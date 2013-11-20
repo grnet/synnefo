@@ -39,8 +39,11 @@ had grown too much.
 """
 
 import time
+import base64
 import socket
 import random
+import paramiko
+import tempfile
 import subprocess
 
 from synnefo_tools.burnin.common import BurninTests
@@ -87,13 +90,13 @@ class CycladesTests(BurninTests):
                   server['name'], server['id'])
         return self.clients.cyclades.get_server_details(server['id'])
 
-    def _create_server(self, name, image, flavor):
+    def _create_server(self, name, image, flavor, personality):
         """Create a new server"""
         self.info("Creating a server with name %s", name)
         self.info("Using image %s with id %s", image['name'], image['id'])
         self.info("Using flavor %s with id %s", flavor['name'], flavor['id'])
         server = self.clients.cyclades.create_server(
-            name, flavor['id'], image['id'])
+            name, flavor['id'], image['id'], personality=personality)
 
         self.info("Server id: %s", server['id'])
         self.info("Server password: %s", server['adminPass'])
@@ -178,7 +181,7 @@ class CycladesTests(BurninTests):
         opmsg = opmsg % (familystr.get(family, "Unknown"), host, port)
         return self._try_until_timeout_expires(opmsg, check_fun)
 
-    def _get_ip(self, server, version):
+    def _get_ip(self, server, version=4):
         """Get the public IP of a server from the detailed server info"""
         assert version in (4, 6)
 
@@ -190,15 +193,14 @@ class CycladesTests(BurninTests):
                 public_addrs = nic['ipv' + str(version)]
 
         self.assertIsNotNone(public_addrs)
-        msg = "Servers %s public IPv%s is %s"
-        self.info(msg, server['name'], version, public_addrs)
+        msg = "Server's public IPv%s is %s"
+        self.info(msg, version, public_addrs)
         return public_addrs
 
-    def _insist_on_ping(self, ip_addr, version):
+    def _insist_on_ping(self, ip_addr, version=4):
         """Test server responds to a single IPv4 of IPv6 ping"""
         def check_fun():
             """Ping to server"""
-            assert version in (4, 6)
             cmd = ("ping%s -c 3 -w 20 %s" %
                    ("6" if version == 6 else "", ip_addr))
             ping = subprocess.Popen(
@@ -208,10 +210,68 @@ class CycladesTests(BurninTests):
             ret = ping.wait()
             if ret != 0:
                 raise Retry
+        assert version in (4, 6)
         opmsg = "Sent IPv%s ping requests to %s"
         self.info(opmsg, version, ip_addr)
         opmsg = opmsg % (version, ip_addr)
         self._try_until_timeout_expires(opmsg, check_fun)
+
+    def _image_is(self, image, osfamily):
+        """Return true if the image is of `osfamily'"""
+        d_image = self.clients.cyclades.get_image_details(image['id'])
+        return d_image['metadata']['osfamily'].lower().find(osfamily) >= 0
+
+    def _ssh_execute(self, hostip, username, password, command):
+        """Execute a command via ssh"""
+        ssh = paramiko.SSHClient()
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        try:
+            ssh.connect(hostip, username=username, password=password)
+        except socket.error as err:
+            self.fail(err)
+        try:
+            _, stdout, _ = ssh.exec_command(command)
+        except paramiko.SSHException as err:
+            self.fail(err)
+        status = stdout.channel.recv_exit_status()
+        output = stdout.readlines()
+        ssh.close()
+        return output, status
+
+    def _insist_get_hostname_over_ssh(self, hostip, username, password):
+        """Connect to server using ssh and get it's hostname"""
+        def check_fun():
+            """Get hostname"""
+            try:
+                lines, status = self._ssh_execute(
+                    hostip, username, password, "hostname")
+                self.assertEqual(status, 0)
+                self.assertEqual(len(lines), 1)
+                # Remove new line
+                return lines[0].strip('\n')
+            except AssertionError:
+                raise Retry()
+        opmsg = "Connecting to server using ssh and get it's hostname"
+        self.info(opmsg)
+        hostname = self._try_until_timeout_expires(opmsg, check_fun)
+        self.info("Server's hostname is %s", hostname)
+        return hostname
+
+    # Too many arguments. pylint: disable-msg=R0913
+    def _check_file_through_ssh(self, hostip, username, password,
+                                remotepath, content):
+        """Fetch file from server and compare contents"""
+        self.info("Fetching file %s from remote server", remotepath)
+        transport = paramiko.Transport((hostip, 22))
+        transport.connect(username=username, password=password)
+        with tempfile.NamedTemporaryFile() as ftmp:
+            sftp = paramiko.SFTPClient.from_transport(transport)
+            sftp.get(remotepath, ftmp.name)
+            sftp.close()
+            transport.close()
+            self.info("Comparing file contents")
+            remote_content = base64.b64encode(ftmp.read())
+            self.assertEqual(content, remote_content)
 
 
 class Retry(Exception):

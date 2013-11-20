@@ -158,7 +158,7 @@ class ImagesTestSuite(BurninTests):
             os.path.join(self.temp_dir, self.temp_image_name)
 
         # Write to file
-        self.info("Download image to %s", self.temp_image_file)
+        self.info("Downloading image to %s", self.temp_image_file)
         with open(self.temp_image_file, "w+b") as fout:
             self.clients.pithos.download_object(image_name, fout)
 

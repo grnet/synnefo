@@ -38,6 +38,8 @@ This is the burnin class that tests the Servers' functionality
 
 import sys
 import IPy
+import stat
+import base64
 import random
 import socket
 
@@ -52,19 +54,34 @@ from synnefo_tools.burnin.cyclades_common import CycladesTests
 class GeneratedServerTestSuite(CycladesTests):
     """Test Spawning Serverfunctionality"""
     use_image = Proper(value=None)
+    personality = Proper(value=None)
     avail_flavors = Proper(value=None)
     use_flavor = Proper(value=None)
     server = Proper(value=None)
     ipv4 = Proper(value=None)
     ipv6 = Proper(value=None)
+    username = Proper(value=None)
+    password = Proper(value=None)
 
     def test_001_submit_create_server(self):
         """Submit a create server request"""
+        if self._image_is(self.use_image, "linux"):
+            # Enforce personality test
+            self.info("Creating personality content to be used")
+            self.personality = [{
+                'path': "/root/test_inj_file",
+                'owner': "root",
+                'group': "root",
+                'mode': stat.S_IRUSR | stat.S_IWUSR,
+                'contents': base64.b64encode("This is a personality file")
+            }]
         servername = "%s for %s" % (self.run_id, self.use_image['name'])
         self.use_flavor = random.choice(self.avail_flavors)
 
         self.server = self._create_server(
-            servername, self.use_image, self.use_flavor)
+            servername, self.use_image, self.use_flavor, self.personality)
+        self.username = self._get_connection_username(self.server)
+        self.password = self.server['adminPass']
 
     def test_002_server_build_list(self):
         """Test server is in BUILD state, in server list"""
@@ -147,24 +164,24 @@ class GeneratedServerTestSuite(CycladesTests):
         # Update the server attribute
         self.server = server
 
-        self.ipv4 = self._get_ip(server, 4)
+        self.ipv4 = self._get_ip(server, version=4)
         self.assertEquals(IPy.IP(self.ipv4).version(), 4)
 
     def test_008_server_has_ipv6(self):
         """Test active server has a valid IPv6 address"""
         self._skip_if(not self.use_ipv6, "--no-ipv6 flag enabled")
 
-        self.ipv6 = self._get_ip(self.server, 6)
+        self.ipv6 = self._get_ip(self.server, version=6)
         self.assertEquals(IPy.IP(self.ipv6).version(), 6)
 
     def test_009_server_ping_ipv4(self):
         """Test server responds to ping on IPv4 address"""
-        self._insist_on_ping(self.ipv4, 4)
+        self._insist_on_ping(self.ipv4, version=4)
 
     def test_010_server_ping_ipv6(self):
         """Test server responds to ping on IPv6 address"""
         self._skip_if(not self.use_ipv6, "--no-ipv6 flag enabled")
-        self._insist_on_ping(self.ipv6, 6)
+        self._insist_on_ping(self.ipv6, version=6)
 
     def test_011_submit_shutdown(self):
         """Test submit request to shutdown server"""
@@ -185,6 +202,72 @@ class GeneratedServerTestSuite(CycladesTests):
     def test_015_server_ping_ipv4(self):
         """Test server OS is actually up and running again"""
         self.test_009_server_ping_ipv4()
+
+    def test_016_ssh_to_server_ipv4(self):
+        """Test SSH to server public IPv4 works, verify hostname"""
+        self._skip_if(not self._image_is(self.use_image, "linux"),
+                      "only valid for Linux servers")
+        hostname = self._insist_get_hostname_over_ssh(
+            self.ipv4, self.username, self.password)
+        # The hostname must be of the form 'prefix-id'
+        self.assertTrue(hostname.endswith("-%d" % self.server['id']))
+
+    def test_017_ssh_to_server_ipv6(self):
+        """Test SSH to server public IPv6 works, verify hostname"""
+        self._skip_if(not self._image_is(self.use_image, "linux"),
+                      "only valid for Linux servers")
+        self._skip_if(not self.use_ipv6, "--no-ipv6 flag enabled")
+        hostname = self._insist_get_hostname_over_ssh(
+            self.ipv6, self.username, self.password)
+        # The hostname must be of the form 'prefix-id'
+        self.assertTrue(hostname.endswith("-%d" % self.server['id']))
+
+    def test_018_rdp_to_server_ipv4(self):
+        """Test RDP connection to server public IPv4 works"""
+        self._skip_if(not self._image_is(self.use_image, "windows"),
+                      "only valid for Windows servers")
+        sock = self._insist_on_tcp_connection(socket.AF_INET, self.ipv4, 3389)
+        # No actual RDP processing done. We assume the RDP server is there
+        # if the connection to the RDP port is successful.
+        # pylint: disable-msg=W0511
+        # FIXME: Use rdesktop, analyze exit code? see manpage
+        sock.close()
+
+    def test_019_rdp_to_server_ipv6(self):
+        """Test RDP connection to server public IPv6 works"""
+        self._skip_if(not self._image_is(self.use_image, "windows"),
+                      "only valid for Windows servers")
+        self._skip_if(not self.use_ipv6, "--no-ipv6 flag enabled")
+        sock = self._insist_on_tcp_connection(socket.AF_INET, self.ipv6, 3389)
+        # No actual RDP processing done. We assume the RDP server is there
+        # if the connection to the RDP port is successful.
+        # pylint: disable-msg=W0511
+        # FIXME: Use rdesktop, analyze exit code? see manpage
+        sock.close()
+
+    def test_020_personality(self):
+        """Test file injection for personality enforcement"""
+        self._skip_if(not self._image_is(self.use_image, "linux"),
+                      "only implemented for linux servers")
+        assert self.personality is not None, "No personality used"
+
+        for inj_file in self.personality:
+            self._check_file_through_ssh(
+                self.ipv4, inj_file['owner'], self.password,
+                inj_file['path'], inj_file['contents'])
+
+    def test_021_submit_delete_request(self):
+        """Test submit request to delete server"""
+        self.clients.cyclades.delete_server(self.server['id'])
+
+    def test_022_server_becomes_deleted(self):
+        """Test server becomes DELETED"""
+        self._insist_on_server_transition(self.server, "ACTIVE", "DELETED")
+
+    def test_023_server_no_longer(self):
+        """Test server is no longer in server list"""
+        servers = self._get_list_of_servers()
+        self.assertNotIn(self.server['id'], [s['id'] for s in servers])
 
 
 # --------------------------------------------------------------------

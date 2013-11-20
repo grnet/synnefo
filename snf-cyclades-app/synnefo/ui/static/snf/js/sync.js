@@ -107,7 +107,7 @@
     // appends global ajax handlers
     // handles changed-since url parameter based on api path
     api.sync = function(method, model, options) {
-
+        
         var type = methodMap[method];
         
         if (model && (model.skipMethods || []).indexOf(method) >= 0) {

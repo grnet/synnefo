@@ -1347,7 +1347,16 @@
             }
             return synnefo.config.ui_console_url + '?' + $.param(url_params);
         },
-      
+        
+        set_firewall: function(nic, value, success_cb, error_cb) {
+          var success = function() { success_cb() }
+          var error = function() { error_cb() }
+          var data = {'nic': nic.id, 'profile': value, 'display': true};
+          var url = this.url() + "/action";
+          //var params = {skip_api_error: false, display: true};
+          this.call('firewallProfile', success, error, data);
+        },
+
         connect_floating_ip: function(ip, cb) {
           this.set({'status': 'CONNECTING'});
           synnefo.storage.ports.create({
@@ -1451,6 +1460,16 @@
 
                                          },  
                                          error, 'destroy', params);
+                    break;
+                case 'firewallProfile':
+                    this.__make_api_call(this.get_action_url(), // vm actions url
+                                         "create",
+                                         {firewallProfile:{nic:params.nic, profile:params.profile}}, // payload
+                                         function() {
+                                             success.apply(this, arguments);
+                                             snf.api.trigger("call");
+                                         },  
+                                         error, 'start', params);
                     break;
                 default:
                     throw "Invalid VM action ("+action_name+")";

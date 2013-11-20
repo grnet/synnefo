@@ -332,12 +332,23 @@
       set_firewall: function() {
         var value = this.get_selected_value();
         this.firewall_apply.addClass("in-progress");
+        var vm = this.model.get('vm');
+        if (!vm) { return }
         this.model.set({'pending_firewall': value});
-        this.model.set_firewall(value, this.set_firewall_complete, 
-                                       this.set_firewall_complete);
+        vm.set_firewall(this.model, value, this.set_firewall_success,
+                        this.set_firewall_error)
         this.in_progress = true;
       },
       
+      set_firewall_success: function() {
+        this.set_firewall_complete();
+      },
+
+      set_firewall_error: function() {
+        this.model.set({'pending_firewall': undefined});
+        this.set_firewall_complete();
+      },
+
       set_firewall_complete: function() {
         this.in_progress = false;
         this.toggle_firewall({}, false, _.bind(function() {
@@ -945,8 +956,7 @@
           complete: function() {
             synnefo.storage.quotas.fetch();
             self.reset_creating();
-          },
-          skip_api_error: true
+          }
         });
       },
       

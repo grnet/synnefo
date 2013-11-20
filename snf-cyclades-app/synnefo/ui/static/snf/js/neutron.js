@@ -399,19 +399,6 @@
         ],
       },
 
-      set_firewall: function(value, callback, error, options) {
-        // MOCK CALL
-        window.setTimeout(_.bind(function() {
-          var vm = this.get('vm');
-          var attachments = [];
-          attachments.push({id: this.id, firewallProfile: value});
-          vm.set({attachments: attachments});
-        }, this),  2000);
-        window.setTimeout(_.bind(function() {
-          callback();
-        }), 300);
-      },
-
       disconnect: function(cb) {
         var network = this.get('network');
         var vm = this.get('vm');

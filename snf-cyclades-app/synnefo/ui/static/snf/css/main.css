@@ -6005,6 +6005,9 @@ table.list-machines .wave {
     color: #FF9955;
     margin-bottom: 1em;
     font-size: 1.2em;
+    text-indent: -20px;
+    padding-right: 58px;
+    margin-left: 20px;
 }
 
 .create-vm .images-info-cont span.title {

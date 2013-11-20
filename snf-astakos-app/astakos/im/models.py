@@ -64,7 +64,6 @@ from astakos.im import auth_providers as auth
 import astakos.im.messages as astakos_messages
 from synnefo.lib.ordereddict import OrderedDict
 
-from snf_django.lib.db.fields import intDecimalField
 from synnefo.util.text import uenc, udec
 from synnefo.util import units
 from astakos.im import presentation
@@ -233,7 +232,7 @@ class Resource(models.Model):
     service_type = models.CharField(_('Type'), max_length=255)
     service_origin = models.CharField(max_length=255, db_index=True)
     unit = models.CharField(_('Unit'), null=True, max_length=255)
-    uplimit = intDecimalField(default=0)
+    uplimit = models.BigIntegerField(default=0)
     allow_in_projects = models.BooleanField(default=True)
 
     def __str__(self):
@@ -1021,7 +1020,7 @@ class AstakosUserAuthProvider(models.Model):
 
 
 class AstakosUserQuota(models.Model):
-    capacity = intDecimalField()
+    capacity = models.BigIntegerField()
     resource = models.ForeignKey(Resource)
     user = models.ForeignKey(AstakosUser)
 
@@ -1493,8 +1492,8 @@ class ProjectResourceGrant(models.Model):
     resource = models.ForeignKey(Resource)
     project_application = models.ForeignKey(ProjectApplication,
                                             null=True)
-    project_capacity = intDecimalField(null=True)
-    member_capacity = intDecimalField(default=0)
+    project_capacity = models.BigIntegerField(null=True)
+    member_capacity = models.BigIntegerField(default=0)
 
     objects = ProjectResourceGrantManager()
 

@@ -9,6 +9,8 @@ class Migration(DataMigration):
     def forwards(self, orm):
         "Write your forwards methods here."
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
+        # Delete stale NICs
+        orm.NetworkInterface.objects.filter(machine__deleted=True).delete()
         for nic in orm.NetworkInterface.objects.all():
             userid = nic.machine.userid
             nic.userid = userid

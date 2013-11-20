@@ -1612,7 +1612,8 @@
         'reboot',
         'console',
         'destroy',
-        'resize'
+        'resize',
+        'snapshot'
     ]
 
     models.VM.TASK_STATE_STATUS_MAP = {
@@ -1630,8 +1631,8 @@
         'UNKNWON'       : ['destroy'],
         'BUILD'         : ['destroy'],
         'REBOOT'        : ['destroy'],
-        'STOPPED'       : ['start', 'destroy', 'resize'],
-        'ACTIVE'        : ['shutdown', 'destroy', 'reboot', 'console', 'resize'],
+        'STOPPED'       : ['start', 'destroy', 'resize', 'snapshot'],
+        'ACTIVE'        : ['shutdown', 'destroy', 'reboot', 'console', 'resize', 'snapshot'],
         'ERROR'         : ['destroy'],
         'DELETED'       : ['destroy'],
         'DESTROY'       : ['destroy'],

@@ -4155,6 +4155,9 @@ div.state .start, tbody.machines .start {
 div.state .resize, tbody.machines .resize {
     background-image: url("../images/icons/actions/medium/resize.png");
 }
+div.state .snapshot, tbody.machines .snapshot {
+    background-image: url("../images/icons/actions/medium/snapshot.png");
+}
 div.state .reboot, tbody.machines .reboot {
     background-image: url("../images/icons/actions/medium/reboot.png");
 }

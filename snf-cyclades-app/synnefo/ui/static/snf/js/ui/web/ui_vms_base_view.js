@@ -695,6 +695,7 @@
         'console':       ['ACTIVE'],
         'start':         ['UNKOWN', 'STOPPED'],
         'resize':        ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT', 'ERROR', 'BUILD'],
+        'snapshot':      ['ACTIVE', 'STOPPED'],
         'destroy':       ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT', 'ERROR', 'BUILD']
     };
 

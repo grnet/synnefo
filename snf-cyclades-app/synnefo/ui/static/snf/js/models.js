@@ -1300,13 +1300,12 @@
         },
         
         get_hostname: function() {
-          var hostname = this.get_meta('hostname');
+          var hostname = this.get_meta('hostname') || this.get('fqdn');
           if (!hostname) {
             if (synnefo.config.vm_hostname_format) {
               hostname = synnefo.config.vm_hostname_format.format(this.id);
             } else {
-              // TODO: resolve public ip
-              hostname = 'PUBLIC NIC';
+              hostname = 'unknown';
             }
           }
           return hostname;
@@ -2005,8 +2004,8 @@
 
             // network metadata
             data['firewalls'] = {};
-
-            data['fqdn'] = synnefo.config.vm_hostname_format.format(data['id']);
+            
+            data['fqdn'] = data['SNF:fqdn'] || synnefo.config.vm_hostname_format.format(data['id']);
 
             // if vm has no metadata, no metadata object
             // is in json response, reset it to force

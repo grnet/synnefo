@@ -1589,7 +1589,8 @@
                 ip_address: this.get_hostname(),
                 hostname: this.get_hostname(),
                 os: this.get_os(),
-                host_os: host_os,
+                host_os: 'windows',
+                ports: JSON.stringify(this.get('SNF:port_forwarding') || {}),
                 srv: this.id
             }
             

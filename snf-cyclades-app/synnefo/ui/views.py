@@ -317,14 +317,17 @@ CONNECT_PROMPT_MESSAGES = {
         'linux': [CONNECT_LINUX_LINUX_MESSAGE, ""],
         'windows': [CONNECT_LINUX_WINDOWS_MESSAGE,
                     CONNECT_LINUX_WINDOWS_SUBMESSAGE],
-        'ssh_message': "ssh %(user)s@%(hostname)s"
+        'ssh_message': "ssh %(user)s@%(hostname)s",
+        'ssh_message_port': "ssh -p %(port)s %(user)s@%(hostname)s"
+
     },
     'windows': {
         'linux': [CONNECT_WINDOWS_LINUX_MESSAGE,
                   CONNECT_WINDOWS_LINUX_SUBMESSAGE],
         'windows': [CONNECT_WINDOWS_WINDOWS_MESSAGE,
                     CONNECT_WINDOWS_WINDOWS_SUBMESSAGE],
-        'ssh_message': "%(user)s@%(hostname)s"
+        'ssh_message': "%(user)s@%(hostname)s",
+        'ssh_message_port': "%(user)s@%(hostname)s (port: %(port)s)"
     },
 }
 
@@ -349,6 +352,7 @@ def machines_connect(request):
     host_os = request.GET.get('host_os', 'Linux').lower()
     username = request.GET.get('username', None)
     domain = request.GET.get("domain", DOMAIN_TPL % int(server_id))
+    ports = json.loads(request.GET.get('ports', '{}'))
 
     # guess host os
     if host_os != "windows":
@@ -364,6 +368,9 @@ def machines_connect(request):
         if metadata_os.lower() == "windows":
             username = "Administrator"
 
+    ssh_forward = ports.get("22", None)
+    rdp_forward = ports.get("3389", None)
+
     # operating system provides ssh access
     ssh = False
     if operating_system != "windows":
@@ -373,6 +380,12 @@ def machines_connect(request):
     # rdp param is set, the user requested rdp file
     # check if we are on windows
     if operating_system == 'windows' and request.GET.get("rdp", False):
+        port = '3389'
+        if rdp_forward:
+            hostname = rdp_forward.get('host', hostname)
+            ip_address = rdp_forward.get('host', ip_address)
+            port = str(rdp_forward.get('port', '3389'))
+
         extra_rdp_content = ''
         # UI sent domain info (from vm metadata) use this
         # otherwise use our default snf-<vm_id> domain
@@ -387,7 +400,8 @@ def machines_connect(request):
                         'server_id': server_id,
                         'ip_address': ip_address,
                         'hostname': hostname,
-                        'user': username
+                        'user': username,
+                        'port': port
                     }
 
         rdp_context = {
@@ -395,6 +409,7 @@ def machines_connect(request):
             'domain': domain,
             'ip_address': ip_address,
             'hostname': hostname,
+            'port': request.GET.get('port', port),
             'extra_content': extra_rdp_content
         }
 
@@ -405,9 +420,19 @@ def machines_connect(request):
         filename = "%d-%s.rdp" % (int(server_id), hostname)
         response['Content-Disposition'] = 'attachment; filename=%s' % filename
     else:
-        ssh_message = CONNECT_PROMPT_MESSAGES['linux'].get('ssh_message')
+        message_key = "ssh_message"
+        ip_address = ip_address
+        hostname = hostname
+        port = ''
+        if ssh_forward:
+            message_key = 'ssh_message_port'
+            hostname = ssh_forward.get('host', hostname)
+            ip_address = ssh_forward.get('host', ip_address)
+            port = str(ssh_forward.get('port', '22'))
+
+        ssh_message = CONNECT_PROMPT_MESSAGES['linux'].get(message_key)
         if host_os == 'windows':
-            ssh_message = CONNECT_PROMPT_MESSAGES['windows'].get('ssh_message')
+            ssh_message = CONNECT_PROMPT_MESSAGES['windows'].get(message_key)
         if callable(ssh_message):
             link_title = ssh_message(server_id, ip_address, hostname, username)
         else:
@@ -415,19 +440,26 @@ def machines_connect(request):
                 'server_id': server_id,
                 'ip_address': ip_address,
                 'hostname': hostname,
-                'user': username
+                'user': username,
+                'port': port
             }
         if (operating_system != "windows"):
             link_url = None
 
         else:
             link_title = _("Remote desktop to %s") % ip_address
+            if rdp_forward:
+                hostname = rdp_forward.get('host', hostname)
+                ip_address = rdp_forward.get('host', ip_address)
+                port = str(rdp_forward.get('port', '3389'))
+                link_title = _("Remote desktop to %s (port %s)") % (ip_address,
+                                                                    port)
             link_url = \
                 "%s?ip_address=%s&os=%s&rdp=1&srv=%d&username=%s&domain=%s" \
-                "&hostname=%s" % (
+                "&hostname=%s&port=%s" % (
                     reverse("ui_machines_connect"), ip_address,
                     operating_system, int(server_id), username,
-                    domain, hostname)
+                    domain, hostname, port)
 
         # try to find a specific message
         try:

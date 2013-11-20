@@ -139,6 +139,7 @@ class BurninTests(unittest.TestCase):
     system_user = None
     images = None
     flavors = None
+    delete_stale = False
 
     @classmethod
     def setUpClass(cls):  # noqa
@@ -443,7 +444,7 @@ class BurninTests(unittest.TestCase):
 
 # --------------------------------------------------------------------
 # Initialize Burnin
-def initialize(opts, testsuites):
+def initialize(opts, testsuites, stale_testsuites):
     """Initalize burnin
 
     Initialize our logger and burnin state
@@ -467,10 +468,15 @@ def initialize(opts, testsuites):
     BurninTests.system_user = opts.system_user
     BurninTests.flavors = opts.flavors
     BurninTests.images = opts.images
+    BurninTests.delete_stale = opts.delete_stale
     BurninTests.run_id = SNF_TEST_PREFIX + \
         datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d%H%M%S")
 
     # Choose tests to run
+    if opts.show_stale:
+        # We will run the stale_testsuites
+        return stale_testsuites
+
     if opts.tests != "all":
         testsuites = opts.tests
     if opts.exclude_tests is not None:

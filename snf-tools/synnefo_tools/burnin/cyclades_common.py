@@ -52,7 +52,7 @@ from synnefo_tools.burnin.common import BurninTests
 # Too many public methods. pylint: disable-msg=R0904
 class CycladesTests(BurninTests):
     """Extends the BurninTests class for Cyclades"""
-    def _try_until_timeout_expires(self, opmsg, check_fun):
+    def _ry_until_timeout_expires(self, opmsg, check_fun):
         """Try to perform an action until timeout expires"""
         assert callable(check_fun), "Not a function"
 
@@ -61,19 +61,30 @@ class CycladesTests(BurninTests):
         if action_warning > action_timeout:
             action_warning = action_timeout
 
-        start_time = time.time()
-        while (start_time + action_warning) > time.time():
+        start_time = int(time.time())
+        end_time = start_time + action_warning
+        while end_time > time.time():
             try:
-                return check_fun()
+                ret_value = check_fun()
+                self.info("Operation `%s' finished in %s seconds",
+                          opmsg, int(time.time()) - start_time)
+                return ret_value
             except Retry:
                 time.sleep(self.query_interval)
-        self.warning("Operation `%s' is taking too long", opmsg)
-        while (start_time + action_timeout) > time.time():
+        self.warning("Operation `%s' is taking too long after %s seconds",
+                     opmsg, int(time.time()) - start_time)
+
+        end_time = start_time + action_timeout
+        while end_time > time.time():
             try:
-                return check_fun()
+                ret_value = check_fun()
+                self.info("Operation `%s' finished in %s seconds",
+                          opmsg, int(time.time()) - start_time)
+                return ret_value
             except Retry:
                 time.sleep(self.query_interval)
-        self.error("Operation `%s' timed out", opmsg)
+        self.error("Operation `%s' timed out after %s seconds",
+                   opmsg, int(time.time()) - start_time)
         self.fail("time out")
 
     def _get_list_of_servers(self, detail=False):

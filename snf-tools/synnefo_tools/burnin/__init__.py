@@ -46,6 +46,8 @@ from synnefo_tools.burnin.images_tests import \
     FlavorsTestSuite, ImagesTestSuite
 from synnefo_tools.burnin.pithos_tests import PithosTestSuite
 from synnefo_tools.burnin.server_tests import ServerTestSuite
+from synnefo_tools.burnin.stale_tests import \
+    StaleServersTestSuite, StaleNetworksTestSuite
 
 
 # --------------------------------------------------------------------
@@ -56,9 +58,15 @@ TESTSUITES = [
     ImagesTestSuite,
     PithosTestSuite,
     ServerTestSuite,
-    ]
-
+]
 TSUITES_NAMES = [tsuite.__name__ for tsuite in TESTSUITES]
+
+STALE_TESTSUITES = [
+    # Must be runned in this order
+    StaleServersTestSuite,
+    StaleNetworksTestSuite,
+]
+STALE_TSUITES_NAMES = [tsuite.__name__ for tsuite in STALE_TESTSUITES]
 
 
 def string_to_class(names):
@@ -245,7 +253,7 @@ def main():
     (opts, _) = parse_arguments(sys.argv[1:])
 
     # Initialize burnin
-    testsuites = common.initialize(opts, TSUITES_NAMES)
+    testsuites = common.initialize(opts, TSUITES_NAMES, STALE_TSUITES_NAMES)
     testsuites = string_to_class(testsuites)
 
     # Run burnin

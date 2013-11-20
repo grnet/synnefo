@@ -1439,28 +1439,6 @@
                                          },  
                                          error, 'resize', params);
                     break;
-                case 'addFloatingIp':
-                    this.__make_api_call(this.get_action_url(), // vm actions url
-                                         "create", // create so that sync later uses POST to make the call
-                                         {addFloatingIp: {address:params.address}}, // payload
-                                         function() {
-                                             self.state('CONNECT');
-                                             success.apply(this, arguments);
-                                             snf.api.trigger("call");
-                                         },  
-                                         error, 'addFloatingIp', params);
-                    break;
-                case 'removeFloatingIp':
-                    this.__make_api_call(this.get_action_url(), // vm actions url
-                                         "create", // create so that sync later uses POST to make the call
-                                         {removeFloatingIp: {address:params.address}}, // payload
-                                         function() {
-                                             self.state('DISCONNECT');
-                                             success.apply(this, arguments);
-                                             snf.api.trigger("call");
-                                         },  
-                                         error, 'addFloatingIp', params);
-                    break;
                 case 'destroy':
                     this.__make_api_call(this.url(), // vm actions url
                                          "delete", // create so that sync later uses POST to make the call

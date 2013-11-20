@@ -347,7 +347,12 @@ def handle_resource_commission(resource, action, commission_name,
     resolved it before issuing the new one.
 
     """
-    # Try to resolve previous serial
+    # Try to resolve previous serial:
+    # If action is DESTROY, we must always reject the previous commission,
+    # since multiple DESTROY actions are allowed in the same resource (e.g. VM)
+    # The one who succeeds will be finally accepted, and all other will be
+    # rejected
+    force = force or (action == "DESTROY")
     resolve_commission(resource.serial, force=force)
 
     serial = issue_commission(resource, action, name=commission_name,

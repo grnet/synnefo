@@ -147,16 +147,20 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
 
     if job_fields is None:
         job_fields = {}
+
+    new_operstate = None
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode)
 
-    # Notifications of success change the operating state
     if status == rapi.JOB_STATUS_SUCCESS:
+        # If job succeeds, change operating state if needed
         if state_for_success is not None:
-            vm.operstate = state_for_success
+            new_operstate = state_for_success
+
         beparams = job_fields.get("beparams", None)
         if beparams:
             # Change the flavor of the VM
             _process_resize(vm, beparams)
+
         # Update backendtime only for jobs that have been successfully
         # completed, since only these jobs update the state of the VM. Else a
         # "race condition" may occur when a successful job (e.g.
@@ -171,7 +175,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if opcode == 'OP_INSTANCE_CREATE' and status in (rapi.JOB_STATUS_CANCELED,
                                                      rapi.JOB_STATUS_ERROR):
-        vm.operstate = 'ERROR'
+        new_operstate = "ERROR"
         vm.backendtime = etime
         # Update state of associated NICs
         vm.nics.all().update(state="ERROR")
@@ -188,7 +192,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
                 # And delete the NIC.
                 nic.delete()
             vm.deleted = True
-            vm.operstate = state_for_success
+            new_operstate = state_for_success
             vm.backendtime = etime
             status = rapi.JOB_STATUS_SUCCESS
 
@@ -200,6 +204,9 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         if vm.task_job_id == jobid:
             vm.task = None
             vm.task_job_id = None
+
+    if new_operstate is not None:
+        vm.operstate = new_operstate
 
     vm.save()
 

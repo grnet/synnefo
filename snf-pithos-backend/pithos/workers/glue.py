@@ -88,7 +88,7 @@ class WorkerGlue(object):
                                      self.cnt)
                     self.cnt += 1
                     return ioctx
-		elif self.worker_id == None:
+                elif self.worker_id is None:
                     ioctx = Xseg_ctx(self.segment, 200)
                     return ioctx
 

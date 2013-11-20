@@ -164,12 +164,12 @@ class ArchipelagoObject(object):
         while 1:
             ioctx = self.ioctx_pool.pool_get()
             req = read(ioctx, self.dst_port,
-                       self.name, size=dsize-datalen, offset=self.offset)
+                       self.name, size=dsize - datalen, offset=self.offset)
             req.submit()
             req.wait()
             ret = req.success()
             if ret:
-                s = string_at(req.get_data(), dsize-datalen)
+                s = string_at(req.get_data(), dsize - datalen)
             else:
                 s = None
             req.put()

@@ -123,7 +123,7 @@ class ArchipelagoMapper(object):
             req.put()
             self.ioctx_pool.pool_put(ioctx)
             for idx in xrange(0, len(data), namelen):
-                hashes = hashes + (data[idx:idx+namelen],)
+                hashes = hashes + (data[idx:idx + namelen],)
             hashes = list(hashes)
         else:
             req.put()

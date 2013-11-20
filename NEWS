@@ -5,6 +5,15 @@ Unified NEWS file for Synnefo versions >= 0.13
 
 Since v0.13 all Synnefo components have been merged into a single repository.
 
+.. _NEWS-0.14.10:
+
+v0.14.10
+=======
+
+Released: UNRELEASED
+
+* Support for Ganeti 2.8
+
 .. _NEWS-0.14.9:
 
 v0.14.9

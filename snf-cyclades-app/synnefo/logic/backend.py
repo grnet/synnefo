@@ -411,8 +411,6 @@ def create_instance(vm, public_nic, flavor, image):
         kw['disks'][0]['origin'] = flavor.disk_origin
 
     kw['nics'] = [public_nic]
-    if vm.backend.use_hotplug():
-        kw['hotplug'] = True
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['os'] = settings.GANETI_OS_PROVIDER
     kw['ip_check'] = False
@@ -434,6 +432,9 @@ def create_instance(vm, public_nic, flavor, image):
         # Store image id and format to Ganeti
         'img_id': image['backend_id'],
         'img_format': image['format']}
+
+    # Use opportunistic locking
+    kw['opportunistic_locking'] = settings.GANETI_USE_OPPORTUNISTIC_LOCKING
 
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['hvparams'] = dict(serial_console=False)
@@ -547,16 +548,16 @@ def create_network(network, backend, connect=True):
 def _create_network(network, backend):
     """Create a network."""
 
-    network_type = network.public and 'public' or 'private'
-
     tags = network.backend_tag
     if network.dhcp:
         tags.append('nfdhcpd')
 
     if network.public:
         conflicts_check = True
+        tags.append('public')
     else:
         conflicts_check = False
+        tags.append('private')
 
     try:
         bn = BackendNetwork.objects.get(network=network, backend=backend)
@@ -571,7 +572,6 @@ def _create_network(network, backend):
                                     network6=network.subnet6,
                                     gateway=network.gateway,
                                     gateway6=network.gateway6,
-                                    network_type=network_type,
                                     mac_prefix=mac_prefix,
                                     conflicts_check=conflicts_check,
                                     tags=tags)
@@ -642,14 +642,15 @@ def connect_to_network(vm, network, address=None):
     log.debug("Connecting vm %s to network %s(%s)", vm, network, address)
 
     with pooled_rapi_client(vm) as client:
-        return client.ModifyInstance(vm.backend_vm_id, nics=[('add',  nic)],
+        return client.ModifyInstance(vm.backend_vm_id,
+                                     nics=[('add',  "-1", nic)],
                                      hotplug=vm.backend.use_hotplug(),
                                      depends=depends,
                                      dry_run=settings.TEST)
 
 
 def disconnect_from_network(vm, nic):
-    op = [('remove', nic.index, {})]
+    op = [('remove', str(nic.index), {})]
 
     log.debug("Removing nic of VM %s, with index %s", vm, str(nic.index))
 
@@ -737,7 +738,7 @@ def get_physical_resources(backend):
         can_host_vms = n['vm_capable'] and not (n['drained'] or n['offline'])
         if can_host_vms and n['cnodes']:
             for a in attr:
-                res[a] += int(n[a])
+                res[a] += int(n[a] or 0)
     return res
 
 

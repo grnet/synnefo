@@ -1,3 +1,4 @@
 deb http://ftp.de.debian.org/debian wheezy main non-free contrib
 
 deb http://apt.dev.grnet.gr wheezy/
+deb http://apt2.dev.grnet.gr unstable/

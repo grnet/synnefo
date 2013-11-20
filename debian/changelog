@@ -1,3 +1,10 @@
+synnefo (0.14.10~rc1-1~wheezy) wheezy; urgency=low
+
+  * New upstream version
+    + Support for Ganeti 2.8
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Wed, 20 Nov 2013 14:41:24 +0200
+
 synnefo (0.14.9-1~wheezy) wheezy; urgency=low
 
   * Release version 0.14.9~rc1 as 0.14.9
@@ -113,6 +120,7 @@ synnefo (0.12.5-1) stable; urgency=low
   [ Dimitris Aragiorgis ]
 
  -- Dimitris Aragiorgis <dimara@grnet.gr>  Fri, 04 Jan 2013 14:46:35 +0200
+
 
 
 

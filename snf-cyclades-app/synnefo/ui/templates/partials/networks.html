@@ -73,7 +73,8 @@
   <div class="collection">
     <div class="empty-list item-list hidden nested">
       <div class="border">
-        <i class="add" data-rv-on-click="view.show_connect_vms_overlay">+</i>
+        <i class="add icon-action connect"
+           data-rv-on-click="view.show_connect_vms_overlay">+</i>
       </div>
       <div class="border2"></div>
     </div>
@@ -87,13 +88,16 @@
   <div class="outer">
     <div class="border">
       <i data-rv-show="model.can_disconnect" 
-         class="remove" 
+         class="remove icon-action" 
          data-rv-on-click="view.set_disconnect_confirm">X</i>
       </div>
     <div class="border2"></div>
     <div class="inner clearfix main-content">
       <img class="model-logo" data-rv-src="model.vm.status|vm_logo_url" />
       <h5 class="title" data-rv-text="model.vm.name|truncate 35"></h5>
+      <div class="state state-indicator">
+        <div class="action-indicator"></div>
+      </div>
       <ul class="ip-addresses">
         <li data-rv-each-item="model.fixed_ips">
           <span data-rv-text="item:ip_address|ip_type" class="type"></span>
@@ -124,7 +128,7 @@
           <input type="radio" class="checkboxes" 
                  value="ENABLED" 
                  data-rv-name="model.id|prefix firewall-" />
-          <span class="checkbox-legends">Fully protecte mode (Firewall on)</span>
+          <span class="checkbox-legends">Fully protected mode (Firewall on)</span>
           <br />
           <input type="radio" class="checkboxes" 
                  data-rv-name="model.id|prefix firewall-"
@@ -192,6 +196,9 @@
               <span data-rv-text="model.cidr|status_display">STATUS</span>
               <span data-rv-show="model.in_progress">...</span>
             </div>
+            <div class="state state-indicator">
+              <div class="action-indicator"></div>
+            </div>
             <div class="status-indicator clearfix">
               <div class="indicator indicator1"></div>
               <div class="indicator indicator2"></div>
@@ -204,7 +211,7 @@
       </div>
     </div>
     <div class="actions-content">
-      <div class="action-container" 
+      <div class="action-container connect" 
            data-rv-class-isactive="model.can_connect"
            data-rv-on-click="view.show_connect_vms_overlay">
            <a>{% trans "Connect machine" %}</a>

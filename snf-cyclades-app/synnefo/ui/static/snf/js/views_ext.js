@@ -453,17 +453,63 @@
         }
       },
       
+      action_cls_map: {
+        'remove': 'destroy'
+      },
+
+      _set_confirm: function(action) {
+        this.pending_action = action;
+        this.set_action_indicator(action);
+      },
+
+      _unset_confirm: function(action) {
+        this.pending_action = undefined;
+        this.reset_action_indicator(action);
+      },
+
+      set_action_indicator: function(action) {
+        action = this.action_cls_map[action] || action;
+        var indicator = this.el.find(".action-indicator");
+        indicator = $(indicator[indicator.length - 1]);
+        indicator.attr("class", "").addClass("state action-indicator " + action);
+      },
+
+      reset_action_indicator: function() {
+        var indicator = this.el.find(".action-indicator");
+        indicator = $(indicator[indicator.length - 1]);
+        indicator.attr("class", "").addClass("state action-indicator");
+        if (this.pending_action) {
+          this.set_action_indicator(this.pending_action);
+        }
+      },
+
       set_confirm: function() {},
       unset_confirm: function() {},
 
       init_action_methods: function(actions) {
+        var self = this;
+        if (this.model && this.model.actions) {
+          this.model.actions.bind("reset-pending", function() {
+            this._unset_confirm();
+          }, this);
+          this.model.actions.bind("set-pending", function(action) {
+            console.log("ACTION", action);
+            this._set_confirm(action)
+          }, this);
+        }
         _.each(actions.actions, function(action) {
+          this.el.find(".action-container." + action).hover(function() {
+            self.set_action_indicator(action);
+          }, function() {
+            self.reset_action_indicator();
+          });
           var method;
           method = 'set_{0}_confirm'.format(action);
           if (this[method]) { return }
           this[method] = _.bind(function(model, ev) {
             if (ev) { ev.stopPropagation() }
             var data = {};
+            this._set_confirm(action);
             this.set_confirm(action);
             this.model.actions.set_pending_action(action);
           }, this);
@@ -472,6 +518,7 @@
           this[method] = _.bind(function(model, ev) {
             if (ev) { ev.stopPropagation() }
             var data = {};
+            this._unset_confirm(action);
             this.unset_confirm(action);
             this.model.actions.unset_pending_action(action);
           }, this);

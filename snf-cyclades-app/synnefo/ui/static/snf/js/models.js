@@ -2266,6 +2266,7 @@
           this.reset_pending();
         }
         this.set(data);
+        this.trigger("set-pending", action);
       },
       
       reset_pending: function() {
@@ -2274,6 +2275,7 @@
           data[action] = this.status.INACTIVE;
         }, this);
         this.set(data);
+        this.trigger("reset-pending");
       }
     });
 

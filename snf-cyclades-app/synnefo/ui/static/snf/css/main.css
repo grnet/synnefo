@@ -4127,6 +4127,12 @@ tbody.machines div.action-indicator {
     position: relative;
     top: -2px;
 }
+div.state .connect, tbody.machines .connect {
+    background-image: url("../images/icons/actions/medium/connect.png");
+}
+div.state .disconnect, tbody.machines .disconnect {
+    background-image: url("../images/icons/actions/medium/disconnect.png");
+}
 div.state .destroy, tbody.machines .destroy {
     background-image: url("../images/icons/actions/medium/destroy.png");
 }
@@ -6704,6 +6710,17 @@ input.has-errors {
   background-color: #A1C8DB;
 }
 
+.pane-view .collection-list-view .model-view .main-content.inner .state-indicator {
+  top: 5px;
+}
+
+.pane-view .collection-list-view .model-view .main-content .state-indicator {
+  width: 50px;
+  position: absolute;
+  top: 30px;
+  right: 5px;
+}
+
 .pane-view .collection-list-view .model-view .main-content .title {
   font-weight: normal;
 }
@@ -6731,6 +6748,10 @@ input.has-errors {
 
 .pane-view .collection-list-view .model-view .main-content .logo {
   float: left;
+}
+
+.pane-view .collection-list-view .model-view .main-content .entry-right {
+  position: relative;
 }
 
 .pane-view .collection-list-view .model-view .main-content .entry {
@@ -6798,6 +6819,8 @@ input.has-errors {
 }
 
 .model-item .status-indicator {
+  width: 110px;
+  float: right;
 }
 
 .model-item .actions-content {
@@ -6973,8 +6996,8 @@ input.has-errors {
 /* end vm sprites */
 
 /* ips */
-.ip-port-view .vm-logo {
-  width: 
+.ip-port-view .title {
+  width: 100%;
 }
 
 .model-item .vm-name {

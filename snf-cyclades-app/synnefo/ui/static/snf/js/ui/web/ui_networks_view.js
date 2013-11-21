@@ -290,6 +290,8 @@
           this.firewall_visible = this.firewall_toggler.hasClass("open");
           if (!this.firewall_visible) {
             this.firewall_apply.fadeOut(50);
+          } else {
+            this.model.actions.reset_pending();
           }
           this.update_firewall();
       },

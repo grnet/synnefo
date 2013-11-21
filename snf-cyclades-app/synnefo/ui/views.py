@@ -95,11 +95,7 @@ SKIP_TIMEOUTS = getattr(settings, "UI_SKIP_TIMEOUTS", 1)
 
 # Additional settings
 VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
-VM_HOSTNAME_FORMAT = getattr(settings, "UI_VM_HOSTNAME_FORMAT",
-                             'snf-%(id)s.vm.synnefo.org')
-
-if isinstance(VM_HOSTNAME_FORMAT, basestring):
-    VM_HOSTNAME_FORMAT = VM_HOSTNAME_FORMAT % {'id': '{0}'}
+NO_FQDN_MESSAGE = getattr(settings, "UI_NO_FQDN_MESSAGE", "No available FQDN")
 
 MAX_SSH_KEYS_PER_USER = getattr(settings, "USERDATA_MAX_SSH_KEYS_PER_USER")
 FLAVORS_DISK_TEMPLATES_INFO = \
@@ -246,7 +242,7 @@ def home(request):
         'private_networks_nic_hotplug':
         json.dumps(PRIVATE_NETWORKS_NIC_HOTPLUG),
         'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL),
-        'vm_hostname_format': json.dumps(VM_HOSTNAME_FORMAT)
+        'no_fqdn_message': json.dumps(NO_FQDN_MESSAGE)
     }
     return template('home', request, context)
 

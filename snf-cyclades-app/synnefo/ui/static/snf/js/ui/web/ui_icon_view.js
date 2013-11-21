@@ -828,7 +828,7 @@
             // truncate name
             el.find("span.name").text(util.truncate(vm.get("name"), 40));
 
-            el.find('.fqdn').text(vm.get('fqdn'));
+            el.find('.fqdn').text(vm.get('fqdn') || synnefo.config.no_fqdn_message);
             el.find("div.status").text(STATE_TEXTS[vm.state()]);
             // set state class
             el.find("div.state").removeClass().addClass(views.IconView.STATE_CLASSES[vm.state()].join(" "));

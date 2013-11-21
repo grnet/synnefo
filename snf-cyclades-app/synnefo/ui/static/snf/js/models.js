@@ -2038,8 +2038,7 @@
 
             // network metadata
             data['firewalls'] = {};
-            
-            data['fqdn'] = data['SNF:fqdn'] || synnefo.config.vm_hostname_format.format(data['id']);
+            data['fqdn'] = data['SNF:fqdn'];
 
             // if vm has no metadata, no metadata object
             // is in json response, reset it to force

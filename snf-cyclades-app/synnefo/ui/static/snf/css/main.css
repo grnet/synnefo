@@ -4748,6 +4748,12 @@ table.list-machines .wave {
     font-size: 0.8em;
 }
 
+.overlay .v6-warn .important {
+  display: block;
+  margin: 4px 0;
+  font-weight: bold;
+}
+
 .overlay .overlay-content .important {
     color: #800000;
 }

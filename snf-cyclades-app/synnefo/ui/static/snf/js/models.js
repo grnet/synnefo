@@ -720,7 +720,7 @@
             ['status', 'state'], function() {
               return !_.contains(['ACTIVE', 'STOPPED'], this.get('status'));
             }
-          ],
+          ]
         },
 
         initialize: function(params) {
@@ -769,6 +769,42 @@
                 }
             }, this));
 
+        },
+          
+        has_public_ip: function() {
+          return this.ports.filter(function(port) {
+            return port.get("network") && 
+                   port.get("network").get("is_public") && 
+                   port.get("ips").length > 0;
+          }).length > 0;
+        },
+
+        has_public_ipv6: function() {
+          return this.has_ip_version("v6", true);
+        },
+
+        has_public_ipv4: function() {
+          return this.has_ip_version("v4", true);
+        },
+        
+        has_ip_version: function(ver, public) {
+          var found = false;
+          this.ports.each(function(port) {
+            if (found) { return }
+            if (public !== undefined) {
+              if (port.get("network") && 
+                  port.get("network").get("is_public") != public) {
+                return
+              }
+            }
+            port.get('ips').each(function(ip) {
+              if (found) { return }
+              if (ip.get("type") == ver) {
+                found = true
+              }
+            })
+          }, this)
+          return found;
         },
 
         status: function(st) {

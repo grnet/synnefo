@@ -66,9 +66,20 @@
 
             this.error = this.$("div.error");
             this.info = this.$("div.connection-info");
+            this.no_public = this.$("div.no-public-ip");
             this.description = this.info.find(".description p");
             this.connect = this.info.find(".connect p");
             this.subinfo = this.info.find(".subinfo");
+            this.v6_warn = this.info.find(".v6-warn");
+
+            var self = this;
+            this.no_public.find("a").click(function(e) {
+              e.preventDefault();
+              self.hide();
+              window.setTimeout(function() {
+                synnefo.router.ips_view();
+              }, 200)
+            });
         },
 
         beforeOpen: function() {
@@ -79,10 +90,18 @@
             this.$(".clipboard").empty();
             try { delete this.clip; } catch (err) {};
         },
+        
+        show_no_public_ip: function() {
+            this.error.hide();
+            this.info.hide();
+            this.no_public.removeClass("hidden").show();
+        },
 
         handle_success: function(data) {
             this.error.hide();
             this.info.show();
+            this.v6_warn.hide();
+            this.no_public.hide();
             this.description.html(data.info);
             if (data.ssh) {
                 this.connect.html(data.link.title);
@@ -97,6 +116,12 @@
                 var ssh_msg = data.link.title;
                 this.clip = new snf.util.ClipHelper(this.$(".clipboard"), ssh_msg);
             } else {
+            }
+
+            if (!this.vm.has_public_ipv4()) {
+              this.v6_warn.removeClass("hidden").show();
+            } else {
+              this.v6_warn.hide();
             }
         },
 
@@ -121,8 +146,12 @@
             
             this.error.hide();
             this.info.hide();
-
-            this.vm.get_connection_info($.client.os, this.handle_success, this.handle_error)
+              
+            if (!this.vm.has_public_ip()) {
+              this.show_no_public_ip();
+            } else {
+              this.vm.get_connection_info($.client.os, this.handle_success, this.handle_error)
+            }
         }
 
     });

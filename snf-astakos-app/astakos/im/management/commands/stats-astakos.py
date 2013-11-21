@@ -30,21 +30,15 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-
-
-import datetime
 import json
 import string
-
 #from optparse import make_option
 
-from django.conf import settings
-from snf_django.management.utils import pprint_table
-
 from snf_django.management.commands import SynnefoCommand, CommandError
-from astakos.im.models import AstakosUser, Resource
-from astakos.quotaholder_app.models import Holding
-from django.db.models import Sum
+from snf_django.management.utils import pprint_table
+#from astakos.im.models import AstakosUser, Resource
+#from astakos.quotaholder_app.models import Holding
+from astakos.admin import stats as statistics
 
 
 class Command(SynnefoCommand):
@@ -55,7 +49,7 @@ class Command(SynnefoCommand):
     )
 
     def handle(self, *args, **options):
-        stats = get_astakos_stats()
+        stats = statistics.get_astakos_stats()
 
         output_format = options["output_format"]
         if output_format == "json":
@@ -67,49 +61,6 @@ class Command(SynnefoCommand):
                                output_format)
 
 
-def get_astakos_stats():
-    stats = {"datetime": datetime.datetime.now().strftime("%c")}
-
-    resources = Resource.objects.values_list("name", flat=True)
-
-    users = AstakosUser.objects.all()
-    verified = users.filter(email_verified=True)
-    active = users.filter(is_active=True)
-
-    user_stats = {}
-    user_stats["total"] = {"total": users.count(),
-                           "verified": verified.count(),
-                           "active": active.count(),
-                           "usage": {}}
-
-    for resource in resources:
-        usage = Holding.objects.filter(resource=resource)\
-                               .aggregate(summ=Sum("usage_max"))
-        user_stats["total"]["usage"][resource] = int(usage["summ"])
-
-    for provider in settings.ASTAKOS_IM_MODULES:
-
-        users = AstakosUser.objects.filter(auth_providers__module=provider)
-        verified = users.filter(email_verified=True)
-        active = users.filter(is_active=True)
-
-        user_stats[provider] = {"total": users.count(),
-                                "verified": verified.count(),
-                                "active": active.count(),
-                                "usage": {}}
-
-        users_uuids = users.values_list("uuid", flat=True)
-        for resource in resources:
-            usage = Holding.objects\
-                           .filter(holder__in=users_uuids, resource=resource)\
-                           .aggregate(summ=Sum("usage_max"))
-            user_stats[provider]["usage"][resource] = int(usage["summ"])
-
-    stats["users"] = user_stats
-
-    return stats
-
-
 def columns_from_fields(fields, values):
     return zip(map(string.lower, fields), [values.get(f, 0) for f in fields])
 
@@ -117,8 +68,8 @@ def columns_from_fields(fields, values):
 def pretty_print_stats(stats, stdout):
     newline = lambda: stdout.write("\n")
 
-    datetime = stats.get("datetime")
-    stdout.write("datetime: %s\n" % datetime)
+    _datetime = stats.get("datetime")
+    stdout.write("datetime: %s\n" % _datetime)
     newline()
 
     users = stats.get("users", {})

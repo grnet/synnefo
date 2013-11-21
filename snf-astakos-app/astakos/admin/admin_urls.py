@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,37 +31,19 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.conf.urls import include, patterns
+from django.conf.urls import url, patterns
 
-from astakos.im.settings import (
-    BASE_PATH, ACCOUNTS_PREFIX, VIEWS_PREFIX, KEYSTONE_PREFIX, WEBLOGIN_PREFIX,
-    ADMIN_PREFIX)
-from snf_django.lib.api.utils import prefix_pattern
-from snf_django.utils.urls import \
-    extend_with_root_redirects, extend_endpoint_with_slash
-from astakos.im.settings import astakos_services
+from astakos.admin import views
+from django.http import Http404
 
-urlpatterns = []
 
-# Redirects should be first, otherwise they may get overridden by wildcards
-extend_endpoint_with_slash(urlpatterns, astakos_services, 'astakos_ui')
-extend_endpoint_with_slash(urlpatterns, astakos_services, 'astakos_weblogin')
+def index(request):
+    raise Http404
 
-astakos_patterns = patterns(
+
+urlpatterns = patterns(
     '',
-    (prefix_pattern(VIEWS_PREFIX), include('astakos.im.urls')),
-    (prefix_pattern(ACCOUNTS_PREFIX), include('astakos.api.urls')),
-    (prefix_pattern(KEYSTONE_PREFIX), include('astakos.api.keystone_urls')),
-    (prefix_pattern(WEBLOGIN_PREFIX), include('astakos.im.weblogin_urls')),
-    (prefix_pattern(ADMIN_PREFIX), include('astakos.admin.admin_urls')),
+    url(r'^$', index),
+    url(r'^stats$', views.get_public_stats),
+    url(r'^stats/detail$', views.get_astakos_stats),
 )
-
-
-urlpatterns += patterns(
-    '',
-    (prefix_pattern(BASE_PATH), include(astakos_patterns)),
-)
-
-# set utility redirects
-extend_with_root_redirects(urlpatterns, astakos_services,
-                           'astakos_ui', BASE_PATH)

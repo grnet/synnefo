@@ -677,6 +677,7 @@
         
         // set selected action
         set: function(action_name) {
+            if (action_name == "snapshot") { return }
             this.selected_action = action_name;
             this.vm.update_pending_action(this.selected_action);
             this.view.vm(this.vm).find(".action-indicator").show().removeClass().addClass(action_name + " action-indicator");

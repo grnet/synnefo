@@ -3317,6 +3317,11 @@ div.reboot-dialog button.details:hover {
   border-bottom: 1px solid #75A9C1;
 }
 
+.machine .info-content.ips .port-item img.in-progress {
+  margin: 4px 2px;
+  margin-right: 20px;
+}
+
 .machine .info-content.ips .port-item img {
   float: left;
   position: relative;
@@ -3736,6 +3741,10 @@ div.machine a.manage-metadata:hover {
 
 .single .ips-content.toggler-content {
   padding: 0;
+}
+
+.single .ips-content.toggler-content .action-container {
+  display: none !important;
 }
 
 .single .toggler-content {
@@ -6765,6 +6774,15 @@ input.has-errors {
   position: relative;
 }
 
+.model-item .actions-content.inline {
+  padding-top: 6px;
+  position: absolute;
+  right: 0px;
+  font-size: 1.2em;
+  height: 26px;
+  width: 182px;
+}
+
 .pane-view .collection-list-view .model-view .main-content .actions-content {
   width: 80px;
   float: left;
@@ -6900,8 +6918,8 @@ input.has-errors {
 
 .model-item .actions-content .action-container.selected:hover {
   background-color: transparent;
-  border-left: 5px solid #7DB4CD;
-  margin-left: 5px;
+  border-left: 4px solid #7DB4CD;
+  margin-left: 6px;
 }
 
 .model-item .actions-content .action-container:hover a {
@@ -6910,8 +6928,8 @@ input.has-errors {
 
 .model-item .actions-content .action-container:hover {
   background-color: #A1C8DB;
-  border-left: 5px solid #7DB4CD;
-  margin-left: 5px;
+  border-left: 4px solid #7DB4CD;
+  margin-left: 6px;
 }
 
 .model-item .actions-content .action-container.selected {
@@ -6924,7 +6942,7 @@ input.has-errors {
 .model-item .actions-content .action-container {
   padding: 2px;
   margin-bottom: 5px;
-  padding-left: 5px;
+  padding-left: 4px;
   margin-left: 10px;
   cursor: pointer;
 }

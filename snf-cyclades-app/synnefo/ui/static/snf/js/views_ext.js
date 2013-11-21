@@ -58,6 +58,9 @@
         var options = _.extend({}, options);
         options.parent_view = this;
         var view = new view_cls(options);
+        if (view.css_classes) {
+          view.el.addClass(view.css_classes)
+        }
         return view;
       },
 

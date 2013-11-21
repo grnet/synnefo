@@ -67,16 +67,33 @@
   </div>
 </div>
 
-<div id="vm-port-ip-tpl" class="hidden clearfix port-ip-item">
-  <div class="type" data-rv-text="model.type|prefix IP "></div>
+<div id="vm-port-ip-tpl" class="hidden port-ip-item">
+  <img src="{{ SYNNEFO_IMAGES_URL }}/icons/indicators/medium/progress.gif" class="in-progress" />
+  <div class="type" data-rv-text="model.type|prefix IP"></div>
   <div class="ip" data-rv-text="model.ip_address"></div>
 </div>
 
-<div id="vm-port-view-tpl">
+<div id="vm-port-view-tpl" class="hidden">
   <div class="ips" data-rv-collection-view="model.ips|VMPortIpsView"></div>
   <div class="clearfix network-header">
+    <span data-rv-show="model.in_progress|update_in_progress"></span>
     <img data-rv-src="model.network.is_public|get_network_icon" />
     <div class="port" data-rv-text="model.network.name|get_network_name"></div>
+    <div class="actions-content inline">
+      <div class="action-container disconnect warn" 
+         data-rv-class-isactive="model.can_disconnect"
+         data-rv-class-selected="model.actions.disconnect|intEq 1"
+         data-rv-on-click="view.set_disconnect_confirm">
+        <a>Disconnect</a>
+        <div class="confirm-single clearfix">
+          <span class="yes" 
+            data-rv-on-click="view.disconnect_port">
+            {% trans "Confirm" %}
+          </span>
+          <span class="no" data-rv-on-click="view.unset_disconnect_confirm">X</span>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 

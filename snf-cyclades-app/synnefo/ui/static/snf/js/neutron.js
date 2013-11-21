@@ -332,6 +332,7 @@
       },
       
       update_ips: function() {
+        var self = this;
         var ips = _.map(this.get('fixed_ips'), function(ip_obj) {
           var ip = _.clone(ip_obj);
           var type = "v4";
@@ -341,6 +342,7 @@
           ip.id = ip.ip_address;
           ip.type = type;
           ip.subnet_id = ip.subnet;
+          ip.port_id = self.id;
           delete ip.subnet;
           return ip;
         });
@@ -383,7 +385,7 @@
         ],
         'in_progress': [
           ['ext_status'], function() {
-            return _.contains(["DISCONNECTING", "CONNECTING"], this.get("status"))
+            return _.contains(["DISCONNECTING", "CONNECTING"], this.get("ext_status"))
           }
         ],
         'firewall_running': [

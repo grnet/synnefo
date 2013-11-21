@@ -761,6 +761,35 @@
     views.VMPortView = views.ext.ModelView.extend({
       tpl: '#vm-port-view-tpl',
       classes: 'port-item clearfix',
+      
+      update_in_progress: function() {
+        if (this.model.get("in_progress")) {
+          this.set_in_progress();
+        } else {
+          this.unset_in_progress();
+        }
+      },
+
+      set_in_progress: function() {
+        this.el.find(".type").hide();
+        this.el.find(".in-progress").show();
+      },
+
+      unset_in_progress: function() {
+        this.el.find(".type").show();
+        this.el.find(".in-progress").hide();
+      },
+
+      disconnect_port: function(model, e) {
+        e && e.stopPropagation();
+        var network = this.model.get("network");
+        this.model.actions.reset_pending();
+        this.model.disconnect(_.bind(this.disconnect_port_complete, this));
+      },
+
+      disconnect_port_complete: function() {
+      },
+
       get_network_name: function() {
         var network = this.model.get('network');
         var name = network && network.get('name');
@@ -790,7 +819,8 @@
     });
 
     views.VMPortIpView = views.ext.ModelView.extend({
-      tpl: '#vm-port-ip-tpl'
+      tpl: '#vm-port-ip-tpl',
+      css_classes: "clearfix"
     });
 
     views.VMPortIpsView = views.ext.CollectionView.extend({

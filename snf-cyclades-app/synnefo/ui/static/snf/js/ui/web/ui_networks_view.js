@@ -423,8 +423,11 @@
         if (hide) {
           this.ports.stop().hide();
         } else {
+          var self = this;
+          this.ports.parent().parent().css({overflow: 'hidden'});
           this.ports.stop().slideToggle(function() {
               $(window).trigger("resize");
+              self.ports.parent().parent().css({overflow: 'visible'});
             });
         }
         this.ports_toggler.find(".cont-toggler").toggleClass("open");

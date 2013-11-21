@@ -29,16 +29,17 @@
 #
 
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from synnefo.logic import servers
 from synnefo.management import common
 from snf_django.management.utils import parse_bool
+from snf_django.management.commands import RemoveCommand
 
 
-class Command(BaseCommand):
+class Command(RemoveCommand):
     can_import_settings = True
     help = "Remove a port from the Database and from the VMs attached to"
-    option_list = BaseCommand.option_list + (
+    option_list = RemoveCommand.option_list + (
         make_option(
             "--wait",
             dest="wait",
@@ -52,6 +53,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if len(args) < 1:
             raise CommandError("Please provide a port ID")
+
+        force = options['force']
+        self.confirm_deletion(force, "port(s)", args)
 
         port = common.get_port(args[0], for_update=True)
 

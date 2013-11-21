@@ -34,12 +34,13 @@
 #from optparse import make_option
 
 from django.db import transaction
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
+from snf_django.management.commands import RemoveCommand
 from synnefo.management import common
 from synnefo.logic import ips
 
 
-class Command(BaseCommand):
+class Command(RemoveCommand):
     help = "Release a floating IP"
 
     @common.convert_api_faults
@@ -47,6 +48,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if not args:
             raise CommandError("Please provide a floating-ip address")
+
+        force = options['force']
+        self.confirm_deletion(force, "floating ip(s)", args)
 
         floating_ip_id = args[0]
 

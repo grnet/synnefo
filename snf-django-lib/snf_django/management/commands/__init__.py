@@ -349,7 +349,7 @@ class RemoveCommand(BaseCommand):
 
         ids = ', '.join(args)
         self.stdout.write("Are you sure you want to delete %s %s?"
-                          " [Y/N]\n" % (resource, ids))
+                          " [Y/N] " % (resource, ids))
         try:
             answer = distutils.util.strtobool(raw_input())
             if answer != 1:

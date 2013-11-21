@@ -33,18 +33,19 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from synnefo.management.common import (get_vm, convert_api_faults,
                                        wait_server_task)
 from synnefo.logic import servers
+from snf_django.management.commands import RemoveCommand
 from snf_django.management.utils import parse_bool
 
 
-class Command(BaseCommand):
+class Command(RemoveCommand):
     args = "<server ID>"
     help = "Remove a server by deleting the instance from the Ganeti backend."
 
-    option_list = BaseCommand.option_list + (
+    option_list = RemoveCommand.option_list + (
         make_option(
             '--wait',
             dest='wait',
@@ -58,6 +59,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")
+
+        force = options['force']
+        self.confirm_deletion(force, "server(s)", args)
 
         server = get_vm(args[0])
 

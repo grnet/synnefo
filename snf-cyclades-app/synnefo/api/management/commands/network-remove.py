@@ -28,12 +28,13 @@
 # policies, either expressed or implied, of GRNET S.A.
 #
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
+from snf_django.management.commands import RemoveCommand
 from synnefo.logic import networks
 from synnefo.management.common import get_network, convert_api_faults
 
 
-class Command(BaseCommand):
+class Command(RemoveCommand):
     can_import_settings = True
     help = "Remove a network from the Database, and Ganeti"
 
@@ -41,6 +42,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if len(args) < 1:
             raise CommandError("Please provide a network ID")
+
+        force = options['force']
+        self.confirm_deletion(force, "network(s)", args)
 
         network = get_network(args[0], for_update=True)
 

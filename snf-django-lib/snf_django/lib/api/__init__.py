@@ -250,6 +250,7 @@ def allow_jsonp(key='callback'):
     Wrapper to enable jsonp responses.
     """
     def wrapper(func):
+        @wraps(func)
         def view_wrapper(request, *args, **kwargs):
             response = func(request, *args, **kwargs)
             if 'content-type' in response._headers and \
@@ -263,3 +264,41 @@ def allow_jsonp(key='callback'):
             return response
         return view_wrapper
     return wrapper
+
+
+def user_in_groups(permitted_groups, logger=None):
+    """Check that the request user belongs to one of permitted groups.
+
+    Django view wrapper to check that the already identified request user
+    belongs to one of the allowed groups.
+
+    """
+    if not logger:
+        logger = log
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            if hasattr(request, "user") and request.user is not None:
+                groups = request.user["access"]["user"]["roles"]
+                groups = [g["name"] for g in groups]
+            else:
+                raise faults.Forbidden
+
+            common_groups = set(groups) & set(permitted_groups)
+
+            if not common_groups:
+                msg = ("Not allowing access to '%s' by user '%s'. User does"
+                       " not belong to a valid group. User groups: %s,"
+                       " Required groups %s"
+                       % (request.path, request.user, groups,
+                          permitted_groups))
+                logger.error(msg)
+                raise faults.Forbidden
+
+            logger.info("User '%s' in groups '%s' accessed view '%s'",
+                        request.user_uniq, groups, request.path)
+
+            return func(request, *args, **kwargs)
+        return wrapper
+    return decorator

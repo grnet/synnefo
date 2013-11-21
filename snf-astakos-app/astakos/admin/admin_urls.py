@@ -31,33 +31,19 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import logging
-from django import http
-from django.utils import simplejson as json
-from django.conf import settings
-from snf_django.lib import api
+from django.conf.urls import url, patterns
 
-from synnefo.admin import stats
-
-logger = logging.getLogger(__name__)
+from astakos.admin import views
+from django.http import Http404
 
 
-@api.api_method(http_method='GET', user_required=False, token_required=False,
-                logger=logger, serializations=['json'])
-@api.allow_jsonp()
-def get_public_stats(request):
-    _stats = stats.get_public_stats()
-    data = json.dumps(_stats)
-    return http.HttpResponse(data, status=200, content_type='application/json')
+def index(request):
+    raise Http404
 
 
-@api.api_method(http_method='GET', user_required=True, token_required=True,
-                logger=logger, serializations=['json'])
-@api.user_in_groups(permitted_groups=settings.ADMIN_STATS_PERMITTED_GROUPS,
-                    logger=logger)
-def get_cyclades_stats(request):
-    _stats = stats.get_cyclades_stats(backend=None, clusters=True,
-                                      servers=True, resources=True,
-                                      networks=True, images=True)
-    data = json.dumps(_stats)
-    return http.HttpResponse(data, status=200, content_type='application/json')
+urlpatterns = patterns(
+    '',
+    url(r'^$', index),
+    url(r'^stats$', views.get_public_stats),
+    url(r'^stats/detail$', views.get_astakos_stats),
+)

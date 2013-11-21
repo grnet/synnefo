@@ -34,12 +34,14 @@
 import logging
 from django import http
 from django.utils import simplejson as json
-from django.conf import settings
 from snf_django.lib import api
+from astakos.im import settings
 
-from synnefo.admin import stats
+from astakos.admin import stats
 
 logger = logging.getLogger(__name__)
+
+PERMITTED_GROUPS = settings.ADMIN_STATS_PERMITTED_GROUPS
 
 
 @api.api_method(http_method='GET', user_required=False, token_required=False,
@@ -53,11 +55,9 @@ def get_public_stats(request):
 
 @api.api_method(http_method='GET', user_required=True, token_required=True,
                 logger=logger, serializations=['json'])
-@api.user_in_groups(permitted_groups=settings.ADMIN_STATS_PERMITTED_GROUPS,
+@api.user_in_groups(permitted_groups=PERMITTED_GROUPS,
                     logger=logger)
-def get_cyclades_stats(request):
-    _stats = stats.get_cyclades_stats(backend=None, clusters=True,
-                                      servers=True, resources=True,
-                                      networks=True, images=True)
+def get_astakos_stats(request):
+    _stats = stats.get_astakos_stats()
     data = json.dumps(_stats)
     return http.HttpResponse(data, status=200, content_type='application/json')

@@ -168,6 +168,7 @@ def pprint_table(out, table, headers=None, output_format='pretty',
 
             t_length = sum(widths) + len(sep) * (len(widths) - 1)
             if title is not None:
+                t_length = max(t_length, len(title))
                 out.write("-" * t_length + "\n")
                 out.write(title.center(t_length) + "\n")
                 out.write("-" * t_length + "\n")

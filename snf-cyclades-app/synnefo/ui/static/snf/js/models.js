@@ -1767,7 +1767,6 @@
         parse: function (resp, xhr) {
             var parsed = _.map(resp.images, _.bind(this.parse_meta, this));
             parsed = this.fill_owners(parsed);
-            parsed = _.map(parsed, function(m) {m.name = 'kpap "image"'; return m});
             return parsed;
         },
 

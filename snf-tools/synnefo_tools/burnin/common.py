@@ -452,9 +452,10 @@ def initialize(opts, testsuites, stale_testsuites):
     """
     # Initialize logger
     global logger  # Using global statement. pylint: disable-msg=C0103,W0603
+    curr_time = datetime.datetime.now()
     logger = Log(opts.log_folder, verbose=opts.verbose,
                  use_colors=opts.use_colors, in_parallel=False,
-                 quiet=opts.quiet)
+                 quiet=opts.quiet, curr_time=curr_time)
 
     # Initialize clients
     Clients.auth_url = opts.auth_url
@@ -470,7 +471,7 @@ def initialize(opts, testsuites, stale_testsuites):
     BurninTests.images = opts.images
     BurninTests.delete_stale = opts.delete_stale
     BurninTests.run_id = SNF_TEST_PREFIX + \
-        datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d%H%M%S")
+        datetime.datetime.strftime(curr_time, "%Y%m%d%H%M%S")
 
     # Choose tests to run
     if opts.show_stale:

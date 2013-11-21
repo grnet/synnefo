@@ -731,12 +731,13 @@ class SynnefoCI(object):
     def build_packages(self):
         """Build packages needed by Synnefo software"""
         self.logger.info("Install development packages")
+        kamaki_version = self.config.get('Burnin', 'kamaki_version')
         cmd = """
         apt-get update
         apt-get install zlib1g-dev dpkg-dev debhelper git-buildpackage \
                 python-dev python-all python-pip ant --yes --force-yes
-        pip install -U devflow
-        """
+        pip install -U devflow kamaki{0}
+        """.format(("==" + kamaki_version) if kamaki_version else "")
         _run(cmd, False)
 
         # Patch pydist bug
@@ -881,17 +882,8 @@ class SynnefoCI(object):
         token=$(grep -e '^token =' .kamakirc | cut -d' ' -f3)
         images_user=$(kamaki image list -l | grep owner | \
                       cut -d':' -f2 | tr -d ' ')
-        snf-burnin --auth-url=$auth_url --token=$token \
-            --force-flavor=2 --image-id=all \
-            --system-images-user=$images_user \
-            {0}
+        snf-burnin --auth-url=$auth_url --token=$token {0}
         BurninExitStatus=$?
-        log_folder=$(ls -1d /var/log/burnin/* | tail -n1)
-        for i in $(ls $log_folder/*/details*); do
-            echo -e "\\n\\n"
-            echo -e "***** $i\\n"
-            cat $i
-        done
         exit $BurninExitStatus
         """.format(self.config.get('Burnin', 'cmd_options'))
         _run(cmd, True)

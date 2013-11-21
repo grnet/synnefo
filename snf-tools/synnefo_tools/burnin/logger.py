@@ -212,7 +212,7 @@ class Log(object):
     # ----------------------------------
     # Too many arguments. pylint: disable-msg=R0913
     def __init__(self, output_dir, verbose=1, use_colors=True,
-                 in_parallel=False, quiet=False):
+                 in_parallel=False, quiet=False, curr_time=None):
         """Initialize our loggers
 
         The file to be used by our file logger will be created inside
@@ -252,14 +252,14 @@ class Log(object):
                 sys.stderr.write(msg)
                 sys.exit("Failed to create log folder")
 
+        if curr_time is None:
+            curr_time = datetime.datetime.now()
         timestamp = datetime.datetime.strftime(
-            datetime.datetime.now(), "%Y%m%d%H%M%S (%a %b %d %Y %H:%M)")
+            curr_time, "%Y%m%d%H%M%S (%a %b %d %Y %H:%M)")
         file_name = timestamp + ".log"
         self.file_location = os.path.join(output_dir, file_name)
 
-        timestamp = datetime.datetime.strftime(
-            datetime.datetime.now(), "%a %b %d %Y %H:%M")
-        self._write_to_stdout(None, "Starting burnin (%s)\n" % timestamp)
+        self._write_to_stdout(None, "Starting burnin with id %s\n" % timestamp)
 
         # Create the logging file
         self._create_logging_file(timestamp)

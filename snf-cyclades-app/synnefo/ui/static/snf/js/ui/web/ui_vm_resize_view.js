@@ -300,7 +300,8 @@
         },
 
         update_vm_details: function() {
-            this.set_subtitle(this.vm.escape("name") + 
+            var name = _.escape(util.truncate(this.vm.get("name"), 70));
+            this.set_subtitle(name + 
                               snf.ui.helpers.vm_icon_tag(this.vm, 
                                                          "small"));
         },

@@ -1347,7 +1347,7 @@
 
             if (!params.image) { return }
             var vm_name_tpl = snf.config.vm_name_template || "My {0} server";
-            if (params.image.is_snapshot()) { vm_name_tpl = "{0}" };
+            //if (params.image.is_snapshot()) { vm_name_tpl = "{0}" };
             var vm_name = vm_name_tpl.format(params.image.get("name"));
             var orig_name = vm_name;
             

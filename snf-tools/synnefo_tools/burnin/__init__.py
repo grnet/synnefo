@@ -182,7 +182,7 @@ def parse_arguments(args):
     parser.add_option(
         "--quiet", action="store_true",
         default=False, dest="quiet",
-        help="Turn off log output")
+        help="Turn off logging (both console and file logging)")
     parser.add_option(
         "--final-report-only", action="store_true",
         default=False, dest="final_report",
@@ -203,12 +203,15 @@ def parse_arguments(args):
     if opts.delete_stale:
         opts.show_stale = True
 
-    # `quiet' implies not `final_report'
-    if opts.quiet:
-        opts.final_report = False
-    # `final_report' implies `quiet'
+    # log_level:
+    #  0 -> log to console and file
+    #  1 -> log to file and output the results in console
+    #  2 -> don't log
+    opts.log_level = 0
     if opts.final_report:
-        opts.quiet = True
+        opts.log_level = 1
+    if opts.quiet:
+        opts.log_level = 2
 
     # Check `--set-tests' and `--exclude-tests' options
     if opts.tests != "all" and \
@@ -261,8 +264,7 @@ def main():
 
     # Run burnin
     # The return value denotes the success status
-    return common.run_burnin(testsuites, failfast=failfast,
-                             final_report=opts.final_report)
+    return common.run_burnin(testsuites, failfast=failfast)
 
 
 if __name__ == "__main__":

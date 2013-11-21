@@ -455,7 +455,7 @@ def initialize(opts, testsuites, stale_testsuites):
     curr_time = datetime.datetime.now()
     logger = Log(opts.log_folder, verbose=opts.verbose,
                  use_colors=opts.use_colors, in_parallel=False,
-                 quiet=opts.quiet, curr_time=curr_time)
+                 log_level=opts.log_level, curr_time=curr_time)
 
     # Initialize clients
     Clients.auth_url = opts.auth_url
@@ -489,7 +489,7 @@ def initialize(opts, testsuites, stale_testsuites):
 
 # --------------------------------------------------------------------
 # Run Burnin
-def run_burnin(testsuites, failfast=False, final_report=False):
+def run_burnin(testsuites, failfast=False):
     """Run burnin testsuites"""
     global logger  # Using global. pylint: disable-msg=C0103,W0603,W0602
 
@@ -500,9 +500,6 @@ def run_burnin(testsuites, failfast=False, final_report=False):
         if failfast and not success:
             break
 
-    # Are we going to print final report?
-    if final_report:
-        logger.print_logfile_to_stdout()
     # Clean up our logger
     del(logger)
 

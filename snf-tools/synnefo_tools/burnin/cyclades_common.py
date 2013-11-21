@@ -256,12 +256,14 @@ class CycladesTests(BurninTests):
             net_id = nic['network_id']
             if network is None:
                 if self.clients.cyclades.get_network_details(net_id)['public']:
-                    addrs = nic['ipv' + str(version)]
-                    break
+                    if nic['ipv' + str(version)]:
+                        addrs = nic['ipv' + str(version)]
+                        break
             else:
                 if net_id == network['id']:
-                    addrs = nic['ipv%s' % version]
-                    break
+                    if nic['ipv' + str(version)]:
+                        addrs = nic['ipv' + str(version)]
+                        break
 
         self.assertIsNotNone(addrs, "Can not get IP from server attachments")
         if network is None:

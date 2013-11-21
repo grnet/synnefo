@@ -212,7 +212,7 @@ class Log(object):
     # ----------------------------------
     # Too many arguments. pylint: disable-msg=R0913
     def __init__(self, output_dir, verbose=1, use_colors=True,
-                 in_parallel=False, quiet=False, curr_time=None):
+                 in_parallel=False, log_level=0, curr_time=None):
         """Initialize our loggers
 
         The file to be used by our file logger will be created inside
@@ -229,14 +229,19 @@ class Log(object):
         @param use_colors: use colors for out stdout/stderr logger
         @type in_parallel: boolean
         @param in_parallel: this signifies that burnin is running in parallel
-        @type quiet: boolean
-        @type quiet: do not print logs to stdout/stderr
+        @type log_level: int
+        @param log_level: logging level
+            0: log to console and file
+            1: log to file only and output the results to console
+            2: don't log
+        @type curr_time: datetime.datetime()
+        @param curr_time: The current time (used as burnin's run id)
 
         """
         self.verbose = verbose
         self.use_colors = use_colors
         self.in_parallel = in_parallel
-        self.quiet = quiet
+        self.log_level = log_level
 
         assert output_dir
 
@@ -266,6 +271,8 @@ class Log(object):
 
     def _create_logging_file(self, timestamp):
         """Create the logging file"""
+        if self.log_level > 1:
+            return
         self.debug(None, "Using \"%s\" file for logging", self.file_location)
         with open(self.file_location, 'w') as out_file:
             out_file.write(SECTION_SEPARATOR + "\n")
@@ -277,6 +284,7 @@ class Log(object):
 
     def __del__(self):
         """Delete the Log object"""
+        self.print_logfile_to_stdout()
         # Remove the lock file
         if hasattr(self, "file_location"):
             file_lock = os.path.splitext(self.file_location)[0] + LOCK_EXT
@@ -287,8 +295,9 @@ class Log(object):
 
     def print_logfile_to_stdout(self):
         """Print the contents of our log file to stdout"""
-        with open(self.file_location, 'r') as fin:
-            sys.stdout.write(fin.read())
+        if self.log_level == 1:
+            with open(self.file_location, 'r') as fin:
+                sys.stdout.write(fin.read())
 
     # ----------------------------------
     # Logging methods
@@ -358,22 +367,26 @@ class Log(object):
 
     def _write_to_stdout(self, section, msg):
         """Write to stdout"""
-        if not self.quiet:
-            if section is not None and self.in_parallel:
-                sys.stdout.write(section + ": " + msg)
-            else:
-                sys.stdout.write(msg)
+        if self.log_level > 0:
+            return
+        if section is not None and self.in_parallel:
+            sys.stdout.write(section + ": " + msg)
+        else:
+            sys.stdout.write(msg)
 
     def _write_to_stderr(self, section, msg):
         """Write to stderr"""
-        if not self.quiet:
-            if section is not None and self.in_parallel:
-                sys.stderr.write(section + ": " + msg)
-            else:
-                sys.stderr.write(msg)
+        if self.log_level > 0:
+            return
+        if section is not None and self.in_parallel:
+            sys.stderr.write(section + ": " + msg)
+        else:
+            sys.stderr.write(msg)
 
     def _write_to_file(self, section, msg):
         """Write to file"""
+        if self.log_level > 1:
+            return
         _write_log_file(self.file_location, section, msg)
 
     # ----------------------------------
@@ -388,11 +401,11 @@ class Log(object):
 
         # Add a new section in the logging file
         test_runned = "  * " + testsuite + "\n"
-        _write_log_file(self.file_location, SECTION_RUNNED, test_runned)
+        self._write_to_file(SECTION_RUNNED, test_runned)
 
         new_section_entry = \
             SECTION_SEPARATOR + "\n" + SECTION_PREFIX + testsuite + "\n\n\n\n"
-        _write_log_file(self.file_location, SECTION_NEW, new_section_entry)
+        self._write_to_file(SECTION_NEW, new_section_entry)
 
         # Add new section to the stdout
         msg = "Starting testsuite %s" % testsuite
@@ -408,7 +421,7 @@ class Log(object):
         assert testsuite, "Testsuite name can not be emtpy"
 
         # Add our testsuite to Results
-        _write_log_file(self.file_location, SECTION_PASSED, testsuite)
+        self._write_to_file(SECTION_PASSED, testsuite)
 
         # Add success to stdout
         msg = "Testsuite %s passed" % testsuite
@@ -424,7 +437,7 @@ class Log(object):
         assert testsuite, "Testsuite name can not be emtpy"
 
         # Add our testsuite to Results
-        _write_log_file(self.file_location, SECTION_FAILED, testsuite)
+        self._write_to_file(SECTION_FAILED, testsuite)
 
         # Add success to stdout
         msg = "Testsuite %s failed" % testsuite

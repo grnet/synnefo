@@ -51,7 +51,5 @@ def object_demux(request, v_account, v_container, v_object):
 
 
 @view_method()
-@api_method('GET', format_allowed=True, token_required=False,
-            user_required=False, logger=logger)
 def object_read(request, v_account, v_container, v_object):
     return _object_read(request, v_account, v_container, v_object)

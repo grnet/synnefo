@@ -1120,24 +1120,15 @@ def api_method(http_method=None, token_required=True, user_required=True,
     return decorator
 
 
-def request_oa2_token(request, client, client_credentials, redirect_uri,
-                      **kwargs):
-    """
-    :raises: AstakosClientException, ValueError
-    """
-    data = client.get_token('authorization_code', *client_credentials,
-                            redirect_uri=redirect_uri, **kwargs)
-    params = {'access_token': data.get('access_token', '')}
-    return HttpResponseRedirect('%s?%s' % (redirect_uri,
-                                           urlencode(params)))
-
-
 def view_method():
     """Decorator function for views."""
 
     def decorator(func):
         @wraps(func)
         def wrapper(request, *args, **kwargs):
+            if request.method != 'GET':
+                return HttpResponseNotAllowed(['GET'])
+
             try:
                 access_token = request.GET.get('access_token')
                 requested_resource = request.path.split(VIEW_PREFIX, 2)[-1]
@@ -1145,12 +1136,14 @@ def view_method():
                                         retry=2, use_pool=True,
                                         logger=logger)
                 if access_token is not None:
-                    # authenticate using the temporary access token
+                    # authenticate using the short-term access token
                     request.user = astakos.validate_token(access_token,
                                                           requested_resource)
                     request.user_uniq = request.user["access"]["user"]["id"]
 
-                    response = func(request, *args, **kwargs)
+                    _func = api_method(token_required=False,
+                                       user_required=False)(func)
+                    response = _func(request, *args, **kwargs)
                     if response.status_code == 404:
                         raise Http404
                     elif response.status_code in [401, 403]:
@@ -1161,25 +1154,29 @@ def view_method():
                 # TODO: check if client credentials are not set
                 authorization_code = request.GET.get('code')
                 if authorization_code is None:
+                    # request authorization code
                     params = {'response_type': 'code',
                               'client_id': client_id,
                               'redirect_uri':
                               request.build_absolute_uri(request.path),
-                              'scope': request.path.split(VIEW_PREFIX, 2)[-1],
-                              'state': ''  # TODO include state for security
-                              }
+                              'state': '',  # TODO include state for security
+                              'scope': request.path.split(VIEW_PREFIX, 2)[-1]}
                     return HttpResponseRedirect('%s?%s' %
                                                 (astakos.api_oa2_auth,
                                                  urlencode(params)))
                 else:
+                    # request short-term access code
                     redirect_uri = join_urls(BASE_HOST, request.path)
-                    return request_oa2_token(request,
-                                             astakos,
-                                             OA2_CLIENT_CREDENTIALS,
+                    data = astakos.get_token('authorization_code',
+                                             *OA2_CLIENT_CREDENTIALS,
                                              redirect_uri=redirect_uri,
                                              scope=requested_resource,
                                              code=authorization_code)
-            except AstakosClientException:
+                    params = {'access_token': data.get('access_token', '')}
+                    return HttpResponseRedirect('%s?%s' % (redirect_uri,
+                                                           urlencode(params)))
+            except AstakosClientException, err:
+                logger.exception(err)
                 raise PermissionDenied
         return wrapper
     return decorator

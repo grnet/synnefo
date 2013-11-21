@@ -562,7 +562,7 @@
                     this.action(action).removeClass("disabled");
                     var inactive = models.VM.AVAILABLE_ACTIONS_INACTIVE[action];
 
-                    if (inactive && _.contains(inactive, this.vm.get('status'))) {
+                    if (inactive && !_.contains(inactive, this.vm.get('status'))) {
                       this.action(action).addClass("inactive");
                     } else {
                       this.action(action).removeClass("inactive");

@@ -1643,7 +1643,7 @@
     }
     
     models.VM.AVAILABLE_ACTIONS_INACTIVE = {
-      'resize': ['ACTIVE']
+      'resize': ['STOPPED']
     }
 
     // api status values

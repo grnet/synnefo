@@ -3263,7 +3263,7 @@ div.reboot-dialog button.details:hover {
 }
 
 .machine .info-content.ips .ips .model-item .ip {
-  padding-top: 2px;
+  padding-top: 4px;
   width: 55%;
   float: left;
 }
@@ -3275,6 +3275,7 @@ div.reboot-dialog button.details:hover {
 .machine .info-content.ips .ips .model-item .type {
   float: left;
   margin-right: 10px;
+  margin-top: 1px;
   vertical-align: middle;
   color: #fff;
   background-color: #4085A5;

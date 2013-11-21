@@ -245,6 +245,23 @@ class Log(object):
 
         assert output_dir
 
+        if curr_time is None:
+            curr_time = datetime.datetime.now()
+        timestamp = datetime.datetime.strftime(
+            curr_time, "%Y%m%d%H%M%S (%a %b %d %Y %H:%M)")
+        file_name = timestamp + ".log"
+        self.file_location = os.path.join(output_dir, file_name)
+
+        self._write_to_stdout(None, "Starting burnin with id %s\n" % timestamp)
+
+        # Create the logging file
+        self._create_logging_file(timestamp, output_dir)
+
+    def _create_logging_file(self, timestamp, output_dir):
+        """Create the logging file"""
+        if self.log_level > 1:
+            return
+
         # Create file for logging
         output_dir = os.path.expanduser(output_dir)
         if not os.path.exists(output_dir):
@@ -257,26 +274,10 @@ class Log(object):
                 sys.stderr.write(msg)
                 sys.exit("Failed to create log folder")
 
-        if curr_time is None:
-            curr_time = datetime.datetime.now()
-        timestamp = datetime.datetime.strftime(
-            curr_time, "%Y%m%d%H%M%S (%a %b %d %Y %H:%M)")
-        file_name = timestamp + ".log"
-        self.file_location = os.path.join(output_dir, file_name)
-
-        self._write_to_stdout(None, "Starting burnin with id %s\n" % timestamp)
-
-        # Create the logging file
-        self._create_logging_file(timestamp)
-
-    def _create_logging_file(self, timestamp):
-        """Create the logging file"""
-        if self.log_level > 1:
-            return
         self.debug(None, "Using \"%s\" file for logging", self.file_location)
         with open(self.file_location, 'w') as out_file:
             out_file.write(SECTION_SEPARATOR + "\n")
-            out_file.write("%s%s (%s):\n\n\n\n" %
+            out_file.write("%s%s with id %s:\n\n\n\n" %
                            (SECTION_PREFIX, SECTION_RUNNED, timestamp))
             out_file.write(SECTION_SEPARATOR + "\n")
             out_file.write("%s%s:\n\n" % (SECTION_PREFIX, SECTION_RESULTS))

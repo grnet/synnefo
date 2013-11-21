@@ -7232,6 +7232,11 @@ input.has-errors {
   margin-bottom: 35px;
 }
 
+.ports.nested-model-list.is-public .empty-list .border,
+.ports.nested-model-list.is-public .empty-list .border2 {
+  display: none !important;
+}
+
 .network-ports-toggler {
   position: absolute;
   top: 30px;

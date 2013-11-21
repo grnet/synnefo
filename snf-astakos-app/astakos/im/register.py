@@ -38,7 +38,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-resource_fields = ['desc', 'unit', 'ui_visible', 'api_visible']
+main_fields = ['desc', 'unit']
+config_fields = ['ui_visible', 'api_visible']
 
 
 class RegisterException(Exception):
@@ -87,8 +88,12 @@ def add_resource(resource_dict):
                      service_type=service_type,
                      service_origin=service_origin)
         exists = False
+        for field in config_fields:
+            value = resource_dict.get(field)
+            if value is not None:
+                setattr(r, field, value)
 
-    for field in resource_fields:
+    for field in main_fields:
         value = resource_dict.get(field)
         if value is not None:
             setattr(r, field, value)

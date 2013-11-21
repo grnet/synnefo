@@ -51,8 +51,9 @@ class Command(ListCommand):
     FIELDS = {
         "id": ("id", "ID"),
         "name": ("name", "Resource Name"),
-        "service type": ("service_type", "Service type"),
-        "service origin": ("service_origin", "Service"),
+        "service_type": ("service_type", "Service type"),
+        "service_origin": ("service_origin", "Service"),
+        "unit": ("unit", "Unit of measurement"),
         "default_quota": ("limit_with_unit", "Default Quota"),
         "description": ("desc", "Description"),
         "api_visible": ("api_visible",

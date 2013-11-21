@@ -52,6 +52,12 @@ Astakos
 * Remove API call GET /account/v1.0/authenticate in favor of
   POST /identity/v2.0/tokens.
 
+* Export basic statistics about Astakos service from '/admin/stats/detail' API
+  endpoint. Access to this endpoint is only allowed to users that belong to
+  the Astakos groups that are defined in the
+  'ASTAKOS_ADMIN_STATS_PERMITTED_GROUPS' setting. Statistics are also availble
+  from 'snf-manage stats-astakos' management command.
+
 * Management commands:
   * Introduced new commands:
      * component-show
@@ -99,6 +105,11 @@ Cyclades
 * Do not automatically release externally reserved IPs if they are released
   from a Ganeti backend. Management of externally reserved IPs must be
   performed from Cyclades with 'network-modify' command.
+* Export basic statistics about Cyclades Service from '/admin/stats/detail'
+  API endpoint. Access to this endpoint is only allowed to users that belong
+  to the Astakos groups that are defined in the 'ADMIN_STATS_PERMITTED_GROUPS'
+  setting.  Statistics are also availble from 'snf-manage stats-cyclades'
+  management command.
 
 Pithos
 ------

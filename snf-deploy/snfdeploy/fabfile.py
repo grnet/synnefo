@@ -15,6 +15,7 @@ import shutil
 import tempfile
 import ast
 from snfdeploy.lib import debug, Conf, Env, disable_color
+from snfdeploy.utils import *
 from snfdeploy import massedit
 
 
@@ -75,43 +76,6 @@ def setup_env(args):
         "ganeti": env.env.cluster_ips,
         "master": [env.env.master.ip],
     })
-
-
-def install_package(package):
-    debug(env.host, " * Installing package %s..." % package)
-    apt_get = "export DEBIAN_FRONTEND=noninteractive ;" + \
-              "apt-get install -y --force-yes "
-
-    host_info = env.env.ips_info[env.host]
-    env.env.update_packages(host_info.os)
-    if ast.literal_eval(env.env.use_local_packages):
-        with settings(warn_only=True):
-            deb = local("ls %s/%s*%s_*.deb"
-                        % (env.env.packages, package, host_info.os),
-                        capture=True)
-            if deb:
-                debug(env.host,
-                      " * Package %s found in %s..."
-                      % (package, env.env.packages))
-                try_put(deb, "/tmp/")
-                try_run("dpkg -i /tmp/%s || "
-                        % os.path.basename(deb) + apt_get + "-f")
-                try_run("rm /tmp/%s" % os.path.basename(deb))
-                return
-
-    info = getattr(env.env, package)
-    if info in \
-            ["squeeze-backports", "squeeze", "stable",
-             "testing", "unstable", "wheezy"]:
-        apt_get += " -t %s %s " % (info, package)
-    elif info:
-        apt_get += " %s=%s " % (package, info)
-    else:
-        apt_get += package
-
-    try_run(apt_get)
-
-    return
 
 
 @roles("ns")
@@ -324,39 +288,6 @@ def setup_hosts():
     try_run(cmd)
 
 
-def try_run(cmd, abort=True):
-    try:
-        if env.local:
-            return local(cmd, capture=True)
-        else:
-            return run(cmd)
-    except BaseException as e:
-        if abort:
-            fabric.utils.abort(e)
-        else:
-            debug(env.host, "WARNING: command failed. Continuing anyway...")
-
-
-def try_put(local_path=None, remote_path=None, abort=True, **kwargs):
-    try:
-        put(local_path=local_path, remote_path=remote_path, **kwargs)
-    except BaseException as e:
-        if abort:
-            fabric.utils.abort(e)
-        else:
-            debug(env.host, "WARNING: command failed. Continuing anyway...")
-
-
-def try_get(remote_path, local_path=None, abort=True, **kwargs):
-    try:
-        get(remote_path, local_path=local_path, **kwargs)
-    except BaseException as e:
-        if abort:
-            fabric.utils.abort(e)
-        else:
-            debug(env.host, "WARNING: command failed. Continuing anyway...")
-
-
 def create_bridges():
     debug(env.host, " * Creating bridges...")
     install_package("bridge-utils")
@@ -391,18 +322,6 @@ def setup_lvm():
         vgcreate {1} {0}
         """.format(env.env.extra_disk, env.env.vg)
         try_run(cmd)
-
-
-def customize_settings_from_tmpl(tmpl, replace):
-    debug(env.host, " * Customizing template %s..." % tmpl)
-    local = env.env.templates + tmpl
-    _, custom = tempfile.mkstemp()
-    shutil.copyfile(local, custom)
-    for k, v in replace.iteritems():
-        regex = "re.sub('%{0}%', '{1}', line)".format(k.upper(), v)
-        massedit.edit_files([custom], [regex], dry_run=False)
-
-    return custom
 
 
 @roles("nodes")

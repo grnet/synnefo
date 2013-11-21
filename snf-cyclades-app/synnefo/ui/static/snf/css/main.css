@@ -6458,6 +6458,8 @@ table.list-machines .wave {
     margin-right:0;
     border-right: none;
     width: 195px;
+    overflow: hidden;
+    overflow-y: auto;
 }
 
 .create-vm .list-cont > h4 {

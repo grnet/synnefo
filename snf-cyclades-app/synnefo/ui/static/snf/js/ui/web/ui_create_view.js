@@ -1313,7 +1313,8 @@
                 this.$(".ssh .empty").hide();
             }
             _.each(keys, _.bind(function(key){
-                var el = $('<li id="ssh-key-option-{1}" class="ssh-key-option">{0}</li>'.format(_.escape(key.get("name")), key.id));
+                var name = _.escape(util.truncate(key.get("name"), 45));
+                var el = $('<li id="ssh-key-option-{1}" class="ssh-key-option">{0}</li>'.format(name, key.id));
                 var check = $('<input class="check" type="checkbox"></input>')
                 el.append(check);
                 el.data("model", key);
@@ -1518,7 +1519,8 @@
                 this.keys.append(this.make("li", {'class':'empty'}, 'No keys selected'))
             }
             _.each(keys, _.bind(function(key) {
-                var el = this.make("li", {'class':'selected-ssh-key'}, key.get('name'));
+                var name = _.escape(util.truncate(key.get("name"), 20))
+                var el = this.make("li", {'class':'selected-ssh-key'}, name);
                 this.keys.append(el);
             }, this))
         },

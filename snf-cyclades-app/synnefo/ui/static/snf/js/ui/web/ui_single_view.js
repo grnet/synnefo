@@ -273,7 +273,7 @@
               collection: vm.ports, 
               container: ports_container,
               parent: this,
-              truncate: 55
+              truncate: 50
             });
             this.ports_views[vm.id] = ports_view
             ports_view.show();
@@ -385,7 +385,7 @@
             if (vm != this.current_vm_instance) { return };
 
             // truncate name
-            el.find(".machine-detail.name").text(util.truncate(vm.get("name"), 35));
+            el.find(".machine-detail.name").text(util.truncate(vm.get("name"), 53));
             el.find(".fqdn").text(vm.get("fqdn"));
             // set the state (i18n ??)
             el.find(".state-label").text(STATE_TEXTS[vm.state()]);

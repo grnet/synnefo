@@ -37,6 +37,7 @@
 from urlparse import urlunsplit, urlsplit, urlparse
 from xml.dom import minidom
 from urllib import quote, unquote
+from mock import patch, PropertyMock
 
 from snf_django.utils.testing import with_settings, astakos_user
 
@@ -46,7 +47,9 @@ from pithos.backends.migrate import initialize_db
 
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
+from synnefo.util import text
 
+from django.core.urlresolvers import reverse
 from django.test import TestCase
 from django.test.client import Client, MULTIPART_CONTENT, FakePayload
 from django.test.simple import DjangoTestSuiteRunner
@@ -55,6 +58,7 @@ from django.utils.http import urlencode
 from django.db.backends.creation import TEST_DATABASE_PREFIX
 
 import django.utils.simplejson as json
+
 
 import random
 import functools
@@ -202,6 +206,12 @@ class PithosTestClient(Client):
 
 
 class PithosAPITest(TestCase):
+    def create_patch(self, name, new_callable=None):
+        patcher = patch(name, new_callable=new_callable)
+        thing = patcher.start()
+        self.addCleanup(patcher.stop)
+        return thing
+
     def setUp(self):
         self.client = PithosTestClient()
 
@@ -212,6 +222,29 @@ class PithosAPITest(TestCase):
         self.user = 'user'
         self.pithos_path = join_urls(get_service_path(
             pithos_settings.pithos_services, 'object-store'))
+
+        # patch astakosclient.AstakosClient.validate_token
+        mock_validate_token = self.create_patch(
+            'astakosclient.AstakosClient.validate_token')
+        mock_validate_token.return_value = {
+            'access': {'user': {'id': text.udec(self.user, 'utf8')}}}
+
+        # patch astakosclient.AstakosClient.get_token
+        mock_get_token = self.create_patch(
+            'astakosclient.AstakosClient.get_token')
+        mock_get_token.return_value = {'access_token': 'valid_token'}
+
+        # patch astakosclient.AstakosClient.api_oa2_auth
+        mock_api_oa2_auth = self.create_patch(
+            'astakosclient.AstakosClient.api_oa2_auth',
+            new_callable=PropertyMock)
+        mock_api_oa2_auth.return_value = reverse('oa2_authenticate')
+
+        # patch astakosclient.AstakosClient.api_oa2_token
+        mock_api_oa2_token = self.create_patch(
+            'astakosclient.AstakosClient.api_oa2_token',
+            new_callable=PropertyMock)
+        mock_api_oa2_token.return_value = reverse('oa2_token')
 
     def tearDown(self):
         #delete additionally created metadata

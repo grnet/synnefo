@@ -78,7 +78,7 @@ class StaleServersTestSuite(CycladesTests):
 
             for stl in self.stale_servers:
                 self._insist_on_server_transition(
-                    stl, ["ACTIVE", "ERROR"], "DELETED")
+                    stl, ["ACTIVE", "ERROR", "STOPPED"], "DELETED")
 
 
 # Too many public methods. pylint: disable-msg=R0904

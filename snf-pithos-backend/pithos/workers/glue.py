@@ -51,6 +51,8 @@ class WorkerGlue(object):
     @classmethod
     def setupXsegPool(cls, ObjectPool, Segment, Xseg_ctx,
                       cfile=ArchipelagoConfFile, pool_size=8):
+        if WorkerGlue.ioctx_pool is not None:
+            return
         worker_id = WorkerGlue.worker_id
         WorkerGlue.ArchipelagoConfFile = ARCHIPELAGO_CONF_FILE = cfile
         ARCHIPELAGO_SEGMENT_TYPE = 'segdev'

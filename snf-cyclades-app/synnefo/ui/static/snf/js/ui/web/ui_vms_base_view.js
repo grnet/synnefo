@@ -773,7 +773,7 @@
 
       set_in_progress: function() {
         this.el.find(".type").hide();
-        this.el.find(".in-progress").show();
+        this.el.find(".in-progress").removeClass("hidden").show();
       },
 
       unset_in_progress: function() {

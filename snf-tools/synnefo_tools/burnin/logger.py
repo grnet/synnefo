@@ -63,7 +63,7 @@ LOCK_EXT = ".lock"
 SECTION_SEPARATOR = \
     "-- -------------------------------------------------------------------"
 SECTION_PREFIX = "-- "
-SECTION_RUNNED = "Tests Runned"
+SECTION_RUNNED = "Tests Run"
 SECTION_RESULTS = "Results"
 SECTION_NEW = "__ADD_NEW_SECTION__"
 SECTION_PASSED = "  * Passed:"
@@ -164,12 +164,18 @@ def _add_testsuite_results(contents, section, testsuite):
 
     """
     if section == SECTION_PASSED:
-        line = contents[-2]
-        new_line = line.rstrip() + " " + testsuite + ",\n"
+        line = contents[-2].rstrip()
+        if line.endswith(":"):
+            new_line = line + " " + testsuite + "\n"
+        else:
+            new_line = line + ", " + testsuite + "\n"
         contents[-2] = new_line
     elif section == SECTION_FAILED:
-        line = contents[-1]
-        new_line = line.rstrip() + " " + testsuite + ",\n"
+        line = contents[-1].rstrip()
+        if line.endswith(":"):
+            new_line = line.rstrip() + " " + testsuite + "\n"
+        else:
+            new_line = line.rstrip() + ", " + testsuite + "\n"
         contents[-1] = new_line
     else:
         sys.stderr.write("Unknown section %s in _add_testsuite_results\n"

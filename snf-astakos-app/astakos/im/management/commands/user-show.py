@@ -42,7 +42,7 @@ from synnefo.lib.ordereddict import OrderedDict
 from snf_django.management.commands import SynnefoCommand
 from snf_django.management import utils
 
-from ._common import show_quotas, style_options, check_style
+from ._common import show_user_quotas, style_options, check_style
 
 import uuid
 
@@ -128,10 +128,12 @@ class Command(SynnefoCommand):
                 check_style(unit_style)
 
                 quotas, initial = list_user_quotas([user])
+                h_quotas = quotas[user.uuid]
+                h_initial = initial[user.uuid]
                 if quotas:
                     self.stdout.write("\n")
-                    print_data, labels = show_quotas(quotas, initial,
-                                                     style=unit_style)
+                    print_data, labels = show_user_quotas(h_quotas, h_initial,
+                                                          style=unit_style)
                     utils.pprint_table(self.stdout, print_data, labels,
                                        options["output_format"],
                                        title="User Quota")

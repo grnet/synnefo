@@ -21,7 +21,8 @@ astakos_services = {
                 'name': "astakos.pending_app",
                 'service_type': "account",
                 'service_origin': "astakos_account",
-                'allow_in_projects': False},
+                "ui_visible": False,
+                "api_visible": False},
         },
     },
 
@@ -93,6 +94,8 @@ cyclades_services = {
                 "desc": "Number of virtual machine processors",
                 "service_type": "compute",
                 "service_origin": "cyclades_compute",
+                "ui_visible": False,
+                "api_visible": False,
             },
             'cpu': {
                 "name": "cyclades.cpu",
@@ -107,6 +110,8 @@ cyclades_services = {
                 "unit": "bytes",
                 "service_type": "compute",
                 "service_origin": "cyclades_compute",
+                "ui_visible": False,
+                "api_visible": False,
             },
             'ram': {
                 "name": "cyclades.ram",

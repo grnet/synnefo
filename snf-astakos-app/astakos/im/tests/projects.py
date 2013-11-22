@@ -46,16 +46,16 @@ class ProjectAPITest(TestCase):
                       "desc": "resource11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
-                      "allow_in_projects": True}
+                      "ui_visible": True}
         r, _ = register.add_resource(resource11)
-        register.update_resource(r, 100)
+        register.update_resources([(r, 100)])
         resource12 = {"name": "service1.resource12",
                       "desc": "resource11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
                       "unit": "bytes"}
         r, _ = register.add_resource(resource12)
-        register.update_resource(r, 1024)
+        register.update_resources([(r, 1024)])
 
         # create user
         self.user1 = get_local_user("test@grnet.gr", moderated=True)
@@ -74,9 +74,12 @@ class ProjectAPITest(TestCase):
                        "desc": "pend app desc",
                        "service_type": "account",
                        "service_origin": "astakos_account",
-                       "allow_in_projects": False}
+                       "ui_visible": False,
+                       "api_visible": False}
         r, _ = register.add_resource(pending_app)
-        register.update_resource(r, 3)
+        register.update_resources([(r, 3)])
+        accepted = AstakosUser.objects.accepted()
+        quotas.update_base_quota(accepted, r.name, 3)
 
     def create(self, app, headers):
         dump = json.dumps(app)
@@ -598,7 +601,8 @@ class TestProjects(TestCase):
         # astakos resources
         self.resource = Resource.objects.create(name="astakos.pending_app",
                                                 uplimit=0,
-                                                allow_in_projects=False,
+                                                ui_visible=False,
+                                                api_visible=False,
                                                 service_type="astakos")
 
         # custom service resources
@@ -618,7 +622,7 @@ class TestProjects(TestCase):
         self.member_client = get_user_client("member@synnefo.org")
         self.member2_client = get_user_client("member2@synnefo.org")
 
-        quotas.qh_sync_users(AstakosUser.objects.all())
+        quotas.qh_sync_new_users(AstakosUser.objects.all())
 
     def tearDown(self):
         Service.objects.all().delete()
@@ -638,11 +642,11 @@ class TestProjects(TestCase):
         self.assertRedirects(r, reverse('project_add'))
 
     @im_settings(PROJECT_ADMINS=['uuid1'])
-    def test_allow_in_project(self):
+    def test_ui_visible(self):
         dfrom = datetime.now()
         dto = datetime.now() + timedelta(days=30)
 
-        # astakos.pending_uplimit allow_in_project flag is False
+        # astakos.pending_app ui_visible flag is False
         # we shouldn't be able to create a project application using this
         # resource.
         application_data = {
@@ -671,7 +675,7 @@ class TestProjects(TestCase):
     @im_settings(PROJECT_ADMINS=['uuid1'])
     def test_applications(self):
         # let user have 2 pending applications
-        quotas.add_base_quota(self.user, 'astakos.pending_app', 2)
+        quotas.update_base_quota([self.user], 'astakos.pending_app', 2)
 
         r = self.user_client.get(reverse('project_add'), follow=True)
         self.assertRedirects(r, reverse('project_add'))

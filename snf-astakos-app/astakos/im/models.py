@@ -64,7 +64,6 @@ from astakos.im import auth_providers as auth
 import astakos.im.messages as astakos_messages
 from synnefo.lib.ordereddict import OrderedDict
 
-from snf_django.lib.db.fields import intDecimalField
 from synnefo.util.text import uenc, udec
 from synnefo.util import units
 from astakos.im import presentation
@@ -233,8 +232,9 @@ class Resource(models.Model):
     service_type = models.CharField(_('Type'), max_length=255)
     service_origin = models.CharField(max_length=255, db_index=True)
     unit = models.CharField(_('Unit'), null=True, max_length=255)
-    uplimit = intDecimalField(default=0)
-    allow_in_projects = models.BooleanField(default=True)
+    uplimit = models.BigIntegerField(default=0)
+    ui_visible = models.BooleanField(default=True)
+    api_visible = models.BooleanField(default=True)
 
     def __str__(self):
         return self.name
@@ -246,7 +246,8 @@ class Resource(models.Model):
         return {'service': self.service_origin,
                 'description': self.desc,
                 'unit': self.unit,
-                'allow_in_projects': self.allow_in_projects,
+                'ui_visible': self.ui_visible,
+                'api_visible': self.api_visible,
                 }
 
     @property
@@ -520,13 +521,8 @@ class AstakosUser(User):
         return self.astakosuserquota_set.select_related().all()
 
     def get_resource_policy(self, resource):
-        resource = Resource.objects.get(name=resource)
-        default_capacity = resource.uplimit
-        try:
-            policy = AstakosUserQuota.objects.get(user=self, resource=resource)
-            return policy, default_capacity
-        except AstakosUserQuota.DoesNotExist:
-            return None, default_capacity
+        return AstakosUserQuota.objects.select_related("resource").\
+            get(user=self, resource__name=resource)
 
     def update_uuid(self):
         while not self.uuid:
@@ -1021,7 +1017,7 @@ class AstakosUserAuthProvider(models.Model):
 
 
 class AstakosUserQuota(models.Model):
-    capacity = intDecimalField()
+    capacity = models.BigIntegerField()
     resource = models.ForeignKey(Resource)
     user = models.ForeignKey(AstakosUser)
 
@@ -1108,7 +1104,8 @@ class EmailChangeManager(models.Manager):
             user.save()
             email_change.delete()
             msg = "User %s changed email from %s to %s"
-            logger.log(astakos_settings.LOGGING_LEVEL, msg, user.log_display, old_email, user.email)
+            logger.log(astakos_settings.LOGGING_LEVEL, msg, user.log_display,
+                       old_email, user.email)
             return user
         except EmailChange.DoesNotExist:
             raise ValueError(_('Invalid activation key.'))
@@ -1492,8 +1489,8 @@ class ProjectResourceGrant(models.Model):
     resource = models.ForeignKey(Resource)
     project_application = models.ForeignKey(ProjectApplication,
                                             null=True)
-    project_capacity = intDecimalField(null=True)
-    member_capacity = intDecimalField(default=0)
+    project_capacity = models.BigIntegerField(null=True)
+    member_capacity = models.BigIntegerField(default=0)
 
     objects = ProjectResourceGrantManager()
 
@@ -1561,7 +1558,7 @@ class ProjectManager(models.Manager):
         relevant = model.o_states_q(model.RELEVANT_STATES)
         return self.filter(flt, relevant).order_by(
             'application__issue_date').select_related(
-                'application', 'application__owner', 'application__applicant')
+            'application', 'application__owner', 'application__applicant')
 
     def search_by_name(self, *search_strings):
         q = Q()

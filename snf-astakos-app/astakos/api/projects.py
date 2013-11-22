@@ -95,6 +95,8 @@ def _application_details(application, all_grants):
     grants = all_grants.get(application.id, [])
     resources = {}
     for grant in grants:
+        if not grant.resource.api_visible:
+            continue
         resources[grant.resource.name] = {
             "member_capacity": grant.member_capacity,
             "project_capacity": grant.project_capacity,

@@ -1,4 +1,4 @@
-# Copyright 2012-2013 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,14 +31,43 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.utils import simplejson as json
-from django.core.management.base import NoArgsCommand
-from synnefo.quotas import resources
+from synnefo.util import units
+from django.core.management import CommandError
+from django.db.models import Q
 
 
-class Command(NoArgsCommand):
-    help = "Export Cyclades resources in JSON format."
+OP_MAP = [
+    ("!=", lambda x: ~x, ""),
+    (">=", lambda x: x, "__gte"),
+    ("=>", lambda x: x, "__gte"),
+    (">", lambda x: x, "__gt"),
+    ("<=", lambda x: x, "__lte"),
+    ("=<", lambda x: x, "__lte"),
+    ("<", lambda x: x, "__lt"),
+    ("=", lambda x: x, ""),
+    ]
 
-    def handle(self, *args, **options):
-        output = json.dumps(resources.resources, indent=4)
-        self.stdout.write(output + "\n")
+
+def parse_filter(exp):
+    for s, prepend, op in OP_MAP:
+        key, sep, value = exp.partition(s)
+        if s == sep:
+            return key, prepend, op, value
+    raise CommandError("Could not parse filter.")
+
+
+def make_query(flt, handlers):
+    key, prepend, opstr, value = parse_filter(flt)
+    try:
+        (dbkey, parse) = handlers[key]
+        return prepend(Q(**{dbkey+opstr: parse(value)}))
+    except KeyError:
+        return None
+
+
+def parse_with_unit(value):
+    try:
+        return units.parse(value)
+    except units.ParseError:
+        raise CommandError("Failed to parse value, should be an integer, "
+                           "possibly followed by a unit, or 'inf'.")

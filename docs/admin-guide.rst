@@ -300,16 +300,13 @@ Setting quota limits
 
 Set default quota
 `````````````````
+To inspect current default base quota limits, run::
 
-In 20-snf-astakos-app-settings.conf, 
-uncomment the default setting ``ASTAKOS_SERVICES``
-and customize the ``'uplimit'`` values.
-These are the default base quota for all users.
+   # snf-manage resource-list
 
-To apply your configuration run::
+You can modify the default base quota limit for all future users with::
 
-    # snf-manage astakos-init --load-service-resources
-    # snf-manage quota --sync
+   # snf-manage resource-modify <resource_name> --default-quota <value>
 
 Set base quota for individual users
 ```````````````````````````````````
@@ -320,7 +317,16 @@ you can set it for each resource like this::
     # use this to display quota / uuid
     # snf-manage user-show 'uuid or email' --quota
 
-    # snf-manage user-modify 'user-uuid' --set-base-quota 'cyclades.vm' 10
+    # snf-manage user-modify <user-uuid> --base-quota 'cyclades.vm' 10
+
+You can set base quota for all existing users, with possible exceptions, using::
+
+    # snf-manage user-modify --all --base-quota cyclades.vm 10 --exclude uuid1,uuid2
+
+All quota for which values different from the default have been set,
+can be listed with::
+
+    # snf-manage quota-list --with-custom=True
 
 
 Enable the Projects feature
@@ -336,11 +342,11 @@ in ``20-snf-astakos-app-settings.conf`` set::
 You can change the maximum allowed number of pending project applications
 per user with::
 
-    # snf-manage resource-modify astakos.pending_app --limit <number>
+    # snf-manage resource-modify astakos.pending_app --default-quota <number>
 
 You can also set a user-specific limit with::
 
-    # snf-manage user-modify 'user-uuid' --set-base-quota 'astakos.pending_app' 5
+    # snf-manage user-modify <user-uuid> --base-quota 'astakos.pending_app' 5
 
 When users apply for projects they are not automatically granted
 the resources. They must first be approved by the administrator.
@@ -918,12 +924,12 @@ component-show                Show component details
 project-control               Manage projects and applications
 project-list                  List projects
 project-show                  Show project details
-quota                         List and check the integrity of user quota
+quota-list                    List user quota
+quota-verify                  Check the integrity of user quota
 reconcile-resources-astakos   Reconcile resource usage of Quotaholder with Astakos DB
-resource-export-astakos       Export astakos resources in json format
-resource-import               Register resources
 resource-list                 List resources
 resource-modify               Modify a resource's default base quota and boolean flags
+service-export-astakos        Export Astakos services and resources in JSON format
 service-import                Register services
 service-list                  List services
 service-show                  Show service details
@@ -949,7 +955,7 @@ Pithos snf-manage commands
 Name                          Description
 ============================  ===========================
 reconcile-commissions-pithos  Display unresolved commissions and trigger their recovery
-resource-export-pithos        Export pithos resources in json format
+service-export-pithos         Export Pithos services and resources in JSON format
 reconcile-resources-pithos    Detect unsynchronized usage between Astakos and Pithos DB resources and synchronize them if specified so.
 ============================  ===========================
 
@@ -964,6 +970,7 @@ backend-list                   List backends
 backend-modify                 Modify a backend
 backend-update-status          Update backend statistics for instance allocation
 backend-remove                 Remove a Ganeti backend
+enforce-resources-cyclades     Check and fix quota violations for Cyclades resources
 server-create                  Create a new server
 server-show                    Show server details
 server-list                    List servers
@@ -996,8 +1003,7 @@ floating-ip-list               List floating IPs
 floating-ip-remove             Delete a floating IP
 queue-inspect                  Inspect the messages of a RabbitMQ queue
 queue-retry                    Resend messages from Dead Letter queues to original exchanges
-resource-export-cyclades       Export Cyclades resources in JSON format.
-service-export-cyclades        Export Cyclades services in JSON format.
+service-export-cyclades        Export Cyclades services and resources in JSON format
 subnet-create                  Create a subnet
 subnet-inspect                 Inspect a subnet in DB
 subnet-list                    List subnets

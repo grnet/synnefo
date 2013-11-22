@@ -443,7 +443,7 @@ def get_actions(*args):
             "setup_pithos",
             "setup_vncauthproxy",
             "setup_cyclades", "cyclades_loaddata", "add_pools",
-            "export_services", "import_services",
+            "export_services", "import_services", "set_user_quota",
             "setup_kamaki", "upload_image", "register_image",
             "setup_burnin"
         ],

@@ -732,10 +732,10 @@ class IPAddress(models.Model):
                % (self.address, self.network_id, self.subnet_id, ip_type)
 
     def in_use(self):
-        if self.machine is None:
+        if self.nic is None or self.nic.machine is None:
             return False
         else:
-            return (not self.machine.deleted)
+            return (not self.nic.machine.deleted)
 
     class Meta:
         unique_together = ("network", "address")

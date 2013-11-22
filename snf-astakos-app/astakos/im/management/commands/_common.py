@@ -40,7 +40,7 @@ from django.core.management import CommandError
 
 from synnefo.util import units
 from astakos.im.models import AstakosUser
-from astakos.im.register import get_resources
+from astakos.im import register
 import sys
 
 
@@ -66,6 +66,28 @@ def get_user(email_or_id, **kwargs):
             return AstakosUser.objects.get(email__iexact=email_or_id, **kwargs)
     except (AstakosUser.DoesNotExist, AstakosUser.MultipleObjectsReturned):
         return None
+
+
+def get_accepted_user(user_ident):
+    if is_uuid(user_ident):
+        try:
+            user = AstakosUser.objects.get(uuid=user_ident)
+        except AstakosUser.DoesNotExist:
+            raise CommandError('There is no user with uuid: %s' %
+                               user_ident)
+    elif is_email(user_ident):
+        try:
+            user = AstakosUser.objects.get(username=user_ident)
+        except AstakosUser.DoesNotExist:
+            raise CommandError('There is no user with email: %s' %
+                               user_ident)
+    else:
+        raise CommandError('Please specify user by uuid or email')
+
+    if not user.is_accepted():
+        raise CommandError('%s is not an accepted user.' % user.uuid)
+
+    return user
 
 
 def get_astakosuser_content_type():
@@ -163,7 +185,8 @@ class ResourceDict(object):
     @classmethod
     def get(cls):
         if cls._object is None:
-            cls._object = get_resources()
+            rs = register.get_resources()
+            cls._object = register.resources_to_dict(rs)
         return cls._object
 
 
@@ -174,27 +197,51 @@ def show_resource_value(number, resource, style):
     return units.show(number, unit, style)
 
 
+def collect_holder_quotas(holder_quotas, h_initial, style=None):
+    print_data = []
+    for source, source_quotas in holder_quotas.iteritems():
+        try:
+            s_initial = h_initial[source]
+        except KeyError:
+            continue
+        for resource, values in source_quotas.iteritems():
+            try:
+                initial = s_initial[resource]
+            except KeyError:
+                continue
+            initial = show_resource_value(initial, resource, style)
+            limit = show_resource_value(values['limit'], resource, style)
+            usage = show_resource_value(values['usage'], resource, style)
+            fields = (source, resource, initial, limit, usage)
+            print_data.append(fields)
+    return print_data
+
+
+def show_user_quotas(holder_quotas, h_initial, style=None):
+    labels = ('source', 'resource', 'base_quota', 'total_quota', 'usage')
+    print_data = collect_holder_quotas(holder_quotas, h_initial, style=style)
+    return print_data, labels
+
+
 def show_quotas(qh_quotas, astakos_initial, info=None, style=None):
-    labels = ('source', 'resource', 'base quota', 'total quota', 'usage')
+    labels = ('user', 'source', 'resource', 'base_quota', 'total_quota',
+              'usage')
     if info is not None:
-        labels = ('uuid', 'email') + labels
+        labels = ('displayname',) + labels
 
     print_data = []
     for holder, holder_quotas in qh_quotas.iteritems():
         h_initial = astakos_initial.get(holder)
+        if h_initial is None:
+            continue
+
         if info is not None:
             email = info.get(holder, "")
 
-        for source, source_quotas in holder_quotas.iteritems():
-            s_initial = h_initial.get(source) if h_initial else None
-            for resource, values in source_quotas.iteritems():
-                initial = s_initial.get(resource) if s_initial else None
-                initial = show_resource_value(initial, resource, style)
-                limit = show_resource_value(values['limit'], resource, style)
-                usage = show_resource_value(values['usage'], resource, style)
-                fields = (source, resource, initial, limit, usage)
-                if info is not None:
-                    fields = (holder, email) + fields
-
-                print_data.append(fields)
+        h_data = collect_holder_quotas(holder_quotas, h_initial, style=style)
+        if info is not None:
+            h_data = [(email, holder) + fields for fields in h_data]
+        else:
+            h_data = [(holder,) + fields for fields in h_data]
+        print_data += h_data
     return print_data, labels

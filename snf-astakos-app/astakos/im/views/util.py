@@ -190,7 +190,7 @@ def _update_object(request, model=None, object_id=None, slug=None,
     return response
 
 
-def _resources_catalog(for_project=False, for_usage=False):
+def _resources_catalog():
     """
     `resource_catalog` contains a list of tuples. Each tuple contains the group
     key the resource is assigned to and resources list of dicts that contain
@@ -252,13 +252,9 @@ def _resources_catalog(for_project=False, for_usage=False):
                     resource_groups.pop(gindex)
 
     # filter out resources which user cannot request in a project application
-    exclude = resources_meta.get('exclude_from_usage', [])
-    for group_index, group_resources in enumerate(list(resource_catalog)):
-        group, resources = group_resources
-        for index, resource in list(enumerate(resources)):
-            if for_project and not resource.get('allow_in_projects'):
-                resources.remove(resource)
-            if resource.get('str_repr') in exclude and for_usage:
+    for group, resources in list(resource_catalog):
+        for resource in resources:
+            if not resource.get('ui_visible'):
                 resources.remove(resource)
 
     # cleanup empty groups

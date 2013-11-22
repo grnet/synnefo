@@ -886,7 +886,7 @@ class ProjectApplicationForm(forms.ModelForm):
                 # keep only resource limits for selected resource groups
                 if self.data.get('is_selected_%s' %
                                  resource.group, "0") == "1":
-                    if not resource.allow_in_projects:
+                    if not resource.ui_visible:
                         raise forms.ValidationError("Invalid resource %s" %
                                                     resource.name)
                     d = model_to_dict(resource)

@@ -738,7 +738,8 @@ def validate_resource_policies(policies):
         raise ProjectBadRequest("Malformed resource policies")
 
     resource_names = policies.keys()
-    resources = Resource.objects.filter(name__in=resource_names)
+    resources = Resource.objects.filter(name__in=resource_names,
+                                        api_visible=True)
     resource_d = {}
     for resource in resources:
         resource_d[resource.name] = resource

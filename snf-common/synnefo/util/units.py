@@ -34,6 +34,7 @@
 from synnefo.lib.ordereddict import OrderedDict
 import re
 
+PRACTICALLY_INFINITE = 2**63 - 1
 DEFAULT_PARSE_BASE = 1024
 PARSE_EXPONENTS = {
     '':      0,
@@ -76,6 +77,9 @@ def _parse_number_with_unit(s):
 
 
 def parse_with_style(s):
+    if s in ['inf', 'infinite']:
+        return PRACTICALLY_INFINITE, 0
+
     n, unit = _parse_number_with_unit(s)
     try:
         exponent = PARSE_EXPONENTS[unit]
@@ -136,12 +140,15 @@ def get_exponent(style):
 
 
 def show(n, unit, style=None):
+    if style == 'none':
+        return str(n)
+
+    if n == PRACTICALLY_INFINITE:
+        return 'inf'
+
     try:
         unit_dict = UNITS[unit]
     except KeyError:
-        return str(n)
-
-    if style == 'none':
         return str(n)
 
     BASE = unit_dict['BASE']

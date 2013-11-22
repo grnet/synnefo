@@ -40,7 +40,7 @@ from astakos.im import functions
 from astakos.im import settings
 from astakos.im import forms
 
-from astakos.im.quotas import qh_sync_user
+from astakos.im.quotas import qh_sync_new_user
 
 import astakos.im.messages as astakos_messages
 
@@ -257,7 +257,7 @@ class ActivationBackend(object):
                                          default=lambda obj:
                                          str(obj))
         user.save()
-        qh_sync_user(user)
+        qh_sync_new_user(user)
 
         if user.is_rejected:
             logger.warning("User has previously been "

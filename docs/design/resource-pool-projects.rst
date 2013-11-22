@@ -402,7 +402,7 @@ applying/approving applications in order to modify some project settings,
 such as the quota limits.
 
 Currently, the administrator can change the user base quota with:
-``snf-manage user-modify <id> --set-base-quota <resource> <capacity>``.
+``snf-manage user-modify <id> --base-quota <resource> <capacity>``.
 This will be removed in favor of the ``project-modify`` command, so that all
 quota are handled in a uniform way. Similar to ``user-modify --all``,
 ``project-modify`` will get options ``--all-base`` and ``--all-non-base`` to

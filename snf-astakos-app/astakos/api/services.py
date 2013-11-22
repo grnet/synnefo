@@ -48,7 +48,8 @@ astakos_services = {
                 'name': "astakos.pending_app",
                 'service_type': "account",
                 'service_origin': "astakos_account",
-                'allow_in_projects': False},
+                'ui_visible': False,
+                'api_visible': False},
         },
     },
 

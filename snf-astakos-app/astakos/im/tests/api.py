@@ -62,16 +62,16 @@ class QuotaAPITest(TestCase):
                       "desc": "resource11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
-                      "allow_in_projects": True}
+                      "ui_visible": True}
         r, _ = register.add_resource(resource11)
-        register.update_resource(r, 100)
+        register.update_resources([(r, 100)])
         resource12 = {"name": "service1.resource12",
                       "desc": "resource11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
                       "unit": "bytes"}
         r, _ = register.add_resource(resource12)
-        register.update_resource(r, 1024)
+        register.update_resources([(r, 1024)])
 
         # create user
         user = get_local_user('test@grnet.gr')
@@ -89,9 +89,9 @@ class QuotaAPITest(TestCase):
                       "desc": "resource11 desc",
                       "service_type": "type2",
                       "service_origin": "service2",
-                      "allow_in_projects": False}
+                      "ui_visible": False}
         r, _ = register.add_resource(resource21)
-        register.update_resource(r, 3)
+        register.update_resources([(r, 3)])
 
         resource_names = [r['name'] for r in
                           [resource11, resource12, resource21]]

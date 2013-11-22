@@ -1270,6 +1270,24 @@ def import_services():
     try_run(cmd)
 
 
+@roles("accounts")
+def set_user_quota():
+    debug(env.host, " * Setting user quota...")
+    cmd = """
+    snf-manage user-modify -f --all --base-quota pithos.diskspace 40G
+    snf-manage user-modify -f --all --base-quota astakos.pending_app 2
+    snf-manage user-modify -f --all --base-quota cyclades.vm 4
+    snf-manage user-modify -f --all --base-quota cyclades.disk 40G
+    snf-manage user-modify -f --all --base-quota cyclades.total_ram 16G
+    snf-manage user-modify -f --all --base-quota cyclades.ram 8G
+    snf-manage user-modify -f --all --base-quota cyclades.total_cpu 32
+    snf-manage user-modify -f --all --base-quota cyclades.cpu 16
+    snf-manage user-modify -f --all --base-quota cyclades.network.private 4
+    snf-manage user-modify -f --all --base-quota cyclades.floating_ip 4
+    """
+    try_run(cmd)
+
+
 @roles("cyclades")
 def add_network():
     debug(env.host, " * Adding public network in cyclades...")

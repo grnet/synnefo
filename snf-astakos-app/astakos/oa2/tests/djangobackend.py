@@ -1,6 +1,7 @@
 import urllib
 import urlparse
 import base64
+import datetime
 
 from collections import namedtuple
 
@@ -9,8 +10,9 @@ from django.test import Client as TestClient
 
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
+from django.utils import simplejson as json
 
-from astakos.oa2.models import Client, AuthorizationCode
+from astakos.oa2.models import Client, AuthorizationCode, Token
 
 
 ParsedURL = namedtuple('ParsedURL', ['host', 'scheme', 'path', 'params',
@@ -124,8 +126,22 @@ class OA2Client(TestClient):
                              **kwargs)
         return self.get(self.get_url(self.auth_url, **params), *args, **kwargs)
 
+    def access_token(self, code,
+                     content_type='application/x-www-form-urlencoded',
+                     **kwargs):
+        """
+        Do an get token request.
+        """
+        params = {
+            'grant_type': 'authorization_code',
+            'code': code
+        }
+        params.update(kwargs)
+        self.set_auth_headers(kwargs)
+        return self.post(self.token_url, data=urllib.urlencode(params),
+                         content_type=content_type, **kwargs)
+
     def set_auth_headers(self, params):
-        print 'self.credentials:', self.credentials
         if not self.credentials:
             return
         credentials = base64.encodestring('%s:%s' % self.credentials).strip()
@@ -142,6 +158,34 @@ class TestOA2(TestCase, URLAssertionsMixin):
 
     def assertCount(self, model, count):
         self.assertEqual(model.objects.count(), count)
+
+    def assert_access_token_response(self, r, expected):
+        self.assertEqual(r.status_code, 200)
+        try:
+            data = json.loads(r.content)
+        except:
+            self.fail("Unexpected response content")
+
+        self.assertTrue('access_token' in data)
+        access_token = data['access_token']
+        self.assertTrue('token_type' in data)
+        token_type = data['token_type']
+        self.assertTrue('expires_in' in data)
+        expires_in = data['expires_in']
+
+        try:
+            token = Token.objects.get(code=access_token)
+            self.assertEqual(token.expires_at,
+                             token.created_at +
+                             datetime.timedelta(seconds=expires_in))
+            self.assertEqual(token.token_type, token_type)
+            self.assertEqual(token.grant_type, 'authorization_code')
+            #self.assertEqual(token.user, expected.get('user'))
+            self.assertEqual(token.redirect_uri, expected.get('redirect_uri'))
+            self.assertEqual(token.scope, expected.get('scope'))
+            self.assertEqual(token.state, expected.get('state'))
+        except Token.DoesNotExist:
+            self.fail("Invalid access_token")
 
     def setUp(self):
         baseurl = reverse('oa2_authenticate').replace('/auth', '/')
@@ -164,14 +208,33 @@ class TestOA2(TestCase, URLAssertionsMixin):
         u.save()
 
     def test_code_authorization(self):
-        r = self.client.authorize_code('client-fake')
+        # missing response_type
+        r = self.client.get(self.client.get_url(self.client.auth_url))
         self.assertEqual(r.status_code, 400)
         self.assertCount(AuthorizationCode, 0)
 
-#        # no auth header, client is confidential
-#        r = self.client.authorize_code('client1')
-#        self.assertEqual(r.status_code, 400)
-#        self.assertCount(AuthorizationCode, 0)
+        # invalid response_type
+        r = self.client.get(self.client.get_url(self.client.auth_url,
+                                                response_type='invalid'))
+        self.assertEqual(r.status_code, 400)
+        self.assertCount(AuthorizationCode, 0)
+
+        # unsupported response_type
+        r = self.client.get(self.client.get_url(self.client.auth_url,
+                                                response_type='token'))
+        self.assertEqual(r.status_code, 400)
+        self.assertCount(AuthorizationCode, 0)
+
+        # missing client_id
+        r = self.client.get(self.client.get_url(self.client.auth_url,
+                                                response_type='code'))
+        self.assertEqual(r.status_code, 400)
+        self.assertCount(AuthorizationCode, 0)
+
+        # fake client
+        r = self.client.authorize_code('client-fake')
+        self.assertEqual(r.status_code, 400)
+        self.assertCount(AuthorizationCode, 0)
 
         # mixed up credentials/client_id's
         self.client.set_credentials('client1', 'secret')
@@ -179,26 +242,37 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.assertEqual(r.status_code, 400)
         self.assertCount(AuthorizationCode, 0)
 
+        # invalid credentials
         self.client.set_credentials('client2', '')
         r = self.client.authorize_code('client2')
         self.assertEqual(r.status_code, 400)
         self.assertCount(AuthorizationCode, 0)
 
-#        self.client.set_credentials()
-#        r = self.client.authorize_code('client1')
-#        self.assertEqual(r.status_code, 400)
-#        self.assertCount(AuthorizationCode, 0)
+        # invalid redirect_uri: not absolute URI
+        self.client.set_credentials()
+        params = {'redirect_uri':
+                  urlparse.urlparse(self.client1_redirect_uri).path}
+        r = self.client.authorize_code('client1', urlparams=params)
+        self.assertEqual(r.status_code, 400)
+        self.assertCount(AuthorizationCode, 0)
 
-        # valid request
+        # mismatching redirect uri
+        self.client.set_credentials()
+        params = {'redirect_uri': self.client1_redirect_uri[1:]}
+        r = self.client.authorize_code('client1', urlparams=params)
+        self.assertEqual(r.status_code, 400)
+        self.assertCount(AuthorizationCode, 0)
+
+        # valid request: untrusted client
         params = {'redirect_uri': self.client1_redirect_uri,
+                  'scope': self.client1_redirect_uri,
                   'extra_param': '123'}
         self.client.set_credentials('client1', 'secret')
         r = self.client.authorize_code('client1', urlparams=params)
         self.assertEqual(r.status_code, 302)
         self.assertTrue('Location' in r)
-        p = urlparse.urlparse(r['Location'])
-        self.assertEqual(p.netloc, 'testserver:80')
-        self.assertEqual(p.path, reverse('login'))
+        self.assertHost(r['Location'], "testserver:80")
+        self.assertPath(r['Location'], reverse('login'))
 
         self.client.set_credentials('client1', 'secret')
         self.client.login(username="user@synnefo.org", password="password")
@@ -231,3 +305,131 @@ class TestOA2(TestCase, URLAssertionsMixin):
         code2 = AuthorizationCode.objects.get(code=redirect2.params['code'][0])
         self.assertEqual(code2.state, 'csrfstate')
         self.assertEqual(code2.redirect_uri, self.client1_redirect_uri)
+
+        # valid request: trusted client
+        params = {'redirect_uri': self.client3_redirect_uri,
+                  'scope': self.client3_redirect_uri,
+                  'extra_param': '123'}
+        self.client.set_credentials('client3', 'secret')
+        r = self.client.authorize_code('client3', urlparams=params)
+        self.assertEqual(r.status_code, 302)
+        self.assertCount(AuthorizationCode, 3)
+
+        # redirect is valid
+        redirect3 = self.get_redirect_url(r)
+        self.assertParam(redirect1, "code")
+        self.assertNoParam(redirect3, "state")
+        self.assertNoParam(redirect3, "extra_param")
+        self.assertHost(redirect3, "server3.com")
+        self.assertPath(redirect3, "/handle_code")
+
+        code3 = AuthorizationCode.objects.get(code=redirect3.params['code'][0])
+        self.assertEqual(code3.state, None)
+        self.assertEqual(code3.redirect_uri, self.client3_redirect_uri)
+
+        # valid request: trusted client
+        params['state'] = 'csrfstate'
+        self.client.set_credentials('client3', 'secret')
+        r = self.client.authorize_code('client3', urlparams=params)
+        self.assertEqual(r.status_code, 302)
+        self.assertCount(AuthorizationCode, 4)
+
+        # redirect is valid
+        redirect4 = self.get_redirect_url(r)
+        self.assertParam(redirect4, "code")
+        self.assertParamEqual(redirect4, "state", 'csrfstate')
+        self.assertNoParam(redirect4, "extra_param")
+        self.assertHost(redirect4, "server3.com")
+        self.assertPath(redirect4, "/handle_code")
+
+        code4 = AuthorizationCode.objects.get(code=redirect4.params['code'][0])
+        self.assertEqual(code4.state, 'csrfstate')
+        self.assertEqual(code4.redirect_uri, self.client3_redirect_uri)
+
+    def test_get_token(self):
+        # invalid method
+        r = self.client.get(self.client.token_url)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
+        self.assertEqual(r['Allow'], 'POST')
+
+        # invalid content type
+        r = self.client.post(self.client.token_url)
+        self.assertEqual(r.status_code, 400)
+
+        # missing grant type
+        r = self.client.post(self.client.token_url,
+                             content_type='application/x-www-form-urlencoded')
+        self.assertEqual(r.status_code, 400)
+
+        # unsupported grant type: client_credentials
+        r = self.client.post(self.client.token_url,
+                             data='grant_type=client_credentials',
+                             content_type='application/x-www-form-urlencoded')
+        self.assertEqual(r.status_code, 400)
+
+        # unsupported grant type: token
+        r = self.client.post(self.client.token_url,
+                             data='grant_type=token',
+                             content_type='application/x-www-form-urlencoded')
+        self.assertEqual(r.status_code, 400)
+
+        # invalid grant type
+        r = self.client.post(self.client.token_url,
+                             data='grant_type=invalid',
+                             content_type='application/x-www-form-urlencoded')
+        self.assertEqual(r.status_code, 400)
+
+        # generate authorization code: without redirect_uri
+        self.client.login(username="user@synnefo.org", password="password")
+        r = self.client.authorize_code('client3')
+        self.assertCount(AuthorizationCode, 1)
+        redirect = self.get_redirect_url(r)
+        code_instance = AuthorizationCode.objects.get(
+            code=redirect.params['code'][0])
+
+        # no client_id & no client authorization
+        r = self.client.access_token(code_instance.code)
+        self.assertEqual(r.status_code, 400)
+
+        # invalid client_id
+        r = self.client.access_token(code_instance.code, client_id='client2')
+        self.assertEqual(r.status_code, 400)
+
+        # inexistent client_id
+        r = self.client.access_token(code_instance.code, client_id='client42')
+        self.assertEqual(r.status_code, 400)
+
+        # no client authorization
+        r = self.client.access_token(code_instance.code, client_id='client3')
+        self.assertEqual(r.status_code, 400)
+
+        # mixed up credentials/client_id's
+        self.client.set_credentials('client1', 'secret')
+        r = self.client.access_token(code_instance.code, client_id='client3')
+        self.assertEqual(r.status_code, 400)
+
+        # mixed up credentials/client_id's
+        self.client.set_credentials('client3', 'secret')
+        r = self.client.access_token(code_instance.code, client_id='client1')
+        self.assertEqual(r.status_code, 400)
+
+        # mismatching client
+        self.client.set_credentials('client1', 'secret')
+        r = self.client.access_token(code_instance.code, client_id='client1')
+        self.assertEqual(r.status_code, 400)
+
+        # invalid code
+        self.client.set_credentials('client3', 'secret')
+        r = self.client.access_token('invalid')
+        self.assertEqual(r.status_code, 400)
+
+        # valid request
+        self.client.set_credentials('client3', 'secret')
+        r = self.client.access_token(code_instance.code)
+        self.assertCount(AuthorizationCode, 0)  # assert code is consumed
+        self.assertCount(Token, 1)
+        expected = {'redirect_uri': self.client3_redirect_uri,
+                    'scope': self.client3_redirect_uri,
+                    'state': None}
+        self.assert_access_token_response(r, expected)

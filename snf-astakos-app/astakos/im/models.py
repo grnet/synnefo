@@ -459,7 +459,7 @@ class AstakosUser(User):
     date_signed_terms = models.DateTimeField(_('Signed terms date'),
                                              null=True, blank=True)
     # permanent unique user identifier
-    uuid = models.CharField(max_length=255, null=True, blank=False,
+    uuid = models.CharField(max_length=255, null=False, blank=False,
                             unique=True)
 
     policy = models.ManyToManyField(

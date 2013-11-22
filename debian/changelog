@@ -1,3 +1,10 @@
+synnefo (0.14.10~rc2-1~wheezy) wheezy; urgency=low
+
+  * New upstream version
+    + Add 'name' attribute to instance NICs
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Fri, 22 Nov 2013 16:23:31 +0200
+
 synnefo (0.14.10~rc1-1~wheezy) wheezy; urgency=low
 
   * New upstream version
@@ -120,6 +127,7 @@ synnefo (0.12.5-1) stable; urgency=low
   [ Dimitris Aragiorgis ]
 
  -- Dimitris Aragiorgis <dimara@grnet.gr>  Fri, 04 Jan 2013 14:46:35 +0200
+
 
 
 

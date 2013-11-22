@@ -6415,7 +6415,7 @@ table.list-machines .wave {
 }
 
 .create-vm .create-step-cont .list-cont ul li.flavor-disktype .value {
-    width: 45px;
+    width: 65px;
 }
 
 .create-vm .create-step-cont .list-cont ul li.image-description .value,
@@ -6424,6 +6424,12 @@ table.list-machines .wave {
     width: auto;
     text-align:left;
     width: auto;
+}
+
+.create-vm .create-step-cont .list-cont ul li.image-name .value {
+  width: 120px;
+  text-indent: 0;
+  margin-left: 0;
 }
 
 .create-vm .create-step-cont .list-cont ul li {

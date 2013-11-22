@@ -1507,7 +1507,7 @@
             }
             
             set_detail("description", image.get_description());
-            set_detail("name");
+            set_detail("name", util.truncate(image.get("name"), 30));
             set_detail("os", _(image.get_os()).capitalize());
             set_detail("gui", image.get_gui());
             set_detail("size", _.escape(image.get_readable_size()));
@@ -1548,7 +1548,7 @@
 
             if (!params.image) { return }
 
-            this.name.text(params.name);
+            this.name.text(util.truncate(params.name, 50));
 
             this.confirm.find("li.image .value").text(params.flavor.get("image"));
             this.confirm.find("li.cpu .value").text(params.flavor.get("cpu") + "x");

@@ -1336,15 +1336,7 @@
         },
         
         get_hostname: function() {
-          var hostname = this.get_meta('hostname') || this.get('fqdn');
-          if (!hostname) {
-            if (synnefo.config.vm_hostname_format) {
-              hostname = synnefo.config.vm_hostname_format.format(this.id);
-            } else {
-              hostname = 'unknown';
-            }
-          }
-          return hostname;
+          return = this.get_meta('hostname') || this.get('fqdn') || synnefo.config.no_fqdn_message;
         },
 
         // get actions that the user can execute

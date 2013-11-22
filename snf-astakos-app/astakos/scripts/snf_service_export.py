@@ -58,6 +58,17 @@ astakos_services = {
              'publicURL': None},
         ],
     },
+
+    'astakos_admin': {
+        'type': 'astakos_admin',
+        'component': 'astakos',
+        'prefix': 'admin',
+        'public': False,
+        'endpoints': [
+            {'versionId': '',
+             'publicURL': None},
+        ],
+    },
 }
 
 cyclades_services = {

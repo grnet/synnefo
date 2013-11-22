@@ -9,6 +9,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
 from django.core.urlresolvers import reverse
 from django.conf.urls.defaults import patterns, url
+from django.http import HttpResponseNotAllowed
 from django.views.decorators.csrf import csrf_exempt
 
 import logging
@@ -24,6 +25,9 @@ class DjangoViewsMixin(object):
 
     @csrf_exempt
     def token_view(self, request):
+        if request.method != 'POST':
+            return HttpResponseNotAllowed(['POST'])
+
         oa2request = self.build_request(request)
         oa2response = self.grant_token(oa2request)
         return self._build_response(oa2response)

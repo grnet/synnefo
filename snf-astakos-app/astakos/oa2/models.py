@@ -68,7 +68,7 @@ class Client(models.Model):
 class AuthorizationCode(models.Model):
     user = models.ForeignKey('im.AstakosUser', on_delete=models.PROTECT)
     code = models.TextField()
-    redirect_uri = models.CharField(max_length=255)
+    redirect_uri = models.CharField(max_length=255, null=True, default=None)
     client = models.ForeignKey('oa2.Client', on_delete=models.PROTECT)
     scope = models.TextField(null=True, default=None)
     created_at = models.DateTimeField(default=datetime.datetime.now())

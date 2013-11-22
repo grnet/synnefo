@@ -74,6 +74,9 @@ class Command(SynnefoCommand):
         if len(args) != 1:
             raise CommandError("Invalid number of arguments")
 
+        if not options['urls']:
+            raise CommandError("There should be at least one redirect URI")
+
         identifier = args[0].decode('utf8')
 
         try:
@@ -85,8 +88,6 @@ class Command(SynnefoCommand):
             c.save()
 
         except BaseException, e:
-            import traceback
-            traceback.print_exc()
             raise CommandError(e)
         else:
             self.stdout.write('Client created successfully\n')

@@ -291,10 +291,10 @@ class SimpleBackend(object):
     def get_client_authorization_code(self, client, code):
         code_instance = self.get_authorization_code(code)
         if not code_instance:
-            raise OA2Error("Invalid code", code)
+            raise OA2Error("Invalid code")
 
         if client.get_id() != code_instance.client.get_id():
-            raise OA2Error("Invalid code for client", code, client)
+            raise OA2Error("Mismatching client with code client")
         return code_instance
 
     def client_id_exists(self, client_id):
@@ -494,9 +494,9 @@ class SimpleBackend(object):
 
         client = self.get_client_by_id(client_id)
 
-        if requires_auth and client.requires_auth:
+        if requires_auth and client.requires_auth():
             if client_credentials is None:
-                raise OA2Error("Client authentication in required")
+                raise OA2Error("Client authentication is required")
 
         if client_credentials is not None:
             self.check_credentials(client, *client_credentials)
@@ -515,6 +515,12 @@ class SimpleBackend(object):
                 raise OA2Error("Mismatching redirect uri")
             if expected_value is not None and redirect_uri != expected_value:
                 raise OA2Error("Invalid redirect uri")
+        else:
+            try:
+                redirect_uri = client.redirecturl_set.values_list('url',
+                                                                  flat=True)[0]
+            except IndexError:
+                raise OA2Error("Unable to fallback to client redirect URI")
         return redirect_uri
 
     def validate_state(self, client, params, headers):
@@ -542,6 +548,7 @@ class SimpleBackend(object):
         client = self.validate_client(params, headers, requires_auth=False)
         redirect_uri = self.validate_redirect_uri(client, params, headers)
         scope = self.validate_scope(client, params, headers)
+        scope = scope or redirect_uri  # set default
         state = self.validate_state(client, params, headers)
         return client, redirect_uri, scope, state
 
@@ -549,6 +556,7 @@ class SimpleBackend(object):
         client = self.validate_client(params, headers)
         redirect_uri = self.validate_redirect_uri(client, params, headers)
         scope = self.validate_scope(client, params, headers)
+        scope = scope or redirect_uri  # set default
         state = self.validate_state(client, params, headers)
         return client, redirect_uri, scope, state
 
@@ -581,11 +589,13 @@ class SimpleBackend(object):
         auth_type, params = self.identify_authorize_request(request_params,
                                                             request.META)
 
+        if auth_type is None:
+            raise OA2Error("Missing authorization type")
         if auth_type == 'code':
             client, uri, scope, state = \
                 self.validate_code_request(params, request.META)
         elif auth_type == 'token':
-            raise OA2Error("Unsupported response type")
+            raise OA2Error("Unsupported authorization type")
 #            client, uri, scope, state = \
 #                self.validate_token_request(params, request.META)
         else:
@@ -624,7 +634,9 @@ class SimpleBackend(object):
 
         grant_type = self.identify_token_request(request.META, request.POST)
 
-        if grant_type == 'authorization_code':
+        if grant_type is None:
+            raise OA2Error("Missing grant type")
+        elif grant_type == 'authorization_code':
             client, redirect_uri, code = \
                 self.validate_code_grant(request.POST, request.META)
             token, token_type = \

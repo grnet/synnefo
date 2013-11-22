@@ -4769,8 +4769,13 @@ table.list-machines .wave {
 
 .overlay .v6-warn .important {
   display: block;
-  margin: 4px 0;
-  font-weight: bold;
+  margin: 8px 0;
+  font-weight: normal;
+  font-size: 0.8em;
+  border: 1px solid #800;
+  background-color: #a00;
+  color: #fff !important;
+  padding: 5px 10px;
 }
 
 .overlay .overlay-content .important {

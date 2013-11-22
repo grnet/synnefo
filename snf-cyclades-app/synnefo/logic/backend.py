@@ -160,11 +160,14 @@ def process_ganeti_nics(ganeti_nics):
     """Process NIC dict from ganeti hooks."""
     new_nics = []
     for i, new_nic in enumerate(ganeti_nics):
-        network = new_nic.get('network', '')
-        n = str(network)
-        pk = utils.id_from_network_name(n)
+        network_name = new_nic.get('network', '')
+        network_id = utils.id_from_network_name(network_name)
+        net = Network.objects.get(id=network_id)
 
-        net = Network.objects.get(pk=pk)
+        nic_name = new_nic.get("name", None)
+        nic_id = None
+        if nic_name is not None:
+            nic_id = utils.id_from_nic_name(nic_name)
 
         # Get the new nic info
         mac = new_nic.get('mac', '')
@@ -186,7 +189,8 @@ def process_ganeti_nics(ganeti_nics):
             'ipv4': ipv4,
             'ipv6': ipv6,
             'firewall_profile': firewall_profile,
-            'state': 'ACTIVE'}
+            'state': 'ACTIVE',
+            'id': nic_id}
 
         new_nics.append(nic)
     return new_nics
@@ -410,7 +414,9 @@ def create_instance(vm, public_nic, flavor, image):
         kw['disks'][0]['provider'] = provider
         kw['disks'][0]['origin'] = flavor.disk_origin
 
-    kw['nics'] = [public_nic]
+    kw['nics'] = [{"name": public_nic.backend_uuid,
+                  "network": public_nic.network.backend_id,
+                  "ip": public_nic.ipv4}]
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
     # kw['os'] = settings.GANETI_OS_PROVIDER
     kw['ip_check'] = False
@@ -626,8 +632,10 @@ def disconnect_network(network, backend, group=None):
     return job_ids
 
 
-def connect_to_network(vm, network, address=None):
+def connect_to_network(vm, nic):
     backend = vm.backend
+    network = nic.network
+    address = nic.ipv4
     network = Network.objects.select_for_update().get(id=network.id)
     bnet, created = BackendNetwork.objects.get_or_create(backend=backend,
                                                          network=network)
@@ -637,7 +645,9 @@ def connect_to_network(vm, network, address=None):
 
     depends = [[job, ["success", "error", "canceled"]] for job in depend_jobs]
 
-    nic = {'ip': address, 'network': network.backend_id}
+    nic = {'ip': address,
+           'network': network.backend_id,
+           'name': nic.backend_uuid}
 
     log.debug("Connecting vm %s to network %s(%s)", vm, network, address)
 
@@ -666,6 +676,11 @@ def set_firewall_profile(vm, profile):
     except KeyError:
         raise ValueError("Unsopported Firewall Profile: %s" % profile)
 
+    try:
+        public_nic = vm.nics.filter(network__public=True)[0]
+    except IndexError:
+        public_nic = None
+
     log.debug("Setting tag of VM %s to %s", vm, profile)
 
     with pooled_rapi_client(vm) as client:
@@ -673,8 +688,16 @@ def set_firewall_profile(vm, profile):
         for t in _firewall_tags.values():
             client.DeleteInstanceTags(vm.backend_vm_id, [t],
                                       dry_run=settings.TEST)
+            if public_nic is not None:
+                tag_with_name = t.replace("0", public_nic.backend_uuid)
+                client.DeleteInstanceTags(vm.backend_vm_id, [tag_with_name],
+                                          dry_run=settings.TEST)
 
         client.AddInstanceTags(vm.backend_vm_id, [tag], dry_run=settings.TEST)
+        if public_nic is not None:
+            tag_with_name = tag.replace("0", public_nic.backend_uuid)
+            client.AddInstanceTags(vm.backend_vm_id, [tag_with_name],
+                                   dry_run=settings.TEST)
 
         # XXX NOP ModifyInstance call to force process_net_status to run
         # on the dispatcher

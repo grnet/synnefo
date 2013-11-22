@@ -351,7 +351,6 @@ def do_create_server(userid, name, password, flavor, image, metadata={},
         if network is None:
             # Allocate IP from public network
             (network, address) = util.get_public_ip(backend)
-            nic = {'ip': address, 'network': network.backend_id}
         else:
             address = util.get_network_free_address(network)
 
@@ -370,8 +369,9 @@ def do_create_server(userid, name, password, flavor, image, metadata={},
         # Create VM's public NIC. Do not wait notification form ganeti hooks to
         # create this NIC, because if the hooks never run (e.g. building error)
         # the VM's public IP address will never be released!
-        NetworkInterface.objects.create(machine=vm, network=network, index=0,
-                                        ipv4=address, state="BUILDING")
+        nic = NetworkInterface.objects.create(machine=vm, network=network,
+                                              index=0, ipv4=address,
+                                              state="BUILDING")
 
         # Also we must create the VM metadata in the same transaction.
         for key, val in metadata.items():

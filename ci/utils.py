@@ -252,7 +252,8 @@ class SynnefoCI(object):
             self._wait_transition(server_id, "ACTIVE", "DELETED")
 
     @_check_kamaki
-    def create_server(self, image=None, flavor=None, ssh_keys=None):
+    def create_server(self, image=None, flavor=None, ssh_keys=None,
+                      server_name=None):
         """Create slave server"""
         self.logger.info("Create a new server..")
 
@@ -265,11 +266,11 @@ class SynnefoCI(object):
         flavor_id = self._find_flavor(flavor)
 
         # Create Server
-        server_name = self.config.get("Deployment", "server_name")
-        server = self.cyclades_client.create_server(
-            "%s(BID: %s)" % (server_name, self.build_id),
-            flavor_id,
-            image_id)
+        if server_name is None:
+            server_name = self.config.get("Deployment", "server_name")
+            server_name = "%s(BID: %s)" % (server_name, self.build_id)
+        server = self.cyclades_client.create_server(server_name, flavor_id,
+                                                    image_id)
         server_id = server['id']
         self.write_temp_config('server_id', server_id)
         self.logger.debug("Server got id %s" % _green(server_id))

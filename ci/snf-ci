@@ -74,6 +74,8 @@ def main():  # Too many branches. pylint: disable-msg=R0912
     parser.add_option("--ssh-keys", dest="ssh_keys", default=None,
                       help="Upload/Install the public ssh keys contained"
                            " in this file to the server")
+    parser.add_option("--name", dest="server_name", default=None,
+                      help=""),
     parser.add_option("-n", "--build-id", dest="build_id", default=None,
                       type="int",
                       help="Specify a number to use to identify this build."
@@ -143,7 +145,8 @@ def main():  # Too many branches. pylint: disable-msg=R0912
     if getattr(options, CREATE_SERVER_CMD, False):
         synnefo_ci.create_server(flavor=options.flavor,
                                  image=options.image,
-                                 ssh_keys=options.ssh_keys)
+                                 ssh_keys=options.ssh_keys,
+                                 server_name=options.server_name)
         synnefo_ci.clone_repo(local_repo=options.local_repo)
     if getattr(options, BUILD_SYNNEFO_CMD, False):
         synnefo_ci.build_packages()

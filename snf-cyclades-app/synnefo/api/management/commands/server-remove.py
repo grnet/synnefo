@@ -39,6 +39,7 @@ from synnefo.management.common import (get_vm, convert_api_faults,
 from synnefo.logic import servers
 from snf_django.management.commands import RemoveCommand
 from snf_django.management.utils import parse_bool
+from snf_django.lib.api import faults
 
 
 class Command(RemoveCommand):
@@ -57,21 +58,28 @@ class Command(RemoveCommand):
 
     @convert_api_faults
     def handle(self, *args, **options):
-        if len(args) != 1:
+        if not args:
             raise CommandError("Please provide a server ID")
 
         force = options['force']
         self.confirm_deletion(force, "server(s)", args)
 
-        server = get_vm(args[0])
+        for server_id in args:
+            self.stdout.write("\n")
+            try:
+                server = get_vm(server_id)
 
-        self.stdout.write("Trying to remove server '%s' from backend '%s'\n" %
-                          (server.backend_vm_id, server.backend))
+                self.stdout.write("Trying to remove server '%s' from backend "
+                                  "'%s' \n" % (server.backend_vm_id,
+                                               server.backend))
 
-        server = servers.destroy(server)
-        jobID = server.task_job_id
+                server = servers.destroy(server)
+                jobID = server.task_job_id
 
-        self.stdout.write("Issued OP_INSTANCE_REMOVE with id: %s\n" % jobID)
+                self.stdout.write("Issued OP_INSTANCE_REMOVE with id: %s\n" %
+                                  jobID)
 
-        wait = parse_bool(options["wait"])
-        wait_server_task(server, wait, self.stdout)
+                wait = parse_bool(options["wait"])
+                wait_server_task(server, wait, self.stdout)
+            except (CommandError, faults.BadRequest) as e:
+                self.stdout.write("Error -- %s\n" % e.message)

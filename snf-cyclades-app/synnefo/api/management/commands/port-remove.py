@@ -51,18 +51,24 @@ class Command(RemoveCommand):
 
     @common.convert_api_faults
     def handle(self, *args, **options):
-        if len(args) < 1:
+        if not args:
             raise CommandError("Please provide a port ID")
 
         force = options['force']
         self.confirm_deletion(force, "port(s)", args)
 
-        port = common.get_port(args[0], for_update=True)
+        for port_id in args:
+            self.stdout.write("\n")
+            try:
+                port = common.get_port(port_id, for_update=True)
 
-        servers.delete_port(port)
+                servers.delete_port(port)
 
-        wait = parse_bool(options["wait"])
-        if port.machine is not None:
-            common.wait_server_task(port.machine, wait, stdout=self.stdout)
-        else:
-            self.stdout.write("Successfully removed port %s\n" % port)
+                wait = parse_bool(options["wait"])
+                if port.machine is not None:
+                    common.wait_server_task(port.machine, wait,
+                                            stdout=self.stdout)
+                else:
+                    self.stdout.write("Successfully removed port %s\n" % port)
+            except CommandError as e:
+                self.stdout.write("Error -- %s\n" % e.message)

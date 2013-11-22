@@ -52,9 +52,13 @@ class Command(RemoveCommand):
         force = options['force']
         self.confirm_deletion(force, "floating ip(s)", args)
 
-        floating_ip_id = args[0]
-
-        floating_ip = common.get_floating_ip_by_id(floating_ip_id,
-                                                   for_update=True)
-        ips.delete_floating_ip(floating_ip)
-        self.stdout.write("Deleted floating IP '%s'.\n" % floating_ip_id)
+        for floating_ip_id in args:
+            self.stdout.write("\n")
+            try:
+                floating_ip = common.get_floating_ip_by_id(floating_ip_id,
+                                                           for_update=True)
+                ips.delete_floating_ip(floating_ip)
+                self.stdout.write("Deleted floating IP '%s'.\n" %
+                                  floating_ip_id)
+            except CommandError as e:
+                self.stdout.write("Error -- %s\n" % e.message)

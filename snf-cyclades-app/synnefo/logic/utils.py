@@ -73,6 +73,19 @@ def id_to_network_name(id):
     return "%snet-%s" % (settings.BACKEND_PREFIX_ID, str(id))
 
 
+def id_from_nic_name(name):
+    """Returns NIC's Django id, given a Ganeti's NIC name.
+
+    """
+    if not str(name).startswith(settings.BACKEND_PREFIX_ID):
+        raise ValueError("Invalid NIC name: %s" % name)
+    ns = str(name).replace(settings.BACKEND_PREFIX_ID + 'nic-', "", 1)
+    if not ns.isdigit():
+        raise ValueError("Invalid NIC name: %s" % name)
+
+    return int(ns)
+
+
 def get_rsapi_state(vm):
     """Returns the API state for a virtual machine
 

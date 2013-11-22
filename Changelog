@@ -49,6 +49,21 @@ Astakos
   Re-registration with `snf-component-register' affects both the base and
   the ui URL.
 
+* Changes in resource and quota handling:
+
+  * New resources are registered with unlimited default base quota,
+    represented by 2**63-1.
+  * Each newly accepted user copies the default value for all resources
+    as their own base quota. A base quota is considered 'custom' if its
+    value differs from the default.
+  * Changing resource's default quota affects the base quota *only* of
+    future users.
+  * Resource definition got flags 'api_visible' and 'ui_visible',
+    replacing flag 'allow_in_projects'. They control whether a user can
+    access these resources. The system internally always accounts for
+    all resources, and a user can get off quota even for a resource that
+    is not visible.
+
 * Remove API call GET /account/v1.0/authenticate in favor of
   POST /identity/v2.0/tokens.
 
@@ -61,8 +76,17 @@ Astakos
 * Management commands:
   * Introduced new commands:
      * component-show
+     * quota-list (replacing quota, supports various filters)
+     * quota-verify (replacing quota)
   * Changed commands:
      * component-add got options --base-url and --ui-url
+     * resource-modify --limit became --default-quota
+     * user-modify can operate on multiple users with --all and --exclude
+     * user-modify --set-base-quota became --base-quota
+  * Removed commands:
+     * quota
+     * resource-import (subsumed by service-import)
+     * resource-export-astakos (subsumed by service-export-astakos)
 
 Cyclades
 --------
@@ -110,6 +134,9 @@ Cyclades
   to the Astakos groups that are defined in the 'ADMIN_STATS_PERMITTED_GROUPS'
   setting.  Statistics are also availble from 'snf-manage stats-cyclades'
   management command.
+* Support enforcing quota through command 'enforce-resources-cyclades'.
+* Remove command 'resource-export-cyclades' subsumed by
+  'service-export-cyclades'.
 
 Pithos
 ------
@@ -118,6 +145,8 @@ Pithos
 objects by domain attribute. This is used by Plankton for listing VM images.
 
 * Enforce container-level atomicity in (most) Pithos API calls.
+
+* Remove command 'resource-export-pithos' subsumed by 'service-export-pithos'.
 
 .. _Changelog-0.14.10:
 

@@ -1336,7 +1336,7 @@
         },
         
         get_hostname: function() {
-          return = this.get_meta('hostname') || this.get('fqdn') || synnefo.config.no_fqdn_message;
+          return this.get_meta('hostname') || this.get('fqdn') || synnefo.config.no_fqdn_message;
         },
 
         // get actions that the user can execute

@@ -69,16 +69,12 @@ from synnefo.db.models import (Backend, VirtualMachine, Flavor,
                                BackendNetwork, BridgePoolTable,
                                MacPrefixPoolTable)
 from synnefo.db import pools
-from synnefo.logic import utils, backend as backend_mod
+from synnefo.logic import utils, rapi, backend as backend_mod
 
 logger = logging.getLogger()
 logging.basicConfig()
 
 BUILDING_NIC_TIMEOUT = timedelta(seconds=120)
-
-GANETI_JOB_ERROR = "error"
-GANETI_JOBS_PENDING = ["queued", "waiting", "running", "canceling"]
-GANETI_JOBS_FINALIZED = ["success", "error", "canceled"]
 
 
 class BackendReconciler(object):
@@ -122,9 +118,9 @@ class BackendReconciler(object):
         job_id = db_server.backendjobid
         if job_id in self.gnt_jobs:
             gnt_job_status = self.gnt_jobs[job_id]["status"]
-            if gnt_job_status == GANETI_JOB_ERROR:
+            if gnt_job_status == rapi.JOB_STATUS_ERROR:
                 return "ERROR"
-            elif gnt_job_status not in GANETI_JOBS_FINALIZED:
+            elif gnt_job_status not in rapi.JOB_STATUS_FINALIZED:
                 return "RUNNING"
             else:
                 return "FINALIZED"
@@ -319,7 +315,7 @@ class BackendReconciler(object):
             pending_task = True
         else:
             gnt_job_status = self.gnt_jobs[job_id]["status"]
-            if gnt_job_status in GANETI_JOBS_FINALIZED:
+            if gnt_job_status in rapi.JOB_STATUS_FINALIZED:
                 pending_task = True
 
         if pending_task:

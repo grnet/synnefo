@@ -55,10 +55,6 @@ _firewall_tags = {
 
 _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 
-# Timeout in seconds for building NICs. After this period the NICs considered
-# stale and removed from DB.
-BUILDING_NIC_TIMEOUT = timedelta(seconds=180)
-
 SIMPLE_NIC_FIELDS = ["state", "mac", "network", "firewall_profile", "index"]
 COMPLEX_NIC_FIELDS = ["ipv4_address", "ipv6_address"]
 NIC_FIELDS = SIMPLE_NIC_FIELDS + COMPLEX_NIC_FIELDS
@@ -255,17 +251,12 @@ def _process_net_status(vm, etime, nics):
         db_nic = db_nics.get(nic_name)
         ganeti_nic = ganeti_nics.get(nic_name)
         if ganeti_nic is None:
-            # NIC exists in DB but not in Ganeti. If the NIC is in 'building'
-            # state for more than 5 minutes, then we remove the NIC.
-            # TODO: This is dangerous as the job may be stack in the queue, and
-            # releasing the IP may lead to duplicate IP use.
-            if db_nic.state != "BUILD" or\
-                (db_nic.state == "BUILD" and
-                 etime > db_nic.created + BUILDING_NIC_TIMEOUT):
+            if nic_is_stale(vm, nic):
+                log.debug("Removing stale NIC '%s'" % db_nic)
                 remove_nic_ips(db_nic)
                 db_nic.delete()
             else:
-                log.warning("Ignoring recent building NIC: %s", db_nic)
+                log.info("NIC '%s' is still being created" % db_nic)
         elif db_nic is None:
             msg = ("NIC/%s of VM %s does not exist in DB! Cannot automatically"
                    " fix this issue!" % (nic_name, vm))
@@ -782,13 +773,33 @@ def network_exists_in_backend(backend_network):
             return False
 
 
-def job_is_still_running(vm):
+def job_is_still_running(vm, job_id=None):
     with pooled_rapi_client(vm) as c:
         try:
-            job_info = c.GetJobStatus(vm.backendjobid)
+            if job_id is None:
+                job_id = vm.backendjobid
+            job_info = c.GetJobStatus(job_id)
             return not (job_info["status"] in rapi.JOB_STATUS_FINALIZED)
         except rapi.GanetiApiError:
             return False
+
+
+def nic_is_stale(vm, nic, timeout=60):
+    """Check if a NIC is stale or exists in the Ganeti backend."""
+    # First check the state of the NIC and if there is a pending CONNECT
+    if nic.state == "BUILD" and vm.task == "CONNECT":
+        if datetime.now() < nic.created + timedelta(seconds=timeout):
+            # Do not check for too recent NICs to avoid the time overhead
+            return False
+        if job_is_still_running(vm, job_id=vm.task_job_id):
+            return False
+        else:
+            # If job has finished, check that the NIC exists, because the
+            # message may have been lost or stuck in the queue.
+            vm_info = get_instance_info(vm)
+            if nic.backend_uuid in vm_info["nic.names"]:
+                return False
+    return True
 
 
 def ensure_network_is_active(backend, network_id):

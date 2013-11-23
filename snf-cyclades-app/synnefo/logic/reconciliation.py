@@ -61,7 +61,7 @@ from django.conf import settings
 import logging
 import itertools
 import bitarray
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.db import transaction
 from synnefo.db.models import (Backend, VirtualMachine, Flavor,
@@ -74,10 +74,7 @@ from synnefo.logic import utils, backend as backend_mod
 logger = logging.getLogger()
 logging.basicConfig()
 
-try:
-    CHECK_INTERVAL = settings.RECONCILIATION_CHECK_INTERVAL
-except AttributeError:
-    CHECK_INTERVAL = 60
+BUILDING_NIC_TIMEOUT = timedelta(seconds=120)
 
 GANETI_JOB_ERROR = "error"
 GANETI_JOBS_PENDING = ["queued", "waiting", "running", "canceling"]
@@ -285,8 +282,7 @@ class BackendReconciler(object):
                                server_id)
 
     def reconcile_unsynced_nics(self, server_id, db_server, gnt_server):
-        building_time = (self.event_time -
-                         backend_mod.BUILDING_NIC_TIMEOUT)
+        building_time = self.event_time - BUILDING_NIC_TIMEOUT
         db_nics = db_server.nics.exclude(state="BUILD",
                                          created__lte=building_time) \
                                 .order_by("id")

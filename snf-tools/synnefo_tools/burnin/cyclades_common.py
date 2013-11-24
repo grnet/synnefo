@@ -167,9 +167,9 @@ class CycladesTests(BurninTests):
                 msg = "Server \"%s\" with id %s went to unexpected status %s"
                 self.error(msg, server['name'], server['id'], srv['status'])
                 self.fail(msg % (server['name'], server['id'], srv['status']))
-        opmsg = "Waiting for server \"%s\" to become %s"
-        self.info(opmsg, server['name'], new_status)
-        opmsg = opmsg % (server['name'], new_status)
+        opmsg = "Waiting for server \"%s\" with id %s to become %s"
+        self.info(opmsg, server['name'], server['id'], new_status)
+        opmsg = opmsg % (server['name'], server['id'], new_status)
         self._try_until_timeout_expires(opmsg, check_fun)
 
     def _insist_on_network_transition(self, network,
@@ -187,9 +187,9 @@ class CycladesTests(BurninTests):
                 self.error(msg, network['name'], network['id'], ntw['status'])
                 self.fail(msg %
                           (network['name'], network['id'], ntw['status']))
-        opmsg = "Waiting for network \"%s\" to become %s"
-        self.info(opmsg, network['name'], new_status)
-        opmsg = opmsg % (network['name'], new_status)
+        opmsg = "Waiting for network \"%s\" with id %s to become %s"
+        self.info(opmsg, network['name'], network['id'], new_status)
+        opmsg = opmsg % (network['name'], network['id'], new_status)
         self._try_until_timeout_expires(opmsg, check_fun)
 
     def _insist_on_network_connection(self, server, network, disconnect=False):

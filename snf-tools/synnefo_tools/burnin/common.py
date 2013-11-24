@@ -104,7 +104,7 @@ class BurninTestResult(unittest.TestResult):
 
 
 # --------------------------------------------------------------------
-# BurninTests class
+# Helper Classes
 # Too few public methods. pylint: disable-msg=R0903
 # Too many instance attributes. pylint: disable-msg=R0902
 class Clients(object):
@@ -126,7 +126,50 @@ class Clients(object):
     image = None
     image_url = None
 
+    def initialize_clients(self):
+        """Initialize all the Kamaki Clients"""
+        self.astakos = AstakosClient(self.auth_url, self.token)
+        self.astakos.CONNECTION_RETRY_LIMIT = self.retry
 
+        self.compute_url = \
+            self.astakos.get_service_endpoints('compute')['publicURL']
+        self.compute = ComputeClient(self.compute_url, self.token)
+        self.compute.CONNECTION_RETRY_LIMIT = self.retry
+
+        self.cyclades = CycladesClient(self.compute_url, self.token)
+        self.cyclades.CONNECTION_RETRY_LIMIT = self.retry
+
+        self.pithos_url = self.astakos.\
+            get_service_endpoints('object-store')['publicURL']
+        self.pithos = PithosClient(self.pithos_url, self.token)
+        self.pithos.CONNECTION_RETRY_LIMIT = self.retry
+
+        self.image_url = \
+            self.astakos.get_service_endpoints('image')['publicURL']
+        self.image = ImageClient(self.image_url, self.token)
+        self.image.CONNECTION_RETRY_LIMIT = self.retry
+
+
+class Proper(object):
+    """A descriptor used by tests implementing the TestCase class
+
+    Since each instance of the TestCase will only be used to run a single
+    test method (a new fixture is created for each test) the attributes can
+    not be saved in the class instances. Instead we use descriptors.
+
+    """
+    def __init__(self, value=None):
+        self.val = value
+
+    def __get__(self, obj, objtype=None):
+        return self.val
+
+    def __set__(self, obj, value):
+        self.val = value
+
+
+# --------------------------------------------------------------------
+# BurninTests class
 # Too many public methods (45/20). pylint: disable-msg=R0904
 class BurninTests(unittest.TestCase):
     """Common class that all burnin tests should implement"""
@@ -141,6 +184,8 @@ class BurninTests(unittest.TestCase):
     flavors = None
     delete_stale = False
 
+    quotas = Proper(value=None)
+
     @classmethod
     def setUpClass(cls):  # noqa
         """Initialize BurninTests"""
@@ -153,35 +198,25 @@ class BurninTests(unittest.TestCase):
     def test_000_clients_setup(self):
         """Initializing astakos/cyclades/pithos clients"""
         # Update class attributes
+        self.clients.initialize_clients()
         self.info("Astakos auth url is %s", self.clients.auth_url)
-        self.clients.astakos = AstakosClient(
-            self.clients.auth_url, self.clients.token)
-        self.clients.astakos.CONNECTION_RETRY_LIMIT = self.clients.retry
-
-        self.clients.compute_url = \
-            self.clients.astakos.get_service_endpoints('compute')['publicURL']
         self.info("Cyclades url is %s", self.clients.compute_url)
-        self.clients.compute = ComputeClient(
-            self.clients.compute_url, self.clients.token)
-        self.clients.compute.CONNECTION_RETRY_LIMIT = self.clients.retry
-
-        self.clients.cyclades = CycladesClient(
-            self.clients.compute_url, self.clients.token)
-        self.clients.cyclades.CONNECTION_RETRY_LIMIT = self.clients.retry
-
-        self.clients.pithos_url = self.clients.astakos.\
-            get_service_endpoints('object-store')['publicURL']
         self.info("Pithos url is %s", self.clients.pithos_url)
-        self.clients.pithos = PithosClient(
-            self.clients.pithos_url, self.clients.token)
-        self.clients.pithos.CONNECTION_RETRY_LIMIT = self.clients.retry
-
-        self.clients.image_url = \
-            self.clients.astakos.get_service_endpoints('image')['publicURL']
         self.info("Image url is %s", self.clients.image_url)
-        self.clients.image = ImageClient(
-            self.clients.image_url, self.clients.token)
-        self.clients.image.CONNECTION_RETRY_LIMIT = self.clients.retry
+
+        self.quotas = self._get_quotas()
+        self.info("  Disk usage is %s",
+                  self.quotas['system']['cyclades.disk']['usage'])
+        self.info("  VM usage is %s",
+                  self.quotas['system']['cyclades.vm']['usage'])
+        self.info("  DiskSpace usage is %s",
+                  self.quotas['system']['pithos.diskspace']['usage'])
+        self.info("  Ram usage is %s",
+                  self.quotas['system']['cyclades.ram']['usage'])
+        self.info("  CPU usage is %s",
+                  self.quotas['system']['cyclades.cpu']['usage'])
+        self.info("  Network usage is %s",
+                  self.quotas['system']['cyclades.network.private']['usage'])
 
     # ----------------------------------
     # Loggers helper functions
@@ -441,6 +476,14 @@ class BurninTests(unittest.TestCase):
         self.clients.pithos.container = container
         self.clients.pithos.container_put()
 
+    # ----------------------------------
+    # Quotas
+    def _get_quotas(self):
+        """Get quotas"""
+        self.info("Getting quotas for user %s", self._get_uuid())
+        astakos_client = self.clients.astakos.get_client()
+        return astakos_client.get_quotas()
+
 
 # --------------------------------------------------------------------
 # Initialize Burnin
@@ -540,21 +583,3 @@ def parse_typed_option(value):
         return type_, val
     except ValueError:
         return None
-
-
-class Proper(object):
-    """A descriptor used by tests implementing the TestCase class
-
-    Since each instance of the TestCase will only be used to run a single
-    test method (a new fixture is created for each test) the attributes can
-    not be saved in the class instances. Instead we use descriptors.
-
-    """
-    def __init__(self, value=None):
-        self.val = value
-
-    def __get__(self, obj, objtype=None):
-        return self.val
-
-    def __set__(self, obj, value):
-        self.val = value

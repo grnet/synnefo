@@ -123,9 +123,6 @@ class Command(BaseCommand):
         if not network_id:
             raise CommandError("Please specify a 'network'")
 
-        if user_id is None:
-            raise CommandError("Please specify the owner of the port")
-
         vm = None
         owner = None
         if server_id:
@@ -138,6 +135,12 @@ class Command(BaseCommand):
             vm = common.get_vm(router_id)
             if not vm.router:
                 raise CommandError("Router '%s' does not exist." % router_id)
+
+        if user_id is None:
+            if vm is not None:
+                user_id = vm.userid
+            else:
+                raise CommandError("Please specify the owner of the port.")
 
         # get the network
         network = common.get_network(network_id)

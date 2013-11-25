@@ -43,7 +43,7 @@ from snf_django.lib.api import faults
 
 
 class Command(RemoveCommand):
-    args = "<server ID or server IDs>"
+    args = "<Server ID> [<Server ID> ...]"
     help = "Remove a server by deleting the instance from the Ganeti backend."
 
     option_list = RemoveCommand.option_list + (

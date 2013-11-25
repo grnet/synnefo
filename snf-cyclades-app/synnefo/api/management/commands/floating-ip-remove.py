@@ -41,7 +41,7 @@ from synnefo.logic import ips
 
 
 class Command(RemoveCommand):
-    args = "<Floating-IP ID or Floating-IP IDs>"
+    args = "<Floating-IP ID> [<Floating-IP ID> ...]"
     help = "Release a floating IP"
 
     @common.convert_api_faults

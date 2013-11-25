@@ -355,4 +355,5 @@ class RemoveCommand(BaseCommand):
             if answer != 1:
                 raise CommandError("Aborting deletion")
         except ValueError:
-            raise CommandError("Invalid Y/N value, aborting")
+            raise CommandError("Unaccepted input value. Please choose yes/no"
+                               " (y/n).")

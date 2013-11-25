@@ -37,6 +37,7 @@ from synnefo.management.common import get_network, convert_api_faults
 
 class Command(RemoveCommand):
     can_import_settings = True
+    args = "<Network ID or Network IDs>"
     help = "Remove a network from the Database, and Ganeti"
 
     @convert_api_faults
@@ -45,7 +46,8 @@ class Command(RemoveCommand):
             raise CommandError("Please provide a network ID")
 
         force = options['force']
-        self.confirm_deletion(force, "network(s)", args)
+        message = "networks" if len(args) > 1 else "network"
+        self.confirm_deletion(force, message, args)
 
         for network_id in args:
             self.stdout.write("\n")

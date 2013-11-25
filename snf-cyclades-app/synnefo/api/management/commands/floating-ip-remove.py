@@ -41,16 +41,18 @@ from synnefo.logic import ips
 
 
 class Command(RemoveCommand):
+    args = "<Floating-IP ID or Floating-IP IDs>"
     help = "Release a floating IP"
 
     @common.convert_api_faults
     @transaction.commit_on_success
     def handle(self, *args, **options):
         if not args:
-            raise CommandError("Please provide a floating-ip address")
+            raise CommandError("Please provide a floating-ip ID")
 
         force = options['force']
-        self.confirm_deletion(force, "floating ip(s)", args)
+        message = "floating IPs" if len(args) > 1 else "floating IP"
+        self.confirm_deletion(force, message, args)
 
         for floating_ip_id in args:
             self.stdout.write("\n")

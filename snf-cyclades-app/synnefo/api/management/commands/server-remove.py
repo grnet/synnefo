@@ -43,7 +43,7 @@ from snf_django.lib.api import faults
 
 
 class Command(RemoveCommand):
-    args = "<server ID>"
+    args = "<server ID or server IDs>"
     help = "Remove a server by deleting the instance from the Ganeti backend."
 
     option_list = RemoveCommand.option_list + (
@@ -62,7 +62,8 @@ class Command(RemoveCommand):
             raise CommandError("Please provide a server ID")
 
         force = options['force']
-        self.confirm_deletion(force, "server(s)", args)
+        message = "servers" if len(args) > 1 else "server"
+        self.confirm_deletion(force, message, args)
 
         for server_id in args:
             self.stdout.write("\n")

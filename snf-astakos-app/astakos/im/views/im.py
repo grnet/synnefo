@@ -129,11 +129,12 @@ def index(request, authenticated_redirect='landing',
 @require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
+@transaction.commit_on_success
 def update_token(request):
     """
     Update api token view.
     """
-    user = request.user
+    user = AstakosUser.objects.select_for_update().get(id=request.user.id)
     user.renew_token()
     user.save()
     messages.success(request, astakos_messages.TOKEN_UPDATED)
@@ -271,6 +272,7 @@ def api_access(request, template_name='im/api_access.html',
 @login_required
 @cookie_fix
 @signed_terms_required
+@transaction.commit_on_success
 def edit_profile(request, template_name='im/profile.html', extra_context=None):
     """
     Allows a user to edit his/her profile.
@@ -300,6 +302,9 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
 
     * LOGIN_URL: login uri
     """
+
+    request.user = AstakosUser.objects.select_for_update().\
+        get(id=request.user.id)
     extra_context = extra_context or {}
     form = ProfileForm(
         instance=request.user,
@@ -616,7 +621,8 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
         return HttpResponseRedirect(reverse('index'))
 
     try:
-        user = AstakosUser.objects.get(verification_code=token)
+        user = AstakosUser.objects.select_for_update().\
+            get(verification_code=token)
     except AstakosUser.DoesNotExist:
         raise Http404
 
@@ -784,6 +790,7 @@ def change_email(request, activation_key=None,
 
 
 @cookie_fix
+@transaction.commit_on_success
 def send_activation(request, user_id, template_name='im/login.html',
                     extra_context=None):
 
@@ -792,7 +799,7 @@ def send_activation(request, user_id, template_name='im/login.html',
 
     extra_context = extra_context or {}
     try:
-        u = AstakosUser.objects.get(id=user_id)
+        u = AstakosUser.objects.select_for_update().get(id=user_id)
     except AstakosUser.DoesNotExist:
         messages.error(request, _(astakos_messages.ACCOUNT_UNKNOWN))
     else:

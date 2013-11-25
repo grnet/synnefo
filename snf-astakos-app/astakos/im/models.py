@@ -1078,7 +1078,8 @@ class EmailChangeManager(models.Manager):
             else:
                 raise ValueError(_('The new email address is reserved.'))
             # update user
-            user = AstakosUser.objects.get(pk=email_change.user_id)
+            user = AstakosUser.objects.select_for_update().\
+                get(pk=email_change.user_id)
             old_email = user.email
             user.set_email(email_change.new_email_address)
             user.save()

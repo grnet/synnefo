@@ -332,6 +332,9 @@ class Command(BaseCommand):
 
         set_base_quota = options.get('set_base_quota')
         if set_base_quota is not None:
+            if not user.is_accepted():
+                m = "%s is not an accepted user." % user
+                raise CommandError(m)
             resource, capacity = set_base_quota
             self.set_limits([user], resource, capacity, force)
 

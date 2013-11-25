@@ -505,10 +505,10 @@ def remove_membership(memb_id, request_user=None, reason=None):
 
 def enroll_member_by_email(project_id, email, request_user=None, reason=None):
     try:
-        user = AstakosUser.objects.verified().get(email=email)
+        user = AstakosUser.objects.accepted().get(email=email)
         return enroll_member(project_id, user, request_user, reason=reason)
     except AstakosUser.DoesNotExist:
-        raise ProjectConflict(astakos_messages.UNKNOWN_USERS)
+        raise ProjectConflict(astakos_messages.UNKNOWN_USERS % email)
 
 
 def enroll_member(project_id, user, request_user=None, reason=None):

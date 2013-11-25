@@ -380,7 +380,7 @@ def submit_application(app_data, user, project_id=None):
         owner = user
     else:
         try:
-            owner = AstakosUser.objects.get(uuid=uuid, email_verified=True)
+            owner = AstakosUser.objects.accepted().get(uuid=uuid)
         except AstakosUser.DoesNotExist:
             raise faults.BadRequest("User does not exist.")
 

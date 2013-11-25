@@ -1,0 +1,183 @@
+#!/usr/bin/env python
+"""Tool to update Ganeti instances:
+
+* add unique name to the NICs of all Ganeti instances
+* rename all instance tags related with network firewall profiles to include
+  the unique name of the corresponding NIC.
+
+The name for each NIC is based on the PK of the NIC in Cyclades DB.
+"""
+
+FIREWALL_TAGS_PREFIX = "synnefo:network:"
+FIREWALL_TAGS = {"ENABLED": "synnefo:network:%s:protected",
+                 "DISABLED": "synnefo:network:%s:unprotected",
+                 "PROTECTED": "synnefo:network:%s:limited"}
+
+# Gevent patching
+import gevent
+from gevent import monkey
+monkey.patch_all()
+
+import sys
+import subprocess
+from optparse import OptionParser, TitledHelpFormatter
+
+# Configure Django env
+from synnefo import settings
+from django.core.management import setup_environ
+setup_environ(settings)
+
+from django.db import close_connection
+from synnefo.db.models import Backend, pooled_rapi_client
+from synnefo.management.common import get_backend
+
+import logging
+logger = logging.getLogger("migrate_nics")
+handler = logging.StreamHandler()
+
+formatter = logging.Formatter("[%(levelname)s] %(message)s")
+handler.setFormatter(formatter)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(handler)
+logger.propagate = False
+
+DESCRIPTION = """\
+Tool to update all Ganeti instances in order to add a unique name to NICs of
+all instances and rename the instance firewall tags to include the NIC name.
+"""
+
+
+def main():
+    parser = OptionParser(description=DESCRIPTION,
+                          formatter=TitledHelpFormatter())
+    parser.add_option("--backend-id", dest="backend_id",
+                      help="Update instances only of this Ganeti backend."),
+    parser.add_option("--dry-run", dest="dry_run", default=False,
+                      action="store_true",
+                      help="Do not send any jobs to Ganeti backend.")
+    parser.add_option("--ganeti-dry-run", dest="ganeti_dry_run", default=False,
+                      action="store_true",
+                      help="Pass --dry-run option to Ganeti jobs.")
+    parser.add_option("--parallel", dest="parallel", default=False,
+                      action="store_true",
+                      help="Use a seperate process for each backend.")
+    parser.add_option("-d", "--debug", dest="debug", default=False,
+                      action="store_true",
+                      help="Display debug information.")
+    options, args = parser.parse_args()
+
+    if options.backend_id:
+        backends = [get_backend(options.backend_id)]
+    else:
+        if Backend.objects.filter(offline=True).exists():
+            msg = "Can not update intances. An 'offline' backend exists."
+            raise Exception(msg)
+        backends = Backend.objects.all()
+
+    if options.debug:
+        logger.setLevel(logging.DEBUG)
+
+    if len(backends) > 1 and options.parallel:
+        cmd = sys.argv
+        processes = []
+        for backend in backends:
+            p = subprocess.Popen(cmd + ["--backend-id=%s" % backend.id])
+            processes.append(p)
+        for p in processes:
+            p.wait()
+        return
+    else:
+        [upgrade_backend(b, options.dry_run, options.ganeti_dry_run)
+         for b in backends]
+    return
+
+
+def upgrade_backend(backend, dry_run, ganeti_dry_run):
+    jobs = []
+    instances_ids = get_instances_with_anonymous_nics(backend)
+    for vm in backend.virtual_machines.filter(id__in=instances_ids):
+        jobs.append(gevent.spawn(upgrade_vm, vm, dry_run, ganeti_dry_run))
+
+    if jobs:
+        for job_chunk in [jobs[x:x+25] for x in range(0, len(jobs), 25)]:
+            gevent.joinall(jobs)
+    else:
+        logger.info("No anonymous NICs in backend '%s'. Nothing to do!",
+                    backend.clustername)
+    return
+
+
+def get_instances_with_anonymous_nics(backend):
+    """Get all Ganeti instances that have NICs without names."""
+    with pooled_rapi_client(backend) as rc:
+        instances = rc.GetInstances(bulk=True)
+    # Filter snf- instances
+    instances = filter(lambda i:
+                       i["name"].startswith(settings.BACKEND_PREFIX_ID),
+                       instances)
+    # Filter instances with anonymous NICs
+    instances = filter(lambda i: None in i["nic.names"], instances)
+    # Get IDs of those instances
+    instances_ids = map(lambda i:
+                        i["name"].replace(settings.BACKEND_PREFIX_ID, "", 1),
+                        instances)
+    return instances_ids
+
+
+def upgrade_vm(vm, dry_run, ganeti_dry_run):
+    """Add names to Ganeti NICs and update firewall Tags."""
+    logger.info("Updating NICs of instance %s" % vm.backend_vm_id)
+    index_to_uuid = {}
+    new_tags = []
+    # Compute new NICs names and firewall tags
+    for nic in vm.nics.all():
+        if nic.index is None:
+            msg = ("Cannot update NIC '%s'. The index of the NIC is unknown."
+                   " Please run snf-manage reconcile-servers --fix-all and"
+                   " retry!")
+            logger.critical(msg)
+            continue
+        uuid = nic.backend_uuid
+        # Map index -> UUID
+        index_to_uuid[nic.index] = uuid
+
+        # New firewall TAG with UUID
+        firewall_profile = nic.firewall_profile
+        if firewall_profile and firewall_profile != "DISABLED":
+            firewall_tag = FIREWALL_TAGS[nic.firewall_profile] % uuid
+            new_tags.append(firewall_tag)
+
+    renamed_nics = [("modify", index, {"name": name})
+                    for index, name in index_to_uuid.items()]
+
+    instance = vm.backend_vm_id
+    with pooled_rapi_client(vm) as rc:
+        # Delete old Tags
+        tags = rc.GetInstanceTags(instance)
+        delete_tags = [t for t in tags if t.startswith(FIREWALL_TAGS_PREFIX)]
+        if delete_tags:
+            logger.debug("Deleting tags '%s' from instance '%s'",
+                         delete_tags, vm.backend_vm_id)
+            if not dry_run:
+                rc.DeleteInstanceTags(instance, delete_tags,
+                                      dry_run=ganeti_dry_run)
+
+        # Add new Tags
+        if new_tags:
+            logger.debug("Adding new tags '%s' to instance '%s'",
+                         new_tags, vm.backend_vm_id)
+            if not dry_run:
+                rc.AddInstanceTags(instance, new_tags, dry_run=ganeti_dry_run)
+
+        # Add names to NICs
+        logger.debug("Modifying NICs of instance '%s'. New NICs: '%s'",
+                     vm.backend_vm_id, renamed_nics)
+        if not dry_run:
+            rc.ModifyInstance(vm.backend_vm_id,
+                              nics=renamed_nics, dry_run=ganeti_dry_run)
+    close_connection()
+
+
+if __name__ == "__main__":
+    main()
+    sys.exit(0)

@@ -295,7 +295,11 @@
           var network = resp.network;
           subnet_params.subnet.network_id = network.id;
           synnefo.storage.subnets.create(subnet_params, {
-            complete: function () { cb && cb() }
+            complete: function () { cb && cb() },
+            error: function() {
+              var created_network = new synnefo.models.networks.Network({id: network.id});
+              created_network.destroy({no_skip: true});
+            }
           });
           quota.get('cyclades.network.private').increase();
         }

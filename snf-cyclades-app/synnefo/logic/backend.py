@@ -651,12 +651,17 @@ def connect_to_network(vm, nic):
 
     log.debug("Connecting vm %s to network %s(%s)", vm, network, address)
 
+    kwargs = {
+        "nics": [('add',  "-1", nic)],
+        "depends": depends,
+        "dry_run": settings.TEST
+
+    }
+    if vm.backend.use_hotplug():
+        kwargs["hotplug_if_possible"] = True
+
     with pooled_rapi_client(vm) as client:
-        return client.ModifyInstance(vm.backend_vm_id,
-                                     nics=[('add',  "-1", nic)],
-                                     hotplug=vm.backend.use_hotplug(),
-                                     depends=depends,
-                                     dry_run=settings.TEST)
+        return client.ModifyInstance(vm.backend_vm_id, **kwargs)
 
 
 def disconnect_from_network(vm, nic):
@@ -664,10 +669,16 @@ def disconnect_from_network(vm, nic):
 
     log.debug("Removing nic of VM %s, with index %s", vm, str(nic.index))
 
+    kwargs = {
+        "nics": op,
+        "dry_run": settings.TEST
+
+    }
+    if vm.backend.use_hotplug():
+        kwargs["hotplug_if_possible"] = True
+
     with pooled_rapi_client(vm) as client:
-        return client.ModifyInstance(vm.backend_vm_id, nics=op,
-                                     hotplug=vm.backend.use_hotplug(),
-                                     dry_run=settings.TEST)
+        return client.ModifyInstance(vm.backend_vm_id, **kwargs)
 
 
 def set_firewall_profile(vm, profile):

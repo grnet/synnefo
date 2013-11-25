@@ -7,8 +7,11 @@
         data-rv-style="model.vm.status|vm_style"></div>
       <h3 class="title" data-rv-text="model.vm.name|truncate 30"></h3>
       <h5 class="subtitle">
-        <span class="key" data-rv-show="model.mac_address">MAC:</span>
-        <span class="value" data-rv-text="model.mac_address"></span>
+        <img data-rv-show="model.in_progress" 
+             src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
+             class="progress-indicator" />
+        <span data-rv-hide="model.in_progress" class="key">MAC:</span>
+        <span data-rv-hide="model.in_progress" class="value" data-rv-text="model.mac_address"></span>
       </h5>
     </div>
   </div>

@@ -386,6 +386,14 @@
         ],
         'in_progress': [
           ['ext_status', 'vm'], function() {
+            var vm_progress = this.get('vm') && this.get('vm').get('in_progress');
+            if (vm_progress) { return true }
+            return _.contains(["BUILD", "DISCONNECTING", "CONNECTING"], this.get("ext_status"))
+          }
+        ],
+        // check progress of port instance only
+        'in_progress_no_vm': [
+          ['ext_status'], function() {
             return _.contains(["BUILD", "DISCONNECTING", "CONNECTING"], this.get("ext_status"))
           }
         ],

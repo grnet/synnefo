@@ -764,7 +764,7 @@
       classes: 'port-item clearfix',
       
       update_in_progress: function() {
-        if (this.model.get("in_progress")) {
+        if (this.model.get("in_progress_no_vm")) {
           this.set_in_progress();
         } else {
           this.unset_in_progress();

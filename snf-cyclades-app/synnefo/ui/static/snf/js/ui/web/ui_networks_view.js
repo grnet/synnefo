@@ -77,12 +77,16 @@
             
             this.subnet_select.find(".subnet").remove();
             _.each(synnefo.config.network_suggested_subnets, function(subnet){
-                this.subnet_select.append($('<option value='+subnet+' class="subnet">'+subnet+'</option>'));
+                this.subnet_select.append($('<option value='+subnet+
+                                            ' class="subnet">'+subnet+
+                                            '</option>'));
             }, this);
 
             this.type_select.find(".subnet").remove();
             _.each(synnefo.config.network_available_types, function(name, value){
-                this.type_select.append($('<option value='+value+' class="subnet">'+name+'</option>'));
+                this.type_select.append($('<option value='+value+
+                                          ' class="subnet">'+name+
+                                          '</option>'));
             }, this);
             
             if (_.keys(synnefo.config.network_available_types).length <= 1) {

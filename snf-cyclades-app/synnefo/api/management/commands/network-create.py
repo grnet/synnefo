@@ -209,4 +209,4 @@ class Command(BaseCommand):
         # TODO: Add --wait option to track job progress and report successful
         # creation in each backend.
         self.stdout.write("\nSuccessfully issued job to create network in"
-                          " in backends\n")
+                          " backends\n")

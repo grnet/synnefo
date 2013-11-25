@@ -93,6 +93,11 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
 
     check_number_of_subnets(network, ipversion)
 
+    if network.backend_networks.exists():
+        raise api.faults.BadRequest("Cannot create subnet in network %s, VMs"
+                                    " are already connected to this network" %
+                                    network_id)
+
     try:
         cidr_ip = ipaddr.IPNetwork(cidr)
     except ValueError:

@@ -103,10 +103,15 @@
           <span data-rv-text="item:ip_address" class="ip">IP</span>
         </li>
       </ul>
+      <div class="firewall">
+      <img data-rv-show="model.in_progress" 
+           src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
+           class="progress-indicator" />
+      <img data-rv-show="model.vm.in_progress" 
+           src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
+           class="progress-indicator" />
+       </div>
       <div data-rv-show="model.network.is_public" class="firewall">
-        <img data-rv-show="model.in_progress" 
-             src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
-             class="progress-indicator" />
         <img data-rv-show="model.firewall_running" 
              src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
              class="progress-indicator" />
@@ -170,14 +175,14 @@
         <img class="logo" data-rv-src="model.is_public|get_network_icon" />
         <div class="entry">
           <div data-rv-show="model" 
-               data-rv-model-view="model|ModelRenameView"></div>
+            data-rv-model-view="model|ModelRenameView">
+          </div>
           <div class="toggler-wrap clearfix network-ports-toggler">
             <div class="cont-toggler">
               <span class="label machines-label">
                 Connections (<span
                   data-rv-text="model.ports|collection_size">0</span>)  
               </span>
-                <!--| Interfaces (<span data-rv-text="model.ports|collection_size">0</span>)-->
               <span class="network-progress-indicator">
                 <img src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" />
               </span>

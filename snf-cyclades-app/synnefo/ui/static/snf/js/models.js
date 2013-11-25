@@ -720,6 +720,11 @@
             ['status', 'state'], function() {
               return !_.contains(['ACTIVE', 'STOPPED'], this.get('status'));
             }
+          ],
+          'in_progress': [
+            ['status', 'state'], function() {
+              return this.in_transition();
+            }
           ]
         },
 
@@ -1685,7 +1690,9 @@
         'START',
         'REBOOT',
         'BUILD',
-        'RESIZE'
+        'RESIZE',
+        'DISCONNECT',
+        'CONNECT'
     ]
 
     models.VM.ACTIVE_STATES = [

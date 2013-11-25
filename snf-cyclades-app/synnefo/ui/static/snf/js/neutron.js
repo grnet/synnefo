@@ -358,6 +358,7 @@
           var status_ok = _.contains(['DOWN', 'ACTIVE', 'CONNECTED'], 
                                      this.get('status'));
           var vm_status_ok = this.get('vm') && this.get('vm').can_connect();
+          var vm_status = this.get('vm') && this.get('vm').get('status');
           return status_ok && vm_status_ok
         }]
       },
@@ -384,8 +385,8 @@
           }
         ],
         'in_progress': [
-          ['ext_status'], function() {
-            return _.contains(["DISCONNECTING", "CONNECTING"], this.get("ext_status"))
+          ['ext_status', 'vm'], function() {
+            return _.contains(["BUILD", "DISCONNECTING", "CONNECTING"], this.get("ext_status"))
           }
         ],
         'firewall_running': [

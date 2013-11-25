@@ -6875,6 +6875,8 @@ input.has-errors {
   text-align: right;
   margin-right: 4px;
   margin-top: 5px;
+  float: right;
+  width: 125px;
 }
 
 .model-item .status-indicator {

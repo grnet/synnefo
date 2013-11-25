@@ -148,7 +148,7 @@ def create_subnet(request):
 
     subnet_dict = subnet_to_dict(sub)
     data = json.dumps({'subnet': subnet_dict})
-    return HttpResponse(data, status=200)
+    return HttpResponse(data, status=201)
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)

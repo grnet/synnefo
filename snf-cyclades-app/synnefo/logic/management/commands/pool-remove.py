@@ -31,7 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
+from snf_django.management.commands import RemoveCommand
 from optparse import make_option
 
 from synnefo.management.common import pool_table_from_type
@@ -39,11 +40,11 @@ from synnefo.management.common import pool_table_from_type
 POOL_CHOICES = ['bridge', 'mac-prefix']
 
 
-class Command(BaseCommand):
+class Command(RemoveCommand):
     help = "Remove a pool."
     args = "<pool ID>"
     output_transaction = True
-    option_list = BaseCommand.option_list + (
+    option_list = RemoveCommand.option_list + (
         make_option("--type", dest="type",
                     choices=POOL_CHOICES,
                     help="Type of pool"
@@ -57,6 +58,9 @@ class Command(BaseCommand):
             raise CommandError("Type of pool is mandatory")
 
         pool_table = pool_table_from_type(type_)
+
+        force = options['force']
+        self.confirm_deletion(force, "pool(s)", args)
 
         try:
             pool_id = int(args[0])

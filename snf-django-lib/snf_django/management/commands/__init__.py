@@ -39,6 +39,8 @@ from django.core.exceptions import FieldError
 from snf_django.management import utils
 from snf_django.lib.astakos import UserCache
 
+import distutils
+
 
 class SynnefoCommand(BaseCommand):
     option_list = BaseCommand.option_list + (
@@ -328,3 +330,30 @@ class ListCommand(BaseCommand):
         for field in self.object_class._meta.fields:
             table.append((field.name, field.verbose_name, field.help_text))
         utils.pprint_table(self.stdout, table, headers)
+
+
+class RemoveCommand(BaseCommand):
+    help = "Generic remove command"
+    option_list = BaseCommand.option_list + (
+        make_option(
+            "-f", "--force",
+            dest="force",
+            action="store_true",
+            default=False,
+            help="Do not prompt for confirmation"),
+    )
+
+    def confirm_deletion(self, force, resource='', args=''):
+        if force is True:
+            return True
+
+        ids = ', '.join(args)
+        self.stdout.write("Are you sure you want to delete %s %s?"
+                          " [Y/N] " % (resource, ids))
+        try:
+            answer = distutils.util.strtobool(raw_input())
+            if answer != 1:
+                raise CommandError("Aborting deletion")
+        except ValueError:
+            raise CommandError("Unaccepted input value. Please choose yes/no"
+                               " (y/n).")

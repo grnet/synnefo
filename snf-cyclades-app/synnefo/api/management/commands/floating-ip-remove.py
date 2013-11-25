@@ -34,23 +34,33 @@
 #from optparse import make_option
 
 from django.db import transaction
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
+from snf_django.management.commands import RemoveCommand
 from synnefo.management import common
 from synnefo.logic import ips
 
 
-class Command(BaseCommand):
+class Command(RemoveCommand):
+    args = "<Floating-IP ID> [<Floating-IP ID> ...]"
     help = "Release a floating IP"
 
     @common.convert_api_faults
     @transaction.commit_on_success
     def handle(self, *args, **options):
         if not args:
-            raise CommandError("Please provide a floating-ip address")
+            raise CommandError("Please provide a floating-ip ID")
 
-        floating_ip_id = args[0]
+        force = options['force']
+        message = "floating IPs" if len(args) > 1 else "floating IP"
+        self.confirm_deletion(force, message, args)
 
-        floating_ip = common.get_floating_ip_by_id(floating_ip_id,
-                                                   for_update=True)
-        ips.delete_floating_ip(floating_ip)
-        self.stdout.write("Deleted floating IP '%s'.\n" % floating_ip_id)
+        for floating_ip_id in args:
+            self.stdout.write("\n")
+            try:
+                floating_ip = common.get_floating_ip_by_id(floating_ip_id,
+                                                           for_update=True)
+                ips.delete_floating_ip(floating_ip)
+                self.stdout.write("Deleted floating IP '%s'.\n" %
+                                  floating_ip_id)
+            except CommandError as e:
+                self.stdout.write("Error -- %s\n" % e.message)

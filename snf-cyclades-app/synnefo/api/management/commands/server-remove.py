@@ -33,18 +33,20 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from synnefo.management.common import (get_vm, convert_api_faults,
                                        wait_server_task)
 from synnefo.logic import servers
+from snf_django.management.commands import RemoveCommand
 from snf_django.management.utils import parse_bool
+from snf_django.lib.api import faults
 
 
-class Command(BaseCommand):
-    args = "<server ID>"
+class Command(RemoveCommand):
+    args = "<Server ID> [<Server ID> ...]"
     help = "Remove a server by deleting the instance from the Ganeti backend."
 
-    option_list = BaseCommand.option_list + (
+    option_list = RemoveCommand.option_list + (
         make_option(
             '--wait',
             dest='wait',
@@ -56,18 +58,29 @@ class Command(BaseCommand):
 
     @convert_api_faults
     def handle(self, *args, **options):
-        if len(args) != 1:
+        if not args:
             raise CommandError("Please provide a server ID")
 
-        server = get_vm(args[0])
+        force = options['force']
+        message = "servers" if len(args) > 1 else "server"
+        self.confirm_deletion(force, message, args)
 
-        self.stdout.write("Trying to remove server '%s' from backend '%s'\n" %
-                          (server.backend_vm_id, server.backend))
+        for server_id in args:
+            self.stdout.write("\n")
+            try:
+                server = get_vm(server_id)
 
-        server = servers.destroy(server)
-        jobID = server.task_job_id
+                self.stdout.write("Trying to remove server '%s' from backend "
+                                  "'%s' \n" % (server.backend_vm_id,
+                                               server.backend))
 
-        self.stdout.write("Issued OP_INSTANCE_REMOVE with id: %s\n" % jobID)
+                server = servers.destroy(server)
+                jobID = server.task_job_id
 
-        wait = parse_bool(options["wait"])
-        wait_server_task(server, wait, self.stdout)
+                self.stdout.write("Issued OP_INSTANCE_REMOVE with id: %s\n" %
+                                  jobID)
+
+                wait = parse_bool(options["wait"])
+                wait_server_task(server, wait, self.stdout)
+            except (CommandError, faults.BadRequest) as e:
+                self.stdout.write("Error -- %s\n" % e.message)

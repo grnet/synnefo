@@ -61,9 +61,9 @@ def list_subnets(user_id):
     """List all subnets of a user"""
     log.debug('list_subnets %s', user_id)
 
-    user_subnets = Subnet.objects.filter((Q(network__userid=user_id) &
-                                          Q(network__public=False)) |
-                                         Q(network__public=True))
+    query = (((Q(network__userid=user_id) & Q(network__public=False)) |
+              Q(network__public=True)) & Q(deleted=False))
+    user_subnets = Subnet.objects.filter(query)
     return user_subnets
 
 
@@ -115,11 +115,13 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
         if ipversion == 6:
             raise api.faults.Conflict("Can't allocate an IP Pool in IPv6")
     elif ipversion == 4:
-        # Check if the gateway is the first IP of the subnet, in this case
-        # create a single ip pool
+        # Check if the gateway is the first IP of the subnet, or the last. In
+        # that case create a single ip pool.
         if gateway_ip:
             if int(gateway_ip) - int(cidr_ip) == 1:
                 allocation_pools = [(gateway_ip + 1, cidr_ip.broadcast - 1)]
+            elif int(cidr_ip.broadcast) - int(gateway_ip) == 1:
+                allocation_pools = [(cidr_ip.network + 1, gateway_ip - 1)]
             else:
                 # If the gateway isn't the first available ip, create two
                 # different ip pools adjacent to said ip
@@ -232,7 +234,7 @@ def validate_pools(pool_list, cidr, gateway):
             if not (gateway < start or gateway > end):
                 raise api.faults.Conflict("Gateway cannot be in pool range")
 
-    # Check if there is a conflict between the IP Poll ranges
+    # Check if there is a conflict between the IP Pool ranges
     end = cidr.network
     for pool in pool_list:
         if end >= pool[0]:

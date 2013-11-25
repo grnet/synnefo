@@ -90,7 +90,7 @@ class SubnetTest(BaseAPITest):
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
-        self.assertSuccess(response)
+        self.assertSuccess201(response)
         resp = json.loads(response.content)['subnet']
         self.assertEqual("10.0.3.1", resp['gateway_ip'])
         self.assertEqual([{"start": "10.0.3.2", "end": "10.0.3.254"}],
@@ -109,7 +109,7 @@ class SubnetTest(BaseAPITest):
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
-        self.assertSuccess(response)
+        self.assertSuccess201(response)
 
     def test_create_subnet_success_ipv6_with_slaac(self):
         """Test create a subnet with ipv6 and slaac"""
@@ -123,7 +123,7 @@ class SubnetTest(BaseAPITest):
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
-        self.assertSuccess(response)
+        self.assertSuccess201(response)
         resp = json.loads(response.content)['subnet']
         self.assertEqual("fdc1:4992:1130:fc0b::1", resp['gateway_ip'])
         self.assertEqual([], resp['allocation_pools'])
@@ -154,7 +154,7 @@ class SubnetTest(BaseAPITest):
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
-        self.assertSuccess(response)
+        self.assertSuccess201(response)
 
     def test_create_subnet_with_ip_pool_allocation(self):
         """Test create a subnet with an IP pool"""
@@ -171,7 +171,7 @@ class SubnetTest(BaseAPITest):
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
-        self.assertSuccess(response)
+        self.assertSuccess201(response)
 
     def test_create_subnet_with_multiple_ip_pools(self):
         """Test create a subnet with multiple IP pools"""
@@ -190,7 +190,7 @@ class SubnetTest(BaseAPITest):
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
-        self.assertSuccess(response)
+        self.assertSuccess201(response)
         resp = json.loads(response.content)['subnet']
         self.assertEqual([{"start": "10.0.3.2", "end": "10.0.3.100"},
                           {"start": "10.0.3.200", "end": "10.0.3.220"}],
@@ -208,7 +208,7 @@ class SubnetTest(BaseAPITest):
         }
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
-        self.assertSuccess(response)
+        self.assertSuccess201(response)
         resp = json.loads(response.content)['subnet']
         self.assertEqual("10.0.3.150", resp['gateway_ip'])
         self.assertEqual([{"start": "10.0.3.1", "end": "10.0.3.149"},
@@ -249,6 +249,24 @@ class SubnetTest(BaseAPITest):
         response = self.post(SUBNETS_URL, test_net.userid,
                              json.dumps(request), "json")
         self.assertConflict(response)
+
+    def test_create_subnet_with_gateway_as_the_last_ip_of_subnet(self):
+        """Test create a subnet with a gateway, as the last IP of the subnet"""
+        test_net = mf.NetworkFactory()
+        request = {
+            'subnet': {
+                'network_id': test_net.id,
+                'cidr': '10.0.3.0/24',
+                'ip_version': 4,
+                'gateway_ip': '10.0.3.254'}
+        }
+        response = self.post(SUBNETS_URL, test_net.userid,
+                             json.dumps(request), "json")
+        self.assertSuccess201(response)
+        resp = json.loads(response.content)['subnet']
+        self.assertEqual("10.0.3.254", resp['gateway_ip'])
+        self.assertEqual([{"start": "10.0.3.1", "end": "10.0.3.253"}],
+                         resp['allocation_pools'])
 
     def test_create_subnet_with_ip_pool_end_lower_than_start(self):
         """Test create a subnet with a pool where end is lower than start"""
@@ -372,7 +390,7 @@ class SubnetTest(BaseAPITest):
         }
         response = self.post(SUBNETS_URL, test_net.userid, json.dumps(request),
                              "json")
-        self.assertSuccess(response)
+        self.assertSuccess201(response)
 
     def test_create_subnet_with_dns_nameservers(self):
         """Create a subnet with dns nameservers"""
@@ -385,7 +403,7 @@ class SubnetTest(BaseAPITest):
         }
         response = self.post(SUBNETS_URL, test_net.userid, json.dumps(request),
                              "json")
-        self.assertSuccess(response)
+        self.assertSuccess201(response)
 
     def test_create_subnet_with_host_routes(self):
         """Create a subnet with dns nameservers"""
@@ -398,7 +416,7 @@ class SubnetTest(BaseAPITest):
         }
         response = self.post(SUBNETS_URL, test_net.userid, json.dumps(request),
                              "json")
-        self.assertSuccess(response)
+        self.assertSuccess201(response)
         resp = json.loads(response.content)['subnet']
         self.assertEqual(["8.8.8.8", "1.1.1.1"], resp["host_routes"])
 

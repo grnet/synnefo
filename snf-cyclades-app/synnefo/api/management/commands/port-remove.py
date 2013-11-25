@@ -29,16 +29,18 @@
 #
 
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from synnefo.logic import servers
 from synnefo.management import common
 from snf_django.management.utils import parse_bool
+from snf_django.management.commands import RemoveCommand
 
 
-class Command(BaseCommand):
+class Command(RemoveCommand):
     can_import_settings = True
+    args = "<Port ID> [<Port ID> ...]"
     help = "Remove a port from the Database and from the VMs attached to"
-    option_list = BaseCommand.option_list + (
+    option_list = RemoveCommand.option_list + (
         make_option(
             "--wait",
             dest="wait",
@@ -50,15 +52,25 @@ class Command(BaseCommand):
 
     @common.convert_api_faults
     def handle(self, *args, **options):
-        if len(args) < 1:
+        if not args:
             raise CommandError("Please provide a port ID")
 
-        port = common.get_port(args[0], for_update=True)
+        force = options['force']
+        message = "ports" if len(args) > 1 else "port"
+        self.confirm_deletion(force, message, args)
 
-        servers.delete_port(port)
+        for port_id in args:
+            self.stdout.write("\n")
+            try:
+                port = common.get_port(port_id, for_update=True)
 
-        wait = parse_bool(options["wait"])
-        if port.machine is not None:
-            common.wait_server_task(port.machine, wait, stdout=self.stdout)
-        else:
-            self.stdout.write("Successfully removed port %s\n" % port)
+                servers.delete_port(port)
+
+                wait = parse_bool(options["wait"])
+                if port.machine is not None:
+                    common.wait_server_task(port.machine, wait,
+                                            stdout=self.stdout)
+                else:
+                    self.stdout.write("Successfully removed port %s\n" % port)
+            except CommandError as e:
+                self.stdout.write("Error -- %s\n" % e.message)

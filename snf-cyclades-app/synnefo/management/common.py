@@ -151,6 +151,11 @@ def get_subnet(subnet_id, for_update=True):
 def get_port(port_id, for_update=True):
     """Get a port object by its ID."""
     try:
+        port_id = int(port_id)
+    except (ValueError, TypeError):
+        raise CommandError("Invalid port ID: %s" % port_id)
+
+    try:
         ports = NetworkInterface.objects
         if for_update:
             ports.select_for_update()
@@ -194,12 +199,17 @@ def get_floating_ip_log_by_address(address):
 
 def get_floating_ip_by_id(floating_ip_id, for_update=False):
     try:
+        floating_ip_id = int(floating_ip_id)
+    except (ValueError, TypeError):
+        raise CommandError("Invalid floating-ip ID: %s" % floating_ip_id)
+
+    try:
         objects = IPAddress.objects
         if for_update:
             objects = objects.select_for_update()
         return objects.get(floating_ip=True, id=floating_ip_id, deleted=False)
     except IPAddress.DoesNotExist:
-        raise CommandError("Floating IP does not exist.")
+        raise CommandError("Floating IP %s does not exist." % floating_ip_id)
 
 
 def check_backend_credentials(clustername, port, username, password):

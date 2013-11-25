@@ -314,7 +314,7 @@ class ModularBackend(BaseBackend):
             self.wrapper.commit()
         else:
             if self.serials:
-                self.astakosclient.resolve_commissions(
+                r = self.astakosclient.resolve_commissions(
                     accept_serials=[],
                     reject_serials=self.serials)
                 self.commission_serials.delete_many(

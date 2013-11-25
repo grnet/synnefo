@@ -1636,9 +1636,7 @@
         'RESIZE'        : ['destroy']
     }
     
-    models.VM.AVAILABLE_ACTIONS_INACTIVE = {
-      'resize': ['STOPPED']
-    }
+    models.VM.AVAILABLE_ACTIONS_INACTIVE = {}
 
     // api status values
     models.VM.STATUSES = [

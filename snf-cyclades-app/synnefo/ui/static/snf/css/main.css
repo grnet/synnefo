@@ -5223,6 +5223,10 @@ table.list-machines .wave {
     padding-bottom:10px;
 }
 
+#network-vms-select-content .empty-list {
+  font-size: 1.2em;
+}
+
 #network-vms-select-content li.options-object .value {
     margin-top: 10px;
     margin-left: 30px;
@@ -6670,10 +6674,27 @@ input.has-errors {
   height: auto;
 }
 
+#vm-resize-overlay-content .form-actions {
+  margin-top: 15px;
+}
+
+#vm-resize-overlay-content .form-actions .warning {
+  width: 200px;
+  color: #800;
+  float: left;
+}
+
+.form-action.shutdown {
+  background-color: #800;
+  margin-right: 10px;
+  border-color: #700;
+}
+
 .form-action.disabled {
   background-color: #ddd;
   color: #aaa;
   border-color: #999;
+  cursor: default;
 }
 
 .overlay .form-actions .assign {

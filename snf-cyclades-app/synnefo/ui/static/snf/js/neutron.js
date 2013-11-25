@@ -429,11 +429,7 @@
       },
 
       comparator: function(m) {
-        try {
-          return parseInt(m.get('device_id'));
-        } catch (err) {
-          return 0
-        }
+          return parseInt(m.id);
       }
     });
 

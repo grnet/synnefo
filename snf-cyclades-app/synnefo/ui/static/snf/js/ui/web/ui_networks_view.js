@@ -322,6 +322,8 @@
       },
       
       disconnect_port: function(model, e) {
+        var parent = this.parent_view.parent_view.el;
+        parent.removeClass("subactionpending");
         e && e.stopPropagation();
         var network = this.model.get("network");
         this.model.actions.reset_pending();
@@ -332,6 +334,8 @@
       },
 
       set_firewall: function() {
+        var parent = this.parent_view.parent_view.el;
+        parent.removeClass("subactionpending");
         var value = this.get_selected_value();
         this.firewall_apply.addClass("in-progress");
         var vm = this.model.get('vm');

@@ -328,7 +328,7 @@
       place_in_parent: function(parent, el, m, index, anim) {
         var place_func, place_func_context, position_found, exists;
 
-        _.each(parent.find(".model-item"), function(el) {
+        _.each(parent.find(">.model-item"), function(el) {
           var el = $(el);
           var el_index = el.data('index');
           if (!el_index || position_found) { return };
@@ -496,7 +496,6 @@
             this._unset_confirm();
           }, this);
           this.model.actions.bind("set-pending", function(action) {
-            console.log("ACTION", action);
             this._set_confirm(action)
           }, this);
         }

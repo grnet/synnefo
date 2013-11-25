@@ -45,6 +45,12 @@
     views.IpPortView = views.ext.ModelView.extend({
       tpl: '#ip-port-view-tpl',
       
+      init: function() {
+        this.model.bind("remove", function() {
+          this.el.remove();
+        }, this);
+      },
+
       vm_style: function() {
         var cls, icon_state;
         var style = "background-image: url('{0}')";

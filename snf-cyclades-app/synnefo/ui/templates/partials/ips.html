@@ -24,8 +24,8 @@
           <h3 class="title floating-ip">
             <span data-rv-text="model.floating_ip_address">IP ADDRESS</span>
           </h3>
-          <div data-rv-if="model.port_id" class="ports nested-model-list proxy inline">
-            <div data-rv-if="model.port_id">
+          <div data-rv-if="model.port" class="ports nested-model-list proxy inline">
+            <div data-rv-if="model.port">
               <div data-rv-show="model.port" data-rv-model-view="model.port|IpPortView"></div>
             </div>
           </div>

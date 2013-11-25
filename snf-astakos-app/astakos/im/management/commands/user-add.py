@@ -105,6 +105,4 @@ class Command(BaseCommand):
                 map(u.add_permission, options['permissions'])
                 map(u.add_group, options['groups'])
             except BaseException, e:
-                import traceback
-                traceback.print_exc()
                 raise CommandError(e)

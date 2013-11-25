@@ -35,7 +35,8 @@ from functools import wraps
 from datetime import datetime
 from urllib import quote, unquote, urlencode
 
-from django.http import HttpResponse, Http404, HttpResponseRedirect
+from django.http import (HttpResponse, Http404, HttpResponseRedirect,
+                         HttpResponseNotAllowed)
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import http_date, parse_etags

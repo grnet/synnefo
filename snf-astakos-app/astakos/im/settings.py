@@ -216,3 +216,7 @@ ADMIN_STATS_PERMITTED_GROUPS = getattr(settings,
 ENDPOINT_CACHE_TIMEOUT = getattr(settings,
                                  'ASTAKOS_ENDPOINT_CACHE_TIMEOUT',
                                  60)
+
+RESOURCE_CACHE_TIMEOUT = getattr(settings,
+                                 'ASTAKOS_RESOURCE_CACHE_TIMEOUT',
+                                 60)

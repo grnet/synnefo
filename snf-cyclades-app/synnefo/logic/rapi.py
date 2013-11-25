@@ -472,7 +472,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     return self._SendRequest(HTTP_POST, "/%s/instances" % GANETI_RAPI_VERSION,
                              query, body)
 
-  def DeleteInstance(self, instance, dry_run=False):
+  def DeleteInstance(self, instance, dry_run=False, shutdown_timeout=None):
     """Deletes an instance.
 
     @type instance: str
@@ -485,9 +485,13 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     query = []
     _AppendDryRunIf(query, dry_run)
 
+    body = None
+    if shutdown_timeout is not None:
+        body = {"shutdown_timeout": shutdown_timeout}
+
     return self._SendRequest(HTTP_DELETE,
                              ("/%s/instances/%s" %
-                              (GANETI_RAPI_VERSION, instance)), query, None)
+                              (GANETI_RAPI_VERSION, instance)), query, body)
 
   def ModifyInstance(self, instance, **kwargs):
     """Modifies an instance.
@@ -642,7 +646,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
                               (GANETI_RAPI_VERSION, instance)), query, None)
 
   def RebootInstance(self, instance, reboot_type=None, ignore_secondaries=None,
-                     dry_run=False):
+                     dry_run=False, shutdown_timeout=None):
     """Reboots an instance.
 
     @type instance: str
@@ -664,11 +668,16 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     _AppendIf(query, ignore_secondaries is not None,
               ("ignore_secondaries", ignore_secondaries))
 
+    body = None
+    if shutdown_timeout is not None:
+        body = {"shutdown_timeout": shutdown_timeout}
+
     return self._SendRequest(HTTP_POST,
                              ("/%s/instances/%s/reboot" %
-                              (GANETI_RAPI_VERSION, instance)), query, None)
+                              (GANETI_RAPI_VERSION, instance)), query, body)
 
-  def ShutdownInstance(self, instance, dry_run=False, no_remember=False):
+  def ShutdownInstance(self, instance, dry_run=False, no_remember=False,
+                       timeout=None):
     """Shuts down an instance.
 
     @type instance: str
@@ -684,10 +693,14 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     query = []
     _AppendDryRunIf(query, dry_run)
     _AppendIf(query, no_remember, ("no-remember", 1))
+    body = None
+    if timeout is not None:
+        body = {"timeout": timeout}
+
 
     return self._SendRequest(HTTP_PUT,
                              ("/%s/instances/%s/shutdown" %
-                              (GANETI_RAPI_VERSION, instance)), query, None)
+                              (GANETI_RAPI_VERSION, instance)), query, body)
 
   def StartupInstance(self, instance, dry_run=False, no_remember=False):
     """Starts up an instance.

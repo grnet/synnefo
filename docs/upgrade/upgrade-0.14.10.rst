@@ -79,8 +79,8 @@ Start Ganeti and re-distribute the configuration to all Ganeti master candidates
 
    root@ganeti-master-host# gnt-cluster redist-conf
 
-   root@ganeti-master-host# /etc/init.d/ganeti restart
-   root@ganeti-nodeX-host# /etc/init.d/ganeti restart
+   root@ganeti-master-host# /etc/init.d/ganeti stop
+   root@ganeti-nodeX-host# /etc/init.d/ganeti stop
 
 
 3. Upgrade Synnefo

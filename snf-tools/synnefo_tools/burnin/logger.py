@@ -72,9 +72,9 @@ SECTION_FAILED = "  * Failed:"
 
 # --------------------------------------------------------------------
 # Helper functions
-def _blue(msg):
-    """Blue color"""
-    return "\x1b[1;34m" + str(msg) + "\x1b[0m"
+def _cyan(msg):
+    """Bold High Intensity Cyan color"""
+    return "\x1b[1;96m" + str(msg) + "\x1b[0m"
 
 
 def _yellow(msg):
@@ -467,7 +467,7 @@ class Log(object):
                 else:
                     return color_fun(msg) + "\n"
             else:
-                args = tuple([_blue(arg) for arg in args])
+                args = tuple([_cyan(arg) for arg in args])
                 return _format_message(msg, *args)
         else:
             return _format_message(msg, *args)

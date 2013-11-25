@@ -36,6 +36,7 @@ This is the burnin class that tests the Pithos functionality
 
 """
 
+import os
 import random
 import tempfile
 
@@ -90,6 +91,8 @@ class PithosTestSuite(BurninTests):
             # Upload the file,
             # The container is the one choosen during the `create_container'
             self.clients.pithos.upload_object("test.txt", fout)
+            # Verify quotas
+            self._check_quotas(diskspace=+os.fstat(fout.fileno()).st_size)
 
     def test_005_download_file(self):
         """Test downloading the file from Pithos"""
@@ -108,7 +111,12 @@ class PithosTestSuite(BurninTests):
         self.info("Removing the file %s from container %s",
                   "test.txt", self.created_container)
         # The container is the one choosen during the `create_container'
+        content_length = \
+            self.clients.pithos.get_object_info("test.txt")['content-length']
         self.clients.pithos.del_object("test.txt")
+
+        # Verify quotas
+        self._check_quotas(diskspace=-int(content_length))
 
         self.info("Removing the container %s", self.created_container)
         self.clients.pithos.purge_container()

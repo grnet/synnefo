@@ -166,8 +166,12 @@ class ImagesTestSuite(BurninTests):
         """Upload the image to Pithos"""
         self._set_pithos_account(self._get_uuid())
         self._create_pithos_container("burnin-images")
+        file_size = os.path.getsize(self.temp_image_file)
         with open(self.temp_image_file, "r+b") as fin:
             self.clients.pithos.upload_object(self.temp_image_name, fin)
+
+        # Verify quotas
+        self._check_quotas(diskspace=file_size)
 
     def test_009_register_image(self):
         """Register image to Plankton"""
@@ -192,6 +196,9 @@ class ImagesTestSuite(BurninTests):
         # Remove uploaded image
         self.info("Deleting uploaded image %s", self.temp_image_name)
         self.clients.pithos.del_object(self.temp_image_name)
+        # Verify quotas
+        file_size = os.path.getsize(self.temp_image_file)
+        self._check_quotas(diskspace=-file_size)
         self.temp_image_name = None
         # Remove temp directory
         self.info("Deleting temp directory %s", self.temp_dir)

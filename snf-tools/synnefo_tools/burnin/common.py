@@ -59,6 +59,9 @@ logger = None  # Invalid constant name. pylint: disable-msg=C0103
 SNF_TEST_PREFIX = "snf-test-"
 CONNECTION_RETRY_LIMIT = 2
 SYSTEM_USERS = ["images@okeanos.grnet.gr", "images@demo.synnefo.org"]
+KB = 2**10
+MB = 2**20
+GB = 2**30
 
 
 # --------------------------------------------------------------------
@@ -205,13 +208,13 @@ class BurninTests(unittest.TestCase):
         self.info("Image url is %s", self.clients.image_url)
 
         self.quotas = self._get_quotas()
-        self.info("  Disk usage is %s",
+        self.info("  Disk usage is %s bytes",
                   self.quotas['system']['cyclades.disk']['usage'])
         self.info("  VM usage is %s",
                   self.quotas['system']['cyclades.vm']['usage'])
-        self.info("  DiskSpace usage is %s",
+        self.info("  DiskSpace usage is %s bytes",
                   self.quotas['system']['pithos.diskspace']['usage'])
-        self.info("  Ram usage is %s",
+        self.info("  Ram usage is %s bytes",
                   self.quotas['system']['cyclades.ram']['usage'])
         self.info("  CPU usage is %s",
                   self.quotas['system']['cyclades.cpu']['usage'])
@@ -480,9 +483,53 @@ class BurninTests(unittest.TestCase):
     # Quotas
     def _get_quotas(self):
         """Get quotas"""
-        self.info("Getting quotas for user %s", self._get_uuid())
+        self.info("Getting quotas")
         astakos_client = self.clients.astakos.get_client()
         return astakos_client.get_quotas()
+
+    # Invalid argument name. pylint: disable-msg=C0103
+    # Too many arguments. pylint: disable-msg=R0913
+    def _check_quotas(self, disk=None, vm=None, diskspace=None,
+                      ram=None, cpu=None, network=None):
+        """Check that quotas' changes are consistent"""
+        assert any(v is None for v in
+                   [disk, vm, diskspace, ram, cpu, network]), \
+            "_check_quotas require arguments"
+
+        self.info("Check that quotas' changes are consistent")
+        old_quotas = self.quotas
+        new_quotas = self._get_quotas()
+        self.quotas = new_quotas
+
+        # Check Disk usage
+        self._check_quotas_aux(
+            old_quotas, new_quotas, 'cyclades.disk', disk)
+        # Check VM usage
+        self._check_quotas_aux(
+            old_quotas, new_quotas, 'cyclades.vm', vm)
+        # Check DiskSpace usage
+        self._check_quotas_aux(
+            old_quotas, new_quotas, 'pithos.diskspace', diskspace)
+        # Check Ram usage
+        self._check_quotas_aux(
+            old_quotas, new_quotas, 'cyclades.ram', ram)
+        # Check CPU usage
+        self._check_quotas_aux(
+            old_quotas, new_quotas, 'cyclades.cpu', cpu)
+        # Check Network usage
+        self._check_quotas_aux(
+            old_quotas, new_quotas, 'cyclades.network.private', network)
+
+    def _check_quotas_aux(self, old_quotas, new_quotas, resource, value):
+        """Auxiliary function for _check_quotas"""
+        old_value = old_quotas['system'][resource]['usage']
+        new_value = new_quotas['system'][resource]['usage']
+        if value is not None:
+            assert isinstance(value, int), \
+                "%s value has to be integer" % resource
+            old_value += value
+        self.assertEqual(old_value, new_value,
+                         "%s quotas don't match" % resource)
 
 
 # --------------------------------------------------------------------

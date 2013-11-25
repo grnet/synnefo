@@ -262,6 +262,8 @@ class GeneratedServerTestSuite(CycladesTests):
     def test_022_server_becomes_deleted(self):
         """Test server becomes DELETED"""
         self._insist_on_server_transition(self.server, ["ACTIVE"], "DELETED")
+        # Verify quotas
+        self._verify_quotas_deleted([self.use_flavor])
 
     def test_023_server_no_longer(self):
         """Test server is no longer in server list"""

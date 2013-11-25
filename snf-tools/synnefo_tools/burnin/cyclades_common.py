@@ -46,7 +46,7 @@ import paramiko
 import tempfile
 import subprocess
 
-from synnefo_tools.burnin.common import BurninTests
+from synnefo_tools.burnin.common import BurninTests, MB, GB
 
 
 # Too many public methods. pylint: disable-msg=R0904
@@ -127,7 +127,29 @@ class CycladesTests(BurninTests):
         self.assertEqual(server['image']['id'], image['id'])
         self.assertEqual(server['status'], "BUILD")
 
+        # Verify quotas
+        self._check_quotas(disk=+int(flavor['disk'])*GB,
+                           vm=+1,
+                           ram=+int(flavor['ram'])*MB,
+                           cpu=+int(flavor['vcpus']))
+
         return server
+
+    def _verify_quotas_deleted(self, flavors):
+        """Verify quotas for a number of deleted servers"""
+        used_disk = 0
+        used_vm = 0
+        used_ram = 0
+        used_cpu = 0
+        for flavor in flavors:
+            used_disk += int(flavor['disk']) * GB
+            used_vm += 1
+            used_ram += int(flavor['ram']) * MB
+            used_cpu += int(flavor['vcpus'])
+        self._check_quotas(disk=-used_disk,
+                           vm=-used_vm,
+                           ram=-used_ram,
+                           cpu=-used_cpu)
 
     def _get_connection_username(self, server):
         """Determine the username to use to connect to the server"""
@@ -359,6 +381,20 @@ class CycladesTests(BurninTests):
                 break
         self.assertIsNotNone(nid, "Could not find network card")
         self.clients.cyclades.disconnect_server(server['id'], nid)
+
+    def _create_network(self, name, cidr="10.0.1.0/28", dhcp=True):
+        """Create a new private network"""
+        network = self.clients.cyclades.create_network(
+            name, cidr=cidr, dhcp=dhcp)
+        self.info("Network with id %s created", network['id'])
+
+        # Verify quotas
+        self._check_quotas(network=+1)
+
+        #Test if the right name is assigned
+        self.assertEqual(network['name'], name)
+
+        return network
 
 
 class Retry(Exception):

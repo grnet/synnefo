@@ -114,12 +114,7 @@ class NetworkTestSuite(CycladesTests):
     def test_006_create_network(self):
         """Submit a create network request"""
         name = self.run_id
-        self.network = self.clients.cyclades.create_network(
-            name, cidr="10.0.1.0/28", dhcp=True)
-        self.info("Network with id %s created", self.network['id'])
-
-        #Test if right the name is assigned
-        self.assertEqual(self.network['name'], name)
+        self.network = self._create_network(name)
 
         self._insist_on_network_transition(
             self.network, ["BUILD"], "ACTIVE")
@@ -217,6 +212,9 @@ class NetworkTestSuite(CycladesTests):
         networks = [net['id'] for net in self._get_list_of_networks()]
         self.assertNotIn(self.network['id'], networks)
 
+        # Verify quotas
+        self._check_quotas(network=-1)
+
     def test_015_cleanup_servers(self):
         """Cleanup servers created for this test"""
         self.clients.cyclades.delete_server(self.server_a['server']['id'])
@@ -226,3 +224,7 @@ class NetworkTestSuite(CycladesTests):
             self.server_a['server'], ["ACTIVE"], "DELETED")
         self._insist_on_server_transition(
             self.server_b['server'], ["ACTIVE"], "DELETED")
+
+        # Verify quotas
+        self._verify_quotas_deleted([self.server_a['flavor'],
+                                     self.server_b['flavor']])

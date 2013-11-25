@@ -80,7 +80,9 @@ class TestApprovalTerms(TestCase):
         terms = ApprovalTerms(location='terms')
         terms.save()
 
-        self.user = get_local_user('user@synnefo.org')
+        self.user = get_local_user('user@synnefo.org',
+                                   has_signed_terms=False,
+                                   date_signed_terms=None)
         self.assertTrue(not self.user.signed_terms)
         self.assertTrue(self.user.date_signed_terms is None)
         self.user_client = get_user_client(self.user.username)

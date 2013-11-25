@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,13 +32,15 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
+from datetime import datetime
 
 from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, get_latest_terms
+from astakos.im.auth import make_local_user
 
 
 class Command(BaseCommand):
@@ -83,13 +85,15 @@ class Command(BaseCommand):
         except ValidationError:
             raise CommandError("Invalid email")
 
+        has_signed_terms = not(get_latest_terms())
+
         try:
-            u = AstakosUser(email=email,
-                            first_name=first_name,
-                            last_name=last_name,
-                            is_superuser=options['is_superuser'])
-            u.set_password(password)
-            u.save()
+            user = make_local_user(
+                email, first_name=first_name, last_name=last_name,
+                password=password, has_signed_terms=has_signed_terms)
+            if options['is_superuser']:
+                user.is_superuser = True
+                user.save()
 
         except BaseException, e:
             raise CommandError(e)
@@ -101,8 +105,7 @@ class Command(BaseCommand):
                 self.stdout.write('\n')
 
             try:
-                u.add_auth_provider('local')
-                map(u.add_permission, options['permissions'])
-                map(u.add_group, options['groups'])
+                map(user.add_permission, options['permissions'])
+                map(user.add_group, options['groups'])
             except BaseException, e:
                 raise CommandError(e)

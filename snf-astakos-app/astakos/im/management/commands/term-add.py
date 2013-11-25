@@ -34,14 +34,16 @@
 from os.path import abspath
 
 from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 
-from astakos.im.models import ApprovalTerms
+from astakos.im.models import ApprovalTerms, AstakosUser
 
 
 class Command(BaseCommand):
     args = "<location>"
     help = "Insert approval terms"
 
+    @transaction.commit_on_success
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Invalid number of arguments")
@@ -54,6 +56,9 @@ class Command(BaseCommand):
 
         terms = ApprovalTerms(location=location)
         terms.save()
+        AstakosUser.objects.select_for_update().\
+            filter(has_signed_terms=True).\
+            update(has_signed_terms=False, date_signed_terms=None)
 
         msg = "Created term id %d" % (terms.id,)
         self.stdout.write(msg + '\n')

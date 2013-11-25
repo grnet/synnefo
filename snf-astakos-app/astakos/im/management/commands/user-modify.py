@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 import string
+from datetime import datetime
 
 from optparse import make_option
 
@@ -138,6 +139,10 @@ class Command(BaseCommand):
         make_option('--reject-reason',
                     dest='reject_reason',
                     help="Reason user got rejected"),
+        make_option('--sign-terms',
+                    default=False,
+                    action='store_true',
+                    help="Sign terms"),
         make_option('--base-quota',
                     dest='set_base_quota',
                     metavar='<resource> <capacity>',
@@ -311,6 +316,10 @@ class Command(BaseCommand):
         if options['renew_token']:
             user.renew_token()
 
+        if options['sign_terms']:
+            user.has_signed_terms = True
+            user.date_signed_terms = datetime.now()
+
         try:
             user.save()
         except ValidationError, e:
@@ -352,7 +361,7 @@ class Command(BaseCommand):
                 m = "A user with this email address already exists."
                 raise CommandError(m)
 
-            user.email = newemail
+            user.set_email(newemail)
             user.save()
 
     def confirm(self):

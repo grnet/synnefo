@@ -6,7 +6,7 @@ Fabric file for snf-deploy
 """
 
 from __future__ import with_statement
-from fabric.api import hide, env, settings, local, roles
+from fabric.api import hide, env, settings, local, roles, execute
 from fabric.operations import run, put, get
 import fabric
 import re
@@ -853,10 +853,8 @@ def add_rapi_user():
 
 @roles("master")
 def add_nodes():
-    nodes = env.env.cluster_nodes.split(",")
-    nodes.remove(env.env.master_node)
     debug(env.host, " * Adding nodes to Ganeti backend...")
-    for n in nodes:
+    for n in env.env.cluster_nodes:
         add_node(n)
 
 

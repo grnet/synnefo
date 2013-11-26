@@ -1,3 +1,11 @@
+synnefo (0.14.10-1~squeeze) squeeze; urgency=low
+
+  * New upstream version
+    + Support for Ganeti 2.8
+    + Add 'name' attribute to instance NICs
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Tue, 26 Nov 2013 11:21:50 +0200
+
 synnefo (0.14.10~rc1-1~squeeze) squeeze; urgency=low
 
   * New upstream version

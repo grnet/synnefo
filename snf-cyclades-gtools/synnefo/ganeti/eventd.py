@@ -45,6 +45,11 @@ import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
+# Since Ganeti 2.7, debian package ships the majority of the python code in
+# a private module under '/usr/share/ganeti'. Add this directory to path
+# in order to be able to import ganeti. Also, add it to the start of path
+# to allow conflicts with Ganeti RAPI client.
+sys.path.insert(0, "/usr/share/ganeti")
 
 import json
 import logging
@@ -120,7 +125,7 @@ def get_instance_nics(instance, logger):
         nics = map(lambda x: dict(zip(nic_keys, x)), nics)
     except ganeti_errors.OpPrereqError:
         # Not running on master! Load the conf file
-        raw_data = utils.ReadFile(constants.CLUSTER_CONF_FILE)
+        raw_data = utils.ReadFile(pathutils.CLUSTER_CONF_FILE)
         config = serializer.LoadJson(raw_data)
         i = config["instances"][instance]
         nics = []
@@ -236,6 +241,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
                         "status": op.status,
                         "cluster": self.cluster_name,
                         "logmsg": logmsg,
+                        "result": op.result,
                         "jobId": job_id})
 
             if op.status == "success":

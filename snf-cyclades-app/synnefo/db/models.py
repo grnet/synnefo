@@ -847,6 +847,11 @@ class SecurityGroup(models.Model):
     name = models.CharField('group name',
                             max_length=SECURITY_GROUP_NAME_LENGTH)
 
+    @property
+    def backend_uuid(self):
+        """Return the name of NIC in Ganeti."""
+        return "%snic-%s" % (settings.BACKEND_PREFIX_ID, str(self.id))
+
 
 class PoolTable(models.Model):
     available_map = models.TextField(default="", null=False)

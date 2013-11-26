@@ -153,7 +153,7 @@ objects by domain attribute. This is used by Plankton for listing VM images.
 v0.14.10
 =======
 
-Released: UNRELEASED
+Released: Tue Nov 26 11:03:37 EET 2013
 
 Cyclades
 -------
@@ -165,6 +165,7 @@ Cyclades
   enable the use of this feature.
 * Fix warning message while getting object permissions to appear only when
   path is None and the object has permissions
+* Add name to newly created NICs and the corresponding firewall tags.
 
 .. _Changelog-0.14.9:
 

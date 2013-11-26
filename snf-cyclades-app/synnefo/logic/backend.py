@@ -951,7 +951,7 @@ def connect_to_network(vm, nic):
         "depends": depends,
     }
     if vm.backend.use_hotplug():
-        kwargs["hotplug"] = True
+        kwargs["hotplug_if_possible"] = True
     if settings.TEST:
         kwargs["dry_run"] = True
 
@@ -967,7 +967,7 @@ def disconnect_from_network(vm, nic):
         "nics": [("remove", nic.backend_uuid, {})],
     }
     if vm.backend.use_hotplug():
-        kwargs["hotplug"] = True
+        kwargs["hotplug_if_possible"] = True
     if settings.TEST:
         kwargs["dry_run"] = True
 

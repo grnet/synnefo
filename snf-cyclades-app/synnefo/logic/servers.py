@@ -529,8 +529,10 @@ def create_instance_ports(user_id, networks=None):
 def create_ports_for_setting(user_id, category):
     if category == "admin":
         network_setting = settings.CYCLADES_FORCED_SERVER_NETWORKS
+        exception = faults.ServiceUnavailable
     elif category == "default":
         network_setting = settings.CYCLADES_DEFAULT_SERVER_NETWORKS
+        exception = faults.Conflict
     else:
         raise ValueError("Unknown category: %s" % category)
 
@@ -540,21 +542,29 @@ def create_ports_for_setting(user_id, category):
         if type(network_ids) not in (list, tuple):
             network_ids = [network_ids]
 
+        error_msgs = []
         for network_id in network_ids:
             try:
                 ports.append(_port_from_setting(user_id, network_id, category))
+                # Port successfully created in one of the networks. Skip the
+                # the rest.
                 break
-            except faults.Conflict:
-                # Try all network IDs in the network group
-                pass
+            except faults.Conflict as e:
+                if len(network_ids) == 1:
+                    raise exception(e.message)
+                else:
+                    error_msgs.append(e.message)
 
-            # Diffrent exception for each category!
-            if category == "admin":
-                exception = faults.ServiceUnavailable
-            else:
-                exception = faults.Conflict
-            raise exception("Cannot connect instance to any of the following"
-                            " networks %s" % network_ids)
+        if category == "admin":
+            log.error("Cannot connect server to forced networks '%s': %s",
+                      network_ids, error_msgs)
+            raise exception("Cannot connect server to forced server networks.")
+        else:
+            log.debug("Cannot connect server to default networks '%s': %s",
+                      network_ids, error_msgs)
+            raise exception("Cannot connect server to default server"
+                            " networks.")
+
     return ports
 
 
@@ -567,8 +577,15 @@ def _port_from_setting(user_id, network_id, category):
     elif network_id == "SNF:ANY_PUBLIC":
         try:
             return create_public_ipv4_port(user_id, category=category)
-        except faults.Conflict:
-            return create_public_ipv6_port(user_id, category=category)
+        except faults.Conflict as e1:
+            try:
+                return create_public_ipv6_port(user_id, category=category)
+            except faults.Conflict as e2:
+                log.error("Failed to connect server to a public IPv4 or IPv6"
+                          " network. IPv4: %s, IPv6: %s", e1, e2)
+                msg = ("Cannot connect server to a public IPv4 or IPv6"
+                       " network.")
+                raise faults.Conflict(msg)
     else:  # Case of network ID
         if category in ["user", "default"]:
             return _port_for_request(user_id, {"uuid": network_id})

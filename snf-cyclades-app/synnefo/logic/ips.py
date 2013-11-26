@@ -153,12 +153,12 @@ def get_free_floating_ip(userid, network=None):
         if floating_ip.nic is None:
             return floating_ip
 
-    msg = "Cannot allocate a floating IP for connecting new server to"
+    msg = "Cannot find an unused floating IP to connect server to"
     if network is not None:
         msg += " network '%s'." % network.id
     else:
         msg += " a public network."
-    msg += " Please create more floating IPs."
+    msg += " Please create a floating IP."
     raise faults.Conflict(msg)
 
 

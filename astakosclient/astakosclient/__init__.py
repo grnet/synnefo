@@ -927,7 +927,7 @@ class AstakosClient(object):
     # --------------------------------
     # do a POST to ``API_OA2_TOKEN``
     def get_token(self, grant_type, client_id, client_secret, **body_params):
-        headers = {'Content-Type': 'application/x-www-form-urlencoded',
+        headers = {'content-type': 'application/x-www-form-urlencoded',
                    'Authorization': 'Basic %s' % b64encode('%s:%s' %
                                                            (client_id,
                                                             client_secret))}

@@ -44,7 +44,7 @@ import datetime
 import tempfile
 import traceback
 
-from kamaki.clients.cyclades import CycladesClient
+from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
 from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients.pithos import PithosClient
@@ -122,6 +122,9 @@ class Clients(object):
     compute_url = None
     # Cyclades
     cyclades = None
+    # Network
+    network = None
+    network_url = None
     # Pithos
     pithos = None
     pithos_url = None
@@ -141,6 +144,11 @@ class Clients(object):
 
         self.cyclades = CycladesClient(self.compute_url, self.token)
         self.cyclades.CONNECTION_RETRY_LIMIT = self.retry
+
+        self.network_url = \
+            self.astakos.get_service_endpoints('network')['publicURL']
+        self.network = CycladesNetworkClient(self.network_url, self.token)
+        self.network.CONNECTION_RETRY_LIMIT = self.retry
 
         self.pithos_url = self.astakos.\
             get_service_endpoints('object-store')['publicURL']
@@ -204,6 +212,7 @@ class BurninTests(unittest.TestCase):
         self.clients.initialize_clients()
         self.info("Astakos auth url is %s", self.clients.auth_url)
         self.info("Cyclades url is %s", self.clients.compute_url)
+        self.info("Network url is %s", self.clients.network_url)
         self.info("Pithos url is %s", self.clients.pithos_url)
         self.info("Image url is %s", self.clients.image_url)
 
@@ -216,6 +225,8 @@ class BurninTests(unittest.TestCase):
                   self.quotas['system']['pithos.diskspace']['usage'])
         self.info("  Ram usage is %s bytes",
                   self.quotas['system']['cyclades.ram']['usage'])
+        self.info("  Floating IPs usage is %s",
+                  self.quotas['system']['cyclades.floating_ip']['usage'])
         self.info("  CPU usage is %s",
                   self.quotas['system']['cyclades.cpu']['usage'])
         self.info("  Network usage is %s",
@@ -490,10 +501,10 @@ class BurninTests(unittest.TestCase):
     # Invalid argument name. pylint: disable-msg=C0103
     # Too many arguments. pylint: disable-msg=R0913
     def _check_quotas(self, disk=None, vm=None, diskspace=None,
-                      ram=None, cpu=None, network=None):
+                      ram=None, ip=None, cpu=None, network=None):
         """Check that quotas' changes are consistent"""
         assert any(v is None for v in
-                   [disk, vm, diskspace, ram, cpu, network]), \
+                   [disk, vm, diskspace, ram, ip, cpu, network]), \
             "_check_quotas require arguments"
 
         self.info("Check that quotas' changes are consistent")
@@ -513,6 +524,9 @@ class BurninTests(unittest.TestCase):
         # Check Ram usage
         self._check_quotas_aux(
             old_quotas, new_quotas, 'cyclades.ram', ram)
+        # Check Floating IPs usage
+        self._check_quotas_aux(
+            old_quotas, new_quotas, 'cyclades.floating_ip', ip)
         # Check CPU usage
         self._check_quotas_aux(
             old_quotas, new_quotas, 'cyclades.cpu', cpu)

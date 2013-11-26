@@ -48,7 +48,7 @@ from synnefo_tools.burnin.pithos_tests import PithosTestSuite
 from synnefo_tools.burnin.server_tests import ServerTestSuite
 from synnefo_tools.burnin.network_tests import NetworkTestSuite
 from synnefo_tools.burnin.stale_tests import \
-    StaleServersTestSuite, StaleNetworksTestSuite
+    StaleServersTestSuite, StaleFloatingIPsTestSuite, StaleNetworksTestSuite
 
 
 # --------------------------------------------------------------------
@@ -66,6 +66,7 @@ TSUITES_NAMES = [tsuite.__name__ for tsuite in TESTSUITES]
 STALE_TESTSUITES = [
     # Must be runned in this order
     StaleServersTestSuite,
+    StaleFloatingIPsTestSuite,
     StaleNetworksTestSuite,
 ]
 STALE_TSUITES_NAMES = [tsuite.__name__ for tsuite in STALE_TESTSUITES]
@@ -113,12 +114,12 @@ def parse_arguments(args):
         help="Disable IPv6 related tests")
     parser.add_option(
         "--action-timeout", action="store",
-        type="int", default=300, dest="action_timeout", metavar="TIMEOUT",
+        type="int", default=420, dest="action_timeout", metavar="TIMEOUT",
         help="Wait TIMEOUT seconds for a server action to complete, "
              "then the test is considered failed")
     parser.add_option(
         "--action-warning", action="store",
-        type="int", default=120, dest="action_warning", metavar="TIMEOUT",
+        type="int", default=180, dest="action_warning", metavar="TIMEOUT",
         help="Warn if TIMEOUT seconds have passed and a server action "
              "has not been completed yet")
     parser.add_option(

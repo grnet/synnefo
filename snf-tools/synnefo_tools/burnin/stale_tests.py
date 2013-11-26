@@ -47,7 +47,7 @@ class StaleServersTestSuite(CycladesTests):
 
     def test_001_show_stale_servers(self):
         """Show staled servers (servers left from previous runs)"""
-        servers = self._get_list_of_servers()
+        servers = self._get_list_of_servers(detail=True)
         self.stale_servers = [s for s in servers
                               if s['name'].startswith(SNF_TEST_PREFIX)]
 
@@ -64,21 +64,47 @@ class StaleServersTestSuite(CycladesTests):
         """Delete staled servers (servers left from previous runs)"""
         len_stale = len(self.stale_servers)
         if not self.delete_stale and len_stale != 0:
-            msg = "Use --delete-stale flag to delete stale servers"
-            self.error(msg)
-            self.fail(msg)
+            self.fail("Use --delete-stale flag to delete stale servers")
         elif len_stale == 0:
             self.info("No stale servers found")
         else:
-            self.info("Deleting %s stale servers:", len_stale)
-            for stl in self.stale_servers:
-                self.info("  Deleting server \"%s\" with id %s",
-                          stl['name'], stl['id'])
-                self.clients.cyclades.delete_server(stl['id'])
+            self.info("Deleting %s stale servers", len_stale)
+            self._delete_servers(self.stale_servers, error=True)
 
-            for stl in self.stale_servers:
-                self._insist_on_server_transition(
-                    stl, ["ACTIVE", "ERROR", "STOPPED"], "DELETED")
+
+# Too many public methods. pylint: disable-msg=R0904
+class StaleFloatingIPsTestSuite(CycladesTests):
+    """Handle stale Floating IPs"""
+    stale_ips = Proper(value=None)
+
+    def test_001_show_stale_ips(self):
+        """Show staled floating IPs"""
+        floating_ips = self.clients.network.list_floatingips()
+        # We consider all the floating ips that are not attached
+        # anywhere as stale ips.
+        self.stale_ips = [ip for ip in floating_ips
+                          if ip['instance_id'] is None]
+
+        len_stale = len(self.stale_ips)
+        if len_stale == 0:
+            self.info("No stale floating IPs found")
+            return
+
+        self.info("Found %s stale floating IPs:", len_stale)
+        for stl in self.stale_ips:
+            self.info("  Floating IP %s with id %s",
+                      stl['floating_ip_address'], stl['id'])
+
+    def test_002_delete_stale_ips(self):
+        """Delete staled floating IPs"""
+        len_stale = len(self.stale_ips)
+        if not self.delete_stale and len_stale != 0:
+            self.fail("Use --delete-stale flag to delete stale floating IPs")
+        elif len_stale == 0:
+            self.info("No stale floating IPs found")
+        else:
+            self.info("Deleteing %s stale floating IPs", len_stale)
+            self._disconnect_from_floating_ips(self.stale_ips)
 
 
 # Too many public methods. pylint: disable-msg=R0904
@@ -105,18 +131,9 @@ class StaleNetworksTestSuite(CycladesTests):
         """Delete staled networks (networks left from previous runs)"""
         len_stale = len(self.stale_networks)
         if not self.delete_stale and len_stale != 0:
-            msg = "Use --delete-stale flag to delete stale networks"
-            self.error(msg)
-            self.fail(msg)
+            self.fail("Use --delete-stale flag to delete stale networks")
         elif len_stale == 0:
             self.info("No stale networks found")
         else:
-            self.info("Deleting %s stale networks:", len_stale)
-            for stl in self.stale_networks:
-                self.info("  Deleting network \"%s\" with id %s",
-                          stl['name'], stl['id'])
-                self.clients.cyclades.delete_network(stl['id'])
-
-            for stl in self.stale_networks:
-                self._insist_on_network_transition(
-                    stl, ["ACTIVE", "ERROR"], "DELETED")
+            self.info("Deleting %s stale networks", len_stale)
+            self._delete_networks(self.stale_networks)

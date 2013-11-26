@@ -39,12 +39,15 @@ had grown too much.
 """
 
 import time
+import IPy
 import base64
 import socket
 import random
 import paramiko
 import tempfile
 import subprocess
+
+from kamaki.clients import ClientError
 
 from synnefo_tools.burnin.common import BurninTests, MB, GB
 
@@ -101,7 +104,7 @@ class CycladesTests(BurninTests):
             self.info("Getting detailed list of networks")
         else:
             self.info("Getting simple list of networks")
-        return self.clients.cyclades.list_networks(detail=detail)
+        return self.clients.network.list_networks(detail=detail)
 
     def _get_server_details(self, server, quiet=False):
         """Get details for a server"""
@@ -110,14 +113,23 @@ class CycladesTests(BurninTests):
                       server['name'], server['id'])
         return self.clients.cyclades.get_server_details(server['id'])
 
-    def _create_server(self, image, flavor, personality=None):
+    def _create_server(self, image, flavor, personality=None, network=False):
         """Create a new server"""
+        if network:
+            fip = self._create_floating_ip()
+            port = self._create_port(fip['floating_network_id'],
+                                     floating_ip=fip)
+            networks = [{'port': port['id']}]
+        else:
+            networks = None
+
         servername = "%s for %s" % (self.run_id, image['name'])
         self.info("Creating a server with name %s", servername)
         self.info("Using image %s with id %s", image['name'], image['id'])
         self.info("Using flavor %s with id %s", flavor['name'], flavor['id'])
         server = self.clients.cyclades.create_server(
-            servername, flavor['id'], image['id'], personality=personality)
+            servername, flavor['id'], image['id'],
+            personality=personality, networks=networks)
 
         self.info("Server id: %s", server['id'])
         self.info("Server password: %s", server['adminPass'])
@@ -134,6 +146,40 @@ class CycladesTests(BurninTests):
                            cpu=+int(flavor['vcpus']))
 
         return server
+
+    def _delete_servers(self, servers, error=False):
+        """Deleting a number of servers in parallel"""
+        # Disconnect floating IPs
+        for srv in servers:
+            self.info("Disconnecting all floating IPs from server with id %s",
+                      srv['id'])
+            self._disconnect_from_network(srv)
+
+        # Delete servers
+        for srv in servers:
+            self.info("Sending the delete request for server with id %s",
+                      srv['id'])
+            self.clients.cyclades.delete_server(srv['id'])
+
+        if error:
+            curr_states = ["ACTIVE", "ERROR", "STOPPED", "BUILD"]
+        else:
+            curr_states = ["ACTIVE"]
+        for srv in servers:
+            self._insist_on_server_transition(srv, curr_states, "DELETED")
+
+        # Servers no longer in server list
+        new_servers = [s['id'] for s in self._get_list_of_servers()]
+        for srv in servers:
+            self.info("Verifying that server with id %s is no longer in "
+                      "server list", srv['id'])
+            self.assertNotIn(srv['id'], new_servers)
+
+        # Verify quotas
+        flavors = \
+            [self.clients.compute.get_flavor_details(srv['flavor']['id'])
+             for srv in servers]
+        self._verify_quotas_deleted(flavors)
 
     def _verify_quotas_deleted(self, flavors):
         """Verify quotas for a number of deleted servers"""
@@ -199,7 +245,7 @@ class CycladesTests(BurninTests):
         """Insist on network transiting from curr_statuses to new_status"""
         def check_fun():
             """Check network status"""
-            ntw = self.clients.cyclades.get_network_details(network['id'])
+            ntw = self.clients.network.get_network_details(network['id'])
             if ntw['status'] in curr_statuses:
                 raise Retry()
             elif ntw['status'] == new_status:
@@ -212,25 +258,6 @@ class CycladesTests(BurninTests):
         opmsg = "Waiting for network \"%s\" with id %s to become %s"
         self.info(opmsg, network['name'], network['id'], new_status)
         opmsg = opmsg % (network['name'], network['id'], new_status)
-        self._try_until_timeout_expires(opmsg, check_fun)
-
-    def _insist_on_network_connection(self, server, network, disconnect=False):
-        """Insist that the server has connected to the network"""
-        def check_fun():
-            """Check network connection"""
-            dsrv = self._get_server_details(server, quiet=True)
-            nets = [s['network_id'] for s in dsrv['attachments']]
-            if not disconnect and network['id'] not in nets:
-                raise Retry()
-            if disconnect and network['id'] in nets:
-                raise Retry()
-        if disconnect:
-            opmsg = \
-                "Waiting for server \"%s\" to disconnect from network \"%s\""
-        else:
-            opmsg = "Waiting for server \"%s\" to connect to network \"%s\""
-        self.info(opmsg, server['name'], network['name'])
-        opmsg = opmsg % (server['name'], network['name'])
         self._try_until_timeout_expires(opmsg, check_fun)
 
     def _insist_on_tcp_connection(self, family, host, port):
@@ -263,37 +290,42 @@ class CycladesTests(BurninTests):
         opmsg = opmsg % (familystr.get(family, "Unknown"), host, port)
         return self._try_until_timeout_expires(opmsg, check_fun)
 
-    def _get_ip(self, server, version=4, network=None):
-        """Get the IP of a server from the detailed server info
+    def _get_ips(self, server, version=4, network=None):
+        """Get the IPs of a server from the detailed server info
 
-        If network not given then get the public IP. Else the ip
+        If network not given then get the public IPs. Else the IPs
         attached to that network
 
         """
         assert version in (4, 6)
 
         nics = server['attachments']
-        addrs = None
+        addrs = []
         for nic in nics:
             net_id = nic['network_id']
             if network is None:
-                if self.clients.cyclades.get_network_details(net_id)['public']:
+                if self.clients.network.get_network_details(net_id)['public']:
                     if nic['ipv' + str(version)]:
-                        addrs = nic['ipv' + str(version)]
-                        break
+                        addrs.append(nic['ipv' + str(version)])
             else:
                 if net_id == network['id']:
                     if nic['ipv' + str(version)]:
-                        addrs = nic['ipv' + str(version)]
-                        break
+                        addrs.append(nic['ipv' + str(version)])
 
-        self.assertIsNotNone(addrs, "Can not get IP from server attachments")
+        self.assertGreater(len(addrs), 0,
+                           "Can not get IPs from server attachments")
+
+        for addr in addrs:
+            self.assertEquals(IPy.IP(addr).version(), version)
+
         if network is None:
             msg = "Server's public IPv%s is %s"
-            self.info(msg, version, addrs)
+            for addr in addrs:
+                self.info(msg, version, addr)
         else:
             msg = "Server's IPv%s attached to network \"%s\" is %s"
-            self.info(msg, version, network['id'], addrs)
+            for addr in addrs:
+                self.info(msg, version, network['id'], addr)
         return addrs
 
     def _insist_on_ping(self, ip_addr, version=4):
@@ -372,21 +404,17 @@ class CycladesTests(BurninTests):
             remote_content = base64.b64encode(ftmp.read())
             self.assertEqual(content, remote_content)
 
-    def _disconnect_from_network(self, server, network):
-        """Disconnect server from network"""
-        nid = None
-        for nic in server['attachments']:
-            if nic['network_id'] == network['id']:
-                nid = nic['id']
-                break
-        self.assertIsNotNone(nid, "Could not find network card")
-        self.clients.cyclades.disconnect_server(server['id'], nid)
-
-    def _create_network(self, name, cidr="10.0.1.0/28", dhcp=True):
+    # ----------------------------------
+    # Networks
+    def _create_network(self, cidr="10.0.1.0/28", dhcp=True):
         """Create a new private network"""
-        network = self.clients.cyclades.create_network(
-            name, cidr=cidr, dhcp=dhcp)
+        name = self.run_id
+        network = self.clients.network.create_network(
+            "MAC_FILTERED", name=name, shared=False)
         self.info("Network with id %s created", network['id'])
+        subnet = self.clients.network.create_subnet(
+            network['id'], cidr=cidr, enable_dhcp=dhcp)
+        self.info("Subnet with id %s created", subnet['id'])
 
         # Verify quotas
         self._check_quotas(network=+1)
@@ -395,6 +423,152 @@ class CycladesTests(BurninTests):
         self.assertEqual(network['name'], name)
 
         return network
+
+    def _delete_networks(self, networks, error=False):
+        """Delete a network"""
+        for net in networks:
+            self.info("Deleting network with id %s", net['id'])
+            self.clients.network.delete_network(net['id'])
+
+        if error:
+            curr_states = ["ACTIVE", "SNF:DRAINED", "ERROR"]
+        else:
+            curr_states = ["ACTIVE", "SNF:DRAINED"]
+        for net in networks:
+            self._insist_on_network_transition(net, curr_states, "DELETED")
+
+        # Networks no longer in network list
+        new_networks = [n['id'] for n in self._get_list_of_networks()]
+        for net in networks:
+            self.info("Verifying that network with id %s is no longer in "
+                      "network list", net['id'])
+            self.assertNotIn(net['id'], new_networks)
+
+        # Verify quotas
+        self._check_quotas(network=-len(networks))
+
+    def _get_public_network(self, networks=None):
+        """Get the public network"""
+        if networks is None:
+            networks = self._get_list_of_networks(detail=True)
+        self.info("Getting the public network")
+        for net in networks:
+            if net['SNF:floating_ip_pool'] and net['public']:
+                return net
+        self.fail("Could not find a public network to use")
+
+    def _create_floating_ip(self):
+        """Create a new floating ip"""
+        pub_net = self._get_public_network()
+        self.info("Creating a new floating ip for network with id %s",
+                  pub_net['id'])
+        fip = self.clients.network.create_floatingip(pub_net['id'])
+        # Verify that floating ip has been created
+        fips = self.clients.network.list_floatingips()
+        fips = [f['id'] for f in fips]
+        self.assertIn(fip['id'], fips)
+        # Verify quotas
+        self._check_quotas(ip=+1)
+        # Check that IP is IPv4
+        self.assertEquals(IPy.IP(fip['floating_ip_address']).version(), 4)
+
+        self.info("Floating IP %s with id %s created",
+                  fip['floating_ip_address'], fip['id'])
+        return fip
+
+    def _create_port(self, network_id, device_id=None, floating_ip=None):
+        """Create a new port attached to the a specific network"""
+        self.info("Creating a new port to network with id %s", network_id)
+        if floating_ip is not None:
+            fixed_ips = [{'ip_address': floating_ip['floating_ip_address']}]
+        else:
+            fixed_ips = None
+        port = self.clients.network.create_port(network_id,
+                                                device_id=device_id,
+                                                fixed_ips=fixed_ips)
+        # Verify that port created
+        ports = self.clients.network.list_ports()
+        ports = [p['id'] for p in ports]
+        self.assertIn(port['id'], ports)
+        # Insist on creation
+        if device_id is None:
+            self._insist_on_port_transition(port, ["BUILD"], "DOWN")
+        else:
+            self._insist_on_port_transition(port, ["BUILD", "DOWN"], "ACTIVE")
+
+        self.info("Port with id %s created", port['id'])
+        return port
+
+    def _insist_on_port_transition(self, port, curr_statuses, new_status):
+        """Insist on port transiting from curr_statuses to new_status"""
+        def check_fun():
+            """Check port status"""
+            portd = self.clients.network.get_port_details(port['id'])
+            if portd['status'] in curr_statuses:
+                raise Retry()
+            elif portd['status'] == new_status:
+                return
+            else:
+                msg = "Port %s went to unexpected status %s"
+                self.fail(msg % (portd['id'], portd['status']))
+        opmsg = "Waiting for port %s to become %s"
+        self.info(opmsg, port['id'], new_status)
+        opmsg = opmsg % (port['id'], new_status)
+        self._try_until_timeout_expires(opmsg, check_fun)
+
+    def _insist_on_port_deletion(self, portid):
+        """Insist on port deletion"""
+        def check_fun():
+            """Check port details"""
+            try:
+                self.clients.network.get_port_details(portid)
+            except ClientError as err:
+                if err.status != 404:
+                    raise
+            else:
+                raise Retry()
+        opmsg = "Waiting for port %s to be deleted"
+        self.info(opmsg, portid)
+        opmsg = opmsg % portid
+        self._try_until_timeout_expires(opmsg, check_fun)
+
+    def _disconnect_from_network(self, server, network=None):
+        """Disconnnect server from network"""
+        if network is None:
+            # Disconnect from public network
+            network = self._get_public_network()
+
+        lports = self.clients.network.list_ports()
+        ports = []
+        for port in lports:
+            dport = self.clients.network.get_port_details(port['id'])
+            if str(dport['network_id']) == str(network['id']) \
+                    and str(dport['device_id']) == str(server['id']):
+                ports.append(dport)
+
+        # Find floating IPs attached to these ports
+        ports_id = [p['id'] for p in ports]
+        fips = [f for f in self.clients.network.list_floatingips()
+                if str(f['port_id']) in ports_id]
+
+        # First destroy the ports
+        for port in ports:
+            self.info("Destroying port with id %s", port['id'])
+            self.clients.network.delete_port(port['id'])
+            self._insist_on_port_deletion(port['id'])
+
+        # Then delete the floating IPs
+        for fip in fips:
+            self.info("Destroying floating IP %s with id %s",
+                      fip['floating_ip_address'], fip['id'])
+            self.clients.network.delete_floatingip(fip['id'])
+
+        # Check that floating IPs have been deleted
+        list_ips = [f['id'] for f in self.clients.network.list_floatingips()]
+        for fip in fips:
+            self.assertNotIn(fip['id'], list_ips)
+        # Verify quotas
+        self._check_quotas(ip=-len(fips))
 
 
 class Retry(Exception):

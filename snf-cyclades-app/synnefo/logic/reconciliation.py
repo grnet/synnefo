@@ -240,10 +240,11 @@ def get_nics_from_instance(i):
     ips = zip(itertools.repeat('ipv4'), i['nic.ips'])
     macs = zip(itertools.repeat('mac'), i['nic.macs'])
     networks = zip(itertools.repeat('network'), i['nic.networks.names'])
+    names = zip(itertools.repeat('name'), i['nic.names'])
     # modes = zip(itertools.repeat('mode'), i['nic.modes'])
     # links = zip(itertools.repeat('link'), i['nic.links'])
     # nics = zip(ips,macs,modes,networks,links)
-    nics = zip(ips, macs, networks)
+    nics = zip(ips, macs, networks, names)
     nics = map(lambda x: dict(x), nics)
     nics = dict(enumerate(nics))
     return nics

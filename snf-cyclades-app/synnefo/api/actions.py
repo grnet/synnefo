@@ -336,7 +336,11 @@ def add(request, net, args):
 
     log.info("Connecting VM %s to Network %s(%s)", vm, net, address)
 
-    backend.connect_to_network(vm, net, address)
+    index= NetworkInterface.objects.filter(machine=vm).count()
+    nic = NetworkInterface.objects.create(machine=vm, network=net,
+                                          index=index,
+                                          ipv4=address, state="BUILDING")
+    backend.connect_to_network(vm, nic)
     return HttpResponse(status=202)
 
 

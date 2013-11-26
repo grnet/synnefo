@@ -701,6 +701,11 @@ class NetworkInterface(models.Model):
     def __unicode__(self):
         return '%s@%s' % (self.machine.name, self.network.name)
 
+    @property
+    def backend_uuid(self):
+        """Return the name of NIC in Ganeti."""
+        return "%snic-%s" % (settings.BACKEND_PREFIX_ID, str(self.id))
+
 
 class PoolTable(models.Model):
     available_map = models.TextField(default="", null=False)

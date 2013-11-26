@@ -153,7 +153,7 @@ def create(userid, name, password, flavor, image, metadata={},
         flavor.disk_template = disk_template
         flavor.disk_provider = provider
         flavor.disk_origin = None
-        if provider == 'vlmc':
+        if provider in ['vlmc', 'archipelago']:
             flavor.disk_origin = image['checksum']
             image['backend_id'] = 'null'
     else:

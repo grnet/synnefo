@@ -544,10 +544,12 @@ def create_ports_for_setting(user_id, category):
 
         error_msgs = []
         for network_id in network_ids:
+            success = False
             try:
                 ports.append(_port_from_setting(user_id, network_id, category))
                 # Port successfully created in one of the networks. Skip the
                 # the rest.
+                success = True
                 break
             except faults.Conflict as e:
                 if len(network_ids) == 1:
@@ -555,15 +557,17 @@ def create_ports_for_setting(user_id, category):
                 else:
                     error_msgs.append(e.message)
 
-        if category == "admin":
-            log.error("Cannot connect server to forced networks '%s': %s",
-                      network_ids, error_msgs)
-            raise exception("Cannot connect server to forced server networks.")
-        else:
-            log.debug("Cannot connect server to default networks '%s': %s",
-                      network_ids, error_msgs)
-            raise exception("Cannot connect server to default server"
-                            " networks.")
+        if not success:
+            if category == "admin":
+                log.error("Cannot connect server to forced networks '%s': %s",
+                          network_ids, error_msgs)
+                raise exception("Cannot connect server to forced server"
+                                " networks.")
+            else:
+                log.debug("Cannot connect server to default networks '%s': %s",
+                          network_ids, error_msgs)
+                raise exception("Cannot connect server to default server"
+                                " networks.")
 
     return ports
 

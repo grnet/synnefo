@@ -1166,7 +1166,8 @@ def view_method():
                               'state': '',  # TODO include state for security
                               'scope': request.path.split(VIEW_PREFIX, 2)[-1]}
                     return HttpResponseRedirect('%s?%s' %
-                                                (astakos.api_oa2_auth,
+                                                (join_urls(astakos.oa2_url,
+                                                           'auth'),
                                                  urlencode(params)))
                 else:
                     # request short-term access code

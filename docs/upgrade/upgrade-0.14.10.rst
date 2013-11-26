@@ -47,7 +47,7 @@ Install packages
 
 Install the new Ganeti packages. To be able to use hotplug (which will be part
 of the official Ganeti 2.10), we recommend using our Ganeti packages with
-version: ``snf-ganeti=2.8.2+snapshot1+b64v1+hotplug+ippoolfix+rapifix-1~wheezy``
+version: ``snf-ganeti=2.8.2+snapshot1+b64v1+hotplug3+ippoolfix+rapifix+netxen+lockfix2-1~wheezy``
 
 .. code-block:: console
 

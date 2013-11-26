@@ -29,7 +29,7 @@ Package: snf-webproject
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends},
   snf-common (= ${binary:Version}),
-  python-django-south (>= 0.7)
+  python-django-south (>= 0.7.3)
 Provides: ${python:Provides}
 XB-Python-Version: ${python:Versions}
 Description: Synnefo webproject package (common settings mechanism)
@@ -48,7 +48,7 @@ Depends: ${misc:Depends}, ${python:Depends},
   snf-branding (= ${binary:Version}), snf-webproject (= ${binary:Version}),
   python-astakosclient (= ${binary:Version}),
   snf-pithos-backend (= ${binary:Version}),
-  python-django-south (>= 0.7)
+ python-django-south (>= 0.7.3)
 Provides: ${python:Provides}
 Replaces: snf-network
 Recommends: snf-webproject

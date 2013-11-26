@@ -1,5 +1,5 @@
 #!/bin/sh
-# postinst script for snf-cyclades-app
+# postinst script for snf-webproject
 #
 # see: dh_installdeb(1)
 
@@ -20,9 +20,7 @@ set -e
 
 case "$1" in
     configure)
-
-        echo "Updating rc.d links... "
-        update-rc.d snf-dispatcher defaults
+        chown www-data:www-data /var/log/synnefo
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

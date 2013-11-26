@@ -1138,8 +1138,11 @@ def view_method():
                                         logger=logger)
                 if access_token is not None:
                     # authenticate using the short-term access token
-                    request.user = astakos.validate_token(access_token,
-                                                          requested_resource)
+                    try:
+                        request.user = astakos.validate_token(
+                            access_token, requested_resource)
+                    except AstakosClientException:
+                        return HttpResponseRedirect(request.path)
                     request.user_uniq = request.user["access"]["user"]["id"]
 
                     _func = api_method(token_required=False,
@@ -1147,7 +1150,7 @@ def view_method():
                     response = _func(request, *args, **kwargs)
                     if response.status_code == 404:
                         raise Http404
-                    elif response.status_code in [401, 403]:
+                    elif response.status_code == 403:
                         raise PermissionDenied
                     return response
 

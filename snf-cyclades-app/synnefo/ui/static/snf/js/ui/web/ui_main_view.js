@@ -379,8 +379,7 @@
         set_handlers: function() {
             var self = this;
             this.pane_view_selector.find("a").hover(function(){
-                // FIXME: title from href ? omg
-                self.title.text($(this).attr("href"));
+                self.title.text($(this).data("hover-title"));
             }, function(){
                 self.title.text(self.parent.get_title());
             });
@@ -393,9 +392,13 @@
                 ev.preventDefault();
                 this.router.networks_view();
             }, this))
-            this.pane_view_selector.find("a#disks_view_link").click(_.bind(function(ev){
+            this.pane_view_selector.find("a#ips_view_link").click(_.bind(function(ev){
                 ev.preventDefault();
-                this.router.disks_view();
+                this.router.ips_view();
+            }, this))
+            this.pane_view_selector.find("a#public_keys_view_link").click(_.bind(function(ev){
+                ev.preventDefault();
+                this.router.public_keys_view();
             }, this))
             
             this.machine_view_selector.find("a#machines_view_icon_link").click(_.bind(function(ev){
@@ -444,23 +447,43 @@
         views_titles: {
             'icon': 'machines', 'single': 'machines', 
             'list': 'machines', 'networks': 'networks',
-            'disks': 'disks'
+            'ips': 'IPs',
+            'public-keys': 'public keys'
         },
 
         // indexes registry
-        views_indexes: {0: 'icon', 2:'single', 1: 'list', 3:'networks'},
-        views_pane_indexes: {0:'single', 1:'networks', 2:'disks'},
+        views_indexes: {
+          0: 'icon', 
+          2: 'single', 
+          1: 'list', 
+          3: 'networks', 
+          4: 'ips',
+          5: 'public-keys'
+        },
+
+        views_pane_indexes: {
+          0: 'single', 
+          1: 'networks', 
+          2: 'ips', 
+          3: 'public-keys'
+        },
 
         // views classes registry
-        views_classes: {'icon': views.IconView, 'single': views.SingleView, 
-            'list': views.ListView, 'networks': views.NetworksView, 'disks': views.DisksView},
+        views_classes: {
+            'icon': views.IconView, 
+            'single': views.SingleView, 
+            'list': views.ListView, 
+            'networks': views.NetworksPaneView, 
+            'ips': views.IpsPaneView,
+            'public-keys': views.PublicKeysPaneView
+        },
 
         // view ids
-        views_ids: {'icon':0, 'single':2, 'list':1, 'networks':3, 'disks':4},
+        views_ids: {'icon':0, 'single':2, 'list':1, 'networks':3, 'ips':4, 'public-keys': 5},
 
         // on which pane id each view exists
         // machine views (icon,single,list) are all on first pane
-        pane_ids: {'icon':0, 'single':0, 'list':0, 'networks':1, 'disks':2},
+        pane_ids: {'icon':0, 'single':0, 'list':0, 'networks':1, 'ips':2, 'public-keys': 3},
     
         initialize: function(show_view) {
             if (!show_view) { show_view = 'icon' };
@@ -507,7 +530,7 @@
         },
 
         set_interval_timeouts: function(time) {
-            _.each([this._networks, this._vms], _.bind(function(fetcher){
+            _.each(this._fetchers, _.bind(function(fetcher){
                 if (!fetcher) { return };
                 if (this.focused) {
                     fetcher.interval = fetcher.normal_interval;
@@ -536,6 +559,7 @@
             storage.vms.bind("change:status", _.bind(this.check_empty, this));
             storage.vms.bind("reset", _.bind(this.check_empty, this));
             storage.quotas.bind("change", _.bind(this.update_create_buttons_status, this));
+            // additionally check quotas the first time they get fetched
             storage.quotas.bind("add", _.bind(this.update_create_buttons_status, this));
             
         },
@@ -627,56 +651,59 @@
             }});
 
             this.update_status("networks", 0);
-            storage.networks.fetch({refresh:true, update:false, success: function(){
-                self.update_status("networks", 1);
-                self.check_status();
-            }});
-
+            $.when([
+                   storage.networks.fetch({refresh: true}), 
+                   storage.floating_ips.fetch({refresh: true}),
+                   storage.subnets.fetch({refresh: true}),
+                   storage.ports.fetch({refresh: true})
+            ]).done(function() {
+              self.update_status("networks", 1);
+              self.check_status();
+            })
         },  
-
-        init_intervals: function() {
+        
+        _fetchers: {},
+        init_interval: function(key, collection) {
+            if (this._fetchers[key]) { return }
             var fetcher_params = [snf.config.update_interval, 
                                   snf.config.update_interval_increase || 500,
                                   snf.config.fast_interval || snf.config.update_interval/2, 
                                   snf.config.update_interval_increase_after_calls || 4,
                                   snf.config.update_interval_max || 20000,
                                   true, 
-                                  {is_recurrent: true}]
-            
-            this._networks = storage.networks.get_fetcher.apply(storage.networks, _.clone(fetcher_params));
-            this._vms = storage.vms.get_fetcher.apply(storage.vms, _.clone(fetcher_params));
-            this._quotas = storage.quotas.get_fetcher.apply(storage.quotas, _.clone(fetcher_params));
+                                  {is_recurrent: true}];
+            var fetcher = collection.get_fetcher.apply(collection, _.clone(fetcher_params));
+            this._fetchers[key] = fetcher;
+            collection.fetch();
+
+        },
+
+        init_intervals: function() {
+            _.each({
+              'networks': storage.networks,
+              'vms': storage.vms,
+              'quotas': storage.quotas,
+              'ips': storage.floating_ips,
+              'subnets': storage.subnets,
+              'ports': storage.ports,
+              'keys': storage.keys
+            }, function(col, name) {
+              this.init_interval(name, col)
+            }, this);
         },
 
         stop_intervals: function() {
-            if (this._networks) { this._networks.stop(); }
-            if (this._vms) { this._vms.stop(); }
-            if (this._quotas) { this._quotas.stop(); }
+            _.each(this._fetchers, function(fetcher) {
+                fetcher.stop();
+            });
             this.intervals_stopped = true;
         },
 
         update_intervals: function() {
-            if (this._networks) {
-                this._networks.stop();
-                this._networks.start();
-            } else {
-                this.init_intervals();
-            }
-
-            if (this._vms) {
-                this._vms.stop();
-                this._vms.start();
-            } else {
-                this.init_intervals();
-            }
-
-            if (this._quotas) {
-                this._quotas.stop();
-                this._quotas.start();
-            } else {
-                this.init_intervals();
-            }
-
+            _.each(this._fetchers, function(fetcher) {
+                fetcher.stop();
+                fetcher.start();
+            })
             this.intervals_stopped = false;
         },
 
@@ -716,14 +743,13 @@
             }
             this.error_view = new views.ErrorView();
             this.vm_resize_view = new views.VmResizeView();
+
             // api request error handling
             synnefo.api.bind("error", _.bind(this.handle_api_error, this));
             synnefo.api.bind("change:error_state", _.bind(this.handle_api_error_state, this));
             synnefo.ui.bind("error", _.bind(this.handle_ui_error, this));
 
             this.feedback_view = new views.FeedbackView();
-            this.public_keys_view = new views.PublicKeysOverlay();
-            this.public_ips_view = new views.PublicIPsOverlay();
             
             if (synnefo.config.use_glance) {
                 this.custom_images_view = new views.CustomImagesOverlay();
@@ -780,7 +806,8 @@
             this.add_view("list");
             this.add_view("single");
             this.add_view("networks");
-            this.add_view("disks");
+            this.add_view("ips");
+            this.add_view("public-keys");
 
             this.init_menu();
         },
@@ -790,23 +817,6 @@
                 e.preventDefault();
                 this.feedback_view.show();
             }, this));
-            $(".usermenu .public_keys").click(_.bind(function(e){
-                e.preventDefault();
-                this.public_keys_view.show();
-            }, this));
-            $(".usermenu .public_ips").click(_.bind(function(e){
-                e.preventDefault();
-                this.public_ips_view.show();
-            }, this));
-
-            if (snf.glance) {
-                $(".usermenu .custom_images").click(_.bind(function(e){
-                    e.preventDefault();
-                    this.custom_images_view.show();
-                }, this));
-            } else {
-                $(".usermenu .custom_images").hide();
-            }
         },
         
         // initial view based on user cookie
@@ -935,7 +945,7 @@
         hide_views: function(skip) {
             _.each(this.views, function(view) {
                 if (skip.indexOf(view) === -1) {
-                    $(view.el).hide();
+                    view.hide();
                 }
             }, this)
         },
@@ -1021,18 +1031,20 @@
                 $(".large-spinner").remove();
 
                 storage.vms.reset_pending_actions();
-                storage.networks.reset_pending_actions();
+                //storage.networks.reset_pending_actions();
                 storage.vms.stop_stats_update();
 
                 // show current view
                 this.show_view_pane();
-                view.show();
+                view.show(true);
                 
                 // update menus
                 if (this.select_view) {
                     this.select_view.update_layout();
                 }
-                this.current_view.__update_layout();
+
+                var update_layout = this.current_view.__update_layout;
+                update_layout && update_layout.call(this.current_view);
 
                 // update cookies
                 this.update_session();

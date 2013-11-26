@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from datetime import datetime
-from django.db.models import F
+from django.db.models import Q
 from astakos.quotaholder_app.exception import (
     QuotaholderError,
     NoCommissionError,
@@ -51,8 +51,11 @@ def format_datetime(d):
     return d.strftime('%Y-%m-%dT%H:%M:%S.%f')[:24]
 
 
-def get_quota(holders=None, sources=None, resources=None):
-    holdings = Holding.objects.all()
+def get_quota(holders=None, sources=None, resources=None, flt=None):
+    if flt is None:
+        flt = Q()
+
+    holdings = Holding.objects.filter(flt)
 
     if holders is not None:
         holdings = holdings.filter(holder__in=holders)
@@ -72,16 +75,25 @@ def get_quota(holders=None, sources=None, resources=None):
     return quotas
 
 
-def _get_holdings_for_update(holding_keys):
+def _get_holdings_for_update(holding_keys, resource=None, delete=False):
+    flt = Q(resource=resource) if resource is not None else Q()
     holders = set(holder for (holder, source, resource) in holding_keys)
-    objs = Holding.objects
-    hs = objs.filter(holder__in=holders).order_by('pk').select_for_update()
+    objs = Holding.objects.filter(flt, holder__in=holders).order_by('pk')
+    hs = objs.select_for_update()
 
+    keys = set(holding_keys)
     holdings = {}
+    put_back = []
     for h in hs:
         key = h.holder, h.source, h.resource
-        holdings[key] = h
+        if key in keys:
+            holdings[key] = h
+        else:
+            put_back.append(h)
 
+    if delete:
+        objs.delete()
+        Holding.objects.bulk_create(put_back)
     return holdings
 
 
@@ -94,36 +106,29 @@ def _mkProvision(key, quantity):
             }
 
 
-def set_quota(quotas):
+def set_quota(quotas, resource=None):
     holding_keys = [key for (key, limit) in quotas]
-    holdings = _get_holdings_for_update(holding_keys)
+    holdings = _get_holdings_for_update(
+        holding_keys, resource=resource, delete=True)
 
+    new_holdings = {}
     for key, limit in quotas:
+        holder, source, res = key
+        if resource is not None and resource != res:
+            continue
+        h = Holding(holder=holder,
+                    source=source,
+                    resource=res,
+                    limit=limit)
         try:
-            h = holdings[key]
+            h_old = holdings[key]
+            h.usage_min = h_old.usage_min
+            h.usage_max = h_old.usage_max
         except KeyError:
-            holder, source, resource = key
-            h = Holding(holder=holder,
-                        source=source,
-                        resource=resource)
-        h.limit = limit
-        h.save()
-        holdings[key] = h
+            pass
+        new_holdings[key] = h
 
-
-def add_resource_limit(holders=None, sources=None, resources=None, diff=0):
-    holdings = Holding.objects.all()
-
-    if holders is not None:
-        holdings = holdings.filter(holder__in=holders)
-
-    if sources is not None:
-        holdings = holdings.filter(source__in=sources)
-
-    if resources is not None:
-        holdings = holdings.filter(resource__in=resources)
-
-    holdings.update(limit=F('limit')+diff)
+    Holding.objects.bulk_create(new_holdings.values())
 
 
 def issue_commission(clientkey, provisions, name="", force=False):

@@ -48,7 +48,8 @@ astakos_services = {
                 'name': "astakos.pending_app",
                 'service_type': "account",
                 'service_origin': "astakos_account",
-                'allow_in_projects': False},
+                'ui_visible': False,
+                'api_visible': False},
         },
     },
 
@@ -79,6 +80,17 @@ astakos_services = {
         'type': 'astakos_ui',
         'component': 'astakos',
         'prefix': 'ui',
+        'public': False,
+        'endpoints': [
+            {'versionId': '',
+             'publicURL': None},
+        ],
+    },
+
+    'astakos_admin': {
+        'type': 'astakos_admin',
+        'component': 'astakos',
+        'prefix': 'admin',
         'public': False,
         'endpoints': [
             {'versionId': '',

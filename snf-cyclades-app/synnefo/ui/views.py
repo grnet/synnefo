@@ -95,11 +95,7 @@ SKIP_TIMEOUTS = getattr(settings, "UI_SKIP_TIMEOUTS", 1)
 
 # Additional settings
 VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
-VM_HOSTNAME_FORMAT = getattr(settings, "UI_VM_HOSTNAME_FORMAT",
-                             'snf-%(id)s.vm.synnefo.org')
-
-if isinstance(VM_HOSTNAME_FORMAT, basestring):
-    VM_HOSTNAME_FORMAT = VM_HOSTNAME_FORMAT % {'id': '{0}'}
+NO_FQDN_MESSAGE = getattr(settings, "UI_NO_FQDN_MESSAGE", "No available FQDN")
 
 MAX_SSH_KEYS_PER_USER = getattr(settings, "USERDATA_MAX_SSH_KEYS_PER_USER")
 FLAVORS_DISK_TEMPLATES_INFO = \
@@ -163,6 +159,12 @@ GROUPED_PUBLIC_NETWORK_NAME = \
     getattr(settings, 'UI_GROUPED_PUBLIC_NETWORK_NAME', 'Internet')
 
 
+DEFAULT_FORCED_SERVER_NETWORKS = \
+    getattr(settings, "CYCLADES_FORCED_SERVER_NETWORKS", [])
+FORCED_SERVER_NETWORKS = getattr(settings, "UI_FORCED_SERVER_NETWORKS",
+                                 DEFAULT_FORCED_SERVER_NETWORKS)
+
+
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
     current_template = template_path + name + '.html'
@@ -188,6 +190,7 @@ def home(request):
         'request': request,
         'current_lang': get_language() or 'en',
         'compute_api_url': json.dumps(uisettings.COMPUTE_URL),
+        'network_api_url': json.dumps(uisettings.NETWORK_URL),
         'user_catalog_url': json.dumps(uisettings.USER_CATALOG_URL),
         'feedback_post_url': json.dumps(uisettings.FEEDBACK_URL),
         'accounts_api_url': json.dumps(uisettings.ACCOUNT_URL),
@@ -227,6 +230,7 @@ def home(request):
         'image_deleted_size_title': json.dumps(IMAGE_DELETED_SIZE_TITLE),
         'network_suggested_subnets': json.dumps(NETWORK_SUBNETS),
         'network_available_types': json.dumps(NETWORK_TYPES),
+        'forced_server_networks': json.dumps(FORCED_SERVER_NETWORKS),
         'network_allow_duplicate_vm_nics': json.dumps(NETWORK_DUPLICATE_NICS),
         'network_strict_destroy': json.dumps(NETWORK_STRICT_DESTROY),
         'network_allow_multiple_destroy':
@@ -238,7 +242,7 @@ def home(request):
         'private_networks_nic_hotplug':
         json.dumps(PRIVATE_NETWORKS_NIC_HOTPLUG),
         'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL),
-        'vm_hostname_format': json.dumps(VM_HOSTNAME_FORMAT)
+        'no_fqdn_message': json.dumps(NO_FQDN_MESSAGE)
     }
     return template('home', request, context)
 
@@ -313,14 +317,17 @@ CONNECT_PROMPT_MESSAGES = {
         'linux': [CONNECT_LINUX_LINUX_MESSAGE, ""],
         'windows': [CONNECT_LINUX_WINDOWS_MESSAGE,
                     CONNECT_LINUX_WINDOWS_SUBMESSAGE],
-        'ssh_message': "ssh %(user)s@%(hostname)s"
+        'ssh_message': "ssh %(user)s@%(hostname)s",
+        'ssh_message_port': "ssh -p %(port)s %(user)s@%(hostname)s"
+
     },
     'windows': {
         'linux': [CONNECT_WINDOWS_LINUX_MESSAGE,
                   CONNECT_WINDOWS_LINUX_SUBMESSAGE],
         'windows': [CONNECT_WINDOWS_WINDOWS_MESSAGE,
                     CONNECT_WINDOWS_WINDOWS_SUBMESSAGE],
-        'ssh_message': "%(user)s@%(hostname)s"
+        'ssh_message': "%(user)s@%(hostname)s",
+        'ssh_message_port': "%(user)s@%(hostname)s (port: %(port)s)"
     },
 }
 
@@ -345,6 +352,7 @@ def machines_connect(request):
     host_os = request.GET.get('host_os', 'Linux').lower()
     username = request.GET.get('username', None)
     domain = request.GET.get("domain", DOMAIN_TPL % int(server_id))
+    ports = json.loads(request.GET.get('ports', '{}'))
 
     # guess host os
     if host_os != "windows":
@@ -360,6 +368,9 @@ def machines_connect(request):
         if metadata_os.lower() == "windows":
             username = "Administrator"
 
+    ssh_forward = ports.get("22", None)
+    rdp_forward = ports.get("3389", None)
+
     # operating system provides ssh access
     ssh = False
     if operating_system != "windows":
@@ -369,6 +380,12 @@ def machines_connect(request):
     # rdp param is set, the user requested rdp file
     # check if we are on windows
     if operating_system == 'windows' and request.GET.get("rdp", False):
+        port = '3389'
+        if rdp_forward:
+            hostname = rdp_forward.get('host', hostname)
+            ip_address = rdp_forward.get('host', ip_address)
+            port = str(rdp_forward.get('port', '3389'))
+
         extra_rdp_content = ''
         # UI sent domain info (from vm metadata) use this
         # otherwise use our default snf-<vm_id> domain
@@ -383,7 +400,8 @@ def machines_connect(request):
                         'server_id': server_id,
                         'ip_address': ip_address,
                         'hostname': hostname,
-                        'user': username
+                        'user': username,
+                        'port': port
                     }
 
         rdp_context = {
@@ -391,6 +409,7 @@ def machines_connect(request):
             'domain': domain,
             'ip_address': ip_address,
             'hostname': hostname,
+            'port': request.GET.get('port', port),
             'extra_content': extra_rdp_content
         }
 
@@ -401,9 +420,19 @@ def machines_connect(request):
         filename = "%d-%s.rdp" % (int(server_id), hostname)
         response['Content-Disposition'] = 'attachment; filename=%s' % filename
     else:
-        ssh_message = CONNECT_PROMPT_MESSAGES['linux'].get('ssh_message')
+        message_key = "ssh_message"
+        ip_address = ip_address
+        hostname = hostname
+        port = ''
+        if ssh_forward:
+            message_key = 'ssh_message_port'
+            hostname = ssh_forward.get('host', hostname)
+            ip_address = ssh_forward.get('host', ip_address)
+            port = str(ssh_forward.get('port', '22'))
+
+        ssh_message = CONNECT_PROMPT_MESSAGES['linux'].get(message_key)
         if host_os == 'windows':
-            ssh_message = CONNECT_PROMPT_MESSAGES['windows'].get('ssh_message')
+            ssh_message = CONNECT_PROMPT_MESSAGES['windows'].get(message_key)
         if callable(ssh_message):
             link_title = ssh_message(server_id, ip_address, hostname, username)
         else:
@@ -411,19 +440,26 @@ def machines_connect(request):
                 'server_id': server_id,
                 'ip_address': ip_address,
                 'hostname': hostname,
-                'user': username
+                'user': username,
+                'port': port
             }
         if (operating_system != "windows"):
             link_url = None
 
         else:
             link_title = _("Remote desktop to %s") % ip_address
+            if rdp_forward:
+                hostname = rdp_forward.get('host', hostname)
+                ip_address = rdp_forward.get('host', ip_address)
+                port = str(rdp_forward.get('port', '3389'))
+                link_title = _("Remote desktop to %s (port %s)") % (ip_address,
+                                                                    port)
             link_url = \
                 "%s?ip_address=%s&os=%s&rdp=1&srv=%d&username=%s&domain=%s" \
-                "&hostname=%s" % (
+                "&hostname=%s&port=%s" % (
                     reverse("ui_machines_connect"), ip_address,
                     operating_system, int(server_id), username,
-                    domain, hostname)
+                    domain, hostname, port)
 
         # try to find a specific message
         try:

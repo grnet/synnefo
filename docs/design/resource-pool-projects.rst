@@ -120,19 +120,24 @@ counters would differ.
   cyclades.vm   project:uuid   None           5       1
   cyclades.vm   user:uuid      project:uuid   5       1
 
-System default base quota
--------------------------
+System default quota
+--------------------
 
 Each resource registered in the system is assigned a default quota limit.
-A newly-activated user is given these limits as their base quota. Up to now,
-a change in a default quota limit propagates to all users' base quota
-(except if they have been customized). Since all users' base quota will be
-controlled through their base projects, the default behavior of
-``resource-modify`` will change to affect only future users (i.e.
-construction of new base projects). However, new option
-``--update-existing-base-projects`` will allow setting the limits to
-existing base projects, too. This is useful, for example, when setting a
-newly registered resource.
+A newly-activated user is given these limits as their base quota. This is
+till now done by copying the default limits as user's entries in
+AstakosUserQuota. Default limits will from now on be copied into the base
+project's resource definitions.
+
+Conventional projects are created through a project application, which
+may not specify limits for all resources registered in the system. In
+fact, it may even be impossible to specify a resource, if it is set
+``api_visible=False``. We have to somehow specify these limits. Defaulting
+to zero is not appropriate: if we don't want to control a resource, we
+would like it set to infinite. We thus need an extra skeleton, like the
+one specifying the default base quota, in order to fill in missing limits
+for conventional projects. It will be controled by a new option
+``--project-default`` of command ``resource-modify``.
 
 Private projects
 ----------------
@@ -392,17 +397,16 @@ Quota can be queried per user or project::
   ------------------------
   cyclades.vm 100    50
 
-``snf-manage quota`` will be removed; checking the integrity of the
-Quotaholder will be provided by a new command ``reconcile-quota``.
-
 A new command ``snf-manage project-modify`` will automate the process of
 applying/approving applications in order to modify some project settings,
 such as the quota limits.
 
 Currently, the administrator can change the user base quota with:
-``snf-manage user-modify <id> --set-base-quota <resource> <capacity>``.
+``snf-manage user-modify <id> --base-quota <resource> <capacity>``.
 This will be removed in favor of the ``project-modify`` command, so that all
-quota are handled in a uniform way.
+quota are handled in a uniform way. Similar to ``user-modify --all``,
+``project-modify`` will get options ``--all-base`` and ``--all-non-base`` to
+allow updating quota in bulk.
 
 Migration steps
 ===============

@@ -32,6 +32,7 @@
 from django.test import TransactionTestCase
 #from snf_django.utils.testing import mocked_quotaholder
 from synnefo.logic import servers
+from synnefo import quotas
 from synnefo.db import models_factory as mfactory, models
 from mock import patch
 
@@ -60,12 +61,13 @@ class ServerCreationTest(TransactionTestCase):
         self.assertRaises(faults.ServiceUnavailable, servers.create, **kwargs)
         self.assertEqual(models.VirtualMachine.objects.count(), 0)
 
-        mfactory.BackendFactory(drained=False)
-        mfactory.BackendNetworkFactory(network__public=True)
+        mfactory.IPv4SubnetFactory(network__public=True)
+        mfactory.IPv6SubnetFactory(network__public=True)
+        mfactory.BackendFactory()
 
         # error in nics
         req = deepcopy(kwargs)
-        req["private_networks"] = [42]
+        req["networks"] = [{"uuid": 42}]
         self.assertRaises(faults.ItemNotFound, servers.create, **req)
         self.assertEqual(models.VirtualMachine.objects.count(), 0)
 
@@ -76,91 +78,51 @@ class ServerCreationTest(TransactionTestCase):
         vm = models.VirtualMachine.objects.get()
         self.assertFalse(vm.deleted)
         self.assertEqual(vm.operstate, "ERROR")
-        self.assertEqual(len(vm.nics.all()), 1)
+        self.assertEqual(len(vm.nics.all()), 2)
         for nic in vm.nics.all():
             self.assertEqual(nic.state, "ERROR")
-
-        # success with no nics
-        mrapi().CreateInstance.side_effect = None
-        mrapi().CreateInstance.return_value = 42
-        with override_settings(settings,
-                               DEFAULT_INSTANCE_NETWORKS=[]):
-            with mocked_quotaholder():
-                vm = servers.create(**kwargs)
-        vm = models.VirtualMachine.objects.get(id=vm.id)
-        self.assertEqual(vm.nics.count(), 0)
-        self.assertEqual(vm.backendjobid, 42)
-        self.assertEqual(vm.task_job_id, 42)
-        self.assertEqual(vm.task, "BUILD")
-
-        # test connect in IPv6 only network
-        net = mfactory.IPv6NetworkFactory(state="ACTIVE")
-        mfactory.BackendNetworkFactory(network=net)
-        with override_settings(settings,
-                               DEFAULT_INSTANCE_NETWORKS=[str(net.id)]):
-            with mocked_quotaholder():
-                vm = servers.create(**kwargs)
-        nics = vm.nics.all()
-        self.assertEqual(len(nics), 1)
-        self.assertEqual(nics[0].ipv4, None)
-        args, kwargs = mrapi().CreateInstance.call_args
-        ganeti_nic = kwargs["nics"][0]
-        self.assertEqual(ganeti_nic["ip"], None)
-        self.assertEqual(ganeti_nic["network"], net.backend_id)
 
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
 class ServerTest(TransactionTestCase):
     def test_connect_network(self, mrapi):
         # Common connect
-        net = mfactory.NetworkFactory(subnet="192.168.2.0/24",
-                                      gateway="192.168.2.1",
-                                      state="ACTIVE",
-                                      dhcp=True,
-                                      flavor="CUSTOM")
-        vm = mfactory.VirtualMachineFactory(operstate="STARTED")
-        mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
-        mrapi().ModifyInstance.return_value = 42
-        servers.connect(vm, net)
-        pool = net.get_pool(with_lock=False)
-        self.assertFalse(pool.is_available("192.168.2.2"))
-        args, kwargs = mrapi().ModifyInstance.call_args
-        nics = kwargs["nics"][0]
-        self.assertEqual(kwargs["instance"], vm.backend_vm_id)
-        self.assertEqual(nics[0], "add")
-        self.assertEqual(nics[1]["ip"], "192.168.2.2")
-        self.assertEqual(nics[1]["network"], net.backend_id)
-
-        # No dhcp
-        vm = mfactory.VirtualMachineFactory(operstate="STARTED")
-        net = mfactory.NetworkFactory(subnet="192.168.2.0/24",
-                                      gateway="192.168.2.1",
-                                      state="ACTIVE",
-                                      dhcp=False)
-        mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
-        servers.connect(vm, net)
-        pool = net.get_pool(with_lock=False)
-        self.assertTrue(pool.is_available("192.168.2.2"))
-        args, kwargs = mrapi().ModifyInstance.call_args
-        nics = kwargs["nics"][0]
-        self.assertEqual(kwargs["instance"], vm.backend_vm_id)
-        self.assertEqual(nics[0], "add")
-        self.assertEqual(nics[1]["ip"], None)
-        self.assertEqual(nics[1]["network"], net.backend_id)
+        for dhcp in [True, False]:
+            subnet = mfactory.IPv4SubnetFactory(network__flavor="CUSTOM",
+                                                cidr="192.168.2.0/24",
+                                                gateway="192.168.2.1",
+                                                dhcp=dhcp)
+            net = subnet.network
+            vm = mfactory.VirtualMachineFactory(operstate="STARTED")
+            mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
+            mrapi().ModifyInstance.return_value = 42
+            with override_settings(settings, GANETI_USE_HOTPLUG=True):
+                servers.connect(vm, net)
+            pool = net.get_ip_pools(locked=False)[0]
+            self.assertFalse(pool.is_available("192.168.2.2"))
+            args, kwargs = mrapi().ModifyInstance.call_args
+            nics = kwargs["nics"][0]
+            self.assertEqual(kwargs["instance"], vm.backend_vm_id)
+            self.assertEqual(nics[0], "add")
+            self.assertEqual(nics[1], "-1")
+            self.assertEqual(nics[2]["ip"], "192.168.2.2")
+            self.assertEqual(nics[2]["network"], net.backend_id)
 
         # Test connect to IPv6 only network
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
-        net = mfactory.NetworkFactory(subnet6="2000::/64",
-                                      state="ACTIVE",
-                                      gateway="2000::1")
+        subnet = mfactory.IPv6SubnetFactory(cidr="2000::/64",
+                                            gateway="2000::1")
+        net = subnet.network
         mfactory.BackendNetworkFactory(network=net, backend=vm.backend)
-        servers.connect(vm, net)
+        with override_settings(settings, GANETI_USE_HOTPLUG=True):
+            servers.connect(vm, net)
         args, kwargs = mrapi().ModifyInstance.call_args
         nics = kwargs["nics"][0]
         self.assertEqual(kwargs["instance"], vm.backend_vm_id)
         self.assertEqual(nics[0], "add")
-        self.assertEqual(nics[1]["ip"], None)
-        self.assertEqual(nics[1]["network"], net.backend_id)
+        self.assertEqual(nics[1], "-1")
+        self.assertEqual(nics[2]["ip"], None)
+        self.assertEqual(nics[2]["network"], net.backend_id)
 
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
@@ -189,7 +151,8 @@ class ServerCommandTest(TransactionTestCase):
         vm = mfactory.VirtualMachineFactory(operstate="STOPPED")
         self.assertRaises(faults.BadRequest, servers.stop, vm)
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
-        self.assertRaises(faults.BadRequest, servers.resize, vm)
+        flavor = mfactory.FlavorFactory()
+        self.assertRaises(faults.BadRequest, servers.resize, vm, flavor)
         # Check that connect/disconnect is allowed only in STOPPED vms
         # if hotplug is disabled.
         vm = mfactory.VirtualMachineFactory(operstate="STARTED")
@@ -206,6 +169,8 @@ class ServerCommandTest(TransactionTestCase):
         vm.task = None
         vm.task_job_id = None
         vm.save()
+        with mocked_quotaholder():
+            quotas.accept_serial(vm.serial)
         mrapi().RebootInstance.return_value = 1
         with mocked_quotaholder():
             servers.reboot(vm, "HARD")
@@ -219,10 +184,8 @@ class ServerCommandTest(TransactionTestCase):
         serial = vm.serial
         mrapi().StartupInstance.return_value = 1
         with mocked_quotaholder() as m:
-            servers.start(vm)
-            m.resolve_commissions.assert_called_once_with([],
-                                                          [serial.serial])
-            self.assertTrue(m.issue_one_commission.called)
+            with self.assertRaises(quotas.ResolveError):
+                servers.start(vm)
         # Not pending, rejct
         vm.task = None
         vm.serial = mfactory.QuotaHolderSerialFactory(serial=400,

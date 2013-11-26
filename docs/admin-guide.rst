@@ -300,16 +300,13 @@ Setting quota limits
 
 Set default quota
 `````````````````
+To inspect current default base quota limits, run::
 
-In 20-snf-astakos-app-settings.conf, 
-uncomment the default setting ``ASTAKOS_SERVICES``
-and customize the ``'uplimit'`` values.
-These are the default base quota for all users.
+   # snf-manage resource-list
 
-To apply your configuration run::
+You can modify the default base quota limit for all future users with::
 
-    # snf-manage astakos-init --load-service-resources
-    # snf-manage quota --sync
+   # snf-manage resource-modify <resource_name> --default-quota <value>
 
 Set base quota for individual users
 ```````````````````````````````````
@@ -320,7 +317,16 @@ you can set it for each resource like this::
     # use this to display quota / uuid
     # snf-manage user-show 'uuid or email' --quota
 
-    # snf-manage user-modify 'user-uuid' --set-base-quota 'cyclades.vm' 10
+    # snf-manage user-modify <user-uuid> --base-quota 'cyclades.vm' 10
+
+You can set base quota for all existing users, with possible exceptions, using::
+
+    # snf-manage user-modify --all --base-quota cyclades.vm 10 --exclude uuid1,uuid2
+
+All quota for which values different from the default have been set,
+can be listed with::
+
+    # snf-manage quota-list --with-custom=True
 
 
 Enable the Projects feature
@@ -336,11 +342,11 @@ in ``20-snf-astakos-app-settings.conf`` set::
 You can change the maximum allowed number of pending project applications
 per user with::
 
-    # snf-manage resource-modify astakos.pending_app --limit <number>
+    # snf-manage resource-modify astakos.pending_app --default-quota <number>
 
 You can also set a user-specific limit with::
 
-    # snf-manage user-modify 'user-uuid' --set-base-quota 'astakos.pending_app' 5
+    # snf-manage user-modify <user-uuid> --base-quota 'astakos.pending_app' 5
 
 When users apply for projects they are not automatically granted
 the resources. They must first be approved by the administrator.
@@ -492,7 +498,6 @@ user information by the cookie identified by ``ASTAKOS_COOKIE_NAME`` setting
 
 Finally, backend systems having acquired a token can use the
 :ref:`authenticate-api-label` API call from a private network or through HTTPS.
-
 
 
 Compute/Network/Image Service (Cyclades)
@@ -858,219 +863,6 @@ these messages and properly updates the state of the Cyclades DB. Subsequent
 requests to the Cyclades API, will retrieve the updated state from the DB.
 
 
-
-Block Storage Service (Archipelago)
-===================================
-
-Overview
---------
-Archipelago offers Copy-On-Write snapshotable volumes. Pithos images can be used
-to provision a volume with Copy-On-Write semantics (i.e. a clone). Snapshots
-offer a unique deduplicated image of a volume, that reflects the volume state
-during snapshot creation and are indistinguishable from a Pithos image.
-
-Archipelago is used by Cyclades and Ganeti for fast provisioning of VMs based on
-CoW volumes. Moreover, it enables live migration of thinly-provisioned VMs with
-no physically shared storage.
-
-Archipelago Architecture
-------------------------
-
-.. image:: images/archipelago-architecture.png
-   :width: 50%
-   :target: _images/archipelago-architecture.png
-
-.. _syn+archip+rados:
-
-Overview of Synnefo + Archipelago + RADOS
------------------------------------------
-
-.. image:: images/synnefo-arch3.png
-   :width: 100%
-   :target: _images/synnefo-arch3.png
-
-Prereqs
--------
-
-The administrator must initialize the storage backend where archipelago volume
-blocks will reside.
-
-In case of a files backend, the administrator must create two directories. One
-for the archipelago data blocks and one for the archipelago map blocks. These
-should probably be over shared storage to enable sharing archipelago volumes
-between multiple nodes. He or she, must also be able to supply a directory where
-the pithos data and map blocks reside.
-
-In case of a RADOS backend, the administrator must create two rados pools, one
-for data blocks, and one for the map blocks. These pools, must be the same pools
-used in pithos, in order to enable volume creation based on pithos images.
-
-Installation
-------------
-
-Archipelago consists of
-
-* ``libxseg0``: libxseg used to communicate over shared memory segments
-* ``python-xseg``: python bindings for libxseg
-* ``archipelago-kernel-dkms``: contains archipelago kernel modules to provide
-  block devices to be used as vm disks
-* ``python-archipelago``: archipelago python module. Includes archipelago and
-  vlmc functionality.
-* ``archipelago``: user space tools and peers for the archipelago management and
-  volume composition
-* ``archipelago-ganeti``: ganeti ext storage scripts, that enable ganeti to
-  provision VMs over archipelago
-
-Performing
-
-.. code-block:: console
-
-  $ apt-get install archipelago-ganeti 
-
-should fetch all the required packages and get you up 'n going with archipelago
-
-Bare in mind, that custom librados is required, which is provided in the apt
-repo of GRNet.
-
-
-For now, librados is a dependency of archipelago, even if you do not intend to
-use archipelago over RADOS.
-
-Configuration
--------------
-Archipelago should work out of the box with a RADOS backend, but basic
-configuration can be done in ``/etc/default/archipelago`` .
-
-If you wish to change the storage backend to files, set
-
-.. code-block:: console
-
-   STORAGE="files"
-
-and provide the appropriate settings for files storage backend in the conf file.
-
-These are:
-
-* ``FILED_IMAGES``: directory for archipelago data blocks.
-* ``FILED_MAPS``: directory for archipelago map blocks.
-* ``PITHOS``: directory of pithos data blocks.
-* ``PITHOSMAPS``: directory of pithos map blocks.
-
-The settings for RADOS storage backend are:
-
-* ``RADOS_POOL_MAPS``: The pool where archipelago and pithos map blocks reside.
-* ``RADOS_POOL_BLOCKS``: The pool where archipelago and pithos data blocks
-  reside.
-
-Examples can be found in the conf file.
-
-Be aware that archipelago infrastructure doesn't provide default values for this
-settings. If they are not set in the conf file, archipelago will not be able to
-function.
-
-Archipelago also provides ``VERBOSITY`` config options to control the output
-generated by the userspace peers.
-
-The available options are:
-
-* ``VERBOSITY_BLOCKERB``
-* ``VERBOSITY_BLOCKERM``
-* ``VERBOSITY_MAPPER``
-* ``VERBOSITY_VLMC``
-
-and the available values are:
-
-* 0 : Error only logging.
-* 1 : Warning logging.
-* 2 : Info logging.
-* 3 : Debug logging. WARNING: This options produces tons of output, but the
-  logrotate daemon should take care of it.
-
-Working with Archipelago
-------------------------
-
-``archipelago`` provides basic functionality for archipelago.
-
-Usage:
-
-.. code-block:: console
-
-  $ archipelago [-u] command
-
-
-Currently it supports the following commands:
-
-* ``start [peer]``
-  Starts archipelago or the specified peer.
-* ``stop [peer]``
-  Stops archipelago or the specified peer.
-* ``restart [peer]``
-  Restarts archipelago or the specified peer.
-* ``status``
-  Show the status of archipelago.
-
-Available peers: ``blockerm``, ``blockerb``, ``mapperd``, ``vlmcd``.
-
-
-``start``, ``stop``, ``restart`` can be combined with the ``-u / --user`` option
-to affect only the userspace peers supporting archipelago.
-
-
-
-Archipelago advanced operations
--------------------------------
-The ``vlmc`` tool provides a way to interact with archipelago volumes
-
-* ``vlmc map <volumename>``: maps the volume to a xsegbd device.
-
-* ``vlmc unmap </dev/xsegbd[1-..]>``: unmaps the specified device from the
-  system.
-
-* ``vlmc create <volumename> --snap <snapname> --size <size>``: creates a new
-  volume named <volumename> from snapshot name <snapname> with size <size>.
-  The ``--snap`` and ``--size`` are optional, but at least one of them is
-  mandatory. e.g:
-
-  ``vlmc create <volumename> --snap <snapname>`` creates a volume named
-  volumename from snapshot snapname. The size of the volume is the same as
-  the size of the snapshot.
-
-  ``vlmc create <volumename> --size <size>`` creates an empty volume of size
-  <size> named <volumename>.
-
-* ``vlmc remove <volumename>``: removes the volume and all the related
-  archipelago blocks from storage.
-
-* ``vlmc list``: provides a list of archipelago volumes. Currently only works
-  with RADOS storage backend.
-
-* ``vlmc info <volumename>``: shows volume information. Currently returns only
-  volume size.
-
-* ``vlmc open <volumename>``: opens an archipelago volume. That is, taking all
-  the necessary locks and also make the rest of the infrastructure aware of the
-  operation.
-
-  This operation succeeds if the volume is alread opened.
-
-* ``vlmc close <volumename>``: closes an archipelago volume. That is, performing
-  all the necessary functions in the insfrastrure to successfully release the
-  volume. Also releases all the acquired locks.
-
-  ``vlmc close`` should be performed after a ``vlmc open`` operation.
-
-* ``vlmc lock <volumename>``: locks a volume. This step allow the administrator
-  to lock an archipelago volume, independently from the rest of the
-  infrastrure.
-
-* ``vlmc unlock [-f] <volumename>``: unlocks a volume. This allow the
-  administrator to unlock a volume, independently from the rest of the
-  infrastructure.
-  The unlock option can be performed only by the blocker that acquired the lock
-  in the first place. To unlock a volume from another blocker, ``-f`` option
-  must be used to break the lock.
-
-
 Synnefo management commands ("snf-manage")
 ==========================================
 
@@ -1132,12 +924,12 @@ component-show                Show component details
 project-control               Manage projects and applications
 project-list                  List projects
 project-show                  Show project details
-quota                         List and check the integrity of user quota
+quota-list                    List user quota
+quota-verify                  Check the integrity of user quota
 reconcile-resources-astakos   Reconcile resource usage of Quotaholder with Astakos DB
-resource-export-astakos       Export astakos resources in json format
-resource-import               Register resources
 resource-list                 List resources
 resource-modify               Modify a resource's default base quota and boolean flags
+service-export-astakos        Export Astakos services and resources in JSON format
 service-import                Register services
 service-list                  List services
 service-show                  Show service details
@@ -1163,7 +955,7 @@ Pithos snf-manage commands
 Name                          Description
 ============================  ===========================
 reconcile-commissions-pithos  Display unresolved commissions and trigger their recovery
-resource-export-pithos        Export pithos resources in json format
+service-export-pithos         Export Pithos services and resources in JSON format
 reconcile-resources-pithos    Detect unsynchronized usage between Astakos and Pithos DB resources and synchronize them if specified so.
 ============================  ===========================
 
@@ -1178,6 +970,7 @@ backend-list                   List backends
 backend-modify                 Modify a backend
 backend-update-status          Update backend statistics for instance allocation
 backend-remove                 Remove a Ganeti backend
+enforce-resources-cyclades     Check and fix quota violations for Cyclades resources
 server-create                  Create a new server
 server-show                    Show server details
 server-list                    List servers
@@ -1199,16 +992,29 @@ pool-show                      Show pool details
 pool-list                      List pools
 pool-modify                    Modify a pool
 pool-remove                    Delete a pool
+port-create                    Create a port connecting a server to a network
+port-inspect                   Inspect the state of a port in DB and Ganeti
+port-list                      List ports
+port-remove                    Delete a port
+floating-ip-create             Create a new floating IP
+floating-ip-attach             Attach a floating IP to a server
+floating-ip-dettach            Dettach a flotaing IP from a server
+floating-ip-list               List floating IPs
+floating-ip-remove             Delete a floating IP
 queue-inspect                  Inspect the messages of a RabbitMQ queue
 queue-retry                    Resend messages from Dead Letter queues to original exchanges
-resource-export-cyclades       Export Cyclades resources in JSON format.
-service-export-cyclades        Export Cyclades services in JSON format.
+service-export-cyclades        Export Cyclades services and resources in JSON format
+subnet-create                  Create a subnet
+subnet-inspect                 Inspect a subnet in DB
+subnet-list                    List subnets
+subnet-modify                  Modify a subnet
 reconcile-servers              Reconcile servers of Synnefo DB with state of Ganeti backend
 reconcile-networks             Reconcile networks of Synnefo DB with state of Ganeti backend
 reconcile-pools                Check consistency of pool resources
 reconcile-commissions-cyclades Detect and resolve pending commissions to Quotaholder
 reconcile-resources-cyclades   Reconcile resource usage of Astakos with Cyclades DB.
 ============================== ===========================
+
 
 Astakos helper scripts
 ======================
@@ -1229,6 +1035,7 @@ cyclades, and pithos) in astakos database. It internally uses the script:
 
 which simulates the export of service and resource definitions of the
 standard Synnefo components.
+
 
 Pithos managing accounts
 ========================
@@ -1903,6 +1710,7 @@ Upgrade Notes
    v0.14 -> v0.14.2 <upgrade/upgrade-0.14.2>
    v0.14.5 -> v0.14.6 <upgrade/upgrade-0.14.6>
    v0.14.7 -> v0.14.8 <upgrade/upgrade-0.14.8>
+   v0.14.9 -> v0.14.10 <upgrade/upgrade-0.14.10>
    v0.14 -> v0.15 <upgrade/upgrade-0.15>
 
 
@@ -1910,6 +1718,7 @@ Changelog, NEWS
 ===============
 
 
+* v0.14.10 :ref:`Changelog <Changelog-0.14.10>`, :ref:`NEWS <NEWS-0.14.10>`
 * v0.14.9 :ref:`Changelog <Changelog-0.14.9>`, :ref:`NEWS <NEWS-0.14.9>`
 * v0.14.8 :ref:`Changelog <Changelog-0.14.8>`, :ref:`NEWS <NEWS-0.14.8>`
 * v0.14.7 :ref:`Changelog <Changelog-0.14.7>`, :ref:`NEWS <NEWS-0.14.7>`

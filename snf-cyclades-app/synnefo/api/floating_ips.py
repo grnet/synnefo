@@ -39,13 +39,13 @@ from django.utils import simplejson as json
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 from synnefo.api import util
-from synnefo import quotas
-from synnefo.db.models import Network, FloatingIP
-
+from synnefo.logic import ips
+from synnefo.db.models import Network, IPAddress
 
 from logging import getLogger
 log = getLogger(__name__)
 
+'''
 ips_urlpatterns = patterns(
     'synnefo.api.floating_ips',
     (r'^(?:/|.json|.xml)?$', 'demux'),
@@ -56,6 +56,13 @@ pools_urlpatterns = patterns(
     "synnefo.api.floating_ips",
     (r'^(?:/|.json|.xml)?$', 'list_floating_ip_pools'),
 )
+'''
+
+ips_urlpatterns = patterns(
+    'synnefo.api.floating_ips',
+    (r'^(?:/|.json|.xml)?$', 'demux'),
+    (r'^/detail(?:.json|.xml)?$', 'list_floating_ips', {'detail': True}),
+    (r'^/(\w+)(?:/|.json|.xml)?$', 'floating_ip_demux'))
 
 
 def demux(request):
@@ -72,17 +79,24 @@ def floating_ip_demux(request, floating_ip_id):
         return get_floating_ip(request, floating_ip_id)
     elif request.method == 'DELETE':
         return release_floating_ip(request, floating_ip_id)
+    elif request.method == 'PUT':
+        return update_floating_ip(request, floating_ip_id)
     else:
         return api.api_method_not_allowed(request)
 
 
 def ip_to_dict(floating_ip):
-    machine_id = floating_ip.machine_id
-    return {"fixed_ip": None,
+    machine_id = None
+    port_id = None
+    if floating_ip.nic is not None:
+        machine_id = floating_ip.nic.machine_id
+        port_id = floating_ip.nic.id
+    return {"fixed_ip_address": None,
             "id": str(floating_ip.id),
             "instance_id": str(machine_id) if machine_id else None,
-            "ip": floating_ip.ipv4,
-            "pool": str(floating_ip.network_id)}
+            "floating_ip_address": floating_ip.address,
+            "port_id": str(floating_ip.nic.id) if port_id else None,
+            "floating_network_id": str(floating_ip.network_id)}
 
 
 @api.api_method(http_method="GET", user_required=True, logger=log,
@@ -92,13 +106,15 @@ def list_floating_ips(request):
     log.debug("list_floating_ips")
 
     userid = request.user_uniq
-    floating_ips = FloatingIP.objects.filter(userid=userid).order_by("id")
+    floating_ips = IPAddress.objects.filter(userid=userid, deleted=False,
+                                            floating_ip=True).order_by("id")\
+                                    .select_related("nic")
     floating_ips = utils.filter_modified_since(request, objects=floating_ips)
 
     floating_ips = map(ip_to_dict, floating_ips)
 
     request.serialization = "json"
-    data = json.dumps({"floating_ips": floating_ips})
+    data = json.dumps({"floatingips": floating_ips})
 
     return HttpResponse(data, status=200)
 
@@ -108,84 +124,46 @@ def list_floating_ips(request):
 def get_floating_ip(request, floating_ip_id):
     """Return information for a floating IP."""
     userid = request.user_uniq
-    try:
-        floating_ip = FloatingIP.objects.get(id=floating_ip_id,
-                                             deleted=False,
-                                             userid=userid)
-    except FloatingIP.DoesNotExist:
-        raise faults.ItemNotFound("Floating IP '%s' does not exist" %
-                                  floating_ip_id)
+    floating_ip = util.get_floating_ip_by_id(userid, floating_ip_id)
     request.serialization = "json"
-    data = json.dumps({"floating_ip": ip_to_dict(floating_ip)})
+    data = json.dumps({"floatingip": ip_to_dict(floating_ip)})
     return HttpResponse(data, status=200)
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log,
                 serializations=["json"])
-@transaction.commit_manually
+@transaction.commit_on_success
 def allocate_floating_ip(request):
     """Allocate a floating IP."""
     req = utils.get_request_dict(request)
+    floating_ip_dict = api.utils.get_attribute(req, "floatingip",
+                                               required=True)
     log.info('allocate_floating_ip %s', req)
 
     userid = request.user_uniq
-    pool = req.get("pool", None)
-    address = req.get("address", None)
-    machine = None
-    net_objects = Network.objects.select_for_update()\
-                                 .filter(public=True, floating_ip_pool=True,
-                                         deleted=False)
-    try:
-        if pool is None:
-            # User did not specified a pool. Choose a random public IP
-            network, address = util.get_free_ip(net_objects)
-        else:
-            try:
-                network_id = int(pool)
-            except ValueError:
-                raise faults.BadRequest("Invalid pool ID.")
-            network = next((n for n in net_objects if n.id == network_id),
-                           None)
-            if network is None:
-                raise faults.ItemNotFound("Pool '%s' does not exist." % pool)
-            if address is None:
-                # User did not specified an IP address. Choose a random one
-                # Gets X-Lock on IP pool
-                address = util.get_network_free_address(network)
-            else:
-                # User specified an IP address. Check that it is not a used
-                # floating IP
-                if FloatingIP.objects.filter(network=network,
-                                             deleted=False,
-                                             ipv4=address).exists():
-                    msg = "Floating IP '%s' is reserved" % address
-                    raise faults.Conflict(msg)
-                pool = network.get_pool()  # Gets X-Lock
-                # Check address belongs to pool
-                if not pool.contains(address):
-                    raise faults.BadRequest("Invalid address")
-                if pool.is_available(address):
-                    pool.reserve(address)
-                    pool.save()
-                # If address is not available, check that it belongs to the
-                # same user
-                elif not network.nics.filter(ipv4=address,
-                                             machine__userid=userid).exists():
-                        msg = "Address '%s' is already in use" % address
-                        raise faults.Conflict(msg)
-        floating_ip = FloatingIP.objects.create(ipv4=address, network=network,
-                                                userid=userid, machine=machine)
-        quotas.issue_and_accept_commission(floating_ip)
-    except:
-        transaction.rollback()
-        raise
+
+    # the network_pool is a mandatory field
+    network_id = api.utils.get_attribute(floating_ip_dict,
+                                         "floating_network_id",
+                                         required=False)
+    if network_id is None:
+        floating_ip = ips.create_floating_ip(userid)
     else:
-        transaction.commit()
+        try:
+            network_id = int(network_id)
+        except ValueError:
+            raise faults.BadRequest("Invalid networkd ID.")
 
-    log.info("User '%s' allocated floating IP '%s", userid, floating_ip)
+        network = util.get_network(network_id, userid, for_update=True,
+                                   non_deleted=True)
+        address = api.utils.get_attribute(floating_ip_dict,
+                                          "floating_ip_address",
+                                          required=False)
+        floating_ip = ips.create_floating_ip(userid, network, address)
 
+    log.info("User '%s' allocated floating IP '%s'", userid, floating_ip)
     request.serialization = "json"
-    data = json.dumps({"floating_ip": ip_to_dict(floating_ip)})
+    data = json.dumps({"floatingip": ip_to_dict(floating_ip)})
     return HttpResponse(data, status=200)
 
 
@@ -196,52 +174,64 @@ def release_floating_ip(request, floating_ip_id):
     """Release a floating IP."""
     userid = request.user_uniq
     log.info("release_floating_ip '%s'. User '%s'.", floating_ip_id, userid)
-    try:
-        floating_ip = FloatingIP.objects.select_for_update()\
-                                        .get(id=floating_ip_id,
-                                             deleted=False,
-                                             userid=userid)
-    except FloatingIP.DoesNotExist:
-        raise faults.ItemNotFound("Floating IP '%s' does not exist" %
-                                  floating_ip_id)
 
-    # Since we have got an exlusively lock in floating IP, and since
-    # to remove a floating IP you need the same lock, the in_use() query
-    # is safe
-    if floating_ip.in_use():
-        msg = "Floating IP '%s' is used" % floating_ip.id
-        raise faults.Conflict(message=msg)
-
-    try:
-        floating_ip.network.release_address(floating_ip.ipv4)
-        floating_ip.deleted = True
-        quotas.issue_and_accept_commission(floating_ip, delete=True)
-    except:
-        transaction.rollback()
-        raise
-    else:
-        floating_ip.delete()
-        transaction.commit()
-
+    floating_ip = util.get_floating_ip_by_id(userid, floating_ip_id,
+                                             for_update=True)
+    ips.delete_floating_ip(floating_ip)
     log.info("User '%s' released IP '%s", userid, floating_ip)
 
     return HttpResponse(status=204)
 
 
-def network_to_pool(network):
-    pool = network.get_pool(with_lock=False)
-    return {"name": str(network.id),
-            "size": pool.pool_size,
-            "free": pool.count_available()}
+@api.api_method(http_method='PUT', user_required=True, logger=log,
+                serializations=["json"])
+@transaction.commit_on_success
+def update_floating_ip(request, floating_ip_id):
+    """Update a floating IP."""
+    raise faults.NotImplemented("Updating a floating IP is not supported.")
+    #userid = request.user_uniq
+    #log.info("update_floating_ip '%s'. User '%s'.", floating_ip_id, userid)
+
+    #req = utils.get_request_dict(request)
+    #info = api.utils.get_attribute(req, "floatingip", required=True)
+
+    #device_id = api.utils.get_attribute(info, "device_id", required=False)
+
+    #floating_ip = util.get_floating_ip_by_id(userid, floating_ip_id,
+    #                                         for_update=True)
+    #if device_id:
+    #    # attach
+    #    vm = util.get_vm(device_id, userid)
+    #    nic, floating_ip = servers.create_nic(vm, ipaddress=floating_ip)
+    #    backend.connect_to_network(vm, nic)
+    #else:
+    #    # dettach
+    #    nic = floating_ip.nic
+    #    if not nic:
+    #        raise faults.BadRequest("The floating IP is not associated\
+    #                                with any device")
+    #    vm = nic.machine
+    #    servers.disconnect(vm, nic)
+    #return HttpResponse(status=202)
 
 
+# Floating IP pools
 @api.api_method(http_method='GET', user_required=True, logger=log,
                 serializations=["json"])
 def list_floating_ip_pools(request):
-    networks = Network.objects.filter(public=True, floating_ip_pool=True)
+    networks = Network.objects.filter(public=True, floating_ip_pool=True,
+                                      deleted=False)
     networks = utils.filter_modified_since(request, objects=networks)
-    pools = map(network_to_pool, networks)
+    floating_ip_pools = map(network_to_floating_ip_pool, networks)
     request.serialization = "json"
-    data = json.dumps({"floating_ip_pools": pools})
+    data = json.dumps({"floating_ip_pools": floating_ip_pools})
     request.serialization = "json"
     return HttpResponse(data, status=200)
+
+
+def network_to_floating_ip_pool(network):
+    """Convert a 'Network' object to a floating IP pool dict."""
+    total, free = network.ip_count()
+    return {"name": str(network.id),
+            "size": total,
+            "free": free}

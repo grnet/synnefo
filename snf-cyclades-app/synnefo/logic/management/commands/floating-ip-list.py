@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.db.models import FloatingIP
+from synnefo.db.models import IPAddress
 from snf_django.management.commands import ListCommand
 from synnefo.settings import CYCLADES_SERVICE_TOKEN, ASTAKOS_AUTH_URL
 from logging import getLogger
@@ -40,18 +40,26 @@ log = getLogger(__name__)
 
 class Command(ListCommand):
     help = "List Floating IPs"
-    object_class = FloatingIP
+    object_class = IPAddress
+    select_related = ["nic"]
     deleted_field = "deleted"
     user_uuid_field = "userid"
     astakos_auth_url = ASTAKOS_AUTH_URL
     astakos_token = CYCLADES_SERVICE_TOKEN
+    filters = {'floating_ip': True}
+
+    def get_machine(ip):
+        try:
+            return ip.nic.machine_id
+        except AttributeError:
+            return None
 
     FIELDS = {
         "id": ("id", "Floating IP UUID"),
         "user.uuid": ("userid", "The UUID of the server's owner"),
-        "address": ("ipv4", "IPv4 Address"),
+        "address": ("address", "IP Address"),
         "pool": ("network", "Floating IP Pool (network)"),
-        "machine": ("machine", "VM using this Floating IP"),
+        "machine": (get_machine, "VM using this Floating IP"),
         "created": ("created", "Datetime this IP was reserved"),
         "deleted": ("deleted", "If the floating IP is deleted"),
     }

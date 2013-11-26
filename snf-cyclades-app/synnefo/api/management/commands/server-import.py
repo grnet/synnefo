@@ -38,9 +38,9 @@ from synnefo.management import common
 
 from synnefo.db.models import VirtualMachine, Network, Flavor
 from synnefo.logic.utils import id_from_network_name, id_from_instance_name
-from synnefo.logic.backend import wait_for_job
+from synnefo.logic.backend import wait_for_job, connect_to_network
 from synnefo.logic.rapi import GanetiApiError
-from synnefo.api.util import allocate_public_address
+from synnefo.logic import servers
 from synnefo import quotas
 
 import sys
@@ -143,17 +143,7 @@ def import_server(instance_name, backend_id, flavor_id, image_id, user_id,
         else:
             raise CommandError("Unexpected error" + str(e))
 
-    if new_public_nic:
-        remove_instance_nics(instance, backend_client,
-                             stream=stream)
-        try:
-            (network, address) = allocate_public_address(backend)
-        except Exception as e:
-            raise CommandError(e)
-        nic = {'ip': address, 'network': network.backend_id}
-        add_public_nic(instance_name, nic, backend_client,
-                       stream=stream)
-    else:
+    if not new_public_nic:
         check_instance_nics(instance)
 
     shutdown_instance(instance, backend_client, stream=stream)
@@ -167,9 +157,22 @@ def import_server(instance_name, backend_id, flavor_id, image_id, user_id,
                                        flavor=flavor)
 
     quotas.issue_and_accept_commission(vm)
+
+    if new_public_nic:
+        remove_instance_nics(instance, backend_client,
+                             stream=stream)
+
     # Rename instance
     rename_instance(instance_name, vm.backend_vm_id, backend_client,
                     stream)
+
+    if new_public_nic:
+        ports = servers.create_instance_ports(user_id)
+        stream.write("Adding new NICs to server")
+        [servers.associate_port_with_machine(port, vm)
+         for port in ports]
+        [connect_to_network(vm, port) for port in ports]
+
     # Startup instance
     startup_instance(vm.backend_vm_id, backend_client, stream=stream)
 
@@ -194,7 +197,8 @@ def flavor_from_instance(instance, flavor, stream=sys.stdout):
 
 def check_instance_nics(instance):
     instance_name = instance['name']
-    networks = instance['nic.networks']
+    networks = instance['nic.networks.names']
+    print networks
     try:
         networks = map(id_from_network_name, networks)
     except Network.InvalidBackendIdError:
@@ -215,7 +219,7 @@ def remove_instance_nics(instance, backend_client, stream=sys.stdout):
     jobid = backend_client.ModifyInstance(instance_name, nics=op)
     (status, error) = wait_for_job(backend_client, jobid)
     if status != 'success':
-        raise CommandError("Can not rename instance: %s" % error)
+        raise CommandError("Cannot remove instance NICs: %s" % error)
 
 
 def add_public_nic(instance_name, nic, backend_client, stream=sys.stdout):
@@ -223,18 +227,17 @@ def add_public_nic(instance_name, nic, backend_client, stream=sys.stdout):
     jobid = backend_client.ModifyInstance(instance_name, nics=[('add', nic)])
     (status, error) = wait_for_job(backend_client, jobid)
     if status != 'success':
-        raise CommandError("Can not rename instance: %s" % error)
+        raise CommandError("Cannot rename instance: %s" % error)
 
 
 def shutdown_instance(instance, backend_client, stream=sys.stdout):
     instance_name = instance['name']
     if instance['status'] != 'ADMIN_down':
-        stream.write("Instance is not down. Shutting down"
-                     " instance\n")
+        stream.write("Instance is not down. Shutting down instance...\n")
         jobid = backend_client.ShutdownInstance(instance_name)
         (status, error) = wait_for_job(backend_client, jobid)
         if status != 'success':
-            raise CommandError("Can not shutdown instance: %s" % error)
+            raise CommandError("Cannot shutdown instance: %s" % error)
 
 
 def rename_instance(old_name, new_name, backend_client, stream=sys.stdout):
@@ -244,7 +247,7 @@ def rename_instance(old_name, new_name, backend_client, stream=sys.stdout):
                                           ip_check=False, name_check=False)
     (status, error) = wait_for_job(backend_client, jobid)
     if status != 'success':
-        raise CommandError("Can not rename instance: %s" % error)
+        raise CommandError("Cannot rename instance: %s" % error)
 
 
 def startup_instance(name, backend_client, stream=sys.stdout):
@@ -252,4 +255,4 @@ def startup_instance(name, backend_client, stream=sys.stdout):
     jobid = backend_client.StartupInstance(name)
     (status, error) = wait_for_job(backend_client, jobid)
     if status != 'success':
-        raise CommandError("Can not rename instance: %s" % error)
+        raise CommandError("Cannot rename instance: %s" % error)

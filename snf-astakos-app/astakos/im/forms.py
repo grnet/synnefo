@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -58,6 +58,7 @@ from astakos.im.functions import send_change_email, submit_application, \
 from astakos.im.util import reserved_verified_email, model_to_dict
 from astakos.im import auth_providers
 from astakos.im import settings
+from astakos.im import auth
 
 import astakos.im.messages as astakos_messages
 
@@ -73,25 +74,7 @@ DOMAIN_VALUE_REGEX = re.compile(
     re.IGNORECASE)
 
 
-class StoreUserMixin(object):
-
-    def store_user(self, user, request=None):
-        """
-        WARNING: this should be wrapped inside a transactional view/method.
-        """
-        user.save()
-        self.post_store_user(user, request)
-        return user
-
-    def post_store_user(self, user, request):
-        """
-        Interface method for descendant backends to be able to do stuff within
-        the transaction enabled by store_user.
-        """
-        pass
-
-
-class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
+class LocalUserCreationForm(UserCreationForm):
     """
     Extends the built in UserCreationForm in several ways:
 
@@ -177,58 +160,21 @@ class LocalUserCreationForm(UserCreationForm, StoreUserMixin):
             raise forms.ValidationError(_(
                 astakos_messages.CAPTCHA_VALIDATION_ERR))
 
-    def post_store_user(self, user, request=None):
-        """
-        Interface method for descendant backends to be able to do stuff within
-        the transaction enabled by store_user.
-        """
-        user.add_auth_provider('local', auth_backend='astakos')
-        user.set_password(self.cleaned_data['password1'])
+    def create_user(self):
+        try:
+            data = self.cleaned_data
+        except AttributeError:
+            self.is_valid()
+            data = self.cleaned_data
 
-    def save(self, commit=True, **kwargs):
-        """
-        Saves the email, first_name and last_name properties, after the normal
-        save behavior is complete.
-        """
-        user = super(LocalUserCreationForm, self).save(commit=False, **kwargs)
-        user.date_signed_terms = datetime.now()
-        user.renew_token()
-        if commit:
-            user.save(**kwargs)
-            logger.info('Created user %s', user.log_display)
+        user = auth.make_local_user(
+            email=data['email'], password=data['password1'],
+            first_name=data['first_name'], last_name=data['last_name'],
+            has_signed_terms=True)
         return user
 
 
-class InvitedLocalUserCreationForm(LocalUserCreationForm):
-    """
-    Extends the LocalUserCreationForm: email is readonly.
-    """
-    class Meta:
-        model = AstakosUser
-        fields = ("email", "first_name", "last_name", "has_signed_terms")
-
-    def __init__(self, *args, **kwargs):
-        """
-        Changes the order of fields, and removes the username field.
-        """
-        super(InvitedLocalUserCreationForm, self).__init__(*args, **kwargs)
-
-        #set readonly form fields
-        ro = ('email', 'username',)
-        for f in ro:
-            self.fields[f].widget.attrs['readonly'] = True
-
-    def save(self, commit=True, **kwargs):
-        user = super(InvitedLocalUserCreationForm, self).save(commit=False,
-                                                              **kwargs)
-        user.set_invitations_level()
-        user.email_verified = True
-        if commit:
-            user.save(**kwargs)
-        return user
-
-
-class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
+class ThirdPartyUserCreationForm(forms.ModelForm):
     email = forms.EmailField(
         label='Contact email',
         help_text='This is needed for contact purposes. '
@@ -292,68 +238,22 @@ class ThirdPartyUserCreationForm(forms.ModelForm, StoreUserMixin):
     def _get_pending_user(self):
         return PendingThirdPartyUser.objects.get(token=self.third_party_token)
 
-    def post_store_user(self, user, request=None):
+    def create_user(self):
+        try:
+            data = self.cleaned_data
+        except AttributeError:
+            self.is_valid()
+            data = self.cleaned_data
+
+        user = auth.make_user(
+            email=data["email"],
+            first_name=data["first_name"], last_name=data["last_name"],
+            has_signed_terms=True)
         pending = self._get_pending_user()
         provider = pending.get_provider(user)
         provider.add_to_user()
         pending.delete()
-
-    def save(self, commit=True, **kwargs):
-        user = super(ThirdPartyUserCreationForm, self).save(commit=False,
-                                                            **kwargs)
-        user.set_unusable_password()
-        user.renew_token()
-        user.date_signed_terms = datetime.now()
-        if commit:
-            user.save(**kwargs)
-            logger.info('Created user %s' % user.log_display)
         return user
-
-
-class InvitedThirdPartyUserCreationForm(ThirdPartyUserCreationForm):
-    """
-    Extends the ThirdPartyUserCreationForm: email is readonly.
-    """
-    def __init__(self, *args, **kwargs):
-        """
-        Changes the order of fields, and removes the username field.
-        """
-        super(
-            InvitedThirdPartyUserCreationForm, self).__init__(*args, **kwargs)
-
-        #set readonly form fields
-        ro = ('email',)
-        for f in ro:
-            self.fields[f].widget.attrs['readonly'] = True
-
-    def save(self, commit=True, **kwargs):
-        user = \
-            super(InvitedThirdPartyUserCreationForm, self).save(commit=False,
-                                                                **kwargs)
-        user.set_invitation_level()
-        user.email_verified = True
-        if commit:
-            user.save(**kwargs)
-        return user
-
-
-class ShibbolethUserCreationForm(ThirdPartyUserCreationForm):
-    additional_email = forms.CharField(
-        widget=forms.HiddenInput(), label='', required=False)
-
-    def __init__(self, *args, **kwargs):
-        super(ShibbolethUserCreationForm, self).__init__(*args, **kwargs)
-        # copy email value to additional_mail in case user will change it
-        name = 'email'
-        field = self.fields[name]
-        self.initial['additional_email'] = self.initial.get(
-            name, field.initial)
-        self.initial['email'] = None
-
-
-class InvitedShibbolethUserCreationForm(ShibbolethUserCreationForm,
-                                        InvitedThirdPartyUserCreationForm):
-    pass
 
 
 class LoginForm(AuthenticationForm):
@@ -886,7 +786,7 @@ class ProjectApplicationForm(forms.ModelForm):
                 # keep only resource limits for selected resource groups
                 if self.data.get('is_selected_%s' %
                                  resource.group, "0") == "1":
-                    if not resource.allow_in_projects:
+                    if not resource.ui_visible:
                         raise forms.ValidationError("Invalid resource %s" %
                                                     resource.name)
                     d = model_to_dict(resource)
@@ -985,7 +885,7 @@ class AddProjectMembersForm(forms.Form):
         q = self.cleaned_data.get('q') or ''
         users = q.split(',')
         users = list(u.strip() for u in users if u)
-        db_entries = AstakosUser.objects.verified().filter(email__in=users)
+        db_entries = AstakosUser.objects.accepted().filter(email__in=users)
         unknown = list(set(users) - set(u.email for u in db_entries))
         if unknown:
             raise forms.ValidationError(

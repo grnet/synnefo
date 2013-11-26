@@ -52,9 +52,10 @@ class FlavorTest(TestCase):
         """Test a flavor object name method."""
         flavor = mfact.FlavorFactory(cpu=1, ram=1024, disk=40,
                                      disk_template="temp")
-        self.assertEqual(flavor.name, "C1R1024D40temp", "flavor.name is not"
-                " generated correctly. Name is %s instead of C1R1024D40temp" %
-                flavor.name)
+        self.assertEqual(
+            flavor.name, "C1R1024D40temp", "flavor.name is not"
+            " generated correctly. Name is %s instead of C1R1024D40temp" %
+            flavor.name)
 
 
 class BackendTest(TestCase):
@@ -132,14 +133,14 @@ class BackendTest(TestCase):
         with override_settings(snf_settings,
                                GANETI_CREATEINSTANCE_KWARGS=kwargs):
             self.assertEqual(kvm_backend.get_create_params(),
-                    {"os": "snf-image+default",
-                     "hvparams": {"foo1": "mpaz1"}})
+                             {"os": "snf-image+default",
+                              "hvparams": {"foo1": "mpaz1"}})
             self.assertEqual(xen_pvm_backend.get_create_params(),
-                    {"os": "snf-image+default",
-                     "hvparams": {"foo2": "mpaz2"}})
+                             {"os": "snf-image+default",
+                              "hvparams": {"foo2": "mpaz2"}})
             self.assertEqual(xen_hvm_backend.get_create_params(),
-                    {"os": "snf-image+default",
-                     "hvparams": {"foo3": "mpaz3"}})
+                             {"os": "snf-image+default",
+                              "hvparams": {"foo3": "mpaz3"}})
         with override_settings(snf_settings, GANETI_CREATEINSTANCE_KWARGS={}):
             self.assertEqual(kvm_backend.get_create_params(), {"hvparams": {}})
 
@@ -172,7 +173,7 @@ class VirtualMachineTest(TestCase):
 
 class NetworkTest(TestCase):
     def setUp(self):
-        self.net = mfact.NetworkFactory()
+        self.net = mfact.NetworkWithSubnetFactory()
 
     def test_tags(self):
         net1 = mfact.NetworkFactory(flavor='IP_LESS_ROUTED')
@@ -194,17 +195,19 @@ class NetworkTest(TestCase):
                          len_backends + 3)
 
     def test_pool(self):
-        pool = self.net.get_pool()
+        pool = self.net.get_ip_pools()[0]
         pool.network = self.net
         self.assertTrue(isinstance(pool, IPPool))
 
     def test_reserve_ip(self):
-        net1 = mfact.NetworkFactory(subnet='192.168.2.0/24')
+        net1 = mfact.NetworkWithSubnetFactory(subnet__cidr='192.168.2.0/24')
+        pool = net1.get_ip_pools()[0]
+        self.assertTrue(pool.is_available('192.168.2.12'))
         net1.reserve_address('192.168.2.12')
-        pool = net1.get_pool()
+        pool = net1.get_ip_pools()[0]
         self.assertFalse(pool.is_available('192.168.2.12'))
         net1.release_address('192.168.2.12')
-        pool = net1.get_pool()
+        pool = net1.get_ip_pools()[0]
         self.assertTrue(pool.is_available('192.168.2.12'))
 
 
@@ -220,7 +223,8 @@ class BackendNetworkTest(TestCase):
         network = mfact.NetworkFactory(mac_prefix='zz:bb:c')
         backend = mfact.BackendFactory()
         self.assertRaises(utils.InvalidMacAddress,
-                mfact.BackendNetworkFactory, network=network, backend=backend)
+                          mfact.BackendNetworkFactory,
+                          network=network, backend=backend)
 
 
 class BridgePoolTest(TestCase):

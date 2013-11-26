@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -129,11 +129,12 @@ def index(request, authenticated_redirect='landing',
 @require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
+@transaction.commit_on_success
 def update_token(request):
     """
     Update api token view.
     """
-    user = request.user
+    user = AstakosUser.objects.select_for_update().get(id=request.user.id)
     user.renew_token()
     user.save()
     messages.success(request, astakos_messages.TOKEN_UPDATED)
@@ -271,6 +272,7 @@ def api_access(request, template_name='im/api_access.html',
 @login_required
 @cookie_fix
 @signed_terms_required
+@transaction.commit_on_success
 def edit_profile(request, template_name='im/profile.html', extra_context=None):
     """
     Allows a user to edit his/her profile.
@@ -300,6 +302,9 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
 
     * LOGIN_URL: login uri
     """
+
+    request.user = AstakosUser.objects.select_for_update().\
+        get(id=request.user.id)
     extra_context = extra_context or {}
     form = ProfileForm(
         instance=request.user,
@@ -464,14 +469,7 @@ def signup(request, template_name='im/signup.html', on_success='index',
             **form_kwargs)
 
         if form.is_valid():
-            user = form.save(commit=False)
-
-            # delete previously unverified accounts
-            if AstakosUser.objects.user_exists(user.email):
-                AstakosUser.objects.get_by_identifier(user.email).delete()
-
-            # store_user so that user auth providers get initialized
-            form.store_user(user, request)
+            user = form.create_user()
             result = activation_backend.handle_registration(user)
             if result.status == \
                     activation_backend.Result.PENDING_MODERATION:
@@ -623,7 +621,8 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
         return HttpResponseRedirect(reverse('index'))
 
     try:
-        user = AstakosUser.objects.get(verification_code=token)
+        user = AstakosUser.objects.select_for_update().\
+            get(verification_code=token)
     except AstakosUser.DoesNotExist:
         raise Http404
 
@@ -791,6 +790,7 @@ def change_email(request, activation_key=None,
 
 
 @cookie_fix
+@transaction.commit_on_success
 def send_activation(request, user_id, template_name='im/login.html',
                     extra_context=None):
 
@@ -799,7 +799,7 @@ def send_activation(request, user_id, template_name='im/login.html',
 
     extra_context = extra_context or {}
     try:
-        u = AstakosUser.objects.get(id=user_id)
+        u = AstakosUser.objects.select_for_update().get(id=user_id)
     except AstakosUser.DoesNotExist:
         messages.error(request, _(astakos_messages.ACCOUNT_UNKNOWN))
     else:
@@ -826,7 +826,7 @@ def resource_usage(request):
 
     current_usage = quotas.get_user_quotas(request.user)
     current_usage = json.dumps(current_usage['system'])
-    resource_catalog, resource_groups = _resources_catalog(for_usage=True)
+    resource_catalog, resource_groups = _resources_catalog()
     if resource_catalog is False:
         # on fail resource_groups contains the result object
         result = resource_groups

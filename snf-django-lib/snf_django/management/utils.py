@@ -95,17 +95,17 @@ def parse_filters(filter_by):
             exclude_dict[key] = parse_bool(val, strict=False)
             return
 
-        OP_MAP = {
-            ">=": "__gte",
-            "=>": "__gte",
-            ">":  "__gt",
-            "<=": "__lte",
-            "=<": "__lte",
-            "<":  "__lt",
-            "=":  "",
-        }
+        OP_MAP = [
+            (">=", "__gte"),
+            ("=>", "__gte"),
+            (">",  "__gt"),
+            ("<=", "__lte"),
+            ("=<", "__lte"),
+            ("<", "__lt"),
+            ("=", ""),
+            ]
 
-        for op, new_op in OP_MAP.items():
+        for op, new_op in OP_MAP:
             if op in query:
                 key, val = query.split(op)
                 filter_dict[key + new_op] = parse_bool(val, strict=False)
@@ -168,7 +168,10 @@ def pprint_table(out, table, headers=None, output_format='pretty',
 
             t_length = sum(widths) + len(sep) * (len(widths) - 1)
             if title is not None:
+                t_length = max(t_length, len(title))
+                out.write("-" * t_length + "\n")
                 out.write(title.center(t_length) + "\n")
+                out.write("-" * t_length + "\n")
             if headers:
                 # pretty print the headers
                 line = sep.join(uenc(v.rjust(w))

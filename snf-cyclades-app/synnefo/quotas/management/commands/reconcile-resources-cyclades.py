@@ -129,7 +129,7 @@ class Command(BaseCommand):
                 request["provisions"] = map(create_provision, unsynced)
                 try:
                     qh.issue_commission(request)
-                except quotas.QuotaLimit:
+                except quotas.errors.QuotaLimit:
                     write("Reconciling failed because a limit has been "
                           "reached. Use --force to ignore the check.\n")
                     return

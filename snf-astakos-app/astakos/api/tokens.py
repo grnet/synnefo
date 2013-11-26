@@ -102,10 +102,11 @@ def authenticate(request):
 
     d["access"]["serviceCatalog"] = []
     append = d["access"]["serviceCatalog"].append
-    for s in Service.objects.all().order_by("id"):
+    for s in Service.objects.all().order_by("id").\
+            prefetch_related('endpoints__data').select_related('component'):
         endpoints = []
-        for l in [e.data.values('key', 'value') for e in s.endpoints.all()]:
-            endpoint = dict((d['key'], d['value']) for d in l)
+        for e in s.endpoints.all():
+            endpoint = dict((ed.key, ed.value) for ed in e.data.all())
             endpoint["SNF:uiURL"] = s.component.url
             endpoint["region"] = "default"
             if s.name == 'astakos_weblogin':

@@ -34,7 +34,8 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management import common
+from synnefo.management import common, pprint
+from snf_django.management.utils import parse_bool
 
 from synnefo.logic import servers
 
@@ -67,7 +68,21 @@ class Command(BaseCommand):
                          " Use snf-manage flavor-list to find out"
                          " available flavors."),
         make_option("--password", dest="password",
-                    help="Password for the new server")
+                    help="Password for the new server"),
+        make_option("--port", dest="connections", action="append",
+                    help="--port network:<network_id>(,address=<ip_address>),"
+                         " --port id:<port_id>"
+                         " --port floatingip:<floatingip_id>."),
+        make_option("--floating-ips", dest="floating_ip_ids",
+                    help="Comma separated list of port IDs to connect"),
+        make_option(
+            '--wait',
+            dest='wait',
+            default="False",
+            choices=["True", "False"],
+            metavar="True|False",
+            help="Wait for Ganeti job to complete."),
+
     )
 
     @common.convert_api_faults
@@ -100,5 +115,44 @@ class Command(BaseCommand):
         else:
             backend = None
 
-        servers.create(user_id, name, password, flavor, image,
-                       use_backend=backend)
+        connection_list = parse_connections(options["connections"])
+        server = servers.create(user_id, name, password, flavor, image,
+                                networks=connection_list,
+                                use_backend=backend)
+        pprint.pprint_server(server, stdout=self.stdout)
+
+        wait = parse_bool(options["wait"])
+        common.wait_server_task(server, wait, self.stdout)
+
+
+def parse_connections(con_list):
+    connections = []
+    if con_list:
+        for opt in con_list:
+            try:
+                con_kind = opt.split(":")[0]
+                if con_kind == "network":
+                    info = opt.split(",")
+                    network_id = info[0].split(":")[1]
+                    try:
+                        address = info[1].split(":")[1]
+                    except:
+                        address = None
+                    if address:
+                        val = {"uuid": network_id, "fixed_ip": address}
+                    else:
+                        val = {"uuid": network_id}
+                elif con_kind == "id":
+                    port_id = opt.split(":")[1]
+                    val = {"port": port_id}
+                elif con_kind == "floatingip":
+                    fip_id = opt.split(":")[1]
+                    fip = common.get_floating_ip_by_id(fip_id, for_update=True)
+                    val = {"uuid": fip.network_id, "fixed_ip": fip.address}
+                else:
+                    raise CommandError("Unknown argument for option --port")
+
+                connections.append(val)
+            except:
+                raise CommandError("Malformed information for option --port")
+    return connections

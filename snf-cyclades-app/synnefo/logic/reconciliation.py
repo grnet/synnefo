@@ -61,7 +61,7 @@ from django.conf import settings
 import logging
 import itertools
 import bitarray
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.db import transaction
 from synnefo.db.models import (Backend, VirtualMachine, Flavor,
@@ -69,19 +69,12 @@ from synnefo.db.models import (Backend, VirtualMachine, Flavor,
                                BackendNetwork, BridgePoolTable,
                                MacPrefixPoolTable)
 from synnefo.db import pools
-from synnefo.logic import utils, backend as backend_mod
+from synnefo.logic import utils, rapi, backend as backend_mod
 
 logger = logging.getLogger()
 logging.basicConfig()
 
-try:
-    CHECK_INTERVAL = settings.RECONCILIATION_CHECK_INTERVAL
-except AttributeError:
-    CHECK_INTERVAL = 60
-
-GANETI_JOB_ERROR = "error"
-GANETI_JOBS_PENDING = ["queued", "waiting", "running", "canceling"]
-GANETI_JOBS_FINALIZED = ["success", "error", "canceled"]
+BUILDING_NIC_TIMEOUT = timedelta(seconds=120)
 
 
 class BackendReconciler(object):
@@ -125,9 +118,9 @@ class BackendReconciler(object):
         job_id = db_server.backendjobid
         if job_id in self.gnt_jobs:
             gnt_job_status = self.gnt_jobs[job_id]["status"]
-            if gnt_job_status == GANETI_JOB_ERROR:
+            if gnt_job_status == rapi.JOB_STATUS_ERROR:
                 return "ERROR"
-            elif gnt_job_status not in GANETI_JOBS_FINALIZED:
+            elif gnt_job_status not in rapi.JOB_STATUS_FINALIZED:
                 return "RUNNING"
             else:
                 return "FINALIZED"
@@ -274,7 +267,7 @@ class BackendReconciler(object):
                 backend_mod.process_op_status(
                     vm=db_server, etime=self.event_time, jobid=-0,
                     opcode=opcode, status='success',
-                    beparams=beparams,
+                    job_fields={"beparams": beparams},
                     logmsg='Reconciliation: simulated Ganeti event')
                 # process_op_status with beparams will set the vmstate to
                 # shutdown. Fix this be returning it to old state
@@ -285,14 +278,27 @@ class BackendReconciler(object):
                                server_id)
 
     def reconcile_unsynced_nics(self, server_id, db_server, gnt_server):
-        db_nics = db_server.nics.order_by("index")
+        building_time = self.event_time - BUILDING_NIC_TIMEOUT
+        db_nics = db_server.nics.exclude(state="BUILD",
+                                         created__lte=building_time) \
+                                .order_by("id")
         gnt_nics = gnt_server["nics"]
         gnt_nics_parsed = backend_mod.process_ganeti_nics(gnt_nics)
-        if backend_mod.nics_changed(db_nics, gnt_nics_parsed):
-            msg = "Found unsynced NICs for server '%s'.\n\t"\
-                  "DB: %s\n\tGaneti: %s"
-            db_nics_str = ", ".join(map(format_db_nic, db_nics))
-            gnt_nics_str = ", ".join(map(format_gnt_nic, gnt_nics_parsed))
+        nics_changed = len(db_nics) != len(gnt_nics)
+        for db_nic, gnt_nic in zip(db_nics, sorted(gnt_nics_parsed.items())):
+            gnt_nic_id, gnt_nic = gnt_nic
+            if (db_nic.id == gnt_nic_id) and\
+               backend_mod.nics_are_equal(db_nic, gnt_nic):
+                continue
+            else:
+                nics_changed = True
+                break
+        if nics_changed:
+            msg = "Found unsynced NICs for server '%s'.\n"\
+                  "\tDB:\n\t\t%s\n\tGaneti:\n\t\t%s"
+            db_nics_str = "\n\t\t".join(map(format_db_nic, db_nics))
+            gnt_nics_str = "\n\t\t".join(map(format_gnt_nic,
+                                         sorted(gnt_nics_parsed.items())))
             self.log.info(msg, server_id, db_nics_str, gnt_nics_str)
             if self.options["fix_unsynced_nics"]:
                 backend_mod.process_net_status(vm=db_server,
@@ -309,7 +315,7 @@ class BackendReconciler(object):
             pending_task = True
         else:
             gnt_job_status = self.gnt_jobs[job_id]["status"]
-            if gnt_job_status in GANETI_JOBS_FINALIZED:
+            if gnt_job_status in rapi.JOB_STATUS_FINALIZED:
                 pending_task = True
 
         if pending_task:
@@ -322,15 +328,20 @@ class BackendReconciler(object):
                 self.log.info("Cleared pending task for server '%s", server_id)
 
 
+NIC_MSG = ": %s\t".join(["ID", "State", "IP", "Network", "MAC", "Index",
+                         "Firewall"]) + ": %s"
+
+
 def format_db_nic(nic):
-    return "Index: %s, IP: %s Network: %s MAC: %s Firewall: %s" % (nic.index,
-           nic.ipv4, nic.network_id, nic.mac, nic.firewall_profile)
+    return NIC_MSG % (nic.id, nic.state, nic.ipv4_address, nic.network_id,
+                      nic.mac, nic.index, nic.firewall_profile)
 
 
 def format_gnt_nic(nic):
-    return "Index: %s IP: %s Network: %s MAC: %s Firewall: %s" %\
-           (nic["index"], nic["ipv4"], nic["network"], nic["mac"],
-            nic["firewall_profile"])
+    nic_name, nic = nic
+    return NIC_MSG % (nic_name, nic["state"], nic["ipv4_address"],
+                      nic["network"].id, nic["mac"], nic["index"],
+                      nic["firewall_profile"])
 
 
 #
@@ -357,9 +368,8 @@ def hanging_networks(backend, GNets):
     """
     def get_network_groups(group_list):
         groups = set()
-        for g in group_list:
-            g_name = g.split('(')[0]
-            groups.add(g_name)
+        for (name, mode, link) in group_list:
+            groups.add(name)
         return groups
 
     with pooled_rapi_client(backend) as c:
@@ -378,7 +388,8 @@ def get_online_backends():
 
 
 def get_database_servers(backend):
-    servers = backend.virtual_machines.select_related("nics", "flavor")\
+    servers = backend.virtual_machines.select_related("flavor")\
+                                      .prefetch_related("nics__ips__subnet")\
                                       .filter(deleted=False)
     return dict([(s.id, s) for s in servers])
 
@@ -421,12 +432,13 @@ def parse_gnt_instance(instance):
 
 def nics_from_instance(i):
     ips = zip(itertools.repeat('ip'), i['nic.ips'])
+    names = zip(itertools.repeat('name'), i['nic.names'])
     macs = zip(itertools.repeat('mac'), i['nic.macs'])
-    networks = zip(itertools.repeat('network'), i['nic.networks'])
+    networks = zip(itertools.repeat('network'), i['nic.networks.names'])
     # modes = zip(itertools.repeat('mode'), i['nic.modes'])
     # links = zip(itertools.repeat('link'), i['nic.links'])
     # nics = zip(ips,macs,modes,networks,links)
-    nics = zip(ips, macs, networks)
+    nics = zip(ips, names, macs, networks)
     nics = map(lambda x: dict(x), nics)
     #nics = dict(enumerate(nics))
     tags = i["tags"]
@@ -436,14 +448,10 @@ def nics_from_instance(i):
             if len(t) != 4:
                 logger.error("Malformed synefo tag %s", tag)
                 continue
-            try:
-                index = int(t[2])
-                nics[index]['firewall'] = t[3]
-            except ValueError:
-                logger.error("Malformed synnefo tag %s", tag)
-            except IndexError:
-                logger.error("Found tag %s for non-existent NIC %d",
-                             tag, index)
+            nic_name = t[2]
+            firewall = t[3]
+            [nic.setdefault("firewall", firewall)
+             for nic in nics if nic["name"] == nic_name]
     return nics
 
 
@@ -492,26 +500,21 @@ class NetworkReconciler(object):
         corresponding Ganeti networks in all Ganeti backends.
 
         """
-        network_ip_pool = network.get_pool()  # X-Lock on IP Pool
+        if network.subnets.filter(ipversion=4, dhcp=True).exists():
+            ip_pools = network.get_ip_pools()  # X-Lock on IP pools
+        else:
+            ip_pools = None
         for bend in self.backends:
             bnet = get_backend_network(network, bend)
             gnet = self.ganeti_networks[bend].get(network.id)
-            if not bnet:
-                if network.floating_ip_pool:
-                    # Network is a floating IP pool and does not exist in
-                    # backend. We need to create it
-                    bnet = self.reconcile_parted_network(network, bend)
-                elif not gnet:
-                    # Network does not exist either in Ganeti nor in BD.
-                    continue
-                else:
-                    # Network exists in Ganeti and not in DB.
-                    if network.action != "DESTROY" and not network.public:
-                        bnet = self.reconcile_parted_network(network, bend)
-                    else:
-                        continue
+            if bnet is None and gnet is not None:
+                # Network exists in backend but not in DB for this backend
+                bnet = self.reconcile_parted_network(network, bend)
 
-            if not gnet:
+            if bnet is None:
+                continue
+
+            if gnet is None:
                 # Network does not exist in Ganeti. If the network action
                 # is DESTROY, we have to mark as deleted in DB, else we
                 # have to create it in Ganeti.
@@ -544,17 +547,22 @@ class NetworkReconciler(object):
             # Check that externally reserved IPs of the network in Ganeti are
             # also externally reserved to the IP pool
             externally_reserved = gnet['external_reservations']
-            if externally_reserved:
+            if externally_reserved and ip_pools is not None:
                 for ip in externally_reserved.split(","):
                     ip = ip.strip()
-                    if not network_ip_pool.is_reserved(ip):
-                        msg = ("D: IP '%s' is reserved for network '%s' in"
-                               " backend '%s' but not in DB.")
-                        self.log.info(msg, ip, network, bend)
-                        if self.fix:
-                            network_ip_pool.reserve(ip, external=True)
-                            network_ip_pool.save()
-                            self.log.info("F: Reserved IP '%s'", ip)
+                    for ip_pool in ip_pools:
+                        if ip_pool.contains(ip):
+                            if not ip_pool.is_reserved(ip):
+                                msg = ("D: IP '%s' is reserved for network"
+                                       " '%s' in backend '%s' but not in DB.")
+                                self.log.info(msg, ip, network, bend)
+                                if self.fix:
+                                    ip_pool.reserve(ip, external=True)
+                                    ip_pool.save()
+                                    self.log.info("F: Reserved IP '%s'", ip)
+        if network.state != "ACTIVE":
+            network = Network.objects.select_for_update().get(id=network.id)
+            backend_mod.update_network_state(network)
 
     def reconcile_parted_network(self, network, backend):
         self.log.info("D: Missing DB entry for network %s in backend %s",
@@ -645,8 +653,13 @@ class PoolReconciler(object):
     def reconcile(self):
         self.reconcile_bridges()
         self.reconcile_mac_prefixes()
-        for network in Network.objects.filter(deleted=False):
-            self.reconcile_ip_pool(network)
+
+        networks = Network.objects.prefetch_related("subnets")\
+                                  .filter(deleted=False)
+        for network in networks:
+            for subnet in network.subnets.all():
+                if subnet.ipversion == 4 and subnet.dhcp:
+                    self.reconcile_ip_pool(network)
 
     @transaction.commit_on_success
     def reconcile_bridges(self):
@@ -659,6 +672,7 @@ class PoolReconciler(object):
             self.log.info("There is no available pool for bridges.")
             return
 
+        # Since pool is locked, no new networks may be created
         used_bridges = set(networks.values_list('link', flat=True))
         check_pool_consistent(pool=pool, pool_class=pools.BridgePool,
                               used_values=used_bridges, fix=self.fix,
@@ -675,6 +689,7 @@ class PoolReconciler(object):
             self.log.info("There is no available pool for MAC prefixes.")
             return
 
+        # Since pool is locked, no new network may be created
         used_mac_prefixes = set(networks.values_list('mac_prefix', flat=True))
         check_pool_consistent(pool=pool, pool_class=pools.MacPrefixPool,
                               used_values=used_mac_prefixes, fix=self.fix,
@@ -683,24 +698,20 @@ class PoolReconciler(object):
     @transaction.commit_on_success
     def reconcile_ip_pool(self, network):
         # Check that all NICs have unique IPv4 address
-        nics = network.nics.filter(ipv4__isnull=False)
-        check_unique_values(objects=nics, field='ipv4', logger=self.log)
+        nics = network.ips.exclude(address__isnull=True).all()
+        check_unique_values(objects=nics, field="address", logger=self.log)
 
-        # Check that all Floating IPs have unique IPv4 address
-        floating_ips = network.floating_ips.filter(deleted=False)
-        check_unique_values(objects=floating_ips, field='ipv4',
-                            logger=self.log)
-
-        # First get(lock) the IP pool of the network to prevent new NICs
-        # from being created.
-        network_ip_pool = network.get_pool()
-        used_ips = set(list(nics.values_list("ipv4", flat=True)) +
-                       list(floating_ips.values_list("ipv4", flat=True)))
-
-        check_pool_consistent(pool=network_ip_pool,
-                              pool_class=pools.IPPool,
-                              used_values=used_ips,
-                              fix=self.fix, logger=self.log)
+        for ip_pool in network.get_ip_pools():
+            # IP pool is now locked, so no new IPs may be created
+            used_ips = ip_pool.pool_table.subnet\
+                              .ips.exclude(address__isnull=True)\
+                              .exclude(deleted=True)\
+                              .values_list("address", flat=True)
+            used_ips = filter(lambda x: ip_pool.contains(x), used_ips)
+            check_pool_consistent(pool=ip_pool,
+                                  pool_class=pools.IPPool,
+                                  used_values=used_ips,
+                                  fix=self.fix, logger=self.log)
 
 
 def check_unique_values(objects, field, logger):

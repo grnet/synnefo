@@ -35,12 +35,12 @@ from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext as _
 
-from astakos.im.models import AstakosUser
+from astakos.im import models
 from astakos.im import functions
 from astakos.im import settings
 from astakos.im import forms
 
-from astakos.im.quotas import qh_sync_user
+from astakos.im.quotas import qh_sync_new_user
 
 import astakos.im.messages as astakos_messages
 
@@ -90,9 +90,7 @@ class ActivationBackend(object):
     >>> backend = get_backend()
     >>> formCls = backend.get_signup_form(request.POST)
     >>> if form.is_valid():
-    >>>     user = form.save(commit=False)
-    >>>     # this creates auth provider objects
-    >>>     form.store_user(user)
+    >>>     user = form.create_user()
     >>>     activation = backend.handle_registration(user)
     >>>     # activation.status is one of backend.Result.{*} activation result
     >>>     # types
@@ -257,7 +255,7 @@ class ActivationBackend(object):
                                          default=lambda obj:
                                          str(obj))
         user.save()
-        qh_sync_user(user)
+        qh_sync_new_user(user)
 
         if user.is_rejected:
             logger.warning("User has previously been "
@@ -444,13 +442,11 @@ class InvitationsBackend(ActivationBackend):
         initial_data = None
         if request.method == 'GET':
             if invitation:
-                # create a tmp user with the invitation realname
-                # to extract first and last name
-                u = AstakosUser(realname=invitation.realname)
+                first, last = models.split_realname(invitation.realname)
                 initial_data = {'email': invitation.username,
                                 'inviter': invitation.inviter.realname,
-                                'first_name': u.first_name,
-                                'last_name': u.last_name,
+                                'first_name': first,
+                                'last_name': last,
                                 'provider': provider}
         else:
             if provider == request.POST.get('provider', ''):

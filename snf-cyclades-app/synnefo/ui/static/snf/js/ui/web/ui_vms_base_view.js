@@ -311,6 +311,14 @@
             this.__update_layout();
         },
         
+        update_toggles_visibility: function(vm) {
+          if (vm.is_building() || vm.in_error_state() || vm.get("status") == "DESTROY") {
+            this.vm(vm).find(".cont-toggler-wrapper.ips").addClass("disabled");
+          } else {
+            this.vm(vm).find(".cont-toggler-wrapper.ips").removeClass("disabled");
+          }
+        },
+
         // update ui for the given vm
         update_vm: function(vm) {
             // do not update deleted state vms
@@ -319,6 +327,7 @@
 
             this.update_details(vm);
             this.update_transition_state(vm);
+            this.update_toggles_visibility(vm);
 
             if (this.action_views) {
                 this.action_views[vm.id].update();
@@ -551,6 +560,14 @@
             _.each(models.VM.ACTIONS, function(action, index) {
                 if (actions.indexOf(action) > -1) {
                     this.action(action).removeClass("disabled");
+                    var inactive = models.VM.AVAILABLE_ACTIONS_INACTIVE[action];
+
+                    if (inactive && !_.contains(inactive, this.vm.get('status'))) {
+                      this.action(action).addClass("inactive");
+                    } else {
+                      this.action(action).removeClass("inactive");
+                    }
+
                     if (this.selected_action == action) {
                         this.action_confirm_cont(action).css('display', 'block');
                         this.action_confirm(action).show();
@@ -619,7 +636,11 @@
                 // action links click events
                 $(this.el).find(".action-container."+action+" a").click(function(ev) {
                     ev.preventDefault();
-                    self.set(action);
+                    if (action == "resize") {
+                        ui.main.vm_resize_view.show(self.vm);
+                    } else {
+                        self.set(action);
+                    }
                 }).data("action", action);
 
                 // confirms
@@ -656,6 +677,7 @@
         
         // set selected action
         set: function(action_name) {
+            if (action_name == "snapshot") { return }
             this.selected_action = action_name;
             this.vm.update_pending_action(this.selected_action);
             this.view.vm(this.vm).find(".action-indicator").show().removeClass().addClass(action_name + " action-indicator");
@@ -672,6 +694,8 @@
         'shutdown':      ['UNKOWN', 'ACTIVE', 'REBOOT'],
         'console':       ['ACTIVE'],
         'start':         ['UNKOWN', 'STOPPED'],
+        'resize':        ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT', 'ERROR', 'BUILD'],
+        'snapshot':      ['ACTIVE', 'STOPPED'],
         'destroy':       ['UNKOWN', 'ACTIVE', 'STOPPED', 'REBOOT', 'ERROR', 'BUILD']
     };
 
@@ -734,5 +758,75 @@
         }
         snf.ui.trigger("error", { code:code, msg:msg, error:error, extra:extra || {} });
     };
+    
+    views.VMPortView = views.ext.ModelView.extend({
+      tpl: '#vm-port-view-tpl',
+      classes: 'port-item clearfix',
+      
+      update_in_progress: function() {
+        if (this.model.get("in_progress_no_vm")) {
+          this.set_in_progress();
+        } else {
+          this.unset_in_progress();
+        }
+      },
+
+      set_in_progress: function() {
+        this.el.find(".type").hide();
+        this.el.find(".in-progress").removeClass("hidden").show();
+      },
+
+      unset_in_progress: function() {
+        this.el.find(".type").show();
+        this.el.find(".in-progress").hide();
+      },
+
+      disconnect_port: function(model, e) {
+        e && e.stopPropagation();
+        var network = this.model.get("network");
+        this.model.actions.reset_pending();
+        this.model.disconnect(_.bind(this.disconnect_port_complete, this));
+      },
+
+      disconnect_port_complete: function() {
+      },
+
+      get_network_name: function() {
+        var network = this.model.get('network');
+        var name = network && network.get('name');
+        if (!name) {
+          name = 'Internet'
+        }
+        var truncate_length = this.parent_view.options.truncate || 40;
+        name = synnefo.util.truncate(name, truncate_length, '...');
+        return name || 'Loading...';
+      },
+
+      get_network_icon: function() {
+        var ico;
+        var network = this.model.get('network');
+        if (network) {
+          ico = network.get('is_public') ? 'internet-small.png' : 'network-small.png';
+        } else {
+          ico = 'network-small.png';
+        }
+        return synnefo.config.media_url + 'images/' + ico;
+      },
+    });
+    
+    views.VMPortListView = views.ext.CollectionView.extend({
+      tpl: '#vm-port-list-view-tpl',
+      model_view_cls: views.VMPortView
+    });
+
+    views.VMPortIpView = views.ext.ModelView.extend({
+      tpl: '#vm-port-ip-tpl',
+      css_classes: "clearfix"
+    });
+
+    views.VMPortIpsView = views.ext.CollectionView.extend({
+      tpl: '#vm-port-ips-tpl',
+      model_view_cls: views.VMPortIpView
+    });
 
 })(this);

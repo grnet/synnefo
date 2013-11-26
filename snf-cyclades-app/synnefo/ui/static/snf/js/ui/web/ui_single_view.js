@@ -49,6 +49,52 @@
     // shortcuts
     var bb = root.Backbone;
     var hasKey = Object.prototype.hasOwnProperty;
+    
+    views.VMSinglePortListView = views.VMPortListView.extend({
+      
+      init: function() {
+        views.VMSinglePortListView.__super__.init.apply(this);
+        this.open = false;
+        this.vm_el = $(this.options.vm_view);
+        this.tags_toggler = this.vm_el.find(".tags-header");
+        this.tags_content = this.vm_el.find(".tags-content");
+        this.toggler = this.vm_el.find(".toggler-header.ips");
+        this.toggler_content = this.vm_el.find(".ips-content");
+        this.toggler_content.hide();
+        $(this.el).show();
+        
+        var self = this;
+        this.toggler.click(function() {
+          if(self.toggler.parent().parent().hasClass("disabled")) {
+            return;
+          }
+          self.toggle();
+        });
+
+        this.tags_toggler.click(function() {
+          self.toggler.find(".toggler").removeClass("open");
+          var f = function() { self.hide(true) }
+          self.toggler_content.slideUp(f);
+        });
+      },
+
+      toggle: function() {
+        var self = this;
+        this.open = !this.open;
+
+        if (this.open) {
+          this.show(true);
+          this.tags_toggler.find(".toggler").removeClass("open");
+          this.tags_content.slideUp();
+          this.toggler.find(".toggler").addClass("open");
+          this.toggler_content.removeClass(".hidden").slideDown();
+        } else {
+          this.toggler.find(".toggler").removeClass("open");
+          var f = function() { self.hide(true) }
+          this.toggler_content.removeClass(".hidden").slideUp();
+        }
+      }
+    });
 
     views.SingleDetailsView = views.VMDetailsView.extend({
     
@@ -61,7 +107,7 @@
             'disk': '.machine-detail.disk',
             'image_name': '.machine-detail.image-name',
             'image_size': '.machine-detail.image-size'
-        }
+        },
     
     })
 
@@ -207,6 +253,7 @@
             this.details_views = this.details_views || {};
             this.action_views = this.action_views || {};
             this.action_error_views = this.action_error_views || {};
+            this.ports_views = this.ports_views || {};
 
             //this.stats_views[vm.id] = new views.IconStatsView(vm, this);
 
@@ -217,6 +264,20 @@
             this.tags_views[vm.id] = new views.VMTagsView(vm, this, true, 20, 10, 35);
             this.details_views[vm.id] = new views.SingleDetailsView(vm, this);
             this.action_error_views[vm.id] = new views.VMActionErrorView(vm, this);
+
+            var ports_container = this.vm(vm).find(".ips-content");
+            var ports_toggler = this.vm(vm).find(".toggler-header.ips");
+            
+            var ports_view = new views.VMSinglePortListView({
+              vm_view: this.vm(vm),
+              collection: vm.ports, 
+              container: ports_container,
+              parent: this,
+              truncate: 50
+            });
+            this.ports_views[vm.id] = ports_view
+            ports_view.show();
+            ports_view.el.hide();
             
             if (storage.vms.models.length > 1) { this.vm(vm).hide(); };
         },
@@ -324,11 +385,8 @@
             if (vm != this.current_vm_instance) { return };
 
             // truncate name
-            el.find(".machine-detail.name").text(util.truncate(vm.get("name"), 35));
-            // set ips
-            el.find(".machine-detail.ipv4.ipv4-text").text(vm.get_addresses().ip4 || "not set");
-            // TODO: fix ipv6 truncates and tooltip handler
-            el.find(".machine-detail.ipv6.ipv6-text").text(vm.get_addresses().ip6 || "not set");
+            el.find(".machine-detail.name").text(util.truncate(vm.get("name"), 53));
+            el.find(".fqdn").text(vm.get("fqdn") || synnefo.confi.no_fqdn_message);
             // set the state (i18n ??)
             el.find(".state-label").text(STATE_TEXTS[vm.state()]);
             // set state class

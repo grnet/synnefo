@@ -14,13 +14,10 @@ needs of the system administrator. However, to do so, the administrator needs
 to understand how each level handles Virtual Networks, to be able to setup the
 backend appropriately.
 
-Since v0.11 Synnefo supports multiple Ganeti clusters (backends). Having in
-mind that every backend has its locality, there is a high possibility each
-cluster to have different infrastracture (wires, routers, subnets, gateways,
-etc.).
-
 In the following sections we investigate in a top-down approach, the way
-networks are defined from the Cyclades, Ganeti, and Backend persperctive.
+networks are defined from the Cyclades, Ganeti, and Backend persperctive. For
+an introduction to the concepts of Cyclades networking and the exposed API see
+:doc:`Cyclades networking design document <design/cyclades-networking>`.
 
 Network @ Cyclades level
 ------------------------
@@ -30,40 +27,63 @@ needs of each deployment.
 
 First of all, as far as visibility and accessibility is concerned, a network
 can be either `public` or `private`. Public networks are created by the
-administrator via the command line interface (`snf-manage`) and are visible to
-all end-users. On the other hand, private networks are created by the end-user
-from the Web UI or the kamaki client and provide isolated Layer 2 connectivity
-to the end-user.
+administrator via the command line interface (`snf-manage network-reate`) and
+are visible to all end-users. On the other hand, private networks are created
+by the end-user from the Web UI or the kamaki client and provide isolated Layer
+2 connectivity to the end-user.
 
 Both networks can have an IPv4 subnet or/and an IPv6 subnet along with the
-corresponding gateway. For IPv4 networks, if the `--dhcp` option is set,
-Cyclades will treat the IPv4 subnet as an IP pool, and will assign to each VM
-that is connected to this network an IPv4 address from this pool.
+corresponding gateway. When a virtual server is connected to a virtual network
+it will be assigned an IP address from each of the subnets of the network. By
+default the allocation pool of the network covers all IP addresses in the CIDR,
+excluding the address for the subnet gateway. However, for IPv4 subnets,
+allocation pools can be limited to specific ranges using the 'allocation-pool'
+option of `snf-manage network-create` command. For example, the following
+command will create a virtual network that will assign IPs only in the range
+[192.168.2.10, 192.168.2.20] and [192.168.2.30, 192.168.2.40]:
+
+.. code-block:: console
+
+  snf-manage network-create --subnet=192.168.2.0 --gateway=192.168.2.1 --allocation-pool=192.168.2.10,192.168.2.20 --allocation-pool=192.168.2.30,192.168.2.40
+
+
+By default, Cyclades will assign IP addresses to virtual servers by responding
+to DHCP requests via the `nfdhcp` daemon. This functionality can be disabled by
+using the `--dhcp=False` option during network creation.
 
 A public network can also be marked as a floating IP pool with the
 `--floating-ip-pool` option. Floating IPs, are IPv4 addresses that can be
 dynamically by added and removed from running VMs. A user can reserve and
 release a floating IP address that he can later add and remove it from running
-VMs. Also the user can release a floating IP if it not used by any of his
-VMs.
+VMs. Also the user can release a floating IP if it not used by any of his VMs.
 
-Private networks and floating IPs must be accessible from all instances across
-all Ganeti backends. So, such networks must exist in all backends, and
-are dynamically created when new Ganeti backends are added. Specially for
-private networks, to avoid the overhead of creating the network to all
-backends, Cyclades create these networks on demand, when an instance that
-lives in a backend tries to connect to this network.
+Since private networks and floating IPs must be accesible to all virtual
+servers that may be distributed accross different Ganeti backends, networks
+must also be available to all Ganeti backends. Specially for private networks,
+to avoid the overhead of creating the network to all backends, Cyclades create
+these networks on demand, when an instance that lives in a backend tries to
+connect to this network.
 
-The administrator may also want to connect instances to some network, without
-supporting floating IPs (e.g. to enforce each VM to be connected to a specific
-network). This can be achieved by setting the `DEFAULT_INSTANCE_NETWORKS`
-setting to the list of the selected networks. The special keyword
-`SNF:ANY_PUBLIC` may be used as a network identifier, to indicate to the system
-to peak any of the public networks that has a free IP address. Public networks
-that are not floating IP pools, do not need to exist to all Ganeti backends,
-since the Cyclades backend allocator, will route spawned vms to a Ganeti
-backend that the selected networks exist. The administrator can choose in
-which backends to create the network via the `--backends` command line option.
+The administrator may also want to connect instances to force connection to
+some networks (e.g. a public IPv6 network or a network that contains a special
+metadata server). This can be achieved by setting the
+`CYCLADES_FORCED_SERVER_NETWORKS` setting to the list of the selected networks.
+Each member of the list may be a network UUID, a tuple of network UUIDs,
+"SNF:ANY_PUBLIC_IPV4" [any public network with an IPv4 subnet defined],
+"SNF:ANY_PUBLIC_IPV6 [any public network with only an IPV6 subnet defined], or
+"SNF:ANY_PUBLIC" [any public network]. For this setting, no access control or
+quota policy are enforced.  The server will get all IPv4/IPv6 addresses needed
+to connect to the networks specified in CYCLADES_FORCED_SERVER_NETWORKS,
+regardless of the state of the floating IP pool of the user, and without
+allocating any floating IPs.
+
+Also, the administrator can set the `CYCLADES_DEFAULT_SERVER_NETWORKS` setting,
+which has the exact same format with `CYCLADES_FORCED_SERVER_NETWORKS` and
+contains a list of networks to connect a newly created server to, if the user
+has not specified them explicitly in the POST /server API call.  Access
+control and quota policy are enforced, just as if the user had specified the
+value of CYCLADES_DEFAULT_SERVER_NETWORKS in the content of the POST /call,
+after processing of "SNF:\*" directives.
 
 Another distinction between networks is their flavor. Flavor is a way to
 abstract infrastructure specific options, that are used to ensure connectivity
@@ -116,7 +136,7 @@ most of these attributes, may be overridden when creating networks with
 
 The administrator is able to create any of the above flavors
 and override their default values by explicitly passing mode, link, etc. using
-the `snf-manage network-create` command. 
+the `snf-manage network-create` command.
 
 The administrator can create networks of any flavor, but end-users is allowed
 to create via API only networks with flavors that are set in the

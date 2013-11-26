@@ -49,8 +49,10 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
 from django.db import transaction
 from astakos.im.models import AstakosUser
 from astakos.im.functions import ProjectError
-from astakos.im import quotas
+from astakos.im import auth
+from astakos.im import activation_backends
 from views import submit, approve, join, leave
+
 
 USERS = {}
 PROJECTS = {}
@@ -78,16 +80,16 @@ def random_email():
 
 def new_user():
     email = random_email()
-    defaults = {'first_name': random_name(),
-                'last_name': random_name(),
-                'is_active': True,
-                }
-    u, created = AstakosUser.objects.get_or_create(
-        email=email, defaults=defaults)
-    if created:
-        quotas.qh_sync_user(u)
+    backend = activation_backends.get_backend()
+    try:
+        AstakosUser.objects.get(email=email)
+        return None
+    except AstakosUser.DoesNotExist:
+        u = auth.make_local_user(email, first_name=random_name(),
+                                 last_name=random_name())
+        backend.verify_user(u, u.verification_code)
+        backend.accept_user(u)
         return u
-    return None
 
 
 @transaction.commit_on_success

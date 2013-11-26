@@ -45,6 +45,11 @@ import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
+# Since Ganeti 2.7, debian package ships the majority of the python code in
+# a private module under '/usr/share/ganeti'. Add this directory to path
+# in order to be able to import ganeti. Also, add it to the start of path
+# to allow conflicts with Ganeti RAPI client.
+sys.path.insert(0, "/usr/share/ganeti")
 
 import json
 import logging
@@ -56,9 +61,9 @@ from lockfile import LockTimeout
 from signal import signal, SIGINT, SIGTERM
 import setproctitle
 
-from ganeti import utils, jqueue, constants, serializer, cli
+from ganeti import utils, jqueue, constants, serializer, pathutils, cli
 from ganeti import errors as ganeti_errors
-from ganeti.ssconf import SimpleConfigReader
+from ganeti.ssconf import SimpleStore
 
 
 from synnefo import settings
@@ -111,16 +116,16 @@ def get_instance_nics(instance, logger):
     """
     try:
         client = cli.GetClient()
-        fields = ["nic.networks", "nic.ips", "nic.macs", "nic.modes",
-                  "nic.links", "tags"]
+        fields = ["nic.names", "nic.networks.names", "nic.ips", "nic.macs",
+                  "nic.modes", "nic.links", "tags"]
         info = client.QueryInstances([instance], fields, use_locking=False)
-        networks, ips, macs, modes, links, tags = info[0]
-        nic_keys = ["network", "ip", "mac", "mode", "link"]
-        nics = zip(networks, ips, macs, modes, links)
+        names, networks, ips, macs, modes, links, tags = info[0]
+        nic_keys = ["name", "network", "ip", "mac", "mode", "link"]
+        nics = zip(names, networks, ips, macs, modes, links)
         nics = map(lambda x: dict(zip(nic_keys, x)), nics)
     except ganeti_errors.OpPrereqError:
         # Not running on master! Load the conf file
-        raw_data = utils.ReadFile(constants.CLUSTER_CONF_FILE)
+        raw_data = utils.ReadFile(pathutils.CLUSTER_CONF_FILE)
         config = serializer.LoadJson(raw_data)
         i = config["instances"][instance]
         nics = []
@@ -138,14 +143,10 @@ def get_instance_nics(instance, logger):
             if len(t) != 4:
                 logger.error("Malformed synefo tag %s", tag)
                 continue
-            try:
-                index = int(t[2])
-                nics[index]['firewall'] = t[3]
-            except ValueError:
-                logger.error("Malformed synnefo tag %s", tag)
-            except IndexError:
-                logger.error("Found tag %s for non-existent NIC %d",
-                             tag, index)
+            nic_name = t[2]
+            firewall = t[3]
+            [nic.setdefault("firewall", firewall)
+             for nic in nics if nic["name"] == nic_name]
     return nics
 
 
@@ -207,10 +208,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
             return
 
         data = serializer.LoadJson(data)
-        try:  # Compatibility with Ganeti version
-            job = jqueue._QueuedJob.Restore(None, data, False)
-        except TypeError:
-            job = jqueue._QueuedJob.Restore(None, data)
+        job = jqueue._QueuedJob.Restore(None, data, False, False)
 
         job_id = int(job.id)
 
@@ -243,19 +241,19 @@ class JobFileHandler(pyinotify.ProcessEvent):
                         "status": op.status,
                         "cluster": self.cluster_name,
                         "logmsg": logmsg,
+                        "result": op.result,
                         "jobId": job_id})
 
             if op.status == "success":
                 msg["result"] = op.result
 
-            if ((op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_STARTUP"] and
-                 op.status == "success") or
-                (op_id == "OP_INSTANCE_SET_PARAMS" and
-                 op.status in ["success", "error", "cancelled"])):
-                    nics = get_instance_nics(msg["instance"], self.logger)
-                    msg["nics"] = nics
+            if op_id == "OP_INSTANCE_CREATE" and op.status == "error":
+                # In case an instance creation fails send the job input
+                # so that the job can be retried if needed.
+                msg["job_fields"] = op.Serialize()["input"]
 
             msg = json.dumps(msg)
+
             self.logger.debug("Delivering msg: %s (key=%s)", msg, routekey)
 
             # Send the message to RabbitMQ
@@ -285,14 +283,23 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.logger.debug("Job: %d: %s(%s) %s", job_id, op_id,
                           instances, op.status)
 
+        job_fields = {}
+        if op_id in ["OP_INSTANCE_SET_PARAMS", "OP_INSTANCE_CREATE"]:
+            job_fields = {"nics": get_field(input, "nics"),
+                          "disks": get_field(input, "disks"),
+                          "beparams": get_field(input, "beparams")}
+
         msg = {"type": "ganeti-op-status",
                "instance": instances,
-               "operation": op_id}
+               "operation": op_id,
+               "job_fields": job_fields}
 
-        if op_id == "OP_INSTANCE_SET_PARAMS":
-            beparams = get_field(input, "beparams")
-            if beparams:
-                msg["beparams"] = beparams
+        if ((op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_STARTUP"] and
+             op.status == "success") or
+            (op_id == "OP_INSTANCE_SET_PARAMS" and
+             op.status in ["success", "error", "cancelled"])):
+                nics = get_instance_nics(msg["instance"], self.logger)
+                msg["instance_nics"] = nics
 
         routekey = "ganeti.%s.event.op" % prefix_from_name(instances)
 
@@ -313,19 +320,20 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.logger.debug("Job: %d: %s(%s) %s", job_id, op_id,
                           network_name, op.status)
 
+        job_fields = {
+            'subnet': get_field(input, 'network'),
+            'gateway': get_field(input, 'gateway'),
+            "add_reserved_ips": get_field(input, "add_reserved_ips"),
+            "remove_reserved_ips": get_field(input, "remove_reserved_ips"),
+            # 'network_mode': get_field(input, 'network_mode'),
+            # 'network_link': get_field(input, 'network_link'),
+            'group_name': get_field(input, 'group_name')}
+
         msg = {'operation':    op_id,
                'type':         "ganeti-network-status",
                'network':      network_name,
-               'subnet':       get_field(input, 'network'),
-               # 'network_mode': get_field(input, 'network_mode'),
-               # 'network_link': get_field(input, 'network_link'),
-               'gateway':      get_field(input, 'gateway'),
-               'group_name':   get_field(input, 'group_name')}
+               'job_fields':   job_fields}
 
-        if op_id == "OP_NETWORK_SET_PARAMS":
-            msg["add_reserved_ips"] = get_field(input, "add_reserved_ips")
-            msg["remove_reserved_ips"] = get_field(input,
-                                                   "remove_reserved_ips")
         routekey = "ganeti.%s.event.network" % prefix_from_name(network_name)
 
         return msg, routekey
@@ -351,8 +359,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
 def find_cluster_name():
     global handler_logger
     try:
-        scr = SimpleConfigReader()
-        name = scr.GetClusterName()
+        ss = SimpleStore()
+        name = ss.GetClusterName()
     except Exception as e:
         handler_logger.error('Can not get the name of the Cluster: %s' % e)
         raise e
@@ -457,12 +465,12 @@ def main():
 
     try:
         # Fail if adding the inotify() watch fails for any reason
-        res = wm.add_watch(constants.QUEUE_DIR, mask)
-        if res[constants.QUEUE_DIR] < 0:
+        res = wm.add_watch(pathutils.QUEUE_DIR, mask)
+        if res[pathutils.QUEUE_DIR] < 0:
             raise Exception("pyinotify add_watch returned negative descriptor")
 
-        logger.info("Now watching %s of %s" %
-                    (constants.QUEUE_DIR, cluster_name))
+        logger.info("Now watching %s of %s" % (pathutils.QUEUE_DIR,
+                    cluster_name))
 
         while True:    # loop forever
             # process the queue of events as explained above

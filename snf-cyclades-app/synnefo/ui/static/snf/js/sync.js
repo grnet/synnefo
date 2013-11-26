@@ -107,7 +107,7 @@
     // appends global ajax handlers
     // handles changed-since url parameter based on api path
     api.sync = function(method, model, options) {
-
+        
         var type = methodMap[method];
         
         if (model && (model.skipMethods || []).indexOf(method) >= 0) {
@@ -373,9 +373,14 @@
             // it works though....
             if (data && data._options) { delete data['_options'] };
             
+            var base_url = snf.config.api_urls[this.api_type];
+            var join = '/';
+            // do not append trailling slash if already exists in url
+            if (base_url[base_url.length - 1] == join) { join = '' }
+
             // prepare the params
             var params = {
-                url: snf.config.api_urls[this.api_type] + "/" + url,
+                url: base_url + join + url,
                 data: data,
                 success: success,
                 complete: function() { api.trigger("call"); complete(this) },

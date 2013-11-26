@@ -36,7 +36,6 @@ from astakos.im.settings import astakos_services, BASE_HOST
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 
-from django.test import TestCase
 from django.core.urlresolvers import reverse
 
 from datetime import date
@@ -62,16 +61,16 @@ class QuotaAPITest(TestCase):
                       "desc": "resource11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
-                      "allow_in_projects": True}
+                      "ui_visible": True}
         r, _ = register.add_resource(resource11)
-        register.update_resource(r, 100)
+        register.update_resources([(r, 100)])
         resource12 = {"name": "service1.resource12",
                       "desc": "resource11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
                       "unit": "bytes"}
         r, _ = register.add_resource(resource12)
-        register.update_resource(r, 1024)
+        register.update_resources([(r, 1024)])
 
         # create user
         user = get_local_user('test@grnet.gr')
@@ -89,9 +88,9 @@ class QuotaAPITest(TestCase):
                       "desc": "resource11 desc",
                       "service_type": "type2",
                       "service_origin": "service2",
-                      "allow_in_projects": False}
+                      "ui_visible": False}
         r, _ = register.add_resource(resource21)
-        register.update_resource(r, 3)
+        register.update_resources([(r, 3)])
 
         resource_names = [r['name'] for r in
                           [resource11, resource12, resource21]]
@@ -187,32 +186,34 @@ class QuotaAPITest(TestCase):
                         content_type='application/json', **s1_headers)
         self.assertEqual(r.status_code, 201)
         body = json.loads(r.content)
-        serial = body['serial']
-        self.assertEqual(serial, 1)
+        serial1 = body['serial']
+        assertGreater(serial1, 0)
 
         post_data = json.dumps(commission_request)
         r = client.post(u('commissions'), post_data,
                         content_type='application/json', **s1_headers)
         self.assertEqual(r.status_code, 201)
         body = json.loads(r.content)
-        self.assertEqual(body['serial'], 2)
+        serial2 = body['serial']
+        assertGreater(serial2, serial1)
 
         post_data = json.dumps(commission_request)
         r = client.post(u('commissions'), post_data,
                         content_type='application/json', **s1_headers)
         self.assertEqual(r.status_code, 201)
         body = json.loads(r.content)
-        self.assertEqual(body['serial'], 3)
+        serial3 = body['serial']
+        assertGreater(serial3, serial2)
 
         r = client.get(u('commissions'), **s1_headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
-        self.assertEqual(body, [1, 2, 3])
+        self.assertEqual(len(body), 3)
 
-        r = client.get(u('commissions/' + str(serial)), **s1_headers)
+        r = client.get(u('commissions/' + str(serial1)), **s1_headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
-        self.assertEqual(body['serial'], serial)
+        self.assertEqual(body['serial'], serial1)
         assertIn('issue_time', body)
         provisions = sorted(body['provisions'], key=lambda p: p['resource'])
         self.assertEqual(provisions, commission_request['provisions'])
@@ -229,8 +230,8 @@ class QuotaAPITest(TestCase):
 
         # resolve pending commissions
         resolve_data = {
-            "accept": [1, 3],
-            "reject": [2, 3, 4],
+            "accept": [serial1, serial3],
+            "reject": [serial2, serial3, serial3 + 1],
         }
         post_data = json.dumps(resolve_data)
 
@@ -238,12 +239,12 @@ class QuotaAPITest(TestCase):
                         content_type='application/json', **s1_headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
-        self.assertEqual(body['accepted'], [1])
-        self.assertEqual(body['rejected'], [2])
+        self.assertEqual(body['accepted'], [serial1])
+        self.assertEqual(body['rejected'], [serial2])
         failed = body['failed']
         self.assertEqual(len(failed), 2)
 
-        r = client.get(u('commissions/' + str(serial)), **s1_headers)
+        r = client.get(u('commissions/' + str(serial1)), **s1_headers)
         self.assertEqual(r.status_code, 404)
 
         # auto accept
@@ -269,10 +270,10 @@ class QuotaAPITest(TestCase):
                         content_type='application/json', **s1_headers)
         self.assertEqual(r.status_code, 201)
         body = json.loads(r.content)
-        serial = body['serial']
-        self.assertEqual(serial, 4)
+        serial4 = body['serial']
+        assertGreater(serial4, serial3)
 
-        r = client.get(u('commissions/' + str(serial)), **s1_headers)
+        r = client.get(u('commissions/' + str(serial4)), **s1_headers)
         self.assertEqual(r.status_code, 404)
 
         # malformed
@@ -407,14 +408,14 @@ class TokensApiTest(TestCase):
     def setUp(self):
         backend = activation_backends.get_backend()
 
-        self.user1 = AstakosUser.objects.create(
-            email='test1', email_verified=True, moderated=True,
+        self.user1 = get_local_user(
+            'test1@example.org', email_verified=True, moderated=True,
             is_rejected=False)
         backend.activate_user(self.user1)
         assert self.user1.is_active is True
 
-        self.user2 = AstakosUser.objects.create(
-            email='test2', email_verified=True, moderated=True,
+        self.user2 = get_local_user(
+            'test2@example.org', email_verified=True, moderated=True,
             is_rejected=False)
         backend.activate_user(self.user2)
         assert self.user2.is_active is True
@@ -608,9 +609,9 @@ class TokensApiTest(TestCase):
 
 class UserCatalogsTest(TestCase):
     def test_get_uuid_displayname_catalogs(self):
-        self.user = AstakosUser.objects.create(
-            email='test1', email_verified=True, moderated=True,
-            is_rejected=False)
+        self.user = get_local_user(
+            'test1@example.org', email_verified=True, moderated=True,
+            is_rejected=False, is_active=False)
 
         client = Client()
         url = reverse('astakos.api.user.get_uuid_displayname_catalogs')

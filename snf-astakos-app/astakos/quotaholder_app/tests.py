@@ -34,6 +34,7 @@
 from django.test import TestCase
 
 from snf_django.utils.testing import assertGreater, assertIn, assertRaises
+from astakos.quotaholder_app import models
 import astakos.quotaholder_app.callpoint as qh
 from astakos.quotaholder_app.exception import (
     InvalidDataError,
@@ -253,25 +254,29 @@ class QuotaholderTest(TestCase):
         }
         self.assertEqual(r, quotas)
 
-        # add resource limit
-
-        qh.add_resource_limit(sources=[source], resources=[resource1], diff=1)
-        r = qh.get_quota(holders=[holder])
-        quotas = {
-            (holder, source, resource1): (limit1+1, limit1+1, limit1+2),
-            (holder, source, resource2): (limit2, limit2-2, limit2-1),
-        }
-        self.assertEqual(r, quotas)
-
-        qh.add_resource_limit(holders=[holder, "nonex"], diff=10)
-        r = qh.get_quota(holders=[holder, "nonex"])
-        quotas = {
-            (holder, source, resource1): (limit1+11, limit1+1, limit1+2),
-            (holder, source, resource2): (limit2+10, limit2-2, limit2-1),
-        }
-        self.assertEqual(r, quotas)
-
     def test_020_empty_provisions(self):
         serial = self.issue_commission([])
         r = qh.resolve_pending_commission(self.client, serial)
         self.assertEqual(r, True)
+
+    def test_030_set(self):
+        holder = 'h0'
+        source = 'system'
+        resource1 = 'r1'
+        resource2 = 'r2'
+        limit1 = 10
+        limit2 = 20
+
+        models.Holding.objects.create(
+            holder=holder, source=source, resource=resource1,
+            usage_min=1, usage_max=1, limit=2)
+        models.Holding.objects.create(
+            holder=holder, source=source, resource=resource2,
+            usage_min=2, usage_max=2, limit=22)
+
+        qh.set_quota([((holder, source, resource1), limit1),
+                      ((holder, source, resource1), limit2)])
+
+        r = qh.get_quota(holders=[holder])
+        self.assertEqual(r, {(holder, source, resource1): (limit2, 1, 1),
+                             (holder, source, resource2): (22, 2, 2)})

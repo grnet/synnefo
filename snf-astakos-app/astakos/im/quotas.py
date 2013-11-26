@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import copy
+from synnefo.util import units
 from astakos.im.models import (
     Resource, AstakosUserQuota, AstakosUser, Service,
     Project, ProjectMembership, ProjectResourceGrant, ProjectApplication)
@@ -69,17 +69,18 @@ def transform_data(holdings, func=None):
     return quota
 
 
-def get_counters(users, resources=None, sources=None):
+def get_counters(users, resources=None, sources=None, flt=None):
     uuids = [user.uuid for user in users]
 
     counters = qh.get_quota(holders=uuids,
                             resources=resources,
-                            sources=sources)
+                            sources=sources,
+                            flt=flt)
     return counters
 
 
-def get_users_quotas(users, resources=None, sources=None):
-    counters = get_counters(users, resources, sources)
+def get_users_quotas(users, resources=None, sources=None, flt=None):
+    counters = get_counters(users, resources, sources, flt=flt)
     quotas = transform_data(counters)
     return quotas
 
@@ -115,19 +116,9 @@ def _level_quota_dict(quotas):
     return lst
 
 
-def _set_user_quota(quotas):
+def _set_user_quota(quotas, resource=None):
     q = _level_quota_dict(quotas)
-    qh.set_quota(q)
-
-
-def get_default_quota():
-    _DEFAULT_QUOTA = {}
-    resources = Resource.objects.select_related('service').all()
-    for resource in resources:
-        capacity = resource.uplimit
-        _DEFAULT_QUOTA[resource.full_name()] = capacity
-
-    return _DEFAULT_QUOTA
+    qh.set_quota(q, resource=resource)
 
 
 SYSTEM = 'system'
@@ -152,48 +143,39 @@ def get_pending_app_quota(user):
     return quota[SYSTEM][PENDING_APP_RESOURCE]
 
 
-def add_base_quota(user, resource, capacity):
-    resource = Resource.objects.get(name=resource)
-    user = get_user_for_update(user.id)
-    obj, created = AstakosUserQuota.objects.get_or_create(
-        user=user, resource=resource, defaults={
-            'capacity': capacity,
-        })
-
-    if not created:
-        obj.capacity = capacity
-        obj.save()
-    qh_sync_locked_user(user)
+def update_base_quota(users, resource, value):
+    userids = [user.pk for user in users]
+    AstakosUserQuota.objects.\
+        filter(resource__name=resource, user__pk__in=userids).\
+        update(capacity=value)
+    qh_sync_locked_users(users, resource=resource)
 
 
-def remove_base_quota(user, resource):
-    user = get_user_for_update(user.id)
-    AstakosUserQuota.objects.filter(
-        user=user, resource__name=resource).delete()
-    qh_sync_locked_user(user)
+def _partition_by(f, l):
+    d = {}
+    for x in l:
+        group = f(x)
+        group_l = d.get(group, [])
+        group_l.append(x)
+        d[group] = group_l
+    return d
 
 
-def initial_quotas(users):
-    users = list(users)
+def initial_quotas(users, flt=None):
+    if flt is None:
+        flt = Q()
+
+    userids = [user.pk for user in users]
+    objs = AstakosUserQuota.objects.select_related('resource')
+    orig_quotas = objs.filter(user__pk__in=userids).filter(flt)
+    orig_quotas = _partition_by(lambda q: q.user_id, orig_quotas)
+
     initial = {}
-    default_quotas = get_default_quota()
-
     for user in users:
-        uuid = user.uuid
-        source_quota = {SYSTEM: dict(default_quotas)}
-        initial[uuid] = source_quota
-
-    objs = AstakosUserQuota.objects.select_related()
-    orig_quotas = objs.filter(user__in=users)
-    for user_quota in orig_quotas:
-        uuid = user_quota.user.uuid
-        user_init = initial.get(uuid, {})
-        source_quota = user_init.get(SYSTEM, {})
-        resource = user_quota.resource.full_name()
-        source_quota[resource] = user_quota.capacity
-        user_init[SYSTEM] = source_quota
-        initial[uuid] = user_init
-
+        qs = {}
+        for q in orig_quotas.get(user.pk, []):
+            qs[q.resource.name] = q.capacity
+        initial[user.uuid] = {SYSTEM: qs}
     return initial
 
 
@@ -201,18 +183,21 @@ def get_grant_source(grant):
     return SYSTEM
 
 
-def astakos_users_quotas(users, initial=None):
-    users = list(users)
-    if initial is None:
-        quotas = initial_quotas(users)
-    else:
-        quotas = copy.deepcopy(initial)
+def add_limits(x, y):
+    return min(x+y, units.PRACTICALLY_INFINITE)
 
+
+def astakos_users_quotas(users, resource=None):
+    users = list(users)
+    flt = Q(resource__name=resource) if resource is not None else Q()
+    quotas = initial_quotas(users, flt=flt)
+
+    userids = [user.pk for user in users]
     ACTUALLY_ACCEPTED = ProjectMembership.ACTUALLY_ACCEPTED
     objs = ProjectMembership.objects.select_related(
         'project', 'person', 'project__application')
     memberships = objs.filter(
-        person__in=users,
+        person__pk__in=userids,
         state__in=ACTUALLY_ACCEPTED,
         project__state=Project.NORMAL,
         project__application__state=ProjectApplication.APPROVED)
@@ -220,7 +205,7 @@ def astakos_users_quotas(users, initial=None):
     apps = set(m.project.application_id for m in memberships)
 
     objs = ProjectResourceGrant.objects.select_related()
-    grants = objs.filter(project_application__in=apps)
+    grants = objs.filter(project_application__in=apps).filter(flt)
 
     for membership in memberships:
         uuid = membership.person.uuid
@@ -237,7 +222,7 @@ def astakos_users_quotas(users, initial=None):
 
             resource = grant.resource.full_name()
             prev = source_quotas.get(resource, 0)
-            new = prev + grant.member_capacity
+            new = add_limits(prev, grant.member_capacity)
             source_quotas[resource] = new
             userquotas[source] = source_quotas
         quotas[uuid] = userquotas
@@ -245,9 +230,9 @@ def astakos_users_quotas(users, initial=None):
     return quotas
 
 
-def list_user_quotas(users):
-    qh_quotas = get_users_quotas(users)
-    astakos_initial = initial_quotas(users)
+def list_user_quotas(users, qhflt=None, initflt=None):
+    qh_quotas = get_users_quotas(users, flt=qhflt)
+    astakos_initial = initial_quotas(users, flt=initflt)
     return qh_quotas, astakos_initial
 
 
@@ -263,15 +248,15 @@ def get_user_for_update(user_id):
     return get_users_for_update([user_id])[0]
 
 
-def qh_sync_locked_users(users):
-    astakos_quotas = astakos_users_quotas(users)
-    _set_user_quota(astakos_quotas)
+def qh_sync_locked_users(users, resource=None):
+    astakos_quotas = astakos_users_quotas(users, resource=resource)
+    _set_user_quota(astakos_quotas, resource=resource)
 
 
-def qh_sync_users(users):
+def qh_sync_users(users, resource=None):
     uids = [user.id for user in users]
     users = get_users_for_update(uids)
-    qh_sync_locked_users(users)
+    qh_sync_locked_users(users, resource=resource)
 
 
 def qh_sync_users_diffs(users, sync=True):
@@ -300,6 +285,21 @@ def qh_sync_user(user):
     qh_sync_users([user])
 
 
+def qh_sync_new_users(users):
+    entries = []
+    for resource in Resource.objects.all():
+        for user in users:
+            entries.append(
+                AstakosUserQuota(user=user, resource=resource,
+                                 capacity=resource.uplimit))
+    AstakosUserQuota.objects.bulk_create(entries)
+    qh_sync_users(users)
+
+
+def qh_sync_new_user(user):
+    qh_sync_new_users([user])
+
+
 def members_to_sync(project):
     objs = ProjectMembership.objects.select_related('person')
     memberships = objs.filter(project=project,
@@ -312,24 +312,14 @@ def qh_sync_project(project):
     qh_sync_users(users)
 
 
-def qh_add_resource_limit(resource, diff):
-    objs = AstakosUser.objects.filter(
-        Q(moderated=True, is_rejected=False) & ~Q(policy=resource))
-    users = objs.order_by('id').select_for_update()
-    uuids = [u.uuid for u in users]
-    qh.add_resource_limit(holders=uuids, sources=[SYSTEM],
-                          resources=[resource.name], diff=diff)
-
-
-def qh_sync_new_resource(resource, limit):
+def qh_sync_new_resource(resource):
     users = AstakosUser.objects.filter(
         moderated=True, is_rejected=False).order_by('id').select_for_update()
 
-    resource_name = resource.name
-    data = []
+    entries = []
     for user in users:
-        uuid = user.uuid
-        key = uuid, SYSTEM, resource_name
-        data.append((key, limit))
-
-    qh.set_quota(data)
+        entries.append(
+            AstakosUserQuota(user=user, resource=resource,
+                             capacity=resource.uplimit))
+    AstakosUserQuota.objects.bulk_create(entries)
+    qh_sync_users(users, resource=resource.name)

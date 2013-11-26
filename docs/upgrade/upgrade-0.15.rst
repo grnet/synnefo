@@ -7,7 +7,7 @@ The upgrade to v0.15 consists in the following steps:
 
 2. Upgrade packages, migrate the databases and configure settings.
 
-3. Re-register components and services in astakos.
+3. Register services and resources.
 
 4. Bring up all services.
 
@@ -119,17 +119,80 @@ setting will have the value of
 For Pithos service we have to change the ``20-snf-pithos-app-settings.conf``
 file in the same way as above.
 
-3. Re-register components and services in astakos
-=================================================
+3. Register services and resources
+==================================
 
-Component registration has changed; you will thus need to repeat the
-process. On the astakos node, run::
+3.1 Re-register service and resource definitions
+------------------------------------------------
+
+You will need to register again all Synnefo components, updating the
+service and resource definitions. On the astakos node, run::
 
     astakos-host$ snf-component-register
 
 This will detect that the Synnefo components are already registered and ask
 to re-register. Answer positively. You need to enter the base URL and the UI
 URL for each component, just like during the initial registration.
+
+.. note::
+
+   You can run ``snf-manage component-list -o name,ui_url`` to inspect the
+   current registered UI URL. In the default installation, the base URL can
+   be found by stripping ``/ui`` from the UI URL.
+
+The meaning of resources ``cyclades.cpu`` and ``cyclades.ram`` has changed:
+they now denote the number of CPUs and, respectively, RAM of *active* VMs
+rather than all VMs. To represent total CPUs and total RAM, as previously,
+new resources ``cyclades.total_cpu`` and ``cyclades.total_ram`` are
+introduced. We now also control the usage of floating IPs through resource
+``cyclades.floating_ip``.
+
+3.2 Tweek resource settings
+---------------------------
+
+New resources (``cyclades.total_cpu``, ``cyclades.total_ram``, and
+``cyclades.floating_ip``) are registered with infinite default base quota.
+You will probably need to restrict them, especially
+``cyclades.floating_ip``. In order to change the default for all *future*
+users, for instance restricting floating IPs to 2, run::
+
+    astakos-host$ snf-manage resource-modify cyclades.floating_ip --default-quota 2
+
+Note that this command does not affect *existing* users any more. They can
+still have infinite floating IPs. You can update base quota of existing
+users in bulk, possibly excluding some users, with::
+
+    astakos-host$ snf-manage user-modify --all --base-quota cyclades.floating_ip 2 --exclude uuid1,uuid2
+
+.. note::
+
+   You can inspect base quota with ``snf-manage quota-list`` before applying
+   any changes, for example::
+
+     # Get users with cyclades.vm base quota that differ from the default value
+     astakos-host$ snf-manage quota-list --with-custom=True --filter-by "resource=cyclades.vm"
+
+     # Get users with cyclades.vm base quota greater than 3
+     astakos-host$ snf-manage quota-list --filter-by "resource=cyclades.vm,base_quota>3"
+
+It is now possible to control whether a resource is visible for the users
+through the API or the UI. Note that the system always checks resource
+quota, regardless of their visibility. By default, ``cyclades.total_cpu``,
+``cyclades.total_ram`` and ``astakos.pending_app`` are not visible. You can
+change this behavior with::
+
+    astakos-host$ snf-manage resource-modify <resource> --api-visible=True (or --ui-visible=True)
+
+3.3 Update the Quotaholder
+--------------------------
+
+To update quota for all new or modified Cyclades resources, bring up Astakos::
+
+    astakos-host$ service gunicorn start
+
+and run on the Cyclades node::
+
+   cyclades-host$ snf-manage reconcile-resources-cyclades --fix --force
 
 4. Bring all services up
 ========================

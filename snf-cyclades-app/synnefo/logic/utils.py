@@ -55,7 +55,7 @@ def id_to_instance_name(id):
 
 
 def id_from_network_name(name):
-    """Returns Network's Django id, given a ganeti machine name.
+    """Returns Network's Django id, given a ganeti network name.
 
     Strips the ganeti prefix atm. Needs a better name!
 
@@ -71,6 +71,19 @@ def id_from_network_name(name):
 
 def id_to_network_name(id):
     return "%snet-%s" % (settings.BACKEND_PREFIX_ID, str(id))
+
+
+def id_from_nic_name(name):
+    """Returns NIC's Django id, given a Ganeti's NIC name.
+
+    """
+    if not str(name).startswith(settings.BACKEND_PREFIX_ID):
+        raise ValueError("Invalid NIC name: %s" % name)
+    ns = str(name).replace(settings.BACKEND_PREFIX_ID + 'nic-', "", 1)
+    if not ns.isdigit():
+        raise ValueError("Invalid NIC name: %s" % name)
+
+    return int(ns)
 
 
 def get_rsapi_state(vm):
@@ -149,8 +162,16 @@ def get_action_from_opcode(opcode, job_fields):
         nics = job_fields.get("nics")
         beparams = job_fields.get("beparams")
         if nics:
-            #TODO: check the nic format
-            return "CONNECT" or "DISCONNECT"
+            try:
+                nic_action = nics[0][0]
+                if nic_action == "add":
+                    return "CONNECT"
+                elif nic_action == "remove":
+                    return "DISCONNECT"
+                else:
+                    return None
+            except:
+                return None
         elif beparams:
             return "RESIZE"
         else:

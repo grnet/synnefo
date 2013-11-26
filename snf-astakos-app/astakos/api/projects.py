@@ -95,6 +95,8 @@ def _application_details(application, all_grants):
     grants = all_grants.get(application.id, [])
     resources = {}
     for grant in grants:
+        if not grant.resource.api_visible:
+            continue
         resources[grant.resource.name] = {
             "member_capacity": grant.member_capacity,
             "project_capacity": grant.project_capacity,
@@ -378,7 +380,7 @@ def submit_application(app_data, user, project_id=None):
         owner = user
     else:
         try:
-            owner = AstakosUser.objects.get(uuid=uuid, email_verified=True)
+            owner = AstakosUser.objects.accepted().get(uuid=uuid)
         except AstakosUser.DoesNotExist:
             raise faults.BadRequest("User does not exist.")
 

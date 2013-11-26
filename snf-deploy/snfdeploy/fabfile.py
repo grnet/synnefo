@@ -887,6 +887,7 @@ def setup_ganeti():
         #try_run("apt-get update")
     install_package("qemu-kvm")
     install_package("python-bitarray")
+    install_package("ganeti-haskell")
     install_package("ganeti-htools")
     install_package("snf-ganeti")
     try_run("mkdir -p /srv/ganeti/file-storage/")
@@ -1005,6 +1006,8 @@ def init_cluster():
     """.format(extra, env.env.common_bridge,
                env.env.cluster_netdev, env.env.cluster.fqdn)
     try_run(cmd)
+    cmd = """gnt-cluster modify --enabled-disk-templates file,plain,ext"""
+    try_run(cmd)
 
 
 @roles("ganeti")
@@ -1085,7 +1088,7 @@ def setup_iptables():
 def setup_network():
     debug(env.host,
           "Setting up networking for Ganeti instances (nfdhcpd, etc.)...")
-    install_package("nfqueue-bindings-python")
+    install_package("python-nfqueue")
     install_package("nfdhcpd")
     tmpl = "/etc/nfdhcpd/nfdhcpd.conf"
     replace = {
@@ -1253,16 +1256,34 @@ def import_services():
 
     debug(env.host, " * Setting default quota...")
     cmd = """
-    snf-manage resource-modify --limit 40G pithos.diskspace
-    snf-manage resource-modify --limit 2 astakos.pending_app
-    snf-manage resource-modify --limit 4 cyclades.vm
-    snf-manage resource-modify --limit 40G cyclades.disk
-    snf-manage resource-modify --limit 16G cyclades.ram
-    snf-manage resource-modify --limit 8G cyclades.active_ram
-    snf-manage resource-modify --limit 32 cyclades.cpu
-    snf-manage resource-modify --limit 16 cyclades.active_cpu
-    snf-manage resource-modify --limit 4 cyclades.network.private
-    snf-manage resource-modify --limit 4 cyclades.floating_ip
+    snf-manage resource-modify --default-quota 40G pithos.diskspace
+    snf-manage resource-modify --default-quota 2 astakos.pending_app
+    snf-manage resource-modify --default-quota 4 cyclades.vm
+    snf-manage resource-modify --default-quota 40G cyclades.disk
+    snf-manage resource-modify --default-quota 16G cyclades.total_ram
+    snf-manage resource-modify --default-quota 8G cyclades.ram
+    snf-manage resource-modify --default-quota 32 cyclades.total_cpu
+    snf-manage resource-modify --default-quota 16 cyclades.cpu
+    snf-manage resource-modify --default-quota 4 cyclades.network.private
+    snf-manage resource-modify --default-quota 4 cyclades.floating_ip
+    """
+    try_run(cmd)
+
+
+@roles("accounts")
+def set_user_quota():
+    debug(env.host, " * Setting user quota...")
+    cmd = """
+    snf-manage user-modify -f --all --base-quota pithos.diskspace 40G
+    snf-manage user-modify -f --all --base-quota astakos.pending_app 2
+    snf-manage user-modify -f --all --base-quota cyclades.vm 4
+    snf-manage user-modify -f --all --base-quota cyclades.disk 40G
+    snf-manage user-modify -f --all --base-quota cyclades.total_ram 16G
+    snf-manage user-modify -f --all --base-quota cyclades.ram 8G
+    snf-manage user-modify -f --all --base-quota cyclades.total_cpu 32
+    snf-manage user-modify -f --all --base-quota cyclades.cpu 16
+    snf-manage user-modify -f --all --base-quota cyclades.network.private 4
+    snf-manage user-modify -f --all --base-quota cyclades.floating_ip 4
     """
     try_run(cmd)
 
@@ -1270,16 +1291,22 @@ def import_services():
 @roles("cyclades")
 def add_network():
     debug(env.host, " * Adding public network in cyclades...")
-    backend_id = get_backend_id(env.env.cluster.fqdn)
     cmd = """
     snf-manage network-create --subnet={0} --gateway={1} --public \
         --dhcp=True --flavor={2} --mode=bridged --link={3} --name=Internet \
-        --backend-id={4}
+        --floating-ip-pool=True
     """.format(env.env.synnefo_public_network_subnet,
                env.env.synnefo_public_network_gateway,
                env.env.synnefo_public_network_type,
-               env.env.common_bridge, backend_id)
+               env.env.common_bridge)
     try_run(cmd)
+    if env.env.testing_vm:
+        cmd = ("snf-manage network-create --subnet6=babe::/64"
+               " --gateway6=babe::1 --public --flavor={0} --mode=bridged"
+               " --link={1} --name=IPv6PublicNetwork"
+               .format(env.env.synnefo_public_network_type,
+                       env.env.common_bridge))
+        try_run(cmd)
 
 
 @roles("cyclades")

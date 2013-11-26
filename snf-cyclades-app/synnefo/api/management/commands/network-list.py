@@ -61,6 +61,8 @@ class Command(ListCommand):
     )
 
     object_class = Network
+    select_related = []
+    prefetch_related = ["subnets"]
     deleted_field = "deleted"
     user_uuid_field = "userid"
     astakos_auth_url = ASTAKOS_AUTH_URL
@@ -72,6 +74,21 @@ class Command(ListCommand):
     def get_backends(network):
         return network.backend_networks.values_list("backend_id", flat=True)
 
+    def get_subnet_ipv4(network):
+        return _get_subnet_field(network, "cidr", 4)
+
+    def get_subnet_ipv6(network):
+        return _get_subnet_field(network, "cidr", 6)
+
+    def get_gateway_ipv4(network):
+        return _get_subnet_field(network, "gateway", 4)
+
+    def get_gateway_ipv6(network):
+        return _get_subnet_field(network, "gateway", 6)
+
+    def get_subnets(network):
+        return network.subnets.values_list('id', flat=True)
+
     FIELDS = {
         "id": ("id", "The ID of the network"),
         "name": ("name", "The name of the network"),
@@ -79,11 +96,11 @@ class Command(ListCommand):
         "public": ("public", "Whether network is public or private"),
         "flavor": ("flavor", "The network's flavor"),
         "state": ("state", "The network's state"),
-        "dhcp": ("dhcp", "Whether network uses nfdhcpd or not"),
-        "subnet.ipv4": ("subnet", "The IPv4 subnet of the network"),
-        "gateway.ipv4": ("gateway", "The IPv4 gateway of the network"),
-        "subnet.ipv6": ("subnet6", "The IPv6 subnet of the network"),
-        "gateway.ipv6": ("gateway6", "The IPv6 gateway of the network"),
+        "subnets": (get_subnets, "The IDs of the associated subnets"),
+        "subnet.ipv4":  (get_subnet_ipv4, "The IPv4 subnet of the network"),
+        "gateway.ipv4": (get_gateway_ipv4, "The IPv4 gateway of the network"),
+        "subnet.ipv6":  (get_subnet_ipv6, "The IPv6 subnet of the network"),
+        "gateway.ipv6":  (get_gateway_ipv6, "The IPv6 gateway of the network"),
         "created": ("created", "The date the network was created"),
         "updated": ("updated", "The date the network was updated"),
         "deleted": ("deleted", "Whether the network is deleted or not"),
@@ -94,15 +111,23 @@ class Command(ListCommand):
         "vms": (get_machines, "Number of connected servers"),
         "backends": (get_backends, "IDs of Ganeti backends that the network is"
                                    " connected to"),
-        "pool": ("floating_ip_pool", "Whether the network is a floating"
-                                     " IP pool"),
+        "floating_ip_pool": ("floating_ip_pool",
+                             "Whether the network is a floating IP pool"),
     }
 
     fields = ["id", "name", "user.uuid", "state", "public", "subnet.ipv4",
-              "gateway.ipv4", "link", "mac_prefix", "dhcp", "drained", "pool"]
+              "gateway.ipv4", "link", "mac_prefix",  "drained",
+              "floating_ip_pool"]
 
     def handle_args(self, *args, **options):
         if options["public"]:
             self.filters["public"] = True
         if options["ipv6"]:
             self.fields.extend(["subnet.ipv6", "gateway.ipv6"])
+
+
+def _get_subnet_field(network, field, version=4):
+    for subnet in network.subnets.all():
+        if subnet.ipversion == version:
+            return getattr(subnet, field)
+    return None

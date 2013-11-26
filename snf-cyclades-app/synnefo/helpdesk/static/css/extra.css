@@ -192,3 +192,12 @@ h3.info							{ cursor:default; color:#2956B2; text-align:center; font-size:16px
 .vm-action form { margin-bottom: 0px; }
 .vm-action.inactive form input { background-color: #2956B2; color: #ffffff;}
 .vm-action form input { background-color: #F81A23; color: #ffffff;}
+
+.table-sorted th:hover 				{ color:#2956B2; cursor:pointer; }
+.table-sorted th span				{ padding-right:20px; }
+.table-sorted th:hover span				{ background:url(../img/arrow-down.png) no-repeat right center; }
+.table-sorted th.headerSortDown span,
+.table-sorted th.headerSortDown:hover span		{ background:url(../img/arrow-up.png) no-repeat right center; }
+
+.table-sorted th.headerSortUp span,
+.table-sorted th.headerSortUp:hover span		{ background:url(../img/arrow-down.png) no-repeat right center; }

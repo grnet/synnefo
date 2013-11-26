@@ -505,10 +505,10 @@ def remove_membership(memb_id, request_user=None, reason=None):
 
 def enroll_member_by_email(project_id, email, request_user=None, reason=None):
     try:
-        user = AstakosUser.objects.verified().get(email=email)
+        user = AstakosUser.objects.accepted().get(email=email)
         return enroll_member(project_id, user, request_user, reason=reason)
     except AstakosUser.DoesNotExist:
-        raise ProjectConflict(astakos_messages.UNKNOWN_USERS)
+        raise ProjectConflict(astakos_messages.UNKNOWN_USERS % email)
 
 
 def enroll_member(project_id, user, request_user=None, reason=None):
@@ -738,7 +738,8 @@ def validate_resource_policies(policies):
         raise ProjectBadRequest("Malformed resource policies")
 
     resource_names = policies.keys()
-    resources = Resource.objects.filter(name__in=resource_names)
+    resources = Resource.objects.filter(name__in=resource_names,
+                                        api_visible=True)
     resource_d = {}
     for resource in resources:
         resource_d[resource.name] = resource

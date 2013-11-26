@@ -227,8 +227,10 @@
             this.flavors_view = undefined; 
             views.VmResizeView.__super__.initialize.apply(this);
             _.bindAll(this);
-            this.submit = this.$(".form-action");
+            this.submit = this.$(".form-action.resize");
+            this.shutdown = this.$(".form-action.shutdown");
             this.pre_init_handlers();
+            this.handle_shutdown_complete = _.bind(this.handle_shutdown_complete, this);
         },
 
         pre_init_handlers: function() {
@@ -238,14 +240,38 @@
                 };
                 this.submit_resize(this.flavors_view.selected_flavor);
             }, this));
+            this.shutdown.click(_.bind(this.handle_shutdown, this));
         },
         
+        handle_shutdown: function() {
+          if (this.shutdown.hasClass("in-progress") || 
+              this.shutdown.hasClass("disabled")) {
+            return;
+          }
+          
+          this.shutdown.addClass("in-progress");
+
+          this.vm.unbind("change:status", this.handle_shutdown_complete);
+          this.vm.bind("change:status", this.handle_shutdown_complete);
+
+          var self = this;
+          this.vm.call("shutdown");
+        },
+
+        handle_shutdown_complete: function(vm) {
+          if (vm.get("status") == "STOPPED") {
+            this.shutdown.removeClass("in-progress");
+            this.vm.unbind("change:status", this.handle_shutdown_complete);
+          }
+        },
+
         submit_resize: function(flv) {
+            if (this.submit.hasClass("in-progress")) { return }
             this.submit.addClass("in-progress");
             var complete = _.bind(function() {
               this.vm.set({'flavor': flv});
               this.vm.set({'flavorRef': flv.id});
-              this.hide()
+              this.hide();
             }, this);
             this.vm.call("resize", complete, complete, {flavor:flv.id});
         },
@@ -257,33 +283,45 @@
             if (this.flavors_view) {
                 this.flavors_view.remove();
             }
-
-            if (!this.vm.can_resize()) {
-                this.$(".warning").show();
-                this.submit.hide();
-            } else {
-                this.$(".warning").hide();
-                this.submit.show();
-                this.$(".flavor-options-inner-cont").append("<div>");
-                this.flavors_view = new snf.views.FlavorOptionsView({
-                    flavors:this.vm.get_resize_flavors(),
-                    el: this.$(".flavor-options-inner-cont div"),
-                    hidden_choices:['disk', 'disk_template'],
-                    selected_flavor: this.vm.get_flavor(),
-                    extra_quotas: this.vm.get_flavor_quotas()
-                });
-                this.flavors_view.bind("flavor:select", this.handle_flavor_select)
-                this.submit.addClass("disabled");
-            }
+            this.warning = this.$(".warning");
+            this.warning.hide();
+            this.submit.show();
+            this.$(".flavor-options-inner-cont").append("<div>");
+            this.flavors_view = new snf.views.FlavorOptionsView({
+                flavors:this.vm.get_resize_flavors(),
+                el: this.$(".flavor-options-inner-cont div"),
+                hidden_choices:['disk', 'disk_template'],
+                selected_flavor: this.vm.get_flavor(),
+                extra_quotas: this.vm.get_flavor_quotas()
+            });
+            this.flavors_view.bind("flavor:select", this.handle_flavor_select)
+            this.submit.addClass("disabled");
             views.VmResizeView.__super__.show.apply(this);
         },
 
         handle_flavor_select: function(flv) {
             if (flv.id == this.vm.get_flavor().id) {
                 this.submit.addClass("disabled");
+                this.shutdown.addClass("disabled");
             } else {
-                this.submit.removeClass("disabled");
+                if (this.vm.can_resize()) {
+                  this.submit.removeClass("disabled");
+                } else {
+                  this.shutdown.removeClass("disabled hidden");
+                  this.warning.show();
+                }
             }
+            this.update_vm_status();
+        },
+
+        update_vm_status: function() {
+          if (this.selected_flavor) {
+            this.handle_flavor_select(this.selected_flavor);
+          }
+          if (this.vm.get("status") == "SHUTDOWN") {
+            this.shutdown.addClass("in-progress").removeClass("disabled");
+            this.warning.hide();
+          }
         },
 
         beforeOpen: function() {
@@ -292,17 +330,35 @@
         },
 
         update_layout: function() {
+            this.update_actions();
             this.update_vm_details();
             this.render_choices();
+            this.update_vm_status();
+        },
+
+        update_actions: function() {
+          if (!this.vm.can_resize()) {
+            this.shutdown.show();
+            this.warning.show();
+            this.shutdown.removeClass("disabled");
+            if (this.selected_flavor) {
+              this.handle_flavor_select(this.selected_flavor);
+            } else {
+              this.shutdown.addClass("disabled");
+            }
+            this.submit.addClass("disabled");
+          } else {
+            this.submit.removeClass("disabled");
+            this.shutdown.hide();
+          }
         },
           
         render_choices: function() {
         },
 
         update_vm_details: function() {
-            this.set_subtitle(this.vm.escape("name") + 
-                              snf.ui.helpers.vm_icon_tag(this.vm, 
-                                                         "small"));
+            var name = _.escape(util.truncate(this.vm.get("name"), 70));
+            this.set_subtitle(name + snf.ui.helpers.vm_icon_tag(this.vm, "small"));
         },
 
         handle_vm_change: function() {
@@ -315,6 +371,7 @@
         onClose: function() {
             this.editing = false;
             this.vm.unbind("change", this.handle_vm_change);
+            this.vm.unbind("change:status", this.handle_shutdown_complete);
             this.vm = undefined;
         }
     });

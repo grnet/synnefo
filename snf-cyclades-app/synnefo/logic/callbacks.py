@@ -35,8 +35,9 @@ import json
 from functools import wraps
 
 from django.db import transaction
-from synnefo.db.models import Backend, VirtualMachine, Network, BackendNetwork
-from synnefo.logic import utils, backend as backend_mod
+from synnefo.db.models import (Backend, VirtualMachine, Network,
+                               BackendNetwork, pooled_rapi_client)
+from synnefo.logic import utils, backend as backend_mod, rapi
 
 from synnefo.lib.utils import merge_time
 
@@ -90,8 +91,8 @@ def instance_from_msg(func):
         except VirtualMachine.DoesNotExist:
             log.error("VM for instance %s with id %d not found in DB.",
                       msg['instance'], vm_id)
-        except Network.InvalidBackendIdError, Network.DoesNotExist:
-            log.error("Invalid message", msg)
+        except (Network.InvalidBackendIdError, Network.DoesNotExist) as e:
+            log.error("Invalid message, can not find network. msg: %s", msg)
     return wrapper
 
 
@@ -171,12 +172,52 @@ def update_db(vm, msg, event_time):
         log.error("Message is of unknown type %s.", msg['type'])
         return
 
-    nics = msg.get("nics", None)
-    beparams = msg.get("beparams", None)
-    backend_mod.process_op_status(vm, event_time, msg['jobId'],
-                                  msg['operation'], msg['status'],
-                                  msg['logmsg'], nics=nics,
-                                  beparams=beparams)
+    operation = msg["operation"]
+    status = msg["status"]
+    jobID = msg["jobId"]
+    logmsg = msg["logmsg"]
+    nics = msg.get("instance_nics", None)
+    job_fields = msg.get("job_fields", {})
+    result = msg.get("result", [])
+
+    # Special case: OP_INSTANCE_CREATE with opportunistic locking may fail
+    # if all Ganeti nodes are already locked. Retry the job without
+    # opportunistic locking..
+    if (operation == "OP_INSTANCE_CREATE" and status == "error" and
+       job_fields.get("opportunistic_locking", False)):
+        try:
+            error_code = result[1][1]
+        except IndexError:
+            error_code = None
+        if error_code == rapi.ECODE_TEMP_NORES:
+            if vm.backendjobid != jobID:  # The job has already been retried!
+                return
+            # Remove extra fields
+            [job_fields.pop(f) for f in ("OP_ID", "reason")]
+            # Remove 'pnode' and 'snode' if they were set by Ganeti iallocator.
+            # Ganeti will fail if both allocator and nodes are specified.
+            allocator = job_fields.pop("iallocator")
+            if allocator is not None:
+                [job_fields.pop(f) for f in ("pnode", "snode")]
+            name = job_fields.pop("name", job_fields.pop("instance_name"))
+            # Turn off opportunistic locking before retrying the job
+            job_fields["opportunistic_locking"] = False
+            with pooled_rapi_client(vm) as c:
+                jobID = c.CreateInstance(name=name, **job_fields)
+            # Update the VM fields
+            vm.backendjobid = jobID
+            # Update the task_job_id for commissions
+            vm.task_job_id = jobID
+            vm.backendjobstatus = None
+            vm.save()
+            log.info("Retrying failed creation of instance '%s' without"
+                     " opportunistic locking. New job ID: '%s'", name, jobID)
+            return
+
+    backend_mod.process_op_status(vm, event_time, jobID,
+                                  operation, status,
+                                  logmsg, nics=nics,
+                                  job_fields=job_fields)
 
     log.debug("Done processing ganeti-op-status msg for vm %s.",
               msg['instance'])
@@ -195,10 +236,11 @@ def update_network(network, msg, event_time):
     opcode = msg['operation']
     status = msg['status']
     jobid = msg['jobId']
+    job_fields = msg.get('job_fields', {})
 
     if opcode == "OP_NETWORK_SET_PARAMS":
         backend_mod.process_network_modify(network, event_time, jobid, opcode,
-                                           status, msg['add_reserved_ips'])
+                                           status, job_fields)
     else:
         backend_mod.process_network_status(network, event_time, jobid, opcode,
                                            status, msg['logmsg'])

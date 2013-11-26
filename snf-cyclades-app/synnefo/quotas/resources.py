@@ -34,4 +34,6 @@
 from synnefo.util.keypath import get_path
 from synnefo.api.services import cyclades_services
 
-resources = get_path(cyclades_services, 'cyclades_compute.resources').values()
+resources = \
+    get_path(cyclades_services, 'cyclades_compute.resources').values() +\
+    get_path(cyclades_services, 'cyclades_network.resources').values()

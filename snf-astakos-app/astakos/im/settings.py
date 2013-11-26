@@ -21,6 +21,7 @@ ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
 VIEWS_PREFIX = get_path(astakos_services, 'astakos_ui.prefix')
 KEYSTONE_PREFIX = get_path(astakos_services, 'astakos_identity.prefix')
 WEBLOGIN_PREFIX = get_path(astakos_services, 'astakos_weblogin.prefix')
+ADMIN_PREFIX = get_path(astakos_services, 'astakos_admin.prefix')
 
 # Set the expiration time of newly created auth tokens
 # to be this many hours after their creation time.
@@ -207,3 +208,7 @@ KAMAKI_CONFIG_CLOUD_NAME = getattr(settings,
 REDIRECT_ALLOWED_SCHEMES = getattr(settings,
                                    'ASTAKOS_REDIRECT_ALLOWED_SCHEMES',
                                    ('pithos', 'pithosdev'))
+
+ADMIN_STATS_PERMITTED_GROUPS = getattr(settings,
+                                       'ASTAKOS_ADMIN_STATS_PERMITTED_GROUPS',
+                                       ['admin-stats'])

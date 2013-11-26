@@ -37,7 +37,7 @@ from django.utils import simplejson as json
 
 from snf_django.management import utils
 from astakos.im.models import Resource
-from astakos.im.register import update_resource
+from astakos.im.register import update_resources
 from ._common import show_resource_value, style_options, check_style, units
 
 
@@ -46,15 +46,16 @@ class Command(BaseCommand):
     help = "Modify a resource's default base quota and boolean flags."
 
     option_list = BaseCommand.option_list + (
-        make_option('--limit',
+        make_option('--default-quota',
+                    metavar='<limit>',
                     help="Specify default base quota"),
-        make_option('--limit-interactive',
+        make_option('--default-quota-interactive',
                     action='store_true',
                     default=None,
                     help=("Prompt user to change default base quota. "
                           "If no resource is given, prompts for all "
                           "resources.")),
-        make_option('--limit-from-file',
+        make_option('--default-quota-from-file',
                     metavar='<limits_file.json>',
                     help=("Read default base quota from a file. "
                           "File should contain a json dict mapping resource "
@@ -63,20 +64,23 @@ class Command(BaseCommand):
                     default='mb',
                     help=("Specify display unit for resource values "
                           "(one of %s); defaults to mb") % style_options),
-        make_option('--allow-in-projects',
+        make_option('--api-visible',
                     metavar='True|False',
-                    help=("Specify whether to allow this resource "
-                          "in projects.")),
+                    help="Control visibility of this resource in the API"),
+        make_option('--ui-visible',
+                    metavar='True|False',
+                    help="Control visibility of this resource in the UI"),
     )
 
     def handle(self, *args, **options):
         resource_name = args[0] if len(args) > 0 else None
 
         actions = {
-            'limit': self.change_limit,
-            'limit_interactive': self.change_interactive,
-            'limit_from_file': self.change_from_file,
-            'allow_in_projects': self.set_allow_in_projects,
+            'default_quota': self.change_limit,
+            'default_quota_interactive': self.change_interactive,
+            'default_quota_from_file': self.change_from_file,
+            'api_visible': self.set_api_visible,
+            'ui_visible': self.set_ui_visible,
         }
 
         opts = [(key, value)
@@ -85,8 +89,9 @@ class Command(BaseCommand):
 
         if len(opts) != 1:
             raise CommandError("Please provide exactly one of the options: "
-                               "--limit, --limit-interactive, "
-                               "--limit-from-file, --allow-in-projects.")
+                               "--default-quota, --default-quota-interactive, "
+                               "--default-quota-from-file, "
+                               "--api-visible, --ui-visible.")
 
         self.unit_style = options['unit_style']
         check_style(self.unit_style)
@@ -95,7 +100,7 @@ class Command(BaseCommand):
         action = actions[key]
         action(resource_name, value)
 
-    def set_allow_in_projects(self, resource_name, allow):
+    def set_api_visible(self, resource_name, allow):
         if resource_name is None:
             raise CommandError("Please provide a resource name.")
 
@@ -104,7 +109,26 @@ class Command(BaseCommand):
         except ValueError:
             raise CommandError("Expecting a boolean value.")
         resource = self.get_resource(resource_name)
-        resource.allow_in_projects = allow
+        resource.api_visible = allow
+        if not allow and resource.ui_visible:
+            self.stdout.write("Also resetting 'ui_visible' for consistency.\n")
+            resource.ui_visible = False
+        resource.save()
+
+    def set_ui_visible(self, resource_name, allow):
+        if resource_name is None:
+            raise CommandError("Please provide a resource name.")
+
+        try:
+            allow = utils.parse_bool(allow)
+        except ValueError:
+            raise CommandError("Expecting a boolean value.")
+        resource = self.get_resource(resource_name)
+
+        resource.ui_visible = allow
+        if allow and not resource.api_visible:
+            self.stdout.write("Also setting 'api_visible' for consistency.\n")
+            resource.api_visible = True
         resource.save()
 
     def get_resource(self, resource_name):
@@ -137,10 +161,14 @@ class Command(BaseCommand):
         else:
             resources = [self.get_resource(resource_name)]
 
+        updates = []
         for resource in resources:
             limit = config.get(resource.name)
             if limit is not None:
-                self.change_resource_limit(resource, limit)
+                limit = self.parse_limit(limit)
+                updates.append((resource, limit))
+        if updates:
+            update_resources(updates)
 
     def change_interactive(self, resource_name, _placeholder):
         if resource_name is None:
@@ -148,6 +176,7 @@ class Command(BaseCommand):
         else:
             resources = [self.get_resource(resource_name)]
 
+        updates = []
         for resource in resources:
             self.stdout.write("Resource '%s' (%s)\n" %
                               (resource.name, resource.desc))
@@ -164,15 +193,24 @@ class Command(BaseCommand):
                         value = units.parse(response)
                     except units.ParseError:
                         continue
-                    update_resource(resource, value)
+                    updates.append((resource, value))
                     break
+        if updates:
+            self.stdout.write("Updating...\n")
+            update_resources(updates)
+
+    def parse_limit(self, limit):
+        try:
+            if isinstance(limit, (int, long)):
+                return limit
+            if isinstance(limit, basestring):
+                return units.parse(limit)
+            raise units.ParseError()
+        except units.ParseError:
+            m = ("Limit should be an integer, optionally followed by a unit,"
+                 " or 'inf'.")
+            raise CommandError(m)
 
     def change_resource_limit(self, resource, limit):
-        if not isinstance(limit, (int, long)):
-            try:
-                limit = units.parse(limit)
-            except units.ParseError:
-                m = ("Limit should be an integer, optionally followed "
-                     "by a unit.")
-                raise CommandError(m)
-            update_resource(resource, limit)
+        limit = self.parse_limit(limit)
+        update_resources([(resource, limit)])

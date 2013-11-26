@@ -217,7 +217,8 @@ class BaseAPITest(TestCase):
 
     def delete(self, url, user='user'):
         with astakos_user(user):
-            with mocked_quotaholder():
+            with mocked_quotaholder() as m:
+                self.mocked_quotaholder = m
                 response = self.client.delete(url)
         return response
 
@@ -225,7 +226,8 @@ class BaseAPITest(TestCase):
         if ctype == 'json':
             content_type = 'application/json'
         with astakos_user(user):
-            with mocked_quotaholder():
+            with mocked_quotaholder() as m:
+                self.mocked_quotaholder = m
                 response = self.client.post(url, params,
                                             content_type=content_type,
                                             *args, **kwargs)
@@ -235,7 +237,8 @@ class BaseAPITest(TestCase):
         if ctype == 'json':
             content_type = 'application/json'
         with astakos_user(user):
-            with mocked_quotaholder():
+            with mocked_quotaholder() as m:
+                self.mocked_quotaholder = m
                 response = self.client.put(url, params,
                                            content_type=content_type,
                                            *args, **kwargs)
@@ -243,6 +246,9 @@ class BaseAPITest(TestCase):
 
     def assertSuccess(self, response):
         self.assertTrue(response.status_code in [200, 202, 203, 204])
+
+    def assertSuccess201(self, response):
+        self.assertEqual(response.status_code, 201)
 
     def assertFault(self, response, status_code, name):
         self.assertEqual(response.status_code, status_code)
@@ -252,8 +258,14 @@ class BaseAPITest(TestCase):
     def assertBadRequest(self, response):
         self.assertFault(response, 400, 'badRequest')
 
+    def assertConflict(self, response):
+        self.assertFault(response, 409, 'conflict')
+
     def assertItemNotFound(self, response):
         self.assertFault(response, 404, 'itemNotFound')
+
+    def assertConflict(self, response):
+        self.assertFault(response, 409, "conflict")
 
     def assertMethodNotAllowed(self, response):
         self.assertFault(response, 400, 'badRequest')

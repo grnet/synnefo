@@ -1090,13 +1090,13 @@
           
           this.fetcher = undefined;
           if (this.update_collection) {
-            this.fetcher_params = [snf.config.update_interval, 
-                                  snf.config.update_interval_increase || 500,
-                                  snf.config.fast_interval || snf.config.update_interval/2, 
-                                  snf.config.update_interval_increase_after_calls || 4,
-                                  snf.config.update_interval_max || 20000,
-                                  true, 
-                                  {is_recurrent: true, update: true}];
+              this.fetcher_params = [snf.config.update_interval, 
+                    snf.config.update_interval_increase || 500,
+                    snf.config.fast_interval || snf.config.update_interval/2, 
+                    snf.config.update_interval_increase_after_calls || 4,
+                    snf.config.update_interval_max || 20000,
+                    true, 
+                    {is_recurrent: true, update: true}];
               this.fetcher = this.collection.get_fetcher.apply(this.collection, 
                                                 _.clone(this.fetcher_params));
               this.fetcher.start();
@@ -1179,68 +1179,17 @@
         initialize: function() {
             views.CreateNetworkingView.__super__.initialize.apply(this, arguments);
             this.init_handlers();
-            this.ssh_list = this.$(".ssh ul");
             this.selected_keys = [];
-
-            var self = this;
-            this.$(".create-ssh-key").click(function() {
-                var confirm_close = true;
-                if (confirm_close) {
-                    snf.ui.main.public_keys_view.show(self.parent);
-                } else {
-                }
-            });
-
+            this.cont = this.$(".step-cont");
         },
         
         init_subviews: function() {
             var create_view = this.parent;
-            if (!this.ips_view) {
-              this.ips_view = new views.CreateColumnSelectListView({
-                collection: synnefo.storage.public_ips,
-                extra_class: 'public-ips',
-                update_collection: true,
-                title: 'IP addresses <span class="create-ip-address"><a href="#">manage ip\'s</a></span>',
-                description: 'Select IP addresses to be assigned to the created machine.',
-                item_cls: views.CreateColumnIPOptionView,
-                empty_msg: 'No IP addresses available. <span><a href="">Create a new IP address.</a></span>',
-                select_first_as_default: true,
-                filter_items: function(model) { 
-                  return !(model.get_vm() || model.get('state'))
-                },
-                init_events: function() {
-                  var msg = this.$(".empty span a");
-                  this.$(".create-ip-address").click(function() {
-                      snf.ui.main.public_ips_view.show(create_view);
-                  });
-                  this.$(".empty a").bind('click', function(e) {
-                      e.preventDefault();
-                      msg.text("Creating...");
-                      synnefo.storage.public_ips.create({address:undefined, pool: undefined}, {
-                        error: function() {
-                          alert("Cannot create new ip address");
-                        },
-                        complete: function() {
-                          msg.text("Create a new IP address.");
-                          msg.show();
-                        },
-                        skip_api_error: true,
-                      })
-                  });
-                }
-              });
-              $(this.ips_view.el).appendTo(this.$(".personalize-conts"));
-            }
             if (!this.networks_view) {
-              this.networks_view = new views.CreateColumnSelectListView({
-                collection: synnefo.storage.networks,
-                extra_class: 'private-networks',
-                title: 'Private networks',
-                description: 'Select private networks to connect the created machine to. You can manage your private networks from the networks tab.',
-                item_cls: views.CreateColumnPrivateNetworkOptionView,
-                filter_items: function(model) { return !model.is_public() }
+              this.networks_view = new views.NetworkSelectView({
+                container: this.cont
               });
-              $(this.networks_view.el).appendTo(this.$(".personalize-conts"));
+              this.networks_view.hide(true);
             }
         },
 
@@ -1251,8 +1200,13 @@
             views.CreateNetworkingView.__super__.show.apply(this, arguments);
             this.init_subviews();
             this.update_layout();
+            this.networks_view.show(true);
         },
         
+        hide_step: function() {
+            this.networks_view && this.networks_view.hide(true);
+        },
+
         update_layout: function() {
         },
 
@@ -1262,13 +1216,13 @@
         },
         
         get_selected_networks: function() {
-          if (!this.networks_view) { return [] }
-          return this.networks_view.get_selected();
+            if (!this.networks_view) { return [] }
+            return this.networks_view.get_selected_networks();
         },
         
         get_selected_addresses: function() {
-          if (!this.networks_view) { return [] }
-          return this.ips_view.get_selected();
+            if (!this.networks_view) { return [] }
+            return this.networks_view.get_selected_floating_ips();
         },
 
         get: function() {
@@ -1279,11 +1233,6 @@
         },
 
         remove: function() {
-          if (this.ips_view) {
-            this.ips_view.remove();
-            delete this.ips_view;
-          }
-          
           if (this.networks_view) {
             this.networks_view.remove();
             delete this.networks_view;
@@ -1364,7 +1313,8 @@
                 this.$(".ssh .empty").hide();
             }
             _.each(keys, _.bind(function(key){
-                var el = $('<li id="ssh-key-option-{1}" class="ssh-key-option">{0}</li>'.format(_.escape(key.get("name")), key.id));
+                var name = _.escape(util.truncate(key.get("name"), 45));
+                var el = $('<li id="ssh-key-option-{1}" class="ssh-key-option">{0}</li>'.format(name, key.id));
                 var check = $('<input class="check" type="checkbox"></input>')
                 el.append(check);
                 el.data("model", key);
@@ -1397,7 +1347,8 @@
 
             if (!params.image) { return }
             var vm_name_tpl = snf.config.vm_name_template || "My {0} server";
-            var vm_name = vm_name_tpl.format(_.escape(params.image.get("name")));
+            //if (params.image.is_snapshot()) { vm_name_tpl = "{0}" };
+            var vm_name = vm_name_tpl.format(params.image.get("name"));
             var orig_name = vm_name;
             
             var existing = true;
@@ -1514,7 +1465,7 @@
             }
             _.each(ips, _.bind(function(ip) {
                 var el = this.make("li", {'class':'selected-ip-address'}, 
-                                  ip.get('ip'));
+                                  ip.get('floating_ip_address'));
                 this.ip_addresses.append(el);
             }, this))
 
@@ -1556,7 +1507,7 @@
             }
             
             set_detail("description", image.get_description());
-            set_detail("name");
+            set_detail("name", util.truncate(image.get("name"), 30));
             set_detail("os", _(image.get_os()).capitalize());
             set_detail("gui", image.get_gui());
             set_detail("size", _.escape(image.get_readable_size()));
@@ -1569,7 +1520,8 @@
                 this.keys.append(this.make("li", {'class':'empty'}, 'No keys selected'))
             }
             _.each(keys, _.bind(function(key) {
-                var el = this.make("li", {'class':'selected-ssh-key'}, key.get('name'));
+                var name = _.escape(util.truncate(key.get("name"), 20))
+                var el = this.make("li", {'class':'selected-ssh-key'}, name);
                 this.keys.append(el);
             }, this))
         },
@@ -1596,7 +1548,7 @@
 
             if (!params.image) { return }
 
-            this.name.text(params.name);
+            this.name.text(util.truncate(params.name, 50));
 
             this.confirm.find("li.image .value").text(params.flavor.get("image"));
             this.confirm.find("li.cpu .value").text(params.flavor.get("cpu") + "x");
@@ -1726,8 +1678,18 @@
                     extra['personality'] = _.flatten(personality);
                 }
                 
-                extra['networks'] = _.map(data.networks, function(n) { return n.get('id') });
-                extra['floating_ips'] = _.map(data.addresses, function(ip) { return ip.get('ip') });
+                extra['networks'] = [];
+                _.each(data.networks, function(n) {
+                  extra.networks.push({'uuid': n.get('id')})
+                });
+                _.each(data.addresses, function(ip) {
+                  extra.networks.push({
+                    'uuid': ip.get('network').get('id'),
+                    'fixed_ip': ip.get('floating_ip_address')
+                  });
+                });
+
+                _.map(data.networks, function(n) { return n.get('id') });
                 storage.vms.create(data.name, data.image, data.flavor, 
                                    meta, extra, _.bind(function(data){
                     _.each(data.addresses, function(ip) {
@@ -1800,7 +1762,8 @@
             // FIXME: this shouldn't be here
             // but since we are not calling step.hide this should work
             this.steps[1].image_details.hide();
-
+            
+            this.current_view && this.current_view.hide_step && this.current_view.hide_step();
             this.current_view = this.steps[step];
             this.update_controls();
 

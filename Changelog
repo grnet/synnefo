@@ -91,31 +91,61 @@ Astakos
 Cyclades
 --------
 
-* Implement Floating IP addresses, which are addresses that can be dynamically
-  added and removed to a running server.
+* Major changes to Cyclades networks:
 
-  * Implement the 'os-floating-ips' and 'os-floating-ip-pools' API extensions.
-  * Implement 'snf-manage floating-ip-list' management command.
-  * Add 'floating_ip_pool' attribute to networks. Such networks must exist to
-    all Ganeti backends.
+  * Implement 'cyclades_network' service, containing the /networks, /ports,
+    /subnets and /floatingips API endpoints under '/network/v2.0'.
+	The old /networks API of 'cyclades_compute' (under /compute/v2.0) is
+	removed.
+  * Implement `snf-manage subnet-{create, list, modify, inspect}' management
+    commands for handling of subnets.
+  * Implement `snf-manage port-{create, list, remove, inspect}' management
+    commands for handling of ports.
+  * Add two new settings, 'CYCLADES_FORCED_SERVER_NETWORKS' and
+	'CYCLADES_DEFAULT_SERVER_NETWORKS' to control the networks that newly
+	created servers will be connected.
 
-* Speed up server reconciliation, by performing parallel reconciliation for
-  each backend.
-* Implement IPv6 only networks.
+* Implement Floating IP addresses, which are IPv4 addresses that can be
+  dynamically added and removed to a running server.
+
+  * Add new 'cyclades.floating_ip' resource.
+  * Implement 'snf-manage floating-ip-{create,list,remove,attach,detach}'
+	management commands to handle floating IPs.
+  * Add 'floating_ip_pool' attribute to networks to mark networks that can
+    be used as floating IP pools.
+
 * Implement 'resize' server action.
 
   * Implement the 'resize' server action, to change the flavor of a server.
   Only 'cpu' and 'memory' resizing is supported.
 
 * Compute quotas for CPU and memory of running vms.
-* Obsolete PUBLIC_USE_POOL setting, since Cyclades manages IP pool for all
-  type of networks.
+
+  * Change 'cyclades.cpu' and 'cyclades.ram' resources to represent the CPU
+    and RAM for running VMs. Total CPU and RAM usage is represented by new
+    'cyclades.total_cpu' and 'cyclades.total_ram' resources.
+
+* Refer to Ganeti NICs by their name instead of their index.
+
+  * Make cyclades give a unique name to each Ganeti NIC. NICs are refered by
+    their unique name and not by their index inside the VM that are connected
+	to.
+
+* Support firewall profile for all NICs of an instance. Change firewall
+  settings to be filled with the unique name of the NIC. The affected settings
+  are the GANETI_FIREWALL_{ENABLED, DISABLED, PROTECTED}_TAG settings.
+* Add accounting for public IP addresses that is accessible via `snf-manage
+  ip-list` management command and via the helpdesk app.
+* Implement IPv6 only networks.
 * Extend servers info API response with 'SNF:fqdn' attribute, and introduce
-  CYCLADES_SERVERS_FQDN to set the template for servers FDQN.
+  CYCLADES_SERVERS_FQDN to set the template for servers FDQN. Remove
+  'UI_VM_HOSTNAME_FORMAT' setting.
 * Extend servers info API response with 'SNF:port_forwarding' attribute,
   describing port fowarding rules (DNAT) that are applied to vms. The
   description of such rules is done via the new CYCLADES_PORT_FORWARDING
   setting.
+* Speed up server reconciliation, by performing parallel reconciliation for
+  each backend.
 * Change --dhcp option of network management commands from a flag to a boolean
   value, e.g. --dhcp=True
 * Remove 'ARCHIPELAGO_BACKENDS' setting used to distinquish between backends
@@ -137,6 +167,8 @@ Cyclades
 * Support enforcing quota through command 'enforce-resources-cyclades'.
 * Remove command 'resource-export-cyclades' subsumed by
   'service-export-cyclades'.
+* Obsolete PUBLIC_USE_POOL setting, since Cyclades manages IP pool for all
+  type of networks.
 
 Pithos
 ------

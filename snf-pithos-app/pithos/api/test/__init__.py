@@ -49,7 +49,6 @@ from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 from synnefo.util import text
 
-from django.core.urlresolvers import reverse
 from django.test import TestCase
 from django.test.client import Client, MULTIPART_CONTENT, FakePayload
 from django.test.simple import DjangoTestSuiteRunner
@@ -236,15 +235,9 @@ class PithosAPITest(TestCase):
 
         # patch astakosclient.AstakosClient.api_oa2_auth
         mock_api_oa2_auth = self.create_patch(
-            'astakosclient.AstakosClient.api_oa2_auth',
+            'astakosclient.AstakosClient.oa2_url',
             new_callable=PropertyMock)
-        mock_api_oa2_auth.return_value = reverse('oa2_authenticate')
-
-        # patch astakosclient.AstakosClient.api_oa2_token
-        mock_api_oa2_token = self.create_patch(
-            'astakosclient.AstakosClient.api_oa2_token',
-            new_callable=PropertyMock)
-        mock_api_oa2_token.return_value = reverse('oa2_token')
+        mock_api_oa2_auth.return_value = '/astakos/oa2/'
 
     def tearDown(self):
         #delete additionally created metadata

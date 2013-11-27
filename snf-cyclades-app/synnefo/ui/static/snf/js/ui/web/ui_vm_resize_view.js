@@ -302,7 +302,9 @@
         handle_flavor_select: function(flv) {
             if (flv.id == this.vm.get_flavor().id) {
                 this.submit.addClass("disabled");
-                this.shutdown.addClass("disabled");
+                if (!this.shutdown.hasClass("in-progress")) {
+                  this.shutdown.addClass("disabled");
+                }
             } else {
                 if (this.vm.can_resize()) {
                   this.submit.removeClass("disabled");
@@ -344,7 +346,9 @@
             if (this.selected_flavor) {
               this.handle_flavor_select(this.selected_flavor);
             } else {
-              this.shutdown.addClass("disabled");
+              if (!this.shutdown.hasClass("in-progress")) {
+                this.shutdown.addClass("disabled");
+              }
             }
             this.submit.addClass("disabled");
           } else {

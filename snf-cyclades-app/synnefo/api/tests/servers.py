@@ -161,18 +161,19 @@ class ServerAPITest(ComputeAPITest):
 
     def test_server_fqdn(self):
         vm = mfactory.VirtualMachineFactory()
-        # test no public ip
+        # Setting set to None
         with override_settings(settings,
-                               CYCLADES_SERVERS_FQDN="vm.example.org"):
+                               CYCLADES_SERVERS_FQDN=None):
             response = self.myget("servers/%d" % vm.id, vm.userid)
             server = json.loads(response.content)['server']
-            self.assertEqual(server["SNF:fqdn"], "")
-        mfactory.IPv4AddressFactory(nic__machine=vm, network__public=True)
+            self.assertEqual(server["SNF:fqdn"], None)
+        # Unformated setting
         with override_settings(settings,
                                CYCLADES_SERVERS_FQDN="vm.example.org"):
             response = self.myget("servers/%d" % vm.id, vm.userid)
             server = json.loads(response.content)['server']
             self.assertEqual(server["SNF:fqdn"], "vm.example.org")
+        # Formatted settings
         with override_settings(settings, CYCLADES_SERVERS_FQDN=
                                "snf-%(id)s.vm.example.org"):
             response = self.myget("servers/%d" % vm.id, vm.userid)
@@ -186,32 +187,6 @@ class ServerAPITest(ComputeAPITest):
             server = json.loads(response.content)['server']
             self.assertEqual(server["SNF:fqdn"], "snf-%d.vm-%d.example.org" %
                              (vm.id, vm.id))
-
-        vm = mfactory.VirtualMachineFactory()
-        # No setting, no NICs
-        with override_settings(settings,
-                               CYCLADES_SERVERS_FQDN=None):
-            response = self.myget("servers/%d" % vm.id, vm.userid)
-            server = json.loads(response.content)['server']
-            self.assertEqual(server["SNF:fqdn"], "")
-
-        # IPv6 NIC
-        ipv6_address = mfactory.IPv6AddressFactory(nic__machine=vm,
-                                                   network__public=True)
-        with override_settings(settings,
-                               CYCLADES_SERVERS_FQDN=None):
-            response = self.myget("servers/%d" % vm.id, vm.userid)
-            server = json.loads(response.content)['server']
-            self.assertEqual(server["SNF:fqdn"], ipv6_address.address)
-
-        # IPv4 NIC
-        ipv4_address = mfactory.IPv4AddressFactory(nic__machine=vm,
-                                                   network__public=True)
-        with override_settings(settings,
-                               CYCLADES_SERVERS_FQDN=None):
-            response = self.myget("servers/%d" % vm.id, vm.userid)
-            server = json.loads(response.content)['server']
-            self.assertEqual(server["SNF:fqdn"], ipv4_address.address)
 
     def test_server_port_forwarding(self):
         vm = mfactory.VirtualMachineFactory()

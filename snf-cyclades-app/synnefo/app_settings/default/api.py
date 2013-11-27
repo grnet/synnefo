@@ -123,8 +123,7 @@ SECRET_ENCRYPTION_KEY = "Password Encryption Key"
 CYCLADES_SERVICE_TOKEN = ''
 
 # Template to use to build the FQDN of VMs. The setting will be formated with
-# the id of the VM. If set to 'None' the first public IPv4 or IPv6 address
-# of the VM will be used.
+# the id of the VM.
 CYCLADES_SERVERS_FQDN = 'snf-%(id)s.vm.example.synnefo.org'
 
 # Description of applied port forwarding rules (DNAT) for Cyclades VMs. This

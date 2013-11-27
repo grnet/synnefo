@@ -1,6 +1,45 @@
 Upgrade to Synnefo v0.15
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
+Prerequisites
+==============
+
+Before upgrading to v0.15 there are two steps that must be performed, relative
+with Cyclades networking service.
+
+Add unique name to the NICs of all Ganeti instances
+---------------------------------------------------
+
+Since Ganeti 2.8, it is supported to give a name to NICs of Ganeti instances
+and refer to them with their name, and not only by their index. Synnefo v0.15
+assigns a unique name to each NIC and refers to them by their unique name.
+Before upgrading to v0.15, Synnefo must assign names to all existing NICs.
+This can easily be performed with a helper script that is shipped with Synnefo
+v0.14.10:
+
+.. code-block:: console
+
+ cyclades.host$ /usr/lib/synnefo/tools/add_unique_name_to_nics
+
+.. note:: If you are not upgrading from v0.14.10, you can find the migration
+ script here XXX.
+
+
+Extend public networks to all Ganeti backends
+---------------------------------------------
+
+Before v0.15, each public network of Cyclades existed in one of the Ganeti
+backends. In order to support dynamic addition and removal of public IPv4
+address across VMs, each public network must exist in all Ganeti backends.
+
+If you are using more than one Ganeti backends, before upgrading to v0.15 you
+must ensure that the network configuration to all Ganeti backends is identical
+and appropriate to support all public networks of Cyclades.
+
+
+Upgrade Steps
+=============
+
 The upgrade to v0.15 consists in the following steps:
 
 1. Bring down services and backup databases.

@@ -699,13 +699,14 @@ IPv4 addresses
 **************
 
 An allocation pool of IPv4 addresses is automatically created for every network
-that has the attribute `dhcp` set to True. The allocation pool contains the
-range of IP addresses that are included in the subnet. The gateway and the
-broadcast address of the network are excluded from the allocation pool. The
-admin can externally reserve IP addresses to exclude them from automatic
+with an IPv4 subnet. By default, the allocation pool contains the range of IP
+addresses that are included in the subnet, except from the gateway and the
+broadcast address of the network. The range of IP addresses can be restricted
+using the `--allocation-pool` option of `snf-manage network-create` command.
+The admin can externally reserve IP addresses to exclude them from automatic
 allocation with the `--add-reserved-ips` option of `snf-manage network-modify`
-command. For example the following command will reserve two IP addresses
-from network with ID `42`:
+command. For example the following command will reserve two IP addresses from
+network with ID `42`:
 
 .. code-block:: console
 
@@ -805,7 +806,6 @@ Reconciliation of Networks detects the following conditions:
   * Stale DB networks without corresponding Ganeti networks
   * Orphan Ganeti networks, without corresponding DB entries
   * Private networks that are not created to all Ganeti backends
-  * Unsynchronized IP pools
 
 To detect all inconsistencies you can just run:
 
@@ -821,6 +821,18 @@ Adding the `--fix-all` option, will do the actual synchronization:
 
 Please see ``snf-manage reconcile-networks --help`` for all the details.
 
+Reconciling Pools
+`````````````````
+
+Reconciliation of pools will check the consistency of available pools by
+checking that the values from each pool are not used more than once, and also
+that the only reserved values in a pool are the ones used. Pool reconciliation
+will check pools of bridges, MAC prefixes, and IPv4 addresses for all networks.
+
+.. code-block:: console
+
+  $ snf-manage reconcile-pools
+  $ snf-manage reconcile-pools --fix
 
 Cyclades internals
 ------------------

@@ -1729,7 +1729,6 @@ case). You can install them by running in both nodes:
 This will install the following:
 
  * ``snf-ganeti-eventd`` (daemon to publish Ganeti related messages on RabbitMQ)
- * ``snf-ganeti-hook`` (all necessary hooks under ``/etc/ganeti/hooks``)
  * ``snf-progress-monitor`` (used by ``snf-image`` to publish progress messages)
 
 Configure ``snf-cyclades-gtools``

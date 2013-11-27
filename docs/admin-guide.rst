@@ -845,16 +845,13 @@ needs an action in the Ganeti backend, Cyclades submit jobs to the Ganeti
 master using the `Ganeti RAPI interface
 <http://docs.ganeti.org/ganeti/2.2/html/rapi.html>`_.
 
-While Ganeti executes the job, `snf-ganeti-eventd`, `snf-ganeti-hook` and
-`snf-progress-monitor` are monitoring the progress of the job and send
-corresponding messages to the RabbitMQ servers. These components are part
-of `snf-cyclades-gtools` and must be installed on all Ganeti nodes. Specially:
+While Ganeti executes the job, `snf-ganeti-eventd`, and `snf-progress-monitor`
+are monitoring the progress of the job and send corresponding messages to the
+RabbitMQ servers. These components are part of `snf-cyclades-gtools` and must
+be installed on all Ganeti nodes. Specially:
 
 * *snf-ganeti-eventd* sends messages about operations affecting the operating
   state of instances and networks. Works by monitoring the Ganeti job queue.
-* *snf-ganeti_hook* sends messages about the NICs of instances. It includes a
-  number of `Ganeti hooks <http://docs.ganeti.org/ganeti/2.2/html/hooks.html>`_
-  for customisation of operations.
 * *snf-progress_monitor* sends messages about the progress of the Image deployment
   phase which is done by the Ganeti OS Definition `snf-image`.
 
@@ -1419,7 +1416,7 @@ processed by a client.
 
 Currently, RabbitMQ is used by the following components:
 
-* `snf-ganeti-eventd`, `snf-ganeti-hook` and `snf-progress-monitor`:
+* `snf-ganeti-eventd` and `snf-progress-monitor`:
   These components send messages concerning the status and progress of
   jobs in the Ganeti backend.
 * `snf-dispatcher`: This daemon, consumes the messages that are sent from

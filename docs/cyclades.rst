@@ -19,7 +19,7 @@ and Ganeti. The `effect` path is activated in response to a user request;
 Cyclades issues VM control commands to Ganeti over RAPI. The `update` path is
 triggered whenever the state of a VM changes, due to Synnefo- or
 administrator-initiated actions happening at the Ganeti level. In the update
-path, we exploit Ganeti’s hook mechanism to produce notifications to the rest
+path, we monitor Ganeti's job queue to produce notifications to the rest
 of the Synnefo infrastructure over a message queue.
 
 Users have full control over their VMs: they can create new ones, start them,

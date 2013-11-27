@@ -124,6 +124,7 @@ def set_quota(quotas, resource=None):
             h_old = holdings[key]
             h.usage_min = h_old.usage_min
             h.usage_max = h_old.usage_max
+            h.id = h_old.id
         except KeyError:
             pass
         new_holdings[key] = h

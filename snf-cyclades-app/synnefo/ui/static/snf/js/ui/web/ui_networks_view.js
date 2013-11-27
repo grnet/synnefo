@@ -512,6 +512,7 @@
 
       show_connect_vms_overlay: function() {
         var view = new views.NetworkConnectVMsOverlay();
+        this.model.actions.reset_pending();
         vms = this.model.connectable_vms;
         var cb = _.bind(function(vms) {
           view.set_in_progress();

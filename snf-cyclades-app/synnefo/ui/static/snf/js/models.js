@@ -784,7 +784,19 @@
             }, this));
 
         },
-          
+        
+        get_public_ips: function() {
+          var ips = [];
+          this.ports.filter(function(port) {
+            if (port.get('network') && !port.get('network').get('is_public')) { return }
+            if (!port.get("ips")) { return }
+            port.get("ips").each(function(ip) {
+              ips.push(ip);
+            });
+          });
+          return ips;
+        },
+
         has_public_ip: function() {
           return this.ports.filter(function(port) {
             return port.get("network") && 

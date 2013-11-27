@@ -6624,9 +6624,14 @@ input.has-errors {
     text-decoration: underline;
 }
 
+.single .suspended-notice {
+  right: 98px;
+  top:2px;
+}
+
 .icon .suspended-notice {
   right: 192px;
-  top: 50px;
+  top: 54px;
 }
 
 .suspended-notice {

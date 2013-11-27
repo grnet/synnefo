@@ -104,7 +104,10 @@
             data += "\n====================";
             data += "\nID: " + vm.id;
             data += "\nName: " + vm.get('name');
-            data += "\nPublic IP: " + vm.get_public_nic().get('ipv4');
+            var public_ips = vm.get_public_ips();
+            _.each(public_ips, function(ip) {
+              data += "\nPublic IP{0}: {1}".format(ip.get('type'), ip.get('ip_address'));
+            });
             data += "\n\n";
             views.SuspendedVMView.__super__.show.call(this, data, collect_data, extra_data, cb);
         }

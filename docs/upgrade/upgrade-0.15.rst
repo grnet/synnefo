@@ -46,9 +46,11 @@ The upgrade to v0.15 consists in the following steps:
 
 2. Upgrade packages, migrate the databases and configure settings.
 
-3. Register services and resources.
+3. Create floating IP pools
 
-4. Bring up all services.
+4. Register services and resources.
+
+5. Bring up all services.
 
 .. warning::
 
@@ -158,10 +160,45 @@ setting will have the value of
 For Pithos service we have to change the ``20-snf-pithos-app-settings.conf``
 file in the same way as above.
 
-3. Register services and resources
+
+3. Create floating IP pools
+===========================
+
+Synnefo v0.15 introduces floating IPs, which are public IPv4 addresses that can
+dynamically be added/removed to/from VMs and are quotable via the
+'cyclades.floating_ip' resource. Connecting a VM to a public network is only
+allowed if the user has firstly created a floating IP from this network.
+
+Floating IPs are created from networks that are marked as Floating IP pools.
+Creation of floating IP pools is done with the `snf-manage network-create`
+command using the `--floating-ip-pool` option.
+
+Existing networks can be converted to floating IPs using `network-modify`
+command:
+
+.. code-block:: console
+
+  snf-manage network-modify --floating-ip-pool=True <network_ID>
+
+Already allocated public IPv4 addresses are not automatically converted to
+floating IPs. Existing VMs can keep their IPv4 addresses which will be
+automatically be released when these VMs will be destroyed. In order to
+convert existing public IPs to floating IPs run the following command:
+
+.. code-block:: console
+
+ cyclades.host$ /usr/lib/synnefo/tools/update_to_floating_ips
+
+or for just one network:
+
+.. code-block:: console
+
+ cyclades.host$ /usr/lib/synnefo/tools/update_to_floating_ips --network-id=<network_ID>
+
+4. Register services and resources
 ==================================
 
-3.1 Re-register service and resource definitions
+4.1 Re-register service and resource definitions
 ------------------------------------------------
 
 You will need to register again all Synnefo components, updating the
@@ -186,7 +223,7 @@ new resources ``cyclades.total_cpu`` and ``cyclades.total_ram`` are
 introduced. We now also control the usage of floating IPs through resource
 ``cyclades.floating_ip``.
 
-3.2 Tweek resource settings
+4.2 Tweek resource settings
 ---------------------------
 
 New resources (``cyclades.total_cpu``, ``cyclades.total_ram``, and
@@ -222,7 +259,7 @@ change this behavior with::
 
     astakos-host$ snf-manage resource-modify <resource> --api-visible=True (or --ui-visible=True)
 
-3.3 Update the Quotaholder
+4.3 Update the Quotaholder
 --------------------------
 
 To update quota for all new or modified Cyclades resources, bring up Astakos::
@@ -233,7 +270,8 @@ and run on the Cyclades node::
 
    cyclades-host$ snf-manage reconcile-resources-cyclades --fix --force
 
-4. Bring all services up
+
+5. Bring all services up
 ========================
 
 After the upgrade is finished, we bring up all services:

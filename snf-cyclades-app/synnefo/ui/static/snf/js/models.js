@@ -1391,7 +1391,8 @@
         },
         
         set_firewall: function(nic, value, success_cb, error_cb) {
-          var success = function() { success_cb() }
+          var self = this;
+          var success = function() { self.require_reboot(); success_cb() }
           var error = function() { error_cb() }
           var data = {'nic': nic.id, 'profile': value, 'display': true};
           var url = this.url() + "/action";

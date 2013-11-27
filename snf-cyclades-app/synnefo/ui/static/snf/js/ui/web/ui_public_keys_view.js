@@ -60,7 +60,7 @@
         overlay_id: "public_key_create_view",
 
         subtitle: "",
-        title: "Create new SSH key",
+        title: "Create new keypair",
         
         initialize: function() {
             views.PublicKeyCreateView.__super__.initialize.apply(this, arguments);

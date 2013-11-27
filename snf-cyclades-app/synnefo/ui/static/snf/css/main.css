@@ -4772,10 +4772,8 @@ table.list-machines .wave {
   margin: 8px 0;
   font-weight: normal;
   font-size: 0.8em;
-  border: 1px solid #800;
-  background-color: #a00;
-  color: #fff !important;
-  padding: 5px 10px;
+  color: #800 !important;
+  padding: 5px 0;
 }
 
 .overlay .overlay-content .important {

@@ -300,10 +300,7 @@
       },
 
       remove_key: function() {
-        this.model.actions.reset_pending();
-        this.model.remove(function() {
-            synnefo.storage.keys.fetch();
-        });
+        this.model.do_remove();
       },
 
       post_hide: function() {

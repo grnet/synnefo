@@ -116,6 +116,15 @@
             })
           });
           this.actions = this.get("actions");
+          this.actions.bind("set-pending", function(action) {
+            this.trigger("action:set-pending", action, this.actions, this);
+          }, this);
+          this.actions.bind("unset-pending", function(action) {
+            this.trigger("action:unset-pending", action, this.actions, this);
+          }, this);
+          this.actions.bind("reset-pending", function() {
+            this.trigger("action:reset-pending", this.actions, this);
+          }, this);
 
           _.each(this.model_actions, function(params, key){
             var attr = 'can_' + key;
@@ -2211,6 +2220,13 @@
               snf.api.trigger("call");
             }, this)
           });
+        },
+
+        do_remove: function() {
+          this.actions.reset_pending();
+          this.remove(function() {
+            synnefo.storage.keys.fetch();
+          });
         }
     })
     
@@ -2254,6 +2270,7 @@
         var data = {};
         data[action] = this.status.INACTIVE;
         this.set(data);
+        this.trigger("unset-pending", action);
       },
 
       set_pending_action: function(action, reset_pending) {

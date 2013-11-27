@@ -68,6 +68,19 @@
           return !this.is_public() && _.contains(['ACTIVE'], this.get('status'));
         }]
       },
+      
+      do_remove: function(succ, err) {
+        this.actions.reset_pending();
+        this.destroy({
+          success: _.bind(function() {
+            this.set({status: 'REMOVING'});
+            this.set({ext_status: 'REMOVING'});
+            // force status display update
+            this.set({cidr: 'REMOVING'});
+          }, this),
+          silent: true
+        });
+      },
 
       proxy_attrs: {
         'is_public': [
@@ -284,7 +297,7 @@
         if (dhcp === false) { subnet_params.subnet.dhcp_enabled = false; }
         
         var cb = function() {
-          callback();
+          callback && callback();
         }
         
         var complete = function() {};
@@ -424,7 +437,7 @@
             vm.set({'status': 'DISCONNECTING'});
           }
           this.set({'status': 'DISCONNECTING'});
-          cb();
+          cb && cb();
         }, this);
         this.destroy({success: success, complete: cb, silent: true});
       }
@@ -469,14 +482,27 @@
         }],
         'disconnect': [['status', 'port_id', 'port'], function() {
           var port = this.get('port');
-          var vm = port && port.get('vm');
-          if (!vm) { return false }
-          if (vm && vm.get("task_state")) { return false }
-          if (vm && vm.in_error_state()) { return false }
-          var status_ok = _.contains(['ACTIVE', 'CONNECTED'], this.get('status'))
-          var vm_status_ok = vm.can_disconnect();
-          return status_ok && vm_status_ok;
+          if (!port) { return false }
+          return port.get('can_disconnect');
         }]
+      },
+      
+      do_remove: function(succ, err) { return this.do_destroy(succ, err) },
+      do_destroy: function(succ, err) {
+        this.actions.reset_pending();
+        this.destroy({
+          success: _.bind(function() {
+            this.set({status: 'REMOVING'});
+            succ && succ();
+          }, this),
+          error: err || function() {},
+          silent: true
+        });
+      },
+
+      do_disconnect: function(succ, err) {
+        this.actions.reset_pending();
+        this.get('port').disconnect(succ);
       },
 
       proxy_attrs: {
@@ -513,10 +539,6 @@
             }
           }
         ]
-      },
-      
-      disconnect: function(cb) {
-        this.get('port').disconnect(cb);
       }
     });
 

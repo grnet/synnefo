@@ -121,7 +121,7 @@
       model_icon: function() {
         var img = 'ip-icon-detached.png';
         var src = synnefo.config.images_url + '/{0}';
-        if (this.model.get('port')) {
+        if (this.model.get('port_id')) {
           img = 'ip-icon.png';
         }
         return src.format(img);
@@ -136,11 +136,7 @@
       
       disconnect: function(model, e) {
         e && e.stopPropagation();
-        this.model.actions.reset_pending();
-        this.model.disconnect(this.disconnect_complete)
-      },
-
-      disconnect_complete: function() {
+        this.model.do_disconnect();
       },
 
       connect_vm: function(vms) {
@@ -160,13 +156,7 @@
 
       remove: function(model, e) {
         e && e.stopPropagation();
-        this.model.actions.reset_pending();
-        this.model.destroy({
-          success: _.bind(function() {
-            this.model.set({status: 'REMOVING'});
-          }, this),
-          silent: true
-        });
+        this.model.do_destroy();
       }
     });
       
@@ -221,14 +211,14 @@
 
     views.IPConnectVmOverlay = views.NetworkConnectVMsOverlay.extend({
         css_class: "overlay-info connect-ip",
-        title: "Connect IP to machine",
+        title: "Attach IP to machine",
         allow_multiple: false,
 
         show_vms: function(ip, vms, selected, callback, subtitle) {
             views.IPConnectVmOverlay.__super__.show_vms.call(this, 
                   undefined, vms, selected, callback, subtitle);
             this.ip = ip;
-            this.set_desc("Select machine to assign <em>" + 
+            this.set_desc("Select machine to attach <em>" + 
                           ip.escape('floating_ip_address') + 
                           "</em> to.");
         },

@@ -185,8 +185,17 @@
                 msg_tpl_plural:"Your actions will affect {0} private networks",
                 actions_msg: {confirm: "Confirm all", cancel: "Cancel all"},
                 limit: 1,
-                cancel_all: function() { snf.storage.networks.reset_pending_actions(); },
-                do_all: function() { snf.storage.networks.do_all_pending_actions(); }
+                cancel_all: function(actions, config) {
+                  _.each(actions, function(action, id) {
+                    action.model.actions.reset_pending();
+                  });
+                },
+                do_all: function(actions, config) {
+                  _.each(actions, function(action, id) {
+                    var action_method = "do_{0}".format(action.actions[0]);
+                    action.model[action_method].apply(action.model);
+                  });
+                }
             });
 
             this.init_ns("reboots", {
@@ -196,6 +205,44 @@
                 limit: 0,
                 cancel_all: function() { snf.storage.vms.reset_reboot_required(); },
                 do_all: function() { snf.storage.vms.do_all_reboots(); }
+            });
+
+            this.init_ns("ips", {
+                msg_tpl:"Your actions will affect 1 IP address.",
+                msg_tpl_plural:"{0} actions will affect {0} IP addresses.",
+                actions_msg: {confirm: "Confirm all", cancel: "Cancel all"},
+                limit: 1,
+                cancel_all: function(actions, config) {
+                  _.each(actions, function(action, id) {
+                    action.model.actions.reset_pending();
+                  });
+                },
+                do_all: function(actions, config) {
+                  _.each(actions, function(action, id) {
+                    var action_method = "do_{0}".format(action.actions[0]);
+                    action.model[action_method].apply(action.model);
+                  });
+                }
+            });
+
+
+            this.init_ns("keys", {
+                msg_tpl:"Your actions will affect 1 public key.",
+                msg_tpl_plural:"{0} actions will affect {0} public keys.",
+                actions_msg: {confirm: "Confirm all", cancel: "Cancel all"},
+                limit: 1,
+                cancel_all: function(actions, config) {
+                  _.each(actions, function(action, id) {
+                    action.model.actions.reset_pending();
+                  });
+                },
+                do_all: function(actions, config) {
+                  _.each(actions, function(action, id) {
+                    var action_method = "do_{0}".format(action.actions[0]);
+                    action.model[action_method].apply(action.model);
+                  });
+                }
+
             });
         },
         
@@ -213,11 +260,25 @@
         },
 
         do_all: function(ns) {
-            this.ns_config[ns].do_all();
+            this.ns_config[ns].do_all.apply(this, [this.actions[ns], this.ns_config[ns]]);
         },
 
         cancel_all: function(ns) {
-            this.ns_config[ns].cancel_all();
+            this.ns_config[ns].cancel_all.apply(this, [this.actions[ns], this.ns_config[ns]]);
+        },
+        
+        register_actions_ns: function(store, ns) {
+          store.bind("action:set-pending", function(action, actions, model) {
+            this.handle_action_add(ns, model, [action]);
+          }, this);
+          store.bind("action:unset-pending", function(action, actions, model) {
+            this.handle_action_remove(ns, model, action);
+          }, this);
+          store.bind("action:reset-pending", function(actions, model) {
+            _.each(actions.actions, function(action) {
+              this.handle_action_remove(ns, model, action);
+            }, this);
+          }, this);
         },
 
         init_handlers: function() {
@@ -235,20 +296,41 @@
                              _.bind(this.handle_action_add, this, "vms"));
             storage.vms.bind("change:reboot_required", 
                              _.bind(this.handle_action_add, this, "reboots"));
-            storage.networks.bind("change:actions", 
-                                  _.bind(this.handle_action_add, this, "nets"));
+            
+            var ns_map = {
+              'ips': storage.floating_ips,
+              'keys': storage.keys,
+              'nets': storage.networks
+            }
+            _.each(ns_map, function(store, ns) {
+              this.register_actions_ns(store, ns);
+            }, this);
+        },
+        
+        handle_action_remove: function(type, model, action) {
+          var actions = this.actions[type];
+          var model_actions = actions[model.id] && actions[model.id].actions;
+          if (!model_actions) { return }
+          actions[model.id].actions = _.without(model_actions, action);
+          if (actions[model.id].actions.length == 0) {
+            delete actions[model.id];
+          }
+          this.update_layout();
         },
 
         handle_action_add: function(type, model, action) {
             var actions = this.actions[type];
             
-            // TODO: remove type specific addition code in its own namespace
+            if (type == "keys") {
+                actions[model.id] = {model: model, actions: action};
+            }
+
+            if (type == "ips") {
+                actions[model.id] = {model: model, actions: action};
+            }
+
             if (type == "nets") {
-                if (!action || action.is_empty()) {
-                    delete actions[model.id];
-                } else {
-                    actions[model.id] = {model: model, actions: action.actions};
-                }
+                actions[model.id] = {model: model, actions: action};
             }
 
             if (type == "vms") {
@@ -293,6 +375,10 @@
             _.each(this.actions[ns], function(actions, model_id) {
                 count++;
                 _.each(actions.actions, function(params, act_name){
+                    if (_.isString(params)) {
+                      actionscount++;
+                      return
+                    }
                     if (params && params.length) {
                         actionscount += params.length;
                     } else {

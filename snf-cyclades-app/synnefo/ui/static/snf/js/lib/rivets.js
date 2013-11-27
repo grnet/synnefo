@@ -405,10 +405,11 @@
         return _this.bindings.push(new Rivets.Binding(_this, node, type, key, keypath, options));
       };
       parse = function(node) {
-        var attribute, attributes, binder, childNode, delimiters, identifier, n, parser, regexp, restTokens, startToken, text, token, tokens, type, value, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2, _ref3, _ref4, _results;
-
+        var attribute, attributes, binder, childNode, delimiters, identifier, n, parser, regexp, restTokens, startToken, text, token, tokens, type, value, _i, _j, _k, _l, _len, _len1, _len2, _len3, _len4, _m, _ref, _ref1, _ref2, _ref3, _ref4, _results, _text_node_id;
+    
         if (__indexOf.call(skipNodes, node) < 0) {
-          if (node.nodeType === Node.TEXT_NODE) {
+          _text_node_id = (window.Node && window.Node.TEXT_NODE) || 3;
+          if (node.nodeType === _text_node_id) {
             parser = Rivets.TextTemplateParser;
             if (delimiters = _this.config.templateDelimiters) {
               if ((tokens = parser.parse(node.data, delimiters)).length) {

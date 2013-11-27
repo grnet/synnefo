@@ -995,7 +995,7 @@ port-list                      List ports
 port-remove                    Delete a port
 floating-ip-create             Create a new floating IP
 floating-ip-attach             Attach a floating IP to a server
-floating-ip-dettach            Dettach a flotaing IP from a server
+floating-ip-detach             Detach a floating IP from a server
 floating-ip-list               List floating IPs
 floating-ip-remove             Delete a floating IP
 queue-inspect                  Inspect the messages of a RabbitMQ queue

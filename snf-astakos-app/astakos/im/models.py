@@ -233,6 +233,7 @@ class Resource(models.Model):
     service_origin = models.CharField(max_length=255, db_index=True)
     unit = models.CharField(_('Unit'), null=True, max_length=255)
     uplimit = models.BigIntegerField(default=0)
+    project_default = models.BigIntegerField()
     ui_visible = models.BooleanField(default=True)
     api_visible = models.BooleanField(default=True)
 

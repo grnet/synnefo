@@ -85,6 +85,7 @@ def add_resource(resource_dict):
     except Resource.DoesNotExist:
         r = Resource(name=name,
                      uplimit=units.PRACTICALLY_INFINITE,
+                     project_default=units.PRACTICALLY_INFINITE,
                      service_type=service_type,
                      service_origin=service_origin)
         exists = False

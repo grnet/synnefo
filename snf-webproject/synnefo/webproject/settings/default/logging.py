@@ -64,7 +64,7 @@ LOGGING_SETUP['loggers']['synnefo.logic'] = {'level': 'INFO', 'propagate': 1}
 
 SNF_MANAGE_LOGGING_SETUP = {
     'version': 1,
-    'disable_existing_loggers': True,
+    'disable_existing_loggers': False,
 
     'formatters': FORMATTERS,
 

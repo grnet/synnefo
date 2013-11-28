@@ -54,7 +54,7 @@ LOGGING_SETUP = {
         'django.request': {
             'handlers': ['mail_admins'],
             'level': 'ERROR',
-            'propagate': False,
+            'propagate': True,
         },
         'synnefo': {
             'handlers': ['console'],

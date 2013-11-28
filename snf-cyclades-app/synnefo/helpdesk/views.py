@@ -126,8 +126,8 @@ def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
             groups = [g["name"] for g in groups]
 
             if not groups:
-                logger.error("Failed to access helpdesk view. User: %r",
-                             request.user_uniq)
+                logger.info("Failed to access helpdesk view. User: %r",
+                            request.user_uniq)
                 raise PermissionDenied
 
             has_perm = False
@@ -136,13 +136,13 @@ def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
                     has_perm = True
 
             if not has_perm:
-                logger.error("Failed to access helpdesk view %r. No valid "
-                             "helpdesk group (%r) matches user groups (%r)",
-                             request.user_uniq, permitted_groups, groups)
+                logger.info("Failed to access helpdesk view %r. No valid "
+                            "helpdesk group (%r) matches user groups (%r)",
+                            request.user_uniq, permitted_groups, groups)
                 raise PermissionDenied
         else:
-            logger.error("Failed to access helpdesk view %r. No authenticated "
-                         "user found.", request.user_uniq)
+            logger.info("Failed to access helpdesk view %r. No authenticated "
+                        "user found.", request.user_uniq)
             raise PermissionDenied
 
         logging.info("User %s accessed helpdesk view (%s)", request.user_uniq,
@@ -302,6 +302,7 @@ def search_by_ip(request, search_query):
 
     return direct_to_template(request, "helpdesk/ip.html",
                               extra_context=user_context)
+
 
 @helpdesk_user_required
 @token_check

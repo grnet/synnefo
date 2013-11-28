@@ -40,6 +40,7 @@ from django.core.cache import cache
 
 from astakos.im import settings
 from astakos.im.models import Service, AstakosUser
+from astakos.oa2.backends.base import OA2Error
 from astakos.oa2.backends.djangobackend import DjangoBackend
 from .util import json_response, xml_response, validate_user,\
     get_content_length
@@ -146,7 +147,7 @@ def validate_token(request, token_id):
     oa2_backend = DjangoBackend()
     try:
         token = oa2_backend.consume_token(token_id)
-    except Exception, e:
+    except OA2Error, e:
         raise faults.ItemNotFound(e.message)
 
     belongsTo = request.GET.get('belongsTo')

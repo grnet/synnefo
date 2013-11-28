@@ -6,8 +6,6 @@ import json
 
 from base64 import b64encode, b64decode
 from hashlib import sha512
-from time import time, mktime
-
 
 import logging
 logger = logging.getLogger(__name__)
@@ -413,8 +411,7 @@ class SimpleBackend(object):
 
     def consume_token(self, token):
         token_instance = self.get_token(token)
-        expires_at = mktime(token_instance.expires_at.timetuple())
-        if time() > expires_at:
+        if datetime.datetime.now() > token_instance.expires_at:
             self.delete_token(token_instance)  # delete expired token
             raise OA2Error("Token has expired")
         # TODO: delete token?

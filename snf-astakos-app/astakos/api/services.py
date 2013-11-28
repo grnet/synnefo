@@ -98,16 +98,7 @@ astakos_services = {
         ],
         'resources': {},
     },
-
-    'astakos_oa2': {
-        'type': 'astakos_auth',
-        'component': 'astakos',
-        'prefix': 'oa2',
-        'public': True,
-        'endpoints': [
-            {'versionId': '',
-             'publicURL': None},
-        ],
-        'resources': {},
-    }
 }
+
+from astakos.oa2.services import oa2_services
+astakos_services.update(oa2_services)

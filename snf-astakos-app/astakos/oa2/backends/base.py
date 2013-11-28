@@ -197,11 +197,11 @@ class SimpleBackend(object):
     __metaclass__ = BackendBase
 
     base_url = ''
-    endpoints_prefix = '/oa2/'
+    endpoints_prefix = 'oa2/'
 
     token_endpoint = 'token/'
     token_length = 30
-    token_expires = 300
+    token_expires = 20
 
     authorization_endpoint = 'auth/'
     authorization_code_length = 60
@@ -217,10 +217,17 @@ class SimpleBackend(object):
     code_model = AuthorizationCode
     user_model = User
 
-    def __init__(self, base_url='', endpoints_prefix='/oa2/', id='oa2',
-                 **kwargs):
+    def __init__(self, base_url='', endpoints_prefix='oa2/', id='oa2',
+                 token_endpoint='token/', token_length=30,
+                 token_expires=20, authorization_endpoint='auth/',
+                 authorization_code_length=60, **kwargs):
         self.base_url = base_url
         self.endpoints_prefix = endpoints_prefix
+        self.token_endpoint = token_endpoint
+        self.token_length = token_length
+        self.token_expires = token_expires
+        self.authorization_endpoint = authorization_endpoint
+        self.authorization_code_length = authorization_code_length
         self.id = id
         self._errors_to_http = kwargs.get('errors_to_http', True)
 

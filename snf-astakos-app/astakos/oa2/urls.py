@@ -33,5 +33,14 @@
 
 from astakos.oa2.backends import DjangoBackend
 
-oa2_backend = DjangoBackend(endpoints_prefix='')
+from astakos.oa2 import settings
+
+oa2_backend = DjangoBackend(endpoints_prefix=settings.ENDPOINT_PREFIX,
+                            token_endpoint=settings.TOKEN_ENDPOINT,
+                            token_length=settings.TOKEN_LENGTH,
+                            token_expires=settings.TOKEN_EXPIRES,
+                            authorization_endpoint=
+                            settings.AUTHORIZATION_ENDPOINT,
+                            authorization_code_length=
+                            settings.AUTHORIZATION_CODE_LENGTH)
 urlpatterns = oa2_backend.get_url_patterns()

@@ -12,6 +12,8 @@ from django.conf.urls.defaults import patterns, url
 from django.http import HttpResponseNotAllowed
 from django.views.decorators.csrf import csrf_exempt
 
+from synnefo.lib import join_urls
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -104,13 +106,14 @@ class DjangoBackend(DjangoBackendORMMixin, oa2base.SimpleBackend,
         return oa2base.Request(**params)
 
     def get_url_patterns(self):
-        sep = '/' if self.endpoints_prefix else ''
         _patterns = patterns(
             '',
-            url(r'^%s%sauth/?$' % (self.endpoints_prefix, sep),
+            url(r'^%s/?$' % join_urls(self.endpoints_prefix,
+                                      self.authorization_endpoint.rstrip('/')),
                 self.auth_view,
                 name='%s_authenticate' % self.id),
-            url(r'^%s%stoken/?$' % (self.endpoints_prefix, sep),
+            url(r'^%s/?$' % join_urls(self.endpoints_prefix,
+                                      self.token_endpoint.rstrip('/')),
                 self.token_view,
                 name='%s_token' % self.id),
         )

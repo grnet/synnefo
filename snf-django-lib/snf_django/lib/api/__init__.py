@@ -122,23 +122,24 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 return response
             except faults.Fault as fault:
                 if fault.code >= 500:
-                    logger.error("Unexpected API Error: %s", request.path,
-                                 exc_info=sys.exc_info(),
-                                 extra={
-                                     "status_code": fault.code,
-                                     "request": request})
+                    django_logger.error("Unexpected API Error: %s",
+                                        request.path,
+                                        exc_info=sys.exc_info(),
+                                        extra={
+                                            "status_code": fault.code,
+                                            "request": request})
                 return render_fault(request, fault)
             except AstakosClientException as err:
                 fault = faults.Fault(message=err.message,
                                      details=err.details,
                                      code=err.status)
                 if fault.code >= 500:
-                    logger.error("Unexpected AstakosClient Error: %s",
-                                 request.path,
-                                 exc_info=sys.exc_info(),
-                                 extra={
-                                     "status_code": fault.code,
-                                     "request": request})
+                    django_logger.error("Unexpected AstakosClient Error: %s",
+                                        request.path,
+                                        exc_info=sys.exc_info(),
+                                        extra={
+                                            "status_code": fault.code,
+                                            "request": request})
                 return render_fault(request, fault)
             except:
                 django_logger.error("Internal Server Error: %s", request.path,

@@ -293,7 +293,7 @@ def change_address_of_port(port, userid, old_address, new_address, version):
     if old_address is not None:
         msg = ("IPv%s Address of server '%s' changed from '%s' to '%s'"
                % (version, port.machine_id, old_address, new_address))
-        log.critical(msg)
+        log.error(msg)
 
     # Remove the old IP address
     remove_nic_ips(port, version=version)

@@ -759,7 +759,8 @@ class ValidateAccessToken(TestCase):
             expires_at=datetime.now() + timedelta(seconds=5),
             user=self.user,
             client=self.oa2_backend.client_model.create(type='public'),
-            redirect_uri='https://server.com/handle_code')
+            redirect_uri='https://server.com/handle_code',
+            scope='user-scope')
 
     def test_validate_token(self):
         # invalid token
@@ -789,9 +790,24 @@ class ValidateAccessToken(TestCase):
         except Exception:
             self.fail('Unexpected response content')
 
+        # inconsistent belongsTo parameter
+        r = self.client.get('%s?belongsTo=invalid' % url)
+        self.assertEqual(r.status_code, 404)
+
+        # consistent belongsTo parameter
+        r = self.client.get('%s?belongsTo=%s' % (url, self.token.scope))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r['Content-Type'].startswith('application/json'))
+        try:
+            body = json.loads(r.content)
+            user = body['access']['user']['id']
+            self.assertEqual(user, self.user.uuid)
+        except Exception:
+            self.fail('Unexpected response content')
+
         # expired token
         sleep_time = (self.token.expires_at - datetime.now()).total_seconds()
-        time.sleep(sleep_time)
+        time.sleep(max(sleep_time, 0))
         r = self.client.get(url)
         self.assertEqual(r.status_code, 404)
         # assert expired token has been deleted

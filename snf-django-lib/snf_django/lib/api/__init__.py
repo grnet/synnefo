@@ -51,6 +51,7 @@ from snf_django.lib.api import faults
 import itertools
 
 log = getLogger(__name__)
+django_logger = getLogger("django.request")
 
 
 def get_token(request):
@@ -140,11 +141,11 @@ def api_method(http_method=None, token_required=True, user_required=True,
                                      "request": request})
                 return render_fault(request, fault)
             except:
-                logger.error("Internal Server Error: %s", request.path,
-                             exc_info=sys.exc_info(),
-                             extra={
-                                 "status_code": '500',
-                                 "request": request})
+                django_logger.error("Internal Server Error: %s", request.path,
+                                    exc_info=sys.exc_info(),
+                                    extra={
+                                        "status_code": '500',
+                                        "request": request})
                 fault = faults.InternalServerError("Unexpected error")
                 return render_fault(request, fault)
         return csrf.csrf_exempt(wrapper)

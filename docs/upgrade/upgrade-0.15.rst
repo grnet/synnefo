@@ -160,6 +160,51 @@ setting will have the value of
 For Pithos service we have to change the ``20-snf-pithos-app-settings.conf``
 file in the same way as above.
 
+2.4 Upgrade vncauthproxy and configure snf-cyclades-app
+-------------------------------------------------------
+
+Synnefo v0.15 adds support for snf-vncauthproxy >= 1.5 and drops support for
+older versions. You will have to upgrade snf-vncauthproxy to v1.5 and  configure
+the authentication (users) file (``/var/lib/vncauthproxy/users``).
+
+In case you're upgrading from an older snf-vncauthproxy version or it's the
+first time you're installing snf-vncauthproxy, you will prompted to configure
+a vncauthproxy user (see below for more information on user management).
+
+To manage the authentication file, you can use the vncauthproxy-passwd tool,
+to easily add, update and delete users
+
+To add a user:
+.. code-block:: console
+
+    # vncauthproxy-passwd /var/lib/vncauthproxy/users synnefo
+
+You will be prompted for a password.
+
+You should also configure the new ``CYCLADES_VNCAUTHPROXY_OPTS`` setting in
+``snf-cyclades-app``, to provide the user and password configured for
+``Synnefo`` in the vncauthproxy authentication file and enable SSL support if
+snf-vncauthproxy is configured to run with SSL enabled for the control socket.
+
+.. warning:: The vncauthproxy daemon requires a restart for the changes in the
+ authentication file to take effect.
+
+.. warning:: If you fail to provide snf-vncauthproxy with a valid
+ authentication file, or in case the configuration of vncauthproxy and the
+ vncauthproxy snf-cyclades-app settings don't match (ie not having SSL enabled
+ on both), VNC console access will not be functional.
+
+Finally, snf-vncauthproxy-1.5 adds a dedicated user and group to be used by the
+vncauthproxy daemon. The Debian default file has changed accordingly (``CHUID``
+option in ``/etc/default/vncauthproxy``). The Debian default file now also
+includes a ``DAEMON_OPTS`` variable which is used to pass any necessary / extra
+options to the vncauthproxy daemon. In case you're ugprading from an older
+version of vncauthproxy, you should make sure to 'merge' the new default file
+with the older one.
+
+Check the `documentation
+<http://www.synnefo.org/docs/snf-vncauthproxy/latest/index.html>`_ of
+snf-vncauthproxy for more information on upgrading to version 1.5.
 
 2.5 Stats configuration
 -----------------------

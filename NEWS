@@ -5,6 +5,13 @@ Unified NEWS file for Synnefo versions >= 0.13
 
 Since v0.13 all Synnefo components have been merged into a single repository.
 
+v0.14next
+=======
+
+Released: UNRELEASED
+
+* Support for snf-vncauthproxy-1.5 (drop support for older versions)
+
 .. _NEWS-0.14.10:
 
 v0.14.10

@@ -392,7 +392,9 @@ def console(vm, console_type):
     if settings.TEST:
         fwd = {'source_port': 1234, 'status': 'OK'}
     else:
-        fwd = request_vnc_forwarding(sport, daddr, dport, password)
+        vnc_extra_opts = settings.CYCLADES_VNCAUTHPROXY_OPTS
+        fwd = request_vnc_forwarding(sport, daddr, dport, password,
+                                     **vnc_extra_opts)
 
     if fwd['status'] != "OK":
         raise faults.ServiceUnavailable('vncauthproxy returned error status')

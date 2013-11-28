@@ -255,7 +255,11 @@
           this.vm.bind("change:status", this.handle_shutdown_complete);
 
           var self = this;
-          this.vm.call("shutdown");
+          this.vm.call("shutdown", undefined, function() {
+            self.shutdown.removeClass("in-progress");
+            self.update_layout();
+            self.hide();
+          });
         },
 
         handle_shutdown_complete: function(vm) {

@@ -25,6 +25,10 @@ Synnefo-wide
 	'_astakos/identity', Astakos' account service is under '_astakos/account'
 	and Astakos' ui service is under '_astakos/ui'.
 
+* Add 'mail_admins' handler to 'django.request' logger in order to send email
+  notifactions to users listed in 'ADMINS' setting about unhandled exceptions
+  in the code.
+
 Astakos
 -------
 

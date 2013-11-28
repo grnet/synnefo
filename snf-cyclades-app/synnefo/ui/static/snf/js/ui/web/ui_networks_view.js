@@ -750,7 +750,7 @@
         },
         
         onClose: function() {
-          this.collection_view.hide(true);
+          this.collection_view && this.collection_view.hide(true);
           delete this.collection_view;
         },
 

@@ -19,6 +19,9 @@ GRANT_TYPES = (('authorization_code', _('Authorization code')),
                ('password', _('Password')),
                ('client_credentials', _('Client Credentials')))
 
+ACCESS_TOKEN_TYPES = (('online', _('Online token')),
+                      ('offline', _('Offline token')))
+
 
 class RedirectUrl(models.Model):
     client = models.ForeignKey('oa2.Client', on_delete=models.PROTECT)
@@ -73,6 +76,9 @@ class AuthorizationCode(models.Model):
     scope = models.TextField(null=True, default=None)
     created_at = models.DateTimeField(default=datetime.datetime.now())
 
+    access_token = models.CharField(max_length=100, choices=ACCESS_TOKEN_TYPES,
+                                    default='online')
+
     # not really useful
     state = models.TextField(null=True, default=None)
 
@@ -106,6 +112,8 @@ class Token(models.Model):
     redirect_uri = models.CharField(max_length=255)
     client = models.ForeignKey('oa2.Client', on_delete=models.PROTECT)
     scope = models.TextField(null=True, default=None)
+    access_token = models.CharField(max_length=100, choices=ACCESS_TOKEN_TYPES,
+                                    default='online')
 
     # not really useful
     state = models.TextField(null=True, default=None)

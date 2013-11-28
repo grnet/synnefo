@@ -517,13 +517,16 @@ Each newly created VM is allocated to a Ganeti backend by the Cyclades backend
 allocator. The VM is "pinned" to this backend, and can not change through its
 lifetime. The backend allocator decides in which backend to spawn the VM based
 on the available resources of each backend, trying to balance the load between
-them.
+them. Also, Networks are created to all Ganeti backends, in order to ensure
+that VMs residing on different backends can be connected to the same networks.
 
-Handling of Networks, as far as backends are concerned, is based on whether the
-network is public or not. Public networks are created through the `snf-manage
-network-create` command, and are only created on one backend. Private networks
-are created on all backends, in order to ensure that VMs residing on different
-backends can be connected to the same private network.
+A backend can be marked as `drained` in order to be excluded from automatic
+servers allocation and not receive new servers. Also, a backend can be marked
+as `offline` to denote that the backend is not healthy (e.g. broken master)
+and avoid the penalty of connection timeouts.
+
+Finally, Cyclades is able to manage Ganeti backends with different enabled
+hypervisors (`kvm`, `xen`), and different enabled disk templates.
 
 Listing existing backends
 `````````````````````````
@@ -552,33 +555,20 @@ where ``clustername`` is the Cluster hostname of the Ganeti cluster, and
 backend attributes can be also changed dynamically using the `snf-manage
 backend-modify` command.
 
-``snf-manage backend-add`` will also create all existing private networks to
+``snf-manage backend-add`` will also create all existing public networks to
 the new backend. You can verify that the backend is added, by running
 `snf-manage backend-list`.
 
 Note that no VMs will be spawned to this backend, since by default it is in a
-``drained`` state after addition and also it has no public network assigned to
-it.
+``drained`` state after addition in order to manually verify the state of the
+backend.
 
-So, first you need to create its public network, make sure everything works as
-expected and finally make it active by un-setting the ``drained`` flag. You can
-do this by running:
+So, after making sure everything works as expected, make the new backend active
+by un-setting the ``drained`` flag. You can do this by running:
 
 .. code-block:: console
 
    $ snf-manage backend-modify --drained=False <backend_id>
-
-Removing an existing Ganeti backend
-```````````````````````````````````
-In order to remove an existing backend from Synnefo, we run:
-
-.. code-block:: console
-
-   # snf-manage backend-remove <backend_id>
-
-This command will fail if there are active VMs on the backend. Also, the
-backend is not cleaned before removal, so all the Synnefo private networks
-will be left on the Ganeti nodes. You need to remove them manually.
 
 Allocation of VMs in Ganeti backends
 ````````````````````````````````````
@@ -597,10 +587,10 @@ backends from the allocation phase by marking them as ``drained`` by running:
    $ snf-manage backend-modify --drained=True <backend_id>
 
 The backend resources are periodically updated, at a period defined by
-the ``BACKEND_REFRESH_MIN`` setting, or by running `snf-manage backend-update-status`
-command. It is advised to have a cron job running this command at a smaller
-interval than ``BACKEND_REFRESH_MIN`` in order to remove the load of refreshing
-the backends stats from the VM creation phase.
+the ``BACKEND_REFRESH_MIN`` setting, or by running `snf-manage
+backend-update-status` command. It is advised to have a cron job running this
+command at a smaller interval than ``BACKEND_REFRESH_MIN`` in order to remove
+the load of refreshing the backends stats from the VM creation phase.
 
 Finally, the admin can decide to have a user's VMs being allocated to a
 specific backend, with the ``BACKEND_PER_USER`` setting. This is a mapping
@@ -633,6 +623,16 @@ flavor disk template, by modifying the enabled or ipolicy disk templates of
 each backend.  Also, the administrator can route instances between different
 nodes of the same Ganeti backend, by modifying the same options at the
 nodegroup level (see `gnt-group` manpage for mor details).
+
+Removing an existing Ganeti backend
+```````````````````````````````````
+In order to remove an existing backend from Synnefo, you must first make
+sure that there are not active servers in the backend, and then run:
+
+.. code-block:: console
+
+   # snf-manage backend-remove <backend_id>
+
 
 
 Managing Virtual Machines

@@ -1104,7 +1104,8 @@
         },
         
         can_connect: function() {
-          return _.contains(["ACTIVE", "STOPPED"], this.get("status"))
+          return _.contains(["ACTIVE", "STOPPED"], this.get("status")) && 
+                 !this.get('suspended')
         },
 
         can_disconnect: function() {

@@ -67,7 +67,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
                                  BASE_HOST, UPDATE_MD5, VIEW_PREFIX,
-                                 OA2_CLIENT_CREDENTIALS)
+                                 OA2_CLIENT_CREDENTIALS, SERVE_API_DOMAIN)
 
 from pithos.api.resources import resources
 from pithos.backends import connect_backend
@@ -1121,14 +1121,55 @@ def api_method(http_method=None, token_required=True, user_required=True,
     return decorator
 
 
+def restrict_to_host(host=None):
+    """
+    View decorator which restricts wrapped view to be accessed only under the
+    host set. If an invalid host is identified and request HTTP method is one
+    of ``GET``, ``HOST``, the decorator will return a redirect response using a
+    clone of the request with host replaced to the one the restriction applies
+    to.
+
+    e.g.
+    @restrict_to_host('files.example.com')
+    my_restricted_view(request, path):
+        return HttpResponse(file(path).read())
+
+    A get to ``https://api.example.com/my_restricted_view/file_path/?param=1``
+    will return a redirect response with Location header set to
+    ``https://files.example.com/my_restricted_view/file_path/?param=1``.
+
+    If host is set to ``None`` no restriction will be applied.
+    """
+    def decorator(func):
+        # skip decoration if no host is set
+        if not host:
+            return func
+
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            request_host = request.get_host()
+            if host != request_host:
+                proto = 'https' if request.is_secure() else 'http'
+                if request.method in ['GET', 'HEAD']:
+                    full_path = request.get_full_path()
+                    redirect_uri = "%s://%s%s" % (proto, host, full_path)
+                    return HttpResponseRedirect(redirect_uri)
+                else:
+                    raise PermissionDenied
+            return func(request, *args, **kwargs)
+        return wrapper
+    return decorator
+
+
 def view_method():
     """Decorator function for views."""
 
     def decorator(func):
+        @restrict_to_host(SERVE_API_DOMAIN)
         @wraps(func)
         def wrapper(request, *args, **kwargs):
-            if request.method != 'GET':
-                return HttpResponseNotAllowed(['GET'])
+            if request.method not in ['GET', 'HEAD']:
+                return HttpResponseNotAllowed(['GET', 'HEAD'])
 
             try:
                 access_token = request.GET.get('access_token')
@@ -1141,7 +1182,7 @@ def view_method():
                     try:
                         request.user = astakos.validate_token(
                             access_token, requested_resource)
-                    except AstakosClientException:
+                    except AstakosClientException, e:
                         return HttpResponseRedirect(request.path)
                     request.user_uniq = request.user["access"]["user"]["id"]
 
@@ -1171,7 +1212,16 @@ def view_method():
                                                  urlencode(params)))
                 else:
                     # request short-term access code
-                    redirect_uri = join_urls(BASE_HOST, request.path)
+
+                    # resolve redirect host. If SERVE_API_DOMAIN is set
+                    # redirect to that host instead.
+                    redirect_host = BASE_HOST
+                    if SERVE_API_DOMAIN:
+                        redirect_host = SERVE_API_DOMAIN
+                        proto = 'https' if request.is_secure() else 'http'
+                        redirect_host = '%s://%s' % (proto, redirect_host)
+
+                    redirect_uri = '%s%s' % (redirect_host, request.path)
                     data = astakos.get_token('authorization_code',
                                              *OA2_CLIENT_CREDENTIALS,
                                              redirect_uri=redirect_uri,

@@ -189,5 +189,9 @@ BACKEND_HASH_ALGORITHM = getattr(
 OA2_CLIENT_CREDENTIALS = getattr(settings, 'PITHOS_OA2_CLIENT_CREDENTIALS',
                                  (None, None))
 
-# Set to False to serve only views
+# Set to False to disable serving object content serving endpoints
 SERVE_API = getattr(settings, 'PITHOS_SERVE_API', True)
+
+# Set domain to restrict requests of pithos object contents serve endpoint or
+# None for no domain restriction
+SERVE_API_DOMAIN = getattr(settings, 'PITHOS_SERVE_API_DOMAIN', None)

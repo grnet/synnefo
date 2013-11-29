@@ -35,10 +35,7 @@ from django.http import HttpResponse
 
 import gd
 import os
-import sys
-import subprocess
 
-from cgi import escape
 from cStringIO import StringIO
 
 import rrdtool
@@ -72,7 +69,7 @@ def draw_cpu_bar(fname, outfname=None):
 
     try:
         values = rrdtool.fetch(fname, "AVERAGE")[2][-20:]
-    except rrdtool.error, e:
+    except rrdtool.error:
         values = [(0.0, )]
 
     v = [x[0] for x in values if x[0] is not None]
@@ -119,7 +116,7 @@ def draw_net_bar(fname, outfname=None):
 
     try:
         values = rrdtool.fetch(fname, "AVERAGE")[2][-20:]
-    except rrdtool.error, e:
+    except rrdtool.error:
         values = [(0.0, 0.0)]
 
     v = [x for x in values if x[0] is not None and x[1] is not None]
@@ -175,7 +172,7 @@ def draw_cpu_ts(fname, outfname):
                   #"-t", "CPU usage",
                   "-v", "%",
                   #"--lazy",
-                  "DEF:cpu=%s:ns:AVERAGE" % fname,
+                  "DEF:cpu=%s:value:AVERAGE" % fname,
                   "LINE1:cpu#00ff00:")
 
     return read_file(outfname)
@@ -189,7 +186,7 @@ def draw_cpu_ts_w(fname, outfname):
                   #"-t", "CPU usage",
                   "-v", "%",
                   #"--lazy",
-                  "DEF:cpu=%s:ns:AVERAGE" % fname,
+                  "DEF:cpu=%s:value:AVERAGE" % fname,
                   "LINE1:cpu#00ff00:")
 
     return read_file(outfname)
@@ -200,17 +197,17 @@ def draw_net_ts(fname, outfname):
     outfname += "-net.png"
 
     rrdtool.graph(outfname, "-s", "-1d", "-e", "-20s",
-              "--units", "si",
-              "-v", "Bits/s",
-              "COMMENT:\t\t\tAverage network traffic\\n",
-              "DEF:rx=%s:rx:AVERAGE" % fname,
-              "DEF:tx=%s:tx:AVERAGE" % fname,
-              "CDEF:rxbits=rx,8,*",
-              "CDEF:txbits=tx,8,*",
-              "LINE1:rxbits#00ff00:Incoming",
-              "GPRINT:rxbits:AVERAGE:\t%4.0lf%sbps\t\g",
-              "LINE1:txbits#0000ff:Outgoing",
-              "GPRINT:txbits:AVERAGE:\t%4.0lf%sbps\\n")
+                  "--units", "si",
+                  "-v", "Bits/s",
+                  "COMMENT:\t\t\tAverage network traffic\\n",
+                  "DEF:rx=%s:rx:AVERAGE" % fname,
+                  "DEF:tx=%s:tx:AVERAGE" % fname,
+                  "CDEF:rxbits=rx,8,*",
+                  "CDEF:txbits=tx,8,*",
+                  "LINE1:rxbits#00ff00:Incoming",
+                  "GPRINT:rxbits:AVERAGE:\t%4.0lf%sbps\t\g",
+                  "LINE1:txbits#0000ff:Outgoing",
+                  "GPRINT:txbits:AVERAGE:\t%4.0lf%sbps\\n")
 
     return read_file(outfname)
 
@@ -220,17 +217,17 @@ def draw_net_ts_w(fname, outfname):
     outfname += "-net-weekly.png"
 
     rrdtool.graph(outfname, "-s", "-1w", "-e", "-20s",
-              "--units", "si",
-              "-v", "Bits/s",
-              "COMMENT:\t\t\tAverage network traffic\\n",
-              "DEF:rx=%s:rx:AVERAGE" % fname,
-              "DEF:tx=%s:tx:AVERAGE" % fname,
-              "CDEF:rxbits=rx,8,*",
-              "CDEF:txbits=tx,8,*",
-              "LINE1:rxbits#00ff00:Incoming",
-              "GPRINT:rxbits:AVERAGE:\t%4.0lf%sbps\t\g",
-              "LINE1:txbits#0000ff:Outgoing",
-              "GPRINT:txbits:AVERAGE:\t%4.0lf%sbps\\n")
+                  "--units", "si",
+                  "-v", "Bits/s",
+                  "COMMENT:\t\t\tAverage network traffic\\n",
+                  "DEF:rx=%s:rx:AVERAGE" % fname,
+                  "DEF:tx=%s:tx:AVERAGE" % fname,
+                  "CDEF:rxbits=rx,8,*",
+                  "CDEF:txbits=tx,8,*",
+                  "LINE1:rxbits#00ff00:Incoming",
+                  "GPRINT:rxbits:AVERAGE:\t%4.0lf%sbps\t\g",
+                  "LINE1:txbits#0000ff:Outgoing",
+                  "GPRINT:txbits:AVERAGE:\t%4.0lf%sbps\\n")
 
     return read_file(outfname)
 
@@ -243,14 +240,13 @@ def decrypt(secret):
     return aes.decrypt(urlsafe_b64decode(secret)).rstrip('\x00')
 
 
-available_graph_types = {
-        'cpu-bar': draw_cpu_bar,
-        'net-bar': draw_net_bar,
-        'cpu-ts': draw_cpu_ts,
-        'net-ts': draw_net_ts,
-        'cpu-ts-w': draw_cpu_ts_w,
-        'net-ts-w': draw_net_ts_w,
-        }
+available_graph_types = {'cpu-bar': draw_cpu_bar,
+                         'net-bar': draw_net_bar,
+                         'cpu-ts': draw_cpu_ts,
+                         'net-ts': draw_net_ts,
+                         'cpu-ts-w': draw_cpu_ts_w,
+                         'net-ts-w': draw_net_ts_w
+                         }
 
 
 @api_method(http_method='GET', token_required=False, user_required=False,

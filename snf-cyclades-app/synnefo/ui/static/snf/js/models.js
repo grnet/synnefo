@@ -1103,6 +1103,25 @@
             models.VM.__super__.unbind.apply(this, arguments);
         },
         
+        can_start: function(flv, count_current) {
+          var get_quota = function(key) {
+            return synnefo.storage.quotas.get(key).get('available');
+          }
+          var flavor = flv || this.get_flavor();
+          var vm_ram_current = 0, vm_cpu_current = 0;
+          if (flv && this.is_active() || flv && count_current) {
+            var current = this.get_flavor();
+            vm_ram_current = current.ram_to_bytes();
+            vm_cpu_current = parseInt(current.get('cpu'));
+          }
+          var vm_ram = flavor.ram_to_bytes();
+          var vm_cpu = parseInt(flavor.get('cpu'));
+          var available_cpu = get_quota('cyclades.cpu') + vm_cpu_current;
+          var available_ram = get_quota('cyclades.ram') + vm_ram_current;
+          if (vm_ram > available_ram || vm_cpu > available_cpu) { return false }
+          return true
+        },
+
         can_connect: function() {
           return _.contains(["ACTIVE", "STOPPED"], this.get("status")) && 
                  !this.get('suspended')
@@ -1328,9 +1347,9 @@
         get_flavor_quotas: function() {
           var flavor = this.get_flavor();
           return {
-            cpu: flavor.get('cpu') + 1, 
-            ram: flavor.get_ram_size() + 1, 
-            disk:flavor.get_disk_size() + 1
+            cpu: flavor.get('cpu'), 
+            ram: flavor.get_ram_size(), 
+            disk:flavor.get_disk_size()
           }
         },
 
@@ -2433,6 +2452,11 @@
             if (value <= 0) { value = 0 }
             if (!this.is_bytes()) {
               return value + "";
+            }
+            
+            // greater than max js int (assume infinite quota)
+            if (value > Math.pow(2, 53)) { 
+              return "Infinite"
             }
             return snf.util.readablizeBytes(value);
         }

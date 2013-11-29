@@ -101,10 +101,20 @@
             this.init_handlers();
         },
         
+        get_current: function(choice, value) {
+          var found = false;
+          _.each(this.flavors, _.bind(function(f){
+              if (found) { return }
+              if (f.get(choice) == value) {
+                  found = true;
+                  to_select = f;
+              }
+          }, this));
+        },
+
         init_handlers: function() {
             this.$el.on('click', 'li.choice', _.bind(function(e) {
                 var el = $(e.target).closest('li');
-                if (el.hasClass('disabled')) { return }
                 var choice = el.data('type');
                 var value = el.data('value');
                 var to_select = this.selected_flavor;
@@ -117,14 +127,7 @@
                 }
 
                 if (!to_select) {
-                    var found = false;
-                    _.each(this.flavors, _.bind(function(f){
-                        if (found) { return }
-                        if (f.get(choice) == value) {
-                            found = true;
-                            to_select = f;
-                        }
-                    }, this));
+                  to_select = this.get_current(choice, value);
                 }
                 this.set_flavor(to_select);
             }, this));
@@ -159,11 +162,11 @@
             var extra_quotas = this.extra_quotas;
             var user_excluded = storage.flavors.unavailable_values_for_quotas(
               quotas, 
-              storage.flavors.active());
+              storage.flavors.active(), extra_quotas);
             _.each(user_excluded, _.bind(function(values, key) {
                 _.each(values, _.bind(function(value) {
                     var choice_el = this.select_choice(key, value);
-                    choice_el.addClass("disabled");
+                    choice_el.addClass("disabled").removeClass("selected");
                 }, this));
             }, this));
         },
@@ -199,6 +202,8 @@
         set_flavor: function(flavor) {
             this.$el.find("li").removeClass("selected");
             if (!flavor) {this.selected_flavor = undefined; return}
+            var no_select = false;
+            var self = this;
             this.each_choice(function(choice){
                 var el = this[choice + '_el'];
                 var choice = el.find('.choice-'+choice+'[data-value='+flavor.get(choice)+']');
@@ -206,6 +211,7 @@
             });
             this.selected_flavor = flavor;
             this.trigger("flavor:select", this.selected_flavor);
+            return this.selected_flavor;
         },
 
         each_choice: function(f) {
@@ -263,7 +269,7 @@
         },
 
         handle_shutdown_complete: function(vm) {
-          if (vm.get("status") == "STOPPED") {
+          if (!vm.is_active()) {
             this.shutdown.removeClass("in-progress");
             this.vm.unbind("change:status", this.handle_shutdown_complete);
           }
@@ -279,24 +285,36 @@
             }, this);
             this.vm.call("resize", complete, complete, {flavor:flv.id});
         },
+        
+        show_with_warning: function(vm) {
+          this.show(vm);
+          this.start_warning.show();
+        },
 
         show: function(vm) {
+            this.start_warning = this.$(".warning.start").hide();
+            this.start_warning.hide();
             this.submit.removeClass("in-progress");
             this.vm = vm;
             this.vm.bind("change", this.handle_vm_change);
             if (this.flavors_view) {
                 this.flavors_view.remove();
             }
-            this.warning = this.$(".warning");
+            this.warning = this.$(".warning.shutdown");
             this.warning.hide();
             this.submit.show();
+            this.shutdown.removeClass("in-progress");
             this.$(".flavor-options-inner-cont").append("<div>");
+            var extra_quota = this.vm.get_flavor_quotas();
+            if (!this.vm.is_active()) {
+              extra_quota = undefined;
+            }
             this.flavors_view = new snf.views.FlavorOptionsView({
                 flavors:this.vm.get_resize_flavors(),
                 el: this.$(".flavor-options-inner-cont div"),
                 hidden_choices:['disk', 'disk_template'],
                 selected_flavor: this.vm.get_flavor(),
-                extra_quotas: this.vm.get_flavor_quotas()
+                extra_quotas: extra_quota
             });
             this.flavors_view.bind("flavor:select", this.handle_flavor_select)
             this.submit.addClass("disabled");
@@ -304,7 +322,8 @@
         },
 
         handle_flavor_select: function(flv) {
-            if (flv.id == this.vm.get_flavor().id) {
+            this.selected_flavor = flv;
+            if (!flv || (flv.id == this.vm.get_flavor().id)) {
                 this.submit.addClass("disabled");
                 if (!this.shutdown.hasClass("in-progress")) {
                   this.shutdown.addClass("disabled");
@@ -317,12 +336,19 @@
                   this.warning.show();
                 }
             }
+            if (flv && !this.vm.can_start(flv, true)) {
+              if (!this.vm.is_active()) {
+                this.start_warning.show();
+              }
+            } else {
+              this.start_warning.hide();
+            }
             this.update_vm_status();
         },
 
         update_vm_status: function() {
-          if (this.selected_flavor) {
-            this.handle_flavor_select(this.selected_flavor);
+          if (this.vm.get("status") == "STOPPED") {
+            this.warning.hide();
           }
           if (this.vm.get("status") == "SHUTDOWN") {
             this.shutdown.addClass("in-progress").removeClass("disabled");
@@ -356,7 +382,9 @@
             }
             this.submit.addClass("disabled");
           } else {
-            this.submit.removeClass("disabled");
+            if (this.selected_flavor) {
+              this.submit.removeClass("disabled");
+            }
             this.shutdown.hide();
           }
         },

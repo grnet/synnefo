@@ -6,8 +6,11 @@
         id="create-vm-flavor-options">
     </div>
     <div class="form-actions plain clearfix">
-      <div class="warning">
+      <div class="warning shutdown">
       {% blocktrans %}You need to shutdown your machine before you can resize it.{% endblocktrans %}
+      </div>
+      <div class="warning start">
+        Insufficient quota to start this machine.
       </div>
       <span class="form-action resize">{% trans "resize machine" %}</span>
       <span class="form-action shutdown">{% trans "shutdown machine" %}</span>

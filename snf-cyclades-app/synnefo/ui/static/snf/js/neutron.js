@@ -372,6 +372,10 @@
           if ((!network || network.get('is_public')) && (network && !network.get('is_floating'))) {
             return false
           }
+          var vm_active = this.get('vm') && this.get('vm').is_active();
+          if (synnefo.config.hotplug_enabled && vm_active) {
+            return false;
+          }
           var status_ok = _.contains(['DOWN', 'ACTIVE', 'CONNECTED'], 
                                      this.get('status'));
           var vm_status_ok = this.get('vm') && this.get('vm').can_connect();

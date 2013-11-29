@@ -2127,6 +2127,12 @@ skipped.
    node2 # snf-manage reconcile-resources-pithos --fix
    node1 # snf-manage reconcile-resources-cyclades --fix
 
+VM stats configuration
+----------------------
+
+Please refer to the documentation in the :ref:`admin guide <admin-guide-stats>`
+for deploying and configuring snf-stats-app and collectd.
+
 
 If all the above return successfully, then you have finished with the Cyclades
 installation and setup.

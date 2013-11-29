@@ -161,6 +161,30 @@ For Pithos service we have to change the ``20-snf-pithos-app-settings.conf``
 file in the same way as above.
 
 
+2.5 Stats configuration
+-----------------------
+
+snf-cyclades-gtools comes with a collectd plugin to collect CPU and network
+stats for Ganeti VMs and an example collectd configuration. snf-stats-app is a
+Django (snf-webproject) app that serves the VM stats graphsmm by reading the VM
+stats (from RRD files) and serves graphs.
+
+To enable / deploy VM stats collecting and snf-stats-app see the relevant
+documentation in the :ref:`admin guide <admin-guide-stats>`.
+
+If you were using collectd to collect VM stats on Debian squeeze and you are
+upgrading to Wheezy, you will need to upgrade your RRD files. Follow the
+instructions on the collectd v4-to-v5 migration `guide
+<https://collectd.org/wiki/index.php/V4_to_v5_migration_guide>`_.
+You will proabably just need to run the `migration script
+<https://collectd.org/wiki/index.php/V4_to_v5_migration_guide#Migration_script>`_
+provided.
+
+If you were using a previous version of snf-stats-app, you should also make
+sure to set the ``STATS_BASE_URL`` setting in ``20-snf-stats-app-settings.conf``
+to match your deployment and change the graph URL settings in
+``20-snf-cyclades-app-api.conf`` accordingly.
+
 v0.15 has also introduced the ``CYCLADES_STATS_SECRET_KEY`` and
 ``STATS_SECRET_KEY`` settings. ``CYCLADES_STATS_SECRET_KEY`` in
 ``20-snf-cyclades-app-api.conf`` is used by Cyclades to encrypt the instance id

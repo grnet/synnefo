@@ -834,6 +834,28 @@ will check pools of bridges, MAC prefixes, and IPv4 addresses for all networks.
   $ snf-manage reconcile-pools
   $ snf-manage reconcile-pools --fix
 
+Helpdesk
+--------
+
+Helpdesk application provides the ability to view the virtual servers and
+networks of all users, along with the ability to perform some basic actions
+like administratively suspending a server. You can perform look-ups by
+user UUID or email, by server ID (vm-$id) or by an IPv4 address.
+
+If you want to activate the helpdesk application you can set to `True` the
+`HELPDESK_ENABLED` setting. Access to helpdesk views (under
+`$BASE_URL/helpdesk`) is only to allowed to users that belong to Astakos
+groups defined in the `HELPDESK_PERMITTED_GROUPS` setting, which by default
+contains the `helpdesk` group. For example, to allow <user_id>
+to access helpdesk view, you should run the following command in the Astakos
+node:
+
+.. code-block:: console
+
+ snf-manage group-add helpdesk
+ snf-manage user-modify --add-group=helpdesk <user_id>
+
+
 Cyclades internals
 ------------------
 

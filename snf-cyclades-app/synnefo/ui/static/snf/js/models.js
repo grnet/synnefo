@@ -1859,7 +1859,7 @@
         },
 
         comparator: function(img) {
-            return -img.get_sort_order("sortorder") || 1000 * img.id;
+            return -img.get_sort_order("sortorder") || 0;
         },
 
         parse_meta: function(img) {

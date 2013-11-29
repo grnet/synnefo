@@ -3,6 +3,7 @@ import datetime
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
+import ipaddr
 
 class Migration(DataMigration):
 
@@ -18,9 +19,12 @@ class Migration(DataMigration):
                                                    dhcp=network.dhcp,
                                                    deleted=network.deleted)
                 ip_pool = network.pool
+                if ip_pool is None:
+                    ip_pool = IPPoolTable
                 ip_pool.subnet = subnet
                 ip_pool.base = subnet.cidr
                 ip_pool.offset = 0
+                ip_pool.size = ipaddr.IPNetwork(network.subnet).numhosts
                 ip_pool.save()
 
             if network.subnet6:

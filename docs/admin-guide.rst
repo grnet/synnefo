@@ -503,11 +503,204 @@ Finally, backend systems having acquired a token can use the
 Compute/Network/Image Service (Cyclades)
 ========================================
 
+Introduction
+------------
+
+Cyclades is the Synnefo component that implements Compute, Network and Image
+services and exposes the associated OpenStack REST APIs. By running Cyclades
+you can provide a cloud that can handle thousands of virtual servers and
+networks.
+
+Cyclades does not include any virtualization software and knows nothing about
+the low-level VM management operations, e.g. handling of VM creation or
+migrations among physical nodes. Instead, Cyclades is the component that
+handles multiple Ganeti backends and exposes the REST APIs. The administrator
+can expand the infrastructure dynamically either by adding more Ganeti nodes
+or by adding new Ganeti clusters. Cyclades issue VM control commands to Ganeti
+via Ganeti's remote API and receive asynchronous notifications from Ganeti
+backends whenever the state of a VM changes, due to Synnefo- or
+administrator-initiated commands.
+
+Cyclades is the action orchestrator and the API layer on top of multiple Ganeti
+clusters. By this decoupled design, Ganeti cluster are self-contained and
+the administrator has complete control on them without Cyclades knowing about
+it. For example a VM migration to a different physical node is transparent
+to Cyclades.
+
+
 Working with Cyclades
 ---------------------
 
-Managing Ganeti Backends
-~~~~~~~~~~~~~~~~~~~~~~~~
+Flavors
+~~~~~~~
+
+When creating a VM, the user must specify the `flavor` of the virtual server.
+Flavors are the virtual hardware templates, and provide a description about
+the number of CPUs, the amount of RAM, and the size of the disk of the VM.
+Besides the size of the disk, Cyclades flavors describe the storage backend
+that will be used for the virtual server.
+
+Flavors are created by the administrator and the user can select one of the
+available flavors. After VM creation, the user can dynamically resize his VM,
+by dynamically (hotplug-able) adding or removing CPU and RAM.
+
+Cyclades support different storage backends that are described by the disk
+template of the flavor, which is mapped to Ganeti's instance `disk template`.
+Currently the available disk templates are the following:
+
+* `file`: regulars file
+* `sharedfile`: regular files on a shared directory, e.g. NFS
+* `plain`: logical volumes
+* `drbd`: drbd on top of lvm volumes
+* `rbd`: rbd volumes residing inside a RADOS cluster
+* `ext`: disks provided by an external shared storage.
+
+  - `ext_archipelago`: External shared storage provided by
+    `Archipelago <http://www.synnefo.org/docs/archipelago/latest/index.html>`_.
+
+Flavors are created by the administrator using `snf-manage flavor-create`
+command. The command takes as argument number of CPUs, amount of RAM, the size
+of the disks and the disk templates and create the flavors that belong to the
+cartesian product of the specified arguments. For example, the following
+command will create two flavors of `40G` disk size with `drbd` disk template,
+`4G` RAM and `2` or `4` CPUs.
+
+.. code-block:: console
+
+  snf-manage flavor-create 2,4 4096 40 drbd
+
+To see the available flavors, run `snf-manage flavor-list` command. Finally,
+the administrator can delete a flavor by using `flavor-modify` command:
+
+.. code-block:: console
+
+  snf-manage flavor-modify --deleted=True <flavor_id>
+
+Images
+~~~~~~
+
+When creating a VM the user must also specify the `image` of the virtual
+server. Images are the static templates from which VM instances are
+initiated. Cyclades uses Pithos to store system and user-provided images,
+taking advantage of all Pithos features, like deduplication and syncing
+protocol. An image is a file stored to Pithos with additional metadata that
+are describing the image, e.g. the OS family or the root partition. To create
+a new image, the administrator or the user has to upload it a file to Pithos,
+and then register it as an Image with Cyclades. Then the user can use this
+image to spawn new VMs from it.
+
+Images can be private, public or shared between users, exactly like Pithos
+files. Since user-provided public images can be untrusted, the administrator
+can denote which users are trusted by adding them to the
+`UI_SYSTEM_IMAGES_OWNERS` setting in the
+`/etc/synnefo/20-snf-cyclades-app-ui.conf` file. Images of those users are
+properly displayed in the UI.
+
+When creating a new VM, Cyclades pass the location of the image and it's
+metadata to Ganeti. After Ganeti creates the instance's disk, `snf-image`
+will copy the image to the new disk and perform the image customization
+phase. During the phase, `snf-image` sends notifications to Cyclades about
+the progress of the image deployment and customization. Customization includes
+resizing the root file system, file injection (e.g. SSH keys) and setting
+a custom hostname. For better understanding of `snf-image` read the
+corresponding `documentation
+<http://www.synnefo.org/docs/snf-image/latest/index.html>`_.
+
+For passing sensitive data about the image to Ganeti, like the VMs password,
+Cyclades keeps all sensitive data in memory caches (memcache) and never allows
+them to hit the disk. The data are exposed to `snf-image` via an one-time URL
+that is exposed from the `vmapi` application. So, instead of passing sensitive
+data to `snf-image` via Ganeti, Cyclades pass an one-time configuration URL
+that contains a random UUID. After `snf-image` gets the sensitive data, the
+URL is invalidated so no one else can access them.
+
+The administrator can register images, exactly like users, using a system user
+(a user that is defined in the `UI_SYSTEM_IMAGES_OWNERS` setting). For
+example, the following command will register the
+`pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump` as an
+image to Cyclades:
+
+.. code-block:: console
+
+ kamaki image register "Debian Base" \
+        pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump \
+        --public \
+        --disk-format=diskdump \
+        --property OSFAMILY=linux --property ROOT_PARTITION=1 \
+        --property description="Debian Squeeze Base System" \
+        --property size=451 --property kernel=2.6.32 --property GUI="No GUI" \
+        --property sortorder=1 --property USERS=root --property OS=debian
+
+Deletion of an image is done via `kamaki image unregister` command, which will
+delete the Cyclades Images but will leave the Pithos file as is (unregister).
+
+Apart from using `kamaki` to see and hangle the available images, the
+administrator can use `snf-manage image-list` and `snf-manage image-show`
+commands to list and inspect the available public images. Also, the `--user-id`
+option can be used the see the images of a specific user.
+
+Virtual Servers
+~~~~~~~~~~~~~~~
+
+As mentioned, Cyclades uses Ganeti for management of VMs. The administrator can
+handle Cyclades VMs just like any other Ganeti instance, via `gnt-instance`
+commands. All Ganeti instances that belong to Synnefo, are separated from
+others, by a prefix in their names. This prefix is defined in
+``BACKEND_PREFIX_ID`` setting in
+``/etc/synnefo/20-snf-cyclades-app-backend.conf``.
+
+Apart from handling Cyclades VM at the Ganeti level, the administrator can
+also use the `snf-manage server-*` commands. These command cover the most
+common tasks that are relative with VM handling. Below we describe come
+of them, but for more information you can use the `--help` option of all
+`snf-manage server-* commands`. These command cover the most
+
+The `snf-manage server-create` command can be used to create a new VM for some
+user. This command can be useful when the administrator wants to test Cyclades
+functionality without starting the API service, e.g. after an upgrade. Also, by
+using `--backend-id` option, the VM will be created in the specified backend,
+bypassing automatic VM allocation.
+
+.. code-block:: console
+
+ snf-manage server-create --flavor-id=1 --image-id=fc0f6858-f962-42ce-bf9a-1345f89b3d5e \
+    --user-id=7cf4d078-67bf-424d-8ff2-8669eb4841ea --backend-id=2 \
+    --password='example_passw0rd' --name='test_vm'
+
+The above commnd will create a new VM for user
+`7cf4d078-67bf-424d-8ff2-8669eb4841ea` in the Ganeti backend with ID 2. By
+default this command will issue a Ganeti job to create the VM
+(`OP_INSTANCE_CREATE`) and return. As in other commands, the `--wait=True`
+option can be used in order to wait for the successful completion of the job.
+
+`snf-manage server-list` command can be used to list all the available servers.
+The command supports some useful options, like listing servers of a user,
+listing servers that exist in a Ganeti backend and listing deleted servers.
+Also, as in most of `*-list` commands, the `--filter-by` option can be used to
+filter the results. For example, the following command will only display the
+started servers of a specific flavor:
+
+.. code-block:: console
+
+ snf-manage server-list --filter-by="operstate=STARTED,flavor=<flavor_id>"
+
+Another very useful command is the `server-inspect` command which will display
+all available information about the state of the server in DB and the state
+of the server in the Ganeti backend. The output will give you an easy overview
+about the state of the VM which can be useful for debugging.
+
+Also the administrator can `suspend` a user's VM, using the `server-modify`
+command:
+
+.. code-block:: console
+
+ snf-manage server-modify --suspended=True <server_id>
+
+The user is forbidden to do any action on an administratively suspended VM,
+which is useful for abuse cases.
+
+Ganeti backends
+~~~~~~~~~~~~~~~
 
 Since v0.11, Synnefo is able to manage multiple Ganeti clusters (backends)
 making it capable to scale linearly to tens of thousands of VMs. Backends
@@ -634,49 +827,89 @@ sure that there are not active servers in the backend, and then run:
    # snf-manage backend-remove <backend_id>
 
 
+Virtual Networks
+~~~~~~~~~~~~~~~~
 
-Managing Virtual Machines
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Cyclades also implements the Network service and exposes the Quantum Openstack
+API. Cyclades supports full IPv4 and IPv6 connectivity to the public internet
+for it's VMs. Also, Cyclades provides L2 and L3 virtual private networks,
+giving the user freedom to create arbitraty network topologies of
+interconnected VMs.
 
-As mentioned, Cyclades uses Ganeti for management of VMs. The administrator can
-handle Cyclades VMs just like any other Ganeti instance, via `gnt-instance`
-commands. All Ganeti instances that belong to Synnefo, are separated from
-others, by a prefix in their names. This prefix is defined in
-``BACKEND_PREFIX_ID`` setting in
-``/etc/synnefo/20-snf-cyclades-app-backend.conf``.
+Public networking is desployment specific and must be customized based on the
+specific needs of the system administrator. Private virtual networks can be
+provided by different network technologies which are exposed as different
+network flavors. For better understanding of networking please refer to the
+:ref:`Network <networks>` section.
 
-Apart from handling instances directly in the Ganeti level, a number of `snf-manage`
-commands are available:
+A Cyclades virtual network is an isolated Layer-2 broadcast domain. A network
+can also have an associated IPv4 and IPv6 subnet representing the Layer-3
+characteristics of the network. Each subnet represents an IP address block
+that is used in order to assign addresses to VMs.
 
-* ``snf-manage server-list``: List servers
-* ``snf-manage server-show``: Show information about a server in the Cyclades DB
-* ``snf-manage server-inspect``: Inspect the state of a server both in DB and Ganeti
-* ``snf-manage server-modify``: Modify the state of a server in the Cycldes DB
-* ``snf-manage server-create``: Create a new server
-* ``snf-manage server-import``: Import an existing Ganeti instance to Cyclades
+To connect a VM to a network, a port must be created, which represent a virtual
+port on a network switch. VMs are connected to networks by attaching a virtual
+interface to a port.
 
+Cyclades also supports `floating IPs`, which are public IPv4 addresses that
+can dynamically(hotplug-able) be added and removed to VMs. Floating IPs are
+a quotable resource that is allocated to each user. Unlike other cloud
+platforms, floating IPs are not implemented using 1-1 NAT to a ports private
+IP. Instead, floating IPs are directly assigned to virtual interfaces of VMs.
 
-Managing Virtual Networks
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Exactly like VMS, networks can be handled as Ganeti networks via `gnt-network`
+commands. All Ganeti networks that belong to Synnefo are named with the prefix
+`${BACKEND_PREFIX_ID}-net-`. Also, there are a number of `snf-manage` commands
+for handling of `networks`, `subnets`, `ports` and `floating IPs`. Below
+we will present a use case scenario using some of these commands. For better
+understanding of these commands, refer to their help messages.
 
-Cyclades is able to create and manage Virtual Networks. Networking is
-desployment specific and must be customized based on the specific needs of the
-system administrator. For better understanding of networking please refer to
-the :ref:`Network <networks>` section.
+Create a virtual private network for user
+`7cf4d078-67bf-424d-8ff2-8669eb4841ea` using the `PHYSICAL_VLAN` flavor, which
+means that the network will be uniquely assigned a phsyical VLAN. The network
+is assigned an IPv4 subnet, described by it's CIDR and gateway. Also,
+the `--dhcp=True` option is used, to make `nfdhcpd` respone to DHCP queries
+from VMs.
 
-Exactly as Cyclades VMs can be handled like Ganeti instances, Cyclades Networks
-can also by handled as Ganeti networks, via `gnt-network commands`. All Ganeti
-networks that belong to Synnefo are named with the prefix
-`${BACKEND_PREFIX_ID}-net-`.
+.. code-block:: console
 
-There are also the following `snf-manage` commands for managing networks:
+ snf-manage network-create --owner=7cf4d078-67bf-424d-8ff2-8669eb4841ea --name=prv_net-1 \
+    --subnet=192.168.2.0/24 --gateway=192.168.2.1 --dhcp=True --flavor=PHYSICAL_VLAN
 
-* ``snf-manage network-list``: List networks
-* ``snf-manage network-show``: Show information about a network in the Cyclades DB
-* ``snf-manage network-inspect``: Inspect the state of the network in DB and Ganeti backends
-* ``snf-manage network-modify``: Modify the state of a network in the Cycldes DB
-* ``snf-manage network-create``: Create a new network
-* ``snf-manage network-remove``: Remove an existing network
+Inspect the state of the network in Cyclades DB and in all the Ganeti backends:
+
+.. code-block:: console
+
+  snf-manage network-inspect <network_id>
+
+Inspect the state of the network's subnet, containg an overview of the
+subnet's IPv4 address allocation pool:
+
+.. code-block:: console
+
+  snf-manage subnet-inspect <subnet_id>
+
+Connect a VM to the created private network. The port will be automatically
+be assigned an IPv4 address from one of the network's available IPs. This
+command will result in sending an `OP_INSTANCE_MODIFY` Ganeti command and
+attaching a NIC to the specified Ganeti instance.
+
+.. code-block:: console
+
+ snf-manage port-create --network=<network_id> --server=<server_id>
+
+Inspect the state of the the port in Cyclades DB and in the Ganeti backend:
+
+.. code-block:: console
+
+ snf-manage port-inspect <port_id>
+
+Disconnect the VM from the network and delete the network:
+
+.. code-block:: console
+
+ snf-manage port-remove <port_id>
+ snf-manage network-remove <network_id>
 
 Managing Network Resources
 ``````````````````````````
@@ -687,8 +920,8 @@ these resources are:
 
 * IP addresses. Cyclades creates a Pool of IPs for each Network, and assigns a
   unique IP address to each VM, thus connecting it to this Network. You can see
-  the IP pool of each network by running `snf-manage network-inspect
-  <network_ID>`. IP pools are automatically created and managed by Cyclades,
+  the IP pool of each network by running `snf-manage subnet-inspect
+  <subnet_ID>`. IP pools are automatically created and managed by Cyclades,
   depending on the subnet of the Network.
 * Bridges corresponding to physical VLANs, which are required for networks of
   type `PRIVATE_PHYSICAL_VLAN`.
@@ -1515,19 +1748,11 @@ using dictionary configuration, whose format is described here:
 
 http://docs.python.org/release/2.7.1/library/logging.html#logging-config-dictschema
 
-Note that this is a feature of Python 2.7 that we have backported for use in
-Python 2.6.
-
 The logging configuration dictionary is defined in
 ``/etc/synnefo/10-snf-webproject-logging.conf``
 
-The administrator can have finer logging control by modifying the
-``LOGGING_SETUP`` dictionary, and defining subloggers with different handlers
-and log levels.  e.g. To enable debug messages only for the API set the level
-of 'synnefo.api' to ``DEBUG``
-
-By default, the Django webapp and snf-manage logs to syslog, while
-`snf-dispatcher` logs to `/var/log/synnefo/dispatcher.log`.
+The administrator can have logging control by modifying the ``LOGGING_SETUP``
+dictionary, and defining subloggers with different handlers and log levels.
 
 
 .. _scale-up:

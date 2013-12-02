@@ -1123,7 +1123,7 @@
         },
 
         can_connect: function() {
-          if (synnefo.config.hotplug_enabled && this.is_active()) { return false }
+          if (!synnefo.config.hotplug_enabled && this.is_active()) { return false }
           return _.contains(["ACTIVE", "STOPPED"], this.get("status")) && 
                  !this.get('suspended')
         },

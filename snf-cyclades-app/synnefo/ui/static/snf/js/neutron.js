@@ -373,7 +373,7 @@
             return false
           }
           var vm_active = this.get('vm') && this.get('vm').is_active();
-          if (synnefo.config.hotplug_enabled && vm_active) {
+          if (!synnefo.config.hotplug_enabled && this.get('vm') && vm_active) {
             return false;
           }
           var status_ok = _.contains(['DOWN', 'ACTIVE', 'CONNECTED'], 

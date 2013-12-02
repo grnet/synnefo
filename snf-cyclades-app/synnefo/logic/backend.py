@@ -503,6 +503,9 @@ def update_network_state(network):
                  network.id, network.mac_prefix, network.link)
         network.deleted = True
         network.state = "DELETED"
+        # Undrain the network, otherwise the network state will remain
+        # as 'SNF:DRAINED'
+        network.drained = False
         if network.mac_prefix:
             if network.FLAVORS[network.flavor]["mac_prefix"] == "pool":
                 release_resource(res_type="mac_prefix",

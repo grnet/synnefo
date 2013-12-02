@@ -113,6 +113,10 @@ class ListCommand(SynnefoCommand):
     astakos_auth_url = None
     astakos_token = None
 
+    # Optimize DB queries
+    prefetch_related = []
+    select_related = []
+
     help = "Generic List Command"
     option_list = SynnefoCommand.option_list + (
         make_option(

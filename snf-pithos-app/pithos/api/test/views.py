@@ -73,9 +73,6 @@ class NotAllowedView(PithosAPITest):
         self.view_url = join_urls(self.view_path, self.user, get_random_name(),
                                   get_random_name())
 
-        r = self.head(self.view_url)
-        self.assertEqual(r.status_code, 405)
-
         r = self.delete(self.view_url)
         self.assertEqual(r.status_code, 405)
         self.assertTrue('Allow' in r)

@@ -541,8 +541,8 @@ Besides the size of the disk, Cyclades flavors describe the storage backend
 that will be used for the virtual server.
 
 Flavors are created by the administrator and the user can select one of the
-available flavors. After VM creation, the user can dynamically resize his VM,
-by dynamically (hotplug-able) adding or removing CPU and RAM.
+available flavors. After VM creation, the user can resize his VM, by
+adding/removing CPU and RAM.
 
 Cyclades support different storage backends that are described by the disk
 template of the flavor, which is mapped to Ganeti's instance `disk template`.

@@ -55,9 +55,8 @@ def get_visible_resources():
     key = "resources"
     result = cache.get(key)
     if result is None:
-        cache.set(key, register.get_api_visible_resources(),
-                  settings.RESOURCE_CACHE_TIMEOUT)
-        result = cache.get(key)
+        result = register.get_api_visible_resources()
+        cache.set(key, result, settings.RESOURCE_CACHE_TIMEOUT)
     return result
 
 

@@ -71,8 +71,8 @@ def get_endpoints():
     key = "endpoints"
     result = cache.get(key)
     if result is None:
-        cache.set(key, compute_endpoints(), settings.ENDPOINT_CACHE_TIMEOUT)
-        result = cache.get(key)
+        result = compute_endpoints()
+        cache.set(key, result, settings.ENDPOINT_CACHE_TIMEOUT)
     return result
 
 

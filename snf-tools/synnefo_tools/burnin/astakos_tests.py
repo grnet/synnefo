@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,40 +31,42 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
+"""
+This is the burnin class that tests the Astakos functionality
 
-from django.core.management.base import BaseCommand, CommandError
-from synnefo.management import common
-from synnefo.logic import servers
+"""
+
+from kamaki.clients.compute import ComputeClient
+from kamaki.clients import ClientError
+
+from synnefo_tools.burnin import common
 
 
-class Command(BaseCommand):
-    help = "Attach a floating IP to a VM or router"
+# Too many public methods. pylint: disable-msg=R0904
+class AstakosTestSuite(common.BurninTests):
+    """Test Astakos functionality"""
+    def test_001_unauthorized_access(self):
+        """Test that access without a valid token fails"""
+        false_token = "12345"
+        self.info("Will use token %s", false_token)
+        client = ComputeClient(self.clients.compute_url, false_token)
+        client.CONNECTION_RETRY_LIMIT = self.clients.retry
 
-    option_list = BaseCommand.option_list + (
-        make_option(
-            '--machine',
-            dest='machine',
-            default=None,
-            help='The server id the floating-ip will be attached to'),
-    )
+        with self.assertRaises(ClientError) as cl_error:
+            client.list_servers()
+            self.assertEqual(cl_error.exception.status, 401)
 
-    @common.convert_api_faults
-    def handle(self, *args, **options):
-        if not args or len(args) > 1:
-            raise CommandError("Command accepts exactly one argument")
+    def test_002_name2uuid(self):
+        """Test that usernames2uuids and uuids2usernames are complementary"""
+        our_uuid = self._get_uuid()
 
-        floating_ip_id = args[0]  # this is the floating-ip address
-        device = options['machine']
+        given_name = self.clients.astakos.uuids2usernames([our_uuid])
+        self.info("uuids2usernames returned %s", given_name)
+        self.assertIn(our_uuid, given_name)
 
-        if not device:
-            raise CommandError('Please give either a server or a router id')
+        given_uuid = \
+            self.clients.astakos.usernames2uuids([given_name[our_uuid]])
+        self.info("usernames2uuids returned %s", given_uuid)
+        self.assertIn(given_name[our_uuid], given_uuid)
 
-        #get the vm
-        vm = common.get_vm(device)
-        floating_ip = common.get_floating_ip_by_id(floating_ip_id,
-                                                   for_update=True)
-        servers.create_port(vm.userid, floating_ip.network,
-                            use_ipaddress=floating_ip, machine=vm)
-
-        self.stdout.write("Attached %s to %s.\n" % (floating_ip, vm))
+        self.assertEqual(given_uuid[given_name[our_uuid]], our_uuid)

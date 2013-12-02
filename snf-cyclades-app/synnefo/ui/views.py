@@ -121,6 +121,9 @@ UI_SYNNEFO_JS_LIB_URL = \
             "UI_SYNNEFO_JS_LIB_URL", UI_SYNNEFO_JS_URL + "lib/")
 UI_SYNNEFO_JS_WEB_URL = \
     getattr(settings, "UI_SYNNEFO_JS_WEB_URL", UI_SYNNEFO_JS_URL + "ui/web/")
+UI_SYNNEFO_FONTS_BASE_URL = \
+    getattr(settings,
+            "UI_FONTS_BASE_URL", "//fonts.googleapis.com/")
 
 # extensions
 ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
@@ -144,9 +147,6 @@ NETWORK_DUPLICATE_NICS = \
 NETWORK_STRICT_DESTROY = \
     getattr(settings,
             'UI_NETWORK_STRICT_DESTROY', False)
-PRIVATE_NETWORKS_NIC_HOTPLUG = \
-    getattr(settings,
-            'UI_PRIVATE_NETWORK_NIC_HOTPLUG', False)
 NETWORK_ALLOW_MULTIPLE_DESTROY = \
     getattr(settings,
             'UI_NETWORK_ALLOW_MULTIPLE_DESTROY', False)
@@ -164,6 +164,10 @@ DEFAULT_FORCED_SERVER_NETWORKS = \
 FORCED_SERVER_NETWORKS = getattr(settings, "UI_FORCED_SERVER_NETWORKS",
                                  DEFAULT_FORCED_SERVER_NETWORKS)
 
+DEFAULT_HOTPLUG_ENABLED = getattr(settings, "CYCLADES_GANETI_USE_HOTPLUG",
+                                  True)
+HOTPLUG_ENABLED = getattr(settings, "UI_HOTPLUG_ENABLED",
+                          DEFAULT_HOTPLUG_ENABLED)
 
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -173,6 +177,7 @@ def template(name, request, context):
         'UI_MEDIA_URL': UI_MEDIA_URL,
         'SYNNEFO_JS_URL': UI_SYNNEFO_JS_URL,
         'SYNNEFO_JS_LIB_URL': UI_SYNNEFO_JS_LIB_URL,
+        'SYNNEFO_FONTS_BASE_URL': UI_SYNNEFO_FONTS_BASE_URL,
         'SYNNEFO_JS_WEB_URL': UI_SYNNEFO_JS_WEB_URL,
         'SYNNEFO_IMAGES_URL': UI_SYNNEFO_IMAGES_URL,
         'SYNNEFO_CSS_URL': UI_SYNNEFO_CSS_URL,
@@ -239,8 +244,7 @@ def home(request):
         json.dumps(AUTOMATIC_NETWORK_RANGE_FORMAT),
         'grouped_public_network_name': json.dumps(GROUPED_PUBLIC_NETWORK_NAME),
         'group_public_networks': json.dumps(GROUP_PUBLIC_NETWORKS),
-        'private_networks_nic_hotplug':
-        json.dumps(PRIVATE_NETWORKS_NIC_HOTPLUG),
+        'hotplug_enabled': json.dumps(HOTPLUG_ENABLED),
         'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL),
         'no_fqdn_message': json.dumps(NO_FQDN_MESSAGE)
     }

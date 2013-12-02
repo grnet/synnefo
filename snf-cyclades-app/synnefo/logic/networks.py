@@ -147,7 +147,8 @@ def delete(network):
     network.action = "DESTROY"
     # Mark network as drained to prevent automatic allocation of
     # public/floating IPs while the network is being deleted
-    network.drained = True
+    if network.public:
+        network.drained = True
     network.save()
 
     # Delete network to all backends that exists

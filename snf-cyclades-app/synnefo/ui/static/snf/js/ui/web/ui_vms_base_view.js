@@ -496,9 +496,27 @@
         hide_actions: function() {
             $(this.el).find("a").css("visibility", "hidden");
         },
+        
+        set_can_start: function() {
+          var el = $(this.el).find("a.action-start").parent();
+          el.removeClass("disabled-visible");
+        },
+
+        set_cannot_start: function() {
+          var el = $(this.el).find("a.action-start").parent();
+          el.addClass("disabled-visible")
+        },
 
         // update the actions layout, depending on the selected actions
         update_layout: function() {
+            
+            if (this.vm.get('status') == 'STOPPED') {
+              if (this.vm.can_start()) {
+                this.set_can_start();
+              } else {
+                this.set_cannot_start();
+              }
+            }
 
             if (!this.vm_handlers_initialized) {
                 this.vm = storage.vms.get(this.vm.id);
@@ -636,8 +654,14 @@
                 // action links click events
                 $(this.el).find(".action-container."+action+" a").click(function(ev) {
                     ev.preventDefault();
+                    if (action == "start" && !self.vm.can_start()) {
+                        ui.main.vm_resize_view.show_with_warning(self.vm);
+                        return;
+                    }
+
                     if (action == "resize") {
                         ui.main.vm_resize_view.show(self.vm);
+                        return;
                     } else {
                         self.set(action);
                     }

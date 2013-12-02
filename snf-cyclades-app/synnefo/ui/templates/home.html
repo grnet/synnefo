@@ -7,9 +7,13 @@
     
     <!--<meta http-equiv="X-UA-Compatible" content="IE=7">-->
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
-
-    <link href="https://fonts.googleapis.com/css?family=Ubuntu&subset=latin,greek" rel="stylesheet" type="text/css" >
-    <link href='https://fonts.googleapis.com/css?family=Open+Sans&subset=latin,greek' rel='stylesheet' type='text/css'>
+    
+    {% if SYNNEFO_FONTS_BASE_URL %}
+    <link href="{{ SYNNEFO_FONTS_BASE_URL }}css?family=Ubuntu&subset=latin,greek" 
+          rel="stylesheet" type="text/css" >
+    <link href='{{ SYNNEFO_FONTS_BASE_URL }}css?family=Open+Sans&subset=latin,greek' 
+          rel='stylesheet' type='text/css'>
+    {% endif %}
 
     <link rel="shortcut icon" href="{{ BRANDING_FAVICON_URL }}" />
 
@@ -618,7 +622,7 @@
             synnefo.config.vm_name_template = {{ vm_name_template|safe }};
             synnefo.config.flavors_disk_templates_info = {{ flavors_disk_templates_info|safe }};
             synnefo.config.vm_image_common_metadata = {{ vm_image_common_metadata|safe }};
-            synnefo.config.private_networks_nic_hotplug = {{ private_networks_nic_hotplug|safe }};
+            synnefo.config.hotplug_enabled = {{ hotplug_enabled|safe }};
 
             synnefo.config.diagnostics_update_interval = {{ diagnostics_update_interval }};
             // override diagnostic messages display

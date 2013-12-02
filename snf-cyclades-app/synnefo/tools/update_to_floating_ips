@@ -1,0 +1,77 @@
+#!/usr/bin/env python
+"""Tool to convert public IPv4 addresses to floatign IPs, which may be needed
+for update to Synnefo v0.15.
+
+"""
+
+import sys
+import logging
+from optparse import OptionParser, TitledHelpFormatter
+
+# Configure Django env
+from synnefo import settings
+from django.core.management import setup_environ
+setup_environ(settings)
+
+from synnefo.management.common import get_network
+from synnefo.db.models import IPAddress
+from django.db import transaction
+
+logger = logging.getLogger("update_floating_ips")
+handler = logging.StreamHandler()
+
+formatter = logging.Formatter("[%(levelname)s] %(message)s")
+handler.setFormatter(formatter)
+logger.setLevel(logging.INFO)
+logger.addHandler(handler)
+logger.propagate = False
+
+DESCRIPTION = """Tool to convert public IPv4 addresses to floating IPs."""
+
+
+@transaction.commit_on_success
+def main():
+    parser = OptionParser(description=DESCRIPTION,
+                          formatter=TitledHelpFormatter())
+    parser.add_option("--network-id", dest="network_id", default=None,
+                      help="Update addresses only of this network."),
+    parser.add_option("--dry-run", dest="dry_run", default=False,
+                      action="store_true",
+                      help="Dry-run mode.")
+    parser.add_option("-d", "--debug", dest="debug", default=False,
+                      action="store_true",
+                      help="Display debug information.")
+    options, args = parser.parse_args()
+
+    if options.debug:
+        logger.setLevel(logging.DEBUG)
+
+    public_ips = IPAddress.objects.filter(network__public=True,
+                                          floating_ip=False)
+    if options.network_id is not None:
+        network = get_network(options.network_id)
+        logger.debug("Converting IPs only of network %s" % network.id)
+        public_ips = public_ips.filter(network=network)
+
+    logger.info("Converting %d public IPv4 addresses to floating IPs.",
+                public_ips.count())
+
+    if not public_ips:
+        logger.info("No public IPs to convert.")
+        return
+
+    if options.debug:
+        addresses = public_ips.values_list("address", flat=True)
+        logger.debug("Converting the following public IPs:\n%s",
+                     "\n".join(addresses))
+
+    if not options.dry_run:
+        public_ips.update(floating_ip=True)
+
+    logger.info("Successfully updated public addresses to floating IPs.")
+    return
+
+
+if __name__ == "__main__":
+    main()
+    sys.exit(0)

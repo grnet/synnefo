@@ -1,4 +1,4 @@
-# Copyright 2012-2013 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,43 +32,41 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.management import common
-from synnefo.management import pprint
+from django.core.management.base import BaseCommand, CommandError
+from synnefo.management.common import get_flavor
+from snf_django.management.utils import parse_bool
+
+
+from logging import getLogger
+log = getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = "Inspect a server on DB and Ganeti"
-    args = "<server ID>"
+    args = "<flavor id>"
+    help = "Modify a flavor"
 
     option_list = BaseCommand.option_list + (
         make_option(
-            '--jobs',
-            action='store_true',
-            dest='jobs',
-            default=False,
-            help="Show non-archived jobs concerning server."),
-        make_option(
-            '--displayname',
-            action='store_true',
-            dest='displayname',
-            default=False,
-            help="Display both uuid and display name"),
+            "--deleted",
+            dest="deleted",
+            metavar="True|False",
+            choices=["True", "False"],
+            default=None,
+            help="Mark/unmark a flavor as deleted"),
     )
 
     def handle(self, *args, **options):
         if len(args) != 1:
-            raise CommandError("Please provide a server ID")
+            raise CommandError("Please provide a flavor ID")
 
-        vm = common.get_vm(args[0])
+        flavor = get_flavor(args[0], for_update=True)
 
-        displayname = options['displayname']
-
-        pprint.pprint_server(vm, display_mails=displayname, stdout=self.stdout)
-        self.stdout.write("\n")
-        pprint.pprint_server_nics(vm, stdout=self.stdout)
-        self.stdout.write("\n")
-        pprint.pprint_server_in_ganeti(vm, print_jobs=options["jobs"],
-                                       stdout=self.stdout)
-        self.stdout.write("\n")
+        deleted = options['deleted']
+        if deleted:
+            deleted = parse_bool(deleted)
+            log.info("Marking flavor %s as deleted=%s", flavor, deleted)
+            flavor.deleted = deleted
+            flavor.save()
+        else:
+            log.info("Nothing changed!")

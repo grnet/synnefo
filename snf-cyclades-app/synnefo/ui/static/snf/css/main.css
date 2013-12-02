@@ -1060,6 +1060,11 @@ div.machine div.actions .disabled {
     display: none;
 }
 
+div.machine div.actions .disabled-visible a,
+div.machine div.vm-actions .disabled-visible a {
+  color: #aaa;
+}
+
 div.single-container div.vm-actions .disabled {
     display: none;
 }
@@ -4767,15 +4772,14 @@ table.list-machines .wave {
     font-size: 0.8em;
 }
 
+.overlay .start-warn .important,
 .overlay .v6-warn .important {
   display: block;
   margin: 8px 0;
   font-weight: normal;
   font-size: 0.8em;
-  border: 1px solid #800;
-  background-color: #a00;
-  color: #fff !important;
-  padding: 5px 10px;
+  color: #800 !important;
+  padding: 5px 0;
 }
 
 .overlay .overlay-content .important {
@@ -5741,6 +5745,16 @@ table.list-machines .wave {
     border: 1px solid #C97943;
 }
 
+.create-vm .flavor-options-cont .flavor-options li.selected.disabled {
+    background-color: #AAA;
+    background-image:linear-gradient(top, #AAA, #E88B4D);
+    background-image:-webkit-linear-gradient(top, #AAA, #E88B4D);
+    background-image:-o-linear-gradient(top, #AAA, #E88B4D);
+    background-image:-moz-linear-gradient(top, #AAA, #E88B4D);
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#AAAAAA', endColorstr='#E88B4D', GradientType=0);
+    border: 1px solid #999;
+}
+
 .create-vm .predefined-list li.disabled {
     color: #ddd !important;
 }
@@ -6626,9 +6640,14 @@ input.has-errors {
     text-decoration: underline;
 }
 
+.single .suspended-notice {
+  right: 98px;
+  top:2px;
+}
+
 .icon .suspended-notice {
   right: 192px;
-  top: 50px;
+  top: 54px;
 }
 
 .suspended-notice {

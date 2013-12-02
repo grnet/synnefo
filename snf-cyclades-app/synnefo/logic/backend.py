@@ -293,7 +293,7 @@ def change_address_of_port(port, userid, old_address, new_address, version):
     if old_address is not None:
         msg = ("IPv%s Address of server '%s' changed from '%s' to '%s'"
                % (version, port.machine_id, old_address, new_address))
-        log.critical(msg)
+        log.error(msg)
 
     # Remove the old IP address
     remove_nic_ips(port, version=version)
@@ -503,6 +503,9 @@ def update_network_state(network):
                  network.id, network.mac_prefix, network.link)
         network.deleted = True
         network.state = "DELETED"
+        # Undrain the network, otherwise the network state will remain
+        # as 'SNF:DRAINED'
+        network.drained = False
         if network.mac_prefix:
             if network.FLAVORS[network.flavor]["mac_prefix"] == "pool":
                 release_resource(res_type="mac_prefix",

@@ -50,12 +50,12 @@ class SynnefoCommand(BaseCommand):
             metavar="[pretty, csv, json]",
             default="pretty",
             choices=["pretty", "csv", "json"],
-            help="Select the output format: pretty [the default], tabs"
-                 " [tab-separated output], csv [comma-separated output]"),
+            help="Select the output format: pretty [the default], json, "
+                 "csv [comma-separated output]"),
     )
 
 
-class ListCommand(BaseCommand):
+class ListCommand(SynnefoCommand):
     """Generic *-list management command.
 
     Management command to handle common tasks when implementing a -list
@@ -114,7 +114,7 @@ class ListCommand(BaseCommand):
     astakos_token = None
 
     help = "Generic List Command"
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             "-o", "--output",
             dest="fields",
@@ -144,14 +144,6 @@ class ListCommand(BaseCommand):
             action="store_false",
             default=True,
             help="Do not display headers"),
-        make_option(
-            "--output-format",
-            dest="output_format",
-            metavar="[pretty, csv, json]",
-            default="pretty",
-            choices=["pretty", "csv", "json"],
-            help="Select the output format: pretty [the default], tabs"
-                 " [tab-separated output], csv [comma-separated output]"),
     )
 
     def __init__(self, *args, **kwargs):

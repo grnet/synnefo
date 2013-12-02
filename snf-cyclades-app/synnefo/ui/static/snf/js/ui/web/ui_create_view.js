@@ -1698,7 +1698,10 @@
                     this.close_all();
                     this.password_view.show(data.server.adminPass, 
                                             data.server.id);
-                    this.submiting = false;
+                    var self = this;
+                    window.setTimeout(function() {
+                      self.submiting = false;
+                    }, 1000);
                 }, this));
             }
         },

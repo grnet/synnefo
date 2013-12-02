@@ -251,12 +251,12 @@
         return synnefo.ui.helpers.vm_icon_path(this.model.get('vm'), 'medium');
       },
       
-      set_confirm: function() {
+      set_confirm: function(action) {
         var parent = this.parent_view.parent_view.el;
         parent.addClass("subactionpending");
       },
 
-      unset_confirm: function() {
+      unset_confirm: function(action) {
         var parent = this.parent_view.parent_view.el;
         parent.removeClass("subactionpending");
       },
@@ -507,20 +507,12 @@
       
       remove: function(model, e) {
         e && e.stopPropagation();
-        this.model.actions.reset_pending();
-        this.model.destroy({
-          success: _.bind(function() {
-            this.model.set({status: 'REMOVING'});
-            this.model.set({ext_status: 'REMOVING'});
-            // force status display update
-            this.model.set({cidr: 'REMOVING'});
-          }, this),
-          silent: true
-        });
+        this.model.do_remove();
       },
 
       show_connect_vms_overlay: function() {
         var view = new views.NetworkConnectVMsOverlay();
+        this.model.actions.reset_pending();
         vms = this.model.connectable_vms;
         var cb = _.bind(function(vms) {
           view.set_in_progress();
@@ -758,7 +750,7 @@
         },
         
         onClose: function() {
-          this.collection_view.hide(true);
+          this.collection_view && this.collection_view.hide(true);
           delete this.collection_view;
         },
 

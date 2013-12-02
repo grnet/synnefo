@@ -116,6 +116,15 @@
             })
           });
           this.actions = this.get("actions");
+          this.actions.bind("set-pending", function(action) {
+            this.trigger("action:set-pending", action, this.actions, this);
+          }, this);
+          this.actions.bind("unset-pending", function(action) {
+            this.trigger("action:unset-pending", action, this.actions, this);
+          }, this);
+          this.actions.bind("reset-pending", function() {
+            this.trigger("action:reset-pending", this.actions, this);
+          }, this);
 
           _.each(this.model_actions, function(params, key){
             var attr = 'can_' + key;
@@ -775,7 +784,19 @@
             }, this));
 
         },
-          
+        
+        get_public_ips: function() {
+          var ips = [];
+          this.ports.filter(function(port) {
+            if (port.get('network') && !port.get('network').get('is_public')) { return }
+            if (!port.get("ips")) { return }
+            port.get("ips").each(function(ip) {
+              ips.push(ip);
+            });
+          });
+          return ips;
+        },
+
         has_public_ip: function() {
           return this.ports.filter(function(port) {
             return port.get("network") && 
@@ -1082,8 +1103,29 @@
             models.VM.__super__.unbind.apply(this, arguments);
         },
         
+        can_start: function(flv, count_current) {
+          var get_quota = function(key) {
+            return synnefo.storage.quotas.get(key).get('available');
+          }
+          var flavor = flv || this.get_flavor();
+          var vm_ram_current = 0, vm_cpu_current = 0;
+          if (flv && this.is_active() || flv && count_current) {
+            var current = this.get_flavor();
+            vm_ram_current = current.ram_to_bytes();
+            vm_cpu_current = parseInt(current.get('cpu'));
+          }
+          var vm_ram = flavor.ram_to_bytes();
+          var vm_cpu = parseInt(flavor.get('cpu'));
+          var available_cpu = get_quota('cyclades.cpu') + vm_cpu_current;
+          var available_ram = get_quota('cyclades.ram') + vm_ram_current;
+          if (vm_ram > available_ram || vm_cpu > available_cpu) { return false }
+          return true
+        },
+
         can_connect: function() {
-          return _.contains(["ACTIVE", "STOPPED"], this.get("status"))
+          if (!synnefo.config.hotplug_enabled && this.is_active()) { return false }
+          return _.contains(["ACTIVE", "STOPPED"], this.get("status")) && 
+                 !this.get('suspended')
         },
 
         can_disconnect: function() {
@@ -1306,9 +1348,9 @@
         get_flavor_quotas: function() {
           var flavor = this.get_flavor();
           return {
-            cpu: flavor.get('cpu') + 1, 
-            ram: flavor.get_ram_size() + 1, 
-            disk:flavor.get_disk_size() + 1
+            cpu: flavor.get('cpu'), 
+            ram: flavor.get_ram_size(), 
+            disk:flavor.get_disk_size()
           }
         },
 
@@ -1382,7 +1424,8 @@
         },
         
         set_firewall: function(nic, value, success_cb, error_cb) {
-          var success = function() { success_cb() }
+          var self = this;
+          var success = function() { self.require_reboot(); success_cb() }
           var error = function() { error_cb() }
           var data = {'nic': nic.id, 'profile': value, 'display': true};
           var url = this.url() + "/action";
@@ -1816,7 +1859,7 @@
         },
 
         comparator: function(img) {
-            return -img.get_sort_order("sortorder") || 1000 * img.id;
+            return -img.get_sort_order("sortorder") || 0;
         },
 
         parse_meta: function(img) {
@@ -2211,6 +2254,13 @@
               snf.api.trigger("call");
             }, this)
           });
+        },
+
+        do_remove: function() {
+          this.actions.reset_pending();
+          this.remove(function() {
+            synnefo.storage.keys.fetch();
+          });
         }
     })
     
@@ -2254,6 +2304,7 @@
         var data = {};
         data[action] = this.status.INACTIVE;
         this.set(data);
+        this.trigger("unset-pending", action);
       },
 
       set_pending_action: function(action, reset_pending) {
@@ -2400,9 +2451,15 @@
                 value = this.get(key)
             }
             if (value <= 0) { value = 0 }
+            // greater than max js int (assume infinite quota)
+            if (value > Math.pow(2, 53)) { 
+              return "Infinite"
+            }
+
             if (!this.is_bytes()) {
               return value + "";
             }
+            
             return snf.util.readablizeBytes(value);
         }
     });

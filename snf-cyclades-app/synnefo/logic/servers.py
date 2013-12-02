@@ -1,3 +1,32 @@
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#   1. Redistributions of source code must retain the above copyright
+#      notice, this list of conditions and the following disclaimer.
+#
+#  2. Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are
+# those of the authors and should not be interpreted as representing official
+# policies, either expressed or implied, of GRNET S.A.
+
 import logging
 
 from socket import getfqdn
@@ -153,7 +182,7 @@ def create(userid, name, password, flavor, image, metadata={},
         flavor.disk_template = disk_template
         flavor.disk_provider = provider
         flavor.disk_origin = None
-        if provider == 'vlmc':
+        if provider in ['vlmc', 'archipelago']:
             flavor.disk_origin = image['checksum']
             image['backend_id'] = 'null'
     else:
@@ -363,7 +392,9 @@ def console(vm, console_type):
     if settings.TEST:
         fwd = {'source_port': 1234, 'status': 'OK'}
     else:
-        fwd = request_vnc_forwarding(sport, daddr, dport, password)
+        vnc_extra_opts = settings.CYCLADES_VNCAUTHPROXY_OPTS
+        fwd = request_vnc_forwarding(sport, daddr, dport, password,
+                                     **vnc_extra_opts)
 
     if fwd['status'] != "OK":
         raise faults.ServiceUnavailable('vncauthproxy returned error status')
@@ -529,8 +560,10 @@ def create_instance_ports(user_id, networks=None):
 def create_ports_for_setting(user_id, category):
     if category == "admin":
         network_setting = settings.CYCLADES_FORCED_SERVER_NETWORKS
+        exception = faults.ServiceUnavailable
     elif category == "default":
         network_setting = settings.CYCLADES_DEFAULT_SERVER_NETWORKS
+        exception = faults.Conflict
     else:
         raise ValueError("Unknown category: %s" % category)
 
@@ -540,21 +573,33 @@ def create_ports_for_setting(user_id, category):
         if type(network_ids) not in (list, tuple):
             network_ids = [network_ids]
 
+        error_msgs = []
         for network_id in network_ids:
+            success = False
             try:
                 ports.append(_port_from_setting(user_id, network_id, category))
+                # Port successfully created in one of the networks. Skip the
+                # the rest.
+                success = True
                 break
-            except faults.Conflict:
-                # Try all network IDs in the network group
-                pass
+            except faults.Conflict as e:
+                if len(network_ids) == 1:
+                    raise exception(e.message)
+                else:
+                    error_msgs.append(e.message)
 
-            # Diffrent exception for each category!
+        if not success:
             if category == "admin":
-                exception = faults.ServiceUnavailable
+                log.error("Cannot connect server to forced networks '%s': %s",
+                          network_ids, error_msgs)
+                raise exception("Cannot connect server to forced server"
+                                " networks.")
             else:
-                exception = faults.Conflict
-            raise exception("Cannot connect instance to any of the following"
-                            " networks %s" % network_ids)
+                log.debug("Cannot connect server to default networks '%s': %s",
+                          network_ids, error_msgs)
+                raise exception("Cannot connect server to default server"
+                                " networks.")
+
     return ports
 
 
@@ -567,8 +612,15 @@ def _port_from_setting(user_id, network_id, category):
     elif network_id == "SNF:ANY_PUBLIC":
         try:
             return create_public_ipv4_port(user_id, category=category)
-        except faults.Conflict:
-            return create_public_ipv6_port(user_id, category=category)
+        except faults.Conflict as e1:
+            try:
+                return create_public_ipv6_port(user_id, category=category)
+            except faults.Conflict as e2:
+                log.error("Failed to connect server to a public IPv4 or IPv6"
+                          " network. IPv4: %s, IPv6: %s", e1, e2)
+                msg = ("Cannot connect server to a public IPv4 or IPv6"
+                       " network.")
+                raise faults.Conflict(msg)
     else:  # Case of network ID
         if category in ["user", "default"]:
             return _port_for_request(user_id, {"uuid": network_id})

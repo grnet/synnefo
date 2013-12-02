@@ -30,7 +30,7 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-
+import sys
 from functools import wraps
 from traceback import format_exc
 from time import time
@@ -51,6 +51,7 @@ from snf_django.lib.api import faults
 import itertools
 
 log = getLogger(__name__)
+django_logger = getLogger("django.request")
 
 
 def get_token(request):
@@ -119,19 +120,33 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 # Fill in response variables
                 update_response_headers(request, response)
                 return response
-            except faults.Fault, fault:
+            except faults.Fault as fault:
                 if fault.code >= 500:
-                    logger.exception("API ERROR")
+                    django_logger.error("Unexpected API Error: %s",
+                                        request.path,
+                                        exc_info=sys.exc_info(),
+                                        extra={
+                                            "status_code": fault.code,
+                                            "request": request})
                 return render_fault(request, fault)
             except AstakosClientException as err:
                 fault = faults.Fault(message=err.message,
                                      details=err.details,
                                      code=err.status)
                 if fault.code >= 500:
-                    logger.exception("Astakos ERROR")
+                    django_logger.error("Unexpected AstakosClient Error: %s",
+                                        request.path,
+                                        exc_info=sys.exc_info(),
+                                        extra={
+                                            "status_code": fault.code,
+                                            "request": request})
                 return render_fault(request, fault)
             except:
-                logger.exception("Unexpected ERROR")
+                django_logger.error("Internal Server Error: %s", request.path,
+                                    exc_info=sys.exc_info(),
+                                    extra={
+                                        "status_code": '500',
+                                        "request": request})
                 fault = faults.InternalServerError("Unexpected error")
                 return render_fault(request, fault)
         return csrf.csrf_exempt(wrapper)

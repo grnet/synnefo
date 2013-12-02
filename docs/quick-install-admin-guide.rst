@@ -749,7 +749,7 @@ As refered in the previous section, based on the operation that triggers
 an email notification, the recipients list differs. Specifically for
 emails whose recipients include contacts from your service team
 (administrators, managers, helpdesk etc) synnefo provides the following
-settings located in ``10-snf-common-admins.conf``:
+settings located in ``00-snf-common-admins.conf``:
 
 .. code-block:: python
 
@@ -910,7 +910,9 @@ Setting Default Base Quota for Resources
 ----------------------------------------
 
 We now have to specify the limit on resources that each user can employ
-(exempting resources offered by projects).
+(exempting resources offered by projects). When specifying storage or
+memory size limits consider to add an appropriate size suffix to the
+numeric value, i.e. 10240 MB, 10 GB etc.
 
 .. code-block:: console
 
@@ -1255,6 +1257,13 @@ Then run on node1:
                     --vm-capable=yes node2.example.com
     root@node1:~ # gnt-cluster modify --disk-parameters=drbd:metavg=ganeti
     root@node1:~ # gnt-group modify --disk-parameters=drbd:metavg=ganeti default
+
+You can verify that the ganeti cluster is successfully setup,by running on the
+:ref:`GANETI-MASTER <GANETI_NODES>` (in our case node1):
+
+.. code-block:: console
+
+   # gnt-cluster verify
 
 For any problems you may stumble upon installing Ganeti, please refer to the
 `official documentation <http://docs.ganeti.org/ganeti/2.6/html>`_. Installation
@@ -1729,7 +1738,6 @@ case). You can install them by running in both nodes:
 This will install the following:
 
  * ``snf-ganeti-eventd`` (daemon to publish Ganeti related messages on RabbitMQ)
- * ``snf-ganeti-hook`` (all necessary hooks under ``/etc/ganeti/hooks``)
  * ``snf-progress-monitor`` (used by ``snf-image`` to publish progress messages)
 
 Configure ``snf-cyclades-gtools``
@@ -1887,7 +1895,7 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-queues.conf``:
    AMQP_HOSTS=["amqp://synnefo:example_rabbitmq_passw0rd@node1.example.com:5672"]
 
 The above settings denote the Message Queue. Those settings should have the same
-values as in ``/etc/synnefo/10-snf-cyclades-gtools-backend.conf`` file, and
+values as in ``/etc/synnefo/20-snf-cyclades-gtools-backend.conf`` file, and
 reflect our :ref:`Message Queue setup <rabbitmq-setup>`.
 
 Edit ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf``:
@@ -2118,6 +2126,12 @@ skipped.
    node1 # snf-manage reconcile-resources-astakos --fix
    node2 # snf-manage reconcile-resources-pithos --fix
    node1 # snf-manage reconcile-resources-cyclades --fix
+
+VM stats configuration
+----------------------
+
+Please refer to the documentation in the :ref:`admin guide <admin-guide-stats>`
+for deploying and configuring snf-stats-app and collectd.
 
 
 If all the above return successfully, then you have finished with the Cyclades

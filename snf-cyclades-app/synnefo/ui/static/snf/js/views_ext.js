@@ -225,6 +225,9 @@
         this.create_button = this.$(".create-button a");
         this.create_button.click(_.bind(function(e) {
           e.preventDefault();
+          if (this.$(".create-button a").hasClass("disabled")) {
+            return;
+          }
           this.handle_create_click();
         }, this));
         

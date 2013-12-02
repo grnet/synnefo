@@ -35,9 +35,6 @@ from django.conf import settings
 from django.core.exceptions import MiddlewareNotUsed
 
 from django.core import mail
-from django.views import debug
-
-import re
 
 HIDDEN_ALL = settings.HIDDEN_COOKIES + settings.HIDDEN_HEADERS
 
@@ -98,8 +95,6 @@ class CleanseSettingsMiddleware(object):
     deployments.
     '''
     def __init__(self):
-        debug.HIDDEN_SETTINGS = re.compile(settings.HIDDEN_SETTINGS)
-
         if not hasattr(mail, 'mail_admins_plain'):
             mail.mail_admins_plain = mail.mail_admins
             mail.mail_admins = mail_admins_safe

@@ -127,12 +127,12 @@ class Command(BaseCommand):
         owner = None
         if server_id:
             owner = "vm"
-            vm = common.get_vm(server_id)
+            vm = common.get_vm(server_id, for_update=True)
             #if vm.router:
             #    raise CommandError("Server '%s' does not exist." % server_id)
         elif router_id:
             owner = "router"
-            vm = common.get_vm(router_id)
+            vm = common.get_vm(router_id, for_update=True)
             if not vm.router:
                 raise CommandError("Router '%s' does not exist." % router_id)
 

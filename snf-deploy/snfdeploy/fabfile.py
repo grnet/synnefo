@@ -1340,7 +1340,7 @@ def setup_kamaki():
     kamaki config set cloud.default.token {1}
     """.format(env.env.accounts.fqdn, user_auth_token)
     try_run(cmd)
-    try_run("kamaki file create images")
+    try_run("kamaki container create images")
 
 
 @roles("client")

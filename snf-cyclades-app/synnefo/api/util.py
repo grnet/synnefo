@@ -31,7 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from base64 import b64encode, b64decode
+from base64 import urlsafe_b64encode, b64decode
+from urllib import quote
 from hashlib import sha256
 from logging import getLogger
 from random import choice
@@ -118,13 +119,13 @@ def zeropad(s):
     return s + '\x00' * npad
 
 
-def encrypt(plaintext):
+def stats_encrypt(plaintext):
     # Make sure key is 32 bytes long
-    key = sha256(settings.SECRET_KEY).digest()
+    key = sha256(settings.CYCLADES_STATS_SECRET_KEY).digest()
 
     aes = AES.new(key)
     enc = aes.encrypt(zeropad(plaintext))
-    return b64encode(enc)
+    return quote(urlsafe_b64encode(enc))
 
 
 def get_vm(server_id, user_id, for_update=False, non_deleted=False,

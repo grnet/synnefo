@@ -43,7 +43,7 @@ from django.db.models import Count, Sum
 
 from snf_django.lib.astakos import UserCache
 from synnefo.db.models import VirtualMachine, Network, Backend
-from synnefo.api.util import get_image
+from synnefo.plankton.utils import image_backend
 from synnefo.logic import backend as backend_mod
 
 
@@ -122,6 +122,7 @@ def get_images_stats(backend=None):
 
     active_servers_images = active_servers.values("imageid", "userid")\
                                           .annotate(number=Count("imageid"))
+
     image_cache = ImageCache()
     image_stats = defaultdict(int)
     for result in active_servers_images:
@@ -200,11 +201,15 @@ class ImageCache(object):
     def get_image(self, imageid, userid):
         if not imageid in self.images:
             try:
-                image = get_image(imageid, userid)
+                with image_backend(userid) as ib:
+                    image = ib.get_image(imageid)
+                properties = image.get("properties")
+                os = properties.get("os",
+                                    properties.get("osfamily", "unknown"))
                 owner = image["owner"]
                 owner = "system" if image["owner"] == self.system_user_uuid\
                         else "user"
-                self.images[imageid] = owner + ":" + image["name"]
+                self.images[imageid] = owner + ":" + os
             except Exception:
                 self.images[imageid] = "unknown:unknown"
 

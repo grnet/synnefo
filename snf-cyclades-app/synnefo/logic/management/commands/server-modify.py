@@ -37,7 +37,7 @@ from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management.common import (get_vm, get_flavor, convert_api_faults,
                                        wait_server_task)
-from synnefo.webproject.management.utils import parse_bool
+from snf_django.management.utils import parse_bool
 from synnefo.logic import servers
 
 
@@ -93,7 +93,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")
 
-        server = get_vm(args[0])
+        server = get_vm(args[0], for_update=True)
 
         new_name = options.get("name", None)
         if new_name is not None:

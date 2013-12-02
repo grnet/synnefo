@@ -219,13 +219,9 @@ def get_server_public_ip(vm_nics, version=4):
 
 
 def get_server_fqdn(vm, vm_nics):
-    public_ip = get_server_public_ip(vm_nics)
-    if public_ip is None:
-        return ""
-
     fqdn_setting = settings.CYCLADES_SERVERS_FQDN
     if fqdn_setting is None:
-        return public_ip.address
+        return None
     elif isinstance(fqdn_setting, basestring):
         return fqdn_setting % {"id": vm.id}
     else:
@@ -691,8 +687,7 @@ def server_stats(request, server_id):
 
     log.debug('server_stats %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
-    #secret = util.encrypt(vm.backend_vm_id)
-    secret = vm.backend_vm_id      # XXX disable backend id encryption
+    secret = util.stats_encrypt(vm.backend_vm_id)
 
     stats = {
         'serverRef': vm.id,

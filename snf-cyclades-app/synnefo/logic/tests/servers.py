@@ -53,6 +53,7 @@ class ServerCreationTest(TransactionTestCase):
             "flavor": flavor,
             "image": {"id": "foo", "backend_id": "foo", "format": "diskdump",
                       "metadata": "{}"},
+            "networks": [],
             "metadata": {"foo": "bar"},
             "personality": [],
         }
@@ -78,7 +79,6 @@ class ServerCreationTest(TransactionTestCase):
         vm = models.VirtualMachine.objects.get()
         self.assertFalse(vm.deleted)
         self.assertEqual(vm.operstate, "ERROR")
-        self.assertEqual(len(vm.nics.all()), 2)
         for nic in vm.nics.all():
             self.assertEqual(nic.state, "ERROR")
 

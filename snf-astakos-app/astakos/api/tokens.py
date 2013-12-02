@@ -36,13 +36,44 @@ from collections import defaultdict
 from django.views.decorators.csrf import csrf_exempt
 
 from snf_django.lib.api import faults, utils, api_method
+from django.core.cache import cache
 
+from astakos.im import settings
 from astakos.im.models import Service, AstakosUser
 from .util import json_response, xml_response, validate_user,\
     get_content_length
 
 import logging
 logger = logging.getLogger(__name__)
+
+
+def compute_endpoints():
+    l = []
+    for s in Service.objects.all().order_by("id").\
+            prefetch_related('endpoints__data').\
+            select_related('component'):
+        endpoints = []
+        for e in s.endpoints.all():
+            endpoint = dict((ed.key, ed.value) for ed in e.data.all())
+            endpoint["SNF:uiURL"] = s.component.url
+            endpoint["region"] = "default"
+            if s.name == 'astakos_weblogin':
+                endpoint["SNF:webloginURL"] = endpoint["publicURL"]
+            endpoints.append(endpoint)
+        l.append({"name": s.name,
+                  "type": s.type,
+                  "endpoints": endpoints,
+                  "endpoints_links": []})
+    return l
+
+
+def get_endpoints():
+    key = "endpoints"
+    result = cache.get(key)
+    if result is None:
+        cache.set(key, compute_endpoints(), settings.ENDPOINT_CACHE_TIMEOUT)
+        result = cache.get(key)
+    return result
 
 
 @csrf_exempt
@@ -100,22 +131,7 @@ def authenticate(request):
             "roles": list(user.groups.values("id", "name")),
             "roles_links": []}
 
-    d["access"]["serviceCatalog"] = []
-    append = d["access"]["serviceCatalog"].append
-    for s in Service.objects.all().order_by("id").\
-            prefetch_related('endpoints__data').select_related('component'):
-        endpoints = []
-        for e in s.endpoints.all():
-            endpoint = dict((ed.key, ed.value) for ed in e.data.all())
-            endpoint["SNF:uiURL"] = s.component.url
-            endpoint["region"] = "default"
-            if s.name == 'astakos_weblogin':
-                endpoint["SNF:webloginURL"] = endpoint["publicURL"]
-            endpoints.append(endpoint)
-        append({"name": s.name,
-                "type": s.type,
-                "endpoints": endpoints,
-                "endpoints_links": []})
+    d["access"]["serviceCatalog"] = get_endpoints()
 
     if request.serialization == 'xml':
         return xml_response({'d': d}, 'api/access.xml')

@@ -1,4 +1,4 @@
-# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -30,60 +30,43 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-#
 
-import distribute_setup
-distribute_setup.use_setuptools()
+"""
+This is the burnin class that tests the Astakos functionality
 
-import os
+"""
 
-#from distutils.util import convert_path
-#from fnmatch import fnmatchcase
-from setuptools import setup, find_packages
+from kamaki.clients.compute import ComputeClient
+from kamaki.clients import ClientError
 
-HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
+from synnefo_tools.burnin import common
 
-from synnefo_tools.version import __version__
 
-# Package info
-VERSION = __version__
-SHORT_DESCRIPTION = 'Integration testing tool for a running Synnefo deployment'
+# Too many public methods. pylint: disable-msg=R0904
+class AstakosTestSuite(common.BurninTests):
+    """Test Astakos functionality"""
+    def test_001_unauthorized_access(self):
+        """Test that access without a valid token fails"""
+        false_token = "12345"
+        self.info("Will use token %s", false_token)
+        client = ComputeClient(self.clients.compute_url, false_token)
+        client.CONNECTION_RETRY_LIMIT = self.clients.retry
 
-PACKAGES_ROOT = '.'
-PACKAGES = find_packages(PACKAGES_ROOT)
+        with self.assertRaises(ClientError) as cl_error:
+            client.list_servers()
+            self.assertEqual(cl_error.exception.status, 401)
 
-# Package meta
-CLASSIFIERS = []
+    def test_002_name2uuid(self):
+        """Test that usernames2uuids and uuids2usernames are complementary"""
+        our_uuid = self._get_uuid()
 
-# Package requirements
-INSTALL_REQUIRES = [
-    "IPy",
-    "paramiko",
-    "vncauthproxy",
-    "kamaki >= 0.10"]
+        given_name = self.clients.astakos.uuids2usernames([our_uuid])
+        self.info("uuids2usernames returned %s", given_name)
+        self.assertIn(our_uuid, given_name)
 
-setup(
-    name='snf-tools',
-    version=VERSION,
-    license='BSD',
-    url='http://www.synnefo.org/',
-    description=SHORT_DESCRIPTION,
-    classifiers=CLASSIFIERS,
+        given_uuid = \
+            self.clients.astakos.usernames2uuids([given_name[our_uuid]])
+        self.info("usernames2uuids returned %s", given_uuid)
+        self.assertIn(given_name[our_uuid], given_uuid)
 
-    author='Synnefo development team',
-    author_email='synnefo-devel@googlegroups.com',
-    maintainer='Synnefo development team',
-    maintainer_email='synnefo-devel@googlegroups.com',
-
-    packages=PACKAGES,
-    package_dir={'': PACKAGES_ROOT},
-    include_package_data=True,
-    zip_safe=False,
-
-    install_requires=INSTALL_REQUIRES,
-
-    dependency_links=['http://www.synnefo.org/packages/pypi'],
-
-    entry_points={
-        'console_scripts': ['snf-burnin = synnefo_tools.burnin:main']}
-)
+        self.assertEqual(given_uuid[given_name[our_uuid]], our_uuid)

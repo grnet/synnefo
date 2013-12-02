@@ -987,16 +987,92 @@ The above command will create a pool of MAC prefixes from ``aa:00:1`` to
 locally administered MAC addresses, so many of these prefixes will be
 externally reserved, to exclude from allocation.
 
-Pool reconciliation
-*******************
+Quotas
+~~~~~~
 
-The management command `snf-manage reconcile-pools` can be used that all the
-above mentioned pools are consistent and that all values that come from the
-pool are not used more than once.
+Handling of quotas for Cyclades resources is powered by Astakos quota
+mechanism. During registration of Cyclades service to Astakos, the Cyclades
+resources are also imported to Astakos for accounting and presentation.
 
+Upon a request that will result in a resource creation or removal, Cyclades
+will communicate with Astakos to ensure that user quotas are within limits and
+update the corresponding usage. If a limit is reached, the request will be
+denied with an `overLimit(413)` fault.
+
+The resources that are exported by Cyclades are the following:
+
+* `cyclades.vm`: Number of virtual machines
+* `cyclades.total_cpu`: Number of virtual machine processors
+* `cyclades.cpu`: Number of virtual machine processors of running VMs
+* `cyclades.total_ram`: Virtual machine memory size
+* `cyclades.ram`: Virtual machine memory size of running VMs
+* `cyclades.disk`: Virtual machine disk size
+* `cyclades.floating_ip`: Number of floating IP addresses
+* `cyclades.network.private`: Number of private virtual networks
 
 Cyclades advanced operations
 ----------------------------
+
+Reconciliation mechanism
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Cyclades - Ganeti reconciliation
+````````````````````````````````
+
+On certain occasions, such as a Ganeti or RabbitMQ failure, the state of
+Cyclades database may differ from the real state of VMs and networks in the
+Ganeti backends. The reconciliation process is designed to synchronize the
+state of the Cyclades DB with Ganeti. There are two management commands for
+reconciling VMs and Networks that will detect stale, orphans and out-of-sync
+VMs and networks. To fix detected inconsistencies, use the `--fix-all`.
+
+.. code-block:: console
+
+  $ snf-manage reconcile-servers
+  $ snf-manage reconcile-servers --fix-all
+
+  $ snf-manage reconcile-networks
+  $ snf-manage reconcile-networks --fix-all
+
+Please see ``snf-manage reconcile-servers --help`` and ``snf-manage
+reconcile--networks --help`` for all the details.
+
+
+Cyclades - Astakos reconciliation
+`````````````````````````````````
+
+As already mentioned, Cyclades communicates with Astakos for resource
+accounting and quota enforcement. In rare cases, e.g. unexpected
+failures, the two services may get unsynchronized. For this reason there
+are the `reconcile-commissions-cyclades` and `reconcile-resources-cyclades`
+command that will synchronize the state of the two services. The first
+command will detect any pending commissions, while the second command will
+detect that the usage that is reported by Astakos is correct.
+To fix detected inconsistencies, use the `--fix` option.
+
+.. code-block:: console
+
+  $ snf-manage reconcile-commissions-cyclades
+  $ snf-manage reconcile-commissions-cyclades --fix
+
+  $ snf-manage reconcile-resources-cyclades
+  $ snf-manage reconcile-resources-cyclades --fix
+
+
+Cyclades resources reconciliation
+`````````````````````````````````
+
+Reconciliation of pools will check the consistency of available pools by
+checking that the values from each pool are not used more than once, and also
+that the only reserved values in a pool are the ones used. Pool reconciliation
+will check pools of bridges, MAC prefixes, and IPv4 addresses for all networks.
+To fix detected inconsistencies, use the `--fix` option.
+
+
+.. code-block:: console
+
+  $ snf-manage reconcile-pools
+  $ snf-manage reconcile-pools --fix
 
 .. _admin-guide-stats:
 
@@ -1154,73 +1230,6 @@ Make sure that you change this settings to match your ``STATS_BASE_URL``
 Cyclades will pass these URLs to the Cyclades UI and the user's browser will
 fetch them when needed.
 
-Reconciliation mechanism
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-On certain occasions, such as a Ganeti or RabbitMQ failure, the state of
-Cyclades database may differ from the real state of VMs and networks in the
-Ganeti backends. The reconciliation process is designed to synchronize
-the state of the Cyclades DB with Ganeti. There are two management commands
-for reconciling VMs and Networks
-
-Reconciling Virtual Machines
-````````````````````````````
-
-Reconciliation of VMs detects the following conditions:
-
- * Stale DB servers without corresponding Ganeti instances
- * Orphan Ganeti instances, without corresponding DB entries
- * Out-of-sync state for DB entries wrt to Ganeti instances
-
-To detect all inconsistencies you can just run:
-
-.. code-block:: console
-
-  $ snf-manage reconcile-servers
-
-Adding the `--fix-all` option, will do the actual synchronization:
-
-.. code-block:: console
-
-  $ snf-manage reconcile-servers --fix-all
-
-Please see ``snf-manage reconcile-servers --help`` for all the details.
-
-Reconciling Networks
-````````````````````
-
-Reconciliation of Networks detects the following conditions:
-
-  * Stale DB networks without corresponding Ganeti networks
-  * Orphan Ganeti networks, without corresponding DB entries
-  * Private networks that are not created to all Ganeti backends
-
-To detect all inconsistencies you can just run:
-
-.. code-block:: console
-
-  $ snf-manage reconcile-networks
-
-Adding the `--fix-all` option, will do the actual synchronization:
-
-.. code-block:: console
-
-  $ snf-manage reconcile-networks --fix-all
-
-Please see ``snf-manage reconcile-networks --help`` for all the details.
-
-Reconciling Pools
-`````````````````
-
-Reconciliation of pools will check the consistency of available pools by
-checking that the values from each pool are not used more than once, and also
-that the only reserved values in a pool are the ones used. Pool reconciliation
-will check pools of bridges, MAC prefixes, and IPv4 addresses for all networks.
-
-.. code-block:: console
-
-  $ snf-manage reconcile-pools
-  $ snf-manage reconcile-pools --fix
 
 Helpdesk
 --------

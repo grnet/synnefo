@@ -1282,6 +1282,28 @@ these messages and properly updates the state of the Cyclades DB. Subsequent
 requests to the Cyclades API, will retrieve the updated state from the DB.
 
 
+List of all Synnefo components
+==============================
+
+They are also available from our apt repository: ``apt.dev.grnet.gr``
+
+ * `snf-common <http://www.synnefo.org/docs/snf-common/latest/index.html>`_
+ * `snf-webproject <http://www.synnefo.org/docs/snf-webproject/latest/index.html>`_
+ * `snf-astakos-app <http://www.synnefo.org/docs/astakos/latest/index.html>`_
+ * `snf-pithos-backend <http://www.synnefo.org/docs/pithos/latest/backends.html>`_
+ * `snf-pithos-app <http://www.synnefo.org/docs/pithos/latest/index.html>`_
+ * `snf-pithos-webclient <http://www.synnefo.org/docs/pithos-webclient/latest/index.html>`_
+ * `snf-cyclades-app <http://www.synnefo.org/docs/snf-cyclades-app/latest/index.html>`_
+ * `snf-cyclades-gtools <http://www.synnefo.org/docs/snf-cyclades-gtools/latest/index.html>`_
+ * `astakosclient <http://www.synnefo.org/docs/astakosclient/latest/index.html>`_
+ * `snf-vncauthproxy <https://code.grnet.gr/projects/vncauthproxy>`_
+ * `snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html/>`_
+ * `snf-image-creator <http://www.synnefo.org/docs/snf-image-creator/latest/index.html>`_
+ * `snf-occi <http://www.synnefo.org/docs/snf-occi/latest/index.html>`_
+ * `snf-cloudcms <http://www.synnefo.org/docs/snf-cloudcms/latest/index.html>`_
+ * `nfdhcpd <https://code.grnet.gr/projects/nfdhcpd>`_
+
+
 Synnefo management commands ("snf-manage")
 ==========================================
 

@@ -1182,7 +1182,7 @@ def view_method():
                     try:
                         request.user = astakos.validate_token(
                             access_token, requested_resource)
-                    except AstakosClientException, e:
+                    except AstakosClientException:
                         return HttpResponseRedirect(request.path)
                     request.user_uniq = request.user["access"]["user"]["id"]
 

@@ -1,6 +1,8 @@
 ## -*- coding: utf-8 -*-
 from django.conf import settings
 
+STATS_SECRET_KEY = getattr(settings, 'STATS_SECRET_KEY', "secret key")
+
 # Image properties
 IMAGE_WIDTH = getattr(settings, 'IMAGE_WIDTH', 210)
 WIDTH = getattr(settings, 'WIDTH', 68)

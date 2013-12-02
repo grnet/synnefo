@@ -160,6 +160,83 @@ setting will have the value of
 For Pithos service we have to change the ``20-snf-pithos-app-settings.conf``
 file in the same way as above.
 
+2.4 Upgrade vncauthproxy and configure snf-cyclades-app
+-------------------------------------------------------
+
+Synnefo v0.15 adds support for snf-vncauthproxy >= 1.5 and drops support for
+older versions. You will have to upgrade snf-vncauthproxy to v1.5 and  configure
+the authentication (users) file (``/var/lib/vncauthproxy/users``).
+
+In case you're upgrading from an older snf-vncauthproxy version or it's the
+first time you're installing snf-vncauthproxy, you will prompted to configure
+a vncauthproxy user (see below for more information on user management).
+
+To manage the authentication file, you can use the vncauthproxy-passwd tool,
+to easily add, update and delete users
+
+To add a user:
+.. code-block:: console
+
+    # vncauthproxy-passwd /var/lib/vncauthproxy/users synnefo
+
+You will be prompted for a password.
+
+You should also configure the new ``CYCLADES_VNCAUTHPROXY_OPTS`` setting in
+``snf-cyclades-app``, to provide the user and password configured for
+``Synnefo`` in the vncauthproxy authentication file and enable SSL support if
+snf-vncauthproxy is configured to run with SSL enabled for the control socket.
+
+.. warning:: The vncauthproxy daemon requires a restart for the changes in the
+ authentication file to take effect.
+
+.. warning:: If you fail to provide snf-vncauthproxy with a valid
+ authentication file, or in case the configuration of vncauthproxy and the
+ vncauthproxy snf-cyclades-app settings don't match (ie not having SSL enabled
+ on both), VNC console access will not be functional.
+
+Finally, snf-vncauthproxy-1.5 adds a dedicated user and group to be used by the
+vncauthproxy daemon. The Debian default file has changed accordingly (``CHUID``
+option in ``/etc/default/vncauthproxy``). The Debian default file now also
+includes a ``DAEMON_OPTS`` variable which is used to pass any necessary / extra
+options to the vncauthproxy daemon. In case you're ugprading from an older
+version of vncauthproxy, you should make sure to 'merge' the new default file
+with the older one.
+
+Check the `documentation
+<http://www.synnefo.org/docs/snf-vncauthproxy/latest/index.html>`_ of
+snf-vncauthproxy for more information on upgrading to version 1.5.
+
+2.5 Stats configuration
+-----------------------
+
+snf-cyclades-gtools comes with a collectd plugin to collect CPU and network
+stats for Ganeti VMs and an example collectd configuration. snf-stats-app is a
+Django (snf-webproject) app that serves the VM stats graphsmm by reading the VM
+stats (from RRD files) and serves graphs.
+
+To enable / deploy VM stats collecting and snf-stats-app see the relevant
+documentation in the :ref:`admin guide <admin-guide-stats>`.
+
+If you were using collectd to collect VM stats on Debian squeeze and you are
+upgrading to Wheezy, you will need to upgrade your RRD files. Follow the
+instructions on the collectd v4-to-v5 migration `guide
+<https://collectd.org/wiki/index.php/V4_to_v5_migration_guide>`_.
+You will proabably just need to run the `migration script
+<https://collectd.org/wiki/index.php/V4_to_v5_migration_guide#Migration_script>`_
+provided.
+
+If you were using a previous version of snf-stats-app, you should also make
+sure to set the ``STATS_BASE_URL`` setting in ``20-snf-stats-app-settings.conf``
+to match your deployment and change the graph URL settings in
+``20-snf-cyclades-app-api.conf`` accordingly.
+
+v0.15 has also introduced the ``CYCLADES_STATS_SECRET_KEY`` and
+``STATS_SECRET_KEY`` settings. ``CYCLADES_STATS_SECRET_KEY`` in
+``20-snf-cyclades-app-api.conf`` is used by Cyclades to encrypt the instance id
+/ hostname  in the URLs serving the VM stats. You should set it to a random
+value / string and make sure that it's the same as the ``STATS_SECRET_KEY``
+setting (used to decrypt the instance hostname) in
+``20-snf-stats-settings.conf`` on your Stats host.
 
 3. Create floating IP pools
 ===========================

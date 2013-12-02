@@ -527,7 +527,6 @@ the administrator has complete control on them without Cyclades knowing about
 it. For example a VM migration to a different physical node is transparent
 to Cyclades.
 
-
 Working with Cyclades
 ---------------------
 
@@ -998,6 +997,162 @@ pool are not used more than once.
 
 Cyclades advanced operations
 ----------------------------
+
+.. _admin-guide-stats:
+
+VM stats collecting
+~~~~~~~~~~~~~~~~~~~
+
+snf-cyclades-gtools comes with a collectd plugin to collect CPU and network
+stats for Ganeti VMs and an example collectd configuration. snf-stats-app is a
+Django (snf-webproject) app that serves the VM stats graphs by reading the VM
+stats (from RRD files) and serves graphs.
+
+The snf-stats-app was originally written by `GRNET NOC <http://noc.grnet.gr>`_
+as a WSGI Python app and was ported to a Synnefo (snf-webproject) app.
+
+snf-stats-app configuration
+```````````````````````````
+
+The snf-stats-app node should have collectd installed. The collectd
+configuration should enable the network plugin, assuming the server role, and
+the RRD plugin / backend, to store the incoming stats. Your
+``/etc/collectd/collectd.conf`` should look like:
+
+.. code-block:: console
+
+    FQDNLookup true
+    LoadPlugin syslog
+    <Plugin syslog>
+        LogLevel info
+    </Plugin>
+
+    LoadPlugin network
+    LoadPlugin rrdtool
+    <Plugin network>
+        TimeToLive 128
+        <Listen "okeanos.io" "25826">
+            SecurityLevel "Sign"
+            AuthFile "/etc/collectd/passwd"
+        </Listen>
+
+        ReportStats false
+        MaxPacketSize 65535
+    </Plugin>
+
+
+    <Plugin rrdtool>
+        DataDir "/var/lib/collectd/rrd"
+        CacheTimeout 120
+        CacheFlush 900
+        WritesPerSecond 30
+        RandomTimeout 0
+    </Plugin>
+
+    Include "/etc/collectd/filters.conf"
+    Include "/etc/collectd/thresholds.conf"
+
+
+An example collectd config file is provided in
+``/usr/share/doc/snf-stats-app/examples/stats-colletcd.conf``.
+
+The recommended deployment is to run snf-stats-app using gunicorn with an
+Apache2 or nginx reverse proxy (using the same configuration as the other
+Synnefo services / apps). An example gunicorn config file is provided in
+``/usr/share/doc/snf-stats-app/examples/stats.gunicorn``.
+
+Make sure to edit the settings under
+``/etc/synnefo/20-snf-stats-app-settings.conf`` to match your deployment.
+More specifically, you should change the ``STATS_BASE_URL`` setting (refer
+to previous documentation on the BASE_URL settings used by the other Synnefo
+services / apps) and the ``RRD_PREFIX`` and ``GRAPH_PREFIX`` settings.
+
+You should also set the ``STATS_SECRET_KEY`` to a random string and make sure
+it's the same at the ``CYCLADES_STATS_SECRET_KEY`` on the Cyclades host (see
+below).
+
+``RRD_PREFIX`` is the directory where collectd stores the RRD files. The
+default setting matches the default RRD directory for the collectd RRDtool
+plugin. In a more complex setup, the collectd daemon could run on a separate
+host and export the RRD directory to the snf-stats-app node via e.g. NFS.
+
+``GRAPH_PREFIX`` is the directory where collectd stores the resulting
+stats graphs. You should create it manually, in case it doesn't exist.
+
+.. code-block::
+
+    # mkdir /var/cache/snf-stats-app/
+    # chown www-data:wwwdata /var/cache/snf-stats-app/
+
+The snf-stats-app will typically run as the ``www-data`` user. In that case,
+make sure that the ``www-data`` user should have read access to the
+``RRD_PREFIX`` directory and read / write access to the ``GRAPH_PREFIX``
+directory.
+
+snf-stats-app, based on the ``STATS_BASE_URL`` setting will export the
+following URL 'endpoints`:
+ * CPU stats bar: ``STATS_BASE_URL``/v1.0/cpu-bar/<encrypted VM hostname>
+ * Network stats bar: ``STATS_BASE_URL``/v1.0/net-bar/<encrypted VM hostname>
+ * CPU stats daily graph: ``STATS_BASE_URL``/v1.0/cpu-ts/<encrypted VM hostname>
+ * Network stats daily graph: ``STATS_BASE_URL``/v1.0/net-ts/<encrypted VM hostname>
+ * CPU stats weekly graph: ``STATS_BASE_URL``/v1.0/cpu-ts-w/<encrypted VM hostname>
+ * Network stats weekly graph: ``STATS_BASE_URL``/v1.0/net-ts-w/<encrypted VM hostname>
+
+You can verify that these endpoints are exported by issuing:
+
+.. code-block::
+
+    # snf-manage show_urls
+
+snf-cyclades-gtools configuration
+`````````````````````````````````
+
+To enable VM stats collecting, you will need to:
+ * Install collectd on the every Ganeti (VM-capable) node.
+ * Enable the Ganeti stats plugin in your collectd configuration. This can be
+   achived by either copying the example collectd conf file that comes with
+   snf-cyclades-gtools
+   (``/usr/share/doc/snf-cyclades-gtools/examples/ganeti-stats-collectd.conf``)
+   or by adding the following line to your existing (or default) collectd
+   conf file:
+
+       Include /etc/collectd/ganeti-stats.conf
+   
+   In the latter case, make sure to configure collectd to send the collected
+   stats to your collectd server (via the network plugin). For more details on
+   how to do this, check the collectd example config file provided by the
+   package and the collectd documentation. 
+
+snf-cyclades-app configuration
+``````````````````````````````
+
+At this point, stats collecting should be enabled and working. You can check
+that everything is ok by checking the contents of ``/var/lib/collectd/rrd/``
+directory (it will gradually get populated with directories containing RRD
+files / stats for every Synnefo instances).
+
+You should also check that gunicorn and Apache2 are configured correctly by
+accessing the graph URLs for a VM (whose stats have been populated in
+``/var/lib/collectd/rrd``).
+
+Cyclades uses the ``CYCLADES_STATS_SECRET_KEY`` setting in
+``20-snf-cyclades-app`` to encrypt the instance hostname in the stats graph
+URL. This settings should be set to a random value and match the
+``STATS_SECRET_KEY`` on the Stats host.
+
+Cyclades (snf-cyclades-app) fetches the stat graphs for VMs based on four
+settings in ``20-snf-cyclades-app-api.conf``. The settings are:
+
+ * CPU_BAR_GRAPH_URL = 'https://stats.host/stats/v1.0/cpu-bar/%s'
+ * CPU_TIMESERIES_GRAPH_URL = 'https://stats.host/stats/v1.0/cpu-ts/%s'
+ * NET_BAR_GRAPH_URL = 'https://stats.host/stats/v1.0/net-bar/%s'
+ * NET_TIMESERIES_GRAPH_URL = 'https://stats.host/stats/v1.0/net-ts/%s'
+
+Make sure that you change this settings to match your ``STATS_BASE_URL``
+(and generally the Apache2 / gunicorn deployment on your stats host).
+
+Cyclades will pass these URLs to the Cyclades UI and the user's browser will
+fetch them when needed.
 
 Reconciliation mechanism
 ~~~~~~~~~~~~~~~~~~~~~~~~

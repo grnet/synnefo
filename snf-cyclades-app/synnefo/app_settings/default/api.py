@@ -92,9 +92,11 @@ CYCLADES_STATS_SECRET_KEY = "secret_key"
 # URL templates for the stat graphs.
 # The API implementation replaces '%s' with the encrypted backend id.
 CPU_BAR_GRAPH_URL = 'http://stats.example.synnefo.org/stats/v1.0/cpu-bar/%s'
-CPU_TIMESERIES_GRAPH_URL = 'http://stats.example.synnefo.org/stats/v1.0/cpu-ts/%s'
+CPU_TIMESERIES_GRAPH_URL = \
+    'http://stats.example.synnefo.org/stats/v1.0/cpu-ts/%s'
 NET_BAR_GRAPH_URL = 'http://stats.example.synnefo.org/stats/v1.0/net-bar/%s'
-NET_TIMESERIES_GRAPH_URL = 'http://stats.example.synnefo.org/stats/v1.0/net-ts/%s'
+NET_TIMESERIES_GRAPH_URL = \
+    'http://stats.example.synnefo.org/stats/v1.0/net-ts/%s'
 
 # Recommended refresh period for server stats
 STATS_REFRESH_PERIOD = 60

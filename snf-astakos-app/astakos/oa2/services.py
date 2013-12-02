@@ -32,11 +32,13 @@
 # or implied, of GRNET S.A.
 
 
+from astakos.oa2 import settings
+
 oa2_services = {
-    'astakos_oa2': {
+    'astakos_oauth2': {
         'type': 'astakos_auth',
         'component': 'astakos',
-        'prefix': 'oa2',
+        'prefix': settings.ENDPOINT_PREFIX,
         'public': True,
         'endpoints': [
             {'versionId': '',

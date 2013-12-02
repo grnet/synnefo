@@ -2,11 +2,11 @@ from django.conf import settings
 
 
 def get_setting(key, default):
-    return getattr(settings, 'OA2_%s' % key, default)
+    return getattr(settings, 'OAUTH2_%s' % key, default)
 
 USER_MODEL = get_setting('USER_MODEL', 'auth.User')
 
-ENDPOINT_PREFIX = get_setting('ENDPOINT_PREFIX', 'oa2/')
+ENDPOINT_PREFIX = get_setting('ENDPOINT_PREFIX', 'oauth2/')
 
 TOKEN_ENDPOINT = get_setting('TOKEN_ENDPOINT', 'token/')
 

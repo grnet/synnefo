@@ -145,16 +145,17 @@ class AstakosClient(object):
         self._ui_prefix = parsed_ui_url.path
         self.logger.debug("Got ui_prefix \"%s\"" % self._ui_prefix)
 
-        oa2_service_catalog = parse_endpoints(endpoints, ep_name="astakos_oa2")
-        self._oa2_url = \
-            oa2_service_catalog[0]['endpoints'][0]['publicURL']
-        parsed_oa2_url = urlparse.urlparse(self._oa2_url)
-        self._oa2_prefix = parsed_oa2_url.path
+        oauth2_service_catalog = parse_endpoints(endpoints,
+                                                 ep_name="astakos_oauth2")
+        self._oauth2_url = \
+            oauth2_service_catalog[0]['endpoints'][0]['publicURL']
+        parsed_oauth2_url = urlparse.urlparse(self._oauth2_url)
+        self._oauth2_prefix = parsed_oauth2_url.path
 
     def _get_value(self, s):
         assert s in ['_account_url', '_account_prefix',
                      '_ui_url', '_ui_prefix',
-                     '_oa2_url', '_oa2_prefix']
+                     '_oauth2_url', '_oauth2_prefix']
         try:
             return getattr(self, s)
         except AttributeError:
@@ -178,12 +179,12 @@ class AstakosClient(object):
         return self._get_value('_ui_prefix')
 
     @property
-    def oa2_url(self):
-        return self._get_value('_oa2_url')
+    def oauth2_url(self):
+        return self._get_value('_oauth2_url')
 
     @property
-    def oa2_prefix(self):
-        return self._get_value('_oa2_prefix')
+    def oauth2_prefix(self):
+        return self._get_value('_oauth2_prefix')
 
     @property
     def api_usercatalogs(self):
@@ -234,12 +235,12 @@ class AstakosClient(object):
         return join_urls(self.ui_prefix, "get_services")
 
     @property
-    def api_oa2_auth(self):
-        return join_urls(self.oa2_prefix, "auth")
+    def api_oauth2_auth(self):
+        return join_urls(self.oauth2_prefix, "auth")
 
     @property
-    def api_oa2_token(self):
-        return join_urls(self.oa2_prefix, "token")
+    def api_oauth2_token(self):
+        return join_urls(self.oauth2_prefix, "token")
 
     # ----------------------------------
     @retry_dec
@@ -925,7 +926,7 @@ class AstakosClient(object):
                                   body=req_body, method="POST")
 
     # --------------------------------
-    # do a POST to ``API_OA2_TOKEN``
+    # do a POST to ``API_OAUTH2_TOKEN``
     def get_token(self, grant_type, client_id, client_secret, **body_params):
         headers = {'content-type': 'application/x-www-form-urlencoded',
                    'Authorization': 'Basic %s' % b64encode('%s:%s' %
@@ -933,7 +934,7 @@ class AstakosClient(object):
                                                             client_secret))}
         body_params['grant_type'] = grant_type
         body = urllib.urlencode(body_params)
-        return self._call_astakos(self.api_oa2_token, headers=headers,
+        return self._call_astakos(self.api_oauth2_token, headers=headers,
                                   body=body, method="POST")
 
 

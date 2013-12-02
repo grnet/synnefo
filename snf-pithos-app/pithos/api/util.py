@@ -67,7 +67,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
                                  BASE_HOST, UPDATE_MD5, VIEW_PREFIX,
-                                 OA2_CLIENT_CREDENTIALS, SERVE_API_DOMAIN)
+                                 OAUTH2_CLIENT_CREDENTIALS, SERVE_API_DOMAIN)
 
 from pithos.api.resources import resources
 from pithos.backends import connect_backend
@@ -1195,7 +1195,7 @@ def view_method():
                         raise PermissionDenied
                     return response
 
-                client_id, client_secret = OA2_CLIENT_CREDENTIALS
+                client_id, client_secret = OAUTH2_CLIENT_CREDENTIALS
                 # TODO: check if client credentials are not set
                 authorization_code = request.GET.get('code')
                 if authorization_code is None:
@@ -1207,7 +1207,7 @@ def view_method():
                               'state': '',  # TODO include state for security
                               'scope': request.path.split(VIEW_PREFIX, 2)[-1]}
                     return HttpResponseRedirect('%s?%s' %
-                                                (join_urls(astakos.oa2_url,
+                                                (join_urls(astakos.oauth2_url,
                                                            'auth'),
                                                  urlencode(params)))
                 else:
@@ -1223,7 +1223,7 @@ def view_method():
 
                     redirect_uri = '%s%s' % (redirect_host, request.path)
                     data = astakos.get_token('authorization_code',
-                                             *OA2_CLIENT_CREDENTIALS,
+                                             *OAUTH2_CLIENT_CREDENTIALS,
                                              redirect_uri=redirect_uri,
                                              scope=requested_resource,
                                              code=authorization_code)

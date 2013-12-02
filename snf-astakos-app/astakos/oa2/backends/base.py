@@ -197,7 +197,7 @@ class SimpleBackend(object):
     __metaclass__ = BackendBase
 
     base_url = ''
-    endpoints_prefix = 'oa2/'
+    endpoints_prefix = 'oauth2/'
 
     token_endpoint = 'token/'
     token_length = 30
@@ -217,7 +217,7 @@ class SimpleBackend(object):
     code_model = AuthorizationCode
     user_model = User
 
-    def __init__(self, base_url='', endpoints_prefix='oa2/', id='oa2',
+    def __init__(self, base_url='', endpoints_prefix='oauth2/', id='oauth2',
                  token_endpoint='token/', token_length=30,
                  token_expires=20, authorization_endpoint='auth/',
                  authorization_code_length=60, **kwargs):

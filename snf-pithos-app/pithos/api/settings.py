@@ -184,13 +184,11 @@ BACKEND_BLOCK_SIZE = getattr(
 BACKEND_HASH_ALGORITHM = getattr(
     settings, 'PITHOS_BACKEND_HASH_ALGORITHM', 'sha256')
 
-# Set the credentials (client_id, client_secret) issued to authenticate
+# Set the credentials (client_id, client_secret) issued for authenticating
 # the views with astakos during the resource access token generation procedure
-OA2_CLIENT_CREDENTIALS = getattr(settings, 'PITHOS_OA2_CLIENT_CREDENTIALS',
-                                 (None, None))
-
-# Set to False to disable serving object content serving endpoints
-SERVE_API = getattr(settings, 'PITHOS_SERVE_API', True)
+OAUTH2_CLIENT_CREDENTIALS = getattr(settings,
+                                    'PITHOS_OAUTH2_CLIENT_CREDENTIALS',
+                                    (None, None))
 
 # Set domain to restrict requests of pithos object contents serve endpoint or
 # None for no domain restriction

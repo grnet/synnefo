@@ -206,7 +206,8 @@ class ListCommand(SynnefoCommand):
 
         # --filter-by option
         if options["filter_by"]:
-            filters, excludes = utils.parse_filters(options["filter_by"])
+            filters, excludes = \
+                utils.parse_queryset_filters(options["filter_by"])
         else:
             filters, excludes = ({}, {})
 

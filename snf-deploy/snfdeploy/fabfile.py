@@ -1312,13 +1312,16 @@ def add_network():
 @roles("cyclades")
 def setup_vncauthproxy():
     debug(env.host, " * Setting up vncauthproxy...")
-    install_package("snf-vncauthproxy")
+    user = "synnefo"
+    salt = "$6$7FUdSvFcWAs3hfVj$"
+    passhash = "ZwvnvpQclTrDYWEwBvZDMRJZNgb6ZUKT1vNsh9NzUIxMpzBuGgMqYxCDTYF"\
+               "6OZcbunDZb88pjL2EIBnzrGMQW1"
     cmd = """
-    echo CHUID="www-data:nogroup" >> /etc/default/vncauthproxy
-    rm /var/log/vncauthproxy/vncauthproxy.log
-    """
+    mkdir /var/lib/vncauthproxy
+    echo '%s:%s%s' > /var/lib/vncauthproxy/users
+    """ % (user, salt, passhash)
     try_run(cmd)
-    try_run("/etc/init.d/vncauthproxy restart")
+    install_package("snf-vncauthproxy")
 
 
 @roles("client")

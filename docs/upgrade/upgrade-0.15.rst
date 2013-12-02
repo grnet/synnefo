@@ -164,17 +164,19 @@ file in the same way as above.
 -------------------------------------------------------
 
 Synnefo v0.15 adds support for snf-vncauthproxy >= 1.5 and drops support for
-older versions. You will have to upgrade snf-vncauthproxy to v1.5 and  configure
-the authentication (users) file (``/var/lib/vncauthproxy/users``).
+older versions. You will have to upgrade snf-vncauthproxy to v1.5 and
+configure the authentication (users) file (``/var/lib/vncauthproxy/users``).
 
-In case you're upgrading from an older snf-vncauthproxy version or it's the
-first time you're installing snf-vncauthproxy, you will prompted to configure
-a vncauthproxy user (see below for more information on user management).
+In case you're upgrading from an older snf-vncauthproxy version or if it's the
+first time you're installing snf-vncauthproxy, you will need to add a
+vncauthproxy user (see below for more information on user management) and
+restart vncauthproxy daemon.
 
 To manage the authentication file, you can use the vncauthproxy-passwd tool,
-to easily add, update and delete users
+to easily add, update and delete users.
 
 To add a user:
+
 .. code-block:: console
 
     # vncauthproxy-passwd /var/lib/vncauthproxy/users synnefo

@@ -137,6 +137,7 @@ Drafts
 
    Resource-pool projects design <design/resource-pool-projects>
    Resource defaults design <design/resource-defaults>
+   Pithos view authentication <design/pithos-view-authentication.rst>
 
 
 Contact

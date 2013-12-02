@@ -62,6 +62,7 @@ def setup_env(args):
         "ns": [env.env.ns.ip],
         "client": [env.env.client.ip],
         "router": [env.env.router.ip],
+        "stats": [env.env.stats.ip],
     }
 
     env.enable_lvm = False
@@ -1129,6 +1130,70 @@ def cyclades_loaddata():
     #run("snf-manage loaddata flavors")
 
 
+@roles("ganeti", "stats")
+def setup_collectd():
+    install_package("collectd")
+    tmpl = "/etc/collectd/collectd.conf"
+    replace = {}
+    custom = customize_settings_from_tmpl(tmpl, replace)
+    try_put(custom, tmpl, mode=0644)
+
+
+@roles("ganeti")
+def setup_ganeti_collectd():
+    setup_collectd()
+
+    tmpl = "/etc/collectd/passwd"
+    replace = {}
+    custom = customize_settings_from_tmpl(tmpl, replace)
+    try_put(custom, tmpl, mode=0644)
+
+    tmpl = "/etc/collectd/synnefo-ganeti.conf"
+    replace = {
+        "STATS": env.env.stats.fqdn,
+        }
+    custom = customize_settings_from_tmpl(tmpl, replace)
+    try_put(custom, tmpl, mode=0644)
+
+    try_run("/etc/init.d/collectd restart")
+
+
+@roles("stats")
+def setup_stats_collectd():
+    setup_collectd()
+    tmpl = "/etc/collectd/synnefo-stats.conf"
+
+    replace = {
+        "STATS": env.env.stats.fqdn,
+        }
+    custom = customize_settings_from_tmpl(tmpl, replace)
+    try_put(custom, tmpl, mode=0644)
+    try_run("/etc/init.d/collectd restart")
+
+
+@roles("stats")
+def setup_stats():
+    debug(env.host, "Setting up snf-stats-app...")
+    setup_stats_collectd()
+    setup_gunicorn()
+    setup_apache()
+    setup_webproject()
+    install_package("snf-stats-app")
+    cmd = """
+    mkdir /var/cache/snf-stats-app/
+    chown www-data:www-data /var/cache/snf-stats-app/
+    """
+    try_run(cmd)
+    tmpl = "/etc/synnefo/stats.conf"
+
+    replace = {
+        "STATS": env.env.stats.fqdn,
+        }
+    custom = customize_settings_from_tmpl(tmpl, replace)
+    try_put(custom, tmpl, mode=0644)
+    try_run("/etc/init.d/gunicorn restart")
+
+
 @roles("cyclades")
 def setup_cyclades():
     debug(env.host, "Setting up snf-cyclades-app...")
@@ -1163,6 +1228,7 @@ def setup_cyclades():
         "HOST": env.env.cyclades.ip,
         "domain": env.env.domain,
         "CYCLADES_SERVICE_TOKEN": service_token,
+        'STATS': env.env.stats.fqdn,
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
     try_put(custom, tmpl, mode=0644)

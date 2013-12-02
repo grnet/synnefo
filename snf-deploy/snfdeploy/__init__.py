@@ -80,10 +80,12 @@ Usage: snf-deploy run <action> [<action>...]
       setup_apt              add_rapi_user                 add_backend
       setup_astakos          add_nodes                     add_image_locally
       setup_cms              astakos_loaddata              add_network
+      setup_collectd
       setup_common           astakos_register_components   add_ns
       setup_cyclades         cms_loaddata                  add_user
       setup_db               cyclades_loaddata             connect_bridges
       setup_ganeti           enable_drbd                   create_bridges
+      setup_ganeti_collectd
       setup_gtools           init_cluster                  create_vlans
       setup_gunicorn         setup_nfs_clients             destroy_db
       setup_hosts            setup_nfs_server              \
@@ -100,6 +102,8 @@ get_auth_token_from_db
       setup_pithos
       setup_pithos_dir
       setup_router
+      setup_stats
+      setup_stats_collectd
       setup_vncauthproxy
       setup_webproject
 
@@ -445,7 +449,8 @@ def get_actions(*args):
             "setup_cyclades", "cyclades_loaddata", "add_pools",
             "export_services", "import_services", "set_user_quota",
             "setup_kamaki", "upload_image", "register_image",
-            "setup_burnin"
+            "setup_burnin",
+            "setup_stats"
         ],
         "supdate": [
             "apt_get_update", "setup_astakos",
@@ -480,6 +485,7 @@ def get_actions(*args):
             "setup_image_host", "setup_image_helper", "add_image_locally",
             "debootstrap", "setup_net_infra",
             "setup_lvm", "enable_lvm", "enable_drbd", "setup_drbd_dparams",
+            "setup_ganeti_collectd"
         ],
         "gupdate": ["setup_apt", "setup_ganeti"],
         "gdestroy": ["destroy_cluster"],

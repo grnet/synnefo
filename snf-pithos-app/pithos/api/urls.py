@@ -43,8 +43,7 @@ from pithos.api.settings import (
     BASE_PATH, PITHOS_PREFIX, PUBLIC_PREFIX, VIEW_PREFIX,
     ASTAKOS_AUTH_PROXY_PATH, ASTAKOS_AUTH_URL,
     ASTAKOS_ACCOUNT_PROXY_PATH, ASTAKOS_ACCOUNT_URL,
-    ASTAKOS_UI_PROXY_PATH, ASTAKOS_UI_URL, SERVE_API,
-    pithos_services)
+    ASTAKOS_UI_PROXY_PATH, ASTAKOS_UI_URL, pithos_services)
 
 
 urlpatterns = []
@@ -69,16 +68,15 @@ pithos_view_patterns = patterns(
      'object_read'))
 
 pithos_patterns = []
-if SERVE_API:
-    pithos_patterns += patterns(
-        '',
-        (r'{0}v1/'.format(prefix_pattern(PITHOS_PREFIX)),
-            include(pithos_api_patterns)),
-        (r'{0}.*'.format(prefix_pattern(PITHOS_PREFIX)),
-            api_endpoint_not_found),
-        (r'{0}(?P<v_public>.+?)/?$'.format(prefix_pattern(PUBLIC_PREFIX)),
-            'pithos.api.public.public_demux'),
-    )
+pithos_patterns += patterns(
+    '',
+    (r'{0}v1/'.format(prefix_pattern(PITHOS_PREFIX)),
+        include(pithos_api_patterns)),
+    (r'{0}.*'.format(prefix_pattern(PITHOS_PREFIX)),
+        api_endpoint_not_found),
+    (r'{0}(?P<v_public>.+?)/?$'.format(prefix_pattern(PUBLIC_PREFIX)),
+        'pithos.api.public.public_demux'),
+)
 
 pithos_patterns += patterns(
     '',

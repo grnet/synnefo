@@ -60,8 +60,6 @@ PUBLIC_PREFIX = get_path(pithos_services, 'pithos_public.prefix')
 UI_PREFIX = get_path(pithos_services, 'pithos_ui.prefix')
 VIEW_PREFIX = join_urls(UI_PREFIX, 'view')
 
-COOKIE_NAME = getattr(settings, 'PITHOS_ASTAKOS_COOKIE_NAME', '_pithos2_a')
-
 
 # --------------------------------------------------------------------
 # Process Astakos settings

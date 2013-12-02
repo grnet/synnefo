@@ -8,7 +8,7 @@ synnefo version 0.15, the pithos view will be deployed in a domain outside the
 astakos cookie domain. The current document describes how the pithos view can
 grant access to the protected pithos resources.
 
-The proposed scheme follows the guidelines of the Oauth 2.0 authentication
+The proposed scheme follows the guidelines of the OAuth 2.0 authentication
 framework as described in http://tools.ietf.org/html/rfc6749/.
 
 Briefly the pithos view requests a short-term access token for a specific
@@ -31,11 +31,11 @@ to be asked.
 
 We can register an oauth 2.0 client with the following command::
 
-    snf-manage oa2-client-add <client_id> --secret=<secret> --is-trusted --url <redirect_uri>
+    snf-manage oauth2-client-add <client_id> --secret=<secret> --is-trusted --url <redirect_uri>
 
 For example::
 
-    snf-manage oa2-client-add pithos-view --secret=12345 --is-trusted --url https://pithos.synnefo.live/pithos/ui/view
+    snf-manage oauth2-client-add pithos-view --secret=12345 --is-trusted --url https://pithos.synnefo.live/pithos/ui/view
 
 
 Configure view credentials in pithos
@@ -43,13 +43,13 @@ Configure view credentials in pithos
 
 To set the credentials issued to pithos view in order to authenticate itself
 with astakos during the resource access token generation procedure we have to
-change the ``PITHOS_OA2_CLIENT_CREDENTIALS`` setting.
+change the ``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting.
 
 The value should be a (<client_id>, <client_secret>) tuple.
 
 For example::
 
-    PITHOS_OA2_CLIENT_CREDENTIALS = ('pithos-view', 12345)
+    PITHOS_OAUTH2_CLIENT_CREDENTIALS = ('pithos-view', 12345)
 
 Authorization Code Grant Flow
 =============================
@@ -99,7 +99,7 @@ the following parameters to the query component using the
 For example, the client directs the user-agent to make the following HTTP
 request using TLS (with extra line breaks for display purposes only)::
 
-    GET /astakos/oa2/auth?response_type=code&client_id=pithos-view
+    GET /astakos/oauth2/auth?response_type=code&client_id=pithos-view
         &redirect_uri=https%3A//pithos.synnefo.live/pithos/ui/view/b0ee4760-9451-4b9a-85f0-605c48bebbdd/pithos/image.png
         &scope=/b0ee4760-9451-4b9a-85f0-605c48bebbdd/pithos/image.png HTTP/1.1
         Host: accounts.synnefo.live
@@ -124,13 +124,14 @@ request entity-body:
         the "redirect_uri" parameter was included in the authorization request
 
 Since the pithos view is registered as a confidential client it MUST
-authenticate with astakos by providing an Authorization header including the encoded client credentials as described
+authenticate with astakos by providing an Authorization header including the
+encoded client credentials as described in
 http://tools.ietf.org/html/rfc2617#page-11.
 
 For example, the view makes the following HTTP request using TLS (with extra
 line breaks for display purposes only)::
 
-     POST /astakos/oa2/token HTTP/1.1
+     POST /astakos/oauth2/token HTTP/1.1
      Host: accounts.synnefo.live
      Authorization: Basic cGl0aG9zLXZpZXc6MTIzNDU=
      Content-Type: application/x-www-form-urlencoded
@@ -186,7 +187,7 @@ Authorization code and access token invalidation
 Authorization codes can be used only once (they are deleted after a
 successful token creation)
 
-Token expiration can be set by changing the ``OA2_TOKEN_EXPIRES`` setting.
+Token expiration can be set by changing the ``OAUTH2_TOKEN_EXPIRES`` setting.
 By default it is set to 20 seconds.
 
 Tokens granted to a user are deleted after user logout or authentication token
@@ -197,10 +198,11 @@ Expired tokens presented to the validation endpoint are also deleted.
 Authorization code and access token length
 ==========================================
 
-Authorization code length is adjustable by the ``OA2_AUTHORIZATION_CODE_LENGTH``
-setting. By default it is set to 60 characters.
+Authorization code length is adjustable by the
+``OAUTH2_AUTHORIZATION_CODE_LENGTH`` setting. By default it is set to
+60 characters.
 
-Token length is adjustable by the ``OA2_TOKEN_LENGTH`` setting.
+Token length is adjustable by the ``OAUTH2_TOKEN_LENGTH`` setting.
 By default it is set to 30 characters.
 
 Restrict file serving endpoints to a specific host

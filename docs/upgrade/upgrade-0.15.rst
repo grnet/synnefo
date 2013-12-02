@@ -143,7 +143,25 @@ The upgrade to v0.15 consists in the following steps:
 
     pithos-host$ pithos-migrate upgrade head
 
-2.3 Update configuration files
+.. _pithos_view_registration:
+
+2.3 Register pithos view as an oauth 2.0 client in astakos
+----------------------------------------------------------
+
+Starting from synnefo version 0.15, the pithos view, in order to get access to
+the data of a protect pithos resource, has to be granted authorization for the
+specific resource by astakos.
+
+During the authorization grant procedure, it has to authenticate itself with
+astakos since the later has to prevent serving requests by unknown/unauthorized
+clients.
+
+To register the pithos view as an OAuth 2.0 client in astakos, use the
+following command::
+
+    snf-manage oauth2-client-add pithos-view --secret=<secret> --is-trusted --url https://pithos.synnefo.live/pithos/ui/view
+
+2.4 Update configuration files
 ------------------------------
 
 The ``ASTAKOS_BASE_URL`` setting has been replaced (both in Cyclades and
@@ -239,6 +257,12 @@ v0.15 has also introduced the ``CYCLADES_STATS_SECRET_KEY`` and
 value / string and make sure that it's the same as the ``STATS_SECRET_KEY``
 setting (used to decrypt the instance hostname) in
 ``20-snf-stats-settings.conf`` on your Stats host.
+
+In addition to this, we have to change the ``PITHOS_OAUTH2_CLIENT_CREDENTIALS``
+setting in the ``20-snf-pithos-app-settings.conf`` file to set the credentials
+issued for the pithos view in `the previous step`__.
+
+__ pithos_view_registration_
 
 3. Create floating IP pools
 ===========================

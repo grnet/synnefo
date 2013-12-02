@@ -1504,6 +1504,9 @@ group-list                    List available groups
 user-list                     List users
 user-modify                   Modify user
 user-show                     Show user details
+oauth2-client-add             Create an oauth2 client
+oauth2-client-list            List oauth2 clients
+oauth2-client-remove          Remove an oauth2 client along with its registered redirect urls
 ============================  ===========================
 
 Pithos snf-manage commands

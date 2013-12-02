@@ -43,7 +43,7 @@ from astakos.oa2.models import Client, RedirectUrl
 
 class Command(SynnefoCommand):
     args = "<identfier>"
-    help = "Create a oauth2 client"
+    help = "Create an oauth2 client"
 
     option_list = SynnefoCommand.option_list + (
         make_option('--secret',

@@ -20,6 +20,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.15 (December 02, 2013)   Extent token api with validate token call
 0.15 (October 29, 2013)    Remove GET /authenticate in favor of POST /tokens
 0.14 (June 03, 2013)       Remove endpoint listing
 0.14 (May 28, 2013)        Extend token api with authenticate call
@@ -427,4 +428,52 @@ Return Code                 Description
 400 (Bad Request)           Method not allowed or invalid request format or missing expected input or not consistent tenantName
 401 (Unauthorized)          Invalid token or invalid creadentials or tenantName does not comply with the provided token
 500 (Internal Server Error) The request cannot be completed because of an internal error
+=========================== =====================
+
+Validate token
+^^^^^^^^^^^^^^
+
+This calls validates an access token and confirms that it belongs to a
+specified scope.
+
+========================================= =========  ==================
+Uri                                       Method     Description
+========================================= =========  ==================
+``/identity/v2.0/tokens/<token_id>``      GET        Validates an access token and confirms that it belongs to a specified scope.
+========================================= =========  ==================
+
+|
+
+======================  =========================
+Request Parameter Name  Value
+======================  =========================
+belongsTo               Validates that a access token has the specified scope.
+                        The belongsTo parameter is optional.
+======================  =========================
+
+
+Example response
+
+::
+
+    {"access": {
+        "token": {
+            "expires": "2013-12-02T15:57:34.300266+00:00",
+            "id": "2YotnFZFEjr1zCsicMWpAA",
+            "tenant": {
+                "id": "c18088be-16b1-4263-8180-043c54e22903",
+                "name": "Firstname Lastname"
+            }
+        },
+         "user": {
+             "roles_links": [],
+             "id": "c18088be-16b1-4263-8180-043c54e22903",
+             "roles": [{"id": 1, "name": "default"}],
+             "name": "Firstname Lastname"}}}
+|
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+404                         Unknown or expired access token or the access token does not belong to the specified scope
 =========================== =====================

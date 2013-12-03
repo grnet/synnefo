@@ -75,27 +75,27 @@ class NotAllowedView(PithosAPITest):
         r = self.delete(self.view_url)
         self.assertEqual(r.status_code, 405)
         self.assertTrue('Allow' in r)
-        self.assertEqual(r['Allow'],  'GET')
+        self.assertEqual(sorted(r['Allow'].split(', ')),  ['GET', 'HEAD'])
 
         r = self.post(self.view_url)
         self.assertEqual(r.status_code, 405)
         self.assertTrue('Allow' in r)
-        self.assertEqual(r['Allow'],  'GET')
+        self.assertEqual(sorted(r['Allow'].split(', ')),  ['GET', 'HEAD'])
 
         r = self.put(self.view_url)
         self.assertEqual(r.status_code, 405)
         self.assertTrue('Allow' in r)
-        self.assertEqual(r['Allow'],  'GET')
+        self.assertEqual(sorted(r['Allow'].split(', ')),  ['GET', 'HEAD'])
 
         r = self.copy(self.view_url)
         self.assertEqual(r.status_code, 405)
         self.assertTrue('Allow' in r)
-        self.assertEqual(r['Allow'],  'GET')
+        self.assertEqual(sorted(r['Allow'].split(', ')),  ['GET', 'HEAD'])
 
         r = self.move(self.view_url)
         self.assertEqual(r.status_code, 405)
         self.assertTrue('Allow' in r)
-        self.assertEqual(r['Allow'],  'GET')
+        self.assertEqual(sorted(r['Allow'].split(', ')),  ['GET', 'HEAD'])
 
 
 class ObjectGetView(PithosAPITest):

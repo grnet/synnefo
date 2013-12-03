@@ -39,6 +39,7 @@ import logging
 import urlparse
 import urllib
 import hashlib
+from base64 import b64encode
 from copy import copy
 
 import simplejson
@@ -144,9 +145,17 @@ class AstakosClient(object):
         self._ui_prefix = parsed_ui_url.path
         self.logger.debug("Got ui_prefix \"%s\"" % self._ui_prefix)
 
+        oauth2_service_catalog = parse_endpoints(endpoints,
+                                                 ep_name="astakos_oauth2")
+        self._oauth2_url = \
+            oauth2_service_catalog[0]['endpoints'][0]['publicURL']
+        parsed_oauth2_url = urlparse.urlparse(self._oauth2_url)
+        self._oauth2_prefix = parsed_oauth2_url.path
+
     def _get_value(self, s):
         assert s in ['_account_url', '_account_prefix',
-                     '_ui_url', '_ui_prefix']
+                     '_ui_url', '_ui_prefix',
+                     '_oauth2_url', '_oauth2_prefix']
         try:
             return getattr(self, s)
         except AttributeError:
@@ -168,6 +177,14 @@ class AstakosClient(object):
     @property
     def ui_prefix(self):
         return self._get_value('_ui_prefix')
+
+    @property
+    def oauth2_url(self):
+        return self._get_value('_oauth2_url')
+
+    @property
+    def oauth2_prefix(self):
+        return self._get_value('_oauth2_prefix')
 
     @property
     def api_usercatalogs(self):
@@ -216,6 +233,14 @@ class AstakosClient(object):
     @property
     def api_getservices(self):
         return join_urls(self.ui_prefix, "get_services")
+
+    @property
+    def api_oauth2_auth(self):
+        return join_urls(self.oauth2_prefix, "auth")
+
+    @property
+    def api_oauth2_token(self):
+        return join_urls(self.oauth2_prefix, "token")
 
     # ----------------------------------
     @retry_dec
@@ -472,6 +497,29 @@ class AstakosClient(object):
                                log_body=False)
         self._fill_endpoints(r)
         return r
+
+    # --------------------------------------
+    # do a GET to ``API_TOKENS`` with a token
+    def validate_token(self, token_id, belongsTo=None):
+        """ Validate a temporary access token (oath2)
+
+        Keyword arguments:
+        belongsTo         -- confirm that token belongs to tenant
+
+        It returns back the token as well as information about the token
+        holder.
+
+        The belongsTo is optional and if it is given it must be inside the
+        token's scope.
+
+        In case of error raise an AstakosClientException.
+
+        """
+        path = join_urls(self.api_tokens, str(token_id))
+        if belongsTo is not None:
+            params = {'belongsTo': belongsTo}
+            path = '%s?%s' % (path, urllib.urlencode(params))
+        return self._call_astakos(path, method="GET", log_body=False)
 
     # ----------------------------------
     # do a GET to ``API_QUOTAS``
@@ -876,6 +924,18 @@ class AstakosClient(object):
         req_body = parse_request(body, self.logger)
         return self._call_astakos(self.api_memberships, headers=req_headers,
                                   body=req_body, method="POST")
+
+    # --------------------------------
+    # do a POST to ``API_OAUTH2_TOKEN``
+    def get_token(self, grant_type, client_id, client_secret, **body_params):
+        headers = {'content-type': 'application/x-www-form-urlencoded',
+                   'Authorization': 'Basic %s' % b64encode('%s:%s' %
+                                                           (client_id,
+                                                            client_secret))}
+        body_params['grant_type'] = grant_type
+        body = urllib.urlencode(body_params)
+        return self._call_astakos(self.api_oauth2_token, headers=headers,
+                                  body=body, method="POST")
 
 
 # --------------------------------------------------------------------

@@ -33,6 +33,8 @@
 
 from astakos.im.tests.common import *
 from astakos.im.settings import astakos_services, BASE_HOST
+from astakos.oa2.backends import DjangoBackend
+
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 
@@ -43,6 +45,7 @@ from datetime import date
 #from xml.dom import minidom
 
 import json
+import time
 
 ROOT = "/%s/%s/%s/" % (
     astakos_settings.BASE_PATH, astakos_settings.ACCOUNTS_PREFIX, 'v1.0')
@@ -446,6 +449,14 @@ class TokensApiTest(TestCase):
         e3.data.create(key='versionId', value='v2.0')
         e3.data.create(key='publicURL', value='http://localhost:8000/s3/v2.0')
 
+        oa2_backend = DjangoBackend()
+        self.token = oa2_backend.token_model.create(
+            code='12345',
+            expires_at=datetime.now() + timedelta(seconds=5),
+            user=self.user1,
+            client=oa2_backend.client_model.create(type='public'),
+            redirect_uri='https://server.com/handle_code')
+
     def test_authenticate(self):
         client = Client()
         url = reverse('astakos.api.tokens.authenticate')
@@ -570,11 +581,34 @@ class TokensApiTest(TestCase):
         r = client.post(url, post_data, content_type='application/json')
         self.assertEqual(r.status_code, 200)
 
-        # Check successful json response
+        # Check successful json response: user credential auth
         post_data = """{"auth":{"passwordCredentials":{"username":"%s",
                                                        "password":"%s"},
                                 "tenantName":"%s"}}""" % (
             self.user1.uuid, self.user1.auth_token, self.user1.uuid)
+        r = client.post(url, post_data, content_type='application/json')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r['Content-Type'].startswith('application/json'))
+        try:
+            body = json.loads(r.content)
+        except Exception, e:
+            self.fail(e)
+
+        try:
+            token = body['access']['token']['id']
+            user = body['access']['user']['id']
+            service_catalog = body['access']['serviceCatalog']
+        except KeyError:
+            self.fail('Invalid response')
+
+        self.assertEqual(token, self.user1.auth_token)
+        self.assertEqual(user, self.user1.uuid)
+        self.assertEqual(len(service_catalog), 3)
+
+        # Check successful json response: token auth
+        post_data = """{"auth":{"token":{"id":"%s"},
+                                "tenantName":"%s"}}""" % (
+            self.user1.auth_token, self.user1.uuid)
         r = client.post(url, post_data, content_type='application/json')
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r['Content-Type'].startswith('application/json'))
@@ -608,6 +642,13 @@ class TokensApiTest(TestCase):
 #            body = minidom.parseString(r.content)
 #        except Exception, e:
 #            self.fail(e)
+
+        # oath access token authorization
+        post_data = """{"auth":{"token":{"id":"%s"},
+                                "tenantName":"%s"}}""" % (
+            self.token.code, self.user1.uuid)
+        r = client.post(url, post_data, content_type='application/json')
+        self.assertEqual(r.status_code, 401)
 
 
 class UserCatalogsTest(TestCase):
@@ -707,3 +748,72 @@ class WrongPathAPITest(TestCase):
             json.loads(response.content)
         except ValueError:
             self.assertTrue(False)
+
+
+class ValidateAccessToken(TestCase):
+    def setUp(self):
+        self.oa2_backend = DjangoBackend()
+        self.user = AstakosUser.objects.create(username="user@synnefo.org")
+        self.token = self.oa2_backend.token_model.create(
+            code='12345',
+            expires_at=datetime.now() + timedelta(seconds=5),
+            user=self.user,
+            client=self.oa2_backend.client_model.create(type='public'),
+            redirect_uri='https://server.com/handle_code',
+            scope='user-scope')
+
+    def test_validate_token(self):
+        # invalid token
+        url = reverse('astakos.api.tokens.validate_token',
+                      kwargs={'token_id': 'invalid'})
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 404)
+
+        # valid token
+        url = reverse('astakos.api.tokens.validate_token',
+                      kwargs={'token_id': self.token.code})
+
+        r = self.client.head(url)
+        self.assertEqual(r.status_code, 400)
+        r = self.client.put(url)
+        self.assertEqual(r.status_code, 400)
+        r = self.client.post(url)
+        self.assertEqual(r.status_code, 400)
+
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r['Content-Type'].startswith('application/json'))
+        try:
+            body = json.loads(r.content)
+            user = body['access']['user']['id']
+            self.assertEqual(user, self.user.uuid)
+        except Exception:
+            self.fail('Unexpected response content')
+
+        # inconsistent belongsTo parameter
+        r = self.client.get('%s?belongsTo=invalid' % url)
+        self.assertEqual(r.status_code, 404)
+
+        # consistent belongsTo parameter
+        r = self.client.get('%s?belongsTo=%s' % (url, self.token.scope))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r['Content-Type'].startswith('application/json'))
+        try:
+            body = json.loads(r.content)
+            user = body['access']['user']['id']
+            self.assertEqual(user, self.user.uuid)
+        except Exception:
+            self.fail('Unexpected response content')
+
+        # expired token
+        sleep_time = (self.token.expires_at - datetime.now()).total_seconds()
+        time.sleep(max(sleep_time, 0))
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 404)
+        # assert expired token has been deleted
+        self.assertEqual(self.oa2_backend.token_model.count(), 0)
+
+        # user authentication token
+        url = reverse('astakos.api.tokens.validate_token',
+                      kwargs={'token_id': self.user.auth_token})
+        self.assertEqual(r.status_code, 404)

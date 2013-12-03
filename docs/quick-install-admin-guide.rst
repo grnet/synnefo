@@ -918,6 +918,23 @@ numeric value, i.e. 10240 MB, 10 GB etc.
 
     # snf-manage resource-modify --default-quota-interactive
 
+.. _pithos_view_registration:
+
+Register pithos view as an OAuth 2.0 client
+-------------------------------------------
+
+Starting from synnefo version 0.15, the pithos view, in order to get access to
+the data of a protect pithos resource, has to be granted authorization for the
+specific resource by astakos.
+
+During the authorization grant procedure, it has to authenticate itself with
+astakos since the later has to prevent serving requests by unknown/unauthorized
+clients.
+
+To register the pithos view as an OAuth 2.0 client in astakos, we have to run
+the following command::
+
+    snf-manage oauth2-client-add pithos-view --secret=<secret> --is-trusted --url https://node2.example.com/pithos/ui/view
 
 Servers Initialization
 ----------------------
@@ -1074,6 +1091,13 @@ cloudbar.
 The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are used by the
 Pithos web client to get from astakos all the information needed to fill its
 own cloudbar. So we put our astakos deployment urls there.
+
+The ``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting is used by the pithos view
+in order to authenticate itself with astakos during the authorization grant
+procedure and it should container the credentials issued for the pithos view
+in `the pithos view registration step`__.
+
+__ pithos_view_registration_
 
 Pooling and Greenlets
 ---------------------

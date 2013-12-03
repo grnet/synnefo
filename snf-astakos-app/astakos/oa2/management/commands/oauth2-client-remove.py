@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,25 +31,33 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.views.decorators.csrf import csrf_exempt
-
-from snf_django.lib import api
-
-from pithos.api.functions import _object_read
-from pithos.api.util import api_method, view_method
-
-import logging
-logger = logging.getLogger(__name__)
+from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
+from astakos.oa2.models import Client
 
 
-@csrf_exempt
-def object_demux(request, v_account, v_container, v_object):
-    if request.method == 'GET':
-        return object_read(request, v_account, v_container, v_object)
-    else:
-        return api.api_method_not_allowed(request, allowed_methods=['GET'])
+class Command(BaseCommand):
+    args = "<client ID or identifier>"
+    help = "Remove an oauth2 client along with its registered redirect urls"
 
+    @transaction.commit_on_success
+    def handle(self, *args, **options):
+        if len(args) != 1:
+            raise CommandError("Please provide a client ID or identifier")
 
-@view_method()
-def object_read(request, v_account, v_container, v_object):
-    return _object_read(request, v_account, v_container, v_object)
+        ident = args[0]
+        try:
+            try:
+                ident = int(ident)
+                client = Client.objects.get(id=ident)
+            except ValueError:
+                client = Client.objects.get(identifier=ident)
+        except Client.DoesNotExist:
+            raise CommandError(
+                "Client does not exist. You may run snf-manage "
+                "oa2-client-list for available client IDs.")
+
+        client.redirecturl_set.all().delete()
+        client.authorizationcode_set.all().delete()
+        client.token_set.all().delete()
+        client.delete()

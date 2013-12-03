@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,25 +31,16 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.views.decorators.csrf import csrf_exempt
+from astakos.oa2.backends import DjangoBackend
 
-from snf_django.lib import api
+from astakos.oa2 import settings
 
-from pithos.api.functions import _object_read
-from pithos.api.util import api_method, view_method
-
-import logging
-logger = logging.getLogger(__name__)
-
-
-@csrf_exempt
-def object_demux(request, v_account, v_container, v_object):
-    if request.method == 'GET':
-        return object_read(request, v_account, v_container, v_object)
-    else:
-        return api.api_method_not_allowed(request, allowed_methods=['GET'])
-
-
-@view_method()
-def object_read(request, v_account, v_container, v_object):
-    return _object_read(request, v_account, v_container, v_object)
+oa2_backend = DjangoBackend(endpoints_prefix=settings.ENDPOINT_PREFIX,
+                            token_endpoint=settings.TOKEN_ENDPOINT,
+                            token_length=settings.TOKEN_LENGTH,
+                            token_expires=settings.TOKEN_EXPIRES,
+                            authorization_endpoint=
+                            settings.AUTHORIZATION_ENDPOINT,
+                            authorization_code_length=
+                            settings.AUTHORIZATION_CODE_LENGTH)
+urlpatterns = oa2_backend.get_url_patterns()

@@ -46,7 +46,6 @@ from synnefo.lib import join_urls
 from urllib import quote
 
 import django.utils.simplejson as json
-from django.core.urlresolvers import reverse
 
 import re
 import datetime
@@ -127,7 +126,7 @@ class ObjectGetView(PithosAPITest):
         self.assertTrue('Location' in r)
         p = urlparse.urlparse(r['Location'])
         self.assertEqual(p.netloc, 'testserver')
-        self.assertEqual(p.path, reverse('oa2_authenticate'))
+        self.assertEqual(p.path, '/astakos/oauth2/auth')
 
         r = self.get(add_url_params(self.view_url, code='valid_code'),
                      follow=True)

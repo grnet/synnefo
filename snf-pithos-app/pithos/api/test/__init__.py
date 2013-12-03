@@ -234,10 +234,10 @@ class PithosAPITest(TestCase):
         mock_get_token.return_value = {'access_token': 'valid_token'}
 
         # patch astakosclient.AstakosClient.api_oa2_auth
-        mock_api_oa2_auth = self.create_patch(
-            'astakosclient.AstakosClient.oa2_url',
+        mock_api_oauth2_auth = self.create_patch(
+            'astakosclient.AstakosClient.oauth2_url',
             new_callable=PropertyMock)
-        mock_api_oa2_auth.return_value = '/astakos/oa2/'
+        mock_api_oauth2_auth.return_value = '/astakos/oauth2/'
 
     def tearDown(self):
         #delete additionally created metadata

@@ -18,7 +18,7 @@ presented by the view during the request for the access token.
 
 Pithos view registration to astakos
 ===================================
-The pithos view has to authenticate itself with astakos since the later has to
+The pithos view has to authenticate itself with astakos since the latter has to
 prevent serving requests by unknown/unauthorized clients.
 
 Each oauth client is identified by a client identifier (client_id). Moreover,
@@ -75,7 +75,7 @@ The general flow includes the following steps:
    If valid, astakos responds back with an short-term access token.
 #. The view exchanges with astakos the access token for the information of the
    user to whom the authoritativeness was granted.
-#. The view responses with the resource contents if the user has access to the
+#. The view responds with the resource contents if the user has access to the
    specific resource.
 
 
@@ -177,7 +177,7 @@ In the former case the view redirects to the requested path
 (without the access token or the authorization code) in order to re-initiate
 the procedure by requesting an new authorization code.
 
-In the later case the view proceeds with the request and if the user has access
+In the latter case the view proceeds with the request and if the user has access
 to the requested resource the resource's data are returned, otherwise the
 access to resource is forbidden.
 

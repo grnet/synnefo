@@ -149,12 +149,14 @@ class Command(BaseCommand):
         ipaddress = None
         floating_ip_id = options["floating_ip_id"]
         ipv4_address = options["ipv4_address"]
-        if ipv4_address is not None and floating_ip_id is not None:
-            raise CommandError("Please use either --floating-ip-id or"
-                               " --ipv4-address option")
-        elif floating_ip_id:
+        if floating_ip_id:
             ipaddress = common.get_floating_ip_by_id(floating_ip_id,
                                                      for_update=True)
+            if ipv4_address is not None and ipaddress.address != ipv4_address:
+                raise CommandError("Floating IP address '%s' is different from"
+                                   " specified address '%s'" %
+                                   (ipaddress.address, ipv4_address))
+
 
         # validate security groups
         sg_list = []

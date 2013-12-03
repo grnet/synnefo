@@ -44,10 +44,9 @@ class Command(BaseCommand):
 
     option_list = BaseCommand.option_list + (
         make_option(
-            '--pool',
-            dest='pool',
-            help="The ID of the floating IP pool(network) to allocate the"
-                 " address from"),
+            '--network',
+            dest='network_id',
+            help="The ID of the network to allocate the address from"),
         make_option(
             '--address',
             dest='address',
@@ -64,7 +63,7 @@ class Command(BaseCommand):
         if args:
             raise CommandError("Command doesn't accept any arguments")
 
-        network_id = options['pool']
+        network_id = options['network_id']
         address = options['address']
         owner = options['owner']
 
@@ -74,6 +73,9 @@ class Command(BaseCommand):
         if network_id is not None:
             network = util.get_network(network_id, owner, for_update=True,
                                        non_deleted=True)
+            if not network.floating_ip_pool:
+                raise CommandError("Network '%s' is not a floating IP pool."
+                                   % network)
         else:
             network = None
 

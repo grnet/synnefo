@@ -73,7 +73,7 @@ class Command(ListCommand):
         "name": ("name", "The name of the port"),
         "user.uuid": ("userid", "The UUID of the port's owner"),
         "mac_address": ("mac", "The MAC address of the port"),
-        "device_id": ("machine_id", "The vm's id the port is conncted to"),
+        "server_id": ("machine_id", "The vm's id the port is conncted to"),
         "state": ("state", "The port's status"),
         "device_owner": ("device_owner", "The owner of the port (vm/router)"),
         "network": ("network_id", "The network's ID the port is\
@@ -85,7 +85,7 @@ class Command(ListCommand):
     }
 
     fields = ["id", "name", "user.uuid", "mac_address", "network",
-              "device_id", "fixed_ips", "state"]
+              "server_id", "fixed_ips", "state"]
 
     def handle_args(self, *args, **options):
         if options["public"]:

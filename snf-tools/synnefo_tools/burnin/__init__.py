@@ -190,6 +190,10 @@ def parse_arguments(args):
         help="Turn off log output and only print the contents of the log "
              "file at the end of the test. Useful when burnin is used in "
              "script files and it's output is to be sent using email")
+    parser.add_option(
+        "--temp-directory", action="store",
+        default="/tmp/", dest="temp_directory",
+        help="Directory to use for saving temporary files")
 
     (opts, args) = parser.parse_args(args)
 

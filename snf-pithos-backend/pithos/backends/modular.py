@@ -1367,7 +1367,7 @@ class ModularBackend(BaseBackend):
 
     @debug_method
     @backend_method
-    def get_uuid(self, user, uuid):
+    def get_uuid(self, user, uuid, check_permissions=True):
         """Return the (account, container, name) for the UUID given."""
 
         info = self.node.latest_uuid(uuid, CLUSTER_NORMAL)
@@ -1375,7 +1375,8 @@ class ModularBackend(BaseBackend):
             raise NameError
         path, serial = info
         account, container, name = path.split('/', 2)
-        self._can_read(user, account, container, name)
+        if check_permissions:
+            self._can_read(user, account, container, name)
         return (account, container, name)
 
     @debug_method

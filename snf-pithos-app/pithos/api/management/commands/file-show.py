@@ -38,11 +38,11 @@ from optparse import make_option
 from snf_django.management.commands import SynnefoCommand
 from snf_django.management import utils
 
-from pithos.api.util import get_backend, update_public_meta
+from pithos.api.util import get_backend, update_public_meta, is_uuid
 
 
 class Command(SynnefoCommand):
-    args = "<account> <container> <object>"
+    args = "<account> <container> <object> or <object uuid>"
     help = """Show file information"""
 
     option_list = SynnefoCommand.option_list + (
@@ -52,18 +52,30 @@ class Command(SynnefoCommand):
         make_option("--domain", dest="domain",
                     default='pithos',
                     help="Show file attributes from the specific domain."),
+        make_option("--hashmap", dest="hashmap",
+                    default=False,
+                    action='store_true',
+                    help="Display also the object hashmap")
     )
 
     def handle(self, *args, **options):
-        if len(args) != 3:
-            raise CommandError("Invalid number of arguments")
-
         success_status = False
         try:
             b = get_backend()
             b.pre_exec()
 
-            account, container, name = args
+            if len(args) == 3:
+                account, container, name = args
+            elif len(args) == 1:
+                if not is_uuid(args[0]):
+                    raise CommandError('Invalid UUID')
+                try:
+                    account, container, name = b.get_uuid(
+                        None, args[0], check_permissions=False)
+                except NameError:
+                    raise CommandError('Unknown UUID')
+            else:
+                raise CommandError("Invalid number of arguments")
 
             kv = b.get_object_meta(account, account, container, name,
                                    options['domain'], options['obj_version'])
@@ -80,9 +92,10 @@ class Command(SynnefoCommand):
                 if public is not None:
                     update_public_meta(public, kv)
 
-            kv['hashmap'] = b.get_object_hashmap(account, account, container,
-                                                 name,
-                                                 options['obj_version'])[-1]
+            if options['hashmap']:
+                _, kv['hashmap'] = b.get_object_hashmap(account, account,
+                                                        container, name,
+                                                        options['obj_version'])
 
             utils.pprint_table(self.stdout, [kv.values()], kv.keys(),
                                options["output_format"], vertical=True)

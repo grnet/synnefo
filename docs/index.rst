@@ -27,11 +27,12 @@ Synnefo has three main components providing the corresponding services:
 This is an overview of the Synnefo services:
 
 .. image:: images/synnefo-overview.png
+   :width: 70%
    :target: _images/synnefo-overview.png
 
 Synnefo is designed with simplicity, scalability and stability in mind.
-Furthermore, although it can be deployed in small configurations, it was
-initially designed to address large installation problems.
+Although it can be deployed in small configurations, it was initially designed
+to address large-scale installation problems.
 
 All Synnefo components use an intuitive settings mechanism, that adds and
 removes settings dynamically as components are getting added or removed from a
@@ -45,11 +46,12 @@ Synnefo General Architecture
 
 The following figure shows the whole Synnefo stack and how it interacts with
 multiple Ganeti clusters and the storage backends. Synnefo decouples the cloud
-from the cluster layer enhancing robustness, scalability, and ease of
-administration and upgrades without impacting VM stability. As shown in the
-figure below, Synnefo sits on the cloud layer:
+from the cluster layer, enhancing robustness and easing administration and
+upgrades without impacting VM stability. As shown in the figure below, Synnefo
+sits on the cloud layer:
 
 .. image:: images/snf-architecture.png
+   :width: 70%
    :target: _images/snf-architecture.png
 
 Synnefo manages multiple Ganeti clusters and different storage backends

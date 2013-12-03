@@ -58,4 +58,6 @@ class Command(BaseCommand):
                 "oa2-client-list for available client IDs.")
 
         client.redirecturl_set.all().delete()
+        client.authorizationcode_set.all().delete()
+        client.token_set.all().delete()
         client.delete()

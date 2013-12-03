@@ -66,7 +66,7 @@ pithos_api_patterns = api_patterns(
 pithos_view_patterns = patterns(
     'pithos.api.views',
     (r'^view/(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$',
-     'object_read'))
+     'object_demux'))
 
 pithos_patterns = patterns(
     '',

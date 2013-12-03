@@ -92,22 +92,34 @@ class NotAllowedView(PithosAPITest):
                                   get_random_name())
 
         r = self.head(self.view_url)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
+        self.assertEqual(r['Allow'],  'GET')
 
         r = self.delete(self.view_url)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
+        self.assertEqual(r['Allow'],  'GET')
 
         r = self.post(self.view_url)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
+        self.assertEqual(r['Allow'],  'GET')
 
         r = self.put(self.view_url)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
+        self.assertEqual(r['Allow'],  'GET')
 
         r = self.copy(self.view_url)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
+        self.assertEqual(r['Allow'],  'GET')
 
         r = self.move(self.view_url)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
+        self.assertEqual(r['Allow'],  'GET')
 
 
 class ObjectGetView(PithosAPITest):

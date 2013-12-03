@@ -185,6 +185,10 @@ Cyclades
 Pithos
 ------
 
+* Management commands:
+  * Introduced new command:
+     * file-show
+
 * Refactor metadata schema (table attributes) in Pithos DB to speedup current
 objects by domain attribute. This is used by Plankton for listing VM images.
 

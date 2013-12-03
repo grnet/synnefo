@@ -1407,6 +1407,7 @@ Name                          Description
 reconcile-commissions-pithos  Display unresolved commissions and trigger their recovery
 service-export-pithos         Export Pithos services and resources in JSON format
 reconcile-resources-pithos    Detect unsynchronized usage between Astakos and Pithos DB resources and synchronize them if specified so.
+file-show                     Display object information
 ============================  ===========================
 
 Cyclades snf-manage commands

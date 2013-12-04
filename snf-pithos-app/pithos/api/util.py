@@ -1211,17 +1211,8 @@ def view_method():
                                                            'auth'),
                                                  urlencode(params)))
                 else:
-                    # request short-term access code
-
-                    # resolve redirect host. If SERVE_API_DOMAIN is set
-                    # redirect to that host instead.
-                    redirect_host = BASE_HOST
-                    if SERVE_API_DOMAIN:
-                        redirect_host = SERVE_API_DOMAIN
-                        proto = 'https' if request.is_secure() else 'http'
-                        redirect_host = '%s://%s' % (proto, redirect_host)
-
-                    redirect_uri = '%s%s' % (redirect_host, request.path)
+                    # request short-term access token
+                    redirect_uri = request.build_absolute_uri(request.path)
                     data = astakos.get_token('authorization_code',
                                              *OAUTH2_CLIENT_CREDENTIALS,
                                              redirect_uri=redirect_uri,

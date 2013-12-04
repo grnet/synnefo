@@ -53,14 +53,8 @@ DEFAULT_MAC_PREFIX = 'aa:00:0'
 DEFAULT_BRIDGE = 'br0'
 
 # Network flavors that users are allowed to create through API requests
+# Available flavors are IP_LESS_ROUTED, MAC_FILTERED, PHYSICAL_VLAN
 API_ENABLED_NETWORK_FLAVORS = ['MAC_FILTERED']
-
-# Settings for IP_LESS_ROUTED network:
-# -----------------------------------
-# In this case VMCs act as routers that forward the traffic to/from VMs, based
-# on the defined routing table($DEFAULT_ROUTING_TABLE) and ip rules, that
-# exist in every node, implenting an IP-less routed and proxy-arp setup.
-DEFAULT_ROUTING_TABLE = 'snf_public'
 
 # Settings for MAC_FILTERED network:
 # ------------------------------------------

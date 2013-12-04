@@ -33,6 +33,7 @@
 
 from functools import wraps
 from django.db import transaction
+from django.conf import settings
 
 from snf_django.lib.api import faults
 from synnefo.api import util
@@ -88,11 +89,6 @@ def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
     mac_prefix = mac_prefix or fmac_prefix
     tags = tags or ftags
 
-    if (flavor == "IP_LESS_ROUTED" and
-       Network.objects.filter(deleted=False, mode=mode, link=link).exists()):
-        msg = "Link '%s' is already used." % link
-        raise faults.BadRequest(msg)
-
     validate_mac(mac_prefix + "0:00:00:00")
 
     network = Network.objects.create(
@@ -109,6 +105,15 @@ def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
         action='CREATE',
         state='ACTIVE',
         drained=drained)
+
+    if link is None:
+        network.link = "%slink-%d" % (settings.BACKEND_PREFIX_ID, network.id)
+        network.save()
+
+    if (flavor == "IP_LESS_ROUTED" and
+       Network.objects.filter(deleted=False, mode=mode, link=link).exists()):
+        msg = "Link '%s' is already used." % link
+        raise faults.BadRequest(msg)
 
     # Issue commission to Quotaholder and accept it since at the end of
     # this transaction the Network object will be created in the DB.

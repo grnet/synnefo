@@ -121,13 +121,13 @@ Existing network flavors are the following:
 ==============   =======   ===============================   ======================  ==================
 Flavor Name      Mode      Link                              MAC prefix              Tags
 ==============   =======   ===============================   ======================  ==================
-IP_LESS_ROUTED   routed    ``DEFAULT_ROUTING_TABLE``         ``DEFAULT_MAC_PREFIX``  'ip-less-routed'
+IP_LESS_ROUTED   routed    ``snf-link-$network_id``          ``DEFAULT_MAC_PREFIX``  'ip-less-routed'
 MAC_FILTERED     bridged   ``DEFAULT_MAC_FILTERED_BRIDGE``   'pool'                  'private'filtered'
 PHYSICAL_VLAN    bridged   'pool'                            ``DEFAULT_MAC_PREFIX``  'physical-vlan'
 CUSTOM           bridged   ``DEFAULT_BRIDGE``                ``DEFAULT_MAC_PREFIX``
 ==============   =======   ===============================   ======================  ==================
 
-``DEFAULT_ROUTING_TABLE``, ``DEFAULT_MAC_PREFIX``, ``DEFAULT_BRIDGE``,
+``DEFAULT_MAC_PREFIX``, ``DEFAULT_BRIDGE``,
 ``DEFAULT_MAC_FILTERED_BRIDGE`` are all configurable settings in
 ``/etc/synnefo/20-snf-cyclades-app-api.conf``. 'pool' is used to denote that a
 link or MAC prefix will be allocated from the corresponding Pool. Finally,

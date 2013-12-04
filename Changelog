@@ -191,6 +191,9 @@ Cyclades
   needed by the newer version of snf-vncauthproxy. Support for older versions
   of snf-vncauthproxy has been dropped. See also the upgrade notes for Synnefo
   and snf-vncauthproxy-1.5.
+* Remove 'DEFAULT_ROUTING_TABLE' setting. If a link for an IP_LESS_ROUTED
+  network is not specified, the link will be uniquely named
+  'snf-link-$network_id'.
 
 
 Cyclades UI

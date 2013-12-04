@@ -1015,6 +1015,7 @@ def init_cluster():
         --nic-parameters link={1},mode=bridged \
         --master-netdev {2} \
         --default-iallocator hail \
+        --specs-nic-count min=0,max=8 \
         --hypervisor-parameters kvm:kernel_path=,vnc_bind_address=0.0.0.0 \
         --no-ssh-init --no-etc-hosts \
         {3}

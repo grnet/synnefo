@@ -31,7 +31,7 @@ ADMIN_STATS_PERMITTED_GROUPS = ["admin-stats"]
 # Access control and quota policy are enforced, just as if the user had
 # specified the value of CYCLADES_DEFAULT_SERVER_NETWORKS in the content
 # of the POST /call, after processing of "SNF:*" directives."
-CYCLADES_DEFAULT_SERVER_NETWORKS = ["SNF:ANY_PUBLIC_IPV4"]
+CYCLADES_DEFAULT_SERVER_NETWORKS = []
 
 # This setting contains a list of networks which every new server
 # will be forced to connect to, regardless of the contents of the POST
@@ -43,7 +43,7 @@ CYCLADES_DEFAULT_SERVER_NETWORKS = ["SNF:ANY_PUBLIC_IPV4"]
 # networks specified in CYCLADES_FORCED_SERVER_NETWORKS, regardless
 # of the state of the floating IP pool of the user, and without
 # allocating any floating IPs."
-CYCLADES_FORCED_SERVER_NETWORKS = ["SNF:ANY_PUBLIC_IPV6"]
+CYCLADES_FORCED_SERVER_NETWORKS = []
 
 # Maximum allowed network size for private networks.
 MAX_CIDR_BLOCK = 22

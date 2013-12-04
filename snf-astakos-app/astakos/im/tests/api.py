@@ -774,11 +774,11 @@ class ValidateAccessToken(TestCase):
                       kwargs={'token_id': self.token.code})
 
         r = self.client.head(url)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
         r = self.client.put(url)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
         r = self.client.post(url)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
 
         r = self.client.get(url)
         self.assertEqual(r.status_code, 200)

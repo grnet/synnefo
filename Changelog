@@ -31,6 +31,9 @@ Synnefo-wide
 
 * Extend astakosclient to request and validate OAuth 2.0 access tokens
 
+* Change response status code from 400 (Bad Request) to 405 (Not allowed
+  method) in case of an unexpected request method.
+
 Astakos
 -------
 
@@ -232,11 +235,35 @@ Cyclades UI
 Pithos
 ------
 
-* Management commands:
-  * Introduced new command:
-     * file-show
+* Rewrite tests.
 
-* Change view authentication
+* Performance optimizations in object listing.
+
+* Introduce backend method decorator for handling transaction management if no
+  transaction is initiated from the frontend.
+
+* Fix Internal Server Errors https://code.grnet.gr/issues/4501 &
+  https://code.grnet.gr/issues/4502.
+
+* Fix REQUEST ENTITY TOO LARGE request failure during move operations
+  https://code.grnet.gr/issues/4154.
+
+* Fix FORBIDDEN request failure while listing implicitly shared objects
+  https://code.grnet.gr/issues/4131.
+
+* Fix issue with the computed size of an updated object.
+
+* Reply with the Merkle hash in the ETag header if MD5 is deactivated.
+
+* Reply with FORBIDDEN (403) to public listing requests performed by non path
+  owners.
+
+* Change response status to NOT FOUND (404) while trying to delete an
+  already deleted object.
+
+* Change SQLAlchemy version to 0.7
+
+* Change view authorization
   The pithos views do not use the cookie information for user authentication.
   They request (from Astakos) and use a short-term access token for a
   specific resource.
@@ -249,10 +276,9 @@ Pithos
 * Add PITHOS_SERVE_API_DOMAIN setting to restrict file serving endpoints to a
   specific host
 
-* Refactor metadata schema (table attributes) in Pithos DB to speedup current
-objects by domain attribute. This is used by Plankton for listing VM images.
-
-* Enforce container-level atomicity in (most) Pithos API calls.
+* Management commands:
+  * Introduced new command:
+     * file-show
 
 * Remove command 'resource-export-pithos' subsumed by 'service-export-pithos'.
 
@@ -413,6 +439,11 @@ Cyclades
 * Add new setting PITHOS_BACKEND_POOL_SIZE, which configures the size
   of the pool of Pithos backends that are used by plankton.
 
+Pithos
+------
+
+* Refactor metadata schema (table attributes) in Pithos DB to speedup current
+objects by domain attribute. This is used by Plankton for listing VM images.
 
 
 .. _Changelog-0.14:
@@ -611,6 +642,9 @@ Pithos
   'PITHOS_USER_LOGIN_URL' settings.
 * Remove PITHOS_USE_QUOTAHOLDER, PITHOS_QUOTAHOLDER_URL,
   PITHOS_QUOTAHOLDER_TOKEN and PITHOS_ASTAKOSCLIENT_POOLSIZE
+
+* Enforce container-level atomicity in (most) Pithos API calls.
+
 
 Tools
 -----

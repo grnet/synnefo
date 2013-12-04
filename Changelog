@@ -192,6 +192,40 @@ Cyclades
   of snf-vncauthproxy has been dropped. See also the upgrade notes for Synnefo
   and snf-vncauthproxy-1.5.
 
+
+Cyclades UI
+-----------
+
+- Retrieve all networks information from the introduced cyclades network
+  service.
+- New IPs pane from which user can manage floating IPs.
+- Redesign public keys overlay as an additional pane view.
+- Split networking configuration into an additional step in machine create 
+  wizard.
+- Display forced networks and choices of the available floating IPs which will 
+  be assigned to the created machine.
+- Support for machine resize action. Explicit handling when machine is started
+  by displaying an utility shutdown button within the resize overlay.
+- Machine IPs toggling subview in icon/single views.
+- Replace IPv4/IPv6 with machine's FQDN in icon/single view. When no FQDN can 
+  be resolved display a message. Message can be configured using the introduced 
+  ``UI_NO_FQDN_MESSAGE``. Setting ``UI_VM_HOSTNAME_FORMAT`` has been removed 
+  and no longer used.
+- Respect ``SNF:task_state`` machine attribute in order to improve machine
+  status display.
+- Append software version as a url parameter in HTML static files in order 
+  to force browser cache invalidation between versions.
+- Configurable Google fonts base url. Fonts base url can be changed usint the 
+  ``SYNNEFO_FONTS_BASE_URL`` setting.
+- Regression fix: Display reboot required notification on machine firewall
+  parameters.
+- Handling of ``GANETI_USE_HOTPLUG`` setting. Do not allow live network actions 
+  when setting is set to ``False``.
+- Double escaping fix in machine create wizard images list and machine details 
+  subview.
+- Fix image ordering in machine create wizard.
+
+
 Pithos
 ------
 

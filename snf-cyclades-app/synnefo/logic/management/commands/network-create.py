@@ -183,6 +183,9 @@ class Command(BaseCommand):
             raise CommandError("Cannot use allocation-pools without subnet")
         if subnet6 is None and gateway6 is not None:
             raise CommandError("Cannot use gateway6 without subnet6")
+        if flavor == "IP_LESS_ROUTED" and not (subnet or subnet6):
+            raise CommandError("Cannot create 'IP_LESS_ROUTED' network without"
+                               " subnet")
 
         if not (userid or public):
             raise CommandError("'owner' is required for private networks")

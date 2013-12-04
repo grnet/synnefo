@@ -61,8 +61,7 @@ class Command(BaseCommand):
             dest="drained",
             metavar="True|False",
             choices=["True", "False"],
-            help="Set as drained to exclude for IP allocation."
-                 " Only used for public networks."),
+            help="Set network as drained to prevent creation of new ports."),
         make_option(
             "--floating-ip-pool",
             dest="floating_ip_pool",

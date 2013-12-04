@@ -64,7 +64,7 @@ def network_command(action):
 
 @transaction.commit_on_success
 def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
-           floating_ip_pool=False, tags=None, public=False):
+           floating_ip_pool=False, tags=None, public=False, drained=False):
     if flavor is None:
         raise faults.BadRequest("Missing request parameter 'type'")
     elif flavor not in Network.FLAVORS.keys():
@@ -107,7 +107,8 @@ def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
         external_router=public,
         floating_ip_pool=floating_ip_pool,
         action='CREATE',
-        state='ACTIVE')
+        state='ACTIVE',
+        drained=drained)
 
     # Issue commission to Quotaholder and accept it since at the end of
     # this transaction the Network object will be created in the DB.

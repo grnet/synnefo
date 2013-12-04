@@ -138,6 +138,13 @@ class Command(BaseCommand):
                  "ending IP. If no allocation pools are given, the whole "
                  "subnet range is used, excluding the gateway IP, the "
                  "broadcast address and the network address"),
+        make_option(
+            "--drained",
+            dest="drained",
+            metavar="True|False",
+            choices=["True", "False"],
+            default="False",
+            help="Set network as drained to prevent creation of new ports."),
     )
 
     @convert_api_faults
@@ -160,6 +167,7 @@ class Command(BaseCommand):
         allocation_pools = options["allocation_pools"]
         floating_ip_pool = parse_bool(options["floating_ip_pool"])
         dhcp = parse_bool(options["dhcp"])
+        drained = parse_bool(options["drained"])
 
         if name is None:
             name = ""
@@ -182,7 +190,8 @@ class Command(BaseCommand):
         network = networks.create(userid=userid, name=name, flavor=flavor,
                                   public=public, mode=mode,
                                   link=link, mac_prefix=mac_prefix, tags=tags,
-                                  floating_ip_pool=floating_ip_pool)
+                                  floating_ip_pool=floating_ip_pool,
+                                  drained=drained)
 
         if subnet is not None:
             alloc = None

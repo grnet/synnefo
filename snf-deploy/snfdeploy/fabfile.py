@@ -610,6 +610,19 @@ def astakos_register_components():
 
 
 @roles("accounts")
+def astakos_register_pithos_view():
+    debug(env.host, " * Register pithos view as oauth2 client...")
+
+    pithos_base_url = "https://%s/pithos" % env.env.pithos.fqdn
+
+    cmd = """
+    snf-manage oauth2-client-add pithos-view --secret=12345 --is-trusted \
+    --url {0}
+    """.format('%s/ui/view' % pithos_base_url)
+    try_run(cmd)
+
+
+@roles("accounts")
 def add_user():
     debug(env.host, " * adding user %s to astakos..." % env.env.user_email)
     email = env.env.user_email
@@ -679,6 +692,7 @@ EOF
     snf-manage syncdb --noinput
     snf-manage migrate im --delete-ghost-migrations
     snf-manage migrate quotaholder_app
+    snf-manage migrate oa2
     """
     try_run(cmd)
 

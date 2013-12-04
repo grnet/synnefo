@@ -91,7 +91,7 @@ Usage: snf-deploy run <action> [<action>...]
       setup_hosts            setup_nfs_server              \
 get_auth_token_from_db
       setup_image_helper     update_ns_for_ganeti          get_service_details
-      setup_image_host                                     gnt_instance_add
+      setup_image_host       astakos_register_pithos_view  gnt_instance_add
       setup_iptables                                       gnt_network_add
       setup_kamaki         Test commands:                  register_image
       setup_lvm              test                          restart_services
@@ -443,6 +443,7 @@ def get_actions(*args):
             #      add_user fails if no groups found
             "astakos_loaddata", "add_user", "activate_user",
             "astakos_register_components",
+            "astakos_register_pithos_view",
             "setup_cms", "cms_loaddata",
             "setup_pithos",
             "setup_vncauthproxy",

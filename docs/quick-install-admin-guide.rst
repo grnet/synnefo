@@ -98,11 +98,11 @@ General Synnefo dependencies
 		* gevent
 		* dns server
 
-You can install apache2, postgresql and ntp by running:
+You can install apache2, postgresql, ntp and rabbitmq by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 postgresql ntp
+   # apt-get install apache2 postgresql ntp rabbitmq-server
 
 Make sure to install gunicorn >= v0.12.2. You can do this by installing from
 the official debian backports:
@@ -124,26 +124,6 @@ python-psycopg2 package:
 
    # apt-get install python-psycopg2
 
-To install RabbitMQ>=2.8.4, use the RabbitMQ APT repository by adding the
-following line to ``/etc/apt/sources.list``:
-
-.. code-block:: console
-
-    deb http://www.rabbitmq.com/debian testing main
-
-Add RabbitMQ public key, to trusted key list:
-
-.. code-block:: console
-
-  # wget http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
-  # apt-key add rabbitmq-signing-key-public.asc
-
-Finally, to install the package run:
-
-.. code-block:: console
-
-  # apt-get update
-  # apt-get install rabbitmq-server
 
 Database setup
 ~~~~~~~~~~~~~~

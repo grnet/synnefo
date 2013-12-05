@@ -764,7 +764,7 @@ To add this Ganeti cluster, we run:
 
 where ``clustername`` is the Cluster hostname of the Ganeti cluster, and
 ``user`` and ``pass`` are the credentials for the `Ganeti RAPI user
-<http://docs.ganeti.org/ganeti/2.2/html/rapi.html#users-and-passwords>`_.  All
+<http://docs.ganeti.org/ganeti/2.8/html/rapi.html#users-and-passwords>`_.  All
 backend attributes can be also changed dynamically using the `snf-manage
 backend-modify` command.
 
@@ -1403,7 +1403,7 @@ The Cyclades API server is responsible for handling user requests. Read-only
 requests are directly served by looking up the Cyclades DB. If the request
 needs an action in the Ganeti backend, Cyclades submit jobs to the Ganeti
 master using the `Ganeti RAPI interface
-<http://docs.ganeti.org/ganeti/2.2/html/rapi.html>`_.
+<http://docs.ganeti.org/ganeti/2.8/html/rapi.html>`_.
 
 While Ganeti executes the job, `snf-ganeti-eventd`, and `snf-progress-monitor`
 are monitoring the progress of the job and send corresponding messages to the

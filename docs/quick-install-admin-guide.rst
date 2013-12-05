@@ -1202,7 +1202,7 @@ Ganeti
 `Ganeti <http://code.google.com/p/ganeti/>`_ handles the low level VM management
 for Cyclades, so Cyclades requires a working Ganeti installation at the backend.
 Please refer to the
-`ganeti documentation <http://docs.ganeti.org/ganeti/2.6/html>`_ for all the
+`ganeti documentation <http://docs.ganeti.org/ganeti/2.8/html>`_ for all the
 gory details. A successful Ganeti installation concludes with a working
 :ref:`GANETI-MASTER <GANETI_NODES>` and a number of :ref:`GANETI-NODEs
 <GANETI_NODES>`.

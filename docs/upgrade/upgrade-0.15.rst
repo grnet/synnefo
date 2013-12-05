@@ -176,9 +176,14 @@ setting will have the value of
 'https://accounts.example.synnefo.org/identity/v2.0'.
 
 For Pithos service we have to change the ``20-snf-pithos-app-settings.conf``
-file in the same way as above.
+file in the same way as above. In addition to this, we have to change the
+``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting in the same configuration file
+to set the credentials issued for the pithos view in `the previous step`__.
 
-2.4 Upgrade vncauthproxy and configure snf-cyclades-app
+__ pithos_view_registration_
+
+
+2.5 Upgrade vncauthproxy and configure snf-cyclades-app
 -------------------------------------------------------
 
 Synnefo v0.15 adds support for snf-vncauthproxy >= 1.5 and drops support for
@@ -226,7 +231,7 @@ Check the `documentation
 <http://www.synnefo.org/docs/snf-vncauthproxy/latest/index.html>`_ of
 snf-vncauthproxy for more information on upgrading to version 1.5.
 
-2.5 Stats configuration
+2.6 Stats configuration
 -----------------------
 
 snf-cyclades-gtools comes with a collectd plugin to collect CPU and network
@@ -258,11 +263,62 @@ value / string and make sure that it's the same as the ``STATS_SECRET_KEY``
 setting (used to decrypt the instance hostname) in
 ``20-snf-stats-settings.conf`` on your Stats host.
 
-In addition to this, we have to change the ``PITHOS_OAUTH2_CLIENT_CREDENTIALS``
-setting in the ``20-snf-pithos-app-settings.conf`` file to set the credentials
-issued for the pithos view in `the previous step`__.
+2.7 Shibboleth configuration updates
+------------------------------------
 
-__ pithos_view_registration_
+.. note::
+
+  Skip this step unless you have ``shibboleth`` enabled in astakos
+  ``IM_MODULES`` setting.
+
+As of v0.15 astakos uses the ``REMOTE_USER`` header provided by apache's
+``mod_shib2`` service in order to resolve the unique identifier which is used to
+associate a shibboleth account to a local astakos user. Prior to this version
+astakos adhered to the presence of the ``MOD_SHIB_EPPN`` header which although
+safe enough on most of the ``SP`` deployment scenarios, it may cause issues in
+certain cases, such as global wide IdP support or inability of supported IdPs
+to release the ``eduPersonPrincipalName`` attribute. The ``REMOTE_USER`` header
+can be set by administrators to match any of the available shibboleth
+attributes.
+
+If ``EPPN`` matches the service provider needs and you want to continue using
+it as the unique identifier, you need to ensure that the ``REMOTE_USER``
+attribute is set to ``eppn`` in the ``mod_shib2`` config file located at
+``/etc/shibboleth/shibboleth2.xml`` 
+
+.. code-block:: xml
+
+    <!-- The ApplicationDefaults element is where most of Shibboleth's SAML bits are defined. -->
+    <ApplicationDefaults entityID="https://sp.example.org/shibboleth" REMOTE_USER="eppn">
+
+Otherwise, if ``EPPN`` doesn't suit the requirements for your ``SP``
+deployment, change the ``REMOTE_USER`` attribute as required e.g.:
+
+.. code-block:: xml
+
+    <!-- The ApplicationDefaults element is where most of Shibboleth's SAML bits are defined. -->
+    <ApplicationDefaults entityID="https://sp.example.org/shibboleth" REMOTE_USER="persistent-nameid persistent-id targeted-id">
+
+and restart the ``shibd`` service:
+
+.. code-block:: console
+
+  $ service shibd restart
+
+**notice** that every time you alter the ``REMOTE_USER`` attribute, all
+existing shibboleth enabled astakos users will be invalidated and no longer be
+able to login to their existing account using shibboleth. Specifically for the
+case of switching from *eppn* to another attribute, astakos is able to prevent
+invalidation and automatically migrate existing *eppn* accounts. In order to do
+that, set the ``ASTAKOS_SHIBBOLETH_MIGRATE_EPPN`` setting to ``True`` in
+``20-snf-astakos-app-settings.conf`` configuration file. Now every time an
+existing *eppn* user logs in using shibboleth, astakos will update the associated 
+*eppn* identifier to the contents of the ``REMOTE_USER`` header.
+
+.. warning::
+  
+  IdPs should keep releasing the ``EPPN`` attribute in order for the migration
+  to work.
 
 3. Create floating IP pools
 ===========================

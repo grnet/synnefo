@@ -22,7 +22,7 @@ v0.14.10:
  cyclades.host$ /usr/lib/synnefo/tools/add_unique_name_to_nics
 
 .. note:: If you are not upgrading from v0.14.10, you can find the migration
- script here XXX.
+ script :ref:`here <add_names>`.
 
 
 Extend public networks to all Ganeti backends
@@ -114,7 +114,8 @@ The upgrade to v0.15 consists in the following steps:
                             python-objpool \
                             snf-common \
                             snf-cyclades-gtools \
-                            snf-pithos-backend
+                            snf-pithos-backend \
+                            snf-network
 
 .. note::
 

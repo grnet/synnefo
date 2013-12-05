@@ -811,6 +811,8 @@ between users and backends. If the user is found in ``BACKEND_PER_USER``, then
 Synnefo allocates all his/hers VMs to the specific backend in the variable,
 even if is marked as drained (useful for testing).
 
+.. _alloc_disk_templates:
+
 Allocation based on disk-templates
 **********************************
 

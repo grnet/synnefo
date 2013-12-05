@@ -4,14 +4,14 @@ Upgrade to Synnefo v0.15
 Prerequisites
 ==============
 
-Before upgrading to v0.15 there are two steps that must be performed, relative
-with Cyclades networking service.
+Before upgrading to v0.15 there are three steps that must be performed, relative
+to the Cyclades networking service.
 
-Add unique name to the NICs of all Ganeti instances
+Add unique names to the NICs of all Ganeti instances
 ---------------------------------------------------
 
 Since Ganeti 2.8, it is supported to give a name to NICs of Ganeti instances
-and refer to them with their name, and not only by their index. Synnefo v0.15
+and refer to them by their name, and not only by their index. Synnefo v0.15
 assigns a unique name to each NIC and refers to them by their unique name.
 Before upgrading to v0.15, Synnefo must assign names to all existing NICs.
 This can easily be performed with a helper script that is shipped with Synnefo
@@ -36,6 +36,50 @@ If you are using more than one Ganeti backends, before upgrading to v0.15 you
 must ensure that the network configuration to all Ganeti backends is identical
 and appropriate to support all public networks of Cyclades.
 
+Update Ganeti allocation policy
+-------------------------------
+
+Minimum number of NICs
+``````````````````````
+
+Until v0.14 all Cyclades VM were forced to be connected to the public network.
+Synnefo v0.15 supports dynamic addition and removal of public IPv4 addresses,
+which may result in a VM holding no NICs. However, Ganeti's default allocation
+policy will not allow instance's without NICs. You will have to override
+allocation policy to set the minimum number of NICs to zero. Todo this,
+first get the current allocation policy:
+
+.. code-block:: console
+
+ $ gnt-cluster show-ispecs-cmd
+ gnt-cluster init --ipolicy-std-specs cpu-count=1,disk-count=1,disk-size=1024,memory-size=128,nic-count=1,spindle-use=1
+   --ipolicy-bounds-specs min:cpu-count=1,disk-count=1,disk-size=1024,memory-size=128,nic-count=1,spindle-use=1/max:cpu-count=8,disk-count=16,disk-size=1048576,memory-size=32768,nic-count=8,spindle-use=12
+   ganeti1.example.synnefo.org
+
+And replace `min:nic-count=1` with `min:nic-count=0`. Also, set
+`max:nic-count=32` to avoid reaching default limit of 8.
+
+
+.. code-block:: console
+
+ gnt-cluster modify --ipolicy-bounds-specs min:cpu-count=1,disk-count=1,disk-size=1024,memory-size=128,nic-count=0,spindle-use=1/max:cpu-count=8,disk-count=16,disk-size=1048576,memory-size=32768,nic-count=32,spindle-use=12
+
+Enabled and allowed disk templates
+``````````````````````````````````
+
+In v0.15, the ``ARCHIPELAGO_BACKENDS`` settings, that was used to seperate
+backends that were using Archipelago from the ones that were using all other
+disk templates, has been removed. Instead, allocation of instances to Ganeti
+backends is based on which disk templates are enabled and allowed in each
+Ganeti backend (see section in :ref:`admin guide <alloc_disk_templates>`).
+You can see the enabled/allowed disk templates by inspecting
+the corresponding fields in `gnt-cluster info` output. For example, to have
+a backend holding only instances with archipelago disk templates, you can set
+the `--ipolicy-disk-templates` to include only `ext` disk template.
+
+.. code-block:: console
+
+ gnt-cluster modify --ipolicy-disk-templates=ext
 
 Upgrade Steps
 =============
@@ -146,7 +190,7 @@ The upgrade to v0.15 consists in the following steps:
 
 .. _pithos_view_registration:
 
-2.3 Register pithos view as an oauth 2.0 client in astakos
+2.3 Register pithos view as an OAuth 2.0 client in astakos
 ----------------------------------------------------------
 
 Starting from synnefo version 0.15, the pithos view, in order to get access to

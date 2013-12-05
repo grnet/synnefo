@@ -130,7 +130,8 @@ def authenticate(request):
             "tenant": {"id": user.uuid, "name": user.realname}}
         d["access"]["user"] = {
             "id": user.uuid, 'name': user.realname,
-            "roles": list(user.groups.values("id", "name")),
+            "roles": [dict(id=str(g['id']), name=g['name']) for g in
+                      user.groups.values('id', 'name')],
             "roles_links": []}
 
     d["access"]["serviceCatalog"] = get_endpoints()
@@ -163,8 +164,9 @@ def validate_token(request, token_id):
                                        "name": token.user.realname}}
     d["access"]["user"] = {"id": token.user.uuid,
                            'name': token.user.realname,
-                           "roles": list(token.user.groups.values("id",
-                                                                  "name")),
+                           "roles": [dict(id=str(g['id']), name=g['name']) for
+                                     g in token.user.groups.values('id',
+                                                                   'name')],
                            "roles_links": []}
 
     if request.serialization == 'xml':

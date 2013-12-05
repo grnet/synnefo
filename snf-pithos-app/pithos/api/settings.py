@@ -190,4 +190,4 @@ OAUTH2_CLIENT_CREDENTIALS = getattr(settings,
 
 # Set domain to restrict requests of pithos object contents serve endpoint or
 # None for no domain restriction
-SERVE_API_DOMAIN = getattr(settings, 'PITHOS_SERVE_API_DOMAIN', None)
+UNSAFE_DOMAIN = getattr(settings, 'PITHOS_UNSAFE_DOMAIN', None)

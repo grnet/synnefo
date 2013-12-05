@@ -233,7 +233,7 @@ By default it is set to 30 characters.
 Restrict file serving endpoints to a specific host
 --------------------------------------------------
 
-A new setting ``PITHOS_SERVE_API_DOMAIN`` has been introduced. When set,
+A new setting ``PITHOS_UNSAFE_DOMAIN`` has been introduced. When set,
 all api views that serve pithos file contents will be restricted to be served
 only under the domain specified in the setting value.
 

@@ -279,7 +279,7 @@ Pithos
 * Add PITHOS_OAUTH2_CLIENT_CREDENTIALS setting to authenticate the views with
   astakos during the resource access token generation procedure
 
-* Add PITHOS_SERVE_API_DOMAIN setting to restrict file serving endpoints to a
+* Add PITHOS_UNSAFE_DOMAIN setting to restrict file serving endpoints to a
   specific host
 
 * Management commands:

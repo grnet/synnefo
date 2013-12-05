@@ -67,7 +67,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
                                  BASE_HOST, UPDATE_MD5, VIEW_PREFIX,
-                                 OAUTH2_CLIENT_CREDENTIALS, SERVE_API_DOMAIN)
+                                 OAUTH2_CLIENT_CREDENTIALS, UNSAFE_DOMAIN)
 
 from pithos.api.resources import resources
 from pithos.backends import connect_backend
@@ -1165,7 +1165,7 @@ def view_method():
     """Decorator function for views."""
 
     def decorator(func):
-        @restrict_to_host(SERVE_API_DOMAIN)
+        @restrict_to_host(UNSAFE_DOMAIN)
         @wraps(func)
         def wrapper(request, *args, **kwargs):
             if request.method not in ['GET', 'HEAD']:

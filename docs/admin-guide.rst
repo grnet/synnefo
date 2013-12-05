@@ -89,6 +89,27 @@ available at the destination::
   Shib-EP-Affiliation
   Shib-Session-ID
 
+Astakos keeps a map of shibboleth users using the value of the ``REMOTE_USER``
+header, passed by the ``mod_shib2`` module. This happens in order to be able to
+identify the astakos account the shibboleth user is associated to, every time
+the user logs in from an affiliate shibboleth IdP. 
+
+The shibboleth attribute which gets mapped to the ``REMOTE_USER`` header can be
+changed in ``/etc/shibboleth/shibboleth2.xml`` configuration file.
+
+.. code-block:: xml
+
+    <!-- The ApplicationDefaults element is where most of Shibboleth's SAML bits are defined. -->
+        <ApplicationDefaults entityID="https://sp.example.org/shibboleth" 
+         REMOTE_USER="eppn persistent-id targeted-id">
+
+.. warning::
+
+ Changing ``mod_shib2`` ``REMOTE_USER`` to map to different shibboleth
+ attributes will probably invalidate any existing shibboleth enabled users in
+ astakos database. Those users won't be able to login to their existing accounts.
+
+
 Finally, add 'shibboleth' in ``ASTAKOS_IM_MODULES`` list. The variable resides
 inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
 

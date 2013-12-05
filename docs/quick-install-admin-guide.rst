@@ -911,6 +911,15 @@ During the authorization grant procedure, it has to authenticate itself with
 astakos since the later has to prevent serving requests by unknown/unauthorized
 clients.
 
+Each oauth 2.0 client is identified by a client identifier (client_id).
+Moreover, the confidential clients are authenticated via a password
+(client_secret).
+Then, each client has to declare at least a redirect URI so that astakos will
+be able to validate the redirect URI provided during the authorization code
+request.
+If a client is trusted (like a pithos view) astakos grants access on behalf
+of the resource owner, otherwise the resource owner has to be asked.
+
 To register the pithos view as an OAuth 2.0 client in astakos, we have to run
 the following command::
 

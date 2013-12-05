@@ -188,7 +188,7 @@ The upgrade to v0.15 consists in the following steps:
 
     pithos-host$ pithos-migrate upgrade head
 
-.. _pithos_view_registration:
+.. _register_pithos_view:
 
 2.3 Register Pithos view as an OAuth 2.0 client in Astakos
 ----------------------------------------------------------
@@ -201,8 +201,17 @@ During the authorization grant procedure, it has to authenticate itself with
 Astakos, since the latter has to prevent serving requests by
 unknown/unauthorized clients.
 
-To register the Pithos view as an OAuth 2.0 client in Astakos, use the
-following command (with the corresponding URL to reflect your deployment)::
+Each oauth 2.0 client is identified by a client identifier (client_id).
+Moreover, the confidential clients are authenticated via a password
+(client_secret).
+Then, each client has to declare at least a redirect URI so that astakos will
+be able to validate the redirect URI provided during the authorization code
+request.
+If a client is trusted (like a pithos view) astakos grants access on behalf
+of the resource owner, otherwise the resource owner has to be asked.
+
+To register the pithos view as an OAuth 2.0 client in astakos, use the
+following command::
 
     snf-manage oauth2-client-add pithos-view --secret=<secret> --is-trusted --url https://pithos.synnefo.live/pithos/ui/view
 
@@ -225,7 +234,7 @@ file in the same way as above. In addition to this, we have to change the
 ``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting in the same configuration file
 to set the credentials issued for the pithos view in `the previous step`__.
 
-__ pithos_view_registration_
+__ register_pithos_view_
 
 2.5 Upgrade vncauthproxy and configure snf-cyclades-app
 -------------------------------------------------------

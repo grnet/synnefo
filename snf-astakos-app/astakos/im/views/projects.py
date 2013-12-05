@@ -158,8 +158,10 @@ def get_user_projects_table(projects, user, prefix):
 @valid_astakos_user_required
 def project_list(request):
     projects = Project.objects.user_accessible_projects(request.user)
-    table = get_user_projects_table(projects, user=request.user,
-                                    prefix="my_projects_")
+    table = (get_user_projects_table(projects, user=request.user,
+                                     prefix="my_projects_")
+             if list(projects) else None)
+
     return object_list(
         request,
         projects,

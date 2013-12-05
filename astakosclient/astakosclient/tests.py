@@ -65,6 +65,7 @@ except ImportError:
 auth_url = "https://example.org/identity/v2.0"
 account_prefix = "/account_prefix"
 ui_prefix = "/ui_prefix"
+oauth2_prefix = "/oauth2"
 api_tokens = "/identity/v2.0/tokens"
 api_usercatalogs = join_urls(account_prefix, "user_catalogs")
 api_resources = join_urls(account_prefix, "resources")
@@ -97,15 +98,25 @@ resources = {
 
 endpoints = {
     "access": {
-        "serviceCatalog": [{
-            "endpoints": [{"SNF:uiURL": join_urls("https://example.org/",
-                                                  ui_prefix),
-                           "publicURL": join_urls("https://example.org/",
-                                                  account_prefix),
-                           "region": "default",
-                           "versionId": "v1.0"}],
-            "name": "astakos_account",
-            "type": "account"}]
+        "serviceCatalog": [
+            {"endpoints": [{"SNF:uiURL": join_urls("https://example.org/",
+                                                   ui_prefix),
+                            "publicURL": join_urls("https://example.org/",
+                                                   account_prefix),
+                            "region": "default",
+                            "versionId": "v1.0"}],
+             "name": "astakos_account",
+             "type": "account"
+             },
+            {"endpoints": [{"SNF:uiURL": join_urls("https://example.org/",
+                                                   ui_prefix),
+                            "publicURL": join_urls("https://example.org/",
+                                                   oauth2_prefix),
+                            "region": "default",
+                            "versionId": "v1.0"}],
+             "name": "astakos_oauth2",
+             "type": "astakos_auth"
+             }]
         }
     }
 
@@ -414,7 +425,7 @@ class TestCallAstakos(unittest.TestCase):
     """Test cases for function _callAstakos"""
 
     # Patch astakosclient's _do_request function
-    def setUp(self):
+    def setUp(self):  # noqa
         astakosclient._do_request = _mock_request
 
     # ----------------------------------
@@ -556,7 +567,7 @@ class TestAuthenticate(unittest.TestCase):
     """Test cases for function getUserInfo"""
 
     # Patch astakosclient's _do_request function
-    def setUp(self):
+    def setUp(self):  # noqa
         astakosclient._do_request = _mock_request
 
     # ----------------------------------
@@ -589,8 +600,8 @@ class TestAuthenticate(unittest.TestCase):
         try:
             client = AstakosClient(token['id'], auth_url, use_pool=pool)
             auth_info = client.authenticate()
-        except:
-            self.fail("Shouldn't raise an Exception")
+        except Exception as err:
+            self.fail("Shouldn't raise an Exception: %s" % err)
         self.assertEqual(endpoints_with_info, auth_info)
 
     def test_auth_user(self):
@@ -606,7 +617,7 @@ class TestDisplayNames(unittest.TestCase):
     """Test cases for functions getDisplayNames/getDisplayName"""
 
     # Patch astakosclient's _do_request function
-    def setUp(self):
+    def setUp(self):  # noqa
         astakosclient._do_request = _mock_request
 
     # ----------------------------------
@@ -657,7 +668,7 @@ class TestGetUUIDs(unittest.TestCase):
     """Test cases for functions getUUIDs/getUUID"""
 
     # Patch astakosclient's _do_request function
-    def setUp(self):
+    def setUp(self):  # noqa
         astakosclient._do_request = _mock_request
 
     # ----------------------------------
@@ -707,7 +718,7 @@ class TestResources(unittest.TestCase):
     """Test cases for function get_resources"""
 
     # Patch astakosclient's _do_request function
-    def setUp(self):
+    def setUp(self):  # noqa
         astakosclient._do_request = _mock_request
 
     # ----------------------------------
@@ -726,7 +737,7 @@ class TestQuotas(unittest.TestCase):
     """Test cases for function get_quotas"""
 
     # Patch astakosclient's _do_request function
-    def setUp(self):
+    def setUp(self):  # noqa
         astakosclient._do_request = _mock_request
 
     # ----------------------------------
@@ -760,7 +771,7 @@ class TestCommissions(unittest.TestCase):
     """Test cases for quota commissions"""
 
     # Patch astakosclient's _do_request function
-    def setUp(self):
+    def setUp(self):  # noqa
         astakosclient._do_request = _mock_request
 
     # ----------------------------------

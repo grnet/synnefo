@@ -1396,7 +1396,7 @@ architecture and communication with a Ganeti backend is shown in the graph
 below:
 
 .. image:: images/cyclades-ganeti-communication.png
-   :width: 50%
+   :width: 40%
    :target: _images/cyclades-ganeti-communication.png
 
 The Cyclades API server is responsible for handling user requests. Read-only

@@ -87,6 +87,12 @@ Astakos
 
 * Add API call for validating OAuth 2.0 access tokens
 
+* **Shibboleth module** Extract unique identifier from the 
+  ``REMOTE_USER`` header.
+
+* Automatically fill third party signup form fields when available by the 
+  the third party provider.
+
 * Management commands:
   * Introduced new commands:
      * component-show

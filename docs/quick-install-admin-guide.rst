@@ -98,11 +98,11 @@ General Synnefo dependencies
 		* gevent
 		* dns server
 
-You can install apache2, postgresql and ntp by running:
+You can install apache2, postgresql, ntp and rabbitmq by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 postgresql ntp
+   # apt-get install apache2 postgresql ntp rabbitmq-server
 
 Make sure to install gunicorn >= v0.12.2. You can do this by installing from
 the official debian backports:
@@ -124,26 +124,6 @@ python-psycopg2 package:
 
    # apt-get install python-psycopg2
 
-To install RabbitMQ>=2.8.4, use the RabbitMQ APT repository by adding the
-following line to ``/etc/apt/sources.list``:
-
-.. code-block:: console
-
-    deb http://www.rabbitmq.com/debian testing main
-
-Add RabbitMQ public key, to trusted key list:
-
-.. code-block:: console
-
-  # wget http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
-  # apt-key add rabbitmq-signing-key-public.asc
-
-Finally, to install the package run:
-
-.. code-block:: console
-
-  # apt-get update
-  # apt-get install rabbitmq-server
 
 Database setup
 ~~~~~~~~~~~~~~
@@ -918,6 +898,32 @@ numeric value, i.e. 10240 MB, 10 GB etc.
 
     # snf-manage resource-modify --default-quota-interactive
 
+.. _pithos_view_registration:
+
+Register pithos view as an OAuth 2.0 client
+-------------------------------------------
+
+Starting from synnefo version 0.15, the pithos view, in order to get access to
+the data of a protect pithos resource, has to be granted authorization for the
+specific resource by astakos.
+
+During the authorization grant procedure, it has to authenticate itself with
+astakos since the later has to prevent serving requests by unknown/unauthorized
+clients.
+
+Each oauth 2.0 client is identified by a client identifier (client_id).
+Moreover, the confidential clients are authenticated via a password
+(client_secret).
+Then, each client has to declare at least a redirect URI so that astakos will
+be able to validate the redirect URI provided during the authorization code
+request.
+If a client is trusted (like a pithos view) astakos grants access on behalf
+of the resource owner, otherwise the resource owner has to be asked.
+
+To register the pithos view as an OAuth 2.0 client in astakos, we have to run
+the following command::
+
+    snf-manage oauth2-client-add pithos-view --secret=<secret> --is-trusted --url https://node2.example.com/pithos/ui/view
 
 Servers Initialization
 ----------------------
@@ -1075,6 +1081,13 @@ The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are used by the
 Pithos web client to get from astakos all the information needed to fill its
 own cloudbar. So we put our astakos deployment urls there.
 
+The ``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting is used by the pithos view
+in order to authenticate itself with astakos during the authorization grant
+procedure and it should container the credentials issued for the pithos view
+in `the pithos view registration step`__.
+
+__ pithos_view_registration_
+
 Pooling and Greenlets
 ---------------------
 
@@ -1198,7 +1211,7 @@ Ganeti
 `Ganeti <http://code.google.com/p/ganeti/>`_ handles the low level VM management
 for Cyclades, so Cyclades requires a working Ganeti installation at the backend.
 Please refer to the
-`ganeti documentation <http://docs.ganeti.org/ganeti/2.6/html>`_ for all the
+`ganeti documentation <http://docs.ganeti.org/ganeti/2.8/html>`_ for all the
 gory details. A successful Ganeti installation concludes with a working
 :ref:`GANETI-MASTER <GANETI_NODES>` and a number of :ref:`GANETI-NODEs
 <GANETI_NODES>`.

@@ -73,6 +73,7 @@ def login(request, user):
 def logout(request, *args, **kwargs):
     user = request.user
     auth_logout(request, *args, **kwargs)
+    user.delete_online_access_tokens()
     logger.info('%s logged out.', user.log_display)
 
 

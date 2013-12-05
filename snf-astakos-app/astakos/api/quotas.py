@@ -55,9 +55,8 @@ def get_visible_resources():
     key = "resources"
     result = cache.get(key)
     if result is None:
-        cache.set(key, register.get_api_visible_resources(),
-                  settings.RESOURCE_CACHE_TIMEOUT)
-        result = cache.get(key)
+        result = register.get_api_visible_resources()
+        cache.set(key, result, settings.RESOURCE_CACHE_TIMEOUT)
     return result
 
 
@@ -97,7 +96,7 @@ def commissions(request):
         return get_pending_commissions(request)
     elif method == 'POST':
         return issue_commission(request)
-    return api.api_method_not_allowed(request)
+    return api.api_method_not_allowed(request, allowed_methods=['GET', 'POST'])
 
 
 @api.api_method(http_method='GET', token_required=True, user_required=False)

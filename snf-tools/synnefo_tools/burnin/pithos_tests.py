@@ -85,7 +85,7 @@ class PithosTestSuite(BurninTests):
     def test_004_upload_file(self):
         """Test uploading a txt file to Pithos"""
         # Create a tmp file
-        with tempfile.TemporaryFile() as fout:
+        with tempfile.TemporaryFile(dir=self.temp_directory) as fout:
             fout.write("This is a temp file")
             fout.seek(0, 0)
             # Upload the file,
@@ -97,7 +97,7 @@ class PithosTestSuite(BurninTests):
     def test_005_download_file(self):
         """Test downloading the file from Pithos"""
         # Create a tmp directory to save the file
-        with tempfile.TemporaryFile() as fout:
+        with tempfile.TemporaryFile(dir=self.temp_directory) as fout:
             self.clients.pithos.download_object("test.txt", fout)
             # Now read the file
             fout.seek(0, 0)

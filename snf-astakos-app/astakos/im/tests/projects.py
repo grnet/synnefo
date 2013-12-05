@@ -487,17 +487,21 @@ class ProjectAPITest(TestCase):
 
         # Bad requests
         r = client.head(reverse("api_projects"), **h_admin)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
 
         r = client.head(reverse("api_project",
                                 kwargs={"project_id": 1}), **h_admin)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
 
         r = client.head(reverse("api_applications"), **h_admin)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
 
         r = client.head(reverse("api_memberships"), **h_admin)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
 
         status = self.project_action(1, "nonex", h_owner)
         self.assertEqual(status, 400)

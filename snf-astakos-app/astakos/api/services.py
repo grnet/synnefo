@@ -96,5 +96,9 @@ astakos_services = {
             {'versionId': '',
              'publicURL': None},
         ],
+        'resources': {},
     },
 }
+
+from astakos.oa2.services import oa2_services
+astakos_services.update(oa2_services)

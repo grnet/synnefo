@@ -70,7 +70,8 @@ def demux(request):
     elif request.method == 'POST':
         return create_server(request)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET', 'POST'])
 
 
 def server_demux(request, server_id):
@@ -81,7 +82,10 @@ def server_demux(request, server_id):
     elif request.method == 'DELETE':
         return delete_server(request, server_id)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET',
+                                                           'PUT',
+                                                           'DELETE'])
 
 
 def metadata_demux(request, server_id):
@@ -90,7 +94,8 @@ def metadata_demux(request, server_id):
     elif request.method == 'POST':
         return update_metadata(request, server_id)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET', 'POST'])
 
 
 def metadata_item_demux(request, server_id, key):
@@ -101,7 +106,10 @@ def metadata_item_demux(request, server_id, key):
     elif request.method == 'DELETE':
         return delete_metadata_item(request, server_id, key)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET',
+                                                           'PUT',
+                                                           'DELETE'])
 
 
 def nic_to_attachments(nic):

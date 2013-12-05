@@ -34,8 +34,10 @@
 import json
 import csv
 import functools
+import operator
 from datetime import datetime
 from django.utils.timesince import timesince, timeuntil
+from django.db.models.query import QuerySet
 
 from synnefo.util.text import uenc, udec
 
@@ -73,7 +75,16 @@ def format_date(d):
         return "in " + timeuntil(d)
 
 
-def parse_filters(filter_by):
+def filter_results(results, filters):
+    if isinstance(results, QuerySet):
+        return filter_queryset_results(results, filters)
+    elif isinstance(results, list):
+        return filter_object_results(results, filters)
+    else:
+        raise ValueError("Invalid type for results argument: %s", results)
+
+
+def parse_queryset_filters(filters):
     """Parse a string into lookup parameters for QuerySet.filter(**kwargs).
 
     This functions converts a string of comma-separated key 'cond' val triples
@@ -83,37 +94,72 @@ def parse_filters(filter_by):
     e.g. filter_by="foo>=2, baz!=4" -> ({"foo__gte": "2"}, {"baz": "4"})
 
     """
+    OP_MAP = [
+        (">=", "__gte"),
+        ("=>", "__gte"),
+        (">",  "__gt"),
+        ("<=", "__lte"),
+        ("=<", "__lte"),
+        ("<", "__lt"),
+        ("=", ""),
+        ]
 
     filter_dict = {}
     exclude_dict = {}
-
-    filter_list = filter_by.split(",")
-
-    def map_field_type(query):
-        if "!=" in query:
-            key, val = query.split("!=")
+    for filter_str in filters.split(","):
+        if "!=" in filter_str:
+            key, val = filter_str.split("!=")
             exclude_dict[key] = parse_bool(val, strict=False)
-            return
-
-        OP_MAP = [
-            (">=", "__gte"),
-            ("=>", "__gte"),
-            (">",  "__gt"),
-            ("<=", "__lte"),
-            ("=<", "__lte"),
-            ("<", "__lt"),
-            ("=", ""),
-            ]
-
+            continue
         for op, new_op in OP_MAP:
-            if op in query:
-                key, val = query.split(op)
+            if op in filter_str:
+                key, val = filter_str.split(op)
                 filter_dict[key + new_op] = parse_bool(val, strict=False)
-                return
-
-    map(lambda x: map_field_type(x), filter_list)
+                break
+        else:
+            raise ValueError("Unknown filter expression: %s" % filter_str)
 
     return (filter_dict, exclude_dict)
+
+
+def filter_queryset_results(results, filters):
+    filter_dict, exclude_dict = parse_queryset_filters(filters)
+    return results.exclude(**exclude_dict).filter(**filter_dict)
+
+
+def parse_object_filters(filters):
+    OP_MAP = [
+        (">=", operator.ge),
+        ("=>", operator.ge),
+        (">",  operator.gt),
+        ("<=", operator.le),
+        ("=<", operator.le),
+        ("<", operator.lt),
+        ("!=", operator.ne),
+        ("=", operator.eq),
+    ]
+    filters = []
+    for filter_str in filters.split(","):
+        for op, op_func in OP_MAP:
+            if op in filter_str:
+                key, val = filter_str.split(op)
+                filters.append((key.strip(), op_func, val.strip()))
+                break
+        else:
+            raise ValueError("Unknown filter expression: %s" % filter_str)
+    return filters
+
+
+def filter_object_results(results, filters):
+    results = list(results)
+    if results is []:
+        return results
+    zero_result = results[0]
+    for key, op_func, val in parse_object_filters(filters):
+        val_type = type(getattr(zero_result, key))
+        results = filter(lambda x: op_func(getattr(x, key), val_type(val)),
+                         results)
+    return results
 
 
 def pprint_table(out, table, headers=None, output_format='pretty',

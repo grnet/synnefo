@@ -268,7 +268,7 @@ def projects(request):
         return get_projects(request)
     elif method == "POST":
         return create_project(request)
-    return api.api_method_not_allowed(request)
+    return api.api_method_not_allowed(request, allowed_methods=['GET', 'POST'])
 
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
@@ -316,7 +316,7 @@ def project(request, project_id):
         return get_project(request, project_id)
     if method == "POST":
         return modify_project(request, project_id)
-    return api.api_method_not_allowed(request)
+    return api.api_method_not_allowed(request, allowed_methods=['GET', 'POST'])
 
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
@@ -485,7 +485,7 @@ def applications(request):
     method = request.method
     if method == "GET":
         return get_applications(request)
-    return api.api_method_not_allowed(request)
+    return api.api_method_not_allowed(request, allowed_methods=['GET'])
 
 
 def make_application_query(input_data):
@@ -569,7 +569,7 @@ def memberships(request):
         return get_memberships(request)
     elif method == "POST":
         return post_memberships(request)
-    return api.api_method_not_allowed(request)
+    return api.api_method_not_allowed(request, allowed_methods=['GET', 'POST'])
 
 
 def make_membership_query(input_data):

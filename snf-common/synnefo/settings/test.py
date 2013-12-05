@@ -15,7 +15,7 @@ DATABASES = {
 }
 
 LOGGING_SETUP['handlers']['console']['level'] = \
-    os.environ.get('SYNNEFO_TESTS_LOGGING_LEVEL', 'WARNING')
+    os.environ.get('SYNNEFO_TESTS_LOGGING_LEVEL', 'INFO')
 
 LOGIN_URL = 'http://host:port/'
 

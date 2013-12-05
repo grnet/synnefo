@@ -562,6 +562,7 @@ class AstakosUser(User):
             timedelta(hours=astakos_settings.AUTH_TOKEN_DURATION)
         if flush_sessions:
             self.flush_sessions(current_key)
+        self.delete_online_access_tokens()
         msg = 'Token renewed for %s'
         logger.log(astakos_settings.LOGGING_LEVEL, msg, self.log_display)
 
@@ -811,6 +812,12 @@ class AstakosUser(User):
         if project.is_deactivated():
             return False
         return True
+
+    def delete_online_access_tokens(self):
+        offline_tokens = self.token_set.filter(access_token='online')
+        logger.info('The following access tokens will be deleted: %s',
+                    offline_tokens)
+        offline_tokens.delete()
 
 
 class AstakosUserAuthProviderManager(models.Manager):

@@ -37,17 +37,19 @@ from django.views.decorators.csrf import csrf_exempt
 from snf_django.lib import api
 from snf_django.lib.api import faults
 
+from pithos.api.settings import UNSAFE_DOMAIN
 from pithos.api.util import (put_object_headers, update_manifest_meta,
                              validate_modification_preconditions,
                              validate_matching_preconditions,
                              object_data_response, api_method,
-                             split_container_object_string)
+                             split_container_object_string, restrict_to_host)
 
 import logging
 logger = logging.getLogger(__name__)
 
 
 @csrf_exempt
+@restrict_to_host(UNSAFE_DOMAIN)
 def public_demux(request, v_public):
     if request.method == 'HEAD':
         return public_meta(request, v_public)

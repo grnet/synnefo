@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
+from functools import partial
 
 from snf_django.management.commands import ListCommand
 from synnefo.db.models import VirtualMachine
@@ -77,13 +78,13 @@ class Command(ListCommand):
     astakos_auth_url = ASTAKOS_AUTH_URL
     astakos_token = ASTAKOS_TOKEN
 
-    def get_ipv4(vm):
-        return vm.nics.filter(ips__subnet__ipversion=4)\
-                      .values_list("ips__address", flat=True)
-
-    def get_ipv6(vm):
-        return vm.nics.filter(ips__subnet__ipversion=6)\
-                      .values_list("ips__address", flat=True)
+    def get_ips(version, vm):
+        ips = []
+        for nic in vm.nics.all():
+            for ip in nic.ips.all():
+                if ip.subnet.ipversion == version:
+                    ips.append(ip.address)
+        return ips
 
     def format_vm_state(vm):
         if vm.operstate == "BUILD":
@@ -100,8 +101,10 @@ class Command(ListCommand):
         "image.id": ("imageid", "The ID of the server's image"),
         "image.name": ("image", "The name of the server's image"),
         "state": (format_vm_state, "The current state of the server"),
-        "ipv4": (get_ipv4, "The IPv4 addresses of the server"),
-        "ipv6": (get_ipv6, "The IPv6 addresses of the server"),
+        "ipv4": (partial(get_ips, 4),
+                 "The IPv4 addresses of the server"),
+        "ipv6": (partial(get_ips, 6),
+                 "The IPv6 addresses of the server"),
         "created": ("created", "The date the server was created"),
         "deleted": ("deleted", "Whether the server is deleted or not"),
         "suspended": ("suspended", "Whether the server is administratively"
@@ -125,6 +128,9 @@ class Command(ListCommand):
         if options["image_name"]:
             self.fields = ["image.name" if x == "image.id" else x
                            for x in self.fields]
+
+        if "ipv4" in self.fields or "ipv6" in self.fields:
+            self.prefetch_related.append("nics__ips__subnet")
 
     def handle_db_objects(self, rows, *args, **kwargs):
         if "image.name" in self.fields:

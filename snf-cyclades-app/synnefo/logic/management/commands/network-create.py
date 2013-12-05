@@ -138,6 +138,13 @@ class Command(BaseCommand):
                  "ending IP. If no allocation pools are given, the whole "
                  "subnet range is used, excluding the gateway IP, the "
                  "broadcast address and the network address"),
+        make_option(
+            "--drained",
+            dest="drained",
+            metavar="True|False",
+            choices=["True", "False"],
+            default="False",
+            help="Set network as drained to prevent creation of new ports."),
     )
 
     @convert_api_faults
@@ -160,6 +167,7 @@ class Command(BaseCommand):
         allocation_pools = options["allocation_pools"]
         floating_ip_pool = parse_bool(options["floating_ip_pool"])
         dhcp = parse_bool(options["dhcp"])
+        drained = parse_bool(options["drained"])
 
         if name is None:
             name = ""
@@ -175,6 +183,9 @@ class Command(BaseCommand):
             raise CommandError("Cannot use allocation-pools without subnet")
         if subnet6 is None and gateway6 is not None:
             raise CommandError("Cannot use gateway6 without subnet6")
+        if flavor == "IP_LESS_ROUTED" and not (subnet or subnet6):
+            raise CommandError("Cannot create 'IP_LESS_ROUTED' network without"
+                               " subnet")
 
         if not (userid or public):
             raise CommandError("'owner' is required for private networks")
@@ -182,7 +193,8 @@ class Command(BaseCommand):
         network = networks.create(userid=userid, name=name, flavor=flavor,
                                   public=public, mode=mode,
                                   link=link, mac_prefix=mac_prefix, tags=tags,
-                                  floating_ip_pool=floating_ip_pool)
+                                  floating_ip_pool=floating_ip_pool,
+                                  drained=drained)
 
         if subnet is not None:
             alloc = None

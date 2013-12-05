@@ -62,7 +62,8 @@ def demux(request):
     elif request.method == 'POST':
         return create_network(request)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET', 'POST'])
 
 
 def network_demux(request, network_id):
@@ -74,7 +75,10 @@ def network_demux(request, network_id):
     elif request.method == 'PUT':
         return update_network(request, network_id)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET',
+                                                           'PUT',
+                                                           'DELETE'])
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)

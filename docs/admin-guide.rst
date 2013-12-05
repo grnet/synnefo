@@ -89,6 +89,27 @@ available at the destination::
   Shib-EP-Affiliation
   Shib-Session-ID
 
+Astakos keeps a map of shibboleth users using the value of the ``REMOTE_USER``
+header, passed by the ``mod_shib2`` module. This happens in order to be able to
+identify the astakos account the shibboleth user is associated to, every time
+the user logs in from an affiliate shibboleth IdP. 
+
+The shibboleth attribute which gets mapped to the ``REMOTE_USER`` header can be
+changed in ``/etc/shibboleth/shibboleth2.xml`` configuration file.
+
+.. code-block:: xml
+
+    <!-- The ApplicationDefaults element is where most of Shibboleth's SAML bits are defined. -->
+        <ApplicationDefaults entityID="https://sp.example.org/shibboleth" 
+         REMOTE_USER="eppn persistent-id targeted-id">
+
+.. warning::
+
+ Changing ``mod_shib2`` ``REMOTE_USER`` to map to different shibboleth
+ attributes will probably invalidate any existing shibboleth enabled users in
+ astakos database. Those users won't be able to login to their existing accounts.
+
+
 Finally, add 'shibboleth' in ``ASTAKOS_IM_MODULES`` list. The variable resides
 inside the file ``/etc/synnefo/20-snf-astakos-app-settings.conf``
 
@@ -132,14 +153,14 @@ Working with Astakos
 User registration
 ~~~~~~~~~~~~~~~~~
 
-When a new user signs up, he/she is not directly marked as active. You can see 
+When a new user signs up, he/she is not directly marked as active. You can see
 his/her state by running (on the machine that runs the Astakos app):
 
 .. code-block:: console
 
    $ snf-manage user-list
 
-More detailed user status is provided in the `status` field of the `user-show` 
+More detailed user status is provided in the `status` field of the `user-show`
 command:
 
 .. code-block:: console
@@ -169,11 +190,11 @@ Email verification
 
 The verification process takes place in order to ensure that the user owns the
 email provided during the signup process. By default, after each successful
-signup astakos notifies user with an verification url via email. 
+signup astakos notifies user with an verification url via email.
 
 At this stage:
 
-    * subsequent registrations invalidate and delete the previous registrations 
+    * subsequent registrations invalidate and delete the previous registrations
       of the same email address.
 
     * in case user misses the initial notification, additional emails can be
@@ -189,7 +210,7 @@ Account activation
 
 Once the user gets verified, it is time for Astakos to decide whether or not to
 proceed through user activation process. If ``ASTAKOS_MODERATION_ENABLED``
-setting is set to ``False`` (default value) user gets activated automatically. 
+setting is set to ``False`` (default value) user gets activated automatically.
 
 In case the moderation is enabled Astakos may still automatically activate the
 user in the following cases:
@@ -197,7 +218,7 @@ user in the following cases:
     * User email matches any of the regular expressions defined in
       ``ASTAKOS_RE_USER_EMAIL_PATTERNS`` (defaults to ``[]``)
     * User used a signup method (e.g. ``shibboleth``) for which automatic
-      activation is enabled (see 
+      activation is enabled (see
       :ref:`authentication methods policies <auth_methods_policies>`).
 
 If all of the above fail to trigger automatic activation, an email is sent to
@@ -224,7 +245,7 @@ Additional authentication methods
 `````````````````````````````````
 
 Astakos supports third party logins from external identity providers. This
-can be usefull since it allows users to use their existing credentials to 
+can be usefull since it allows users to use their existing credentials to
 login to astakos service.
 
 Currently astakos supports the following identity providers:
@@ -238,7 +259,7 @@ Currently astakos supports the following identity providers:
       (module name ``linkedin``)
 
 To enable any of the above modules (by default only ``local`` accounts are
-allowed), retrieve and set the required provider settings and append the 
+allowed), retrieve and set the required provider settings and append the
 module name in ``ASTAKOS_IM_MODULES``.
 
 .. code-block:: python
@@ -246,7 +267,7 @@ module name in ``ASTAKOS_IM_MODULES``.
     # settings from https://code.google.com/apis/console/
     ASTAKOS_GOOGLE_CLIENT_ID = '1111111111-epi60tvimgha63qqnjo40cljkojcann3.apps.googleusercontent.com'
     ASTAKOS_GOOGLE_SECRET = 'tNDQqTDKlTf7_LaeUcWTWwZM'
-    
+
     # let users signup and login using their google account
     ASTAKOS_IM_MODULES = ['local', 'google']
 
@@ -256,23 +277,23 @@ module name in ``ASTAKOS_IM_MODULES``.
 Authentication method policies
 ``````````````````````````````
 
-Astakos allows you to override the default policies for each enabled provider 
-separately by adding the approriate settings in your ``.conf`` files in the 
+Astakos allows you to override the default policies for each enabled provider
+separately by adding the approriate settings in your ``.conf`` files in the
 following format:
 
 **ASTAKOS_AUTH_PROVIDER_<module>_<policy>_POLICY**
 
 Available policies are:
 
-    * **CREATE** Users can signup using that provider (default: ``True``) 
-    * **REMOVE/ADD** Users can remove/add login method from their profile 
+    * **CREATE** Users can signup using that provider (default: ``True``)
+    * **REMOVE/ADD** Users can remove/add login method from their profile
       (default: ``True``)
     * **AUTOMODERATE** Automatically activate users that signup using that
       provider (default: ``False``)
     * **LOGIN** Whether or not users can use the provider to login (default:
       ``True``).
 
-e.g. to enable automatic activation for your academic users, while keeping 
+e.g. to enable automatic activation for your academic users, while keeping
 locally signed up users under moderation you can apply the following settings.
 
 .. code-block:: python
@@ -566,14 +587,14 @@ command will create two flavors of `40G` disk size with `drbd` disk template,
 
 .. code-block:: console
 
-  snf-manage flavor-create 2,4 4096 40 drbd
+  $ snf-manage flavor-create 2,4 4096 40 drbd
 
 To see the available flavors, run `snf-manage flavor-list` command. Finally,
 the administrator can delete a flavor by using `flavor-modify` command:
 
 .. code-block:: console
 
-  snf-manage flavor-modify --deleted=True <flavor_id>
+  $ snf-manage flavor-modify --deleted=True <flavor_id>
 
 Images
 ~~~~~~
@@ -591,7 +612,7 @@ image to spawn new VMs from it.
 Images can be private, public or shared between users, exactly like Pithos
 files. Since user-provided public images can be untrusted, the administrator
 can denote which users are trusted by adding them to the
-`UI_SYSTEM_IMAGES_OWNERS` setting in the
+``UI_SYSTEM_IMAGES_OWNERS`` setting in the
 `/etc/synnefo/20-snf-cyclades-app-ui.conf` file. Images of those users are
 properly displayed in the UI.
 
@@ -614,14 +635,14 @@ that contains a random UUID. After `snf-image` gets the sensitive data, the
 URL is invalidated so no one else can access them.
 
 The administrator can register images, exactly like users, using a system user
-(a user that is defined in the `UI_SYSTEM_IMAGES_OWNERS` setting). For
+(a user that is defined in the ``UI_SYSTEM_IMAGES_OWNERS`` setting). For
 example, the following command will register the
 `pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump` as an
 image to Cyclades:
 
 .. code-block:: console
 
- kamaki image register "Debian Base" \
+ $ kamaki image register "Debian Base" \
         pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump \
         --public \
         --disk-format=diskdump \
@@ -662,7 +683,7 @@ bypassing automatic VM allocation.
 
 .. code-block:: console
 
- snf-manage server-create --flavor-id=1 --image-id=fc0f6858-f962-42ce-bf9a-1345f89b3d5e \
+ $ snf-manage server-create --flavor-id=1 --image-id=fc0f6858-f962-42ce-bf9a-1345f89b3d5e \
     --user-id=7cf4d078-67bf-424d-8ff2-8669eb4841ea --backend-id=2 \
     --password='example_passw0rd' --name='test_vm'
 
@@ -681,7 +702,7 @@ started servers of a specific flavor:
 
 .. code-block:: console
 
- snf-manage server-list --filter-by="operstate=STARTED,flavor=<flavor_id>"
+ $ snf-manage server-list --filter-by="operstate=STARTED,flavor=<flavor_id>"
 
 Another very useful command is the `server-inspect` command which will display
 all available information about the state of the server in DB and the state
@@ -693,7 +714,7 @@ command:
 
 .. code-block:: console
 
- snf-manage server-modify --suspended=True <server_id>
+ $ snf-manage server-modify --suspended=True <server_id>
 
 The user is forbidden to do any action on an administratively suspended VM,
 which is useful for abuse cases.
@@ -743,7 +764,7 @@ To add this Ganeti cluster, we run:
 
 where ``clustername`` is the Cluster hostname of the Ganeti cluster, and
 ``user`` and ``pass`` are the credentials for the `Ganeti RAPI user
-<http://docs.ganeti.org/ganeti/2.2/html/rapi.html#users-and-passwords>`_.  All
+<http://docs.ganeti.org/ganeti/2.8/html/rapi.html#users-and-passwords>`_.  All
 backend attributes can be also changed dynamically using the `snf-manage
 backend-modify` command.
 
@@ -790,6 +811,8 @@ between users and backends. If the user is found in ``BACKEND_PER_USER``, then
 Synnefo allocates all his/hers VMs to the specific backend in the variable,
 even if is marked as drained (useful for testing).
 
+.. _alloc_disk_templates:
+
 Allocation based on disk-templates
 **********************************
 
@@ -823,7 +846,7 @@ sure that there are not active servers in the backend, and then run:
 
 .. code-block:: console
 
-   # snf-manage backend-remove <backend_id>
+   $ snf-manage backend-remove <backend_id>
 
 
 Virtual Networks
@@ -867,26 +890,26 @@ Create a virtual private network for user
 `7cf4d078-67bf-424d-8ff2-8669eb4841ea` using the `PHYSICAL_VLAN` flavor, which
 means that the network will be uniquely assigned a phsyical VLAN. The network
 is assigned an IPv4 subnet, described by it's CIDR and gateway. Also,
-the `--dhcp=True` option is used, to make `nfdhcpd` respone to DHCP queries
+the `--dhcp=True` option is used, to make `nfdhcpd` response to DHCP queries
 from VMs.
 
 .. code-block:: console
 
- snf-manage network-create --owner=7cf4d078-67bf-424d-8ff2-8669eb4841ea --name=prv_net-1 \
+ $ snf-manage network-create --owner=7cf4d078-67bf-424d-8ff2-8669eb4841ea --name=prv_net-1 \
     --subnet=192.168.2.0/24 --gateway=192.168.2.1 --dhcp=True --flavor=PHYSICAL_VLAN
 
 Inspect the state of the network in Cyclades DB and in all the Ganeti backends:
 
 .. code-block:: console
 
-  snf-manage network-inspect <network_id>
+  $ snf-manage network-inspect <network_id>
 
 Inspect the state of the network's subnet, containg an overview of the
 subnet's IPv4 address allocation pool:
 
 .. code-block:: console
 
-  snf-manage subnet-inspect <subnet_id>
+  $ snf-manage subnet-inspect <subnet_id>
 
 Connect a VM to the created private network. The port will be automatically
 be assigned an IPv4 address from one of the network's available IPs. This
@@ -895,20 +918,128 @@ attaching a NIC to the specified Ganeti instance.
 
 .. code-block:: console
 
- snf-manage port-create --network=<network_id> --server=<server_id>
+ $ snf-manage port-create --network=<network_id> --server=<server_id>
 
 Inspect the state of the the port in Cyclades DB and in the Ganeti backend:
 
 .. code-block:: console
 
- snf-manage port-inspect <port_id>
+ $ snf-manage port-inspect <port_id>
 
 Disconnect the VM from the network and delete the network:
 
 .. code-block:: console
 
- snf-manage port-remove <port_id>
- snf-manage network-remove <network_id>
+ $ snf-manage port-remove <port_id>
+ $ snf-manage network-remove <network_id>
+
+
+Enabling DHCP
+`````````````
+
+When connecting a VM to a network, Cyclades will automatically assign an IPv4
+address from the IPv4 or/and IPv6 subnets of the network. If the network has
+no subnets, then it will not be assigned any IP address.
+
+If the network has DHCP enabled, then `nfdhcpd` daemon, which must be running
+on all Ganeti nodes, will respond to DHCP queries from VMs and assign to them
+the IP address that was allocated by Cyclades. DCHP can be enabled/disabled
+using the `--dhcp` option of `network-create` command.
+
+
+Public network connectivity
+```````````````````````````
+
+Since v0.14, users are able to dynamically connect and disconnect their VMs
+from public networks. In order to do that, they have to use a `floating IP`.
+Floating IPs are basically public IPv4 addresses that can be dynamically
+attached and detached from VMs. The user creates a floating IP address from a
+network that has set the `floating_ip_pool` attribute. The floating IP is
+accounted to the user, who can then connect his VMs to public networks by
+creating ports that they are using this floating IP. Performing this work-flow
+from `snf-manage` would look like this:
+
+.. code-block:: console
+
+ $ snf-manage network-list --filter-by="floating_ip_pool=True"
+ id      name  user.uuid   state  public  subnet.ipv4  gateway.ipv4  drained  floating_ip_pool
+ ---------------------------------------------------------------------------------------------
+  1  Internet       None  ACTIVE    True  10.2.1.0/24      10.2.1.1    False              True
+
+ $ snf-manage floating-ip-create --owner=7cf4d078-67bf-424d-8ff2-8669eb4841ea --network=1
+
+ $ snf-manage floating-ip-list --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea
+ id   address       network                             user.uuid  server
+ ------------------------------------------------------------------------
+ 38  10.2.1.2             1  7cf4d078-67bf-424d-8ff2-8669eb4841ea      42
+
+ $ snf-manage port-create --owner=7cf4d078-67bf-424d-8ff2-8669eb4841ea --network=1 \
+                          --ipv4-address=10.2.1.2 --floating-ip=38
+
+ $ snf-manage port-list --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea
+ id                            user.uuid        mac_address  network  server_id  fixed_ips   state
+ --------------------------------------------------------------------------------------------------
+ 163 7cf4d078-67bf-424d-8ff2-8669eb4841ea  aa:00:00:45:13:98       1         77   10.2.1.2  ACTIVE
+
+ $ snf-manage port-remove 163
+ $ snf-manage floating-ip-remove 38
+
+Users do not have permission to connect and disconnect VMs from public
+networks without using a floating IP address. However, the administrator
+have the ability to perform this tasks, using `port-create` and `port-remove`
+commands.
+
+Network connectivity for newly created servers
+``````````````````````````````````````````````
+
+When creating a virtual server, the user can specify the networks that the
+newly created server will be connected to. Beyond this, the administrator can
+define a list of networks that every new server will be forced to connect to.
+For example, you can enforce all VMs to be connected to a public network
+containing a metadata server. The networks must be specified in the
+``CYCLADES_FORCED_SERVER_NETWORKS`` that exists in the
+``/etc/synnefo/20-snf-cyclades-app-api.conf``. For the networks in this
+setting, no access control or quota policy are enforced!
+
+Finally, the administrator can define a list of networks that new servers will
+be connected, *if the user has not* specified networks in the request to create
+the server. Access control and quota policy are enforced, just as if the user
+had specified these networks. The list of these networks is defined in the
+``CYCLADES_DEFAULT_SERVER_NETWORKS`` that exists in the
+``/etc/synnefo/20-snf-cyclades-app-api.conf``. This setting should only
+be used if Cyclades are being accessed by external clients that are
+unaware of the `Neutron API extensions` in the `Compute API`.
+
+Each member of the above mentioned settings can be:
+
+* a network UUID
+* a tuple of network UUIDs: the server will be connected to only one of these
+  networks, e.g. one that has a free IPv4 address
+* `SNF:ANY_PUBLIC_IPV4`: the server will be connected to any network with
+  an IPv4 subnet defined
+* `SNF:ANY_PUBLIC_IPV6`: the server will be connected to any network with
+  only an IPv6 subnet defined.
+* `SNF:ANY_PUBLIC`: the server will be connected to any public network.
+
+Public IP accounting
+````````````````````
+
+There are many use cases, e.g. abuse ports, where you need to find which user
+or which server had a public IP address. For this reason, Cyclades keeps track
+usage of public IPv4/IPv6 addresses. Specifically, it keeps the date and time
+that each public IP address was allocated and released from a virtual server.
+This information can be found using `ip-list` command:
+
+.. code-block:: console
+
+ $ snf-manage ip-list
+
+ Show usage of a specific address:
+ $ snf-manage ip-list --address=192.168.2.1
+
+ Show public IPs of a specific server:
+ $ snf-manage ip-list --server=<server_id>
+
 
 Managing Network Resources
 ``````````````````````````
@@ -987,16 +1118,92 @@ The above command will create a pool of MAC prefixes from ``aa:00:1`` to
 locally administered MAC addresses, so many of these prefixes will be
 externally reserved, to exclude from allocation.
 
-Pool reconciliation
-*******************
+Quotas
+~~~~~~
 
-The management command `snf-manage reconcile-pools` can be used that all the
-above mentioned pools are consistent and that all values that come from the
-pool are not used more than once.
+Handling of quotas for Cyclades resources is powered by Astakos quota
+mechanism. During registration of Cyclades service to Astakos, the Cyclades
+resources are also imported to Astakos for accounting and presentation.
 
+Upon a request that will result in a resource creation or removal, Cyclades
+will communicate with Astakos to ensure that user quotas are within limits and
+update the corresponding usage. If a limit is reached, the request will be
+denied with an `overLimit(413)` fault.
+
+The resources that are exported by Cyclades are the following:
+
+* `cyclades.vm`: Number of virtual machines
+* `cyclades.total_cpu`: Number of virtual machine processors
+* `cyclades.cpu`: Number of virtual machine processors of running VMs
+* `cyclades.total_ram`: Virtual machine memory size
+* `cyclades.ram`: Virtual machine memory size of running VMs
+* `cyclades.disk`: Virtual machine disk size
+* `cyclades.floating_ip`: Number of floating IP addresses
+* `cyclades.network.private`: Number of private virtual networks
 
 Cyclades advanced operations
 ----------------------------
+
+Reconciliation mechanism
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Cyclades - Ganeti reconciliation
+````````````````````````````````
+
+On certain occasions, such as a Ganeti or RabbitMQ failure, the state of
+Cyclades database may differ from the real state of VMs and networks in the
+Ganeti backends. The reconciliation process is designed to synchronize the
+state of the Cyclades DB with Ganeti. There are two management commands for
+reconciling VMs and Networks that will detect stale, orphans and out-of-sync
+VMs and networks. To fix detected inconsistencies, use the `--fix-all`.
+
+.. code-block:: console
+
+  $ snf-manage reconcile-servers
+  $ snf-manage reconcile-servers --fix-all
+
+  $ snf-manage reconcile-networks
+  $ snf-manage reconcile-networks --fix-all
+
+Please see ``snf-manage reconcile-servers --help`` and ``snf-manage
+reconcile--networks --help`` for all the details.
+
+
+Cyclades - Astakos reconciliation
+`````````````````````````````````
+
+As already mentioned, Cyclades communicates with Astakos for resource
+accounting and quota enforcement. In rare cases, e.g. unexpected
+failures, the two services may get unsynchronized. For this reason there
+are the `reconcile-commissions-cyclades` and `reconcile-resources-cyclades`
+command that will synchronize the state of the two services. The first
+command will detect any pending commissions, while the second command will
+detect that the usage that is reported by Astakos is correct.
+To fix detected inconsistencies, use the `--fix` option.
+
+.. code-block:: console
+
+  $ snf-manage reconcile-commissions-cyclades
+  $ snf-manage reconcile-commissions-cyclades --fix
+
+  $ snf-manage reconcile-resources-cyclades
+  $ snf-manage reconcile-resources-cyclades --fix
+
+
+Cyclades resources reconciliation
+`````````````````````````````````
+
+Reconciliation of pools will check the consistency of available pools by
+checking that the values from each pool are not used more than once, and also
+that the only reserved values in a pool are the ones used. Pool reconciliation
+will check pools of bridges, MAC prefixes, and IPv4 addresses for all networks.
+To fix detected inconsistencies, use the `--fix` option.
+
+
+.. code-block:: console
+
+  $ snf-manage reconcile-pools
+  $ snf-manage reconcile-pools --fix
 
 .. _admin-guide-stats:
 
@@ -1117,11 +1324,11 @@ To enable VM stats collecting, you will need to:
    conf file:
 
        Include /etc/collectd/ganeti-stats.conf
-   
+
    In the latter case, make sure to configure collectd to send the collected
    stats to your collectd server (via the network plugin). For more details on
    how to do this, check the collectd example config file provided by the
-   package and the collectd documentation. 
+   package and the collectd documentation.
 
 snf-cyclades-app configuration
 ``````````````````````````````
@@ -1154,73 +1361,6 @@ Make sure that you change this settings to match your ``STATS_BASE_URL``
 Cyclades will pass these URLs to the Cyclades UI and the user's browser will
 fetch them when needed.
 
-Reconciliation mechanism
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-On certain occasions, such as a Ganeti or RabbitMQ failure, the state of
-Cyclades database may differ from the real state of VMs and networks in the
-Ganeti backends. The reconciliation process is designed to synchronize
-the state of the Cyclades DB with Ganeti. There are two management commands
-for reconciling VMs and Networks
-
-Reconciling Virtual Machines
-````````````````````````````
-
-Reconciliation of VMs detects the following conditions:
-
- * Stale DB servers without corresponding Ganeti instances
- * Orphan Ganeti instances, without corresponding DB entries
- * Out-of-sync state for DB entries wrt to Ganeti instances
-
-To detect all inconsistencies you can just run:
-
-.. code-block:: console
-
-  $ snf-manage reconcile-servers
-
-Adding the `--fix-all` option, will do the actual synchronization:
-
-.. code-block:: console
-
-  $ snf-manage reconcile-servers --fix-all
-
-Please see ``snf-manage reconcile-servers --help`` for all the details.
-
-Reconciling Networks
-````````````````````
-
-Reconciliation of Networks detects the following conditions:
-
-  * Stale DB networks without corresponding Ganeti networks
-  * Orphan Ganeti networks, without corresponding DB entries
-  * Private networks that are not created to all Ganeti backends
-
-To detect all inconsistencies you can just run:
-
-.. code-block:: console
-
-  $ snf-manage reconcile-networks
-
-Adding the `--fix-all` option, will do the actual synchronization:
-
-.. code-block:: console
-
-  $ snf-manage reconcile-networks --fix-all
-
-Please see ``snf-manage reconcile-networks --help`` for all the details.
-
-Reconciling Pools
-`````````````````
-
-Reconciliation of pools will check the consistency of available pools by
-checking that the values from each pool are not used more than once, and also
-that the only reserved values in a pool are the ones used. Pool reconciliation
-will check pools of bridges, MAC prefixes, and IPv4 addresses for all networks.
-
-.. code-block:: console
-
-  $ snf-manage reconcile-pools
-  $ snf-manage reconcile-pools --fix
 
 Helpdesk
 --------
@@ -1258,14 +1398,14 @@ architecture and communication with a Ganeti backend is shown in the graph
 below:
 
 .. image:: images/cyclades-ganeti-communication.png
-   :width: 50%
+   :width: 40%
    :target: _images/cyclades-ganeti-communication.png
 
 The Cyclades API server is responsible for handling user requests. Read-only
 requests are directly served by looking up the Cyclades DB. If the request
 needs an action in the Ganeti backend, Cyclades submit jobs to the Ganeti
 master using the `Ganeti RAPI interface
-<http://docs.ganeti.org/ganeti/2.2/html/rapi.html>`_.
+<http://docs.ganeti.org/ganeti/2.8/html/rapi.html>`_.
 
 While Ganeti executes the job, `snf-ganeti-eventd`, and `snf-progress-monitor`
 are monitoring the progress of the job and send corresponding messages to the
@@ -1280,6 +1420,28 @@ be installed on all Ganeti nodes. Specially:
 Finally, `snf-dispatcher` consumes messages from the RabbitMQ queues, processes
 these messages and properly updates the state of the Cyclades DB. Subsequent
 requests to the Cyclades API, will retrieve the updated state from the DB.
+
+
+List of all Synnefo components
+==============================
+
+They are also available from our apt repository: ``apt.dev.grnet.gr``
+
+ * `snf-common <http://www.synnefo.org/docs/snf-common/latest/index.html>`_
+ * `snf-webproject <http://www.synnefo.org/docs/snf-webproject/latest/index.html>`_
+ * `snf-astakos-app <http://www.synnefo.org/docs/astakos/latest/index.html>`_
+ * `snf-pithos-backend <http://www.synnefo.org/docs/pithos/latest/backends.html>`_
+ * `snf-pithos-app <http://www.synnefo.org/docs/pithos/latest/index.html>`_
+ * `snf-pithos-webclient <http://www.synnefo.org/docs/pithos-webclient/latest/index.html>`_
+ * `snf-cyclades-app <http://www.synnefo.org/docs/snf-cyclades-app/latest/index.html>`_
+ * `snf-cyclades-gtools <http://www.synnefo.org/docs/snf-cyclades-gtools/latest/index.html>`_
+ * `astakosclient <http://www.synnefo.org/docs/astakosclient/latest/index.html>`_
+ * `snf-vncauthproxy <https://code.grnet.gr/projects/vncauthproxy>`_
+ * `snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html/>`_
+ * `snf-image-creator <http://www.synnefo.org/docs/snf-image-creator/latest/index.html>`_
+ * `snf-occi <http://www.synnefo.org/docs/snf-occi/latest/index.html>`_
+ * `snf-cloudcms <http://www.synnefo.org/docs/snf-cloudcms/latest/index.html>`_
+ * `nfdhcpd <https://code.grnet.gr/projects/nfdhcpd>`_
 
 
 Synnefo management commands ("snf-manage")
@@ -1365,6 +1527,9 @@ group-list                    List available groups
 user-list                     List users
 user-modify                   Modify user
 user-show                     Show user details
+oauth2-client-add             Create an oauth2 client
+oauth2-client-list            List oauth2 clients
+oauth2-client-remove          Remove an oauth2 client along with its registered redirect urls
 ============================  ===========================
 
 Pithos snf-manage commands
@@ -1376,6 +1541,7 @@ Name                          Description
 reconcile-commissions-pithos  Display unresolved commissions and trigger their recovery
 service-export-pithos         Export Pithos services and resources in JSON format
 reconcile-resources-pithos    Detect unsynchronized usage between Astakos and Pithos DB resources and synchronize them if specified so.
+file-show                     Display object information
 ============================  ===========================
 
 Cyclades snf-manage commands
@@ -1581,7 +1747,7 @@ Branding
 Since Synnefo v0.14, you are able to adapt the Astakos, Pithos and Cyclades Web
 UI to your company’s visual identity. This is possible using the snf-branding
 component, which is automatically installed on the nodes running the API
-servers for Astakos, Pithos and Cyclades. 
+servers for Astakos, Pithos and Cyclades.
 
 Configuration
 ~~~~~~~~~~~~~
@@ -1604,12 +1770,12 @@ You can overwrite the company and the service name and URL respectively by
 uncommenting and setting the following:
 
 .. code-block:: python
-  
+
   # setting used in Astakos Dashboard/Projects pages
   BRANDING_SERVICE_NAME = 'My cloud'
   BRANDING_SERVICE_URL = 'http://www.mycloud.synnefo.org/'
 
-  # settings used in Astakos, Pithos, Cyclades footer only if 
+  # settings used in Astakos, Pithos, Cyclades footer only if
   # BRANDING_SHOW_COPYRIGHT is set to True
   BRANDING_SHOW_COPYRIGHT = True
   BRANDING_COMPANY_NAME = 'Company LTD'
@@ -1634,9 +1800,9 @@ setting the following option:
 
   BRANDING_COPYRIGHT_MESSAGE = 'Copyright (c) 2011-2013 GRNET'
 
-If you want to include a custom message in the footer, you can uncomment and 
-set the ``BRANDING_FOOTER_EXTRA_MESSAGE`` setting. You can use html markup. 
-Your custom message will appear  above Copyright message at the Compute 
+If you want to include a custom message in the footer, you can uncomment and
+set the ``BRANDING_FOOTER_EXTRA_MESSAGE`` setting. You can use html markup.
+Your custom message will appear  above Copyright message at the Compute
 templates and the Dashboard UI.
 
 .. code-block:: python
@@ -1647,7 +1813,7 @@ templates and the Dashboard UI.
 **Images:**
 
 The Astakos, Pithos and Cyclades Web UI has some logos and images.
- 
+
 The branding-related images are presented in  the following table:
 
 ===============  ============================  =========
@@ -1660,7 +1826,7 @@ Console logo     console_logo.png              Visible in the Cyclades Console W
 Storage logo     storage_logo.png              Visible in all Pithos UI pages
 ===============  ============================  =========
 
-There are two methods  available for replacing all, or individual, 
+There are two methods  available for replacing all, or individual,
 branding-related images:
 
 1. Create a new directory inside ``/usr/share/synnefo/static/`` (e.g.
@@ -1671,9 +1837,9 @@ branding-related images:
    ``BRANDING_IMAGE_MEDIA_URL`` setting accordingly:
 
    .. code-block:: python
-        
+
       # using relative path
-      BRANDING_IMAGE_MEDIA_URL= '/static/mybranding/images/' 
+      BRANDING_IMAGE_MEDIA_URL= '/static/mybranding/images/'
 
       # or if you already host them in a separate domain (e.g. cdn)
       BRANDING_IMAGE_MEDIA_URL= 'https://cdn.synnefo.org/branding/images/'
@@ -1684,52 +1850,52 @@ branding-related images:
    the file inside your directory for each ``BRANDING_<image>_URL`` that you wish
    to replace.
 
-2. Upload some or all of your images to a server and replace each 
+2. Upload some or all of your images to a server and replace each
    ``BRANDING_<image>_URL`` with the absolute url of the image (i.e.
    ``BRANDING_DASHBOARD_URL = 'https://www.synnefo.com/images/my_dashboard.jpg'``).
 
-   Note that the alternative text  for each image tag inside html documents is 
+   Note that the alternative text  for each image tag inside html documents is
    alt=“BRANDING_SERVICE_NAME {Dashboard, Compute. Console, Storage}” respectively.
 
 .. note:: Retina optimized images:
 
-   Synnefo UI is optimized for Retina displays. As far as images are concerned,  
+   Synnefo UI is optimized for Retina displays. As far as images are concerned,
    `retina.js <http://retinajs.com/>`_ is used.
 
-   Retina.js checks each image on a page to see if there is a high-resolution 
-   version of that image on your server. If a high-resolution variant exists, 
+   Retina.js checks each image on a page to see if there is a high-resolution
+   version of that image on your server. If a high-resolution variant exists,
    the script will swap in that image in-place.
 
    The script assumes you use  `Apple's prescribed high-resolution modifier (@2x)
    <http://developer.apple.com/library/ios/#documentation/2DDrawing/Conceptual/
    DrawingPrintingiOS/SupportingHiResScreensInViews/SupportingHiResScreensInViews
-   .html#//apple_ref/doc/uid/TP40010156-CH15-SW1>`_ to denote high-resolution 
+   .html#//apple_ref/doc/uid/TP40010156-CH15-SW1>`_ to denote high-resolution
    image variants on your server.
 
-   For each of the images that you wish the script to  replace, you must have a 
-   high-resolution variant in the same folder  named correctly and it will be 
-   detected automatically. For example if your image is in <my_directory> and is 
-   named "my_image.jpg" the script will look in the same directory for an image 
+   For each of the images that you wish the script to  replace, you must have a
+   high-resolution variant in the same folder  named correctly and it will be
+   detected automatically. For example if your image is in <my_directory> and is
+   named "my_image.jpg" the script will look in the same directory for an image
    named "my_image@2x.jpg".
 
-   In case that you don’t want to use a high-resolution image, the 
+   In case that you don’t want to use a high-resolution image, the
    normal-resolution image will be visible.
 
 More branding
 ~~~~~~~~~~~~~
 
 Although, it is not 100% branding-related, further verbal customization is
-feasible. 
+feasible.
 
 **EMAILS**
 
 The output of all email `*`.txt files will be already customized to contain your
 company and service names but you can further alter their content if you feel it
-best fits your needs as simple as creasynnefo template.    
+best fits your needs as simple as creasynnefo template.
 
-In order to overwrite one or more email-templates you need to place your 
+In order to overwrite one or more email-templates you need to place your
 modified <email-file>.txt files respecting the following structure:
-  
+
   **/etc/synnefo/templates/**
       **im/**
           | activation_email.txt
@@ -1739,7 +1905,7 @@ modified <email-file>.txt files respecting the following structure:
           | welcome_email.txt
           **projects/**
               | project_approval_notification.txt
-              | project_denial_notification.txt    
+              | project_denial_notification.txt
               | project_membership_change_notification.txt
               | project_membership_enroll_notification.txt
               | project_membership_leave_request_notification.txt
@@ -1752,7 +1918,7 @@ modified <email-file>.txt files respecting the following structure:
 
 Feel free to omit any of the above files you do not wish to overwrite.
 
-Below is a list of all emails sent by Synnefo to users along with a short 
+Below is a list of all emails sent by Synnefo to users along with a short
 description and a link to their content:
 
 * ``snf-astakos-app/astakos/im/templates/im/email.txt``
@@ -1806,9 +1972,9 @@ description and a link to their content:
 
 .. warning:: Django templates language:
 
-  If you choose to  overwrite these email templates, be mindful of the necessary 
-  information contained in django template variables that must not be omitted, 
-  such as the activation link for activating one’s account and many more. 
+  If you choose to  overwrite these email templates, be mindful of the necessary
+  information contained in django template variables that must not be omitted,
+  such as the activation link for activating one’s account and many more.
   These variables are contained into {{}} inside the templates.
 
 

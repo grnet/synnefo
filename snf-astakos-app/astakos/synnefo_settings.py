@@ -46,7 +46,7 @@ installed_apps = [
     'django_tables2',
     'astakos.quotaholder_app',
     'synnefo_branding',
-    # 'debug_toolbar',
+    'astakos.oa2',
 ]
 
 context_processors = [

@@ -36,7 +36,6 @@ Common utils for burnin tests
 
 """
 
-import os
 import re
 import shutil
 import unittest
@@ -194,6 +193,7 @@ class BurninTests(unittest.TestCase):
     images = None
     flavors = None
     delete_stale = False
+    temp_directory = None
 
     quotas = Proper(value=None)
 
@@ -271,13 +271,8 @@ class BurninTests(unittest.TestCase):
         return username
 
     def _create_tmp_directory(self):
-        """Create a tmp directory
-
-        In my machine /tmp has not enough space for an image
-        to be saves, so we are going to use the current directory.
-
-        """
-        temp_dir = tempfile.mkdtemp(dir=os.getcwd())
+        """Create a tmp directory"""
+        temp_dir = tempfile.mkdtemp(dir=self.temp_directory)
         self.info("Temp directory %s created", temp_dir)
         return temp_dir
 
@@ -574,6 +569,7 @@ def initialize(opts, testsuites, stale_testsuites):
     BurninTests.flavors = opts.flavors
     BurninTests.images = opts.images
     BurninTests.delete_stale = opts.delete_stale
+    BurninTests.temp_directory = opts.temp_directory
     BurninTests.run_id = SNF_TEST_PREFIX + \
         datetime.datetime.strftime(curr_time, "%Y%m%d%H%M%S")
 

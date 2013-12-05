@@ -91,7 +91,8 @@ def api_method(http_method=None, token_required=True, user_required=True,
 
                 # Check HTTP method
                 if http_method and request.method != http_method:
-                    raise faults.BadRequest("Method not allowed")
+                    raise faults.NotAllowed("Method not allowed",
+                                            allowed_methods=[http_method])
 
                 # Get authentication token
                 request.x_auth_token = None
@@ -246,6 +247,8 @@ def render_fault(request, fault):
         data = json.dumps(d)
 
     response = HttpResponse(data, status=fault.code)
+    if response.status_code == 405 and hasattr(fault, 'allowed_methods'):
+        response['Allow'] = ','.join(fault.allowed_methods)
     update_response_headers(request, response)
     return response
 
@@ -256,8 +259,9 @@ def api_endpoint_not_found(request):
 
 
 @api_method(token_required=False, user_required=False)
-def api_method_not_allowed(request):
-    raise faults.BadRequest('Method not allowed')
+def api_method_not_allowed(request, allowed_methods):
+    raise faults.NotAllowed("Method not allowed",
+                            allowed_methods=allowed_methods)
 
 
 def allow_jsonp(key='callback'):

@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -33,10 +33,10 @@
 
 from functools import wraps
 from datetime import datetime
-from urllib import quote, unquote
+from urllib import quote, unquote, urlencode
 
-from django.http import (HttpResponse, HttpResponseRedirect, Http404,
-                         HttpResponseForbidden)
+from django.http import (HttpResponse, Http404, HttpResponseRedirect,
+                         HttpResponseNotAllowed)
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import http_date, parse_etags
@@ -44,6 +44,7 @@ from django.utils.encoding import smart_unicode, smart_str
 from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 from django.core.urlresolvers import reverse
+from django.core.exceptions import PermissionDenied
 
 from snf_django.lib.api.parsedate import parse_http_date_safe, parse_http_date
 from snf_django.lib import api
@@ -65,7 +66,8 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
-                                 COOKIE_NAME, BASE_HOST, UPDATE_MD5, LOGIN_URL)
+                                 BASE_HOST, UPDATE_MD5, VIEW_PREFIX,
+                                 OAUTH2_CLIENT_CREDENTIALS, UNSAFE_DOMAIN)
 
 from pithos.api.resources import resources
 from pithos.backends import connect_backend
@@ -75,7 +77,7 @@ from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
 from synnefo.lib import join_urls
 
 from astakosclient import AstakosClient
-from astakosclient.errors import NoUserName, NoUUID
+from astakosclient.errors import NoUserName, NoUUID, AstakosClientException
 
 import logging
 import re
@@ -1119,32 +1121,109 @@ def api_method(http_method=None, token_required=True, user_required=True,
     return decorator
 
 
-def get_token_from_cookie(request):
-    token = None
-    if COOKIE_NAME in request.COOKIES:
-        cookie_value = unquote(request.COOKIES.get(COOKIE_NAME, ''))
-        account, sep, token = cookie_value.partition('|')
-    return token
+def restrict_to_host(host=None):
+    """
+    View decorator which restricts wrapped view to be accessed only under the
+    host set. If an invalid host is identified and request HTTP method is one
+    of ``GET``, ``HOST``, the decorator will return a redirect response using a
+    clone of the request with host replaced to the one the restriction applies
+    to.
+
+    e.g.
+    @restrict_to_host('files.example.com')
+    my_restricted_view(request, path):
+        return HttpResponse(file(path).read())
+
+    A get to ``https://api.example.com/my_restricted_view/file_path/?param=1``
+    will return a redirect response with Location header set to
+    ``https://files.example.com/my_restricted_view/file_path/?param=1``.
+
+    If host is set to ``None`` no restriction will be applied.
+    """
+    def decorator(func):
+        # skip decoration if no host is set
+        if not host:
+            return func
+
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            request_host = request.get_host()
+            if host != request_host:
+                proto = 'https' if request.is_secure() else 'http'
+                if request.method in ['GET', 'HEAD']:
+                    full_path = request.get_full_path()
+                    redirect_uri = "%s://%s%s" % (proto, host, full_path)
+                    return HttpResponseRedirect(redirect_uri)
+                else:
+                    raise PermissionDenied
+            return func(request, *args, **kwargs)
+        return wrapper
+    return decorator
 
 
 def view_method():
     """Decorator function for views."""
 
     def decorator(func):
+        @restrict_to_host(UNSAFE_DOMAIN)
         @wraps(func)
         def wrapper(request, *args, **kwargs):
-            token = get_token_from_cookie(request)
-            if token is None:
-                return HttpResponseRedirect('%s?next=%s' % (
-                    LOGIN_URL, join_urls(BASE_HOST, request.path)))
-            request.META['HTTP_X_AUTH_TOKEN'] = token
-            # Get the response object
-            response = func(request, *args, **kwargs)
-            if response.status_code == 404:
-                raise Http404()
-            elif response.status_code in [401, 403]:
-                return HttpResponseForbidden()
-            return response
+            if request.method not in ['GET', 'HEAD']:
+                return HttpResponseNotAllowed(['GET', 'HEAD'])
+
+            try:
+                access_token = request.GET.get('access_token')
+                requested_resource = request.path.split(VIEW_PREFIX, 2)[-1]
+                astakos = AstakosClient(SERVICE_TOKEN, ASTAKOS_AUTH_URL,
+                                        retry=2, use_pool=True,
+                                        logger=logger)
+                if access_token is not None:
+                    # authenticate using the short-term access token
+                    try:
+                        request.user = astakos.validate_token(
+                            access_token, requested_resource)
+                    except AstakosClientException:
+                        return HttpResponseRedirect(request.path)
+                    request.user_uniq = request.user["access"]["user"]["id"]
+
+                    _func = api_method(token_required=False,
+                                       user_required=False)(func)
+                    response = _func(request, *args, **kwargs)
+                    if response.status_code == 404:
+                        raise Http404
+                    elif response.status_code == 403:
+                        raise PermissionDenied
+                    return response
+
+                client_id, client_secret = OAUTH2_CLIENT_CREDENTIALS
+                # TODO: check if client credentials are not set
+                authorization_code = request.GET.get('code')
+                if authorization_code is None:
+                    # request authorization code
+                    params = {'response_type': 'code',
+                              'client_id': client_id,
+                              'redirect_uri':
+                              request.build_absolute_uri(request.path),
+                              'state': '',  # TODO include state for security
+                              'scope': request.path.split(VIEW_PREFIX, 2)[-1]}
+                    return HttpResponseRedirect('%s?%s' %
+                                                (join_urls(astakos.oauth2_url,
+                                                           'auth'),
+                                                 urlencode(params)))
+                else:
+                    # request short-term access token
+                    redirect_uri = request.build_absolute_uri(request.path)
+                    data = astakos.get_token('authorization_code',
+                                             *OAUTH2_CLIENT_CREDENTIALS,
+                                             redirect_uri=redirect_uri,
+                                             scope=requested_resource,
+                                             code=authorization_code)
+                    params = {'access_token': data.get('access_token', '')}
+                    return HttpResponseRedirect('%s?%s' % (redirect_uri,
+                                                           urlencode(params)))
+            except AstakosClientException, err:
+                logger.exception(err)
+                raise PermissionDenied
         return wrapper
     return decorator
 

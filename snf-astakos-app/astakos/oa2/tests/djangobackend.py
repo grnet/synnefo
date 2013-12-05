@@ -45,7 +45,7 @@ from django.core.urlresolvers import reverse
 from django.utils import simplejson as json
 
 from astakos.oa2.models import Client, AuthorizationCode, Token
-from astakos.im.models import AstakosUser
+from astakos.im.tests import common
 
 
 ParsedURL = namedtuple('ParsedURL', ['host', 'scheme', 'path', 'params',
@@ -236,9 +236,7 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.client3_redirect_uri = "https://server3.com/handle_code"
         client3.redirecturl_set.create(url=self.client3_redirect_uri)
 
-        u = AstakosUser.objects.create(username="user@synnefo.org")
-        u.set_password("password")
-        u.save()
+        common.get_local_user("user@synnefo.org", password="password")
 
     def test_code_authorization(self):
         # missing response_type

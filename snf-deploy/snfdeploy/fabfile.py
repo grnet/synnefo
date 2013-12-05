@@ -62,6 +62,7 @@ def setup_env(args):
         "ns": [env.env.ns.ip],
         "client": [env.env.client.ip],
         "router": [env.env.router.ip],
+        "stats": [env.env.stats.ip],
     }
 
     env.enable_lvm = False
@@ -609,6 +610,19 @@ def astakos_register_components():
 
 
 @roles("accounts")
+def astakos_register_pithos_view():
+    debug(env.host, " * Register pithos view as oauth2 client...")
+
+    pithos_base_url = "https://%s/pithos" % env.env.pithos.fqdn
+
+    cmd = """
+    snf-manage oauth2-client-add pithos-view --secret=12345 --is-trusted \
+    --url {0}
+    """.format('%s/ui/view' % pithos_base_url)
+    try_run(cmd)
+
+
+@roles("accounts")
 def add_user():
     debug(env.host, " * adding user %s to astakos..." % env.env.user_email)
     email = env.env.user_email
@@ -678,6 +692,7 @@ EOF
     snf-manage syncdb --noinput
     snf-manage migrate im --delete-ghost-migrations
     snf-manage migrate quotaholder_app
+    snf-manage migrate oa2
     """
     try_run(cmd)
 
@@ -1000,6 +1015,7 @@ def init_cluster():
         --nic-parameters link={1},mode=bridged \
         --master-netdev {2} \
         --default-iallocator hail \
+        --specs-nic-count min=0,max=8 \
         --hypervisor-parameters kvm:kernel_path=,vnc_bind_address=0.0.0.0 \
         --no-ssh-init --no-etc-hosts \
         {3}
@@ -1129,6 +1145,70 @@ def cyclades_loaddata():
     #run("snf-manage loaddata flavors")
 
 
+@roles("ganeti", "stats")
+def setup_collectd():
+    install_package("collectd")
+    tmpl = "/etc/collectd/collectd.conf"
+    replace = {}
+    custom = customize_settings_from_tmpl(tmpl, replace)
+    try_put(custom, tmpl, mode=0644)
+
+
+@roles("ganeti")
+def setup_ganeti_collectd():
+    setup_collectd()
+
+    tmpl = "/etc/collectd/passwd"
+    replace = {}
+    custom = customize_settings_from_tmpl(tmpl, replace)
+    try_put(custom, tmpl, mode=0644)
+
+    tmpl = "/etc/collectd/synnefo-ganeti.conf"
+    replace = {
+        "STATS": env.env.stats.fqdn,
+        }
+    custom = customize_settings_from_tmpl(tmpl, replace)
+    try_put(custom, tmpl, mode=0644)
+
+    try_run("/etc/init.d/collectd restart")
+
+
+@roles("stats")
+def setup_stats_collectd():
+    setup_collectd()
+    tmpl = "/etc/collectd/synnefo-stats.conf"
+
+    replace = {
+        "STATS": env.env.stats.fqdn,
+        }
+    custom = customize_settings_from_tmpl(tmpl, replace)
+    try_put(custom, tmpl, mode=0644)
+    try_run("/etc/init.d/collectd restart")
+
+
+@roles("stats")
+def setup_stats():
+    debug(env.host, "Setting up snf-stats-app...")
+    setup_stats_collectd()
+    setup_gunicorn()
+    setup_apache()
+    setup_webproject()
+    install_package("snf-stats-app")
+    cmd = """
+    mkdir /var/cache/snf-stats-app/
+    chown www-data:www-data /var/cache/snf-stats-app/
+    """
+    try_run(cmd)
+    tmpl = "/etc/synnefo/stats.conf"
+
+    replace = {
+        "STATS": env.env.stats.fqdn,
+        }
+    custom = customize_settings_from_tmpl(tmpl, replace)
+    try_put(custom, tmpl, mode=0644)
+    try_run("/etc/init.d/gunicorn restart")
+
+
 @roles("cyclades")
 def setup_cyclades():
     debug(env.host, "Setting up snf-cyclades-app...")
@@ -1163,6 +1243,7 @@ def setup_cyclades():
         "HOST": env.env.cyclades.ip,
         "domain": env.env.domain,
         "CYCLADES_SERVICE_TOKEN": service_token,
+        'STATS': env.env.stats.fqdn,
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
     try_put(custom, tmpl, mode=0644)
@@ -1312,13 +1393,16 @@ def add_network():
 @roles("cyclades")
 def setup_vncauthproxy():
     debug(env.host, " * Setting up vncauthproxy...")
-    install_package("snf-vncauthproxy")
+    user = "synnefo"
+    salt = "$6$7FUdSvFcWAs3hfVj$"
+    passhash = "ZwvnvpQclTrDYWEwBvZDMRJZNgb6ZUKT1vNsh9NzUIxMpzBuGgMqYxCDTYF"\
+               "6OZcbunDZb88pjL2EIBnzrGMQW1"
     cmd = """
-    echo CHUID="www-data:nogroup" >> /etc/default/vncauthproxy
-    rm /var/log/vncauthproxy/vncauthproxy.log
-    """
+    mkdir /var/lib/vncauthproxy
+    echo '%s:%s%s' > /var/lib/vncauthproxy/users
+    """ % (user, salt, passhash)
     try_run(cmd)
-    try_run("/etc/init.d/vncauthproxy restart")
+    install_package("snf-vncauthproxy")
 
 
 @roles("client")

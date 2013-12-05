@@ -71,7 +71,8 @@ def demux(request):
     elif request.method == 'POST':
         return allocate_floating_ip(request)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET', 'POST'])
 
 
 def floating_ip_demux(request, floating_ip_id):
@@ -82,7 +83,8 @@ def floating_ip_demux(request, floating_ip_id):
     elif request.method == 'PUT':
         return update_floating_ip(request, floating_ip_id)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET', 'DELETE'])
 
 
 def ip_to_dict(floating_ip):

@@ -448,7 +448,7 @@ class Network(models.Model):
         },
         'IP_LESS_ROUTED': {
             'mode': 'routed',
-            'link': settings.DEFAULT_ROUTING_TABLE,
+            'link': None,
             'mac_prefix': settings.DEFAULT_MAC_PREFIX,
             'tags': 'ip-less-routed',
             'desc': "Flavor used for an IP-less routed network using"

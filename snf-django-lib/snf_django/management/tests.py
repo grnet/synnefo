@@ -12,17 +12,17 @@ except ImportError:
 
 class ParseFiltersTestCase(unittest.TestCase):
     def test_parse_empty(self):
-        res = utils.parse_filters("")
+        res = utils.parse_queryset_filters("")
         self.assertEqual(res, ({}, {}))
 
     def test_parse_one(self):
-        res = utils.parse_filters("x=2")
+        res = utils.parse_queryset_filters("x=2")
         self.assertEqual(res, ({"x": "2"}, {}))
-        res = utils.parse_filters("x!=2")
+        res = utils.parse_queryset_filters("x!=2")
         self.assertEqual(res, ({}, {"x": "2"}))
 
     def test_parse_many(self):
-        res = utils.parse_filters("x=2,x>=3,y!=4,z<3")
+        res = utils.parse_queryset_filters("x=2,x>=3,y!=4,z<3")
         filters = {"x": "2", "x__gte": "3", "z__lt": "3"}
         excludes = {"y": "4"}
         self.assertEqual(res, (filters, excludes))

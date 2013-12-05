@@ -71,6 +71,18 @@ class ResizeNotAllowed(Forbidden):
     pass
 
 
+class NotAllowed(Fault):
+    code = 405
+
+    def __init__(self, message='', details='', name='', code=500,
+                 allowed_methods=None):
+        """
+        :param allowed_methods: (list) the valid methods
+        """
+        super(NotAllowed, self).__init__(message, details, name, code)
+        self.allowed_methods = allowed_methods or []
+
+
 class ItemNotFound(Fault):
     code = 404
 

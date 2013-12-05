@@ -65,7 +65,8 @@ def demux(request):
     elif request.method == 'POST':
         return create_image(request)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET', 'POST'])
 
 
 def image_demux(request, image_id):
@@ -74,7 +75,8 @@ def image_demux(request, image_id):
     elif request.method == 'DELETE':
         return delete_image(request, image_id)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET', 'DELETE'])
 
 
 def metadata_demux(request, image_id):
@@ -83,7 +85,8 @@ def metadata_demux(request, image_id):
     elif request.method == 'POST':
         return update_metadata(request, image_id)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET', 'POST'])
 
 
 def metadata_item_demux(request, image_id, key):
@@ -94,7 +97,10 @@ def metadata_item_demux(request, image_id, key):
     elif request.method == 'DELETE':
         return delete_metadata_item(request, image_id, key)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET',
+                                                           'PUT',
+                                                           'DELETE'])
 
 
 def image_to_dict(image, detail=True):

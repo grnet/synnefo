@@ -268,12 +268,13 @@ class BaseAPITest(TestCase):
         self.assertFault(response, 409, "conflict")
 
     def assertMethodNotAllowed(self, response):
-        self.assertFault(response, 400, 'badRequest')
+        self.assertFault(response, 405, 'notAllowed')
+        self.assertTrue('Allow' in response)
         try:
             error = json.loads(response.content)
         except ValueError:
             self.assertTrue(False)
-        self.assertEqual(error['badRequest']['message'], 'Method not allowed')
+        self.assertEqual(error['notAllowed']['message'], 'Method not allowed')
 
 
 # Imitate unittest assertions new in Python 2.7

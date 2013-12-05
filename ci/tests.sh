@@ -22,7 +22,7 @@ runCoverage () {
 
 export SYNNEFO_SETTINGS_DIR=/tmp/snf-test-settings
 
-ASTAKOS_APPS="im quotaholder_app"
+ASTAKOS_APPS="im quotaholder_app oa2"
 CYCLADES_APPS="api db logic plankton quotas vmapi helpdesk userdata"
 PITHOS_APPS="api"
 

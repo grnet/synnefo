@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -98,7 +98,7 @@ def top_demux(request):
                 return authenticate(request)
         return account_list(request)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request, allowed_methods=['GET'])
 
 
 @csrf_exempt
@@ -117,7 +117,10 @@ def account_demux(request, v_account):
     elif request.method == 'GET':
         return container_list(request, v_account)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['HEAD',
+                                                           'POST',
+                                                           'GET'])
 
 
 @csrf_exempt
@@ -140,7 +143,12 @@ def container_demux(request, v_account, v_container):
     elif request.method == 'GET':
         return object_list(request, v_account, v_container)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['HEAD',
+                                                           'PUT',
+                                                           'POST',
+                                                           'DELETE',
+                                                           'GET'])
 
 
 @csrf_exempt
@@ -172,7 +180,13 @@ def object_demux(request, v_account, v_container, v_object):
     elif request.method == 'DELETE':
         return object_delete(request, v_account, v_container, v_object)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request, allowed_methods=['HEAD',
+                                                                    'GET',
+                                                                    'PUT',
+                                                                    'COPY',
+                                                                    'MOVE',
+                                                                    'POST',
+                                                                    'DELETE'])
 
 
 @api_method('GET', token_required=False, user_required=False, logger=logger)

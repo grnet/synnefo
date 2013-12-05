@@ -31,7 +31,7 @@ ADMIN_STATS_PERMITTED_GROUPS = ["admin-stats"]
 # Access control and quota policy are enforced, just as if the user had
 # specified the value of CYCLADES_DEFAULT_SERVER_NETWORKS in the content
 # of the POST /call, after processing of "SNF:*" directives."
-CYCLADES_DEFAULT_SERVER_NETWORKS = ["SNF:ANY_PUBLIC_IPV4"]
+CYCLADES_DEFAULT_SERVER_NETWORKS = []
 
 # This setting contains a list of networks which every new server
 # will be forced to connect to, regardless of the contents of the POST
@@ -43,7 +43,7 @@ CYCLADES_DEFAULT_SERVER_NETWORKS = ["SNF:ANY_PUBLIC_IPV4"]
 # networks specified in CYCLADES_FORCED_SERVER_NETWORKS, regardless
 # of the state of the floating IP pool of the user, and without
 # allocating any floating IPs."
-CYCLADES_FORCED_SERVER_NETWORKS = ["SNF:ANY_PUBLIC_IPV6"]
+CYCLADES_FORCED_SERVER_NETWORKS = []
 
 # Maximum allowed network size for private networks.
 MAX_CIDR_BLOCK = 22
@@ -53,14 +53,8 @@ DEFAULT_MAC_PREFIX = 'aa:00:0'
 DEFAULT_BRIDGE = 'br0'
 
 # Network flavors that users are allowed to create through API requests
+# Available flavors are IP_LESS_ROUTED, MAC_FILTERED, PHYSICAL_VLAN
 API_ENABLED_NETWORK_FLAVORS = ['MAC_FILTERED']
-
-# Settings for IP_LESS_ROUTED network:
-# -----------------------------------
-# In this case VMCs act as routers that forward the traffic to/from VMs, based
-# on the defined routing table($DEFAULT_ROUTING_TABLE) and ip rules, that
-# exist in every node, implenting an IP-less routed and proxy-arp setup.
-DEFAULT_ROUTING_TABLE = 'snf_public'
 
 # Settings for MAC_FILTERED network:
 # ------------------------------------------
@@ -92,9 +86,11 @@ CYCLADES_STATS_SECRET_KEY = "secret_key"
 # URL templates for the stat graphs.
 # The API implementation replaces '%s' with the encrypted backend id.
 CPU_BAR_GRAPH_URL = 'http://stats.example.synnefo.org/stats/v1.0/cpu-bar/%s'
-CPU_TIMESERIES_GRAPH_URL = 'http://stats.example.synnefo.org/stats/v1.0/cpu-ts/%s'
+CPU_TIMESERIES_GRAPH_URL = \
+    'http://stats.example.synnefo.org/stats/v1.0/cpu-ts/%s'
 NET_BAR_GRAPH_URL = 'http://stats.example.synnefo.org/stats/v1.0/net-bar/%s'
-NET_TIMESERIES_GRAPH_URL = 'http://stats.example.synnefo.org/stats/v1.0/net-ts/%s'
+NET_TIMESERIES_GRAPH_URL = \
+    'http://stats.example.synnefo.org/stats/v1.0/net-ts/%s'
 
 # Recommended refresh period for server stats
 STATS_REFRESH_PERIOD = 60

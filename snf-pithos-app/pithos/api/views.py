@@ -31,6 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from django.views.decorators.csrf import csrf_exempt
+
+from snf_django.lib import api
+
 from pithos.api.functions import _object_read
 from pithos.api.util import api_method, view_method
 
@@ -38,7 +42,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+@csrf_exempt
+def object_demux(request, v_account, v_container, v_object):
+    if request.method == 'GET':
+        return object_read(request, v_account, v_container, v_object)
+    else:
+        return api.api_method_not_allowed(request, allowed_methods=['GET'])
+
+
 @view_method()
-@api_method('GET', format_allowed=True, user_required=True, logger=logger)
 def object_read(request, v_account, v_container, v_object):
     return _object_read(request, v_account, v_container, v_object)

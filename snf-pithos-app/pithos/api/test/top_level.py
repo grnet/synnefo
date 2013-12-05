@@ -42,13 +42,22 @@ class TopLevel(PithosAPITest):
     def test_not_allowed_method(self):
         url = join_urls(self.pithos_path, '/')
         r = self.head(url)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
+        self.assertEqual(r['Allow'], 'GET')
         r = self.put(url, data='')
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
+        self.assertEqual(r['Allow'], 'GET')
         r = self.post(url, data='')
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
+        self.assertEqual(r['Allow'], 'GET')
         r = self.delete(url)
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
+        self.assertEqual(r['Allow'], 'GET')
+
 
     def test_authenticate(self):
         url = join_urls(self.pithos_path, '/')

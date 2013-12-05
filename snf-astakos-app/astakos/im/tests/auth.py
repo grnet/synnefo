@@ -385,6 +385,7 @@ class TestLocal(TestCase):
     def test_login_ratelimit(self):
         from django.core.cache import cache
         cache.clear()
+        [cache.delete(key) for key in cache._cache.keys()]
 
         credentials = {'username': 'γιού τι έφ', 'password': 'password'}
         r = self.client.post(ui_url('local'), credentials, follow=True)
@@ -394,9 +395,6 @@ class TestLocal(TestCase):
         fields = r.context['login_form'].fields.keyOrder
         self.assertFalse('recaptcha_challenge_field' in fields)
         r = self.client.post(ui_url('local'), credentials, follow=True)
-        fields = r.context['login_form'].fields.keyOrder
-        self.assertTrue('recaptcha_challenge_field' in fields)
-        r = self.client.post(ui_url('local'), follow=True)
         fields = r.context['login_form'].fields.keyOrder
         self.assertTrue('recaptcha_challenge_field' in fields)
 
@@ -820,8 +818,7 @@ class TestAuthProviderViews(TestCase):
 
         # new academic user
         self.assertFalse(academic_users.filter(email='newuser@synnefo.org'))
-        cl_newuser.set_tokens(remote_user="newusereppn",
-                              mail="newuser@synnefo.org",
+        cl_newuser.set_tokens(remote_user="newusereppn", mail="newuser@synnefo.org",
                               surname="Lastname")
         r = cl_newuser.get(ui_url('login/shibboleth?'), follow=True)
         initial = r.context['signup_form'].initial

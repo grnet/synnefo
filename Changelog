@@ -29,6 +29,11 @@ Synnefo-wide
   notifactions to users listed in 'ADMINS' setting about unhandled exceptions
   in the code.
 
+* Extend astakosclient to request and validate OAuth 2.0 access tokens
+
+* Change response status code from 400 (Bad Request) to 405 (Not allowed
+  method) in case of an unexpected request method.
+
 Astakos
 -------
 
@@ -77,11 +82,25 @@ Astakos
   'ASTAKOS_ADMIN_STATS_PERMITTED_GROUPS' setting. Statistics are also availble
   from 'snf-manage stats-astakos' management command.
 
+* Implement OAuth 2.0 Authorization Code Grant
+  Add API calls for authorization code and access token generation
+
+* Add API call for validating OAuth 2.0 access tokens
+
+* **Shibboleth module** Extract unique identifier from the 
+  ``REMOTE_USER`` header.
+
+* Automatically fill third party signup form fields when available by the 
+  the third party provider.
+
 * Management commands:
   * Introduced new commands:
      * component-show
      * quota-list (replacing quota, supports various filters)
      * quota-verify (replacing quota)
+	 * oauth2-client-add (register OAuth 2.0 client)
+	 * oauth2-client-list (list registered oauth 2.0 clients)
+	 * oauth2-client-remove (remove OAuth 2.0 client)
   * Changed commands:
      * component-add got options --base-url and --ui-url
      * resource-modify --limit became --default-quota
@@ -181,14 +200,91 @@ Cyclades
   needed by the newer version of snf-vncauthproxy. Support for older versions
   of snf-vncauthproxy has been dropped. See also the upgrade notes for Synnefo
   and snf-vncauthproxy-1.5.
+* Remove 'DEFAULT_ROUTING_TABLE' setting. If a link for an IP_LESS_ROUTED
+  network is not specified, the link will be uniquely named
+  'snf-link-$network_id'.
+
+
+Cyclades UI
+-----------
+
+- Retrieve all networks information from the introduced cyclades network
+  service.
+- New IPs pane from which user can manage floating IPs.
+- Redesign public keys overlay as an additional pane view.
+- Split networking configuration into an additional step in machine create 
+  wizard.
+- Display forced networks and choices of the available floating IPs which will 
+  be assigned to the created machine.
+- Support for machine resize action. Explicit handling when machine is started
+  by displaying an utility shutdown button within the resize overlay.
+- Machine IPs toggling subview in icon/single views.
+- Replace IPv4/IPv6 with machine's FQDN in icon/single view. When no FQDN can 
+  be resolved display a message. Message can be configured using the introduced 
+  ``UI_NO_FQDN_MESSAGE``. Setting ``UI_VM_HOSTNAME_FORMAT`` has been removed 
+  and no longer used.
+- Respect ``SNF:task_state`` machine attribute in order to improve machine
+  status display.
+- Append software version as a url parameter in HTML static files in order 
+  to force browser cache invalidation between versions.
+- Configurable Google fonts base url. Fonts base url can be changed usint the 
+  ``SYNNEFO_FONTS_BASE_URL`` setting.
+- Regression fix: Display reboot required notification on machine firewall
+  parameters.
+- Handling of ``GANETI_USE_HOTPLUG`` setting. Do not allow live network actions 
+  when setting is set to ``False``.
+- Double escaping fix in machine create wizard images list and machine details 
+  subview.
+- Fix image ordering in machine create wizard.
+
 
 Pithos
 ------
 
-* Refactor metadata schema (table attributes) in Pithos DB to speedup current
-objects by domain attribute. This is used by Plankton for listing VM images.
+* Rewrite tests.
 
-* Enforce container-level atomicity in (most) Pithos API calls.
+* Performance optimizations in object listing.
+
+* Introduce backend method decorator for handling transaction management if no
+  transaction is initiated from the frontend.
+
+* Fix Internal Server Errors https://code.grnet.gr/issues/4501 &
+  https://code.grnet.gr/issues/4502.
+
+* Fix REQUEST ENTITY TOO LARGE request failure during move operations
+  https://code.grnet.gr/issues/4154.
+
+* Fix FORBIDDEN request failure while listing implicitly shared objects
+  https://code.grnet.gr/issues/4131.
+
+* Fix issue with the computed size of an updated object.
+
+* Reply with the Merkle hash in the ETag header if MD5 is deactivated.
+
+* Reply with FORBIDDEN (403) to public listing requests performed by non path
+  owners.
+
+* Change response status to NOT FOUND (404) while trying to delete an
+  already deleted object.
+
+* Change SQLAlchemy version to 0.7
+
+* Change view authorization
+  The pithos views do not use the cookie information for user authentication.
+  They request (from Astakos) and use a short-term access token for a
+  specific resource.
+
+* Remove PITHOS_ASTAKOS_COOKIE_NAME setting, since it is no longer useful
+
+* Add PITHOS_OAUTH2_CLIENT_CREDENTIALS setting to authenticate the views with
+  astakos during the resource access token generation procedure
+
+* Add PITHOS_UNSAFE_DOMAIN setting to restrict file serving endpoints to a
+  specific host
+
+* Management commands:
+  * Introduced new command:
+     * file-show
 
 * Remove command 'resource-export-pithos' subsumed by 'service-export-pithos'.
 
@@ -349,6 +445,11 @@ Cyclades
 * Add new setting PITHOS_BACKEND_POOL_SIZE, which configures the size
   of the pool of Pithos backends that are used by plankton.
 
+Pithos
+------
+
+* Refactor metadata schema (table attributes) in Pithos DB to speedup current
+objects by domain attribute. This is used by Plankton for listing VM images.
 
 
 .. _Changelog-0.14:
@@ -547,6 +648,9 @@ Pithos
   'PITHOS_USER_LOGIN_URL' settings.
 * Remove PITHOS_USE_QUOTAHOLDER, PITHOS_QUOTAHOLDER_URL,
   PITHOS_QUOTAHOLDER_TOKEN and PITHOS_ASTAKOSCLIENT_POOLSIZE
+
+* Enforce container-level atomicity in (most) Pithos API calls.
+
 
 Tools
 -----

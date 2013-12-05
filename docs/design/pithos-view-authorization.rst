@@ -1,58 +1,45 @@
 Serve untrusted user content
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+The current document describes how the pithos view accesses the protected
+pithos resources and proposes a new design for granting access to
+the specific resources. It sketches implementation details and configuration
+concerns.
+
+Current state and shortcomings
+==============================
+
+Pithos in order to identify the user who requests to view a pithos resource
+uses the information stored by astakos in the cookie after a successful user
+authentication login.
+
+The main drawback of this design is that the pithos view which serves untrusted
+user content has access to the sensitive information stored in the cookie.
+
+Abstract
+========
+
 We want to serve untrusted user content in a domain which does not have access
-to sensitive information. The information used by pithos view is set by astakos
-in the cookie after a successful user authentication login. Starting from
-synnefo version 0.15, the pithos view will be deployed in a domain outside the
-astakos cookie domain. The current document describes how the pithos view can
-grant access to the protected pithos resources.
+to sensitive information. Therefore, we would like the pithos view to be
+deployed in a domain outside the astakos cookie domain.
+
+We propose a design for the pithos view to grant access to the
+access-restricted resource without consulting the cookie.
+
+Briefly the pithos view will request a short-term access token for a specific
+resource from astakos. Before requesting the access token, the view should
+obtain an authorization grant (authorization code) from astakos, which will be
+presented by the view during the request for the access token.
 
 The proposed scheme follows the guidelines of the OAuth 2.0 authentication
 framework as described in http://tools.ietf.org/html/rfc6749/.
 
-Briefly the pithos view requests a short-term access token for a specific
-resource from astakos. Before requesting the access token, the view obtains
-an authorization grant (authorization code) from astakos, which is then
-presented by the view during the request for the access token.
+Proposed changes
+================
 
-Pithos view registration to astakos
-===================================
-The pithos view has to authenticate itself with astakos since the latter has to
-prevent serving requests by unknown/unauthorized clients.
+We propose to alter the view to obtain authorization according to the
+authorization code grant flow.
 
-Each oauth client is identified by a client identifier (client_id). Moreover,
-the confidential clients are authenticated via a password (client_secret).
-Then, each client has to declare at least a redirect URI so
-that astakos will be able to validate the redirect URI provided during the
-authorization code request. If a client is trusted (like a pithos view) astakos
-grants access on behalf of the resource owner, otherwise the resource owner has
-to be asked.
-
-We can register an oauth 2.0 client with the following command::
-
-    snf-manage oauth2-client-add <client_id> --secret=<secret> --is-trusted --url <redirect_uri>
-
-For example::
-
-    snf-manage oauth2-client-add pithos-view --secret=12345 --is-trusted --url https://pithos.synnefo.live/pithos/ui/view
-
-
-Configure view credentials in pithos
-====================================
-
-To set the credentials issued to pithos view in order to authenticate itself
-with astakos during the resource access token generation procedure we have to
-change the ``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting.
-
-The value should be a (<client_id>, <client_secret>) tuple.
-
-For example::
-
-    PITHOS_OAUTH2_CLIENT_CREDENTIALS = ('pithos-view', 12345)
-
-Authorization Code Grant Flow
-=============================
 The general flow includes the following steps:
 
 #. The user requests to view the content of the protected resource.
@@ -78,9 +65,47 @@ The general flow includes the following steps:
 #. The view responds with the resource contents if the user has access to the
    specific resource.
 
+Implementation details
+======================
+
+Pithos view registration to astakos
+-----------------------------------
+
+The pithos view has to authenticate itself with astakos since the latter has to
+prevent serving requests by unknown/unauthorized clients.
+
+Each oauth client is identified by a client identifier (client_id). Moreover,
+the confidential clients are authenticated via a password (client_secret).
+Then, each client has to declare at least a redirect URI so
+that astakos will be able to validate the redirect URI provided during the
+authorization code request. If a client is trusted (like a pithos view) astakos
+grants access on behalf of the resource owner, otherwise the resource owner has
+to be asked.
+
+We can register an oauth 2.0 client with the following command::
+
+    snf-manage oauth2-client-add <client_id> --secret=<secret> --is-trusted --url <redirect_uri>
+
+For example::
+
+    snf-manage oauth2-client-add pithos-view --secret=12345 --is-trusted --url https://pithos.synnefo.live/pithos/ui/view
+
+
+Configure view credentials in pithos
+------------------------------------
+
+To set the credentials issued to pithos view in order to authenticate itself
+with astakos during the resource access token generation procedure we have to
+change the ``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting.
+
+The value should be a (<client_id>, <client_secret>) tuple.
+
+For example::
+
+    PITHOS_OAUTH2_CLIENT_CREDENTIALS = ('pithos-view', 12345)
 
 Authorization code request
-==========================
+--------------------------
 
 The view receives a request without either an access token or an authorization
 code. In that case it redirects to astakos's authorization endpoint by adding
@@ -105,7 +130,7 @@ request using TLS (with extra line breaks for display purposes only)::
         Host: accounts.synnefo.live
 
 Access token request
-====================
+--------------------
 
 Astakos's authorization endpoint responses to a valid authorization code
 request by redirecting the user-agent back to the requested view
@@ -141,7 +166,7 @@ line breaks for display purposes only)::
 
 
 Access to the protected resource
-================================
+--------------------------------
 
 Astakos's token endpoint replies to a valid token request with a (200 OK)
 response::
@@ -182,7 +207,7 @@ to the requested resource the resource's data are returned, otherwise the
 access to resource is forbidden.
 
 Authorization code and access token invalidation
-================================================
+------------------------------------------------
 
 Authorization codes can be used only once (they are deleted after a
 successful token creation)
@@ -196,7 +221,7 @@ renewal.
 Expired tokens presented to the validation endpoint are also deleted.
 
 Authorization code and access token length
-==========================================
+------------------------------------------
 
 Authorization code length is adjustable by the
 ``OAUTH2_AUTHORIZATION_CODE_LENGTH`` setting. By default it is set to
@@ -206,7 +231,7 @@ Token length is adjustable by the ``OAUTH2_TOKEN_LENGTH`` setting.
 By default it is set to 30 characters.
 
 Restrict file serving endpoints to a specific host
-==================================================
+--------------------------------------------------
 
 A new setting ``PITHOS_SERVE_API_DOMAIN`` has been introduced. When set,
 all api views that serve pithos file contents will be restricted to be served

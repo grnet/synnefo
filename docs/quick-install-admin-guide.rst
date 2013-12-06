@@ -840,6 +840,7 @@ for Astakos:
 
     # snf-manage migrate im
     # snf-manage migrate quotaholder_app
+    # snf-manage migrate oa2
 
 Then, we load the pre-defined user groups
 
@@ -868,7 +869,7 @@ The latter is the URL that appears in the Cloudbar and leads to the
 component UI. If you want to follow the default setup, set
 the UI URL to ``<base_url>/ui/`` where ``base_url`` the component's base
 URL as explained before. (You can later change the UI URL with
-``snf-manage component-modify <component_name> --url new_ui_url``.)
+``snf-manage component-modify <component_name> --ui-url new_ui_url``.)
 
 The command will also register automatically the resource definitions
 offered by the services.
@@ -905,12 +906,28 @@ Setting Default Base Quota for Resources
 
 We now have to specify the limit on resources that each user can employ
 (exempting resources offered by projects). When specifying storage or
-memory size limits consider to add an appropriate size suffix to the
-numeric value, i.e. 10240 MB, 10 GB etc.
+memory size limits you can append a unit to the value, i.e. 10240 MB,
+10 GB etc. Use the special value ``inf``, if you don't want to restrict a
+resource.
 
 .. code-block:: console
 
     # snf-manage resource-modify --default-quota-interactive
+
+Setting Resource Visibility
+---------------------------
+
+It is possible to control whether a resource is visible to the users via the
+API or the Web UI. The default value for these options is denoted inside the
+default resource definitions. Note that the system always checks and
+enforces resource quota, regardless of their visibility. You can inspect the
+current status with::
+
+   # snf-manage resource-list
+
+You can change a resource's visibility with::
+
+   # snf-manage resource-modify <resource> --api-visible=True (or --ui-visible=True)
 
 .. _pithos_view_registration:
 
@@ -918,12 +935,12 @@ Register pithos view as an OAuth 2.0 client
 -------------------------------------------
 
 Starting from synnefo version 0.15, the pithos view, in order to get access to
-the data of a protect pithos resource, has to be granted authorization for the
-specific resource by astakos.
+the data of a protected pithos resource, has to be granted authorization for
+the specific resource by astakos.
 
 During the authorization grant procedure, it has to authenticate itself with
-astakos since the later has to prevent serving requests by unknown/unauthorized
-clients.
+astakos since the latter has to prevent serving requests by
+unknown/unauthorized clients.
 
 Each oauth 2.0 client is identified by a client identifier (client_id).
 Moreover, the confidential clients are authenticated via a password
@@ -931,7 +948,7 @@ Moreover, the confidential clients are authenticated via a password
 Then, each client has to declare at least a redirect URI so that astakos will
 be able to validate the redirect URI provided during the authorization code
 request.
-If a client is trusted (like a pithos view) astakos grants access on behalf
+If a client is trusted (like a pithos view), astakos grants access on behalf
 of the resource owner, otherwise the resource owner has to be asked.
 
 To register the pithos view as an OAuth 2.0 client in astakos, we have to run
@@ -990,7 +1007,7 @@ documentation. In production, you can also manually activate a user, by sending
 him/her an activation email. See how to do this at the :ref:`User
 activation <user_activation>` section.
 
-Now let's go back to the homepage. Open ``http://node1.example.com/astkos/ui/`` with
+Now let's go back to the homepage. Open ``http://node1.example.com/astakos/ui/`` with
 your browser again. Try to sign in using your new credentials. If the Astakos
 menu appears and you can see your profile, then you have successfully setup
 Astakos.

@@ -1955,7 +1955,7 @@
                 if (index.disk.indexOf(disk_size) == -1) {
                   var disk = el.disk_to_bytes();
                   if (disk > disk_available) {
-                    index.disk.push(disk_size);
+                    index.disk.push(el.get('disk'));
                   }
                 }
                 
@@ -1989,8 +1989,8 @@
                 var img_size = size;
                 var flv_size = el.get_disk_size();
                 if (flv_size < img_size) {
-                    if (index.disk.indexOf(flv_size) == -1) {
-                        index.disk.push(flv_size);
+                    if (index.disk.indexOf(el.get("disk")) == -1) {
+                        index.disk.push(el.get("disk"));
                     }
                 };
             });

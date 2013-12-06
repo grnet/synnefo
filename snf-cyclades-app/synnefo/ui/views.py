@@ -106,7 +106,7 @@ CUSTOM_IMAGE_HELP_URL = getattr(settings, "UI_CUSTOM_IMAGE_HELP_URL", None)
 # MEDIA PATHS
 UI_MEDIA_URL = \
     getattr(settings, "UI_MEDIA_URL",
-            "%ssnf-%s/" % (settings.MEDIA_URL, SYNNEFO_JS_LIB_VERSION))
+            "%sui/static/snf/" % (settings.MEDIA_URL,))
 UI_SYNNEFO_IMAGES_URL = \
     getattr(settings,
             "UI_SYNNEFO_IMAGES_URL", UI_MEDIA_URL + "images/")

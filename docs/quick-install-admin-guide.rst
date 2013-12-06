@@ -1418,6 +1418,7 @@ Then run on node1:
                     --no-etc-hosts --vg-name=ganeti --nic-parameters link=br1 \
                     --default-iallocator hail \
                     --hypervisor-parameters kvm:kernel_path=,vnc_bind_address=0.0.0.0 \
+                    --specs-nic-count min=0,max=16 \
                     --master-netdev eth0 ganeti.node1.example.com
 
     root@node1:~ # gnt-node add --no-ssh-key-check --master-capable=yes \

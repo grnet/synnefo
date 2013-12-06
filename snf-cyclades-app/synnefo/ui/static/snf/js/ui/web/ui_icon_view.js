@@ -176,8 +176,8 @@
                 window.setTimeout(function() {$(self.view).trigger("resize")}, 300);
             }, this));
 
-
-            this.$(".stats-report").click(_.bind(function(e){
+            
+            this.vm_view.find(".stats-report").click(_.bind(function(e){
                 e.preventDefault();
                 snf.ui.main.show_vm_details(this.vm);
             }, this))

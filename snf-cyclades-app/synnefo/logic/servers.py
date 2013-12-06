@@ -264,7 +264,7 @@ def create_server(vm, nics, flavor, image, personality, password):
     vm.backendjobid = jobID
     vm.save()
     log.info("User %s created VM %s, NICs %s, Backend %s, JobID %s",
-             vm.userid, vm, nics, backend, str(jobID))
+             vm.userid, vm, nics, vm.backend, str(jobID))
 
     return jobID
 

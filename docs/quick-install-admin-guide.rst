@@ -211,7 +211,7 @@ Now you can create the keys and sign them with the certificate
 
 This will create a ``01.pem`` and a ``node1.example.com.key`` files in the 
 ``/etc/openvpn/easy-rsa/2.0/keys`` directory. Copy these in ``/etc/ssl/certs/``
-and ``/etc/ssl/private/`` respectively and use them in the apache2 
+and ``/etc/ssl/private/`` respectively and use them in the apache2
 configuration file below instead of the defaults.
 
 Apache2 setup
@@ -758,8 +758,7 @@ Alternatively, it may be convenient to send e-mails to a file, instead of an act
 .. code-block:: python
 
     EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-    EMAIL_FILE_PATH = '/tmp/app-messages' 
-  
+    EMAIL_FILE_PATH = '/tmp/app-messages'
 
 
 Enable Pooling
@@ -1349,21 +1348,36 @@ Ganeti nodes:
 It's time to install Ganeti. To be able to use hotplug (which will be part of 
 the official Ganeti 2.10), we recommend using our Ganeti package version:
 
-`2.8.2+snapshot1+b64v1+hotplug5+ippoolfix+rapifix+netxen+lockfix2-1~wheezy`
+``2.8.2+snapshot1+b64v1+kvmopts1+extfix1+hotplug5+lockfix3+ippoolfix+rapifix+netxen-1~wheezy``
 
 Let's briefly explain each patch:
 
-    * hotplug: hotplug devices (NICs and Disks) (ganeti 2.10)
-    * b64v1: Save bitarray of network IP pools in config file, encoded in base64, instead of 0/1.
-    * ippoolfix: Ability to give an externally reserved IP to an instance (e.g. gateway IP).  (ganeti 2.10)
-    * rapifix: Extend RAPI το support 'depends' and 'shutdown_timeout' body arguments. (ganeti 2.9)
-    * netxen: Network configuration for xen instances, exactly like in kvm instances. (ganeti 2.9)
+    * hotplug: hotplug devices (NICs and Disks) (ganeti 2.10).
+    * b64v1: Save bitarray of network IP pools in config file, encoded in 
+      base64, instead of 0/1.
+    * ippoolfix: Ability to give an externally reserved IP to an instance (e.g.
+      gateway IP)  (ganeti 2.10).
+    * kvmopts: Export disk geometry to kvm command and add migration 
+      capabilities.
+    * extfix: Includes:
+
+      * exports logical id in hooks.
+      * adds better arbitrary params support (modification, deletion).
+      * cache, heads, cyls arbitrary params reach kvm command.
+
+    * rapifix: Extend RAPI το support 'depends' and 'shutdown_timeout' body 
+      arguments. (ganeti 2.9).
+    * netxen: Network configuration for xen instances, exactly like in kvm 
+      instances. (ganeti 2.9).
     * lockfix2: Fixes for 2 locking issues:
 
-      - Issue 622: Fix for opportunistic locking that caused an assertion error (Patch waiting in ganeti-devel list)
-      - Issue 621: Fix for network locking issue that resulted in: [Lock 'XXXXXX' not found in set 'instance' (it may have been removed)]
+      * Issue 622: Fix for opportunistic locking that caused an assertion 
+        error (Patch waiting in ganeti-devel list).
+      * Issue 621: Fix for network locking issue that resulted in: [Lock 
+        'XXXXXX' not found in set 'instance' (it may have been removed)].
 
-    * snapshot: Add trivial 'snapshot' functionality that is unused by Synnefo or Ganeti.
+    * snapshot: Add trivial 'snapshot' functionality that is unused by Synnefo
+      or Ganeti.
 
 To install Ganeti run:
 
@@ -1396,7 +1410,7 @@ Then run on node1:
 
 ``br1`` will be the default interface for any newly created VMs.
 
-You can verify that the ganeti cluster is successfully setup,by running on the
+You can verify that the ganeti cluster is successfully setup, by running on the
 :ref:`GANETI-MASTER <GANETI_NODES>` (in our case node1):
 
 .. code-block:: console
@@ -1561,10 +1575,12 @@ In the above command:
  * ``img_passwd``: the arbitrary root password of your new instance
  * ``img_format``: set to ``diskdump`` to reflect the type of the uploaded Image
  * ``img_id``: If you want to deploy an Image stored on Pithos (our case), this
-               should have the format ``pithosmap://<HashMap>/<size>``:
+   should have the format ``pithosmap://<HashMap>/<size>``:
+
                * ``HashMap``: the map of the file
                * ``size``: the size of the file, same size as reported in 
-                 ``ls -la filename``
+                 ``ls -l filename``
+
  * ``img_properties``: taken from the metadata file. Used only the two mandatory
                        properties ``OSFAMILY`` and ``ROOT_PARTITION``. `Learn more
                        <http://www.synnefo.org/docs/snf-image/latest/usage.html#image-properties>`_

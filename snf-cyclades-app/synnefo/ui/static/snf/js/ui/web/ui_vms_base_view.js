@@ -654,7 +654,7 @@
                 // action links click events
                 $(this.el).find(".action-container."+action+" a").click(function(ev) {
                     ev.preventDefault();
-                    if (action == "start" && !self.vm.can_start()) {
+                    if (action == "start" && !self.vm.can_start() && !vm.in_error_state()) {
                         ui.main.vm_resize_view.show_with_warning(self.vm);
                         return;
                     }

@@ -654,6 +654,7 @@
         
         init_handlers: function() {
           this.resize_actions.bind('click', _.bind(function(e){
+              if (this.vm.in_error_state()) { return }
               ui.main.vm_resize_view.show(this.vm);
           }, this));
         },

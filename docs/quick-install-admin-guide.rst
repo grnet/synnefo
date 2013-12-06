@@ -1619,11 +1619,20 @@ Networking Setup Overview
 -------------------------
 
 This part is deployment-specific and must be customized based on the specific
-needs of the system administrator.
+needs of the system administrator. Synnefo supports a lot of different
+networking configurations in the backend (spanning from very simple to more
+advanced), which are not in the scope of this guide.
 
-In this section, we'll describe the simplest scenario, which will provide
-access to the public Internet along with private networking capabilities for
-the VMs.
+In this section, we'll describe the simplest scenario, which will enable the
+VMs to have access to the public Internet and also access to arbitrary private
+networks.
+
+At the end of this section the networking setup on the two nodes will look like
+this:
+
+.. image:: images/install-guide-networks.png
+   :width: 70%
+   :target: _images/install-guide-networks.png
 
 .. _snf-network:
 

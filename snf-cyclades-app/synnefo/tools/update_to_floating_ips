@@ -47,6 +47,7 @@ def main():
         logger.setLevel(logging.DEBUG)
 
     public_ips = IPAddress.objects.filter(network__public=True,
+                                          subnet__ipversion=4,
                                           floating_ip=False)
     if options.network_id is not None:
         network = get_network(options.network_id)

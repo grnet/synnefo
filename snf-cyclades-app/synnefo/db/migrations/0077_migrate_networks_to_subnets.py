@@ -20,7 +20,7 @@ class Migration(DataMigration):
                                                    deleted=network.deleted)
                 ip_pool = network.pool
                 if ip_pool is None:
-                    ip_pool = IPPoolTable
+                    ip_pool = orm.IPPoolTable()
                 ip_pool.subnet = subnet
                 ip_pool.base = subnet.cidr
                 ip_pool.offset = 0

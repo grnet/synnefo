@@ -32,16 +32,25 @@
 # or implied, of GRNET S.A.
 #
 
+import logging
 import synnefo.cyclades_settings as cyclades
-from synnefo.cyclades_settings import cyclades_services
+
+from django.conf import settings
+from astakosclient import AstakosClient
+
+from synnefo import cyclades_settings
 
 from synnefo.lib import join_urls
 from synnefo.lib.services import get_public_endpoint as endpoint
 
 
+logger = logging.getLogger(__name__)
+
 BASE_PATH = cyclades.BASE_PATH
 if not BASE_PATH.startswith("/"):
     BASE_PATH = "/" + BASE_PATH
+
+cyclades_services = cyclades_settings.cyclades_services
 
 GLANCE_URL = endpoint(cyclades_services, 'image', 'v1.0').rstrip('/')
 COMPUTE_URL = endpoint(cyclades_services, 'compute', 'v2.0').rstrip('/')
@@ -53,5 +62,22 @@ ACCOUNT_URL = join_urls('/', cyclades.ASTAKOS_ACCOUNT_PROXY_PATH)
 USER_CATALOG_URL = join_urls(ACCOUNT_URL, 'user_catalogs')
 FEEDBACK_URL = join_urls(ACCOUNT_URL, 'feedback')
 
-LOGIN_URL = join_urls('/', cyclades.ASTAKOS_UI_PROXY_PATH, 'login')
+
+class LazyAstakosUrl(object):
+    def __init__(self, endpoints_name):
+        self.endpoints_name = endpoints_name
+
+    def __str__(self):
+        if not hasattr(self, 'str'):
+            try:
+                astakos_client = \
+                    AstakosClient(cyclades_settings.SERVICE_TOKEN,
+                                  settings.ASTAKOS_AUTH_URL)
+                self.str = getattr(astakos_client, self.endpoints_name)
+            except Exception, e:
+                logger.exception(e)
+                return ''
+        return self.str
+
+LOGIN_URL = join_urls(str(LazyAstakosUrl('ui_url')), 'login')
 LOGOUT_REDIRECT = LOGIN_URL

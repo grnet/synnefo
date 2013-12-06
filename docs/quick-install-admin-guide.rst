@@ -37,7 +37,7 @@ For the rest of the documentation we will refer to the first physical node as
 are "node1.example.com" and "node2.example.com" and their public IPs are "203.0.113.1" and
 "203.0.113.2" respectively. It is important that the two machines are under the same domain name.
 In case you choose to follow a private installation you will need to
-set up a private dns server, using dnsmasq for example. See node1 below for 
+set up a private dns server, using dnsmasq for example. See node1 below for
 more information on how to do so.
 
 General Prerequisites
@@ -167,8 +167,8 @@ actual IPs. Now, restart the server to apply the changes:
 Certificate Creation
 ~~~~~~~~~~~~~~~~~~~~~
 
-Node1 will host Cyclades. Cyclades should communicate with the other Synnefo 
-Services and users over a secure channel. In order for the connection to be 
+Node1 will host Cyclades. Cyclades should communicate with the other Synnefo
+Services and users over a secure channel. In order for the connection to be
 trusted, the keys provided to Apache below should be signed with a certificate.
 This certificate should be added to all nodes. In case you don't have signed keys you can create a self-signed certificate
 and sign your keys with this. To do so on node1 run:
@@ -209,7 +209,7 @@ Now you can create the keys and sign them with the certificate
 
 		# ./build-key-server node1.example.com
 
-This will create a ``01.pem`` and a ``node1.example.com.key`` files in the 
+This will create a ``01.pem`` and a ``node1.example.com.key`` files in the
 ``/etc/openvpn/easy-rsa/2.0/keys`` directory. Copy these in ``/etc/ssl/certs/``
 and ``/etc/ssl/private/`` respectively and use them in the apache2
 configuration file below instead of the defaults.
@@ -316,7 +316,7 @@ during the Cyclades setup.
 Pithos data directory setup
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-As mentioned in the General Prerequisites section, there should be a directory 
+As mentioned in the General Prerequisites section, there should be a directory
 called ``/srv/pithos`` visible by both nodes. We create and setup the ``data``
 directory inside it:
 
@@ -338,7 +338,7 @@ In order to do this, run:
 Now edit ``/etc/exports`` and add the following line:
 
 .. code-block:: console
-   
+
    /srv/pithos/ 203.0.113.2(rw,no_root_squash,sync,subtree_check)
 
 Once done, run:
@@ -370,15 +370,15 @@ dnsmasq will serve any IPs/domains found in ``/etc/resolv.conf``.
 There is a `"bug" in libevent 2.0.5 <http://sourceforge.net/p/levent/bugs/193/>`_
 , where if you have multiple nameservers in your ``/etc/resolv.conf``, libevent
 will round-robin against them. To avoid this, you must use a single nameserver
-for all your needs. Edit your ``/etc/resolv.conf`` to include your dns server: 
+for all your needs. Edit your ``/etc/resolv.conf`` to include your dns server:
 
 .. code-block:: console
 
    nameserver 203.0.113.1
 
 Because of the aforementioned bug, you can't specify more than one DNS servers
-in your ``/etc/resolv.conf``. In order for dnsmasq to serve domains not in 
-``/etc/hosts``, edit ``/etc/dnsmasq.conf`` and change the line starting with 
+in your ``/etc/resolv.conf``. In order for dnsmasq to serve domains not in
+``/etc/hosts``, edit ``/etc/dnsmasq.conf`` and change the line starting with
 ``#resolv-file=`` to:
 
 .. code-block:: console
@@ -392,7 +392,7 @@ want dnsmasq to query for domains, e.g., 8.8.8.8:
 
    nameserver 8.8.8.8
 
-In the ``/etc/dnsmasq.conf`` file, you can also specify the ``listen-address`` 
+In the ``/etc/dnsmasq.conf`` file, you can also specify the ``listen-address``
 and the ``interface`` you would like dnsmasq to listen to.
 
 Finally, restart dnsmasq:
@@ -545,7 +545,7 @@ Add the following line in ``/etc/resolv.conf`` file
 
 to inform the node about the new DNS server.
 
-As mentioned before, this should be the only ``nameserver`` entry in 
+As mentioned before, this should be the only ``nameserver`` entry in
 ``/etc/resolv.conf``.
 
 We are now ready with all general prerequisites for node2. Now that we have
@@ -556,7 +556,7 @@ Installation of Astakos on node1
 ================================
 
 To install Astakos, grab the package from our repository (make sure  you made
-the additions needed in your ``/etc/apt/sources.list`` file and updated, as 
+the additions needed in your ``/etc/apt/sources.list`` file and updated, as
 described previously), by running:
 
 .. code-block:: console
@@ -683,10 +683,10 @@ method, read the relative :ref:`section <shibboleth-auth>`.
 Email delivery configuration
 ----------------------------
 
-Many of the ``Astakos`` operations require the server to notify service users 
-and administrators via email. e.g. right after the signup process, the service 
-sents an email to the registered email address containing an verification url. 
-After the user verifies the email address, Astakos once again needs to 
+Many of the ``Astakos`` operations require the server to notify service users
+and administrators via email. e.g. right after the signup process, the service
+sents an email to the registered email address containing an verification url.
+After the user verifies the email address, Astakos once again needs to
 notify administrators with a notice that a new account has just been verified.
 
 More specifically Astakos sends emails in the following cases
@@ -1247,8 +1247,8 @@ please continue with the rest of the guide.
 Kamaki
 ======
 
-`Kamaki <http://www.synnefo.org/docs/kamaki/latest/index.html>`_ is an 
-Openstack API client library and command line interface with custom extentions 
+`Kamaki <http://www.synnefo.org/docs/kamaki/latest/index.html>`_ is an
+Openstack API client library and command line interface with custom extentions
 specific to Synnefo.
 
 Kamaki Installation and Configuration
@@ -1260,11 +1260,11 @@ To install kamaki run:
 
    # apt-get install kamaki
 
-Now, visit 
+Now, visit
 
  `https://node1.example.com/astakos/ui/`
 
-log in and click on ``API access``. Scroll all the way to the bottom of the 
+log in and click on ``API access``. Scroll all the way to the bottom of the
 page, click on the orange ``Download your .kamakirc`` button and save the file
 as ``.kamakirc`` in your home directory.
 
@@ -1287,7 +1287,7 @@ Ganeti
 
 `Ganeti <http://code.google.com/p/ganeti/>`_ handles the low level VM management
 for Cyclades, so Cyclades requires a working Ganeti installation at the backend.
-Please refer to the `ganeti documentation <http://docs.ganeti.org/ganeti/2.8/html>`_ for all 
+Please refer to the `ganeti documentation <http://docs.ganeti.org/ganeti/2.8/html>`_ for all
 the gory details. A successful Ganeti installation concludes with a working
 :ref:`GANETI-MASTER <GANETI_NODES>` and a number of :ref:`GANETI-NODEs
 <GANETI_NODES>`.
@@ -1313,39 +1313,39 @@ You're gonna need the ``lvm2`` and ``vlan`` packages, so run:
 Ganeti requires FQDN. To properly configure your nodes please
 see `this <http://docs.ganeti.org/ganeti/2.6/html/install.html#hostname-issues>`_.
 
-Ganeti requires an extra available IP and its FQDN e.g., ``203.0.113.100`` and 
-``ganeti.node1.example.com``. Add this IP to your DNS server configuration, as 
+Ganeti requires an extra available IP and its FQDN e.g., ``203.0.113.100`` and
+``ganeti.node1.example.com``. Add this IP to your DNS server configuration, as
 explained above.
 
-Also, Ganeti will need a volume group with the same name e.g., ``ganeti`` 
-across all nodes, of at least 20GiB. To create the volume group, 
+Also, Ganeti will need a volume group with the same name e.g., ``ganeti``
+across all nodes, of at least 20GiB. To create the volume group,
 see `this <http://www.tldp.org/HOWTO/LVM-HOWTO/createvgs.html>`_.
 
 Moreover, node1 and node2 must have the same dsa, rsa keys and authorised_keys
-under ``/root/.ssh/`` for password-less root ssh between each other. To 
+under ``/root/.ssh/`` for password-less root ssh between each other. To
 generate said keys, see `this <https://wiki.debian.org/SSH#Using_shared_keys>`_.
 
 In the following sections, we assume that the public interface of all nodes is
-``eth0`` and there are two extra interfaces ``eth1`` and ``eth2``, which can 
-also be vlans on your primary interface e.g., ``eth0.1`` and ``eth0.2``  in 
-case you don't have multiple physical interfaces. For information on how to 
+``eth0`` and there are two extra interfaces ``eth1`` and ``eth2``, which can
+also be vlans on your primary interface e.g., ``eth0.1`` and ``eth0.2``  in
+case you don't have multiple physical interfaces. For information on how to
 create vlans, please see
 `this <https://wiki.debian.org/NetworkConfiguration#Howto_use_vlan_.28dot1q.2C_802.1q.2C_trunk.29_.28Etch.2C_Lenny.29>`_.
 
-Finally, setup two bridges on the host machines (e.g: br1/br2 on eth1/eth2 
+Finally, setup two bridges on the host machines (e.g: br1/br2 on eth1/eth2
 respectively), as described `here <https://wiki.debian.org/BridgeNetworkConnections>`_.
 
 Ganeti Installation and Initialization
 --------------------------------------
 
-We assume that Ganeti will use the KVM hypervisor. To install KVM, run on all 
+We assume that Ganeti will use the KVM hypervisor. To install KVM, run on all
 Ganeti nodes:
 
 .. code-block:: console
 
    # apt-get install qemu-kvm
 
-It's time to install Ganeti. To be able to use hotplug (which will be part of 
+It's time to install Ganeti. To be able to use hotplug (which will be part of
 the official Ganeti 2.10), we recommend using our Ganeti package version:
 
 ``2.8.2+snapshot1+b64v1+kvmopts1+extfix1+hotplug5+lockfix3+ippoolfix+rapifix+netxen-1~wheezy``
@@ -1353,11 +1353,11 @@ the official Ganeti 2.10), we recommend using our Ganeti package version:
 Let's briefly explain each patch:
 
     * hotplug: hotplug devices (NICs and Disks) (ganeti 2.10).
-    * b64v1: Save bitarray of network IP pools in config file, encoded in 
+    * b64v1: Save bitarray of network IP pools in config file, encoded in
       base64, instead of 0/1.
     * ippoolfix: Ability to give an externally reserved IP to an instance (e.g.
       gateway IP)  (ganeti 2.10).
-    * kvmopts: Export disk geometry to kvm command and add migration 
+    * kvmopts: Export disk geometry to kvm command and add migration
       capabilities.
     * extfix: Includes:
 
@@ -1365,15 +1365,15 @@ Let's briefly explain each patch:
       * adds better arbitrary params support (modification, deletion).
       * cache, heads, cyls arbitrary params reach kvm command.
 
-    * rapifix: Extend RAPI το support 'depends' and 'shutdown_timeout' body 
+    * rapifix: Extend RAPI το support 'depends' and 'shutdown_timeout' body
       arguments. (ganeti 2.9).
-    * netxen: Network configuration for xen instances, exactly like in kvm 
+    * netxen: Network configuration for xen instances, exactly like in kvm
       instances. (ganeti 2.9).
     * lockfix2: Fixes for 2 locking issues:
 
-      * Issue 622: Fix for opportunistic locking that caused an assertion 
+      * Issue 622: Fix for opportunistic locking that caused an assertion
         error (Patch waiting in ganeti-devel list).
-      * Issue 621: Fix for network locking issue that resulted in: [Lock 
+      * Issue 621: Fix for network locking issue that resulted in: [Lock
         'XXXXXX' not found in set 'instance' (it may have been removed)].
 
     * snapshot: Add trivial 'snapshot' functionality that is unused by Synnefo
@@ -1385,7 +1385,7 @@ To install Ganeti run:
 
    # apt-get install snf-ganeti ganeti-htools ganeti-haskell
 
-Ganeti will make use of drbd. To enable this and make the configuration 
+Ganeti will make use of drbd. To enable this and make the configuration
 permanent you have to do the following :
 
 .. code-block:: console
@@ -1402,7 +1402,7 @@ Then run on node1:
                     --default-iallocator hail \
                     --hypervisor-parameters kvm:kernel_path=,vnc_bind_address=0.0.0.0 \
                     --master-netdev eth0 ganeti.node1.example.com
-    
+
     root@node1:~ # gnt-node add --no-ssh-key-check --master-capable=yes \
                     --vm-capable=yes node2.example.com
     root@node1:~ # gnt-cluster modify --disk-parameters=drbd:metavg=ganeti
@@ -1521,7 +1521,7 @@ b) Upload the Image to your Pithos installation, either using the Pithos Web
 To upload the file using kamaki, run:
 
 .. code-block:: console
-   
+
    # kamaki file upload debian_base-6.0-x86_64.diskdump pithos
 
 Once the Image is uploaded successfully, download the Image's metadata file
@@ -1540,8 +1540,8 @@ Spawning a VM from a Pithos Image, using Ganeti
 Now, it is time to test our installation so far. So, we have Astakos and
 Pithos installed, we have a working Ganeti installation, the snf-image
 definition installed on all VM-capable nodes, a Debian Squeeze Image on
-Pithos and kamaki installed and configured. Make sure you also have the 
-`metadata file <http://cdn.synnefo.org/debian_base-6.0-x86_64.diskdump.meta>`_ 
+Pithos and kamaki installed and configured. Make sure you also have the
+`metadata file <http://cdn.synnefo.org/debian_base-6.0-x86_64.diskdump.meta>`_
 for this image.
 
 To spawn a VM from a Pithos file, we need to know:
@@ -1550,12 +1550,12 @@ To spawn a VM from a Pithos file, we need to know:
     2) The size of the file
 
 If you uploaded the file with kamaki as described above, run:
-    
+
 .. code-block:: console
 
-   # kamaki file info pithos:debian_base-6.0-x86_64.diskdump 
+   # kamaki file info pithos:debian_base-6.0-x86_64.diskdump
 
-else, replace ``pithos`` and ``debian_base-6.0-x86_64.diskdump`` with the 
+else, replace ``pithos`` and ``debian_base-6.0-x86_64.diskdump`` with the
 container and filename you used, when uploading the file.
 
 The hashmap is the field ``x-object-hash``, while the size of the file is the
@@ -1578,7 +1578,7 @@ In the above command:
    should have the format ``pithosmap://<HashMap>/<size>``:
 
                * ``HashMap``: the map of the file
-               * ``size``: the size of the file, same size as reported in 
+               * ``size``: the size of the file, same size as reported in
                  ``ls -l filename``
 
  * ``img_properties``: taken from the metadata file. Used only the two mandatory
@@ -1622,7 +1622,7 @@ This part is deployment-specific and must be customized based on the specific
 needs of the system administrator.
 
 In this section, we'll describe the simplest scenario, which will provide
-access to the public Internet along with private networking capabilities for 
+access to the public Internet along with private networking capabilities for
 the VMs.
 
 .. _snf-network:
@@ -1650,8 +1650,8 @@ Then, in :file:`/etc/default/snf-network` set:
 nfdhcpd
 ~~~~~~~
 
-nfdhcpd is an NFQUEUE based daemon, answering DHCP requests and running locally 
-on every Ganeti node. Its leases file, gets automatically updated by 
+nfdhcpd is an NFQUEUE based daemon, answering DHCP requests and running locally
+on every Ganeti node. Its leases file, gets automatically updated by
 snf-network and information provided by Ganeti.
 
 .. code-block:: console
@@ -1668,7 +1668,7 @@ Google's DNS server ``8.8.8.8``). Restart the server on all nodes:
 
    # /etc/init.d/nfdhcpd restart
 
-In order for nfdhcpd to receive the VMs requests, we have to mangle all DHCP 
+In order for nfdhcpd to receive the VMs requests, we have to mangle all DHCP
 traffic coming from the corresponding interfaces. To accomplish that run:
 
 .. code-block:: console
@@ -1690,7 +1690,7 @@ Public Network Setup
 
 In the following section, we'll guide you through a very basic network setup.
 This assumes the following:
-    
+
     * Node1 has access to the public network via eth0.
     * Node1 will become a NAT server for the VMs.
     * All nodes have ``br1/br2`` dedicated for the VMs' public/private traffic.
@@ -1702,13 +1702,13 @@ Setting up the NAT server on node1
 To setup the NAT server on node1, run:
 
 .. code-block:: console
-   
+
    # ip addr add 10.0.0.1/24 dev br1
    # iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
    # echo 1 > /proc/sys/net/ipv4/ip_forward
 
 and append it to your ``/etc/rc.local``.
-    
+
 
 Testing the Public Networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1746,7 +1746,7 @@ Also in all nodes, bring all ``br*`` interfaces up:
 Finally, run on the GANETI-MASTER (node1):
 
 .. code-block:: console
-    
+
    # gnt-instance add -o snf-image+default --os-parameters \
                       img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-6.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
                       -t plain --disk 0:size=2G --no-name-check --no-ip-check \
@@ -1759,7 +1759,7 @@ The following things should happen:
     * snf-network bridges the tap interface to ``br1`` and updates nfdhcpd state.
     * nfdhcpd serves 10.0.0.2 IP to the interface of ``testvm2``.
 
-Now try to ping the outside world e.g., ``www.synnefo.org`` from inside the VM 
+Now try to ping the outside world e.g., ``www.synnefo.org`` from inside the VM
 (connect to the VM using VNC as before).
 
 Make sure everything works as expected, before proceeding with the Private
@@ -1770,15 +1770,15 @@ Networks setup.
 Private Networks Setup
 ----------------------
 
-In this section, we'll describe a basic network configuration, that will provide 
-isolated private networks to the end-users. All private network traffic, will 
-pass through ``br1`` and isolation will be guaranteed with a specific set of 
+In this section, we'll describe a basic network configuration, that will provide
+isolated private networks to the end-users. All private network traffic, will
+pass through ``br1`` and isolation will be guaranteed with a specific set of
 ``ebtables`` rules.
 
 Testing the Private Networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We'll create two instances and connect them to the same Private Network. This 
+We'll create two instances and connect them to the same Private Network. This
 means that the instances will have a second NIC connected to the ``br1``.
 
 .. code-block:: console
@@ -2085,7 +2085,7 @@ Add a Public Network
 Cyclades supports different Public Networks on different Ganeti backends.
 After connecting Cyclades with our Ganeti cluster, we need to setup a Public
 Network for this Ganeti backend (`id = 1`). The basic setup is to bridge every
-created NIC on a bridge. 
+created NIC on a bridge.
 
 .. code-block:: console
 
@@ -2271,7 +2271,7 @@ Register an existing Image file to Cyclades
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For the purposes of the following example, we assume that the user has uploaded
-a file in container ``pithos`` called ``debian_base-6.0-x86_64``. Moreover, 
+a file in container ``pithos`` called ``debian_base-6.0-x86_64``. Moreover,
 he should have the appropriate `metadata file <http://cdn.synnefo.org/debian_base-6.0-x86_64.diskdump.meta>`_.
 
 Once the Image file has been successfully uploaded on Pithos then we register
@@ -2282,8 +2282,8 @@ it to Cyclades, by running:
    $ kamaki image register "Debian Base" pithos:debian_base-6.0-x86_64 \
      --metafile debian_base-6.0-x86_64.diskdump.meta --public
 
-This command registers a Pithos file as an Image in Cyclades. This Image will 
-be public (``--public``), so all users will be able to spawn VMs from it. 
+This command registers a Pithos file as an Image in Cyclades. This Image will
+be public (``--public``), so all users will be able to spawn VMs from it.
 
 Spawn a VM from the Cyclades Web UI
 -----------------------------------
@@ -2310,4 +2310,4 @@ through VNC out of band, or click on the machine's icon to connect directly via
 SSH or RDP (for windows machines).
 
 Congratulations. You have successfully installed the whole Synnefo stack and
-connected all components. 
+connected all components.

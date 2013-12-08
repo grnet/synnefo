@@ -107,7 +107,8 @@ def create_port(request):
     port_dict = api.utils.get_attribute(req, "port")
     net_id = api.utils.get_attribute(port_dict, "network_id")
 
-    network = util.get_network(net_id, user_id, non_deleted=True)
+    network = util.get_network(net_id, user_id, non_deleted=True,
+                               for_update=True)
 
     # Check if the request contains a valid IPv4 address
     fixed_ips = api.utils.get_attribute(port_dict, "fixed_ips", required=False)

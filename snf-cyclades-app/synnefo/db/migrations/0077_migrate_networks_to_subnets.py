@@ -10,7 +10,7 @@ class Migration(DataMigration):
     def forwards(self, orm):
         "Write your forwards methods here."
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
-        for network in orm.Network.objects.all():
+        for network in orm.Network.objects.select_related('pool').all():
             if network.subnet:
                 subnet = orm.Subnet.objects.create(network=network,
                                                    ipversion=4,
@@ -18,14 +18,16 @@ class Migration(DataMigration):
                                                    gateway=network.gateway,
                                                    dhcp=network.dhcp,
                                                    deleted=network.deleted)
-                ip_pool = network.pool
-                if ip_pool is None:
-                    ip_pool = orm.IPPoolTable()
-                ip_pool.subnet = subnet
-                ip_pool.base = subnet.cidr
-                ip_pool.offset = 0
-                ip_pool.size = ipaddr.IPNetwork(network.subnet).numhosts
-                ip_pool.save()
+
+                if not network.deleted:
+                    ip_pool = network.pool
+                    if ip_pool is None:
+                        ip_pool = orm.IPPoolTable()
+                    ip_pool.subnet = subnet
+                    ip_pool.base = subnet.cidr
+                    ip_pool.offset = 0
+                    ip_pool.size = ipaddr.IPNetwork(network.subnet).numhosts
+                    ip_pool.save()
 
             if network.subnet6:
                 orm.Subnet.objects.create(network=network,

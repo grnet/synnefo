@@ -299,9 +299,16 @@ class SynnefoCI(object):
         flavor_id = self._find_flavor(flavor)
 
         # Create Server
-        fip = self._create_floating_ip()
-        port = self._create_port(fip)
-        networks = [{'port': port['id']}]
+        networks = []
+        if self.config.get("Deployment", "allocate_floating_ip") == "True":
+            fip = self._create_floating_ip()
+            port = self._create_port(fip)
+            networks.append({'port': port['id']})
+        private_networks = self.config.get('Deployment', 'private_networks')
+        if private_networks:
+            private_networks = private_networks.split(",")
+            networks.extend([{"uuid": uuid.strip()}
+                             for uuid in private_networks])
         if server_name is None:
             server_name = self.config.get("Deployment", "server_name")
             server_name = "%s(BID: %s)" % (server_name, self.build_id)

@@ -150,10 +150,14 @@ class CycladesTests(BurninTests):
     def _delete_servers(self, servers, error=False):
         """Deleting a number of servers in parallel"""
         # Disconnect floating IPs
-        for srv in servers:
-            self.info("Disconnecting all floating IPs from server with id %s",
-                      srv['id'])
-            self._disconnect_from_network(srv)
+        if not error:
+            # If there is the possibility for the machine to be in
+            # ERROR state we cannot delete its ports.
+            for srv in servers:
+                self.info(
+                    "Disconnecting all floating IPs from server with id %s",
+                    srv['id'])
+                self._disconnect_from_network(srv)
 
         # Delete servers
         for srv in servers:

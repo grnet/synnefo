@@ -176,7 +176,8 @@ def get_free_floating_ip(userid, network=None):
 
     """
     floating_ips = IPAddress.objects\
-                            .filter(userid=userid, deleted=False, nic=None)
+                            .filter(userid=userid, deleted=False, nic=None,
+                                    floating_ip=True)
     if network is not None:
         floating_ips = floating_ips.filter(network=network)
 

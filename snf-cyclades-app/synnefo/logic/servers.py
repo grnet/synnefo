@@ -171,10 +171,7 @@ def create(userid, name, password, flavor, image, metadata={},
         use_backend = allocate_new_server(userid, flavor)
 
     # Create the ports for the server
-    try:
-        ports = create_instance_ports(userid, networks)
-    except Exception as e:
-        raise e
+    ports = create_instance_ports(userid, networks)
 
     # Fix flavor for archipelago
     disk_template, provider = util.get_flavor_provider(flavor)

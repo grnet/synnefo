@@ -164,6 +164,17 @@ def debug_method(func):
     return wrapper
 
 
+def list_method(func):
+    @wraps(func)
+    def wrapper(self, *args, **kw):
+        marker = kw.get('marker')
+        limit = kw.get('limit')
+        result = func(self, *args, **kw)
+        start, limit = self._list_limits(result, marker, limit)
+        return result[start:start + limit]
+    return wrapper
+
+
 class ModularBackend(BaseBackend):
     """A modular backend.
 
@@ -333,12 +344,11 @@ class ModularBackend(BaseBackend):
 
     @debug_method
     @backend_method
+    @list_method
     def list_accounts(self, user, marker=None, limit=10000):
         """Return a list of accounts the user can access."""
 
-        allowed = self._allowed_accounts(user)
-        start, limit = self._list_limits(allowed, marker, limit)
-        return allowed[start:start + limit]
+        return self._allowed_accounts(user)
 
     def _get_account_quotas(self, account):
         """Get account usage from astakos."""
@@ -490,6 +500,7 @@ class ModularBackend(BaseBackend):
 
     @debug_method
     @backend_method
+    @list_method
     def list_containers(self, user, account, marker=None, limit=10000,
                         shared=False, until=None, public=False):
         """Return a list of containers existing under an account."""
@@ -497,9 +508,7 @@ class ModularBackend(BaseBackend):
         if user != account:
             if until or account not in self._allowed_accounts(user):
                 raise NotAllowedError
-            allowed = self._allowed_containers(user, account)
-            start, limit = self._list_limits(allowed, marker, limit)
-            return allowed[start:start + limit]
+            return self._allowed_containers(user, account)
         if shared or public:
             allowed = set()
             if shared:
@@ -508,15 +517,10 @@ class ModularBackend(BaseBackend):
             if public:
                 allowed.update([x[0].split('/', 2)[1] for x in
                                self.permissions.public_list(account)])
-            allowed = sorted(allowed)
-            start, limit = self._list_limits(allowed, marker, limit)
-            return allowed[start:start + limit]
+            return sorted(allowed)
         node = self.node.node_lookup(account)
-        containers = [x[0] for x in self._list_object_properties(
+        return [x[0] for x in self._list_object_properties(
             node, account, '', '/', marker, limit, False, None, [], until)]
-        start, limit = self._list_limits(
-            [x[0] for x in containers], marker, limit)
-        return containers[start:start + limit]
 
     @debug_method
     @backend_method

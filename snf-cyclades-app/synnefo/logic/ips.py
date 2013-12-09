@@ -84,7 +84,7 @@ def allocate_ip(network, userid, address=None, floating_ip=False):
                               " 'SNF:DRAINED' status" % network.id)
 
     ip_pools = IPPoolTable.objects.select_for_update()\
-        .filter(subnet__network=network)
+        .filter(subnet__network=network).order_by('id')
     try:
         return allocate_ip_from_pools(ip_pools, userid, address=address,
                                       floating_ip=floating_ip)

@@ -1254,13 +1254,6 @@
             this.selected_keys = [];
 
             var self = this;
-            this.$(".create-ssh-key").click(function() {
-                var confirm_close = true;
-                if (confirm_close) {
-                    snf.ui.main.public_keys_view.show(self.parent);
-                } else {
-                }
-            });
         },
 
         init_suggested_roles: function() {

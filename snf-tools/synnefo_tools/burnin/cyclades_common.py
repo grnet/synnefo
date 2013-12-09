@@ -558,6 +558,10 @@ class CycladesTests(BurninTests):
             self._insist_on_port_deletion(port['id'])
 
         # Then delete the floating IPs
+        self._delete_floating_ips(fips)
+
+    def _delete_floating_ips(self, fips):
+        """Delete floating ips"""
         for fip in fips:
             self.info("Destroying floating IP %s with id %s",
                       fip['floating_ip_address'], fip['id'])

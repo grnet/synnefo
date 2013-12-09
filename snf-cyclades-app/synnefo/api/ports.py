@@ -107,8 +107,11 @@ def create_port(request):
     port_dict = api.utils.get_attribute(req, "port")
     net_id = api.utils.get_attribute(port_dict, "network_id")
 
-    network = util.get_network(net_id, user_id, non_deleted=True,
-                               for_update=True)
+    device_id = api.utils.get_attribute(port_dict, "device_id", required=False)
+    vm = None
+    if device_id is not None:
+        vm = util.get_vm(device_id, user_id, for_update=True, non_deleted=True,
+                         non_suspended=True)
 
     # Check if the request contains a valid IPv4 address
     fixed_ips = api.utils.get_attribute(port_dict, "fixed_ips", required=False)
@@ -129,6 +132,9 @@ def create_port(request):
     else:
         fixed_ip_address = None
 
+    network = util.get_network(net_id, user_id, non_deleted=True,
+                               for_update=True)
+
     ipaddress = None
     if network.public:
         # Creating a port to a public network is only allowed if the user has
@@ -143,12 +149,6 @@ def create_port(request):
     elif fixed_ip_address:
         ipaddress = ips.allocate_ip(network, user_id,
                                     address=fixed_ip_address)
-
-    device_id = api.utils.get_attribute(port_dict, "device_id", required=False)
-    vm = None
-    if device_id is not None:
-        vm = util.get_vm(device_id, user_id, for_update=True, non_deleted=True,
-                         non_suspended=True)
 
     name = api.utils.get_attribute(port_dict, "name", required=False)
     if name is None:

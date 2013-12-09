@@ -236,6 +236,8 @@ Cyclades UI
 - Double escaping fix in machine create wizard images list and machine details 
   subview.
 - Fix image ordering in machine create wizard.
+- New setting ``UI_SUPPORT_SSH_OS_FAMILY_LIST``. A list of image OS families 
+  for which ui will enable ssh key injection in machine wizard.
 
 
 Pithos

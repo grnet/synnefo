@@ -37,7 +37,7 @@ from snf_django.lib.api import faults
 from django.db import transaction
 from synnefo import quotas
 from synnefo.db import pools
-from synnefo.db.models import (IPPoolTable, IPAddress)
+from synnefo.db.models import (IPPoolTable, IPAddress, Network)
 log = logging.getLogger(__name__)
 
 
@@ -203,6 +203,9 @@ def delete_floating_ip(floating_ip):
         # instance.
         msg = "Floating IP '%s' is attached to instance." % floating_ip.id
         raise faults.Conflict(msg)
+
+    # Lock network to prevent deadlock
+    Network.objects.select_for_update().get(id=floating_ip.network_id)
 
     # Return the address of the floating IP back to pool
     floating_ip.release_address()

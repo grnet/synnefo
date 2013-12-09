@@ -253,10 +253,16 @@ class SynnefoCI(object):
     def destroy_server(self, wait=True):
         """Destroy slave server"""
         server_id = int(self.read_temp_config('server_id'))
+        fips = [f for f in self.network_client.list_floatingips()
+                if str(f['instance_id']) == str(server_id)]
         self.logger.info("Destoying server with id %s " % server_id)
         self.cyclades_client.delete_server(server_id)
         if wait:
             self._wait_transition(server_id, "ACTIVE", "DELETED")
+        for fip in fips:
+            self.logger.info("Destroying floating ip %s",
+                             fip['floating_ip_address'])
+            self.network_client.delete_floatingip(fip['id'])
 
     def _create_floating_ip(self):
         """Create a new floating ip"""

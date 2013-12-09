@@ -1445,7 +1445,8 @@ def register_image(image="debian_base.diskdump"):
     image_location = "images:{0}".format(image)
     cmd = """
     sleep 5
-    kamaki image register "Debian Base" {0} --public --disk-format=diskdump \
+    kamaki image register --name="Debian Base" --location={0} --public \
+            --disk-format=diskdump \
             --property OSFAMILY=linux --property ROOT_PARTITION=1 \
             --property description="Debian Squeeze Base System" \
             --property size=450M --property kernel=2.6.32 \

@@ -642,8 +642,8 @@ image to Cyclades:
 
 .. code-block:: console
 
- $ kamaki image register "Debian Base" \
-        pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump \
+ $ kamaki image register --name="Debian Base" \
+        --location="pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump" \
         --public \
         --disk-format=diskdump \
         --property OSFAMILY=linux --property ROOT_PARTITION=1 \

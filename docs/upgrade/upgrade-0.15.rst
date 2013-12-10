@@ -228,7 +228,12 @@ of the resource owner, otherwise the resource owner has to be asked.
 To register the pithos view as an OAuth 2.0 client in astakos, use the
 following command::
 
-    astakos-host$ snf-manage oauth2-client-add pithos-view --secret=<secret> --is-trusted --url https://pithos.synnefo.live/pithos/ui/view
+    astakos-host$ snf-manage oauth2-client-add pithos-view --secret=<secret> --is-trusted --url <redirect_uri>
+
+The redirect_uri should be the ``PITHOS_BASE_URL`` plus the ``/ui/view``
+suffix, for example::
+
+    https://node2.example.com/pithos/ui/view
 
 You can see the registered clients by running::
 

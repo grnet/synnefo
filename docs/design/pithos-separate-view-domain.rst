@@ -91,7 +91,7 @@ We register an OAuth 2.0 client with the following command::
 
 For example::
 
-    snf-manage oauth2-client-add pithos-view --secret=12345 --is-trusted --url https://pithos.synnefo.live/pithos/ui/view
+    snf-manage oauth2-client-add pithos-view --secret=12345 --is-trusted --url https://node2.example.com/pithos/ui/view
 
 Configure view credentials in Pithos
 ------------------------------------
@@ -129,7 +129,7 @@ For example, the client directs the user-agent to make the following HTTP
 request using TLS (with extra line breaks for display purposes only)::
 
     GET /astakos/oauth2/auth?response_type=code&client_id=pithos-view
-        &redirect_uri=https%3A//pithos.synnefo.live/pithos/ui/view/b0ee4760-9451-4b9a-85f0-605c48bebbdd/pithos/image.png
+        &redirect_uri=https%3A//node2.example.com/pithos/ui/view/b0ee4760-9451-4b9a-85f0-605c48bebbdd/pithos/image.png
         &scope=/b0ee4760-9451-4b9a-85f0-605c48bebbdd/pithos/image.png HTTP/1.1
         Host: accounts.synnefo.live
 
@@ -169,7 +169,7 @@ line breaks for display purposes only)::
      Content-Type: application/x-www-form-urlencoded
 
      grant_type=authorization_code&code=SplxlOBeZQQYbYS6WxSbIA
-     &redirect_uri=https%3A//pithos.synnefo.live/pithos/ui/view/b0ee4760-9451-4b9a-85f0-605c48bebbdd/pithos/image.png
+     &redirect_uri=https%3A//node2.example.com/pithos/ui/view/b0ee4760-9451-4b9a-85f0-605c48bebbdd/pithos/image.png
 
 Access to the protected resource
 --------------------------------

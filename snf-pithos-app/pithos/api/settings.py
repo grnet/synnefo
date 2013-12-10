@@ -194,8 +194,9 @@ BACKEND_BLOCK_SIZE = getattr(
 BACKEND_HASH_ALGORITHM = getattr(
     settings, 'PITHOS_BACKEND_HASH_ALGORITHM', 'sha256')
 
-# Set the credentials (client_id, client_secret) issued for authenticating
-# the views with astakos during the resource access token generation procedure
+# Set the credentials (client identifier, client secret) issued for
+# authenticating the views with astakos during the resource access token
+# generation procedure
 OAUTH2_CLIENT_CREDENTIALS = getattr(settings,
                                     'PITHOS_OAUTH2_CLIENT_CREDENTIALS',
                                     (None, None))

@@ -97,11 +97,11 @@ class DjangoBackendORMMixin(object):
 
     def delete_authorization_code(self, code):
         code.delete()
-        logger.info('%r deleted' % code)
+        logger.info(u'%r deleted' % code)
 
     def delete_token(self, token):
         token.delete()
-        logger.info('%r deleted' % token)
+        logger.info(u'%r deleted' % token)
 
     def check_credentials(self, client, username, secret):
         if not (username == client.get_id() and secret == client.secret):

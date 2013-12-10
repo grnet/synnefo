@@ -1442,7 +1442,7 @@ def register_image(image="debian_base.diskdump"):
     #     uid, user_auth_token, user_uuid = \
     #        get_auth_token_from_db(env.env.user_email)
 
-    image_location = "images:{0}".format(image)
+    image_location = "/images/{0}".format(image)
     cmd = """
     sleep 5
     kamaki image register --name="Debian Base" --location={0} --public \

@@ -188,9 +188,24 @@ The upgrade to v0.15 consists in the following steps:
 
     pithos-host$ pithos-migrate upgrade head
 
-.. _register_pithos_view:
+2.3 Configure Astakos authentication URL
+----------------------------------------
 
-2.3 Register Pithos view as an OAuth 2.0 client in Astakos
+The ``ASTAKOS_BASE_URL`` setting has been replaced (both in Cyclades and Pithos
+services) with the ``ASTAKOS_AUTH_URL`` setting.
+
+For Cyclades service we have to change the ``20-snf-cyclades-app-api.conf``
+file, remove the ``ASTAKOS_BASE_URL`` setting and replace it with
+``ASTAKOS_AUTH_URL``. Typically it is sufficient to add ``/identity/v2.0`` at
+the end of base URL to get the auth URL. For example, if base URL had the value
+of 'https://accounts.example.synnefo.org/' then the ``ASTAKOS_AUTH_URL``
+setting will have the value of
+'https://accounts.example.synnefo.org/identity/v2.0'.
+
+The same change has to be made for the Pithos service in
+``/etc/synnefo/20-snf-pithos-app-settings.conf``.
+
+2.4 Register Pithos view as an OAuth 2.0 client in Astakos
 ----------------------------------------------------------
 
 Starting from Synnefo version 0.15, the Pithos view, in order to get access to
@@ -213,28 +228,16 @@ of the resource owner, otherwise the resource owner has to be asked.
 To register the pithos view as an OAuth 2.0 client in astakos, use the
 following command::
 
-    snf-manage oauth2-client-add pithos-view --secret=<secret> --is-trusted --url https://pithos.synnefo.live/pithos/ui/view
+    astakos-host$ snf-manage oauth2-client-add pithos-view --secret=<secret> --is-trusted --url https://pithos.synnefo.live/pithos/ui/view
 
-2.4 Update configuration files
-------------------------------
+You can see the registered clients by running::
 
-The ``ASTAKOS_BASE_URL`` setting has been replaced (both in Cyclades and Pithos
-services) with the ``ASTAKOS_AUTH_URL`` setting.
+    astakos-host$ snf-manage oauth2-client-list -o id,name,redirect_urls,is_trusted
 
-For Cyclades service we have to change the ``20-snf-cyclades-app-api.conf``
-file, remove the ``ASTAKOS_BASE_URL`` setting and replace it with
-``ASTAKOS_AUTH_URL``. Typically it is sufficient to add ``/identity/v2.0`` at
-the end of base URL to get the auth URL. For example, if base URL had the value
-of 'https://accounts.example.synnefo.org/' then the ``ASTAKOS_AUTH_URL``
-setting will have the value of
-'https://accounts.example.synnefo.org/identity/v2.0'.
+Finally, you will have to add the registered `client_id` and `client_secret` to
+the ``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting in
+``/etc/synnefo/20-snf-pithos-app-settings.conf``.
 
-For the Pithos service we have to change the ``20-snf-pithos-app-settings.conf``
-file in the same way as above. In addition to this, we have to change the
-``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting in the same configuration file
-to set the credentials issued for the pithos view in `the previous step`__.
-
-__ register_pithos_view_
 
 2.5 Upgrade vncauthproxy and configure snf-cyclades-app
 -------------------------------------------------------

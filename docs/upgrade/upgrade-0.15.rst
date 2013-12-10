@@ -239,8 +239,8 @@ You can see the registered clients by running::
 
     astakos-host$ snf-manage oauth2-client-list -o id,name,redirect_urls,is_trusted
 
-Finally, you will have to add the registered `client_id` and `client_secret` to
-the ``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting in
+Finally, you will have to add the registered `identifier` (e.g. `pithos-view`)
+and `client_secret` to the ``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting in
 ``/etc/synnefo/20-snf-pithos-app-settings.conf``.
 
 

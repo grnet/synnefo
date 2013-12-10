@@ -295,7 +295,10 @@ class VirtualMachine(models.Model):
         'DESTROYED': 'DELETED',
     }
 
-    name = models.CharField('Virtual Machine Name', max_length=255)
+    VIRTUAL_MACHINE_NAME_LENGTH = 255
+
+    name = models.CharField('Virtual Machine Name',
+                            max_length=VIRTUAL_MACHINE_NAME_LENGTH)
     userid = models.CharField('User ID of the owner', max_length=100,
                               db_index=True, null=False)
     backend = models.ForeignKey(Backend, null=True,

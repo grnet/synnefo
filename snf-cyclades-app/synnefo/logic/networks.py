@@ -42,6 +42,7 @@ from synnefo.db.models import Network, Backend
 from synnefo.db.utils import validate_mac
 from synnefo.db.pools import EmptyPool
 from synnefo.logic import backend as backend_mod
+from synnefo.logic import utils
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -75,6 +76,9 @@ def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
         raise faults.BadRequest("Cannot override MAC_FILTERED mac-prefix")
     if link is not None and flavor == "PHYSICAL_VLAN":
         raise faults.BadRequest("Cannot override PHYSICAL_VLAN link")
+
+    utils.check_name_length(name, Network.NETWORK_NAME_LENGTH, "Network name "
+                            "is too long")
 
     try:
         fmode, flink, fmac_prefix, ftags = util.values_from_flavor(flavor)

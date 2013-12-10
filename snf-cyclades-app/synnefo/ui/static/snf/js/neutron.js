@@ -278,6 +278,12 @@
       path: 'networks',
       details: true,
       parse: function(resp) {
+        var data = _.map(resp.networks, function(net) {
+          if (!net.name) {
+            net.name = '(no name set)';
+          }
+          return net
+        })
         return resp.networks
       },
 

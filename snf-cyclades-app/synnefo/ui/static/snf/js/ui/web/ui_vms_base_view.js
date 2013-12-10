@@ -819,7 +819,11 @@
         var network = this.model.get('network');
         var name = network && network.get('name');
         if (!name) {
-          name = 'Internet'
+          if (network.get('is_public')) {
+            name = 'Internet'
+          } else {
+            name = '(no network name)'
+          }
         }
         var truncate_length = this.parent_view.options.truncate || 40;
         name = synnefo.util.truncate(name, truncate_length, '...');

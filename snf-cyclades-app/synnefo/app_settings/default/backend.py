@@ -45,3 +45,9 @@ BACKEND_REFRESH_MIN = 15
 # Maximum number of NICs per Ganeti instance. This value must be less or equal
 # than 'max:nic-count' option of Ganeti's ipolicy.
 GANETI_MAX_NICS_PER_INSTANCE = 8
+
+# The following setting defines a dictionary with key-value parameters to be
+# passed to each Ganeti ExtStorage provider. The setting defines a mapping from
+# the provider name, e.g. 'archipelago' to a dictionary with the actual
+# arbitrary parameters.
+GANETI_DISK_PROVIDER_KWARGS = {}

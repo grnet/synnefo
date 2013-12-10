@@ -627,6 +627,9 @@ def create_instance(vm, nics, flavor, image):
     if provider:
         kw['disks'][0]['provider'] = provider
         kw['disks'][0]['origin'] = flavor.disk_origin
+        extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS.get(provider)
+        if extra_disk_params is not None:
+            kw["disks"][0].update(extra_disk_params)
 
     kw['nics'] = [{"name": nic.backend_uuid,
                    "network": nic.network.backend_id,

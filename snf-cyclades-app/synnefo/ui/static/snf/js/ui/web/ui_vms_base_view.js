@@ -819,7 +819,7 @@
         var network = this.model.get('network');
         var name = network && network.get('name');
         if (!name) {
-          if (network.get('is_public')) {
+          if (network && network.get('is_public')) {
             name = 'Internet'
           } else {
             name = '(no network name)'

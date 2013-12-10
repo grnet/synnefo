@@ -179,7 +179,7 @@ def create(userid, name, password, flavor, image, metadata={},
         flavor.disk_template = disk_template
         flavor.disk_provider = provider
         flavor.disk_origin = None
-        if provider in ['vlmc', 'archipelago']:
+        if provider in settings.GANETI_CLONE_PROVIDERS:
             flavor.disk_origin = image['checksum']
             image['backend_id'] = 'null'
     else:

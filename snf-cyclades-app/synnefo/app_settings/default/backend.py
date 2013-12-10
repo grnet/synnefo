@@ -51,3 +51,9 @@ GANETI_MAX_NICS_PER_INSTANCE = 8
 # the provider name, e.g. 'archipelago' to a dictionary with the actual
 # arbitrary parameters.
 GANETI_DISK_PROVIDER_KWARGS = {}
+
+# List of ExtStorage providers that support cloning. For these providers, the
+# hashmap of the image is passed as an ExtStorage disk parameter('origin') and,
+# since disk will be already filled with data, 'snf-image' performs only
+# customization (no data copying).
+GANETI_CLONE_PROVIDERS = ['vlmc', 'archipelago']

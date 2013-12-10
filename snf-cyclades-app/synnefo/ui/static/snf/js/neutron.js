@@ -21,7 +21,17 @@
     
     // Neutron base model, extending existing synnefo model
     models.NetworkModel = snfmodels.Model.extend({
-      api_type: 'network'
+      api_type: 'network',
+      toJSON: function() {
+        var res = {};
+        _.each(this.attributes, function(attr, key) {
+          if (attr instanceof bb.Collection) {
+            attr = "[Collection object]";
+          }
+          res[key] = attr;
+        });
+        return res;
+      }
     });
     
     // Neutron base collection, common neutron collection params are shared

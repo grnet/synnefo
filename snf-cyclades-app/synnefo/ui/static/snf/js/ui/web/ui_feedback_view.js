@@ -125,7 +125,17 @@
         },
 
         get_feedback_data: function() {
-            if (this.collect_data) return JSON.stringify(_.extend({}, snf.collect_user_data(),this.extra_data));
+            if (this.collect_data) {
+              var user_data = snf.collect_user_data();
+              user_data.errors = [];
+              try {
+                var user_data_str = JSON.stringify(user_data);
+              } catch (err) {
+                console.error(err);
+                user_data = {'error': 'cannot parse user data to string'};
+              }
+              return JSON.stringify(_.extend({}, user_data, this.extra_data));
+            }
         },
         
         onOpen: function() {

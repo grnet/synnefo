@@ -11,6 +11,7 @@ import utils
 from optparse import OptionParser
 
 CREATE_SERVER_CMD = "create"
+DELETE_SERVER_CMD = "delete"
 BUILD_SYNNEFO_CMD = "build"
 BUILD_DOCS_SYNNEFO_CMD = "docs"
 DEPLOY_SYNNEFO_CMD = "deploy"
@@ -30,6 +31,7 @@ COMMANDS_IN_ALL_MODE = [
 
 AVAILABLE_COMMANDS = [
     CREATE_X2GO_FILE,
+    DELETE_SERVER_CMD,
 ] + COMMANDS_IN_ALL_MODE
 
 USAGE = """usage: %%prog [options] command[,command...]
@@ -42,6 +44,7 @@ command:
     * %s: Run Synnefo unittests
     * %s: Run snf-burnin in the deployed Synnefo
     * %s: Create x2go plugin file
+    * %s: Delete the slave server
 
     * %s: Run all the available commands
 """ % tuple([CREATE_SERVER_CMD,
@@ -51,6 +54,7 @@ command:
              TEST_SYNNEFO_CMD,
              RUN_BURNIN_CMD,
              CREATE_X2GO_FILE,
+             DELETE_SERVER_CMD,
              ALL_CMDS])
 
 
@@ -166,6 +170,8 @@ def main():  # Too many branches. pylint: disable-msg=R0912
         synnefo_ci.run_burnin()
     if getattr(options, CREATE_X2GO_FILE, False):
         synnefo_ci.x2go_plugin(options.x2go_output)
+    if getattr(options, DELETE_SERVER_CMD, False):
+        synnefo_ci.destroy_server()
 
 
 if __name__ == "__main__":

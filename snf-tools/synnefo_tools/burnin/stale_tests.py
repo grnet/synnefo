@@ -103,8 +103,8 @@ class StaleFloatingIPsTestSuite(CycladesTests):
         elif len_stale == 0:
             self.info("No stale floating IPs found")
         else:
-            self.info("Deleteing %s stale floating IPs", len_stale)
-            self._disconnect_from_floating_ips(self.stale_ips)
+            self.info("Deleting %s stale floating IPs", len_stale)
+            self._delete_floating_ips(self.stale_ips)
 
 
 # Too many public methods. pylint: disable-msg=R0904

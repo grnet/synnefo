@@ -41,3 +41,19 @@ GANETI_USE_OPPORTUNISTIC_LOCKING = True
 BACKEND_ALLOCATOR_MODULE = "synnefo.logic.allocators.default_allocator"
 # Refresh backend statistics timeout, in minutes, used in backend allocation
 BACKEND_REFRESH_MIN = 15
+
+# Maximum number of NICs per Ganeti instance. This value must be less or equal
+# than 'max:nic-count' option of Ganeti's ipolicy.
+GANETI_MAX_NICS_PER_INSTANCE = 8
+
+# The following setting defines a dictionary with key-value parameters to be
+# passed to each Ganeti ExtStorage provider. The setting defines a mapping from
+# the provider name, e.g. 'archipelago' to a dictionary with the actual
+# arbitrary parameters.
+GANETI_DISK_PROVIDER_KWARGS = {}
+
+# List of ExtStorage providers that support cloning. For these providers, the
+# hashmap of the image is passed as an ExtStorage disk parameter('origin') and,
+# since disk will be already filled with data, 'snf-image' performs only
+# customization (no data copying).
+GANETI_CLONE_PROVIDERS = ['vlmc', 'archipelago']

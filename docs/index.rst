@@ -129,6 +129,16 @@ There are also the following tools:
 Design
 ======
 
+v0.15
+-----
+
+.. toctree::
+   :maxdepth: 1
+
+   Pithos separate view domain <design/pithos-separate-view-domain>
+   Cyclades networking <design/cyclades-networking>
+   Astakos resource defaults <design/resource-defaults>
+
 Drafts
 ------
 
@@ -136,8 +146,6 @@ Drafts
    :maxdepth: 1
 
    Resource-pool projects design <design/resource-pool-projects>
-   Resource defaults design <design/resource-defaults>
-   Pithos view authorization <design/pithos-view-authorization.rst>
 
 
 Contact

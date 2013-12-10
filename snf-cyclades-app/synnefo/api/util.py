@@ -196,7 +196,9 @@ def get_flavor(flavor_id, include_deleted=False):
             return Flavor.objects.get(id=flavor_id)
         else:
             return Flavor.objects.get(id=flavor_id, deleted=include_deleted)
-    except (ValueError, Flavor.DoesNotExist):
+    except (ValueError, TypeError):
+        raise faults.BadRequest("Invalid flavor ID '%s'" % flavor_id)
+    except Flavor.DoesNotExist:
         raise faults.ItemNotFound('Flavor not found.')
 
 
@@ -228,7 +230,9 @@ def get_network(network_id, user_id, for_update=False, non_deleted=False):
         if non_deleted and network.deleted:
             raise faults.BadRequest("Network has been deleted.")
         return network
-    except (ValueError, Network.DoesNotExist):
+    except (ValueError, TypeError):
+        raise faults.BadRequest("Invalid network ID '%s'" % network_id)
+    except Network.DoesNotExist:
         raise faults.ItemNotFound('Network %s not found.' % network_id)
 
 
@@ -243,7 +247,9 @@ def get_port(port_id, user_id, for_update=False):
         # if (port.device_owner != "vm") and for_update:
         #     raise faults.BadRequest('Cannot update non vm port')
         return objects.get(id=port_id)
-    except (ValueError, NetworkInterface.DoesNotExist):
+    except (ValueError, TypeError):
+        raise faults.BadRequest("Invalid port ID '%s'" % port_id)
+    except NetworkInterface.DoesNotExist:
         raise faults.ItemNotFound("Port '%s' not found." % port_id)
 
 

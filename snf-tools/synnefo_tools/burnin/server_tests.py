@@ -341,6 +341,10 @@ class ServerTestSuite(BurninTests):
 
     def test_004_run_testsuites(self):
         """Run the generated tests"""
+        success = True
         for gen_cls in self.gen_classes:
             self.info("Running testsuite %s", gen_cls.__name__)
-            run_test(gen_cls)
+            success = run_test(gen_cls) and success  # With this order
+            if self.failfast and not success:
+                break
+        self.assertTrue(success, "Some of the generated tests failed")

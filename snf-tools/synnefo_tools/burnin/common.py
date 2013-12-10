@@ -194,6 +194,7 @@ class BurninTests(unittest.TestCase):
     flavors = None
     delete_stale = False
     temp_directory = None
+    failfast = None
 
     quotas = Proper(value=None)
 
@@ -570,6 +571,7 @@ def initialize(opts, testsuites, stale_testsuites):
     BurninTests.images = opts.images
     BurninTests.delete_stale = opts.delete_stale
     BurninTests.temp_directory = opts.temp_directory
+    BurninTests.failfast = opts.failfast
     BurninTests.run_id = SNF_TEST_PREFIX + \
         datetime.datetime.strftime(curr_time, "%Y%m%d%H%M%S")
 

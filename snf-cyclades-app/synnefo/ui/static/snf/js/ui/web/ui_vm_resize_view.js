@@ -316,6 +316,7 @@
                 selected_flavor: this.vm.get_flavor(),
                 extra_quotas: extra_quota
             });
+            this.selected_flavor = this.vm.get_flavor();
             this.flavors_view.bind("flavor:select", this.handle_flavor_select)
             this.submit.addClass("disabled");
             views.VmResizeView.__super__.show.apply(this);

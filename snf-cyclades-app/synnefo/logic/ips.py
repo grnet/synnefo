@@ -37,7 +37,7 @@ from snf_django.lib.api import faults
 from django.db import transaction
 from synnefo import quotas
 from synnefo.db import pools
-from synnefo.db.models import (IPPoolTable, IPAddress)
+from synnefo.db.models import (IPPoolTable, IPAddress, Network)
 log = logging.getLogger(__name__)
 
 
@@ -84,7 +84,7 @@ def allocate_ip(network, userid, address=None, floating_ip=False):
                               " 'SNF:DRAINED' status" % network.id)
 
     ip_pools = IPPoolTable.objects.select_for_update()\
-        .filter(subnet__network=network)
+        .filter(subnet__network=network).order_by('id')
     try:
         return allocate_ip_from_pools(ip_pools, userid, address=address,
                                       floating_ip=floating_ip)
@@ -176,7 +176,8 @@ def get_free_floating_ip(userid, network=None):
 
     """
     floating_ips = IPAddress.objects\
-                            .filter(userid=userid, deleted=False, nic=None)
+                            .filter(userid=userid, deleted=False, nic=None,
+                                    floating_ip=True)
     if network is not None:
         floating_ips = floating_ips.filter(network=network)
 
@@ -202,6 +203,9 @@ def delete_floating_ip(floating_ip):
         # instance.
         msg = "Floating IP '%s' is attached to instance." % floating_ip.id
         raise faults.Conflict(msg)
+
+    # Lock network to prevent deadlock
+    Network.objects.select_for_update().get(id=floating_ip.network_id)
 
     # Return the address of the floating IP back to pool
     floating_ip.release_address()

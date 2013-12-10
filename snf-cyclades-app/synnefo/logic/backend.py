@@ -243,10 +243,6 @@ def _process_net_status(vm, etime, nics):
     db_nics = dict([(nic.id, nic)
                     for nic in vm.nics.prefetch_related("ips__subnet")])
 
-    # Get X-Lock on backend before getting X-Lock on network IP pools, to
-    # guarantee that no deadlock will occur with Backend allocator.
-    Backend.objects.select_for_update().get(id=vm.backend_id)
-
     for nic_name in set(db_nics.keys()) | set(ganeti_nics.keys()):
         db_nic = db_nics.get(nic_name)
         ganeti_nic = ganeti_nics.get(nic_name)
@@ -631,6 +627,9 @@ def create_instance(vm, nics, flavor, image):
     if provider:
         kw['disks'][0]['provider'] = provider
         kw['disks'][0]['origin'] = flavor.disk_origin
+        extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS.get(provider)
+        if extra_disk_params is not None:
+            kw["disks"][0].update(extra_disk_params)
 
     kw['nics'] = [{"name": nic.backend_uuid,
                    "network": nic.network.backend_id,
@@ -813,11 +812,15 @@ def ensure_network_is_active(backend, network_id):
     and the IDs of the Ganeti job to create the network.
 
     """
-    network = Network.objects.select_for_update().get(id=network_id)
-    bnet, created = BackendNetwork.objects.get_or_create(backend=backend,
-                                                         network=network)
     job_ids = []
-    if bnet.operstate != "ACTIVE":
+    try:
+        bnet = BackendNetwork.objects.select_related("network")\
+                                     .get(backend=backend, network=network_id)
+        if bnet.operstate != "ACTIVE":
+            job_ids = create_network(bnet.network, backend, connect=True)
+    except BackendNetwork.DoesNotExist:
+        network = Network.objects.select_for_update().get(id=network_id)
+        bnet = BackendNetwork.objects.create(backend=backend, network=network)
         job_ids = create_network(network, backend, connect=True)
 
     return bnet, job_ids

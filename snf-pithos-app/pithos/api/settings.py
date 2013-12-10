@@ -32,6 +32,8 @@
 # or implied, of GRNET S.A.
 
 #coding=utf8
+import logging
+
 from django.conf import settings
 from synnefo.lib import parse_base_url, join_urls
 from synnefo.lib.services import fill_endpoints
@@ -41,6 +43,8 @@ from astakosclient import AstakosClient
 
 from copy import deepcopy
 
+
+logger = logging.getLogger(__name__)
 
 # --------------------------------------------------------------------
 # Process Pithos settings
@@ -74,6 +78,8 @@ ASTAKOSCLIENT_POOLSIZE = \
 
 # --------------------------------------
 # Define a LazyAstakosUrl
+# This is used to define ASTAKOS_ACCOUNT_URL and
+# ASTAKOS_UI_URL and should never be used as is.
 class LazyAstakosUrl(object):
     def __init__(self, endpoints_name):
         self.endpoints_name = endpoints_name
@@ -84,12 +90,18 @@ class LazyAstakosUrl(object):
                 astakos_client = \
                     AstakosClient(SERVICE_TOKEN, ASTAKOS_AUTH_URL)
                 self.str = getattr(astakos_client, self.endpoints_name)
-            except:
-                return None
+            except Exception as excpt:
+                logger.exception(
+                    "Could not retrieve endpoints from Astakos url %s: %s",
+                    ASTAKOS_AUTH_URL, excpt)
+                return ""
         return self.str
 
 # --------------------------------------
 # Define ASTAKOS_ACCOUNT_URL and ASTAKOS_UR_URL as LazyAstakosUrl
+# These are used to define the proxy paths.
+# These have to be resolved lazily (by the proxy function) so
+# they should not be used as is.
 ASTAKOS_ACCOUNT_URL = LazyAstakosUrl('account_url')
 ASTAKOS_UI_URL = LazyAstakosUrl('ui_url')
 
@@ -182,8 +194,9 @@ BACKEND_BLOCK_SIZE = getattr(
 BACKEND_HASH_ALGORITHM = getattr(
     settings, 'PITHOS_BACKEND_HASH_ALGORITHM', 'sha256')
 
-# Set the credentials (client_id, client_secret) issued for authenticating
-# the views with astakos during the resource access token generation procedure
+# Set the credentials (client identifier, client secret) issued for
+# authenticating the views with astakos during the resource access token
+# generation procedure
 OAUTH2_CLIENT_CREDENTIALS = getattr(settings,
                                     'PITHOS_OAUTH2_CLIENT_CREDENTIALS',
                                     (None, None))

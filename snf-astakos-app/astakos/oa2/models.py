@@ -124,7 +124,7 @@ class AuthorizationCode(models.Model):
 
     def __repr__(self):
         return ("Authorization code: %s "
-                "(user: %s, client: %s, redirect_uri: %s, scope: %s)" % (
+                "(user: %r, client: %r, redirect_uri: %r, scope: %r)" % (
                     self.code,
                     self.user.log_display,
                     self.client.get_id(),
@@ -152,7 +152,7 @@ class Token(models.Model):
     state = models.TextField(null=True, default=None)
 
     def __repr__(self):
-        return ("Token: %s (token_type: %s, grant_type: %s, "
-                "user: %s, client: %s, scope: %s)" % (
+        return ("Token: %r (token_type: %r, grant_type: %r, "
+                "user: %r, client: %r, scope: %r)" % (
                     self.code, self.token_type, self.grant_type,
                     self.user.log_display, self.client.get_id(), self.scope))

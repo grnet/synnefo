@@ -422,6 +422,12 @@ def rename(server, new_name):
 
 @transaction.commit_on_success
 def create_port(*args, **kwargs):
+    vm = kwargs.get("machine", None)
+    if vm is None and len(args) >= 3:
+        vm = args[2]
+    if vm is not None:
+        if vm.nics.count() == settings.GANETI_MAX_NICS_PER_INSTANCE:
+            raise faults.BadRequest("Maximum ports per server limit reached")
     return _create_port(*args, **kwargs)
 
 
@@ -551,7 +557,10 @@ def create_instance_ports(user_id, networks=None):
     else:
         # Else just connect to the networks that the user defined
         ports = create_ports_for_request(user_id, networks)
-    return forced_ports + ports
+    total_ports = forced_ports + ports
+    if len(total_ports) > settings.GANETI_MAX_NICS_PER_INSTANCE:
+        raise faults.BadRequest("Maximum ports per server limit reached")
+    return total_ports
 
 
 def create_ports_for_setting(user_id, category):

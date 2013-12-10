@@ -176,11 +176,10 @@
                 window.setTimeout(function() {$(self.view).trigger("resize")}, 300);
             }, this));
 
-            
             this.vm_view.find(".stats-report").click(_.bind(function(e){
                 e.preventDefault();
                 snf.ui.main.show_vm_details(this.vm);
-            }, this))
+            }, this)).attr("href", "#machines/single/details/{0}".format(this.vm.id));
         }
     
     })

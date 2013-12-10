@@ -62,22 +62,5 @@ ACCOUNT_URL = join_urls('/', cyclades.ASTAKOS_ACCOUNT_PROXY_PATH)
 USER_CATALOG_URL = join_urls(ACCOUNT_URL, 'user_catalogs')
 FEEDBACK_URL = join_urls(ACCOUNT_URL, 'feedback')
 
-
-class LazyAstakosUrl(object):
-    def __init__(self, endpoints_name):
-        self.endpoints_name = endpoints_name
-
-    def __str__(self):
-        if not hasattr(self, 'str'):
-            try:
-                astakos_client = \
-                    AstakosClient(cyclades_settings.SERVICE_TOKEN,
-                                  settings.ASTAKOS_AUTH_URL)
-                self.str = getattr(astakos_client, self.endpoints_name)
-            except Exception, e:
-                logger.exception(e)
-                return ''
-        return self.str
-
-LOGIN_URL = join_urls(str(LazyAstakosUrl('ui_url')), 'login')
+LOGIN_URL = join_urls('/', cyclades.ASTAKOS_UI_PROXY_PATH, 'login')
 LOGOUT_REDIRECT = LOGIN_URL

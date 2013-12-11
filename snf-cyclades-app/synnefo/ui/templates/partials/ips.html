@@ -10,8 +10,12 @@
         <img data-rv-show="model.in_progress" 
              src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
              class="progress-indicator" />
-        <span data-rv-hide="model.in_progress" class="key">MAC:</span>
-        <span data-rv-hide="model.in_progress" class="value" data-rv-text="model.mac_address"></span>
+        <span data-rv-show="model.device_id" class="key">MAC:</span>
+        <span data-rv-show="model.device_id" class="value" data-rv-text="model.mac_address"></span>
+        <span data-rv-hide="model.device_id" class="value no-device">
+          No device assigned. 
+          Detach IP, in order to be able to reattach it to a machine.
+        </span>
       </h5>
     </div>
   </div>

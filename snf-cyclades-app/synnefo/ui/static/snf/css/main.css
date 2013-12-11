@@ -7219,6 +7219,14 @@ input.has-errors {
   /*height: 59px;*/
 }
 
+.nested-model-list .model-item .inner.main-content .no-device {
+  color: #ef0000;
+  position: absolute;
+  top: -20px;
+  left: -42px;
+  width: 200px;
+}
+
 .nested-model-list .model-item .inner.main-content .subtitle {
   position: absolute;
   top: 27px;

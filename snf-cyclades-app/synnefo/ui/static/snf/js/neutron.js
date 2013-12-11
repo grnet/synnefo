@@ -406,6 +406,7 @@
           if (!synnefo.config.hotplug_enabled && this.get('vm') && vm_active) {
             return false;
           }
+          if (this.get('device_id'))
           var status_ok = _.contains(['DOWN', 'ACTIVE', 'CONNECTED'], 
                                      this.get('status'));
           var vm_status_ok = this.get('vm') && this.get('vm').can_connect();
@@ -507,7 +508,7 @@
 
       model_actions: {
         'remove': [['status'], function() {
-          var status_ok = _.contains(['DISCONNECTED'], this.get('status'))
+          var status_ok = _.contains(['DISCONNECTED'], this.get('status'));
           return status_ok
         }],
         'connect': [['status'], function() {
@@ -517,6 +518,9 @@
         'disconnect': [['status', 'port_id', 'port'], function() {
           var port = this.get('port');
           if (!port) { return false }
+
+          // not connected to a device
+          if (port && !port.get('device_id')) { return true }
           return port.get('can_disconnect');
         }]
       },

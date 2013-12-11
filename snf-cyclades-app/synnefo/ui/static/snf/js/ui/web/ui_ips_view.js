@@ -143,7 +143,9 @@
         var overlay = this.parent_view.connect_view;
         overlay.set_in_progress();
         _.each(vms, function(vm) {
-          vm.connect_floating_ip(this.model, this.connect_complete);
+          vm.connect_floating_ip(this.model, 
+                                 _.bind(this.connect_complete,this),
+                                 _.bind(this.connect_error, this));
         }, this);
       },
 
@@ -152,6 +154,12 @@
         overlay.hide();
         overlay.unset_in_progress();
         this.model.set({'status': 'CONNECTING'});
+      },
+
+      connect_error: function() {
+        var overlay = this.parent_view.connect_view;
+        overlay.hide();
+        overlay.unset_in_progress();
       },
 
       remove: function(model, e) {

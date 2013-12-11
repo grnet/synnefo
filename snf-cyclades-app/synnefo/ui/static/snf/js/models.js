@@ -1440,7 +1440,9 @@
           this.call('firewallProfile', success, error, data);
         },
 
-        connect_floating_ip: function(ip, cb) {
+        connect_floating_ip: function(ip, cb, error) {
+          var self = this;
+          var from_status = this.get('status');
           this.set({'status': 'CONNECTING'});
           synnefo.storage.ports.create({
             port: {
@@ -1448,7 +1450,11 @@
               device_id: this.id,
               fixed_ips: [{'ip_address': ip.get('floating_ip_address')}]
             }
-          }, {complete: cb, skip_api_error: false})
+          }, {
+            success: cb, 
+            error: function() { error && error() },
+            skip_api_error: false
+          });
         },
 
         // action helper

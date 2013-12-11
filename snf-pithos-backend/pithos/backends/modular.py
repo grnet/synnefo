@@ -723,15 +723,16 @@ class ModularBackend(BaseBackend):
                       size_range, all_props, public):
         if user != account and until:
             raise NotAllowedError
+
+        objects = []
         if shared and public:
             # get shared first
             shared_paths = self._list_object_permissions(
                 user, account, container, prefix, shared=True, public=False)
-            objects = set()
             if shared_paths:
                 path, node = self._lookup_container(account, container)
                 shared_paths = self._get_formatted_paths(shared_paths)
-                objects |= set(self._list_object_properties(
+                objects = set(self._list_object_properties(
                     node, path, prefix, delimiter, marker, limit, virtual,
                     domain, keys, until, size_range, shared_paths, all_props))
 
@@ -741,27 +742,22 @@ class ModularBackend(BaseBackend):
             objects = list(objects)
 
             objects.sort(key=lambda x: x[0])
-            start, limit = self._list_limits(
-                [x[0] for x in objects], marker, limit)
-            return objects[start:start + limit]
         elif public:
             objects = self._list_public_object_properties(
                 user, account, container, prefix, all_props)
-            start, limit = self._list_limits(
-                [x[0] for x in objects], marker, limit)
-            return objects[start:start + limit]
+        else:
+            allowed = self._list_object_permissions(
+                user, account, container, prefix, shared, public=False)
+            if shared and not allowed:
+                return []
+            path, node = self._lookup_container(account, container)
+            allowed = self._get_formatted_paths(allowed)
+            objects = self._list_object_properties(
+                node, path, prefix, delimiter, marker, limit, virtual, domain,
+                keys, until, size_range, allowed, all_props)
 
-        allowed = self._list_object_permissions(
-            user, account, container, prefix, shared, public)
-        if shared and not allowed:
-            return []
-        path, node = self._lookup_container(account, container)
-        allowed = self._get_formatted_paths(allowed)
-        objects = self._list_object_properties(
-            node, path, prefix, delimiter, marker, limit, virtual, domain,
-            keys, until, size_range, allowed, all_props)
-        start, limit = self._list_limits(
-            [x[0] for x in objects], marker, limit)
+        # apply limits
+        start, limit = self._list_limits(objects, marker, limit)
         return objects[start:start + limit]
 
     def _list_public_object_properties(self, user, account, container, prefix,

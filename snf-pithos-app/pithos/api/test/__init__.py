@@ -239,6 +239,16 @@ class PithosAPITest(TestCase):
             new_callable=PropertyMock)
         mock_api_oauth2_auth.return_value = '/astakos/oauth2/'
 
+        mock_service_get_quotas = self.create_patch(
+            'astakosclient.AstakosClient.service_get_quotas')
+        mock_service_get_quotas.return_value = {
+            self.user: {
+                "system": {
+                    "pithos.diskspace": {
+                        "usage": 0,
+                        "limit": 1073741824,  # 1GB
+                        "pending": 0}}}}
+
     def tearDown(self):
         #delete additionally created metadata
         meta = self.get_account_meta()

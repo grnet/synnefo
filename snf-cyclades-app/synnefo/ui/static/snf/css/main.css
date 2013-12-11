@@ -4938,6 +4938,11 @@ table.list-machines .wave {
     font-size: 0.8em;
 }
 
+.overlay-error .message p .api-message {
+  color: #444;
+  font-size: 0.9em;
+}
+
 .overlay-error span.value, .overlay-error div.value {
     padding: 0.4em;
     display: block;

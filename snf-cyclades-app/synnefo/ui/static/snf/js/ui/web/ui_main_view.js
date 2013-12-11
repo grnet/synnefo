@@ -678,7 +678,9 @@
             // force logout if UNAUTHORIZED request arrives
             if (args.code == 401) { snf.auth_client.redirect_to_login(); return };
 
-            var error_entry = [args.ns, args.code, args.message, args.type, args.details, args];
+            var error_entry = [args.ns, args.code, args.message, 
+                               args.api_message, args.type, 
+                               args.details, args];
             this.error_view.show_error.apply(this.error_view, error_entry);
         },
 
@@ -688,7 +690,8 @@
             params = { title: "UI error", extra_details: data.extra };
             delete data.extra.allow_close;
             params.allow_close = data.extra.allow_close === undefined ? true : data.extra.allow_close;
-            this.error_view.show_error("UI", -1, msg, "JS Exception", error, params);
+            this.error_view.show_error("UI", -1, msg, undefined, 
+                                       "JS Exception", error, params);
         },
 
         init_overlays: function() {

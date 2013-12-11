@@ -300,6 +300,13 @@
       get_floating_ips_network: function() {
         return this.filter(function(n) { return n.get('is_public')})[1]
       },
+      
+      create_subnet: function(subnet_params, complete, error) {
+        synnefo.storage.subnets.create(subnet_params, {
+          complete: function () { complete && complete() },
+          error: function() { error && error() }
+        });
+      },
 
       create: function (name, type, cidr, dhcp, callback) {
         var quota = synnefo.storage.quotas;
@@ -316,20 +323,27 @@
           callback && callback();
         }
         
-        var complete = function() {};
+        var complete = function() {
+          if (!create_subnet) { cb && cb() }
+        };
         var error = function() { cb() };
-        // on network create success, try to create the requested 
-        // network subnet
+        var create_subnet = !!cidr;
+        
+        // on network create success, try to create the requested network 
+        // subnet.
+        var self = this;
         var success = function(resp) {
           var network = resp.network;
-          subnet_params.subnet.network_id = network.id;
-          synnefo.storage.subnets.create(subnet_params, {
-            complete: function () { cb && cb() },
-            error: function() {
-              var created_network = new synnefo.models.networks.Network({id: network.id});
+          if (create_subnet) {
+            subnet_params.subnet.network_id = network.id;
+            self.create_subnet(subnet_params, cb, function() {
+              // rollback network creation
+              var created_network = new synnefo.models.networks.Network({
+                id: network.id
+              });
               created_network.destroy({no_skip: true});
-            }
-          });
+            });
+          }
           quota.get('cyclades.network.private').increase();
         }
         return this.api_call(this.path, "create", params, complete, error, success);

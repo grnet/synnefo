@@ -41,7 +41,9 @@ enforced.
 
 Projects will be the sole source of resources. Current base quota offered to
 users by the system will be expressed in terms of special-purpose *base*
-projects.
+projects. Due to the central role that projects now acquire, we will alter
+the project schema to facilitate project creation and modification without
+the extra overhead of submitting and approving applications.
 
 Implementation details
 ======================
@@ -120,8 +122,49 @@ counters would differ.
   cyclades.vm   project:uuid   None           5       1
   cyclades.vm   user:uuid      project:uuid   5       1
 
-System default quota
---------------------
+Private projects
+----------------
+
+Since the introduction of base projects will explode the number of total
+projects, we will need to control their visibility. We add a new flag
+*private* in project definitions. A private project can only be accessed by
+its owner and members and not be advertized in the UI. Base projects are
+marked as private.
+
+Decouple projects from applications
+-----------------------------------
+
+Base projects do not fit well in the current project/application scheme,
+because no user has applied for them. Moveover, we would like to easily
+modify project properties, particularly quota limits, without the need to
+apply for an application for each project and then approve it.
+
+We will decouple projects from applications by incorporating the project
+definition into the project object rather than relying on an application.
+The system will directly make a new (base) project upon user creation and a
+privileged user will be able to modify an existing project by directly
+modifying it. An unprivileged user will still need to make an application.
+
+The project model is adapted to reference the *last* application that is
+related to the project, if any---projects automatically created by the
+system reference no application. For an uninitialized project, this
+denotes the original application through which the project was made. If
+the application is denied or cancelled, the whole project is considered
+deleted.
+
+Applications as modifications
+`````````````````````````````
+
+Application for a new project is created in state ``pending`` and its
+properties are copied into a new project object, which is in state
+``uninitialized``. To preserve this equality, we disallow modifications of
+uninitialized projects, either in-place or through an application. An
+already activated project can be modified by submitting an application
+containing just the desired changes. An application object stores the
+specified changes and should remain read-only.
+
+System default quota and resource registration
+----------------------------------------------
 
 Each resource registered in the system is assigned a default quota limit.
 A newly-activated user is given these limits as their base quota. This is
@@ -139,14 +182,10 @@ one specifying the default base quota, in order to fill in missing limits
 for conventional projects. It will be controled by a new option
 ``--project-default`` of command ``resource-modify``.
 
-Private projects
-----------------
-
-Since the introduction of base projects will explode the number of total
-projects, we will need to control their visibility. We add a new flag
-*private* in project definitions. A private project can only be accessed by
-its owner and members and not be advertised in the UI. Base projects are
-marked as private.
+When a project is activated, either directly in the case of base projects
+or through the approval of a project application, limits for resources not
+specified are automatically completed by consulting the appropriate
+skeleton.
 
 Allocation of a new resource
 ----------------------------
@@ -198,10 +237,7 @@ In Cyclades, each VM, floating IP, or other distinct resource should be
 linked to a project. Pithos should link containers to projects.
 
 Astakos will handle its own resource ``astakos.pending_app`` in a special
-way: it will always be charged at the user's base project. This resource
-is marked with ``allow_in_projects = False`` in its definition. Since quota
-is now project-based, this flag will now be interpreted as forbidding usage
-in non-base projects.
+way: it will always be charged at the user's base project.
 
 Resource reassignment
 ---------------------
@@ -268,8 +304,8 @@ This will issue the following provisions to the Quotaholder::
           }
   ]
 
-API extensions
---------------
+API changes
+-----------
 
 API call ``GET /quotas`` is extended to incorporate project-level quota. The
 response contains entries for all projects for which a user/project pair
@@ -312,6 +348,10 @@ regardless of user::
       }
   }
 
+``GET /service_project_quotas`` will be used in a similar way as ``GET
+/service_quotas`` to get the project-level quotas for resources associated
+with the Synnefo component that makes the request.
+
 All service API calls that create resources can specify the project where
 they will be attributed.
 
@@ -335,6 +375,25 @@ extra optional policy ``project``. The former call assigns a newly created
 container to a given project, the latter reassigns an existing container.
 Field ``x-container-policy-project`` will be retrieved by a ``HEAD`` call at
 the container level.
+
+Changes in the projects API
+```````````````````````````
+
+``PUT /projects`` will be used to make a new project replacing ``POST``.
+
+``POST /projects/<proj_id>`` now expects a dictionary with just the desired
+changes, not a complete project definition. It is only allowed if the
+project is already activated.
+
+``GET /projects/<proj_id>`` changes to include a ``last_application`` field,
+if applicable.
+
+Application actions (approve, deny, dismiss, cancel) are integrated into
+project actions and expect an extra ``app_id`` argument to specify the
+application. Actions are allowed only on a project's last application;
+the application id is required in order to avoid races.
+
+The applications API is removed, incorporated into the projects API.
 
 User interface
 --------------
@@ -397,16 +456,15 @@ Quota can be queried per user or project::
   ------------------------
   cyclades.vm 100    50
 
-A new command ``snf-manage project-modify`` will automate the process of
-applying/approving applications in order to modify some project settings,
-such as the quota limits.
+A new command ``snf-manage project-modify`` will enable in-place
+modification of project properties, such as their quota limits.
 
 Currently, the administrator can change the user base quota with:
 ``snf-manage user-modify <id> --base-quota <resource> <capacity>``.
 This will be removed in favor of the ``project-modify`` command, so that all
 quota are handled in a uniform way. Similar to ``user-modify --all``,
-``project-modify`` will get options ``--all-base`` and ``--all-non-base`` to
-allow updating quota in bulk.
+``project-modify`` will get options ``--all-base-projects`` to
+allow updating base quota in bulk.
 
 Migration steps
 ===============

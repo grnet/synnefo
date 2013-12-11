@@ -1068,17 +1068,6 @@ def update_response_headers(request, response):
             response[quote(k)] = quote(v, safe='/=,:@; ')
 
 
-def get_pithos_usage(token):
-    """Get Pithos Usage from astakos."""
-    astakos = AstakosClient(token, ASTAKOS_AUTH_URL,
-                            retry=2, use_pool=True,
-                            logger=logger)
-    quotas = astakos.get_quotas()['system']
-    pithos_resources = [r['name'] for r in resources]
-    map(quotas.pop, filter(lambda k: k not in pithos_resources, quotas.keys()))
-    return quotas.popitem()[-1]  # assume only one resource
-
-
 def api_method(http_method=None, token_required=True, user_required=True,
                logger=None, format_allowed=False, serializations=None,
                strict_serlization=False, lock_container_path=False):

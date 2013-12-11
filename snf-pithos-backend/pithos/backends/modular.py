@@ -120,6 +120,7 @@ inf = float('inf')
 ULTIMATE_ANSWER = 42
 
 DEFAULT_SOURCE = 'system'
+DEFAULT_DISKSPACE_RESOURCE = 'pithos.diskspace'
 
 logger = logging.getLogger(__name__)
 
@@ -339,11 +340,17 @@ class ModularBackend(BaseBackend):
         start, limit = self._list_limits(allowed, marker, limit)
         return allowed[start:start + limit]
 
+    def _get_account_quotas(self, account):
+        """Get account usage from astakos."""
+
+        quotas = self.astakosclient.service_get_quotas(account)[account]
+        return quotas.get(DEFAULT_SOURCE, {}).get(DEFAULT_DISKSPACE_RESOURCE,
+                                                  {})
+
     @debug_method
     @backend_method
-    def get_account_meta(
-            self, user, account, domain, until=None, include_user_defined=True,
-            external_quota=None):
+    def get_account_meta(self, user, account, domain, until=None,
+                         include_user_defined=True):
         """Return a dictionary with the account metadata for the domain."""
 
         path, node = self._lookup_account(account, user == account)
@@ -377,7 +384,7 @@ class ModularBackend(BaseBackend):
                 meta.update({'until_timestamp': tstamp})
             meta.update({'name': account, 'count': count, 'bytes': bytes})
             if self.using_external_quotaholder:
-                external_quota = external_quota or {}
+                external_quota = self._get_account_quotas(account)
                 meta['bytes'] = external_quota.get('usage', 0)
         meta.update({'modified': modified})
         return meta
@@ -424,7 +431,7 @@ class ModularBackend(BaseBackend):
 
     @debug_method
     @backend_method
-    def get_account_policy(self, user, account, external_quota=None):
+    def get_account_policy(self, user, account):
         """Return a dictionary with the account policy."""
 
         if user != account:
@@ -434,7 +441,7 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_account(account, True)
         policy = self._get_policy(node, is_account_policy=True)
         if self.using_external_quotaholder:
-            external_quota = external_quota or {}
+            external_quota = self._get_account_quotas(account)
             policy['quota'] = external_quota.get('limit', 0)
         return policy
 

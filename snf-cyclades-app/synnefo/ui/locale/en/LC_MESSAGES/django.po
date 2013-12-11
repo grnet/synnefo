@@ -340,15 +340,15 @@ msgid "machines"
 msgstr ""
 
 #: templates/home.html:236
-msgid "manage your virtual machines"
+msgid "manage virtual machines"
 msgstr ""
 
 #: templates/home.html:239
-msgid "configure networking"
+msgid "manage networks"
 msgstr ""
 
 #: templates/home.html:243
-msgid "manage your storage volumes"
+msgid "manage storage volumes"
 msgstr ""
 
 #: templates/home.html:409 templates/partials/create_vm.html:330

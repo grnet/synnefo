@@ -536,7 +536,7 @@
         views_titles: {
             'icon': 'machines', 'single': 'machines', 
             'list': 'machines', 'networks': 'networks',
-            'ips': 'IPs',
+            'ips': 'IP addresses',
             'public-keys': 'public keys'
         },
 

@@ -552,20 +552,12 @@
         },
 
         _supports_ssh: function() {
-            var os_list = synnefo.config.support_ssh_os_list;
-            var osfamily_list = synnefo.config.support_ssh_os_family_list;
-            
+            var exclude_list = synnefo.config.ssh_support_osfamily_exclude_list || [];
             var os = this.get_os();
-            if (os_list.indexOf(os) > -1) {
-                return true;
+            if (exclude_list.indexOf(os) > -1) {
+                return false;
             }
-            
-            var osfamily = this.get_meta("osfamily");
-            if (osfamily_list.indexOf(osfamily) > -1) {
-              return true
-            }
-
-            return false;
+            return true;
         },
 
         supports: function(feature) {

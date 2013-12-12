@@ -1301,18 +1301,19 @@ class ProjectApplication(models.Model):
     owner = models.ForeignKey(
         AstakosUser,
         related_name='projects_owned',
+        null=True,
         db_index=True)
     chain = models.ForeignKey('Project',
                               related_name='chained_apps',
                               db_column='chain')
-    name = models.CharField(max_length=80)
+    name = models.CharField(max_length=80, null=True)
     homepage = models.URLField(max_length=255, null=True,
                                verify_exists=False)
     description = models.TextField(null=True, blank=True)
     start_date = models.DateTimeField(null=True, blank=True)
-    end_date = models.DateTimeField()
-    member_join_policy = models.IntegerField()
-    member_leave_policy = models.IntegerField()
+    end_date = models.DateTimeField(null=True)
+    member_join_policy = models.IntegerField(null=True)
+    member_leave_policy = models.IntegerField(null=True)
     limit_on_members_number = models.BigIntegerField(null=True)
     resource_grants = models.ManyToManyField(
         Resource,
@@ -1329,7 +1330,7 @@ class ProjectApplication(models.Model):
     waive_reason = models.TextField(null=True, blank=True)
     waive_actor = models.ForeignKey(AstakosUser, null=True,
                                     related_name='waived_apps')
-    private = models.BooleanField(default=False)
+    private = models.NullBooleanField(default=False)
 
     objects = ProjectApplicationManager()
 
@@ -1563,9 +1564,8 @@ class Project(models.Model):
 
     id = models.BigIntegerField(db_column='id', primary_key=True)
 
-    application = models.OneToOneField(
-        ProjectApplication,
-        related_name='project')
+    last_application = models.ForeignKey(ProjectApplication, null=True,
+                                         related_name='last_of_project')
 
     members = models.ManyToManyField(
         AstakosUser,
@@ -1578,6 +1578,7 @@ class Project(models.Model):
         db_index=True,
         unique=True)
 
+    UNINITIALIZED = 0
     NORMAL = 1
     SUSPENDED = 10
     TERMINATED = 100
@@ -1587,6 +1588,25 @@ class Project(models.Model):
     state = models.IntegerField(default=NORMAL,
                                 db_index=True)
     uuid = models.CharField(max_length=255, unique=True)
+
+    owner = models.ForeignKey(
+        AstakosUser,
+        related_name='projs_owned',
+        null=True,
+        db_index=True)
+    realname = models.CharField(max_length=80)
+    homepage = models.URLField(max_length=255, verify_exists=False)
+    description = models.TextField(blank=True)
+    end_date = models.DateTimeField()
+    member_join_policy = models.IntegerField()
+    member_leave_policy = models.IntegerField()
+    limit_on_members_number = models.BigIntegerField()
+    resource_grants = models.ManyToManyField(
+        Resource,
+        null=True,
+        blank=True,
+        through='ProjectResourceQuota')
+    private = models.BooleanField(default=False)
 
     objects = ProjectManager()
 
@@ -1772,6 +1792,27 @@ def create_project(**kwargs):
     if "uuid" not in kwargs:
         kwargs["uuid"] = str(uuid.uuid4())
     return Project.objects.create(**kwargs)
+
+
+class ProjectResourceQuotaManager(models.Manager):
+    def quotas_per_project(self, projects):
+        proj_ids = [proj.id for proj in projects]
+        quotas = self.filter(
+            project__in=proj_ids).select_related("resource")
+        return _partition_by(lambda g: g.project_id, quotas)
+
+
+class ProjectResourceQuota(models.Model):
+
+    resource = models.ForeignKey(Resource)
+    project = models.ForeignKey(Project)
+    project_capacity = models.BigIntegerField(default=0)
+    member_capacity = models.BigIntegerField(default=0)
+
+    objects = ProjectResourceQuotaManager()
+
+    class Meta:
+        unique_together = ("resource", "project")
 
 
 class ProjectLogManager(models.Manager):

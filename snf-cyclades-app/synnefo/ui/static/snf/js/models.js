@@ -2058,6 +2058,7 @@
         },
 
         parse_vm_api_data: function(data) {
+            var status;
             // do not add non existing DELETED entries
             if (data.status && data.status == "DELETED") {
                 if (!this.get(data.id)) {
@@ -2067,9 +2068,15 @@
             
             if ('SNF:task_state' in data) { 
                 data['task_state'] = data['SNF:task_state'];
+                // Update machine state based on task_state value
+                // Do not apply task_state logic when machine is in ERROR state.
+                // In that case only update from task_state only if equals to
+                // DESTROY
                 if (data['task_state']) {
-                    var status = models.VM.TASK_STATE_STATUS_MAP[data['task_state']];
-                    if (status) { data['status'] = status }
+                    if (data['status'] != 'ERROR' && data['task_state'] != 'DESTROY') {
+                      status = models.VM.TASK_STATE_STATUS_MAP[data['task_state']];
+                      if (status) { data['status'] = status }
+                    }
                 }
             }
 

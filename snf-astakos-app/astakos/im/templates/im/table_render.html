@@ -15,9 +15,12 @@
         <tr>
         {% for column in table.columns %}
             {% if column.orderable %}
-            <th {{ column.attrs.th.as_html }}><a href="{% querystring table.prefixed_order_by_field=column.order_by_alias.next %}#{{ table.attrs.id }}">{{ column.header }}</a></th>
+            <th {{ column.attrs.th.as_html }}><a href="{% querystring table.prefixed_order_by_field=column.order_by_alias.next %}#{{ table.attrs.id }}">
+                <span>{{ column.header }}</span></a></th>
             {% else %}
-            <th {{ column.attrs.th.as_html }}>{{ column.header }}</th>
+            <th {{ column.attrs.th.as_html }}>
+                <span>{{ column.header }}</span>
+            </th>
             {% endif %}
         {% endfor %}
         </tr>

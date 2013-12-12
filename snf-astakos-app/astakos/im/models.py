@@ -1313,7 +1313,7 @@ class ProjectApplication(models.Model):
     end_date = models.DateTimeField()
     member_join_policy = models.IntegerField()
     member_leave_policy = models.IntegerField()
-    limit_on_members_number = models.PositiveIntegerField(null=True)
+    limit_on_members_number = models.BigIntegerField(null=True)
     resource_grants = models.ManyToManyField(
         Resource,
         null=True,

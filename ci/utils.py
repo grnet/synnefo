@@ -306,9 +306,8 @@ class SynnefoCI(object):
             networks.append({'port': port['id']})
         private_networks = self.config.get('Deployment', 'private_networks')
         if private_networks:
-            private_networks = private_networks.split(",")
-            networks.extend([{"uuid": uuid.strip()}
-                             for uuid in private_networks])
+            private_networks = [p.strip() for p in private_networks.split(",")]
+            networks.extend([{"uuid": uuid} for uuid in private_networks])
         if server_name is None:
             server_name = self.config.get("Deployment", "server_name")
             server_name = "%s(BID: %s)" % (server_name, self.build_id)
@@ -324,7 +323,7 @@ class SynnefoCI(object):
         self.write_temp_config('server_passwd', server_passwd)
 
         server = self._wait_transition(server_id, "BUILD", "ACTIVE")
-        self._get_server_ip_and_port(server)
+        self._get_server_ip_and_port(server, private_networks)
         self._copy_ssh_keys(ssh_keys)
 
         # Setup Firewall
@@ -468,10 +467,23 @@ class SynnefoCI(object):
         self.logger.error("No matching image found.. aborting")
         sys.exit(1)
 
-    def _get_server_ip_and_port(self, server):
+    def _get_server_ip_and_port(self, server, private_networks):
         """Compute server's IPv4 and ssh port number"""
         self.logger.info("Get server connection details..")
-        server_ip = server['attachments'][0]['ipv4']
+        if private_networks:
+            # Choose the networks that belong to private_networks
+            networks = [n for n in server['attachments']
+                        if n['network_id'] in private_networks]
+        else:
+            # Choose the networks that are public
+            networks = \
+                [n for n in server['attachments']
+                 if self.network_client.get_network_details(n['id'])['public']]
+        # Choose the networks with IPv4
+        networks = [n for n in networks if n['ipv4']]
+        # Use the first network as IPv4
+        server_ip = networks[0]['ipv4']
+
         if (".okeanos.io" in self.cyclades_client.base_url or
            ".demo.synnefo.org" in self.cyclades_client.base_url):
             tmp1 = int(server_ip.split(".")[2])

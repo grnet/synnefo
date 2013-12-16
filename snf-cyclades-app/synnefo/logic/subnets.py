@@ -86,6 +86,9 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
     except Network.DoesNotExist:
         raise api.faults.ItemNotFound("No network found with that id")
 
+    if network.deleted:
+        raise api.faults.BadRequest("Network has been deleted")
+
     if user_id != network.userid:
         raise api.faults.Unauthorized("Unauthorized operation")
 

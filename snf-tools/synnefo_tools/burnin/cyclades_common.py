@@ -363,8 +363,8 @@ class CycladesTests(BurninTests):
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
             ssh.connect(hostip, username=username, password=password)
-        except paramiko.SSHException as excpt:
-            if excpt.errno == 104:  # Error reading SSH protocol banner
+        except paramiko.SSHException as err:
+            if err.args[0] == "Error reading SSH protocol banner":
                 raise Retry()
             else:
                 raise

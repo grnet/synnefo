@@ -476,9 +476,9 @@ class SynnefoCI(object):
                         if n['network_id'] in private_networks]
         else:
             # Choose the networks that are public
-            networks = \
-                [n for n in server['attachments']
-                 if self.network_client.get_network_details(n['id'])['public']]
+            networks = [n for n in server['attachments']
+                        if self.network_client.
+                        get_network_details(n['network_id'])['public']]
         # Choose the networks with IPv4
         networks = [n for n in networks if n['ipv4']]
         # Use the first network as IPv4

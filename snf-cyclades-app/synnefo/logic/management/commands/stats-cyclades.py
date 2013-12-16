@@ -156,7 +156,7 @@ def pretty_print_stats(stats, stdout):
                 name = "servers_with_%s" % res
                 resource[name] = num
                 fields.append(name)
-            table = columns_from_fields(fields, resources)
+            table = columns_from_fields(fields, resource)
             pprint_table(stdout, table, None,
                          title="Statistics for %s" % resource_name)
             newline()

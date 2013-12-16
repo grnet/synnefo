@@ -196,7 +196,7 @@ def get_backend_stats(backend=None):
 class ImageCache(object):
     def __init__(self):
         self.images = {}
-        usercache = UserCache(settings.ASTAKOS_BASE_URL,
+        usercache = UserCache(settings.ASTAKOS_AUTH_URL,
                               settings.CYCLADES_SERVICE_TOKEN)
         self.system_user_uuid = \
             usercache.get_uuid(settings.SYSTEM_IMAGES_OWNER)

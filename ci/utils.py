@@ -774,13 +774,12 @@ class SynnefoCI(object):
     def build_packages(self):
         """Build packages needed by Synnefo software"""
         self.logger.info("Install development packages")
-        kamaki_version = self.config.get('Burnin', 'kamaki_version')
         cmd = """
         apt-get update
         apt-get install zlib1g-dev dpkg-dev debhelper git-buildpackage \
                 python-dev python-all python-pip ant --yes --force-yes
-        pip install -U devflow kamaki{0}
-        """.format(("==" + kamaki_version) if kamaki_version else "")
+        pip install -U devflow
+        """
         _run(cmd, False)
 
         # Patch pydist bug

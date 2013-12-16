@@ -107,9 +107,11 @@ class Groups(DBWorker):
     def group_addmany(self, owner, group, members):
         """Add members to a group."""
 
-        #TODO: more efficient way to do it
-        for member in members:
-            self.group_add(owner, group, member)
+        ins = self.groups.insert()
+        values = list({'owner': owner,
+                       'name': group,
+                       'member': m} for m in members)
+        self.conn.execute(ins, values)
 
     def group_remove(self, owner, group, member):
         """Remove a member from a group."""

@@ -91,6 +91,12 @@ def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
 
     validate_mac(mac_prefix + "0:00:00:00")
 
+    # Check that given link is unique!
+    if (link is not None and flavor == "IP_LESS_ROUTED" and
+       Network.objects.filter(deleted=False, mode=mode, link=link).exists()):
+        msg = "Link '%s' is already used." % link
+        raise faults.BadRequest(msg)
+
     network = Network.objects.create(
         name=name,
         userid=userid,
@@ -109,11 +115,6 @@ def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
     if link is None:
         network.link = "%slink-%d" % (settings.BACKEND_PREFIX_ID, network.id)
         network.save()
-
-    if (flavor == "IP_LESS_ROUTED" and
-       Network.objects.filter(deleted=False, mode=mode, link=link).exists()):
-        msg = "Link '%s' is already used." % link
-        raise faults.BadRequest(msg)
 
     # Issue commission to Quotaholder and accept it since at the end of
     # this transaction the Network object will be created in the DB.

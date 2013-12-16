@@ -320,8 +320,11 @@ def update_build_progress(vm, msg, event_time):
 @handle_message_delivery
 @transaction.commit_on_success()
 def update_cluster(msg):
+    operation = msg.get("operation")
     clustername = msg.get("cluster")
     if clustername is None:
+        return
+    if operation != "OP_CLUSTER_SET_PARAMS":
         return
     backend = Backend.objects.select_for_update().get(clustername=clustername)
     backend_mod.update_backend_disk_templates(backend)

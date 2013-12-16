@@ -857,11 +857,12 @@ def _create_network(network, backend):
             subnet6 = _subnet.cidr
             gateway6 = _subnet.gateway
 
+    conflicts_check = False
     if network.public:
-        conflicts_check = True
         tags.append('public')
+        if subnet is not None:
+            conflicts_check = True
     else:
-        conflicts_check = False
         tags.append('private')
 
     # Use a dummy network subnet for IPv6 only networks. Currently Ganeti does
@@ -893,10 +894,9 @@ def connect_network(network, backend, depends=[], group=None):
     """Connect a network to nodegroups."""
     log.debug("Connecting network %s to backend %s", network, backend)
 
-    if network.public:
+    conflicts_check = False
+    if network.public and (network.subnet4 is not None):
         conflicts_check = True
-    else:
-        conflicts_check = False
 
     depends = create_job_dependencies(depends)
     with pooled_rapi_client(backend) as client:

@@ -511,7 +511,7 @@ class AstakosClient(object):
 
     # --------------------------------------
     # do a GET to ``API_TOKENS`` with a token
-    def validate_token(self, token_id, belongsTo=None):
+    def validate_token(self, token_id, belongs_to=None):
         """ Validate a temporary access token (oath2)
 
         Keyword arguments:
@@ -520,15 +520,15 @@ class AstakosClient(object):
         It returns back the token as well as information about the token
         holder.
 
-        The belongsTo is optional and if it is given it must be inside the
+        The belongs_to is optional and if it is given it must be inside the
         token's scope.
 
         In case of error raise an AstakosClientException.
 
         """
         path = join_urls(self.api_tokens, str(token_id))
-        if belongsTo is not None:
-            params = {'belongsTo': belongsTo}
+        if belongs_to is not None:
+            params = {'belongsTo': belongs_to}
             path = '%s?%s' % (path, urllib.urlencode(params))
         return self._call_astakos(path, method="GET", log_body=False)
 
@@ -996,7 +996,7 @@ def parse_endpoints(endpoints, ep_name=None, ep_type=None,
         else:
             return catalog
     except KeyError:
-        raise NoEndpoints()
+        raise NoEndpoints(ep_name, ep_type, ep_region, ep_version_id)
 
 
 # --------------------------------------------------------------------

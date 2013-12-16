@@ -44,7 +44,7 @@ import socket
 
 from vncauthproxy.d3des import generate_response as d3des_generate_response
 
-from synnefo_tools.burnin.common import BurninTests, Proper, run_test
+from synnefo_tools.burnin.common import BurninTests, Proper
 from synnefo_tools.burnin.cyclades_common import CycladesTests
 
 
@@ -341,10 +341,4 @@ class ServerTestSuite(BurninTests):
 
     def test_004_run_testsuites(self):
         """Run the generated tests"""
-        success = True
-        for gen_cls in self.gen_classes:
-            self.info("Running testsuite %s", gen_cls.__name__)
-            success = run_test(gen_cls) and success  # With this order
-            if self.failfast and not success:
-                break
-        self.assertTrue(success, "Some of the generated tests failed")
+        self._run_tests(self.gen_classes)

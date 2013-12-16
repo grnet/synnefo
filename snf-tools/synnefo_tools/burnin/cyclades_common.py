@@ -364,7 +364,7 @@ class CycladesTests(BurninTests):
         try:
             ssh.connect(hostip, username=username, password=password)
         except paramiko.SSHException as excpt:
-            if excpt.code == 104:  # Error reading SSH protocol banner
+            if excpt.errno == 104:  # Error reading SSH protocol banner
                 raise Retry()
             else:
                 raise

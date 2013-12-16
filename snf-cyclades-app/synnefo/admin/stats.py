@@ -104,7 +104,10 @@ def get_resources_stats(backend=None):
         for result in results:
             server_count[res][result[val]] = result["count"]
             if res != "disk_template":
-                allocated[res] += result["count"]
+                prod = (result["count"] * int(result[val]))
+                if res == "disk":
+                    prod = prod << 10
+                allocated[res] += prod
 
     resources_stats = get_backend_stats(backend=backend)
     for res in ["cpu", "ram", "disk", "disk_template"]:

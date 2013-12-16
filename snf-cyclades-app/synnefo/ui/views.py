@@ -77,9 +77,9 @@ IMAGE_DELETED_TITLE = \
 IMAGE_DELETED_SIZE_TITLE = \
     getattr(settings, 'UI_IMAGE_DELETED_SIZE_TITLE', '(none)')
 
-SUPPORT_SSH_OS_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_LIST",)
-SUPPORT_SSH_OS_FAMILY_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_FAMILY_LIST",
-                                     ['linux', 'openbsd', 'freebsd', 'netbsd'])
+
+SSH_SUPPORT_OSFAMILY_EXCLUDE_LIST = getattr(
+    settings, "UI_SSH_SUPPORT_OSFAMILY_EXCLUDE_LIST", ['windows'])
 
 OS_CREATED_USERS = getattr(settings, "UI_OS_DEFAULT_USER_MAP")
 UNKNOWN_OS = getattr(settings, "UI_UNKNOWN_OS", "unknown")
@@ -227,8 +227,7 @@ def home(request):
         'skip_timeouts': json.dumps(SKIP_TIMEOUTS),
         'vm_name_template': json.dumps(VM_NAME_TEMPLATE),
         'flavors_disk_templates_info': json.dumps(FLAVORS_DISK_TEMPLATES_INFO),
-        'support_ssh_os_list': json.dumps(SUPPORT_SSH_OS_LIST),
-        'support_ssh_os_family_list': json.dumps(SUPPORT_SSH_OS_FAMILY_LIST),
+        'ssh_support_osfamily_exclude_list': json.dumps(SSH_SUPPORT_OSFAMILY_EXCLUDE_LIST),
         'unknown_os': json.dumps(UNKNOWN_OS),
         'os_created_users': json.dumps(OS_CREATED_USERS),
         'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),

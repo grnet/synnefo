@@ -108,7 +108,7 @@
             // force logout if UNAUTHORIZED request arrives
             if (args.code == 401) { snf.ui.logout(); return };
             
-            var error_entry = [args.ns, args.code, args.message, args.type, args.details, args];
+            var error_entry = [args.ns, args.code, args.message, '', args.type, args.details, args];
             ui.main.error_view.show_error.apply(ui.main.error_view, error_entry);
         },
 

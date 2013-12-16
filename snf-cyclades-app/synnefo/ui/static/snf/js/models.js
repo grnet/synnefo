@@ -552,20 +552,12 @@
         },
 
         _supports_ssh: function() {
-            var os_list = synnefo.config.support_ssh_os_list;
-            var osfamily_list = synnefo.config.support_ssh_os_family_list;
-            
+            var exclude_list = synnefo.config.ssh_support_osfamily_exclude_list || [];
             var os = this.get_os();
-            if (os_list.indexOf(os) > -1) {
-                return true;
+            if (exclude_list.indexOf(os) > -1) {
+                return false;
             }
-            
-            var osfamily = this.get_meta("osfamily");
-            if (osfamily_list.indexOf(osfamily) > -1) {
-              return true
-            }
-
-            return false;
+            return true;
         },
 
         supports: function(feature) {
@@ -1440,7 +1432,9 @@
           this.call('firewallProfile', success, error, data);
         },
 
-        connect_floating_ip: function(ip, cb) {
+        connect_floating_ip: function(ip, cb, error) {
+          var self = this;
+          var from_status = this.get('status');
           this.set({'status': 'CONNECTING'});
           synnefo.storage.ports.create({
             port: {
@@ -1448,7 +1442,11 @@
               device_id: this.id,
               fixed_ips: [{'ip_address': ip.get('floating_ip_address')}]
             }
-          }, {complete: cb, skip_api_error: false})
+          }, {
+            success: cb, 
+            error: function() { error && error() },
+            skip_api_error: false
+          });
         },
 
         // action helper
@@ -2060,6 +2058,7 @@
         },
 
         parse_vm_api_data: function(data) {
+            var status;
             // do not add non existing DELETED entries
             if (data.status && data.status == "DELETED") {
                 if (!this.get(data.id)) {
@@ -2069,9 +2068,15 @@
             
             if ('SNF:task_state' in data) { 
                 data['task_state'] = data['SNF:task_state'];
+                // Update machine state based on task_state value
+                // Do not apply task_state logic when machine is in ERROR state.
+                // In that case only update from task_state only if equals to
+                // DESTROY
                 if (data['task_state']) {
-                    var status = models.VM.TASK_STATE_STATUS_MAP[data['task_state']];
-                    if (status) { data['status'] = status }
+                    if (data['status'] != 'ERROR' && data['task_state'] != 'DESTROY') {
+                      status = models.VM.TASK_STATE_STATUS_MAP[data['task_state']];
+                      if (status) { data['status'] = status }
+                    }
                 }
             }
 

@@ -198,14 +198,26 @@ class ContainerGet(PithosAPITest):
         # share an object
         cname = self.cnames[0]
         onames = self.objects[cname].keys()
-        oname = onames.pop()
-        url = join_urls(self.pithos_path, self.user, cname, oname)
+        shared1 = onames.pop()
+        url = join_urls(self.pithos_path, self.user, cname, shared1)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_SHARING='read=*')
+        self.assertEqual(r.status_code, 202)
+
+        # share another object
+        shared2 = onames.pop()
+        url = join_urls(self.pithos_path, self.user, cname, shared2)
         r = self.post(url, content_type='', HTTP_X_OBJECT_SHARING='read=*')
         self.assertEqual(r.status_code, 202)
 
         # publish another object
-        other = onames.pop()
-        url = join_urls(self.pithos_path, self.user, cname, other)
+        public1 = onames.pop()
+        url = join_urls(self.pithos_path, self.user, cname, public1)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        # publish another object
+        public2 = onames.pop()
+        url = join_urls(self.pithos_path, self.user, cname, public2)
         r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
         self.assertEqual(r.status_code, 202)
 
@@ -216,7 +228,7 @@ class ContainerGet(PithosAPITest):
         objects = r.content.split('\n')
         if '' in objects:
             objects.remove('')
-        self.assertEqual([oname], objects)
+        self.assertEqual(sorted([shared1, shared2]), objects)
 
         # list detailed shared and assert only the shared object is returned
         url = join_urls(self.pithos_path, self.user, cname)
@@ -226,13 +238,19 @@ class ContainerGet(PithosAPITest):
             objects = json.loads(r.content)
         except:
             self.fail('json format expected')
-        self.assertEqual([oname], [o['name'] for o in objects])
-        self.assertTrue('x_object_sharing' in objects[0])
-        self.assertTrue('x_object_public' not in objects[0])
+        l = sorted([shared1, shared2])
+        i = 0
+        for name in l:
+            self.assertEqual(objects[i]['name'], name)
+            self.assertEqual(objects[i]['bytes'],
+                             len(self.objects[cname][name]))
+            self.assertTrue('x_object_sharing' in objects[i])
+            self.assertTrue('x_object_public' not in objects[i])
+            i += 1
 
         # publish the shared object and assert it is still listed in the
         # shared objects
-        url = join_urls(self.pithos_path, self.user, cname, oname)
+        url = join_urls(self.pithos_path, self.user, cname, shared1)
         r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
         self.assertEqual(r.status_code, 202)
         url = join_urls(self.pithos_path, self.user, cname)
@@ -242,12 +260,20 @@ class ContainerGet(PithosAPITest):
             objects = json.loads(r.content)
         except:
             self.fail('json format expected')
-        self.assertEqual([oname], [o['name'] for o in objects])
-        self.assertTrue('x_object_sharing' in objects[0])
-        self.assertTrue('x_object_public' in objects[0])
+        i = 0
+        for name in l:
+            self.assertEqual(objects[i]['name'], name)
+            self.assertEqual(objects[i]['bytes'],
+                             len(self.objects[cname][name]))
+            self.assertTrue('x_object_sharing' in objects[i])
+            if name == shared1:
+                self.assertTrue('x_object_public' in objects[i])
+            else:
+                self.assertTrue('x_object_public' not in objects[i])
+            i += 1
 
         # create child object
-        descendant = strnextling(oname)
+        descendant = strnextling(shared1)
         self.upload_object(cname, descendant)
         # request shared and assert child obejct is not listed
         url = join_urls(self.pithos_path, self.user, cname)
@@ -256,13 +282,13 @@ class ContainerGet(PithosAPITest):
         objects = r.content.split('\n')
         if '' in objects:
             objects.remove('')
-        self.assertTrue(oname in objects)
+        self.assertTrue(shared1 in objects)
         self.assertTrue(descendant not in objects)
 
         # check folder inheritance
-        oname, _ = self.create_folder(cname, HTTP_X_OBJECT_SHARING='read=*')
+        folder, _ = self.create_folder(cname, HTTP_X_OBJECT_SHARING='read=*')
         # create child object
-        descendant = '%s/%s' % (oname, get_random_name())
+        descendant = '%s/%s' % (folder, get_random_name())
         self.upload_object(cname, descendant)
         # request shared
         url = join_urls(self.pithos_path, self.user, cname)
@@ -271,33 +297,45 @@ class ContainerGet(PithosAPITest):
         objects = r.content.split('\n')
         if '' in objects:
             objects.remove('')
-        self.assertTrue(oname in objects)
+        self.assertTrue(folder in objects)
         self.assertTrue(descendant in objects)
 
     def test_list_public(self):
-        # publish an object
         cname = self.cnames[0]
         onames = self.objects[cname].keys()
-        oname = onames.pop()
-        other = onames.pop()
 
         # publish an object
-        url = join_urls(self.pithos_path, self.user, cname, oname)
+        public1 = onames.pop()
+        url = join_urls(self.pithos_path, self.user, cname, public1)
         r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
         self.assertEqual(r.status_code, 202)
 
+        # publish another
+        public2 = onames.pop()
+        url = join_urls(self.pithos_path, self.user, cname, public2)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        # share an object
+        shared1 = onames.pop()
+        url = join_urls(self.pithos_path, self.user, cname, shared1)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_SHARING='read=alice')
+        self.assertEqual(r.status_code, 202)
+
         # share another
-        url = join_urls(self.pithos_path, self.user, cname, other)
+        shared2 = onames.pop()
+        url = join_urls(self.pithos_path, self.user, cname, shared2)
         r = self.post(url, content_type='', HTTP_X_OBJECT_SHARING='read=alice')
         self.assertEqual(r.status_code, 202)
 
         # list public and assert only the public object is returned
         url = join_urls(self.pithos_path, self.user, cname)
         r = self.get('%s?public=' % url)
-        objects = r.content.split('\n')
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(oname in r.content.split('\n'))
-        (self.assertTrue(object not in objects) for object in o_names[1:])
+        objects = r.content.split('\n')
+        if '' in objects:
+            objects.remove('')
+        self.assertEqual(sorted([public1, public2]), objects)
 
         # list detailed public and assert only the public object is returned
         url = join_urls(self.pithos_path, self.user, cname)
@@ -307,13 +345,19 @@ class ContainerGet(PithosAPITest):
             objects = json.loads(r.content)
         except:
             self.fail('json format expected')
-        self.assertEqual([oname], [obj['name'] for obj in objects])
-        self.assertTrue('x_object_sharing' not in objects[0])
-        self.assertTrue('x_object_public' in objects[0])
+        l = sorted([public1, public2])
+        i = 0
+        for name in l:
+            self.assertEqual(objects[i]['name'], name)
+            self.assertEqual(objects[i]['bytes'],
+                             len(self.objects[cname][name]))
+            self.assertTrue('x_object_sharing' not in objects[i])
+            self.assertTrue('x_object_public' in objects[i])
+            i += 1
 
         # share the public object and assert it is still listed in the
         # public objects
-        url = join_urls(self.pithos_path, self.user, cname, oname)
+        url = join_urls(self.pithos_path, self.user, cname, public1)
         r = self.post(url, content_type='', HTTP_X_OBJECT_SHARING='read=alice')
         self.assertEqual(r.status_code, 202)
         url = join_urls(self.pithos_path, self.user, cname)
@@ -323,9 +367,16 @@ class ContainerGet(PithosAPITest):
             objects = json.loads(r.content)
         except:
             self.fail('json format expected')
-        self.assertEqual([oname], [obj['name'] for obj in objects])
-        self.assertTrue('x_object_sharing' in objects[0])
-        self.assertTrue('x_object_public' in objects[0])
+        i = 0
+        for name in l:
+            self.assertEqual(objects[i]['name'], name)
+            self.assertEqual(objects[i]['bytes'],
+                             len(self.objects[cname][name]))
+            if name == public1:
+                self.assertTrue('x_object_sharing' in objects[i])
+            else:
+                self.assertTrue('x_object_sharing' not in objects[i])
+            i += 1
 
         url = join_urls(self.pithos_path, self.user, cname)
 
@@ -339,7 +390,7 @@ class ContainerGet(PithosAPITest):
         self.assertEqual(r.status_code, 403)
 
         # create child object
-        descendant = strnextling(oname)
+        descendant = strnextling(public1)
         self.upload_object(cname, descendant)
         # request public and assert child obejct is not listed
         r = self.get('%s?public=' % url)
@@ -347,34 +398,47 @@ class ContainerGet(PithosAPITest):
         if '' in objects:
             objects.remove('')
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(oname in objects)
-        (self.assertTrue(o not in objects) for o in o_names[1:])
+        self.assertTrue(public1 in objects)
+        self.assertTrue(descendant not in objects)
 
         # test folder inheritance
-        oname, _ = self.create_folder(cname, HTTP_X_OBJECT_PUBLIC='true')
+        folder, _ = self.create_folder(cname, HTTP_X_OBJECT_PUBLIC='true')
         # create child object
-        descendant = '%s/%s' % (oname, get_random_name())
+        descendant = '%s/%s' % (folder, get_random_name())
         self.upload_object(cname, descendant)
         # request public
         r = self.get('%s?public=' % url)
         self.assertEqual(r.status_code, 200)
         objects = r.content.split('\n')
-        self.assertTrue(oname in objects)
+        self.assertTrue(folder in objects)
         self.assertTrue(descendant not in objects)
 
     def test_list_shared_public(self):
-        # publish an object
         cname = self.cnames[0]
         container_url = join_urls(self.pithos_path, self.user, cname)
         onames = self.objects[cname].keys()
-        oname = onames.pop()
-        url = join_urls(container_url, oname)
+
+        # publish an object
+        public1 = onames.pop()
+        url = join_urls(container_url, public1)
         r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
         self.assertEqual(r.status_code, 202)
 
+        # publish another
+        public2 = onames.pop()
+        url = join_urls(container_url, public2)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        # share an object
+        shared1 = onames.pop()
+        url = join_urls(container_url, shared1)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_SHARING='read=alice')
+        self.assertEqual(r.status_code, 202)
+
         # share another
-        other = onames.pop()
-        url = join_urls(container_url, other)
+        shared2 = onames.pop()
+        url = join_urls(container_url, shared2)
         r = self.post(url, content_type='', HTTP_X_OBJECT_SHARING='read=alice')
         self.assertEqual(r.status_code, 202)
 
@@ -382,12 +446,15 @@ class ContainerGet(PithosAPITest):
         r = self.get('%s?shared=&public=&format=json' % container_url)
         self.assertEqual(r.status_code, 200)
         objects = json.loads(r.content)
-        self.assertEqual([o['name'] for o in objects], sorted([oname, other]))
-        for o in objects:
-            if o['name'] == oname:
-                self.assertTrue('x_object_public' in o.keys())
-            elif o['name'] == other:
-                self.assertTrue('x_object_sharing' in o.keys())
+        l = sorted([public1, public2, shared1, shared2])
+        i = 0
+        for name in l:
+            self.assertEqual(objects[i]['name'], name)
+            self.assertEqual(objects[i]['bytes'],
+                             len(self.objects[cname][name]))
+            self.assertTrue('x_object_sharing' in objects[i] or
+                            'x_object_public' in objects[i])
+            i += 1
 
         # assert not listing shared and public to a not shared user
         r = self.get('%s?shared=&public=&format=json' % container_url,
@@ -400,7 +467,7 @@ class ContainerGet(PithosAPITest):
         self.assertEqual(r.status_code, 403)
 
         # create child object
-        descendant = strnextling(oname)
+        descendant = strnextling(public1)
         self.upload_object(cname, descendant)
         # request public and assert child obejct is not listed
         r = self.get('%s?shared=&public=' % container_url)
@@ -408,13 +475,12 @@ class ContainerGet(PithosAPITest):
         if '' in objects:
             objects.remove('')
         self.assertEqual(r.status_code, 200)
-        self.assertTrue(oname in objects)
-        (self.assertTrue(o not in objects) for o in o_names[1:])
+        self.assertEqual(objects, l)
 
         # test folder inheritance
-        oname, _ = self.create_folder(cname, HTTP_X_OBJECT_PUBLIC='true')
+        folder, _ = self.create_folder(cname, HTTP_X_OBJECT_PUBLIC='true')
         # create child object
-        descendant = '%s/%s' % (oname, get_random_name())
+        descendant = '%s/%s' % (folder, get_random_name())
         self.upload_object(cname, descendant)
         # request public
         r = self.get('%s?shared=&public=' % container_url)
@@ -422,7 +488,7 @@ class ContainerGet(PithosAPITest):
         objects = r.content.split('\n')
         if '' in objects:
             objects.remove('')
-        self.assertTrue(oname in objects)
+        self.assertTrue(folder in objects)
         self.assertTrue(descendant not in objects)
 
     def test_list_objects(self):

@@ -763,7 +763,7 @@ class ModularBackend(BaseBackend):
         paths = [x[len(cont_prefix):] for x in paths]
         objects = [(p,) + props for p, props in
                    zip(paths, self.node.version_lookup_bulk(
-                       nodes, all_props=all_props))]
+                       nodes, all_props=all_props, order_by_path=True))]
         return objects
 
     def _list_objects_no_limit(self, user, account, container, prefix,

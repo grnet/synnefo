@@ -799,9 +799,9 @@ class NetworkInterface(models.Model):
 
     NETWORK_IFACE_NAME_LENGTH = 128
 
-    name = models.CharField('NIC name', max_length=128, null=True, default="")
-    userid = models.CharField("UUID of the owner",
-                              max_length=NETWORK_IFACE_NAME_LENGTH,
+    name = models.CharField('NIC name', max_length=NETWORK_IFACE_NAME_LENGTH,
+                            null=True, default="")
+    userid = models.CharField("UUID of the owner", max_length=128,
                               null=False, db_index=True)
     machine = models.ForeignKey(VirtualMachine, related_name='nics',
                                 on_delete=models.PROTECT, null=True)

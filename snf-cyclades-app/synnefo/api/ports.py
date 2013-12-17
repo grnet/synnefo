@@ -166,7 +166,7 @@ def create_port(request):
             sg_list.append(sg)
 
     new_port = servers.create_port(user_id, network, use_ipaddress=ipaddress,
-                                   machine=vm)
+                                   machine=vm, name=name)
 
     response = render_port(request, port_to_dict(new_port), status=201)
 

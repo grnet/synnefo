@@ -616,9 +616,9 @@ def astakos_register_pithos_view():
     pithos_base_url = "https://%s/pithos" % env.env.pithos.fqdn
 
     cmd = """
-    snf-manage oauth2-client-add pithos-view --secret=12345 --is-trusted \
-    --url {0}
-    """.format('%s/ui/view' % pithos_base_url)
+    snf-manage oauth2-client-add pithos-view --secret={0} --is-trusted \
+    --url {1}
+    """.format(env.env.oa2_secret, '%s/ui/view' % pithos_base_url)
     try_run(cmd)
 
 

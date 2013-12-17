@@ -1365,42 +1365,32 @@ Ganeti nodes:
 It's time to install Ganeti. To be able to use hotplug (which will be part of
 the official Ganeti 2.10), we recommend using our Ganeti package version:
 
-``2.8.2+snapshot1+b64v1+kvmopts1+extfix1+hotplug5+lockfix3+ippoolfix+rapifix+netxen-1~wheezy``
+``2.8.3+snap1+b64v1+kvm1+ext1+lockfix1+ipfix1+backports1-1~wheezy``
 
-Let's briefly explain each patch:
+Let's briefly explain each patch set:
 
-    * hotplug: hotplug devices (NICs and Disks) (ganeti 2.10).
-    * b64v1: Save bitarray of network IP pools in config file, encoded in
-      base64, instead of 0/1.
-    * ippoolfix: Ability to give an externally reserved IP to an instance (e.g.
-      gateway IP)  (ganeti 2.10).
-    * kvmopts: Export disk geometry to kvm command and add migration
-      capabilities.
-    * extfix: Includes:
+    * snap adds snapshot support for ext disk template
+    * b64 saves networks' bitarrays in a more compact representation
+    * kvm exports disk geometry to kvm command and adds migration capabilities
+    * ext
 
-      * exports logical id in hooks.
-      * adds better arbitrary params support (modification, deletion).
-      * cache, heads, cyls arbitrary params reach kvm command.
+      * exports logical id in hooks
+      * allows cache, heads, cyls arbitrary params to reach kvm command
 
-    * rapifix: Extend RAPI το support 'depends' and 'shutdown_timeout' body
-      arguments. (ganeti 2.9).
-    * netxen: Network configuration for xen instances, exactly like in kvm
-      instances. (ganeti 2.9).
-    * lockfix2: Fixes for 2 locking issues:
+    * lockfix is a workaround for Issue #621
+    * ipfix does not require IP if mode is routed (needed for IPv6 only NICs)
+    * backports is a set of patches backported from stable-2.10
 
-      * Issue 622: Fix for opportunistic locking that caused an assertion
-        error (Patch waiting in ganeti-devel list).
-      * Issue 621: Fix for network locking issue that resulted in: [Lock
-        'XXXXXX' not found in set 'instance' (it may have been removed)].
-
-    * snapshot: Add trivial 'snapshot' functionality that is unused by Synnefo
-      or Ganeti.
+      * Hotplug support
+      * Better networking support (NIC configuration scripts)
+      * Change IP pool to support NAT instances
+      * Change RAPI to accept depends body argument and shutdown_timeout
 
 To install Ganeti run:
 
 .. code-block:: console
 
-   # apt-get install snf-ganeti ganeti-htools ganeti-haskell
+   # apt-get install snf-ganeti ganeti-htools ganeti-haskell ganeti2
 
 Ganeti will make use of drbd. To enable this and make the configuration
 permanent you have to do the following :

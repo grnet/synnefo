@@ -622,6 +622,8 @@ class Subnet(models.Model):
                                   null=False)
     host_routes = fields.SeparatedValuesField('Host Routes', null=True)
     dns_nameservers = fields.SeparatedValuesField('DNS Nameservers', null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     def __unicode__(self):
         msg = u"<Subnet %s, Network: %s, CIDR: %s>"

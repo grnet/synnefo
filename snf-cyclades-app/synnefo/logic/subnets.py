@@ -148,15 +148,17 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
     return sub
 
 
-def get_subnet(sub_id):
+def get_subnet(sub_id, prefetch_related=False):
     """Show info of a specific subnet"""
     log.debug('get_subnet %s', sub_id)
     try:
-        subnet = Subnet.objects.get(id=sub_id)
+        subnets = Subnet.objects
+        if prefetch_related:
+            subnets = subnets.select_related("network")
+            subnets = subnets.prefetch_related("ip_pools")
+        return subnets.get(id=sub_id)
     except Subnet.DoesNotExist:
         raise api.faults.ItemNotFound("Subnet not found")
-
-    return subnet
 
 
 def delete_subnet():

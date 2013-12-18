@@ -263,11 +263,11 @@ class AuthProvider(object):
         return create
 
     def __repr__(self):
-        r = "'%s' module" % self.__class__.__name__
+        r = "'%r' module" % self.__class__.__name__
         if self.user:
-            r += ' (user: %s)' % self.user
+            r += ' (user: %r)' % self.user
         if self.identifier:
-            r += '(identifier: %s)' % self.identifier
+            r += '(identifier: %r)' % self.identifier
         return r
 
     def _message_params(self, **extra_params):

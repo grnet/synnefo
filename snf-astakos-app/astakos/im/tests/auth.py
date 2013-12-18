@@ -791,6 +791,7 @@ class TestAuthProviderViews(TestCase):
     @shibboleth_settings(CREATION_GROUPS_POLICY=['academic-login'],
                          AUTOMODERATE_POLICY=True)
     @im_settings(IM_MODULES=['shibboleth', 'local'], MODERATION_ENABLED=True,
+                 HELPDESK=(('support', 'support@synnefo.org'),),
                  FORCE_PROFILE_UPDATE=False)
     def test_user(self):
         Profile = AuthProviderPolicyProfile
@@ -818,8 +819,8 @@ class TestAuthProviderViews(TestCase):
 
         # new academic user
         self.assertFalse(academic_users.filter(email='newuser@synnefo.org'))
-        cl_newuser.set_tokens(remote_user="newusereppn", mail="newuser@synnefo.org",
-                              surname="Lastname")
+        cl_newuser.set_tokens(remote_user="newusereppn",
+                              mail="newuser@synnefo.org", surname="Lastname")
         r = cl_newuser.get(ui_url('login/shibboleth?'), follow=True)
         initial = r.context['signup_form'].initial
         pending = Pending.objects.get()
@@ -869,7 +870,7 @@ class TestAuthProviderViews(TestCase):
         pending = Pending.objects.get()
         identifier = pending.third_party_identifier
         signup_data = {'third_party_identifier': identifier,
-                       'first_name': 'Academic',
+                       u'first_name': 'Academic γιούνικοουντ',
                        'third_party_token': pending.token,
                        'last_name': 'New User',
                        'provider': 'shibboleth'}
@@ -882,6 +883,10 @@ class TestAuthProviderViews(TestCase):
         self.assertTrue(academic_users.get(email='newuser@synnefo.org'))
         r = cl_newuser.get(newuser.get_activation_url(), follow=True)
         self.assertRedirects(r, ui_url('landing'))
+        helpdesk_email = astakos_settings.HELPDESK[0][1]
+        self.assertEqual(len(get_mailbox(helpdesk_email)), 1)
+        self.assertTrue(u'AstakosUser: Academic γιούνικοουντ' in \
+                            get_mailbox(helpdesk_email)[0].body)
         newuser = User.objects.get(email="newuser@synnefo.org")
         self.assertEqual(newuser.is_active, True)
         self.assertEqual(newuser.email_verified, True)

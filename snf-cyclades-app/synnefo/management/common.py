@@ -250,6 +250,8 @@ class Omit(object):
 
 def wait_server_task(server, wait, stdout):
     jobID = server.task_job_id
+    if jobID is None:
+        return
     if wait:
         msg = "Issued job '%s'. Waiting to complete...\n"
         stdout.write(msg % jobID)

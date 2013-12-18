@@ -542,7 +542,8 @@ def delete_port(port):
 
     """
 
-    if port.machine is not None:
+    vm = port.machine
+    if vm is not None and not vm.deleted:
         vm = disconnect(port.machine, port)
         log.info("Removing port %s, Job: %s", port, vm.task_job_id)
     else:

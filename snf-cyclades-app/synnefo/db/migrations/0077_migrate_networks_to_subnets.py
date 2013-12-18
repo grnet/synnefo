@@ -10,7 +10,7 @@ class Migration(DataMigration):
     def forwards(self, orm):
         "Write your forwards methods here."
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
-        for network in orm.Network.objects.select_related('pool').all():
+        for network in orm.Network.objects.select_related('pool').filter(dhcp=True):
             if network.subnet:
                 subnet = orm.Subnet.objects.create(network=network,
                                                    ipversion=4,

@@ -52,6 +52,7 @@ log = getLogger(__name__)
 urlpatterns = patterns(
     'synnefo.api.subnets',
     (r'^(?:/|.json|.xml)?$', 'demux'),
+    (r'^/detail(?:.json|.xml)?$', 'list_subnets', {'detail': True}),
     (r'^/([-\w]+)(?:/|.json|.xml)?$', 'subnet_demux'))
 
 
@@ -76,7 +77,7 @@ def subnet_demux(request, sub_id):
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
-def list_subnets(request):
+def list_subnets(request, detail=True):
     """List all subnets of a user"""
     userid = request.user_uniq
     subnets_list = Subnet.objects.filter(Q(network__public=True) |

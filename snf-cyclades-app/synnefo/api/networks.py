@@ -82,7 +82,7 @@ def network_demux(request, network_id):
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
-def list_networks(request, detail=False):
+def list_networks(request, detail=True):
     log.debug('list_networks detail=%s', detail)
 
     user_networks = Network.objects.filter(Q(userid=request.user_uniq) |

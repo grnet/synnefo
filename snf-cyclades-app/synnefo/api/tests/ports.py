@@ -91,31 +91,31 @@ class PortTest(BaseAPITest):
         res = json.loads(response.content)
         self.assertEqual(res['port']['name'], "test-name")
 
-    def test_update_port_sg_unfound(self):
-        sg1 = dbmf.SecurityGroupFactory()
-        nic = dbmf.NetworkInterfaceFactory(device_owner='vm')
-        nic.security_groups.add(sg1)
-        nic.save()
-        url = join_urls(PORTS_URL, str(nic.id))
-        request = {'port': {"security_groups": ["123"]}}
-        response = self.put(url, params=json.dumps(request),
-                            user=nic.userid)
-        self.assertEqual(response.status_code, 404)
+    # def test_update_port_sg_unfound(self):
+    #     sg1 = dbmf.SecurityGroupFactory()
+    #     nic = dbmf.NetworkInterfaceFactory(device_owner='vm')
+    #     nic.security_groups.add(sg1)
+    #     nic.save()
+    #     url = join_urls(PORTS_URL, str(nic.id))
+    #     request = {'port': {"security_groups": ["123"]}}
+    #     response = self.put(url, params=json.dumps(request),
+    #                         user=nic.userid)
+    #     self.assertEqual(response.status_code, 404)
 
-    def test_update_port_sg(self):
-        sg1 = dbmf.SecurityGroupFactory()
-        sg2 = dbmf.SecurityGroupFactory()
-        sg3 = dbmf.SecurityGroupFactory()
-        nic = dbmf.NetworkInterfaceFactory(device_owner='vm')
-        nic.security_groups.add(sg1)
-        nic.save()
-        url = join_urls(PORTS_URL, str(nic.id))
-        request = {'port': {"security_groups": [str(sg2.id), str(sg3.id)]}}
-        response = self.put(url, params=json.dumps(request),
-                            user=nic.userid)
-        res = json.loads(response.content)
-        self.assertEqual(res['port']['security_groups'],
-                         [str(sg2.id), str(sg3.id)])
+    # def test_update_port_sg(self):
+    #     sg1 = dbmf.SecurityGroupFactory()
+    #     sg2 = dbmf.SecurityGroupFactory()
+    #     sg3 = dbmf.SecurityGroupFactory()
+    #     nic = dbmf.NetworkInterfaceFactory(device_owner='vm')
+    #     nic.security_groups.add(sg1)
+    #     nic.save()
+    #     url = join_urls(PORTS_URL, str(nic.id))
+    #     request = {'port': {"security_groups": [str(sg2.id), str(sg3.id)]}}
+    #     response = self.put(url, params=json.dumps(request),
+    #                         user=nic.userid)
+    #     res = json.loads(response.content)
+    #     self.assertEqual(res['port']['security_groups'],
+    #                      [str(sg2.id), str(sg3.id)])
 
     def test_create_port_no_network(self):
         request = {

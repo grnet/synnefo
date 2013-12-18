@@ -865,6 +865,7 @@ def setup_pithos():
         "synnefo_db_passwd": env.env.synnefo_db_passwd,
         "pithos_dir": env.env.pithos_dir,
         "PITHOS_SERVICE_TOKEN": service_token,
+        "oa2_secret": env.env.oa2_secret,
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
     try_put(custom, tmpl, mode=0644)

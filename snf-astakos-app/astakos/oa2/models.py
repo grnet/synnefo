@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 import datetime
-import urlparse
 
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -87,15 +86,12 @@ class Client(models.Model):
         return self.redirecturl_set.get().url
 
     def redirect_uri_is_valid(self, uri):
-        # ignore user specific uri part
-        parts = list(urlparse.urlsplit(uri))
-        path = parts[2]
-        pieces = path.rsplit('/', 3)
-        parts[2] = '/'.join(pieces[:-3]) if len(pieces) > 3 else path
-        uri = urlparse.urlunsplit(parts)
-
-        # TODO: handle trailing slashes
-        return self.redirecturl_set.filter(url=uri).count() > 0
+        for redirect_uri in self.redirecturl_set.values_list('url', flat=True):
+            if uri == redirect_uri:
+                return True
+            elif uri.startswith(redirect_uri.rstrip('/') + '/'):
+                return True
+        return False
 
     def get_id(self):
         return self.identifier

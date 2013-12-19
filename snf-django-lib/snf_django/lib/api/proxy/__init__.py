@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 
 from objpool.http import PooledHTTPConnection
 
@@ -50,7 +50,7 @@ import urlparse
 EXCLUDE_HEADERS = ['Host', 'Cookie', 'Connection', 'X-Forwarded-Host']
 
 
-def proxy(request, proxy_base=None, target_base=None):
+def proxy(request, proxy_base=None, target_base=None, redirect=False):
     kwargs = {}
 
     if None in (proxy_base, target_base):
@@ -62,7 +62,7 @@ def proxy(request, proxy_base=None, target_base=None):
     target_base = str(target_base)
 
     parsed = urlparse.urlparse(target_base)
-    target_base = '/' + parsed.path.strip('/')
+    target_path = '/' + parsed.path.strip('/')
     proxy_base = proxy_base.strip('/')
 
     # prepare headers
@@ -93,7 +93,14 @@ def proxy(request, proxy_base=None, target_base=None):
         m = m.format(path, proxy_base)
         raise AssertionError(m)
     path = path.replace(proxy_base, '', 1)
-    path = join_urls(target_base, path)
+
+    # redirect to target instead of proxing
+    if redirect:
+        redirect_url = join_urls(target_base, path)
+        qs = urllib.urlencode(request.GET)
+        return HttpResponseRedirect('?'.join([redirect_url, qs]))
+
+    path = join_urls(target_path, path)
     with PooledHTTPConnection(parsed.netloc, parsed.scheme) as conn:
         conn.request(
             request.method,

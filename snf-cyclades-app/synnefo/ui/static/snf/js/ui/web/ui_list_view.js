@@ -362,7 +362,7 @@
             img = img + '<img src="'+snf.config.indicators_icons_url+'medium/wave.gif" class="wave" />';
             img = img + '<span class="action-indicator" />';
 
-            var name = util.truncate(vm.get('name'), 25);
+            var name = _.escape(util.truncate(vm.get('name'), 25));
             var flavor = vm.get_flavor().details_string();
             var status = STATE_TEXTS[vm.state()];
             

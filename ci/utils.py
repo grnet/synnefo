@@ -16,7 +16,7 @@ from ConfigParser import ConfigParser, DuplicateSectionError
 
 from kamaki.cli import config as kamaki_config
 from kamaki.clients.astakos import AstakosClient
-from kamaki.clients.cyclades import CycladesClient
+from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
 from kamaki.clients.image import ImageClient
 from kamaki.clients.compute import ComputeClient
 import filelocker
@@ -92,13 +92,13 @@ class _MyFormatter(logging.Formatter):
     def format(self, record):
         format_orig = self._fmt
         if record.levelno == logging.DEBUG:
-            self._fmt = "  %(msg)s"
+            self._fmt = "  %(message)s"
         elif record.levelno == logging.INFO:
-            self._fmt = "%(msg)s"
+            self._fmt = "%(message)s"
         elif record.levelno == logging.WARNING:
-            self._fmt = _yellow("[W] %(msg)s")
+            self._fmt = _yellow("[W] %(message)s")
         elif record.levelno == logging.ERROR:
-            self._fmt = _red("[E] %(msg)s")
+            self._fmt = _red("[E] %(message)s")
         result = logging.Formatter.format(self, record)
         self._fmt = format_orig
         return result
@@ -173,6 +173,7 @@ class SynnefoCI(object):
         self.fabric_installed = False
         self.kamaki_installed = False
         self.cyclades_client = None
+        self.network_client = None
         self.compute_client = None
         self.image_client = None
         self.astakos_client = None
@@ -189,7 +190,7 @@ class SynnefoCI(object):
                 self.kamaki_cloud = config.get("global", "default_cloud")
             except AttributeError:
                 # Compatibility with kamaki version <=0.10
-                self.kamaki_cloud = config.get_global("default_cloud")
+                self.kamaki_cloud = config.get("global", "default_cloud")
 
         self.logger.info("Setup kamaki client, using cloud '%s'.." %
                          self.kamaki_cloud)
@@ -205,6 +206,12 @@ class SynnefoCI(object):
         self.logger.debug("Cyclades API url is %s" % _green(cyclades_url))
         self.cyclades_client = CycladesClient(cyclades_url, token)
         self.cyclades_client.CONNECTION_RETRY_LIMIT = 2
+
+        network_url = \
+            self.astakos_client.get_service_endpoints('network')['publicURL']
+        self.logger.debug("Network API url is %s" % _green(network_url))
+        self.network_client = CycladesNetworkClient(network_url, token)
+        self.network_client.CONNECTION_RETRY_LIMIT = 2
 
         image_url = \
             self.astakos_client.get_service_endpoints('image')['publicURL']
@@ -246,10 +253,36 @@ class SynnefoCI(object):
     def destroy_server(self, wait=True):
         """Destroy slave server"""
         server_id = int(self.read_temp_config('server_id'))
+        fips = [f for f in self.network_client.list_floatingips()
+                if str(f['instance_id']) == str(server_id)]
         self.logger.info("Destoying server with id %s " % server_id)
         self.cyclades_client.delete_server(server_id)
         if wait:
             self._wait_transition(server_id, "ACTIVE", "DELETED")
+        for fip in fips:
+            self.logger.info("Destroying floating ip %s",
+                             fip['floating_ip_address'])
+            self.network_client.delete_floatingip(fip['id'])
+
+    def _create_floating_ip(self):
+        """Create a new floating ip"""
+        networks = self.network_client.list_networks(detail=True)
+        pub_net = [n for n in networks
+                   if n['SNF:floating_ip_pool'] and n['public']]
+        pub_net = pub_net[0]
+        fip = self.network_client.create_floatingip(pub_net['id'])
+        self.logger.debug("Floating IP %s with id %s created",
+                          fip['floating_ip_address'], fip['id'])
+        return fip
+
+    def _create_port(self, floating_ip):
+        """Create a new port for our floating IP"""
+        net_id = floating_ip['floating_network_id']
+        self.logger.debug("Creating a new port to network with id %s", net_id)
+        fixed_ips = [{'ip_address': floating_ip['floating_ip_address']}]
+        port = self.network_client.create_port(
+            net_id, device_id=None, fixed_ips=fixed_ips)
+        return port
 
     @_check_kamaki
     def create_server(self, image=None, flavor=None, ssh_keys=None,
@@ -266,11 +299,21 @@ class SynnefoCI(object):
         flavor_id = self._find_flavor(flavor)
 
         # Create Server
+        networks = []
+        if self.config.get("Deployment", "allocate_floating_ip") == "True":
+            fip = self._create_floating_ip()
+            port = self._create_port(fip)
+            networks.append({'port': port['id']})
+        private_networks = self.config.get('Deployment', 'private_networks')
+        if private_networks:
+            private_networks = private_networks.split(",")
+            networks.extend([{"uuid": uuid.strip()}
+                             for uuid in private_networks])
         if server_name is None:
             server_name = self.config.get("Deployment", "server_name")
             server_name = "%s(BID: %s)" % (server_name, self.build_id)
-        server = self.cyclades_client.create_server(server_name, flavor_id,
-                                                    image_id)
+        server = self.cyclades_client.create_server(
+            server_name, flavor_id, image_id, networks=networks)
         server_id = server['id']
         self.write_temp_config('server_id', server_id)
         self.logger.debug("Server got id %s" % _green(server_id))

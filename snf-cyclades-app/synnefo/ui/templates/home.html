@@ -234,16 +234,16 @@
                 <!-- tabs -->
                 <div class="tab-name">{% trans "machines" %}</div>
                 <ul class="css-tabs">
-                    <li><a href="machines" title="{% trans "manage your virtual machines" %}"
+                    <li><a href="#machines/icon/" title="{% trans "manage virtual machines" %}"
                         data-hover-title="machines" class="primary" id="machines_view_link">
                         <img src="{{ SYNNEFO_IMAGES_URL }}machines-icon.png" /></a></li>
-                    <li><a href="networks" title="{% trans "configure networking" %}"
+                    <li><a href="#networks/" title="{% trans "manage networks" %}"
                         data-hover-title="networks" class="primary" id="networks_view_link">
                         <img src="{{ SYNNEFO_IMAGES_URL }}networks-icon.png" /></a></li>
-                    <li><a href="ips" title="{% trans "manage your IP addresses" %}"
+                    <li><a href="#ips/" title="{% trans "manage IP addresses" %}"
                         data-hover-title="IPs" class="primary" id="ips_view_link">
                         <img src="{{ SYNNEFO_IMAGES_URL }}ips-pane-icon.png" /></a></li>
-                    <li><a href="public-keys" title="{% trans "manage your public keys" %}"
+                    <li><a href="#public-keys/" title="{% trans "manage public keys" %}"
                         data-hover-title="public keys" class="primary" id="public_keys_view_link">
                         <img src="{{ SYNNEFO_IMAGES_URL }}ssh-keys-pane-icon.png" /></a></li>
                 </ul>
@@ -539,7 +539,7 @@
 
     <div id="suspended-vm-overlay" class="overlay-content overlay-info hidden">
         <div class="description noborder">
-          You VM has been suspended, please contact us for more details.
+          Your VM has been suspended, please contact us for more details.
         </div>
     </div>
 
@@ -659,7 +659,7 @@
             synnefo.config.machines_icons_url = '{{ SYNNEFO_IMAGES_URL }}icons/machines/';
             synnefo.config.ui_console_url = '{% url ui_machines_console %}';
             synnefo.config.ui_connect_url = '{% url ui_machines_connect %}';
-            synnefo.config.support_ssh_os_list = {{ support_ssh_os_list|safe }};
+            synnefo.config.ssh_support_osfamily_exclude_list = {{ ssh_support_osfamily_exclude_list|safe }};
             synnefo.config.unknown_os = {{ unknown_os|safe }};
             synnefo.config.os_created_users = {{ os_created_users|safe }};
             synnefo.config.feedback_post_url = {{ feedback_post_url|safe }};

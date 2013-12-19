@@ -11,6 +11,7 @@ v0.14next
 Released: UNRELEASED
 
 * Support for snf-vncauthproxy-1.5 (drop support for older versions)
+* Until release of v0.15, for complete list of changes see the Changelog.
 
 .. _NEWS-0.14.10:
 

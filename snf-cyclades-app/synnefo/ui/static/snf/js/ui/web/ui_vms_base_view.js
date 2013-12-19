@@ -654,7 +654,7 @@
                 // action links click events
                 $(this.el).find(".action-container."+action+" a").click(function(ev) {
                     ev.preventDefault();
-                    if (action == "start" && !self.vm.can_start()) {
+                    if (action == "start" && !self.vm.can_start() && !vm.in_error_state()) {
                         ui.main.vm_resize_view.show_with_warning(self.vm);
                         return;
                     }
@@ -819,7 +819,11 @@
         var network = this.model.get('network');
         var name = network && network.get('name');
         if (!name) {
-          name = 'Internet'
+          if (network && network.get('is_public')) {
+            name = 'Internet'
+          } else {
+            name = '(no network name)'
+          }
         }
         var truncate_length = this.parent_view.options.truncate || 40;
         name = synnefo.util.truncate(name, truncate_length, '...');

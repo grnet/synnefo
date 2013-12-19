@@ -738,7 +738,7 @@ class IPAddress(models.Model):
             return (not self.nic.machine.deleted)
 
     class Meta:
-        unique_together = ("network", "address")
+        unique_together = ("network", "address", "deleted")
 
     @property
     def ipversion(self):

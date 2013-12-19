@@ -11,7 +11,8 @@ class Migration(DataMigration):
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
         # Delete stale NICs
         orm.NetworkInterface.objects.filter(machine__deleted=True).delete()
-        for nic in orm.NetworkInterface.objects.all():
+        for nic in orm.NetworkInterface.objects.select_related('machine',
+                                                               'network').all():
             userid = nic.machine.userid
             nic.userid = userid
             nic.save()

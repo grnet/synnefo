@@ -575,6 +575,8 @@
         options = _.extend(options, synnefo.i18n.API_ERROR_MESSAGES[error_message] || {});
         options = _.extend(options, synnefo.i18n.API_ERROR_MESSAGES[code] || {});
         
+        options.api_message = options.message;
+
         if (window.ERROR_OVERRIDES && window.ERROR_OVERRIDES[options.message]) {
             options.message = window.ERROR_OVERRIDES[options.message];
         }
@@ -582,7 +584,10 @@
         if (code && window.ERROR_OVERRIDES && window.ERROR_OVERRIDES[code]) {
             options.message = window.ERROR_OVERRIDES[code];
         }
-
+        
+        if (options.api_message == options.message) {
+          options.api_message = '';
+        }
         options = _.extend(defaults, options);
         options.code = code;
 

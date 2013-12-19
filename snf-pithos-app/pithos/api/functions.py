@@ -240,10 +240,10 @@ def account_list(request):
         return response
 
     account_meta = []
+    usage = get_pithos_usage(request.x_auth_token)
     for x in accounts:
         if x == request.user_uniq:
             continue
-        usage = get_pithos_usage(request.x_auth_token)
         try:
             meta = request.backend.get_account_meta(
                 request.user_uniq, x, 'pithos', include_user_defined=False,

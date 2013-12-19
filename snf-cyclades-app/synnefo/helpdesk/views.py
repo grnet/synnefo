@@ -49,8 +49,7 @@ from snf_django.lib import astakos
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 
 # server actions specific imports
-from synnefo.api import util
-from synnefo.logic import backend as servers_backend
+from synnefo.logic import servers as servers_backend
 from synnefo.ui.views import UI_MEDIA_URL
 
 logger = logging.getLogger(__name__)
@@ -331,8 +330,7 @@ def vm_suspend_release(request, vm_id):
 def vm_shutdown(request, vm_id):
     logging.info("VM %s shutdown by %s", vm_id, request.user_uniq)
     vm = VirtualMachine.objects.get(pk=vm_id)
-    jobId = servers_backend.shutdown_instance(vm)
-    util.start_action(vm, 'STOP', jobId)
+    jobId = servers_backend.stop(vm)
     account = vm.userid
     return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))
 
@@ -342,7 +340,6 @@ def vm_shutdown(request, vm_id):
 def vm_start(request, vm_id):
     logging.info("VM %s start by %s", vm_id, request.user_uniq)
     vm = VirtualMachine.objects.get(pk=vm_id)
-    jobId = servers_backend.startup_instance(vm)
-    util.start_action(vm, 'START', jobId)
+    jobId = servers_backend.start(vm)
     account = vm.userid
     return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))

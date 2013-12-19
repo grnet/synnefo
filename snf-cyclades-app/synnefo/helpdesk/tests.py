@@ -37,6 +37,7 @@ import mock
 from django.test import TestCase, Client
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from snf_django.utils.testing import mocked_quotaholder
 
 
 USER1 = "5edcb5aa-1111-4146-a8ed-2b6287824353"
@@ -322,8 +323,9 @@ class HelpdeskTests(TestCase):
         shutdown.return_value = 1
         self.vm1.operstate = 'STARTED'
         self.vm1.save()
-        r = self.client.post(reverse('helpdesk-vm-shutdown', args=(pk,)),
-                             data={'token': '0001'}, user_token='0001')
+        with mocked_quotaholder():
+            r = self.client.post(reverse('helpdesk-vm-shutdown', args=(pk,)),
+                                 data={'token': '0001'}, user_token='0001')
         self.assertEqual(r.status_code, 302)
         self.assertTrue(shutdown.called)
         self.assertEqual(len(shutdown.mock_calls), 1)
@@ -332,8 +334,9 @@ class HelpdeskTests(TestCase):
         startup.return_value = 2
         self.vm1.operstate = 'STOPPED'
         self.vm1.save()
-        r = self.client.post(reverse('helpdesk-vm-start', args=(pk,)),
-                             data={'token': '0001'}, user_token='0001')
+        with mocked_quotaholder():
+            r = self.client.post(reverse('helpdesk-vm-start', args=(pk,)),
+                                 data={'token': '0001'}, user_token='0001')
         self.assertEqual(r.status_code, 302)
         self.assertTrue(startup.called)
         self.assertEqual(len(startup.mock_calls), 1)

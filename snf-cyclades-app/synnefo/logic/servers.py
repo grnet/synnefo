@@ -171,10 +171,7 @@ def create(userid, name, password, flavor, image, metadata={},
         use_backend = allocate_new_server(userid, flavor)
 
     # Create the ports for the server
-    try:
-        ports = create_instance_ports(userid, networks)
-    except Exception as e:
-        raise e
+    ports = create_instance_ports(userid, networks)
 
     # Fix flavor for archipelago
     disk_template, provider = util.get_flavor_provider(flavor)
@@ -182,7 +179,7 @@ def create(userid, name, password, flavor, image, metadata={},
         flavor.disk_template = disk_template
         flavor.disk_provider = provider
         flavor.disk_origin = None
-        if provider in ['vlmc', 'archipelago']:
+        if provider in settings.GANETI_CLONE_PROVIDERS:
             flavor.disk_origin = image['checksum']
             image['backend_id'] = 'null'
     else:
@@ -264,7 +261,7 @@ def create_server(vm, nics, flavor, image, personality, password):
     vm.backendjobid = jobID
     vm.save()
     log.info("User %s created VM %s, NICs %s, Backend %s, JobID %s",
-             vm.userid, vm, nics, backend, str(jobID))
+             vm.userid, vm, nics, vm.backend, str(jobID))
 
     return jobID
 
@@ -425,6 +422,12 @@ def rename(server, new_name):
 
 @transaction.commit_on_success
 def create_port(*args, **kwargs):
+    vm = kwargs.get("machine", None)
+    if vm is None and len(args) >= 3:
+        vm = args[2]
+    if vm is not None:
+        if vm.nics.count() == settings.GANETI_MAX_NICS_PER_INSTANCE:
+            raise faults.BadRequest("Maximum ports per server limit reached")
     return _create_port(*args, **kwargs)
 
 
@@ -554,7 +557,10 @@ def create_instance_ports(user_id, networks=None):
     else:
         # Else just connect to the networks that the user defined
         ports = create_ports_for_request(user_id, networks)
-    return forced_ports + ports
+    total_ports = forced_ports + ports
+    if len(total_ports) > settings.GANETI_MAX_NICS_PER_INSTANCE:
+        raise faults.BadRequest("Maximum ports per server limit reached")
+    return total_ports
 
 
 def create_ports_for_setting(user_id, category):

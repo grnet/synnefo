@@ -316,6 +316,8 @@
                 selected_flavor: this.vm.get_flavor(),
                 extra_quotas: extra_quota
             });
+            this.selected_flavor = this.vm.get_flavor();
+            this.handle_flavor_select(this.selected_flavor);
             this.flavors_view.bind("flavor:select", this.handle_flavor_select)
             this.submit.addClass("disabled");
             views.VmResizeView.__super__.show.apply(this);
@@ -382,7 +384,7 @@
             }
             this.submit.addClass("disabled");
           } else {
-            if (this.selected_flavor) {
+            if (this.selected_flavor && this.selected_flavor.id != this.vm.get_flavor().id) {
               this.submit.removeClass("disabled");
             }
             this.shutdown.hide();

@@ -624,7 +624,7 @@ class Node(DBWorker):
         return None
 
     def version_lookup_bulk(self, nodes, before=inf, cluster=0,
-                            all_props=True):
+                            all_props=True, order_by_path=False):
         """Lookup the current versions of the given nodes.
            Return a list with their properties:
            (serial, node, hash, size, type, source, mtime, muser, uuid,
@@ -634,18 +634,19 @@ class Node(DBWorker):
         if not nodes:
             return ()
         q = ("select %s "
-             "from versions "
+             "from versions v, nodes n "
              "where serial in %s "
-             "and cluster = ? %s")
+             "and v.node = n.node "
+             "and cluster = ? %s ")
         subq, args = self._construct_latest_versions_subquery(
             nodes=nodes, before=before)
         if not all_props:
             q = q % ("serial", subq, '')
         else:
-            q = q % (("serial, node, hash, size, type, source, mtime, muser, "
-                     "uuid, checksum, cluster"),
+            q = q % (("serial, v.node, hash, size, type, source, mtime, "
+                      "muser, uuid, checksum, cluster"),
                      subq,
-                     'order by node')
+                     "order by path" if order_by_path else "")
 
         args += [cluster]
         self.execute(q, args)

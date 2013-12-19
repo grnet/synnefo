@@ -259,7 +259,6 @@
           var error = _.bind(function() {
             this.generating = false;
             this.generate_action.removeClass("in-progress");
-            this.generate_progress.hide();
             this.private_key = undefined;
             this.show_error();
           }, this);
@@ -316,7 +315,25 @@
       collection: storage.keys,
       collection_name: 'keys',
       model_view_cls: views.PublicKeyView,
-      create_view_cls: views.PublicKeyCreateView
+      create_view_cls: views.PublicKeyCreateView,
+      initialize: function() {
+        views.PublicKeysCollectionView.__super__.initialize.apply(this, arguments);
+        this.collection.bind("add", _.bind(this.update_quota, this));
+        this.collection.bind("remove", _.bind(this.update_quota, this));
+        this.collection.bind("reset", _.bind(this.update_quota, this));
+      },
+
+      update_quota: function() {
+        var quota = synnefo.config.userdata_keys_limit;
+        var available = quota - this.collection.length;
+        if (available > 0) {
+          this.create_button.removeClass("disabled");
+          this.create_button.attr("title", this.quota_limit_message || "Quota limit reached")
+        } else {
+          this.create_button.addClass("disabled");
+          this.create_button.attr("title", "");
+        }
+      }
     });
 
     views.PublicKeysPaneView = views.ext.PaneView.extend({

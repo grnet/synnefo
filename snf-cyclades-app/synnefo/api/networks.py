@@ -173,7 +173,7 @@ def network_to_dict(network, detail=True):
         # related!
         subnet_ids = []
         for subnet in network.subnets.all():
-            subnet_ids.append(network.id)
+            subnet_ids.append(subnet.id)
 
         state = "SNF:DRAINED" if network.drained else network.state
         d['user_id'] = network.userid

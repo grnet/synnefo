@@ -35,6 +35,7 @@ import string
 from optparse import make_option
 from django.db import transaction
 
+from synnefo.lib.ordereddict import OrderedDict
 from synnefo.quotas import util
 from synnefo.quotas import enforce
 from synnefo.quotas import errors
@@ -52,6 +53,8 @@ class Command(SynnefoCommand):
     help = """Check and fix quota violations for Cyclades resources.
     """
     option_list = SynnefoCommand.option_list + (
+        make_option("--max-operations",
+                    help="Limit operations per backend."),
         make_option("--users", dest="users",
                     help=("Enforce resources only for the specified list "
                           "of users, e.g uuid1,uuid2")),
@@ -100,6 +103,13 @@ class Command(SynnefoCommand):
         write = self.stderr.write
         fix = options["fix"]
         force = options["force"]
+        maxops = options["max_operations"]
+        if maxops is not None:
+            try:
+                maxops = int(maxops)
+            except ValueError:
+                m = "Expected integer max operations."
+                raise CommandError(m)
 
         users = options['users']
         if users is not None:
@@ -111,6 +121,7 @@ class Command(SynnefoCommand):
         except errors.AstakosClientException as e:
             raise CommandError(e)
 
+        qh_holdings = sorted(qh_holdings.items())
         resources = set(h[0] for h in handlers)
         dangerous = bool(resources.difference(DEFAULT_RESOURCES))
 
@@ -119,10 +130,10 @@ class Command(SynnefoCommand):
         viol_id = 0
         for resource, handle_resource, resource_type in handlers:
             if resource_type not in actions:
-                actions[resource_type] = {}
+                actions[resource_type] = OrderedDict()
             actual_resources = enforce.get_actual_resources(resource_type,
                                                             users)
-            for user, user_quota in qh_holdings.iteritems():
+            for user, user_quota in qh_holdings:
                 for source, source_quota in user_quota.iteritems():
                     try:
                         qh = util.transform_quotas(source_quota)
@@ -163,8 +174,8 @@ class Command(SynnefoCommand):
                     self.confirm()
                 write("Applying actions. Please wait...\n")
             title = "Applied Actions" if fix else "Suggested Actions"
-            log = enforce.perform_actions(actions, fix=fix)
-            headers = ("Type", "ID", "State", "Action", "Violation")
+            log = enforce.perform_actions(actions, maxops=maxops, fix=fix)
+            headers = ("Type", "ID", "State", "Backend", "Action", "Violation")
             if fix:
                 headers += ("Result",)
             pprint_table(self.stderr, log, headers,

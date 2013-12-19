@@ -39,7 +39,7 @@ from synnefo.management import pprint, common
 
 class Command(BaseCommand):
     help = "Inspect a subnet on DB and Ganeti."
-
+    args = "<Subnet ID>"
     option_list = BaseCommand.option_list
 
     def handle(self, *args, **options):

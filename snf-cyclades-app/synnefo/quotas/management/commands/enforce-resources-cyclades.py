@@ -58,6 +58,8 @@ class Command(SynnefoCommand):
         make_option("--users", dest="users",
                     help=("Enforce resources only for the specified list "
                           "of users, e.g uuid1,uuid2")),
+        make_option("--exclude-users",
+                    help=("Exclude list of users from resource enforcement")),
         make_option("--resources",
                     help="Specify resources to check, default: %s" %
                     ",".join(DEFAULT_RESOURCES)),
@@ -115,6 +117,9 @@ class Command(SynnefoCommand):
         if users is not None:
             users = users.split(',')
 
+        excluded = options['exclude_users']
+        excluded = set(excluded.split(',') if excluded is not None else [])
+
         handlers = self.get_handlers(options["resources"])
         try:
             qh_holdings = util.get_qh_users_holdings(users)
@@ -134,6 +139,8 @@ class Command(SynnefoCommand):
             actual_resources = enforce.get_actual_resources(resource_type,
                                                             users)
             for user, user_quota in qh_holdings:
+                if user in excluded:
+                    continue
                 for source, source_quota in user_quota.iteritems():
                     try:
                         qh = util.transform_quotas(source_quota)

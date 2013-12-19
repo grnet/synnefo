@@ -54,7 +54,8 @@ from synnefo_tools.burnin.logger import Log
 
 # --------------------------------------------------------------------
 # Global variables
-logger = None  # Invalid constant name. pylint: disable-msg=C0103
+logger = None   # Invalid constant name. pylint: disable-msg=C0103
+success = None  # Invalid constant name. pylint: disable-msg=C0103
 SNF_TEST_PREFIX = "snf-test-"
 CONNECTION_RETRY_LIMIT = 2
 SYSTEM_USERS = ["images@okeanos.grnet.gr", "images@demo.synnefo.org"]
@@ -194,6 +195,7 @@ class BurninTests(unittest.TestCase):
     flavors = None
     delete_stale = False
     temp_directory = None
+    failfast = None
 
     quotas = Proper(value=None)
 
@@ -231,6 +233,16 @@ class BurninTests(unittest.TestCase):
                   self.quotas['system']['cyclades.cpu']['usage'])
         self.info("  Network usage is %s",
                   self.quotas['system']['cyclades.network.private']['usage'])
+
+    def _run_tests(self, tcases):
+        """Run some generated testcases"""
+        global success  # Using global. pylint: disable-msg=C0103,W0603,W0602
+
+        for tcase in tcases:
+            self.info("Running testsuite %s", tcase.__name__)
+            success = run_test(tcase) and success
+            if self.failfast and not success:
+                break
 
     # ----------------------------------
     # Loggers helper functions
@@ -570,6 +582,7 @@ def initialize(opts, testsuites, stale_testsuites):
     BurninTests.images = opts.images
     BurninTests.delete_stale = opts.delete_stale
     BurninTests.temp_directory = opts.temp_directory
+    BurninTests.failfast = opts.failfast
     BurninTests.run_id = SNF_TEST_PREFIX + \
         datetime.datetime.strftime(curr_time, "%Y%m%d%H%M%S")
 
@@ -591,20 +604,28 @@ def initialize(opts, testsuites, stale_testsuites):
 # Run Burnin
 def run_burnin(testsuites, failfast=False):
     """Run burnin testsuites"""
-    global logger  # Using global. pylint: disable-msg=C0103,W0603,W0602
+    # Using global. pylint: disable-msg=C0103,W0603,W0602
+    global logger, success
 
     success = True
-    for tcase in testsuites:
-        was_success = run_test(tcase)
-        success = success and was_success
-        if failfast and not success:
-            break
+    run_tests(testsuites, failfast=failfast)
 
     # Clean up our logger
     del(logger)
 
     # Return
     return 0 if success else 1
+
+
+def run_tests(tcases, failfast=False):
+    """Run some testcases"""
+    global success  # Using global. pylint: disable-msg=C0103,W0603,W0602
+
+    for tcase in tcases:
+        was_success = run_test(tcase)
+        success = success and was_success
+        if failfast and not success:
+            break
 
 
 def run_test(tcase):
@@ -617,9 +638,9 @@ def run_test(tcase):
 
 # --------------------------------------------------------------------
 # Helper functions
-def was_successful(tsuite, success):
+def was_successful(tsuite, successful):
     """Handle whether a testsuite was succesful or not"""
-    if success:
+    if successful:
         logger.testsuite_success(tsuite)
         return True
     else:

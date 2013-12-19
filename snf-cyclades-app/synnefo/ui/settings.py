@@ -32,16 +32,25 @@
 # or implied, of GRNET S.A.
 #
 
+import logging
 import synnefo.cyclades_settings as cyclades
-from synnefo.cyclades_settings import cyclades_services
+
+from django.conf import settings
+from astakosclient import AstakosClient
+
+from synnefo import cyclades_settings
 
 from synnefo.lib import join_urls
 from synnefo.lib.services import get_public_endpoint as endpoint
 
 
+logger = logging.getLogger(__name__)
+
 BASE_PATH = cyclades.BASE_PATH
 if not BASE_PATH.startswith("/"):
     BASE_PATH = "/" + BASE_PATH
+
+cyclades_services = cyclades_settings.cyclades_services
 
 GLANCE_URL = endpoint(cyclades_services, 'image', 'v1.0').rstrip('/')
 COMPUTE_URL = endpoint(cyclades_services, 'compute', 'v2.0').rstrip('/')

@@ -284,7 +284,7 @@ class SimpleBackend(object):
         }
         code_params.update(kwargs)
         code_instance = self.code_model.create(**code_params)
-        logger.info('%r created' % code_instance)
+        logger.info(u'%r created' % code_instance)
         return code_instance
 
     def _token_params(self, value, token_type, authorization, scope):
@@ -311,7 +311,7 @@ class SimpleBackend(object):
             params['refresh_token'] = refresh_token
             # TODO: refresh token expires ???
         token = self.token_model.create(**params)
-        logger.info('%r created' % token)
+        logger.info(u'%r created' % token)
         return token
 
 #    def delete_authorization_code(self, code):

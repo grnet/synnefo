@@ -52,6 +52,7 @@ class ServerCreationTest(TransactionTestCase):
             "password": "1234",
             "flavor": flavor,
             "image": {"id": "foo", "backend_id": "foo", "format": "diskdump",
+                      "checksum": "test_checksum",
                       "metadata": "{}"},
             "networks": [],
             "metadata": {"foo": "bar"},
@@ -64,7 +65,7 @@ class ServerCreationTest(TransactionTestCase):
 
         mfactory.IPv4SubnetFactory(network__public=True)
         mfactory.IPv6SubnetFactory(network__public=True)
-        mfactory.BackendFactory()
+        backend = mfactory.BackendFactory()
 
         # error in nics
         req = deepcopy(kwargs)
@@ -81,6 +82,32 @@ class ServerCreationTest(TransactionTestCase):
         self.assertEqual(vm.operstate, "ERROR")
         for nic in vm.nics.all():
             self.assertEqual(nic.state, "ERROR")
+
+        # test ext settings:
+        req = deepcopy(kwargs)
+        ext_flavor = mfactory.FlavorFactory(disk_template="ext_archipelago",
+                                            disk=1)
+        req["flavor"] = ext_flavor
+        mrapi().CreateInstance.return_value = 42
+        backend.disk_templates = ["ext"]
+        backend.save()
+        osettings = {
+            "GANETI_DISK_PROVIDER_KWARGS": {
+                "archipelago": {
+                    "foo": "mpaz",
+                    "lala": "lolo"
+                }
+            }
+        }
+        with mocked_quotaholder():
+            with override_settings(settings, **osettings):
+                vm = servers.create(**req)
+        name, args, kwargs = mrapi().CreateInstance.mock_calls[-1]
+        self.assertEqual(kwargs["disks"][0], {"provider": "archipelago",
+                                              "origin": "test_checksum",
+                                              "foo": "mpaz",
+                                              "lala": "lolo",
+                                              "size": 1024})
 
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")

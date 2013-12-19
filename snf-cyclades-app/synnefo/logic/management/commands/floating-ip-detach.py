@@ -39,7 +39,7 @@ from synnefo.logic import servers
 
 
 class Command(BaseCommand):
-    help = "Dettach a floating IP from a VM or router"
+    help = "Detach a floating IP from a VM or router"
 
     @common.convert_api_faults
     def handle(self, *args, **options):
@@ -58,5 +58,5 @@ class Command(BaseCommand):
         nic = floating_ip.nic
         vm = nic.machine
         servers.delete_port(nic)
-        self.stdout.write("Dettached floating IP %s from  %s.\n"
+        self.stdout.write("Detached floating IP %s from  %s.\n"
                           % (floating_ip_id, vm))

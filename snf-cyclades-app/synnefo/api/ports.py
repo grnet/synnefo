@@ -85,6 +85,9 @@ def list_ports(request, detail=False):
 
     user_ports = NetworkInterface.objects.filter(userid=request.user_uniq)
 
+    if detail:
+        user_ports = user_ports.prefetch_related("ips")
+
     port_dicts = [port_to_dict(port, detail)
                   for port in user_ports.order_by('id')]
 
@@ -107,7 +110,11 @@ def create_port(request):
     port_dict = api.utils.get_attribute(req, "port")
     net_id = api.utils.get_attribute(port_dict, "network_id")
 
-    network = util.get_network(net_id, user_id, non_deleted=True)
+    device_id = api.utils.get_attribute(port_dict, "device_id", required=False)
+    vm = None
+    if device_id is not None:
+        vm = util.get_vm(device_id, user_id, for_update=True, non_deleted=True,
+                         non_suspended=True)
 
     # Check if the request contains a valid IPv4 address
     fixed_ips = api.utils.get_attribute(port_dict, "fixed_ips", required=False)
@@ -128,6 +135,9 @@ def create_port(request):
     else:
         fixed_ip_address = None
 
+    network = util.get_network(net_id, user_id, non_deleted=True,
+                               for_update=True)
+
     ipaddress = None
     if network.public:
         # Creating a port to a public network is only allowed if the user has
@@ -142,12 +152,6 @@ def create_port(request):
     elif fixed_ip_address:
         ipaddress = ips.allocate_ip(network, user_id,
                                     address=fixed_ip_address)
-
-    device_id = api.utils.get_attribute(port_dict, "device_id", required=False)
-    vm = None
-    if device_id is not None:
-        vm = util.get_vm(device_id, user_id, for_update=True, non_deleted=True,
-                         non_suspended=True)
 
     name = api.utils.get_attribute(port_dict, "name", required=False)
     if name is None:
@@ -165,7 +169,7 @@ def create_port(request):
             sg_list.append(sg)
 
     new_port = servers.create_port(user_id, network, use_ipaddress=ipaddress,
-                                   machine=vm)
+                                   machine=vm, name=name)
 
     response = render_port(request, port_to_dict(new_port), status=201)
 
@@ -245,15 +249,16 @@ def port_to_dict(port, detail=True):
         d['mac_address'] = port.mac
         d['status'] = port.state
         d['device_owner'] = port.device_owner
-        d['network_id'] = str(port.network.id)
+        d['network_id'] = str(port.network_id)
         d['updated'] = api.utils.isoformat(port.updated)
         d['created'] = api.utils.isoformat(port.created)
         d['fixed_ips'] = []
         for ip in port.ips.all():
             d['fixed_ips'].append({"ip_address": ip.address,
-                                   "subnet": str(ip.subnet.id)})
-        sg_list = list(port.security_groups.values_list('id', flat=True))
-        d['security_groups'] = map(str, sg_list)
+                                   "subnet": str(ip.subnet_id)})
+        # Avoid extra queries until security groups are implemented!
+        #sg_list = list(port.security_groups.values_list('id', flat=True))
+        d['security_groups'] = []
 
     return d
 

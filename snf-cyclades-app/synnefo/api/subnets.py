@@ -37,9 +37,10 @@ from snf_django.lib import api
 from django.conf.urls import patterns
 from django.http import HttpResponse
 from django.utils import simplejson as json
+from django.db.models import Q
 
 from snf_django.lib.api import utils
-#from synnefo.db.models import Subnet
+from synnefo.db.models import Subnet
 from synnefo.logic import subnets
 from synnefo.api import util
 
@@ -77,9 +78,17 @@ def subnet_demux(request, sub_id):
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def list_subnets(request):
     """List all subnets of a user"""
-    subnet_list = subnets.list_subnets(request.user_uniq)
-    subnets_dict = [subnet_to_dict(sub)
-                    for sub in subnet_list.order_by('id')]
+    userid = request.user_uniq
+    subnets_list = Subnet.objects.filter(Q(network__public=True) |
+                                         (Q(network__userid=userid) &
+                                          Q(network__public=False)))\
+                                 .order_by("id")
+    subnets_list = subnets_list.prefetch_related("ip_pools")\
+                               .select_related("network")
+    subnets_list = api.utils.filter_modified_since(request,
+                                                   objects=subnets_list)
+
+    subnets_dict = [subnet_to_dict(sub) for sub in subnets_list]
 
     data = json.dumps({'subnets': subnets_dict})
 
@@ -210,7 +219,7 @@ def subnet_to_dict(subnet):
 
     network = subnet.network
     d = {'id': str(subnet.id),
-         'network_id': str(network.id),
+         'network_id': str(subnet.network_id),
          'name': subnet.name if subnet.name is not None else "",
          'tenant_id': network.userid,
          'user_id': network.userid,

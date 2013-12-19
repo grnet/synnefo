@@ -295,7 +295,10 @@ class VirtualMachine(models.Model):
         'DESTROYED': 'DELETED',
     }
 
-    name = models.CharField('Virtual Machine Name', max_length=255)
+    VIRTUAL_MACHINE_NAME_LENGTH = 255
+
+    name = models.CharField('Virtual Machine Name',
+                            max_length=VIRTUAL_MACHINE_NAME_LENGTH)
     userid = models.CharField('User ID of the owner', max_length=100,
                               db_index=True, null=False)
     backend = models.ForeignKey(Backend, null=True,
@@ -619,6 +622,8 @@ class Subnet(models.Model):
                                   null=False)
     host_routes = fields.SeparatedValuesField('Host Routes', null=True)
     dns_nameservers = fields.SeparatedValuesField('DNS Nameservers', null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     def __unicode__(self):
         msg = u"<Subnet %s, Network: %s, CIDR: %s>"
@@ -738,7 +743,7 @@ class IPAddress(models.Model):
             return (not self.nic.machine.deleted)
 
     class Meta:
-        unique_together = ("network", "address")
+        unique_together = ("network", "address", "deleted")
 
     @property
     def ipversion(self):
@@ -796,9 +801,9 @@ class NetworkInterface(models.Model):
 
     NETWORK_IFACE_NAME_LENGTH = 128
 
-    name = models.CharField('NIC name', max_length=128, null=True, default="")
-    userid = models.CharField("UUID of the owner",
-                              max_length=NETWORK_IFACE_NAME_LENGTH,
+    name = models.CharField('NIC name', max_length=NETWORK_IFACE_NAME_LENGTH,
+                            null=True, default="")
+    userid = models.CharField("UUID of the owner", max_length=128,
                               null=False, db_index=True)
     machine = models.ForeignKey(VirtualMachine, related_name='nics',
                                 on_delete=models.PROTECT, null=True)

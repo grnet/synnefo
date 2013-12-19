@@ -121,6 +121,7 @@
                 "Code: " + this.code + "\n" + 
                 "Type: " + this.type + "\n" +
                 "Message: " + this.message + "\n" +
+                "API Message: " + this.api_message + "\n" +
                 "Module: " + this.ns + "\n" +
                 "Details: " + this.details + "\n\n" +
                 "Please describe the actions that triggered the error:\n"
@@ -128,9 +129,9 @@
             return fdb_msg;
         },
         
-        show_error: function(ns, code, message, type, details, error_options) {
+        show_error: function(ns, code, message, api_message, type, details, error_options) {
             
-            var error_entry = [ns, code, message, type, details, error_options];
+            var error_entry = [ns, code, message, api_message, type, details, error_options];
             var last_error_key = this.update_errors_stack(error_entry);
             
             if (!this.is_visible && !this.displaying_error) {
@@ -196,7 +197,9 @@
 
         display_error: function(stack_key) {
             var err = this.error_stack[stack_key];
-            var ns = err[0], code = err[1], message = err[2], type = err[3], details = err[4], error_options = err[5]
+            var ns = err[0], code = err[1], message = err[2];
+            var api_message = err[3], type = err[4];
+            var details = err[5], error_options = err[6];
 
             this.error_options = {'allow_report': true, 'allow_reload': true, 
                 'extra_details': {}, 'non_critical': false, 
@@ -212,7 +215,8 @@
             this.type = type;
             this.details = details ? (details.toString ? details.toString() : details) : undefined;
             this.message = message;
-            this.title = error_options.title || undefined;
+            this.api_message = api_message;
+            this.title = _.escape(error_options.title) || undefined;
 
             this.update_details();
             
@@ -244,7 +248,14 @@
             this.$(".error-code").text(this.code || "");
             this.$(".error-type").text(this.type || "");
             this.$(".error-module").text(this.ns || "");
-            this.$(".message p").text(this.message || "");
+            if (this.api_message) {
+              this.$(".message p").html($(
+                "<span>{0}</span><br /><span class='api-message'>{1}</span>".format(
+                _.escape(this.message), 
+                _.escape(this.api_message))));
+            } else {
+              this.$(".message p").text(this.message || "");
+            }
             this.$(".error-more-details p").html($("<pre />", {text:this.details}) || "no info");
 
             this.$(".extra-details").remove();

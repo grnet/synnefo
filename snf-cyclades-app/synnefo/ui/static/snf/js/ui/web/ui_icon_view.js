@@ -108,7 +108,7 @@
             // force logout if UNAUTHORIZED request arrives
             if (args.code == 401) { snf.ui.logout(); return };
             
-            var error_entry = [args.ns, args.code, args.message, args.type, args.details, args];
+            var error_entry = [args.ns, args.code, args.message, '', args.type, args.details, args];
             ui.main.error_view.show_error.apply(ui.main.error_view, error_entry);
         },
 
@@ -176,11 +176,10 @@
                 window.setTimeout(function() {$(self.view).trigger("resize")}, 300);
             }, this));
 
-
-            this.$(".stats-report").click(_.bind(function(e){
+            this.vm_view.find(".stats-report").click(_.bind(function(e){
                 e.preventDefault();
                 snf.ui.main.show_vm_details(this.vm);
-            }, this))
+            }, this)).attr("href", "#machines/single/details/{0}".format(this.vm.id));
         }
     
     })
@@ -654,6 +653,7 @@
         
         init_handlers: function() {
           this.resize_actions.bind('click', _.bind(function(e){
+              if (this.vm.in_error_state()) { return }
               ui.main.vm_resize_view.show(this.vm);
           }, this));
         },

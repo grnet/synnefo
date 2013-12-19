@@ -97,9 +97,11 @@ astakos_auth_proxy = \
 astakos_account_proxy = \
     partial(proxy, proxy_base=ASTAKOS_ACCOUNT_PROXY_PATH,
             target_base=ASTAKOS_ACCOUNT_URL)
+
+# ui views serve html content, redirect instead of proxing
 astakos_ui_proxy = \
     partial(proxy, proxy_base=ASTAKOS_UI_PROXY_PATH,
-            target_base=ASTAKOS_UI_URL)
+            target_base=ASTAKOS_UI_URL, redirect=True)
 
 urlpatterns += api_patterns(
     '',

@@ -617,8 +617,9 @@
                 }
                 
                 // not available for image
-                if (self.unavailable_values && self.unavailable_values.disk.indexOf(existing.get_disk_size()) > -1) {
-                    return false
+                if (self.unavailable_values && self.unavailable_values.disk.indexOf(
+                    existing.get("disk")) > -1) {
+                      return false
                 }
 
                 return key;
@@ -693,7 +694,7 @@
             var existing = storage.flavors.get_flavor(flv.get("cpu"), flv.get("ram"), flv.get("disk"), flv.get("disk_template"), this.flavors);
             if (!existing) { return false };
             
-            if (this.unavailable_values && (this.unavailable_values.disk.indexOf(parseInt(flv.get("disk")) * 1000) > -1)) {
+            if (this.unavailable_values && (this.unavailable_values.disk.indexOf(parseInt(flv.get("disk"))) > -1)) {
                 return false;
             }
             if (this.unavailable_values && (this.unavailable_values.ram.indexOf(parseInt(flv.get("ram"))) > -1)) {
@@ -750,7 +751,7 @@
             if (!this.unavailable_values) { return }
             
             this.$("#create-vm-flavor-options .flavor-options.disk li").each(_.bind(function(i, el){
-                var el_value = $(el).data("value") * 1000;
+                var el_value = $(el).data("value");
                 if (this.unavailable_values.disk.indexOf(el_value) > -1) {
                     $(el).addClass("disabled");
                     $(el).removeClass("selected");
@@ -1253,13 +1254,6 @@
             this.selected_keys = [];
 
             var self = this;
-            this.$(".create-ssh-key").click(function() {
-                var confirm_close = true;
-                if (confirm_close) {
-                    snf.ui.main.public_keys_view.show(self.parent);
-                } else {
-                }
-            });
         },
 
         init_suggested_roles: function() {

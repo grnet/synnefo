@@ -552,13 +552,12 @@
         },
 
         _supports_ssh: function() {
-            if (synnefo.config.support_ssh_os_list.indexOf(this.get_os()) > -1) {
-                return true;
+            var exclude_list = synnefo.config.ssh_support_osfamily_exclude_list || [];
+            var os = this.get_os();
+            if (exclude_list.indexOf(os) > -1) {
+                return false;
             }
-            if (this.get_meta('osfamily') == 'linux') {
-              return true;
-            }
-            return false;
+            return true;
         },
 
         supports: function(feature) {
@@ -1433,7 +1432,9 @@
           this.call('firewallProfile', success, error, data);
         },
 
-        connect_floating_ip: function(ip, cb) {
+        connect_floating_ip: function(ip, cb, error) {
+          var self = this;
+          var from_status = this.get('status');
           this.set({'status': 'CONNECTING'});
           synnefo.storage.ports.create({
             port: {
@@ -1441,7 +1442,11 @@
               device_id: this.id,
               fixed_ips: [{'ip_address': ip.get('floating_ip_address')}]
             }
-          }, {complete: cb, skip_api_error: false})
+          }, {
+            success: cb, 
+            error: function() { error && error() },
+            skip_api_error: false
+          });
         },
 
         // action helper
@@ -1629,7 +1634,7 @@
                 ip_address: this.get_hostname(),
                 hostname: this.get_hostname(),
                 os: this.get_os(),
-                host_os: 'windows',
+                host_os: host_os,
                 ports: JSON.stringify(this.get('SNF:port_forwarding') || {}),
                 srv: this.id
             }
@@ -1955,7 +1960,7 @@
                 if (index.disk.indexOf(disk_size) == -1) {
                   var disk = el.disk_to_bytes();
                   if (disk > disk_available) {
-                    index.disk.push(disk_size);
+                    index.disk.push(el.get('disk'));
                   }
                 }
                 
@@ -1989,8 +1994,8 @@
                 var img_size = size;
                 var flv_size = el.get_disk_size();
                 if (flv_size < img_size) {
-                    if (index.disk.indexOf(flv_size) == -1) {
-                        index.disk.push(flv_size);
+                    if (index.disk.indexOf(el.get("disk")) == -1) {
+                        index.disk.push(el.get("disk"));
                     }
                 };
             });
@@ -2053,6 +2058,7 @@
         },
 
         parse_vm_api_data: function(data) {
+            var status;
             // do not add non existing DELETED entries
             if (data.status && data.status == "DELETED") {
                 if (!this.get(data.id)) {
@@ -2062,9 +2068,15 @@
             
             if ('SNF:task_state' in data) { 
                 data['task_state'] = data['SNF:task_state'];
+                // Update machine state based on task_state value
+                // Do not apply task_state logic when machine is in ERROR state.
+                // In that case only update from task_state only if equals to
+                // DESTROY
                 if (data['task_state']) {
-                    var status = models.VM.TASK_STATE_STATUS_MAP[data['task_state']];
-                    if (status) { data['status'] = status }
+                    if (data['status'] != 'ERROR' && data['task_state'] != 'DESTROY') {
+                      status = models.VM.TASK_STATE_STATUS_MAP[data['task_state']];
+                      if (status) { data['status'] = status }
+                    }
                 }
             }
 

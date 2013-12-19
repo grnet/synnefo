@@ -218,11 +218,10 @@ def get_server_public_ip(vm_nics, version=4):
 
     NOTE: 'vm_nics' objects have prefetched the ips
     """
-    for version in [4, 6]:
-        for nic in vm_nics:
-            for ip in nic.ips.all():
-                if ip.ipversion == version and ip.public:
-                    return ip
+    for nic in vm_nics:
+        for ip in nic.ips.all():
+            if ip.ipversion == version and ip.public:
+                return ip
     return None
 
 

@@ -15,7 +15,7 @@ internet)
 
 Currently there are four available Networks Flavors:
 
-* IP_ONLY: A Layer-3 network where host routes traffic to the external network.
+* IP_LESS_ROUTED: A Layer-3 network where host routes traffic to the external network.
 * PHYSICAL_VLAN: A Layer-2 network where a physical VLAN is assigned to the
   network.
 * MAC_FILTERED: A Layer-2 network. All networks of this type share the same

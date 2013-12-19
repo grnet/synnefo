@@ -642,8 +642,8 @@ image to Cyclades:
 
 .. code-block:: console
 
- $ kamaki image register "Debian Base" \
-        pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump \
+ $ kamaki image register --name="Debian Base" \
+        --location=pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump \
         --public \
         --disk-format=diskdump \
         --property OSFAMILY=linux --property ROOT_PARTITION=1 \
@@ -1660,10 +1660,8 @@ To change a setting use ``kamaki config set``:
 
 .. code-block:: console
 
-   $ kamaki config set image.url https://cyclades.example.com/image
-   $ kamaki config set file.url https://pithos.example.com/v1
-   $ kamaki config set user.url https://accounts.example.com
-   $ kamaki config set token ...
+   $ kamaki config set cloud.default.url https://example.com/identity/v2.0
+   $ kamaki config set cloud.default.token ...
 
 To test that everything works, try authenticating the current account with
 kamaki:
@@ -1682,27 +1680,27 @@ container exists, by listing all containers in your account:
 
 .. code-block:: console
 
-   $ kamaki file list
+   $ kamaki file list /images
 
 If the container ``images`` does not exist, create it:
 
 .. code-block:: console
 
-  $ kamaki file create images
+  $ kamaki container create images
 
 You are now ready to upload an image to container ``images``. You can upload it
 with a Pithos client, or use kamaki directly:
 
 .. code-block:: console
 
-   $ kamaki file upload ubuntu.iso images
+   $ kamaki file upload ubuntu.iso /images
 
 You can use any Pithos client to verify that the image was uploaded correctly,
 or you can list the contents of the container with kamaki:
 
 .. code-block:: console
 
-  $ kamaki file list images
+  $ kamaki file list /images
 
 The full Pithos URL for the previous example will be
 ``pithos://u53r-un1qu3-1d/images/ubuntu.iso`` where ``u53r-un1qu3-1d`` is the
@@ -1711,12 +1709,12 @@ unique user id (uuid).
 Register Image
 --------------
 
-To register an image you will need to use the full Pithos URL. To register as
-a public image the one from the previous example use:
+To register an image you will need to use the full or the relative Pithos URL.
+To register as a public image the one from the previous example use:
 
 .. code-block:: console
 
-   $ kamaki image register Ubuntu pithos://u53r-un1qu3-1d/images/ubuntu.iso --public
+   $ kamaki image register --name=Ubuntu --location=/images/ubuntu.iso --public
 
 The ``--public`` flag is important, if missing the registered image will not
 be listed by ``kamaki image list``.
@@ -1726,14 +1724,14 @@ options. A more complete example would be the following:
 
 .. code-block:: console
 
-   $ kamaki image register Ubuntu pithos://u53r-un1qu3-1d/images/ubuntu.iso \
+   $ kamaki image register --name Ubuntu --location /images/ubuntu.iso \
             --public --disk-format diskdump --property kernel=3.1.2
 
 To verify that the image was registered successfully use:
 
 .. code-block:: console
 
-   $ kamaki image list --name-like=ubuntu
+   $ kamaki image list --name-like ubuntu
 
 
 Miscellaneous
@@ -1891,7 +1889,7 @@ feasible.
 
 The output of all email `*`.txt files will be already customized to contain your
 company and service names but you can further alter their content if you feel it
-best fits your needs as simple as creasynnefo template.
+best fits your needs.
 
 In order to overwrite one or more email-templates you need to place your
 modified <email-file>.txt files respecting the following structure:
@@ -1976,6 +1974,71 @@ description and a link to their content:
   information contained in django template variables that must not be omitted,
   such as the activation link for activating one’s account and many more.
   These variables are contained into {{}} inside the templates.
+
+**Astakos landing page**
+
+Astakos generates sensible default values used to display component-
+specific details in several places across views (dashboard, cloudbar
+etc.). One of these places is Astakos landing page where Synnefo components are
+featured.
+
+In case those values doesn't seem to suit your deployment, Astakos allows
+you to override any of them using ``ASTAKOS_COMPONENTS_META`` setting
+in your ``/etc/synnefo/20-snf-astakos-app-settings.conf`` configuration file.
+
+So, for example if you want to add your own image for Astakos service and in the
+same time hide Cyclades service from Astakos landing page you can
+add the following line to your configuration file:
+
+.. code-block:: python
+
+  ASTAKOS_COMPONENTS_META = {
+    'astakos': {
+      'dashboard': {
+        'icon': '<path-to-your-icon>'
+      }
+    },
+    'cyclades': {
+      'dashboard': {
+        'show': False
+      }
+    }
+  }
+
+A complete list of available keys is shown below:
+
+.. code-block:: python
+
+  '<component-name>' = {
+    'order': 1,
+    'dashboard': {
+      'order': 1,
+      'show': True,
+      'description': '<component-description>',
+      'icon': '<component-icon-path>',
+    },
+    'cloudbar': {
+      'show': True
+    }
+  }
+
+
+**403, 404 and 500 pages**
+
+Feel free to add your own 403 (HTTP Forbidden), 404 (Page not found) and
+500 (server error) pages.
+To override the default Synnefo error views, you must write and include any of
+the files 403.html, 404.html and 500.html in your
+**/etc/synnefo/templates/** directory.
+
+Their content is up to you, but you may use as guides the default error pages
+found in:
+
+  **/synnefo/snf-webproject/synnefo/webproject/templates/**
+    | 403.html
+    | 404.html
+    | 500.html
+
 
 
 .. RabbitMQ

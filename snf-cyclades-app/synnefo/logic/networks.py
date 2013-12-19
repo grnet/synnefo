@@ -42,6 +42,7 @@ from synnefo.db.models import Network, Backend
 from synnefo.db.utils import validate_mac
 from synnefo.db.pools import EmptyPool
 from synnefo.logic import backend as backend_mod
+from synnefo.logic import utils
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -76,6 +77,9 @@ def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
     if link is not None and flavor == "PHYSICAL_VLAN":
         raise faults.BadRequest("Cannot override PHYSICAL_VLAN link")
 
+    utils.check_name_length(name, Network.NETWORK_NAME_LENGTH, "Network name "
+                            "is too long")
+
     try:
         fmode, flink, fmac_prefix, ftags = util.values_from_flavor(flavor)
     except EmptyPool:
@@ -90,6 +94,12 @@ def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
     tags = tags or ftags
 
     validate_mac(mac_prefix + "0:00:00:00")
+
+    # Check that given link is unique!
+    if (link is not None and flavor == "IP_LESS_ROUTED" and
+       Network.objects.filter(deleted=False, mode=mode, link=link).exists()):
+        msg = "Link '%s' is already used." % link
+        raise faults.BadRequest(msg)
 
     network = Network.objects.create(
         name=name,
@@ -109,11 +119,6 @@ def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
     if link is None:
         network.link = "%slink-%d" % (settings.BACKEND_PREFIX_ID, network.id)
         network.save()
-
-    if (flavor == "IP_LESS_ROUTED" and
-       Network.objects.filter(deleted=False, mode=mode, link=link).exists()):
-        msg = "Link '%s' is already used." % link
-        raise faults.BadRequest(msg)
 
     # Issue commission to Quotaholder and accept it since at the end of
     # this transaction the Network object will be created in the DB.

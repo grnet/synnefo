@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import logging
+
 from django.conf import settings
 from synnefo.lib import join_urls, parse_base_url
 from synnefo.util.keypath import get_path, set_path
@@ -40,6 +42,8 @@ from astakosclient import AstakosClient
 
 from copy import deepcopy
 
+
+logger = logging.getLogger(__name__)
 
 # --------------------------------------------------------------------
 # Process Cyclades settings
@@ -77,6 +81,8 @@ ASTAKOS_AUTH_URL = getattr(
 
 # --------------------------------------
 # Define a LazyAstakosUrl
+# This is used to define ASTAKOS_ACCOUNT_URL and
+# ASTAKOS_UI_URL and should never be used as is.
 class LazyAstakosUrl(object):
     def __init__(self, endpoints_name):
         self.endpoints_name = endpoints_name
@@ -87,12 +93,18 @@ class LazyAstakosUrl(object):
                 astakos_client = \
                     AstakosClient(SERVICE_TOKEN, ASTAKOS_AUTH_URL)
                 self.str = getattr(astakos_client, self.endpoints_name)
-            except:
-                return None
+            except Exception as excpt:
+                logger.exception(
+                    "Could not retrieve endpoints from Astakos url %s: %s",
+                    ASTAKOS_AUTH_URL, excpt)
+                return ""
         return self.str
 
 # --------------------------------------
 # Define ASTAKOS_UI_URL and ASTAKOS_ACCOUNT_URL as LazyAstakosUrl
+# These are used to define the proxy paths.
+# These have to be resolved lazily (by the proxy function) so
+# they should not be used as is.
 ASTAKOS_ACCOUNT_URL = LazyAstakosUrl('account_url')
 ASTAKOS_UI_URL = LazyAstakosUrl('ui_url')
 

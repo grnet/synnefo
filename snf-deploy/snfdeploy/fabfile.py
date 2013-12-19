@@ -616,9 +616,9 @@ def astakos_register_pithos_view():
     pithos_base_url = "https://%s/pithos" % env.env.pithos.fqdn
 
     cmd = """
-    snf-manage oauth2-client-add pithos-view --secret=12345 --is-trusted \
-    --url {0}
-    """.format('%s/ui/view' % pithos_base_url)
+    snf-manage oauth2-client-add pithos-view --secret={0} --is-trusted \
+    --url {1}
+    """.format(env.env.oa2_secret, '%s/ui/view' % pithos_base_url)
     try_run(cmd)
 
 
@@ -865,6 +865,7 @@ def setup_pithos():
         "synnefo_db_passwd": env.env.synnefo_db_passwd,
         "pithos_dir": env.env.pithos_dir,
         "PITHOS_SERVICE_TOKEN": service_token,
+        "oa2_secret": env.env.oa2_secret,
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
     try_put(custom, tmpl, mode=0644)
@@ -1442,10 +1443,11 @@ def register_image(image="debian_base.diskdump"):
     #     uid, user_auth_token, user_uuid = \
     #        get_auth_token_from_db(env.env.user_email)
 
-    image_location = "images:{0}".format(image)
+    image_location = "/images/{0}".format(image)
     cmd = """
     sleep 5
-    kamaki image register "Debian Base" {0} --public --disk-format=diskdump \
+    kamaki image register --name="Debian Base" --location={0} --public \
+            --disk-format=diskdump \
             --property OSFAMILY=linux --property ROOT_PARTITION=1 \
             --property description="Debian Squeeze Base System" \
             --property size=450M --property kernel=2.6.32 \

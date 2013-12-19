@@ -369,13 +369,13 @@ def parse_options():
     # virtual cluster related options
     parser.add_argument("--mem", dest="mem",
                         default=2024,
-                        help="Memory for every virutal node")
+                        help="Memory for every virtual node")
     parser.add_argument("--smp", dest="smp",
                         default=1,
                         help="Virtual CPUs for every virtual node")
     parser.add_argument("--vnc", dest="vnc",
                         default=False, action="store_true",
-                        help="Wheter virtual nodes will have a vnc "
+                        help="Whether virtual nodes will have a vnc "
                              "console or not")
     parser.add_argument("--force", dest="force",
                         default=False, action="store_true",

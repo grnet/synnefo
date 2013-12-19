@@ -85,13 +85,16 @@ def instance_from_msg(func):
         try:
             vm_id = utils.id_from_instance_name(msg["instance"])
             vm = VirtualMachine.objects.select_for_update().get(id=vm_id)
+            if vm.deleted:
+                log.debug("Ignoring message for deleted instance '%s'", vm)
+                return
             func(vm, msg)
         except VirtualMachine.InvalidBackendIdError:
             log.debug("Ignoring msg for unknown instance %s.", msg['instance'])
         except VirtualMachine.DoesNotExist:
             log.error("VM for instance %s with id %d not found in DB.",
                       msg['instance'], vm_id)
-        except (Network.InvalidBackendIdError, Network.DoesNotExist) as e:
+        except (Network.InvalidBackendIdError, Network.DoesNotExist):
             log.error("Invalid message, can not find network. msg: %s", msg)
     return wrapper
 
@@ -106,6 +109,9 @@ def network_from_msg(func):
         try:
             network_id = utils.id_from_network_name(msg["network"])
             network = Network.objects.select_for_update().get(id=network_id)
+            if network.deleted:
+                log.debug("Ignoring message for deleted network '%s'", network)
+                return
             backend = Backend.objects.get(clustername=msg['cluster'])
             bnet, new = BackendNetwork.objects.get_or_create(network=network,
                                                              backend=backend)
@@ -314,8 +320,11 @@ def update_build_progress(vm, msg, event_time):
 @handle_message_delivery
 @transaction.commit_on_success()
 def update_cluster(msg):
+    operation = msg.get("operation")
     clustername = msg.get("cluster")
     if clustername is None:
+        return
+    if operation != "OP_CLUSTER_SET_PARAMS":
         return
     backend = Backend.objects.select_for_update().get(clustername=clustername)
     backend_mod.update_backend_disk_templates(backend)

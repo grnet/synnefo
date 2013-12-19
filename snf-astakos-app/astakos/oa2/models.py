@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 import datetime
-import urlparse
 
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
@@ -87,15 +86,12 @@ class Client(models.Model):
         return self.redirecturl_set.get().url
 
     def redirect_uri_is_valid(self, uri):
-        # ignore user specific uri part
-        parts = list(urlparse.urlsplit(uri))
-        path = parts[2]
-        pieces = path.rsplit('/', 3)
-        parts[2] = '/'.join(pieces[:-3]) if len(pieces) > 3 else path
-        uri = urlparse.urlunsplit(parts)
-
-        # TODO: handle trailing slashes
-        return self.redirecturl_set.filter(url=uri).count() > 0
+        for redirect_uri in self.redirecturl_set.values_list('url', flat=True):
+            if uri == redirect_uri:
+                return True
+            elif uri.startswith(redirect_uri.rstrip('/') + '/'):
+                return True
+        return False
 
     def get_id(self):
         return self.identifier
@@ -124,7 +120,7 @@ class AuthorizationCode(models.Model):
 
     def __repr__(self):
         return ("Authorization code: %s "
-                "(user: %s, client: %s, redirect_uri: %s, scope: %s)" % (
+                "(user: %r, client: %r, redirect_uri: %r, scope: %r)" % (
                     self.code,
                     self.user.log_display,
                     self.client.get_id(),
@@ -152,7 +148,7 @@ class Token(models.Model):
     state = models.TextField(null=True, default=None)
 
     def __repr__(self):
-        return ("Token: %s (token_type: %s, grant_type: %s, "
-                "user: %s, client: %s, scope: %s)" % (
+        return ("Token: %r (token_type: %r, grant_type: %r, "
+                "user: %r, client: %r, scope: %r)" % (
                     self.code, self.token_type, self.grant_type,
                     self.user.log_display, self.client.get_id(), self.scope))

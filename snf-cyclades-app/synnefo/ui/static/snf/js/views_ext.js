@@ -245,10 +245,10 @@
         var available = this.quota.get_available();
         if (available > 0) {
           this.create_button.removeClass("disabled");
-          this.create_button.attr("title", this.quota_limit_message || "Quota limit reached")
+          this.create_button.attr("title", "");
         } else {
           this.create_button.addClass("disabled");
-          this.create_button.attr("title", "");
+          this.create_button.attr("title", this.quota_limit_message || "Quota limit reached")
         }
       },
       

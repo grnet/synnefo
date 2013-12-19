@@ -21,7 +21,17 @@
     
     // Neutron base model, extending existing synnefo model
     models.NetworkModel = snfmodels.Model.extend({
-      api_type: 'network'
+      api_type: 'network',
+      toJSON: function() {
+        var res = {};
+        _.each(this.attributes, function(attr, key) {
+          if (attr instanceof bb.Collection) {
+            attr = "[Collection object]";
+          }
+          res[key] = attr;
+        });
+        return res;
+      }
     });
     
     // Neutron base collection, common neutron collection params are shared
@@ -278,11 +288,24 @@
       path: 'networks',
       details: true,
       parse: function(resp) {
+        var data = _.map(resp.networks, function(net) {
+          if (!net.name) {
+            net.name = '(no name set)';
+          }
+          return net
+        })
         return resp.networks
       },
 
       get_floating_ips_network: function() {
         return this.filter(function(n) { return n.get('is_public')})[1]
+      },
+      
+      create_subnet: function(subnet_params, complete, error) {
+        synnefo.storage.subnets.create(subnet_params, {
+          complete: function () { complete && complete() },
+          error: function() { error && error() }
+        });
       },
 
       create: function (name, type, cidr, dhcp, callback) {
@@ -300,20 +323,27 @@
           callback && callback();
         }
         
-        var complete = function() {};
+        var complete = function() {
+          if (!create_subnet) { cb && cb() }
+        };
         var error = function() { cb() };
-        // on network create success, try to create the requested 
-        // network subnet
+        var create_subnet = !!cidr;
+        
+        // on network create success, try to create the requested network 
+        // subnet.
+        var self = this;
         var success = function(resp) {
           var network = resp.network;
-          subnet_params.subnet.network_id = network.id;
-          synnefo.storage.subnets.create(subnet_params, {
-            complete: function () { cb && cb() },
-            error: function() {
-              var created_network = new synnefo.models.networks.Network({id: network.id});
+          if (create_subnet) {
+            subnet_params.subnet.network_id = network.id;
+            self.create_subnet(subnet_params, cb, function() {
+              // rollback network creation
+              var created_network = new synnefo.models.networks.Network({
+                id: network.id
+              });
               created_network.destroy({no_skip: true});
-            }
-          });
+            });
+          }
           quota.get('cyclades.network.private').increase();
         }
         return this.api_call(this.path, "create", params, complete, error, success);
@@ -376,6 +406,7 @@
           if (!synnefo.config.hotplug_enabled && this.get('vm') && vm_active) {
             return false;
           }
+          if (this.get('device_id'))
           var status_ok = _.contains(['DOWN', 'ACTIVE', 'CONNECTED'], 
                                      this.get('status'));
           var vm_status_ok = this.get('vm') && this.get('vm').can_connect();
@@ -477,7 +508,7 @@
 
       model_actions: {
         'remove': [['status'], function() {
-          var status_ok = _.contains(['DISCONNECTED'], this.get('status'))
+          var status_ok = _.contains(['DISCONNECTED'], this.get('status'));
           return status_ok
         }],
         'connect': [['status'], function() {
@@ -487,6 +518,9 @@
         'disconnect': [['status', 'port_id', 'port'], function() {
           var port = this.get('port');
           if (!port) { return false }
+
+          // not connected to a device
+          if (port && !port.get('device_id')) { return true }
           return port.get('can_disconnect');
         }]
       },

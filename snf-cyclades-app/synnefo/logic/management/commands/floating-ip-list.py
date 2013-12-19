@@ -59,9 +59,11 @@ class Command(ListCommand):
         "user.uuid": ("userid", "The UUID of the server's owner"),
         "address": ("address", "IP Address"),
         "network": ("network_id", "Network ID"),
+        "port": ("nic_id", "Port ID"),
         "server": (get_server, "Server using this Floating IP"),
         "created": ("created", "Datetime this IP was reserved"),
         "deleted": ("deleted", "If the floating IP is deleted"),
     }
 
-    fields = ["id", "address", "network", "user.uuid", "server", "created"]
+    fields = ["id", "address", "network", "server", "port", "user.uuid",
+              "created"]

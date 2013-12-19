@@ -97,7 +97,7 @@ def ip_to_dict(floating_ip):
             "id": str(floating_ip.id),
             "instance_id": str(machine_id) if machine_id else None,
             "floating_ip_address": floating_ip.address,
-            "port_id": str(floating_ip.nic.id) if port_id else None,
+            "port_id": str(port_id) if port_id else None,
             "floating_network_id": str(floating_ip.network_id)}
 
 

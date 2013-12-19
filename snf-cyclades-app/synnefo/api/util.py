@@ -222,7 +222,7 @@ def get_network(network_id, user_id, for_update=False, non_deleted=False):
 
     try:
         network_id = int(network_id)
-        objects = Network.objects.prefetch_related("subnets")
+        objects = Network.objects
         if for_update:
             objects = objects.select_for_update()
         network = objects.get(Q(userid=user_id) | Q(public=True),

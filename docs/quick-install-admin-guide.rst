@@ -1365,42 +1365,32 @@ Ganeti nodes:
 It's time to install Ganeti. To be able to use hotplug (which will be part of
 the official Ganeti 2.10), we recommend using our Ganeti package version:
 
-``2.8.2+snapshot1+b64v1+kvmopts1+extfix1+hotplug5+lockfix3+ippoolfix+rapifix+netxen-1~wheezy``
+``2.8.3+snap1+b64v1+kvm1+ext1+lockfix1+ipfix1+backports1-1~wheezy``
 
-Let's briefly explain each patch:
+Let's briefly explain each patch set:
 
-    * hotplug: hotplug devices (NICs and Disks) (ganeti 2.10).
-    * b64v1: Save bitarray of network IP pools in config file, encoded in
-      base64, instead of 0/1.
-    * ippoolfix: Ability to give an externally reserved IP to an instance (e.g.
-      gateway IP)  (ganeti 2.10).
-    * kvmopts: Export disk geometry to kvm command and add migration
-      capabilities.
-    * extfix: Includes:
+    * snap adds snapshot support for ext disk template
+    * b64 saves networks' bitarrays in a more compact representation
+    * kvm exports disk geometry to kvm command and adds migration capabilities
+    * ext
 
-      * exports logical id in hooks.
-      * adds better arbitrary params support (modification, deletion).
-      * cache, heads, cyls arbitrary params reach kvm command.
+      * exports logical id in hooks
+      * allows cache, heads, cyls arbitrary params to reach kvm command
 
-    * rapifix: Extend RAPI το support 'depends' and 'shutdown_timeout' body
-      arguments. (ganeti 2.9).
-    * netxen: Network configuration for xen instances, exactly like in kvm
-      instances. (ganeti 2.9).
-    * lockfix2: Fixes for 2 locking issues:
+    * lockfix is a workaround for Issue #621
+    * ipfix does not require IP if mode is routed (needed for IPv6 only NICs)
+    * backports is a set of patches backported from stable-2.10
 
-      * Issue 622: Fix for opportunistic locking that caused an assertion
-        error (Patch waiting in ganeti-devel list).
-      * Issue 621: Fix for network locking issue that resulted in: [Lock
-        'XXXXXX' not found in set 'instance' (it may have been removed)].
-
-    * snapshot: Add trivial 'snapshot' functionality that is unused by Synnefo
-      or Ganeti.
+      * Hotplug support
+      * Better networking support (NIC configuration scripts)
+      * Change IP pool to support NAT instances
+      * Change RAPI to accept depends body argument and shutdown_timeout
 
 To install Ganeti run:
 
 .. code-block:: console
 
-   # apt-get install snf-ganeti ganeti-htools ganeti-haskell
+   # apt-get install snf-ganeti ganeti-htools ganeti-haskell ganeti2
 
 Ganeti will make use of drbd. To enable this and make the configuration
 permanent you have to do the following :
@@ -2294,6 +2284,95 @@ though you may already have uploaded an Image on Pithos from a :ref:`previous
 We will use the `kamaki <http://www.synnefo.org/docs/kamaki/latest/index.html>`_
 command line client to do the uploading and registering of the Image.
 
+Installation of `kamaki`
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+You can install `kamaki` anywhere you like, since it is a standalone client of
+the APIs and talks to the installation over `http`. For the purpose of this
+guide we will assume that we have downloaded the `Debian Squeeze Base Image
+<https://pithos.okeanos.grnet.gr/public/9epgb>`_ and stored it under node1's
+``/srv/images`` directory. For that reason we will install `kamaki` on node1,
+too. We do this by running:
+
+.. code-block:: console
+
+   # apt-get install kamaki
+
+Configuration of kamaki
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Now we need to setup kamaki, by adding the appropriate URLs and tokens of our
+installation. We do this by running:
+
+.. code-block:: console
+
+   $ kamaki config set cloud.default.url \
+       "https://node1.example.com/astakos/identity/v2.0"
+   $ kamaki config set cloud.default.token USER_TOKEN
+
+Both the Authentication URL and the USER_TOKEN appear on the user's
+`API access` web page on the Astakos Web UI.
+
+You can see that the new configuration options have been applied correctly,
+either by checking the editable file ``~/.kamakirc`` or by running:
+
+.. code-block:: console
+
+   $ kamaki config list
+
+A quick test to check that kamaki is configured correctly, is to try to
+authenticate a user based on his/her token (in this case the user is you):
+
+.. code-block:: console
+
+  $ kamaki user authenticate
+
+The above operation provides various user information, e.g. UUID (the unique
+user id) which might prove useful in some operations.
+
+Upload an Image file to Pithos
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Now, that we have set up `kamaki` we will upload the Image that we have
+downloaded and stored under ``/srv/images/``. Although we can upload the Image
+under the root ``Pithos`` container (as you may have done when uploading the
+Image from the Pithos Web UI), we will create a new container called ``images``
+and store the Image under that container. We do this for two reasons:
+
+a) To demonstrate how to create containers other than the default ``Pithos``.
+   This can be done only with the `kamaki` client and not through the Web UI.
+
+b) As a best organization practise, so that you won't have your Image files
+   tangled along with all your other Pithos files and directory structures.
+
+We create the new ``images`` container by running:
+
+.. code-block:: console
+
+   $ kamaki container create images
+
+To check if the container has been created, list all containers of your
+account:
+
+.. code-block:: console
+
+  $ kamaki file list /images
+
+Then, we upload the Image file to that container:
+
+.. code-block:: console
+
+   $ kamaki file upload /srv/images/debian_base-6.0-7-x86_64.diskdump /images
+
+The first is the local path and the second is the remote container on Pithos.
+Check if the file has been uploaded, by listing the container contents:
+
+.. code-block:: console
+
+  $ kamaki file list /images
+
+Alternatively check if the new container and file appear on the Pithos Web UI.
+
 Register an existing Image file to Cyclades
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2306,8 +2385,14 @@ it to Cyclades, by running:
 
 .. code-block:: console
 
-   $ kamaki image register "Debian Base" pithos:debian_base-6.0-x86_64 \
-     --metafile debian_base-6.0-x86_64.diskdump.meta --public
+   $ kamaki image register --name "Debian Base" \
+                           --location /images/debian_base-6.0-11-x86_64.diskdump \
+                           --public \
+                           --disk-format=diskdump \
+                           --property OSFAMILY=linux --property ROOT_PARTITION=1 \
+                           --property description="Debian Squeeze Base System" \
+                           --property size=451 --property kernel=2.6.32 --property GUI="No GUI" \
+                           --property sortorder=1 --property USERS=root --property OS=debian
 
 This command registers a Pithos file as an Image in Cyclades. This Image will
 be public (``--public``), so all users will be able to spawn VMs from it.

@@ -201,7 +201,13 @@ def delete_floating_ip(floating_ip):
     if floating_ip.nic:
         # This is safe, you also need for_update to attach floating IP to
         # instance.
-        msg = "Floating IP '%s' is attached to instance." % floating_ip.id
+        server = floating_ip.nic.machine
+        if server is None:
+            msg = ("Floating IP '%s' is used by port '%s'" %
+                   (floating_ip.id, floating_ip.nic_id))
+        else:
+            msg = ("Floating IP '%s' is used by server '%s'" %
+                   (floating_ip.id, floating_ip.nic.machine_id))
         raise faults.Conflict(msg)
 
     # Lock network to prevent deadlock

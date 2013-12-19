@@ -356,18 +356,19 @@ class CycladesTests(BurninTests):
         d_image = self.clients.cyclades.get_image_details(image['id'])
         return d_image['metadata']['osfamily'].lower().find(osfamily) >= 0
 
+    # Method could be a function. pylint: disable-msg=R0201
     def _ssh_execute(self, hostip, username, password, command):
         """Execute a command via ssh"""
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
             ssh.connect(hostip, username=username, password=password)
-        except socket.error as err:
-            self.fail(err)
-        try:
-            _, stdout, _ = ssh.exec_command(command)
         except paramiko.SSHException as err:
-            self.fail(err)
+            if err.args[0] == "Error reading SSH protocol banner":
+                raise Retry()
+            else:
+                raise
+        _, stdout, _ = ssh.exec_command(command)
         status = stdout.channel.recv_exit_status()
         output = stdout.readlines()
         ssh.close()

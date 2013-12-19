@@ -643,7 +643,7 @@ image to Cyclades:
 .. code-block:: console
 
  $ kamaki image register --name="Debian Base" \
-        --location="pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump" \
+        --location=pithos://u53r-un1qu3-1d/images/debian_base-6.0-7-x86_64.diskdump \
         --public \
         --disk-format=diskdump \
         --property OSFAMILY=linux --property ROOT_PARTITION=1 \
@@ -1889,7 +1889,7 @@ feasible.
 
 The output of all email `*`.txt files will be already customized to contain your
 company and service names but you can further alter their content if you feel it
-best fits your needs as simple as creasynnefo template.
+best fits your needs.
 
 In order to overwrite one or more email-templates you need to place your
 modified <email-file>.txt files respecting the following structure:
@@ -1974,6 +1974,71 @@ description and a link to their content:
   information contained in django template variables that must not be omitted,
   such as the activation link for activating one’s account and many more.
   These variables are contained into {{}} inside the templates.
+
+**Astakos landing page**
+
+Astakos generates sensible default values used to display component-
+specific details in several places across views (dashboard, cloudbar
+etc.). One of these places is Astakos landing page where Synnefo components are
+featured.
+
+In case those values doesn't seem to suit your deployment, Astakos allows
+you to override any of them using ``ASTAKOS_COMPONENTS_META`` setting
+in your ``/etc/synnefo/20-snf-astakos-app-settings.conf`` configuration file.
+
+So, for example if you want to add your own image for Astakos service and in the
+same time hide Cyclades service from Astakos landing page you can
+add the following line to your configuration file:
+
+.. code-block:: python
+
+  ASTAKOS_COMPONENTS_META = {
+    'astakos': {
+      'dashboard': {
+        'icon': '<path-to-your-icon>'
+      }
+    },
+    'cyclades': {
+      'dashboard': {
+        'show': False
+      }
+    }
+  }
+
+A complete list of available keys is shown below:
+
+.. code-block:: python
+
+  '<component-name>' = {
+    'order': 1,
+    'dashboard': {
+      'order': 1,
+      'show': True,
+      'description': '<component-description>',
+      'icon': '<component-icon-path>',
+    },
+    'cloudbar': {
+      'show': True
+    }
+  }
+
+
+**403, 404 and 500 pages**
+
+Feel free to add your own 403 (HTTP Forbidden), 404 (Page not found) and
+500 (server error) pages.
+To override the default Synnefo error views, you must write and include any of
+the files 403.html, 404.html and 500.html in your
+**/etc/synnefo/templates/** directory.
+
+Their content is up to you, but you may use as guides the default error pages
+found in:
+
+  **/synnefo/snf-webproject/synnefo/webproject/templates/**
+    | 403.html
+    | 404.html
+    | 500.html
+
 
 
 .. RabbitMQ

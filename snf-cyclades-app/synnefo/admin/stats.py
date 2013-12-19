@@ -104,7 +104,10 @@ def get_resources_stats(backend=None):
         for result in results:
             server_count[res][result[val]] = result["count"]
             if res != "disk_template":
-                allocated[res] += result["count"]
+                prod = (result["count"] * int(result[val]))
+                if res == "disk":
+                    prod = prod << 10
+                allocated[res] += prod
 
     resources_stats = get_backend_stats(backend=backend)
     for res in ["cpu", "ram", "disk", "disk_template"]:
@@ -193,7 +196,7 @@ def get_backend_stats(backend=None):
 class ImageCache(object):
     def __init__(self):
         self.images = {}
-        usercache = UserCache(settings.ASTAKOS_BASE_URL,
+        usercache = UserCache(settings.ASTAKOS_AUTH_URL,
                               settings.CYCLADES_SERVICE_TOKEN)
         self.system_user_uuid = \
             usercache.get_uuid(settings.SYSTEM_IMAGES_OWNER)

@@ -152,7 +152,7 @@ class NetworkFactory(factory.DjangoModelFactory):
     flavor = factory.Sequence(round_seq(models.Network.FLAVORS.keys()))
     mode = factory.LazyAttribute(lambda a:
                                  models.Network.FLAVORS[a.flavor]['mode'])
-    link = factory.Sequence(prefix_seq('link'))
+    link = factory.Sequence(prefix_seq('snf-link'))
     mac_prefix = 'aa:00:0'
     tags = factory.LazyAttribute(lambda a:
                                  models.Network.FLAVORS[a.flavor]['tags'])
@@ -261,13 +261,13 @@ class SecurityGroupFactory(factory.DjangoModelFactory):
 class BridgePoolTableFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.BridgePoolTable
 
-    size = 20
-    base = 'prv'
+    size = 500
+    base = 'snf-link-'
 
 
 class MacPrefixPoolTableFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.MacPrefixPoolTable
-    size = 100
+    size = 500
     base = 'aa:00:0'
 
 

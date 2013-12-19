@@ -128,7 +128,16 @@ class AstakosClient(object):
         self.auth_prefix = parsed_auth_url.path
         self.api_tokens = join_urls(self.auth_prefix, "tokens")
 
-    def _fill_endpoints(self, endpoints):
+    def _fill_endpoints(self, endpoints, extra=False):
+        """Fill the endpoints for our AstakosClient
+
+        This will be done once (lazily) and the endpoints will be there
+        to be used afterwards.
+        The `extra' parameter is there for compatibility reasons. We are going
+        to fill the oauth2 endpoint only if we need it. This way we are keeping
+        astakosclient compatible with older Astakos version.
+
+        """
         astakos_service_catalog = parse_endpoints(
             endpoints, ep_name="astakos_account", ep_version_id="v1.0")
         self._account_url = \
@@ -145,21 +154,22 @@ class AstakosClient(object):
         self._ui_prefix = parsed_ui_url.path
         self.logger.debug("Got ui_prefix \"%s\"" % self._ui_prefix)
 
-        oauth2_service_catalog = parse_endpoints(endpoints,
-                                                 ep_name="astakos_oauth2")
-        self._oauth2_url = \
-            oauth2_service_catalog[0]['endpoints'][0]['publicURL']
-        parsed_oauth2_url = urlparse.urlparse(self._oauth2_url)
-        self._oauth2_prefix = parsed_oauth2_url.path
+        if extra:
+            oauth2_service_catalog = \
+                parse_endpoints(endpoints, ep_name="astakos_oauth2")
+            self._oauth2_url = \
+                oauth2_service_catalog[0]['endpoints'][0]['publicURL']
+            parsed_oauth2_url = urlparse.urlparse(self._oauth2_url)
+            self._oauth2_prefix = parsed_oauth2_url.path
 
-    def _get_value(self, s):
+    def _get_value(self, s, extra=False):
         assert s in ['_account_url', '_account_prefix',
                      '_ui_url', '_ui_prefix',
                      '_oauth2_url', '_oauth2_prefix']
         try:
             return getattr(self, s)
         except AttributeError:
-            self.get_endpoints()
+            self.get_endpoints(extra=extra)
             return getattr(self, s)
 
     @property
@@ -180,11 +190,11 @@ class AstakosClient(object):
 
     @property
     def oauth2_url(self):
-        return self._get_value('_oauth2_url')
+        return self._get_value('_oauth2_url', extra=True)
 
     @property
     def oauth2_prefix(self):
-        return self._get_value('_oauth2_prefix')
+        return self._get_value('_oauth2_prefix', extra=True)
 
     @property
     def api_usercatalogs(self):
@@ -456,9 +466,10 @@ class AstakosClient(object):
 
     # -----------------------------------------
     # do a POST to ``API_TOKENS`` with no token
-    def get_endpoints(self):
+    def get_endpoints(self, extra=False):
         """ Get services' endpoints
 
+        The extra parameter is to be used by _fill_endpoints.
         In case of error raise an AstakosClientException.
 
         """
@@ -467,7 +478,7 @@ class AstakosClient(object):
         r = self._call_astakos(self.api_tokens, headers=req_headers,
                                body=req_body, method="POST",
                                log_body=False)
-        self._fill_endpoints(r)
+        self._fill_endpoints(r, extra=extra)
         return r
 
     # --------------------------------------
@@ -500,7 +511,7 @@ class AstakosClient(object):
 
     # --------------------------------------
     # do a GET to ``API_TOKENS`` with a token
-    def validate_token(self, token_id, belongsTo=None):
+    def validate_token(self, token_id, belongs_to=None):
         """ Validate a temporary access token (oath2)
 
         Keyword arguments:
@@ -509,15 +520,15 @@ class AstakosClient(object):
         It returns back the token as well as information about the token
         holder.
 
-        The belongsTo is optional and if it is given it must be inside the
+        The belongs_to is optional and if it is given it must be inside the
         token's scope.
 
         In case of error raise an AstakosClientException.
 
         """
         path = join_urls(self.api_tokens, str(token_id))
-        if belongsTo is not None:
-            params = {'belongsTo': belongsTo}
+        if belongs_to is not None:
+            params = {'belongsTo': belongs_to}
             path = '%s?%s' % (path, urllib.urlencode(params))
         return self._call_astakos(path, method="GET", log_body=False)
 
@@ -985,7 +996,7 @@ def parse_endpoints(endpoints, ep_name=None, ep_type=None,
         else:
             return catalog
     except KeyError:
-        raise NoEndpoints()
+        raise NoEndpoints(ep_name, ep_type, ep_region, ep_version_id)
 
 
 # --------------------------------------------------------------------

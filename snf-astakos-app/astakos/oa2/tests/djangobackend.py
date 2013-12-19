@@ -377,6 +377,25 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.assertEqual(code4.state, 'csrfstate')
         self.assertEqual(code4.redirect_uri, self.client3_redirect_uri)
 
+        params['redirect_uri'] = '%s/more' % self.client3_redirect_uri
+        self.client.set_credentials('client3', 'secret')
+        r = self.client.authorize_code('client3', urlparams=params)
+        self.assertEqual(r.status_code, 302)
+        self.assertCount(AuthorizationCode, 5)
+
+        # redirect is valid
+        redirect5 = self.get_redirect_url(r)
+        self.assertParam(redirect5, "code")
+        self.assertParamEqual(redirect5, "state", 'csrfstate')
+        self.assertNoParam(redirect5, "extra_param")
+        self.assertHost(redirect5, "server3.com")
+        self.assertPath(redirect5, "/handle_code/more")
+
+        code4 = AuthorizationCode.objects.get(code=redirect5.params['code'][0])
+        self.assertEqual(code4.state, 'csrfstate')
+        self.assertEqual(code4.redirect_uri,
+                         '%s/more' % self.client3_redirect_uri)
+
     def test_get_token(self):
         # invalid method
         r = self.client.get(self.client.token_url)

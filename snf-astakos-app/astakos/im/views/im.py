@@ -628,7 +628,8 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
         user = AstakosUser.objects.select_for_update().\
             get(verification_code=token)
     except AstakosUser.DoesNotExist:
-        raise Http404
+        messages.error(request, astakos_messages.INVALID_ACTIVATION_KEY)
+        return HttpResponseRedirect(reverse('index'))
 
     if user.email_verified:
         message = _(astakos_messages.ACCOUNT_ALREADY_VERIFIED)

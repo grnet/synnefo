@@ -603,7 +603,9 @@ class TestLocal(TestCase):
 
         r = self.client.get(user.get_activation_url(), follow=True)
         # previous code got invalidated
-        self.assertEqual(r.status_code, 404)
+        self.assertRedirects(r, reverse('login'))
+        self.assertContains(r, astakos_messages.INVALID_ACTIVATION_KEY)
+        self.assertEqual(r.status_code, 200)
 
         user = AstakosUser.objects.get(pk=user.pk)
         self.assertEqual(len(get_mailbox(self.helpdesk_email)), 0)

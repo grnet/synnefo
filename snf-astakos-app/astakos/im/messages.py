@@ -152,7 +152,7 @@ UNKNOWN_USERS = "Unknown users: %s"
 UNIQUE_EMAIL_IS_ACTIVE_CONSTRAIN_ERR = (
     "More than one account with the same email & 'is_active' field. Error."
 )
-INVALID_ACTIVATION_KEY = "Invalid activation key."
+INVALID_ACTIVATION_KEY = "Invalid or already used activation key."
 NEW_EMAIL_ADDR_RESERVED = (
     "The new email address you requested is already used by another account. "
     "Please provide a different one."

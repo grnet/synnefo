@@ -998,6 +998,7 @@ class ExtendedProfileForm(ProfileForm):
             self.fields['old_password'].label = _('Password')
             self.fields['old_password'].help_text = _('Change your password.')
             self.fields['old_password'].initial = 'password'
+            self.fields['old_password'].widget.render_value = True
             self.fields['new_password1'].required = False
             self.fields['new_password2'].required = False
 

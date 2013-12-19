@@ -241,7 +241,8 @@ def _process_net_status(vm, etime, nics):
     """
     ganeti_nics = process_ganeti_nics(nics)
     db_nics = dict([(nic.id, nic)
-                    for nic in vm.nics.prefetch_related("ips__subnet")])
+                    for nic in vm.nics.select_related("network")
+                                      .prefetch_related("ips")])
 
     for nic_name in set(db_nics.keys()) | set(ganeti_nics.keys()):
         db_nic = db_nics.get(nic_name)
@@ -266,18 +267,20 @@ def _process_net_status(vm, etime, nics):
 
             # Special case where the IPv4 address has changed, because you
             # need to release the old IPv4 address and reserve the new one
-            ipv4_address = ganeti_nic["ipv4_address"]
-            if db_nic.ipv4_address != ipv4_address:
+            gnt_ipv4_address = ganeti_nic["ipv4_address"]
+            db_ipv4_address = db_nic.ipv4_address
+            if db_ipv4_address != gnt_ipv4_address:
                 change_address_of_port(db_nic, vm.userid,
-                                       old_address=db_nic.ipv4_address,
-                                       new_address=ipv4_address,
+                                       old_address=db_ipv4_address,
+                                       new_address=gnt_ipv4_address,
                                        version=4)
 
-            ipv6_address = ganeti_nic["ipv6_address"]
-            if db_nic.ipv6_address != ipv6_address:
+            gnt_ipv6_address = ganeti_nic["ipv6_address"]
+            db_ipv6_address = db_nic.ipv6_address
+            if db_ipv6_address != gnt_ipv6_address:
                 change_address_of_port(db_nic, vm.userid,
-                                       old_address=db_nic.ipv6_address,
-                                       new_address=ipv6_address,
+                                       old_address=db_ipv6_address,
+                                       new_address=gnt_ipv6_address,
                                        version=6)
 
     vm.backendtime = etime

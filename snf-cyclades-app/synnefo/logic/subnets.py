@@ -117,6 +117,7 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
                                    "name is too long")
     sub = Subnet.objects.create(name=name, network=network, cidr=cidr,
                                 ipversion=ipversion, gateway=gateway,
+                                userid=network.userid, public=network.public,
                                 dhcp=dhcp, host_routes=host_routes,
                                 dns_nameservers=dns_nameservers)
 
@@ -155,12 +156,8 @@ def get_subnet(subnet_id, user_id, for_update=False):
     try:
         objects = Subnet.objects
         subnet_id = int(subnet_id)
-        subnet = objects.get(id=subnet_id)
-        if (subnet.network.userid != user_id) and (subnet.network.public is
-                                                   False):
-            raise api.faults.Unauthorized("You're not allowed to view this "
-                                          "subnet")
-        return subnet
+        return objects.get(Q(userid=user_id) | Q(public=True),
+                           id=subnet_id)
     except (ValueError, TypeError):
         raise faults.BadRequest("Invalid subnet ID '%s'" % subnet_id)
     except Subnet.DoesNotExist:

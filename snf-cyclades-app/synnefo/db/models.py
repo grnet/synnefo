@@ -609,6 +609,10 @@ class Network(models.Model):
 class Subnet(models.Model):
     SUBNET_NAME_LENGTH = 128
 
+    userid = models.CharField('User ID of the owner', max_length=128,
+                              null=True, db_index=True)
+    public = models.BooleanField(default=False, db_index=True)
+
     network = models.ForeignKey('Network', null=False, db_index=True,
                                 related_name="subnets",
                                 on_delete=models.PROTECT)

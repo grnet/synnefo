@@ -668,6 +668,24 @@ class TestLocal(TestCase):
 
 class UserActionsTests(TestCase):
 
+    def test_email_validation(self):
+        backend = activation_backends.get_backend()
+        form = backend.get_signup_form('local')
+        self.assertTrue(isinstance(form, forms.LocalUserCreationForm))
+        user_data = {
+            'email': 'kpap@synnefo.org',
+            'first_name': 'Kostas Papas',
+            'password1': '123',
+            'password2': '123'
+        }
+        form = backend.get_signup_form(provider='local',
+                                       initial_data=user_data)
+        self.assertTrue(form.is_valid())
+        user_data['email'] = 'kpap@synnefo.org.'
+        form = backend.get_signup_form(provider='local',
+                                       initial_data=user_data)
+        self.assertFalse(form.is_valid())
+
     def test_email_change(self):
         # to test existing email validation
         get_local_user('existing@synnefo.org')
@@ -686,9 +704,16 @@ class UserActionsTests(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertFalse(user.email_change_is_pending())
 
+        # invalid email format
+        data = {'new_email_address': 'existing@synnefo.org.'}
+        r = self.client.post(ui_url('email_change'), data)
+        form = r.context['form']
+        self.assertFalse(form.is_valid())
+
         # request email change to an existing email fails
         data = {'new_email_address': 'existing@synnefo.org'}
         r = self.client.post(ui_url('email_change'), data)
+
         self.assertContains(r, messages.EMAIL_USED)
 
         # proper email change

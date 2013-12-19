@@ -48,6 +48,7 @@ from django.core import validators
 from synnefo.util import units
 from synnefo_branding.utils import render_to_string
 from synnefo.lib import join_urls
+from astakos.im.fields import EmailField
 from astakos.im.models import AstakosUser, EmailChange, Invitation, Resource, \
     PendingThirdPartyUser, get_latest_terms, ProjectApplication, Project
 from astakos.im import presentation
@@ -86,6 +87,7 @@ class LocalUserCreationForm(UserCreationForm):
     recaptcha_challenge_field = forms.CharField(widget=DummyWidget)
     recaptcha_response_field = forms.CharField(
         widget=RecaptchaWidget, label='')
+    email = EmailField()
 
     class Meta:
         model = AstakosUser
@@ -175,7 +177,7 @@ class LocalUserCreationForm(UserCreationForm):
 
 
 class ThirdPartyUserCreationForm(forms.ModelForm):
-    email = forms.EmailField(
+    email = EmailField(
         label='Contact email',
         help_text='This is needed for contact purposes. '
         'It doesn&#39;t need to be the same with the one you '
@@ -257,7 +259,7 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
 
 
 class LoginForm(AuthenticationForm):
-    username = forms.EmailField(label=_("Email"))
+    username = EmailField(label=_("Email"))
     recaptcha_challenge_field = forms.CharField(widget=DummyWidget)
     recaptcha_response_field = forms.CharField(
         widget=RecaptchaWidget, label='')
@@ -342,8 +344,8 @@ class ProfileForm(forms.ModelForm):
     The class defines a save method which sets ``is_verified`` to True so as
     the user during the next login will not to be redirected to profile page.
     """
-    email = forms.EmailField(label='E-mail address',
-                             help_text='E-mail address')
+    email = EmailField(label='E-mail address',
+                       help_text='E-mail address')
     renew = forms.BooleanField(label='Renew token', required=False)
 
     class Meta:
@@ -389,9 +391,9 @@ class SendInvitationForm(forms.Form):
     Form for sending an invitations
     """
 
-    email = forms.EmailField(required=True, label='Email address')
-    first_name = forms.EmailField(label='First name')
-    last_name = forms.EmailField(label='Last name')
+    email = EmailField(required=True, label='Email address')
+    first_name = EmailField(label='First name')
+    last_name = EmailField(label='Last name')
 
 
 class ExtendedPasswordResetForm(PasswordResetForm):
@@ -456,6 +458,8 @@ class ExtendedPasswordResetForm(PasswordResetForm):
 
 class EmailChangeForm(forms.ModelForm):
 
+    new_email_address = EmailField()
+
     class Meta:
         model = EmailChange
         fields = ('new_email_address',)
@@ -507,7 +511,7 @@ class SignApprovalTermsForm(forms.ModelForm):
 
 class InvitationForm(forms.ModelForm):
 
-    username = forms.EmailField(label=_("Email"))
+    username = EmailField(label=_("Email"))
 
     def __init__(self, *args, **kwargs):
         super(InvitationForm, self).__init__(*args, **kwargs)

@@ -44,7 +44,7 @@ import tempfile
 import traceback
 
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
-from kamaki.clients.astakos import AstakosClient
+from kamaki.clients.astakos import CachedAstakosClient
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients.pithos import PithosClient
 from kamaki.clients.image import ImageClient
@@ -134,7 +134,7 @@ class Clients(object):
 
     def initialize_clients(self):
         """Initialize all the Kamaki Clients"""
-        self.astakos = AstakosClient(self.auth_url, self.token)
+        self.astakos = CachedAstakosClient(self.auth_url, self.token)
         self.astakos.CONNECTION_RETRY_LIMIT = self.retry
 
         self.compute_url = \

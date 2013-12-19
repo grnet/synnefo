@@ -525,7 +525,7 @@ def list_addresses(request, server_id):
     #                       overLimit (413)
 
     log.debug('list_addresses %s', server_id)
-    vm = util.get_vm(server_id, request.user_uniq, prefetch_related="nic__ips")
+    vm = util.get_vm(server_id, request.user_uniq, prefetch_related="nics__ips")
     attachments = [nic_to_attachments(nic)
                    for nic in vm.nics.filter(state="ACTIVE")]
     addresses = attachments_to_addresses(attachments)

@@ -723,6 +723,7 @@ class IPAddress(models.Model):
                               db_index=True)
     address = models.CharField("IP Address", max_length=64, null=False)
     floating_ip = models.BooleanField("Floating IP", null=False, default=False)
+    ipversion = models.IntegerField("IP Version", null=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     deleted = models.BooleanField(default=False, null=False)
@@ -744,10 +745,6 @@ class IPAddress(models.Model):
 
     class Meta:
         unique_together = ("network", "address", "deleted")
-
-    @property
-    def ipversion(self):
-        return self.subnet.ipversion
 
     @property
     def public(self):
@@ -839,7 +836,7 @@ class NetworkInterface(models.Model):
 
     def get_ip_address(self, version=4):
         for ip in self.ips.all():
-            if ip.subnet.ipversion == version:
+            if ip.ipversion == version:
                 return ip.address
         return None
 

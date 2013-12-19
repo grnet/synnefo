@@ -60,7 +60,8 @@ def allocate_ip_from_pools(pool_rows, userid, address=None, floating_ip=False):
                                                  network=subnet.network,
                                                  userid=userid,
                                                  address=value,
-                                                 floating_ip=floating_ip)
+                                                 floating_ip=floating_ip,
+                                                 ipversion=4)
             return ipaddress
         except pools.EmptyPool:
             pass

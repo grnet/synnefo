@@ -304,7 +304,8 @@ def change_address_of_port(port, userid, old_address, new_address, version):
                                              network=port.network,
                                              subnet=subnet6,
                                              nic=port,
-                                             address=new_address)
+                                             address=new_address,
+                                             ipversion=6)
     else:
         raise ValueError("Unknown version: %s" % version)
 

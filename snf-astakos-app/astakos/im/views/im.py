@@ -435,14 +435,17 @@ def signup(request, template_name='im/signup.html', on_success='index',
         unverified = get_unverified(pending.provider,
                                     identifier=pending.third_party_identifier)
 
+        get_verified = AstakosUserAuthProvider.objects.verified
+        verified = get_verified(pending.provider,
+                                identifier=pending.third_party_identifier)
+        if verified:
+            # an existing verified user already exists for the third party
+            # identifier
+            pending.delete()
+            raise Http404
+
         if unverified and request.method == 'GET':
             messages.warning(request, unverified.get_pending_registration_msg)
-            if unverified.user.moderated:
-                messages.warning(request,
-                                 unverified.get_pending_resend_activation_msg)
-            else:
-                messages.warning(request,
-                                 unverified.get_pending_moderation_msg)
 
     # prepare activation backend based on current request
     if not activation_backend:

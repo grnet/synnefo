@@ -121,14 +121,36 @@ class ShibbolethTests(TestCase):
         existing_user.delete()
 
         # and finally a valid signup
-        post_data['email'] = 'kpap@synnefo.org'
+        post_data['email'] = 'kpap-takeover@synnefo.org'
         r = client.post(signup_url, post_data, follow=True)
         self.assertContains(r, messages.VERIFICATION_SENT)
+
+        # takeover of the uverified the shibboleth identifier
+        client = ShibbolethClient()
+        client.set_tokens(mail="kpap@synnefo.org", remote_user="kpapeppn",
+                          eppn="kpapeppn",
+                          cn="Kostas Papadimitriou",
+                          ep_affiliation="Test Affiliation")
+        r = client.get(ui_url('login/shibboleth?'), follow=True,
+                       **{'HTTP_SHIB_CUSTOM_IDP_KEY': 'test'})
+        # a new pending user created, previous one was deleted
+        self.assertEqual(PendingThirdPartyUser.objects.count(), 1)
+        pending_user = PendingThirdPartyUser.objects.get(
+            third_party_identifier="kpapeppn")
+        identifier = pending_user.third_party_identifier
+        token = pending_user.token
+        post_data = {'third_party_identifier': identifier,
+                     'third_party_token': token}
+        post_data['email'] = 'kpap@synnefo.org'
+        r = client.post(signup_url, post_data)
+        self.assertEqual(PendingThirdPartyUser.objects.count(), 0)
+        # previously unverified user associated with kpapeppn gets deleted
+        user_qs = AstakosUser.objects.filter(email="kpap-takeover@synnefo.org")
+        self.assertEqual(user_qs.count(), 0)
 
         # entires commited as expected
         self.assertEqual(AstakosUser.objects.count(), 1)
         self.assertEqual(AstakosUserAuthProvider.objects.count(), 1)
-        self.assertEqual(PendingThirdPartyUser.objects.count(), 0)
 
         user = AstakosUser.objects.get()
         provider = user.get_auth_provider("shibboleth")
@@ -143,11 +165,33 @@ class ShibbolethTests(TestCase):
         self.assertEqual(provider.info['name'], u'Kostas Papadimitriou')
         self.assertTrue('headers' in provider.info)
 
-        # login (not activated yet)
+        # login (not verified yet)
         client.set_tokens(mail="kpap@synnefo.org", remote_user="kpapeppn",
                           cn="Kostas Papadimitriou")
         r = client.get(ui_url("login/shibboleth?"), follow=True)
-        self.assertContains(r, 'is pending moderation')
+        self.assertContains(r, 'A pending registration exists for')
+        self.assertNotContains(r, 'pending moderation')
+        self.assertEqual(PendingThirdPartyUser.objects.count(), 1)
+        tmp_third_party = PendingThirdPartyUser.objects.get()
+
+        # user gets verified
+        u = AstakosUser.objects.get(username="kpap@synnefo.org")
+        backend = activation_backends.get_backend()
+        activation_result = backend.verify_user(u, u.verification_code)
+        client.set_tokens(mail="kpap@synnefo.org", remote_user="kpapeppn",
+                          cn="Kostas Papadimitriou")
+        r = client.get(ui_url("login/shibboleth?"), follow=True)
+        self.assertNotContains(r, 'A pending registration exists for')
+        self.assertContains(r, 'pending moderation')
+
+        # temporary signup process continues. meanwhile the user have verified
+        # her account. The signup process should fail
+        tp = tmp_third_party
+        post_data = {'third_party_identifier': tp.third_party_identifier,
+                     'email': 'unsed-email@synnefo.org',
+                     'third_party_token': tp.token}
+        r = client.post(signup_url, post_data)
+        self.assertEqual(r.status_code, 404)
 
         # admin activates the user
         u = AstakosUser.objects.get(username="kpap@synnefo.org")
@@ -157,6 +201,7 @@ class ShibbolethTests(TestCase):
         self.assertFalse(activation_result.is_error())
         backend.send_result_notifications(activation_result, u)
         self.assertEqual(u.is_active, True)
+
 
         # we see our profile
         r = client.get(ui_url("login/shibboleth?"), follow=True)

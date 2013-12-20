@@ -935,7 +935,8 @@ class TestAuthProviderViews(TestCase):
         r = cl_newuser2.post(ui_url('signup/'), signup_data)
         self.assertFalse(academic_users.filter(email='newuser@synnefo.org'))
         r = self.client.get(activation_link, follow=True)
-        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, astakos_messages.INVALID_ACTIVATION_KEY)
         newuser = User.objects.get(email="newuser@synnefo.org")
         self.assertTrue(newuser.activation_sent)
 

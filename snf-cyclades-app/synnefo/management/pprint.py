@@ -135,10 +135,12 @@ def pprint_subnet_in_db(subnet, stdout=None, title=None):
     info = OrderedDict([("ID", subnet.id),
                         ("Network_ID", subnet.network.id),
                         # If a user names his subnet "-", what happens then?
+                        ("User_ID", subnet.userid),
                         ("Name", "-" if subnet.name == "" else subnet.name),
                         ("IP_Version", subnet.ipversion),
                         ("CIDR", subnet.cidr),
                         ("Gateway", subnet.gateway),
+                        ("Public", subnet.public),
                         ("DHCP/SLAAC", subnet.dhcp),
                         ("Host_Routes", subnet.host_routes),
                         ("DNS_Nameservers", subnet.dns_nameservers)])

@@ -1,3 +1,9 @@
+synnefo (0.15~rc3-3~precise) precise; urgency=low
+
+  * Add missing python-setuptools dependency
+
+ -- Nikos Skalkotos <skalkoto@grnet.gr>  Fri, 20 Dec 2013 18:38:58 +0200
+
 synnefo (0.15~rc3-1~precise) precise; urgency=low
 
   * New upstream version

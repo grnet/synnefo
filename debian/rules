@@ -41,16 +41,16 @@ override_dh_auto_install:
 		python setup.py install --root=$(DESTDIR)/python-$$package --install-layout=deb ; \
 		cd - ; \
 	done
-#	-for py in $(shell pyversions -vr debian/control); do \
-#		rm $(DESTDIR)/*/usr/lib/python$$py/*-packages/*-nspkg.pth; \
-#	done
+	-for py in $(shell pyversions -vr debian/control); do \
+		rm $(DESTDIR)/*/usr/lib/python$$py/*-packages/*-nspkg.pth; \
+	done
 	dh_install
 
 override_dh_fixperms:
 	dh_fixperms
-	chmod 0640 $(DESTDIR)/*/etc/synnefo/*
-	chmod 0750 $(DESTDIR)/*/etc/synnefo
-	chown -R root:www-data $(DESTDIR)/*/etc/synnefo
+#	chmod 0640 $(DESTDIR)/*/etc/synnefo/*
+#	chmod 0750 $(DESTDIR)/*/etc/synnefo
+#	chown -R root:www-data $(DESTDIR)/*/etc/synnefo
 
 override_dh_installinit:
 	dh_installinit --name=snf-ganeti-eventd --error-handler=true -- defaults 20 80 -i

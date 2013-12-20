@@ -36,7 +36,7 @@ The current Astakos/Identity API is:
 .. toctree::
    :maxdepth: 2
 
-    Identity API (Keystone) <astakos-api-guide>
+    Identity API (Keystone) <identity-api-guide>
 
 
 Resource and Quota Service API (Astakos)
@@ -72,7 +72,8 @@ This is the Cyclades/Compute API:
 .. toctree::
    :maxdepth: 2
 
-   Compute API (Compute) <cyclades-api-guide>
+   Compute API (Compute) <compute-api-guide>
+
 
 
 Network Service API (Cyclades)
@@ -100,7 +101,7 @@ This is the Cyclades/Image API:
 .. toctree::
    :maxdepth: 2
 
-   Image API (Glance) <plankton-api-guide>
+   Image API (Glance) <image-api-guide>
 
 
 Storage Service API (Pithos)
@@ -114,7 +115,7 @@ This is the Pithos Object Storage API:
 .. toctree::
    :maxdepth: 2
 
-   Storage API (Object Storage) <pithos-api-guide>
+   Storage API (Object Storage) <object-api-guide>
 
 
 Implementing new clients

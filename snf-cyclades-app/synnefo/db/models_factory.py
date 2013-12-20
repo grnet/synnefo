@@ -152,7 +152,7 @@ class NetworkFactory(factory.DjangoModelFactory):
     flavor = factory.Sequence(round_seq(models.Network.FLAVORS.keys()))
     mode = factory.LazyAttribute(lambda a:
                                  models.Network.FLAVORS[a.flavor]['mode'])
-    link = factory.Sequence(prefix_seq('link'))
+    link = factory.Sequence(prefix_seq('snf-link'))
     mac_prefix = 'aa:00:0'
     tags = factory.LazyAttribute(lambda a:
                                  models.Network.FLAVORS[a.flavor]['tags'])
@@ -199,6 +199,8 @@ class SubnetFactory(factory.DjangoModelFactory):
     dhcp = True
     dns_nameservers = []
     host_routes = []
+    userid = factory.LazyAttribute(lambda self: self.network.userid)
+    public = factory.LazyAttribute(lambda self: self.network.public)
 
 
 class IPv4SubnetFactory(SubnetFactory):
@@ -228,6 +230,7 @@ class IPv4AddressFactory(factory.DjangoModelFactory):
     network = factory.SubFactory(NetworkFactory, state="ACTIVE")
     subnet = factory.SubFactory(IPv4SubnetFactory,
                                 network=factory.SelfAttribute('..network'))
+    ipversion = 4
     address =\
         factory.LazyAttributeSequence(lambda self, n: self.subnet.cidr[:-4] +
                                       '{0}'.format(int(n) + 2))
@@ -242,6 +245,7 @@ class IPv6AddressFactory(IPv4AddressFactory):
     subnet = factory.SubFactory(IPv6SubnetFactory)
     network = factory.SubFactory(NetworkFactory, state="ACTIVE")
     address = "babe::"
+    ipversion = 6
     nic = factory.SubFactory(NetworkInterfaceFactory,
                              network=factory.SelfAttribute('..network'))
 
@@ -261,13 +265,13 @@ class SecurityGroupFactory(factory.DjangoModelFactory):
 class BridgePoolTableFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.BridgePoolTable
 
-    size = 20
-    base = 'prv'
+    size = 500
+    base = 'snf-link-'
 
 
 class MacPrefixPoolTableFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.MacPrefixPoolTable
-    size = 100
+    size = 500
     base = 'aa:00:0'
 
 

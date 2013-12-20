@@ -39,7 +39,7 @@ from snf_django.lib.api import faults
 from django.conf import settings
 from synnefo import quotas
 from synnefo.api import util
-from synnefo.logic import backend, ips
+from synnefo.logic import backend, ips, utils
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.db.models import (NetworkInterface, VirtualMachine,
                                VirtualMachineMetadata, IPAddressLog, Network)
@@ -169,6 +169,9 @@ def create(userid, name, password, flavor, image, metadata={},
     if use_backend is None:
         # Allocate server to a Ganeti backend
         use_backend = allocate_new_server(userid, flavor)
+
+    utils.check_name_length(name, VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
+                            "Server name is too long")
 
     # Create the ports for the server
     ports = create_instance_ports(userid, networks)
@@ -453,6 +456,9 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
         raise faults.Conflict("Cannot create port while network %s is in"
                               " 'SNF:DRAINED' status" % network.id)
 
+    utils.check_name_length(name, NetworkInterface.NETWORK_IFACE_NAME_LENGTH,
+                            "Port name is too long")
+
     ipaddress = None
     if use_ipaddress is not None:
         # Use an existing IPAddress object.
@@ -536,7 +542,8 @@ def delete_port(port):
 
     """
 
-    if port.machine is not None:
+    vm = port.machine
+    if vm is not None and not vm.deleted:
         vm = disconnect(port.machine, port)
         log.info("Removing port %s, Job: %s", port, vm.task_job_id)
     else:

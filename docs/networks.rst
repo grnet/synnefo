@@ -27,7 +27,7 @@ needs of each deployment.
 
 First of all, as far as visibility and accessibility is concerned, a network
 can be either `public` or `private`. Public networks are created by the
-administrator via the command line interface (`snf-manage network-reate`) and
+administrator via the command line interface (`snf-manage network-create`) and
 are visible to all end-users. On the other hand, private networks are created
 by the end-user from the Web UI or the kamaki client and provide isolated Layer
 2 connectivity to the end-user.

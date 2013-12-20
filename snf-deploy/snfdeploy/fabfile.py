@@ -616,9 +616,9 @@ def astakos_register_pithos_view():
     pithos_base_url = "https://%s/pithos" % env.env.pithos.fqdn
 
     cmd = """
-    snf-manage oauth2-client-add pithos-view --secret=12345 --is-trusted \
-    --url {0}
-    """.format('%s/ui/view' % pithos_base_url)
+    snf-manage oauth2-client-add pithos-view --secret={0} --is-trusted \
+    --url {1}
+    """.format(env.env.oa2_secret, '%s/ui/view' % pithos_base_url)
     try_run(cmd)
 
 
@@ -865,6 +865,7 @@ def setup_pithos():
         "synnefo_db_passwd": env.env.synnefo_db_passwd,
         "pithos_dir": env.env.pithos_dir,
         "PITHOS_SERVICE_TOKEN": service_token,
+        "oa2_secret": env.env.oa2_secret,
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
     try_put(custom, tmpl, mode=0644)

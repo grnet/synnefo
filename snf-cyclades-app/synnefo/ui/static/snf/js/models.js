@@ -1513,7 +1513,6 @@
                                              // set state after successful call
                                              self.state('DESTROY');
                                              success.apply(this, arguments);
-                                             synnefo.storage.quotas.get('cyclades.vm').decrease();
 
                                          },  
                                          error, 'destroy', params);

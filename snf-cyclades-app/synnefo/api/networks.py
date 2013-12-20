@@ -82,18 +82,20 @@ def network_demux(request, network_id):
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
-def list_networks(request, detail=False):
+def list_networks(request, detail=True):
     log.debug('list_networks detail=%s', detail)
 
     user_networks = Network.objects.filter(Q(userid=request.user_uniq) |
                                            Q(public=True))\
-                                   .prefetch_related("subnets")
+                                   .order_by('id')
+    if detail:
+        user_networks = user_networks.prefetch_related("subnets")
 
     user_networks = api.utils.filter_modified_since(request,
                                                     objects=user_networks)
 
     network_dicts = [network_to_dict(network, detail)
-                     for network in user_networks.order_by('id')]
+                     for network in user_networks]
 
     if request.serialization == 'xml':
         data = render_to_string('list_networks.xml', {
@@ -167,6 +169,12 @@ def network_to_dict(network, detail=True):
     d = {'id': str(network.id), 'name': network.name}
     d['links'] = util.network_to_links(network.id)
     if detail:
+        # Loop over subnets. Do not perform any extra query because of prefetch
+        # related!
+        subnet_ids = []
+        for subnet in network.subnets.all():
+            subnet_ids.append(subnet.id)
+
         state = "SNF:DRAINED" if network.drained else network.state
         d['user_id'] = network.userid
         d['tenant_id'] = network.userid
@@ -177,7 +185,7 @@ def network_to_dict(network, detail=True):
         d['public'] = network.public
         d['router:external'] = network.external_router
         d['admin_state_up'] = True
-        d['subnets'] = list(network.subnets.values_list('id', flat=True))
+        d['subnets'] = subnet_ids
         d['SNF:floating_ip_pool'] = network.floating_ip_pool
     return d
 

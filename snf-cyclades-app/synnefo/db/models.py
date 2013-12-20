@@ -295,7 +295,10 @@ class VirtualMachine(models.Model):
         'DESTROYED': 'DELETED',
     }
 
-    name = models.CharField('Virtual Machine Name', max_length=255)
+    VIRTUAL_MACHINE_NAME_LENGTH = 255
+
+    name = models.CharField('Virtual Machine Name',
+                            max_length=VIRTUAL_MACHINE_NAME_LENGTH)
     userid = models.CharField('User ID of the owner', max_length=100,
                               db_index=True, null=False)
     backend = models.ForeignKey(Backend, null=True,
@@ -606,6 +609,10 @@ class Network(models.Model):
 class Subnet(models.Model):
     SUBNET_NAME_LENGTH = 128
 
+    userid = models.CharField('User ID of the owner', max_length=128,
+                              null=True, db_index=True)
+    public = models.BooleanField(default=False, db_index=True)
+
     network = models.ForeignKey('Network', null=False, db_index=True,
                                 related_name="subnets",
                                 on_delete=models.PROTECT)
@@ -619,6 +626,8 @@ class Subnet(models.Model):
                                   null=False)
     host_routes = fields.SeparatedValuesField('Host Routes', null=True)
     dns_nameservers = fields.SeparatedValuesField('DNS Nameservers', null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
 
     def __unicode__(self):
         msg = u"<Subnet %s, Network: %s, CIDR: %s>"
@@ -718,6 +727,7 @@ class IPAddress(models.Model):
                               db_index=True)
     address = models.CharField("IP Address", max_length=64, null=False)
     floating_ip = models.BooleanField("Floating IP", null=False, default=False)
+    ipversion = models.IntegerField("IP Version", null=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     deleted = models.BooleanField(default=False, null=False)
@@ -739,10 +749,6 @@ class IPAddress(models.Model):
 
     class Meta:
         unique_together = ("network", "address", "deleted")
-
-    @property
-    def ipversion(self):
-        return self.subnet.ipversion
 
     @property
     def public(self):
@@ -796,9 +802,9 @@ class NetworkInterface(models.Model):
 
     NETWORK_IFACE_NAME_LENGTH = 128
 
-    name = models.CharField('NIC name', max_length=128, null=True, default="")
-    userid = models.CharField("UUID of the owner",
-                              max_length=NETWORK_IFACE_NAME_LENGTH,
+    name = models.CharField('NIC name', max_length=NETWORK_IFACE_NAME_LENGTH,
+                            null=True, default="")
+    userid = models.CharField("UUID of the owner", max_length=128,
                               null=False, db_index=True)
     machine = models.ForeignKey(VirtualMachine, related_name='nics',
                                 on_delete=models.PROTECT, null=True)
@@ -834,7 +840,7 @@ class NetworkInterface(models.Model):
 
     def get_ip_address(self, version=4):
         for ip in self.ips.all():
-            if ip.subnet.ipversion == version:
+            if ip.ipversion == version:
                 return ip.address
         return None
 

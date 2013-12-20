@@ -44,7 +44,7 @@ import socket
 
 from vncauthproxy.d3des import generate_response as d3des_generate_response
 
-from synnefo_tools.burnin.common import BurninTests, Proper, run_test
+from synnefo_tools.burnin.common import BurninTests, Proper
 from synnefo_tools.burnin.cyclades_common import CycladesTests
 
 
@@ -120,14 +120,7 @@ class GeneratedServerTestSuite(CycladesTests):
         """Test server becomes ACTIVE"""
         self._insist_on_server_transition(self.server, ["BUILD"], "ACTIVE")
 
-    def test_006_attach_second_network(self):
-        """Attach a second public IP to our server"""
-        floating_ip = self._create_floating_ip()
-        self._create_port(floating_ip['floating_network_id'],
-                          device_id=self.server['id'],
-                          floating_ip=floating_ip)
-
-    def test_007_get_server_oob_console(self):
+    def test_006_get_server_oob_console(self):
         """Test getting OOB server console over VNC
 
         Implementation of RFB protocol follows
@@ -165,7 +158,7 @@ class GeneratedServerTestSuite(CycladesTests):
         self.assertEquals(list(result), ['\x00', '\x00', '\x00', '\x00'])
         sock.close()
 
-    def test_008_server_has_ipv4(self):
+    def test_007_server_has_ipv4(self):
         """Test active server has a valid IPv4 address"""
         server = self.clients.cyclades.get_server_details(self.server['id'])
         # Update the server attribute
@@ -173,21 +166,37 @@ class GeneratedServerTestSuite(CycladesTests):
 
         self.ipv4 = self._get_ips(server, version=4)
 
-    def test_009_server_has_ipv6(self):
+    def test_008_server_has_ipv6(self):
         """Test active server has a valid IPv6 address"""
         self._skip_if(not self.use_ipv6, "--no-ipv6 flag enabled")
 
         self.ipv6 = self._get_ips(self.server, version=6)
 
-    def test_010_server_ping_ipv4(self):
+    def test_009_server_ping_ipv4(self):
         """Test server responds to ping on IPv4 address"""
-        self._insist_on_ping(self.ipv4[0], version=4)
-        self._insist_on_ping(self.ipv4[1], version=4)
+        for ipv4 in self.ipv4:
+            self._insist_on_ping(ipv4, version=4)
 
-    def test_011_server_ping_ipv6(self):
+    def test_010_server_ping_ipv6(self):
         """Test server responds to ping on IPv6 address"""
         self._skip_if(not self.use_ipv6, "--no-ipv6 flag enabled")
         self._insist_on_ping(self.ipv6[0], version=6)
+
+    def test_011_attach_second_network(self):
+        """Attach a second public IP to our server"""
+        floating_ip = self._create_floating_ip()
+        self._create_port(floating_ip['floating_network_id'],
+                          device_id=self.server['id'],
+                          floating_ip=floating_ip)
+
+        # Update server attributes
+        server = self.clients.cyclades.get_server_details(self.server['id'])
+        self.server = server
+        self.ipv4 = self._get_ips(server, version=4)
+        self.assertEqual(len(self.ipv4), 2)
+
+        # Test new IPv4
+        self.test_009_server_ping_ipv4()
 
     def test_012_submit_shutdown(self):
         """Test submit request to shutdown server"""
@@ -207,7 +216,7 @@ class GeneratedServerTestSuite(CycladesTests):
 
     def test_016_server_ping_ipv4(self):
         """Test server OS is actually up and running again"""
-        self.test_010_server_ping_ipv4()
+        self.test_009_server_ping_ipv4()
 
     def test_017_ssh_to_server_ipv4(self):
         """Test SSH to server public IPv4 works, verify hostname"""
@@ -341,10 +350,4 @@ class ServerTestSuite(BurninTests):
 
     def test_004_run_testsuites(self):
         """Run the generated tests"""
-        success = True
-        for gen_cls in self.gen_classes:
-            self.info("Running testsuite %s", gen_cls.__name__)
-            success = run_test(gen_cls) and success  # With this order
-            if self.failfast and not success:
-                break
-        self.assertTrue(success, "Some of the generated tests failed")
+        self._run_tests(self.gen_classes)

@@ -44,16 +44,17 @@ ACCOUNT_NOT_ACTIVE = 'User account is not active.'
 ACCOUNT_NOT_MODERATED = 'User account is not moderated.'
 ACCOUNT_NOT_VERIFIED = 'User account does not have a verified email address.'
 ACCOUNT_RESEND_ACTIVATION = (
-    'It seems that an activation email has been sent to you, but you have '
-    'not followed the activation link. '
-    '<a href="%(send_activation_url)s">Resend activation email.</a>')
+    'It seems that a verification email has been sent to you, but you have '
+    'not followed the email verification link. '
+    '<a href="%(send_activation_url)s">Resend verification email.</a>')
 INACTIVE_ACCOUNT_CHANGE_EMAIL = ''.join(
     [ACCOUNT_RESEND_ACTIVATION,
-     ' Or <a href="%(signup_url)s">Send activation to a new email.</a>'])
+     ' Or <a href="%(signup_url)s">Send verification to a new email.</a>'])
 
 ACCOUNT_PENDING_ACTIVATION_HELP = (
-    'An activation email has been sent to you. Make sure you check your '
-    'spam folder, too.')
+    'A verification email has been sent to the email address you specified '
+    'during sign up. Please follow the link in this email to proceed. '
+    'Make sure you check your spam folder, too.')
 
 ACCOUNT_ACTIVATED = 'Congratulations. Your account has' + \
     ' been activated. You are now logged in.'
@@ -66,8 +67,8 @@ PASSWORD_RESET_CONFIRM_DONE = (
     'can now login using your new password.')
 PASSWORD_CHANGED = 'Your new password was set successfully.'
 
-ACCOUNT_RESEND_ACTIVATION = 'Resend activation email'
-ACCOUNT_USER_ACTIVATION_PENDING = 'You have not followed the activation link'
+ACCOUNT_RESEND_ACTIVATION = 'Resend verification email'
+ACCOUNT_USER_ACTIVATION_PENDING = 'You have not followed the verification link'
 
 ACCOUNT_UNKNOWN = 'There is no such account.'
 TOKEN_UNKNOWN = 'There is no user matching this authentication token.'
@@ -152,7 +153,7 @@ UNKNOWN_USERS = "Unknown users: %s"
 UNIQUE_EMAIL_IS_ACTIVE_CONSTRAIN_ERR = (
     "More than one account with the same email & 'is_active' field. Error."
 )
-INVALID_ACTIVATION_KEY = "Invalid activation key."
+INVALID_ACTIVATION_KEY = "Invalid or already used activation key."
 NEW_EMAIL_ADDR_RESERVED = (
     "The new email address you requested is already used by another account. "
     "Please provide a different one."
@@ -208,7 +209,7 @@ NOTIFICATION_SENT = (
     'now pending approval. You will be notified by email in the next few '
     'days. Thanks for your interest!')
 ACTIVATION_SENT = (
-    'An email containing your activation link has been sent to your '
+    'An email containing a verification link has been sent to your '
     'email address.')
 
 REGISTRATION_COMPLETED = (
@@ -327,12 +328,12 @@ AUTH_PROVIDER_PENDING_REGISTRATION = '''A pending registration exists for
 all pending registrations will be deleted.'''
 
 AUTH_PROVIDER_PENDING_RESEND_ACTIVATION = (
-    '<a href="{resend_activation_url}">Click here to resend activation '
+    '<a href="{resend_activation_url}">Click here to resend the verification '
     'email.</a>')
 AUTH_PROVIDER_PENDING_MODERATION = (
     'Your account request is pending moderation.')
 AUTH_PROVIDER_PENDING_ACTIVATION = (
-    'Your account request is pending activation.')
+    'Your account request is pending email verification.')
 AUTH_PROVIDER_ACCOUNT_INACTIVE = 'Your account is disabled.'
 
 AUTH_PROVIDER_ADD_TO_EXISTING_ACCOUNT = (
@@ -344,7 +345,7 @@ _SITENAME = astakos_settings.SITENAME
 INVITATION_EMAIL_SUBJECT = 'Invitation to %s' % _SITENAME
 GREETING_EMAIL_SUBJECT = 'Welcome to %s' % _SITENAME
 FEEDBACK_EMAIL_SUBJECT = 'Feedback from %s' % _SITENAME
-VERIFICATION_EMAIL_SUBJECT = '%s account activation is needed' % _SITENAME
+VERIFICATION_EMAIL_SUBJECT = '%s account verification' % _SITENAME
 ACCOUNT_CREATION_SUBJECT = '%s account created (%%(user)s)' % _SITENAME
 HELPDESK_NOTIFICATION_EMAIL_SUBJECT = \
     '%s account activated (%%(user)s)' % _SITENAME

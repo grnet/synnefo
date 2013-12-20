@@ -3,73 +3,18 @@ import datetime
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
-import ipaddr
 
 class Migration(DataMigration):
 
     def forwards(self, orm):
         "Write your forwards methods here."
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
-        for network in orm.Network.objects.select_related('pool').filter(dhcp=True):
-            if network.subnet:
-                subnet = orm.Subnet.objects.create(network=network,
-                                                   ipversion=4,
-                                                   cidr=network.subnet,
-                                                   gateway=network.gateway,
-                                                   dhcp=network.dhcp,
-                                                   deleted=network.deleted)
-
-                if not network.deleted:
-                    ip_pool = network.pool
-                    if ip_pool is None:
-                        ip_pool = orm.IPPoolTable()
-                    ip_pool.subnet = subnet
-                    ip_pool.base = subnet.cidr
-                    ip_pool.offset = 0
-                    ip_pool.size = ipaddr.IPNetwork(network.subnet).numhosts
-                    ip_pool.save()
-
-            if network.subnet6:
-                orm.Subnet.objects.create(network=network,
-                                          ipversion=6,
-                                          cidr=network.subnet6,
-                                          gateway=network.gateway6,
-                                          dhcp=network.dhcp,
-                                          deleted=network.deleted)
+        for subnet in orm.Subnet.objects.filter(deleted=False):
+            subnet.ips.update(ipversion=subnet.ipversion)
 
     def backwards(self, orm):
-        warning_msg_printed = False
-        for subnet in orm.Subnet.objects.filter(ipversion=4):
-            network = subnet.network
-            network.dhcp = subnet.dhcp
-            network.subnet = subnet.cidr
-            network.gateway = subnet.gateway
-            # Create an empty pool
-            network.pool = orm.IPPoolTable.objects.create(available_map="",
-                                                          reserved_map="",
-                                                          size=0)
-            network.save()
-            try:
-                ip_pool = network.get_pool()
-                for nic in network.nics.filter(ipv4__isnull=False):
-                    ip_pool.reserve(nic.ipv4)
-                ip_pool.save()
-            except:
-                if not warning_msg_printed:
-                    msg = ("WARNING: Cannot perform backwards migration for IP pools!"
-                           " IP pools for all networks are not consistent."
-                           " Make sure to run 'snf-manage reconcile-pools'.")
-                    print msg
-                    warning_msg_printed = True
-
-            subnet.ip_pools.all().delete()
-
-        for subnet in orm.Subnet.objects.filter(ipversion=6):
-            network = subnet.network
-            network.dhcp = subnet.dhcp
-            network.subnet6 = subnet.cidr
-            network.gateway6 = subnet.gateway
-            network.save()
+        "Write your backwards methods here."
+        pass
 
     models = {
         'db.backend': {
@@ -105,7 +50,7 @@ class Migration(DataMigration):
             'deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'mac_prefix': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
-            'network': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'backend_networks'", 'to': "orm['db.Network']"}),
+            'network': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'backend_networks'", 'on_delete': 'models.PROTECT', 'to': "orm['db.Network']"}),
             'operstate': ('django.db.models.fields.CharField', [], {'default': "'PENDING'", 'max_length': '30'}),
             'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
         },
@@ -127,16 +72,30 @@ class Migration(DataMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'ram': ('django.db.models.fields.IntegerField', [], {'default': '0'})
         },
-        'db.floatingip': {
-            'Meta': {'object_name': 'FloatingIP'},
+        'db.ipaddress': {
+            'Meta': {'unique_together': "(('network', 'address', 'deleted'),)", 'object_name': 'IPAddress'},
+            'address': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'floating_ip': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'ipv4': ('django.db.models.fields.IPAddressField', [], {'unique': 'True', 'max_length': '15', 'db_index': 'True'}),
-            'machine': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'floating_ips'", 'null': 'True', 'to': "orm['db.VirtualMachine']"}),
-            'network': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'floating_ips'", 'to': "orm['db.Network']"}),
-            'serial': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'floating_ips'", 'null': 'True', 'on_delete': 'models.SET_NULL', 'to': "orm['db.QuotaHolderSerial']"}),
+            'ipversion': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
+            'network': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'ips'", 'on_delete': 'models.PROTECT', 'to': "orm['db.Network']"}),
+            'nic': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'ips'", 'null': 'True', 'on_delete': 'models.SET_NULL', 'to': "orm['db.NetworkInterface']"}),
+            'serial': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'ips'", 'null': 'True', 'on_delete': 'models.SET_NULL', 'to': "orm['db.QuotaHolderSerial']"}),
+            'subnet': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'ips'", 'on_delete': 'models.PROTECT', 'to': "orm['db.Subnet']"}),
+            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'userid': ('django.db.models.fields.CharField', [], {'max_length': '128', 'db_index': 'True'})
+        },
+        'db.ipaddresslog': {
+            'Meta': {'object_name': 'IPAddressLog'},
+            'active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'address': ('django.db.models.fields.CharField', [], {'max_length': '64', 'db_index': 'True'}),
+            'allocated_at': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'network_id': ('django.db.models.fields.IntegerField', [], {}),
+            'released_at': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
+            'server_id': ('django.db.models.fields.IntegerField', [], {})
         },
         'db.ippooltable': {
             'Meta': {'object_name': 'IPPoolTable'},
@@ -146,7 +105,7 @@ class Migration(DataMigration):
             'offset': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
             'reserved_map': ('django.db.models.fields.TextField', [], {'default': "''"}),
             'size': ('django.db.models.fields.IntegerField', [], {}),
-            'subnet': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'ip_pools'", 'null': 'True', 'to': "orm['db.Subnet']"})
+            'subnet': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'ip_pools'", 'null': 'True', 'on_delete': 'models.PROTECT', 'to': "orm['db.Subnet']"})
         },
         'db.macprefixpooltable': {
             'Meta': {'object_name': 'MacPrefixPoolTable'},
@@ -162,42 +121,38 @@ class Migration(DataMigration):
             'action': ('django.db.models.fields.CharField', [], {'default': 'None', 'max_length': '32', 'null': 'True'}),
             'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'db_index': 'True'}),
-            'dhcp': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'drained': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'external_router': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'flavor': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
             'floating_ip_pool': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'gateway': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True'}),
-            'gateway6': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'link': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True'}),
             'mac_prefix': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
             'machines': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['db.VirtualMachine']", 'through': "orm['db.NetworkInterface']", 'symmetrical': 'False'}),
             'mode': ('django.db.models.fields.CharField', [], {'max_length': '16', 'null': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
-            'pool': ('django.db.models.fields.related.OneToOneField', [], {'related_name': "'network'", 'unique': 'True', 'null': 'True', 'to': "orm['db.IPPoolTable']"}),
             'public': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'db_index': 'True'}),
             'serial': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'network'", 'null': 'True', 'on_delete': 'models.SET_NULL', 'to': "orm['db.QuotaHolderSerial']"}),
             'state': ('django.db.models.fields.CharField', [], {'default': "'PENDING'", 'max_length': '32'}),
-            'subnet': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True'}),
-            'subnet6': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True'}),
             'tags': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True'}),
             'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
             'userid': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True', 'db_index': 'True'})
         },
         'db.networkinterface': {
-            'Meta': {'unique_together': "(('network', 'ipv4'),)", 'object_name': 'NetworkInterface'},
+            'Meta': {'object_name': 'NetworkInterface'},
             'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
-            'dirty': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'device_owner': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True'}),
             'firewall_profile': ('django.db.models.fields.CharField', [], {'max_length': '30', 'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'index': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
-            'ipv4': ('django.db.models.fields.CharField', [], {'max_length': '15', 'null': 'True'}),
-            'ipv6': ('django.db.models.fields.CharField', [], {'max_length': '100', 'null': 'True'}),
             'mac': ('django.db.models.fields.CharField', [], {'max_length': '32', 'unique': 'True', 'null': 'True'}),
-            'machine': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'nics'", 'to': "orm['db.VirtualMachine']"}),
-            'network': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'nics'", 'to': "orm['db.Network']"}),
+            'machine': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'nics'", 'null': 'True', 'on_delete': 'models.PROTECT', 'to': "orm['db.VirtualMachine']"}),
+            'name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '128', 'null': 'True'}),
+            'network': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'nics'", 'on_delete': 'models.PROTECT', 'to': "orm['db.Network']"}),
+            'security_groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['db.SecurityGroup']", 'null': 'True', 'symmetrical': 'False'}),
             'state': ('django.db.models.fields.CharField', [], {'default': "'ACTIVE'", 'max_length': '32'}),
-            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
+            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
+            'userid': ('django.db.models.fields.CharField', [], {'max_length': '128', 'db_index': 'True'})
         },
         'db.quotaholderserial': {
             'Meta': {'ordering': "['serial']", 'object_name': 'QuotaHolderSerial'},
@@ -206,9 +161,15 @@ class Migration(DataMigration):
             'resolved': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'serial': ('django.db.models.fields.BigIntegerField', [], {'primary_key': 'True', 'db_index': 'True'})
         },
+        'db.securitygroup': {
+            'Meta': {'object_name': 'SecurityGroup'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '128'})
+        },
         'db.subnet': {
             'Meta': {'object_name': 'Subnet'},
-            'cidr': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True'}),
+            'cidr': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'db_index': 'True'}),
             'dhcp': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'dns_nameservers': ('synnefo.db.fields.SeparatedValuesField', [], {'null': 'True'}),
@@ -216,8 +177,9 @@ class Migration(DataMigration):
             'host_routes': ('synnefo.db.fields.SeparatedValuesField', [], {'null': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'ipversion': ('django.db.models.fields.IntegerField', [], {'default': '4'}),
-            'name': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True'}),
-            'network': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'subnets'", 'to': "orm['db.Network']"})
+            'name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '128', 'null': 'True'}),
+            'network': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'subnets'", 'on_delete': 'models.PROTECT', 'to': "orm['db.Network']"}),
+            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'})
         },
         'db.virtualmachine': {
             'Meta': {'object_name': 'VirtualMachine'},

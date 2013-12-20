@@ -1,4 +1,4 @@
-.. _cyclades-api-guide:
+.. _compute-api-guide:
 
 API Guide
 *********

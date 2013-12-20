@@ -41,6 +41,8 @@ from django.db.models import Q
 
 from snf_django.lib import api
 from snf_django.lib.api import faults
+from synnefo.logic import utils
+from synnefo.api import util
 
 from synnefo.db.models import Subnet, Network, IPPoolTable
 
@@ -85,6 +87,9 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
     except Network.DoesNotExist:
         raise api.faults.ItemNotFound("No network found with that id")
 
+    if network.deleted:
+        raise api.faults.BadRequest("Network has been deleted")
+
     if user_id != network.userid:
         raise api.faults.Unauthorized("Unauthorized operation")
 
@@ -108,9 +113,11 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
     else:
         validate_subnet_params(subnet=cidr, gateway=gateway)
 
-    name = check_name_length(name)
+    name = utils.check_name_length(name, Subnet.SUBNET_NAME_LENGTH, "Subnet "
+                                   "name is too long")
     sub = Subnet.objects.create(name=name, network=network, cidr=cidr,
                                 ipversion=ipversion, gateway=gateway,
+                                userid=network.userid, public=network.public,
                                 dhcp=dhcp, host_routes=host_routes,
                                 dns_nameservers=dns_nameservers)
 
@@ -143,15 +150,18 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
     return sub
 
 
-def get_subnet(sub_id):
-    """Show info of a specific subnet"""
-    log.debug('get_subnet %s', sub_id)
-    try:
-        subnet = Subnet.objects.get(id=sub_id)
-    except Subnet.DoesNotExist:
-        raise api.faults.ItemNotFound("Subnet not found")
+def get_subnet(subnet_id, user_id, for_update=False):
+    """Return a Subnet instance or raise ItemNotFound."""
 
-    return subnet
+    try:
+        objects = Subnet.objects
+        subnet_id = int(subnet_id)
+        return objects.get(Q(userid=user_id) | Q(public=True),
+                           id=subnet_id)
+    except (ValueError, TypeError):
+        raise faults.BadRequest("Invalid subnet ID '%s'" % subnet_id)
+    except Subnet.DoesNotExist:
+        raise faults.ItemNotFound("Subnet '%s' not found." % subnet_id)
 
 
 def delete_subnet():
@@ -178,7 +188,8 @@ def update_subnet(sub_id, name, user_id):
     if user_id != subnet.network.userid:
         raise api.faults.Unauthorized("Unauthorized operation")
 
-    check_name_length(name)
+    utils.check_name_length(name, Subnet.SUBNET_NAME_LENGTH, "Subnet name is "
+                            " too long")
 
     subnet.name = name
     subnet.save()
@@ -205,13 +216,6 @@ def check_number_of_subnets(network, version):
     if network.subnets.filter(ipversion=version):
         raise api.faults.BadRequest("Only one subnet of IPv4/IPv6 per "
                                     "network is allowed")
-
-
-def check_name_length(name):
-    """Check if the length of a name is within acceptable value"""
-    if len(str(name)) > Subnet.SUBNET_NAME_LENGTH:
-        raise api.faults.BadRequest("Subnet name too long")
-    return name
 
 
 def validate_pools(pool_list, cidr, gateway):

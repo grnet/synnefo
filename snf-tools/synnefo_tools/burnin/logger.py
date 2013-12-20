@@ -52,6 +52,7 @@ corresponding line and closes the file.
 import os
 import sys
 import os.path
+import logging
 import datetime
 
 from synnefo_tools.burnin import filelocker
@@ -68,6 +69,9 @@ SECTION_RESULTS = "Results"
 SECTION_NEW = "__ADD_NEW_SECTION__"
 SECTION_PASSED = "  * Passed:"
 SECTION_FAILED = "  * Failed:"
+
+# Ignore `paramiko' logger
+logging.getLogger('paramiko').addHandler(logging.NullHandler())
 
 
 # --------------------------------------------------------------------

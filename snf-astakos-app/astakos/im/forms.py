@@ -410,6 +410,11 @@ class ExtendedPasswordResetForm(PasswordResetForm):
         try:
             user = AstakosUser.objects.get_by_identifier(email)
             self.users_cache = [user]
+            if not user.has_auth_provider('local', auth_backend='astakos'):
+                provider = auth_providers.get_provider('local', user)
+                msg = mark_safe(provider.get_unusable_password_msg)
+                raise forms.ValidationError(msg)
+
             if not user.is_active:
                 msg = mark_safe(user.get_inactive_message('local'))
                 raise forms.ValidationError(msg)

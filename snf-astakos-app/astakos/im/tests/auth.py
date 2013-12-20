@@ -193,6 +193,10 @@ class ShibbolethTests(TestCase):
         r = client.post(signup_url, post_data)
         self.assertEqual(r.status_code, 404)
 
+        r = client.post(reverse('astakos.im.views.target.local.password_reset'),
+                        {'email': 'kpap@synnefo.org'})
+        self.assertContains(r, 'Classic login is not enabled for your account')
+
         # admin activates the user
         u = AstakosUser.objects.get(username="kpap@synnefo.org")
         backend = activation_backends.get_backend()

@@ -743,7 +743,10 @@ class AstakosUser(User):
                                'token': token_generator.make_token(self)})
 
     def get_inactive_message(self, provider_module, identifier=None):
-        provider = self.get_auth_provider(provider_module, identifier)
+        try:
+            provider = self.get_auth_provider(provider_module, identifier)
+        except AstakosUserAuthProvider.DoesNotExist:
+            provider = auth.get_provider(provider_module, self)
 
         msg_extra = ''
         message = ''

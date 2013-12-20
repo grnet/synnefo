@@ -1,3 +1,9 @@
+synnefo (0.15~rc3-1~precise) precise; urgency=low
+
+  * New upstream version
+
+ -- Nikos Skalkotos <skalkoto@grnet.gr>  Fri, 20 Dec 2013 17:50:31 +0200
+
 synnefo (0.14.10-1~wheezy) wheezy; urgency=low
 
   * New upstream version

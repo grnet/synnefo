@@ -145,6 +145,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         job_fields = {}
 
     new_operstate = None
+    new_flavor = None
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode)
 
     if status == rapi.JOB_STATUS_SUCCESS:
@@ -155,7 +156,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         beparams = job_fields.get("beparams", None)
         if beparams:
             # Change the flavor of the VM
-            _process_resize(vm, beparams)
+            new_flavor = _process_resize(vm, beparams)
 
         # Update backendtime only for jobs that have been successfully
         # completed, since only these jobs update the state of the VM. Else a
@@ -203,6 +204,8 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
 
     if new_operstate is not None:
         vm.operstate = new_operstate
+    if new_flavor is not None:
+        vm.flavor = new_flavor
 
     vm.save()
 
@@ -220,8 +223,7 @@ def _process_resize(vm, beparams):
                                         disk_template=old_flavor.disk_template)
     except Flavor.DoesNotExist:
         raise Exception("Cannot find flavor for VM")
-    vm.flavor = new_flavor
-    vm.save()
+    return new_flavor
 
 
 @transaction.commit_on_success

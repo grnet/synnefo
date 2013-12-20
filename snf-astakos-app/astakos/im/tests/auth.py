@@ -571,7 +571,7 @@ class TestLocal(TestCase):
         data = {'email': 'kpap@synnefo.org'}
         r = self.client.post(ui_url('local/password_reset'), data, follow=True)
         # she can't because account is not active yet
-        self.assertContains(r, 'pending activation')
+        self.assertContains(r, 'pending email verification')
 
         # moderation is enabled and an activation email has already been sent
         # so user can trigger resend of the activation email
@@ -583,7 +583,7 @@ class TestLocal(TestCase):
         # also she cannot login
         data = {'username': 'kpap@synnefo.org', 'password': 'password'}
         r = self.client.post(ui_url('local'), data, follow=True)
-        self.assertContains(r, 'Resend activation')
+        self.assertContains(r, 'Resend verification')
         self.assertFalse(r.context['request'].user.is_authenticated())
         self.assertFalse('_pithos2_a' in self.client.cookies)
 

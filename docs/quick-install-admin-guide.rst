@@ -2013,11 +2013,32 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-vmapi.conf``:
 
    VMAPI_CACHE_BACKEND = "memcached://127.0.0.1:11211/?timeout=3600"
 
-Edit ``/etc/default/vncauthproxy``:
+Add a vncauthproxy user:
 
 .. code-block:: console
 
-   CHUID="nobody:www-data"
+    # vncauthproxy-passwd /var/lib/vncauthproxy/users synnefo
+    # /etc/init.d/vncauthproxy restart
+
+Configure the vncauthproxy settings in
+``/etc/synnefo/20/snf-cyclades-app-api.conf``:
+
+.. code-block:: console
+
+    CYCLADES_VNCAUTHPROXY_OPTS = {
+        'auth_user': 'synnefo',
+        'auth_password': 'secret_password',
+        'server_address': '127.0.0.1',
+        'server_port': 24999,
+        'enable_ssl': False,
+        'ca_cert': None,
+        'strict': False,
+    }
+
+Depending on your snf-vncauthproxy setup, you might want to tweak the above
+settings. Check the `documentation
+<http://www.synnefo.org/docs/snf-vncauthproxy/latest/index.html>`_ of
+snf-vncauthproxy for more information.
 
 We have now finished with the basic Cyclades configuration.
 

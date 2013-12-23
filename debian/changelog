@@ -1,3 +1,9 @@
+synnefo (0.15~rc3-4~precise) precise; urgency=low
+
+  * Source was wrong. Version was tagged at a wrong place
+
+ -- Nikos Skalkotos <skalkoto@grnet.gr>  Mon, 23 Dec 2013 15:17:55 +0200
+
 synnefo (0.15~rc3-3~precise) precise; urgency=low
 
   * Add missing python-setuptools dependency

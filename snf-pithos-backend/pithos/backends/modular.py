@@ -164,6 +164,17 @@ def debug_method(func):
     return wrapper
 
 
+def list_method(func):
+    @wraps(func)
+    def wrapper(self, *args, **kw):
+        marker = kw.get('marker')
+        limit = kw.get('limit')
+        result = func(self, *args, **kw)
+        start, limit = self._list_limits(result, marker, limit)
+        return result[start:start + limit]
+    return wrapper
+
+
 class ModularBackend(BaseBackend):
     """A modular backend.
 
@@ -333,12 +344,11 @@ class ModularBackend(BaseBackend):
 
     @debug_method
     @backend_method
+    @list_method
     def list_accounts(self, user, marker=None, limit=10000):
         """Return a list of accounts the user can access."""
 
-        allowed = self._allowed_accounts(user)
-        start, limit = self._list_limits(allowed, marker, limit)
-        return allowed[start:start + limit]
+        return self._allowed_accounts(user)
 
     def _get_account_quotas(self, account):
         """Get account usage from astakos."""
@@ -490,6 +500,7 @@ class ModularBackend(BaseBackend):
 
     @debug_method
     @backend_method
+    @list_method
     def list_containers(self, user, account, marker=None, limit=10000,
                         shared=False, until=None, public=False):
         """Return a list of containers existing under an account."""
@@ -497,9 +508,7 @@ class ModularBackend(BaseBackend):
         if user != account:
             if until or account not in self._allowed_accounts(user):
                 raise NotAllowedError
-            allowed = self._allowed_containers(user, account)
-            start, limit = self._list_limits(allowed, marker, limit)
-            return allowed[start:start + limit]
+            return self._allowed_containers(user, account)
         if shared or public:
             allowed = set()
             if shared:
@@ -508,15 +517,10 @@ class ModularBackend(BaseBackend):
             if public:
                 allowed.update([x[0].split('/', 2)[1] for x in
                                self.permissions.public_list(account)])
-            allowed = sorted(allowed)
-            start, limit = self._list_limits(allowed, marker, limit)
-            return allowed[start:start + limit]
+            return sorted(allowed)
         node = self.node.node_lookup(account)
-        containers = [x[0] for x in self._list_object_properties(
+        return [x[0] for x in self._list_object_properties(
             node, account, '', '/', marker, limit, False, None, [], until)]
-        start, limit = self._list_limits(
-            [x[0] for x in containers], marker, limit)
-        return containers[start:start + limit]
 
     @debug_method
     @backend_method
@@ -719,15 +723,16 @@ class ModularBackend(BaseBackend):
                       size_range, all_props, public):
         if user != account and until:
             raise NotAllowedError
+
+        objects = []
         if shared and public:
             # get shared first
             shared_paths = self._list_object_permissions(
                 user, account, container, prefix, shared=True, public=False)
-            objects = set()
             if shared_paths:
                 path, node = self._lookup_container(account, container)
                 shared_paths = self._get_formatted_paths(shared_paths)
-                objects |= set(self._list_object_properties(
+                objects = set(self._list_object_properties(
                     node, path, prefix, delimiter, marker, limit, virtual,
                     domain, keys, until, size_range, shared_paths, all_props))
 
@@ -737,27 +742,22 @@ class ModularBackend(BaseBackend):
             objects = list(objects)
 
             objects.sort(key=lambda x: x[0])
-            start, limit = self._list_limits(
-                [x[0] for x in objects], marker, limit)
-            return objects[start:start + limit]
         elif public:
             objects = self._list_public_object_properties(
                 user, account, container, prefix, all_props)
-            start, limit = self._list_limits(
-                [x[0] for x in objects], marker, limit)
-            return objects[start:start + limit]
+        else:
+            allowed = self._list_object_permissions(
+                user, account, container, prefix, shared, public=False)
+            if shared and not allowed:
+                return []
+            path, node = self._lookup_container(account, container)
+            allowed = self._get_formatted_paths(allowed)
+            objects = self._list_object_properties(
+                node, path, prefix, delimiter, marker, limit, virtual, domain,
+                keys, until, size_range, allowed, all_props)
 
-        allowed = self._list_object_permissions(
-            user, account, container, prefix, shared, public)
-        if shared and not allowed:
-            return []
-        path, node = self._lookup_container(account, container)
-        allowed = self._get_formatted_paths(allowed)
-        objects = self._list_object_properties(
-            node, path, prefix, delimiter, marker, limit, virtual, domain,
-            keys, until, size_range, allowed, all_props)
-        start, limit = self._list_limits(
-            [x[0] for x in objects], marker, limit)
+        # apply limits
+        start, limit = self._list_limits(objects, marker, limit)
         return objects[start:start + limit]
 
     def _list_public_object_properties(self, user, account, container, prefix,

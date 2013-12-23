@@ -15,7 +15,7 @@ import tempfile
 from ConfigParser import ConfigParser, DuplicateSectionError
 
 from kamaki.cli import config as kamaki_config
-from kamaki.clients.astakos import AstakosClient
+from kamaki.clients.astakos import CachedAstakosClient
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
 from kamaki.clients.image import ImageClient
 from kamaki.clients.compute import ComputeClient
@@ -199,7 +199,7 @@ class SynnefoCI(object):
         token = config.get_cloud(self.kamaki_cloud, "token")
         #self.logger.debug("Token is %s" % _green(token))
 
-        self.astakos_client = AstakosClient(auth_url, token)
+        self.astakos_client = CachedAstakosClient(auth_url, token)
 
         cyclades_url = \
             self.astakos_client.get_service_endpoints('compute')['publicURL']

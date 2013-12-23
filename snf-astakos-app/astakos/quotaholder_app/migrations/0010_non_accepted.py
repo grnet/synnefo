@@ -11,25 +11,7 @@ class Migration(DataMigration):
         )
 
     def forwards(self, orm):
-        AstakosUser = orm["im.astakosuser"]
-        users = AstakosUser.objects.filter(
-            models.Q(moderated=False) |
-            models.Q(moderated=True, is_rejected=True))
-        uuids = set(users.values_list("uuid", flat=True))
-
-        # no usage
-        holdings = orm.Holding.objects.filter(holder__in=uuids)
-        empty = len(holdings.filter(usage_min=0, usage_max=0))
-        if empty:
-            print "Deleting %s empty holdings" % empty
-        holdings.filter(usage_min=0, usage_max=0).delete()
-
-        # with usage
-        hs = holdings.all()
-        for h in hs:
-            print "Warning: Deleting non-empty holding: %s, %s" % (h.holder,
-                                                                   h.resource)
-        holdings.all().delete()
+        pass
 
     def backwards(self, orm):
         "Write your backwards methods here."

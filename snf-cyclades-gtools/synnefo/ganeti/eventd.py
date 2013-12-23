@@ -348,6 +348,10 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
         self.logger.debug("Job: %d: %s %s", job_id, op_id, op.status)
 
+        if op_id != "OP_CLUSTER_SET_PARAMS":
+            # Send only modifications of cluster
+            return None, None
+
         msg = {'operation':    op_id,
                'type':         "ganeti-cluster-status"}
 

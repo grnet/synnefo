@@ -131,7 +131,7 @@ def get_rsapi_state(vm):
 
 
 TASK_STATE_FROM_ACTION = {
-    "BUILD": "BULDING",
+    "BUILD": "BUILDING",
     "START": "STARTING",
     "STOP": "STOPPING",
     "REBOOT": "REBOOTING",

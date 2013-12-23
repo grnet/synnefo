@@ -1663,7 +1663,7 @@
     ]
 
     models.VM.TASK_STATE_STATUS_MAP = {
-      'BULDING': 'BUILD',
+      'BUILDING': 'BUILD',
       'REBOOTING': 'REBOOT',
       'STOPPING': 'SHUTDOWN',
       'STARTING': 'START',

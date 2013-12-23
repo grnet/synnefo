@@ -109,6 +109,7 @@ external world. Also documents all Synnefo external REST APIs.
 
    Administrator's Guide <admin-guide>
    Developer's Guide <dev-guide>
+   API Guide <api-guide>
 
 
 Synnefo tools

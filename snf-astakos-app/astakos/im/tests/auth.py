@@ -193,6 +193,10 @@ class ShibbolethTests(TestCase):
         r = client.post(signup_url, post_data)
         self.assertEqual(r.status_code, 404)
 
+        r = client.post(reverse('astakos.im.views.target.local.password_reset'),
+                        {'email': 'kpap@synnefo.org'})
+        self.assertContains(r, 'Classic login is not enabled for your account')
+
         # admin activates the user
         u = AstakosUser.objects.get(username="kpap@synnefo.org")
         backend = activation_backends.get_backend()
@@ -567,7 +571,7 @@ class TestLocal(TestCase):
         data = {'email': 'kpap@synnefo.org'}
         r = self.client.post(ui_url('local/password_reset'), data, follow=True)
         # she can't because account is not active yet
-        self.assertContains(r, 'pending activation')
+        self.assertContains(r, 'pending email verification')
 
         # moderation is enabled and an activation email has already been sent
         # so user can trigger resend of the activation email
@@ -579,7 +583,7 @@ class TestLocal(TestCase):
         # also she cannot login
         data = {'username': 'kpap@synnefo.org', 'password': 'password'}
         r = self.client.post(ui_url('local'), data, follow=True)
-        self.assertContains(r, 'Resend activation')
+        self.assertContains(r, 'Resend verification')
         self.assertFalse(r.context['request'].user.is_authenticated())
         self.assertFalse('_pithos2_a' in self.client.cookies)
 
@@ -931,7 +935,8 @@ class TestAuthProviderViews(TestCase):
         r = cl_newuser2.post(ui_url('signup/'), signup_data)
         self.assertFalse(academic_users.filter(email='newuser@synnefo.org'))
         r = self.client.get(activation_link, follow=True)
-        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, astakos_messages.INVALID_ACTIVATION_KEY)
         newuser = User.objects.get(email="newuser@synnefo.org")
         self.assertTrue(newuser.activation_sent)
 

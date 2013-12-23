@@ -1,4 +1,4 @@
-.. _plankton-api-guide:
+.. _image-api-guide:
 
 Cyclades/Image API Guide
 ========================
@@ -679,7 +679,7 @@ URI                                   Method Image    Glance
 **image-id** is explained at :ref:`id-ref`
 
 **uuid** is the unique user id of the user (see `Astakos API
-<astakos-api-guide.html>`_ on how to handle it)
+<identity-api-guide.html>`_ on how to handle it)
 
 |
 
@@ -716,7 +716,7 @@ URI                                   Method Image    Glance
 **image-id** is explained at :ref:`id-ref`
 
 **uuid** is the unique user id of the user (see `Astakos API
-<astakos-api-guide.html>`_ on how to handle it)
+<identity-api-guide.html>`_ on how to handle it)
 
 |
 
@@ -749,7 +749,7 @@ URI                       Method Image    Glance
 ``/shared-images/<uuid>`` DELETE ✔        ✔
 ========================= ====== ======== ======
 
-**uuid** is the unique user id of the user (see `Astakos API <astakos-api-guide.html>`_ on how to handle it)
+**uuid** is the unique user id of the user (see `Astakos API <identity-api-guide.html>`_ on how to handle it)
 
 |
 

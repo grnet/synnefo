@@ -56,7 +56,7 @@ from pithos.api.util import (
     get_content_range, socket_read_iterator, SaveToBackendHandler,
     object_data_response, put_object_block, hashmap_md5, simple_list_response,
     api_method, is_uuid, retrieve_uuid, retrieve_uuids,
-    retrieve_displaynames, get_pithos_usage, Checksum, NoChecksum
+    retrieve_displaynames, Checksum, NoChecksum
 )
 
 from pithos.api.settings import (UPDATE_MD5, TRANSLATE_UUIDS,
@@ -240,14 +240,12 @@ def account_list(request):
         return response
 
     account_meta = []
-    usage = get_pithos_usage(request.x_auth_token)
     for x in accounts:
         if x == request.user_uniq:
             continue
         try:
             meta = request.backend.get_account_meta(
-                request.user_uniq, x, 'pithos', include_user_defined=False,
-                external_quota=usage)
+                request.user_uniq, x, 'pithos', include_user_defined=False)
             groups = request.backend.get_account_groups(request.user_uniq, x)
         except NotAllowedError:
             raise faults.Forbidden('Not allowed')
@@ -284,11 +282,9 @@ def account_meta(request, v_account):
     #                       badRequest (400)
 
     until = get_int_parameter(request.GET.get('until'))
-    usage = get_pithos_usage(request.x_auth_token)
     try:
         meta = request.backend.get_account_meta(
-            request.user_uniq, v_account, 'pithos', until,
-            external_quota=usage)
+            request.user_uniq, v_account, 'pithos', until)
         groups = request.backend.get_account_groups(
             request.user_uniq, v_account)
 
@@ -297,7 +293,7 @@ def account_meta(request, v_account):
                 groups[k] = retrieve_displaynames(
                     getattr(request, 'token', None), groups[k])
         policy = request.backend.get_account_policy(
-            request.user_uniq, v_account, external_quota=usage)
+            request.user_uniq, v_account)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
 
@@ -365,15 +361,13 @@ def container_list(request, v_account):
     #                       badRequest (400)
 
     until = get_int_parameter(request.GET.get('until'))
-    usage = get_pithos_usage(request.x_auth_token)
     try:
         meta = request.backend.get_account_meta(
-            request.user_uniq, v_account, 'pithos', until,
-            external_quota=usage)
+            request.user_uniq, v_account, 'pithos', until)
         groups = request.backend.get_account_groups(
             request.user_uniq, v_account)
         policy = request.backend.get_account_policy(
-            request.user_uniq, v_account, external_quota=usage)
+            request.user_uniq, v_account)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
 

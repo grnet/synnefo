@@ -248,13 +248,15 @@
 
     synnefo.i18n.API_ERROR_MESSAGES = {
         'timeout': {
+            'title': 'API error',
             'message': 'TIMEOUT', 
             'allow_report': false,
             'type': 'Network'
         },
         
         'error': {
-            'message': 'API error'
+            'title': 'API error',
+            'message': null
         }, 
 
         'abort': {},
@@ -579,6 +581,7 @@
 
         if (window.ERROR_OVERRIDES && window.ERROR_OVERRIDES[options.message]) {
             options.message = window.ERROR_OVERRIDES[options.message];
+            options.api_message = '';
         }
         
         if (code && window.ERROR_OVERRIDES && window.ERROR_OVERRIDES[code]) {

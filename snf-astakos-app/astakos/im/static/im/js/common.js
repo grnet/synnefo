@@ -444,29 +444,16 @@ $('#members-table tr .check input').click(function(e){
     $('.renew-token a.do').show();
   })
 
-// control pagination for projects intro page
-$('.projects').siblings("#projects-list")
-    .tablesorter({
-      widthFixed: true,
-      sortList: [[0,0]],
-    })
-    .tablesorterPager({
-      container: $("#pager"),
-      size:10,
-      positionFixed:false,
-    });
+  // control pagination for projects intro page
+  $('.search-projects').parents('.projects').find('table#projects-list').dataTable({
+    "iDisplayLength": 20,
+  });
 
-// control pagination for find project page
-$('.projects').find("#projects-list")
-    .tablesorter({
-      widthFixed: true,
-      sortList: [[0,0]],
-    })
-    .tablesorterPager({
-      container: $("#pager"),
-      size:20,
-      positionFixed:false,
-    });
+  $('.search-projects').parents('.projects').find('#projects-list_filter').hide();
+  // control pagination for projects intro page
+  $('.projects-intro').parents('.projects').siblings('table#projects-list').dataTable({
+    "iDisplayLength": 10,
+  });
 
 });
 

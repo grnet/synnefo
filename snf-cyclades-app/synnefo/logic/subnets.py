@@ -113,8 +113,8 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
     else:
         validate_subnet_params(subnet=cidr, gateway=gateway)
 
-    name = utils.check_name_length(name, Subnet.SUBNET_NAME_LENGTH, "Subnet "
-                                   "name is too long")
+    utils.check_name_length(name, Subnet.SUBNET_NAME_LENGTH, "Subnet "
+                            "name is too long")
     sub = Subnet.objects.create(name=name, network=network, cidr=cidr,
                                 ipversion=ipversion, gateway=gateway,
                                 userid=network.userid, public=network.public,

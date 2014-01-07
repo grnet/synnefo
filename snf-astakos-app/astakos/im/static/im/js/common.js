@@ -84,7 +84,48 @@ if (navigator.userAgent.match(/iPhone/i)) {
 }
 //end of fix
 
- 
+function tableSort(tableEl, iDisplayLength, bFilter) {
+
+  // bFilter is an optional parameter
+  // if bFilter is provided, search input will be visible
+  bFilter = typeof bFilter !== 'undefined' ? bFilter : true;
+
+  // iDisplayLength is an optional parameter
+  // iDisplayLength controls the max number of rows visible to each page
+  iDisplayLength = typeof iDisplayLength !== 'undefined' ? iDisplayLength : 10;
+
+  // return if table holds no data
+  if (tableEl.find('tbody').find('tr').length <2 ){
+    return;
+  }
+
+  var dateArr = [];
+  var numHTMLArr = [];
+
+  _.each(tableEl.find('th'),function(value, key, list){
+    if ( $(value).attr('class').indexOf("date")> -1 ) {
+      dateArr.push(key);
+    }
+    if ( $(value).attr('class').indexOf("members_count")> -1) {
+      numHTMLArr.push(key);
+    };
+
+  });
+
+  // control pagination & table sorting for projects intro page
+  tableEl.dataTable({
+    "bFilter": bFilter,
+    "iDisplayLength": iDisplayLength,
+    "bLengthChange": false,
+    "aoColumnDefs": [
+         { "sType": "num-html", "aTargets": numHTMLArr },
+         { "sType": "date-uk", "aTargets": dateArr },
+    ]
+  });
+  $('.dataTables_wrapper').addClass('clearfix');
+
+}
+
 $(document).ready(function() {
 	
     var is_firefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
@@ -444,16 +485,9 @@ $('#members-table tr .check input').click(function(e){
     $('.renew-token a.do').show();
   })
 
-  // control pagination for projects intro page
-  $('.search-projects').parents('.projects').find('table#projects-list').dataTable({
-    "iDisplayLength": 20,
-  });
-
-  $('.search-projects').parents('.projects').find('#projects-list_filter').hide();
-  // control pagination for projects intro page
-  $('.projects-intro').parents('.projects').siblings('table#projects-list').dataTable({
-    "iDisplayLength": 10,
-  });
+  tableSort($('.projects-intro').siblings('table#projects-list'), 10, true );
+  tableSort($('.search-projects').siblings('table#projects-list'), 20, false);
+  tableSort($('#members-table'), 10, true);
 
 });
 
@@ -461,6 +495,5 @@ $('#members-table tr .check input').click(function(e){
 $(window).resize(function() {
     
    setContainerMinHeight('.container .wrapper');
-    
 
 });

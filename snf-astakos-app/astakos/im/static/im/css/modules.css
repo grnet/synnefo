@@ -198,6 +198,8 @@ a.button 										{ border:0 none;  color: #FFFFFF;  display: inline-block;  te
 a.button:hover								 	{ background-color: #F89A1C; border:0 none; color:#fff;}*/
 
 /*pagination*/
+.dataTables_wrapper 							{ margin-bottom: 1em}
+.dataTables_wrapper th:hover 					{ cursor: pointer}
 .dataTables_info 								{ float:left;}
 .dataTables_paginate                            { float:right; }
 .dataTables_paginate a:after 					{ content: ' >';}
@@ -212,14 +214,13 @@ a.button:hover								 	{ background-color: #F89A1C; border:0 none; color:#fff;}
 .dataTables_paginate .paginate_disabled_previous,
 .dataTables_paginate .paginate_disabled_next,
 .dataTables_paginate .paginate_disabled_next:hover { color: gray; text-decoration: none}
-.dataTables_length 						 		{ display: none;}
-.dataTables_filter 								{ position: absolute; right: 70px;}
+.dataTables_filter 								{ position: absolute; right: 0;}
 .dataTables_filter input 						{ border: 1px solid #9e9e9e; height: 21px; line-height: 21px; padding: 3px 10px;}
 .dataTables_paginate .nums                      { text-align:left;}
 .dataTables_paginate .nums span                          { color:#000;}
 .dataTables_paginate .next-prev a.disabled				{ text-decoration: none; color:#ccc; cursor:default; }
 .two-cols .lt .clients-wrapper p				{ padding:0; }
-
+#members-table_wrapper .dataTables_filter 		{ position: relative; text-align: right}
 
 /* colors for links */
 .container ul.options li a						{ display:inline-block; line-height:100%; }
@@ -256,10 +257,8 @@ table.alt-style tr td a							{ margin:0; }
 table.alt-style tr td:first-child a				{ margin:0; }
 table.alt-style tr th a							{ padding-right:20px; }
 table.alt-style tr th:focus 					{ outline: 0 none;}
-table.alt-style tr th.asc a						{ background:url(../images/arrow_th_bg.png) no-repeat right -48px; }
-table.alt-style tr th.desc a					{ background:url(../images/arrow_th_bg.png) no-repeat right 6px; }
 table.alt-style tr th.sorting_asc span			{ padding-right:20px;background:url(../images/arrow_th_bg.png) no-repeat right -46px; }
-table.alt-style tr th.sorting_desc span			{ padding-right:20px;background:url(../images/arrow_th_bg.png) no-repeat right 6px;}
+table.alt-style tr th.sorting_desc span			{ padding-right:20px;background:url(../images/arrow_th_bg.png) no-repeat right 6px;} 
 table.my-projects tr th:hover 					{ cursor: pointer; text-decoration: underline;}
 .content a.submit								{ margin:0; display:inline-block; margin:10px 0 ;  height:auto; min-width:100px; text-align:center;}
 table.alt-style tr:nth-child(2n) td				{ background:#F2F2F2 } 
@@ -685,13 +684,11 @@ table.cols-3 tr.images td 						{ text-align: center;}
 table.cols-3 tr.links td 						{ font-size:1.154em}
 
 
+
 .members-table 									{ width:100%;}
 .members-table .check 							{ width:5%;}
 .members-table .check input[type="checkbox"]	{ vertical-align: middle }
 .members-table .check + td.email	 			{ padding-left:5px;}
-.approved .members-table .email:hover,
-.pending .members-table.email:hover 			{ cursor: pointer;} 
-.members-table + .pagination 					{ display: none}
 .all .members-table .check 						{ display:none;}
 .form-actions 									{ position: relative;}
 .form-actions input[type="submit"]				{ display: none; position: } 

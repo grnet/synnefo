@@ -1,6 +1,6 @@
-function setContainerMinHeight( applicableDiv){
-	
-    if ( $(applicableDiv).length > 0 ) {
+function setContainerMinHeight(applicableDiv) {
+
+    if ($(applicableDiv).length > 0) {
         //var h = $('.header').height(); div.header is not found 
         var f = $('.footer').height();
         var w = $(window).height();
@@ -116,7 +116,9 @@ function tableSort(tableEl, iDisplayLength, bFilter) {
   tableEl.dataTable({
     "bFilter": bFilter,
     "iDisplayLength": iDisplayLength,
-    "bLengthChange": false,
+    "bLengthChange": true,
+    "sDom": '<"top">frt<"clearfix"i><"bottom"pl>',
+    "bStateSave": true,
     "aoColumnDefs": [
          { "sType": "num-html", "aTargets": numHTMLArr },
          { "sType": "date-uk", "aTargets": dateArr },
@@ -486,7 +488,7 @@ $('#members-table tr .check input').click(function(e){
   })
 
   tableSort($('.projects-intro').siblings('table#projects-list'), 10, true );
-  tableSort($('.search-projects').siblings('table#projects-list'), 20, false);
+  tableSort($('.search-projects').siblings('table#projects-list'), 20, true);
   tableSort($('#members-table'), 10, true);
 
 });

@@ -207,14 +207,14 @@ a.button:hover								 	{ background-color: #F89A1C; border:0 none; color:#fff;}
 .dataTables_paginate a:first-child:after 		{ content: '';}
 .dataTables_paginate a:first-child:before 		{ content: '< ';}
 .dataTables_paginate .paginate_enabled_next,
-.dataTables_paginate .paginate_disabled_next	{ margin-left:15px; }
-
+.dataTables_paginate .paginate_disabled_next	{ margin-left:20px; }
+.dataTables_wrapper .select 					{ margin-left: 40px; float: left;}
 .dataTables_paginate .paginate_enabled_previous:hover,
 .dataTables_paginate .paginate_enabled_next:hover { cursor: pointer; }
 .dataTables_paginate .paginate_disabled_previous:hover,
 .dataTables_paginate .paginate_disabled_previous,
 .dataTables_paginate .paginate_disabled_next,
-.dataTables_paginate .paginate_disabled_next:hover { color: gray; text-decoration: none}
+.dataTables_paginate .paginate_disabled_next:hover { color: #B3B3B3; text-decoration: none}
 .dataTables_filter 								{ position: absolute; right: 0; top: -2px;}
 .dataTables_filter input 						{ border: 1px solid #9e9e9e; height: 21px; line-height: 21px; padding: 3px 10px;}
 .dataTables_paginate .nums                      { text-align:left;}
@@ -704,4 +704,6 @@ table.cols-3 tr.links td 						{ font-size:1.154em}
 .form-actions form.link-like input.approve[type="submit"] 		{ background:#55B577;}
 .form-actions form.link-like input[type="submit"]:hover		    { text-decoration:none; background:#3582AC; }
 .form-actions.inactive form.link-like input[type="submit"]		{ background:#e8e8e8;   cursor:default; }
- 
+
+.search-projects + #projects-list_wrapper table caption { font-size: 1.308em;}
+

@@ -110,9 +110,10 @@ class View(object):
                     request, data, *args, **kwargs)
             except ValidationError, e:
                 # specific response for validation errors
-                return http.HttpResponseServerError(
+                return http.HttpResponse(
                     json.dumps({'errors': e.message_dict,
-                                'non_field_key': NON_FIELD_ERRORS}))
+                                'non_field_key': NON_FIELD_ERRORS}),
+                status=422, content_type="application/json")
 
         else:
             allowed_methods = \

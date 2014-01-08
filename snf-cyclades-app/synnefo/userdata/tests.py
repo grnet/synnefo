@@ -38,9 +38,13 @@ from django.conf import settings
 from django.test.client import Client
 from django.utils import simplejson as json
 from django.core.urlresolvers import reverse
+from django.core.validators import MaxLengthValidator
+
+from snf_django.utils.testing import with_settings
+
 from mock import patch
 
-from synnefo.userdata.models import PublicKeyPair
+from synnefo.userdata.models import PublicKeyPair, SSH_KEY_MAX_CONTENT_LENGTH
 
 
 def get_user_mock(request, *args, **kwargs):
@@ -87,6 +91,21 @@ class TestRestViews(TransactionTestCase):
         self.client = AaiClient()
         self.user = 'test'
         self.keys_url = reverse('ui_keys_collection')
+
+    def test_key_content_length_limit(self):
+        # patch validator
+        PublicKeyPair._meta.fields[3].validators = [MaxLengthValidator(10)]
+        resp = self.client.post(self.keys_url,
+                                json.dumps({'name': 'key pair 2',
+                                            'content': """0123456789+"""}),
+                                content_type='application/json')
+        self.assertEqual(resp.status_code, 422)
+        resp = json.loads(resp.content)
+        assert 'errors' in resp
+        assert 'content' in resp['errors']
+        self.assertEqual(PublicKeyPair.objects.count(), 0)
+        PublicKeyPair._meta.fields[3].validators = \
+            [MaxLengthValidator(SSH_KEY_MAX_CONTENT_LENGTH)]
 
     def test_keys_collection_get(self):
         resp = self.client.get(self.keys_url)
@@ -201,7 +220,7 @@ class TestRestViews(TransactionTestCase):
                                 json.dumps({'content': """key 2 content"""}),
                                 content_type='application/json')
 
-        self.assertEqual(resp.status_code, 500)
+        self.assertEqual(resp.status_code, 422)
         self.assertEqual(resp.content,
                          """{"non_field_key": "__all__", "errors": """
                          """{"name": ["This field cannot be blank."]}}""")
@@ -221,7 +240,7 @@ class TestRestViews(TransactionTestCase):
                                 json.dumps({'name': 'key1',
                                             'content': """key 1 content"""}),
                                 content_type='application/json')
-        self.assertEqual(resp.status_code, 500)
+        self.assertEqual(resp.status_code, 422)
         self.assertEqual(resp.content,
                          """{"non_field_key": "__all__", "errors": """
                          """{"__all__": ["SSH keys limit exceeded."]}}""")

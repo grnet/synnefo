@@ -34,7 +34,8 @@
 import re
 
 from django.utils.translation import ugettext as _
-from django.utils.encoding import smart_str, force_text
+from django.utils.encoding import smart_str
+from django.utils.encoding import force_unicode as force_text
 from django import forms
 
 

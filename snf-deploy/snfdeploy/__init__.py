@@ -581,8 +581,8 @@ def main():
         do_create_ddns_keys(args, env)
         return 0
     else:
-        if ((args.key_inject and not args.ssh_key and must_create_keys(env)) or
-            must_create_ddns_keys(env)):
+        if ((args.key_inject and not args.ssh_key and
+             must_create_keys(env)) or must_create_ddns_keys(env)):
             print "No ssh/ddns keys to use. Run `snf-deploy keygen' first."
             return 1
         env.ddns_keys = find_ddns_key_files(env)

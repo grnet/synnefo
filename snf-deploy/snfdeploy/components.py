@@ -100,7 +100,7 @@ class SSH(SynnefoComponent):
         files = [
             "authorized_keys", "id_dsa", "id_dsa.pub", "id_rsa", "id_rsa.pub"
             ]
-        ssh = [("/root/.ssh/%s" % f, {}, {"mode":0600}) for f in files]
+        ssh = [("/root/.ssh/%s" % f, {}, {"mode": 0600}) for f in files]
         return ssh
 
     def initialize(self):
@@ -289,7 +289,7 @@ su - postgres -c  "psql -w -d snf_apps -f /tmp/psqlcmd"
     def allow_access_in_db(self, node_info, user="all", method="md5"):
         f = "/etc/postgresql/*/main/pg_hba.conf"
         cmd1 = "echo host all %s %s/32 %s >> %s" % \
-                (user, node_info.ip, method, f)
+            (user, node_info.ip, method, f)
         cmd2 = "sed -i 's/\(host.*127.0.0.1.*\)md5/\\1trust/' %s" % f
         return [cmd1, cmd2] + self.restart()
 
@@ -378,19 +378,19 @@ class Ganeti(SynnefoComponent):
 class Master(SynnefoComponent):
     def add_rapi_user(self):
         x = "%s:Ganeti Remote API:%s" % \
-              (self.env.env.synnefo_user, self.env.env.synnefo_rapi_passwd)
+            (self.env.env.synnefo_user, self.env.env.synnefo_rapi_passwd)
 
         commands = [
-          "echo %s {HA1}$(echo -n %s | openssl md5 | sed 's/^.* //') write > \
-              /var/lib/ganeti/rapi/users" % (self.env.env.synnefo_user, x),
-          ]
+            "echo %s {HA1}$(echo -n %s | openssl md5 | sed 's/^.* //') write" +
+            " > /var/lib/ganeti/rapi/users" % (self.env.env.synnefo_user, x),
+            ]
 
         return commands + self.restart()
 
     def add_node(self, node_info):
         commands = [
             "gnt-node add --no-ssh-key-check --master-capable=yes " +
-              "--vm-capable=yes " + node_info.fqdn,
+            "--vm-capable=yes " + node_info.fqdn,
             ]
         return commands
 
@@ -538,8 +538,8 @@ class Apache(SynnefoComponent):
 
     def restart(self):
         return [
-          "/etc/init.d/apache2 restart",
-          ]
+            "/etc/init.d/apache2 restart",
+            ]
 
 
 class Gunicorn(SynnefoComponent):
@@ -560,8 +560,8 @@ class Gunicorn(SynnefoComponent):
 
     def restart(self):
         return [
-          "/etc/init.d/gunicorn restart",
-          ]
+            "/etc/init.d/gunicorn restart",
+            ]
 
 
 class Common(SynnefoComponent):
@@ -590,8 +590,8 @@ class Common(SynnefoComponent):
 
     def restart(self):
         return [
-          "/etc/init.d/gunicorn restart",
-          ]
+            "/etc/init.d/gunicorn restart",
+            ]
 
 
 class WEB(SynnefoComponent):
@@ -618,8 +618,8 @@ class WEB(SynnefoComponent):
 
     def restart(self):
         return [
-          "/etc/init.d/gunicorn restart",
-          ]
+            "/etc/init.d/gunicorn restart",
+            ]
 
 
 class Astakos(SynnefoComponent):
@@ -916,7 +916,7 @@ snf-manage network-create --subnet6={0} \
         passwd = self.env.env.synnefo_rapi_passwd
         return [
             "snf-manage backend-add --clustername=%s --user=%s --pass=%s" %
-              (cluster.fqdn, user, passwd)
+            (cluster.fqdn, user, passwd)
             ]
 
     def undrain_backend(self):
@@ -988,10 +988,10 @@ class Kamaki(SynnefoComponent):
 
     def initialize(self):
         url = "https://%s/astakos/identity/v2.0" % self.env.env.accounts.fqdn
+        token = self.env.user_auth_token
         return [
             "kamaki config set cloud.default.url %s" % url,
-            "kamaki config set cloud.default.token %s" %
-              self.env.user_auth_token,
+            "kamaki config set cloud.default.token %s" % token,
             "kamaki container create images",
             ]
 

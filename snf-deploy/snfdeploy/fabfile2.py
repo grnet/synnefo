@@ -116,7 +116,7 @@ def update_env_with_user_info():
     match = r.search(result)
     if env.dry_run:
         env.user_id, env.user_auth_token, env.user_uuid = \
-              ("dummy_uid", "dummy_user_auth_token", "dummy_user_uuid")
+            ("dummy_uid", "dummy_user_auth_token", "dummy_user_uuid")
     else:
         env.user_id, env.user_auth_token, env.user_uuid = match.groups()
 

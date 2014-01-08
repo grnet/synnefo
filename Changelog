@@ -242,6 +242,13 @@ Cyclades UI
 - Setting ``UI_SUPPORT_SSH_OS_LIST`` removed and no longer used.
 
 
+Cyclades Userdata
+-----------------
+
+- Maximum allowed length of ssh key content. Configurable from the 
+  ``USERDATA_SSH_KEY_MAX_CONTENT_SIZE`` setting.
+
+
 Pithos
 ------
 

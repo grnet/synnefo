@@ -397,22 +397,16 @@ $(document).ready(function() {
     $('.hidden-submit input[readonly!="True"]').focus(function () {
          $('.hidden-submit .form-row.submit').slideDown(500);
     });
-    
-    
-    
-   
       
-    
     setTimeout(function() {
-      if ($('input#id_username').val()){ 
-      	$('input#id_username').siblings('label').css('opacity','0');
-      };
-      if ($('input#id_password').val()){ 
-      	$('input#id_password').siblings('label').css('opacity','0');
-      }
-	}, 100);
-	
-	
+        var innerInputs = $('form.innerlabels input[type="text"], form.innerlabels input[type="password"]');
+        _.each(innerInputs, function(val, key,list){
+          if ($(val).val()){
+            $(val).siblings('label').css('opacity','0');
+          };
+        });
+    }, 200);
+
 	
 	// landing-page initialization
     if ($('.landing-page').length > 0) {

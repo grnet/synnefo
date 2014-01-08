@@ -170,9 +170,9 @@ class Env(object):
 
         # This is needed because "".split(",") -> ['']
         if self.cluster_nodes:
-          self.cluster_nodes = self.cluster_nodes.split(",")
+            self.cluster_nodes = self.cluster_nodes.split(",")
         else:
-          self.cluster_nodes = []
+            self.cluster_nodes = []
 
         self.cluster_hostnames = [self.node2hostname[n]
                                   for n in self.cluster_nodes]

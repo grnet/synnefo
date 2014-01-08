@@ -54,9 +54,10 @@ def abort(action):
             abort = kwargs.get("abort", True)
             force = env.force
             if not abort or force:
-                 debug(env.host, "WARNING: command failed. Continuing anyway...")
+                debug(env.host,
+                      "WARNING: command failed. Continuing anyway...")
             else:
-                 fabric.utils.abort(e)
+                fabric.utils.abort(e)
     return inner
 
 

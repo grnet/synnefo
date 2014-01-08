@@ -1241,7 +1241,7 @@ def export_services():
         filename = "%s_services.json" % service
         cmd = "snf-manage service-export-%s > %s" % (service, filename)
         run(cmd)
-        try_get(filename, filename+".local")
+        try_get(filename, filename + ".local")
 
 
 @roles("accounts")

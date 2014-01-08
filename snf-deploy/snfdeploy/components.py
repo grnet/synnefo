@@ -34,6 +34,7 @@
 import datetime
 from snfdeploy.utils import debug
 
+
 class SynnefoComponent(object):
 
     REQUIRED_PACKAGES = []
@@ -85,6 +86,7 @@ class HW(SynnefoComponent):
             "ping -c 1 www.google.com",
             "apt-get update",
             ]
+
 
 class SSH(SynnefoComponent):
     def prepare(self):
@@ -234,7 +236,8 @@ class APT(SynnefoComponent):
     def prepare(self):
         return [
             "echo 'APT::Install-Suggests \"false\";' >> /etc/apt/apt.conf",
-            "curl -k https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -",
+            "curl -k https://dev.grnet.gr/files/apt-grnetdev.pub | \
+                apt-key add -",
             ]
 
     def configure(self):
@@ -384,10 +387,9 @@ class Master(SynnefoComponent):
 
         return commands + self.restart()
 
-
     def add_node(self, node_info):
         commands = [
-            "gnt-node add --no-ssh-key-check --master-capable=yes " + \
+            "gnt-node add --no-ssh-key-check --master-capable=yes " +
               "--vm-capable=yes " + node_info.fqdn,
             ]
         return commands
@@ -399,7 +401,6 @@ class Master(SynnefoComponent):
             "gnt-cluster modify --disk-parameters=drbd:metavg=%s" % vg,
             "gnt-group modify --disk-parameters=drbd:metavg=%s default" % vg,
             ]
-
 
     def initialize(self):
         cmd = """
@@ -444,7 +445,6 @@ class Image(SynnefoComponent):
 
     def initialize(self):
         return ["snf-image-update-helper -y"]
-
 
 
 class GTools(SynnefoComponent):
@@ -507,7 +507,6 @@ class Network(SynnefoComponent):
 
     def initialize(self):
         return ["/etc/init.d/rc.local start"]
-
 
     def restart(self):
         return ["/etc/init.d/nfdhcpd restart"]
@@ -643,31 +642,33 @@ class Astakos(SynnefoComponent):
             ]
 
     def set_default_quota(self):
+        cmd = "snf-manage resource-modify --default-quota"
         return [
-            "snf-manage resource-modify --default-quota 40G pithos.diskspace",
-            "snf-manage resource-modify --default-quota 2 astakos.pending_app",
-            "snf-manage resource-modify --default-quota 4 cyclades.vm",
-            "snf-manage resource-modify --default-quota 40G cyclades.disk",
-            "snf-manage resource-modify --default-quota 16G cyclades.total_ram",
-            "snf-manage resource-modify --default-quota 8G cyclades.ram",
-            "snf-manage resource-modify --default-quota 32 cyclades.total_cpu",
-            "snf-manage resource-modify --default-quota 16 cyclades.cpu",
-            "snf-manage resource-modify --default-quota 4 cyclades.network.private",
-            "snf-manage resource-modify --default-quota 4 cyclades.floating_ip",
+            "%s 40G pithos.diskspace" % cmd,
+            "%s 2 astakos.pending_app" % cmd,
+            "%s 4 cyclades.vm" % cmd,
+            "%s 40G cyclades.disk" % cmd,
+            "%s 16G cyclades.total_ram" % cmd,
+            "%s 8G cyclades.ram" % cmd,
+            "%s 32 cyclades.total_cpu" % cmd,
+            "%s 16 cyclades.cpu" % cmd,
+            "%s 4 cyclades.network.private" % cmd,
+            "%s 4 cyclades.floating_ip" % cmd,
             ]
 
     def modify_all_quota(self):
+        cmd = "snf-manage user-modify -f --all --base-quota"
         return [
-            "snf-manage user-modify -f --all --base-quota pithos.diskspace 40G",
-            "snf-manage user-modify -f --all --base-quota astakos.pending_app 2",
-            "snf-manage user-modify -f --all --base-quota cyclades.vm 4",
-            "snf-manage user-modify -f --all --base-quota cyclades.disk 40G",
-            "snf-manage user-modify -f --all --base-quota cyclades.total_ram 16G",
-            "snf-manage user-modify -f --all --base-quota cyclades.ram 8G",
-            "snf-manage user-modify -f --all --base-quota cyclades.total_cpu 32",
-            "snf-manage user-modify -f --all --base-quota cyclades.cpu 16",
-            "snf-manage user-modify -f --all --base-quota cyclades.network.private 4",
-            "snf-manage user-modify -f --all --base-quota cyclades.floating_ip 4",
+            "%s pithos.diskspace 40G" % cmd,
+            "%s astakos.pending_app 2" % cmd,
+            "%s cyclades.vm 4" % cmd,
+            "%s cyclades.disk 40G" % cmd,
+            "%s cyclades.total_ram 16G" % cmd,
+            "%s cyclades.ram 8G" % cmd,
+            "%s cyclades.total_cpu 32" % cmd,
+            "%s cyclades.cpu 16" % cmd,
+            "%s cyclades.network.private 4" % cmd,
+            "%s cyclades.floating_ip 4" % cmd,
             ]
 
     def get_services(self):
@@ -732,7 +733,6 @@ class Astakos(SynnefoComponent):
             "snf-manage user-modify --verify %s" % user_id,
             "snf-manage user-modify --accept %s" % user_id,
             ]
-
 
 
 class CMS(SynnefoComponent):
@@ -860,6 +860,7 @@ class Pithos(SynnefoComponent):
             ("/etc/synnefo/webclient.conf", r2, {}),
             ]
 
+
 class Cyclades(SynnefoComponent):
     REQUIRED_PACKAGES = [
         "memcached",
@@ -870,15 +871,11 @@ class Cyclades(SynnefoComponent):
         "python-django-south",
         ]
 
-    def add_network(self, subnet=None, gw=None, ntype=None, link=None):
-        if not subnet:
-            subnet = self.env.env.synnefo_public_network_subnet
-        if not gw:
-            gw = self.env.env.synnefo_public_network_gateway
-        if not ntype:
-            ntype = self.env.env.synnefo_public_network_type
-        if not link:
-            link = self.env.env.common_bridge
+    def add_network(self):
+        subnet = self.env.env.synnefo_public_network_subnet
+        gw = self.env.env.synnefo_public_network_gateway
+        ntype = self.env.env.synnefo_public_network_type
+        link = self.env.env.common_bridge
 
         cmd = """
 snf-manage network-create --subnet={0} --gateway={1} --public \
@@ -888,17 +885,17 @@ snf-manage network-create --subnet={0} --gateway={1} --public \
 
         return [cmd]
 
-    def add_network6(self, subnet="babe::/64", gw="babe::1", ntype=None, link=None):
-        if not ntype:
-            ntype = self.env.env.synnefo_public_network_type
-        if not link:
-            link = self.env.env.common_bridge
+    def add_network6(self):
+        subnet = "babe::/64"
+        gw = "babe::1"
+        ntype = self.env.env.synnefo_public_network_type
+        link = self.env.env.common_bridge
 
-        cmd  = """
-snf-manage network-create --subnet6=babe::/64 \
-      --gateway6=babe::1 --public --dhcp=True --flavor={0} --mode=bridged \
-       --link={1} --name=IPv6PublicNetwork
-""".format(ntype, link)
+        cmd = """
+snf-manage network-create --subnet6={0} \
+      --gateway6={1} --public --dhcp=True --flavor={2} --mode=bridged \
+       --link={3} --name=IPv6PublicNetwork
+""".format(subnet, gw, ntype, link)
 
         return [cmd]
 
@@ -918,7 +915,7 @@ snf-manage network-create --subnet6=babe::/64 \
         user = self.env.env.synnefo_user
         passwd = self.env.env.synnefo_rapi_passwd
         return [
-            "snf-manage backend-add --clustername=%s --user=%s --pass=%s"  % \
+            "snf-manage backend-add --clustername=%s --user=%s --pass=%s" %
               (cluster.fqdn, user, passwd)
             ]
 
@@ -959,7 +956,8 @@ snf-manage network-create --subnet6=babe::/64 \
         return [
             "snf-manage syncdb",
             "snf-manage migrate --delete-ghost-migrations",
-            "snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536",
+            "snf-manage pool-create --type=mac-prefix \
+              --base=aa:00:0 --size=65536",
             "snf-manage pool-create --type=bridge --base=prv --size=20",
             "snf-manage flavor-create %s %s %s %s" % (cpu, ram, disk, storage),
             ]
@@ -969,6 +967,7 @@ snf-manage network-create --subnet6=babe::/64 \
             "/etc/init.d/gunicorn restart",
             "/etc/init.d/snf-dispatcher restart",
             ]
+
 
 class VNC(SynnefoComponent):
     REQUIRED_PACKAGES = [
@@ -990,8 +989,9 @@ class Kamaki(SynnefoComponent):
     def initialize(self):
         url = "https://%s/astakos/identity/v2.0" % self.env.env.accounts.fqdn
         return [
-            "kamaki config set cloud.default.url %s" %  url,
-            "kamaki config set cloud.default.token %s" % self.env.user_auth_token,
+            "kamaki config set cloud.default.url %s" % url,
+            "kamaki config set cloud.default.token %s" %
+              self.env.user_auth_token,
             "kamaki container create images",
             ]
 
@@ -1025,11 +1025,13 @@ class Kamaki(SynnefoComponent):
             cmd
             ]
 
+
 class Burnin(SynnefoComponent):
     REQUIRED_PACKAGES = [
         "kamaki",
         "snf-tools",
         ]
+
 
 class Collectd(SynnefoComponent):
     REQUIRED_PACKAGES = [
@@ -1073,6 +1075,7 @@ class Stats(SynnefoComponent):
             "/etc/init.d/apache2 restart",
             ]
 
+
 class GanetiCollectd(SynnefoComponent):
     def configure(self):
         r1 = {
@@ -1082,5 +1085,3 @@ class GanetiCollectd(SynnefoComponent):
             ("/etc/collectd/passwd", {}, {}),
             ("/etc/collectd/synnefo-ganeti.conf", r1, {}),
             ]
-
-

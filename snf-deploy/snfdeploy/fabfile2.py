@@ -125,7 +125,7 @@ def update_env_with_user_info():
 def update_env_with_service_info(service="pithos"):
     result = RunComponentMethod(Astakos, "get_services")
     r = re.compile(r"(\d+)[ ]*%s[ ]*(\S+)" % service, re.M)
-    match  = r.search(result)
+    match = r.search(result)
     if env.dry_run:
         env.service_id, env.service_token = \
             ("dummy_service_id", "dummy_service_token")
@@ -143,6 +143,7 @@ def update_env_with_backend_info():
         env.backend_id = "dummy_backend_id"
     else:
         env.backend_id, = match.groups()
+
 
 #
 #
@@ -211,6 +212,8 @@ def add_image():
     RunComponentMethod(Kamaki, "fetch_image")
     RunComponentMethod(Kamaki, "upload_image")
     RunComponentMethod(Kamaki, "register_image")
+
+
 #
 #
 # Those methods do the basic setup of a synnefo role

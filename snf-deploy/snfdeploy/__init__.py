@@ -560,7 +560,6 @@ EOF
     os.system(cmd)
 
 
-
 def main():
     args = parse_options()
 

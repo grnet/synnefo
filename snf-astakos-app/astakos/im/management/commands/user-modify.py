@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013, 2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -162,7 +162,7 @@ class Command(BaseCommand):
         make_option('--delete',
                     dest='delete',
                     action='store_true',
-                    help="Delete user"),
+                    help="Delete a non-accepted user"),
     )
 
     @transaction.commit_on_success
@@ -340,6 +340,9 @@ class Command(BaseCommand):
 
         delete = options.get('delete')
         if delete:
+            if user.is_accepted():
+                m = "Cannot delete. User %s is accepted." % user
+                raise CommandError(m)
             management.call_command('user-show', str(user.pk),
                                     list_quotas=True)
             m = "Are you sure you want to permanently delete the user " \

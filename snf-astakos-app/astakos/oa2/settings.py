@@ -20,3 +20,8 @@ TOKEN_LENGTH = get_setting('TOKEN_LENGTH', 30)
 
 # Set the expiration time of newly created access tokens to 20 seconds
 TOKEN_EXPIRES = get_setting('TOKEN_EXPIRES', 20)
+
+# Set the maximum allowed redirection endpoint URI length
+# Requests for a greater redirection endpoint URI will fail.
+MAXIMUM_ALLOWED_REDIRECT_URI_LENGTH = get_setting(
+    'MAXIMUM_ALLOWED_REDIRECT_URI_LENGTH', 5000)

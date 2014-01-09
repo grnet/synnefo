@@ -52,6 +52,7 @@ log = getLogger(__name__)
 urlpatterns = patterns(
     'synnefo.api.subnets',
     (r'^(?:/|.json|.xml)?$', 'demux'),
+    (r'^/detail(?:.json|.xml)?$', 'list_subnets', {'detail': True}),
     (r'^/([-\w]+)(?:/|.json|.xml)?$', 'subnet_demux'))
 
 
@@ -76,15 +77,14 @@ def subnet_demux(request, sub_id):
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
-def list_subnets(request):
+def list_subnets(request, detail=True):
     """List all subnets of a user"""
     userid = request.user_uniq
-    subnets_list = Subnet.objects.filter(Q(network__public=True) |
-                                         (Q(network__userid=userid) &
-                                          Q(network__public=False)))\
+    subnets_list = Subnet.objects.filter(Q(public=True) |
+                                         (Q(userid=userid) &
+                                          Q(public=False)))\
                                  .order_by("id")
-    subnets_list = subnets_list.prefetch_related("ip_pools")\
-                               .select_related("network")
+    subnets_list = subnets_list.prefetch_related("ip_pools")
     subnets_list = api.utils.filter_modified_since(request,
                                                    objects=subnets_list)
 
@@ -164,10 +164,7 @@ def create_subnet(request):
 def get_subnet(request, sub_id):
     """Show info of a specific subnet"""
     user_id = request.user_uniq
-    subnet = subnets.get_subnet(sub_id)
-
-    if (subnet.network.userid != user_id) and (subnet.network.public is False):
-        raise api.faults.Unauthorized("You're not allowed to view this subnet")
+    subnet = subnets.get_subnet(sub_id, user_id)
 
     subnet_dict = subnet_to_dict(subnet)
     data = json.dumps({'subnet': subnet_dict})
@@ -217,12 +214,12 @@ def subnet_to_dict(subnet):
     allocation_pools = [render_ip_pool(pool)
                         for pool in subnet.ip_pools.all()]
 
-    network = subnet.network
     d = {'id': str(subnet.id),
          'network_id': str(subnet.network_id),
          'name': subnet.name if subnet.name is not None else "",
-         'tenant_id': network.userid,
-         'user_id': network.userid,
+         'tenant_id': subnet.userid,
+         'user_id': subnet.userid,
+         'public': subnet.public,
          'gateway_ip': subnet.gateway,
          'ip_version': subnet.ipversion,
          'cidr': subnet.cidr,

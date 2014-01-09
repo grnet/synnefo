@@ -42,6 +42,7 @@ from django.db.models import Q
 from snf_django.lib import api
 from snf_django.lib.api import faults
 from synnefo.logic import utils
+from synnefo.api import util
 
 from synnefo.db.models import Subnet, Network, IPPoolTable
 
@@ -112,10 +113,11 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
     else:
         validate_subnet_params(subnet=cidr, gateway=gateway)
 
-    name = utils.check_name_length(name, Subnet.SUBNET_NAME_LENGTH, "Subnet "
-                                   "name is too long")
+    utils.check_name_length(name, Subnet.SUBNET_NAME_LENGTH, "Subnet "
+                            "name is too long")
     sub = Subnet.objects.create(name=name, network=network, cidr=cidr,
                                 ipversion=ipversion, gateway=gateway,
+                                userid=network.userid, public=network.public,
                                 dhcp=dhcp, host_routes=host_routes,
                                 dns_nameservers=dns_nameservers)
 
@@ -148,14 +150,18 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
     return sub
 
 
-def get_subnet(sub_id):
-    """Show info of a specific subnet"""
-    log.debug('get_subnet %s', sub_id)
+def get_subnet(subnet_id, user_id, for_update=False):
+    """Return a Subnet instance or raise ItemNotFound."""
+
     try:
-        subnets = Subnet.objects
-        return subnets.get(id=sub_id)
+        objects = Subnet.objects
+        subnet_id = int(subnet_id)
+        return objects.get(Q(userid=user_id) | Q(public=True),
+                           id=subnet_id)
+    except (ValueError, TypeError):
+        raise faults.BadRequest("Invalid subnet ID '%s'" % subnet_id)
     except Subnet.DoesNotExist:
-        raise api.faults.ItemNotFound("Subnet not found")
+        raise faults.ItemNotFound("Subnet '%s' not found." % subnet_id)
 
 
 def delete_subnet():

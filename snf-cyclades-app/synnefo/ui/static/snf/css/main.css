@@ -7450,13 +7450,14 @@ input.has-errors {
 
 #public-keys-list-view .model-item textarea.content {
   width: 270px;
+  max-width: 380px;
   background-color: transparent;
   font-family: monospace;
   font-size: 1em;
   border: none;
   overflow-y: hidden;
   overflow-x: hidden;
-  height: 155px;
+  height: 185px;
   margin: 10px 0;
   padding: 10px;
   border: 1px solid #ddd;

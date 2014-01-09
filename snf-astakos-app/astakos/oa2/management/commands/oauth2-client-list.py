@@ -49,7 +49,6 @@ class Command(ListCommand):
 
     FIELDS = {
         'id': ('id', ('The id of the client')),
-        'name': ('name', 'The name of the client'),
         'identifier': ('identifier', 'The unique client identifier'),
         'type': ('type', 'The client type'),
         'is_trusted': ('is_trusted', 'Whether the client is trusted or not'),

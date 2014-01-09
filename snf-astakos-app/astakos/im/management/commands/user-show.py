@@ -123,7 +123,7 @@ class Command(SynnefoCommand):
             utils.pprint_table(self.stdout, [kv.values()], kv.keys(),
                                options["output_format"], vertical=True)
 
-            if options["list_quotas"]:
+            if options["list_quotas"] and user.is_accepted():
                 unit_style = options["unit_style"]
                 check_style(unit_style)
 

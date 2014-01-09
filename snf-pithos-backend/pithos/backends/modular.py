@@ -357,6 +357,13 @@ class ModularBackend(BaseBackend):
         return quotas.get(DEFAULT_SOURCE, {}).get(DEFAULT_DISKSPACE_RESOURCE,
                                                   {})
 
+    def _get_account_quotas(self, account):
+        """Get account usage from astakos."""
+
+        quotas = self.astakosclient.service_get_quotas(account)[account]
+        return quotas.get(DEFAULT_SOURCE, {}).get(DEFAULT_DISKSPACE_RESOURCE,
+                                                  {})
+
     @debug_method
     @backend_method
     def get_account_meta(self, user, account, domain, until=None,

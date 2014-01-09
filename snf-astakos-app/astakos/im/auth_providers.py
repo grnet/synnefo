@@ -57,6 +57,10 @@ PROVIDERS = {}
 REQUIRED_PROVIDERS = {}
 
 
+class InvalidProvider(Exception):
+    pass
+
+
 class AuthProviderBase(type):
 
     def __new__(cls, name, bases, dct):
@@ -245,7 +249,10 @@ class AuthProvider(object):
                 self.module, identifier=self.identifier)
 
             if pending:
-                pending._instance.delete()
+                user = pending._instance.user
+                logger.info("Removing existing unverified user (%r)",
+                            user.log_display)
+                user.delete()
 
         create_params = {
             'module': self.module,
@@ -263,11 +270,11 @@ class AuthProvider(object):
         return create
 
     def __repr__(self):
-        r = "'%s' module" % self.__class__.__name__
+        r = "'%r' module" % self.__class__.__name__
         if self.user:
-            r += ' (user: %s)' % self.user
+            r += ' (user: %r)' % self.user
         if self.identifier:
-            r += '(identifier: %s)' % self.identifier
+            r += '(identifier: %r)' % self.identifier
         return r
 
     def _message_params(self, **extra_params):
@@ -664,6 +671,6 @@ def get_provider(module, user_obj=None, identifier=None, **params):
     Return a provider instance from the auth providers registry.
     """
     if not module in PROVIDERS:
-        raise Exception('Invalid auth provider "%s"' % id)
+        raise InvalidProvider('Invalid auth provider "%s"' % module)
 
     return PROVIDERS.get(module)(user_obj, identifier, **params)

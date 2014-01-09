@@ -108,6 +108,12 @@ class ShibbolethTests(TestCase):
 
         signup_url = reverse('signup')
 
+        # invalid request
+        invalid_data = copy.copy(post_data)
+        invalid_data['provider'] = ''
+        r = client.post(signup_url, invalid_data, follow=True)
+        self.assertRedirects(r, reverse('signup'))
+
         # invlid email
         post_data['email'] = 'kpap'
         r = client.post(signup_url, post_data)
@@ -121,14 +127,36 @@ class ShibbolethTests(TestCase):
         existing_user.delete()
 
         # and finally a valid signup
-        post_data['email'] = 'kpap@synnefo.org'
+        post_data['email'] = 'kpap-takeover@synnefo.org'
         r = client.post(signup_url, post_data, follow=True)
         self.assertContains(r, messages.VERIFICATION_SENT)
+
+        # takeover of the uverified the shibboleth identifier
+        client = ShibbolethClient()
+        client.set_tokens(mail="kpap@synnefo.org", remote_user="kpapeppn",
+                          eppn="kpapeppn",
+                          cn="Kostas Papadimitriou",
+                          ep_affiliation="Test Affiliation")
+        r = client.get(ui_url('login/shibboleth?'), follow=True,
+                       **{'HTTP_SHIB_CUSTOM_IDP_KEY': 'test'})
+        # a new pending user created, previous one was deleted
+        self.assertEqual(PendingThirdPartyUser.objects.count(), 1)
+        pending_user = PendingThirdPartyUser.objects.get(
+            third_party_identifier="kpapeppn")
+        identifier = pending_user.third_party_identifier
+        token = pending_user.token
+        post_data = {'third_party_identifier': identifier,
+                     'third_party_token': token}
+        post_data['email'] = 'kpap@synnefo.org'
+        r = client.post(signup_url, post_data)
+        self.assertEqual(PendingThirdPartyUser.objects.count(), 0)
+        # previously unverified user associated with kpapeppn gets deleted
+        user_qs = AstakosUser.objects.filter(email="kpap-takeover@synnefo.org")
+        self.assertEqual(user_qs.count(), 0)
 
         # entires commited as expected
         self.assertEqual(AstakosUser.objects.count(), 1)
         self.assertEqual(AstakosUserAuthProvider.objects.count(), 1)
-        self.assertEqual(PendingThirdPartyUser.objects.count(), 0)
 
         user = AstakosUser.objects.get()
         provider = user.get_auth_provider("shibboleth")
@@ -143,11 +171,37 @@ class ShibbolethTests(TestCase):
         self.assertEqual(provider.info['name'], u'Kostas Papadimitriou')
         self.assertTrue('headers' in provider.info)
 
-        # login (not activated yet)
+        # login (not verified yet)
         client.set_tokens(mail="kpap@synnefo.org", remote_user="kpapeppn",
                           cn="Kostas Papadimitriou")
         r = client.get(ui_url("login/shibboleth?"), follow=True)
-        self.assertContains(r, 'is pending moderation')
+        self.assertContains(r, 'A pending registration exists for')
+        self.assertNotContains(r, 'pending moderation')
+        self.assertEqual(PendingThirdPartyUser.objects.count(), 1)
+        tmp_third_party = PendingThirdPartyUser.objects.get()
+
+        # user gets verified
+        u = AstakosUser.objects.get(username="kpap@synnefo.org")
+        backend = activation_backends.get_backend()
+        activation_result = backend.verify_user(u, u.verification_code)
+        client.set_tokens(mail="kpap@synnefo.org", remote_user="kpapeppn",
+                          cn="Kostas Papadimitriou")
+        r = client.get(ui_url("login/shibboleth?"), follow=True)
+        self.assertNotContains(r, 'A pending registration exists for')
+        self.assertContains(r, 'pending moderation')
+
+        # temporary signup process continues. meanwhile the user have verified
+        # her account. The signup process should fail
+        tp = tmp_third_party
+        post_data = {'third_party_identifier': tp.third_party_identifier,
+                     'email': 'unsed-email@synnefo.org',
+                     'third_party_token': tp.token}
+        r = client.post(signup_url, post_data)
+        self.assertEqual(r.status_code, 404)
+
+        r = client.post(reverse('astakos.im.views.target.local.password_reset'),
+                        {'email': 'kpap@synnefo.org'})
+        self.assertContains(r, 'Classic login is not enabled for your account')
 
         # admin activates the user
         u = AstakosUser.objects.get(username="kpap@synnefo.org")
@@ -157,6 +211,7 @@ class ShibbolethTests(TestCase):
         self.assertFalse(activation_result.is_error())
         backend.send_result_notifications(activation_result, u)
         self.assertEqual(u.is_active, True)
+
 
         # we see our profile
         r = client.get(ui_url("login/shibboleth?"), follow=True)
@@ -522,7 +577,7 @@ class TestLocal(TestCase):
         data = {'email': 'kpap@synnefo.org'}
         r = self.client.post(ui_url('local/password_reset'), data, follow=True)
         # she can't because account is not active yet
-        self.assertContains(r, 'pending activation')
+        self.assertContains(r, 'pending email verification')
 
         # moderation is enabled and an activation email has already been sent
         # so user can trigger resend of the activation email
@@ -534,7 +589,7 @@ class TestLocal(TestCase):
         # also she cannot login
         data = {'username': 'kpap@synnefo.org', 'password': 'password'}
         r = self.client.post(ui_url('local'), data, follow=True)
-        self.assertContains(r, 'Resend activation')
+        self.assertContains(r, 'Resend verification')
         self.assertFalse(r.context['request'].user.is_authenticated())
         self.assertFalse('_pithos2_a' in self.client.cookies)
 
@@ -558,7 +613,9 @@ class TestLocal(TestCase):
 
         r = self.client.get(user.get_activation_url(), follow=True)
         # previous code got invalidated
-        self.assertEqual(r.status_code, 404)
+        self.assertRedirects(r, reverse('login'))
+        self.assertContains(r, astakos_messages.INVALID_ACTIVATION_KEY)
+        self.assertEqual(r.status_code, 200)
 
         user = AstakosUser.objects.get(pk=user.pk)
         self.assertEqual(len(get_mailbox(self.helpdesk_email)), 0)
@@ -668,6 +725,24 @@ class TestLocal(TestCase):
 
 class UserActionsTests(TestCase):
 
+    def test_email_validation(self):
+        backend = activation_backends.get_backend()
+        form = backend.get_signup_form('local')
+        self.assertTrue(isinstance(form, forms.LocalUserCreationForm))
+        user_data = {
+            'email': 'kpap@synnefo.org',
+            'first_name': 'Kostas Papas',
+            'password1': '123',
+            'password2': '123'
+        }
+        form = backend.get_signup_form(provider='local',
+                                       initial_data=user_data)
+        self.assertTrue(form.is_valid())
+        user_data['email'] = 'kpap@synnefo.org.'
+        form = backend.get_signup_form(provider='local',
+                                       initial_data=user_data)
+        self.assertFalse(form.is_valid())
+
     def test_email_change(self):
         # to test existing email validation
         get_local_user('existing@synnefo.org')
@@ -686,9 +761,16 @@ class UserActionsTests(TestCase):
         self.assertEqual(r.status_code, 200)
         self.assertFalse(user.email_change_is_pending())
 
+        # invalid email format
+        data = {'new_email_address': 'existing@synnefo.org.'}
+        r = self.client.post(ui_url('email_change'), data)
+        form = r.context['form']
+        self.assertFalse(form.is_valid())
+
         # request email change to an existing email fails
         data = {'new_email_address': 'existing@synnefo.org'}
         r = self.client.post(ui_url('email_change'), data)
+
         self.assertContains(r, messages.EMAIL_USED)
 
         # proper email change
@@ -791,6 +873,7 @@ class TestAuthProviderViews(TestCase):
     @shibboleth_settings(CREATION_GROUPS_POLICY=['academic-login'],
                          AUTOMODERATE_POLICY=True)
     @im_settings(IM_MODULES=['shibboleth', 'local'], MODERATION_ENABLED=True,
+                 HELPDESK=(('support', 'support@synnefo.org'),),
                  FORCE_PROFILE_UPDATE=False)
     def test_user(self):
         Profile = AuthProviderPolicyProfile
@@ -818,8 +901,8 @@ class TestAuthProviderViews(TestCase):
 
         # new academic user
         self.assertFalse(academic_users.filter(email='newuser@synnefo.org'))
-        cl_newuser.set_tokens(remote_user="newusereppn", mail="newuser@synnefo.org",
-                              surname="Lastname")
+        cl_newuser.set_tokens(remote_user="newusereppn",
+                              mail="newuser@synnefo.org", surname="Lastname")
         r = cl_newuser.get(ui_url('login/shibboleth?'), follow=True)
         initial = r.context['signup_form'].initial
         pending = Pending.objects.get()
@@ -858,7 +941,8 @@ class TestAuthProviderViews(TestCase):
         r = cl_newuser2.post(ui_url('signup/'), signup_data)
         self.assertFalse(academic_users.filter(email='newuser@synnefo.org'))
         r = self.client.get(activation_link, follow=True)
-        self.assertEqual(r.status_code, 404)
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, astakos_messages.INVALID_ACTIVATION_KEY)
         newuser = User.objects.get(email="newuser@synnefo.org")
         self.assertTrue(newuser.activation_sent)
 
@@ -869,7 +953,7 @@ class TestAuthProviderViews(TestCase):
         pending = Pending.objects.get()
         identifier = pending.third_party_identifier
         signup_data = {'third_party_identifier': identifier,
-                       'first_name': 'Academic',
+                       u'first_name': 'Academic γιούνικοουντ',
                        'third_party_token': pending.token,
                        'last_name': 'New User',
                        'provider': 'shibboleth'}
@@ -882,6 +966,10 @@ class TestAuthProviderViews(TestCase):
         self.assertTrue(academic_users.get(email='newuser@synnefo.org'))
         r = cl_newuser.get(newuser.get_activation_url(), follow=True)
         self.assertRedirects(r, ui_url('landing'))
+        helpdesk_email = astakos_settings.HELPDESK[0][1]
+        self.assertEqual(len(get_mailbox(helpdesk_email)), 1)
+        self.assertTrue(u'AstakosUser: Academic γιούνικοουντ' in \
+                            get_mailbox(helpdesk_email)[0].body)
         newuser = User.objects.get(email="newuser@synnefo.org")
         self.assertEqual(newuser.is_active, True)
         self.assertEqual(newuser.email_verified, True)

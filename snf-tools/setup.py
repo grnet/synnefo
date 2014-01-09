@@ -60,7 +60,7 @@ INSTALL_REQUIRES = [
     "IPy",
     "paramiko",
     "vncauthproxy",
-    "kamaki >= 0.12"]
+    "kamaki >= 0.12.3"]
 
 setup(
     name='snf-tools',

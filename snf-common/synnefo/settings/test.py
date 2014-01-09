@@ -6,6 +6,8 @@ from synnefo.settings import *
 DEBUG = False
 TEST = True
 
+CACHE_BACKEND = os.environ.get('SNF_TEST_CACHE_BACKEND', 'locmem://')
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',

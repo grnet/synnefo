@@ -199,6 +199,8 @@ class SubnetFactory(factory.DjangoModelFactory):
     dhcp = True
     dns_nameservers = []
     host_routes = []
+    userid = factory.LazyAttribute(lambda self: self.network.userid)
+    public = factory.LazyAttribute(lambda self: self.network.public)
 
 
 class IPv4SubnetFactory(SubnetFactory):
@@ -228,6 +230,7 @@ class IPv4AddressFactory(factory.DjangoModelFactory):
     network = factory.SubFactory(NetworkFactory, state="ACTIVE")
     subnet = factory.SubFactory(IPv4SubnetFactory,
                                 network=factory.SelfAttribute('..network'))
+    ipversion = 4
     address =\
         factory.LazyAttributeSequence(lambda self, n: self.subnet.cidr[:-4] +
                                       '{0}'.format(int(n) + 2))
@@ -242,6 +245,7 @@ class IPv6AddressFactory(IPv4AddressFactory):
     subnet = factory.SubFactory(IPv6SubnetFactory)
     network = factory.SubFactory(NetworkFactory, state="ACTIVE")
     address = "babe::"
+    ipversion = 6
     nic = factory.SubFactory(NetworkInterfaceFactory,
                              network=factory.SelfAttribute('..network'))
 

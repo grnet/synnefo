@@ -315,27 +315,27 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.assertCount(AuthorizationCode, 1)
 
         # redirect is valid
-        redirect1 = self.get_redirect_url(r)
-        self.assertParam(redirect1, "code")
-        self.assertNoParam(redirect1, "extra_param")
-        self.assertHost(redirect1, "server.com")
-        self.assertPath(redirect1, "/handle_code")
+        redirect = self.get_redirect_url(r)
+        self.assertParam(redirect, "code")
+        self.assertNoParam(redirect, "extra_param")
+        self.assertHost(redirect, "server.com")
+        self.assertPath(redirect, "/handle_code")
+
+        code = AuthorizationCode.objects.get(code=redirect.params['code'][0])
+        #self.assertEqual(code.state, '')
+        self.assertEqual(code.state, None)
+        self.assertEqual(code.redirect_uri, self.client1_redirect_uri)
 
         params['state'] = 'csrfstate'
         params['scope'] = 'resource1'
         r = self.client.authorize_code('client1', urlparams=params)
-        redirect2 = self.get_redirect_url(r)
-        self.assertParamEqual(redirect2, "state", 'csrfstate')
+        redirect = self.get_redirect_url(r)
+        self.assertParamEqual(redirect, "state", 'csrfstate')
         self.assertCount(AuthorizationCode, 2)
 
-        code1 = AuthorizationCode.objects.get(code=redirect1.params['code'][0])
-        #self.assertEqual(code1.state, '')
-        self.assertEqual(code1.state, None)
-        self.assertEqual(code1.redirect_uri, self.client1_redirect_uri)
-
-        code2 = AuthorizationCode.objects.get(code=redirect2.params['code'][0])
-        self.assertEqual(code2.state, 'csrfstate')
-        self.assertEqual(code2.redirect_uri, self.client1_redirect_uri)
+        code = AuthorizationCode.objects.get(code=redirect.params['code'][0])
+        self.assertEqual(code.state, 'csrfstate')
+        self.assertEqual(code.redirect_uri, self.client1_redirect_uri)
 
         # valid request: trusted client
         params = {'redirect_uri': self.client3_redirect_uri,
@@ -347,16 +347,16 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.assertCount(AuthorizationCode, 3)
 
         # redirect is valid
-        redirect3 = self.get_redirect_url(r)
-        self.assertParam(redirect1, "code")
-        self.assertNoParam(redirect3, "state")
-        self.assertNoParam(redirect3, "extra_param")
-        self.assertHost(redirect3, "server3.com")
-        self.assertPath(redirect3, "/handle_code")
+        redirect = self.get_redirect_url(r)
+        self.assertParam(redirect, "code")
+        self.assertNoParam(redirect, "state")
+        self.assertNoParam(redirect, "extra_param")
+        self.assertHost(redirect, "server3.com")
+        self.assertPath(redirect, "/handle_code")
 
-        code3 = AuthorizationCode.objects.get(code=redirect3.params['code'][0])
-        self.assertEqual(code3.state, None)
-        self.assertEqual(code3.redirect_uri, self.client3_redirect_uri)
+        code = AuthorizationCode.objects.get(code=redirect.params['code'][0])
+        self.assertEqual(code.state, None)
+        self.assertEqual(code.redirect_uri, self.client3_redirect_uri)
 
         # valid request: trusted client
         params['state'] = 'csrfstate'
@@ -366,35 +366,50 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.assertCount(AuthorizationCode, 4)
 
         # redirect is valid
-        redirect4 = self.get_redirect_url(r)
-        self.assertParam(redirect4, "code")
-        self.assertParamEqual(redirect4, "state", 'csrfstate')
-        self.assertNoParam(redirect4, "extra_param")
-        self.assertHost(redirect4, "server3.com")
-        self.assertPath(redirect4, "/handle_code")
+        redirect = self.get_redirect_url(r)
+        self.assertParam(redirect, "code")
+        self.assertParamEqual(redirect, "state", 'csrfstate')
+        self.assertNoParam(redirect, "extra_param")
+        self.assertHost(redirect, "server3.com")
+        self.assertPath(redirect, "/handle_code")
 
-        code4 = AuthorizationCode.objects.get(code=redirect4.params['code'][0])
-        self.assertEqual(code4.state, 'csrfstate')
-        self.assertEqual(code4.redirect_uri, self.client3_redirect_uri)
+        code = AuthorizationCode.objects.get(code=redirect.params['code'][0])
+        self.assertEqual(code.state, 'csrfstate')
+        self.assertEqual(code.redirect_uri, self.client3_redirect_uri)
 
-        params['redirect_uri'] = '%s/more' % self.client3_redirect_uri
+        # redirect uri startswith the client's registered redirect url
+        params['redirect_uri'] = '%smore' % self.client3_redirect_uri
+        self.client.set_credentials('client3', 'secret')
+        r = self.client.authorize_code('client3', urlparams=params)
+        self.assertEqual(r.status_code, 400)
+
+        # redirect uri descendant
+        redirect_uri = '%s/more' % self.client3_redirect_uri
+        params['redirect_uri'] = redirect_uri
         self.client.set_credentials('client3', 'secret')
         r = self.client.authorize_code('client3', urlparams=params)
         self.assertEqual(r.status_code, 302)
         self.assertCount(AuthorizationCode, 5)
 
         # redirect is valid
-        redirect5 = self.get_redirect_url(r)
-        self.assertParam(redirect5, "code")
-        self.assertParamEqual(redirect5, "state", 'csrfstate')
-        self.assertNoParam(redirect5, "extra_param")
-        self.assertHost(redirect5, "server3.com")
-        self.assertPath(redirect5, "/handle_code/more")
+        redirect = self.get_redirect_url(r)
+        self.assertParam(redirect, "code")
+        self.assertParamEqual(redirect, "state", 'csrfstate')
+        self.assertNoParam(redirect, "extra_param")
+        self.assertHost(redirect, "server3.com")
+        self.assertPath(redirect, urlparse.urlparse(redirect_uri).path)
 
-        code4 = AuthorizationCode.objects.get(code=redirect5.params['code'][0])
-        self.assertEqual(code4.state, 'csrfstate')
-        self.assertEqual(code4.redirect_uri,
+        code = AuthorizationCode.objects.get(code=redirect.params['code'][0])
+        self.assertEqual(code.state, 'csrfstate')
+        self.assertEqual(code.redirect_uri,
                          '%s/more' % self.client3_redirect_uri)
+
+        # too long redirect uri
+        redirect_uri = '%s?foo=%s' % (self.client3_redirect_uri, 'a'*10000)
+        params['redirect_uri'] = redirect_uri
+        self.client.set_credentials('client3', 'secret')
+        r = self.client.authorize_code('client3', urlparams=params)
+        self.assertEqual(r.status_code, 400)
 
     def test_get_token(self):
         # invalid method
@@ -481,5 +496,25 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.assertCount(Token, 1)
         expected = {'redirect_uri': self.client3_redirect_uri,
                     'scope': self.client3_redirect_uri,
+                    'state': None}
+        self.assert_access_token_response(r, expected)
+
+        # generate authorization code with too long redirect_uri
+        redirect_uri = '%s/%s' % (self.client3_redirect_uri, 'a'*2000)
+        params = {'redirect_uri': redirect_uri}
+        r = self.client.authorize_code('client3', urlparams=params)
+        self.assertCount(AuthorizationCode, 1)
+        redirect = self.get_redirect_url(r)
+        code_instance = AuthorizationCode.objects.get(
+            code=redirect.params['code'][0])
+
+        # valid request
+        self.client.set_credentials('client3', 'secret')
+        r = self.client.access_token(code_instance.code,
+                                     redirect_uri=redirect_uri)
+        self.assertCount(AuthorizationCode, 0)  # assert code is consumed
+        self.assertCount(Token, 2)
+        expected = {'redirect_uri': redirect_uri,
+                    'scope': redirect_uri,
                     'state': None}
         self.assert_access_token_response(r, expected)

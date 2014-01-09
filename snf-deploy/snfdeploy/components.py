@@ -944,7 +944,8 @@ snf-manage network-create --subnet6={0} \
             "HOST": self.env.env.cyclades.ip,
             "domain": self.env.env.domain,
             "CYCLADES_SERVICE_TOKEN": self.env.service_token,
-            "STATS": self.env.env.stats.fqdn
+            "STATS": self.env.env.stats.fqdn,
+            "SYNNEFO_VNC_PASSWD": self.env.env.synnefo_vnc_passwd,
             }
         return [
             ("/etc/synnefo/cyclades.conf", r1, {})
@@ -975,6 +976,20 @@ class VNC(SynnefoComponent):
     REQUIRED_PACKAGES = [
         "snf-vncauthproxy"
         ]
+
+    def prepare(self):
+        return ["mkdir /var/lib/vncauthproxy"]
+
+    def configure(self):
+        return [
+            ("/var/lib/vncauthproxy/users", {}, {})
+            ]
+
+    def initialize(self):
+        user = self.env.env.synnefo_user
+        passwd = self.env.env.synnefo_vnc_passwd
+        #TODO: run vncauthproxy-passwd
+        return []
 
     def restart(self):
         return [

@@ -623,6 +623,7 @@ def main():
         else:
             fabcommand(args, env, args.actions)
 
+    return 0
 
 if __name__ == "__main__":
     sys.exit(main())

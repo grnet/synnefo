@@ -145,6 +145,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         job_fields = {}
 
     new_operstate = None
+    new_flavor = None
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode)
 
     if status == rapi.JOB_STATUS_SUCCESS:
@@ -155,7 +156,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         beparams = job_fields.get("beparams", None)
         if beparams:
             # Change the flavor of the VM
-            _process_resize(vm, beparams)
+            new_flavor = _process_resize(vm, beparams)
 
         # Update backendtime only for jobs that have been successfully
         # completed, since only these jobs update the state of the VM. Else a
@@ -203,6 +204,8 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
 
     if new_operstate is not None:
         vm.operstate = new_operstate
+    if new_flavor is not None:
+        vm.flavor = new_flavor
 
     vm.save()
 
@@ -220,8 +223,7 @@ def _process_resize(vm, beparams):
                                         disk_template=old_flavor.disk_template)
     except Flavor.DoesNotExist:
         raise Exception("Cannot find flavor for VM")
-    vm.flavor = new_flavor
-    vm.save()
+    return new_flavor
 
 
 @transaction.commit_on_success
@@ -241,7 +243,8 @@ def _process_net_status(vm, etime, nics):
     """
     ganeti_nics = process_ganeti_nics(nics)
     db_nics = dict([(nic.id, nic)
-                    for nic in vm.nics.prefetch_related("ips__subnet")])
+                    for nic in vm.nics.select_related("network")
+                                      .prefetch_related("ips")])
 
     for nic_name in set(db_nics.keys()) | set(ganeti_nics.keys()):
         db_nic = db_nics.get(nic_name)
@@ -266,18 +269,20 @@ def _process_net_status(vm, etime, nics):
 
             # Special case where the IPv4 address has changed, because you
             # need to release the old IPv4 address and reserve the new one
-            ipv4_address = ganeti_nic["ipv4_address"]
-            if db_nic.ipv4_address != ipv4_address:
+            gnt_ipv4_address = ganeti_nic["ipv4_address"]
+            db_ipv4_address = db_nic.ipv4_address
+            if db_ipv4_address != gnt_ipv4_address:
                 change_address_of_port(db_nic, vm.userid,
-                                       old_address=db_nic.ipv4_address,
-                                       new_address=ipv4_address,
+                                       old_address=db_ipv4_address,
+                                       new_address=gnt_ipv4_address,
                                        version=4)
 
-            ipv6_address = ganeti_nic["ipv6_address"]
-            if db_nic.ipv6_address != ipv6_address:
+            gnt_ipv6_address = ganeti_nic["ipv6_address"]
+            db_ipv6_address = db_nic.ipv6_address
+            if db_ipv6_address != gnt_ipv6_address:
                 change_address_of_port(db_nic, vm.userid,
-                                       old_address=db_nic.ipv6_address,
-                                       new_address=ipv6_address,
+                                       old_address=db_ipv6_address,
+                                       new_address=gnt_ipv6_address,
                                        version=6)
 
     vm.backendtime = etime
@@ -304,7 +309,8 @@ def change_address_of_port(port, userid, old_address, new_address, version):
                                              network=port.network,
                                              subnet=subnet6,
                                              nic=port,
-                                             address=new_address)
+                                             address=new_address,
+                                             ipversion=6)
     else:
         raise ValueError("Unknown version: %s" % version)
 

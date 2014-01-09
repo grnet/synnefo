@@ -100,7 +100,7 @@ def handle_stop_active(viol_id, resource, vms, diff, actions):
         diff -= CHANGE[resource](vm)
         if vm_actions.get(vm.id) is None:
             action = "REMOVE" if vm.operstate == "ERROR" else "SHUTDOWN"
-            vm_actions[vm.id] = viol_id, vm.operstate, action
+            vm_actions[vm.id] = viol_id, vm.operstate, vm.backend_id, action
 
 
 def handle_destroy(viol_id, resource, vms, diff, actions):
@@ -110,7 +110,7 @@ def handle_destroy(viol_id, resource, vms, diff, actions):
         if diff < 1:
             break
         diff -= CHANGE[resource](vm)
-        vm_actions[vm.id] = viol_id, vm.operstate, "REMOVE"
+        vm_actions[vm.id] = viol_id, vm.operstate, vm.backend_id, "REMOVE"
 
 
 def _state_after_action(vm, action):
@@ -121,13 +121,19 @@ def _state_after_action(vm, action):
     return vm.operstate  # no action
 
 
+def _maybe_action(tpl):
+    if tpl is None:
+        return None
+    return tpl[-1]
+
+
 def sort_ips(vm_actions):
     def f(ip):
         if not ip.in_use():
             level = 5
         else:
             machine = ip.nic.machine
-            _, _, action = vm_actions.get(machine.id, (None, None, None))
+            action = _maybe_action(vm_actions.get(machine.id))
             level = VM_SORT_LEVEL[_state_after_action(machine, action)]
         return (level, ip.id)
     return f
@@ -142,7 +148,11 @@ def handle_floating_ip(viol_id, resource, ips, diff, actions):
             break
         diff -= CHANGE[resource](ip)
         state = "USED" if ip.in_use() else "FREE"
-        ip_actions[ip.id] = viol_id, state, "REMOVE"
+        if ip.nic and ip.nic.machine:
+            backend_id = ip.nic.machine.backend_id
+        else:
+            backend_id = None
+        ip_actions[ip.id] = viol_id, state, backend_id, "REMOVE"
 
 
 def get_vms(users=None):
@@ -186,10 +196,22 @@ def apply_to_vm(action, vm_id):
         return False
 
 
-def perform_vm_actions(actions, fix=False):
+def allow_operation(backend_id, opcount, maxops):
+    if backend_id is None or maxops is None:
+        return True
+    backend_ops = opcount.get(backend_id, 0)
+    if backend_ops >= maxops:
+        return False
+    opcount[backend_id] = backend_ops + 1
+    return True
+
+
+def perform_vm_actions(actions, opcount, maxops=None, fix=False):
     log = []
-    for vm_id, (viol_id, state, vm_action) in actions.iteritems():
-        data = ("vm", vm_id, state, vm_action, viol_id)
+    for vm_id, (viol_id, state, backend_id, vm_action) in actions.iteritems():
+        if not allow_operation(backend_id, opcount, maxops):
+            continue
+        data = ("vm", vm_id, state, backend_id, vm_action, viol_id)
         if fix:
             r = apply_to_vm(vm_action, vm_id)
             data += ("DONE" if r else "FAILED",)
@@ -225,10 +247,12 @@ def remove_ip(ip_id):
         return False
 
 
-def perform_floating_ip_actions(actions, fix=False):
+def perform_floating_ip_actions(actions, opcount, maxops=None, fix=False):
     log = []
-    for ip_id, (viol_id, state, ip_action) in actions.iteritems():
-        data = ("floating_ip", ip_id, state, ip_action, viol_id)
+    for ip_id, (viol_id, state, backend_id, ip_action) in actions.iteritems():
+        if not allow_operation(backend_id, opcount, maxops):
+            continue
+        data = ("floating_ip", ip_id, state, backend_id, ip_action, viol_id)
         if ip_action == "REMOVE":
             if fix:
                 r = remove_ip(ip_id)
@@ -237,16 +261,17 @@ def perform_floating_ip_actions(actions, fix=False):
     return log
 
 
-def perform_actions(actions, fix=False):
+def perform_actions(actions, maxops=None, fix=False):
     ACTION_HANDLING = [
         ("floating_ip", perform_floating_ip_actions),
         ("vm", perform_vm_actions),
         ]
 
+    opcount = {}
     logs = []
     for resource_type, handler in ACTION_HANDLING:
         t_actions = actions.get(resource_type, {})
-        log = handler(t_actions, fix=fix)
+        log = handler(t_actions, opcount, maxops=maxops, fix=fix)
         logs += log
     return logs
 

@@ -79,7 +79,7 @@ def port_demux(request, port_id):
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
-def list_ports(request, detail=False):
+def list_ports(request, detail=True):
 
     log.debug('list_ports detail=%s', detail)
 

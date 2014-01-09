@@ -164,6 +164,14 @@ def resolve_commissions(accept=None, reject=None, strict=True):
     with AstakosClientExceptionHandler():
         response = qh.resolve_commissions(accept, reject)
 
+    # Update correspodning entries in DB
+    QuotaHolderSerial.objects.filter(serial__in=accept).update(accept=True,
+                                                               pending=False,
+                                                               resolved=True)
+    QuotaHolderSerial.objects.filter(serial__in=reject).update(accept=False,
+                                                               pending=False,
+                                                               resolved=True)
+
     if strict:
         failed = response["failed"]
         if failed:

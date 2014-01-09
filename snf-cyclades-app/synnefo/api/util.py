@@ -274,6 +274,7 @@ def get_floating_ip_by_address(userid, address, for_update=False):
 
 def get_floating_ip_by_id(userid, floating_ip_id, for_update=False):
     try:
+        floating_ip_id = int(floating_ip_id)
         objects = IPAddress.objects
         if for_update:
             objects = objects.select_for_update()
@@ -282,6 +283,8 @@ def get_floating_ip_by_id(userid, floating_ip_id, for_update=False):
     except IPAddress.DoesNotExist:
         raise faults.ItemNotFound("Floating IP with ID %s does not exist." %
                                   floating_ip_id)
+    except (ValueError, TypeError):
+        raise faults.BadRequest("Invalid Floating IP ID %s" % floating_ip_id)
 
 
 def backend_has_free_public_ip(backend):

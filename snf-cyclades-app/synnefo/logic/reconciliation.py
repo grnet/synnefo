@@ -158,9 +158,9 @@ class BackendReconciler(object):
         # Fix them
         if stale and self.options["fix_stale"]:
             for server_id in stale:
-                db_server = self.db_servers[server_id]
+                vm = get_locked_server(server_id)
                 backend_mod.process_op_status(
-                    vm=db_server,
+                    vm=vm,
                     etime=self.event_time,
                     jobid=-0,
                     opcode='OP_INSTANCE_REMOVE', status='success',
@@ -210,8 +210,9 @@ class BackendReconciler(object):
                       db_server.id)
         if self.options["fix_unsynced"]:
             fix_opcode = "OP_INSTANCE_CREATE"
+            vm = get_locked_server(db_server.id)
             backend_mod.process_op_status(
-                vm=db_server,
+                vm=vm,
                 etime=self.event_time,
                 jobid=-0,
                 opcode=fix_opcode, status='error',
@@ -224,18 +225,19 @@ class BackendReconciler(object):
             self.log.info("Server '%s' is '%s' in DB and '%s' in Ganeti.",
                           server_id, db_server.operstate, gnt_server["state"])
             if self.options["fix_unsynced"]:
+                vm = get_locked_server(server_id)
                 # If server is in building state, you will have first to
                 # reconcile it's creation, to avoid wrong quotas
                 if db_server.operstate == "BUILD":
                     backend_mod.process_op_status(
-                        vm=db_server, etime=self.event_time, jobid=-0,
+                        vm=vm, etime=self.event_time, jobid=-0,
                         opcode="OP_INSTANCE_CREATE", status='success',
                         logmsg='Reconciliation: simulated Ganeti event')
                 fix_opcode = "OP_INSTANCE_STARTUP"\
                     if gnt_server["state"] == "STARTED"\
                     else "OP_INSTANCE_SHUTDOWN"
                 backend_mod.process_op_status(
-                    vm=db_server, etime=self.event_time, jobid=-0,
+                    vm=vm, etime=self.event_time, jobid=-0,
                     opcode=fix_opcode, status='success',
                     logmsg='Reconciliation: simulated Ganeti event')
                 self.log.debug("Simulated Ganeti state event for server '%s'",
@@ -259,13 +261,14 @@ class BackendReconciler(object):
             self.log.info("Server '%s' has flavor '%s' in DB and '%s' in"
                           " Ganeti", server_id, db_flavor, gnt_flavor)
             if self.options["fix_unsynced_flavors"]:
-                old_state = db_server.operstate
+                vm = get_locked_server(server_id)
+                old_state = vm.operstate
                 opcode = "OP_INSTANCE_SET_PARAMS"
                 beparams = {"vcpus": gnt_flavor.cpu,
                             "minmem": gnt_flavor.ram,
                             "maxmem": gnt_flavor.ram}
                 backend_mod.process_op_status(
-                    vm=db_server, etime=self.event_time, jobid=-0,
+                    vm=vm, etime=self.event_time, jobid=-0,
                     opcode=opcode, status='success',
                     job_fields={"beparams": beparams},
                     logmsg='Reconciliation: simulated Ganeti event')
@@ -301,7 +304,8 @@ class BackendReconciler(object):
                                          sorted(gnt_nics_parsed.items())))
             self.log.info(msg, server_id, db_nics_str, gnt_nics_str)
             if self.options["fix_unsynced_nics"]:
-                backend_mod.process_net_status(vm=db_server,
+                vm = get_locked_server(server_id)
+                backend_mod.process_net_status(vm=vm,
                                                etime=self.event_time,
                                                nics=gnt_nics)
 
@@ -319,6 +323,10 @@ class BackendReconciler(object):
                 pending_task = True
 
         if pending_task:
+            db_server = get_locked_server(server_id)
+            if db_server.task_job_id != job_id:
+                # task has changed!
+                return
             self.log.info("Found server '%s' with pending task: '%s'",
                           server_id, db_server.task)
             if self.options["fix_pending_tasks"]:
@@ -577,6 +585,8 @@ class NetworkReconciler(object):
         self.log.info("D: Stale DB entry for network %s in backend %s",
                       backend_network.network, backend_network.backend)
         if self.fix:
+            backend_network = BackendNetwork.objects.select_for_update()\
+                                                    .get(id=backend_network.id)
             backend_mod.process_network_status(
                 backend_network, self.event_time, 0,
                 "OP_NETWORK_REMOVE",
@@ -606,6 +616,8 @@ class NetworkReconciler(object):
         self.log.info("D: Unsynced network %s in backend %s", network, backend)
         if self.fix:
             self.log.info("F: Issuing OP_NETWORK_CONNECT")
+            backend_network = BackendNetwork.objects.select_for_update()\
+                                                    .get(id=backend_network.id)
             backend_mod.process_network_status(
                 backend_network, self.event_time, 0,
                 "OP_NETWORK_CONNECT",
@@ -752,3 +764,7 @@ def create_empty_pool(pool, pool_class):
     pool_row.available_map = ""
     pool_row.reserved_map = ""
     return pool_class(pool_row)
+
+
+def get_locked_server(server_id):
+    return VirtualMachine.objects.select_for_update().get(id=server_id)

@@ -978,7 +978,7 @@ class VNC(SynnefoComponent):
         ]
 
     def prepare(self):
-        return ["mkdir /var/lib/vncauthproxy"]
+        return ["mkdir -p /var/lib/vncauthproxy"]
 
     def configure(self):
         return [

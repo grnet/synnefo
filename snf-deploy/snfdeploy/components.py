@@ -377,15 +377,17 @@ class Ganeti(SynnefoComponent):
 
 class Master(SynnefoComponent):
     def add_rapi_user(self):
-        x = "%s:Ganeti Remote API:%s" % \
-            (self.env.env.synnefo_user, self.env.env.synnefo_rapi_passwd)
+        user = self.env.env.synnefo_user
+        passwd = self.env.env.synnefo_rapi_passwd
+        x = "%s:Ganeti Remote API:%s" % (user, passwd)
 
-        commands = [
-            "echo %s {HA1}$(echo -n %s | openssl md5 | sed 's/^.* //') write" +
-            " > /var/lib/ganeti/rapi/users" % (self.env.env.synnefo_user, x),
-            ]
+        cmd = """
+cat >> /var/lib/ganeti/rapi/users <<EOF
+%s {HA1}$(echo -n %s | openssl md5 | sed 's/^.* //') write
+EOF
+""" % (self.env.env.synnefo_user, x)
 
-        return commands + self.restart()
+        return [cmd] + self.restart()
 
     def add_node(self, node_info):
         commands = [

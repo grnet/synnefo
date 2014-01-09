@@ -240,6 +240,10 @@ Cyclades UI
 - New setting ``UI_SSH_SUPPORT_OSFAMILY_EXCLUDE_LIST``. A list of image OS
   families for which ui will disable ssh key injection in machine wizard.
 - Setting ``UI_SUPPORT_SSH_OS_LIST`` removed and no longer used.
+- Group public networks by name if setting ``UI_GROUP_PUBLIC_NETWORKS`` is set 
+  to True.
+- Setting ``UI_GROUPED_PUBLIC_NETWORK_NAME`` has been deprecated and no longer 
+  used.
 
 
 Cyclades Userdata

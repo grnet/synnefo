@@ -398,7 +398,8 @@
             return model;
         },
 
-        get_fetcher: function(interval, increase, fast, increase_after_calls, max, initial_call, params) {
+        get_fetcher: function(interval, increase, fast, increase_after_calls, 
+                              max, initial_call, params) {
             var fetch_params = params || {};
             var handler_options = {};
 

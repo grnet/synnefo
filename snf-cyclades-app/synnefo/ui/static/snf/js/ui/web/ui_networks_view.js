@@ -246,6 +246,10 @@
     views.NetworkPortView = views.ext.ModelView.extend({
       tpl: '#network-port-view-tpl',
       
+      error_status: function(status) {
+        return status == "ERROR"
+      },
+
       vm_logo_url: function(vm) {
         if (!this.model.get('vm')) { return '' }
         return synnefo.ui.helpers.vm_icon_path(this.model.get('vm'), 'medium');
@@ -533,9 +537,14 @@
       model_view_cls: views.NetworkView,
       create_view_cls: views.NetworkCreateView,
       quota_key: 'cyclades.network.private',
+
+      group_key: 'name',
+      group_network: function(n) {
+        return n.get('is_public')
+      },
       
       init: function() {
-        this.public_added = false;
+        this.grouped_networks = {};
         views.NetworksCollectionView.__super__.init.apply(this, arguments);
       },
       
@@ -549,29 +558,37 @@
       },
 
       add_model: function(m) {
-        if (m.get('is_public') && !this.public_added) {
-          this.combined_public = new models.networks.CombinedPublicNetwork();
-          this.combined_public_view = new views.NetworkView({
-            model: this.combined_public
-          });
-          this.add_model_view(this.combined_public_view, this.combined_public, 0);
-          this.public_added = true;
+        var CombinedPublic = models.networks.CombinedPublicNetwork;
+        if (this.group_network(m) && synnefo.config.group_public_networks) {
+          var group_value = m.get(this.group_key);
+          if (!(group_value in this.grouped_networks)) {
+            var combined_public = new CombinedPublic({name: group_value});
+            combined_public_view = new views.NetworkView({
+              model: combined_public
+            });
+
+            this.add_model_view(combined_public_view, 
+                                combined_public, 0);
+            this.grouped_networks[group_value] = combined_public;
+          }
         }
         return views.NetworksCollectionView.__super__.add_model.call(this, m);
       },
 
       remove_model: function(m) {
-        if (m.id == 'snf-combined-public-network') {
-          return;
+        if (m.id == 'snf-combined-public-network' ||
+            (this.group_network(m) && 
+            synnefo.config.group_public_networks)) {
+          return false;
         } else {
           return views.NetworksCollectionView.__super__.remove_model.call(this, m);
         }
       },
 
       get_model_view_cls: function(m) {
-        if (!this.public_added) {
-        }
-        if (m.get('is_public')) {
+        if (m.id == 'snf-combined-public-network' || 
+            (this.group_network(m) && 
+             synnefo.config.group_public_networks)) {
           return false;
         }
         return views.NetworksCollectionView.__super__.get_model_view_cls.apply(this, [m]);
@@ -1061,11 +1078,11 @@
         }
 
         // combined public
-        this.combined_public = new models.networks.CombinedPublicNetwork();
-        this.combined_public.set({noselect: true, 
+        this.floating_public = new models.networks.CombinedPublicNetwork('Internet');
+        this.floating_public.set({noselect: true, 
                                   name: 'Internet (public IPv4)', 
                                   forced: false});
-        this.public_networks.add(this.combined_public);
+        this.public_networks.add(this.floating_public);
 
         model_attrs = {
           public_collection: this.public_networks,

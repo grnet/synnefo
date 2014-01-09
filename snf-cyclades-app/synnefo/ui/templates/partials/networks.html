@@ -111,7 +111,9 @@
            src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
            class="progress-indicator" />
        </div>
-      <div data-rv-show="model.network.is_public" class="firewall">
+       <div data-rv-show="model.network.is_public" 
+            class="firewall" 
+            data-rv-hide="model.vm.status|error_status">
         <img data-rv-show="model.firewall_running" 
              src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
              class="progress-indicator" />

@@ -521,6 +521,122 @@ Finally, backend systems having acquired a token can use the
 :ref:`authenticate-api-label` API call from a private network or through HTTPS.
 
 
+File/Object Storage Service (Pithos+)
+====================================
+
+Pithos+ is the Synnefo component that implements a storage service and exposes
+the associated OpenStack REST APIs with custom extensions.
+
+Pithos+ advanced operations
+---------------------------
+
+Enable separate domain for serving user content
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Since Synnefo v0.15, there is a possibility to serve untrusted user content
+in an isolated domain.
+
+Enabling this feature consists of the following steps:
+
+#. **Declare new domain in apache server**
+
+   In order to enable the apache server to serve several domains it is required
+   to setup several virtual hosts.
+   Therefore, for adding the new domain e.g. "user-content.example.com", append
+   the following in ``/etc/apache2/sites-available/synnefo-ssl``:
+
+    .. code-block:: console
+
+        <VirtualHost _default_:443>
+            ServerName user-content.example.com
+
+            Alias /static "/usr/share/synnefo/static"
+
+            #  SetEnv no-gzip
+            #  SetEnv dont-vary
+
+           AllowEncodedSlashes On
+
+           RequestHeader set X-Forwarded-Protocol "https"
+
+        <Proxy * >
+            Order allow,deny
+            Allow from all
+        </Proxy>
+
+            SetEnv                proxy-sendchunked
+            SSLProxyEngine        off
+            ProxyErrorOverride    off
+
+            ProxyPass        /static !
+            ProxyPass        / http://localhost:8080/ retry=0
+            ProxyPassReverse / http://localhost:8080/
+
+            RewriteEngine On
+            RewriteCond %{THE_REQUEST} ^.*(\\r|\\n|%0A|%0D).* [NC]
+            RewriteRule ^(.*)$ - [F,L]
+
+            SSLEngine on
+            SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
+            SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+        </VirtualHost>
+
+    .. note:: Consider also to purchase and install a certificate for the new
+              domain.
+
+
+    Finally, restart the apache server::
+
+        pithos-host$ /etc/init.d/apache2 restart
+
+#. **Register Pithos+ as an OAuth2 client in Astakos**
+
+   Starting from synnefo version 0.15, in order to view the content of a
+   protected resource, Pithos+ (on behalf of the user) has to be granted
+   authorization for the specific resource by Astakos.
+
+   During the authorization grant procedure, Pithos+ has to authenticate
+   itself with Astakos since the latter has to prevent serving requests by
+   unknown/unauthorized clients.
+
+   Therefore, in the installation guide you were guided to register Pithos+
+   as an OAuth2 client in Astakos.
+
+   .. note:: You can see the registered clients by running::
+    astakos-host$ snf-manage oauth2-client-list -o identifier,redirect_urls,is_trusted
+
+   However, requests originated from the new domain will be rejected since
+   Astakos is ignorant about the new domain.
+
+   Therefore, you need to register a new client pointing to the unsafe domain.
+   To do so, use the following command::
+
+        astakos-host$ snf-manage oauth2-client-add pithos-unsafe-domain --secret=<secret> --is-trusted --url https://user-content.example.com/pithos/ui/view
+
+
+   .. note:: You can also unregister the client pointing to the safe domain,
+       since it will no longer be useful.
+       To do so, run the following::
+
+        astakos-host$ snf-manage oauth2-client-remove pithos-view
+
+#. **Update Pithos+ configuration**
+
+   Respectively, the ``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting should be
+   updated to contain the credentials of the client registered in the previous
+   step.
+
+   Furthermore, you need to restrict all the requests for user content
+   to be served exclusively by the unsafe domain.
+
+   To enable this, set the ``PITHOS_UNSAFE_DOMAIN`` setting to the value
+   of the new domain e.g. "user-content.example.com"
+
+   Finally, restart the gunicorn server::
+
+        pithos-host$ /etc/init.d/gunicorn restart
+
+
 Compute/Network/Image Service (Cyclades)
 ========================================
 

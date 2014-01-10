@@ -20,6 +20,7 @@ exclude_patterns = ['_build']
 pygments_style = 'sphinx'
 html_theme = 'default'
 html_theme_options = {
+	'sidebarwidth': '300',
 	'collapsiblesidebar': 'true',
 	'footerbgcolor':    '#55b577',
 	'footertextcolor':  '#000000',

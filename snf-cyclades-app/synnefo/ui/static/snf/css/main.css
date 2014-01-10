@@ -6899,13 +6899,17 @@ input.has-errors {
   text-align: right;
   margin-right: 4px;
   margin-top: 5px;
-  float: right;
-  width: 125px;
+  width: 150px;
+  position: absolute;
+  top:-4px;
+  right: 0;
 }
 
 .model-item .status-indicator {
   width: 65px;
-  float: right;
+  position: absolute;
+  top: 16px;
+  right: 0;
 }
 
 .model-item .actions-content {
@@ -7017,6 +7021,10 @@ input.has-errors {
 
 .model-item .status-inactive .status-indicator .indicator {
   background-color: #940606;
+}
+
+.model-item .status-terminated .status-indicator .indicator {
+  background-color: #5E1616;
 }
 
 .model-item .status-error .status-indicator .indicator {
@@ -7492,7 +7500,7 @@ input.has-errors {
   border: 1px solid #aaaaaa;
   font-size: 85%;
   padding: 2px;
-  width: 235px;
+  width: 207px;
 }
 
 .model-rename-view .value {}
@@ -7504,7 +7512,7 @@ input.has-errors {
   width: 40px;
   position: relative;
   top: 1px;
-  left: -6px;
+  left: -36px;
 }
 
 .model-rename-view .rename-actions .btn {

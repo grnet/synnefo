@@ -465,6 +465,7 @@
       
       status_map: {
         'ACTIVE': 'Active',
+        'SNF:DRAINED': 'Drained',
         'CONNECTING': 'Connecting',
         'DISCONNECTING': 'Disconnecting',
         'REMOVING': 'Destroying'
@@ -472,6 +473,7 @@
 
       status_cls_map: {
         'ACTIVE': 'status-active',
+        'SNF:DRAINED': 'status-terminated',
         'DISCONNECTING': 'status-progress',
         'CONNECTING': 'status-progress',
         'REMOVING': 'status-progress'

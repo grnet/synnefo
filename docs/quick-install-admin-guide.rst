@@ -2129,7 +2129,7 @@ created NIC on a bridge.
 
    $ snf-manage network-create --subnet=10.0.0.0/24 \
                                --gateway=10.0.0.1 \
-                               --public --dhcp --flavor=CUSTOM \
+                               --public --dhcp=True --flavor=CUSTOM \
                                --link=br1 --mode=bridged \
                                --name=public_network \
                                --backend-id=1

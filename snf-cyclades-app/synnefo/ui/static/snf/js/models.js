@@ -1389,6 +1389,7 @@
         // get actions that the user can execute
         // depending on the vm state/status
         get_available_actions: function() {
+            if (this.get('suspended')) { return [] }
             return models.VM.AVAILABLE_ACTIONS[this.state()];
         },
 

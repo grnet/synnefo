@@ -683,12 +683,14 @@ def create_instance(vm, nics, flavor, image):
         return client.CreateInstance(**kw)
 
 
-def delete_instance(vm):
+def delete_instance(vm, shutdown_timeout=None):
     with pooled_rapi_client(vm) as client:
-        return client.DeleteInstance(vm.backend_vm_id, dry_run=settings.TEST)
+        return client.DeleteInstance(vm.backend_vm_id,
+                                     shutdown_timeout=shutdown_timeout,
+                                     dry_run=settings.TEST)
 
 
-def reboot_instance(vm, reboot_type):
+def reboot_instance(vm, reboot_type, shutdown_timeout=None):
     assert reboot_type in ('soft', 'hard')
     # Note that reboot type of Ganeti job must be always hard. The 'soft' and
     # 'hard' type of OS API is different from the one in Ganeti, and maps to
@@ -698,6 +700,8 @@ def reboot_instance(vm, reboot_type):
     # 'shutdown_timeout' parameter is only support from snf-ganeti>=2.8.2 and
     # Ganeti > 2.10. In other versions this parameter will be ignored and
     # we will fallback to default timeout of Ganeti (120s).
+    if shutdown_timeout is not None:
+        kwargs["shutdown_timeout"] = shutdown_timeout
     if reboot_type == "hard":
         kwargs["shutdown_timeout"] = 0
     if settings.TEST:
@@ -711,9 +715,11 @@ def startup_instance(vm):
         return client.StartupInstance(vm.backend_vm_id, dry_run=settings.TEST)
 
 
-def shutdown_instance(vm):
+def shutdown_instance(vm, shutdown_timeout=None):
     with pooled_rapi_client(vm) as client:
-        return client.ShutdownInstance(vm.backend_vm_id, dry_run=settings.TEST)
+        return client.ShutdownInstance(vm.backend_vm_id,
+                                       timeout=shutdown_timeout,
+                                       dry_run=settings.TEST)
 
 
 def resize_instance(vm, vcpus, memory):

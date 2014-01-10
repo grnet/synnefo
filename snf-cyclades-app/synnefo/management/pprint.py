@@ -263,7 +263,8 @@ def pprint_port_in_ganeti(port, stdout=None, title=None):
                          nics)[0]
         gnt_nic["instance"] = vm_info["name"]
     except IndexError:
-        stdout.write("Port %s is not attached to instance %s" % (port, vm))
+        stdout.write("Port %s is not attached to instance %s\n" %
+                     (port.id, vm.id))
         return
     pprint_table(stdout, gnt_nic.items(), None, separator=" | ",
                  title=title)

@@ -71,6 +71,10 @@ cyclades_patterns = api_patterns(
 cyclades_patterns += patterns(
     '',
     (prefix_pattern(UI_PREFIX), include('synnefo.ui.urls')),
+)
+
+cyclades_patterns += api_patterns(
+    '',
     (prefix_pattern(HELPDESK_PREFIX), include('synnefo.helpdesk.urls')),
 )
 

@@ -159,7 +159,7 @@ def index(request):
     # if form submitted redirect to details
     account = request.GET.get('account', None)
     if account:
-        return redirect('synnefo.helpdesk.views.account',
+        return redirect('helpdesk-details',
                         search_query=account)
 
     # show index template

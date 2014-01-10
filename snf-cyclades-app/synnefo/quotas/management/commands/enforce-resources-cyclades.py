@@ -72,6 +72,8 @@ class Command(SynnefoCommand):
                     action="store_true",
                     help=("Confirm actions that may permanently "
                           "remove a vm")),
+        make_option("--shutdown-timeout",
+                    help="Force vm shutdown after given seconds."),
     )
 
     def confirm(self):
@@ -113,6 +115,14 @@ class Command(SynnefoCommand):
                 m = "Expected integer max operations."
                 raise CommandError(m)
 
+        shutdown_timeout = options["shutdown_timeout"]
+        if shutdown_timeout is not None:
+            try:
+                shutdown_timeout = int(shutdown_timeout)
+            except ValueError:
+                m = "Expected integer shutdown timeout."
+                raise CommandError(m)
+
         users = options['users']
         if users is not None:
             users = users.split(',')
@@ -130,6 +140,7 @@ class Command(SynnefoCommand):
         resources = set(h[0] for h in handlers)
         dangerous = bool(resources.difference(DEFAULT_RESOURCES))
 
+        opts = {"shutdown_timeout": shutdown_timeout}
         actions = {}
         overlimit = []
         viol_id = 0
@@ -181,7 +192,8 @@ class Command(SynnefoCommand):
                     self.confirm()
                 write("Applying actions. Please wait...\n")
             title = "Applied Actions" if fix else "Suggested Actions"
-            log = enforce.perform_actions(actions, maxops=maxops, fix=fix)
+            log = enforce.perform_actions(actions, maxops=maxops, fix=fix,
+                                          options=opts)
             headers = ("Type", "ID", "State", "Backend", "Action", "Violation")
             if fix:
                 headers += ("Result",)

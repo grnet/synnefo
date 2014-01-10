@@ -1304,6 +1304,10 @@ of operations per backend. For example,
 will apply only the first 10 listed actions per backend. One can repeat the
 operation, until nothing is left to be done.
 
+To control load a timeout can also be set for shutting down VMs (using
+option ``--shutdown-timeout <sec>``). This may be needed to avoid
+expensive operations triggered by shutdown, such as Windows updates.
+
 Cyclades advanced operations
 ----------------------------
 

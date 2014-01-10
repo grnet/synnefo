@@ -15,8 +15,11 @@ def get_volume(user_id, volume_id, for_update=False,
 
 
 def get_snapshot(user_id, snapshot_id, exception=faults.ItemNotFound):
-    with image_backend(user_id) as b:
-        return b.get_snapshot(user_id, snapshot_id)
+    try:
+        with image_backend(user_id) as b:
+            return b.get_snapshot(user_id, snapshot_id)
+    except faults.ItemNotFound:
+        raise exception("Snapshot %s not found" % snapshot_id)
 
 
 def get_image(user_id, image_id, exception=faults.ItemNotFound):

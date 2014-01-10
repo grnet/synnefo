@@ -609,8 +609,13 @@
         update_valid_predefined: function() {
             this.update_unavailable_values();
             var self = this;
-            this.valid_predefined = _.select(_.map(this.predefined_flavors, function(flv, key){
-                var existing = storage.flavors.get_flavor(flv.cpu, flv.ram, flv.disk, flv.disk_template, self.flavors);
+            this.valid_predefined = _.select(
+              _.map(this.predefined_flavors, function(flv, key){
+                var existing = storage.flavors.get_flavor(flv.cpu, 
+                                                          flv.ram, 
+                                                          flv.disk, 
+                                                          flv.disk_template, 
+                                                          self.flavors);
                 // non existing
                 if (!existing) {
                     return false;
@@ -621,7 +626,18 @@
                     existing.get("disk")) > -1) {
                       return false
                 }
-
+                
+                // quota check
+                var quotas = synnefo.storage.quotas.get_available_for_vm();
+                var unavailable_check = 
+                  synnefo.storage.flavors.unavailable_values_for_quotas;
+                var unavailable = unavailable_check(quotas, [existing]);
+                if ((_.filter(unavailable, function(values, flvkey) {
+                  return values.length > 0
+                })).length > 0) {
+                  return false;
+                }
+                
                 return key;
             }), function(ret) { return ret });
             

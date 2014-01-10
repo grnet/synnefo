@@ -95,7 +95,7 @@
 
         beforeOpen: function() {
             views.SuspendedVMView.__super__.beforeOpen.apply(this);
-            $(this.$(".description p")[0]).html($("#suspended-vm-overlay .description").html())
+            $(this.$(".form-field label")[0]).html($("#suspended-vm-overlay .description").html())
         },
 
         show: function(vm, data, collect_data, extra_data, cb) {

@@ -1141,6 +1141,53 @@ The resources that are exported by Cyclades are the following:
 * `cyclades.floating_ip`: Number of floating IP addresses
 * `cyclades.network.private`: Number of private virtual networks
 
+Enforcing quotas
+~~~~~~~~~~~~~~~~
+
+User quota can get overlimit, for example when a user is removed from a
+project granting Cyclades resources. However, no action is automatically
+taken to restrict users to their new limits. There is a special tool for
+quota enforcement:
+
+.. code-block:: console
+
+  # snf-manage enforce-resources-cyclades
+
+This command will check and report which users are overlimit on their
+Cyclades quota; it will also suggest actions to be taken in order to enforce
+quota limits, dependent on the overlimit resource:
+
+* `cyclades.vm`: Delete VMs
+* `cyclades.total_cpu`: Delete VMs
+* `cyclades.cpu`: Shutdown VMs
+* `cyclades.total_ram`: Delete VMs
+* `cyclades.ram`: Shutdown VMs
+* `cyclades.disk`: Delete VMs
+* `cyclades.floating_ip`: Detach and remove IPs
+
+VMs to be deleted/shutdown are chosen first by state in the following order:
+ERROR, BUILD, STOPPED, STARTED or RESIZE and then by decreasing ID. When
+needing to remove IPs, we first choose IPs that are free, then those
+attached to VMs, using the same VM ordering.
+
+By default, the command checks only the following resources: `cyclades.cpu`,
+`cyclades.ram`, and `cyclades.floating_ip`; that is, the less dangerous
+ones, those that do not result in *deleting* any VM. One can change the
+default behavior by specifying the desired resources with option
+``--resources``. It is also possible to specify users to be checked or
+excluded.
+
+Actual enforcement is done with option ``--fix``. In order to control the
+load that quota enforcement may cause on Cyclades, one can limit the number
+of operations per backend. For example,
+
+.. code-block:: console
+
+  # snf-manage enforce-resources-cyclades --fix --max-operations 10
+
+will apply only the first 10 listed actions per backend. One can repeat the
+operation, until nothing is left to be done.
+
 Cyclades advanced operations
 ----------------------------
 

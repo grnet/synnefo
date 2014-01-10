@@ -695,7 +695,9 @@ class SynnefoCI(object):
             synnefo_repo=synnefo_repo, synnefo_branch=synnefo_branch,
             local_repo=local_repo, pull_request=pull_request)
         # Clone pithos-web-client
-        self.clone_pithos_webclient_repo(synnefo_branch)
+        if self.config.get("Global", "build_pithos_webclient") == "True":
+            # Clone pithos-web-client
+            self.clone_pithos_webclient_repo(synnefo_branch)
 
     @_check_fabric
     def clone_synnefo_repo(self, synnefo_repo=None, synnefo_branch=None,
@@ -908,7 +910,8 @@ class SynnefoCI(object):
         # Build synnefo packages
         self.build_synnefo()
         # Build pithos-web-client packages
-        self.build_pithos_webclient()
+        if self.config.get("Global", "build_pithos_webclient") == "True":
+            self.build_pithos_webclient()
 
     @_check_fabric
     def build_synnefo(self):

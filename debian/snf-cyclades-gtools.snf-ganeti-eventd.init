@@ -1,39 +1,62 @@
-#! /bin/sh
+#!/bin/sh
 
 ### BEGIN INIT INFO
-# Provides:          snf-ganeti-eventd
-# Required-Start:    $remote_fs $syslog ganeti
-# Required-Stop:     $remote_fs $syslog 
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# X-Start-After:	 ganeti
-# Short-Description: Synnefo ganeti-eventd daemon
-# Description:       ganeti-eventd is a daemon 
+# Provides:		  snf-ganeti-eventd
+# Required-Start:	$remote_fs $syslog
+# Required-Stop:	 $remote_fs $syslog
+# Default-Start:	 2 3 4 5
+# Default-Stop:	  0 1 6
+# Short-Description: Synnefo Ganeti eventd daemon
+# Description: Synnefo Ganeti eventd daemon
 ### END INIT INFO
 
-set -e
+# Do NOT "set -e",
+# Per Debian Policy Manual, section: System run levels and init.d scripts
+# set -e
 
-# /etc/init.d/snf-ganeti-eventd: start and stop the ganeti-eventd daemon
-# script skeleton stolen from rsyncd
-
+# /etc/init.d/snf-ganeti-eventd: start and stop the Synnefo Ganeti Event Daemon
 
 DAEMON=/usr/sbin/snf-ganeti-eventd
-SNF_EVENTD_PID_FILE=/var/run/snf-ganeti-eventd.pid
-SNF_EVENTD_DEFAULTS=/etc/default/snf-ganeti-eventd
-SNF_EVENTD_OPTS=''
+NAME="snf-ganeti-eventd"
+DESCRIPTION="snf-ganeti-eventd daemon"
+DAEMON_OPTS=''
+DAEMON_DEFAULTS_FILE=/etc/default/$NAME
+RUNDIR=/var/run/
+PIDFILE=$RUNDIR/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
 SNF_EVENTD_ENABLE=true
-SNF_USER="root"
+SNF_USER=root
 
-test -x $DAEMON || exit 0
+# Exit if the package is not installed
+[ -x "$DAEMON" ] || exit 0
 
+# Read defaults file if it is present
+[ -r "$DAEMON_DEFAULTS_FILE" ] && . $DAEMON_DEFAULTS_FILE
+
+# Load LSB functions
 . /lib/lsb/init-functions
 
-if [ -s $SNF_EVENTD_DEFAULTS ]; then
-    . $SNF_EVENTD_DEFAULTS
-fi
-
 export PATH="${PATH:+$PATH:}/usr/sbin:/sbin"
-export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}/usr/share/ganeti"
+
+check_config()
+{
+    # Check Configuration file
+    if [ -r $DAEMON_DEFAULTS_FILE ]; then
+        # Load extra daemon options
+        DAEMON_OPTS=$SNF_EVENTD_OPTS" --pid-file $PIDFILE"
+        # Check the 'ENABLE" value
+        case "x$SNF_EVENTD_ENABLE" in
+          xtrue|xfalse)	;;
+          *)
+            log_failure_msg "Value of SNF_EVENTD_ENABLE in $DAEMON_DEFAULTS_FILE must be either 'true' or 'false';"
+            log_failure_msg "not starting $NAME daemon."
+            exit 1
+            ;;
+        esac
+    else
+        log_warning_msg "$NAME default file $DAEMON_DEFAULTS_FILE is missing"
+    fi
+}
 
 check_ganeti_master() {
     MASTER=`/usr/sbin/gnt-cluster getmaster`
@@ -46,92 +69,96 @@ check_ganeti_master() {
     fi
 }
 
-eventd_start() {
-    if start-stop-daemon --start --chuid $SNF_USER --pidfile $SNF_EVENTD_PID_FILE \
-		--exec $DAEMON -- $SNF_EVENTD_OPTS
-    then
-        rc=0
-        sleep 1
-        if ! kill -0 $(cat $SNF_EVENTD_PID_FILE) >/dev/null 2>&1; then
-            log_failure_msg "snf-ganeti-eventd daemon failed to start"
-            rc=1
-        fi
+do_start() {
+	# Ensure the directory containing the pidfile exists
+	# and has the right permissions
+    # Return
+    #   0 if daemon has been started
+    #   1 if daemon was already running
+    #   2 if daemon could not be started
+    #   3 if daemon is not configured to start
+    force_start=$1
+    check_config
+    [ $force_start -eq 0 ] && check_ganeti_master
+	if "$SNF_EVENTD_ENABLE"; then
+            if [ -s $PIDFILE ] && kill -0 $(cat $PIDFILE) >/dev/null 2>&1; then
+              return 1
+            else
+              SNF_USER=${SNF_USER:-root}
+              start-stop-daemon --start --chuid $SNF_USER --exec $DAEMON --pidfile $PIDFILE -- $DAEMON_OPTS || return 2
+              sleep 1
+              if [ ! -s $PIDFILE ] || ! kill -0 $(cat $PIDFILE) >/dev/null 2>&1; then
+                log_warning_msg "$NAME daemon failed to start"
+                return 2
+              fi
+            fi
     else
-        rc=1
+	  log_warning_msg "$NAME not enabled in $DAEMON_DEFAULTS_FILE, not starting."
+      return 3
     fi
-    if [ $rc -eq 0 ]; then
-        log_end_msg 0
-    else
-        log_end_msg 1
-    fi
-} # eventd_start
+}
+
+
+do_stop() {
+    # Return
+    # 0 if daemon has been stopped
+    # 1 if daemon was already stopped
+    # 2 if deamon could not be stopped
+    # other if failure occured
+    start-stop-daemon --stop --quiet --pidfile $PIDFILE --retry=TERM/30/KILL/5
+    return $?
+}
+
 
 case "$1" in
   start)
-        if "$SNF_EVENTD_ENABLE"; then
-            log_daemon_msg "Starting snf-ganeti-eventd daemon" "snf-ganeti-eventd"
-            if [ -s $SNF_EVENTD_PID_FILE ] && kill -0 $(cat $SNF_EVENTD_PID_FILE) >/dev/null 2>&1; then
-                log_progress_msg "apparently already running"
-                log_end_msg 0
-                exit 0
-            fi
-            # Check if we are on the Ganeti master node
-            check_ganeti_master
-            eventd_start
-        else
-            if [ -s "$SNF_EVENTD_DEFAULTS" ]; then
-                [ "$VERBOSE" != no ] && log_warning_msg "snf-ganeti-eventd daemon not enabled in $SNF_EVENTD_DEFAULTS, not starting..."
-            fi
-        fi
-        ;;
+    log_daemon_msg "Starting $DESCRIPTION" "$NAME"
+    do_start 0
+    case "$?" in
+      0|3) log_end_msg 0 ;;
+      1) log_progress_msg "Apparently already running" && log_end_msg 0;;
+      2) log_end_msg 1 ;;
+    esac
+    ;;
   force-start)
-        if "$SNF_EVENTD_ENABLE"; then
-            log_daemon_msg "Starting snf-ganeti-eventd daemon" "snf-ganeti-eventd"
-        else
-            if [ -s "$SNF_EVENTD_DEFAULTS" ]; then
-                [ "$VERBOSE" != no ] && log_warning_msg "snf-ganeti-eventd daemon not enabled in $SNF_EVENTD_DEFAULTS, starting anyway"
-            fi
-        fi
-
-        if [ -s $SNF_EVENTD_PID_FILE ] && kill -0 $(cat $SNF_EVENTD_PID_FILE) >/dev/null 2>&1; then
-            log_progress_msg "apparently already running"
-            log_end_msg 0
-            exit 0
-        fi
-        eventd_start
-        ;;
+    log_daemon_msg "Starting $DESCRIPTION" "$NAME"
+    do_start 1
+    case "$?" in
+      0|3) log_end_msg 0 ;;
+      1) log_progress_msg "Apparently already running" && log_end_msg 0;;
+      2) log_end_msg 1 ;;
+    esac
+    ;;
   stop)
-        log_daemon_msg "Stopping snf-ganeti-eventd daemon" "snf-ganeti-eventd"
-        start-stop-daemon --stop --quiet --oknodo --pidfile $SNF_EVENTD_PID_FILE
-        log_end_msg $?
-        ;;
-  restart)
-        set +e
-        if $SNF_EVENTD_ENABLE; then
-            log_daemon_msg "Restarting snf-ganeti-eventd daemon" "snf-ganeti-eventd"
-            if [ -s $SNF_EVENTD_PID_FILE ] && kill -0 $(cat $SNF_EVENTD_PID_FILE) >/dev/null 2>&1; then
-                start-stop-daemon --stop --quiet --oknodo --pidfile $SNF_EVENTD_PID_FILE || true
-                sleep 1
-            else
-                log_warning_msg "snf-ganeti-eventd daemon not running, attempting to start."
-            fi
-            # Check if we are on the Ganeti master node, before starting
-            check_ganeti_master
-            eventd_start
-        else
-            if [ -s "$SNF_EVENTD_DEFAULTS" ]; then
-                [ "$VERBOSE" != no ] && log_warning_msg "snf-ganeti-eventd daemon not enabled in $SNF_EVENTD_DEFAULTS, not starting..."
-            fi
-        fi
-        ;;
-
+    log_daemon_msg "Stoping $DESCRIPTION" "$NAME"
+    do_stop
+    case "$?" in
+      0|1) log_end_msg 0 ;;
+      2) log_end_msg 1 ;;
+    esac
+	;;
   status)
-        status_of_proc -p $SNF_EVENTD_PID_FILE "$DAEMON" ganeti-eventd
-        exit $? # notreached due to set -e
+	status_of_proc -p $PIDFILE $DAEMON $NAME && exit 0 || exit $?
+	;;
+  restart|force-reload)
+    log_daemon_msg "Restarting $DESCRIPTION" "$NAME"
+    do_stop
+    case "$?" in
+      0|1)
+        do_start 0
+        case "$?" in
+          0) log_end_msg 0 ;;
+          *) log_end_msg 1 ;;  # Old process stil running or failed to start
+        esac
         ;;
+      *)
+        # Failed to stop
+        log_end_msg 1
+        ;;
+    esac
+	;;
   *)
-        echo "Usage: /etc/init.d/snf-ganeti-eventd {start|stop|restart|force-start|status}"
-        exit 1
+	echo "Usage: /etc/init.d/snf-ganeti-eventd {start|stop|status|restart|force-reload}" >&2
+	exit 3
+    ;;
 esac
-
-exit 0

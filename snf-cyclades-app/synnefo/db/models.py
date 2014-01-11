@@ -825,8 +825,8 @@ class NetworkInterface(models.Model):
     device_owner = models.CharField('Device owner', max_length=128, null=True)
 
     def __unicode__(self):
-        return "<%s:vm:%s network:%s>" % (self.id, self.machine_id,
-                                          self.network_id)
+        return "<NIC %s:vm:%s network:%s>" % (self.id, self.machine_id,
+                                              self.network_id)
 
     @property
     def backend_uuid(self):
@@ -1003,18 +1003,20 @@ class Volume(models.Model):
                             " volume")
     )
 
+    SOURCE_IMAGE_PREFIX = "image:"
+    SOURCE_SNAPSHOT_PREFIX = "snapshot:"
+    SOURCE_VOLUME_PREFIX = "volume:"
+
     name = models.CharField("Name", max_length=255, null=True)
     description = models.CharField("Description", max_length=256, null=True)
     userid = models.CharField("Owner's UUID", max_length=100, null=False,
                               db_index=True)
     size = models.IntegerField("Volume size in GB",  null=False)
-    source_image_id = models.CharField(max_length=100, null=True)
-    source_snapshot_id = models.CharField(max_length=100, null=True)
-    source_volume = models.ForeignKey("Volume",
-                                      related_name="cloned_volumes",
-                                      null=True)
     delete_on_termination = models.BooleanField("Delete on Server Termination",
                                                 default=True, null=False)
+
+    source = models.CharField(max_length=128, null=True)
+    origin = models.CharField(max_length=128, null=True)
 
     # TODO: volume_type should be foreign key to VolumeType model
     volume_type = None
@@ -1041,6 +1043,63 @@ class Volume(models.Model):
     @property
     def backend_disk_uuid(self):
         return u"%sdisk-%d" % (settings.BACKEND_PREFIX_ID, self.id)
+
+    @property
+    def source_image_id(self):
+        src = self.source
+        if src and src.startswith(self.SOURCE_IMAGE_PREFIX):
+            return src[len(self.SOURCE_IMAGE_PREFIX):]
+        else:
+            return None
+
+    @property
+    def source_snapshot_id(self):
+        src = self.source
+        if src and src.startswith(self.SOURCE_SNAPSHOT_PREFIX):
+            return src[len(self.SOURCE_SNAPSHOT_PREFIX):]
+        else:
+            return None
+
+    @property
+    def source_volume_id(self):
+        src = self.source
+        if src and src.startswith(self.SOURCE_VOLUME_PREFIX):
+            return src[len(self.SOURCE_VOLUME_PREFIX):]
+        else:
+            return None
+
+    @property
+    def disk_template(self):
+        if self.machine is None:
+            return None
+        else:
+            disk_template = self.machine.flavor.disk_template
+            return disk_template.split("_")[0]
+
+    @property
+    def disk_provider(self):
+        if self.machine is None:
+            return None
+        else:
+            disk_template = self.machine.flavor.disk_template
+            if "_" in disk_template:
+                return disk_template.split("_")[1]
+            else:
+                return None
+
+    @staticmethod
+    def prefix_source(source_id, source_type):
+        if source_type == "volume":
+            return Volume.SOURCE_VOLUME_PREFIX + str(source_id)
+        if source_type == "snapshot":
+            return Volume.SOURCE_SNAPSHOT_PREFIX + str(source_id)
+        if source_type == "image":
+            return Volume.SOURCE_IMAGE_PREFIX + str(source_id)
+        elif source_type == "blank":
+            return None
+
+    def __unicode__(self):
+        return "<Volume %s:vm:%s>" % (self.id, self.machine_id)
 
 
 class Metadata(models.Model):

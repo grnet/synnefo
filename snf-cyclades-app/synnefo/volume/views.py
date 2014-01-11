@@ -58,15 +58,14 @@ def display_null_field(field):
 def volume_to_dict(volume, detail=True):
     data = {
         "id": str(volume.id),
-        "name": display_null_field(volume.name),
-        # TODO: Links!
-        "links": "",
+        "display_name": display_null_field(volume.name),
+        "links": util.volume_to_dict(volume.id),
     }
     if detail:
         details = {
             "status": volume.status.lower(),
             "size": volume.size,
-            "description": volume.description,
+            "display_description": volume.description,
             "created_at": utils.isoformat(volume.created),
             "metadata": dict((m.key, m.value) for m in volume.metadata.all()),
             "snapshot_id": display_null_field(volume.source_snapshot_id),
@@ -75,6 +74,7 @@ def volume_to_dict(volume, detail=True):
             "attachments": get_volume_attachments(volume),
             # TODO:
             "volume_type": None,
+            "delete_on_termination": volume.delete_on_termination,
             #"availabilit_zone": None,
             #"bootable": None,
             #"os-vol-tenant-attr:tenant_id": None,
@@ -109,7 +109,7 @@ def create_volume(request):
 
     # Get and validate 'name' parameter
     # TODO: auto generate name
-    name = new_volume.get("name", None)
+    name = new_volume.get("display_name", None)
     if name is None:
         raise faults.BadRequest("Volume 'name' is needed.")
     # Get and validate 'size' parameter
@@ -128,7 +128,7 @@ def create_volume(request):
     volume_type = new_volume.get("volume_type", None)
 
     # Optional parameters
-    description = new_volume.get("description", "")
+    description = new_volume.get("display_description", "")
     metadata = new_volume.get("metadata", {})
     if not isinstance(metadata, dict):
         msg = "Volume 'metadata' needs to be a dictionary of key-value pairs."\
@@ -163,17 +163,11 @@ def create_volume(request):
 @api.api_method(http_method="GET", user_required=True, logger=log)
 def list_volumes(request, detail=False):
     log.debug('list_volumes detail=%s', detail)
-    volumes = Volume.objects.filter(userid=request.user_uniq)
+    volumes = Volume.objects.filter(userid=request.user_uniq).order_by("id")
 
-    since = utils.isoparse(request.GET.get('changes-since'))
-    if since:
-        volumes = volumes.filter(updated__gte=since)
-        if not volumes:
-            return HttpResponse(status=304)
-    else:
-        volumes = volumes.filter(deleted=False)
+    volumes = utils.filter_modified_since(request, objects=volumes)
 
-    volumes = [volume_to_dict(v, detail) for v in volumes.order_by("id")]
+    volumes = [volume_to_dict(v, detail) for v in volumes]
 
     data = json.dumps({'volumes': volumes})
     return HttpResponse(data, content_type="application/json", status=200)
@@ -206,8 +200,8 @@ def update_volume(request, volume_id):
 
     volume = util.get.volume(request.user_uniq, volume_id, for_update=True)
 
-    new_name = req.get("name")
-    description = req.get("description")
+    new_name = req.get("display_name")
+    description = req.get("display_description")
 
     if new_name is None and description is None:
         raise faults.BadRequest("Nothing to update.")

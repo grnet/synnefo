@@ -290,10 +290,10 @@ def create_instance_volumes(vm, flavor, image):
                                    machine=vm,
                                    name=name,
                                    size=flavor.disk,
-                                   source_image_id=image["id"],
+                                   source=Volume.SOURCE_IMAGE_PREFIX+image["id"],
+                                   origin=image["checksum"],
                                    status="CREATING")
 
-    volume.source_image = image
     volume.save()
 
     return [volume]

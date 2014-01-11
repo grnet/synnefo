@@ -34,7 +34,7 @@ from django.conf import settings
 from django.db import transaction
 from datetime import datetime, timedelta
 
-from synnefo.db.models import (Backend, VirtualMachine, Network,
+from synnefo.db.models import (VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
                                Flavor, IPAddress, IPAddressLog)
@@ -637,7 +637,7 @@ def create_instance(vm, nics, volumes, flavor, image):
         provider = flavor.disk_provider
         if provider is not None:
             disk["provider"] = provider
-            disk["origin"] = volume.source_image["checksum"]
+            disk["origin"] = volume.origin
             extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
                                         .get(provider)
             if extra_disk_params is not None:
@@ -1014,15 +1014,16 @@ def set_firewall_profile(vm, profile, nic):
 def attach_volume(vm, volume, depends=[]):
     log.debug("Attaching volume %s to vm %s", vm, volume)
 
-    disk = {"size": volume.size,
+    disk = {"size": int(volume.size) << 10,
             "name": volume.backend_volume_uuid,
             "volume_name": volume.backend_volume_uuid}
-    if volume.source_volume_id is not None:
-        disk["origin"] = volume.source_volume.backend_volume_uuid
-    elif volume.source_snapshot is not None:
-        disk["origin"] = volume.source_snapshot["checksum"]
-    elif volume.source_image is not None:
-        disk["origin"] = volume.source_image["checksum"]
+
+    disk_provider = volume.disk_provider
+    if disk_provider is not None:
+        disk["provider"] = disk_provider
+
+    if volume.origin is not None:
+        disk["origin"] = volume.origin
 
     kwargs = {
         "instance": vm.backend_vm_id,
@@ -1030,7 +1031,7 @@ def attach_volume(vm, volume, depends=[]):
         "depends": depends,
     }
     if vm.backend.use_hotplug():
-        kwargs["hotplug"] = True
+        kwargs["hotplug_if_possible"] = True
     if settings.TEST:
         kwargs["dry_run"] = True
 
@@ -1038,14 +1039,15 @@ def attach_volume(vm, volume, depends=[]):
         return client.ModifyInstance(**kwargs)
 
 
-def detach_volume(vm, volume):
+def detach_volume(vm, volume, depends=[]):
     log.debug("Removing volume %s from vm %s", volume, vm)
     kwargs = {
         "instance": vm.backend_vm_id,
         "disks": [("remove", volume.backend_volume_uuid, {})],
+        "depends": depends,
     }
     if vm.backend.use_hotplug():
-        kwargs["hotplug"] = True
+        kwargs["hotplug_if_possible"] = True
     if settings.TEST:
         kwargs["dry_run"] = True
 

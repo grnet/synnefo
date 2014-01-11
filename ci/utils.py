@@ -390,16 +390,19 @@ class SynnefoCI(object):
             _run(cmd, False)
 
         # Setup apt, download packages
-        self.logger.debug("Setup apt. Install x2goserver and firefox")
+        self.logger.debug("Setup apt")
         cmd = """
         echo 'APT::Install-Suggests "false";' >> /etc/apt/apt.conf
         echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf
         apt-get update
-        apt-get install curl --yes --force-yes
+        apt-get install -q=2 curl --yes --force-yes
         echo -e "\n\n{0}" >> /etc/apt/sources.list
         # Synnefo repo's key
         curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
+        """.format(self.config.get('Global', 'apt_repo'))
+        _run(cmd, False)
 
+        cmd = """
         # X2GO Key
         apt-key adv --recv-keys --keyserver keys.gnupg.net E1F958385BFE2B6E
         apt-get install x2go-keyring --yes --force-yes
@@ -418,9 +421,10 @@ class SynnefoCI(object):
         echo 'Encoding=UTF-8' >> /usr/share/applications/xterm.desktop
         echo 'Icon=xterm-color_48x48' >> /usr/share/applications/xterm.desktop
         echo 'Categories=System;TerminalEmulator;' >> \
-                /usr/share/applications/xterm.desktop
-        """.format(self.config.get('Global', 'apt_repo'))
-        _run(cmd, False)
+                /usr/share/applications/xterm.desktop"""
+        if self.config.get("Global", "setup_x2go") == "True":
+            self.logger.debug("Install x2goserver and firefox")
+            _run(cmd, False)
 
     def _find_flavor(self, flavor=None):
         """Find a suitable flavor to use

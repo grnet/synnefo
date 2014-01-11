@@ -222,8 +222,8 @@ def snapshot_to_dict(snapshot, detail=True):
     data = {
         "id": snapshot["uuid"],
         "size": int(snapshot["size"]) >> 30,  # gigabytes
-        "name": snapshot["name"],
-        "description": snapshot["description"],
+        "display_name": snapshot["name"],
+        "display_description": snapshot["description"],
         "status": status,
         "user_id": owner,
         "tenant_id": owner,
@@ -232,7 +232,7 @@ def snapshot_to_dict(snapshot, detail=True):
         "created_at": utils.isoformat(date_parse(snapshot["created_at"])),
         "metadata": snapshot.get("metadata", {}),
         "volume_id": snapshot.get("volume_id"),
-        "links": "",  # TODO fix links
+        "links": util.snapshot_to_links(snapshot["uuid"])
     }
     return data
 
@@ -263,11 +263,11 @@ def create_snapshot(request):
     volume = util.get_volume(user_id, volume_id, for_update=True,
                              exception=faults.BadRequest)
 
-    name = new_snapshot.get("name", None)
+    name = new_snapshot.get("display_name", None)
     if name is None:
         name = "snapshot_volume_%s_%s" %\
             (volume.id, str(datetime.datetime.now()))
-    description = new_snapshot.get("description", "")
+    description = new_snapshot.get("display_description", "")
 
     # TODO: What to do with force ?
     force = new_snapshot.get("force", False)
@@ -329,9 +329,16 @@ def update_snapshot(request, snapshot_id):
     req = utils.get_request_dict(request)
     log.debug('update_snapshot snapshot_id: %s, request: %s', snapshot_id, req)
     snapshot = util.get_snapshot(request.user_uniq, snapshot_id)
-    # TODO
-    #snapshot.name = req.get("name", snapshot.name)
-    #snapshot.description = req.get("description", snapshot.description)
-    #snapshot.save()
+
+    new_name = req.get("display_name")
+    new_description = req.get("display_description")
+    if new_name is None and new_description is None:
+        raise faults.BadRequest("Nothing to update.")
+
+    if new_name is not None:
+        snapshot = snapshots.rename(snapshot, new_name)
+    if new_description is not None:
+        snapshot = snapshots.update_description(snapshot, new_description)
+
     data = json.dumps({'snapshot': snapshot_to_dict(snapshot, detail=True)})
     return HttpResponse(data, content_type="application/json", status=200)

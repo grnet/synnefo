@@ -280,7 +280,7 @@ def destroy(vm, shutdown_timeout=None):
        not backend.vm_exists_in_backend(vm)):
             raise faults.BuildInProgress("Server is being build")
     log.info("Deleting VM %s", vm)
-    return backend.delete_instance(vm, shutdown_timeout=None)
+    return backend.delete_instance(vm, shutdown_timeout=shutdown_timeout)
 
 
 @server_command("START")
@@ -292,7 +292,7 @@ def start(vm):
 @server_command("STOP")
 def stop(vm, shutdown_timeout=None):
     log.info("Stopping VM %s", vm)
-    return backend.shutdown_instance(vm, shutdown_timeout=None)
+    return backend.shutdown_instance(vm, shutdown_timeout=shutdown_timeout)
 
 
 @server_command("REBOOT")

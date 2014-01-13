@@ -5422,13 +5422,15 @@ table.list-machines .wave {
   margin-right: 5px;
 }
 
-.cont-toggler-wrapper.disabled .cont-toggler {
+.cont-toggler-wrapper.disabled .cont-toggler,
+.cont-toggler.disabled {
   background-color: #C1CED4;
   background-image: url("../images/down-arrow-lighter.png");
   border-right-color: #C1CED4;
 }
 
-.cont-toggler-wrapper.disabled .cont-toggler .label {
+.cont-toggler-wrapper.disabled .cont-toggler .label,
+.cont-toggler.disabled .label {
   color: #eee;
   background-color: #B4C1C7;
 }

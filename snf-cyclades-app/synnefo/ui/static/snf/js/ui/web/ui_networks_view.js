@@ -415,6 +415,15 @@
 
       show_connect_vms_overlay: function() {
         this.parent_view.show_connect_vms_overlay();
+      },
+
+      check_empty: function() {
+        views.NetworkPortCollectionView.__super__.check_empty.apply(this, arguments);
+        if (this.collection.length == 0) {
+          this.parent_view.set_ports_empty();
+        } else {
+          this.parent_view.unset_ports_empty();
+        }
       }
     });
 
@@ -428,6 +437,19 @@
         this.ports_toggler.click(this.toggle_ports);
         this.ports_visible = false;
       },
+      
+      set_ports_empty: function() {
+        if (this.ports_visible) {
+          this.toggle_ports();
+        }
+        this.ports_empty = true;
+        this.ports_toggler.find(".cont-toggler").addClass("disabled");
+      },
+
+      unset_ports_empty: function() {
+        this.ports_toggler.find(".cont-toggler").removeClass("disabled");
+        this.ports_empty = false;
+      },
 
       toggle_ports: function(e, hide) {
         $(window).trigger("resize");
@@ -435,6 +457,7 @@
         if (hide) {
           this.ports.stop().hide();
         } else {
+          if (this.ports_empty) { return }
           var self = this;
           this.ports.parent().parent().css({overflow: 'hidden'});
           this.ports.stop().slideToggle(function() {

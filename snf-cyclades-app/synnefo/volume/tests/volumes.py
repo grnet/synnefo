@@ -12,7 +12,9 @@ class VolumesTest(BaseAPITest):
     def setUp(self):
         self.userid = "test_user"
         self.size = 1
-        self.vm = mf.VirtualMachineFactory(userid=self.userid)
+        self.vm = mf.VirtualMachineFactory(
+            userid=self.userid,
+            flavor__disk_template="ext_archipelago")
         self.kwargs = {"user_id": self.userid,
                        "size": self.size,
                        "server_id": self.vm.id}
@@ -41,7 +43,9 @@ class VolumesTest(BaseAPITest):
         self.assertEqual(vol.name, None)
         self.assertEqual(vol.description, None)
         self.assertEqual(vol.source_snapshot_id, None)
-        self.assertEqual(vol.source_volume, None)
+        self.assertEqual(vol.source, None)
+        self.assertEqual(vol.origin, None)
+        self.assertEqual(vol.source_volume_id, None)
         self.assertEqual(vol.source_image_id, None)
         self.assertEqual(vol.machine, self.vm)
 
@@ -54,14 +58,21 @@ class VolumesTest(BaseAPITest):
         self.assertFalse("origin" in disk_info)
 
     def test_create_from_volume(self, mrapi):
-        # Wrong source
+        # Check permissions
         svol = mf.VolumeFactory(userid="other_user")
         self.assertRaises(faults.BadRequest,
                           volumes.create,
                           source_volume_id=svol.id,
                           **self.kwargs)
+        # Invalid volume status
+        svol = mf.VolumeFactory(userid=self.userid, status="CREATING")
+        self.assertRaises(faults.BadRequest,
+                          volumes.create,
+                          source_volume_id=svol.id,
+                          **self.kwargs)
 
-        svol = mf.VolumeFactory(userid=self.userid)
+        svol.status = "AVAILABLE"
+        svol.save()
         mrapi().ModifyInstance.return_value = 42
         vol = volumes.create(source_volume_id=svol.id, **self.kwargs)
 
@@ -69,9 +80,8 @@ class VolumesTest(BaseAPITest):
         self.assertEqual(vol.userid, self.userid)
         self.assertEqual(vol.name, None)
         self.assertEqual(vol.description, None)
-        self.assertEqual(vol.source_snapshot_id, None)
-        self.assertEqual(vol.source_volume, svol)
-        self.assertEqual(vol.source_image_id, None)
+        self.assertEqual(vol.source, "volume:%s" % svol.id)
+        self.assertEqual(vol.origin, svol.backend_volume_uuid)
 
         name, args, kwargs = mrapi().ModifyInstance.mock_calls[0]
         self.assertEqual(kwargs["instance"], self.vm.backend_vm_id)
@@ -81,23 +91,24 @@ class VolumesTest(BaseAPITest):
         self.assertEqual(disk_info["volume_name"], vol.backend_volume_uuid)
         self.assertEqual(disk_info["origin"], svol.backend_volume_uuid)
 
-    @patch("synnefo.api.util.get_image")
-    def test_create_from_snapshot(self, mocked_image, mrapi):
+    @patch("synnefo.plankton.backend.ImageBackend")
+    def test_create_from_snapshot(self, mimage, mrapi):
         # Wrong source
-        mocked_image.side_effect = faults.ItemNotFound
+        mimage().get_snapshot.side_effect = faults.ItemNotFound
         self.assertRaises(faults.BadRequest,
                           volumes.create,
                           source_snapshot_id=421,
                           **self.kwargs)
 
-        mocked_image.side_effect = None
-        mocked_image.return_value = {'location': 'pithos://foo',
-                                     'checksum': 'snf-snapshot-43',
-                                     'id': 12,
-                                     'name': "test_image",
-                                     'size': 1242,
-                                     'disk_format': 'diskdump',
-                                     'properties': {'source_volume': 42}}
+        mimage().get_snapshot.side_effect = None
+        mimage().get_snapshot.return_value = {
+            'location': 'pithos://foo',
+            'checksum': 'snf-snapshot-43',
+            'id': 12,
+            'name': "test_image",
+            'size': 1242,
+            'disk_format': 'diskdump',
+            'properties': {'source_volume': 42}}
 
         mrapi().ModifyInstance.return_value = 42
         vol = volumes.create(source_snapshot_id=12, **self.kwargs)
@@ -106,9 +117,10 @@ class VolumesTest(BaseAPITest):
         self.assertEqual(vol.userid, self.userid)
         self.assertEqual(vol.name, None)
         self.assertEqual(vol.description, None)
-        self.assertEqual(vol.source_snapshot_id, 12)
-        self.assertEqual(vol.source_volume, None)
+        self.assertEqual(int(vol.source_snapshot_id), 12)
+        self.assertEqual(vol.source_volume_id, None)
         self.assertEqual(vol.source_image_id, None)
+        self.assertEqual(vol.origin, "snf-snapshot-43")
 
         name, args, kwargs = mrapi().ModifyInstance.mock_calls[0]
         self.assertEqual(kwargs["instance"], self.vm.backend_vm_id)
@@ -119,17 +131,26 @@ class VolumesTest(BaseAPITest):
         self.assertEqual(disk_info["origin"], "snf-snapshot-43")
 
     def test_delete(self, mrapi):
-        # Test in use
-        vol = mf.VolumeFactory()
-        vm = mf.VirtualMachineFactory()
-        vol.machine = vm
-        vol.save()
+        # We can not deleted detached volumes
+        vol = mf.VolumeFactory(machine=None)
         self.assertRaises(faults.BadRequest,
                           volumes.delete,
                           vol)
-        self.assertFalse(vol.deleted)
 
-        vol.machine = None
-        vol.save()
+        vm = mf.VirtualMachineFactory()
+        # Also we cannot delete root volume
+        vol.index = 0
+        vol.machine = vm
+        self.assertRaises(faults.BadRequest,
+                          volumes.delete,
+                          vol)
+
+        # We can delete everything else
+        vol.index = 1
+        mrapi().ModifyInstance.return_value = 42
         volumes.delete(vol)
-        self.assertTrue(vol.deleted)
+        self.assertEqual(vol.backendjobid, 42)
+        args, kwargs = mrapi().ModifyInstance.call_args
+        self.assertEqual(kwargs["instance"], vm.backend_vm_id)
+        self.assertEqual(kwargs["disks"][0], ("remove",
+                                              vol.backend_volume_uuid, {}))

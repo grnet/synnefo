@@ -1112,7 +1112,7 @@ def set_firewall_profile(vm, profile, nic):
 
 
 def attach_volume(vm, volume, depends=[]):
-    log.debug("Attaching volume %s to vm %s", vm, volume)
+    log.debug("Attaching volume %s to vm %s", volume, vm)
 
     disk = {"size": int(volume.size) << 10,
             "name": volume.backend_volume_uuid,

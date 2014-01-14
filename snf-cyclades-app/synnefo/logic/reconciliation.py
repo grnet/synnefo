@@ -326,7 +326,35 @@ class BackendReconciler(object):
                                                nics=gnt_nics)
 
     def reconcile_unsynced_disks(self, server_id, db_server, gnt_server):
-        pass
+        building_time = self.event_time - BUILDING_NIC_TIMEOUT
+        db_disks = db_server.volumes.exclude(status="CREATING",
+                                             created__lte=building_time) \
+                                    .filter(deleted=False)\
+                                    .order_by("id")
+        gnt_disks = gnt_server["disks"]
+        gnt_disks_parsed = backend_mod.process_ganeti_disks(gnt_disks)
+        disks_changed = len(db_disks) != len(gnt_disks)
+        for db_disk, gnt_disk in zip(db_disks,
+                                     sorted(gnt_disks_parsed.items())):
+            gnt_disk_id, gnt_disk = gnt_disk
+            if (db_disk.id == gnt_disk_id) and\
+               backend_mod.disks_are_equal(db_disk, gnt_disk):
+                continue
+            else:
+                disks_changed = True
+                break
+        if disks_changed:
+            msg = "Found unsynced disks for server '%s'.\n"\
+                  "\tDB:\n\t\t%s\n\tGaneti:\n\t\t%s"
+            db_disks_str = "\n\t\t".join(map(format_db_disk, db_disks))
+            gnt_disks_str = "\n\t\t".join(map(format_gnt_disk,
+                                          sorted(gnt_disks_parsed.items())))
+            self.log.info(msg, server_id, db_disks_str, gnt_disks_str)
+            if self.options["fix_unsynced_disks"]:
+                vm = get_locked_server(server_id)
+                backend_mod.process_disks_status(vm=vm,
+                                                 etime=self.event_time,
+                                                 disks=gnt_disks)
 
     def reconcile_pending_task(self, server_id, db_server):
         job_id = db_server.task_job_id
@@ -366,6 +394,17 @@ def format_gnt_nic(nic):
     return NIC_MSG % (nic_name, nic["state"], nic["ipv4_address"],
                       nic["network"].id, nic["mac"], nic["index"],
                       nic["firewall_profile"])
+
+DISK_MSG = ": %s\t".join(["ID", "State", "Size", "Index"]) + ": %s"
+
+
+def format_db_disk(disk):
+    return DISK_MSG % (disk.id, disk.status, disk.size, disk.index)
+
+
+def format_gnt_disk(disk):
+    disk_name, disk = disk
+    return DISK_MSG % (disk_name, disk["status"], disk["size"], disk["index"])
 
 
 #

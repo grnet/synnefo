@@ -140,7 +140,7 @@ create all needed databases on node1 and then node2 will connect to them.
     postgres=# GRANT ALL PRIVILEGES ON DATABASE snf_pithos TO synnefo;
 
 Configure the database to listen to all network interfaces. You can do this by
-editting the file ``/etc/postgresql/9.1/main/postgresql.conf`` and change
+editing the file ``/etc/postgresql/9.1/main/postgresql.conf`` and change
 ``listen_addresses`` to ``'*'`` :
 
 .. code-block:: console

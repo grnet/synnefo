@@ -210,6 +210,7 @@ def vm_to_dict(vm, detail=False):
         d["SNF:fqdn"] = fqdn
         d["SNF:port_forwarding"] = get_server_port_forwarding(vm, active_nics,
                                                               fqdn)
+        d['deleted'] = vm.deleted
     return d
 
 

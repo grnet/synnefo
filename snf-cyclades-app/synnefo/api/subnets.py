@@ -226,7 +226,8 @@ def subnet_to_dict(subnet):
          'enable_dhcp': subnet.dhcp,
          'dns_nameservers': dns,
          'host_routes': hosts,
-         'allocation_pools': allocation_pools}
+         'allocation_pools': allocation_pools,
+         'deleted': subnet.deleted}
 
     if subnet.ipversion == 6:
         d['enable_slaac'] = subnet.dhcp

@@ -98,7 +98,8 @@ def ip_to_dict(floating_ip):
             "instance_id": str(machine_id) if machine_id else None,
             "floating_ip_address": floating_ip.address,
             "port_id": str(port_id) if port_id else None,
-            "floating_network_id": str(floating_ip.network_id)}
+            "floating_network_id": str(floating_ip.network_id),
+            "deleted": floating_ip.deleted}
 
 
 @api.api_method(http_method="GET", user_required=True, logger=log,
@@ -236,4 +237,5 @@ def network_to_floating_ip_pool(network):
     total, free = network.ip_count()
     return {"name": str(network.id),
             "size": total,
-            "free": free}
+            "free": free,
+            "deleted": network.deleted}

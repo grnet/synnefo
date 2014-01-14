@@ -88,6 +88,19 @@ def id_from_nic_name(name):
     return int(ns)
 
 
+def id_from_disk_name(name):
+    """Returns Disk Django id, given a Ganeti's Disk name.
+
+    """
+    if not str(name).startswith(settings.BACKEND_PREFIX_ID):
+        raise ValueError("Invalid Disk name: %s" % name)
+    ns = str(name).replace(settings.BACKEND_PREFIX_ID + 'volume-', "", 1)
+    if not ns.isdigit():
+        raise ValueError("Invalid Disk name: %s" % name)
+
+    return int(ns)
+
+
 def get_rsapi_state(vm):
     """Returns the API state for a virtual machine
 

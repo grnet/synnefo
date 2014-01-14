@@ -7212,6 +7212,10 @@ input.has-errors {
   background-color: #84B7D0;
 }
 
+.main-content.vm-status-error .title {
+    color: #f00 !important;
+}
+
 .entry.inline .model-item .inner,
 .entry.inline *:hover .model-item .inner,
 .entry.inline .model-item:hover .inner {

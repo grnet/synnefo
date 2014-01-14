@@ -39,6 +39,7 @@ from django.core.management.base import CommandError
 from snf_django.management.commands import SynnefoCommand
 
 from astakos.oa2.models import Client, RedirectUrl
+from astakos.oa2 import settings
 
 
 class Command(SynnefoCommand):
@@ -74,7 +75,16 @@ class Command(SynnefoCommand):
         if len(args) != 1:
             raise CommandError("Invalid number of arguments")
 
-        if not options['urls']:
+        urls = filter(lambda u: len(u) <
+                      settings.MAXIMUM_ALLOWED_REDIRECT_URI_LENGTH,
+                      options['urls'])
+
+        if len(options['urls']) != len(urls):
+            self.stdout.write('The following urls are over the allowed limit '
+                              'and are going to be ignored: %s\n' %
+                              ','.join(set(options['urls']) - set(urls)))
+
+        if not urls:
             raise CommandError("There should be at least one redirect URI")
 
         identifier = args[0].decode('utf8')
@@ -84,7 +94,7 @@ class Command(SynnefoCommand):
                        type=options['type'], is_trusted=options['is_trusted'])
             c.save()
             c.redirecturl_set.bulk_create((RedirectUrl(client=c, url=url) for
-                                          url in options['urls']))
+                                          url in urls))
             c.save()
 
         except BaseException, e:

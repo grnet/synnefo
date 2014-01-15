@@ -498,10 +498,11 @@ def nics_from_instance(i):
     names = zip(itertools.repeat('name'), i['nic.names'])
     macs = zip(itertools.repeat('mac'), i['nic.macs'])
     networks = zip(itertools.repeat('network'), i['nic.networks.names'])
+    indexes = zip(itertools.repeat('index'), range(0, len(ips)))
     # modes = zip(itertools.repeat('mode'), i['nic.modes'])
     # links = zip(itertools.repeat('link'), i['nic.links'])
     # nics = zip(ips,macs,modes,networks,links)
-    nics = zip(ips, names, macs, networks)
+    nics = zip(ips, names, macs, networks, indexes)
     nics = map(lambda x: dict(x), nics)
     #nics = dict(enumerate(nics))
     tags = i["tags"]
@@ -522,7 +523,8 @@ def disks_from_instance(i):
     sizes = zip(itertools.repeat('size'), i['disk.sizes'])
     names = zip(itertools.repeat('name'), i['disk.names'])
     uuids = zip(itertools.repeat('uuid'), i['disk.uuids'])
-    disks = zip(sizes, names, uuids)
+    indexes = zip(itertools.repeat('index'), range(0, len(sizes)))
+    disks = zip(sizes, names, uuids, indexes)
     disks = map(lambda x: dict(x), disks)
     #disks = dict(enumerate(disks))
     return disks

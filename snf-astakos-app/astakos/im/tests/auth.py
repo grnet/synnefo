@@ -75,11 +75,28 @@ class ShibbolethTests(TestCase):
 
         # shibboleth logged us in
         client.set_tokens(mail="kpap@synnefo.org", remote_user="kpapeppn",
+                          cn="Kostas Papadimitriou" + 30*"*",
+                          ep_affiliation="Test Affiliation")
+        r = client.get(ui_url('login/shibboleth?'), follow=True,
+                       **{'HTTP_SHIB_CUSTOM_IDP_KEY': 'test'})
+
+        # name exceeds first_name character limit, validation error skipped
+        self.assertEqual(r.status_code, 200)
+        pending = PendingThirdPartyUser.objects.get()
+        self.assertEqual(pending.first_name, "Kostas")
+        self.assertEqual(pending.last_name, None)
+
+        # shibboleth logged us in
+        client.set_tokens(mail="kpap@synnefo.org", remote_user="kpapeppn",
                           cn="Kostas Papadimitriou",
                           ep_affiliation="Test Affiliation")
         r = client.get(ui_url('login/shibboleth?'), follow=True,
                        **{'HTTP_SHIB_CUSTOM_IDP_KEY': 'test'})
-        token = PendingThirdPartyUser.objects.get().token
+        pending = PendingThirdPartyUser.objects.get()
+        token = pending.token
+        self.assertEqual(pending.first_name, "Kostas")
+        self.assertEqual(pending.last_name, "Papadimitriou")
+
         self.assertRedirects(r, ui_url('signup?third_party_token=%s' % token))
         self.assertEqual(r.status_code, 200)
 

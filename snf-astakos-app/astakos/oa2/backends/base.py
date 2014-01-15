@@ -253,7 +253,8 @@ class SimpleBackend(object):
     def __init__(self, base_url='', endpoints_prefix='oauth2/', id='oauth2',
                  token_endpoint='token/', token_length=30,
                  token_expires=20, authorization_endpoint='auth/',
-                 authorization_code_length=60, **kwargs):
+                 authorization_code_length=60,
+                 redirect_uri_limit=5000, **kwargs):
         self.base_url = base_url
         self.endpoints_prefix = endpoints_prefix
         self.token_endpoint = token_endpoint
@@ -263,6 +264,7 @@ class SimpleBackend(object):
         self.authorization_code_length = authorization_code_length
         self.id = id
         self._errors_to_http = kwargs.get('errors_to_http', True)
+        self.redirect_uri_limit = redirect_uri_limit
 
     # Request/response builders
     def build_request(self, method, get, post, meta):
@@ -548,6 +550,8 @@ class SimpleBackend(object):
         if redirect_uri is not None:
             if not bool(urlparse.urlparse(redirect_uri).scheme):
                 raise OA2Error("Redirect uri should be an absolute URI")
+            if len(redirect_uri) > self.redirect_uri_limit:
+                raise OA2Error("Redirect uri length limit exceeded")
             if not client.redirect_uri_is_valid(redirect_uri):
                 raise OA2Error("Mismatching redirect uri")
             if expected_value is not None and redirect_uri != expected_value:

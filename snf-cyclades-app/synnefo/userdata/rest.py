@@ -32,6 +32,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import logging
+
 from django import http
 from django.utils import simplejson as json
 from django.core.urlresolvers import reverse
@@ -56,6 +58,7 @@ class View(object):
         Constructor. Called in the URLconf; can contain helpful extra
         keyword arguments, and other things.
         """
+        self.logger = logging.getLogger(self.model._meta.db_table)
         # Go through keyword arguments, and either save their values to our
         # instance, or raise an error.
         for key, value in kwargs.items():
@@ -110,9 +113,10 @@ class View(object):
                     request, data, *args, **kwargs)
             except ValidationError, e:
                 # specific response for validation errors
-                return http.HttpResponseServerError(
+                return http.HttpResponse(
                     json.dumps({'errors': e.message_dict,
-                                'non_field_key': NON_FIELD_ERRORS}))
+                                'non_field_key': NON_FIELD_ERRORS}),
+                status=422, content_type="application/json")
 
         else:
             allowed_methods = \
@@ -193,10 +197,14 @@ class ResourceView(JSONRestView):
         self.update_instance(instance, data, self.exclude_fields)
         instance.full_clean()
         instance.save()
+        self.logger.info("Instance [%d] updated", instance.pk)
         return self.GET(request, data, *args, **kwargs)
 
     def DELETE(self, request, data, *args, **kwargs):
-        self.instance().delete()
+        instance = self.instance()
+        pk = instance.pk
+        instance.delete()
+        self.logger.info("Instance [%d] removed", pk)
         return self.json_response("")
 
 
@@ -218,6 +226,7 @@ class CollectionView(JSONRestView):
         self.update_instance(instance, data, self.exclude_fields)
         instance.full_clean()
         instance.save()
+        self.logger.info("Instance [%d] created", instance.pk)
         return self.json_response(
             self.instance_to_dict(instance, self.exclude_fields))
 
@@ -245,5 +254,6 @@ class UserCollectionView(CollectionView):
         instance.user = request.user_uniq
         instance.full_clean()
         instance.save()
+        self.logger.info("Instance [%d] created", instance.pk)
         return self.json_response(
             self.instance_to_dict(instance, self.exclude_fields))

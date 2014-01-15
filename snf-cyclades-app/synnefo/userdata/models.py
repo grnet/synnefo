@@ -41,12 +41,17 @@ from hashlib import md5
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError, NON_FIELD_ERRORS
+from django.core.validators import MaxLengthValidator
 from django.db.models.signals import pre_save
 
 try:
     from paramiko import rsakey, dsskey, SSHException
 except:
     pass
+
+SSH_KEY_MAX_CONTENT_LENGTH = getattr(settings,
+                                     'USERDATA_SSH_KEY_MAX_CONTENT_LENGTH',
+                                     30000)
 
 
 class ProfileModel(models.Model):
@@ -67,7 +72,8 @@ class PublicKeyPair(ProfileModel):
     Public key model
     """
     name = models.CharField(max_length=255, null=False, blank=False)
-    content = models.TextField()
+    content = models.TextField(validators=[
+        MaxLengthValidator(SSH_KEY_MAX_CONTENT_LENGTH)])
     fingerprint = models.CharField(max_length=100, null=False, blank=True)
 
     class Meta:

@@ -44,7 +44,7 @@ import tempfile
 import traceback
 
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
-from kamaki.clients.astakos import CachedAstakosClient
+from kamaki.clients.astakos import AstakosClient, parse_endpoints
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients.pithos import PithosClient
 from kamaki.clients.image import ImageClient
@@ -134,31 +134,36 @@ class Clients(object):
 
     def initialize_clients(self):
         """Initialize all the Kamaki Clients"""
-        self.astakos = CachedAstakosClient(self.auth_url, self.token)
+        self.astakos = AstakosClient(self.auth_url, self.token)
         self.astakos.CONNECTION_RETRY_LIMIT = self.retry
 
-        self.compute_url = \
-            self.astakos.get_service_endpoints('compute')['publicURL']
+        endpoints = self.astakos.authenticate()
+
+        self.compute_url = _get_endpoint_url(endpoints, "compute")
         self.compute = ComputeClient(self.compute_url, self.token)
         self.compute.CONNECTION_RETRY_LIMIT = self.retry
 
         self.cyclades = CycladesClient(self.compute_url, self.token)
         self.cyclades.CONNECTION_RETRY_LIMIT = self.retry
 
-        self.network_url = \
-            self.astakos.get_service_endpoints('network')['publicURL']
+        self.network_url = _get_endpoint_url(endpoints, "network")
         self.network = CycladesNetworkClient(self.network_url, self.token)
         self.network.CONNECTION_RETRY_LIMIT = self.retry
 
-        self.pithos_url = self.astakos.\
-            get_service_endpoints('object-store')['publicURL']
+        self.pithos_url = _get_endpoint_url(endpoints, "object-store")
         self.pithos = PithosClient(self.pithos_url, self.token)
         self.pithos.CONNECTION_RETRY_LIMIT = self.retry
 
-        self.image_url = \
-            self.astakos.get_service_endpoints('image')['publicURL']
+        self.image_url = _get_endpoint_url(endpoints, "image")
         self.image = ImageClient(self.image_url, self.token)
         self.image.CONNECTION_RETRY_LIMIT = self.retry
+
+
+def _get_endpoint_url(endpoints, endpoint_type):
+    """Get the publicURL for the specified endpoint"""
+
+    service_catalog = parse_endpoints(endpoints, ep_type=endpoint_type)
+    return service_catalog[0]['endpoints'][0]['publicURL']
 
 
 class Proper(object):
@@ -305,12 +310,8 @@ class BurninTests(unittest.TestCase):
         self.info("Getting the uuid of the system user")
         system_users = None
         if self.system_user is not None:
-            parsed_su = parse_typed_option(self.system_user)
-            if parsed_su is None:
-                msg = "Invalid system-user format: %s. Must be [id|name]:.+"
-                self.warning(msg, self.system_user)
-            else:
-                su_type, su_value = parsed_su
+            try:
+                su_type, su_value = parse_typed_option(self.system_user)
                 if su_type == "name":
                     system_users = [su_value]
                 elif su_type == "id":
@@ -319,11 +320,14 @@ class BurninTests(unittest.TestCase):
                 else:
                     self.error("Unrecognized system-user type %s", su_type)
                     self.fail("Unrecognized system-user type")
+            except ValueError:
+                msg = "Invalid system-user format: %s. Must be [id|name]:.+"
+                self.warning(msg, self.system_user)
 
         if system_users is None:
             system_users = SYSTEM_USERS
 
-        uuids = self.clients.astakos.usernames2uuids(system_users)
+        uuids = self.clients.astakos.get_uuids(system_users)
         for su_name in system_users:
             self.info("Trying username %s", su_name)
             if su_name in uuids:
@@ -362,12 +366,13 @@ class BurninTests(unittest.TestCase):
 
         ret_flavors = []
         for ptrn in patterns:
-            parsed_ptrn = parse_typed_option(ptrn)
-            if parsed_ptrn is None:
+            try:
+                flv_type, flv_value = parse_typed_option(ptrn)
+            except ValueError:
                 msg = "Invalid flavor format: %s. Must be [id|name]:.+"
                 self.warning(msg, ptrn)
                 continue
-            flv_type, flv_value = parsed_ptrn
+
             if flv_type == "name":
                 # Filter flavor by name
                 msg = "Trying to find a flavor with name %s"
@@ -431,12 +436,13 @@ class BurninTests(unittest.TestCase):
 
         ret_images = []
         for ptrn in patterns:
-            parsed_ptrn = parse_typed_option(ptrn)
-            if parsed_ptrn is None:
+            try:
+                img_type, img_value = parse_typed_option(ptrn)
+            except ValueError:
                 msg = "Invalid image format: %s. Must be [id|name]:.+"
                 self.warning(msg, ptrn)
                 continue
-            img_type, img_value = parsed_ptrn
+
             if img_type == "name":
                 # Filter image by name
                 msg = "Trying to find an image with name %s"
@@ -502,8 +508,7 @@ class BurninTests(unittest.TestCase):
     def _get_quotas(self):
         """Get quotas"""
         self.info("Getting quotas")
-        astakos_client = self.clients.astakos.get_client()
-        return astakos_client.get_quotas()
+        return self.clients.astakos.get_quotas()
 
     # Invalid argument name. pylint: disable-msg=C0103
     # Too many arguments. pylint: disable-msg=R0913
@@ -611,7 +616,7 @@ def run_burnin(testsuites, failfast=False):
     run_tests(testsuites, failfast=failfast)
 
     # Clean up our logger
-    del(logger)
+    del logger
 
     # Return
     return 0 if success else 1
@@ -660,4 +665,4 @@ def parse_typed_option(value):
             raise ValueError
         return type_, val
     except ValueError:
-        return None
+        raise

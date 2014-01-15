@@ -60,12 +60,11 @@ class AstakosTestSuite(common.BurninTests):
         """Test that usernames2uuids and uuids2usernames are complementary"""
         our_uuid = self._get_uuid()
 
-        given_name = self.clients.astakos.uuids2usernames([our_uuid])
+        given_name = self.clients.astakos.get_usernames([our_uuid])
         self.info("uuids2usernames returned %s", given_name)
         self.assertIn(our_uuid, given_name)
 
-        given_uuid = \
-            self.clients.astakos.usernames2uuids([given_name[our_uuid]])
+        given_uuid = self.clients.astakos.get_uuids([given_name[our_uuid]])
         self.info("usernames2uuids returned %s", given_uuid)
         self.assertIn(given_name[our_uuid], given_uuid)
 

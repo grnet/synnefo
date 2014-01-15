@@ -15,7 +15,7 @@ import tempfile
 from ConfigParser import ConfigParser, DuplicateSectionError
 
 from kamaki.cli import config as kamaki_config
-from kamaki.clients.astakos import AstakosClient
+from kamaki.clients.astakos import AstakosClient, parse_endpoints
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
 from kamaki.clients.image import ImageClient
 from kamaki.clients.compute import ComputeClient
@@ -200,27 +200,24 @@ class SynnefoCI(object):
         #self.logger.debug("Token is %s" % _green(token))
 
         self.astakos_client = AstakosClient(auth_url, token)
+        endpoints = self.astakos_client.authenticate()
 
-        cyclades_url = \
-            self.astakos_client.get_service_endpoints('compute')['publicURL']
+        cyclades_url = get_endpoint_url(endpoints, "compute")
         self.logger.debug("Cyclades API url is %s" % _green(cyclades_url))
         self.cyclades_client = CycladesClient(cyclades_url, token)
         self.cyclades_client.CONNECTION_RETRY_LIMIT = 2
 
-        network_url = \
-            self.astakos_client.get_service_endpoints('network')['publicURL']
+        network_url = get_endpoint_url(endpoints, "network")
         self.logger.debug("Network API url is %s" % _green(network_url))
         self.network_client = CycladesNetworkClient(network_url, token)
         self.network_client.CONNECTION_RETRY_LIMIT = 2
 
-        image_url = \
-            self.astakos_client.get_service_endpoints('image')['publicURL']
+        image_url = get_endpoint_url(endpoints, "image")
         self.logger.debug("Images API url is %s" % _green(image_url))
         self.image_client = ImageClient(cyclades_url, token)
         self.image_client.CONNECTION_RETRY_LIMIT = 2
 
-        compute_url = \
-            self.astakos_client.get_service_endpoints('compute')['publicURL']
+        compute_url = get_endpoint_url(endpoints, "compute")
         self.logger.debug("Compute API url is %s" % _green(compute_url))
         self.compute_client = ComputeClient(compute_url, token)
         self.compute_client.CONNECTION_RETRY_LIMIT = 2
@@ -285,6 +282,7 @@ class SynnefoCI(object):
         return port
 
     @_check_kamaki
+    # Too many local variables. pylint: disable-msg=R0914
     def create_server(self, image=None, flavor=None, ssh_keys=None,
                       server_name=None):
         """Create slave server"""
@@ -1040,3 +1038,10 @@ def parse_typed_option(option, value):
     except ValueError:
         msg = "Invalid %s format. Must be [id|name]:.+" % option
         raise ValueError(msg)
+
+
+def get_endpoint_url(endpoints, endpoint_type):
+    """Get the publicURL for the specified endpoint"""
+
+    service_catalog = parse_endpoints(endpoints, ep_type=endpoint_type)
+    return service_catalog[0]['endpoints'][0]['publicURL']

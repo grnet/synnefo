@@ -159,7 +159,7 @@ def index(request):
     # if form submitted redirect to details
     account = request.GET.get('account', None)
     if account:
-        return redirect('synnefo.helpdesk.views.account',
+        return redirect('helpdesk-details',
                         search_query=account)
 
     # show index template
@@ -176,6 +176,7 @@ def account(request, search_query):
 
     logging.info("Helpdesk search by %s: %s", request.user_uniq, search_query)
     show_deleted = bool(int(request.GET.get('deleted', SHOW_DELETED_VMS)))
+    error = request.GET.get('error', None)
 
     account_exists = True
     # flag to indicate successfull astakos calls
@@ -249,6 +250,7 @@ def account(request, search_query):
 
     user_context = {
         'account_exists': account_exists,
+        'error': error,
         'is_ip': is_ip,
         'is_vm': is_vm,
         'is_uuid': is_uuid,
@@ -330,9 +332,17 @@ def vm_suspend_release(request, vm_id):
 def vm_shutdown(request, vm_id):
     logging.info("VM %s shutdown by %s", vm_id, request.user_uniq)
     vm = VirtualMachine.objects.get(pk=vm_id)
-    jobId = servers_backend.stop(vm)
     account = vm.userid
-    return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))
+    error = None
+    try:
+        jobId = servers_backend.stop(vm)
+    except Exception, e:
+        error = e.message
+
+    redirect = reverse('helpdesk-details', args=(account,))
+    if error:
+        redirect = "%s?error=%s" % (redirect, error)
+    return HttpResponseRedirect(redirect)
 
 
 @helpdesk_user_required
@@ -340,6 +350,14 @@ def vm_shutdown(request, vm_id):
 def vm_start(request, vm_id):
     logging.info("VM %s start by %s", vm_id, request.user_uniq)
     vm = VirtualMachine.objects.get(pk=vm_id)
-    jobId = servers_backend.start(vm)
     account = vm.userid
-    return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))
+    error = None
+    try:
+        jobId = servers_backend.start(vm)
+    except Exception, e:
+        error = e.message
+
+    redirect = reverse('helpdesk-details', args=(account,))
+    if error:
+        redirect = "%s?error=%s" % (redirect, error)
+    return HttpResponseRedirect(redirect)

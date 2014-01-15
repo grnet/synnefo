@@ -158,9 +158,6 @@ AUTOMATIC_NETWORK_RANGE_FORMAT = getattr(settings,
                                          "192.168.%d.0/24").replace("%d",
                                                                     "{0}")
 GROUP_PUBLIC_NETWORKS = getattr(settings, 'UI_GROUP_PUBLIC_NETWORKS', True)
-GROUPED_PUBLIC_NETWORK_NAME = \
-    getattr(settings, 'UI_GROUPED_PUBLIC_NETWORK_NAME', 'Internet')
-
 
 DEFAULT_FORCED_SERVER_NETWORKS = \
     getattr(settings, "CYCLADES_FORCED_SERVER_NETWORKS", [])
@@ -245,7 +242,6 @@ def home(request):
         json.dumps(NETWORK_ALLOW_MULTIPLE_DESTROY),
         'automatic_network_range_format':
         json.dumps(AUTOMATIC_NETWORK_RANGE_FORMAT),
-        'grouped_public_network_name': json.dumps(GROUPED_PUBLIC_NETWORK_NAME),
         'group_public_networks': json.dumps(GROUP_PUBLIC_NETWORKS),
         'hotplug_enabled': json.dumps(HOTPLUG_ENABLED),
         'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL),

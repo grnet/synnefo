@@ -58,7 +58,7 @@ ACCESS_TOKEN_TYPES = (('online', _('Online token')),
 class RedirectUrl(models.Model):
     client = models.ForeignKey('oa2.Client', on_delete=models.PROTECT)
     is_default = models.BooleanField(default=True)
-    url = models.URLField(unique=True)
+    url = models.TextField()
 
     class Meta:
         ordering = ('is_default', )
@@ -100,7 +100,7 @@ class Client(models.Model):
 class AuthorizationCode(models.Model):
     user = models.ForeignKey('im.AstakosUser', on_delete=models.PROTECT)
     code = models.TextField()
-    redirect_uri = models.CharField(max_length=255, null=True, default=None)
+    redirect_uri = models.TextField(null=True, default=None)
     client = models.ForeignKey('oa2.Client', on_delete=models.PROTECT)
     scope = models.TextField(null=True, default=None)
     created_at = models.DateTimeField(default=datetime.datetime.now())
@@ -138,7 +138,7 @@ class Token(models.Model):
 
     # authorization fields
     user = models.ForeignKey('im.AstakosUser', on_delete=models.PROTECT)
-    redirect_uri = models.CharField(max_length=255)
+    redirect_uri = models.TextField()
     client = models.ForeignKey('oa2.Client', on_delete=models.PROTECT)
     scope = models.TextField(null=True, default=None)
     access_token = models.CharField(max_length=100, choices=ACCESS_TOKEN_TYPES,

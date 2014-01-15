@@ -108,6 +108,12 @@ class ShibbolethTests(TestCase):
 
         signup_url = reverse('signup')
 
+        # invalid request
+        invalid_data = copy.copy(post_data)
+        invalid_data['provider'] = ''
+        r = client.post(signup_url, invalid_data, follow=True)
+        self.assertRedirects(r, reverse('signup'))
+
         # invlid email
         post_data['email'] = 'kpap'
         r = client.post(signup_url, post_data)

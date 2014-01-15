@@ -57,6 +57,10 @@ PROVIDERS = {}
 REQUIRED_PROVIDERS = {}
 
 
+class InvalidProvider(Exception):
+    pass
+
+
 class AuthProviderBase(type):
 
     def __new__(cls, name, bases, dct):
@@ -667,6 +671,6 @@ def get_provider(module, user_obj=None, identifier=None, **params):
     Return a provider instance from the auth providers registry.
     """
     if not module in PROVIDERS:
-        raise Exception('Invalid auth provider "%s"' % id)
+        raise InvalidProvider('Invalid auth provider "%s"' % module)
 
     return PROVIDERS.get(module)(user_obj, identifier, **params)

@@ -409,6 +409,12 @@ def signup(request, template_name='im/signup.html', on_success='index',
         return HttpResponseRedirect(reverse('index'))
 
     provider = get_query(request).get('provider', 'local')
+    try:
+        auth.get_provider(provider)
+    except auth.InvalidProvider, e:
+        messages.error(request, e.message)
+        return HttpResponseRedirect(reverse("signup"))
+
     if not auth.get_provider(provider).get_create_policy:
         logger.error("%s provider not available for signup", provider)
         raise PermissionDenied
@@ -591,9 +597,14 @@ def logout(request, template='registration/logged_out.html',
     else:
         last_provider = request.COOKIES.get(
             'astakos_last_login_method', 'local')
-        provider = auth.get_provider(last_provider)
+        try:
+            provider = auth.get_provider(last_provider)
+        except auth.InvalidProvider:
+            provider = auth.get_provider('local')
+
         message = provider.get_logout_success_msg
         extra = provider.get_logout_success_extra_msg
+
         if extra:
             message += "<br />" + extra
         messages.success(request, message)

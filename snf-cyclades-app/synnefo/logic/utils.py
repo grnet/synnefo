@@ -33,6 +33,7 @@ from synnefo.db.models import VirtualMachine, Network
 from snf_django.lib.api import faults
 from django.conf import settings
 from copy import deepcopy
+from synnefo.util.text import uenc
 
 
 def id_from_instance_name(name):
@@ -192,5 +193,5 @@ def hide_pass(kw):
 
 def check_name_length(name, max_length, message):
     """Check if a string is within acceptable value length"""
-    if len(str(name)) > max_length:
+    if len(uenc(name)) > max_length:
         raise faults.BadRequest(message)

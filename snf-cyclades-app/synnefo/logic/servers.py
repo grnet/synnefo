@@ -270,7 +270,7 @@ def create_server(vm, nics, flavor, image, personality, password):
 
 
 @server_command("DESTROY")
-def destroy(vm):
+def destroy(vm, shutdown_timeout=None):
     # XXX: Workaround for race where OP_INSTANCE_REMOVE starts executing on
     # Ganeti before OP_INSTANCE_CREATE. This will be fixed when
     # OP_INSTANCE_REMOVE supports the 'depends' request attribute.
@@ -280,7 +280,7 @@ def destroy(vm):
        not backend.vm_exists_in_backend(vm)):
             raise faults.BuildInProgress("Server is being build")
     log.info("Deleting VM %s", vm)
-    return backend.delete_instance(vm)
+    return backend.delete_instance(vm, shutdown_timeout=shutdown_timeout)
 
 
 @server_command("START")
@@ -290,19 +290,20 @@ def start(vm):
 
 
 @server_command("STOP")
-def stop(vm):
+def stop(vm, shutdown_timeout=None):
     log.info("Stopping VM %s", vm)
-    return backend.shutdown_instance(vm)
+    return backend.shutdown_instance(vm, shutdown_timeout=shutdown_timeout)
 
 
 @server_command("REBOOT")
-def reboot(vm, reboot_type):
+def reboot(vm, reboot_type, shutdown_timeout=None):
     if reboot_type not in ("SOFT", "HARD"):
         raise faults.BadRequest("Malformed request. Invalid reboot"
                                 " type %s" % reboot_type)
     log.info("Rebooting VM %s. Type %s", vm, reboot_type)
 
-    return backend.reboot_instance(vm, reboot_type.lower())
+    return backend.reboot_instance(vm, reboot_type.lower(),
+                                   shutdown_timeout=shutdown_timeout)
 
 
 def resize(vm, flavor):

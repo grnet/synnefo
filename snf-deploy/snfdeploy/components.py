@@ -862,6 +862,9 @@ class Pithos(SynnefoComponent):
             ("/etc/synnefo/webclient.conf", r2, {}),
             ]
 
+    def initialize(self):
+        return ["pithos-migrate stamp head"]
+
 
 class Cyclades(SynnefoComponent):
     REQUIRED_PACKAGES = [

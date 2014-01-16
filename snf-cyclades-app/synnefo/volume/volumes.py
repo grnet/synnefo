@@ -4,7 +4,7 @@ from django.db import transaction
 from synnefo.db.models import Volume
 from snf_django.lib.api import faults
 from synnefo.volume import util
-from synnefo.logic import backend
+from synnefo.logic import backend, servers
 
 log = logging.getLogger(__name__)
 
@@ -43,19 +43,20 @@ def create(user_id, size, server_id, name=None, description=None,
             msg = ("Cannot take a snapshot while snapshot is in '%s' state"
                    % source_volume.status)
             raise faults.BadRequest(msg)
-        source = Volume.SOURCE_VOLUME_PREFIX + str(source_volume_id)
+        source = Volume.prefix_source(source_volume_id, source_type="volume")
         origin = source_volume.backend_volume_uuid
     elif source_snapshot_id is not None:
         source_snapshot = util.get_snapshot(user_id, source_snapshot_id,
                                             exception=faults.BadRequest)
         # TODO: Check the state of the snapshot!!
+        source = Volume.prefix_source(source_snapshot_id,
+                                      source_type="snapshot")
         origin = source_snapshot["checksum"]
-        source = Volume.SOURCE_SNAPSHOT_PREFIX + str(source_snapshot_id)
     elif source_image_id is not None:
         source_image = util.get_image(user_id, source_image_id,
                                       exception=faults.BadRequest)
+        source = Volume.prefix_source(source_image_id, source_type="image")
         origin = source_image["checksum"]
-        source = Volume.SOURCE_IMAGE_PREFIX + str(source_image_id)
 
     volume = Volume.objects.create(userid=user_id,
                                    size=size,
@@ -71,9 +72,7 @@ def create(user_id, size, server_id, name=None, description=None,
         for meta_key, meta_val in metadata.items():
             volume.metadata.create(key=meta_key, value=meta_val)
 
-    # Create the disk in the backend
-    volume.backendjobid = backend.attach_volume(server, volume)
-    volume.save()
+    servers.attach_volume(server, volume)
 
     return volume
 
@@ -83,11 +82,8 @@ def delete(volume):
     """Delete a Volume"""
     # A volume is deleted by detaching it from the server that is attached.
     # Deleting a detached volume is not implemented.
-    if volume.index == 0:
-        raise faults.BadRequest("Cannot detach the root volume of a server")
-
     if volume.machine_id is not None:
-        volume.backendjobid = backend.detach_volume(volume.machine, volume)
+        servers.detach_volume(volume.machine, volume)
         log.info("Detach volume '%s' from server '%s', job: %s",
                  volume.id, volume.machine_id, volume.backendjobid)
     else:

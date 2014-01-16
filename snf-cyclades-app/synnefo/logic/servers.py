@@ -80,7 +80,11 @@ def validate_server_action(vm, action):
     elif (action == "START" and operstate != "STOPPED") or\
          (action == "STOP" and operstate != "STARTED") or\
          (action == "RESIZE" and operstate != "STOPPED") or\
-         (action in ["CONNECT", "DISCONNECT"] and operstate != "STOPPED"
+         (action in ["CONNECT", "DISCONNECT"]
+          and operstate != "STOPPED"
+          and not settings.GANETI_USE_HOTPLUG) or \
+         (action in ["ATTACH_VOLUME", "DETACH_VOLUME"]
+          and operstate != "STOPPED"
           and not settings.GANETI_USE_HOTPLUG):
         raise faults.BadRequest("Cannot perform '%s' action while server is"
                                 " in '%s' state." % (action, operstate))
@@ -798,3 +802,76 @@ def _port_for_request(user_id, network_dict):
     else:
         raise faults.BadRequest("Network 'uuid' or 'port' attribute"
                                 " is required.")
+
+
+@server_command("ATTACH_VOLUME")
+def attach_volume(vm, volume):
+    """Attach a volume to a server.
+
+    The volume must be in 'AVAILABLE' status in order to be attached. Also,
+    number of the volumes that are attached to the server must remain less
+    than 'GANETI_MAX_DISKS_PER_INSTANCE' setting. This function will send
+    the corresponding job to Ganeti backend and update the status of the
+    volume to 'ATTACHING'.
+
+    """
+    # Check volume state
+    if volume.status not in ["AVAILABLE", "CREATING"]:
+        raise faults.BadRequest("Cannot attach volume while volume is in"
+                                " '%s' status." % volume.status)
+
+    # Check that disk templates are the same
+    if volume.disk_template != vm.flavor.disk_template:
+        msg = ("Volume and server must have the same disk template. Volume has"
+               " disk template '%s' while server has '%s'"
+               % (volume.disk_template, vm.flavor.disk_template))
+        raise faults.BadRequest(msg)
+
+    # Check maximum disk per instance hard limit
+    if vm.volumes.count() == settings.GANETI_MAX_DISKS_PER_INSTANCE:
+        raise faults.BadRequest("Maximum volumes per server limit reached")
+
+    jobid = backend.attach_volume(vm, volume)
+
+    log.info("Attached volume '%s' to server '%s'. JobID: '%s'", volume.id,
+             volume.machine_id, jobid)
+
+    volume.backendjobid = jobid
+    volume.machine = vm
+    volume.status = "ATTACHING"
+    volume.save()
+    return jobid
+
+
+@server_command("DETACH_VOLUME")
+def detach_volume(vm, volume):
+    """Detach a volume to a server.
+
+    The volume must be in 'IN_USE' status in order to be detached. Also,
+    the root volume of the instance (index=0) can not be detached. This
+    function will send the corresponding job to Ganeti backend and update the
+    status of the volume to 'DETACHING'.
+
+    """
+
+    _check_attachment(vm, volume)
+    if volume.status != "IN_USE":
+        #TODO: Maybe allow other statuses as well ?
+        raise faults.BadRequest("Cannot detach volume while volume is in"
+                                " '%s' status." % volume.status)
+    if volume.index == 0:
+        raise faults.BadRequest("Cannot detach the root volume of a server")
+    jobid = backend.detach_volume(vm, volume)
+    log.info("Detached volume '%s' from server '%s'. JobID: '%s'", volume.id,
+             volume.machine_id, jobid)
+    volume.backendjobid = jobid
+    volume.status = "DETACHING"
+    volume.save()
+    return jobid
+
+
+def _check_attachment(vm, volume):
+    """Check that volume is attached to vm."""
+    if volume.machine_id != vm.id:
+        raise faults.BadRequest("Volume '%s' is not attached to server '%s'"
+                                % volume.id, vm.id)

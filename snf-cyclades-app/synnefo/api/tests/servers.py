@@ -881,3 +881,82 @@ class ServerVNCConsole(ComputeAPITest):
         response = self.mypost('servers/%d/action' % vm.id,
                                vm.userid, data, 'json')
         self.assertBadRequest(response)
+
+
+@patch('synnefo.logic.rapi_pool.GanetiRapiClient')
+class ServerAttachments(ComputeAPITest):
+    def test_list_attachments(self, mrapi):
+        # Test default volume
+        vol = mfactory.VolumeFactory()
+        vm = vol.machine
+
+        response = self.myget("servers/%d/os-volume_attachments" % vm.id,
+                              vm.userid)
+        self.assertSuccess(response)
+        attachments = json.loads(response.content)
+        self.assertEqual(len(attachments), 1)
+        self.assertEqual(attachments["volumeAttachments"][0],
+                         {"volumeId": vol.id,
+                          "serverId": vm.id,
+                          "id": vol.id,
+                          "device": ""})
+
+        # Test deleted Volume
+        dvol = mfactory.VolumeFactory(machine=vm, deleted=True)
+        response = self.myget("servers/%d/os-volume_attachments" % vm.id,
+                              vm.userid)
+        self.assertSuccess(response)
+        attachments = json.loads(response.content)["volumeAttachments"]
+        self.assertEqual(len([d for d in attachments if d["id"] == dvol.id]),
+                         0)
+
+    def test_attach_detach_volume(self, mrapi):
+        vol = mfactory.VolumeFactory(status="AVAILABLE")
+        vm = vol.machine
+        disk_template = vm.flavor.disk_template
+        # Test that we cannot detach the root volume
+        response = self.mydelete("servers/%d/os-volume_attachments/%d" %
+                                 (vm.id, vol.id), vm.userid)
+        self.assertBadRequest(response)
+
+        # Test that we cannot attach a used volume
+        vol1 = mfactory.VolumeFactory(status="IN_USE",
+                                      disk_template=disk_template,
+                                      userid=vm.userid)
+        request = json.dumps({"volumeAttachment": {"volumeId": vol1.id}})
+        response = self.mypost("servers/%d/os-volume_attachments" %
+                               vm.id, vm.userid,
+                               request, "json")
+        self.assertBadRequest(response)
+
+        # We cannot attach a volume of different disk template
+        vol1.status = "AVAILABLE"
+        vol1.disk_template = "lalalal"
+        vol1.save()
+        response = self.mypost("servers/%d/os-volume_attachments/" %
+                               vm.id, vm.userid,
+                               request, "json")
+        self.assertBadRequest(response)
+
+        vol1.disk_template = disk_template
+        vol1.save()
+        mrapi().ModifyInstance.return_value = 43
+        response = self.mypost("servers/%d/os-volume_attachments" %
+                               vm.id, vm.userid,
+                               request, "json")
+        self.assertEqual(response.status_code, 202, response.content)
+        attachment = json.loads(response.content)["volumeAttachment"]
+        self.assertEqual(attachment, {"volumeId": vol1.id,
+                                      "serverId": vm.id,
+                                      "id": vol1.id,
+                                      "device": ""})
+        # And we delete it...will fail because of status
+        response = self.mydelete("servers/%d/os-volume_attachments/%d" %
+                                 (vm.id, vol1.id), vm.userid)
+        self.assertBadRequest(response)
+        vm.task = None
+        vm.save()
+        vm.volumes.all().update(status="IN_USE")
+        response = self.mydelete("servers/%d/os-volume_attachments/%d" %
+                                 (vm.id, vol1.id), vm.userid)
+        self.assertEqual(response.status_code, 202, response.content)

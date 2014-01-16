@@ -123,11 +123,41 @@ def get_qh_users_holdings(users=None):
     return qs
 
 
+def get_qh_project_holdings(projects=None):
+    qh = Quotaholder.get()
+    if projects is None or len(projects) != 1:
+        req = None
+    else:
+        req = projects[0]
+    quotas = qh.service_get_project_quotas(req)
+
+    if projects is None:
+        return quotas
+
+    qs = {}
+    for project in projects:
+        try:
+            qs[project] = quotas[project]
+        except KeyError:
+            pass
+    return qs
+
+
 def transform_quotas(quotas):
     d = {}
     for resource, counters in quotas.iteritems():
         used = counters['usage']
         limit = counters['limit']
         pending = counters['pending']
+        d[resource] = (used, limit, pending)
+    return d
+
+
+def transform_project_quotas(quotas):
+    d = {}
+    for resource, counters in quotas.iteritems():
+        used = counters['project_usage']
+        limit = counters['project_limit']
+        pending = counters['project_pending']
         d[resource] = (used, limit, pending)
     return d

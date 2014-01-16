@@ -155,30 +155,54 @@ def handle_floating_ip(viol_id, resource, ips, diff, actions):
         ip_actions[ip.id] = viol_id, state, backend_id, "REMOVE"
 
 
-def get_vms(users=None):
+def get_vms(users=None, projects=None):
     vms = VirtualMachine.objects.filter(deleted=False).\
         select_related("flavor").order_by('-id')
     if users is not None:
         vms = vms.filter(userid__in=users)
+    if projects is not None:
+        vms = vms.filter(project__in=projects)
 
-    return _partition_by(lambda vm: vm.userid, vms)
+    vmsdict = _partition_by(lambda vm: vm.project, vms)
+    for project, projectdict in vmsdict.iteritems():
+        vmsdict[project] = _partition_by(lambda vm: vm.userid, projectdict)
+    return vmsdict
 
 
-def get_floating_ips(users=None):
+def get_floating_ips(users=None, projects=None):
     ips = IPAddress.objects.filter(deleted=False, floating_ip=True).\
         select_related("nic__machine")
     if users is not None:
         ips = ips.filter(userid__in=users)
+    if projects is not None:
+        ips = ips.filter(project__in=projects)
 
-    return _partition_by(lambda ip: ip.userid, ips)
+    ipsdict = _partition_by(lambda ip: ip.project, ips)
+    for project, projectdict in ipsdict.iteritems():
+        ipsdict[project] = _partition_by(lambda ip: ip.userid, projectdict)
+    return ipsdict
 
 
-def get_actual_resources(resource_type, users=None):
+def get_actual_resources(resource_type, users=None, projects=None):
     ACTUAL_RESOURCES = {
         "vm": get_vms,
         "floating_ip": get_floating_ips,
         }
-    return ACTUAL_RESOURCES[resource_type](users=users)
+    return ACTUAL_RESOURCES[resource_type](users=users, projects=projects)
+
+
+def skip_check(obj, to_check=None, excluded=None):
+    return (to_check is not None and obj not in to_check or
+            excluded is not None and obj in excluded)
+
+
+def pick_project_resources(project_dict, users=None, excluded_users=None):
+    resources = []
+    for user, user_resources in project_dict.iteritems():
+        if skip_check(user, users, excluded_users):
+            continue
+        resources += user_resources
+    return resources
 
 
 VM_ACTION = {

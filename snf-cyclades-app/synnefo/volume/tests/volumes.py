@@ -52,7 +52,7 @@ class VolumesTest(BaseAPITest):
         name, args, kwargs = mrapi().ModifyInstance.mock_calls[0]
         self.assertEqual(kwargs["instance"], self.vm.backend_vm_id)
         disk_info = kwargs["disks"][0][2]
-        self.assertEqual(disk_info["size"], self.size)
+        self.assertEqual(disk_info["size"], self.size << 10)
         self.assertEqual(disk_info["name"], vol.backend_volume_uuid)
         self.assertEqual(disk_info["volume_name"], vol.backend_volume_uuid)
         self.assertFalse("origin" in disk_info)
@@ -86,7 +86,7 @@ class VolumesTest(BaseAPITest):
         name, args, kwargs = mrapi().ModifyInstance.mock_calls[0]
         self.assertEqual(kwargs["instance"], self.vm.backend_vm_id)
         disk_info = kwargs["disks"][0][2]
-        self.assertEqual(disk_info["size"], self.size)
+        self.assertEqual(disk_info["size"], self.size << 10)
         self.assertEqual(disk_info["name"], vol.backend_volume_uuid)
         self.assertEqual(disk_info["volume_name"], vol.backend_volume_uuid)
         self.assertEqual(disk_info["origin"], svol.backend_volume_uuid)
@@ -125,14 +125,14 @@ class VolumesTest(BaseAPITest):
         name, args, kwargs = mrapi().ModifyInstance.mock_calls[0]
         self.assertEqual(kwargs["instance"], self.vm.backend_vm_id)
         disk_info = kwargs["disks"][0][2]
-        self.assertEqual(disk_info["size"], self.size)
+        self.assertEqual(disk_info["size"], self.size << 10)
         self.assertEqual(disk_info["name"], vol.backend_volume_uuid)
         self.assertEqual(disk_info["volume_name"], vol.backend_volume_uuid)
         self.assertEqual(disk_info["origin"], "snf-snapshot-43")
 
     def test_delete(self, mrapi):
         # We can not deleted detached volumes
-        vol = mf.VolumeFactory(machine=None)
+        vol = mf.VolumeFactory(machine=None, status="AVAILABLE")
         self.assertRaises(faults.BadRequest,
                           volumes.delete,
                           vol)
@@ -141,6 +141,8 @@ class VolumesTest(BaseAPITest):
         # Also we cannot delete root volume
         vol.index = 0
         vol.machine = vm
+        vol.status = "IN_USE"
+        vol.save()
         self.assertRaises(faults.BadRequest,
                           volumes.delete,
                           vol)

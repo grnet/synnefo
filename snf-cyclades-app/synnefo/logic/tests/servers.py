@@ -34,14 +34,24 @@ from django.test import TransactionTestCase
 from synnefo.logic import servers
 from synnefo import quotas
 from synnefo.db import models_factory as mfactory, models
-from mock import patch
+from mock import patch, Mock
 
 from snf_django.lib.api import faults
 from snf_django.utils.testing import mocked_quotaholder, override_settings
 from django.conf import settings
 from copy import deepcopy
 
+fixed_image = Mock()
+fixed_image.return_value = {'location': 'pithos://foo',
+                            'checksum': 'test_checksum',
+                            "id": 1,
+                            "name": "test_image",
+                            "size": 1024,
+                            "is_snapshot": False,
+                            'disk_format': 'diskdump'}
 
+
+@patch('synnefo.api.util.get_image', fixed_image)
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
 class ServerCreationTest(TransactionTestCase):
     def test_create(self, mrapi):
@@ -51,9 +61,7 @@ class ServerCreationTest(TransactionTestCase):
             "name": "test_vm",
             "password": "1234",
             "flavor": flavor,
-            "image": {"id": "foo", "backend_id": "foo", "format": "diskdump",
-                      "checksum": "test_checksum",
-                      "metadata": "{}"},
+            "image_id": "safs",
             "networks": [],
             "metadata": {"foo": "bar"},
             "personality": [],
@@ -103,11 +111,13 @@ class ServerCreationTest(TransactionTestCase):
             with override_settings(settings, **osettings):
                 vm = servers.create(**req)
         name, args, kwargs = mrapi().CreateInstance.mock_calls[-1]
-        self.assertEqual(kwargs["disks"][0], {"provider": "archipelago",
-                                              "origin": "test_checksum",
-                                              "foo": "mpaz",
-                                              "lala": "lolo",
-                                              "size": 1024})
+        self.assertEqual(kwargs["disks"][0],
+                         {"provider": "archipelago",
+                          "origin": "pithos:test_checksum",
+                          "name": vm.volumes.all()[0].backend_volume_uuid,
+                          "foo": "mpaz",
+                          "lala": "lolo",
+                          "size": 1024})
 
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")

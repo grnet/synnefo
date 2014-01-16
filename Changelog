@@ -93,6 +93,9 @@ Astakos
 * Automatically fill third party signup form fields when available by the
   the third party provider.
 
+* Omit validation issues for non-required metadata values received from the 
+  third party authentication provider.
+
 * Management commands:
 
   * Introduced new commands:

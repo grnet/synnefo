@@ -269,6 +269,11 @@ class PithosTestSuite(BurninTests):
     @classmethod
     def tearDownClass(cls):  # noqa
         """Clean up"""
-        if cls.created_container is not None:
-            cls.clients.pithos.del_container(delimiter='/')
-            cls.clients.pithos.purge_container()
+        pithos = cls.clients.pithos
+        for tcont in getattr(cls, 'temp_containers', []):
+            pithos.container = tcont
+            try:
+                pithos.del_container(delimiter='/')
+                pithos.purge_container(tcont)
+            except ClientError:
+                pass

@@ -210,6 +210,7 @@ class BurninTests(unittest.TestCase):
     delete_stale = False
     temp_directory = None
     failfast = None
+    temp_containers = []
 
     quotas = Proper(value=None)
     uuid = Proper(value=None)
@@ -518,8 +519,8 @@ class BurninTests(unittest.TestCase):
         assert container, "No pithos container was given"
 
         self.info("Creating pithos container %s", container)
-        self.clients.pithos.container = container
-        self.clients.pithos.container_put()
+        self.clients.pithos.create_container(container)
+        self.temp_containers.append(container)
 
     # ----------------------------------
     # Quotas

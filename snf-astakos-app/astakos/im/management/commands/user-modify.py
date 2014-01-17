@@ -257,7 +257,7 @@ class Command(BaseCommand):
                 group = Group.objects.get(name=groupname)
                 user.groups.add(group)
             except Group.DoesNotExist, e:
-                self.stdout.write(
+                self.stderr.write(
                     "Group named %s does not exist\n" % groupname)
 
         groupname = options.get('delete-group')
@@ -266,7 +266,7 @@ class Command(BaseCommand):
                 group = Group.objects.get(name=groupname)
                 user.groups.remove(group)
             except Group.DoesNotExist, e:
-                self.stdout.write(
+                self.stderr.write(
                     "Group named %s does not exist\n" % groupname)
 
         pname = options.get('add-permission')
@@ -274,13 +274,13 @@ class Command(BaseCommand):
             try:
                 r, created = add_user_permission(user, pname)
                 if created:
-                    self.stdout.write(
+                    self.stderr.write(
                         'Permission: %s created successfully\n' % pname)
                 if r > 0:
-                    self.stdout.write(
+                    self.stderr.write(
                         'Permission: %s added successfully\n' % pname)
                 elif r == 0:
-                    self.stdout.write(
+                    self.stderr.write(
                         'User has already permission: %s\n' % pname)
             except Exception, e:
                 raise CommandError(e)
@@ -290,12 +290,12 @@ class Command(BaseCommand):
             try:
                 r = remove_user_permission(user, pname)
                 if r < 0:
-                    self.stdout.write(
+                    self.stderr.write(
                         'Invalid permission codename: %s\n' % pname)
                 elif r == 0:
-                    self.stdout.write('User has not permission: %s\n' % pname)
+                    self.stderr.write('User has not permission: %s\n' % pname)
                 elif r > 0:
-                    self.stdout.write(
+                    self.stderr.write(
                         'Permission: %s removed successfully\n' % pname)
             except Exception, e:
                 raise CommandError(e)
@@ -374,7 +374,7 @@ class Command(BaseCommand):
         self.stdout.write("Confirm? [y/N] ")
         response = raw_input()
         if string.lower(response) not in ['y', 'yes']:
-            self.stdout.write("Aborted.\n")
+            self.stderr.write("Aborted.\n")
             exit()
 
     def handle_limits_user(self, user, res, capacity, style):

@@ -47,4 +47,4 @@ class Command(BaseCommand):
             raise CommandError("Invalid number of arguments")
 
         Group.objects.get_or_create(name=args[0].strip())
-        print "Group created"
+        self.stderr.write("Group created\n")

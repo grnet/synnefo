@@ -77,10 +77,10 @@ class Command(SynnefoCommand):
     )
 
     def confirm(self):
-        self.stderr.write("Confirm? [y/N] ")
+        self.stdout.write("Confirm? [y/N] ")
         response = raw_input()
         if string.lower(response) not in ['y', 'yes']:
-            self.stdout.write("Aborted.\n")
+            self.stderr.write("Aborted.\n")
             exit()
 
     def get_handlers(self, resources):
@@ -180,11 +180,11 @@ class Command(SynnefoCommand):
             return
 
         headers = ("#", "User", "Source", "Resource", "Limit", "Usage")
-        pprint_table(self.stderr, overlimit, headers,
+        pprint_table(self.stdout, overlimit, headers,
                      options["output_format"], title="Violations")
 
         if any(actions.values()):
-            write("\n")
+            self.stdout.write("\n")
             if fix:
                 if dangerous and not force:
                     write("You are enforcing resources that may permanently "
@@ -197,5 +197,5 @@ class Command(SynnefoCommand):
             headers = ("Type", "ID", "State", "Backend", "Action", "Violation")
             if fix:
                 headers += ("Result",)
-            pprint_table(self.stderr, log, headers,
+            pprint_table(self.stdout, log, headers,
                          options["output_format"], title=title)

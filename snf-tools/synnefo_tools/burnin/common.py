@@ -70,7 +70,9 @@ class BurninTestResult(unittest.TestResult):
     def startTest(self, test):  # noqa
         """Called when the test case test is about to be run"""
         super(BurninTestResult, self).startTest(test)
-        logger.log(test.__class__.__name__, test.shortDescription())
+        logger.log(
+            test.__class__.__name__,
+            test.shortDescription() or 'Test %s' % test.__class__.__name__)
 
     # pylint: disable=no-self-use
     def _test_failed(self, test, err):

@@ -25,6 +25,7 @@ from datetime import datetime
 
 from synnefo_tools.burnin.common import BurninTests, Proper, \
     QPITHOS, QADD, QREMOVE
+from kamaki.clients import ClientError
 
 
 # pylint: disable=too-many-public-methods
@@ -109,9 +110,51 @@ class PithosTestSuite(BurninTests):
             self.assertNotEqual(resp1.status_code, resp2.status_code)
         self.info('If_(un)modified_since is OK')
 
+    def test_015_account_post(self):
+        """Test account_post"""
+        pithos = self.clients.pithos
+        resp = pithos.account_post()
+        self.assertEqual(resp.status_code, 202)
+        self.info('Status code is OK')
+
+        rand_num = '%s%s' % (self.run_id or 0, random.randint(1000, 9999))
+        grp_name = 'grp%s' % rand_num
+
+        uuid1, uuid2 = pithos.account, 'invalid-user-uuid-%s' % rand_num
+        self.assertRaises(
+            ClientError, pithos.set_account_group, grp_name, [uuid1, uuid2])
+        self.info('Invalid uuid is handled correctly')
+
+        pithos.set_account_group(grp_name, [uuid1])
+        resp = pithos.get_account_group()
+        self.assertEqual(resp['x-account-group-' + grp_name], '%s' % uuid1)
+        self.info('Account group is OK')
+        pithos.del_account_group(grp_name)
+        resp = pithos.get_account_group()
+        self.assertTrue('x-account-group-' + grp_name not in resp)
+        self.info('Removed account group')
+
+        mprefix = 'meta%s' % rand_num
+        pithos.set_account_meta({
+            mprefix + '1': 'v1', mprefix + '2': 'v2'})
+        resp = pithos.get_account_meta()
+        self.assertEqual(resp['x-account-meta-' + mprefix + '1'], 'v1')
+        self.assertEqual(resp['x-account-meta-' + mprefix + '2'], 'v2')
+        self.info('Account meta is OK')
+
+        pithos.del_account_meta(mprefix + '1')
+        resp = pithos.get_account_meta()
+        self.assertTrue('x-account-meta-' + mprefix + '1' not in resp)
+        self.assertTrue('x-account-meta-' + mprefix + '2' in resp)
+        self.info('Selective removal of account meta is OK')
+
+        pithos.del_account_meta(mprefix + '2')
+        resp = pithos.get_account_meta()
+        self.assertTrue('x-account-meta-' + mprefix + '2' not in resp)
+        self.info('Temporary account meta are removed')
+
     def test_051_list_containers(self):
         """Test container list actually returns containers"""
-        # self.assertTrue(False)   # This is a stoper!
         self.containers = self._get_list_of_containers()
         self.assertGreater(len(self.containers), 0)
 

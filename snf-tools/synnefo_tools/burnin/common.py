@@ -24,6 +24,8 @@ import unittest
 import datetime
 import tempfile
 import traceback
+from tempfile import NamedTemporaryFile
+from os import urandom
 
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
 from kamaki.clients.astakos import AstakosClient, parse_endpoints
@@ -316,6 +318,18 @@ class BurninTests(unittest.TestCase):
             self.info("Temp directory %s deleted", tmp_dir)
         except OSError:
             pass
+
+    def _create_large_file(self, size):
+        """Create a large file at fs"""
+        named_file = NamedTemporaryFile()
+        seg = size / 8
+        self.debug('Create file %s  ', named_file.name)
+        for sbytes in [b * seg for b in range(size / seg)]:
+            named_file.seek(sbytes)
+            named_file.write(urandom(seg))
+            named_file.flush()
+        named_file.seek(0)
+        return named_file
 
     def _get_uuid_of_system_user(self):
         """Get the uuid of the system user

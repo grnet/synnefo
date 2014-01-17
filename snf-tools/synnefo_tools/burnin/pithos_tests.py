@@ -182,7 +182,7 @@ class PithosTestSuite(BurninTests):
         self.info('Container meta exists')
 
         self.obj_metakey = 'metakey%s' % random.randint(1000, 9999)
-        obj = 'object%s' % random.randint(1000, 9999)
+        obj = 'object_with_meta'
         pithos.create_object(obj)
         pithos.set_object_meta(obj, {self.obj_metakey: 'our value'})
         resp = pithos.get_container_object_meta()
@@ -253,6 +253,136 @@ class PithosTestSuite(BurninTests):
         except ClientError:
             pass
 
+    def test_030_container_put(self):
+        """Test container PUT"""
+        pithos = self.clients.pithos
+        pithos.container = 'cont%s%s' % (
+            self.run_id or 0, random.randint(1000, 9999))
+        self.temp_containers.append(pithos.container)
+
+        resp = pithos.create_container()
+        self.assertTrue(isinstance(resp, dict))
+
+        resp = pithos.get_container_limit(pithos.container)
+        cquota = resp.values()[0]
+        newquota = 2 * int(cquota)
+        self.info('Limit is OK')
+        pithos.del_container()
+
+        resp = pithos.create_container(sizelimit=newquota)
+        self.assertTrue(isinstance(resp, dict))
+
+        resp = pithos.get_container_limit(pithos.container)
+        xquota = int(resp.values()[0])
+        self.assertEqual(newquota, xquota)
+        self.info('Can set container limit')
+        pithos.del_container()
+
+        resp = pithos.create_container(versioning='auto')
+        self.assertTrue(isinstance(resp, dict))
+
+        resp = pithos.get_container_versioning(pithos.container)
+        nvers = resp.values()[0]
+        self.assertEqual('auto', nvers)
+        self.info('Versioning=auto is OK')
+        pithos.del_container()
+
+        resp = pithos.container_put(versioning='none')
+        self.assertEqual(resp.status_code, 201)
+
+        resp = pithos.get_container_versioning(pithos.container)
+        nvers = resp.values()[0]
+        self.assertEqual('none', nvers)
+        self.info('Versioning=none is OK')
+        pithos.del_container()
+
+        resp = pithos.create_container(metadata={'m1': 'v1', 'm2': 'v2'})
+        self.assertTrue(isinstance(resp, dict))
+
+        resp = pithos.get_container_meta(pithos.container)
+        self.assertTrue('x-container-meta-m1' in resp)
+        self.assertEqual(resp['x-container-meta-m1'], 'v1')
+        self.assertTrue('x-container-meta-m2' in resp)
+        self.assertEqual(resp['x-container-meta-m2'], 'v2')
+
+        resp = pithos.container_put(metadata={'m1': '', 'm2': 'v2a'})
+        self.assertEqual(resp.status_code, 202)
+
+        resp = pithos.get_container_meta(pithos.container)
+        self.assertTrue('x-container-meta-m1' not in resp)
+        self.assertTrue('x-container-meta-m2' in resp)
+        self.assertEqual(resp['x-container-meta-m2'], 'v2a')
+        self.info('Container meta is OK')
+
+        pithos.del_container_meta(pithos.container)
+
+    # pylint: disable=too-many-statements
+    def test_035_container_post(self):
+        """Test container POST"""
+        pithos = self.clients.pithos
+
+        resp = pithos.container_post()
+        self.assertEqual(resp.status_code, 202)
+        self.info('Status is OK')
+
+        pithos.set_container_meta({'m1': 'v1', 'm2': 'v2'})
+        resp = pithos.get_container_meta(pithos.container)
+        self.assertTrue('x-container-meta-m1' in resp)
+        self.assertEqual(resp['x-container-meta-m1'], 'v1')
+        self.assertTrue('x-container-meta-m2' in resp)
+        self.assertEqual(resp['x-container-meta-m2'], 'v2')
+        self.info('Set metadata works')
+
+        resp = pithos.del_container_meta('m1')
+        resp = pithos.set_container_meta({'m2': 'v2a'})
+        resp = pithos.get_container_meta(pithos.container)
+        self.assertTrue('x-container-meta-m1' not in resp)
+        self.assertTrue('x-container-meta-m2' in resp)
+        self.assertEqual(resp['x-container-meta-m2'], 'v2a')
+        self.info('Delete metadata works')
+
+        resp = pithos.get_container_limit(pithos.container)
+        cquota = resp.values()[0]
+        newquota = 2 * int(cquota)
+        resp = pithos.set_container_limit(newquota)
+        resp = pithos.get_container_limit(pithos.container)
+        xquota = int(resp.values()[0])
+        self.assertEqual(newquota, xquota)
+        self.info('Set quota works')
+
+        pithos.set_container_versioning('auto')
+        resp = pithos.get_container_versioning(pithos.container)
+        nvers = resp.values()[0]
+        self.assertEqual('auto', nvers)
+        pithos.set_container_versioning('none')
+        resp = pithos.get_container_versioning(pithos.container)
+        nvers = resp.values()[0]
+        self.assertEqual('none', nvers)
+        self.info('Set versioning works')
+
+        named_file = self._create_large_file(1024 * 1024 * 100)
+        self.info('Created file %s of 100 MB' % named_file.name)
+
+        pithos.create_directory('dir')
+        resp = pithos.upload_object('/dir/sample.file', named_file)
+        for term in ('content-length', 'content-type', 'x-object-version'):
+            self.assertTrue(term in resp)
+        resp = pithos.get_object_info('/dir/sample.file')
+        self.assertTrue(int(resp['content-length']) > 100000000)
+        self.info('Made remote directory /dir and object /dir/sample.file')
+
+        # TODO: What is tranfer_encoding? What should I check about it?
+
+        obj = 'object_with_meta'
+        pithos.container = self.temp_containers[-2]
+        resp = pithos.object_post(
+            obj, update='False', metadata={'newmeta': 'newval'})
+
+        resp = pithos.get_object_info(obj)
+        self.assertTrue('x-object-meta-newmeta' in resp)
+        self.assertFalse('x-object-meta-%s' % self.obj_metakey not in resp)
+        self.info('Metadata with update=False works')
+
     def test_051_list_containers(self):
         """Test container list actually returns containers"""
         self.containers = self._get_list_of_containers()
@@ -263,27 +393,6 @@ class PithosTestSuite(BurninTests):
         names = [n['name'] for n in self.containers]
         names = sorted(names)
         self.assertEqual(sorted(list(set(names))), names)
-
-    def test_053_create_container(self):
-        """Test creating a new container"""
-        names = [n['name'] for n in self.containers]
-        while True:
-            rand_num = random.randint(1000, 9999)
-            rand_name = "%s%s" % (self.run_id or 0, rand_num)
-            self.info("Trying container name %s", rand_name)
-            if rand_name not in names:
-                break
-            self.info("Container name %s already exists", rand_name)
-        # Create container
-        self._create_pithos_container(rand_name)
-        # Verify that container is created
-        containers = self._get_list_of_containers()
-        self.info("Verify that container %s is created", rand_name)
-        names = [n['name'] for n in containers]
-        self.assertIn(rand_name, names)
-        # Keep the name of the container so we can remove it
-        # at cleanup phase, if something goes wrong.
-        self.created_container = rand_name
 
     def test_054_upload_file(self):
         """Test uploading a txt file to Pithos"""

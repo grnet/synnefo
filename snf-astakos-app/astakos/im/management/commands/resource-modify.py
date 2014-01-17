@@ -185,7 +185,11 @@ class Command(BaseCommand):
             self.stdout.write("Current limit: %s\n" % value)
             while True:
                 self.stdout.write("New limit (leave blank to keep current): ")
-                response = raw_input()
+                try:
+                    response = raw_input()
+                except EOFError:
+                    self.stderr.write("Aborted.\n")
+                    exit()
                 if response == "":
                     break
                 else:

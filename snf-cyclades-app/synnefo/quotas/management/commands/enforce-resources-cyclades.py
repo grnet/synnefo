@@ -78,7 +78,10 @@ class Command(SynnefoCommand):
 
     def confirm(self):
         self.stdout.write("Confirm? [y/N] ")
-        response = raw_input()
+        try:
+            response = raw_input()
+        except EOFError:
+            response = "ABORT"
         if string.lower(response) not in ['y', 'yes']:
             self.stderr.write("Aborted.\n")
             exit()

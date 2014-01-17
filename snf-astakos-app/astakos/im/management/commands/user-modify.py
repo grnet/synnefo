@@ -345,13 +345,11 @@ class Command(BaseCommand):
                 raise CommandError(m)
             management.call_command('user-show', str(user.pk),
                                     list_quotas=True)
-            m = "Are you sure you want to permanently delete the user " \
-                "(yes/no) ? "
 
-            self.stdout.write("\n")
-            confirm = raw_input(m)
-            if confirm == "yes":
-                user.delete()
+            if not force:
+                self.stdout.write("About to delete user %s. " % user.uuid)
+                self.confirm()
+            user.delete()
 
         # Change users email address
         newemail = options.get('set-email', None)
@@ -372,7 +370,10 @@ class Command(BaseCommand):
 
     def confirm(self):
         self.stdout.write("Confirm? [y/N] ")
-        response = raw_input()
+        try:
+            response = raw_input()
+        except EOFError:
+            response = "ABORT"
         if string.lower(response) not in ['y', 'yes']:
             self.stderr.write("Aborted.\n")
             exit()

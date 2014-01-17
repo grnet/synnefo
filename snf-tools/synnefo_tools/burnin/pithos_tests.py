@@ -34,6 +34,7 @@ class PithosTestSuite(BurninTests):
     containers = Proper(value=None)
     created_container = Proper(value=None)
     now_unformated = Proper(value=datetime.utcnow())
+    obj_metakey = Proper(value=None)
 
     def test_005_account_head(self):
         """HEAD on pithos account"""
@@ -179,6 +180,78 @@ class PithosTestSuite(BurninTests):
         self.assertIn(k, resp)
         self.assertEqual('our value', resp[k])
         self.info('Container meta exists')
+
+        self.obj_metakey = 'metakey%s' % random.randint(1000, 9999)
+        obj = 'object%s' % random.randint(1000, 9999)
+        pithos.create_object(obj)
+        pithos.set_object_meta(obj, {self.obj_metakey: 'our value'})
+        resp = pithos.get_container_object_meta()
+        self.assertIn('x-container-object-meta', resp)
+        self.assertIn(
+            self.obj_metakey, resp['x-container-object-meta'].lower())
+        self.info('Container object meta exists')
+
+    def test_025_container_get(self):
+        """Test container GET"""
+        pithos = self.clients.pithos
+
+        resp = pithos.container_get()
+        self.assertEqual(resp.status_code, 200)
+        self.info('Status code is OK')
+
+        full_len = len(resp.json)
+        obj1 = 'test%s' % random.randint(1000, 9999)
+        pithos.create_object(obj1)
+        obj2 = 'test%s' % random.randint(1000, 9999)
+        pithos.create_object(obj2)
+        obj3 = 'another%s.test' % random.randint(1000, 9999)
+        pithos.create_object(obj3)
+
+        resp = pithos.container_get(prefix='test')
+        self.assertTrue(len(resp.json) > 1)
+        test_objects = [o for o in resp.json if o['name'].startswith('test')]
+        self.assertEqual(len(resp.json), len(test_objects))
+        self.info('Prefix is OK')
+
+        resp = pithos.container_get(limit=1)
+        self.assertEqual(len(resp.json), 1)
+        self.info('Limit is OK')
+
+        resp = pithos.container_get(marker=obj3[:-5])
+        self.assertTrue(len(resp.json) > 1)
+        aoobjects = [obj for obj in resp.json if obj['name'] > obj3[:-5]]
+        self.assertEqual(len(resp.json), len(aoobjects))
+        self.info('Marker is OK')
+
+        resp = pithos.container_get(prefix=obj3, delimiter='.')
+        self.assertTrue(full_len > len(resp.json))
+        self.info('Delimiter is OK')
+
+        resp = pithos.container_get(path='/')
+        full_len += 3
+        self.assertEqual(full_len, len(resp.json))
+        self.info('Path is OK')
+
+        resp = pithos.container_get(format='xml')
+        self.assertEqual(resp.text.split()[4],
+                         'name="' + pithos.container + '">')
+        self.info('Format is OK')
+
+        resp = pithos.container_get(meta=[self.obj_metakey, ])
+        self.assertTrue(len(resp.json) > 0)
+        self.info('Meta is OK')
+
+        resp = pithos.container_get(show_only_shared=True)
+        self.assertTrue(len(resp.json) < full_len)
+        self.info('Show-only-shared is OK')
+
+        try:
+            resp = pithos.container_get(until=1000000000)
+            datestring = unicode(resp.headers['x-account-until-timestamp'])
+            self.assertEqual(u'Sun, 09 Sep 2001 01:46:40 GMT', datestring)
+            self.info('Until is OK')
+        except ClientError:
+            pass
 
     def test_051_list_containers(self):
         """Test container list actually returns containers"""

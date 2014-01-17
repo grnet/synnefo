@@ -66,7 +66,7 @@ class PithosTestSuite(BurninTests):
         pithos = self.clients.pithos
         for i in range(1, 3):
             cont_name = "cont%s_%s%s" % (
-                i, self.run_id, random.randint(1000, 9999))
+                i, self.run_id or 0, random.randint(1000, 9999))
             self._create_pithos_container(cont_name)
         pithos.container, obj = cont_name, 'shared_file'
         pithos.create_object(obj)
@@ -153,6 +153,33 @@ class PithosTestSuite(BurninTests):
         self.assertTrue('x-account-meta-' + mprefix + '2' not in resp)
         self.info('Temporary account meta are removed')
 
+    def test_020_container_head(self):
+        """Test container HEAD"""
+        pithos = self.clients.pithos
+        resp = pithos.container_head()
+        self.assertEqual(resp.status_code, 204)
+        self.info('Status code is OK')
+
+        resp = pithos.container_head(until=1000000, success=(204, 404))
+        self.assertEqual(resp.status_code, 404)
+        self.info('Until works')
+
+        for date_format in pithos.DATE_FORMATS:
+            now_formated = self.now_unformated.strftime(date_format)
+            resp1 = pithos.container_head(
+                if_modified_since=now_formated, success=(204, 304, 412))
+            resp2 = pithos.container_head(
+                if_unmodified_since=now_formated, success=(204, 304, 412))
+            self.assertNotEqual(resp1.status_code, resp2.status_code)
+
+        k = 'metakey%s' % random.randint(1000, 9999)
+        pithos.set_container_meta({k: 'our value'})
+        resp = pithos.get_container_meta()
+        k = 'x-container-meta-%s' % k
+        self.assertIn(k, resp)
+        self.assertEqual('our value', resp[k])
+        self.info('Container meta exists')
+
     def test_051_list_containers(self):
         """Test container list actually returns containers"""
         self.containers = self._get_list_of_containers()
@@ -169,7 +196,7 @@ class PithosTestSuite(BurninTests):
         names = [n['name'] for n in self.containers]
         while True:
             rand_num = random.randint(1000, 9999)
-            rand_name = "%s%s" % (self.run_id, rand_num)
+            rand_name = "%s%s" % (self.run_id or 0, rand_num)
             self.info("Trying container name %s", rand_name)
             if rand_name not in names:
                 break

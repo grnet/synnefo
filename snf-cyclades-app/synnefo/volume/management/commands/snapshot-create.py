@@ -85,5 +85,5 @@ class Command(BaseCommand):
                                     metadata={})
 
         msg = ("Created snapshot of volume '%s' with ID %s\n"
-               % (volume.id, snapshot["uuid"]))
+               % (volume.id, snapshot["id"]))
         self.stdout.write(msg)

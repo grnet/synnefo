@@ -71,3 +71,8 @@ def get_disk_template_provider(disk_template):
     if disk_template.startswith("ext") and "_" in disk_template:
         disk_template, provider = disk_template.split("_", 1)
     return disk_template, provider
+
+
+def update_snapshot_status(snapshot_id, user_id, status):
+    with image_backend(user_id) as b:
+        return b.update_status(snapshot_id, status=status)

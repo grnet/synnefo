@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 from django.conf import settings
 from django.db import transaction
+from django.utils import simplejson as json
 from datetime import datetime, timedelta
 
 from synnefo.db.models import (VirtualMachine, Network,
@@ -43,6 +44,7 @@ from synnefo import quotas
 from synnefo.api.util import release_resource
 from synnefo.util.mac2eui64 import mac2eui64
 from synnefo.logic import rapi
+from synnefo.volume.util import update_snapshot_status
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -133,6 +135,15 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
     #if (opcode not in [x[0] for x in VirtualMachine.BACKEND_OPCODES] or
     if status not in [x[0] for x in BACKEND_STATUSES]:
         raise VirtualMachine.InvalidBackendMsgError(opcode, status)
+
+    if opcode == "OP_INSTANCE_SNAPSHOT":
+        for disk_id, disk_info in job_fields.get("disks", []):
+            snapshot_name = disk_info.get("snapshot_name")
+            snapshot_info = json.loads(disk_info["snapshot_info"])
+            user_id = vm.userid
+            _process_snapshot_status(snapshot_name, snapshot_info,
+                                     user_id, etime, jobid, status)
+        return
 
     vm.backendjobid = jobid
     vm.backendjobstatus = status
@@ -506,6 +517,23 @@ def process_ganeti_disks(ganeti_disks):
 
         new_disks.append((disk_id, disk_info))
     return dict(new_disks)
+
+
+@transaction.commit_on_success
+def process_snapshot_status(*args, **kwargs):
+    return _process_snapshot_status(*args, **kwargs)
+
+
+def _process_snapshot_status(snapshot_name, snapshot_info, user_id, etime,
+                             jobid, status):
+    """Process a notification for a snapshot."""
+    snapshot_id = snapshot_info.get("snapshot_id")
+    assert(snapshot_id is not None), "Missing snapshot_id"
+    if status in rapi.JOB_STATUS_FINALIZED:
+        snapshot_status = rapi.JOB_STATUS_SUCCESS and "AVAILABLE" or "ERROR"
+        log.debug("Updating status of snapshot '%s' to '%s'", snapshot_id,
+                  snapshot_status)
+        update_snapshot_status(snapshot_id, user_id, status=snapshot_status)
 
 
 @transaction.commit_on_success
@@ -1155,11 +1183,13 @@ def detach_volume(vm, volume, depends=[]):
         return client.ModifyInstance(**kwargs)
 
 
-def snapshot_instance(vm, snapshot_name):
+def snapshot_instance(vm, snapshot_name, snapshot_id):
     #volume = instance.volumes.all()[0]
+    reason = json.dumps({"snapshot_id": snapshot_id})
     with pooled_rapi_client(vm) as client:
         return client.SnapshotInstance(instance=vm.backend_vm_id,
-                                       snapshot_name=snapshot_name)
+                                       snapshot_name=snapshot_name,
+                                       reason=reason)
 
 
 def get_instances(backend, bulk=True):

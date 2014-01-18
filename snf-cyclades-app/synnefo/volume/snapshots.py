@@ -83,7 +83,7 @@ def create(user_id, volume, name, description, metadata, force=False):
 
     with image_backend(user_id) as pithos_backend:
         # move this to plankton backend
-        snapshot_uuid = pithos_backend.backend.register_object_map(
+        snapshot_id = pithos_backend.backend.register_object_map(
             user=user_id,
             account=user_id,
             container=SNAPSHOTS_CONTAINER,
@@ -97,9 +97,10 @@ def create(user_id, volume, name, description, metadata, force=False):
             permissions=None)
 
     backend.snapshot_instance(volume.machine,
-                              snapshot_name=snapshot_pithos_name)
+                              snapshot_name=snapshot_pithos_name,
+                              snapshot_id=snapshot_id)
 
-    snapshot = util.get_snapshot(user_id, snapshot_uuid)
+    snapshot = util.get_snapshot(user_id, snapshot_id)
 
     return snapshot
 

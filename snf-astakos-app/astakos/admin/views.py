@@ -36,12 +36,19 @@ from django import http
 from django.utils import simplejson as json
 from snf_django.lib import api
 from astakos.im import settings
+from synnefo.lib.services import get_path
 
 from astakos.admin import stats
 
 logger = logging.getLogger(__name__)
 
 PERMITTED_GROUPS = settings.ADMIN_STATS_PERMITTED_GROUPS
+try:
+    AUTH_URL = get_path(settings.astakos_services,
+                        "astakos_identity.endpoints")[0]["publicURL"]
+except (IndexError, KeyError) as e:
+    logger.error("Failed to load Astakos Auth URL: %s", e)
+    AUTH_URL = None
 
 
 @api.api_method(http_method='GET', user_required=False, token_required=False,
@@ -54,6 +61,7 @@ def get_public_stats(request):
 
 
 @api.api_method(http_method='GET', user_required=True, token_required=True,
+                astakos_auth_url=AUTH_URL,
                 logger=logger, serializations=['json'])
 @api.user_in_groups(permitted_groups=PERMITTED_GROUPS,
                     logger=logger)

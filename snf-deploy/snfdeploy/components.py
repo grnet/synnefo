@@ -643,18 +643,28 @@ class Astakos(SynnefoComponent):
             ]
 
     def set_default_quota(self):
-        cmd = "snf-manage resource-modify --base-default"
+        cmd = "snf-manage resource-modify"
         return [
-            "%s 40G pithos.diskspace" % cmd,
-            "%s 2 astakos.pending_app" % cmd,
-            "%s 4 cyclades.vm" % cmd,
-            "%s 40G cyclades.disk" % cmd,
-            "%s 16G cyclades.total_ram" % cmd,
-            "%s 8G cyclades.ram" % cmd,
-            "%s 32 cyclades.total_cpu" % cmd,
-            "%s 16 cyclades.cpu" % cmd,
-            "%s 4 cyclades.network.private" % cmd,
-            "%s 4 cyclades.floating_ip" % cmd,
+            "%s --base-default 40G pithos.diskspace" % cmd,
+            "%s --base-default 2 astakos.pending_app" % cmd,
+            "%s --base-default 4 cyclades.vm" % cmd,
+            "%s --base-default 40G cyclades.disk" % cmd,
+            "%s --base-default 16G cyclades.total_ram" % cmd,
+            "%s --base-default 8G cyclades.ram" % cmd,
+            "%s --base-default 32 cyclades.total_cpu" % cmd,
+            "%s --base-default 16 cyclades.cpu" % cmd,
+            "%s --base-default 4 cyclades.network.private" % cmd,
+            "%s --base-default 4 cyclades.floating_ip" % cmd,
+            "%s --project-default 0 pithos.diskspace" % cmd,
+            "%s --project-default 0 astakos.pending_app" % cmd,
+            "%s --project-default 0 cyclades.vm" % cmd,
+            "%s --project-default 0 cyclades.disk" % cmd,
+            "%s --project-default inf cyclades.total_ram" % cmd,
+            "%s --project-default 0 cyclades.ram" % cmd,
+            "%s --project-default inf cyclades.total_cpu" % cmd,
+            "%s --project-default 0 cyclades.cpu" % cmd,
+            "%s --project-default 0 cyclades.network.private" % cmd,
+            "%s --project-default 0 cyclades.floating_ip" % cmd,
             ]
 
     def modify_all_quota(self):

@@ -126,6 +126,18 @@ def update_base_default(resource, base_default):
                     % (resource.name, base_default))
 
 
+def update_project_default(resource, project_default):
+    old_project_default = resource.project_default
+    if project_default == old_project_default:
+        logger.info("Resource %s has project default %s; no need to update."
+                    % (resource.name, project_default))
+    else:
+        resource.project_default = project_default
+        resource.save()
+        logger.info("Updated resource %s with project default %s."
+                    % (resource.name, project_default))
+
+
 def resources_to_dict(resources):
     resource_dict = {}
     for r in resources:

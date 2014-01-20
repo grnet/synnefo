@@ -42,12 +42,15 @@ from ._common import style_options, check_style, units
 
 class Command(BaseCommand):
     args = "<resource name>"
-    help = "Modify a resource's default base quota and boolean flags."
+    help = "Modify a resource's quota defaults and boolean flags."
 
     option_list = BaseCommand.option_list + (
         make_option('--base-default',
                     metavar='<limit>',
-                    help="Specify default base quota"),
+                    help="Specify default quota for base projects"),
+        make_option('--project-default',
+                    metavar='<limit>',
+                    help="Specify default quota for non-base projects"),
         make_option('--unit-style',
                     default='mb',
                     help=("Specify display unit for resource values "
@@ -68,6 +71,7 @@ class Command(BaseCommand):
 
         actions = {
             'base_default': self.change_base_default,
+            'project_default': self.change_project_default,
             'api_visible': self.set_api_visible,
             'ui_visible': self.set_ui_visible,
         }
@@ -115,6 +119,10 @@ class Command(BaseCommand):
     def change_base_default(self, resource, limit):
         limit = self.parse_limit(limit)
         register.update_base_default(resource, limit)
+
+    def change_project_default(self, resource, limit):
+        limit = self.parse_limit(limit)
+        register.update_project_default(resource, limit)
 
     def parse_limit(self, limit):
         try:

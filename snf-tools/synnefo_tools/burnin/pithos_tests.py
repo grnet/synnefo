@@ -22,10 +22,23 @@ import os
 import random
 import tempfile
 from datetime import datetime
+from tempfile import NamedTemporaryFile
 
 from synnefo_tools.burnin.common import BurninTests, Proper, \
     QPITHOS, QADD, QREMOVE
 from kamaki.clients import ClientError
+
+
+def sample_block(fid, block):
+    """Read a block from fid"""
+    block_size = 4 * 1024 * 1024
+    fid.seek(block * block_size)
+    chars = [fid.read(1)]
+    fid.seek(block_size / 2, 1)
+    chars.append(fid.read(1))
+    fid.seek((block + 1) * block_size - 1)
+    chars.append(fid.read(1))
+    return chars
 
 
 # pylint: disable=too-many-public-methods
@@ -35,6 +48,7 @@ class PithosTestSuite(BurninTests):
     created_container = Proper(value=None)
     now_unformated = Proper(value=datetime.utcnow())
     obj_metakey = Proper(value=None)
+    large_file = Proper(value=None)
 
     def test_005_account_head(self):
         """HEAD on pithos account"""
@@ -200,6 +214,9 @@ class PithosTestSuite(BurninTests):
         self.info('Status code is OK')
 
         full_len = len(resp.json)
+        self.assertGreater(full_len, 0)
+        self.info('There are enough (%s) containers' % full_len)
+
         obj1 = 'test%s' % random.randint(1000, 9999)
         pithos.create_object(obj1)
         obj2 = 'test%s' % random.randint(1000, 9999)
@@ -361,9 +378,11 @@ class PithosTestSuite(BurninTests):
         self.info('Set versioning works')
 
         named_file = self._create_large_file(1024 * 1024 * 100)
+        self.large_file = named_file
         self.info('Created file %s of 100 MB' % named_file.name)
 
         pithos.create_directory('dir')
+        self.info('Upload the file ...')
         resp = pithos.upload_object('/dir/sample.file', named_file)
         for term in ('content-length', 'content-type', 'x-object-version'):
             self.assertTrue(term in resp)
@@ -383,12 +402,171 @@ class PithosTestSuite(BurninTests):
         self.assertFalse('x-object-meta-%s' % self.obj_metakey not in resp)
         self.info('Metadata with update=False works')
 
-    def test_051_list_containers(self):
-        """Test container list actually returns containers"""
-        self.containers = self._get_list_of_containers()
-        self.assertGreater(len(self.containers), 0)
+    def test_040_container_delete(self):
+        """Test container DELETE"""
+        pithos = self.clients.pithos
 
-    def test_052_unique_containers(self):
+        resp = pithos.container_delete(success=409)
+        self.assertEqual(resp.status_code, 409)
+        self.assertRaises(ClientError, pithos.container_delete)
+        self.info('Successfully failed to delete non-empty container')
+
+        resp = pithos.container_delete(until='1000000000')
+        self.assertEqual(resp.status_code, 204)
+        self.info('Successfully failed to delete old-timestamped container')
+
+        obj_names = [o['name'] for o in pithos.container_get().json]
+        pithos.del_container(delimiter='/')
+        resp = pithos.container_get()
+        self.assertEqual(len(resp.json), 0)
+        self.info('Successfully emptied container')
+
+        for obj in obj_names:
+            resp = pithos.get_object_versionlist(obj)
+            self.assertTrue(len(resp) > 0)
+        self.info('Versions are still there')
+
+        pithos.purge_container()
+        for obj in obj_names:
+            self.assertRaises(ClientError, pithos.get_object_versionlist, obj)
+        self.info('Successfully purged container')
+
+        self.temp_containers.remove(pithos.container)
+        pithos.container = self.temp_containers[-1]
+
+    def test_045_object_head(self):
+        """Test object HEAD"""
+        pithos = self.clients.pithos
+
+        obj = 'dir/sample.file'
+        resp = pithos.object_head(obj)
+        self.assertEqual(resp.status_code, 200)
+        self.info('Status code is OK')
+        etag = resp.headers['etag']
+        real_version = resp.headers['x-object-version']
+
+        self.assertRaises(ClientError, pithos.object_head, obj, version=-10)
+        resp = pithos.object_head(obj, version=real_version)
+        self.assertEqual(resp.headers['x-object-version'], real_version)
+        self.info('Version works')
+
+        resp = pithos.object_head(obj, if_etag_match=etag)
+        self.assertEqual(resp.status_code, 200)
+        self.info('if-etag-match is OK')
+
+        resp = pithos.object_head(
+            obj, if_etag_not_match=etag, success=(200, 412, 304))
+        self.assertNotEqual(resp.status_code, 200)
+        self.info('if-etag-not-match works')
+
+        resp = pithos.object_head(
+            obj, version=real_version, if_etag_match=etag, success=200)
+        self.assertEqual(resp.status_code, 200)
+        self.info('Version with if-etag-match works')
+
+        for date_format in pithos.DATE_FORMATS:
+            now_formated = self.now_unformated.strftime(date_format)
+            resp1 = pithos.object_head(
+                obj, if_modified_since=now_formated, success=(200, 304, 412))
+            resp2 = pithos.object_head(
+                obj, if_unmodified_since=now_formated, success=(200, 304, 412))
+            self.assertNotEqual(resp1.status_code, resp2.status_code)
+        self.info('if-(un)modified-since works')
+
+    # pylint: disable=too-many-locals
+    def test_050_object_get(self):
+        """Test object GET"""
+        pithos = self.clients.pithos
+        obj = 'dir/sample.file'
+
+        resp = pithos.object_get(obj)
+        self.assertEqual(resp.status_code, 200)
+        self.info('Status code is OK')
+
+        osize = int(resp.headers['content-length'])
+        etag = resp.headers['etag']
+
+        resp = pithos.object_get(obj, hashmap=True)
+        self.assertEqual(
+            set(('hashes', 'block_size', 'block_hash', 'bytes')),
+            set(resp.json))
+        self.info('Hashmap works')
+        hash0 = resp.json['hashes'][0]
+
+        resp = pithos.object_get(obj, format='xml', hashmap=True)
+        self.assertTrue(resp.text.split('hash>')[1].startswith(hash0))
+        self.info('Hashmap with XML format works')
+
+        rangestr = 'bytes=%s-%s' % (osize / 3, osize / 2)
+        resp = pithos.object_get(obj, data_range=rangestr, success=(200, 206))
+        partsize = int(resp.headers['content-length'])
+        self.assertTrue(0 < partsize and partsize <= 1 + osize / 3)
+        self.info('Range x-y works')
+        orig = resp.text
+
+        rangestr = 'bytes=%s' % (osize / 3)
+        resp = pithos.object_get(
+            obj, data_range=rangestr, if_range=True, success=(200, 206))
+        partsize = int(resp.headers['content-length'])
+        self.assertTrue(partsize, 1 + (osize / 3))
+        diff = set(resp.text).symmetric_difference(set(orig[:partsize]))
+        self.assertEqual(len(diff), 0)
+        self.info('Range x works')
+
+        rangestr = 'bytes=-%s' % (osize / 3)
+        resp = pithos.object_get(
+            obj, data_range=rangestr, if_range=True, success=(200, 206))
+        partsize = int(resp.headers['content-length'])
+        self.assertTrue(partsize, osize / 3)
+        diff = set(resp.text).symmetric_difference(set(orig[-partsize:]))
+        self.assertEqual(len(diff), 0)
+        self.info('Range -x works')
+
+        resp = pithos.object_get(obj, if_etag_match=etag)
+        self.assertEqual(resp.status_code, 200)
+        self.info('if-etag-match works')
+
+        resp = pithos.object_get(obj, if_etag_not_match=etag + 'LALALA')
+        self.assertEqual(resp.status_code, 200)
+        self.info('if-etag-not-match works')
+
+        for date_format in pithos.DATE_FORMATS:
+            now_formated = self.now_unformated.strftime(date_format)
+            resp1 = pithos.object_get(
+                obj, if_modified_since=now_formated, success=(200, 304, 412))
+            resp2 = pithos.object_get(
+                obj, if_unmodified_since=now_formated, success=(200, 304, 412))
+            self.assertNotEqual(resp1.status_code, resp2.status_code)
+        self.info('if(un)modified-since works')
+
+        obj, dnl_f = 'dir/sample.file', NamedTemporaryFile()
+        self.info('Download %s as %s ...' % (obj, dnl_f.name))
+        pithos.download_object(obj, dnl_f)
+        self.info('Download is completed')
+
+        f_size = len(orig)
+        for pos in (0, f_size / 2, f_size - 128):
+            dnl_f.seek(pos)
+            self.large_file.seek(pos)
+            self.assertEqual(self.large_file.read(64), dnl_f.read(64))
+        self.info('Sampling shows that files match')
+
+        # Upload a boring file
+        self.info("Create a boring file of 42 blocks...")
+        bor_f = self._create_boring_file(42)
+        trg_fname = 'dir/uploaded.file'
+        self.info('Now, upload the boring file as %s...' % trg_fname)
+        pithos.upload_object(trg_fname, bor_f)
+        self.info('Boring file %s is uploaded as %s' % (bor_f.name, trg_fname))
+        dnl_f = NamedTemporaryFile()
+        self.info('Download boring file as %s' % dnl_f.name)
+        pithos.download_object(trg_fname, dnl_f)
+        self.info('File is downloaded')
+
+        for i in range(42):
+            self.assertEqual(sample_block(bor_f, i), sample_block(dnl_f, i))
+
+    def test_152_unique_containers(self):
         """Test if containers have unique names"""
         names = [n['name'] for n in self.containers]
         names = sorted(names)

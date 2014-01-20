@@ -26,6 +26,7 @@ import tempfile
 import traceback
 from tempfile import NamedTemporaryFile
 from os import urandom
+from string import ascii_letters
 
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
 from kamaki.clients.astakos import AstakosClient, parse_endpoints
@@ -330,6 +331,30 @@ class BurninTests(unittest.TestCase):
             named_file.flush()
         named_file.seek(0)
         return named_file
+
+    def _create_boring_file(self, num_of_blocks):
+        """Create a file with some blocks being the same"""
+
+        def chargen():
+            """10 + 2 * 26 + 26 = 88"""
+            while True:
+                for char in xrange(10):
+                    yield '%s' % char
+                for char in ascii_letters:
+                    yield char
+                for char in '~!@#$%^&*()_+`-=:";|<>?,./':
+                    yield char
+
+        tmp_file = NamedTemporaryFile()
+        self.debug('\tCreate file %s  ' % tmp_file.name)
+        block_size = 4 * 1024 * 1024
+        chars = chargen()
+        while num_of_blocks:
+            fslice = 3 if num_of_blocks > 3 else num_of_blocks
+            tmp_file.write(fslice * block_size * chars.next())
+            num_of_blocks -= fslice
+        tmp_file.seek(0)
+        return tmp_file
 
     def _get_uuid_of_system_user(self):
         """Get the uuid of the system user

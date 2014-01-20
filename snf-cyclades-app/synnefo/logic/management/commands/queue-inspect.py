@@ -59,7 +59,7 @@ class Command(BaseCommand):
         client = AMQPClient()
         client.connect()
 
-        pp = pprint.PrettyPrinter(indent=4, width=4)
+        pp = pprint.PrettyPrinter(indent=4, width=4, stream=self.stdout)
 
         more_msgs = True
         counter = 0
@@ -68,9 +68,9 @@ class Command(BaseCommand):
             msg = client.basic_get(queue=queue)
             if msg:
                 counter += 1
-                print sep
-                print 'Message %d:' % counter
-                print sep
+                self.stderr.write(sep + "\n")
+                self.stderr.write('Message %d:\n' % counter)
+                self.stderr.write(sep + "\n")
                 pp.pprint(msg)
                 if not requeue or interactive:
                     if interactive and not get_user_confirmation():

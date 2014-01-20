@@ -18,10 +18,13 @@ def color_style():
 
 try:
     # 2008-05-30 admindocs found in newforms-admin brand
-    from django.contrib.admindocs.views import extract_views_from_urlpatterns, simplify_regex
+    from django.contrib.admindocs.views import \
+        extract_views_from_urlpatterns, simplify_regex
 except ImportError:
     # fall back to trunk, pre-NFA merge
-    from django.contrib.admin.views.doc import extract_views_from_urlpatterns, simplify_regex
+    from django.contrib.admin.views.doc import \
+        extract_views_from_urlpatterns, simplify_regex
+
 
 class Command(BaseCommand):
     help = "Displays all of the url matching routes for the project."
@@ -35,7 +38,8 @@ class Command(BaseCommand):
         style = color_style()
 
         if settings.ADMIN_FOR:
-            settings_modules = [__import__(m, {}, {}, ['']) for m in settings.ADMIN_FOR]
+            settings_modules = [__import__(m, {}, {}, [''])
+                                for m in settings.ADMIN_FOR]
         else:
             settings_modules = [settings]
 
@@ -46,14 +50,21 @@ class Command(BaseCommand):
             except Exception, e:
                 if options.get('traceback', None):
                     import traceback
-                    traceback.print_exc()
-                print style.ERROR("Error occurred while trying to load %s: %s" % (settings_mod.ROOT_URLCONF, str(e)))
+                    self.stderr.write(traceback.format_exc() + "\n")
+                self.stderr.write(
+                    style.ERROR("Error occurred while trying to load %s: %s\n"
+                                % (settings_mod.ROOT_URLCONF, str(e))))
                 continue
-            view_functions = extract_views_from_urlpatterns(urlconf.urlpatterns)
+            view_functions = \
+                extract_views_from_urlpatterns(urlconf.urlpatterns)
             for (func, regex) in view_functions:
-                func_name = hasattr(func, '__name__') and func.__name__ or repr(func)
-                views.append("%(url)s\t%(module)s.%(name)s" % {'name': style.MODULE_NAME(func_name),
-                                       'module': style.MODULE(getattr(func, '__module__', '<no module>')),
-                                       'url': style.URL(simplify_regex(regex))})
+                func_name = hasattr(func, '__name__') and \
+                    func.__name__ or repr(func)
+                views.append("%(url)s\t%(module)s.%(name)s"
+                             % {'name': style.MODULE_NAME(func_name),
+                                'module': style.MODULE(
+                                    getattr(func, '__module__',
+                                            '<no module>')),
+                                'url': style.URL(simplify_regex(regex))})
 
         return "\n".join([v for v in views])

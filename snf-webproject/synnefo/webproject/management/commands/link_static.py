@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -29,27 +29,31 @@
 """
 Collect static files required by synnefo to a specific location
 """
-import os, shutil
+import os
 
 from django.utils.importlib import import_module
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.conf import settings
 
 STATIC_FILES = getattr(settings, "STATIC_FILES", {})
+
 
 class Command(BaseCommand):
 
     help = 'Symlink static files to directory specified'
 
     option_list = BaseCommand.option_list + (
-        make_option('--static-root',
+        make_option(
+            '--static-root',
             action='store',
             dest='static_root',
             default=settings.MEDIA_ROOT,
-            help='Path to place symlinks (default: `%s`)' % settings.MEDIA_ROOT),
-        make_option('--dry-run',
+            help='Path to place symlinks (default: `%s`)'
+                 % settings.MEDIA_ROOT),
+        make_option(
+            '--dry-run',
             action='store_true',
             dest='dry',
             default=False,
@@ -58,29 +62,32 @@ class Command(BaseCommand):
 
     def collect_files(self, target):
         symlinks = []
-        dirs_to_create = set()
         for module, ns in STATIC_FILES.iteritems():
             module = import_module(module)
-            static_root = os.path.join(os.path.dirname(module.__file__), 'static')
+            static_root = os.path.join(os.path.dirname(module.__file__),
+                                       'static')
 
             # no nested dir exists for the app
             if ns == '':
                 for f in os.listdir(static_root):
-                    symlinks.append((os.path.join(static_root, f), os.path.join(target, ns, f)))
+                    symlinks.append((os.path.join(static_root, f),
+                                     os.path.join(target, ns, f)))
 
             # symlink whole app directory
             else:
-                symlinks.append((os.path.join(static_root), os.path.join(target, ns)))
+                symlinks.append((os.path.join(static_root),
+                                 os.path.join(target, ns)))
 
         return symlinks
 
     def handle(self, *args, **options):
 
-        print "The following synlinks will get created"
+        self.stderr.write("The following symlinks will be created\n")
 
         symlinks = self.collect_files(options['static_root'])
         for linkfrom, linkto in symlinks:
-            print "Symlink '%s' to '%s' will get created." % (linkfrom, linkto)
+            self.stderr.write("Symlink '%s' to '%s' will be created.\n"
+                              % (linkfrom, linkto))
 
         if not options['dry']:
             confirm = raw_input("""
@@ -89,10 +96,10 @@ Type 'yes' to continue, or 'no' to cancel: """)
 
             if confirm == "yes":
                 for linkfrom, linkto in symlinks:
-                    print "Creating link from %s to %s" % (linkfrom, linkto)
+                    self.stderr.write("Creating link from %s to %s\n"
+                                      % (linkfrom, linkto))
                     if os.path.exists(linkto):
-                        print "Skippig %s" % linkto
+                        self.stderr.write("Skippig %s\n" % linkto)
                         continue
 
                     os.symlink(linkfrom, linkto)
-

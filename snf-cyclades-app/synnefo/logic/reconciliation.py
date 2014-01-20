@@ -126,7 +126,9 @@ class BackendReconciler(object):
         if job_id in self.gnt_jobs:
             job = self.gnt_jobs[job_id]
             gnt_job_status = job["status"]
-            end_timestamp = merge_time(job["end_ts"])
+            end_timestamp = job["end_ts"]
+            if end_timestamp is not None:
+                end_timestamp = merge_time(end_timestamp)
             if gnt_job_status == rapi.JOB_STATUS_ERROR:
                 return "ERROR", end_timestamp
             elif gnt_job_status not in rapi.JOB_STATUS_FINALIZED:

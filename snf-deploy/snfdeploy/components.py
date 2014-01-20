@@ -643,7 +643,7 @@ class Astakos(SynnefoComponent):
             ]
 
     def set_default_quota(self):
-        cmd = "snf-manage resource-modify --default-quota"
+        cmd = "snf-manage resource-modify --base-default"
         return [
             "%s 40G pithos.diskspace" % cmd,
             "%s 2 astakos.pending_app" % cmd,

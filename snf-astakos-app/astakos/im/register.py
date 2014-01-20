@@ -114,19 +114,16 @@ def add_resource(resource_dict):
     return r, exists
 
 
-def update_resources(updates):
-    resources = []
-    for resource, uplimit in updates:
-        resources.append(resource)
-        old_uplimit = resource.uplimit
-        if uplimit == old_uplimit:
-            logger.info("Resource %s has limit %s; no need to update."
-                        % (resource.name, uplimit))
-        else:
-            resource.uplimit = uplimit
-            resource.save()
-            logger.info("Updated resource %s with limit %s."
-                        % (resource.name, uplimit))
+def update_base_default(resource, base_default):
+    old_base_default = resource.uplimit
+    if base_default == old_base_default:
+        logger.info("Resource %s has base default %s; no need to update."
+                    % (resource.name, base_default))
+    else:
+        resource.uplimit = base_default
+        resource.save()
+        logger.info("Updated resource %s with base default %s."
+                    % (resource.name, base_default))
 
 
 def resources_to_dict(resources):

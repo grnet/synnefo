@@ -1256,16 +1256,16 @@ def import_services():
 
     debug(env.host, " * Setting default quota...")
     cmd = """
-    snf-manage resource-modify --default-quota 40G pithos.diskspace
-    snf-manage resource-modify --default-quota 2 astakos.pending_app
-    snf-manage resource-modify --default-quota 4 cyclades.vm
-    snf-manage resource-modify --default-quota 40G cyclades.disk
-    snf-manage resource-modify --default-quota 16G cyclades.total_ram
-    snf-manage resource-modify --default-quota 8G cyclades.ram
-    snf-manage resource-modify --default-quota 32 cyclades.total_cpu
-    snf-manage resource-modify --default-quota 16 cyclades.cpu
-    snf-manage resource-modify --default-quota 4 cyclades.network.private
-    snf-manage resource-modify --default-quota 4 cyclades.floating_ip
+    snf-manage resource-modify --base-default 40G pithos.diskspace
+    snf-manage resource-modify --base-default 2 astakos.pending_app
+    snf-manage resource-modify --base-default 4 cyclades.vm
+    snf-manage resource-modify --base-default 40G cyclades.disk
+    snf-manage resource-modify --base-default 16G cyclades.total_ram
+    snf-manage resource-modify --base-default 8G cyclades.ram
+    snf-manage resource-modify --base-default 32 cyclades.total_cpu
+    snf-manage resource-modify --base-default 16 cyclades.cpu
+    snf-manage resource-modify --base-default 4 cyclades.network.private
+    snf-manage resource-modify --base-default 4 cyclades.floating_ip
     """
     try_run(cmd)
 

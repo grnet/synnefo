@@ -70,6 +70,7 @@ from synnefo.db.models import (Backend, VirtualMachine, Flavor,
                                MacPrefixPoolTable)
 from synnefo.db import pools
 from synnefo.logic import utils, rapi, backend as backend_mod
+from synnefo.lib.utils import merge_time
 
 logger = logging.getLogger()
 logging.basicConfig()
@@ -96,6 +97,8 @@ class BackendReconciler(object):
         backend = self.backend
         log.debug("Reconciling backend %s", backend)
 
+        self.event_time = datetime.now()
+
         self.db_servers = get_database_servers(backend)
         self.db_servers_keys = set(self.db_servers.keys())
         log.debug("Got servers info from database.")
@@ -107,25 +110,31 @@ class BackendReconciler(object):
         self.gnt_jobs = get_ganeti_jobs(backend)
         log.debug("Got jobs from Ganeti backend")
 
-        self.event_time = datetime.now()
-
         self.stale_servers = self.reconcile_stale_servers()
         self.orphan_servers = self.reconcile_orphan_servers()
         self.unsynced_servers = self.reconcile_unsynced_servers()
         self.close()
 
     def get_build_status(self, db_server):
+        """Return the status of the build job.
+
+        Return whether the job is RUNNING, FINALIZED or ERROR, together
+        with the timestamp that the job finished (if any).
+
+        """
         job_id = db_server.backendjobid
         if job_id in self.gnt_jobs:
-            gnt_job_status = self.gnt_jobs[job_id]["status"]
+            job = self.gnt_jobs[job_id]
+            gnt_job_status = job["status"]
+            end_timestamp = merge_time(job["end_ts"])
             if gnt_job_status == rapi.JOB_STATUS_ERROR:
-                return "ERROR"
+                return "ERROR", end_timestamp
             elif gnt_job_status not in rapi.JOB_STATUS_FINALIZED:
-                return "RUNNING"
+                return "RUNNING", None
             else:
-                return "FINALIZED"
+                return "FINALIZED", end_timestamp
         else:
-            return "ERROR"
+            return "ERROR", None
 
     def reconcile_stale_servers(self):
         # Detect stale servers
@@ -134,7 +143,7 @@ class BackendReconciler(object):
         for server_id in stale_keys:
             db_server = self.db_servers[server_id]
             if db_server.operstate == "BUILD":
-                build_status = self.get_build_status(db_server)
+                build_status, end_timestamp = self.get_build_status(db_server)
                 if build_status == "ERROR":
                     # Special handling of BUILD eerrors
                     self.reconcile_building_server(db_server)
@@ -187,13 +196,18 @@ class BackendReconciler(object):
             db_server = self.db_servers[server_id]
             gnt_server = self.gnt_servers[server_id]
             if db_server.operstate == "BUILD":
-                build_status = self.get_build_status(db_server)
+                build_status, end_timestamp = self.get_build_status(db_server)
                 if build_status == "RUNNING":
                     # Do not reconcile building VMs
                     continue
                 elif build_status == "ERROR":
                     # Special handling of build errors
                     self.reconcile_building_server(db_server)
+                    continue
+                elif end_timestamp >= self.event_time:
+                    # Do not continue reconciliation for building server that
+                    # the build job completed after quering the state of
+                    # Ganeti servers.
                     continue
 
             self.reconcile_unsynced_operstate(server_id, db_server,

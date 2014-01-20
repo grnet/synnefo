@@ -113,6 +113,11 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
                                               force=True,
                                               auto_accept=True)
             log.debug("Issued new commission: %s", vm.serial)
+            # NOTE: Since we rejected the serial that was associated with the
+            # 'vm.task_job_id' job, we must also clear the 'vm.serial' field.
+            # If not, there will be no new commission for the 'vm.task_job_id'
+            # job!
+            vm.serial = None
 
     return vm
 

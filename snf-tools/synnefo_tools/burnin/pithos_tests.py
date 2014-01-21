@@ -51,7 +51,7 @@ class PithosTestSuite(BurninTests):
     large_file = Proper(value=None)
 
     def test_005_account_head(self):
-        """HEAD on pithos account"""
+        """Test account HEAD"""
         self._set_pithos_account(self._get_uuid())
         pithos = self.clients.pithos
         resp = pithos.account_head()
@@ -75,8 +75,9 @@ class PithosTestSuite(BurninTests):
             self.assertNotEqual(resp1.status_code, resp2.status_code)
         self.info('If_(un)modified_since is OK')
 
-    def test_010_account_get(self):  # pylint: disable=too-many-locals
-        """Test account_get"""
+    # pylint: disable=too-many-locals
+    def test_010_account_get(self):
+        """Test account GET"""
         self.info('Preparation')
         pithos = self.clients.pithos
         for i in range(1, 3):
@@ -88,10 +89,17 @@ class PithosTestSuite(BurninTests):
         pithos.set_object_sharing(obj, read_permission='*')
         self.info('Created object /%s/%s' % (cont_name, obj))
 
+        #  Try to re-create the same container
+        pithos.create_container(cont_name)
+
         resp = pithos.list_containers()
         full_len = len(resp)
         self.assertTrue(full_len > 2)
         self.info('Normal use is OK')
+
+        cnames = [c['name'] for c in resp]
+        self.assertEqual(sorted(list(set(cnames))), sorted(cnames))
+        self.info('Containers have unique names')
 
         resp = pithos.account_get(limit=1)
         self.assertEqual(len(resp.json), 1)
@@ -126,7 +134,7 @@ class PithosTestSuite(BurninTests):
         self.info('If_(un)modified_since is OK')
 
     def test_015_account_post(self):
-        """Test account_post"""
+        """Test account POST"""
         pithos = self.clients.pithos
         resp = pithos.account_post()
         self.assertEqual(resp.status_code, 202)
@@ -552,7 +560,7 @@ class PithosTestSuite(BurninTests):
         self.info('Sampling shows that files match')
 
         # Upload a boring file
-        self.info("Create a boring file of 42 blocks...")
+        self.info('Create a boring file of 42 blocks...')
         bor_f = self._create_boring_file(42)
         trg_fname = 'dir/uploaded.file'
         self.info('Now, upload the boring file as %s...' % trg_fname)
@@ -566,11 +574,181 @@ class PithosTestSuite(BurninTests):
         for i in range(42):
             self.assertEqual(sample_block(bor_f, i), sample_block(dnl_f, i))
 
-    def test_152_unique_containers(self):
-        """Test if containers have unique names"""
-        names = [n['name'] for n in self.containers]
-        names = sorted(names)
-        self.assertEqual(sorted(list(set(names))), names)
+    def test_055_object_put(self):
+        """Test object PUT"""
+        pithos = self.clients.pithos
+        obj = 'sample.file'
+
+        pithos.create_object(obj + '.FAKE')
+        resp = pithos.get_object_info(obj + '.FAKE')
+        self.assertEqual(
+            set(resp['content-type']), set('application/octer-stream'))
+        self.info('Simple call creates a new object correctly')
+
+        resp = pithos.object_put(
+            obj,
+            data='a',
+            content_type='application/octer-stream',
+            permissions=dict(
+                read=['accX:groupA', 'u1', 'u2'],
+                write=['u2', 'u3']),
+            metadata=dict(key1='val1', key2='val2'),
+            content_encoding='UTF-8',
+            content_disposition='attachment; filename="fname.ext"')
+        self.assertEqual(resp.status_code, 201)
+        self.info('Status code is OK')
+        etag = resp.headers['etag']
+
+        resp = pithos.get_object_info(obj)
+        self.assertTrue('content-disposition' in resp)
+        self.assertEqual(
+            resp['content-disposition'], 'attachment; filename="fname.ext"')
+        self.info('Content-disposition is OK')
+
+        sharing = resp['x-object-sharing'].split('; ')
+        self.assertTrue(sharing[0].startswith('read='))
+        read = set(sharing[0][5:].split(','))
+        self.assertEqual(set(('u1', 'accx:groupa')), read)
+        self.assertTrue(sharing[1].startswith('write='))
+        write = set(sharing[1][6:].split(','))
+        self.assertEqual(set(('u2', 'u3')), write)
+        self.info('Permissions are OK')
+
+        resp = pithos.get_object_meta(obj)
+        self.assertEqual(resp['x-object-meta-key1'], 'val1')
+        self.assertEqual(resp['x-object-meta-key2'], 'val2')
+        self.info('Meta are OK')
+
+        pithos.object_put(
+            obj,
+            if_etag_match=etag,
+            data='b',
+            content_type='application/octet-stream',
+            public=True)
+        self.info('If-etag-match is OK')
+
+        resp = pithos.object_get(obj)
+        self.assertTrue('x-object-public' in resp.headers)
+        self.info('Publishing works')
+
+        vers2 = int(resp.headers['x-object-version'])
+        etag = resp.headers['etag']
+        self.assertEqual(resp.text, 'b')
+        self.info('Remote object content is correct')
+
+        resp = pithos.object_put(
+            obj,
+            if_etag_not_match=etag,
+            data='c',
+            content_type='application/octet-stream',
+            success=(201, 412))
+        self.assertEqual(resp.status_code, 412)
+        self.info('If-etag-not-match is OK')
+
+        resp = pithos.get_object_info('dir')
+        self.assertEqual(resp['content-type'], 'application/directory')
+        self.info('Directory has been created correctly')
+
+        resp = pithos.object_put(
+            '%s_v2' % obj,
+            format=None,
+            copy_from='/%s/%s' % (pithos.container, obj),
+            content_encoding='application/octet-stream',
+            source_account=pithos.account,
+            content_length=0,
+            success=201)
+        self.assertEqual(resp.status_code, 201)
+        resp1 = pithos.get_object_info(obj)
+        resp2 = pithos.get_object_info('%s_v2' % obj)
+        self.assertEqual(resp1['x-object-hash'], resp2['x-object-hash'])
+        self.info('Object has being copied in same container, OK')
+
+        pithos.copy_object(
+            src_container=pithos.container,
+            src_object=obj,
+            dst_container=self.temp_containers[-2],
+            dst_object='%s_new' % obj)
+        pithos.container = self.temp_containers[-2]
+        resp1 = pithos.get_object_info('%s_new' % obj)
+        pithos.container = self.temp_containers[-1]
+        resp2 = pithos.get_object_info(obj)
+        self.assertEqual(resp1['x-object-hash'], resp2['x-object-hash'])
+        self.info('Object has being copied in another container, OK')
+
+        fromstr = '/%s/%s_new' % (self.temp_containers[-2], obj)
+        resp = pithos.object_put(
+            obj,
+            format=None,
+            copy_from=fromstr,
+            content_encoding='application/octet-stream',
+            source_account=pithos.account,
+            content_length=0,
+            success=201)
+        self.assertEqual(resp.status_code, 201)
+        self.info('Cross container put accepts content_encoding')
+
+        resp = pithos.get_object_info(obj)
+        self.assertEqual(resp['etag'], etag)
+        self.info('Etag is OK')
+
+        resp = pithos.object_put(
+            '%s_v3' % obj,
+            format=None,
+            move_from=fromstr,
+            content_encoding='application/octet-stream',
+            source_account='nonExistendAddress@NeverLand.com',
+            content_length=0,
+            success=(201, 403))
+        self.assertEqual(resp.status_code, 403)
+        self.info('Fake source account is handled correctly')
+
+        resp1 = pithos.get_object_info(obj)
+        pithos.container = self.temp_containers[-2]
+        pithos.move_object(
+            src_container=self.temp_containers[-1],
+            src_object=obj,
+            dst_container=pithos.container,
+            dst_object=obj + '_new')
+        resp0 = pithos.get_object_info(obj + '_new')
+        self.assertEqual(resp1['x-object-hash'], resp0['x-object-hash'])
+        self.info('Cross container move is OK')
+
+        pithos.object_put(
+            obj,
+            format=None,
+            move_from='/%s/dir/%s' % (self.temp_containers[-1], obj),
+            source_version=vers2,
+            content_encoding='application/octet-stream',
+            content_length=0, success=201)
+        self.info('Source-version is OK')
+
+        mobj = 'manifest.test'
+        txt = ''
+        for i in range(10):
+            txt += '%s' % i
+            pithos.object_put(
+                '%s/%s' % (mobj, i),
+                data='%s' % i,
+                content_length=1,
+                success=201,
+                content_type='application/octet-stream',
+                content_encoding='application/octet-stream')
+        pithos.object_put(
+            mobj,
+            content_length=0,
+            content_type='application/octet-stream',
+            manifest='%s/%s' % (pithos.container, mobj))
+        resp = pithos.object_get(mobj)
+        self.assertEqual(resp.text, txt)
+        self.info('Manifest file creation works')
+
+        named_file = self._create_large_file(1024 * 10)
+        pithos.upload_object('sample.file', named_file)
+        resp = pithos.get_object_info('sample.file')
+        self.assertEqual(int(resp['content-length']), 10240)
+        self.info('Overwrite is OK')
+
+        # TODO: MISSING: test transfer-encoding?
 
     def test_054_upload_file(self):
         """Test uploading a txt file to Pithos"""

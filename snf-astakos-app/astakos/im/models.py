@@ -839,8 +839,10 @@ class AstakosUserAuthProviderManager(models.Manager):
 
     def unverified(self, provider, **filters):
         try:
-            return self.get(module=provider, user__email_verified=False,
-                            **filters).settings
+
+            return self.select_for_update().get(module=provider,
+                                                user__email_verified=False,
+                                                **filters).settings
         except AstakosUserAuthProvider.DoesNotExist:
             return None
 

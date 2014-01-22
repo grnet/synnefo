@@ -1319,6 +1319,10 @@ To control load a timeout can also be set for shutting down VMs (using
 option ``--shutdown-timeout <sec>``). This may be needed to avoid
 expensive operations triggered by shutdown, such as Windows updates.
 
+The command outputs the list of applied actions and reports whether each
+action succeeded or not. Failure is reported if for any reason cyclades
+failed to process the job and submit it to the backend.
+
 Cyclades advanced operations
 ----------------------------
 

@@ -394,6 +394,10 @@ def create_server(request):
     image = util.get_image_dict(image_id, user_id)
     # Get flavor (ensure it is active)
     flavor = util.get_flavor(flavor_id, include_deleted=False)
+    if not flavor.allow_create:
+        msg = ("It is not allowed to create a server from flavor with id '%d',"
+               " see 'allow_create' flavor attribute")
+        raise faults.Forbidden(msg % flavor.id)
     # Generate password
     password = util.random_password()
 

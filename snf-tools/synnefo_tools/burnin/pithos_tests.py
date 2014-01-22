@@ -631,7 +631,6 @@ class PithosTestSuite(BurninTests):
         self.assertTrue('x-object-public' in resp.headers)
         self.info('Publishing works')
 
-        vers2 = int(resp.headers['x-object-version'])
         etag = resp.headers['etag']
         self.assertEqual(resp.text, 'b')
         self.info('Remote object content is correct')
@@ -698,8 +697,7 @@ class PithosTestSuite(BurninTests):
             content_encoding='application/octet-stream',
             source_account='nonExistendAddress@NeverLand.com',
             content_length=0,
-            success=(201, 403))
-        self.assertEqual(resp.status_code, 403)
+            success=(403, ))
         self.info('Fake source account is handled correctly')
 
         resp1 = pithos.get_object_info(obj)
@@ -713,13 +711,26 @@ class PithosTestSuite(BurninTests):
         self.assertEqual(resp1['x-object-hash'], resp0['x-object-hash'])
         self.info('Cross container move is OK')
 
+        pithos.container = self.temp_containers[-1]
+        pithos.create_container(versioning='auto')
+        pithos.upload_from_string(obj, 'first version')
+        source_hashmap = pithos.get_object_hashmap(obj)['hashes']
+        pithos.upload_from_string(obj, 'second version')
+        pithos.upload_from_string(obj, 'third version')
+        versions = pithos.get_object_versionlist(obj)
+        self.assertEqual(len(versions), 3)
+        vers0 = versions[0][0]
+
+        pithos.container = self.temp_containers[-2]
         pithos.object_put(
             obj,
             format=None,
-            move_from='/%s/dir/%s' % (self.temp_containers[-1], obj),
-            source_version=vers2,
+            move_from='/%s/%s' % (self.temp_containers[-1], obj),
+            source_version=vers0,
             content_encoding='application/octet-stream',
             content_length=0, success=201)
+        target_hashmap = pithos.get_object_hashmap(obj)['hashes']
+        self.assertEqual(source_hashmap, target_hashmap)
         self.info('Source-version is OK')
 
         mobj = 'manifest.test'
@@ -803,6 +814,112 @@ class PithosTestSuite(BurninTests):
         # We successfully deleted our container, no need to do it
         # in our clean up phase
         self.created_container = None
+
+    def test_060_object_copy(self):
+        """Test copying pithos objects"""
+        pithos = self.clients.pithos
+        obj, trg = 'source.file2copy', 'copied.file'
+        data = '{"key1":"val1", "key2":"val2"}'
+
+        resp = pithos.object_put(
+            obj,
+            content_type='application/octet-stream',
+            data=data,
+            metadata=dict(mkey1='mval1', mkey2='mval2'),
+            permissions=dict(
+                read=['accX:groupA', 'u1', 'u2'],
+                write=['u2', 'u3']),
+            content_disposition='attachment; filename="fname.ext"')
+        self.info('Prepared a file /%s/%s' % (pithos.container, obj))
+
+        resp = pithos.object_copy(
+            obj,
+            destination='/%s/%s' % (pithos.container, trg),
+            ignore_content_type=False, content_type='application/json',
+            metadata={'mkey2': 'mval2a', 'mkey3': 'mval3'},
+            permissions={'write': ['u5', 'accX:groupB']})
+        self.assertEqual(resp.status_code, 201)
+        self.info('Status code is OK')
+
+        resp = pithos.get_object_info(trg)
+        self.assertTrue('content-disposition' in resp)
+        self.info('Content-disposition is OK')
+
+        self.assertEqual(resp['x-object-meta-mkey1'], 'mval1')
+        self.assertEqual(resp['x-object-meta-mkey2'], 'mval2a')
+        self.assertEqual(resp['x-object-meta-mkey3'], 'mval3')
+        self.info('Metadata are OK')
+
+        resp = pithos.get_object_sharing(trg)
+        self.assertFalse('read' in resp or 'u2' in resp['write'])
+        self.assertTrue('accx:groupb' in resp['write'])
+        self.info('Sharing is OK')
+
+        resp = pithos.object_copy(
+            obj,
+            destination='/%s/%s' % (pithos.container, obj),
+            content_encoding='utf8',
+            content_type='application/json',
+            destination_account='nonExistendAddress@NeverLand.com',
+            success=(201, 404))
+        self.assertEqual(resp.status_code, 404)
+        self.info('Non existing UUID correctly causes a 404')
+
+        """Check destination being another container
+        and also content_type and content encoding"""
+        resp = pithos.object_copy(
+            obj,
+            destination='/%s/%s' % (self.temp_containers[-1], obj),
+            content_encoding='utf8',
+            content_type='application/json')
+        self.assertEqual(resp.status_code, 201)
+        self.assertEqual(
+            resp.headers['content-type'],
+            'application/json; charset=UTF-8')
+
+        # Check ignore_content_type and content_type
+        pithos.container = self.temp_containers[-1]
+        resp = pithos.object_get(obj)
+        etag = resp.headers['etag']
+        ctype = resp.headers['content-type']
+        self.assertEqual(ctype, 'application/json')
+        self.info('Cross container copy w. content-type/encoding is OK')
+
+        resp = pithos.object_copy(
+            obj,
+            destination='/%s/%s0' % (pithos.container, obj),
+            ignore_content_type=True,
+            content_type='text/x-python')
+        self.assertEqual(resp.status_code, 201)
+        self.assertNotEqual(resp.headers['content-type'], 'application/json')
+        resp = pithos.object_get(obj + '0')
+        self.assertNotEqual(resp.headers['content-type'], 'text/x-python')
+
+        resp = pithos.object_copy(
+            obj,
+            destination='/%s/%s1' % (pithos.container, obj),
+            if_etag_match=etag)
+        self.assertEqual(resp.status_code, 201)
+        self.info('if-etag-match is OK')
+
+        resp = pithos.object_copy(
+            obj,
+            destination='/%s/%s2' % (pithos.container, obj),
+            if_etag_not_match='lalala')
+        self.assertEqual(resp.status_code, 201)
+        self.info('if-etag-not-match is OK')
+
+        resp = pithos.object_copy(
+            '%s2' % obj,
+            destination='/%s/%s3' % (pithos.container, obj),
+            format='xml',
+            public=True)
+        self.assertEqual(resp.status_code, 201)
+        self.assertTrue('xml' in resp.headers['content-type'])
+
+        resp = pithos.get_object_info(obj + '3')
+        self.assertTrue('x-object-public' in resp)
+        self.info('Publish, format and source-version are OK')
 
     @classmethod
     def tearDownClass(cls):  # noqa

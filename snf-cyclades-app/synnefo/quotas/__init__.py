@@ -127,22 +127,14 @@ def issue_commission(resource, action, name="", force=False, auto_accept=False,
 
 
 def accept_serial(serial, strict=True):
-    assert serial.pending or serial.accept
+    assert serial.pending or serial.accept, "%s can't be accepted" % serial
     response = resolve_commissions(accept=[serial.serial], strict=strict)
-    serial.pending = False
-    serial.accept = True
-    serial.resolved = True
-    serial.save()
     return response
 
 
 def reject_serial(serial, strict=True):
-    assert serial.pending or not serial.accept
+    assert serial.pending or not serial.accept, "%s can't be rejected" % serial
     response = resolve_commissions(reject=[serial.serial], strict=strict)
-    serial.pending = False
-    serial.accept = False
-    serial.resolved = True
-    serial.save()
     return response
 
 
@@ -156,13 +148,15 @@ def resolve_commissions(accept=None, reject=None, strict=True):
     with AstakosClientExceptionHandler():
         response = qh.resolve_commissions(accept, reject)
 
-    # Update correspodning entries in DB
-    QuotaHolderSerial.objects.filter(serial__in=accept).update(accept=True,
-                                                               pending=False,
-                                                               resolved=True)
-    QuotaHolderSerial.objects.filter(serial__in=reject).update(accept=False,
-                                                               pending=False,
-                                                               resolved=True)
+    accepted = response.get("accepted", [])
+    rejected = response.get("rejected", [])
+
+    if accepted:
+        QuotaHolderSerial.objects.filter(serial__in=accepted).update(
+            accept=True, pending=False, resolved=True)
+    if rejected:
+        QuotaHolderSerial.objects.filter(serial__in=rejected).update(
+            accept=False, pending=False, resolved=True)
 
     if strict:
         failed = response["failed"]

@@ -204,7 +204,12 @@ def mocked_quotaholder(success=True):
             return (len(astakos.return_value.issue_one_commission.mock_calls) +
                     serial)
         astakos.return_value.issue_one_commission.side_effect = foo
-        astakos.return_value.resolve_commissions.return_value = {"failed": []}
+        def resolve_mock(*args, **kwargs):
+            return {"failed": [],
+                    "accepted": args[0],
+                    "rejected": args[1],
+                    }
+        astakos.return_value.resolve_commissions.side_effect = resolve_mock
         yield astakos.return_value
 
 

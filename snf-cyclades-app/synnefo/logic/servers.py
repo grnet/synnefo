@@ -138,7 +138,7 @@ def server_command(action, action_fields=None):
                     log.debug("Rejecting commission: '%s', could not perform"
                               " action '%s': %s" % (vm.serial,  action, e))
                     transaction.rollback()
-                    quotas.reject_serial(vm.serial)
+                    quotas.reject_resource_serial(vm)
                     transaction.commit()
                 raise
 
@@ -147,7 +147,7 @@ def server_command(action, action_fields=None):
                 # commission because the VM has been stored in DB. Also, if
                 # communication with Ganeti fails, the job will never reach
                 # Ganeti, and the commission will never be resolved.
-                quotas.accept_serial(vm.serial)
+                quotas.accept_resource_serial(vm)
 
             log.info("user: %s, vm: %s, action: %s, job_id: %s, serial: %s",
                      user_id, vm.id, action, job_id, vm.serial)

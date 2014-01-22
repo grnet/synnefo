@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 # Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -298,7 +299,7 @@ class TestOA2(TestCase, URLAssertionsMixin):
         # valid request: untrusted client
         params = {'redirect_uri': self.client1_redirect_uri,
                   'scope': self.client1_redirect_uri,
-                  'extra_param': '123'}
+                  'extra_param': 'γιουνικοντ'}
         self.client.set_credentials('client1', 'secret')
         r = self.client.authorize_code('client1', urlparams=params)
         self.assertEqual(r.status_code, 302)

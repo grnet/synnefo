@@ -146,14 +146,6 @@ def reject_serial(serial, strict=True):
     return response
 
 
-def accept_commissions(accepted, strict=True):
-    return resolve_commissions(accept=accepted, strict=strict)
-
-
-def reject_commissions(rejected, strict=True):
-    return resolve_commissions(reject=rejected, strict=strict)
-
-
 def resolve_commissions(accept=None, reject=None, strict=True):
     if accept is None:
         accept = []
@@ -179,11 +171,6 @@ def resolve_commissions(accept=None, reject=None, strict=True):
                       failed)
 
     return response
-
-
-def fix_pending_commissions():
-    (accepted, rejected) = resolve_pending_commissions()
-    resolve_commissions(accept=accepted, reject=rejected)
 
 
 def resolve_pending_commissions():

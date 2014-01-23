@@ -720,7 +720,7 @@ class AstakosUser(User):
     # URL methods
     @property
     def auth_providers_display(self):
-        return ",".join(["%s:%s" % (p.module, p.get_username_msg) for p in
+        return ",".join(["%s:%ts" % (p.module, p.identifier) for p in
                          self.get_enabled_auth_providers()])
 
     def add_auth_provider(self, module='local', identifier=None, **params):

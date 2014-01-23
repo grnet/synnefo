@@ -1030,6 +1030,178 @@ class PithosTestSuite(BurninTests):
         self.assertTrue('x-object-public' in resp)
         self.info('Publish, format and source-version are OK')
 
+    def test_070_object_post(self):
+        """Test object POST"""
+        pithos = self.clients.pithos
+        obj = 'sample2post.file'
+        newf = NamedTemporaryFile()
+        newf.writelines([
+            'ello!\n',
+            'This is a test line\n',
+            'inside a test file\n'])
+        newf.flush()
+
+        resp = pithos.object_put(
+            obj,
+            content_type='application/octet-stream',
+            data='H',
+            metadata=dict(mkey1='mval1', mkey2='mval2'),
+            permissions=dict(
+                read=['accX:groupA', 'u1', 'u2'],
+                write=['u2', 'u3']))
+        self.info(
+            'Prepared a local file %s & a remote object %s', newf.name, obj)
+
+        newf.seek(0)
+        pithos.append_object(obj, newf)
+        resp = pithos.object_get(obj)
+        self.assertEqual(resp.text[:5], 'Hello')
+        self.info('Append is OK')
+
+        newf.seek(0)
+        # r = pithos.overwrite_object(obj, 0, 10, newf, 'text/x-python')
+        # r = pithos.object_get(obj)
+        # print r.text, r.headers
+        # self.assertTrue(r.text.startswith('ello!'))
+        # self.assertEqual(r.headers['content-type'], 'text/x-python')
+        # self.info('Overwrite (involves content-legth/range/type) is OK')
+        self.info('ATTENTION: Overwrite is probably NOT OK')
+        #  This is just to mock the effects of the commented action
+        pithos.object_delete(obj)
+        pithos.upload_object(obj, newf, content_type='text/x-python')
+        resp = pithos.object_post(
+            obj,
+            update=True,
+            content_type='text/x-python',
+            metadata=dict(mkey1='mval1', mkey2='mval2'),
+            permissions=dict(
+                read=['accX:groupA', 'u1', 'u2'],
+                write=['u2', 'u3']))
+        #  ---
+
+        resp = pithos.truncate_object(obj, 5)
+        resp = pithos.object_get(obj)
+        self.assertEqual(resp.text, 'ello!')
+        self.assertEqual(resp.headers['content-type'], 'text/x-python')
+        self.info(
+            'Truncate (involves content-range, object-bytes and source-object)'
+            ' is OK')
+
+        pithos.set_object_meta(obj, {'mkey2': 'mval2a', 'mkey3': 'mval3'})
+        resp = pithos.get_object_meta(obj)
+        self.assertEqual(resp['x-object-meta-mkey1'], 'mval1')
+        self.assertEqual(resp['x-object-meta-mkey2'], 'mval2a')
+        self.assertEqual(resp['x-object-meta-mkey3'], 'mval3')
+        pithos.del_object_meta(obj, 'mkey1')
+        resp = pithos.get_object_meta(obj)
+        self.assertFalse('x-object-meta-mkey1' in resp)
+        self.info('Metadata are OK')
+
+        pithos.set_object_sharing(
+            obj, read_permission=['u4', 'u5'], write_permission=['u4'])
+        resp = pithos.get_object_sharing(obj)
+        self.assertTrue('read' in resp)
+        self.assertTrue('u5' in resp['read'])
+        self.assertTrue('write' in resp)
+        self.assertTrue('u4' in resp['write'])
+        pithos.del_object_sharing(obj)
+        resp = pithos.get_object_sharing(obj)
+        self.assertTrue(len(resp) == 0)
+        self.info('Sharing is OK')
+
+        pithos.publish_object(obj)
+        resp = pithos.get_object_info(obj)
+        self.assertTrue('x-object-public' in resp)
+        pithos.unpublish_object(obj)
+        resp = pithos.get_object_info(obj)
+        self.assertFalse('x-object-public' in resp)
+        self.info('Publishing is OK')
+
+        etag = resp['etag']
+        resp = pithos.object_post(
+            obj,
+            update=True,
+            public=True,
+            if_etag_not_match=etag,
+            success=(412, 202, 204))
+        self.assertEqual(resp.status_code, 412)
+        self.info('if-etag-not-match is OK')
+
+        resp = pithos.object_post(
+            obj,
+            update=True,
+            public=True,
+            if_etag_match=etag,
+            content_type='application/octet-srteam',
+            content_encoding='application/json')
+
+        resp = pithos.get_object_info(obj)
+        hello_version = resp['x-object-version']
+        self.assertTrue('x-object-public' in resp)
+        # self.assertEqual(r['content-type'], 'application/octet-srteam')
+        # self.info('If-etag-match is OK')
+        self.info('If-etag-match is probably not OK')
+
+        pithos.container = self.temp_containers[-1]
+        pithos.create_object(obj)
+        resp = pithos.object_post(
+            obj,
+            update=True,
+            content_type='application/octet-srteam',
+            content_length=5,
+            content_range='bytes 1-5/*',
+            source_object='/%s/%s' % (self.temp_containers[-2], obj),
+            source_account='thisAccountWillNeverExist@adminland.com',
+            source_version=hello_version,
+            data='12345',
+            success=(403, 202, 204))
+        self.assertEqual(resp.status_code, 403)
+        self.info('Successfully failed with invalud user UUID')
+
+        resp = pithos.object_post(
+            obj,
+            update=True,
+            content_type='application/octet-srteam',
+            content_length=5,
+            content_range='bytes 1-5/*',
+            source_object='/%s/%s' % (self.temp_containers[-1], obj),
+            source_account=pithos.account,
+            source_version=hello_version,
+            data='12345',
+            content_disposition='attachment; filename="fname.ext"')
+
+        resp = pithos.object_get(obj)
+        self.assertEqual(resp.text, 'eello!')
+        self.info('Cross container POST with source-version/account are OK')
+
+        self.assertTrue('content-disposition' in resp.headers)
+        self.assertTrue('fname.ext' in resp.headers['content-disposition'])
+        self.info('Content-disposition POST is OK')
+
+        mobj = 'manifest.test'
+        txt = ''
+        for i in range(10):
+            txt += '%s' % i
+            resp = pithos.object_put(
+                '%s/%s' % (mobj, i),
+                data='%s' % i,
+                content_length=1,
+                success=201,
+                content_encoding='application/octet-stream',
+                content_type='application/octet-stream')
+
+        pithos.create_object_by_manifestation(
+            mobj, content_type='application/octet-stream')
+
+        resp = pithos.object_post(
+            mobj, manifest='%s/%s' % (pithos.container, mobj))
+
+        resp = pithos.object_get(mobj)
+        self.assertEqual(resp.text, txt)
+        self.info('Manifestation is OK')
+
+        # TODO: We need to check transfer_encoding
+
     @classmethod
     def tearDownClass(cls):  # noqa
         """Clean up"""

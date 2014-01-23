@@ -118,7 +118,7 @@ class Command(SynnefoCommand):
             backend = None
 
         connection_list = parse_connections(options["connections"])
-        server = servers.create(user_id, name, password, flavor, image,
+        server = servers.create(user_id, name, password, flavor, image["id"],
                                 networks=connection_list,
                                 use_backend=backend)
         pprint.pprint_server(server, stdout=self.stdout)

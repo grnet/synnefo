@@ -66,6 +66,13 @@ urlpatterns = patterns(
     (r'^/(\d+)/os-volume_attachments/(\d+)(?:.json)?$', 'demux_volumes_item'),
 )
 
+VOLUME_SOURCE_TYPES = [
+    "snapshot",
+    "image",
+    "volume",
+    "blank"
+]
+
 
 def demux(request):
     if request.method == 'GET':
@@ -414,10 +421,13 @@ def create_server(request):
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
 
+    volumes = None
+    dev_map = server.get("block_device_mapping_v2")
+    if dev_map is not None:
+        volumes = parse_block_device_mapping(dev_map)
+
     # Verify that personalities are well-formed
     util.verify_personality(personality)
-    # Get image information
-    image = util.get_image_dict(image_id, user_id)
     # Get flavor (ensure it is active)
     flavor = util.get_flavor(flavor_id, include_deleted=False)
     if not flavor.allow_create:
@@ -427,9 +437,9 @@ def create_server(request):
     # Generate password
     password = util.random_password()
 
-    vm = servers.create(user_id, name, password, flavor, image,
+    vm = servers.create(user_id, name, password, flavor, image_id,
                         metadata=metadata, personality=personality,
-                        project=project, networks=networks)
+                        project=project, networks=networks, volumes=volumes)
 
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'
@@ -438,6 +448,65 @@ def create_server(request):
     response = render_server(request, server, status=202)
 
     return response
+
+
+def parse_block_device_mapping(dev_map):
+    """Parse 'block_device_mapping_v2' attribute"""
+    if not isinstance(dev_map, list):
+        raise faults.BadRequest("Block Device Mapping is Invalid")
+    return [_parse_block_device(device) for device in dev_map]
+
+
+def _parse_block_device(device):
+    """Parse and validate a block device mapping"""
+    if not isinstance(device, dict):
+        raise faults.BadRequest("Block Device Mapping is Invalid")
+
+    # Validate source type
+    source_type = device.get("source_type")
+    if source_type is None:
+        raise faults.BadRequest("Block Device Mapping is Invalid: Invalid"
+                                " source_type field")
+    elif source_type not in VOLUME_SOURCE_TYPES:
+        raise faults.BadRequest("Block Device Mapping is Invalid: source_type"
+                                " must be on of %s"
+                                % ", ".join(VOLUME_SOURCE_TYPES))
+
+    # Validate source UUID
+    uuid = device.get("uuid")
+    if uuid is None and source_type != "blank":
+        raise faults.BadRequest("Block Device Mapping is Invalid: uuid of"
+                                " %s is missing" % source_type)
+
+    # Validate volume size
+    size = device.get("volume_size")
+    if size is not None:
+        try:
+            size = int(size)
+        except (TypeError, ValueError):
+            raise faults.BadRequest("Block Device Mapping is Invalid: Invalid"
+                                    " size field")
+
+    # Validate 'delete_on_termination'
+    delete_on_termination = device.get("delete_on_termination")
+    if delete_on_termination is not None:
+        if not isinstance(delete_on_termination, bool):
+            raise faults.BadRequest("Block Device Mapping is Invalid: Invalid"
+                                    " delete_on_termination field")
+    else:
+        if source_type == "volume":
+            delete_on_termination = False
+        else:
+            delete_on_termination = True
+
+    # Unused API Attributes
+    # boot_index = device.get("boot_index")
+    # destination_type = device.get("destination_type")
+
+    return {"source_type": source_type,
+            "source_uuid": uuid,
+            "size": size,
+            "delete_on_termination": delete_on_termination}
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
@@ -994,7 +1063,7 @@ def volume_to_attachment(volume):
     return {"id": volume.id,
             "volumeId": volume.id,
             "serverId": volume.machine_id,
-            "device": ""}  #  TODO: What device to return?
+            "device": ""}  # TODO: What device to return?
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)

@@ -711,7 +711,7 @@ def create_instance(vm, nics, volumes, flavor, image):
     kw['name'] = vm.backend_vm_id
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
 
-    kw['disk_template'] = flavor.disk_template
+    kw['disk_template'] = volumes[0].template
     disks = []
     for volume in volumes:
         disk = {"name": volume.backend_volume_uuid,

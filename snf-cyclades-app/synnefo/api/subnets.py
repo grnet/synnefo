@@ -196,7 +196,7 @@ def update_subnet(request, sub_id):
         raise api.faults.BadRequest("Malformed request")
 
     if len(subnet) != 1 or "name" not in subnet:
-        raise api.faults.BadRequest("Only the name of subnet can be updated")
+        raise api.faults.BadRequest("Only the name of a subnet can be updated")
 
     name = subnet.get("name", None)
 

@@ -68,6 +68,18 @@ class NetworkTest(BaseAPITest):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(len(Network.objects.filter(userid='user1')), 0)
 
+    def test_invalid_create2(self):
+        """Test invalid name type"""
+        request = {
+            "network": {
+                "type": "MAC_FILTERED",
+                "name": ["Test"]
+            }
+        }
+        response = self.post(NETWORKS_URL, params=json.dumps(request))
+        code = response.status_code
+        self.assertBarRequest(response)
+
     def test_create(self):
         request = {
             "network": {

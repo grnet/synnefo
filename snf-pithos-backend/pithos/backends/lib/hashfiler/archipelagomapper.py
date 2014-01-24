@@ -35,6 +35,7 @@ from binascii import hexlify
 import os
 import re
 import ctypes
+import logging
 
 from context_archipelago import ArchipelagoObject
 from archipelago.common import (
@@ -52,6 +53,7 @@ from pithos.workers import (
 
 monkey.patch_Request()
 
+logger = logging.getLogger(__name__)
 
 class ArchipelagoMapper(object):
     """Mapper.
@@ -153,6 +155,14 @@ class ArchipelagoMapper(object):
             req.put()
             self.ioctx_pool.pool_put(ioctx)
             raise Exception("Could not retrieve Archipelago mapfile.")
+        req = Request.get_close_request(ioctx, self.mapperd_port, maphash);
+        req.submit()
+        req.wait()
+        ret = req.success();
+        if ret is False:
+            logger.warning("Could not close map %s" % maphash)
+            pass
+        req.put();
         self.ioctx_pool.pool_put(ioctx)
         return hashes
 

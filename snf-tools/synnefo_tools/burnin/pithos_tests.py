@@ -822,7 +822,7 @@ class PithosTestSuite(BurninTests):
         self.created_container = None
 
     def test_060_object_copy(self):
-        """Test copying pithos objects"""
+        """Test object COPY"""
         pithos = self.clients.pithos
         obj, trg = 'source.file2copy', 'copied.file'
         data = '{"key1":"val1", "key2":"val2"}'
@@ -1043,7 +1043,7 @@ class PithosTestSuite(BurninTests):
 
         resp = pithos.object_put(
             obj,
-            content_type='application/octet-stream',
+            content_type='text/x-python',
             data='H',
             metadata=dict(mkey1='mval1', mkey2='mval2'),
             permissions=dict(
@@ -1059,25 +1059,11 @@ class PithosTestSuite(BurninTests):
         self.info('Append is OK')
 
         newf.seek(0)
-        # r = pithos.overwrite_object(obj, 0, 10, newf, 'text/x-python')
-        # r = pithos.object_get(obj)
-        # print r.text, r.headers
-        # self.assertTrue(r.text.startswith('ello!'))
-        # self.assertEqual(r.headers['content-type'], 'text/x-python')
-        # self.info('Overwrite (involves content-legth/range/type) is OK')
-        self.info('ATTENTION: Overwrite is probably NOT OK')
-        #  This is just to mock the effects of the commented action
-        pithos.object_delete(obj)
-        pithos.upload_object(obj, newf, content_type='text/x-python')
-        resp = pithos.object_post(
-            obj,
-            update=True,
-            content_type='text/x-python',
-            metadata=dict(mkey1='mval1', mkey2='mval2'),
-            permissions=dict(
-                read=['accX:groupA', 'u1', 'u2'],
-                write=['u2', 'u3']))
-        #  ---
+        resp = pithos.overwrite_object(obj, 0, 10, newf)
+        resp = pithos.object_get(obj)
+        self.assertTrue(resp.text.startswith('ello!'))
+        self.assertEqual(resp.headers['content-type'], 'text/x-python')
+        self.info('Overwrite (involves content-legth/range/type) is OK')
 
         resp = pithos.truncate_object(obj, 5)
         resp = pithos.object_get(obj)
@@ -1138,9 +1124,8 @@ class PithosTestSuite(BurninTests):
         resp = pithos.get_object_info(obj)
         hello_version = resp['x-object-version']
         self.assertTrue('x-object-public' in resp)
-        # self.assertEqual(r['content-type'], 'application/octet-srteam')
-        # self.info('If-etag-match is OK')
-        self.info('If-etag-match is probably not OK')
+        self.assertEqual(resp['content-type'], 'text/x-python')
+        self.info('If-etag-match is OK')
 
         pithos.container = self.temp_containers[-1]
         pithos.create_object(obj)
@@ -1154,24 +1139,25 @@ class PithosTestSuite(BurninTests):
             source_account='thisAccountWillNeverExist@adminland.com',
             source_version=hello_version,
             data='12345',
-            success=(403, 202, 204))
-        self.assertEqual(resp.status_code, 403)
-        self.info('Successfully failed with invalud user UUID')
+            success=(416, 202, 204))
+        self.assertEqual(resp.status_code, 416)
+        self.info('Successfully failed with invalid user UUID')
 
+        pithos.upload_from_string(obj, '12345')
         resp = pithos.object_post(
             obj,
             update=True,
             content_type='application/octet-srteam',
-            content_length=5,
-            content_range='bytes 1-5/*',
-            source_object='/%s/%s' % (self.temp_containers[-1], obj),
+            content_length=3,
+            content_range='bytes 1-3/*',
+            source_object='/%s/%s' % (self.temp_containers[-2], obj),
             source_account=pithos.account,
             source_version=hello_version,
-            data='12345',
+            data='123',
             content_disposition='attachment; filename="fname.ext"')
 
         resp = pithos.object_get(obj)
-        self.assertEqual(resp.text, 'eello!')
+        self.assertEqual(resp.text, '1ell5')
         self.info('Cross container POST with source-version/account are OK')
 
         self.assertTrue('content-disposition' in resp.headers)
@@ -1201,6 +1187,24 @@ class PithosTestSuite(BurninTests):
         self.info('Manifestation is OK')
 
         # TODO: We need to check transfer_encoding
+
+    def test_075_object_delete(self):
+        """Test object DELETE"""
+        pithos = self.clients.pithos
+        obj = 'sample2post.file'
+
+        resp = pithos.object_delete(obj, until=1000000)
+        resp = pithos.object_get(obj, success=(200, 404))
+        self.assertEqual(resp.status_code, 200)
+        self.info('Successfully failed to delete with false "until"')
+
+        resp = pithos.object_delete(obj)
+        self.assertEqual(resp.status_code, 204)
+        self.info('Status code is OK')
+
+        resp = pithos.object_get(obj, success=(200, 404))
+        self.assertEqual(resp.status_code, 404)
+        self.info('Successfully failed to delete a deleted file')
 
     @classmethod
     def tearDownClass(cls):  # noqa

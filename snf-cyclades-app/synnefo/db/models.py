@@ -1012,6 +1012,9 @@ class Volume(models.Model):
     userid = models.CharField("Owner's UUID", max_length=100, null=False,
                               db_index=True)
     size = models.IntegerField("Volume size in GB",  null=False)
+    disk_template = models.CharField('Disk template', max_length=32,
+                                     null=False)
+
     delete_on_termination = models.BooleanField("Delete on Server Termination",
                                                 default=True, null=False)
 
@@ -1069,23 +1072,15 @@ class Volume(models.Model):
             return None
 
     @property
-    def disk_template(self):
-        if self.machine is None:
-            return None
-        else:
-            disk_template = self.machine.flavor.disk_template
-            return disk_template.split("_")[0]
+    def template(self):
+        return self.disk_template.split("_")[0]
 
     @property
-    def disk_provider(self):
-        if self.machine is None:
-            return None
+    def provider(self):
+        if "_" in self.disk_template:
+            return self.disk_template.split("_", 1)[1]
         else:
-            disk_template = self.machine.flavor.disk_template
-            if "_" in disk_template:
-                return disk_template.split("_")[1]
-            else:
-                return None
+            return None
 
     @staticmethod
     def prefix_source(source_id, source_type):

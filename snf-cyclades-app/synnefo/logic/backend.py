@@ -716,7 +716,7 @@ def create_instance(vm, nics, volumes, flavor, image):
     for volume in volumes:
         disk = {"name": volume.backend_volume_uuid,
                 "size": volume.size * 1024}
-        provider = flavor.disk_provider
+        provider = volume.provider
         if provider is not None:
             disk["provider"] = provider
             disk["origin"] = volume.origin

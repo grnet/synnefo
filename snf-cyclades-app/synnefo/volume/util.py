@@ -57,3 +57,17 @@ def volume_to_links(volume_id):
 def snapshot_to_links(snapshot_id):
     href = join_urls(SNAPSHOTS_URL, str(snapshot_id))
     return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
+
+
+def get_disk_template_provider(disk_template):
+    """Extract provider from disk template.
+
+    Provider for `ext` disk_template is encoded in the disk template
+    name, which is formed `ext_<provider_name>`. Provider is None
+    for all other disk templates.
+
+    """
+    provider = None
+    if disk_template.startswith("ext") and "_" in disk_template:
+        disk_template, provider = disk_template.split("_", 1)
+    return disk_template, provider

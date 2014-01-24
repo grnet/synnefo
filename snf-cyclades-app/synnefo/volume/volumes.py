@@ -1,6 +1,7 @@
 import logging
 
 from django.db import transaction
+from django.conf import settings
 from snf_django.lib.api import faults
 from synnefo.db.models import Volume
 from synnefo.volume import util
@@ -57,7 +58,9 @@ def _create_volume(server, user_id, size, source_type, source_uuid,
     # Only ext_ disk template supports cloning from another source. Otherwise
     # is must be the root volume so that 'snf-image' fill the volume
     disk_template = server.flavor.disk_template
-    can_have_source = (index == 0 or disk_template.startswith("ext_"))
+    teplate, provider = util.get_disk_template_provider(disk_template)
+    can_have_source = (index == 0 or
+                       provider in settings.GANETI_CLONE_PROVIDERS)
     if not can_have_source and source_type != "blank":
         msg = ("Volumes of '%s' disk template cannot have a source" %
                disk_template)
@@ -111,6 +114,7 @@ def _create_volume(server, user_id, size, source_type, source_uuid,
 
     volume = Volume.objects.create(userid=user_id,
                                    size=size,
+                                   disk_template=disk_template,
                                    name=name,
                                    machine=server,
                                    description=description,

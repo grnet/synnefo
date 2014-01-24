@@ -214,21 +214,6 @@ def get_flavor(flavor_id, include_deleted=False):
         raise faults.ItemNotFound('Flavor not found.')
 
 
-def get_flavor_provider(flavor):
-    """Extract provider from disk template.
-
-    Provider for `ext` disk_template is encoded in the disk template
-    name, which is formed `ext_<provider_name>`. Provider is None
-    for all other disk templates.
-
-    """
-    disk_template = flavor.disk_template
-    provider = None
-    if disk_template.startswith("ext"):
-        disk_template, provider = disk_template.split("_", 1)
-    return disk_template, provider
-
-
 def get_network(network_id, user_id, for_update=False, non_deleted=False):
     """Return a Network instance or raise ItemNotFound."""
 

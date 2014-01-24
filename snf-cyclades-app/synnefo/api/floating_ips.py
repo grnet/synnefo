@@ -140,7 +140,7 @@ def allocate_floating_ip(request):
     """Allocate a floating IP."""
     req = utils.get_request_dict(request)
     floating_ip_dict = api.utils.get_attribute(req, "floatingip",
-                                               required=True)
+                                               required=True, attr_type=dict)
     log.info('allocate_floating_ip %s', req)
 
     userid = request.user_uniq
@@ -148,7 +148,8 @@ def allocate_floating_ip(request):
     # the network_pool is a mandatory field
     network_id = api.utils.get_attribute(floating_ip_dict,
                                          "floating_network_id",
-                                         required=False)
+                                         required=False,
+                                         attr_type=(basestring, int))
     if network_id is None:
         floating_ip = ips.create_floating_ip(userid)
     else:
@@ -161,7 +162,8 @@ def allocate_floating_ip(request):
                                    non_deleted=True)
         address = api.utils.get_attribute(floating_ip_dict,
                                           "floating_ip_address",
-                                          required=False)
+                                          required=False,
+                                          attr_type=basestring)
         floating_ip = ips.create_floating_ip(userid, network, address)
 
     log.info("User '%s' allocated floating IP '%s'", userid, floating_ip)

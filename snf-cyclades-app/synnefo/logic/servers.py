@@ -699,10 +699,14 @@ def create_ports_for_request(user_id, networks):
     IPs.
 
     """
+    if not isinstance(networks, list):
+        raise faults.BadRequest("Malformed request. Invalid 'networks' field")
     return [_port_for_request(user_id, network) for network in networks]
 
 
 def _port_for_request(user_id, network_dict):
+    if not isinstance(network_dict, dict):
+        raise faults.BadRequest("Malformed request. Invalid 'networks' field")
     port_id = network_dict.get("port")
     network_id = network_dict.get("uuid")
     if port_id is not None:

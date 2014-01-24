@@ -447,10 +447,9 @@ def update_server_name(request, server_id):
     req = utils.get_request_dict(request)
     log.info('update_server_name %s %s', server_id, req)
 
-    try:
-        name = req['server']['name']
-    except (TypeError, KeyError):
-        raise faults.BadRequest("Malformed request")
+    req = utils.get_attribute(req, "server", attr_type=dict, required=True)
+    name = utils.get_attribute(req, "name", attr_type=basestring,
+                               required=True)
 
     vm = util.get_vm(server_id, request.user_uniq, for_update=True,
                      non_suspended=True)
@@ -500,7 +499,7 @@ def demux_server_action(request, server_id):
     req = utils.get_request_dict(request)
     log.debug('server_action %s %s', server_id, req)
 
-    if len(req) != 1:
+    if not isinstance(req, dict) and len(req) != 1:
         raise faults.BadRequest("Malformed request")
 
     # Do not allow any action on deleted or suspended VMs
@@ -508,14 +507,14 @@ def demux_server_action(request, server_id):
                      non_deleted=True, non_suspended=True)
 
     action = req.keys()[0]
+    if not isinstance(action, basestring):
+        raise faults.BadRequest("Malformed Request. Invalid action.")
 
     if key_to_action(action) not in [x[0] for x in VirtualMachine.ACTIONS]:
         if action not in ARBITRARY_ACTIONS:
             raise faults.BadRequest("Action %s not supported" % action)
-    action_args = req[action]
-
-    if not isinstance(action_args, dict):
-        raise faults.BadRequest("Invalid argument")
+    action_args = utils.get_attribute(req, action, required=True,
+                                      attr_type=dict)
 
     return server_actions[action](request, vm, action_args)
 
@@ -530,7 +529,8 @@ def list_addresses(request, server_id):
     #                       overLimit (413)
 
     log.debug('list_addresses %s', server_id)
-    vm = util.get_vm(server_id, request.user_uniq, prefetch_related="nics__ips")
+    vm = util.get_vm(server_id, request.user_uniq,
+                     prefetch_related="nics__ips")
     attachments = [nic_to_attachments(nic)
                    for nic in vm.nics.filter(state="ACTIVE")]
     addresses = attachments_to_addresses(attachments)
@@ -598,13 +598,13 @@ def update_metadata(request, server_id):
     req = utils.get_request_dict(request)
     log.info('update_server_metadata %s %s', server_id, req)
     vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
-    try:
-        metadata = req['metadata']
-        assert isinstance(metadata, dict)
-    except (KeyError, AssertionError):
-        raise faults.BadRequest("Malformed request")
+    metadata = utils.get_attribute(req, "metadata", required=True,
+                                   attr_type=dict)
 
     for key, val in metadata.items():
+        if not isinstance(key, (basestring, int)) or\
+           not isinstance(val, (basestring, int)):
+            raise faults.BadRequest("Malformed Request. Invalid metadata.")
         meta, created = vm.metadata.get_or_create(meta_key=key)
         meta.meta_value = val
         meta.save()

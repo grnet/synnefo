@@ -544,6 +544,18 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(len(vm.nics.all()), 3)
 
     def test_create_server_with_port(self, mrapi):
+        # Test invalid networks
+        request = deepcopy(self.request)
+        request["server"]["networks"] = {"foo": "lala"}
+        with override_settings(settings, **self.network_settings):
+            response = self.mypost("servers", "dummy_user",
+                                   json.dumps(request), 'json')
+        self.assertBadRequest(response)
+        request["server"]["networks"] = ['1', '2']
+        with override_settings(settings, **self.network_settings):
+            response = self.mypost("servers", "dummy_user",
+                                   json.dumps(request), 'json')
+        self.assertBadRequest(response)
         mrapi().CreateInstance.return_value = 42
         ip = mfactory.IPv4AddressFactory(nic__machine=None)
         port1 = ip.nic

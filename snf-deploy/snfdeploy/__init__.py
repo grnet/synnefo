@@ -469,6 +469,7 @@ def get_actions(*args):
             "setup_lvm", "enable_lvm",
             "enable_drbd", "setup_drbd_dparams",
             "setup_net_infra", "setup_iptables", "setup_router",
+            "setup_ganeti_collectd"
         ],
         "bstorage": [
             "setup_lvm", "enable_lvm",

@@ -93,7 +93,7 @@ class Command(SynnefoCommand):
         if disk_uuid is None:
             raise CommandError("Please specify the UUID of the Ganeti disk")
 
-        vm = common.get_vm(server_id)
+        vm = common.get_resource("server", server_id)
 
         instance_info = backend_mod.get_instance_info(vm)
         instance_disks = reconciliation.disks_from_instance(instance_info)
@@ -114,17 +114,21 @@ class Command(SynnefoCommand):
                                % (disk_uuid, vm.id, disk_id))
 
         size = disk["size"] >> 10  # Convert to GB
+        index = disk["index"]
 
         self.stdout.write("Import disk/%s of instance %s, size: %s GB\n"
-                          % (disk["index"], vm.id, size))
+                          % (index, vm.id, size))
 
         volume = Volume.objects.create(
             userid=vm.userid,
+            disk_template=vm.flavor.disk_template,
             size=size,
-            machine_id=server_id,
+            machine_id=vm.id,
             name=display_name,
             description=display_description,
-            index=disk["index"])
+            delete_on_termination=True,
+            status="IN_USE",
+            index=index)
 
         self.stdout.write("Created Volume '%s' in DB\n" % volume.id)
         pprint.pprint_volume(volume, stdout=self.stdout)

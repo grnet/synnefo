@@ -37,7 +37,8 @@ def create(user_id, size, server_id, name=None, description=None,
         source_type = "image"
         source_uuid = source_image_id
     else:
-        source_type = source_uuid = None
+        source_type = "blank"
+        source_uuid = None
 
     volume = _create_volume(server, user_id, size, source_type, source_uuid,
                             name, description, index=None)
@@ -151,14 +152,13 @@ def delete(volume):
 
 
 @transaction.commit_on_success
-def rename(volume, new_name):
-    volume.name = new_name
-    volume.save()
-    return volume
+def update(volume, name=None, description=None, delete_on_termination=None):
+    if name is not None:
+        volume.name = name
+    if description is not None:
+        volume.description = description
+    if delete_on_termination is not None:
+        volume.delete_on_termination = delete_on_termination
 
-
-@transaction.commit_on_success
-def update_description(volume, new_description):
-    volume.description = new_description
     volume.save()
     return volume

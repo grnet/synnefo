@@ -1,4 +1,4 @@
-# Copyright 2012-2014 GRNET S.A. All rights reserved.
+# Copyright 2012 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -28,36 +28,36 @@
 # policies, either expressed or implied, of GRNET S.A.
 #
 
+from django.core.management.base import BaseCommand, CommandError
 from optparse import make_option
-from django.core.management.base import CommandError
 
-from snf_django.management.commands import SynnefoCommand
-from synnefo.plankton.backend import PlanktonBackend
 from synnefo.management import common
+from synnefo.plankton.utils import image_backend
 from snf_django.management import utils
 
 
-class Command(SynnefoCommand):
-    args = "<image_id>"
-    help = "Display available information about an image"
-    option_list = SynnefoCommand.option_list + (
+class Command(BaseCommand):
+    args = "<snapshot_id>"
+    help = "Display available information about a snapshot"
+    option_list = BaseCommand.option_list + (
         make_option(
             '--user-id',
             dest='userid',
             default=None,
-            help="The UUID of the owner of the image. Required"
-                 " if image is not public"),
+            help="The UUID of the owner of the snapshot. Required"
+                 "if snapshot is not public"),
     )
 
     @common.convert_api_faults
     def handle(self, *args, **options):
 
         if len(args) != 1:
-            raise CommandError("Please provide an image ID")
-        image_id = args[0]
-        #user_id = options["userid"]
+            raise CommandError("Please provide a snapshot ID")
 
-        with PlanktonBackend(None) as backend:
-            image = backend.get_image(image_id)
-        utils.pprint_table(out=self.stdout, table=[image.values()],
-                           headers=image.keys(), vertical=True)
+        snapshot_id = args[0]
+        user_id = options["userid"]
+
+        with image_backend(userid) as backend:
+            snapshot = backend.get_snapshot(userid, snapshot_id)
+        utils.pprint_table(out=self.stdout, table=[snapshot.values()],
+                           headers=snapshot.keys(), vertical=True)

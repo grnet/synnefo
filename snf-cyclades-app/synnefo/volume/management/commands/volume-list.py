@@ -56,11 +56,15 @@ class Command(ListCommand):
         "id": ("id", "ID of the server"),
         "name": ("name", "Name of the server"),
         "user.uuid": ("userid", "The UUID of the server's owner"),
-        "server_id": ("machine_id", ""),
-        "source": ("source", ""),
-        "status": ("status", ""),
+        "size": ("size", "The size of the volume (GB)"),
+        "server_id": ("machine_id", "The UUID of the server that the volume"
+                                    " is currently attached"),
+        "source": ("source", "The source of the volume"),
+        "status": ("status", "The status of the volume"),
         "created": ("created", "The date the server was created"),
         "deleted": ("deleted", "Whether the server is deleted or not"),
+        "disk_template": ("disk_template", "The disk template of the volume")
     }
 
-    fields = ["id", "name", "user.uuid", "status", "source", "server_id"]
+    fields = ["id", "user.uuid", "size", "status", "source", "disk_template",
+              "server_id"]

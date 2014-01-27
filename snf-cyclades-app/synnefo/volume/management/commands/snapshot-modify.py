@@ -1,4 +1,4 @@
-# Copyright 2012-2014 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -27,37 +27,46 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 #
-
 from optparse import make_option
 from django.core.management.base import CommandError
-
-from snf_django.management.commands import SynnefoCommand
-from synnefo.plankton.backend import PlanktonBackend
+from synnefo.volume import snapshots, util
 from synnefo.management import common
-from snf_django.management import utils
+from snf_django.management.commands import SynnefoCommand
 
 
 class Command(SynnefoCommand):
-    args = "<image_id>"
-    help = "Display available information about an image"
+    args = "<Snapshot ID>"
+    help = "Modify a snapshot"
     option_list = SynnefoCommand.option_list + (
         make_option(
-            '--user-id',
-            dest='userid',
+            "--user_id",
+            dest="user_id",
             default=None,
-            help="The UUID of the owner of the image. Required"
-                 " if image is not public"),
+            help="UUID of the owner of the snapshot"),
+        make_option(
+            "--name",
+            dest="name",
+            default=None,
+            help="Update snapshot's name"),
+        make_option(
+            "--description",
+            dest="description",
+            default=None,
+            help="Update snapshot's description"),
     )
 
     @common.convert_api_faults
     def handle(self, *args, **options):
+        if not args:
+            raise CommandError("Please provide a snapshot ID")
 
-        if len(args) != 1:
-            raise CommandError("Please provide an image ID")
-        image_id = args[0]
-        #user_id = options["userid"]
+        snapshot_id = args[0]
+        user_id = self.options["user_id"]
+        name = self.options["name"]
+        description = self.options["description"]
 
-        with PlanktonBackend(None) as backend:
-            image = backend.get_image(image_id)
-        utils.pprint_table(out=self.stdout, table=[image.values()],
-                           headers=image.keys(), vertical=True)
+        snapshot = util.get_snapshot(user_id, snapshot_id)
+
+        snapshots.modify(snapshot, name=name, description=description)
+        self.stdout.write("Successfully updated snapshot %s\n"
+                          % snapshot)

@@ -421,14 +421,15 @@ def pprint_volume(volume, display_mails=False, stdout=None, title=None):
     volume_dict = OrderedDict([
         ("id", volume.id),
         ("size", volume.size),
-        ("disk_template", volume.disk_template),
-        ("disk_provider", volume.disk_provider),
+        ("disk_template", volume.template),
+        ("disk_provider", volume.provider),
         ("server_id", volume.machine_id),
         ("userid", volume.userid),
         ("username", ucache.get_name(userid) if display_mails else None),
         ("index", volume.index),
         ("name", volume.name),
         ("state", volume.status),
+        ("delete_on_termination", volume.delete_on_termination),
         ("deleted", volume.deleted),
         ("backendjobid", volume.backendjobid),
         ])

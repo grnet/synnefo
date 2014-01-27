@@ -32,38 +32,38 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management import common
-#from snf_django.management.utils import parse_bool
-from synnefo.volume import snapshots
+
+from snf_django.management.utils import parse_bool
+from synnefo.management.common import convert_api_faults
+from synnefo.management import pprint, common
+from synnefo.volume import volumes
 
 
 class Command(BaseCommand):
+    help = "Modify a volume"
     args = "<volume ID>"
-    help = "Create a snapshot from the specified volume"
 
     option_list = BaseCommand.option_list + (
         make_option(
-            '--wait',
-            dest='wait',
+            '--name',
+            dest='name',
+            help="Modify a volume's display name"),
+        make_option(
+            '--description',
+            dest='description',
+            help="Modify a volume's display description"),
+        make_option(
+            '--delete-on-termination',
+            dest='delete_on_termination',
             default="True",
             choices=["True", "False"],
             metavar="True|False",
-            help="Wait for Ganeti job to complete."),
-        make_option(
-            "--name",
-            dest="name",
-            default=None,
-            help="Display name of the snapshot"),
-        make_option(
-            "--description",
-            dest="description",
-            default=None,
-            help="Display description of the snapshot"),
+            help="Set whether volume will be preserved when the server"
+                 " the volume is attached will be deleted"),
     )
 
-    @common.convert_api_faults
+    @convert_api_faults
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a volume ID")
@@ -71,19 +71,13 @@ class Command(BaseCommand):
         volume = common.get_resource("volume", args[0], for_update=True)
 
         name = options.get("name")
-        if name is None:
-            raise CommandError("'name' option is required")
-
         description = options.get("description")
-        if description is None:
-            description = "Snapshot of Volume '%s" % volume.id
+        delete_on_termination = options.get("delete_on_termination")
+        if delete_on_termination is not None:
+            delete_on_termination = parse_bool(delete_on_termination)
 
-        snapshot = snapshots.create(volume.userid,
-                                    volume,
-                                    name=name,
-                                    description=description,
-                                    metadata={})
+        volume = volumes.update(volume, name, description,
+                                delete_on_termination)
 
-        msg = ("Created snapshot of volume '%s' with ID %s\n"
-               % (volume.id, snapshot["id"]))
-        self.stdout.write(msg)
+        pprint.pprint_volume(volume, stdout=self.stdout)
+        self.stdout.write('\n\n')

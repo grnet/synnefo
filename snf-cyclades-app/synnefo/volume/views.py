@@ -202,14 +202,15 @@ def update_volume(request, volume_id):
 
     new_name = req.get("display_name")
     description = req.get("display_description")
+    delete_on_termination = req.get("delete_on_termination")
 
-    if new_name is None and description is None:
+    if new_name is None and description is None and\
+       delete_on_termination is None:
         raise faults.BadRequest("Nothing to update.")
+    else:
+        volume = volumes.update(volume, new_name, description,
+                                delete_on_termination)
 
-    if new_name is not None:
-        volume = volumes.rename(volume, new_name)
-    if description is not None:
-        volume = volumes.update_description(volume, description)
     data = json.dumps({'volume': volume_to_dict(volume, detail=True)})
     return HttpResponse(data, content_type="application/json", status=200)
 
@@ -334,10 +335,8 @@ def update_snapshot(request, snapshot_id):
     if new_name is None and new_description is None:
         raise faults.BadRequest("Nothing to update.")
 
-    if new_name is not None:
-        snapshot = snapshots.rename(snapshot, new_name)
-    if new_description is not None:
-        snapshot = snapshots.update_description(snapshot, new_description)
+    snapshot = snapshots.update(snapshot, name=new_name,
+                                description=new_description)
 
     data = json.dumps({'snapshot': snapshot_to_dict(snapshot, detail=True)})
     return HttpResponse(data, content_type="application/json", status=200)

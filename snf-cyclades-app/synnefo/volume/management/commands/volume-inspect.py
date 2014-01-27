@@ -56,7 +56,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a volume ID")
 
-        volume = common.get_volume("volume", args[0])
+        volume = common.get_resource("volume", args[0])
 
         pprint.pprint_volume(volume, stdout=self.stdout)
         self.stdout.write('\n\n')

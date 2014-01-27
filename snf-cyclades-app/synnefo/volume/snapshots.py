@@ -132,11 +132,18 @@ def delete(snapshot):
     return snapshot
 
 
-def rename(snapshot, new_name):
-    # user_id = snapshot["owner"]
-    raise NotImplemented("Renaming a snapshot is not implemented!")
+def update(snapshot, name=None, description=None):
+    """Update a snapshot
 
-
-def update_description(snapshot, new_description):
-    # user_id = snapshot["owner"]
-    raise NotImplemented("Updating snapshot's description is not implemented!")
+    Update the name or description of a snapshot.
+    """
+    metadata = {}
+    if name is not None:
+        metadata["name"] = name
+    if description is not None:
+        metadata["description"] = description
+    if not metadata:
+        return
+    user_id = snapshot["owner"]
+    with image_backend(user_id) as b:
+        return b.update_metadata(snapshot["id"], metadata)

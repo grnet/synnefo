@@ -1163,7 +1163,7 @@ def attach_volume(vm, volume, depends=[]):
     disk = {"size": int(volume.size) << 10,
             "name": volume.backend_volume_uuid}
 
-    disk_provider = volume.disk_provider
+    disk_provider = volume.provider
     if disk_provider is not None:
         disk["provider"] = disk_provider
 

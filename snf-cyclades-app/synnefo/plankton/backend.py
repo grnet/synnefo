@@ -77,14 +77,11 @@ PLANKTON_PREFIX = 'plankton:'
 PROPERTY_PREFIX = 'property:'
 
 PLANKTON_META = ('container_format', 'disk_format', 'name',
-                 'status', 'created_at')
+                 'status', 'created_at', 'volume_id', 'description')
 
 MAX_META_KEY_LENGTH = 128 - len(PLANKTON_DOMAIN) - len(PROPERTY_PREFIX)
 MAX_META_VALUE_LENGTH = 256
 
-# TODO: Change domain!
-SNAPSHOTS_DOMAIN = PLANKTON_DOMAIN
-SNAPSHOTS_PREFIX = PLANKTON_PREFIX
 
 from pithos.backends.util import PithosBackendPool
 _pithos_backend_pool = \
@@ -548,34 +545,6 @@ def image_to_dict(location, metadata, permissions):
     image["properties"] = properties
 
     return image
-
-
-def snapshot_to_dict(snapshot_url, meta, permissions):
-    """Render an snapshot to a dictionary"""
-    account, container, name = split_url(snapshot_url)
-
-    snapshot = {}
-    snapshot["uuid"] = meta["uuid"]
-    snapshot["map"] = meta["hash"]
-    snapshot["size"] = meta["bytes"]
-
-    snapshot['owner'] = account
-    snapshot["location"] = snapshot_url
-    snapshot["file_name"] = name
-
-    created = meta["version_timestamp"]
-    snapshot["created_at"] = format_timestamp(created)
-
-    for key, val in meta.items():
-        if key.startswith(SNAPSHOTS_PREFIX):
-            # Remove plankton prefix
-            key = key.replace(SNAPSHOTS_PREFIX, "")
-            if key == "metadata":
-                snapshot[key] = json.loads(val)
-            else:
-                snapshot[key] = val
-
-    return snapshot
 
 
 class JSONFileBackend(object):

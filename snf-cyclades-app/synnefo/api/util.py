@@ -180,17 +180,17 @@ def get_image_dict(image_id, user_id):
     image["is_snapshot"] = img["is_snapshot"]
     size = image["size"] = img["size"]
 
-    checksum = img["checksum"]
-    if checksum.startswith("archip:"):
-        unprefixed_checksum, _ = checksum.split("archip:")
-        checksum = unprefixed_checksum
+    mapfile = img["mapfile"]
+    if mapfile.startswith("archip:"):
+        _, unprefixed_mapfile, = mapfile.split("archip:")
+        mapfile = unprefixed_mapfile
     else:
-        unprefixed_checksum = checksum
-        checksum = "pithos:" + checksum
+        unprefixed_mapfile = mapfile
+        mapfile = "pithos:" + mapfile
 
-    image["backend_id"] = PITHOSMAP_PREFIX + "/".join([unprefixed_checksum,
+    image["backend_id"] = PITHOSMAP_PREFIX + "/".join([unprefixed_mapfile,
                                                        str(size)])
-    image["checksum"] = checksum
+    image["mapfile"] = mapfile
 
     properties = img.get("properties", {})
     image["metadata"] = dict((key.upper(), val)

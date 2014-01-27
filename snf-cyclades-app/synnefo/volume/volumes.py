@@ -93,7 +93,7 @@ def _create_volume(server, user_id, size, source_type, source_uuid,
             raise faults.BadRequest("Volume size '%s' is smaller than"
                                     " snapshot's size '%s'"
                                     % (size << 30, source_snapshot["size"]))
-        origin = source_snapshot["checksum"]
+        origin = source_snapshot["mapfile"]
     elif source_type == "image":
         source_image = util.get_image(user_id, source_uuid,
                                       exception=faults.BadRequest)
@@ -104,7 +104,7 @@ def _create_volume(server, user_id, size, source_type, source_uuid,
                                     " image's size '%s'"
                                     % (size << 30, source_image["size"]))
         source = Volume.prefix_source(source_uuid, source_type="image")
-        origin = source_image["checksum"]
+        origin = source_image["mapfile"]
     elif source_type == "blank":
         if size is None:
             raise faults.BadRequest("Volume size is required")

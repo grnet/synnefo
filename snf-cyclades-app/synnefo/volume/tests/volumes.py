@@ -103,7 +103,7 @@ class VolumesTest(BaseAPITest):
         mimage().get_snapshot.side_effect = None
         mimage().get_snapshot.return_value = {
             'location': 'pithos://foo',
-            'checksum': 'snf-snapshot-43',
+            'mapfile': 'snf-snapshot-43',
             'id': 12,
             'name': "test_image",
             'size': 1242,

@@ -53,10 +53,10 @@ class Command(BaseCommand):
         with image_backend(user) as backend:
             snapshots = backend.list_snapshots(user)
 
-        headers = ("id", "name", "volume_id", "size", "map")
+        headers = ("id", "name", "volume_id", "size", "mapfile")
         table = []
         for snap in snapshots:
-            fields = (snap["uuid"], snap["name"], snap["volume_id"],
-                      snap["size"], snap["map"])
+            fields = (snap["id"], snap["name"], snap["volume_id"],
+                      snap["size"], snap["mapfile"])
             table.append(fields)
         pprint_table(self.stdout, table, headers)

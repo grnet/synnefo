@@ -43,7 +43,7 @@ from copy import deepcopy
 
 fixed_image = Mock()
 fixed_image.return_value = {'location': 'pithos://foo',
-                            'checksum': 'test_checksum',
+                            'mapfile': 'test_mapfile',
                             "id": 1,
                             "name": "test_image",
                             "size": 1024,
@@ -113,7 +113,7 @@ class ServerCreationTest(TransactionTestCase):
         name, args, kwargs = mrapi().CreateInstance.mock_calls[-1]
         self.assertEqual(kwargs["disks"][0],
                          {"provider": "archipelago",
-                          "origin": "pithos:test_checksum",
+                          "origin": "pithos:test_mapfile",
                           "name": vm.volumes.all()[0].backend_volume_uuid,
                           "foo": "mpaz",
                           "lala": "lolo",

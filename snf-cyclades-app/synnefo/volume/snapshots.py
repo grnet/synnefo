@@ -1,19 +1,19 @@
 import logging
-from django.utils import simplejson as json
 from django.db import transaction
 from snf_django.lib.api import faults
 from synnefo.plankton.utils import image_backend
 from synnefo.logic import backend
 from synnefo.volume import util
 
-#import datetime
-#from snf_django.lib.api.utils import isoformat
-
 log = logging.getLogger(__name__)
 
+PLANKTON_DOMAIN = "plankton"
+PLANKTON_PREFIX = "plankton:"
+
+PROPERTY_PREFIX = "property:"
+
+SNAPSHOT_PREFIX = "snapshot:"
 SNAPSHOTS_CONTAINER = "snapshots"
-SNAPSHOTS_DOMAIN = "plankton"
-SNAPSHOTS_PREFIX = "plankton:"
 SNAPSHOTS_TYPE = "application/octet-stream"
 SNAPSHOTS_MAPFILE_PREFIX = "archip:"
 
@@ -48,39 +48,30 @@ def create(user_id, volume, name, description, metadata, force=False):
     volume.save()
     transaction.commit()
 
-    # Snapshot information are stored as metadata on the Pithos file
     snapshot_metadata = {
-        SNAPSHOTS_PREFIX + "name": name,
-        SNAPSHOTS_PREFIX + "description": description,
-        SNAPSHOTS_PREFIX + "volume_id": volume.id,
-        SNAPSHOTS_PREFIX + "status": "CREATING",
+        PLANKTON_PREFIX + "name": name,
+        PLANKTON_PREFIX + "status": "CREATING",
+        PLANKTON_PREFIX + "disk_format": "diskdump",
+        PLANKTON_PREFIX + "container_format": "bare",
+        PLANKTON_PREFIX + "is_snapshot": True,
+        # Snapshot specific
+        PLANKTON_PREFIX + "description": description,
+        PLANKTON_PREFIX + "volume_id": volume.id,
     }
-
-    # TODO: The following are used in order plankton to work with snapshots
-    # exactly as with iamges
-    snapshot_metadata.update({
-        SNAPSHOTS_PREFIX + "store": "pithos",
-        SNAPSHOTS_PREFIX + "disk_format": "diskdump",
-        SNAPSHOTS_PREFIX + "default_container_format": "bare",
-        SNAPSHOTS_PREFIX + "metadata": json.dumps(metadata)})
-
-    # Set a special attribute to distinquish snapshots from the images
-    snapshot_metadata[SNAPSHOTS_PREFIX + "is_snapshot"] = True
 
     # Snapshots are used as images. We set the most important properties
     # that are being used for images. We set 'EXCLUDE_ALL_TASKS' to bypass
     # image customization. Also, we get some basic metadata for the volume from
     # the server that the volume is attached
-    image_properties = {"EXCLUDE_ALL_TASKS": "yes",
-                        "description": description}
+    metadata.update({"EXCLUDE_ALL_TASKS": "yes",
+                     "description": description})
     vm_metadata = dict(volume.machine.metadata
+                                     .filter(meta_key__in=["OS", "users"])
                                      .values_list("meta_key", "meta_value"))
-    for key in ["OS", "users"]:
-        val = vm_metadata.get(key)
-        if val is not None:
-            image_properties[key] = val
-    snapshot_metadata[SNAPSHOTS_PREFIX + "properties"] = \
-        json.dumps(image_properties)
+    metadata.update(vm_metadata)
+
+    for key, val in metadata.items():
+        snapshot_metadata[PLANKTON_PREFIX + PROPERTY_PREFIX + key] = val
 
     # Generate a name for the Pithos file. Also, generate a name for the
     # Archipelago mapfile.
@@ -98,13 +89,12 @@ def create(user_id, volume, name, description, metadata, force=False):
             container=SNAPSHOTS_CONTAINER,
             name=snapshot_pithos_name,
             size=size,
-            domain=SNAPSHOTS_DOMAIN,
+            domain=PLANKTON_DOMAIN,
             type=SNAPSHOTS_TYPE,
             mapfile=mapfile,
             meta=snapshot_metadata,
             replace_meta=True,
             permissions=None)
-            #checksum=None,
 
     backend.snapshot_instance(volume.machine,
                               snapshot_name=snapshot_pithos_name)
@@ -117,8 +107,8 @@ def create(user_id, volume, name, description, metadata, force=False):
 def generate_snapshot_pithos_name(volume):
     """Helper function to generate a name for the Pithos file."""
     # time = isoformat(datetime.datetime.now())
-    return "snapshot-of-volume-%s-%s" % (volume.id,
-                                         volume.snapshot_counter)
+    return "snf-snap-%s-%s" % (volume.id,
+                               volume.snapshot_counter)
 
 
 @transaction.commit_on_success

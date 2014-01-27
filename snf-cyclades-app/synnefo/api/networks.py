@@ -191,7 +191,7 @@ def network_to_dict(network, detail=True):
         d['admin_state_up'] = True
         d['subnets'] = subnet_ids
         d['SNF:floating_ip_pool'] = network.floating_ip_pool
-        d['deleted'] = True
+        d['deleted'] = network.deleted
     return d
 
 

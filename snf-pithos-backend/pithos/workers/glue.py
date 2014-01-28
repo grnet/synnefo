@@ -91,7 +91,7 @@ class WorkerGlue(object):
                     self.cnt += 1
                     return ioctx
                 elif self.worker_id is None:
-                    ioctx = Xseg_ctx(self.segment, 200)
+                    ioctx = Xseg_ctx(self.segment)
                     return ioctx
 
             def _pool_verify(self, poolobj):

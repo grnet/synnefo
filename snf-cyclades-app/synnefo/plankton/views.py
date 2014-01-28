@@ -44,7 +44,7 @@ from snf_django.lib import api
 from snf_django.lib.api import faults
 from synnefo.plankton.utils import image_backend
 from synnefo.plankton.backend import split_url
-
+from synnefo.util.text import uenc
 
 FILTERS = ('name', 'container_format', 'disk_format', 'status', 'size_min',
            'size_max')
@@ -143,6 +143,10 @@ def add_image(request):
     assert set(params.keys()).issubset(set(ADD_FIELDS))
 
     name = params.pop('name')
+
+    if len(uenc(name)) < 1:
+        raise faults.BadRequest("Invalid image name")
+
     location = params.pop('location', None)
     try:
         split_url(location)

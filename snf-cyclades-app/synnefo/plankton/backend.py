@@ -182,10 +182,12 @@ class ImageBackend(object):
             meta = self._get_meta(image_url, version)
             meta["deleted"] = timestamp
 
+        # XXX: Check that an object is a plankton image! PithosBackend will
+        # return common metadata for an object, even if it has no metadata in
+        # plankton domain. All images must have a name, so we check if a file
+        # is an image by checking if they are having an image name.
         if PLANKTON_PREFIX + 'name' not in meta:
-            logger.warning("Image without Plankton name! url %s meta %s",
-                           image_url, meta)
-            meta[PLANKTON_PREFIX + "name"] = ""
+            raise ImageNotFound
 
         permissions = self._get_permissions(image_url)
         return image_to_dict(image_url, meta, permissions)

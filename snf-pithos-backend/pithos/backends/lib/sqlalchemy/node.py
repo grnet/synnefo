@@ -51,7 +51,7 @@ DEFAULT_DISKSPACE_RESOURCE = 'pithos.diskspace'
 ROOTNODE = 0
 
 (SERIAL, NODE, HASH, SIZE, TYPE, SOURCE, MTIME, MUSER, UUID, CHECKSUM,
- CLUSTER) = range(11)
+ CLUSTER, AVAILABLE, MAP_CHECK_TIMESTAMP) = range(13)
 
 (MATCH_PREFIX, MATCH_EXACT) = range(2)
 
@@ -105,6 +105,8 @@ _propnames = {
     'uuid': 8,
     'checksum': 9,
     'cluster': 10,
+    'available':11,
+    'map_check_timestamp':12
 }
 
 
@@ -167,6 +169,9 @@ def create_tables(engine):
     columns.append(Column('uuid', String(64), nullable=False, default=''))
     columns.append(Column('checksum', String(256), nullable=False, default=''))
     columns.append(Column('cluster', Integer, nullable=False, default=0))
+    columns.append(Column('available', Boolean, nullable=False, default=True))
+    columns.append(Column('map_check_timestamp', DECIMAL(precision=16,
+                                                         scale=6)))
     versions = Table('versions', metadata, *columns, mysql_engine='InnoDB')
     Index('idx_versions_node_mtime', versions.c.node, versions.c.mtime)
     Index('idx_versions_node_uuid', versions.c.uuid)
@@ -301,7 +306,7 @@ class Node(DBWorker):
         """Return the properties of all versions at node.
            If keys is empty, return all properties in the order
            (serial, node, hash, size, type, source, mtime, muser, uuid,
-            checksum, cluster).
+            checksum, cluster, available, map_check_timestamp).
         """
 
         s = select([self.versions.c.serial,
@@ -314,7 +319,10 @@ class Node(DBWorker):
                     self.versions.c.muser,
                     self.versions.c.uuid,
                     self.versions.c.checksum,
-                    self.versions.c.cluster], self.versions.c.node == node)
+                    self.versions.c.cluster,
+                    self.versions.c.available,
+                    self.versions.c.map_check_timestamp],
+                   self.versions.c.node == node)
         s = s.order_by(self.versions.c.serial)
         r = self.conn.execute(s)
         rows = r.fetchall()
@@ -777,7 +785,8 @@ class Node(DBWorker):
 
     def version_create(self, node, hash, size, type, source, muser, uuid,
                        checksum, cluster=0,
-                       update_statistics_ancestors_depth=None):
+                       update_statistics_ancestors_depth=None,
+                       available=True):
         """Create a new version from the given properties.
            Return the (serial, mtime) of the new version.
         """
@@ -786,7 +795,7 @@ class Node(DBWorker):
         s = self.versions.insert().values(
             node=node, hash=hash, size=size, type=type, source=source,
             mtime=mtime, muser=muser, uuid=uuid, checksum=checksum,
-            cluster=cluster)
+            cluster=cluster, available=available)
         serial = self.conn.execute(s).inserted_primary_key[0]
         self.statistics_update_ancestors(node, 1, size, mtime, cluster,
                                          update_statistics_ancestors_depth)
@@ -799,7 +808,7 @@ class Node(DBWorker):
         """Lookup the current version of the given node.
            Return a list with its properties:
            (serial, node, hash, size, type, source, mtime,
-            muser, uuid, checksum, cluster)
+            muser, uuid, checksum, cluster, available, map_check_timestamp)
            or None if the current version is not found in the given cluster.
         """
 
@@ -810,7 +819,8 @@ class Node(DBWorker):
             s = select([v.c.serial, v.c.node, v.c.hash,
                         v.c.size, v.c.type, v.c.source,
                         v.c.mtime, v.c.muser, v.c.uuid,
-                        v.c.checksum, v.c.cluster])
+                        v.c.checksum, v.c.cluster,
+                        v.c.available, v.c.map_check_timestamp])
         if before != inf:
             c = select([func.max(self.versions.c.serial)],
                        self.versions.c.node == node)
@@ -832,7 +842,7 @@ class Node(DBWorker):
         """Lookup the current versions of the given nodes.
            Return a list with their properties:
            (serial, node, hash, size, type, source, mtime, muser, uuid,
-            checksum, cluster).
+            checksum, cluster, available, map_check_timestamp).
         """
         if not nodes:
             return ()
@@ -844,7 +854,8 @@ class Node(DBWorker):
             s = select([v.c.serial, v.c.node, v.c.hash,
                         v.c.size, v.c.type, v.c.source,
                         v.c.mtime, v.c.muser, v.c.uuid,
-                        v.c.checksum, v.c.cluster])
+                        v.c.checksum, v.c.cluster,
+                        v.c.available, v.c.map_check_timestamp])
         if before != inf:
             c = select([func.max(self.versions.c.serial)],
                        self.versions.c.node.in_(nodes))
@@ -871,14 +882,16 @@ class Node(DBWorker):
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
            (serial, node, hash, size, type, source, mtime, muser, uuid,
-            checksum, cluster).
+            checksum, cluster, available, map_check_timestamp).
         """
 
         v = self.versions.alias()
         s = select([v.c.serial, v.c.node, v.c.hash,
                     v.c.size, v.c.type, v.c.source,
                     v.c.mtime, v.c.muser, v.c.uuid,
-                    v.c.checksum, v.c.cluster], v.c.serial == serial)
+                    v.c.checksum, v.c.cluster,
+                    v.c.available, v.c.map_check_timestamp],
+                   v.c.serial == serial)
         if node is not None:
             s = s.where(v.c.node == node)
         rp = self.conn.execute(s)

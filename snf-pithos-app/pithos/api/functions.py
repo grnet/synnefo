@@ -957,6 +957,8 @@ def _object_read(request, v_account, v_container, v_object):
             raise faults.ItemNotFound('Object does not exist')
         except VersionNotExists:
             raise faults.ItemNotFound('Version does not exist')
+        except IllegalOperationError, e:
+            raise faults.Forbidden(str(e))
     else:
         try:
             s, h = request.backend.get_object_hashmap(
@@ -970,6 +972,8 @@ def _object_read(request, v_account, v_container, v_object):
             raise faults.ItemNotFound('Object does not exist')
         except VersionNotExists:
             raise faults.ItemNotFound('Version does not exist')
+        except IllegalOperationError, e:
+            raise faults.Forbidden(str(e))
 
     # Reply with the hashmap.
     if hashmap_reply:
@@ -1386,6 +1390,8 @@ def object_update(request, v_account, v_container, v_object):
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:
         raise faults.ItemNotFound('Object does not exist')
+    except IllegalOperationError, e:
+        raise faults.Forbidden(str(e))
 
     offset, length, total = ranges
     if offset is None:
@@ -1411,6 +1417,8 @@ def object_update(request, v_account, v_container, v_object):
             raise faults.Forbidden('Not allowed')
         except ItemNotExists:
             raise faults.ItemNotFound('Source object does not exist')
+        except IllegalOperationError, e:
+            raise faults.Forbidden(str(e))
 
         if length is None:
             length = src_size

@@ -35,6 +35,7 @@ from hashlib import new as newhasher
 from binascii import hexlify
 import os
 import re
+import ConfigParser
 
 from context_archipelago import ArchipelagoObject, file_sync_read_chunks
 from archipelago.common import (
@@ -62,9 +63,9 @@ class ArchipelagoBlocker(object):
 
     def __init__(self, **params):
         cfg = {}
-        bcfg = open(glue.WorkerGlue.ArchipelagoConfFile).read()
-        cfg['blockerb'] = re.search('\'blockerb_port\'\s*:\s*\d+',
-                                    bcfg).group(0).split(':')[1]
+        bcfg = ConfigParser.ConfigParser()
+        bcfg.readfp(open(glue.WorkerGlue.ArchipelagoConfFile))
+        cfg['blockerb'] = bcfg.getint('mapperd','blockerb_port')
         blocksize = params['blocksize']
         hashtype = params['hashtype']
         try:

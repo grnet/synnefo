@@ -35,6 +35,7 @@ from binascii import hexlify
 import os
 import re
 import ctypes
+import ConfigParser
 import logging
 
 from context_archipelago import ArchipelagoObject
@@ -66,11 +67,10 @@ class ArchipelagoMapper(object):
         self.params = params
         self.namelen = params['namelen']
         cfg = {}
-        bcfg = open(glue.WorkerGlue.ArchipelagoConfFile).read()
-        cfg['blockerm'] = re.search('\'blockerm_port\'\s*:\s*\d+',
-                                    bcfg).group(0).split(':')[1]
-        cfg['mapperd'] = re.search('\'mapper_port\'\s*:\s*\d+',
-                                   bcfg).group(0).split(':')[1]
+        bcfg = ConfigParser.ConfigParser()
+        bcfg.readfp(open(glue.WorkerGlue.ArchipelagoConfFile))
+        cfg['blockerm'] = bcfg.getint('mapperd','blockerm_port')
+        cfg['mapperd'] = bcfg.getint('vlmcd','mapper_port')
         self.ioctx_pool = glue.WorkerGlue().ioctx_pool
         self.dst_port = int(cfg['blockerm'])
         self.mapperd_port = int(cfg['mapperd'])

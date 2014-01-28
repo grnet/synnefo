@@ -33,7 +33,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import re
+import ConfigParser
 
 
 class WorkerGlue(object):
@@ -56,11 +56,12 @@ class WorkerGlue(object):
         ARCHIPELAGO_SEGMENT_TYPE = 'segdev'
         ARCHIPELAGO_SEGMENT_NAME = 'xsegbd'
         cfg = {}
-        bcfg = open(ARCHIPELAGO_CONF_FILE).read()
-        cfg['SEGMENT_PORTS'] = re.search('SEGMENT_PORTS\s*=\s*\d+',
-                                         bcfg).group(0).split('=')[1]
-        cfg['SEGMENT_SIZE'] = re.search('SEGMENT_SIZE\s*=\s*\d+',
-                                        bcfg).group(0).split('=')[1]
+        bcfg = ConfigParser.ConfigParser()
+        bcfg.readfp(open(ARCHIPELAGO_CONF_FILE))
+        cfg['SEGMENT_PORTS'] = bcfg.getint('XSEG', 'SEGMENT_PORTS')
+        cfg['SEGMENT_DYNPORTS'] = bcfg.getint('XSEG', 'SEGMENT_DYNPORTS')
+        cfg['SEGMENT_SIZE'] = bcfg.getint('XSEG', 'SEGMENT_SIZE')
+        ARCHIPELAGO_SEGMENT_DYNPORTS = int(cfg['SEGMENT_DYNPORTS'])
         ARCHIPELAGO_SEGMENT_PORTS = int(cfg['SEGMENT_PORTS'])
         ARCHIPELAGO_SEGMENT_SIZE = int(cfg['SEGMENT_SIZE'])
         ARCHIPELAGO_SEGMENT_ALIGNMENT = 12
@@ -71,6 +72,7 @@ class WorkerGlue(object):
                 super(XsegPool, self).__init__(size=pool_size)
                 self.segment = Segment(ARCHIPELAGO_SEGMENT_TYPE,
                                        ARCHIPELAGO_SEGMENT_NAME,
+                                       ARCHIPELAGO_SEGMENT_DYNPORTS,
                                        ARCHIPELAGO_SEGMENT_PORTS,
                                        ARCHIPELAGO_SEGMENT_SIZE,
                                        ARCHIPELAGO_SEGMENT_ALIGNMENT)

@@ -638,7 +638,7 @@ def new_membership(project, user, actor=None, reason=None, enroll=False):
     state = (ProjectMembership.ACCEPTED if enroll
              else ProjectMembership.REQUESTED)
     m = ProjectMembership.objects.create(
-        project=project, person=user, state=state)
+        project=project, person=user, state=state, initialized=enroll)
     m._log_create(None, state, actor=actor, reason=reason)
     return m
 

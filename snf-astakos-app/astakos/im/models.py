@@ -1854,6 +1854,12 @@ class ProjectMembershipManager(models.Manager):
         q = self.model.Q_ACTUALLY_ACCEPTED
         return self.filter(q)
 
+    def initialized(self, projects=None):
+        q = Q(initialized=True)
+        if projects is not None:
+            q &= Q(project__in=projects)
+        return self.filter(q)
+
     def requested(self):
         return self.filter(state=ProjectMembership.REQUESTED)
 
@@ -1912,6 +1918,7 @@ class ProjectMembership(models.Model):
     state = models.IntegerField(default=REQUESTED,
                                 db_index=True)
 
+    initialized = models.BooleanField(default=False)
     objects = ProjectMembershipManager()
 
     # Compiled queries
@@ -1973,6 +1980,10 @@ class ProjectMembership(models.Model):
         self.state = to_state
         self.save()
 
+    def is_active(self):
+        return (self.project.state == Project.NORMAL and
+                self.state in self.ACTUALLY_ACCEPTED)
+
     ACTION_CHECKS = {
         "join": lambda m: m.state not in m.ASSOCIATED_STATES,
         "accept": lambda m: m.state == m.REQUESTED,
@@ -2014,6 +2025,8 @@ class ProjectMembership(models.Model):
             s = self.ACTION_STATES[action]
         except KeyError:
             raise ValueError("No such action '%s'" % action)
+        if action == "accept":
+            self.initialized = True
         return self.set_state(s, actor=actor, reason=reason)
 
 

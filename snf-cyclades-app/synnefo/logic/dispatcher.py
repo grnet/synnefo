@@ -121,6 +121,8 @@ class Dispatcher:
                     self.client.reconnect()
             except SystemExit:
                 break
+            except KeyboardInterrupt:
+                break
             except Exception as e:
                 log.exception("Caught unexpected exception: %s", e)
 

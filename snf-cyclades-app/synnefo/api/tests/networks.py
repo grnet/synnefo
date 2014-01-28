@@ -78,7 +78,7 @@ class NetworkTest(BaseAPITest):
         }
         response = self.post(NETWORKS_URL, params=json.dumps(request))
         code = response.status_code
-        self.assertBarRequest(response)
+        self.assertBadRequest(response)
 
     def test_create(self):
         request = {

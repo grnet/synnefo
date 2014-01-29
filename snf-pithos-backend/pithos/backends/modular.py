@@ -967,6 +967,14 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version)
         if version is None:
+            if not props[self.AVAILABLE]:
+                try:
+                    self._update_available(props)
+                except (NotAllowedError, IllegalOperationError):
+                    pass  # just update the database
+                finally:
+                    # get updated properties
+                    props = self._get_version(node, version)
             modified = props[self.MTIME]
         else:
             try:
@@ -1188,7 +1196,8 @@ class ModularBackend(BaseBackend):
         pre_version_id, dest_version_id = self._put_version_duplicate(
             user, node, src_node=src_node, size=size, type=type, hash=hash,
             checksum=checksum, is_copy=is_copy,
-            update_statistics_ancestors_depth=1, available=available)
+            update_statistics_ancestors_depth=1,
+            available=available, keep_available=False)
 
         # Handle meta.
         if src_version_id is None:
@@ -1740,7 +1749,7 @@ class ModularBackend(BaseBackend):
                                type=None, hash=None, checksum=None,
                                cluster=CLUSTER_NORMAL, is_copy=False,
                                update_statistics_ancestors_depth=None,
-                               available=True):
+                               available=True, keep_available=True):
         """Create a new version of the node."""
 
         props = self.node.version_lookup(
@@ -1751,12 +1760,20 @@ class ModularBackend(BaseBackend):
             src_size = props[self.SIZE]
             src_type = props[self.TYPE]
             src_checksum = props[self.CHECKSUM]
+            if keep_available:
+                src_available = props[self.AVAILABLE]
+                src_map_check_timestamp = props[self.MAP_CHECK_TIMESTAMP]
+            else:
+                src_available = available
+                src_map_check_timestamp = None
         else:
             src_version_id = None
             src_hash = None
             src_size = 0
             src_type = ''
             src_checksum = ''
+            src_available = available
+            src_map_check_timestamp = None
         if size is None:  # Set metadata.
             hash = src_hash  # This way hash can be set to None
                              # (account or container).
@@ -1782,7 +1799,8 @@ class ModularBackend(BaseBackend):
         dest_version_id, mtime = self.node.version_create(
             node, hash, size, type, src_version_id, user, uuid, checksum,
             cluster, update_statistics_ancestors_depth,
-            available=available)
+            available=src_available,
+            map_check_timestamp=src_map_check_timestamp)
 
         self.node.attribute_unset_is_latest(node, dest_version_id)
 

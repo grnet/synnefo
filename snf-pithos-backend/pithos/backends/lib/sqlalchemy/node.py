@@ -786,7 +786,7 @@ class Node(DBWorker):
     def version_create(self, node, hash, size, type, source, muser, uuid,
                        checksum, cluster=0,
                        update_statistics_ancestors_depth=None,
-                       available=True):
+                       available=True, map_check_timestamp=None):
         """Create a new version from the given properties.
            Return the (serial, mtime) of the new version.
         """
@@ -795,7 +795,8 @@ class Node(DBWorker):
         s = self.versions.insert().values(
             node=node, hash=hash, size=size, type=type, source=source,
             mtime=mtime, muser=muser, uuid=uuid, checksum=checksum,
-            cluster=cluster, available=available)
+            cluster=cluster, available=available,
+            map_check_timestamp=map_check_timestamp)
         serial = self.conn.execute(s).inserted_primary_key[0]
         self.statistics_update_ancestors(node, 1, size, mtime, cluster,
                                          update_statistics_ancestors_depth)

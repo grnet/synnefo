@@ -243,7 +243,7 @@ def put_object_headers(response, meta, restricted=False, token=None,
     response.override_serialization = True
     response['Content-Type'] = meta.get('type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
-    response['Map-Exists'] = meta['available']
+    response['Available'] = meta['available']
     response['Map-Checked-At'] = (
         http_date(int(meta['map_check_timestamp'])) if
         meta['map_check_timestamp'] is not None else '')

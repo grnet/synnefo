@@ -1245,6 +1245,7 @@ def setup_cyclades():
         "domain": env.env.domain,
         "CYCLADES_SERVICE_TOKEN": service_token,
         'STATS': env.env.stats.fqdn,
+        'CYCLADES_NODE_IP': env.env.cyclades.ip,
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
     try_put(custom, tmpl, mode=0644)

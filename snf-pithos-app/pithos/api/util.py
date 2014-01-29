@@ -244,9 +244,6 @@ def put_object_headers(response, meta, restricted=False, token=None,
     response['Content-Type'] = meta.get('type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
     response['Available'] = meta['available']
-    response['Map-Checked-At'] = (
-        http_date(int(meta['map_check_timestamp'])) if
-        meta['map_check_timestamp'] is not None else '')
     if not restricted:
         response['X-Object-Hash'] = meta['hash']
         response['X-Object-UUID'] = meta['uuid']

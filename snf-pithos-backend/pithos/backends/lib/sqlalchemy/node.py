@@ -696,7 +696,9 @@ class Node(DBWorker):
                     self.versions.c.muser,
                     self.versions.c.uuid,
                     self.versions.c.checksum,
-                    self.versions.c.cluster])
+                    self.versions.c.cluster,
+                    self.versions.c.available,
+                    self.versions.c.map_check_timestamp])
         if before != inf:
             filtered = select([func.max(self.versions.c.serial)],
                               self.versions.c.node == node)
@@ -1191,7 +1193,9 @@ class Node(DBWorker):
                        self.versions.c.mtime, self.versions.c.muser,
                        self.versions.c.uuid,
                        self.versions.c.checksum,
-                       self.versions.c.cluster],
+                       self.versions.c.cluster,
+                       self.versions.c.available,
+                       self.versions.c.map_check_timestamp],
                        from_obj=[inner_join]).distinct()
 
         s = s.where(self.versions.c.cluster != except_cluster)

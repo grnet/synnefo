@@ -934,7 +934,9 @@ class ModularBackend(BaseBackend):
                     'modified': p[self.MTIME + 1] if until is None else None,
                     'modified_by': p[self.MUSER + 1],
                     'uuid': p[self.UUID + 1],
-                    'checksum': p[self.CHECKSUM + 1]})
+                    'checksum': p[self.CHECKSUM + 1],
+                    'available': p[self.AVAILABLE + 1],
+                    'map_check_timestamp': p[self.MAP_CHECK_TIMESTAMP + 1]})
         return objects
 
     @debug_method

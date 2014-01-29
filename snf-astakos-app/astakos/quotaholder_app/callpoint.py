@@ -75,6 +75,13 @@ def get_quota(holders=None, sources=None, resources=None, flt=None):
     return quotas
 
 
+def delete_quota(keys):
+    for holder, source, resource in keys:
+        Holding.objects.filter(holder=holder,
+                               source=source,
+                               resource=resource).delete()
+
+
 def _get_holdings_for_update(holding_keys, resource=None, delete=False):
     flt = Q(resource=resource) if resource is not None else Q()
     holders = set(holder for (holder, source, resource) in holding_keys)

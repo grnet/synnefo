@@ -320,31 +320,6 @@ def qh_sync_membership(membership):
     set_quota(quota)
 
 
-def compute_diff_quota(local, registered):
-    diff = {}
-    for holder, h_quota in local.iteritems():
-        for source, value in h_quota.iteritems():
-            reg_h_quota = registered.get(holder, {})
-            reg_value = reg_h_quota.get(source, {})
-            if value != reg_value:
-                set_path(diff, [holder, source], value, createpath=True)
-    return diff
-
-
-def qh_sync_projects_diffs(projects, sync=True):
-    local_project, local_user = astakos_project_quotas(projects)
-    registered_project, registered_user = get_projects_quota_limits(projects)
-    diff_quotas = compute_diff_quota(local_project, registered_project)
-    diff_quotas.update(compute_diff_quota(local_user, registered_user))
-
-    if sync:
-        set_quota(diff_quotas)
-
-    all_registered = registered_project
-    all_registered.update(registered_user)
-    return all_registered, diff_quotas
-
-
 def pick_limit_scheme(project, resource):
     return resource.uplimit if project.is_base else resource.project_default
 

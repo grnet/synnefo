@@ -42,9 +42,10 @@ from django.http import HttpResponse
 
 from snf_django.lib import api
 from snf_django.lib.api import faults
+from synnefo.lib.text import uenc
 from synnefo.plankton.utils import image_backend
-from synnefo.plankton.backend import split_url
-from synnefo.util.text import uenc
+from synnefo.plankton.backend import split_url, InvalidLocation
+
 
 FILTERS = ('name', 'container_format', 'disk_format', 'status', 'size_min',
            'size_max')
@@ -139,18 +140,21 @@ def add_image(request):
     params = _get_image_headers(request)
     log.debug('add_image %s', params)
 
-    assert 'name' in params
-    assert set(params.keys()).issubset(set(ADD_FIELDS))
+    if not set(params.keys()).issubset(set(ADD_FIELDS)):
+        raise faults.BadRequest("Invalid parameters")
 
     name = params.pop('name')
-
-    if len(uenc(name)) < 1:
+    if name is None:
+        raise faults.BadRequest("Image 'name' parameter is required")
+    elif len(uenc(name)) == 0:
         raise faults.BadRequest("Invalid image name")
-
     location = params.pop('location', None)
+    if location is None:
+        raise faults.BadRequest("'location' parameter is required")
+
     try:
         split_url(location)
-    except AssertionError:
+    except InvalidLocation:
         raise faults.BadRequest("Invalid location '%s'" % location)
 
     if location:
@@ -284,8 +288,10 @@ def list_images(request, detail=False):
     params.setdefault('sort_key', 'created_at')
     params.setdefault('sort_dir', 'desc')
 
-    assert params['sort_key'] in SORT_KEY_OPTIONS
-    assert params['sort_dir'] in SORT_DIR_OPTIONS
+    if not params['sort_key'] in SORT_KEY_OPTIONS:
+        raise faults.BadRequest("Invalid 'sort_key'")
+    if not params['sort_dir'] in SORT_DIR_OPTIONS:
+        raise faults.BadRequest("Invalid 'sort_dir'")
 
     if 'size_max' in filters:
         try:
@@ -367,7 +373,8 @@ def update_image(request, image_id):
     meta = _get_image_headers(request)
     log.debug('update_image %s', meta)
 
-    assert set(meta.keys()).issubset(set(UPDATE_FIELDS))
+    if not set(meta.keys()).issubset(set(UPDATE_FIELDS)):
+        raise faults.BadRequest("Invalid metadata")
 
     with image_backend(request.user_uniq) as backend:
         image = backend.update_metadata(image_id, meta)

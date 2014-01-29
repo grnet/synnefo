@@ -63,6 +63,8 @@ from operator import itemgetter
 from django.conf import settings
 from django.utils import importlib
 from pithos.backends.base import NotAllowedError, VersionNotExists
+from synnefo.util.text import uenc
+
 
 logger = logging.getLogger(__name__)
 
@@ -100,10 +102,14 @@ def create_url(account, container, name):
 
 def split_url(url):
     """Returns (accout, container, object) from a url string"""
-    t = url.split('/', 4)
-    assert t[0] == "pithos:", "Invalid url"
-    assert len(t) == 5, "Invalid url"
-    return t[2:5]
+    try:
+        assert(isinstance(url, basestring))
+        t = url.split('/', 4)
+        assert t[0] == "pithos:", "Invalid url"
+        assert len(t) == 5, "Invalid url"
+        return t[2:5]
+    except AssertionError:
+        raise InvalidLocation("Invalid location '%s" % url)
 
 
 def format_timestamp(t):
@@ -205,7 +211,8 @@ class ImageBackend(object):
         """Update object's metadata."""
         account, container, name = split_url(image_url)
 
-        prefixed = [(PLANKTON_PREFIX + k, v) for k, v in meta.items()
+        prefixed = [(PLANKTON_PREFIX + uenc(k), uenc(v))
+                    for k, v in meta.items()
                     if k in PLANKTON_META or k.startswith(PROPERTY_PREFIX)]
         prefixed = dict(prefixed)
 
@@ -481,6 +488,10 @@ class Forbidden(ImageBackendError):
 
 
 class InvalidMetadata(ImageBackendError):
+    pass
+
+
+class InvalidLocation(ImageBackendError):
     pass
 
 

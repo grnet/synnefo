@@ -42,7 +42,7 @@ from django.http import HttpResponse
 
 from snf_django.lib import api
 from snf_django.lib.api import faults
-from synnefo.lib.text import uenc
+from synnefo.util.text import uenc
 from synnefo.plankton.utils import image_backend
 from synnefo.plankton.backend import split_url, InvalidLocation
 

@@ -71,7 +71,7 @@ PLANKTON_DOMAIN = 'plankton'
 PLANKTON_PREFIX = 'plankton:'
 PROPERTY_PREFIX = 'property:'
 
-PLANKTON_META = ('container_format', 'disk_format', 'name', 'properties',
+PLANKTON_META = ('container_format', 'disk_format', 'name',
                  'status', 'created_at')
 
 from pithos.backends.util import PithosBackendPool
@@ -202,12 +202,9 @@ class ImageBackend(object):
         """Update object's metadata."""
         account, container, name = split_url(image_url)
 
-        prefixed = {}
-        for key, val in meta.items():
-            if key in PLANKTON_META:
-                if key == "properties":
-                    val = json.dumps(val)
-                prefixed[PLANKTON_PREFIX + key] = val
+        prefixed = [(PLANKTON_PREFIX + k, v) for k, v in meta.items()
+                    if k in PLANKTON_META or k.startswith(PROPERTY_PREFIX)]
+        prefixed = dict(prefixed)
 
         self.backend.update_object_meta(self.user, account, container, name,
                                         PLANKTON_DOMAIN, prefixed, replace)
@@ -331,6 +328,7 @@ class ImageBackend(object):
         image_url = self._get_image_url(image_uuid)
         self._get_image(image_url)  # Assert that it is an image
 
+        # 'is_public' metadata is translated in proper file permissions
         is_public = metadata.pop("is_public", None)
         if is_public is not None:
             permissions = self._get_permissions(image_url)
@@ -341,8 +339,12 @@ class ImageBackend(object):
                 read.discard("*")
             permissions["read"] = list(read)
             self._update_permissions(image_url, permissions)
-        meta = {}
-        meta["properties"] = metadata.pop("properties", {})
+
+        # Extract the properties dictionary from metadata, and store each
+        # property as a separeted, prefixed metadata
+        properties = metadata.pop("properties", {})
+        meta = dict([(PROPERTY_PREFIX + k, v) for k, v in properties.items()])
+        # Also add the following metadata
         meta.update(**metadata)
 
         self._update_meta(image_url, meta)
@@ -390,12 +392,14 @@ class ImageBackend(object):
         else:
             permissions = {'read': [self.user]}
 
-        # Update rest metadata
-        meta = {}
-        meta['properties'] = metadata.pop('properties', {})
+        # Extract the properties dictionary from metadata, and store each
+        # property as a separeted, prefixed metadata
+        properties = metadata.pop("properties", {})
+        meta = dict([(PROPERTY_PREFIX + k, v) for k, v in properties.items()])
         # Add creation(register) timestamp as a metadata, to avoid extra
         # queries when retrieving the list of images.
         meta['created_at'] = time()
+        # Update rest metadata
         meta.update(name=name, status='available', **metadata)
 
         # Do the actualy update in the Pithos backend
@@ -490,6 +494,7 @@ def image_to_dict(image_url, meta, permissions):
     # Permissions
     image["is_public"] = "*" in permissions.get('read', [])
 
+    properties = {}
     for key, val in meta.items():
         # Get plankton properties
         if key.startswith(PLANKTON_PREFIX):
@@ -497,13 +502,13 @@ def image_to_dict(image_url, meta, permissions):
             key = key.replace(PLANKTON_PREFIX, "")
             # Keep only those in plankton meta
             if key in PLANKTON_META:
-                if key == "properties":
-                    image[key] = json.loads(val)
-                elif key == "created_at":
+                if key != "created_at":
                     # created timestamp is return in 'created_at' field
-                    pass
-                else:
                     image[key] = val
+            elif key.startswith(PROPERTY_PREFIX):
+                key = key.replace(PROPERTY_PREFIX, "")
+                properties[key] = val
+    image["properties"] = properties
 
     return image
 

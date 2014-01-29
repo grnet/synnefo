@@ -43,7 +43,7 @@
         },
 
         is_snapshot: function() {
-          return this.get('checksum').indexOf('arch') === 0;
+          return this.get('is_snapshot');
         },
 
         display_size: function() {

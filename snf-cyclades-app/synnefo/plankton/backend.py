@@ -74,6 +74,9 @@ PROPERTY_PREFIX = 'property:'
 PLANKTON_META = ('container_format', 'disk_format', 'name',
                  'status', 'created_at')
 
+MAX_META_KEY_LENGTH = 128 - len(PLANKTON_DOMAIN) - len(PROPERTY_PREFIX)
+MAX_META_VALUE_LENGTH = 256
+
 from pithos.backends.util import PithosBackendPool
 _pithos_backend_pool = \
     PithosBackendPool(
@@ -205,6 +208,14 @@ class ImageBackend(object):
         prefixed = [(PLANKTON_PREFIX + k, v) for k, v in meta.items()
                     if k in PLANKTON_META or k.startswith(PROPERTY_PREFIX)]
         prefixed = dict(prefixed)
+
+        for k, v in prefixed.items():
+            if len(k) > 128:
+                raise InvalidMetadata('Metadata keys should be less than %s '
+                                      'characters' % MAX_META_KEY_LENGTH)
+            if len(v) > 256:
+                raise InvalidMetadata('Metadata values should be less than %s '
+                                      'characters.' % MAX_META_VALUE_LENGTH)
 
         self.backend.update_object_meta(self.user, account, container, name,
                                         PLANKTON_DOMAIN, prefixed, replace)
@@ -466,6 +477,10 @@ class ImageNotFound(ImageBackendError):
 
 
 class Forbidden(ImageBackendError):
+    pass
+
+
+class InvalidMetadata(ImageBackendError):
     pass
 
 

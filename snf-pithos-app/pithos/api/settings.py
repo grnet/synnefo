@@ -213,5 +213,4 @@ BACKEND_XSEG_POOL_SIZE = getattr(settings, 'PITHOS_BACKEND_XSEG_POOL_SIZE', 8)
 
 # The maximum interval (in seconds) for consequent backend object map checks
 BACKEND_MAP_CHECK_INTERVAL = getattr(settings,
-                                     'PITHOS_BACKEND_MAP_CHECK_INTERVAL',
-                                     300)
+                                     'PITHOS_BACKEND_MAP_CHECK_INTERVAL', 5)

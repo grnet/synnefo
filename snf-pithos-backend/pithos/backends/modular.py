@@ -134,7 +134,7 @@ ULTIMATE_ANSWER = 42
 
 DEFAULT_DISKSPACE_RESOURCE = 'pithos.diskspace'
 
-DEFAULT_MAP_CHECK_INTERVAL = 300  # set to 300 secs
+DEFAULT_MAP_CHECK_INTERVAL = 5  # set to 5 secs
 
 logger = logging.getLogger(__name__)
 

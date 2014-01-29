@@ -949,6 +949,7 @@ snf-manage network-create --subnet6={0} \
             "CYCLADES_SERVICE_TOKEN": self.env.service_token,
             "STATS": self.env.env.stats.fqdn,
             "SYNNEFO_VNC_PASSWD": self.env.env.synnefo_vnc_passwd,
+            "CYCLADES_NODE_IP": self.env.env.cyclades.ip
             }
         return [
             ("/etc/synnefo/cyclades.conf", r1, {})

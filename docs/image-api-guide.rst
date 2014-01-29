@@ -285,7 +285,7 @@ X-Image-Meta-Property-*       Property prefix           ✔         ✔
 
 **X-Image-Meta-Container-Format** values are listed at :ref:`container-format-ref`
 
-**X-Image-Meta-Size** is optional, but should much the actual image file size.
+**X-Image-Meta-Size** is optional, but should match the actual image file size.
 
 **X-Image-Meta-Is-Public** values are true or false (case insensitive)
 
@@ -377,7 +377,7 @@ X-Image-Meta-Property-*       Add / modify properties
 **X-Image-Meta-Is-Public** values are true or false (case insensitive)
 
 **X-Image-Meta-Property-*** is used as a prefix to update image property
-values, or set some extra proeperties. If a registered image already contains
+values, or set some extra properties. If a registered image already contains
 some custom properties that are not addressed in the update request, these
 properties will remain untouched. For example::
 

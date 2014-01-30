@@ -121,6 +121,7 @@ def image_to_dict(image, detail=True):
         d['progress'] = 100 if status == 'ACTIVE' else 0
         d['user_id'] = image['owner']
         d['tenant_id'] = image['owner']
+        d['public'] = image["is_public"]
         d['links'] = util.image_to_links(image["id"])
         if image["properties"]:
             d['metadata'] = image['properties']

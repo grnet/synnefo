@@ -225,7 +225,8 @@ def get_object_headers(request):
     return content_type, meta, get_sharing(request), get_public(request)
 
 
-def put_object_headers(response, meta, restricted=False, token=None):
+def put_object_headers(response, meta, restricted=False, token=None,
+                       disposition_type=None):
     response['ETag'] = meta['hash'] if not UPDATE_MD5 else meta['checksum']
     response['Content-Length'] = meta['bytes']
     response.override_serialization = True
@@ -255,6 +256,11 @@ def put_object_headers(response, meta, restricted=False, token=None):
         for k in ('Content-Encoding', 'Content-Disposition'):
             if k in meta:
                 response[k] = smart_str(meta[k], strings_only=True)
+    disposition_type = disposition_type if disposition_type in \
+        ('inline', 'attachment') else None
+    if disposition_type is not None:
+        response['Content-Disposition'] = '%s; filename=%s' % (
+            disposition_type, meta['name'])
 
 
 def update_manifest_meta(request, v_account, meta):
@@ -945,7 +951,8 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
     response = HttpResponse(wrapper, status=ret)
     put_object_headers(
         response, meta, restricted=public,
-        token=getattr(request, 'token', None))
+        token=getattr(request, 'token', None),
+        disposition_type=request.GET.get('disposition-type'))
     if ret == 206:
         if len(ranges) == 1:
             offset, length = ranges[0]

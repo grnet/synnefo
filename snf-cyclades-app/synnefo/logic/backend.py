@@ -89,12 +89,11 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
         # failed server
         serial = vm.serial
         if job_status == rapi.JOB_STATUS_SUCCESS:
-            quotas.accept_serial(serial)
+            quotas.accept_resource_serial(vm)
         elif job_status in [rapi.JOB_STATUS_ERROR, rapi.JOB_STATUS_CANCELED]:
             log.debug("Job %s failed. Rejecting related serial %s", job_id,
                       serial)
-            quotas.reject_serial(serial)
-        vm.serial = None
+            quotas.reject_resource_serial(vm)
     elif job_status == rapi.JOB_STATUS_SUCCESS:
         commission_info = quotas.get_commission_info(resource=vm,
                                                      action=action,
@@ -103,17 +102,18 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
             # Commission for this change has not been issued, or the issued
             # commission was unaware of the current change. Reject all previous
             # commissions and create a new one in forced mode!
-            log.debug("Expected job was %s. Processing job %s.",
-                      vm.task_job_id, job_id)
+            log.debug("Expected job was %s. Processing job %s. "
+                      "Attached serial %s",
+                      vm.task_job_id, job_id, vm.serial)
             reason = ("client: dispatcher, resource: %s, ganeti_job: %s"
                       % (vm, job_id))
-            quotas.handle_resource_commission(vm, action,
-                                              action_fields=job_fields,
-                                              commission_name=reason,
-                                              force=True,
-                                              auto_accept=True)
-            log.debug("Issued new commission: %s", vm.serial)
-
+            serial = quotas.handle_resource_commission(
+                vm, action,
+                action_fields=job_fields,
+                commission_name=reason,
+                force=True,
+                auto_accept=True)
+            log.debug("Issued new commission: %s", serial)
     return vm
 
 

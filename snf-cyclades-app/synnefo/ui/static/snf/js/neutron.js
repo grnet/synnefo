@@ -284,7 +284,7 @@
         });
         this.set({available_floating_ips: this.available_floating_ips});
         this.set({name: attributes.name || 'Internet'});
-        models.Network.__super__.initialize.apply(this, attributes);
+        models.Network.__super__.initialize.call(this, attributes);
       }
     });
 

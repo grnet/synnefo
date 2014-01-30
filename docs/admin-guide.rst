@@ -705,12 +705,23 @@ command will create two flavors of `40G` disk size with `drbd` disk template,
 
   $ snf-manage flavor-create 2,4 4096 40 drbd
 
-To see the available flavors, run `snf-manage flavor-list` command. Finally,
-the administrator can delete a flavor by using `flavor-modify` command:
+To see the available flavors, run `snf-manage flavor-list` command. The
+administrator can delete a flavor by using `flavor-modify` command:
 
 .. code-block:: console
 
   $ snf-manage flavor-modify --deleted=True <flavor_id>
+
+Finally, the administrator can set if new servers can be created from a flavor
+or not, by setting the `allow_create` attribute:
+
+.. code-block:: console
+
+  $ snf-manage flavor-modify --allow-create=False <flavor_id>
+
+Flavors that are marked with `allow_create=False` cannot be used by users to
+create new servers. However, they can still be used to resize existing VMs.
+
 
 Images
 ~~~~~~
@@ -1307,6 +1318,10 @@ operation, until nothing is left to be done.
 To control load a timeout can also be set for shutting down VMs (using
 option ``--shutdown-timeout <sec>``). This may be needed to avoid
 expensive operations triggered by shutdown, such as Windows updates.
+
+The command outputs the list of applied actions and reports whether each
+action succeeded or not. Failure is reported if for any reason cyclades
+failed to process the job and submit it to the backend.
 
 Cyclades advanced operations
 ----------------------------

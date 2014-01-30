@@ -49,8 +49,8 @@ class Command(NoArgsCommand):
             fixed = fix_superusers()
             count = len(fixed)
             if count != 0:
-                self.stdout.write("Fixed %s superuser(s).\n" % count)
+                self.stderr.write("Fixed %s superuser(s).\n" % count)
             else:
-                self.stdout.write("No superuser needed a fix.\n")
+                self.stderr.write("No superuser needed a fix.\n")
         except BaseException, e:
             raise CommandError(e)

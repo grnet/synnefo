@@ -41,6 +41,8 @@ from snf_django.lib.astakos import UserCache
 
 import distutils
 
+USER_EMAIL_FIELD = "user.email"
+
 
 class SynnefoCommand(BaseCommand):
     option_list = BaseCommand.option_list + (
@@ -189,6 +191,12 @@ class ListCommand(SynnefoCommand):
 
         assert(self.object_class), "object_class variable must be declared"
 
+        # If an user field is declared, include the USER_EMAIL_FIELD in the
+        # available fields
+        if self.user_uuid_field is not None:
+            self.FIELDS[USER_EMAIL_FIELD] =\
+                ("_user_email", "The email of the owner")
+
         if options["list_fields"]:
             self.display_fields()
             return
@@ -203,6 +211,10 @@ class ListCommand(SynnefoCommand):
             fields = fields.split(",")
             self.validate_fields(fields)
             self.fields = options["fields"].split(",")
+
+        # --display-mails option
+        if options.get("display_mails"):
+            self.fields.append(USER_EMAIL_FIELD)
 
         # --filter-by option
         if options["filter_by"]:
@@ -252,21 +264,15 @@ class ListCommand(SynnefoCommand):
         order_key = self.order_by if self.order_by is not None else 'pk'
         objects = objects.order_by(order_key)
 
-        # --display-mails option
-        display_mails = options.get("display_mails")
-        if display_mails:
-            if 'user_mail' in self.object_class._meta.get_all_field_names():
+        if USER_EMAIL_FIELD in self.fields:
+            if '_user_email' in self.object_class._meta.get_all_field_names():
                 raise RuntimeError("%s has already a 'user_mail' attribute")
-
-            self.fields.append("user.email")
-            self.FIELDS["user.email"] =\
-                ("user_email", "The email of the owner.")
             uuids = [getattr(obj, self.user_uuid_field) for obj in objects]
             ucache = UserCache(self.astakos_auth_url, self.astakos_token)
             ucache.fetch_names(list(set(uuids)))
             for obj in objects:
                 uuid = getattr(obj, self.user_uuid_field)
-                obj.user_email = ucache.get_name(uuid)
+                obj._user_email = ucache.get_name(uuid)
 
         # Special handling of DB results
         objects = list(objects)

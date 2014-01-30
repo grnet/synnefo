@@ -73,7 +73,7 @@ class Command(BaseCommand):
         self.add_services(data)
 
     def add_services(self, data):
-        write = self.stdout.write
+        write = self.stderr.write
         output = []
         for name, service_dict in data.iteritems():
             try:
@@ -91,7 +91,7 @@ class Command(BaseCommand):
 
             try:
                 existed = add_service(component, name, service_type, endpoints,
-                                      out=self.stdout)
+                                      out=self.stderr)
             except RegisterException as e:
                 raise CommandError(e.message)
 

@@ -112,8 +112,10 @@ def create_network(request):
     req = api.utils.get_request_dict(request)
     log.info('create_network %s', req)
 
-    network_dict = api.utils.get_attribute(req, "network")
-    flavor = api.utils.get_attribute(network_dict, "type")
+    network_dict = api.utils.get_attribute(req, "network",
+                                           attr_type=dict)
+    flavor = api.utils.get_attribute(network_dict, "type",
+                                     attr_type=basestring)
 
     if flavor not in Network.FLAVORS.keys():
         raise api.faults.BadRequest("Invalid network type '%s'" % flavor)
@@ -121,7 +123,8 @@ def create_network(request):
         raise api.faults.Forbidden("Cannot create network of type '%s'." %
                                    flavor)
 
-    name = api.utils.get_attribute(network_dict, "name", required=False)
+    name = api.utils.get_attribute(network_dict, "name", attr_type=basestring,
+                                   required=False)
     if name is None:
         name = ""
 
@@ -144,8 +147,9 @@ def get_network_details(request, network_id):
 def update_network(request, network_id):
     info = api.utils.get_request_dict(request)
 
-    network = api.utils.get_attribute(info, "network", required=True)
-    new_name = api.utils.get_attribute(network, "name")
+    network = api.utils.get_attribute(info, "network", attr_type=dict,
+                                      required=True)
+    new_name = api.utils.get_attribute(network, "name", attr_type=basestring)
 
     network = util.get_network(network_id, request.user_uniq, for_update=True)
     if network.public:
@@ -187,6 +191,7 @@ def network_to_dict(network, detail=True):
         d['admin_state_up'] = True
         d['subnets'] = subnet_ids
         d['SNF:floating_ip_pool'] = network.floating_ip_pool
+        d['deleted'] = network.deleted
     return d
 
 

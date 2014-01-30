@@ -54,6 +54,13 @@ class Command(BaseCommand):
             choices=["True", "False"],
             default=None,
             help="Mark/unmark a flavor as deleted"),
+        make_option(
+            "--allow-create",
+            dest="allow_create",
+            metavar="True|False",
+            choices=["True", "False"],
+            default=None,
+            help="Set if users can create servers with this flavor"),
     )
 
     def handle(self, *args, **options):
@@ -63,10 +70,17 @@ class Command(BaseCommand):
         flavor = get_flavor(args[0], for_update=True)
 
         deleted = options['deleted']
+
         if deleted:
             deleted = parse_bool(deleted)
             log.info("Marking flavor %s as deleted=%s", flavor, deleted)
             flavor.deleted = deleted
             flavor.save()
-        else:
-            log.info("Nothing changed!")
+
+        allow_create = options['allow_create']
+        if allow_create:
+            allow_create = parse_bool(allow_create)
+            log.info("Marking flavor %s as allow_create=%s", flavor,
+                     allow_create)
+            flavor.allow_create = allow_create
+            flavor.save()

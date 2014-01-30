@@ -884,7 +884,7 @@ def setup_pithos():
     #TOFIX: the previous command lets pithos-backend create blocks and maps
     #       with root owner
     try_run("chown -R www-data:www-data %s/data " % env.env.pithos_dir)
-    #try_run("pithos-migrate stamp 4c8ccdc58192")
+    try_run("pithos-migrate stamp head")
     #try_run("pithos-migrate upgrade head")
 
 
@@ -1245,6 +1245,7 @@ def setup_cyclades():
         "domain": env.env.domain,
         "CYCLADES_SERVICE_TOKEN": service_token,
         'STATS': env.env.stats.fqdn,
+        'CYCLADES_NODE_IP': env.env.cyclades.ip,
         }
     custom = customize_settings_from_tmpl(tmpl, replace)
     try_put(custom, tmpl, mode=0644)

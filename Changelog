@@ -93,6 +93,9 @@ Astakos
 * Automatically fill third party signup form fields when available by the
   the third party provider.
 
+* Omit validation issues for non-required metadata values received from the 
+  third party authentication provider.
+
 * Management commands:
 
   * Introduced new commands:
@@ -204,6 +207,8 @@ Cyclades
 * Remove 'DEFAULT_ROUTING_TABLE' setting. If a link for an IP_LESS_ROUTED
   network is not specified, the link will be uniquely named
   'snf-link-$network_id'.
+* Extend flavors with 'allow_create' attribute. Flavors that have this
+  attribute unset cannot be used by users to create new servers.
 
 
 Cyclades UI

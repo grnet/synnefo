@@ -2021,7 +2021,7 @@ Add a vncauthproxy user:
     # /etc/init.d/vncauthproxy restart
 
 Configure the vncauthproxy settings in
-``/etc/synnefo/20/snf-cyclades-app-api.conf``:
+``/etc/synnefo/20-snf-cyclades-app-api.conf``:
 
 .. code-block:: console
 

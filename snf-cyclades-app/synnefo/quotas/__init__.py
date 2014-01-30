@@ -43,6 +43,9 @@ import logging
 log = logging.getLogger(__name__)
 
 
+QUOTABLE_RESOURCES = [VirtualMachine, Network, IPAddress]
+
+
 DEFAULT_SOURCE = 'system'
 RESOURCES = [
     "cyclades.vm",
@@ -115,46 +118,47 @@ def issue_commission(resource, action, name="", force=False, auto_accept=False,
                                              force=force,
                                              auto_accept=auto_accept)
 
-    if serial:
-        serial_info = {"serial": serial}
-        if auto_accept:
-            serial_info["pending"] = False
-            serial_info["accept"] = True
-            serial_info["resolved"] = True
-        return QuotaHolderSerial.objects.create(**serial_info)
-    else:
+    if not serial:
         raise Exception("No serial")
 
+    serial_info = {"serial": serial}
+    if auto_accept:
+        serial_info["pending"] = False
+        serial_info["accept"] = True
+        serial_info["resolved"] = True
 
-def accept_serial(serial, strict=True):
-    assert serial.pending or serial.accept
-    response = resolve_commissions(accept=[serial.serial], strict=strict)
-    serial.pending = False
-    serial.accept = True
-    serial.resolved = True
-    serial.save()
-    return response
+    serial = QuotaHolderSerial.objects.create(**serial_info)
 
+    # Correlate the serial with the resource. Resolved serials are not
+    # attached to resources
+    if not auto_accept:
+        resource.serial = serial
+        resource.save()
 
-def reject_serial(serial, strict=True):
-    assert serial.pending or not serial.accept
-    response = resolve_commissions(reject=[serial.serial], strict=strict)
-    serial.pending = False
-    serial.accept = False
-    serial.resolved = True
-    serial.save()
-    return response
+    return serial
 
 
-def accept_commissions(accepted, strict=True):
-    return resolve_commissions(accept=accepted, strict=strict)
+def accept_resource_serial(resource, strict=True):
+    serial = resource.serial
+    assert serial.pending or serial.accept, "%s can't be accepted" % serial
+    log.debug("Accepting serial %s of resource %s", serial, resource)
+    _resolve_commissions(accept=[serial.serial], strict=strict)
+    resource.serial = None
+    resource.save()
+    return resource
 
 
-def reject_commissions(rejected, strict=True):
-    return resolve_commissions(reject=rejected, strict=strict)
+def reject_resource_serial(resource, strict=True):
+    serial = resource.serial
+    assert serial.pending or not serial.accept, "%s can't be rejected" % serial
+    log.debug("Rejecting serial %s of resource %s", serial, resource)
+    _resolve_commissions(reject=[serial.serial], strict=strict)
+    resource.serial = None
+    resource.save()
+    return resource
 
 
-def resolve_commissions(accept=None, reject=None, strict=True):
+def _resolve_commissions(accept=None, reject=None, strict=True):
     if accept is None:
         accept = []
     if reject is None:
@@ -164,13 +168,15 @@ def resolve_commissions(accept=None, reject=None, strict=True):
     with AstakosClientExceptionHandler():
         response = qh.resolve_commissions(accept, reject)
 
-    # Update correspodning entries in DB
-    QuotaHolderSerial.objects.filter(serial__in=accept).update(accept=True,
-                                                               pending=False,
-                                                               resolved=True)
-    QuotaHolderSerial.objects.filter(serial__in=reject).update(accept=False,
-                                                               pending=False,
-                                                               resolved=True)
+    accepted = response.get("accepted", [])
+    rejected = response.get("rejected", [])
+
+    if accepted:
+        QuotaHolderSerial.objects.filter(serial__in=accepted).update(
+            accept=True, pending=False, resolved=True)
+    if rejected:
+        QuotaHolderSerial.objects.filter(serial__in=rejected).update(
+            accept=False, pending=False, resolved=True)
 
     if strict:
         failed = response["failed"]
@@ -181,9 +187,13 @@ def resolve_commissions(accept=None, reject=None, strict=True):
     return response
 
 
-def fix_pending_commissions():
-    (accepted, rejected) = resolve_pending_commissions()
-    resolve_commissions(accept=accepted, reject=rejected)
+def reconcile_resolve_commissions(accept=None, reject=None, strict=True):
+    response = _resolve_commissions(accept=accept,
+                                    reject=reject,
+                                    strict=strict)
+    affected = response.get("accepted", []) + response.get("rejected", [])
+    for resource in QUOTABLE_RESOURCES:
+        resource.objects.filter(serial__in=affected).update(serial=None)
 
 
 def resolve_pending_commissions():
@@ -266,6 +276,9 @@ def issue_and_accept_commission(resource, action="BUILD", action_fields=None):
                                         action_fields=action_fields,
                                         commission_name=commission_reason)
 
+    if serial is None:
+        return
+
     # Mark the serial as one to accept and associate it with the resource
     serial.pending = False
     serial.accept = True
@@ -274,14 +287,12 @@ def issue_and_accept_commission(resource, action="BUILD", action_fields=None):
 
     try:
         # Accept the commission to quotaholder
-        accept_serial(serial)
+        accept_resource_serial(resource)
     except:
         # Do not crash if we can not accept commission to Quotaholder. Quotas
         # have already been reserved and the resource already exists in DB.
         # Just log the error
-        log.exception("Failed to accept commission: %s", serial)
-
-    return serial
+        log.exception("Failed to accept commission: %s", resource.serial)
 
 
 def get_commission_info(resource, action, action_fields=None):
@@ -361,13 +372,11 @@ def handle_resource_commission(resource, action, commission_name,
     # The one who succeeds will be finally accepted, and all other will be
     # rejected
     force = force or (action == "DESTROY")
-    resolve_commission(resource.serial, force=force)
+    resolve_resource_commission(resource, force=force)
 
     serial = issue_commission(resource, action, name=commission_name,
                               force=force, auto_accept=auto_accept,
                               action_fields=action_fields)
-    resource.serial = serial
-    resource.save()
     return serial
 
 
@@ -375,7 +384,8 @@ class ResolveError(Exception):
     pass
 
 
-def resolve_commission(serial, force=False):
+def resolve_resource_commission(resource, force=False):
+    serial = resource.serial
     if serial is None or serial.resolved:
         return
     if serial.pending and not force:
@@ -383,6 +393,6 @@ def resolve_commission(serial, force=False):
         raise ResolveError(m)
     log.warning("Resolving pending commission: %s", serial)
     if not serial.pending and serial.accept:
-        accept_serial(serial)
+        accept_resource_serial(resource)
     else:
-        reject_serial(serial)
+        reject_resource_serial(resource)

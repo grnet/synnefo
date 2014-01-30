@@ -59,14 +59,16 @@ class ServerReconciliationTest(TestCase):
                                              backendjobid=1,
                                              operstate="BUILD")
         for status in ["queued", "waiting", "running"]:
-            mrapi().GetJobs.return_value = [{"id": "1", "status": status}]
+            mrapi().GetJobs.return_value = [{"id": "1", "status": status,
+                                             "end_ts": None}]
             with mocked_quotaholder():
                 self.reconciler.reconcile()
             vm1 = VirtualMachine.objects.get(id=vm1.id)
             self.assertFalse(vm1.deleted)
             self.assertEqual(vm1.operstate, "BUILD")
 
-        mrapi().GetJobs.return_value = [{"id": "1", "status": "error"}]
+        mrapi().GetJobs.return_value = [{"id": "1", "status": "error",
+                                         "end_ts": [44123, 1]}]
         with mocked_quotaholder():
             self.reconciler.reconcile()
         vm1 = VirtualMachine.objects.get(id=vm1.id)
@@ -77,7 +79,8 @@ class ServerReconciliationTest(TestCase):
             vm1.operstate = "BUILD"
             vm1.deleted = False
             vm1.save()
-            mrapi().GetJobs.return_value = [{"id": "1", "status": status}]
+            mrapi().GetJobs.return_value = [{"id": "1", "status": status,
+                                            "end_ts": [44123, 1]}]
             with mocked_quotaholder():
                 self.reconciler.reconcile()
             vm1 = VirtualMachine.objects.get(id=vm1.id)

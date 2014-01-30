@@ -124,7 +124,10 @@
 
             options.url = getUrl(urlobject, options, method) || urlError();
             if (urlobject && urlobject.supportIncUpdates) {
-                options.url = options.refresh ? options.url : setChangesSince(options.url, type);
+                if (!options.refresh) {
+                  options.url = setChangesSince(options.url, type);
+                  options._detect_change_by_response_code = true;
+                } 
             }
             if (!options.refresh && options.cache === undefined) {
                 options.cache = true;
@@ -261,7 +264,8 @@
                 return;
             }
 
-            if (["beforeSend", "complete"].indexOf(cb_type) == -1 && this.is_recurrent) {
+            if (["beforeSend", "complete"].indexOf(cb_type) == -1 && 
+                this._detect_change_by_response_code) {
                 // trigger event to notify that a recurrent event
                 // has returned status other than notmodified
                 snf.api.trigger("change:recurrent");

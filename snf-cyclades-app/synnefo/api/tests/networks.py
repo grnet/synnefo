@@ -37,7 +37,7 @@ from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 import synnefo.db.models_factory as dbmf
-from synnefo.db.models import Network
+from synnefo.db.models import Network, QuotaHolderSerial
 from django.conf import settings
 
 NETWORK_URL = get_service_path(cyclades_services, 'network',
@@ -68,6 +68,18 @@ class NetworkTest(BaseAPITest):
         self.assertEqual(response.status_code, 403)
         self.assertEqual(len(Network.objects.filter(userid='user1')), 0)
 
+    def test_invalid_create2(self):
+        """Test invalid name type"""
+        request = {
+            "network": {
+                "type": "MAC_FILTERED",
+                "name": ["Test"]
+            }
+        }
+        response = self.post(NETWORKS_URL, params=json.dumps(request))
+        code = response.status_code
+        self.assertBadRequest(response)
+
     def test_create(self):
         request = {
             "network": {
@@ -92,10 +104,10 @@ class NetworkTest(BaseAPITest):
         self.assertEqual(commission_resources, {"cyclades.network.private": 1})
         name, args, kwargs =\
             self.mocked_quotaholder.resolve_commissions.mock_calls[0]
-        serial = Network.objects.get().serial.serial
+        serial = QuotaHolderSerial.objects.order_by("-serial")[0]
         accepted_serials = args[0]
         rejected_serials = args[1]
-        self.assertEqual(accepted_serials, [serial])
+        self.assertEqual(accepted_serials, [serial.serial])
         self.assertEqual(rejected_serials, [])
 
         # test no name

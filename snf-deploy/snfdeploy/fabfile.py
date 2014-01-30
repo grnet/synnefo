@@ -803,7 +803,7 @@ def setup_pithos():
     #TOFIX: the previous command lets pithos-backend create blocks and maps
     #       with root owner
     try_run("chown -R www-data:www-data %s/data " % env.env.pithos_dir)
-    #try_run("pithos-migrate stamp 4c8ccdc58192")
+    try_run("pithos-migrate stamp head")
     #try_run("pithos-migrate upgrade head")
 
 

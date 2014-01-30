@@ -64,6 +64,12 @@ class Command(ListCommand):
             dest="dhcp",
             default=False,
             help="List only subnets that have DHCP/SLAC enabled"),
+        make_option(
+            "--public",
+            action="store_true",
+            dest="public",
+            default=False,
+            help="List only public subnets"),
     )
 
     object_class = Subnet
@@ -75,15 +81,16 @@ class Command(ListCommand):
         "id": ("id", "ID of the subnet"),
         "network": ("network_id", "ID of the network the subnet belongs to"),
         "name": ("name", "Name of the subnet"),
-        "user.uuid": ("network.userid", "The UUID of the subnet's owner"),
+        "user.uuid": ("userid", "The UUID of the subnet's owner"),
         "cidr": ("cidr", "The CIDR of the subnet"),
         "ipversion": ("ipversion", "The IP version of the subnet"),
         "gateway": ("gateway", "The gateway IP of the subnet"),
         "dhcp": ("dhcp", "DHCP flag of the subnet"),
+        "public": ("public", "Public flag of the subnet"),
     }
 
     fields = ["id", "network", "name", "user.uuid", "cidr", "ipversion",
-              "gateway", "dhcp"]
+              "gateway", "dhcp", "public"]
 
     def handle_args(self, *args, **options):
         if options["ipv4"] and options["ipv6"]:
@@ -97,3 +104,6 @@ class Command(ListCommand):
 
         if options["dhcp"]:
             self.filters["dhcp"] = True
+
+        if options["public"]:
+            self.filters["public"] = True

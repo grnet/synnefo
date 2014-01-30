@@ -44,6 +44,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def urlencode(params):
+    if hasattr(params, 'urlencode') and callable(getattr(params, 'urlencode')):
+        return params.urlencode()
+    return urllib.urlencode(params)
+
+
 def handles_oa2_requests(func):
     def wrapper(self, *args, **kwargs):
         if not self._errors_to_http:
@@ -341,7 +347,7 @@ class SimpleBackend(object):
         return bool(self.get_client_by_id(client_id))
 
     def build_site_url(self, prefix='', **params):
-        params = urllib.urlencode(params)
+        params = urlencode(params)
         return "%s%s%s%s" % (self.base_url, self.endpoints_prefix, prefix,
                              params)
 
@@ -352,7 +358,7 @@ class SimpleBackend(object):
     def build_client_redirect_uri(self, client, uri, **params):
         if not client.redirect_uri_is_valid(uri):
             raise OA2Error("Invalid redirect uri")
-        params = urllib.urlencode(params)
+        params = urlencode(params)
         uri = self._get_uri_base(uri)
         return "%s?%s" % (uri, params)
 
@@ -396,12 +402,12 @@ class SimpleBackend(object):
 
     def redirect_to_login_response(self, request, params):
         parts = list(urlparse.urlsplit(request.path))
-        parts[3] = urllib.urlencode(params)
+        parts[3] = urlencode(params)
         query = {'next': urlparse.urlunsplit(parts)}
         return Response(302,
                         headers={'Location': '%s?%s' %
                                  (self.get_login_uri(),
-                                  urllib.urlencode(query))})
+                                  urlencode(query))})
 
     def redirect_to_uri(self, redirect_uri, code, state=None):
         parts = list(urlparse.urlsplit(redirect_uri))
@@ -409,7 +415,7 @@ class SimpleBackend(object):
         params['code'] = code
         if state is not None:
             params['state'] = state
-        parts[3] = urllib.urlencode(params)
+        parts[3] = urlencode(params)
         return Response(302,
                         headers={'Location': '%s' %
                                  urlparse.urlunsplit(parts)})

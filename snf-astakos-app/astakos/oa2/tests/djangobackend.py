@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 # Copyright 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -44,6 +45,7 @@ from django.test import Client as TestClient
 from django.core.urlresolvers import reverse
 from django.utils import simplejson as json
 
+from astakos.oa2 import settings
 from astakos.oa2.models import Client, AuthorizationCode, Token
 from astakos.im.tests import common
 
@@ -297,7 +299,7 @@ class TestOA2(TestCase, URLAssertionsMixin):
         # valid request: untrusted client
         params = {'redirect_uri': self.client1_redirect_uri,
                   'scope': self.client1_redirect_uri,
-                  'extra_param': '123'}
+                  'extra_param': 'γιουνικοντ'}
         self.client.set_credentials('client1', 'secret')
         r = self.client.authorize_code('client1', urlparams=params)
         self.assertEqual(r.status_code, 302)
@@ -384,7 +386,9 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.assertEqual(r.status_code, 400)
 
         # redirect uri descendant
-        redirect_uri = '%s/more' % self.client3_redirect_uri
+        redirect_uri = '%s/' % self.client3_redirect_uri
+        rest = settings.MAXIMUM_ALLOWED_REDIRECT_URI_LENGTH - len(redirect_uri)
+        redirect_uri = '%s%s' % (redirect_uri, 'a'*rest)
         params['redirect_uri'] = redirect_uri
         self.client.set_credentials('client3', 'secret')
         r = self.client.authorize_code('client3', urlparams=params)
@@ -401,12 +405,10 @@ class TestOA2(TestCase, URLAssertionsMixin):
 
         code = AuthorizationCode.objects.get(code=redirect.params['code'][0])
         self.assertEqual(code.state, 'csrfstate')
-        self.assertEqual(code.redirect_uri,
-                         '%s/more' % self.client3_redirect_uri)
+        self.assertEqual(code.redirect_uri, redirect_uri)
 
         # too long redirect uri
-        redirect_uri = '%s?foo=%s' % (self.client3_redirect_uri, 'a'*10000)
-        params['redirect_uri'] = redirect_uri
+        params['redirect_uri'] = '%sa' % redirect_uri
         self.client.set_credentials('client3', 'secret')
         r = self.client.authorize_code('client3', urlparams=params)
         self.assertEqual(r.status_code, 400)
@@ -500,7 +502,9 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.assert_access_token_response(r, expected)
 
         # generate authorization code with too long redirect_uri
-        redirect_uri = '%s/%s' % (self.client3_redirect_uri, 'a'*2000)
+        redirect_uri = '%s/' % self.client3_redirect_uri
+        rest = settings.MAXIMUM_ALLOWED_REDIRECT_URI_LENGTH - len(redirect_uri)
+        redirect_uri = '%s%s' % (redirect_uri, 'a'*rest)
         params = {'redirect_uri': redirect_uri}
         r = self.client.authorize_code('client3', urlparams=params)
         self.assertCount(AuthorizationCode, 1)
@@ -510,6 +514,10 @@ class TestOA2(TestCase, URLAssertionsMixin):
 
         # valid request
         self.client.set_credentials('client3', 'secret')
+        r = self.client.access_token(code_instance.code,
+                                     redirect_uri='%sa' % redirect_uri)
+        self.assertEqual(r.status_code, 400)
+
         r = self.client.access_token(code_instance.code,
                                      redirect_uri=redirect_uri)
         self.assertCount(AuthorizationCode, 0)  # assert code is consumed

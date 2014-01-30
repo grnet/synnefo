@@ -95,7 +95,7 @@
 
         beforeOpen: function() {
             views.SuspendedVMView.__super__.beforeOpen.apply(this);
-            $(this.$(".description p")[0]).html($("#suspended-vm-overlay .description").html())
+            $(this.$(".form-field label")[0]).html($("#suspended-vm-overlay .description").html())
         },
 
         show: function(vm, data, collect_data, extra_data, cb) {
@@ -763,7 +763,8 @@
                                   snf.config.update_interval_increase_after_calls || 4,
                                   snf.config.update_interval_max || 20000,
                                   true, 
-                                  {is_recurrent: true}];
+                                  {is_recurrent: true},
+                                  key];
             var fetcher = collection.get_fetcher.apply(collection, _.clone(fetcher_params));
             this._fetchers[key] = fetcher;
             collection.fetch();

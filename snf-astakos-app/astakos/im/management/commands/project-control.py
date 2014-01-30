@@ -124,23 +124,23 @@ class Command(BaseCommand):
             s = '1 expired project:\n'
         else:
             s = '%d expired projects:\n' % (length,)
-        self.stdout.write(s)
+        self.stderr.write(s)
 
         if length > 0:
             labels = ('Project', 'Name', 'Status', 'Expiration date')
             columns = (10, 30, 14, 30)
 
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
+            self.stderr.write(line + '\n')
             sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
+            self.stderr.write(sep + '\n')
 
             for project in projects:
                 line = ' '.join(f.rjust(w) for f, w in zip(project, columns))
-                self.stdout.write(line + '\n')
+                self.stderr.write(line + '\n')
 
             if execute:
-                self.stdout.write('%d projects have been terminated.\n' % (
+                self.stderr.write('%d projects have been terminated.\n' % (
                     length,))
 
     def expire(self, execute=False):

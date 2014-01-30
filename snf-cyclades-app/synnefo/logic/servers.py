@@ -138,7 +138,7 @@ def server_command(action, action_fields=None):
                     log.debug("Rejecting commission: '%s', could not perform"
                               " action '%s': %s" % (vm.serial,  action, e))
                     transaction.rollback()
-                    quotas.reject_serial(vm.serial)
+                    quotas.reject_resource_serial(vm)
                     transaction.commit()
                 raise
 
@@ -147,7 +147,7 @@ def server_command(action, action_fields=None):
                 # commission because the VM has been stored in DB. Also, if
                 # communication with Ganeti fails, the job will never reach
                 # Ganeti, and the commission will never be resolved.
-                quotas.accept_serial(vm.serial)
+                quotas.accept_resource_serial(vm)
 
             log.info("user: %s, vm: %s, action: %s, job_id: %s, serial: %s",
                      user_id, vm.id, action, job_id, vm.serial)
@@ -270,7 +270,7 @@ def create_server(vm, nics, flavor, image, personality, password):
 
 
 @server_command("DESTROY")
-def destroy(vm):
+def destroy(vm, shutdown_timeout=None):
     # XXX: Workaround for race where OP_INSTANCE_REMOVE starts executing on
     # Ganeti before OP_INSTANCE_CREATE. This will be fixed when
     # OP_INSTANCE_REMOVE supports the 'depends' request attribute.
@@ -280,7 +280,7 @@ def destroy(vm):
        not backend.vm_exists_in_backend(vm)):
             raise faults.BuildInProgress("Server is being build")
     log.info("Deleting VM %s", vm)
-    return backend.delete_instance(vm)
+    return backend.delete_instance(vm, shutdown_timeout=shutdown_timeout)
 
 
 @server_command("START")
@@ -290,19 +290,20 @@ def start(vm):
 
 
 @server_command("STOP")
-def stop(vm):
+def stop(vm, shutdown_timeout=None):
     log.info("Stopping VM %s", vm)
-    return backend.shutdown_instance(vm)
+    return backend.shutdown_instance(vm, shutdown_timeout=shutdown_timeout)
 
 
 @server_command("REBOOT")
-def reboot(vm, reboot_type):
+def reboot(vm, reboot_type, shutdown_timeout=None):
     if reboot_type not in ("SOFT", "HARD"):
         raise faults.BadRequest("Malformed request. Invalid reboot"
                                 " type %s" % reboot_type)
     log.info("Rebooting VM %s. Type %s", vm, reboot_type)
 
-    return backend.reboot_instance(vm, reboot_type.lower())
+    return backend.reboot_instance(vm, reboot_type.lower(),
+                                   shutdown_timeout=shutdown_timeout)
 
 
 def resize(vm, flavor):
@@ -698,10 +699,14 @@ def create_ports_for_request(user_id, networks):
     IPs.
 
     """
+    if not isinstance(networks, list):
+        raise faults.BadRequest("Malformed request. Invalid 'networks' field")
     return [_port_for_request(user_id, network) for network in networks]
 
 
 def _port_for_request(user_id, network_dict):
+    if not isinstance(network_dict, dict):
+        raise faults.BadRequest("Malformed request. Invalid 'networks' field")
     port_id = network_dict.get("port")
     network_id = network_dict.get("uuid")
     if port_id is not None:

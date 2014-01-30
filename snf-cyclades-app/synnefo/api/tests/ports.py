@@ -117,7 +117,8 @@ class PortTest(BaseAPITest):
     #     self.assertEqual(res['port']['security_groups'],
     #                      [str(sg2.id), str(sg3.id)])
 
-    def test_create_port_no_network(self):
+    def test_create_port_invalid(self):
+        # No network
         request = {
             "port": {
                 "device_id": "123",
@@ -127,6 +128,16 @@ class PortTest(BaseAPITest):
         }
         response = self.post(PORTS_URL, params=json.dumps(request))
         self.assertEqual(response.status_code, 404)
+        net = dbmf.NetworkFactory(public=True)
+        request = {
+            "port": {
+                "name": "port1",
+                "network_id": net.id,
+                "fixed_ips": ["lala"]
+            }
+        }
+        response = self.post(PORTS_URL, params=json.dumps(request))
+        self.assertEqual(response.status_code, 400, response.content)
 
     @patch("synnefo.db.models.get_rapi_client")
     def test_create_port_private_net(self, mrapi):

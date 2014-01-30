@@ -76,6 +76,7 @@ class FloatingIPAPITest(BaseAPITest):
                           "fixed_ip_address": None,
                           "id": str(ip.id),
                           "port_id": str(ip.nic.id),
+                          "deleted": False,
                           "floating_network_id": str(ip.network_id)})
 
     def test_get_ip(self):
@@ -90,6 +91,7 @@ class FloatingIPAPITest(BaseAPITest):
                           "fixed_ip_address": None,
                           "id": str(ip.id),
                           "port_id": str(ip.nic.id),
+                          "deleted": False,
                           "floating_network_id": str(ip.network_id)})
 
     def test_wrong_user(self):
@@ -121,6 +123,7 @@ class FloatingIPAPITest(BaseAPITest):
                           "fixed_ip_address": None,
                           "id": str(ip.id),
                           "port_id": None,
+                          "deleted": False,
                           "floating_network_id": str(self.pool.id)})
 
     def test_reserve_empty_body(self):
@@ -194,6 +197,7 @@ class FloatingIPAPITest(BaseAPITest):
                           "fixed_ip_address": None,
                           "id": str(ip.id),
                           "port_id": None,
+                          "deleted": False,
                           "floating_network_id": str(self.pool.id)})
 
         # Already reserved

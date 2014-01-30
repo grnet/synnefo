@@ -69,7 +69,7 @@ class Command(BaseCommand):
 
     @transaction.commit_on_success
     def handle(self, *args, **options):
-        write = self.stdout.write
+        write = self.stderr.write
         force = options['force']
         userid = options['userid']
 
@@ -130,7 +130,7 @@ class Command(BaseCommand):
 
         headers = ("User", "Resource", "Astakos", "Quotaholder")
         if unsynced:
-            pprint_table(self.stderr, unsynced, headers)
+            pprint_table(self.stdout, unsynced, headers)
             if options["fix"]:
                 provisions = map(create_provision, unsynced)
                 try:

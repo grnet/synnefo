@@ -36,6 +36,7 @@ import json
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
+from django.core.validators import ValidationError
 from django.db import transaction
 
 from astakos.im.models import PendingThirdPartyUser, AstakosUser
@@ -132,6 +133,18 @@ def handle_third_party_signup(request, userid, provider_module,
 
     user.info = json.dumps(provider_info)
     user.generate_token()
+
+    # skip non required fields validation errors. Reset the field instead of
+    # raising a validation exception.
+    try:
+        user.full_clean()
+    except ValidationError, e:
+        non_required_fields = ['email', 'first_name',
+                               'last_name', 'affiliation']
+        for field in e.message_dict.keys():
+            if field in non_required_fields:
+                setattr(user, field, None)
+
     user.save()
 
     extra_context['provider'] = provider.module

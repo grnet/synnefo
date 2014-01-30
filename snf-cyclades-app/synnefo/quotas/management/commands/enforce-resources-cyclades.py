@@ -72,13 +72,18 @@ class Command(SynnefoCommand):
                     action="store_true",
                     help=("Confirm actions that may permanently "
                           "remove a vm")),
+        make_option("--shutdown-timeout",
+                    help="Force vm shutdown after given seconds."),
     )
 
     def confirm(self):
-        self.stderr.write("Confirm? [y/N] ")
-        response = raw_input()
+        self.stdout.write("Confirm? [y/N] ")
+        try:
+            response = raw_input()
+        except EOFError:
+            response = "ABORT"
         if string.lower(response) not in ['y', 'yes']:
-            self.stdout.write("Aborted.\n")
+            self.stderr.write("Aborted.\n")
             exit()
 
     def get_handlers(self, resources):
@@ -113,6 +118,14 @@ class Command(SynnefoCommand):
                 m = "Expected integer max operations."
                 raise CommandError(m)
 
+        shutdown_timeout = options["shutdown_timeout"]
+        if shutdown_timeout is not None:
+            try:
+                shutdown_timeout = int(shutdown_timeout)
+            except ValueError:
+                m = "Expected integer shutdown timeout."
+                raise CommandError(m)
+
         users = options['users']
         if users is not None:
             users = users.split(',')
@@ -130,6 +143,7 @@ class Command(SynnefoCommand):
         resources = set(h[0] for h in handlers)
         dangerous = bool(resources.difference(DEFAULT_RESOURCES))
 
+        opts = {"shutdown_timeout": shutdown_timeout}
         actions = {}
         overlimit = []
         viol_id = 0
@@ -169,11 +183,11 @@ class Command(SynnefoCommand):
             return
 
         headers = ("#", "User", "Source", "Resource", "Limit", "Usage")
-        pprint_table(self.stderr, overlimit, headers,
+        pprint_table(self.stdout, overlimit, headers,
                      options["output_format"], title="Violations")
 
         if any(actions.values()):
-            write("\n")
+            self.stdout.write("\n")
             if fix:
                 if dangerous and not force:
                     write("You are enforcing resources that may permanently "
@@ -181,9 +195,10 @@ class Command(SynnefoCommand):
                     self.confirm()
                 write("Applying actions. Please wait...\n")
             title = "Applied Actions" if fix else "Suggested Actions"
-            log = enforce.perform_actions(actions, maxops=maxops, fix=fix)
+            log = enforce.perform_actions(actions, maxops=maxops, fix=fix,
+                                          options=opts)
             headers = ("Type", "ID", "State", "Backend", "Action", "Violation")
             if fix:
                 headers += ("Result",)
-            pprint_table(self.stderr, log, headers,
+            pprint_table(self.stdout, log, headers,
                          options["output_format"], title=title)

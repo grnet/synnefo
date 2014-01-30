@@ -111,6 +111,6 @@ class Command(BaseCommand):
 
         profile.save()
         if update:
-            print "Profile updated"
+            self.stderr.write("Profile updated\n")
         else:
-            print "Profile stored"
+            self.stderr.write("Profile stored\n")

@@ -197,7 +197,7 @@ class ServerCommandTest(TransactionTestCase):
         vm.task_job_id = None
         vm.save()
         with mocked_quotaholder():
-            quotas.accept_serial(vm.serial)
+            quotas.accept_resource_serial(vm)
         mrapi().RebootInstance.return_value = 1
         with mocked_quotaholder():
             servers.reboot(vm, "HARD")

@@ -122,7 +122,7 @@ def delete(snapshot):
     user_id = snapshot["owner"]
     log.info("Deleting snapshot '%s'", snapshot["location"])
     with image_backend(user_id) as pithos_backend:
-        pithos_backend.delete_snapshot(snapshot["uuid"])
+        pithos_backend.delete_snapshot(snapshot["id"])
     return snapshot
 
 

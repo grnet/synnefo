@@ -220,7 +220,7 @@ def snapshot_to_dict(snapshot, detail=True):
     progress = "%s%%" % 100 if status == "ACTIVE" else 0
 
     data = {
-        "id": snapshot["uuid"],
+        "id": snapshot["id"],
         "size": int(snapshot["size"]) >> 30,  # gigabytes
         "display_name": snapshot["name"],
         "display_description": snapshot["description"],
@@ -232,7 +232,7 @@ def snapshot_to_dict(snapshot, detail=True):
         "created_at": utils.isoformat(date_parse(snapshot["created_at"])),
         "metadata": snapshot.get("metadata", {}),
         "volume_id": snapshot.get("volume_id"),
-        "links": util.snapshot_to_links(snapshot["uuid"])
+        "links": util.snapshot_to_links(snapshot["id"])
     }
     return data
 

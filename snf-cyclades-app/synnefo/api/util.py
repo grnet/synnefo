@@ -178,6 +178,7 @@ def get_image_dict(image_id, user_id):
     image["format"] = img["disk_format"]
     image["location"] = img["location"]
     image["is_snapshot"] = img["is_snapshot"]
+    image["status"] = img["status"]
     size = image["size"] = img["size"]
 
     mapfile = img["mapfile"]

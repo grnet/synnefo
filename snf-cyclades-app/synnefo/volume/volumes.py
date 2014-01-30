@@ -85,6 +85,11 @@ def _create_volume(server, user_id, size, source_type, source_uuid,
     elif source_type == "snapshot":
         source_snapshot = util.get_snapshot(user_id, source_uuid,
                                             exception=faults.BadRequest)
+        snap_status = source_snapshot.get("status", "").upper()
+        if snap_status != "AVAILABLE":
+            raise faults.BadRequest("Cannot create volume from snapshot, while"
+                                    " snapshot is in '%s' status" %
+                                    snap_status)
         source = Volume.prefix_source(source_uuid,
                                       source_type="snapshot")
         if size is None:
@@ -97,6 +102,10 @@ def _create_volume(server, user_id, size, source_type, source_uuid,
     elif source_type == "image":
         source_image = util.get_image(user_id, source_uuid,
                                       exception=faults.BadRequest)
+        img_status = source_image.get("status", "").upper()
+        if img_status != "AVAILABLE":
+            raise faults.BadRequest("Cannot create volume from image, while"
+                                    " image is in '%s' status" % img_status)
         if size is None:
             raise faults.BadRequest("Volume size is required")
         elif (size << 30) < int(source_image["size"]):

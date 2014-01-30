@@ -35,6 +35,9 @@ def create(user_id, volume, name, description, metadata, force=False):
     # Check that taking a snapshot is feasible
     if volume.machine is None:
         raise faults.BadRequest("Cannot snapshot a detached volume!")
+    if volume.status not in ["AVAILABLE", "IN_USE"]:
+        raise faults.BadRequest("Cannot create snapshot while volume is in"
+                                " '%s' status" % volume.status)
 
     flavor = volume.machine.flavor
     if not flavor.disk_template.startswith("ext_"):

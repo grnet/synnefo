@@ -46,6 +46,7 @@ fixed_image.return_value = {'location': 'pithos://foo',
                             'mapfile': 'test_mapfile',
                             "id": 1,
                             "name": "test_image",
+                            "status": "AVAILABLE",
                             "size": 1024,
                             "is_snapshot": False,
                             'disk_format': 'diskdump'}

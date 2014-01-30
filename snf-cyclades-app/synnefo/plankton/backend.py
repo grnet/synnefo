@@ -536,6 +536,8 @@ def image_to_dict(location, metadata, permissions):
             key = key.replace(PLANKTON_PREFIX, "")
             # Keep only those in plankton metadata
             if key in PLANKTON_META:
+                if key == "status":
+                    image["status"] = val.upper()
                 if key != "created_at":
                     # created timestamp is return in 'created_at' field
                     image[key] = val

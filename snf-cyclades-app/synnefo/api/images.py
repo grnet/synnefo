@@ -103,13 +103,22 @@ def metadata_item_demux(request, image_id, key):
                                                            'DELETE'])
 
 
+API_STATUS_FROM_IMAGE_STATUS = {
+    "CREATING": "SAVING",
+    "AVAILABLE": "ACTIVE",
+    "ERROR": "ERROR",
+    "DELETED": "DELETED"}
+
+
 def image_to_dict(image, detail=True):
     d = dict(id=image['id'], name=image['name'])
     if detail:
         d['updated'] = utils.isoformat(date_parse(image['updated_at']))
         d['created'] = utils.isoformat(date_parse(image['created_at']))
-        d['status'] = 'DELETED' if image['deleted_at'] else 'ACTIVE'
-        d['progress'] = 100 if image['status'] == 'available' else 0
+        img_status = image.get("status", "").upper()
+        status = API_STATUS_FROM_IMAGE_STATUS.get(img_status, "UNKNOWN")
+        d['status'] = status
+        d['progress'] = 100 if status == 'ACTIVE' else 0
         d['user_id'] = image['owner']
         d['tenant_id'] = image['owner']
         d['links'] = util.image_to_links(image["id"])

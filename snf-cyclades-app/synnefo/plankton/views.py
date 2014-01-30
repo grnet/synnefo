@@ -62,7 +62,8 @@ LIST_FIELDS = ('status', 'name', 'disk_format', 'container_format', 'size',
 
 DETAIL_FIELDS = ('name', 'disk_format', 'container_format', 'size', 'checksum',
                  'location', 'created_at', 'updated_at', 'deleted_at',
-                 'status', 'is_public', 'owner', 'properties', 'id', "is_snapshot")
+                 'status', 'is_public', 'owner', 'properties', 'id',
+                 "is_snapshot")
 
 ADD_FIELDS = ('name', 'id', 'store', 'disk_format', 'container_format', 'size',
               'checksum', 'is_public', 'owner', 'properties', 'location')
@@ -80,6 +81,12 @@ STORE_TYPES = ('pithos')
 log = getLogger('synnefo.plankton')
 
 
+API_STATUS_FROM_IMAGE_STATUS = {
+    "CREATING": "SAVING",
+    "AVAILABLE": "ACTIVE",
+    "DELETED": "DELETED"}
+
+
 def _create_image_response(image):
     response = HttpResponse()
 
@@ -89,8 +96,14 @@ def _create_image_response(image):
                 name = 'x-image-meta-property-' + k.replace('_', '-')
                 response[name] = uenc(v)
         else:
-            name = 'x-image-meta-' + key.replace('_', '-')
-            response[name] = uenc(image.get(key, ''))
+            if key == "status":
+                img_status = image.get(key, "").upper()
+                status = API_STATUS_FROM_IMAGE_STATUS.get(img_status,
+                                                          "UNKNOWN")
+                response["x-image-meta-status"] = status
+            else:
+                name = 'x-image-meta-' + key.replace('_', '-')
+                response[name] = uenc(image.get(key, ''))
 
     return response
 

@@ -151,7 +151,12 @@ form.link-like.alone input[type="submit"]		{ padding:0; }
 .projects .minimal select						{ padding:3px; width:250px; }
 .projects .minimal label						{ position:absolute; right:290px; top:5px; white-space:nowrap}
 
+form.contactform label 							{ display: block; margin-bottom: 1em; float:none;}
+form.contactform textarea 						{ width: 406px; height:177px; max-width: 406px; max-height: 177px;}
+form.contactform input[type="submit"] 			{ margin:15px 0 0;}
+
 @media screen and (max-width : 630px) 		{ 
+    form.contactform textarea                   { width:90%;}
 	form.withlabels .extra-img	   				{ left:260px; }
     form.withlabels span.info 	   				{ left:260px; }
     form .extra-img	               				{ left:260px; }
@@ -191,6 +196,7 @@ form.link-like.alone input[type="submit"]		{ padding:0; }
     form.withlabels input[type="text"], 
     form.withlabels input[type="password"],
     form.withlabels textarea,
+    form.contactform textarea,
     form textarea, 
 	form input.text, 
 	form input[type="text"], 

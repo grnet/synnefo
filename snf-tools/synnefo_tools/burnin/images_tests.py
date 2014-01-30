@@ -176,6 +176,17 @@ class ImagesTestSuite(BurninTests):
         self.assertEqual(len(images), 1)
         self.info("Image registered with id %s", images[0]['id'])
 
+        self.info("Registering with unicode name")
+        uni_str = u'\u03b5\u03b9\u03ba\u03cc\u03bd\u03b1'
+        uni_name = u'%s, or %s in Greek' % (self.temp_image_name, uni_str)
+        img = self.clients.image.register(
+            uni_name, location, params, properties)
+
+        self.info('Checking if image with unicode name exists')
+        found_img = self.clients.image.get_meta(img['id'])
+        self.assertEqual(found_img['name'], uni_name)
+        self.info("Image registered with id %s", found_img['id'])
+
     def test_010_cleanup_image(self):
         """Remove uploaded image from Pithos"""
         # Remove uploaded image

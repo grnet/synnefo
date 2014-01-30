@@ -145,6 +145,12 @@ class PithosTestSuite(BurninTests):
 
         rand_num = '%s%s' % (self.run_id or 0, random.randint(1000, 9999))
         grp_name = 'grp%s' % rand_num
+        self.assertRaises(
+            ClientError, pithos.set_account_group, grp_name, [pithos.account])
+        self.info('Invalid group name is handled correctly')
+
+        rand_num = rand_num.replace('-', 'x')
+        grp_name = 'grp%s' % rand_num
 
         uuid1, uuid2 = pithos.account, 'invalid-user-uuid-%s' % rand_num
         self.assertRaises(

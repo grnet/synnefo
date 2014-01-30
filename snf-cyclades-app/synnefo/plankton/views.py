@@ -70,6 +70,12 @@ ADD_FIELDS = ('name', 'id', 'store', 'disk_format', 'container_format', 'size',
 UPDATE_FIELDS = ('name', 'disk_format', 'container_format', 'is_public',
                  'owner', 'properties', 'status')
 
+DISK_FORMATS = ('diskdump', 'extdump', 'ntfsdump')
+
+CONTAINER_FORMATS = ('aki', 'ari', 'ami', 'bare', 'ovf')
+
+STORE_TYPES = ('pithos')
+
 
 log = getLogger('synnefo.plankton')
 
@@ -81,10 +87,10 @@ def _create_image_response(image):
         if key == 'properties':
             for k, v in image.get('properties', {}).items():
                 name = 'x-image-meta-property-' + k.replace('_', '-')
-                response[name] = v
+                response[name] = uenc(v)
         else:
             name = 'x-image-meta-' + key.replace('_', '-')
-            response[name] = image.get(key, '')
+            response[name] = uenc(image.get(key, ''))
 
     return response
 
@@ -156,6 +162,8 @@ def add_image(request):
         split_url(location)
     except InvalidLocation:
         raise faults.BadRequest("Invalid location '%s'" % location)
+
+    validate_fields(params)
 
     if location:
         with image_backend(request.user_uniq) as backend:
@@ -376,6 +384,8 @@ def update_image(request, image_id):
     if not set(meta.keys()).issubset(set(UPDATE_FIELDS)):
         raise faults.BadRequest("Invalid metadata")
 
+    validate_fields(meta)
+
     with image_backend(request.user_uniq) as backend:
         image = backend.update_metadata(image_id, meta)
     return _create_image_response(image)
@@ -404,3 +414,23 @@ def update_image_members(request, image_id):
     with image_backend(request.user_uniq) as backend:
         backend.replace_users(image_id, members)
     return HttpResponse(status=204)
+
+
+def validate_fields(params):
+    if "id" in params:
+        raise faults.BadRequest("Setting the image ID is not supported")
+
+    if "store" in params:
+        if params["store"] not in STORE_TYPES:
+            raise faults.BadRequest("Invalid store type '%s'" %
+                                    params["store"])
+
+    if "disk_format" in params:
+        if params["disk_format"] not in DISK_FORMATS:
+            raise faults.BadRequest("Invalid disk format '%s'" %
+                                    params['disk_format'])
+
+    if "container_format" in params:
+        if params["container_format"] not in CONTAINER_FORMATS:
+            raise faults.BadRequest("Invalid container format '%s'" %
+                                    params['container_format'])

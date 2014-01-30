@@ -246,7 +246,7 @@
         synnefo.storage.ports.create(data, {complete: cb});
       }
     });
-
+    
     models.CombinedPublicNetwork = models.Network.extend({
       defaults: {
         'admin_state_up': true,
@@ -258,13 +258,18 @@
         'rename_disabled': true,
         'subnets': []
       },
-      
-      initialize: function() {
+        
+      group_by: 'name',
+      group_networks: [],
+
+      initialize: function(attributes) {
+        this.groupKey = attributes.name;
         var self = this;
         this.ports = new Backbone.FilteredCollection(undefined, {
           collection: synnefo.storage.ports,
           collectionFilter: function(m) {
-            return m.get('network') && m.get('network').get('is_public');
+            return m.get('network') && 
+                   m.get('network').get(self.group_by) == self.groupKey;
           }
         });
         this.set({ports: this.ports});
@@ -278,15 +283,16 @@
           }
         });
         this.set({available_floating_ips: this.available_floating_ips});
-        models.Network.__super__.initialize.apply(this, arguments);
-      },
-
-    })
+        this.set({name: attributes.name || 'Internet'});
+        models.Network.__super__.initialize.call(this, attributes);
+      }
+    });
 
     models.Networks = models.NetworkCollection.extend({
       model: models.Network,
       path: 'networks',
       details: true,
+
       parse: function(resp) {
         var data = _.map(resp.networks, function(net) {
           if (!net.name) {

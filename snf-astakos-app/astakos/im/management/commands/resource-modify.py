@@ -111,7 +111,7 @@ class Command(BaseCommand):
         resource = self.get_resource(resource_name)
         resource.api_visible = allow
         if not allow and resource.ui_visible:
-            self.stdout.write("Also resetting 'ui_visible' for consistency.\n")
+            self.stderr.write("Also resetting 'ui_visible' for consistency.\n")
             resource.ui_visible = False
         resource.save()
 
@@ -127,7 +127,7 @@ class Command(BaseCommand):
 
         resource.ui_visible = allow
         if allow and not resource.api_visible:
-            self.stdout.write("Also setting 'api_visible' for consistency.\n")
+            self.stderr.write("Also setting 'api_visible' for consistency.\n")
             resource.api_visible = True
         resource.save()
 
@@ -185,7 +185,11 @@ class Command(BaseCommand):
             self.stdout.write("Current limit: %s\n" % value)
             while True:
                 self.stdout.write("New limit (leave blank to keep current): ")
-                response = raw_input()
+                try:
+                    response = raw_input()
+                except EOFError:
+                    self.stderr.write("Aborted.\n")
+                    exit()
                 if response == "":
                     break
                 else:
@@ -196,7 +200,7 @@ class Command(BaseCommand):
                     updates.append((resource, value))
                     break
         if updates:
-            self.stdout.write("Updating...\n")
+            self.stderr.write("Updating...\n")
             update_resources(updates)
 
     def parse_limit(self, limit):

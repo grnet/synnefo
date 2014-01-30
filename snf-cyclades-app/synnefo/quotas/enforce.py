@@ -187,10 +187,10 @@ VM_ACTION = {
 }
 
 
-def apply_to_vm(action, vm_id):
+def apply_to_vm(action, vm_id, shutdown_timeout):
     try:
         vm = VirtualMachine.objects.select_for_update().get(id=vm_id)
-        VM_ACTION[action](vm)
+        VM_ACTION[action](vm, shutdown_timeout=shutdown_timeout)
         return True
     except BaseException:
         return False
@@ -206,14 +206,14 @@ def allow_operation(backend_id, opcount, maxops):
     return True
 
 
-def perform_vm_actions(actions, opcount, maxops=None, fix=False):
+def perform_vm_actions(actions, opcount, maxops=None, fix=False, options={}):
     log = []
     for vm_id, (viol_id, state, backend_id, vm_action) in actions.iteritems():
         if not allow_operation(backend_id, opcount, maxops):
             continue
         data = ("vm", vm_id, state, backend_id, vm_action, viol_id)
         if fix:
-            r = apply_to_vm(vm_action, vm_id)
+            r = apply_to_vm(vm_action, vm_id, options.get("shutdown_timeout"))
             data += ("DONE" if r else "FAILED",)
         log.append(data)
     return log
@@ -247,7 +247,8 @@ def remove_ip(ip_id):
         return False
 
 
-def perform_floating_ip_actions(actions, opcount, maxops=None, fix=False):
+def perform_floating_ip_actions(actions, opcount, maxops=None, fix=False,
+                                options={}):
     log = []
     for ip_id, (viol_id, state, backend_id, ip_action) in actions.iteritems():
         if not allow_operation(backend_id, opcount, maxops):
@@ -261,7 +262,7 @@ def perform_floating_ip_actions(actions, opcount, maxops=None, fix=False):
     return log
 
 
-def perform_actions(actions, maxops=None, fix=False):
+def perform_actions(actions, maxops=None, fix=False, options={}):
     ACTION_HANDLING = [
         ("floating_ip", perform_floating_ip_actions),
         ("vm", perform_vm_actions),
@@ -271,7 +272,8 @@ def perform_actions(actions, maxops=None, fix=False):
     logs = []
     for resource_type, handler in ACTION_HANDLING:
         t_actions = actions.get(resource_type, {})
-        log = handler(t_actions, opcount, maxops=maxops, fix=fix)
+        log = handler(t_actions, opcount, maxops=maxops, fix=fix,
+                      options=options)
         logs += log
     return logs
 

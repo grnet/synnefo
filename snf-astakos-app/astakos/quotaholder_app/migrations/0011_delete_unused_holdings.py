@@ -7,11 +7,23 @@ from django.db import models
 class Migration(DataMigration):
 
     depends_on = (
-        ("im", "0058_moderation_fix"),
+        ("im", "0062_accept_with_usage.py"),
         )
 
     def forwards(self, orm):
-        pass
+        AstakosUser = orm["im.astakosuser"]
+        accepted_users = AstakosUser.objects.filter(
+            moderated=True, is_rejected=False)
+        uuids = set(accepted_users.values_list("uuid", flat=True))
+
+        holdings = orm.Holding.objects.exclude(holder__in=uuids)
+        numb = len(holdings)
+        if numb:
+            holders = set(holdings.values_list('holder', flat=True))
+            print ("Deleting %s holdings for %d holders, because they don't "
+                   "correspond to accepted users" % (numb, len(holders)))
+
+        orm.Holding.objects.exclude(holder__in=uuids).delete()
 
     def backwards(self, orm):
         "Write your backwards methods here."

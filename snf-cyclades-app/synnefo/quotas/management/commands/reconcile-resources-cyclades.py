@@ -65,7 +65,7 @@ class Command(BaseCommand):
     )
 
     def handle(self, *args, **options):
-        write = self.stdout.write
+        write = self.stderr.write
         userid = options['userid']
 
         # Get holdings from Cyclades DB
@@ -117,7 +117,7 @@ class Command(BaseCommand):
 
         headers = ("User", "Resource", "Database", "Quotaholder")
         if unsynced:
-            pprint_table(self.stderr, unsynced, headers)
+            pprint_table(self.stdout, unsynced, headers)
             if options["fix"]:
                 qh = quotas.Quotaholder.get()
                 request = {}

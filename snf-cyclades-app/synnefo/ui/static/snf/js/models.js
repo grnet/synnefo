@@ -398,7 +398,8 @@
             return model;
         },
 
-        get_fetcher: function(interval, increase, fast, increase_after_calls, max, initial_call, params) {
+        get_fetcher: function(interval, increase, fast, increase_after_calls, 
+                              max, initial_call, params, fetcher_id) {
             var fetch_params = params || {};
             var handler_options = {};
 
@@ -408,7 +409,7 @@
             handler_options.fast = fast;
             handler_options.increase_after_calls = increase_after_calls;
             handler_options.max= max;
-            handler_options.id = "collection id";
+            handler_options.id = fetcher_id || "collection";
 
             var last_ajax = undefined;
             var callback = _.bind(function() {
@@ -1388,6 +1389,7 @@
         // get actions that the user can execute
         // depending on the vm state/status
         get_available_actions: function() {
+            if (this.get('suspended')) { return [] }
             return models.VM.AVAILABLE_ACTIONS[this.state()];
         },
 
@@ -2479,6 +2481,7 @@
         model: models.Quota,
         api_type: 'accounts',
         path: 'quotas',
+        supportIncUpdates: false,
         parse: function(resp) {
             filtered = _.map(resp.system, function(value, key) {
                 var available = (value.limit - value.usage) || 0;

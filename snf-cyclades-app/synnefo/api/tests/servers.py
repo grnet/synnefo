@@ -373,7 +373,8 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(api_server['name'], db_vm.name)
         self.assertEqual(api_server['status'], db_vm.operstate)
 
-    def test_create_server_no_flavor(self, mrapi):
+    def test_create_server_wrong_flavor(self, mrapi):
+        # Test with a flavor that does not exist
         request = deepcopy(self.request)
         request["server"]["flavorRef"] = 42
         with override_settings(settings, **self.network_settings):
@@ -381,6 +382,15 @@ class ServerCreateAPITest(ComputeAPITest):
                 response = self.mypost('servers', 'test_user',
                                        json.dumps(request), 'json')
         self.assertItemNotFound(response)
+
+        # Test with an flavor that is not allowed
+        flavor = mfactory.FlavorFactory(allow_create=False)
+        request["server"]["flavorRef"] = flavor.id
+        with override_settings(settings, **self.network_settings):
+            with mocked_quotaholder():
+                response = self.mypost('servers', 'test_user',
+                                       json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 403)
 
     def test_create_server_error(self, mrapi):
         """Test if the create server call returns the expected response
@@ -534,6 +544,18 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(len(vm.nics.all()), 3)
 
     def test_create_server_with_port(self, mrapi):
+        # Test invalid networks
+        request = deepcopy(self.request)
+        request["server"]["networks"] = {"foo": "lala"}
+        with override_settings(settings, **self.network_settings):
+            response = self.mypost("servers", "dummy_user",
+                                   json.dumps(request), 'json')
+        self.assertBadRequest(response)
+        request["server"]["networks"] = ['1', '2']
+        with override_settings(settings, **self.network_settings):
+            response = self.mypost("servers", "dummy_user",
+                                   json.dumps(request), 'json')
+        self.assertBadRequest(response)
         mrapi().CreateInstance.return_value = 42
         ip = mfactory.IPv4AddressFactory(nic__machine=None)
         port1 = ip.nic

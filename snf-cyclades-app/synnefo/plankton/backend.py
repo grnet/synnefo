@@ -63,6 +63,8 @@ from operator import itemgetter
 from django.conf import settings
 from django.utils import importlib
 from pithos.backends.base import NotAllowedError, VersionNotExists
+from synnefo.util.text import uenc
+
 
 logger = logging.getLogger(__name__)
 
@@ -71,8 +73,11 @@ PLANKTON_DOMAIN = 'plankton'
 PLANKTON_PREFIX = 'plankton:'
 PROPERTY_PREFIX = 'property:'
 
-PLANKTON_META = ('container_format', 'disk_format', 'name', 'properties',
+PLANKTON_META = ('container_format', 'disk_format', 'name',
                  'status', 'created_at')
+
+MAX_META_KEY_LENGTH = 128 - len(PLANKTON_DOMAIN) - len(PROPERTY_PREFIX)
+MAX_META_VALUE_LENGTH = 256
 
 from pithos.backends.util import PithosBackendPool
 _pithos_backend_pool = \
@@ -97,10 +102,14 @@ def create_url(account, container, name):
 
 def split_url(url):
     """Returns (accout, container, object) from a url string"""
-    t = url.split('/', 4)
-    assert t[0] == "pithos:", "Invalid url"
-    assert len(t) == 5, "Invalid url"
-    return t[2:5]
+    try:
+        assert(isinstance(url, basestring))
+        t = url.split('/', 4)
+        assert t[0] == "pithos:", "Invalid url"
+        assert len(t) == 5, "Invalid url"
+        return t[2:5]
+    except AssertionError:
+        raise InvalidLocation("Invalid location '%s" % url)
 
 
 def format_timestamp(t):
@@ -182,10 +191,12 @@ class ImageBackend(object):
             meta = self._get_meta(image_url, version)
             meta["deleted"] = timestamp
 
+        # XXX: Check that an object is a plankton image! PithosBackend will
+        # return common metadata for an object, even if it has no metadata in
+        # plankton domain. All images must have a name, so we check if a file
+        # is an image by checking if they are having an image name.
         if PLANKTON_PREFIX + 'name' not in meta:
-            logger.warning("Image without Plankton name! url %s meta %s",
-                           image_url, meta)
-            meta[PLANKTON_PREFIX + "name"] = ""
+            raise ImageNotFound
 
         permissions = self._get_permissions(image_url)
         return image_to_dict(image_url, meta, permissions)
@@ -200,12 +211,18 @@ class ImageBackend(object):
         """Update object's metadata."""
         account, container, name = split_url(image_url)
 
-        prefixed = {}
-        for key, val in meta.items():
-            if key in PLANKTON_META:
-                if key == "properties":
-                    val = json.dumps(val)
-                prefixed[PLANKTON_PREFIX + key] = val
+        prefixed = [(PLANKTON_PREFIX + uenc(k), uenc(v))
+                    for k, v in meta.items()
+                    if k in PLANKTON_META or k.startswith(PROPERTY_PREFIX)]
+        prefixed = dict(prefixed)
+
+        for k, v in prefixed.items():
+            if len(k) > 128:
+                raise InvalidMetadata('Metadata keys should be less than %s '
+                                      'characters' % MAX_META_KEY_LENGTH)
+            if len(v) > 256:
+                raise InvalidMetadata('Metadata values should be less than %s '
+                                      'characters.' % MAX_META_VALUE_LENGTH)
 
         self.backend.update_object_meta(self.user, account, container, name,
                                         PLANKTON_DOMAIN, prefixed, replace)
@@ -329,6 +346,7 @@ class ImageBackend(object):
         image_url = self._get_image_url(image_uuid)
         self._get_image(image_url)  # Assert that it is an image
 
+        # 'is_public' metadata is translated in proper file permissions
         is_public = metadata.pop("is_public", None)
         if is_public is not None:
             permissions = self._get_permissions(image_url)
@@ -339,8 +357,12 @@ class ImageBackend(object):
                 read.discard("*")
             permissions["read"] = list(read)
             self._update_permissions(image_url, permissions)
-        meta = {}
-        meta["properties"] = metadata.pop("properties", {})
+
+        # Extract the properties dictionary from metadata, and store each
+        # property as a separeted, prefixed metadata
+        properties = metadata.pop("properties", {})
+        meta = dict([(PROPERTY_PREFIX + k, v) for k, v in properties.items()])
+        # Also add the following metadata
         meta.update(**metadata)
 
         self._update_meta(image_url, meta)
@@ -388,12 +410,14 @@ class ImageBackend(object):
         else:
             permissions = {'read': [self.user]}
 
-        # Update rest metadata
-        meta = {}
-        meta['properties'] = metadata.pop('properties', {})
+        # Extract the properties dictionary from metadata, and store each
+        # property as a separeted, prefixed metadata
+        properties = metadata.pop("properties", {})
+        meta = dict([(PROPERTY_PREFIX + k, v) for k, v in properties.items()])
         # Add creation(register) timestamp as a metadata, to avoid extra
         # queries when retrieving the list of images.
         meta['created_at'] = time()
+        # Update rest metadata
         meta.update(name=name, status='available', **metadata)
 
         # Do the actualy update in the Pithos backend
@@ -463,6 +487,14 @@ class Forbidden(ImageBackendError):
     pass
 
 
+class InvalidMetadata(ImageBackendError):
+    pass
+
+
+class InvalidLocation(ImageBackendError):
+    pass
+
+
 def image_to_dict(image_url, meta, permissions):
     """Render an image to a dictionary"""
     account, container, name = split_url(image_url)
@@ -488,6 +520,7 @@ def image_to_dict(image_url, meta, permissions):
     # Permissions
     image["is_public"] = "*" in permissions.get('read', [])
 
+    properties = {}
     for key, val in meta.items():
         # Get plankton properties
         if key.startswith(PLANKTON_PREFIX):
@@ -495,13 +528,13 @@ def image_to_dict(image_url, meta, permissions):
             key = key.replace(PLANKTON_PREFIX, "")
             # Keep only those in plankton meta
             if key in PLANKTON_META:
-                if key == "properties":
-                    image[key] = json.loads(val)
-                elif key == "created_at":
+                if key != "created_at":
                     # created timestamp is return in 'created_at' field
-                    pass
-                else:
                     image[key] = val
+            elif key.startswith(PROPERTY_PREFIX):
+                key = key.replace(PROPERTY_PREFIX, "")
+                properties[key] = val
+    image["properties"] = properties
 
     return image
 

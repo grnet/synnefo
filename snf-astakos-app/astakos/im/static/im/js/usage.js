@@ -113,20 +113,14 @@ _.extend(UsageView.prototype, {
 
     _.each(this.meta.resources, function(group, index) {
       _.each(group[1], function(resource, rindex) {
-        var resource_index = ordered.length;
-        if (!_.contains(ordered, resource.name)) {
-          ordered.push(resource.name);
-        } else {
-          resource_index = ordered.indexOf(resource.name);
-        }
-        resource.index = resource_index;
         resource.resource_name = resource.name.split(".")[1];
         resources[resource.name] = resource;
       })
     });
       
     resources_ordered = _.filter(_.map(ordered, 
-                                       function(rk) { 
+                                       function(rk, index) { 
+                                         rk.index = index;
                                          return resources[rk] 
                                        }), 
                                  function(i) { return i});

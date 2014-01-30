@@ -204,7 +204,12 @@ def mocked_quotaholder(success=True):
             return (len(astakos.return_value.issue_one_commission.mock_calls) +
                     serial)
         astakos.return_value.issue_one_commission.side_effect = foo
-        astakos.return_value.resolve_commissions.return_value = {"failed": []}
+        def resolve_mock(*args, **kwargs):
+            return {"failed": [],
+                    "accepted": args[0],
+                    "rejected": args[1],
+                    }
+        astakos.return_value.resolve_commissions.side_effect = resolve_mock
         yield astakos.return_value
 
 
@@ -245,30 +250,29 @@ class BaseAPITest(TestCase):
         return response
 
     def assertSuccess(self, response):
-        self.assertTrue(response.status_code in [200, 202, 203, 204])
+        self.assertTrue(response.status_code in [200, 202, 203, 204],
+                        msg=response.content)
 
     def assertSuccess201(self, response):
-        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.status_code, 201, msg=response.content)
 
-    def assertFault(self, response, status_code, name):
-        self.assertEqual(response.status_code, status_code)
+    def assertFault(self, response, status_code, name, msg=''):
+        self.assertEqual(response.status_code, status_code,
+                         msg=msg)
         fault = json.loads(response.content)
         self.assertEqual(fault.keys(), [name])
 
     def assertBadRequest(self, response):
-        self.assertFault(response, 400, 'badRequest')
+        self.assertFault(response, 400, 'badRequest', msg=response.content)
 
     def assertConflict(self, response):
-        self.assertFault(response, 409, 'conflict')
+        self.assertFault(response, 409, 'conflict', msg=response.content)
 
     def assertItemNotFound(self, response):
-        self.assertFault(response, 404, 'itemNotFound')
-
-    def assertConflict(self, response):
-        self.assertFault(response, 409, "conflict")
+        self.assertFault(response, 404, 'itemNotFound', msg=response.content)
 
     def assertMethodNotAllowed(self, response):
-        self.assertFault(response, 405, 'notAllowed')
+        self.assertFault(response, 405, 'notAllowed', msg=response.content)
         self.assertTrue('Allow' in response)
         try:
             error = json.loads(response.content)

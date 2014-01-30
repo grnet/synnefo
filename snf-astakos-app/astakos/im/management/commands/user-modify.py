@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013, 2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -162,7 +162,7 @@ class Command(BaseCommand):
         make_option('--delete',
                     dest='delete',
                     action='store_true',
-                    help="Delete user"),
+                    help="Delete a non-accepted user"),
     )
 
     @transaction.commit_on_success
@@ -257,7 +257,7 @@ class Command(BaseCommand):
                 group = Group.objects.get(name=groupname)
                 user.groups.add(group)
             except Group.DoesNotExist, e:
-                self.stdout.write(
+                self.stderr.write(
                     "Group named %s does not exist\n" % groupname)
 
         groupname = options.get('delete-group')
@@ -266,7 +266,7 @@ class Command(BaseCommand):
                 group = Group.objects.get(name=groupname)
                 user.groups.remove(group)
             except Group.DoesNotExist, e:
-                self.stdout.write(
+                self.stderr.write(
                     "Group named %s does not exist\n" % groupname)
 
         pname = options.get('add-permission')
@@ -274,13 +274,13 @@ class Command(BaseCommand):
             try:
                 r, created = add_user_permission(user, pname)
                 if created:
-                    self.stdout.write(
+                    self.stderr.write(
                         'Permission: %s created successfully\n' % pname)
                 if r > 0:
-                    self.stdout.write(
+                    self.stderr.write(
                         'Permission: %s added successfully\n' % pname)
                 elif r == 0:
-                    self.stdout.write(
+                    self.stderr.write(
                         'User has already permission: %s\n' % pname)
             except Exception, e:
                 raise CommandError(e)
@@ -290,12 +290,12 @@ class Command(BaseCommand):
             try:
                 r = remove_user_permission(user, pname)
                 if r < 0:
-                    self.stdout.write(
+                    self.stderr.write(
                         'Invalid permission codename: %s\n' % pname)
                 elif r == 0:
-                    self.stdout.write('User has not permission: %s\n' % pname)
+                    self.stderr.write('User has not permission: %s\n' % pname)
                 elif r > 0:
-                    self.stdout.write(
+                    self.stderr.write(
                         'Permission: %s removed successfully\n' % pname)
             except Exception, e:
                 raise CommandError(e)
@@ -340,15 +340,16 @@ class Command(BaseCommand):
 
         delete = options.get('delete')
         if delete:
+            if user.is_accepted():
+                m = "Cannot delete. User %s is accepted." % user
+                raise CommandError(m)
             management.call_command('user-show', str(user.pk),
                                     list_quotas=True)
-            m = "Are you sure you want to permanently delete the user " \
-                "(yes/no) ? "
 
-            self.stdout.write("\n")
-            confirm = raw_input(m)
-            if confirm == "yes":
-                user.delete()
+            if not force:
+                self.stdout.write("About to delete user %s. " % user.uuid)
+                self.confirm()
+            user.delete()
 
         # Change users email address
         newemail = options.get('set-email', None)
@@ -369,9 +370,12 @@ class Command(BaseCommand):
 
     def confirm(self):
         self.stdout.write("Confirm? [y/N] ")
-        response = raw_input()
+        try:
+            response = raw_input()
+        except EOFError:
+            response = "ABORT"
         if string.lower(response) not in ['y', 'yes']:
-            self.stdout.write("Aborted.\n")
+            self.stderr.write("Aborted.\n")
             exit()
 
     def handle_limits_user(self, user, res, capacity, style):

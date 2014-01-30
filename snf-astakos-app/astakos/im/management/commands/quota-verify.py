@@ -79,20 +79,20 @@ class Command(SynnefoCommand):
     def print_sync(self, diff_quotas):
         size = len(diff_quotas)
         if size == 0:
-            self.stdout.write("No sync needed.\n")
+            self.stderr.write("No sync needed.\n")
         else:
-            self.stdout.write("Synced %s users:\n" % size)
+            self.stderr.write("Synced %s users:\n" % size)
             uuids = diff_quotas.keys()
             users = AstakosUser.objects.filter(uuid__in=uuids)
             for user in users:
-                self.stdout.write("%s (%s)\n" % (user.uuid, user.username))
+                self.stderr.write("%s (%s)\n" % (user.uuid, user.username))
 
     def print_verify(self, qh_limits, diff_quotas):
         for holder, local in diff_quotas.iteritems():
             registered = qh_limits.pop(holder, None)
             user = get_user_by_uuid(holder)
             if registered is None:
-                self.stdout.write(
+                self.stderr.write(
                     "No quota for %s (%s) in quotaholder.\n" %
                     (holder, user.username))
             else:
@@ -105,4 +105,4 @@ class Command(SynnefoCommand):
 
         diffs = len(diff_quotas)
         if diffs:
-            self.stdout.write("Quota differ for %d users.\n" % (diffs))
+            self.stderr.write("Quota differ for %d users.\n" % (diffs))

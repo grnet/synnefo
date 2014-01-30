@@ -59,4 +59,4 @@ class Command(BaseCommand):
 
             activation_backend.send_user_verification_email(user)
 
-            self.stdout.write("Activation sent to '%s'\n" % (user.email,))
+            self.stderr.write("Activation sent to '%s'\n" % (user.email,))

@@ -142,7 +142,8 @@ def pretty_print_stats(stats, stdout):
         public_ips = networks.pop("public_ips")
         networks["total_public_ips"] = public_ips.get("total", 0)
         networks["free_public_ips"] = public_ips.get("free", 0)
-        fields = ["total", "ACTIVE", "DELETED", "ERROR"]
+        fields = ["total", "ACTIVE", "DELETED", "ERROR", "total_public_ips",
+                  "free_public_ips"]
         table = columns_from_fields(fields, networks)
         pprint_table(stdout, table, None,
                      title="Statistics for Virtual Networks")

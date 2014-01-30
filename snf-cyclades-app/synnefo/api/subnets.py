@@ -196,7 +196,7 @@ def update_subnet(request, sub_id):
         raise api.faults.BadRequest("Malformed request")
 
     if len(subnet) != 1 or "name" not in subnet:
-        raise api.faults.BadRequest("Only the name of subnet can be updated")
+        raise api.faults.BadRequest("Only the name of a subnet can be updated")
 
     name = subnet.get("name", None)
 
@@ -226,7 +226,8 @@ def subnet_to_dict(subnet):
          'enable_dhcp': subnet.dhcp,
          'dns_nameservers': dns,
          'host_routes': hosts,
-         'allocation_pools': allocation_pools}
+         'allocation_pools': allocation_pools,
+         'deleted': subnet.deleted}
 
     if subnet.ipversion == 6:
         d['enable_slaac'] = subnet.dhcp

@@ -46,43 +46,41 @@ def get_public_stats():
 
 
 def get_astakos_stats():
-    stats = {"datetime": datetime.datetime.now().strftime("%c")}
-
-    resources = Resource.objects.values_list("name", flat=True)
+    stats = {"datetime": datetime.datetime.now().strftime("%c"),
+             "providers": [],
+             "users": {},
+             "resources": {}}
 
     users = AstakosUser.objects.all()
     verified = users.filter(email_verified=True)
     active = users.filter(is_active=True)
 
-    user_stats = {}
-    user_stats["total"] = {"total": users.count(),
-                           "verified": verified.count(),
-                           "active": active.count(),
-                           "usage": {}}
-
-    for resource in resources:
-        usage = Holding.objects.filter(resource=resource)\
-                               .aggregate(summ=Sum("usage_max"))
-        user_stats["total"]["usage"][resource] = int(usage["summ"])
-
     for provider in settings.ASTAKOS_IM_MODULES:
+        # Add provider
+        stats["providers"].append(provider)
 
+        # Add stats about users
         users = AstakosUser.objects.filter(auth_providers__module=provider)
         verified = users.filter(email_verified=True)
         active = users.filter(is_active=True)
 
-        user_stats[provider] = {"total": users.count(),
-                                "verified": verified.count(),
-                                "active": active.count(),
-                                "usage": {}}
+        stats["users"][provider] = {"total": users.count(),
+                                    "verified": verified.count(),
+                                    "active": active.count()}
 
+        # Add stats about resources
         users_uuids = users.values_list("uuid", flat=True)
-        for resource in resources:
-            usage = Holding.objects\
-                           .filter(holder__in=users_uuids, resource=resource)\
-                           .aggregate(summ=Sum("usage_max"))
-            user_stats[provider]["usage"][resource] = int(usage["summ"])
-
-    stats["users"] = user_stats
+        resources_stats = {}
+        for resource in Resource.objects.all():
+            info = Holding.objects\
+                          .filter(holder__in=users_uuids,
+                                  resource=resource.name)\
+                          .aggregate(usage_sum=Sum("usage_max"),
+                                     limit_sum=Sum("limit"))
+            resources_stats[resource.name] = {"used": info["usage_sum"],
+                                              "limit": info["limit_sum"],
+                                              "unit": resource.unit,
+                                              "description": resource.desc}
+        stats["resources"][provider] = resources_stats
 
     return stats

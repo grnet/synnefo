@@ -107,22 +107,28 @@ def create_port(request):
     req = api.utils.get_request_dict(request)
     log.info('create_port %s', req)
 
-    port_dict = api.utils.get_attribute(req, "port")
-    net_id = api.utils.get_attribute(port_dict, "network_id")
+    port_dict = api.utils.get_attribute(req, "port", attr_type=dict)
+    net_id = api.utils.get_attribute(port_dict, "network_id",
+                                     attr_type=(basestring, int))
 
-    device_id = api.utils.get_attribute(port_dict, "device_id", required=False)
+    device_id = api.utils.get_attribute(port_dict, "device_id", required=False,
+                                        attr_type=(basestring, int))
     vm = None
     if device_id is not None:
         vm = util.get_vm(device_id, user_id, for_update=True, non_deleted=True,
                          non_suspended=True)
 
     # Check if the request contains a valid IPv4 address
-    fixed_ips = api.utils.get_attribute(port_dict, "fixed_ips", required=False)
+    fixed_ips = api.utils.get_attribute(port_dict, "fixed_ips", required=False,
+                                        attr_type=list)
     if fixed_ips is not None and len(fixed_ips) > 0:
         if len(fixed_ips) > 1:
             msg = "'fixed_ips' attribute must contain only one fixed IP."
             raise faults.BadRequest(msg)
-        fixed_ip_address = fixed_ips[0].get("ip_address")
+        fixed_ip = fixed_ips[0]
+        if not isinstance(fixed_ip, dict):
+            raise faults.BadRequest("Invalid 'fixed_ips' field.")
+        fixed_ip_address = fixed_ip.get("ip_address")
         if fixed_ip_address is not None:
             try:
                 ip = ipaddr.IPAddress(fixed_ip_address)
@@ -153,19 +159,24 @@ def create_port(request):
         ipaddress = ips.allocate_ip(network, user_id,
                                     address=fixed_ip_address)
 
-    name = api.utils.get_attribute(port_dict, "name", required=False)
+    name = api.utils.get_attribute(port_dict, "name", required=False,
+                                   attr_type=basestring)
     if name is None:
         name = ""
 
     security_groups = api.utils.get_attribute(port_dict,
                                               "security_groups",
-                                              required=False)
+                                              required=False,
+                                              attr_type=list)
     #validate security groups
     # like get security group from db
     sg_list = []
     if security_groups:
         for gid in security_groups:
-            sg = util.get_security_group(int(gid))
+            try:
+                sg = util.get_security_group(int(gid))
+            except (KeyError, ValueError):
+                raise faults.BadRequest("Invalid 'security_groups' field.")
             sg_list.append(sg)
 
     new_port = servers.create_port(user_id, network, use_ipaddress=ipaddress,
@@ -191,19 +202,25 @@ def update_port(request, port_id):
     port = util.get_port(port_id, request.user_uniq, for_update=True)
     req = api.utils.get_request_dict(request)
 
-    port_info = api.utils.get_attribute(req, "port", required=True)
-    name = api.utils.get_attribute(port_info, "name", required=False)
+    port_info = api.utils.get_attribute(req, "port", required=True,
+                                        attr_type=dict)
+    name = api.utils.get_attribute(port_info, "name", required=False,
+                                   attr_type=basestring)
 
     if name:
         port.name = name
 
     security_groups = api.utils.get_attribute(port_info, "security_groups",
-                                              required=False)
+                                              required=False, attr_type=list)
+
     if security_groups:
         sg_list = []
         #validate security groups
         for gid in security_groups:
-            sg = util.get_security_group(int(gid))
+            try:
+                sg = util.get_security_group(int(gid))
+            except (KeyError, ValueError):
+                raise faults.BadRequest("Invalid 'security_groups' field.")
             sg_list.append(sg)
 
         #clear the old security groups

@@ -91,7 +91,7 @@
          data-rv-on-click="view.set_disconnect_confirm">X</i>
       </div>
     <div class="border2"></div>
-    <div class="inner clearfix main-content">
+    <div data-rv-class="model.vm.status|vm_status_cls">
       <img class="model-logo" data-rv-src="model.vm.status|vm_logo_url" />
       <h5 class="title" data-rv-text="model.vm.name|truncate 35"></h5>
       <div class="state state-indicator">
@@ -111,35 +111,38 @@
            src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
            class="progress-indicator" />
        </div>
-      <div data-rv-show="model.network.is_public" class="firewall">
-        <img data-rv-show="model.firewall_running" 
-             src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
-             class="progress-indicator" />
-        <div class="toggler-wrap clearfix">
-          <div class="cont-toggler firewall-toggle">
-            <span class="label machines-label">Firewall
-            (<span class="firewall-on">On</span>)
-            </span>
+       <div data-rv-hide="model.vm.status|error_status">
+         <div data-rv-show="model.network.is_public" 
+           class="firewall">
+          <img data-rv-show="model.firewall_running" 
+               src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
+               class="progress-indicator" />
+          <div class="toggler-wrap clearfix">
+            <div class="cont-toggler firewall-toggle">
+              <span class="label machines-label">Firewall
+              (<span class="firewall-on">On</span>)
+              </span>
+            </div>
           </div>
-        </div>
-        <div class="firewall-content clearfix" 
-             data-rv-class-dummy="model.firewall_status|update_firewall">
-          <input type="radio" class="checkboxes" value="DISABLED"
-                 checked="checked" 
-                 data-rv-name="model.id|prefix firewall-" />
-          <span class="checkbox-legends current">Unprotected mode</span>
-          <br />
-          <input type="radio" class="checkboxes" 
-                 value="ENABLED" 
-                 data-rv-name="model.id|prefix firewall-" />
-          <span class="checkbox-legends">Fully protected mode (Firewall on)</span>
-          <br />
-          <input type="radio" class="checkboxes" 
-                 data-rv-name="model.id|prefix firewall-"
-                 value="PROTECTED" />
-          <span class="checkbox-legends">Basically protected mode (Firewall on)</span>
-          <br />
-          <button data-rv-on-click="view.set_firewall" type="submit" class="firewall-apply hidden">Apply</button> 
+          <div class="firewall-content clearfix" 
+               data-rv-class-dummy="model.firewall_status|update_firewall">
+            <input type="radio" class="checkboxes" value="DISABLED"
+                   checked="checked" 
+                   data-rv-name="model.id|prefix firewall-" />
+            <span class="checkbox-legends current">Unprotected mode</span>
+            <br />
+            <input type="radio" class="checkboxes" 
+                   value="ENABLED" 
+                   data-rv-name="model.id|prefix firewall-" />
+            <span class="checkbox-legends">Fully protected mode (Firewall on)</span>
+            <br />
+            <input type="radio" class="checkboxes" 
+                   data-rv-name="model.id|prefix firewall-"
+                   value="PROTECTED" />
+            <span class="checkbox-legends">Basically protected mode (Firewall on)</span>
+            <br />
+            <button data-rv-on-click="view.set_firewall" type="submit" class="firewall-apply hidden">Apply</button> 
+          </div>
         </div>
       </div>
       <div class="actions-content">

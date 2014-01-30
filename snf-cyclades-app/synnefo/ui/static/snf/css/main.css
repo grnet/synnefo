@@ -5422,13 +5422,15 @@ table.list-machines .wave {
   margin-right: 5px;
 }
 
-.cont-toggler-wrapper.disabled .cont-toggler {
+.cont-toggler-wrapper.disabled .cont-toggler,
+.cont-toggler.disabled {
   background-color: #C1CED4;
   background-image: url("../images/down-arrow-lighter.png");
   border-right-color: #C1CED4;
 }
 
-.cont-toggler-wrapper.disabled .cont-toggler .label {
+.cont-toggler-wrapper.disabled .cont-toggler .label,
+.cont-toggler.disabled .label {
   color: #eee;
   background-color: #B4C1C7;
 }
@@ -6899,13 +6901,17 @@ input.has-errors {
   text-align: right;
   margin-right: 4px;
   margin-top: 5px;
-  float: right;
-  width: 125px;
+  width: 150px;
+  position: absolute;
+  top:-4px;
+  right: 0;
 }
 
 .model-item .status-indicator {
   width: 65px;
-  float: right;
+  position: absolute;
+  top: 16px;
+  right: 0;
 }
 
 .model-item .actions-content {
@@ -7017,6 +7023,10 @@ input.has-errors {
 
 .model-item .status-inactive .status-indicator .indicator {
   background-color: #940606;
+}
+
+.model-item .status-terminated .status-indicator .indicator {
+  background-color: #5E1616;
 }
 
 .model-item .status-error .status-indicator .indicator {
@@ -7200,6 +7210,10 @@ input.has-errors {
 .nested-model-list .model-item:hover .inner.main-content,
 .nested-model-list .model-item.hovered .inner.main-content {
   background-color: #84B7D0;
+}
+
+.main-content.vm-status-error .title {
+    color: #f00 !important;
 }
 
 .entry.inline .model-item .inner,
@@ -7450,13 +7464,14 @@ input.has-errors {
 
 #public-keys-list-view .model-item textarea.content {
   width: 270px;
+  max-width: 380px;
   background-color: transparent;
   font-family: monospace;
   font-size: 1em;
   border: none;
   overflow-y: hidden;
   overflow-x: hidden;
-  height: 155px;
+  height: 185px;
   margin: 10px 0;
   padding: 10px;
   border: 1px solid #ddd;
@@ -7491,7 +7506,7 @@ input.has-errors {
   border: 1px solid #aaaaaa;
   font-size: 85%;
   padding: 2px;
-  width: 235px;
+  width: 207px;
 }
 
 .model-rename-view .value {}
@@ -7503,7 +7518,7 @@ input.has-errors {
   width: 40px;
   position: relative;
   top: 1px;
-  left: -6px;
+  left: -36px;
 }
 
 .model-rename-view .rename-actions .btn {

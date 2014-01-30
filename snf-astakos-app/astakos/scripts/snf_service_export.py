@@ -1,5 +1,6 @@
 import os
 os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
+import sys
 from optparse import OptionParser
 from synnefo.lib.services import fill_endpoints, filter_public
 from django.utils import simplejson as json
@@ -303,7 +304,7 @@ def main():
     try:
         services = definitions[component]
     except KeyError:
-        print "Unrecognized component %s" % component
+        print >> sys.stderr, "Unrecognized component %s" % component
         exit(1)
     base_url = args[1]
     print_definitions(services, base_url)

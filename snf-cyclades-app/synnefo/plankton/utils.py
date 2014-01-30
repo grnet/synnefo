@@ -48,9 +48,11 @@ def image_backend(user_id):
     image_backend = backend.get_backend()(user_id)
     try:
         yield image_backend
-    except backend.Forbidden:
+    except backend.Forbidden as e:
         raise faults.Forbidden
     except backend.ImageNotFound:
         raise faults.ItemNotFound
+    except backend.InvalidMetadata as e:
+        raise faults.BadRequest(str(e))
     finally:
         image_backend.close()

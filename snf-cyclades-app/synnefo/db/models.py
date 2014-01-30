@@ -55,6 +55,8 @@ class Flavor(models.Model):
     disk = models.IntegerField('Disk size in GiB', default=0)
     disk_template = models.CharField('Disk template', max_length=32)
     deleted = models.BooleanField('Deleted', default=False)
+    # Whether the flavor can be used to create new servers
+    allow_create = models.BooleanField(default=True, null=False)
 
     class Meta:
         verbose_name = u'Virtual machine flavor'

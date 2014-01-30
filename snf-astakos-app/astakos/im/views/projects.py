@@ -358,9 +358,6 @@ def common_detail(request, chain_or_app_id, project_view=True,
                                                        members,
                                                        user=request.user,
                                                        prefix="members_")
-            RequestConfig(request, paginate={"per_page": settings.PAGINATE_BY}
-                          ).configure(members_table)
-
         else:
             members_table = None
 

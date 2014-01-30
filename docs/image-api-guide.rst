@@ -132,18 +132,18 @@ Example Image response:
 ::
 
     [{
-        "status": "available", 
-        "name": "ubuntu", 
-        "disk_format": "diskdump", 
-        "container_format": "bare", 
-        "id": "5583ffe1-5273-4c84-9e32-2fbe476bd7b7", 
+        "status": "available",
+        "name": "ubuntu",
+        "disk_format": "diskdump",
+        "container_format": "bare",
+        "id": "5583ffe1-5273-4c84-9e32-2fbe476bd7b7",
         "size": 2622562304
     }, {
-        "status": "available", 
-        "name": "Ubuntu-10.04", 
-        "disk_format": "diskdump", 
-        "container_format": "bare", 
-        "id": "907ef618-c03a-4473-9914-9348e12890c1", 
+        "status": "available",
+        "name": "Ubuntu-10.04",
+        "disk_format": "diskdump",
+        "container_format": "bare",
+        "id": "907ef618-c03a-4473-9914-9348e12890c1",
         "size": 761368576
     }]
 
@@ -194,11 +194,11 @@ properties       Custom properties     ✔        ✔
 Example Image response::
 
     [{
-        "status": "available", 
+        "status": "available",
         "location": "pithos://u53r-1d/images/my/path/example_image_build.diskdump"
-        "name": "ubuntu", 
-        "disk_format": "diskdump", 
-        "container_format": "bare", 
+        "name": "ubuntu",
+        "disk_format": "diskdump",
+        "container_format": "bare",
         "created_at": "2013-03-29 14:14:34",
         "deleted_at": "",
         "id": "5583ffe1-5273-4c84-9e32-2fbe476bd7b7",
@@ -206,22 +206,22 @@ Example Image response::
         "is_public": "True",
         "checksum": "a387aaaae583bc65daacf12d6be502bd7cfbbb254dcd452f92ca31f4c06a9208",
         "properties": {
-            "partition_table": "msdos", 
-            "kernel": "3.8.3", 
-            "osfamily": "linux", 
-            "users": "root user", 
-            "gui": "GNOME 3.4.2", 
-            "sortorder": "5", 
-            "os": "fedora", 
-            "root_partition": "1", 
+            "partition_table": "msdos",
+            "kernel": "3.8.3",
+            "osfamily": "linux",
+            "users": "root user",
+            "gui": "GNOME 3.4.2",
+            "sortorder": "5",
+            "os": "fedora",
+            "root_partition": "1",
             "description": "Fedora release 17 (Beefy Miracle)"}
     }, {
         "location": "pithos://0th3r-u53r-1d/images/ubuntu_10_04.diskdump"
-        "status": "available", 
-        "name": "Ubuntu-10.04", 
-        "disk_format": "diskdump", 
-        "container_format": "bare", 
-        "id": "907ef618-c03a-4473-9914-9348e12890c1", 
+        "status": "available",
+        "name": "Ubuntu-10.04",
+        "disk_format": "diskdump",
+        "container_format": "bare",
+        "id": "907ef618-c03a-4473-9914-9348e12890c1",
         "size": 761368576
         "created_at": "2013-03-29 14:14:34",
         "deleted_at": ""
@@ -232,7 +232,7 @@ Add or update an image
 
 According to the Synnefo approach, this request performs two operations:
 
-* registers a new image to Cyclades/Image 
+* registers a new image to Cyclades/Image
 * commits metadata for the new image
 * update the metadata of an existing image
 
@@ -272,7 +272,7 @@ X-Image-Meta-Is_public        Make image public         **✘**     ✔
 x-image-meta-Min-Ram          Minimum ram required (MB) **✘**     ✔
 x-image-meta-Min-Disk         Maximum ram required (MB) **✘**     ✔
 X-Image-Meta-Owner            Image owner               ✔         ✔
-X-Image-Meta-Property-*       Property prefix           ✔         ✔         
+X-Image-Meta-Property-*       Property prefix           ✔         ✔
 ============================= ========================= ========  ========
 
 **X-Meta-Location** format is described at :ref:`location-ref`
@@ -285,7 +285,7 @@ X-Image-Meta-Property-*       Property prefix           ✔         ✔
 
 **X-Image-Meta-Container-Format** values are listed at :ref:`container-format-ref`
 
-**X-Image-Meta-Size** is optional, but should much the actual image file size.
+**X-Image-Meta-Size** is optional, but should match the actual image file size.
 
 **X-Image-Meta-Is-Public** values are true or false (case insensitive)
 
@@ -300,12 +300,12 @@ X-Image-Meta-Property-*       Property prefix           ✔         ✔
 Return Code                 Description
 =========================== =====================
 200 (OK)                    The request succeeded
-400 (Bad Request)           
+400 (Bad Request)
 \                           No name header
 \                           Illegal header value
-\                           File not found on given location
 \                           Invalid size or checksum
 401 (Unauthorized)          Missing or expired user token
+404 (Not Found)             File not found on given location
 500 (Internal Server Error) The request cannot be completed because of an internal error
 501 (Not Implemented)       Location header is empty or omitted
 =========================== =====================
@@ -356,16 +356,16 @@ The following refers only to the Cyclades/Image implementation.
 |
 
 ============================= =========================
-Request Header Name           Value                    
+Request Header Name           Value
 ============================= =========================
 X-Auth-Token                  User authentication token
-X-Image-Meta-Name             New image name           
-X-Image-Meta-Disk-Format      New disk format          
-X-Image-Meta-Container-Format New container format     
-X-Image-Meta-Status           New image status         
-X-Image-Meta-Is-Public        (un)publish the image    
-X-Image-Meta-Owner            Set an owner             
-X-Image-Meta-Property-*       Add / modify properties  
+X-Image-Meta-Name             New image name
+X-Image-Meta-Disk-Format      New disk format
+X-Image-Meta-Container-Format New container format
+X-Image-Meta-Status           New image status
+X-Image-Meta-Is-Public        (un)publish the image
+X-Image-Meta-Owner            Set an owner
+X-Image-Meta-Property-*       Add / modify properties
 ============================= =========================
 
 **X-Image-Meta-Disk-Format** values are listed at :ref:`disk-format-ref`
@@ -377,7 +377,7 @@ X-Image-Meta-Property-*       Add / modify properties
 **X-Image-Meta-Is-Public** values are true or false (case insensitive)
 
 **X-Image-Meta-Property-*** is used as a prefix to update image property
-values, or set some extra proeperties. If a registered image already contains
+values, or set some extra properties. If a registered image already contains
 some custom properties that are not addressed in the update request, these
 properties will remain untouched. For example::
 
@@ -390,7 +390,7 @@ properties will remain untouched. For example::
 Return Code                 Description
 =========================== =====================
 200 (OK)                    The request succeeded
-400 (Bad Request)           
+400 (Bad Request)
 \                           Illegal header value
 \                           Invalid size or checksum
 401 (Unauthorized)          Missing or expired user token
@@ -404,20 +404,20 @@ Return Code                 Description
 The following is received when the response code is 200:
 
 ============================= =====================
-Response Header               Description          
+Response Header               Description
 ============================= =====================
-X-Image-Meta-Id               Unique img id        
-X-Image-Meta-Name             Img name             
-X-Image-Meta-Disk-Format      Disk format          
-X-Image-Meta-Container-Format Container format     
-X-Image-Meta-Size             Img file size        
+X-Image-Meta-Id               Unique img id
+X-Image-Meta-Name             Img name
+X-Image-Meta-Disk-Format      Disk format
+X-Image-Meta-Container-Format Container format
+X-Image-Meta-Size             Img file size
 X-Image-Meta-Checksum         Img file MD5 checksum
 X-Image-Meta-Location         Pithos file location
-X-Image-Meta-Created-At       Date of img creation 
-X-Image-Meta-Deleted-At       Date of img deletion 
-X-Image-Meta-Status           Img status           
+X-Image-Meta-Created-At       Date of img creation
+X-Image-Meta-Deleted-At       Date of img deletion
+X-Image-Meta-Status           Img status
 X-Image-Meta-Is-Public        True if img is public
-X-Image-Meta-Owner            Img owner or tentant 
+X-Image-Meta-Owner            Img owner or tentant
 X-Image-Meta-Property-*       Custom img properties
 ============================= =====================
 
@@ -522,7 +522,7 @@ Example Cyclades/Image Headers response::
     x-image-meta-checksum: d0f28e4d72927c90eadf30917d94d0156781fe1351ed16402b538316d404
     x-image-meta-created-at: 2013-02-26 12:04:31
     x-image-meta-updated-at: 2013-02-26 12:05:28
-    x-image-meta-deleted-at: 
+    x-image-meta-deleted-at:
     x-image-meta-status: available
     x-image-meta-is-public: True
     x-image-meta-owner: 25cced7-bd53-4145-91ee-cf4737e9fb2

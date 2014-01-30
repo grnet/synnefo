@@ -106,8 +106,15 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 # Authenticate
                 if user_required:
                     assert(token_required), "Can not get user without token"
-                    astakos = astakos_auth_url or settings.ASTAKOS_AUTH_URL
-                    astakos = AstakosClient(token, astakos,
+                    astakos_url = astakos_auth_url
+                    if astakos_url is None:
+                        try:
+                            astakos_url = settings.ASTAKOS_AUTH_URL
+                        except AttributeError:
+                            logger.error("Cannot authenticate without having"
+                                         " an Astakos Authentication URL")
+                            raise
+                    astakos = AstakosClient(token, astakos_url,
                                             use_pool=True,
                                             retry=2,
                                             logger=logger)

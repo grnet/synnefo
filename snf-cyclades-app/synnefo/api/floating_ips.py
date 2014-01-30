@@ -98,7 +98,8 @@ def ip_to_dict(floating_ip):
             "instance_id": str(machine_id) if machine_id else None,
             "floating_ip_address": floating_ip.address,
             "port_id": str(port_id) if port_id else None,
-            "floating_network_id": str(floating_ip.network_id)}
+            "floating_network_id": str(floating_ip.network_id),
+            "deleted": floating_ip.deleted}
 
 
 @api.api_method(http_method="GET", user_required=True, logger=log,
@@ -139,7 +140,7 @@ def allocate_floating_ip(request):
     """Allocate a floating IP."""
     req = utils.get_request_dict(request)
     floating_ip_dict = api.utils.get_attribute(req, "floatingip",
-                                               required=True)
+                                               required=True, attr_type=dict)
     log.info('allocate_floating_ip %s', req)
 
     userid = request.user_uniq
@@ -147,7 +148,8 @@ def allocate_floating_ip(request):
     # the network_pool is a mandatory field
     network_id = api.utils.get_attribute(floating_ip_dict,
                                          "floating_network_id",
-                                         required=False)
+                                         required=False,
+                                         attr_type=(basestring, int))
     if network_id is None:
         floating_ip = ips.create_floating_ip(userid)
     else:
@@ -160,7 +162,8 @@ def allocate_floating_ip(request):
                                    non_deleted=True)
         address = api.utils.get_attribute(floating_ip_dict,
                                           "floating_ip_address",
-                                          required=False)
+                                          required=False,
+                                          attr_type=basestring)
         floating_ip = ips.create_floating_ip(userid, network, address)
 
     log.info("User '%s' allocated floating IP '%s'", userid, floating_ip)
@@ -236,4 +239,5 @@ def network_to_floating_ip_pool(network):
     total, free = network.ip_count()
     return {"name": str(network.id),
             "size": total,
-            "free": free}
+            "free": free,
+            "deleted": network.deleted}

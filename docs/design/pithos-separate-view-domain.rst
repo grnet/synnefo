@@ -244,5 +244,5 @@ views that serve Pithos file contents will be restricted to be served only
 under the domain specified in the setting value.
 
 If an invalid host is identified and request HTTP method is one of ``GET``,
-``HOST``, the server will redirect using a clone of the request with host
+``HEAD``, the server will redirect using a clone of the request with host
 replaced to the one the restriction applies to.

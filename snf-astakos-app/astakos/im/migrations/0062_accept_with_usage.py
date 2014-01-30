@@ -7,11 +7,31 @@ from django.db import models
 class Migration(DataMigration):
 
     depends_on = (
-        ("im", "0058_moderation_fix"),
+        ("quotaholder_app", "0010_non_accepted.py"),
         )
 
     def forwards(self, orm):
-        pass
+        Holding = orm["quotaholder_app.holding"]
+        uuids = set(Holding.objects.filter(models.Q(usage_min__gt=0) |
+                                           models.Q(usage_max__gt=0)).
+                    values_list("holder", flat=True))
+        users = orm.AstakosUser.objects.filter(uuid__in=uuids).\
+            filter(models.Q(moderated=False) |
+                   models.Q(moderated=True, is_rejected=True))
+
+        for user in users:
+            print ("Accepting user %s (%s) because of non-zero quota usage. "
+                   "User kept inactive." % (user.uuid, user.email))
+            user.moderated = True
+            user.moderated_at = datetime.datetime.now()
+            user.accepted_policy = 'migration'
+            user.accepted_email = user.email
+            user.email_verified = True
+            user.deactivated_reason = 'migration'
+            user.deactivated_at = user.moderated_at
+            user.is_rejected = False
+            user.is_active = False
+            user.save()
 
     def backwards(self, orm):
         "Write your backwards methods here."
@@ -344,5 +364,5 @@ class Migration(DataMigration):
         }
     }
 
-    complete_apps = ['im', 'quotaholder_app']
+    complete_apps = ['quotaholder_app', 'im']
     symmetrical = True

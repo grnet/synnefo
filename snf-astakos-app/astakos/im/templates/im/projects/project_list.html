@@ -6,25 +6,15 @@
 {% block page.body %} 
 <div class="maincol {% block innerpage.class %}{% endblock %}">
     <div class="projects">
-	    <h2>PROJECTS</h2>
 	    {% if form %}
 	        {% include "im/projects/search_form.html" %}
 	    {% else %}
+	    <h2>PROJECTS</h2>
 	        {% include "im/projects/intro.html" %}
-		</div>
         {% endif %}
         {% if table %}
-
             {% render_table table %}
-            <div class="pagination clearfix" id="pager">
-                <p class="next-prev">
-                    <a href="" class="prev">&lt; Previous</a>
-                    <a href="" class="next">Next &gt;</a>
-                </p>
-                <span class="pagedisplay">1/1</span>
-            </div>
-
         {% endif %}
-</div>
+	</div>
 </div>  
 {% endblock %}

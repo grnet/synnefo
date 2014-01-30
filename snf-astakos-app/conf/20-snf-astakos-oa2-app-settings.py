@@ -14,3 +14,8 @@
 #
 ## Set the expiration time of newly created access tokens to 20 seconds
 #OAUTH2_TOKEN_EXPIRES = 20
+#
+# Set the maximum allowed redirection endpoint URI length
+# Requests for a greater redirection endpoint URI will fail.
+#OAUTH2_MAXIMUM_ALLOWED_REDIRECT_URI_LENGTH = get_setting(
+#    'MAXIMUM_ALLOWED_REDIRECT_URI_LENGTH', 5000)

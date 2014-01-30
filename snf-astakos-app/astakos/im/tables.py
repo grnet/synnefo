@@ -354,8 +354,10 @@ class ProjectMembersTable(UserTable):
     input = "<input type='checkbox' name='all-none'/>"
     check = tables.Column(accessor="person.id", verbose_name=mark_safe(input),
                           orderable=False)
-    email = tables.Column(accessor="person.email", verbose_name=_('Email'))
-    status = tables.Column(accessor="state", verbose_name=_('Status'))
+    email = tables.Column(accessor="person.email", verbose_name=_('Email'),
+                          orderable= False)
+    status = tables.Column(accessor="state", verbose_name=_('Status'),
+                          orderable= False)
     project_action = RichLinkColumn(verbose_name=_('Action'),
                                     extra_context=member_action_extra_context,
                                     orderable=False)

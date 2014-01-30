@@ -44,10 +44,10 @@ class Command(NoArgsCommand):
     help = "Cleanup sessions and session catalog"
 
     def handle_noargs(self, **options):
-        self.stdout.write('Cleanup sessions ...\n')
+        self.stderr.write('Cleanup sessions ...\n')
         call_command('cleanup')
 
-        self.stdout.write('Cleanup session catalog ...\n')
+        self.stderr.write('Cleanup session catalog ...\n')
         engine = import_module(settings.SESSION_ENGINE)
         store = engine.SessionStore()
         tbd = (entry for entry in SessionCatalog.objects.all()

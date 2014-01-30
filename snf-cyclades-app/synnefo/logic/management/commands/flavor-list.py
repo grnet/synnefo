@@ -52,7 +52,10 @@ class Command(ListCommand):
         "ram": ("ram", "Size(MB) of RAM"),
         "disk": ("disk", "Size(GB) of disk"),
         "template": ("disk_template", "Disk template"),
+        "allow_create": ("allow_create", "Whether servers can be created from"
+                                         " this flavor"),
         "vms": (get_vms, "Number of active servers using this flavor")
     }
 
-    fields = ["id", "name", "cpu", "ram", "disk", "template", "vms"]
+    fields = ["id", "name", "cpu", "ram", "disk", "template", "allow_create",
+              "vms"]

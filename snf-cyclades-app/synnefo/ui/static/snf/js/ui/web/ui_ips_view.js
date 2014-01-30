@@ -51,6 +51,15 @@
         }, this);
       },
 
+      vm_status_cls: function(vm) {
+        var cls = 'inner clearfix main-content';
+        if (!this.model.get('vm')) { return cls }
+        if (this.model.get('vm').in_error_state()) {
+          cls += ' vm-status-error';
+        }
+        return cls
+      },
+      
       vm_style: function() {
         var cls, icon_state;
         var style = "background-image: url('{0}')";

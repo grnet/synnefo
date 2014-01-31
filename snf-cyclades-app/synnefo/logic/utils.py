@@ -94,7 +94,7 @@ def id_from_disk_name(name):
     """
     if not str(name).startswith(settings.BACKEND_PREFIX_ID):
         raise ValueError("Invalid Disk name: %s" % name)
-    ns = str(name).replace(settings.BACKEND_PREFIX_ID + 'volume-', "", 1)
+    ns = str(name).replace(settings.BACKEND_PREFIX_ID + 'vol-', "", 1)
     if not ns.isdigit():
         raise ValueError("Invalid Disk name: %s" % name)
 

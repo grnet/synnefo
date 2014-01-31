@@ -1041,7 +1041,7 @@ class Volume(models.Model):
 
     @property
     def backend_volume_uuid(self):
-        return u"%svolume-%d" % (settings.BACKEND_PREFIX_ID, self.id)
+        return u"%svol-%d" % (settings.BACKEND_PREFIX_ID, self.id)
 
     @property
     def backend_disk_uuid(self):

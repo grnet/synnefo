@@ -265,8 +265,7 @@ def create_snapshot(request):
 
     name = new_snapshot.get("display_name", None)
     if name is None:
-        name = "snapshot_volume_%s_%s" %\
-            (volume.id, str(datetime.datetime.now()))
+        raise faults.BadRequest("Snapshot 'name' is required")
     description = new_snapshot.get("display_description", "")
 
     # TODO: What to do with force ?

@@ -36,7 +36,6 @@ from synnefo.logic import backend, commands
 log = logging.getLogger(__name__)
 
 
-@commands.server_command("ATTACH_VOLUME")
 def attach_volume(vm, volume):
     """Attach a volume to a server.
 
@@ -60,24 +59,36 @@ def attach_volume(vm, volume):
         raise faults.BadRequest(msg)
 
     # Check maximum disk per instance hard limit
-    if vm.volumes.filter(deleted=False).count() == settings.GANETI_MAX_DISKS_PER_INSTANCE:
+    vm_volumes_num = vm.volumes.filter(deleted=False).count()
+    if vm_volumes_num == settings.GANETI_MAX_DISKS_PER_INSTANCE:
         raise faults.BadRequest("Maximum volumes per server limit reached")
 
-    jobid = backend.attach_volume(vm, volume)
+    if volume.status == "CREATING":
+        action_fields = {"disks": [("add", volume, {})]}
+    else:
+        action_fields = {}
+    comm = commands.server_command("ATTACH_VOLUME",
+                                   action_fields=action_fields)
+    return comm(_attach_volume)(vm, volume)
 
+
+def _attach_volume(vm, volume):
+    """Attach a Volume to a VM and update the Volume's status."""
+    jobid = backend.attach_volume(vm, volume)
     log.info("Attached volume '%s' to server '%s'. JobID: '%s'", volume.id,
              volume.machine_id, jobid)
-
     volume.backendjobid = jobid
     volume.machine = vm
-    volume.status = "ATTACHING"
+    if volume.status == "AVAILALBE":
+        volume.status = "ATTACHING"
+    else:
+        volume.status = "CREATING"
     volume.save()
     return jobid
 
 
-@commands.server_command("DETACH_VOLUME")
 def detach_volume(vm, volume):
-    """Detach a volume to a server.
+    """Detach a Volume from a VM
 
     The volume must be in 'IN_USE' status in order to be detached. Also,
     the root volume of the instance (index=0) can not be detached. This
@@ -87,23 +98,34 @@ def detach_volume(vm, volume):
     """
 
     _check_attachment(vm, volume)
-    if volume.status != "IN_USE":
-        #TODO: Maybe allow other statuses as well ?
+    if volume.status not in ["IN_USE", "ERROR"]:
         raise faults.BadRequest("Cannot detach volume while volume is in"
                                 " '%s' status." % volume.status)
     if volume.index == 0:
         raise faults.BadRequest("Cannot detach the root volume of a server")
+
+    action_fields = {"disks": [("remove", volume, {})]}
+    comm = commands.server_command("DETACH_VOLUME",
+                                   action_fields=action_fields)
+    return comm(_detach_volume)(vm, volume)
+
+
+def _detach_volume(vm, volume):
+    """Detach a Volume from a VM and update the Volume's status"""
     jobid = backend.detach_volume(vm, volume)
     log.info("Detached volume '%s' from server '%s'. JobID: '%s'", volume.id,
              volume.machine_id, jobid)
     volume.backendjobid = jobid
-    volume.status = "DETACHING"
+    if volume.delete_on_termination:
+        volume.status = "DELETING"
+    else:
+        volume.status = "DETACHING"
     volume.save()
     return jobid
 
 
 def _check_attachment(vm, volume):
-    """Check that volume is attached to vm."""
+    """Check that the Volume is attached to the VM"""
     if volume.machine_id != vm.id:
         raise faults.BadRequest("Volume '%s' is not attached to server '%s'"
                                 % volume.id, vm.id)

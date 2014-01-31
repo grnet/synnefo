@@ -302,7 +302,7 @@ class BackendReconciler(object):
                                          created__lte=building_time) \
                                 .order_by("id")
         gnt_nics = gnt_server["nics"]
-        gnt_nics_parsed = backend_mod.process_ganeti_nics(gnt_nics)
+        gnt_nics_parsed = backend_mod.parse_instance_nics(gnt_nics)
         nics_changed = len(db_nics) != len(gnt_nics)
         for db_nic, gnt_nic in zip(db_nics, sorted(gnt_nics_parsed.items())):
             gnt_nic_id, gnt_nic = gnt_nic
@@ -321,9 +321,11 @@ class BackendReconciler(object):
             self.log.info(msg, server_id, db_nics_str, gnt_nics_str)
             if self.options["fix_unsynced_nics"]:
                 vm = get_locked_server(server_id)
-                backend_mod.process_net_status(vm=vm,
-                                               etime=self.event_time,
-                                               nics=gnt_nics)
+                backend_mod.process_op_status(
+                    vm=vm, etime=self.event_time, jobid=-0,
+                    opcode="OP_INSTANCE_SET_PARAMS", status='success',
+                    logmsg="Reconciliation: simulated Ganeti event",
+                    nics=gnt_nics)
 
     def reconcile_unsynced_disks(self, server_id, db_server, gnt_server):
         building_time = self.event_time - BUILDING_NIC_TIMEOUT
@@ -332,7 +334,7 @@ class BackendReconciler(object):
                                     .filter(deleted=False)\
                                     .order_by("id")
         gnt_disks = gnt_server["disks"]
-        gnt_disks_parsed = backend_mod.process_ganeti_disks(gnt_disks)
+        gnt_disks_parsed = backend_mod.parse_instance_disks(gnt_disks)
         disks_changed = len(db_disks) != len(gnt_disks)
         for db_disk, gnt_disk in zip(db_disks,
                                      sorted(gnt_disks_parsed.items())):
@@ -352,9 +354,11 @@ class BackendReconciler(object):
             self.log.info(msg, server_id, db_disks_str, gnt_disks_str)
             if self.options["fix_unsynced_disks"]:
                 vm = get_locked_server(server_id)
-                backend_mod.process_disks_status(vm=vm,
-                                                 etime=self.event_time,
-                                                 disks=gnt_disks)
+                backend_mod.process_op_status(
+                    vm=vm, etime=self.event_time, jobid=-0,
+                    opcode="OP_INSTANCE_SET_PARAMS", status='success',
+                    logmsg="Reconciliation: simulated Ganeti event",
+                    disks=gnt_disks)
 
     def reconcile_pending_task(self, server_id, db_server):
         job_id = db_server.task_job_id

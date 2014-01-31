@@ -995,6 +995,7 @@ class Volume(models.Model):
         ("DETACHING", "The volume is detaching from an instance"),
         ("IN_USE", "The volume is attached to an instance"),
         ("DELETING", "The volume is being deleted"),
+        ("DELETED", "The volume has been deleted"),
         ("ERROR", "An error has occured with the volume"),
         ("ERROR_DELETING", "There was an error deleting this volume"),
         ("BACKING_UP", "The volume is being backed up"),

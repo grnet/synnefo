@@ -45,6 +45,8 @@ from synnefo.quotas import util
 
 
 class GetDBHoldingsTestCase(TestCase):
+    maxDiff = None
+
     def test_no_holdings(self):
         holdings = util.get_db_holdings(user=None)
         self.assertEqual(holdings, {})
@@ -52,16 +54,16 @@ class GetDBHoldingsTestCase(TestCase):
     def test_vm_holdings(self):
         flavor = mfactory.FlavorFactory(cpu=24, ram=8192, disk=20,
                                         disk_template='drbd')
-        mfactory.VirtualMachineFactory()
+        mfactory.VirtualMachineFactory(userid="user1", deleted=True)
         mfactory.VirtualMachineFactory(flavor=flavor, userid="user1",
                                        operstate="BUILD")
-        user_holdings = {"user1": {None:
-                                       {"cyclades.vm": 1,
-                                        "cyclades.total_cpu": 24,
-                                        "cyclades.cpu": 24,
-                                        "cyclades.disk": 21474836480,
-                                        "cyclades.total_ram": 8589934592,
-                                        "cyclades.ram": 8589934592}}}
+        mfactory.VolumeFactory(userid="user1", size=20, machine=None)
+        user_holdings = {"user1": {None: {"cyclades.vm": 1,
+                                          "cyclades.total_cpu": 24,
+                                          "cyclades.cpu": 24,
+                                          "cyclades.disk": 20 << 30,
+                                          "cyclades.total_ram": 8192 << 20,
+                                          "cyclades.ram": 8192 << 20}}}
         holdings = util.get_db_holdings(user="user1")
         self.assertEqual(holdings, user_holdings)
         holdings = util.get_db_holdings()
@@ -70,20 +72,20 @@ class GetDBHoldingsTestCase(TestCase):
         ##
         mfactory.VirtualMachineFactory(flavor=flavor, userid="user2",
                                        operstate="STARTED")
+        mfactory.VolumeFactory(userid="user2", size=30, machine=None)
         user_holdings = {"user2": {None: {"cyclades.vm": 1,
                                           "cyclades.total_cpu": 24,
                                           "cyclades.cpu": 24,
-                                          "cyclades.disk": 21474836480,
-                                          "cyclades.total_ram": 8589934592,
-                                          "cyclades.ram": 8589934592}}}
+                                          "cyclades.disk": 30 << 30,
+                                          "cyclades.total_ram": 8192 << 20,
+                                          "cyclades.ram": 8192 << 20}}}
         holdings = util.get_db_holdings(user="user2")
         self.assertEqual(holdings, user_holdings)
         mfactory.VirtualMachineFactory(flavor=flavor, userid="user3",
                                        operstate="STOPPED")
         user_holdings = {"user3": {None: {"cyclades.vm": 1,
-                                          "cyclades.total_cpu": 24,
-                                          "cyclades.disk": 21474836480,
-                                          "cyclades.total_ram": 8589934592}}}
+                                   "cyclades.total_cpu": 24,
+                                   "cyclades.total_ram": 8589934592}}}
         holdings = util.get_db_holdings(user="user3")
         self.assertEqual(holdings, user_holdings)
 
@@ -133,9 +135,13 @@ class ResolvePendingTestCase(TestCase):
 
 
 class GetCommissionInfoTest(TestCase):
+    maxDiff = None
+
     def test_commissions(self):
         flavor = mfactory.FlavorFactory(cpu=2, ram=1024, disk=20)
         vm = mfactory.VirtualMachineFactory(flavor=flavor)
+        mfactory.VolumeFactory(size=20, machine=vm, deleted=False,
+                               delete_on_termination=True)
         #commission = quotas.get_commission_info(vm, "BUILD")
         #self.assertEqual({"cyclades.vm": 1,
         #                  "cyclades.cpu": 2,
@@ -170,8 +176,8 @@ class GetCommissionInfoTest(TestCase):
         commission = quotas.get_commission_info(vm, "DESTROY")
         self.assertEqual({"cyclades.vm": -1,
                           "cyclades.total_cpu": -2,
-                          "cyclades.total_ram": 1048576 * -1024,
-                          "cyclades.disk": 1073741824 * -20}, commission)
+                          "cyclades.total_ram": -1024 << 20,
+                          "cyclades.disk": -20 << 30}, commission)
         commission = quotas.get_commission_info(vm, "RESIZE")
         self.assertEqual(None, commission)
         commission = quotas.get_commission_info(vm, "RESIZE",

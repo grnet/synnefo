@@ -71,6 +71,7 @@
             this.description = this.$(".snapshot-create-desc");
             this.form = this.$("form");
             this.init_handlers();
+            this.creating = false;
         },
         
         show: function(vm) {
@@ -118,12 +119,15 @@
         },
         
         create: function() {
+            if (this.creating) { return }
             this.create_button.addClass("in-progress");
 
             var name = this.text.val();
             var desc = this.description.val();
             
+            this.creating = true;
             this.vm.create_snapshot({display_name:name, display_description:desc}, _.bind(function() {
+              this.creating = false;
               this.hide();
             }, this));
         },

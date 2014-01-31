@@ -66,6 +66,7 @@ INSTALL_REQUIRES = [
     'snf-django-lib',
     'snf-webproject',
     'snf-branding',
+    'svipc',
 ]
 
 EXTRAS_REQUIRES = {

@@ -204,14 +204,8 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
     **project_action(**\ project_id, action, reason=""\ **)**
         Perform action on a project
 
-    **get_applications(**\ project=None\ **)**
-        Retrieve all accessible applications
-
-    **get_application(**\ app_id\ **)**
-        Retrieve application description, if accessible
-
-    **application_action(**\ app_id, action, reason=""\ **)**
-        Perform action on an application
+    **application_action(**\ project_id, app_id, action, reason=""\ **)**
+        Perform action on a project application
 
     **get_memberships(**\ project=None\ **)**
         Retrieve all accessible memberships

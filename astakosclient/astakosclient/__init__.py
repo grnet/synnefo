@@ -234,10 +234,6 @@ class AstakosClient(object):
         return join_urls(self.account_prefix, "projects")
 
     @property
-    def api_applications(self):
-        return join_urls(self.api_projects, "apps")
-
-    @property
     def api_memberships(self):
         return join_urls(self.api_projects, "memberships")
 
@@ -893,56 +889,30 @@ class AstakosClient(object):
         path = join_urls(self.api_projects, str(project_id))
         path = join_urls(path, "action")
         req_headers = {'content-type': 'application/json'}
-        req_body = parse_request({action: reason}, self.logger)
+        req_body = parse_request({action: {"reason": reason}}, self.logger)
         return self._call_astakos(path, headers=req_headers,
                                   body=req_body, method="POST")
 
-    # --------------------------------
-    # do a GET to ``API_APPLICATIONS``
-    def get_applications(self, project=None):
-        """Retrieve all accessible applications
-
-        Arguments:
-        project -- filter by project (optional)
-
-        In case of success, return a list of application descriptions.
-        """
-        req_headers = {'content-type': 'application/json'}
-        body = {"project": project} if project is not None else None
-        req_body = parse_request(body, self.logger) if body else None
-        return self._call_astakos(self.api_applications,
-                                  headers=req_headers, body=req_body)
-
-    # -----------------------------------------
-    # do a GET to ``API_APPLICATIONS``/<app_id>
-    def get_application(self, app_id):
-        """Retrieve application description, if accessible
-
-        Arguments:
-        app_id -- application identifier
-
-        In case of success, return application description.
-        """
-        path = join_urls(self.api_applications, str(app_id))
-        return self._call_astakos(path)
-
     # -------------------------------------------------
-    # do a POST to ``API_APPLICATIONS``/<app_id>/action
-    def application_action(self, app_id, action, reason=""):
-        """Perform action on an application
+    # do a POST to ``API_PROJECTS``/<project_id>/action
+    def application_action(self, project_id, app_id, action, reason=""):
+        """Perform action on a project application
 
         Arguments:
-        app_id -- application identifier
-        action -- action to perform, one of "approve", "deny",
-                  "dismiss", "cancel"
-        reason -- reason of performing the action
+        project_id -- project identifier
+        app_id     -- application identifier
+        action     -- action to perform, one of "approve", "deny",
+                      "dismiss", "cancel"
+        reason     -- reason of performing the action
 
         In case of success, return nothing.
         """
-        path = join_urls(self.api_applications, str(app_id))
+        path = join_urls(self.api_projects, str(project_id))
         path = join_urls(path, "action")
         req_headers = {'content-type': 'application/json'}
-        req_body = parse_request({action: reason}, self.logger)
+        req_body = parse_request({action: {
+                    "reasons": reason,
+                    "app_id": app_id}}, self.logger)
         return self._call_astakos(path, headers=req_headers,
                                   body=req_body, method="POST")
 

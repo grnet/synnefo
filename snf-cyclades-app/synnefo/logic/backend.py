@@ -1143,8 +1143,7 @@ def attach_volume(vm, volume, depends=[]):
     log.debug("Attaching volume %s to vm %s", volume, vm)
 
     disk = {"size": int(volume.size) << 10,
-            "name": volume.backend_volume_uuid,
-            "volume_name": volume.backend_volume_uuid}
+            "name": volume.backend_volume_uuid}
 
     disk_provider = volume.disk_provider
     if disk_provider is not None:

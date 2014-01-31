@@ -177,7 +177,7 @@ class ArchipelagoBlocker(object):
                     req_data.put()
                 else:
                     req_data.put()
-                    self.ioctx_pool.put(ioctx)
+                    self.ioctx_pool.pool_put(ioctx)
                     raise Exception("Cannot retrieve Archipelago data.")
             else:
                 req.put()

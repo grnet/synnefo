@@ -846,6 +846,7 @@ EOF
 class Pithos(SynnefoComponent):
     REQUIRED_PACKAGES = [
         "kamaki",
+        "python-svipc",
         "snf-pithos-app",
         "snf-pithos-webclient",
         ]

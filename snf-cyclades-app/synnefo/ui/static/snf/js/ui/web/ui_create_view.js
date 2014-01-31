@@ -554,7 +554,7 @@
                            '<span class="prepend"></span>' +
                            '{3}</span>' + 
                            '<p>{4}</p>' +
-                           '</li>').format(_.escape(util.truncate(img.get("name"), 37)), 
+                           '</li>').format(_.escape(util.truncate(img.get("name"), 50)), 
                                                   img.id, 
                                                   snf.ui.helpers.os_icon_tag(img.escape("OS")),
                                                   _.escape(img.get_readable_size()),

@@ -5954,8 +5954,11 @@ table.list-machines .wave {
 
 .create-vm .select-image.wide .image-details .size {
     color: #5CA1C0;
-    position: absolute;
+    position: relative;
     top: 5px;
+    display: block;
+    left: 17px;
+    top: -3px;
 }
 
 .create-vm .select-image.wide .images-info-cont h3 {

@@ -1978,7 +1978,8 @@
         },
 
         active: function() {
-            return this.filter(function(img){return img.get('status') != "DELETED"});
+            var active_states = ['available'];
+            return this.filter(function(img){return img.get('status') == "available"});
         },
 
         predefined: function() {

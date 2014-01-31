@@ -141,8 +141,8 @@
           var date = '{0}-{1}-{2} {3}:{4}:{5}'.format(
             d.getFullYear(), d.getMonth()+1, d.getDate(), d.getHours(), 
             d.getMinutes(), d.getSeconds());
-          var name = "\"{0}\" snapshot [{1}]".format(vmname, date);
-	  if (this.volume) { name += "[volume:" + this.volume + "]" }
+          var name = "\"{0}\" snapshot [{1}]".format(synnefo.util.truncate(vmname, 40), date);
+          if (this.volume) { name += "[volume:" + this.volume + "]" }
           var description = "Volume id: {0}".format(this.volume || 'primary');
           description += "\n" + "Server id: {0}".format(vmid);
           description += "\n" + "Server name: {0}".format(vmname);

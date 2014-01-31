@@ -123,7 +123,7 @@
             var name = this.text.val();
             var desc = this.description.val();
             
-            this.vm.create_snapshot({name:name, description:desc}, _.bind(function() {
+            this.vm.create_snapshot({display_name:name, display_description:desc}, _.bind(function() {
               this.hide();
             }, this));
         },
@@ -137,8 +137,9 @@
           var date = '{0}-{1}-{2} {3}:{4}:{5}'.format(
             d.getFullYear(), d.getMonth()+1, d.getDate(), d.getHours(), 
             d.getMinutes(), d.getSeconds());
-          var name = "Snapshot @ {0} of Volume {1} of Server {2} ({3})".format(date, index, vmid, vmname);
-          var description = "Volume id: {0}".format(this.volume);
+          var name = "\"{0}\" snapshot [{1}]".format(vmname, date);
+	  if (this.volume) { name += "[volume:" + this.volume + "]" }
+          var description = "Volume id: {0}".format(this.volume || 'primary');
           description += "\n" + "Server id: {0}".format(vmid);
           description += "\n" + "Server name: {0}".format(vmname);
           description += "\n" + "Timestamp: {0}".format(d.toJSON());

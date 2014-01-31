@@ -1965,7 +1965,8 @@
         },
 
         comparator: function(img) {
-            return -img.get_sort_order("sortorder") || 0;
+            var date = new Date(img.get('created_at'));
+            return -img.get_sort_order("sortorder") || -date.getTime();
         },
 
         parse_meta: function(img) {

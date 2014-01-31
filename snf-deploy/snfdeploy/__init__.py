@@ -586,13 +586,14 @@ def main():
 
     # Check if there are keys to use
     if args.command == "keygen":
-        if not args.force:
-            if not must_create_keys(env) or not must_create_ddns_keys(env):
-                print "Keys already exist.."
-                print "To override existing ones use --force."
-                return 1
-        do_create_keys(args, env)
-        do_create_ddns_keys(args, env)
+        if must_create_keys(env) or args.force:
+            do_create_keys(args, env)
+        else:
+            print "ssh keys found. To re-create them use --force"
+        if must_create_ddns_keys(env) or args.force:
+            do_create_ddns_keys(args, env)
+        else:
+            print "ddns keys found. To re-create them use --force"
         return 0
     else:
         if ((args.key_inject and not args.ssh_key and

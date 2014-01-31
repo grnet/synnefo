@@ -844,6 +844,7 @@ class SynnefoCI(object):
         cmd = """
         dpkg -i snf-deploy*.deb
         apt-get -f install --yes --force-yes
+        snf-deploy keygen
         """
         with fabric.cd("synnefo_build-area"):
             with fabric.settings(warn_only=True):
@@ -919,7 +920,6 @@ class SynnefoCI(object):
 
         self.logger.debug("Run snf-deploy")
         cmd = """
-        snf-deploy keygen --force
         snf-deploy --disable-colors --autoconf all
         """
         _run(cmd, True)

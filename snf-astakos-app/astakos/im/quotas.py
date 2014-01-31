@@ -165,6 +165,18 @@ def get_projects_quota(projects, resources=None, sources=None):
     return mk_project_quota_dict(strip_names(project_counters))
 
 
+def service_get_project_quotas(component, projects=None):
+    name_values = Service.objects.filter(
+        component=component).values_list('name')
+    service_names = [t for (t,) in name_values]
+    resources = Resource.objects.filter(service_origin__in=service_names)
+    resource_names = [r.name for r in resources]
+    ps = Project.objects.initialized()
+    if projects is not None:
+        ps = ps.filter(uuid__in=projects)
+    return get_projects_quota(ps, resources=resource_names)
+
+
 def get_project_quota(project, resources=None, sources=None):
     quotas = get_projects_quota([project], resources, sources)
     return quotas.get(project.uuid, {})

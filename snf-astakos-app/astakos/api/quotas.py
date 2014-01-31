@@ -42,7 +42,8 @@ from django.core.cache import cache
 
 from astakos.im import settings
 from astakos.im import register
-from astakos.im.quotas import get_user_quotas, service_get_quotas
+from astakos.im.quotas import get_user_quotas, service_get_quotas, \
+    service_get_project_quotas
 
 import astakos.quotaholder_app.exception as qh_exception
 import astakos.quotaholder_app.callpoint as qh
@@ -78,6 +79,20 @@ def service_quotas(request):
 
     if user is not None and result == {}:
         raise ItemNotFound("No such user '%s'" % user)
+
+    return json_response(result)
+
+
+@api.api_method(http_method='GET', token_required=True, user_required=False)
+@component_from_token
+def service_project_quotas(request):
+    project = request.GET.get('project')
+    projects = [project] if project is not None else None
+    result = service_get_project_quotas(request.component_instance,
+                                        projects=projects)
+
+    if project is not None and result == {}:
+        raise ItemNotFound("No such project '%s'" % project)
 
     return json_response(result)
 

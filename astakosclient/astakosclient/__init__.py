@@ -214,6 +214,10 @@ class AstakosClient(object):
         return join_urls(self.account_prefix, "service_quotas")
 
     @property
+    def api_service_project_quotas(self):
+        return join_urls(self.account_prefix, "service_project_quotas")
+
+    @property
     def api_commissions(self):
         return join_urls(self.account_prefix, "commissions")
 
@@ -556,6 +560,24 @@ class AstakosClient(object):
         query = self.api_service_quotas
         if user is not None:
             query += "?user=" + user
+        return self._call_astakos(query)
+
+    # ----------------------------------
+    # do a GET to ``API_SERVICE_PROJECT_QUOTAS``
+    def service_get_project_quotas(self, project=None):
+        """Get all project quotas for resources associated with the service
+
+        Keyword arguments:
+        project    -- optionally, the uuid of a specific project
+
+        In case of success return a dict of dicts with current quotas
+        for all projects, or of a specified project, if project argument is set.
+        Otherwise raise an AstakosClientException
+
+        """
+        query = self.api_service_project_quotas
+        if project is not None:
+            query += "?project=" + project
         return self._call_astakos(query)
 
     # ----------------------------------

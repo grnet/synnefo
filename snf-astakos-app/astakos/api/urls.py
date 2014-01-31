@@ -39,6 +39,7 @@ astakos_account_v1_0 = patterns(
     'astakos.api.quotas',
     url(r'^quotas/?$', 'quotas', name="astakos-api-quotas"),
     url(r'^service_quotas/?$', 'service_quotas'),
+    url(r'^service_project_quotas/?$', 'service_project_quotas'),
     url(r'^resources/?$', 'resources'),
     url(r'^commissions/?$', 'commissions'),
     url(r'^commissions/action/?$', 'resolve_pending_commissions'),

@@ -139,6 +139,13 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         quotas of a specific user with argument user=UUID. In case of error it
         raises an AstakosClientException exception.
 
+    **service_get_project_quotas(**\ project=None\ **)**
+        It returns all projects' current quotas for the resources
+        associated with the service (as dict of dicts).
+        Optionally, one can query the quotas of a specific project with
+        argument project=UUID. In case of error it raises an
+        AstakosClientException exception.
+
     **issue_commission_generic(**\ user_provisions, project_provisions, name="", force=False, auto_accept=False\ **)**
         Issue a commission. User provisions are specified as a dict from
         (user, project, resource) to int; project provisions as a dict from

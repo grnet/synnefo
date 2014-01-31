@@ -162,27 +162,28 @@ def memberships(user):
     for m in ms:
         project = m.project
         print_data.append((project.uuid,
-                           project.application.name,
+                           project.realname,
                            m.state_display(),
                            ))
     return print_data, labels
 
 
 def ownerships(user):
-    chains = Project.objects.all_with_pending(Q(application__owner=user))
+    chains = Project.objects.select_related("last_application").\
+        filter(owner=user)
     return chain_info(chains)
 
 
 def chain_info(chains):
     labels = ('project id', 'project name', 'status', 'pending app id')
     l = []
-    for project, pending_app in chains:
+    for project in chains:
         status = project.state_display()
-        pending_appid = pending_app.id if pending_app is not None else ""
-        application = project.application
+        app = project.last_application
+        pending_appid = app.id if app and app.state == app.PENDING else ""
 
         t = (project.uuid,
-             application.name,
+             project.realname,
              status,
              pending_appid,
              )

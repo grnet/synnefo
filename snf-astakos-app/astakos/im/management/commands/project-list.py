@@ -35,7 +35,7 @@ from optparse import make_option
 
 from snf_django.management.commands import SynnefoCommand, CommandError
 
-from astakos.im.models import Project
+from astakos.im.models import Project, ProjectApplication
 from django.db.models import Q
 from snf_django.management import utils
 from ._common import is_uuid, is_email
@@ -45,6 +45,9 @@ class Command(SynnefoCommand):
     help = """List projects and project status.
 
     Project status can be one of:
+      Uninitialized        an uninitialized project,
+                           with no pending application
+
       Pending              an uninitialized project, pending review
 
       Active               an active project
@@ -59,14 +62,11 @@ class Command(SynnefoCommand):
                            it can later be resumed
 
       Terminated           a terminated project; its name can be claimed
-                           by a new project"""
+                           by a new project
+
+      Deleted              an uninitialized, deleted project"""
 
     option_list = SynnefoCommand.option_list + (
-        make_option('--all',
-                    action='store_true',
-                    dest='all',
-                    default=False,
-                    help="List all projects (default)"),
         make_option('--new',
                     action='store_true',
                     dest='new',
@@ -83,11 +83,11 @@ class Command(SynnefoCommand):
                     default=False,
                     help=("Show only projects with a pending application "
                           "(equiv. --modified --new)")),
-        make_option('--skip',
+        make_option('--deleted',
                     action='store_true',
-                    dest='skip',
+                    dest='deleted',
                     default=False,
-                    help="Skip cancelled and terminated projects"),
+                    help="Also so cancelled/terminated projects"),
         make_option('--name',
                     dest='name',
                     help='Filter projects by name'),
@@ -105,63 +105,50 @@ class Command(SynnefoCommand):
 
         name = options['name']
         if name:
-            flt &= filter_by_name(name)
+            flt &= Q(realname=name)
 
-        chains = Project.objects.all_with_pending(flt)
+        if not options['deleted']:
+            flt &= ~Q(state__in=Project.SKIP_STATES)
 
-        if not options['all']:
-            if options['skip']:
-                pred = lambda c: (
-                    c[0].overall_state() not in Project.SKIP_STATES
-                    or c[1] is not None)
-                chains = filter_preds([pred], chains)
+        pending = Q(last_application__isnull=False,
+                    last_application__state=ProjectApplication.PENDING)
 
-            preds = []
-            if options['new'] or options['pending']:
-                preds.append(
-                    lambda c: c[0].overall_state() == Project.O_PENDING)
-            if options['modified'] or options['pending']:
-                preds.append(
-                    lambda c: c[0].overall_state() != Project.O_PENDING
-                    and c[1] is not None)
+        if options['pending']:
+            flt &= pending
+        else:
+            if options['new']:
+                flt &= pending & Q(state=Project.UNINITIALIZED)
+            if options['modified']:
+                flt &= pending & Q(state__in=Project.INITIALIZED_STATES)
 
-            if preds:
-                chains = filter_preds(preds, chains)
+        projects = Project.objects.\
+            select_related("last_application", "owner").filter(flt)
 
         labels = ('ProjID', 'Name', 'Owner', 'Status', 'Pending AppID')
 
-        info = chain_info(chains)
+        info = project_info(projects)
         utils.pprint_table(self.stdout, info, labels,
                            options["output_format"])
 
 
-def filter_preds(preds, chains):
-    return [c for c in chains
-            if any(map(lambda f: f(c), preds))]
-
-
-def filter_by_name(name):
-    return Q(application__name=name)
-
-
 def filter_by_owner(s):
     if is_email(s):
-        return Q(application__owner__email=s)
+        return Q(owner__email=s)
     if is_uuid(s):
-        return Q(application__owner__uuid=s)
+        return Q(owner__uuid=s)
     raise CommandError("Expecting either email or uuid.")
 
 
-def chain_info(chains):
+def project_info(projects):
     l = []
-    for project, pending_app in chains:
+    for project in projects:
         status = project.state_display()
-        pending_appid = pending_app.id if pending_app is not None else ""
-        application = project.application
+        app = project.last_application
+        pending_appid = app.id if app and app.state == app.PENDING else ""
 
         t = (project.uuid,
-             application.name,
-             application.owner.email,
+             project.realname,
+             project.owner.email if project.owner else None,
              status,
              pending_appid,
              )

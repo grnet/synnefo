@@ -44,7 +44,7 @@ from synnefo_branding.utils import render_to_string
 from synnefo.lib import join_urls
 from astakos.im.models import AstakosUser, Invitation, ProjectMembership, \
     ProjectApplication, Project, new_chain, Resource, ProjectLock, \
-    create_project
+    create_project, ProjectResourceQuota, ProjectResourceGrant
 from astakos.im import quotas
 from astakos.im import project_notif
 from astakos.im import settings
@@ -352,24 +352,17 @@ def get_membership_by_id(memb_id):
         raise ProjectNotFound(m)
 
 
-ALLOWED_CHECKS = [
-    (lambda u, a: not u or u.is_project_admin()),
-    (lambda u, a: a.owner == u),
-    (lambda u, a: a.applicant == u),
-    (lambda u, a: a.chain.overall_state() == Project.O_ACTIVE and not a.private
-     or bool(a.chain.projectmembership_set.any_accepted().filter(person=u))),
-]
-
 ADMIN_LEVEL = 0
 OWNER_LEVEL = 1
-APPLICANT_LEVEL = 2
-ANY_LEVEL = 3
+APPLICANT_LEVEL = 1
+ANY_LEVEL = 2
 
 
-def _check_yield(b, silent=False):
-    if b:
-        return True
+def is_admin(user):
+    return not user or user.is_project_admin()
 
+
+def _failure(silent=False):
     if silent:
         return False
 
@@ -382,18 +375,40 @@ def membership_check_allowed(membership, request_user,
     r = project_check_allowed(
         membership.project, request_user, level, silent=True)
 
-    return _check_yield(r or membership.person == request_user, silent)
+    if r or membership.person == request_user:
+        return True
+    return _failure(silent)
 
 
 def project_check_allowed(project, request_user,
                           level=OWNER_LEVEL, silent=False):
-    return app_check_allowed(project.application, request_user, level, silent)
+    if is_admin(request_user):
+        return True
+    if level <= ADMIN_LEVEL:
+        return _failure(silent)
+
+    if project.owner == request_user:
+        return True
+    if level <= OWNER_LEVEL:
+        return _failure(silent)
+
+    if project.state == Project.NORMAL and not project.private \
+            or bool(project.projectmembership_set.any_accepted().
+                    filter(person=request_user)):
+            return True
+    return _failure(silent)
 
 
 def app_check_allowed(application, request_user,
                       level=OWNER_LEVEL, silent=False):
-    checks = (f(request_user, application) for f in ALLOWED_CHECKS[:level+1])
-    return _check_yield(any(checks), silent)
+    if is_admin(request_user):
+        return True
+    if level <= ADMIN_LEVEL:
+        return _failure(silent)
+
+    if application.applicant == request_user:
+        return True
+    return _failure(silent)
 
 
 def checkAlive(project):
@@ -406,7 +421,7 @@ def accept_membership_project_checks(project, request_user):
     project_check_allowed(project, request_user)
     checkAlive(project)
 
-    join_policy = project.application.member_join_policy
+    join_policy = project.member_join_policy
     if join_policy == CLOSED_POLICY:
         m = _(astakos_messages.MEMBER_JOIN_POLICY_CLOSED)
         raise ProjectConflict(m)
@@ -490,7 +505,7 @@ def remove_membership_checks(membership, request_user=None):
     project_check_allowed(project, request_user)
     checkAlive(project)
 
-    leave_policy = project.application.member_leave_policy
+    leave_policy = project.member_leave_policy
     if leave_policy == CLOSED_POLICY:
         m = _(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED)
         raise ProjectConflict(m)
@@ -552,7 +567,7 @@ def leave_project_checks(membership, request_user):
     project = membership.project
     checkAlive(project)
 
-    leave_policy = project.application.member_leave_policy
+    leave_policy = project.member_leave_policy
     if leave_policy == CLOSED_POLICY:
         m = _(astakos_messages.MEMBER_LEAVE_POLICY_CLOSED)
         raise ProjectConflict(m)
@@ -575,7 +590,7 @@ def leave_project(memb_id, request_user, reason=None):
     leave_project_checks(membership, request_user)
 
     auto_accepted = False
-    leave_policy = project.application.member_leave_policy
+    leave_policy = project.member_leave_policy
     if leave_policy == AUTO_ACCEPT_POLICY:
         membership.perform_action("remove", actor=request_user, reason=reason)
         quotas.qh_sync_user(request_user)
@@ -595,7 +610,7 @@ def leave_project(memb_id, request_user, reason=None):
 def join_project_checks(project):
     checkAlive(project)
 
-    join_policy = project.application.member_join_policy
+    join_policy = project.member_join_policy
     if join_policy == CLOSED_POLICY:
         m = _(astakos_messages.MEMBER_JOIN_POLICY_CLOSED)
         raise ProjectConflict(m)
@@ -640,7 +655,7 @@ def join_project(project_id, request_user, reason=None):
         membership = new_membership(project, request_user, actor=request_user,
                                     reason=reason)
 
-    join_policy = project.application.member_join_policy
+    join_policy = project.member_join_policy
     if (join_policy == AUTO_ACCEPT_POLICY and (
             not project.violates_members_limit(adding=1))):
         membership.perform_action("accept", actor=request_user, reason=reason)
@@ -694,17 +709,36 @@ def submit_application(owner=None,
     if project_id is not None:
         project = get_project_for_update(project_id)
         project_check_allowed(project, request_user, level=APPLICANT_LEVEL)
+        if project.state not in Project.INITIALIZED_STATES:
+            raise ProjectConflict("Cannot modify an uninitialized project.")
 
     policies = validate_resource_policies(resources)
 
     force = request_user.is_project_admin()
-    ok, limit = qh_add_pending_app(owner, project, force)
+    ok, limit = qh_add_pending_app(request_user, project, force)
     if not ok:
         m = _(astakos_messages.REACHED_PENDING_APPLICATION_LIMIT) % limit
         raise ProjectConflict(m)
 
-    application = ProjectApplication(
+    if project is None:
+        chain = new_chain()
+        project = create_project(
+            id=chain.chain,
+            owner=owner,
+            realname=name,
+            homepage=homepage,
+            description=description,
+            end_date=end_date,
+            member_join_policy=member_join_policy,
+            member_leave_policy=member_leave_policy,
+            limit_on_members_number=limit_on_members_number,
+            private=private)
+        if policies is not None:
+            set_project_resources(project, policies)
+
+    application = ProjectApplication.objects.create(
         applicant=request_user,
+        chain=project,
         owner=owner,
         name=name,
         homepage=homepage,
@@ -716,28 +750,17 @@ def submit_application(owner=None,
         limit_on_members_number=limit_on_members_number,
         private=private,
         comments=comments)
-
-    if project is None:
-        chain = new_chain()
-        application.chain_id = chain.chain
-        application.save()
-        create_project(id=chain.chain, application=application)
-    else:
-        application.chain = project
-        application.save()
-        if project.application.state != ProjectApplication.APPROVED:
-            project.application = application
-            project.save()
-
-        pending = ProjectApplication.objects.filter(
-            chain=project,
-            state=ProjectApplication.PENDING).exclude(id=application.id)
-        for app in pending:
-            app.state = ProjectApplication.REPLACED
-            app.save()
-
     if policies is not None:
-        set_resource_policies(application, policies)
+        set_application_resources(application, policies)
+
+    project.last_application = application
+    project.save()
+
+    ProjectApplication.objects.\
+        filter(chain=project, state=ProjectApplication.PENDING).\
+        exclude(id=application.id).\
+        update(state=ProjectApplication.REPLACED)
+
     logger.info("User %s submitted %s." %
                 (request_user.log_display, application.log_display))
     project_notif.application_notify(application, "submit")
@@ -765,25 +788,51 @@ def validate_resource_policies(policies):
         p_capacity = specs.get("project_capacity")
         m_capacity = specs.get("member_capacity")
 
-        if p_capacity is not None and not isinstance(p_capacity, (int, long)):
-            raise ProjectBadRequest("Malformed resource policies")
-        if not isinstance(m_capacity, (int, long)):
+        if not isinstance(p_capacity, (int, long)) or \
+                not isinstance(m_capacity, (int, long)):
             raise ProjectBadRequest("Malformed resource policies")
         pols.append((resource_d[resource_name], m_capacity, p_capacity))
     return pols
 
 
-def set_resource_policies(application, policies):
+def set_application_resources(application, policies):
+    grants = []
     for resource, m_capacity, p_capacity in policies:
-        g = application.projectresourcegrant_set
-        g.create(resource=resource,
-                 member_capacity=m_capacity,
-                 project_capacity=p_capacity)
+        grants.append(
+            ProjectResourceGrant(
+                project_application=application,
+                resource=resource,
+                member_capacity=m_capacity,
+                project_capacity=p_capacity))
+    ProjectResourceGrant.objects.bulk_create(grants)
 
 
-def cancel_application(application_id, request_user=None, reason=""):
-    get_project_of_application_for_update(application_id)
+def set_project_resources(project, policies):
+    grants = []
+    for resource, m_capacity, p_capacity in policies:
+        grants.append(
+            ProjectResourceQuota(
+                project=project,
+                resource=resource,
+                member_capacity=m_capacity,
+                project_capacity=p_capacity))
+    ProjectResourceQuota.objects.bulk_create(grants)
+
+
+def check_app_relevant(application, project, project_id):
+    if project_id is not None and project.uuid != project_id or \
+            project.last_application != application:
+        pid = project_id if project_id is not None else project.uuid
+        m = (_("%s is not a pending application for project %s.") %
+             (application.id, pid))
+        raise ProjectConflict(m)
+
+
+def cancel_application(application_id, project_id=None, request_user=None,
+                       reason=""):
+    project = get_project_of_application_for_update(application_id)
     application = get_application(application_id)
+    check_app_relevant(application, project, project_id)
     app_check_allowed(application, request_user, level=APPLICANT_LEVEL)
 
     if not application.can_cancel():
@@ -791,15 +840,19 @@ def cancel_application(application_id, request_user=None, reason=""):
               (application.id, application.state_display()))
         raise ProjectConflict(m)
 
-    qh_release_pending_app(application.owner)
+    qh_release_pending_app(application.applicant)
 
     application.cancel(actor=request_user, reason=reason)
+    if project.state == Project.UNINITIALIZED:
+        project.set_deleted()
     logger.info("%s has been cancelled." % (application.log_display))
 
 
-def dismiss_application(application_id, request_user=None, reason=""):
-    get_project_of_application_for_update(application_id)
+def dismiss_application(application_id, project_id=None, request_user=None,
+                        reason=""):
+    project = get_project_of_application_for_update(application_id)
     application = get_application(application_id)
+    check_app_relevant(application, project, project_id)
     app_check_allowed(application, request_user, level=APPLICANT_LEVEL)
 
     if not application.can_dismiss():
@@ -808,13 +861,16 @@ def dismiss_application(application_id, request_user=None, reason=""):
         raise ProjectConflict(m)
 
     application.dismiss(actor=request_user, reason=reason)
+    if project.state == Project.UNINITIALIZED:
+        project.set_deleted()
     logger.info("%s has been dismissed." % (application.log_display))
 
 
-def deny_application(application_id, request_user=None, reason=""):
-    get_project_of_application_for_update(application_id)
+def deny_application(application_id, project_id=None, request_user=None,
+                     reason=""):
+    project = get_project_of_application_for_update(application_id)
     application = get_application(application_id)
-
+    check_app_relevant(application, project, project_id)
     app_check_allowed(application, request_user, level=ADMIN_LEVEL)
 
     if not application.can_deny():
@@ -822,7 +878,7 @@ def deny_application(application_id, request_user=None, reason=""):
               (application.id, application.state_display()))
         raise ProjectConflict(m)
 
-    qh_release_pending_app(application.owner)
+    qh_release_pending_app(application.applicant)
 
     application.deny(actor=request_user, reason=reason)
     logger.info("%s has been denied with reason \"%s\"." %
@@ -830,26 +886,24 @@ def deny_application(application_id, request_user=None, reason=""):
     project_notif.application_notify(application, "deny")
 
 
-def check_conflicting_projects(application):
-    project = application.chain
-    new_project_name = application.name
+def check_conflicting_projects(project, new_project_name):
     try:
-        q = Q(name=new_project_name) & ~Q(state=Project.TERMINATED)
+        q = Q(name=new_project_name) & ~Q(id=project.id)
         conflicting_project = Project.objects.get(q)
-        if (conflicting_project != project):
-            m = (_("cannot approve: project with name '%s' "
-                   "already exists (id: %s)") %
-                 (new_project_name, conflicting_project.uuid))
-            raise ProjectConflict(m)  # invalid argument
+        m = (_("cannot approve: project with name '%s' "
+               "already exists (id: %s)") %
+             (new_project_name, conflicting_project.uuid))
+        raise ProjectConflict(m)  # invalid argument
     except Project.DoesNotExist:
         pass
 
 
-def approve_application(app_id, request_user=None, reason=""):
+def approve_application(application_id, project_id=None, request_user=None,
+                        reason=""):
     get_project_lock()
-    project = get_project_of_application_for_update(app_id)
-    application = get_application(app_id)
-
+    project = get_project_of_application_for_update(application_id)
+    application = get_application(application_id)
+    check_app_relevant(application, project, project_id)
     app_check_allowed(application, request_user, level=ADMIN_LEVEL)
 
     if not application.can_approve():
@@ -857,26 +911,85 @@ def approve_application(app_id, request_user=None, reason=""):
               (application.id, application.state_display()))
         raise ProjectConflict(m)
 
-    check_conflicting_projects(application)
+    if application.name:
+        check_conflicting_projects(project, application.name)
 
     # Pre-lock members and owner together in order to impose an ordering
     # on locking users
     members = quotas.members_to_sync(project)
     uids_to_sync = [member.id for member in members]
-    owner = application.owner
-    uids_to_sync.append(owner.id)
+    applicant = application.applicant
+    uids_to_sync.append(applicant.id)
     quotas.get_users_for_update(uids_to_sync)
 
-    qh_release_pending_app(owner, locked=True)
+    qh_release_pending_app(applicant, locked=True)
     application.approve(actor=request_user, reason=reason)
-    project.application = application
-    project.name = application.name
-    project.save()
-    if project.is_deactivated():
-        project.resume(actor=request_user, reason="APPROVE")
+
+    if project.state == Project.UNINITIALIZED:
+        _fill_from_skeleton(project)
+    else:
+        _apply_modifications(project, application)
+    project.activate(actor=request_user, reason=reason)
+
     quotas.qh_sync_locked_users(members)
     logger.info("%s has been approved." % (application.log_display))
     project_notif.application_notify(application, "approve")
+
+
+def _fill_from_skeleton(project):
+    current_resources = set(ProjectResourceQuota.objects.
+                            filter(project=project).
+                            values_list("resource_id", flat=True))
+    resources = Resource.objects.all()
+    new_quotas = []
+    for resource in resources:
+        if resource.id not in current_resources:
+            limit = quotas.pick_limit_scheme(project, resource)
+            new_quotas.append(
+                ProjectResourceQuota(
+                    project=project,
+                    resource=resource,
+                    member_capacity=limit,
+                    project_capacity=limit))
+    ProjectResourceQuota.objects.bulk_create(new_quotas)
+
+
+def _apply_modifications(project, application):
+    FIELDS = [
+        ("owner", "owner"),
+        ("name", "realname"),
+        ("homepage", "homepage"),
+        ("description", "description"),
+        ("end_date", "end_date"),
+        ("member_join_policy", "member_join_policy"),
+        ("member_leave_policy", "member_leave_policy"),
+        ("limit_on_members_number", "limit_on_members_number"),
+        ("private", "private"),
+        ]
+
+    changed = False
+    for appfield, projectfield in FIELDS:
+        value = getattr(application, appfield)
+        if value is not None:
+            changed = True
+            setattr(project, projectfield, value)
+    if changed:
+        project.save()
+
+    grants = application.projectresourcegrant_set.all()
+    pquotas = []
+    resources = []
+    for grant in grants:
+        resources.append(grant.resource)
+        pquotas.append(
+            ProjectResourceQuota(
+                project=project,
+                resource=grant.resource,
+                member_capacity=grant.member_capacity,
+                project_capacity=grant.project_capacity))
+    ProjectResourceQuota.objects.\
+        filter(project=project, resource__in=resources).delete()
+    ProjectResourceQuota.objects.bulk_create(pquotas)
 
 
 def check_expiration(execute=False):
@@ -936,7 +1049,7 @@ def reinstate(project_id, request_user=None, reason=None):
         m = _(astakos_messages.NOT_TERMINATED_PROJECT) % project.uuid
         raise ProjectConflict(m)
 
-    check_conflicting_projects(project.application)
+    check_conflicting_projects(project, project.realname)
     project.resume(actor=request_user, reason=reason)
     quotas.qh_sync_project(project)
     logger.info("%s has been reinstated" % (project))

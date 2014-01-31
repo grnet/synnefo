@@ -93,7 +93,7 @@ def membership_request_notify(project, requested_user, action):
     subject, template = MEMBERSHIP_REQUEST_DATA[action](project)
     try:
         build_notification(
-            SENDER, [project.application.owner.email], subject,
+            SENDER, [project.owner.email], subject,
             template=template,
             dictionary={'object': project, 'user': requested_user.email}
         ).send()
@@ -131,7 +131,7 @@ def application_notify(application, action):
 
 PROJECT_DATA = {
     "terminate": lambda p: (
-        _(messages.PROJECT_TERMINATION_SUBJECT) % p.application.__dict__,
+        _(messages.PROJECT_TERMINATION_SUBJECT) % p.__dict__,
         "im/projects/project_termination_notification.txt"),
     "reinstate": lambda p: (
         _(messages.PROJECT_REINSTATEMENT_SUBJECT) % p.__dict__,
@@ -149,7 +149,7 @@ def project_notify(project, action):
     subject, template = PROJECT_DATA[action](project)
     try:
         build_notification(
-            SENDER, [project.application.owner.email], subject,
+            SENDER, [project.owner.email], subject,
             template=template,
             dictionary={'object': project}
         ).send()

@@ -77,6 +77,9 @@ def _parse_number_with_unit(s):
 
 
 def parse_with_style(s):
+    if isinstance(s, (int, long)):
+        return s, 0
+
     if s in ['inf', 'infinite']:
         return PRACTICALLY_INFINITE, 0
 

@@ -34,7 +34,7 @@
 from synnefo.util import units
 from astakos.im.models import (
     Resource, AstakosUserQuota, AstakosUser, Service,
-    Project, ProjectMembership, ProjectResourceGrant, ProjectApplication)
+    Project, ProjectMembership, ProjectResourceQuota, ProjectApplication)
 import astakos.quotaholder_app.callpoint as qh
 from astakos.quotaholder_app.exception import NoCapacityError
 from django.db.models import Q
@@ -195,26 +195,25 @@ def astakos_users_quotas(users, resource=None):
     userids = [user.pk for user in users]
     ACTUALLY_ACCEPTED = ProjectMembership.ACTUALLY_ACCEPTED
     objs = ProjectMembership.objects.select_related(
-        'project', 'person', 'project__application')
+        'project', 'person')
     memberships = objs.filter(
         person__pk__in=userids,
         state__in=ACTUALLY_ACCEPTED,
         project__state=Project.NORMAL,
-        project__application__state=ProjectApplication.APPROVED)
+        )
 
-    apps = set(m.project.application_id for m in memberships)
+    projs = set(m.project_id for m in memberships)
 
-    objs = ProjectResourceGrant.objects.select_related()
-    grants = objs.filter(project_application__in=apps).filter(flt)
+    objs = ProjectResourceQuota.objects.select_related()
+    grants = objs.filter(project__in=projs).filter(flt)
 
     for membership in memberships:
         uuid = membership.person.uuid
         userquotas = quotas.get(uuid, {})
 
-        application = membership.project.application
-
+        proj = membership.project
         for grant in grants:
-            if grant.project_application_id != application.id:
+            if grant.project_id != proj.id:
                 continue
 
             source = get_grant_source(grant)
@@ -310,6 +309,10 @@ def members_to_sync(project):
 def qh_sync_project(project):
     users = members_to_sync(project)
     qh_sync_users(users)
+
+
+def pick_limit_scheme(project, resource):
+    return resource.uplimit if project.is_base else resource.project_default
 
 
 def qh_sync_new_resource(resource):

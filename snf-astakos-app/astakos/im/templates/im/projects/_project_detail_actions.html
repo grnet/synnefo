@@ -10,9 +10,9 @@
 <a class="owner-action" href="{% url astakos.im.views.project_modify object.pk %}">MODIFY</a>
 
 {% if owner_mode %}
-{% with project.last_pending_application as last_pending %}
+{% with object.last_pending_application as last_pending %}
 {% if last_pending != None %}
-{% if project.is_initialized %}
+{% if object.is_initialized %}
 - {% confirm_link "CANCEL PROJECT MODIFICATION" "project_modification_cancel" "project_app_cancel" last_pending.pk "" "OK" %}
 {% else %}
 - {% confirm_link "CANCEL PROJECT APPLICATION" "project_app_cancel" "project_app_cancel" last_pending.pk "" "OK" %}
@@ -41,7 +41,7 @@
 {% endif %}
 
 {% if can_join_request %}
-{% confirm_link "JOIN" "project_join" "project_join" project.pk %}
+{% confirm_link "JOIN" "project_join" "project_join" object.pk %}
 {% endif %}
 
 {% if can_leave_request %}

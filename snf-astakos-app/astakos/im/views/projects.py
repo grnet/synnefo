@@ -41,7 +41,7 @@ from django_tables2 import RequestConfig
 from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from django.core.urlresolvers import reverse
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect
 from django.utils.html import escape
 from django.utils.translation import ugettext as _
@@ -198,7 +198,7 @@ def _project_app_cancel(request, application_id):
     try:
         application_id = int(application_id)
         chain_id = get_related_project_id(application_id)
-        cancel_application(application_id, request.user)
+        cancel_application(chain_id, application_id, request.user)
     except ProjectError as e:
         messages.error(request, e)
 
@@ -294,7 +294,68 @@ def project_app(request, application_id):
 @cookie_fix
 @valid_astakos_user_required
 def project_detail(request, chain_id):
-    return common_detail(request, chain_id)
+    if request.method == 'POST':
+        addmembers_form = AddProjectMembersForm(
+            request.POST,
+            chain_id=int(chain_id),
+            request_user=request.user)
+        with ExceptionHandler(request):
+            addmembers(request, chain_id, addmembers_form)
+
+        if addmembers_form.is_valid():
+            addmembers_form = AddProjectMembersForm()  # clear form data
+    else:
+        addmembers_form = AddProjectMembersForm()  # initialize form
+
+    project = get_object_or_404(Project, id=chain_id)
+    members = project.projectmembership_set
+    approved_members_count = project.members_count()
+    pending_members_count = project.count_pending_memberships()
+    _limit = project.limit_on_members_number
+    remaining_memberships_count = (max(0, _limit - approved_members_count)
+                                   if _limit is not None else None)
+    members = members.associated()
+    members = members.select_related()
+    members_table = tables.ProjectMembersTable(project,
+                                               members,
+                                               user=request.user,
+                                               prefix="members_")
+    RequestConfig(request, paginate={"per_page": settings.PAGINATE_BY}
+                  ).configure(members_table)
+
+    user = request.user
+    is_project_admin = user.is_project_admin()
+    is_owner = user.owns_project(project)
+
+    if not (is_owner or is_project_admin) and \
+            not user.non_owner_can_view(project):
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    membership = user.get_membership(project) if project else None
+    membership_id = membership.id if membership else None
+    mem_display = user.membership_display(project) if project else None
+    can_join_req = can_join_request(project, user) if project else False
+    can_leave_req = can_leave_request(project, user) if project else False
+
+    return object_detail(
+        request,
+        queryset=Project.objects.select_related(),
+        object_id=project.pk,
+        template_name="im/projects/project_detail.html",
+        extra_context={
+            'addmembers_form': addmembers_form,
+            'approved_members_count': approved_members_count,
+            'pending_members_count': pending_members_count,
+            'members_table': members_table,
+            'owner_mode': is_owner,
+            'admin_mode': is_project_admin,
+            'mem_display': mem_display,
+            'membership_id': membership_id,
+            'can_join_request': can_join_req,
+            'can_leave_request': can_leave_req,
+            'remaining_memberships_count': remaining_memberships_count,
+        })
 
 
 @transaction.commit_on_success
@@ -369,7 +430,7 @@ def common_detail(request, chain_or_app_id, project_view=True,
         addmembers_form = None
 
     user = request.user
-    is_project_admin = user.is_project_admin(application_id=application.id)
+    is_project_admin = user.is_project_admin()
     is_owner = user.owns_application(application)
     if not (is_owner or is_project_admin) and not project_view:
         m = _(astakos_messages.NOT_ALLOWED)
@@ -435,7 +496,7 @@ def project_search(request):
             'project', flat=True)
 
         projects = Project.objects.search_by_name(q)
-        projects = projects.filter(Project.o_state_q(Project.O_ACTIVE))
+        projects = projects.filter(state=Project.NORMAL)
         projects = projects.exclude(id__in=accepted).select_related(
             'application', 'application__owner', 'application__applicant')
 
@@ -630,18 +691,16 @@ def project_app_approve(request, application_id):
     except ProjectApplication.DoesNotExist:
         raise Http404
 
-    with ExceptionHandler(request):
-        _project_app_approve(request, application_id)
-
     chain_id = get_related_project_id(application_id)
-    if not chain_id:
-        return redirect_back(request, 'project_list')
+    with ExceptionHandler(request):
+        _project_app_approve(request, chain_id, application_id)
+
     return redirect(reverse('project_detail', args=(chain_id,)))
 
 
 @transaction.commit_on_success
-def _project_app_approve(request, application_id):
-    approve_application(application_id)
+def _project_app_approve(request, project_id, application_id):
+    approve_application(project_id, application_id)
 
 
 @require_http_methods(["POST"])
@@ -663,15 +722,16 @@ def project_app_deny(request, application_id):
     except ProjectApplication.DoesNotExist:
         raise Http404
 
+    chain_id = get_related_project_id(application_id)
     with ExceptionHandler(request):
-        _project_app_deny(request, application_id, reason)
+        _project_app_deny(request, chain_id, application_id, reason)
 
     return redirect(reverse('project_list'))
 
 
 @transaction.commit_on_success
-def _project_app_deny(request, application_id, reason):
-    deny_application(application_id, reason=reason)
+def _project_app_deny(request, project_id, application_id, reason):
+    deny_application(project_id, application_id, reason=reason)
 
 
 @require_http_methods(["POST"])
@@ -688,11 +748,10 @@ def project_app_dismiss(request, application_id):
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 
+    chain_id = get_related_project_id(application_id)
     with ExceptionHandler(request):
         _project_app_dismiss(request, application_id)
 
-    chain_id = None
-    chain_id = get_related_project_id(application_id)
     if chain_id:
         next = reverse('project_detail', args=(chain_id,))
     else:
@@ -700,9 +759,9 @@ def project_app_dismiss(request, application_id):
     return redirect(next)
 
 
-def _project_app_dismiss(request, application_id):
+def _project_app_dismiss(request, project_id, application_id):
     # XXX: dismiss application also does authorization
-    dismiss_application(application_id, request_user=request.user)
+    dismiss_application(project_id, application_id, request_user=request.user)
 
 
 @require_http_methods(["GET", "POST"])
@@ -715,9 +774,75 @@ def project_members(request, chain_id, members_status_filter=None,
     if not user.owns_project(project) and not user.is_project_admin():
         return redirect(reverse('index'))
 
-    return common_detail(request, chain_id,
-                         members_status_filter=members_status_filter,
-                         template_name=template_name)
+    if request.method == 'POST':
+        addmembers_form = AddProjectMembersForm(
+            request.POST,
+            chain_id=int(chain_id),
+            request_user=request.user)
+        with ExceptionHandler(request):
+            addmembers(request, chain_id, addmembers_form)
+
+        if addmembers_form.is_valid():
+            addmembers_form = AddProjectMembersForm()  # clear form data
+    else:
+        addmembers_form = AddProjectMembersForm()  # initialize form
+
+    members = project.projectmembership_set
+    approved_members_count = project.members_count()
+    pending_members_count = project.count_pending_memberships()
+    _limit = project.limit_on_members_number
+    if _limit is not None:
+        remaining_memberships_count = \
+            max(0, _limit - approved_members_count)
+    flt = MEMBERSHIP_STATUS_FILTER.get(members_status_filter)
+    if flt is not None:
+        members = flt(members)
+    else:
+        members = members.associated()
+    members = members.select_related()
+    members_table = tables.ProjectMembersTable(project,
+                                               members,
+                                               user=request.user,
+                                               prefix="members_")
+    RequestConfig(request, paginate={"per_page": settings.PAGINATE_BY}
+                  ).configure(members_table)
+
+
+    user = request.user
+    is_project_admin = user.is_project_admin()
+    is_owner = user.owns_application(project)
+    if (
+        not (is_owner or is_project_admin) and
+        not user.non_owner_can_view(project)
+    ):
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    membership = user.get_membership(project) if project else None
+    membership_id = membership.id if membership else None
+    mem_display = user.membership_display(project) if project else None
+    can_join_req = can_join_request(project, user) if project else False
+    can_leave_req = can_leave_request(project, user) if project else False
+
+    return object_detail(
+        request,
+        queryset=Project.objects.select_related(),
+        object_id=project.id,
+        template_name='im/projects/project_members.html',
+        extra_context={
+            'addmembers_form': addmembers_form,
+            'approved_members_count': approved_members_count,
+            'pending_members_count': pending_members_count,
+            'members_table': members_table,
+            'owner_mode': is_owner,
+            'admin_mode': is_project_admin,
+            'mem_display': mem_display,
+            'membership_id': membership_id,
+            'can_join_request': can_join_req,
+            'can_leave_request': can_leave_req,
+            'members_status_filter': members_status_filter,
+            'remaining_memberships_count': remaining_memberships_count,
+        })
 
 
 @require_http_methods(["POST"])

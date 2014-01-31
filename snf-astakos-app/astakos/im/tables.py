@@ -225,9 +225,9 @@ class UserTable(tables.Table):
 
 
 def project_name_append(project, column):
-    pending_apps = column.table.pending_apps
-    app = pending_apps.get(project.id)
-    if app and app.id != project.application_id:
+    if project.state != project.UNINITIALIZED and \
+            project.last_application is not None and \
+            project.last_application.state == ProjectApplication.PENDING:
         return mark_safe("<br /><i class='tiny'>%s</i>" %
                          _('modifications pending'))
     return u''
@@ -250,19 +250,16 @@ class UserProjectsTable(UserTable):
                       append=project_name_append,
                       args=(A('id'),),
                       orderable=False,
-                      accessor='application.name')
+                      accessor='realname')
 
-    issue_date = tables.DateColumn(verbose_name=_('Application'),
-                                   format=DEFAULT_DATE_FORMAT,
-                                   orderable=False,
-                                   accessor='application.issue_date')
-    start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT,
-                                   orderable=False,
-                                   accessor='application.start_date')
+    creation_date = tables.DateColumn(verbose_name=_('Application'),
+                                      format=DEFAULT_DATE_FORMAT,
+                                      orderable=False,
+                                      accessor='creation_date')
     end_date = tables.DateColumn(verbose_name=_('Expiration'),
                                  format=DEFAULT_DATE_FORMAT,
                                  orderable=False,
-                                 accessor='application.end_date')
+                                 accessor='end_date')
     members_count_f = tables.Column(verbose_name=_("Members"),
                                     empty_values=(),
                                     orderable=False)
@@ -313,12 +310,11 @@ class UserProjectsTable(UserTable):
         return mark_safe(str(members_count) + append)
 
     class Meta:
-        sequence = ('name', 'membership_status', 'issue_date', 'end_date',
+        sequence = ('name', 'membership_status', 'creation_date', 'end_date',
                     'members_count_f', 'project_action')
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
         template = "im/table_render.html"
         empty_text = _('No projects')
-        exclude = ('start_date', )
 
 
 def member_action_extra_context(membership, table, col):

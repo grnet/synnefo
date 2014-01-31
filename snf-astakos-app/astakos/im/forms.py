@@ -824,7 +824,8 @@ class ProjectApplicationForm(forms.ModelForm):
         policies = {}
         for d in self.resource_policies:
             policies[d["name"]] = {
-                "project_capacity": None,
+                ### TEMPORARY HACK !!!
+                "project_capacity": d["uplimit"],
                 "member_capacity": d["uplimit"]
             }
 

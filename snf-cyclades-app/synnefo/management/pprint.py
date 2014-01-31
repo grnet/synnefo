@@ -260,16 +260,16 @@ def pprint_port_in_ganeti(port, stdout=None, title=None):
             return
         raise e
 
-    disks = disks_from_instance(vm_info)
+    nics = nics_from_instance(vm_info)
     try:
-        gnt_disk = filter(lambda disk: disk.get("name") == port.backend_uuid,
-                          disks)[0]
-        gnt_disk["instance"] = vm_info["name"]
+        gnt_nic = filter(lambda nic: nic.get("name") == port.backend_uuid,
+                         nics)[0]
+        gnt_nic["instance"] = vm_info["name"]
     except IndexError:
         stdout.write("Port %s is not attached to instance %s\n" %
                      (port.id, vm.id))
         return
-    pprint_table(stdout, gnt_disk.items(), None, separator=" | ",
+    pprint_table(stdout, gnt_nic.items(), None, separator=" | ",
                  title=title)
 
     vm.put_client(client)
@@ -332,6 +332,23 @@ def pprint_server_nics(server, stdout=None, title=None):
                  title=title)
 
 
+def pprint_server_volumes(server, stdout=None, title=None):
+    if title is None:
+        title = "Volumes of Server %s" % server.id
+    if stdout is None:
+        stdout = sys.stdout
+
+    vols = []
+    for vol in server.volumes.filter(deleted=False):
+        vols.append((vol.id, vol.name, vol.index, vol.size, vol.template,
+                     vol.provider, vol.status, vol.source))
+
+    headers = ["ID", "Name", "Index", "Size", "Template", "Provider",
+               "Status", "Source"]
+    pprint_table(stdout, vols, headers, separator=" | ",
+                 title=title)
+
+
 def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
     if stdout is None:
         stdout = sys.stdout
@@ -365,6 +382,13 @@ def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
     nics_values = [[nic[key] for key in nics_keys] for nic in nics]
     pprint_table(stdout, nics_values, nics_keys, separator=" | ",
                  title="NICs of Server %s in Ganeti" % server.id)
+
+    stdout.write("\n")
+    disks = disks_from_instance(server_info)
+    disks_keys = ["name", "size"]
+    disks_values = [[disk[key] for key in disks_keys] for disk in disks]
+    pprint_table(stdout, disks_values, disks_keys, separator=" | ",
+                 title="Disks of Server %s in Ganeti" % server.id)
 
     if not print_jobs:
         return

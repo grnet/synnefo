@@ -765,7 +765,7 @@ class ModularBackend(BaseBackend):
         if user != account and until:
             raise NotAllowedError
 
-        objects = []
+        objects = set()
         if shared and public:
             # get shared first
             shared_paths = self._list_object_permissions(

@@ -12,6 +12,10 @@ def get_volume(user_id, volume_id, for_update=False,
     if for_update:
         volumes = volumes.select_for_update()
     try:
+        volume_id = int(volume_id)
+    except (TypeError, ValueError):
+        raise faults.BadRequest("Invalid volume id: %s" % volume_id)
+    try:
         return volumes.get(id=volume_id, userid=user_id)
     except models.Volume.DoesNotExist:
         raise exception("Volume %s not found" % volume_id)
@@ -34,6 +38,10 @@ def get_image(user_id, image_id, exception=faults.ItemNotFound):
 
 def get_server(user_id, server_id, for_update=False,
                exception=faults.ItemNotFound):
+    try:
+        server_id = int(server_id)
+    except (TypeError, ValueError):
+        raise faults.BadRequest("Invalid server id: %s" % server_id)
     try:
         return get_vm(server_id, user_id, for_update=for_update,
                       non_deleted=True, non_suspended=True)

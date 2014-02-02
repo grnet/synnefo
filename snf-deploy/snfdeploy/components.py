@@ -372,10 +372,7 @@ class Ganeti(SynnefoComponent):
             ] + self.prepare_net_infra()
 
     def restart(self):
-        return ["/etc/init.d/ganeti restart",
-                "mkdir -p /srv/archip/blocks",
-                "mkdir -p /srv/archip/maps",
-                "archipelago restart"]
+        return ["/etc/init.d/ganeti restart"]
 
 
 class Master(SynnefoComponent):
@@ -1157,15 +1154,20 @@ class Archip(SynnefoComponent):
         ]
 
     def prepare(self):
-        return ["mkdir -p /etc/archip"]
+        return ["mkdir -p /etc/archipelago"]
 
     def configure(self):
+        r1 = {"HOST": self.node_info.fqdn}
         return [
-            ("/etc/archip/pithos.conf.py", {}, {})
+            ("/etc/gunicorn.d/synnefo-archip", r1,
+             {"remote": "/etc/gunicorn.d/synnefo"}),
+            ("/etc/archipelago/pithos.conf.py", {}, {}),
+            ("/etc/archipelago/archipelago.conf", {}, {})
             ]
 
     def restart(self):
         return [
+            "/etc/init.d/gunicorn restart",
             "archipelago restart"
             ]
 

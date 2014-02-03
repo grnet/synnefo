@@ -1176,3 +1176,15 @@ class ArchipGaneti(SynnefoComponent):
     REQUIRED_PACKAGES = [
         "archipelago-ganeti",
         ]
+
+
+class ExtStorage(SynnefoComponent):
+    def prepare(self):
+        return ["mkdir -p /usr/share/ganeti/"]
+
+    def initialize(self):
+        url = "http://code.grnet.gr/git/extstorage"
+        extdir = "/usr/share/ganeti/extstorage"
+        return [
+            "git clone %s %s" % (url, extdir)
+            ]

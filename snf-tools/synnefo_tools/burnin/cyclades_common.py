@@ -567,7 +567,13 @@ class CycladesTests(BurninTests):
 
     def _delete_floating_ips(self, fips):
         """Delete floating ips"""
-        for fip in fips:
+        # Renew the list of floating IP objects
+        # (It may have been changed, i.e. a port may have been deleted).
+        fip_ids = [f['id'] for f in fips]
+        new_fips = [f for f in self.clients.network.list_floatingips()
+                    if f['id'] in fip_ids]
+
+        for fip in new_fips:
             port_id = fip['port_id']
             if port_id:
                 self.info("Destroying port with id %s", port_id)

@@ -58,8 +58,8 @@ class Mapper(object):
         """
         return self.fmap.map_retr(maphash, blkoff, nr)
 
-    def map_stor(self, maphash, hashes=(), blkoff=0, create=1):
+    def map_stor(self, maphash, hashes=(), blkoff=0):
         """Store hashes in the given hashes map."""
         if self.rmap:
-            self.rmap.map_stor(maphash, hashes, blkoff, create)
-        self.fmap.map_stor(maphash, hashes, blkoff, create)
+            self.rmap.map_stor(maphash, hashes, blkoff)
+        self.fmap.map_stor(maphash, hashes, blkoff)

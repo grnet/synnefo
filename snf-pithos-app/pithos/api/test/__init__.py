@@ -59,6 +59,7 @@ from django.db.backends.creation import TEST_DATABASE_PREFIX
 import django.utils.simplejson as json
 
 
+import sys
 import random
 import functools
 
@@ -151,8 +152,11 @@ class PithosTestSuiteRunner(DjangoTestSuiteRunner):
     def teardown_databases(self, old_config, **kwargs):
         from pithos.api.util import _pithos_backend_pool
         _pithos_backend_pool.shutdown()
-        super(PithosTestSuiteRunner, self).teardown_databases(old_config,
-                                                              **kwargs)
+        try:
+            super(PithosTestSuiteRunner, self).teardown_databases(old_config,
+                                                                  **kwargs)
+        except Exception as e:
+            sys.stderr.write("FAILED to teardown databases: %s\n" % str(e))
 
 
 class PithosTestClient(Client):

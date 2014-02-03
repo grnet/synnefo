@@ -36,6 +36,7 @@ from os.path import isdir, realpath, exists, join
 from binascii import hexlify
 
 from context_file import ContextFile
+from os import O_RDONLY, O_WRONLY
 
 
 class FileMapper(object):
@@ -58,13 +59,21 @@ class FileMapper(object):
                                  (mappath,))
         self.mappath = mappath
 
-    def _get_rear_map(self, maphash, create=0):
+    def _read_rear_map(self, maphash):
         filename = hexlify(maphash)
         dir = join(self.mappath, filename[0:2], filename[2:4], filename[4:6])
         if not exists(dir):
             makedirs(dir)
         name = join(dir, filename)
-        return ContextFile(name, create)
+        return ContextFile(name, O_RDONLY)
+
+    def _write_rear_map(self, maphash):
+        filename = hexlify(maphash)
+        dir = join(self.mappath, filename[0:2], filename[2:4], filename[4:6])
+        if not exists(dir):
+            makedirs(dir)
+        name = join(dir, filename)
+        return ContextFile(name, O_WRONLY)
 
     def _check_rear_map(self, maphash):
         filename = hexlify(maphash)
@@ -80,15 +89,15 @@ class FileMapper(object):
         namelen = self.namelen
         hashes = ()
 
-        with self._get_rear_map(maphash, 0) as rmap:
+        with self._read_rear_map(maphash) as rmap:
             if rmap:
                 hashes = list(rmap.sync_read_chunks(namelen, nr, blkoff))
         return hashes
 
-    def map_stor(self, maphash, hashes=(), blkoff=0, create=1):
+    def map_stor(self, maphash, hashes=(), blkoff=0):
         """Store hashes in the given hashes map."""
         namelen = self.namelen
         if self._check_rear_map(maphash):
             return
-        with self._get_rear_map(maphash, 1) as rmap:
+        with self._write_rear_map(maphash) as rmap:
             rmap.sync_write_chunks(namelen, blkoff, hashes, None)

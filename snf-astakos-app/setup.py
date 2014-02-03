@@ -74,6 +74,7 @@ INSTALL_REQUIRES = [
     'django-ratelimit==0.1',
     'requests',
     'inflect',
+    'urltools',
     'snf-django-lib',
     'snf-branding',
     'snf-webproject',

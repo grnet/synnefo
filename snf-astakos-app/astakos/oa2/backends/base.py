@@ -36,9 +36,12 @@ import urlparse
 import uuid
 import datetime
 import json
+import urltools
 
 from base64 import b64encode, b64decode
 from hashlib import sha512
+
+from synnefo.util.text import uenc
 
 import logging
 logger = logging.getLogger(__name__)
@@ -47,8 +50,12 @@ logger = logging.getLogger(__name__)
 def urlencode(params):
     if hasattr(params, 'urlencode') and callable(getattr(params, 'urlencode')):
         return params.urlencode()
+    for k in params:
+        params[uenc(k)] = uenc(params.pop(k))
     return urllib.urlencode(params)
 
+def normalize(url):
+    return urltools.normalize(uenc(url))
 
 def handles_oa2_requests(func):
     def wrapper(self, *args, **kwargs):
@@ -450,7 +457,7 @@ class SimpleBackend(object):
                                  scope=None, token_type="Bearer"):
         if scope and code_instance.scope != scope:
             raise OA2Error("Invalid scope")
-        if redirect_uri != code_instance.redirect_uri:
+        if normalize(redirect_uri) != normalize(code_instance.redirect_uri):
             raise OA2Error("The redirect uri does not match "
                            "the one used during authorization")
         token = self.add_token_for_client(token_type, code_instance)
@@ -562,7 +569,8 @@ class SimpleBackend(object):
                 raise OA2Error("Redirect uri length limit exceeded")
             if not client.redirect_uri_is_valid(redirect_uri):
                 raise OA2Error("Mismatching redirect uri")
-            if expected_value is not None and redirect_uri != expected_value:
+            if expected_value is not None and \
+                    normalize(redirect_uri) != normalize(expected_value):
                 raise OA2Error("Invalid redirect uri")
         else:
             try:
@@ -574,7 +582,7 @@ class SimpleBackend(object):
 
     def validate_state(self, client, params, headers):
         return params.get('state')
-        raise OA2Error("Invalid state")
+        #raise OA2Error("Invalid state")
 
     def validate_scope(self, client, params, headers):
         scope = params.get('scope')

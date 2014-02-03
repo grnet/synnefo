@@ -156,6 +156,8 @@ Drafts
    :maxdepth: 1
 
    Resource-pool projects design <design/resource-pool-projects>
+   Volumes design <design/volumes>
+   Volume Snapshots design <design/volume-snapshots>
 
 
 Contact

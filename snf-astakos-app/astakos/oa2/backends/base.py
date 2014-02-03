@@ -478,10 +478,10 @@ class SimpleBackend(object):
             return None, None
         pass
 
-    def _get_authorization(self, params, headers):
+    def _get_authorization(self, params, headers, authorization_required=True):
         scheme, client_credentials = self._get_credentials(params, headers)
         no_authorization = scheme is None and client_credentials is None
-        if no_authorization:
+        if authorization_required and no_authorization:
             raise OA2Error("Missing authorization header")
         return client_credentials
 
@@ -524,15 +524,17 @@ class SimpleBackend(object):
 
         client_credentials = None
         try:  # check authorization header
-            client_credentials = self._get_authorization(params, meta)
+            client_credentials = self._get_authorization(params, meta,
+                                                         authorization_required=False)
+        except:
+            pass
+        else:
             if client_credentials is not None:
                 _client_id = client_credentials[0]
                 if client_id is not None and client_id != _client_id:
                     raise OA2Error("Client identification conflicts "
                                    "with client authorization")
                 client_id = _client_id
-        except:
-            pass
 
         if client_id is None:
             raise OA2Error("Missing client identification")

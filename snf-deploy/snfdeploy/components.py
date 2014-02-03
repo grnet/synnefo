@@ -457,6 +457,11 @@ class GTools(SynnefoComponent):
     def check(self):
         return ["ping -c1 %s" % self.env.env.mq.ip]
 
+    def prepare(self):
+        return [
+            "sed -i 's/false/true/' /etc/default/snf-ganeti-eventd",
+            ]
+
     def configure(self):
         tmpl = "/etc/synnefo/gtools.conf"
         replace = {
@@ -465,12 +470,6 @@ class GTools(SynnefoComponent):
             "mq_node": self.env.env.mq.ip,
             }
         return [(tmpl, replace, {})]
-
-    def initialize(self):
-        return [
-            "sed -i 's/false/true/' /etc/default/snf-ganeti-eventd",
-            "/etc/init.d/snf-ganeti-eventd start",
-            ]
 
     def restart(self):
         return ["/etc/init.d/snf-ganeti-eventd restart"]

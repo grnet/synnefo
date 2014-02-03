@@ -41,7 +41,7 @@ class WorkerGlue(object):
     pmap = {}
     worker_id = None
     ioctx_pool = None
-    ArchipelagoConfFile = '/etc/archipelago/archipelago.conf'
+    ArchipelagoConfFile = None
 
     @classmethod
     def setmap(cls, pid, index):
@@ -50,34 +50,30 @@ class WorkerGlue(object):
 
     @classmethod
     def setupXsegPool(cls, ObjectPool, Segment, Xseg_ctx,
-                      cfile=ArchipelagoConfFile, pool_size=8):
+                      cfile='/etc/archipelago/archipelago.conf', pool_size=8):
         if WorkerGlue.ioctx_pool is not None:
             return
-        worker_id = WorkerGlue.worker_id
-        WorkerGlue.ArchipelagoConfFile = ARCHIPELAGO_CONF_FILE = cfile
-        ARCHIPELAGO_SEGMENT_TYPE = 'segdev'
-        ARCHIPELAGO_SEGMENT_NAME = 'xsegbd'
-        cfg = {}
         bcfg = ConfigParser.ConfigParser()
-        bcfg.readfp(open(ARCHIPELAGO_CONF_FILE))
-        cfg['SEGMENT_PORTS'] = bcfg.getint('XSEG', 'SEGMENT_PORTS')
-        cfg['SEGMENT_DYNPORTS'] = bcfg.getint('XSEG', 'SEGMENT_DYNPORTS')
-        cfg['SEGMENT_SIZE'] = bcfg.getint('XSEG', 'SEGMENT_SIZE')
-        ARCHIPELAGO_SEGMENT_DYNPORTS = int(cfg['SEGMENT_DYNPORTS'])
-        ARCHIPELAGO_SEGMENT_PORTS = int(cfg['SEGMENT_PORTS'])
-        ARCHIPELAGO_SEGMENT_SIZE = int(cfg['SEGMENT_SIZE'])
-        ARCHIPELAGO_SEGMENT_ALIGNMENT = 12
+        bcfg.readfp(open(cfile))
+        worker_id = WorkerGlue.worker_id
+        WorkerGlue.ArchipelagoConfFile = cfile
+        archipelago_segment_type = 'segdev'
+        archipelago_segment_name = 'xsegbd'
+        archipelago_dynports = bcfg.getint('XSEG', 'SEGMENT_DYNPORTS')
+        archipelago_ports = bcfg.getint('XSEG', 'SEGMENT_PORTS')
+        archipelago_segment_size = bcfg.getint('XSEG', 'SEGMENT_SIZE')
+        archipelago_segment_alignment = 12
 
         class XsegPool(ObjectPool):
 
             def __init__(self):
                 super(XsegPool, self).__init__(size=pool_size)
-                self.segment = Segment(ARCHIPELAGO_SEGMENT_TYPE,
-                                       ARCHIPELAGO_SEGMENT_NAME,
-                                       ARCHIPELAGO_SEGMENT_DYNPORTS,
-                                       ARCHIPELAGO_SEGMENT_PORTS,
-                                       ARCHIPELAGO_SEGMENT_SIZE,
-                                       ARCHIPELAGO_SEGMENT_ALIGNMENT)
+                self.segment = Segment(archipelago_segment_type,
+                                       archipelago_segment_name,
+                                       archipelago_dynports,
+                                       archipelago_ports,
+                                       archipelago_segment_size,
+                                       archipelago_segment_alignment)
                 self.worker_id = worker_id
                 self.cnt = 1
 

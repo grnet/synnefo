@@ -34,6 +34,7 @@
 from functools import wraps
 from datetime import datetime
 from urllib import quote, unquote, urlencode
+from urlparse import urlunsplit, urlsplit, parse_qsl
 
 from django.http import (HttpResponse, Http404, HttpResponseRedirect,
                          HttpResponseNotAllowed)
@@ -1196,12 +1197,13 @@ def view_method():
                 client_id, client_secret = OAUTH2_CLIENT_CREDENTIALS
                 # TODO: check if client credentials are not set
                 authorization_code = request.GET.get('code')
+                redirect_uri = unquote(request.build_absolute_uri(
+                    request.get_full_path()))
                 if authorization_code is None:
                     # request authorization code
                     params = {'response_type': 'code',
                               'client_id': client_id,
-                              'redirect_uri':
-                              request.build_absolute_uri(request.path),
+                              'redirect_uri': redirect_uri,
                               'state': '',  # TODO include state for security
                               'scope': requested_resource}
                     return HttpResponseRedirect('%s?%s' %
@@ -1210,15 +1212,23 @@ def view_method():
                                                  urlencode(params)))
                 else:
                     # request short-term access token
-                    redirect_uri = request.build_absolute_uri(request.path)
+                    parts = list(urlsplit(redirect_uri))
+                    params = dict(parse_qsl(parts[3], keep_blank_values=True))
+                    if 'code' in params:  # always True
+                        del params['code']
+                    if 'state' in params:
+                        del params['state']
+                    parts[3] = urlencode(params)
+                    redirect_uri = urlunsplit(parts)
                     data = astakos.get_token('authorization_code',
                                              *OAUTH2_CLIENT_CREDENTIALS,
                                              redirect_uri=redirect_uri,
                                              scope=requested_resource,
                                              code=authorization_code)
-                    params = {'access_token': data.get('access_token', '')}
-                    return HttpResponseRedirect('%s?%s' % (redirect_uri,
-                                                           urlencode(params)))
+                    params['access_token'] = data.get('access_token', '')
+                    parts[3] = urlencode(params)
+                    redirect_uri = urlunsplit(parts)
+                    return HttpResponseRedirect(redirect_uri)
             except AstakosClientException, err:
                 logger.exception(err)
                 raise PermissionDenied

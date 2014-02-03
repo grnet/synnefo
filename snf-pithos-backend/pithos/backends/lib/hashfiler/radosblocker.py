@@ -83,9 +83,9 @@ class RadosBlocker(object):
     def _pad(self, block):
         return block + ('\x00' * (self.blocksize - len(block)))
 
-    def _get_rear_block(self, blkhash, create=0):
+    def _get_rear_block(self, blkhash):
         name = hexlify(blkhash)
-        return RadosObject(name, self.ioctx, create)
+        return RadosObject(name, self.ioctx)
 
     def _check_rear_block(self, blkhash):
         filename = hexlify(blkhash)

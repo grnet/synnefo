@@ -65,9 +65,9 @@ class RadosMapper(object):
         self.mappool = mappool
         self.ioctx = RadosMapper.get_rados_ctx(mappool)
 
-    def _get_rear_map(self, maphash, create=0):
+    def _get_rear_map(self, maphash):
         name = hexlify(maphash)
-        return RadosObject(name, self.ioctx, create)
+        return RadosObject(name, self.ioctx)
 
     def _check_rear_map(self, maphash):
         name = hexlify(maphash)
@@ -90,10 +90,10 @@ class RadosMapper(object):
                 hashes = list(rmap.sync_read_chunks(namelen, nr, blkoff))
         return hashes
 
-    def map_stor(self, maphash, hashes=(), blkoff=0, create=1):
+    def map_stor(self, maphash, hashes=(), blkoff=0):
         """Store hashes in the given hashes map."""
         namelen = self.namelen
         if self._check_rear_map(maphash):
             return
-        with self._get_rear_map(maphash, 1) as rmap:
+        with self._get_rear_map(maphash) as rmap:
             rmap.sync_write_chunks(namelen, blkoff, hashes, None)

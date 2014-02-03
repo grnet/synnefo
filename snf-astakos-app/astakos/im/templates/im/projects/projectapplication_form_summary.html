@@ -31,9 +31,11 @@ exactly your request.</p>
 			 	<dt>Homepage Url</dt>
 				<dd>{{ form_data.homepage }}&nbsp;</dd>
 				<dt>Description</dt>
-				<dd>{{ form_data.description }}&nbsp;</dd>
+                <dd>{{ form_data.description }}&nbsp;</dd>
+                {% block form.start_date %}
 			 	<dt>Start date</dt>
-			 	<dd>{{ form_data.start_date|date:"d/m/Y"}}&nbsp;</dd>
+                <dd>{{ form_data.start_date|date:"d/m/Y"}}&nbsp;</dd>
+                {% endblock %}
 			 	<dt>End Date</dt>
 			 	<dd>{{ form_data.end_date|date:"d/m/Y"}}&nbsp;</dd>		
 			 	<dt>Comments</dt>
@@ -52,27 +54,39 @@ exactly your request.</p>
 			 	<dd>{{ form_data.limit_on_members_number }}</dd>
 			 </dl>
 		 </div>
-		 
-		 
 		 <div class="full-dotted">
-			<h3>RESOURCES</h3>
-			<p>The following resources will be granted to each member of this Project:</p>
-		 	<dl class="alt-style">
-		 	    {% for rp in form.resource_policies %}
-		 		    <dt>
-                        {{rp.pluralized_display_name}} per user
-           			</dt>
-			 		<dd>
-                                          {{ rp.display_uplimit }}
-           			</dd>
-           		{% empty %}
-           			No resources
-		 		{% endfor %}
-		 	</dl>      
+            <h3>RESOURCES (per user / total)</h3>
+            <dl class="alt-style">
+                {% for rp in form.resource_policies %}
+                    <dt>
+                        {{rp.pluralized_display_name}}
+                    </dt>
+                    <dd>
+                    {{ rp.display_m_uplimit|default:"(not set)" }} 
+                    {% if rp.m_diff %}
+                    {% with rp.m_diff as diff %}
+                        <span class="policy-diff 
+                            {% if diff.increased %}green{% else %}red{% endif %}"
+                            >({{diff.operator}}{{ diff.diff_display }})</span>
+                    {% endwith %}
+                    {% endif %}
+                    / 
+                    {{ rp.display_p_uplimit|default:"(not set)" }}
+                    {% if rp.p_diff %}
+                    {% with rp.p_diff as diff %}
+                        <span class="policy-diff 
+                            {% if diff.increased %}green{% else %}red{% endif %}"
+                        >({{diff.operator}}{{ diff.diff_display }})</span>
+                    {% endwith %}
+                    {% endif %}
+                    </dd>
+                {% empty %}
+                    No resources
+                {% endfor %}
+            </dl>      
 		 </div>
 		 
 		 <div class="full-dotted">
-		 	 
 		 </div>
 		
 		 

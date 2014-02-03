@@ -14,9 +14,9 @@
           MEMBERS  
  
           <div class="project-actions">
-            <a href="{% url project_members object.id %}"  {% if members_status_filter == None %}class="inactive"{% endif %}>ALL</a> -
-            <a href="{% url project_approved_members object.id %}" {% if members_status_filter == 1 %}class="inactive"{% endif %}>APPROVED</a> -
-            <a href="{% url project_pending_members object.id %}" {% if members_status_filter == 0 %}class="inactive"{% endif %}>PENDING</a>
+            <a href="{% url project_members project.uuid %}"  {% if members_status_filter == None %}class="inactive"{% endif %}>ALL</a> -
+            <a href="{% url project_approved_members project.uuid %}" {% if members_status_filter == 1 %}class="inactive"{% endif %}>APPROVED</a> -
+            <a href="{% url project_pending_members project.uuid %}" {% if members_status_filter == 0 %}class="inactive"{% endif %}>PENDING</a>
 
           </div>
         </h3>
@@ -24,9 +24,9 @@
        
         {% render_table members_table %}
         <div class="form-actions inactive clearfix">
-          {% confirm_link "Reject selected" "Reject selected members ?" "project_members_reject" object.id "" "OK" 1 "reject members-batch-action" %}
-          {% confirm_link "Accept selected" "Accept selected members ?" "project_members_accept" object.id "" "OK" 1 "accept members-batch-action" %}
-          {% confirm_link "Remove selected" "Remove selected members ?" "project_members_remove" object.id "" "OK" 1 "remove members-batch-action" %}
+          {% confirm_link "Reject selected" "Reject selected members ?" "project_members_reject" project.uuid "" "OK" 1 "reject members-batch-action" %}
+          {% confirm_link "Accept selected" "Accept selected members ?" "project_members_accept" project.uuid "" "OK" 1 "accept members-batch-action" %}
+          {% confirm_link "Remove selected" "Remove selected members ?" "project_members_remove" project.uuid "" "OK" 1 "remove members-batch-action" %}
         </div>
         {% endif %}
         

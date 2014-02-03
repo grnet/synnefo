@@ -1368,9 +1368,8 @@ class ProjectApplication(models.Model):
         return self.APPLICATION_STATE_DISPLAY.get(self.state, _('Unknown'))
 
     @property
-    def grants(self):
-        return self.projectresourcegrant_set.values('member_capacity',
-                                                    'resource__name')
+    def resource_set(self):
+        return self.projectresourcegrant_set.order_by('resource__name')
 
     @property
     def resource_policies(self):
@@ -1495,6 +1494,31 @@ class ProjectResourceGrant(models.Model):
 
     def display_member_capacity(self):
         return units.show(self.member_capacity, self.resource.unit)
+
+    def display_project_capacity(self):
+        return units.show(self.project_capacity, self.resource.unit)
+
+    def project_diffs(self):
+        project = self.project_application.chain
+        try:
+            project_resource = project.resource_set.get(resource=self.resource)
+        except ProjectResourceQuota.DoesNotExist:
+            return [self.project_capacity, self.member_capacity]
+
+        project_diff = \
+                self.project_capacity - project_resource.project_capacity
+        member_diff = self.member_capacity - project_resource.member_capacity
+        return [project_diff, member_diff]
+
+    def display_project_diff(self):
+        proj, member = self.project_diffs()
+        proj_abs, member_abs = abs(proj), abs(member)
+        unit = self.resource.unit
+
+        def disp(v):
+            sign = u'+' if v >= 0 else u'-'
+            return sign + unicode(units.show(v, unit))
+        return map(disp, [proj_abs, member_abs])
 
     def __str__(self):
         return 'Max %s per user: %s' % (self.resource.pluralized_display_name,
@@ -1747,8 +1771,10 @@ class Project(models.Model):
     def set_deleted(self, actor=None, reason=None):
         self.set_state(self.DELETED, actor=actor, reason=reason)
 
-    ### Logical checks
+    def can_modify(self):
+        return self.state not in [self.UNINITIALIZED, self.DELETED]
 
+    ### Logical checks
     @property
     def is_alive(self):
         return self.state in [self.NORMAL, self.SUSPENDED]
@@ -1792,6 +1818,10 @@ class Project(models.Model):
         policy = self.member_leave_policy
         return presentation.PROJECT_MEMBER_LEAVE_POLICIES.get(policy)
 
+    @property
+    def resource_set(self):
+        return self.projectresourcequota_set.order_by('resource__name')
+
 
 def create_project(**kwargs):
     if "uuid" not in kwargs:
@@ -1818,6 +1848,12 @@ class ProjectResourceQuota(models.Model):
 
     class Meta:
         unique_together = ("resource", "project")
+
+    def display_member_capacity(self):
+        return units.show(self.member_capacity, self.resource.unit)
+
+    def display_project_capacity(self):
+        return units.show(self.project_capacity, self.resource.unit)
 
 
 class ProjectLogManager(models.Manager):

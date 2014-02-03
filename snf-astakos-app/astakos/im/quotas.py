@@ -341,6 +341,5 @@ def qh_sync_new_resource(resource):
                 resource=resource,
                 project_capacity=limit,
                 member_capacity=limit))
-
     ProjectResourceQuota.objects.bulk_create(entries)
     qh_sync_projects(projects, resource=resource.name)

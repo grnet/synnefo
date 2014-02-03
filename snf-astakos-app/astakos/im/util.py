@@ -176,6 +176,15 @@ def restrict_next(url, domain=None, allowed_schemes=()):
     return None
 
 
+def restrict_reverse(*args, **kwargs):
+    """
+    Like reverse, with an additional restrict_next call to the reverse result.
+    """
+    domain = kwargs.pop('restrict_domain', settings.COOKIE_DOMAIN)
+    url = reverse(*args, **kwargs)
+    return restrict_next(url, domain=domain)
+
+
 def prepare_response(request, user, next='', renew=False):
     """Return the unique username and the token
        as 'X-Auth-User' and 'X-Auth-Token' headers,
@@ -344,3 +353,11 @@ def redirect_back(request, default='index'):
     if referer and safe and not loops:
         return redirect(referer)
     return redirect(reverse(default))
+
+
+def truncatename(v, max=18, append="..."):
+    length = len(v)
+    if length > max:
+        return v[:max] + append
+    else:
+        return v

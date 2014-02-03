@@ -273,7 +273,10 @@ dl.alt-style dd									{ overflow:hidden; position:relative;}
 .projects h3 .rt-action 						{ float:right;}
 .projects .submit-rt							{ margin:0; text-align:right; }
 .projects +.buttons-list.fixpos					{ left:0; right:auto; }
-.project-actions a 								{ font-size: 0.7em }
+.project-actions .msg-wrap::after               { content:'-'; }
+.project-actions .msg-wrap:last-child::after    { content:''; }
+.back-to-action                                 { display: block; position: absolute; top: -20px; font-size: 0.8em }
+/*.project-actions a 								{ font-size: 0.7em }*/
 .project-actions a.inactive	 					{ color:#ccc; cursor: default}
 .project-actions a.inactive:hover				{ text-decoration: none;}
 .projects dl.alt-style .faint					{ color:#ccc; font-style: italic}

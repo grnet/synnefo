@@ -575,6 +575,13 @@ def leave_project_checks(membership, request_user):
         raise ProjectConflict(m)
 
 
+def can_cancel_join_request(project, user):
+    m = user.get_membership(project)
+    if m is None:
+        return False
+    return m.state in [m.REQUESTED]
+
+
 def can_leave_request(project, user):
     m = user.get_membership(project)
     if m is None:

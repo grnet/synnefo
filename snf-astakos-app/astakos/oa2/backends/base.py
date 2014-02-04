@@ -54,8 +54,10 @@ def urlencode(params):
         params[uenc(k)] = uenc(params.pop(k))
     return urllib.urlencode(params)
 
+
 def normalize(url):
     return urltools.normalize(uenc(url))
+
 
 def handles_oa2_requests(func):
     def wrapper(self, *args, **kwargs):
@@ -531,8 +533,8 @@ class SimpleBackend(object):
 
         client_credentials = None
         try:  # check authorization header
-            client_credentials = self._get_authorization(params, meta,
-                                                         authorization_required=False)
+            client_credentials = self._get_authorization(
+                params, meta, authorization_required=False)
         except:
             pass
         else:

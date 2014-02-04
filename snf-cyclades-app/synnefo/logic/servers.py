@@ -132,6 +132,10 @@ def create(userid, name, password, flavor, image_id, metadata={},
         server_volumes.append(v)
 
     for key, val in metadata.items():
+        utils.check_name_length(key, VirtualMachineMetadata.KEY_LENGTH,
+                                "Metadata key is too long")
+        utils.check_name_length(val, VirtualMachineMetadata.VALUE_LENGTH,
+                                "Metadata value is too long")
         VirtualMachineMetadata.objects.create(
             meta_key=key,
             meta_value=val,

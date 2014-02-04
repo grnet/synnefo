@@ -3,9 +3,9 @@ import logging
 from django.db import transaction
 from django.conf import settings
 from snf_django.lib.api import faults
-from synnefo.db.models import Volume
+from synnefo.db.models import Volume, VolumeMetadata
 from synnefo.volume import util
-from synnefo.logic import server_attachments
+from synnefo.logic import server_attachments, utils
 
 log = logging.getLogger(__name__)
 
@@ -45,6 +45,10 @@ def create(user_id, size, server_id, name=None, description=None,
 
     if metadata is not None:
         for meta_key, meta_val in metadata.items():
+            utils.check_name_length(meta_key, VolumeMetadata.KEY_LENGTH,
+                                    "Metadata key is too long")
+            utils.check_name_length(meta_val, VolumeMetadata.VALUE_LENGTH,
+                                    "Metadata key is too long")
             volume.metadata.create(key=meta_key, value=meta_val)
 
     server_attachments.attach_volume(server, volume)
@@ -56,6 +60,10 @@ def _create_volume(server, user_id, size, source_type, source_uuid,
                    name=None, description=None, index=None,
                    delete_on_termination=True):
 
+    utils.check_name_length(name, Volume.NAME_LENGTH,
+                            "Volume name is too long")
+    utils.check_name_length(description, Volume.DESCRIPTION_LENGTH,
+                            "Volume name is too long")
     # Only ext_ disk template supports cloning from another source. Otherwise
     # is must be the root volume so that 'snf-image' fill the volume
     disk_template = server.flavor.disk_template

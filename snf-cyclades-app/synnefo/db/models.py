@@ -409,8 +409,10 @@ class VirtualMachine(models.Model):
 
 
 class VirtualMachineMetadata(models.Model):
-    meta_key = models.CharField(max_length=50)
-    meta_value = models.CharField(max_length=500)
+    KEY_LENGTH = 50
+    VALUE_LENGTH = 500
+    meta_key = models.CharField(max_length=KEY_LENGTH)
+    meta_value = models.CharField(max_length=VALUE_LENGTH)
     vm = models.ForeignKey(VirtualMachine, related_name='metadata',
                            on_delete=models.CASCADE)
 
@@ -1004,12 +1006,15 @@ class Volume(models.Model):
                             " volume")
     )
 
+    NAME_LENGTH = 255
+    DESCRIPTION_LENGTH = 255
     SOURCE_IMAGE_PREFIX = "image:"
     SOURCE_SNAPSHOT_PREFIX = "snapshot:"
     SOURCE_VOLUME_PREFIX = "volume:"
 
-    name = models.CharField("Name", max_length=255, null=True)
-    description = models.CharField("Description", max_length=256, null=True)
+    name = models.CharField("Name", max_length=NAME_LENGTH, null=True)
+    description = models.CharField("Description",
+                                   max_length=DESCRIPTION_LENGTH, null=True)
     userid = models.CharField("Owner's UUID", max_length=100, null=False,
                               db_index=True)
     size = models.IntegerField("Volume size in GB",  null=False)
@@ -1099,8 +1104,10 @@ class Volume(models.Model):
 
 
 class Metadata(models.Model):
-    key = models.CharField("Metadata Key", max_length=64)
-    value = models.CharField("Metadata Value", max_length=255)
+    KEY_LENGTH = 64
+    VALUE_LENGTH = 255
+    key = models.CharField("Metadata Key", max_length=KEY_LENGTH)
+    value = models.CharField("Metadata Value", max_length=VALUE_LENGTH)
 
     class Meta:
         abstract = True

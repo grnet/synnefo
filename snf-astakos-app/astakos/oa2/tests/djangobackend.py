@@ -38,7 +38,6 @@ import base64
 import datetime
 
 from collections import namedtuple
-from urltools import normalize
 
 from django.test import TransactionTestCase as TestCase
 from django.test import Client as TestClient
@@ -51,6 +50,7 @@ from astakos.oa2.models import Client, AuthorizationCode, Token
 from astakos.im.tests import common
 
 from synnefo.util.text import uenc
+from synnefo.util.urltools import normalize
 
 
 ParsedURL = namedtuple('ParsedURL', ['host', 'scheme', 'path', 'params',

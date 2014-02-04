@@ -36,12 +36,12 @@ import urlparse
 import uuid
 import datetime
 import json
-import urltools
 
 from base64 import b64encode, b64decode
 from hashlib import sha512
 
 from synnefo.util.text import uenc
+from synnefo.util import urltools
 
 import logging
 logger = logging.getLogger(__name__)

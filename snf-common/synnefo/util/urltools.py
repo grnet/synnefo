@@ -71,8 +71,10 @@ UNQUOTE_EXCEPTIONS = {
     'fragment': ' +#'
 }
 
-_hextochr = {'%02x' % i: chr(i) for i in range(256)}
-_hextochr.update({'%02X' % i: chr(i) for i in range(256)})
+#_hextochr = {'%02x' % i: chr(i) for i in range(256)}
+#_hextochr.update({'%02X' % i: chr(i) for i in range(256)})
+_hextochr = dict(('%02x' % i, chr(i)) for i in range(256))
+_hextochr.update(dict(('%02X' % i, chr(i)) for i in range(256)))
 _idna_encode = lambda x: x.decode('utf-8').encode('idna')
 _idna_decode = lambda x: x.decode('idna').encode('utf-8')
 

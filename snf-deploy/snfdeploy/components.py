@@ -1180,11 +1180,11 @@ class ArchipGaneti(SynnefoComponent):
 
 class ExtStorage(SynnefoComponent):
     def prepare(self):
-        return ["mkdir -p /usr/share/ganeti/"]
+        return ["mkdir -p /usr/local/lib/ganeti/"]
 
     def initialize(self):
         url = "http://code.grnet.gr/git/extstorage"
-        extdir = "/usr/share/ganeti/extstorage"
+        extdir = "/usr/local/lib/ganeti/extstorage"
         return [
             "git clone %s %s" % (url, extdir)
             ]

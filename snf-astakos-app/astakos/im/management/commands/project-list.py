@@ -33,15 +33,13 @@
 
 from optparse import make_option
 
-from snf_django.management.commands import SynnefoCommand, CommandError
+from snf_django.management.commands import ListCommand
 
 from astakos.im.models import Project, ProjectApplication
-from django.db.models import Q
-from snf_django.management import utils
-from ._common import is_uuid, is_email
+from ._common import is_uuid
 
 
-class Command(SynnefoCommand):
+class Command(ListCommand):
     help = """List projects and project status.
 
     Project status can be one of:
@@ -66,7 +64,10 @@ class Command(SynnefoCommand):
 
       Deleted              an uninitialized, deleted project"""
 
-    option_list = SynnefoCommand.option_list + (
+    object_class = Project
+    select_related = ["last_application", "owner"]
+
+    option_list = ListCommand.option_list + (
         make_option('--new',
                     action='store_true',
                     dest='new',
@@ -88,69 +89,58 @@ class Command(SynnefoCommand):
                     dest='deleted',
                     default=False,
                     help="Also so cancelled/terminated projects"),
-        make_option('--name',
-                    dest='name',
-                    help='Filter projects by name'),
-        make_option('--owner',
-                    dest='owner',
-                    help='Filter projects by owner\'s email or uuid'),
     )
 
-    def handle(self, *args, **options):
+    def get_owner(project):
+        return project.owner.email if project.owner else None
 
-        flt = Q()
-        owner = options['owner']
-        if owner:
-            flt &= filter_by_owner(owner)
+    def get_status(project):
+        return project.state_display()
 
-        name = options['name']
-        if name:
-            flt &= Q(realname=name)
+    def get_pending_app(project):
+        app = project.last_application
+        return app.id if app and app.state == app.PENDING else ""
+
+    FIELDS = {
+        "id": ("uuid", "Project ID"),
+        "name": ("realname", "Project Name"),
+        "owner": (get_owner, "Project Owner"),
+        "status": (get_status, "Project Status"),
+        "pending_app": (get_pending_app,
+                        "An application pending for the project"),
+    }
+
+    fields = ["id", "name", "owner", "status", "pending_app"]
+
+    def handle_args(self, *args, **options):
+        try:
+            name_filter = self.filters.pop("name")
+            self.filters["realname"] = name_filter
+        except KeyError:
+            pass
+
+        try:
+            owner_filter = self.filters.pop("owner")
+            if owner_filter is not None:
+                if is_uuid(owner_filter):
+                    self.filters["owner__uuid"] = owner_filter
+                else:
+                    self.filters["owner__email"] = owner_filter
+        except KeyError:
+            pass
 
         if not options['deleted']:
-            flt &= ~Q(state__in=Project.SKIP_STATES)
+            self.excludes["state__in"] = Project.SKIP_STATES
 
-        pending = Q(last_application__isnull=False,
-                    last_application__state=ProjectApplication.PENDING)
-
-        if options['pending']:
-            flt &= pending
+        if options["pending"]:
+            self.filter_pending()
         else:
             if options['new']:
-                flt &= pending & Q(state=Project.UNINITIALIZED)
+                self.filter_pending()
+                self.filters["state"] = Project.UNINITIALIZED
             if options['modified']:
-                flt &= pending & Q(state__in=Project.INITIALIZED_STATES)
+                self.filter_pending()
+                self.filters["state__in"] = Project.INITIALIZED_STATES
 
-        projects = Project.objects.\
-            select_related("last_application", "owner").filter(flt)
-
-        labels = ('ProjID', 'Name', 'Owner', 'Status', 'Pending AppID')
-
-        info = project_info(projects)
-        utils.pprint_table(self.stdout, info, labels,
-                           options["output_format"])
-
-
-def filter_by_owner(s):
-    if is_email(s):
-        return Q(owner__email=s)
-    if is_uuid(s):
-        return Q(owner__uuid=s)
-    raise CommandError("Expecting either email or uuid.")
-
-
-def project_info(projects):
-    l = []
-    for project in projects:
-        status = project.state_display()
-        app = project.last_application
-        pending_appid = app.id if app and app.state == app.PENDING else ""
-
-        t = (project.uuid,
-             project.realname,
-             project.owner.email if project.owner else None,
-             status,
-             pending_appid,
-             )
-        l.append(t)
-    return l
+    def filter_pending(self):
+        self.filters["last_application__state"] = ProjectApplication.PENDING

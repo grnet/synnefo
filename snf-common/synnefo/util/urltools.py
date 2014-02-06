@@ -26,30 +26,30 @@ from collections import namedtuple
 from posixpath import normpath
 
 
-__all__ = ["ParseResult", "SplitResult", "parse", "extract", "split",
-           "split_netloc", "split_host", "assemble", "encode", "normalize",
+__all__ = ["ParseResult", "SplitResult", "split",
+           "split_netloc", "assemble", "normalize",
            "normalize_host", "normalize_path", "normalize_query",
            "normalize_fragment", "unquote"]
 
 
-PSL_URL = 'http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1'
-
-def _get_public_suffix_list():
-    """Get the public suffix list.
-    """
-    local_psl = os.environ.get('PUBLIC_SUFFIX_LIST')
-    if local_psl:
-        psl_raw = open(local_psl).readlines()
-    else:
-        psl_raw = urllib.urlopen(PSL_URL).readlines()
-    psl = set()
-    for line in psl_raw:
-        item = line.strip()
-        if item != '' and not item.startswith('//'):
-            psl.add(item)
-    return psl
-
-PSL = _get_public_suffix_list()
+#PSL_URL = 'http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1'
+#
+#def _get_public_suffix_list():
+#    """Get the public suffix list.
+#    """
+#    local_psl = os.environ.get('PUBLIC_SUFFIX_LIST')
+#    if local_psl:
+#        psl_raw = open(local_psl).readlines()
+#    else:
+#        psl_raw = urllib.urlopen(PSL_URL).readlines()
+#    psl = set()
+#    for line in psl_raw:
+#        item = line.strip()
+#        if item != '' and not item.startswith('//'):
+#            psl.add(item)
+#    return psl
+#
+#PSL = _get_public_suffix_list()
 
 
 SCHEMES = ['http', 'https', 'ftp', 'sftp', 'file', 'gopher', 'imap', 'mms',
@@ -114,12 +114,12 @@ def normalize(url):
     return assemble(result)
 
 
-def encode(url):
-    """Encode URL
-    """
-    parts = extract(url)
-    encoded = ParseResult(*(_idna_encode(p) for p in parts))
-    return assemble(encoded)
+#def encode(url):
+#    """Encode URL
+#    """
+#    parts = extract(url)
+#    encoded = ParseResult(*(_idna_encode(p) for p in parts))
+#    return assemble(encoded)
 
 
 def assemble(parts):
@@ -222,37 +222,37 @@ def unquote(text, exceptions=[]):
     return ''.join(res)
 
 
-def parse(url):
-    """Parse a URL
-    """
-    parts = split(url)
-    if parts.scheme:
-        (username, password, host, port) = split_netloc(parts.netloc)
-        (subdomain, domain, tld) = split_host(host)
-    else:
-        username = password = subdomain = domain = tld = port = ''
-    return ParseResult(parts.scheme, username, password, subdomain, domain, tld,
-                       port, parts.path, parts.query, parts.fragment)
+#def parse(url):
+#    """Parse a URL
+#    """
+#    parts = split(url)
+#    if parts.scheme:
+#        (username, password, host, port) = split_netloc(parts.netloc)
+#        (subdomain, domain, tld) = split_host(host)
+#    else:
+#        username = password = subdomain = domain = tld = port = ''
+#    return ParseResult(parts.scheme, username, password, subdomain, domain, tld,
+#                       port, parts.path, parts.query, parts.fragment)
 
 
-def extract(url):
-    """Extract as much information from a (relative) URL as possible
-    """
-    parts = split(url)
-    if parts.scheme:
-        netloc = parts.netloc
-        path = parts.path
-    else:
-        netloc = parts.path
-        path = ''
-        if '/' in netloc:
-            tmp = netloc.split('/', 1)
-            netloc = tmp[0]
-            path = '/' + tmp[1]
-    (username, password, host, port) = split_netloc(netloc)
-    (subdomain, domain, tld) = split_host(host)
-    return ParseResult(parts.scheme, username, password, subdomain, domain, tld,
-                       port, path, parts.query, parts.fragment)
+#def extract(url):
+#    """Extract as much information from a (relative) URL as possible
+#    """
+#    parts = split(url)
+#    if parts.scheme:
+#        netloc = parts.netloc
+#        path = parts.path
+#    else:
+#        netloc = parts.path
+#        path = ''
+#        if '/' in netloc:
+#            tmp = netloc.split('/', 1)
+#            netloc = tmp[0]
+#            path = '/' + tmp[1]
+#    (username, password, host, port) = split_netloc(netloc)
+#    (subdomain, domain, tld) = split_host(host)
+#    return ParseResult(parts.scheme, username, password, subdomain, domain, tld,
+#                       port, path, parts.query, parts.fragment)
 
 
 def split(url):
@@ -341,33 +341,33 @@ def split_netloc(netloc):
     return username, password, host, port
 
 
-def split_host(host):
-    """Use the Public Suffix List to split host into subdomain, domain and tld
-    """
-    if '[' in host:
-        return '', host, ''
-    domain = subdomain = tld = ''
-    for c in host:
-        if c not in IP_CHARS:
-            break
-    else:
-        return '', host, ''
-    parts = host.split('.')
-    for i in range(len(parts)):
-        tld = '.'.join(parts[i:])
-        wildcard_tld = '*.' + tld
-        exception_tld = '!' + tld
-        if exception_tld in PSL:
-            domain = '.'.join(parts[:i+1])
-            tld = '.'.join(parts[i+1:])
-            break
-        if tld in PSL:
-            domain = '.'.join(parts[:i])
-            break
-        if wildcard_tld in PSL:
-            domain = '.'.join(parts[:i-1])
-            tld = '.'.join(parts[i-1:])
-            break
-    if '.' in domain:
-        (subdomain, domain) = domain.rsplit('.', 1) 
-    return subdomain, domain, tld
+#def split_host(host):
+#    """Use the Public Suffix List to split host into subdomain, domain and tld
+#    """
+#    if '[' in host:
+#        return '', host, ''
+#    domain = subdomain = tld = ''
+#    for c in host:
+#        if c not in IP_CHARS:
+#            break
+#    else:
+#        return '', host, ''
+#    parts = host.split('.')
+#    for i in range(len(parts)):
+#        tld = '.'.join(parts[i:])
+#        wildcard_tld = '*.' + tld
+#        exception_tld = '!' + tld
+#        if exception_tld in PSL:
+#            domain = '.'.join(parts[:i+1])
+#            tld = '.'.join(parts[i+1:])
+#            break
+#        if tld in PSL:
+#            domain = '.'.join(parts[:i])
+#            break
+#        if wildcard_tld in PSL:
+#            domain = '.'.join(parts[:i-1])
+#            tld = '.'.join(parts[i-1:])
+#            break
+#    if '.' in domain:
+#        (subdomain, domain) = domain.rsplit('.', 1)
+#    return subdomain, domain, tld

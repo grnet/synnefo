@@ -43,7 +43,7 @@ from django.core.cache import cache
 from astakos.im import settings
 from astakos.im import register
 from astakos.im.quotas import get_user_quotas, service_get_quotas, \
-    service_get_project_quotas
+    service_get_project_quotas, project_ref
 
 import astakos.quotaholder_app.exception as qh_exception
 import astakos.quotaholder_app.callpoint as qh
@@ -66,7 +66,10 @@ def get_visible_resources():
 def quotas(request):
     visible_resources = get_visible_resources()
     resource_names = [r.name for r in visible_resources]
-    result = get_user_quotas(request.user, resources=resource_names)
+    memberships = request.user.projectmembership_set.actually_accepted()
+    sources = [project_ref(m.project.uuid) for m in memberships]
+    result = get_user_quotas(request.user, resources=resource_names,
+                             sources=sources)
     return json_response(result)
 
 

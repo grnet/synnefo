@@ -122,6 +122,7 @@ def create_tables(engine):
     nodes = Table('nodes', metadata, *columns, mysql_engine='InnoDB')
     Index('idx_nodes_path', nodes.c.path, unique=True)
     Index('idx_nodes_parent', nodes.c.parent)
+    Index('idx_latest_version', nodes.c.latest_version)
 
     #create policy table
     columns = []

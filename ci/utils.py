@@ -19,6 +19,7 @@ from kamaki.clients.astakos import AstakosClient, parse_endpoints
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
 from kamaki.clients.image import ImageClient
 from kamaki.clients.compute import ComputeClient
+from kamaki.clients import ClientError
 import filelocker
 
 DEFAULT_CONFIG_FILE = "ci_wheezy.conf"
@@ -264,13 +265,20 @@ class SynnefoCI(object):
     def _create_floating_ip(self):
         """Create a new floating ip"""
         networks = self.network_client.list_networks(detail=True)
-        pub_net = [n for n in networks
-                   if n['SNF:floating_ip_pool'] and n['public']]
-        pub_net = pub_net[0]
-        fip = self.network_client.create_floatingip(pub_net['id'])
-        self.logger.debug("Floating IP %s with id %s created",
-                          fip['floating_ip_address'], fip['id'])
-        return fip
+        pub_nets = [n for n in networks
+                    if n['SNF:floating_ip_pool'] and n['public']]
+        for pub_net in pub_nets:
+            # Try until we find a public network that is not full
+            try:
+                fip = self.network_client.create_floatingip(pub_net['id'])
+            except ClientError as err:
+                self.logger.warning("%s: %s", err.message, err.details)
+                continue
+            self.logger.debug("Floating IP %s with id %s created",
+                              fip['floating_ip_address'], fip['id'])
+            return fip
+        self.logger.error("No mor IP addresses available")
+        sys.exit(1)
 
     def _create_port(self, floating_ip):
         """Create a new port for our floating IP"""

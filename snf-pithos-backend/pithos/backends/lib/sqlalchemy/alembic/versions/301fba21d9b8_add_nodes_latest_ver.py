@@ -11,12 +11,10 @@ revision = '301fba21d9b8'
 down_revision = '54dbdde2d187'
 
 from alembic import op
-import sqlalchemy as sa
 
 
 def upgrade():
-    op.create_index('idx_latest_version', 'nodes',
-                                ['latest_version'])
+    op.create_index('idx_latest_version', 'nodes', ['latest_version'])
 
 
 def downgrade():

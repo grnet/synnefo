@@ -776,6 +776,7 @@
               'networks': storage.networks,
               'vms': storage.vms,
               'quotas': storage.quotas,
+              'projects': storage.projects,
               'ips': storage.floating_ips,
               'subnets': storage.subnets,
               'ports': storage.ports,
@@ -825,7 +826,6 @@
             this.loaded = true;
             
             // application start point
-
             this.check_empty();
             this.show_initial_view();
         },
@@ -836,6 +836,9 @@
             }
             this.error_view = new views.ErrorView();
             this.vm_resize_view = new views.VmResizeView();
+            this.vm_reassign_view = new views.VmReassignView();
+            this.ip_reassign_view = new views.IPReassignView();
+            this.network_reassign_view = new views.NetworkReassignView();
 
             // api request error handling
             synnefo.api.bind("error", _.bind(this.handle_api_error, this));
@@ -873,8 +876,13 @@
                 self.check_status();
                 storage.quotas.fetch({refresh:true, update:true, success: function() {
                   self.update_status("quotas", 1);
-                  self.update_status("layout", 1);
-                  self.check_status()
+                  self.update_status("projects", 0);
+                  self.check_status();
+                  storage.projects.fetch({refresh:true, update:true, success: function() {
+                    self.update_status("projects", 1);
+                    self.update_status("layout", 0);
+                    self.check_status();
+                  }});
                 }})
             }})
         },
@@ -927,21 +935,26 @@
         },
         
         update_create_buttons_status: function() {
-            var nets = storage.quotas.get('cyclades.network.private');
-            var vms = storage.quotas.get('cyclades.vm');
+            var nets = storage.quotas.can_create('network');
+            var vms = storage.quotas.can_create('vm');
+            var ips = storage.quotas.can_create('ip');
             
-            if (!nets || !vms) { return }
-
-            if (!nets.can_consume()) {
-                $("#networks-pane a.createbutton").addClass("disabled");
+            if (!nets) {
+                $("#networks-pane .create-button a").addClass("disabled");
             } else {
-                $("#networks-pane a.createbutton").removeClass("disabled");
+                $("#networks-pane .create-button a").removeClass("disabled");
             }
 
-            if (!vms.can_consume()) {
+            if (!vms) {
                 $("#createcontainer #create").addClass("disabled");
             } else {
                 $("#createcontainer #create").removeClass("disabled");
+            }
+
+            if (!ips) {
+                $("#ips-pane #create-ip a").addClass("disabled");
+            } else {
+                $("#ips-pane #create-ip a").removeClass("disabled");
             }
         },
 

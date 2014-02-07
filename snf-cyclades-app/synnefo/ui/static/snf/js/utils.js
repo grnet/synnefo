@@ -1,4 +1,4 @@
-// Copyright 2011 GRNET S.A. All rights reserved.
+// Copyright 2014 GRNET S.A. All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or
 // without modification, are permitted provided that the following
@@ -237,6 +237,7 @@
     }
 
     synnefo.util.readablizeBytes = function(bytes, fix) {
+        if (parseInt(bytes) == 0) { return '0 bytes' }
         if (fix === undefined) { fix = 2; }
         var s = ['bytes', 'kb', 'MB', 'GB', 'TB', 'PB'];
         var e = Math.floor(Math.log(bytes)/Math.log(1024));

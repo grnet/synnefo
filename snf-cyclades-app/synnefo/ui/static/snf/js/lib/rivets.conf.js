@@ -115,11 +115,16 @@ _.extend(rivets.binders, {
         var specs = this.options.formatters[0].split(",");
         var cls_name = specs[0];
         var params = specs[1];
+        if (params && this.view.models && 
+                      this.view.models.view &&
+                      this.view.models.view[params]) { 
+          params = this.view.models.view[params](this, specs); 
+        } else {
+          if (params) { params = JSON.parse(params) }
+        }
         var view_cls = synnefo.views[cls_name];
         var view_params = {collection: value};
-        if (params) {
-          _.extend(view_params, JSON.parse(params));
-        }
+        if (params) { _.extend(view_params, params); }
         var view = this.view.models.view.create_view(view_cls, view_params);
         this.view.models.view.add_subview(view);
         view.show(true);

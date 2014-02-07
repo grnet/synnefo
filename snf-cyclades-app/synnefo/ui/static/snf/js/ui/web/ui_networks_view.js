@@ -1,4 +1,4 @@
-// Copyright 2013 GRNET S.A. All rights reserved.
+// Copyright 2014 GRNET S.A. All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or
 // without modification, are permitted provided that the following
@@ -72,6 +72,8 @@
             this.type_select = this.$("#network-create-type");
             this.subnet_select = this.$("#network-create-subnet");
             this.subnet_custom = this.$("#network-create-subnet-custom");
+            
+            this.project_select = this.$(".project-select");
                 
             this.dhcp_form = this.$("#network-create-dhcp-fields");
             
@@ -92,7 +94,7 @@
             if (_.keys(synnefo.config.network_available_types).length <= 1) {
                 this.type_select.closest(".form-field").hide();
             }
-
+            
             this.check_dhcp_form();
             this.init_handlers();
         },
@@ -165,6 +167,13 @@
                 this.text.closest(".form-field").removeClass("error");
             }
             
+            var project = this.get_project();
+            if (!project || !project.quotas.can_fit({'cyclades.network.private': 1})) {
+                this.project_select.closest(".form-field").addClass("error");
+                this.project_select.focus();
+                return false;
+            }
+
             if (this.dhcp_select.is(":checked")) {
                 if (this.subnet_select.val() == "custom") {
                     var sub = this.subnet_custom.val();
@@ -200,12 +209,16 @@
         },
 
         create: function() {
+            if (this.create_button.hasClass("in-progress")) { return }
             this.create_button.addClass("in-progress");
 
             var name = this.text.val();
             var dhcp = this.dhcp_select.is(":checked");
             var subnet = null;
             var type = this.type_select.val();
+            var project_id = this.project_select.val();
+            var project = synnefo.storage.projects.get(project_id);
+
 
             if (dhcp) {
                 if (this.subnet_select.val() == "custom") {
@@ -218,16 +231,38 @@
                 
             }
 
-            snf.storage.networks.create(name, type, subnet, dhcp, _.bind(function(){
+            snf.storage.networks.create(
+              project, name, type, subnet, dhcp, _.bind(function(){
                 this.hide();
-                // trigger parent view create handler
-                this.parent_view.post_create();
             }, this));
+        },
+        
+        update_projects: function() {
+          this.project_select.find("option").remove();
+          var min_network_quota = {'cyclades.network.private': 1}
+          synnefo.storage.projects.each(function(project){
+            var el = $("<option></option>");
+            el.attr("value", project.id);
+            var name = '{0} ({1} available)'.format(project.get('name'), 
+              project.quotas.get('cyclades.network.private').get('available'));
+            el.text(name);
+            if (!project.quotas.can_fit(min_network_quota)) {
+              el.attr('disabled', true);
+            }
+            this.project_select.append(el);
+          }, this);
+        },
+        
+        get_project: function() {
+          var project_id = this.project_select.val();
+          var project = synnefo.storage.projects.get(project_id);
+          return project;
         },
 
         beforeOpen: function() {
+            this.update_projects();
             this.create_button.removeClass("in-progress")
-            this.text.closest(".form-field").removeClass("error");
+            this.$(".form-field").removeClass("error");
             this.text.val("");
             this.text.show();
             this.text.focus();
@@ -240,7 +275,7 @@
 
         onOpen: function() {
             this.text.focus();
-        }
+        }    
     });
 
     views.NetworkPortView = views.ext.ModelView.extend({
@@ -447,6 +482,10 @@
         this.ports_visible = false;
       },
       
+      show_reassign_view: function() {
+          synnefo.ui.main.network_reassign_view.show(this.model);
+      },
+
       set_ports_empty: function() {
         if (this.ports_visible) {
           this.toggle_ports();
@@ -570,7 +609,7 @@
       collection_name: 'networks',
       model_view_cls: views.NetworkView,
       create_view_cls: views.NetworkCreateView,
-      quota_key: 'cyclades.network.private',
+      quota_key: 'network',
 
       group_key: 'name',
       group_network: function(n) {
@@ -827,6 +866,11 @@
       classes: 'public-network',
       post_init_element: function() {
         views.NetworkSelectPublicNetwork.__super__.post_init_element.apply(this);
+      },
+      resolve_floating_ip_view_params: function() {
+        return {
+          project: this.parent_view.parent_view.project
+        }
       }
     });
 
@@ -861,7 +905,7 @@
     views.NetworkSelectFloatingIpsView = views.ext.CollectionView.extend({
       tpl: '#networks-select-floating-ips-tpl',
       model_view_cls: views.NetworkSelectFloatingIpView,
-
+      
       deselect_all: function() {
         this.each_ip_view(function(v) { v.deselect() });
       },
@@ -874,11 +918,11 @@
         })
       },
 
-      post_init: function() {
+      post_init: function(options) {
         var parent = this.parent_view;
         var self = this;
-
-        this.quota = synnefo.storage.quotas.get("cyclades.floating_ip");
+        
+        this.quota = this.options.project.quotas.get("cyclades.floating_ip");
         this.selected_ips = [];
         this.handle_ip_select = _.bind(this.handle_ip_select, this);
         this.create = this.$(".floating-ip.create");
@@ -1074,7 +1118,8 @@
       },
 
       initialize: function(options) {
-        this.quotas = synnefo.storage.quotas.get('cyclades.private_network');
+        this.project = options.project;
+        this.quotas = this.project.quotas.get('cyclades.private_network');
         options = options || {};
         options.model = options.model || new models.Model();
         this.private_networks = new Backbone.FilteredCollection(undefined, {

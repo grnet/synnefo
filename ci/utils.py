@@ -724,7 +724,7 @@ class SynnefoCI(object):
         for branch in `git branch -a | grep remotes | grep -v HEAD`; do
             git branch --track ${branch##*/} $branch > /dev/null 2>&1
         done
-        git branch
+        git --no-pager branch --no-color
         """
         webclient_branches = _run(cmd, False)
         webclient_branches = webclient_branches.split()

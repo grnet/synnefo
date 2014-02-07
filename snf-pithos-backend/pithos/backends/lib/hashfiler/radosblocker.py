@@ -48,14 +48,20 @@ class RadosBlocker(object):
     blocksize = None
     blockpool = None
     hashtype = None
+    rados = None
+    rados_ctx = None
+
+    @classmethod
+    def get_rados_ctx(cls, pool):
+        if cls.rados_ctx is None:
+            cls.rados = Rados(conffile=CEPH_CONF_FILE)
+            cls.rados.connect()
+            cls.rados_ctx = cls.rados.open_ioctx(pool)
+        return cls.rados_ctx
 
     def __init__(self, **params):
         blocksize = params['blocksize']
         blockpool = params['blockpool']
-
-        rados = Rados(conffile=CEPH_CONF_FILE)
-        rados.connect()
-        ioctx = rados.open_ioctx(blockpool)
 
         hashtype = params['hashtype']
         try:
@@ -69,8 +75,7 @@ class RadosBlocker(object):
 
         self.blocksize = blocksize
         self.blockpool = blockpool
-        self.rados = rados
-        self.ioctx = ioctx
+        self.ioctx = RadosBlocker.get_rados_ctx(self.blockpool)
         self.hashtype = hashtype
         self.hashlen = len(emptyhash)
         self.emptyhash = emptyhash

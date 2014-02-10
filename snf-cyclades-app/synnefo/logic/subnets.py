@@ -82,10 +82,14 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
     network_id and the desired cidr are mandatory, everything else is optional
 
     """
+
     try:
+        network_id = int(network_id)
         network = Network.objects.get(id=network_id)
+    except (ValueError, TypeError):
+        raise api.faults.BadRequest("Malformed network ID")
     except Network.DoesNotExist:
-        raise api.faults.ItemNotFound("No network found with that id")
+        raise api.faults.ItemNotFound("No network found with that ID")
 
     if network.deleted:
         raise api.faults.BadRequest("Network has been deleted")

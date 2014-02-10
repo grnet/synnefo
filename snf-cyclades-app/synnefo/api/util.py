@@ -310,9 +310,12 @@ def backend_public_networks(backend):
 def get_vm_nic(vm, nic_id):
     """Get a VMs NIC by its ID."""
     try:
+        nic_id = int(nic_id)
         return vm.nics.get(id=nic_id)
     except NetworkInterface.DoesNotExist:
         raise faults.ItemNotFound("NIC '%s' not found" % nic_id)
+    except (ValueError, TypeError):
+        raise faults.BadRequest("Invalid NIC ID '%s'" % nic_id)
 
 
 def get_nic(nic_id):

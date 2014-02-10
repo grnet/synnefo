@@ -105,7 +105,7 @@ class URLAssertionsMixin(object):
 
     @parsed_url_wrapper
     def assertPath(self, url, path):
-        self.assertEqual(url.path, path)
+        self.assertEqual(normalize(url.path), normalize(path))
 
     @parsed_url_wrapper
     def assertSecure(self, url, key):
@@ -385,7 +385,7 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.assertEqual(code.redirect_uri, self.client3_redirect_uri)
 
         # redirect uri startswith the client's registered redirect url
-        params['redirect_uri'] = '%smore' % self.client3_redirect_uri
+        params['redirect_uri'] = '%sφωτογραφία.JPG' % self.client3_redirect_uri
         self.client.set_credentials('client3', 'secret')
         r = self.client.authorize_code('client3', urlparams=params)
         self.assertEqual(r.status_code, 400)
@@ -419,7 +419,7 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.assertEqual(r.status_code, 400)
 
         # redirect uri descendant
-        redirect_uri = '%s/more?α=γιουνικοντ' % self.client3_redirect_uri
+        redirect_uri = '%s/φωτογραφία.JPG?α=γιουνικοντ' % self.client3_redirect_uri
         params['redirect_uri'] = redirect_uri
         self.client.set_credentials('client3', 'secret')
         r = self.client.authorize_code('client3', urlparams=params)
@@ -553,7 +553,7 @@ class TestOA2(TestCase, URLAssertionsMixin):
                     'state': None}
         self.assert_access_token_response(r, expected)
 
-        redirect_uri = '%s/more?α=γιουνικοντ' % self.client3_redirect_uri
+        redirect_uri = '%s/φωτογραφία.JPG?α=γιουνικοντ' % self.client3_redirect_uri
         params = {'redirect_uri': redirect_uri}
         r = self.client.authorize_code('client3', urlparams=params)
         self.assertCount(AuthorizationCode, 1)

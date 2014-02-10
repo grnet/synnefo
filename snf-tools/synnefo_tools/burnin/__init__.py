@@ -47,6 +47,7 @@ from synnefo_tools.burnin.images_tests import \
 from synnefo_tools.burnin.pithos_tests import PithosTestSuite
 from synnefo_tools.burnin.server_tests import ServerTestSuite
 from synnefo_tools.burnin.network_tests import NetworkTestSuite
+from synnefo_tools.burnin.projects_tests import QuotasTestSuite
 from synnefo_tools.burnin.stale_tests import \
     StaleServersTestSuite, StaleFloatingIPsTestSuite, StaleNetworksTestSuite
 
@@ -60,6 +61,7 @@ TESTSUITES = [
     PithosTestSuite,
     ServerTestSuite,
     NetworkTestSuite,
+    QuotasTestSuite,
 ]
 TSUITES_NAMES = [tsuite.__name__ for tsuite in TESTSUITES]
 

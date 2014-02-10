@@ -90,10 +90,13 @@ MEMBERSHIP_REQUEST_DATA = {
 
 
 def membership_request_notify(project, requested_user, action):
+    owner = project.owner
+    if owner is None:
+        return
     subject, template = MEMBERSHIP_REQUEST_DATA[action](project)
     try:
         build_notification(
-            SENDER, [project.owner.email], subject,
+            SENDER, [owner.email], subject,
             template=template,
             dictionary={'object': project, 'user': requested_user.email}
         ).send()
@@ -107,11 +110,11 @@ APPLICATION_DATA = {
         _(messages.PROJECT_CREATION_SUBJECT) % a.__dict__,
         "im/projects/project_creation_notification.txt"),
     "deny": lambda a: (
-        [a.owner.email],
+        [a.applicant.email],
         _(messages.PROJECT_DENIED_SUBJECT) % a.__dict__,
         "im/projects/project_denial_notification.txt"),
     "approve": lambda a: (
-        [a.owner.email],
+        [a.applicant.email],
         _(messages.PROJECT_APPROVED_SUBJECT) % a.__dict__,
         "im/projects/project_approval_notification.txt"),
 }
@@ -146,10 +149,13 @@ PROJECT_DATA = {
 
 
 def project_notify(project, action):
+    owner = project.owner
+    if owner is None:
+        return
     subject, template = PROJECT_DATA[action](project)
     try:
         build_notification(
-            SENDER, [project.owner.email], subject,
+            SENDER, [owner.email], subject,
             template=template,
             dictionary={'object': project}
         ).send()

@@ -105,6 +105,20 @@ class BurninTestResult(unittest.TestResult):
         super(BurninTestResult, self).addFailure(test, err)
         self._test_failed(test, err)
 
+    # pylint: disable=fixme
+    def addSkip(self, test, reason):  # noqa
+        """Called when the test case test is skipped
+
+        If reason starts with "__SkipClass__: " then
+        we should stop the execution of all the TestSuite.
+
+        TODO: There should be a better way to do this
+
+        """
+        super(BurninTestResult, self).addSkip(test, reason)
+        if reason.startswith("__SkipClass__: "):
+            self.stop()
+
 
 # --------------------------------------------------------------------
 # Helper Classes
@@ -346,6 +360,12 @@ class BurninTests(unittest.TestCase):
         if condition:
             self.info("Test skipped: %s" % msg)
             self.skipTest(msg)
+
+    def _skip_suite_if(self, condition, msg):
+        """Skip the whole testsuite"""
+        if condition:
+            self.info("TestSuite skipped: %s" % msg)
+            self.skipTest("__SkipClass__: %s" % msg)
 
     # ----------------------------------
     # Flavors

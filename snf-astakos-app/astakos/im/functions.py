@@ -1110,6 +1110,9 @@ def terminate(project_id, request_user=None, reason=None):
     project = get_project_for_update(project_id)
     project_check_allowed(project, request_user, level=ADMIN_LEVEL)
     checkAlive(project)
+    if project.is_base:
+        m = _(astakos_messages.BASE_NO_TERMINATE) % project.uuid
+        raise ProjectConflict(m)
 
     project.terminate(actor=request_user, reason=reason)
     quotas.qh_sync_project(project)

@@ -228,6 +228,7 @@ UNIQUE_PROJECT_NAME_CONSTRAIN_ERR = (
 NOT_ALIVE_PROJECT = 'Project %s is not alive.'
 NOT_SUSPENDED_PROJECT = 'Project %s is not suspended.'
 NOT_TERMINATED_PROJECT = 'Project %s is not terminated.'
+BASE_NO_TERMINATE = "Cannot terminate: %s is a base project."
 NOT_ALLOWED = 'You do not have the permissions to perform this action.'
 MEMBER_NUMBER_LIMIT_REACHED = (
     'You have reached the maximum number of members for this Project.')

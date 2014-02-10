@@ -223,21 +223,25 @@ class BurninTests(unittest.TestCase):
         self.info("Pithos url is %s", self.clients.pithos_url)
         self.info("Image url is %s", self.clients.image_url)
 
+        user_uuid = self._get_uuid()
         self.quotas = self._get_quotas()
-        self.info("  Disk usage is %s bytes",
-                  self.quotas['system']['cyclades.disk']['usage'])
-        self.info("  VM usage is %s",
-                  self.quotas['system']['cyclades.vm']['usage'])
-        self.info("  DiskSpace usage is %s bytes",
-                  self.quotas['system']['pithos.diskspace']['usage'])
-        self.info("  Ram usage is %s bytes",
-                  self.quotas['system']['cyclades.ram']['usage'])
-        self.info("  Floating IPs usage is %s",
-                  self.quotas['system']['cyclades.floating_ip']['usage'])
-        self.info("  CPU usage is %s",
-                  self.quotas['system']['cyclades.cpu']['usage'])
-        self.info("  Network usage is %s",
-                  self.quotas['system']['cyclades.network.private']['usage'])
+        for puuid, quotas in self.quotas.items():
+            project_name = self._get_project_name(puuid, user_uuid)
+            self.info("  Project %s:", project_name)
+            self.info("    Disk usage is         %s bytes",
+                      quotas['cyclades.disk']['usage'])
+            self.info("    VM usage is           %s",
+                      quotas['cyclades.vm']['usage'])
+            self.info("    DiskSpace usage is    %s bytes",
+                      quotas['pithos.diskspace']['usage'])
+            self.info("    Ram usage is          %s bytes",
+                      quotas['cyclades.ram']['usage'])
+            self.info("    Floating IPs usage is %s",
+                      quotas['cyclades.floating_ip']['usage'])
+            self.info("    CPU usage is          %s",
+                      quotas['cyclades.cpu']['usage'])
+            self.info("    Network usage is      %s",
+                      quotas['cyclades.network.private']['usage'])
 
     def _run_tests(self, tcases):
         """Run some generated testcases"""
@@ -508,13 +512,18 @@ class BurninTests(unittest.TestCase):
     def _get_quotas(self):
         """Get quotas"""
         self.info("Getting quotas")
-        return self.clients.astakos.get_quotas()
+        return dict(self.clients.astakos.get_quotas())
 
     # Invalid argument name. pylint: disable-msg=C0103
     # Too many arguments. pylint: disable-msg=R0913
-    def _check_quotas(self, disk=None, vm=None, diskspace=None,
+    def _check_quotas(self, puuid=None, disk=None, vm=None, diskspace=None,
                       ram=None, ip=None, cpu=None, network=None):
-        """Check that quotas' changes are consistent"""
+        """Check that quotas' changes are consistent
+
+        @param puuid: The uuid of the project, quotas are assigned to
+
+        """
+
         assert any(v is None for v in
                    [disk, vm, diskspace, ram, ip, cpu, network]), \
             "_check_quotas require arguments"
@@ -524,38 +533,67 @@ class BurninTests(unittest.TestCase):
         new_quotas = self._get_quotas()
         self.quotas = new_quotas
 
-        # Check Disk usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.disk', disk)
-        # Check VM usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.vm', vm)
-        # Check DiskSpace usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'pithos.diskspace', diskspace)
-        # Check Ram usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.ram', ram)
-        # Check Floating IPs usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.floating_ip', ip)
-        # Check CPU usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.cpu', cpu)
-        # Check Network usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.network.private', network)
+        user_uuid = self._get_uuid()
+        if puuid is None:
+            puuid = user_uuid
 
-    def _check_quotas_aux(self, old_quotas, new_quotas, resource, value):
+        self.assertListEqual(sorted(old_quotas.keys()),
+                             sorted(new_quotas.keys()))
+        for project in old_quotas.keys():
+            # Check Disk usage
+            project_name = self._get_project_name(project, user_uuid)
+            self._check_quotas_aux(old_quotas[project], new_quotas[project],
+                                   project_name, "cyclades.disk",
+                                   disk, project == puuid)
+            # Check VM usage
+            self._check_quotas_aux(old_quotas[project], new_quotas[project],
+                                   project_name, "cyclades.vm",
+                                   vm, project == puuid)
+            # Check DiskSpace usage
+            self._check_quotas_aux(old_quotas[project], new_quotas[project],
+                                   project_name, "pithos.diskspace",
+                                   diskspace, project == puuid)
+            # Check Ram usage
+            self._check_quotas_aux(old_quotas[project], new_quotas[project],
+                                   project_name, "cyclades.ram",
+                                   ram, project == puuid)
+            # Check Floating IPs usage
+            self._check_quotas_aux(old_quotas[project], new_quotas[project],
+                                   project_name, "cyclades.floating_ip",
+                                   ip, project == puuid)
+            # Check CPU usage
+            self._check_quotas_aux(old_quotas[project], new_quotas[project],
+                                   project_name, "cyclades.cpu",
+                                   cpu, project == puuid)
+            # Check Network usage
+            self._check_quotas_aux(old_quotas[project], new_quotas[project],
+                                   project_name, "cyclades.network.private",
+                                   network, project == puuid)
+
+    def _check_quotas_aux(self, old_quotas, new_quotas,
+                          project_name, resource, value, check):
         """Auxiliary function for _check_quotas"""
-        old_value = old_quotas['system'][resource]['usage']
-        new_value = new_quotas['system'][resource]['usage']
-        if value is not None:
+        old_value = old_quotas[resource]['usage']
+        new_value = new_quotas[resource]['usage']
+        if check and value is not None:
             assert isinstance(value, int), \
                 "%s value has to be integer" % resource
             old_value += value
         self.assertEqual(old_value, new_value,
-                         "%s quotas don't match" % resource)
+                         "Project %s: %s quotas don't match" %
+                         (project_name, resource))
+
+    # ----------------------------------
+    # Projects
+    def _get_project_name(self, puuid, uuid=None):
+        """Get the name of a project"""
+        if uuid is None:
+            uuid = self._get_uuid()
+        if puuid == uuid:
+            return "base"
+        else:
+            project_info = self.clients.astakos.get_project(puuid)
+            return project_info['name']
 
 
 # --------------------------------------------------------------------

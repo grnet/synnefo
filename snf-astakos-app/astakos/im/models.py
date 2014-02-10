@@ -1892,6 +1892,11 @@ class ProjectMembershipManager(models.Manager):
             q &= Q(project__in=projects)
         return self.filter(q)
 
+    def actually_accepted_and_active(self):
+        q = self.model.Q_ACTUALLY_ACCEPTED
+        q &= Q(project__state=Project.NORMAL)
+        return self.filter(q)
+
     def initialized(self, projects=None):
         q = Q(initialized=True)
         if projects is not None:

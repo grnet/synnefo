@@ -281,23 +281,33 @@ def get_projects(request):
     user = request.user
     input_data = read_json_body(request, default={})
     filters = input_data.get("filter", {})
+    mode = input_data.get("mode", "default")
     query = make_project_query(filters)
-    projects = _get_projects(query, request_user=user)
+    projects = _get_projects(query, mode=mode, request_user=user)
     data = get_projects_details(projects, request_user=user)
     return json_response(data)
 
 
-def _get_projects(query, request_user=None):
+def _get_projects(query, mode="default", request_user=None):
     projects = Project.objects.filter(query)
 
-    if not request_user.is_project_admin():
-        membs = request_user.projectmembership_set.any_accepted()
+    if mode == "member":
+        membs = request_user.projectmembership_set.\
+            actually_accepted_and_active()
         memb_projects = membs.values_list("project", flat=True)
         is_memb = Q(id__in=memb_projects)
-        owned = Q(owner=request_user)
-        active = (Q(state=Project.NORMAL) &
-                  Q(private=False))
-        projects = projects.filter(is_memb | owned | active)
+        projects = projects.filter(is_memb)
+    elif mode == "default":
+        if not request_user.is_project_admin():
+            membs = request_user.projectmembership_set.any_accepted()
+            memb_projects = membs.values_list("project", flat=True)
+            is_memb = Q(id__in=memb_projects)
+            owned = Q(owner=request_user)
+            active = (Q(state=Project.NORMAL) &
+                      Q(private=False))
+            projects = projects.filter(is_memb | owned | active)
+    else:
+        raise faults.BadRequest("Unrecognized mode '%s'." % mode)
     return projects.select_related("last_application")
 
 

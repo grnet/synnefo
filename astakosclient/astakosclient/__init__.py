@@ -804,13 +804,15 @@ class AstakosClient(object):
 
     # ----------------------------
     # do a GET to ``API_PROJECTS``
-    def get_projects(self, name=None, state=None, owner=None):
+    def get_projects(self, name=None, state=None, owner=None, mode=None):
         """Retrieve all accessible projects
 
         Arguments:
         name  -- filter by name (optional)
         state -- filter by state (optional)
         owner -- filter by owner (optional)
+        mode  -- if value is 'member', return only active projects in which
+                 the request user is an active member
 
         In case of success, return a list of project descriptions.
         """
@@ -821,6 +823,8 @@ class AstakosClient(object):
             filters["state"] = state
         if owner is not None:
             filters["owner"] = owner
+        if mode is not None:
+            filters["mode"] = mode
         req_headers = {'content-type': 'application/json'}
         req_body = (parse_request({"filter": filters}, self.logger)
                     if filters else None)

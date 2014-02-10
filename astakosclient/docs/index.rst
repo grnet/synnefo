@@ -189,7 +189,7 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         rejected and which failed to resolved. Otherwise raise an
         AstakosClientException exception.
 
-    **get_projects(**\ name=None, state=None, owner=None\ **)**
+    **get_projects(**\ name=None, state=None, owner=None, mode=None\ **)**
         Retrieve all accessible projects
 
     **get_project(**\ project_id\ **)**

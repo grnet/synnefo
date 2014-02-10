@@ -260,8 +260,8 @@ def put_object_headers(response, meta, restricted=False, token=None,
     disposition_type = disposition_type if disposition_type in \
         ('inline', 'attachment') else None
     if disposition_type is not None:
-        response['Content-Disposition'] = '%s; filename=%s' % (
-            disposition_type, meta['name'])
+        response['Content-Disposition'] = smart_str('%s; filename=%s' % (
+            disposition_type, meta['name']), strings_only=True)
 
 
 def update_manifest_meta(request, v_account, meta):

@@ -43,7 +43,7 @@ import tempfile
 from synnefo_tools.burnin.common import BurninTests, Proper
 
 
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class PithosTestSuite(BurninTests):
     """Test Pithos functionality"""
     containers = Proper(value=None)

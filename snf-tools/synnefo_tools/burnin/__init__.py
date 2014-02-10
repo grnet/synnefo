@@ -92,8 +92,7 @@ def parse_arguments(args):
     kwargs["description"] = \
         "%prog runs a number of test scenarios on a Synnefo deployment."
 
-    # Used * or ** magic. pylint: disable-msg=W0142
-    parser = optparse.OptionParser(**kwargs)
+    parser = optparse.OptionParser(**kwargs)  # pylint: disable=star-args
     parser.disable_interspersed_args()
 
     parser.add_option(

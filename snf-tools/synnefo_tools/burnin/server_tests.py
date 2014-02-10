@@ -48,8 +48,7 @@ from synnefo_tools.burnin.common import BurninTests, Proper
 from synnefo_tools.burnin.cyclades_common import CycladesTests
 
 
-# Too many public methods. pylint: disable-msg=R0904
-# Too many instance attributes. pylint: disable-msg=R0902
+# pylint: disable=too-many-public-methods,too-many-instance-attributes
 # This class gets replicated into actual TestCases dynamically
 class GeneratedServerTestSuite(CycladesTests):
     """Test Spawning Serverfunctionality"""
@@ -248,7 +247,7 @@ class GeneratedServerTestSuite(CycladesTests):
             socket.AF_INET, self.ipv4[0], 3389)
         # No actual RDP processing done. We assume the RDP server is there
         # if the connection to the RDP port is successful.
-        # pylint: disable-msg=W0511
+        # pylint: disable=fixme
         # FIXME: Use rdesktop, analyze exit code? see manpage
         sock.close()
 
@@ -261,7 +260,7 @@ class GeneratedServerTestSuite(CycladesTests):
             socket.AF_INET, self.ipv6[0], 3389)
         # No actual RDP processing done. We assume the RDP server is there
         # if the connection to the RDP port is successful.
-        # pylint: disable-msg=W0511
+        # pylint: disable=fixme
         # FIXME: Use rdesktop, analyze exit code? see manpage
         sock.close()
 

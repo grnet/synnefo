@@ -45,7 +45,7 @@ from kamaki.clients import ClientError
 from synnefo_tools.burnin.common import BurninTests, Proper
 
 
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class FlavorsTestSuite(BurninTests):
     """Test flavor lists for consistency"""
     simple_flavors = Proper(value=None)
@@ -89,7 +89,7 @@ class FlavorsTestSuite(BurninTests):
 
 
 # --------------------------------------------------------------------
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class ImagesTestSuite(BurninTests):
     """Test image lists for consistency"""
     simple_images = Proper(value=None)

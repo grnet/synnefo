@@ -52,7 +52,7 @@ from kamaki.clients import ClientError
 from synnefo_tools.burnin.common import BurninTests, MB, GB
 
 
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class CycladesTests(BurninTests):
     """Extends the BurninTests class for Cyclades"""
     def _try_until_timeout_expires(self, opmsg, check_fun):
@@ -356,7 +356,7 @@ class CycladesTests(BurninTests):
         d_image = self.clients.cyclades.get_image_details(image['id'])
         return d_image['metadata']['osfamily'].lower().find(osfamily) >= 0
 
-    # Method could be a function. pylint: disable-msg=R0201
+    # pylint: disable=no-self-use
     def _ssh_execute(self, hostip, username, password, command):
         """Execute a command via ssh"""
         ssh = paramiko.SSHClient()
@@ -393,7 +393,7 @@ class CycladesTests(BurninTests):
         self.info("Server's hostname is %s", hostname)
         return hostname
 
-    # Too many arguments. pylint: disable-msg=R0913
+    # pylint: disable=too-many-arguments
     def _check_file_through_ssh(self, hostip, username, password,
                                 remotepath, content):
         """Fetch file from server and compare contents"""

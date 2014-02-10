@@ -42,7 +42,7 @@ from synnefo_tools.burnin.common import Proper
 from synnefo_tools.burnin.cyclades_common import CycladesTests
 
 
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class NetworkTestSuite(CycladesTests):
     """Test Networking in Cyclades"""
     avail_images = Proper(value=None)

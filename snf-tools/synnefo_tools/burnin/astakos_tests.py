@@ -42,7 +42,7 @@ from kamaki.clients import ClientError
 from synnefo_tools.burnin import common
 
 
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class AstakosTestSuite(common.BurninTests):
     """Test Astakos functionality"""
     def test_001_unauthorized_access(self):

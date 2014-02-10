@@ -54,8 +54,8 @@ from synnefo_tools.burnin.logger import Log
 
 # --------------------------------------------------------------------
 # Global variables
-logger = None   # Invalid constant name. pylint: disable-msg=C0103
-success = None  # Invalid constant name. pylint: disable-msg=C0103
+logger = None   # pylint: disable=invalid-name
+success = None  # pylint: disable=invalid-name
 SNF_TEST_PREFIX = "snf-test-"
 CONNECTION_RETRY_LIMIT = 2
 SYSTEM_USERS = ["images@okeanos.grnet.gr", "images@demo.synnefo.org"]
@@ -79,7 +79,7 @@ class BurninTestResult(unittest.TestResult):
         super(BurninTestResult, self).startTest(test)
         logger.log(test.__class__.__name__, test.shortDescription())
 
-    # Method could be a function. pylint: disable-msg=R0201
+    # pylint: disable=no-self-use
     def _test_failed(self, test, err):
         """Test failed"""
         # Get class name
@@ -108,8 +108,8 @@ class BurninTestResult(unittest.TestResult):
 
 # --------------------------------------------------------------------
 # Helper Classes
-# Too few public methods. pylint: disable-msg=R0903
-# Too many instance attributes. pylint: disable-msg=R0902
+# pylint: disable=too-few-public-methods
+# pylint: disable=too-many-instance-attributes
 class Clients(object):
     """Our kamaki clients"""
     auth_url = None
@@ -186,7 +186,7 @@ class Proper(object):
 
 # --------------------------------------------------------------------
 # BurninTests class
-# Too many public methods (45/20). pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class BurninTests(unittest.TestCase):
     """Common class that all burnin tests should implement"""
     clients = Clients()
@@ -245,7 +245,7 @@ class BurninTests(unittest.TestCase):
 
     def _run_tests(self, tcases):
         """Run some generated testcases"""
-        global success  # Using global. pylint: disable-msg=C0103,W0603,W0602
+        global success  # pylint: disable=invalid-name, global-statement
 
         for tcase in tcases:
             self.info("Running testsuite %s", tcase.__name__)
@@ -514,8 +514,8 @@ class BurninTests(unittest.TestCase):
         self.info("Getting quotas")
         return dict(self.clients.astakos.get_quotas())
 
-    # Invalid argument name. pylint: disable-msg=C0103
-    # Too many arguments. pylint: disable-msg=R0913
+    # pylint: disable=invalid-name
+    # pylint: disable=too-many-arguments
     def _check_quotas(self, puuid=None, disk=None, vm=None, diskspace=None,
                       ram=None, ip=None, cpu=None, network=None):
         """Check that quotas' changes are consistent
@@ -605,7 +605,7 @@ def initialize(opts, testsuites, stale_testsuites):
 
     """
     # Initialize logger
-    global logger  # Using global statement. pylint: disable-msg=C0103,W0603
+    global logger  # pylint: disable=invalid-name, global-statement
     curr_time = datetime.datetime.now()
     logger = Log(opts.log_folder, verbose=opts.verbose,
                  use_colors=opts.use_colors, in_parallel=False,
@@ -647,7 +647,8 @@ def initialize(opts, testsuites, stale_testsuites):
 # Run Burnin
 def run_burnin(testsuites, failfast=False):
     """Run burnin testsuites"""
-    # Using global. pylint: disable-msg=C0103,W0603,W0602
+    # pylint: disable=invalid-name,global-statement
+    # pylint: disable=global-variable-not-assigned
     global logger, success
 
     success = True
@@ -662,7 +663,9 @@ def run_burnin(testsuites, failfast=False):
 
 def run_tests(tcases, failfast=False):
     """Run some testcases"""
-    global success  # Using global. pylint: disable-msg=C0103,W0603,W0602
+    # pylint: disable=invalid-name,global-statement
+    # pylint: disable=global-variable-not-assigned
+    global success
 
     for tcase in tcases:
         was_success = run_test(tcase)

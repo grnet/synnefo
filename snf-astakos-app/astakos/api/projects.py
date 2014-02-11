@@ -279,9 +279,12 @@ def projects(request):
 @transaction.commit_on_success
 def get_projects(request):
     user = request.user
-    input_data = read_json_body(request, default={})
-    filters = input_data.get("filter", {})
-    mode = input_data.get("mode", "default")
+    filters = {}
+    for key in PROJECT_QUERY.keys():
+        value = request.GET.get(key)
+        if value is not None:
+            filters[key] = value
+    mode = request.GET.get("mode", "default")
     query = make_project_query(filters)
     projects = _get_projects(query, mode=mode, request_user=user)
     data = get_projects_details(projects, request_user=user)
@@ -619,8 +622,7 @@ def make_membership_query(input_data):
 @transaction.commit_on_success
 def get_memberships(request):
     user = request.user
-    input_data = read_json_body(request, default={})
-    query = make_membership_query(input_data)
+    query = make_membership_query(request.GET)
     memberships = _get_memberships(query, request_user=user)
     data = get_memberships_details(memberships, user)
     return json_response(data)

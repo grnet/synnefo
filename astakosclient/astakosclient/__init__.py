@@ -825,11 +825,11 @@ class AstakosClient(object):
             filters["owner"] = owner
         if mode is not None:
             filters["mode"] = mode
+        path = self.api_projects
+        if filters:
+            path += "?" + urllib.urlencode(filters)
         req_headers = {'content-type': 'application/json'}
-        req_body = (parse_request({"filter": filters}, self.logger)
-                    if filters else None)
-        return self._call_astakos(self.api_projects,
-                                  headers=req_headers, body=req_body)
+        return self._call_astakos(path, headers=req_headers)
 
     # -----------------------------------------
     # do a GET to ``API_PROJECTS``/<project_id>
@@ -931,10 +931,13 @@ class AstakosClient(object):
         In case of success, return a list of membership descriptions.
         """
         req_headers = {'content-type': 'application/json'}
-        body = {"project": project} if project is not None else None
-        req_body = parse_request(body, self.logger) if body else None
-        return self._call_astakos(self.api_memberships,
-                                  headers=req_headers, body=req_body)
+        filters = {}
+        if project is not None:
+            filters["project"] = project
+        path = self.api_memberships
+        if filters:
+            path += '?' + urllib.urlencode(filters)
+        return self._call_astakos(path, headers=req_headers)
 
     # -----------------------------------------
     # do a GET to ``API_MEMBERSHIPS``/<memb_id>

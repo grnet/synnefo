@@ -124,6 +124,8 @@ def ip_to_dict(floating_ip):
             "floating_ip_address": floating_ip.address,
             "port_id": str(port_id) if port_id else None,
             "floating_network_id": str(floating_ip.network_id),
+            "user_id": floating_ip.userid,
+            "tenant_id": floating_ip.project,
             "deleted": floating_ip.deleted}
 
 

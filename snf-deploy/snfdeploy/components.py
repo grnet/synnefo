@@ -1158,11 +1158,12 @@ class Archip(SynnefoComponent):
 
     def configure(self):
         r1 = {"HOST": self.node_info.fqdn}
+        r2 = {"SEGMENT_SIZE": self.env.env.segment_size}
         return [
             ("/etc/gunicorn.d/synnefo-archip", r1,
              {"remote": "/etc/gunicorn.d/synnefo"}),
             ("/etc/archipelago/pithos.conf.py", {}, {}),
-            ("/etc/archipelago/archipelago.conf", {}, {})
+            ("/etc/archipelago/archipelago.conf", r2, {})
             ]
 
     def restart(self):

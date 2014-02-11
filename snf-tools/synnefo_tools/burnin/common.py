@@ -63,6 +63,17 @@ KB = 2**10
 MB = 2**20
 GB = 2**30
 
+QADD = 1
+QREMOVE = -1
+
+QDISK = "cyclades.disk"
+QVM = "cyclades.vm"
+QPITHOS = "pithos.diskspace"
+QRAM = "cyclades.ram"
+QIP = "cyclades.floating_ip"
+QCPU = "cyclades.cpu"
+QNET = "cyclades.network.private"
+
 
 # --------------------------------------------------------------------
 # BurninTestResult class
@@ -217,6 +228,7 @@ class BurninTests(unittest.TestCase):
     failfast = None
 
     quotas = Proper(value=None)
+    uuid = Proper(value=None)
 
     @classmethod
     def setUpClass(cls):  # noqa
@@ -288,15 +300,17 @@ class BurninTests(unittest.TestCase):
     def error(self, msg, *args):
         """Pass the section value to logger"""
         logger.error(self.suite_name, msg, *args)
+        self.fail(msg % args)
 
     # ----------------------------------
     # Helper functions that every testsuite may need
     def _get_uuid(self):
         """Get our uuid"""
-        authenticate = self.clients.astakos.authenticate()
-        uuid = authenticate['access']['user']['id']
-        self.info("User's uuid is %s", uuid)
-        return uuid
+        if self.uuid is None:
+            authenticate = self.clients.astakos.authenticate()
+            self.uuid = authenticate['access']['user']['id']
+            self.info("User's uuid is %s", self.uuid)
+        return self.uuid
 
     def _get_username(self):
         """Get our User Name"""
@@ -337,7 +351,6 @@ class BurninTests(unittest.TestCase):
                     return su_value
                 else:
                     self.error("Unrecognized system-user type %s", su_type)
-                    self.fail("Unrecognized system-user type")
             except ValueError:
                 msg = "Invalid system-user format: %s. Must be [id|name]:.+"
                 self.warning(msg, self.system_user)
@@ -412,7 +425,6 @@ class BurninTests(unittest.TestCase):
                     [f for f in flavors if str(f['id']) == flv_value]
             else:
                 self.error("Unrecognized flavor type %s", flv_type)
-                self.fail("Unrecognized flavor type")
 
             # Append and continue
             ret_flavors.extend(filtered_flvs)
@@ -483,7 +495,6 @@ class BurninTests(unittest.TestCase):
                      i['id'].lower() == img_value.lower()]
             else:
                 self.error("Unrecognized image type %s", img_type)
-                self.fail("Unrecognized image type")
 
             # Append and continue
             ret_images.extend(filtered_imgs)
@@ -536,72 +547,36 @@ class BurninTests(unittest.TestCase):
 
     # pylint: disable=invalid-name
     # pylint: disable=too-many-arguments
-    def _check_quotas(self, puuid=None, disk=None, vm=None, diskspace=None,
-                      ram=None, ip=None, cpu=None, network=None):
+    def _check_quotas(self, changes):
         """Check that quotas' changes are consistent
 
-        @param puuid: The uuid of the project, quotas are assigned to
+        @param changes: A dict of the changes that have been made in quotas
 
         """
-
-        assert any(v is None for v in
-                   [disk, vm, diskspace, ram, ip, cpu, network]), \
-            "_check_quotas require arguments"
+        if not changes:
+            return
 
         self.info("Check that quotas' changes are consistent")
         old_quotas = self.quotas
         new_quotas = self._get_quotas()
         self.quotas = new_quotas
 
-        user_uuid = self._get_uuid()
-        if puuid is None:
-            puuid = user_uuid
-
         self.assertListEqual(sorted(old_quotas.keys()),
                              sorted(new_quotas.keys()))
-        for project in old_quotas.keys():
-            # Check Disk usage
-            project_name = self._get_project_name(project, user_uuid)
-            self._check_quotas_aux(old_quotas[project], new_quotas[project],
-                                   project_name, "cyclades.disk",
-                                   disk, project == puuid)
-            # Check VM usage
-            self._check_quotas_aux(old_quotas[project], new_quotas[project],
-                                   project_name, "cyclades.vm",
-                                   vm, project == puuid)
-            # Check DiskSpace usage
-            self._check_quotas_aux(old_quotas[project], new_quotas[project],
-                                   project_name, "pithos.diskspace",
-                                   diskspace, project == puuid)
-            # Check Ram usage
-            self._check_quotas_aux(old_quotas[project], new_quotas[project],
-                                   project_name, "cyclades.ram",
-                                   ram, project == puuid)
-            # Check Floating IPs usage
-            self._check_quotas_aux(old_quotas[project], new_quotas[project],
-                                   project_name, "cyclades.floating_ip",
-                                   ip, project == puuid)
-            # Check CPU usage
-            self._check_quotas_aux(old_quotas[project], new_quotas[project],
-                                   project_name, "cyclades.cpu",
-                                   cpu, project == puuid)
-            # Check Network usage
-            self._check_quotas_aux(old_quotas[project], new_quotas[project],
-                                   project_name, "cyclades.network.private",
-                                   network, project == puuid)
 
-    def _check_quotas_aux(self, old_quotas, new_quotas,
-                          project_name, resource, value, check):
-        """Auxiliary function for _check_quotas"""
-        old_value = old_quotas[resource]['usage']
-        new_value = new_quotas[resource]['usage']
-        if check and value is not None:
-            assert isinstance(value, int), \
-                "%s value has to be integer" % resource
-            old_value += value
-        self.assertEqual(old_value, new_value,
-                         "Project %s: %s quotas don't match" %
-                         (project_name, resource))
+        # Take old_quotas and apply changes
+        for prj, values in changes.items():
+            self.assertIn(prj, old_quotas.keys())
+            for q_name, q_mult, q_value, q_unit in values:
+                if q_unit is None:
+                    q_unit = 1
+                q_value = q_mult*int(q_value)*q_unit
+                assert isinstance(q_value, int), \
+                    "Project %s: %s value has to be integer" % (prj, q_name)
+                old_quotas[prj][q_name]['usage'] += q_value
+                old_quotas[prj][q_name]['project_usage'] += q_value
+
+        self.assertEqual(old_quotas, new_quotas)
 
     # ----------------------------------
     # Projects

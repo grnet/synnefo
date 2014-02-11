@@ -40,7 +40,8 @@ import os
 import random
 import tempfile
 
-from synnefo_tools.burnin.common import BurninTests, Proper
+from synnefo_tools.burnin.common import BurninTests, Proper, \
+    QPITHOS, QADD, QREMOVE
 
 
 # pylint: disable=too-many-public-methods
@@ -92,7 +93,10 @@ class PithosTestSuite(BurninTests):
             # The container is the one choosen during the `create_container'
             self.clients.pithos.upload_object("test.txt", fout)
             # Verify quotas
-            self._check_quotas(diskspace=+os.fstat(fout.fileno()).st_size)
+            size = os.fstat(fout.fileno()).st_size
+            changes = \
+                {self._get_uuid(): [(QPITHOS, QADD, size, None)]}
+            self._check_quotas(changes)
 
     def test_005_download_file(self):
         """Test downloading the file from Pithos"""
@@ -116,7 +120,9 @@ class PithosTestSuite(BurninTests):
         self.clients.pithos.del_object("test.txt")
 
         # Verify quotas
-        self._check_quotas(diskspace=-int(content_length))
+        changes = \
+            {self._get_uuid(): [(QPITHOS, QREMOVE, content_length, None)]}
+        self._check_quotas(changes)
 
         self.info("Removing the container %s", self.created_container)
         self.clients.pithos.purge_container()

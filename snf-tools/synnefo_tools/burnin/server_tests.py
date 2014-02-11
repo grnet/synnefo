@@ -44,7 +44,7 @@ import socket
 
 from vncauthproxy.d3des import generate_response as d3des_generate_response
 
-from synnefo_tools.burnin.common import BurninTests, Proper
+from synnefo_tools.burnin.common import Proper
 from synnefo_tools.burnin.cyclades_common import CycladesTests
 
 
@@ -290,7 +290,7 @@ class GeneratedServerTestSuite(CycladesTests):
 # will run the same tests using different images and or flavors.
 # The creation and running of our GeneratedServerTestSuite class will
 # happen as a testsuite itself (everything here is a test!).
-class ServerTestSuite(BurninTests):
+class ServerTestSuite(CycladesTests):
     """Generate and run the GeneratedServerTestSuite
 
     We will generate as many testsuites as the number of images given.
@@ -303,28 +303,11 @@ class ServerTestSuite(BurninTests):
 
     def test_001_images_to_use(self):
         """Find images to be used by GeneratedServerTestSuite"""
-        if self.images is None:
-            self.info("No --images given. Will use the default %s",
-                      "^Debian Base$")
-            filters = ["name:^Debian Base$"]
-        else:
-            filters = self.images
-
-        self.avail_images = self._find_images(filters)
-        self.info("Found %s images. Let's create an equal number of tests",
-                  len(self.avail_images))
+        self.avail_images = self._parse_images()
 
     def test_002_flavors_to_use(self):
         """Find flavors to be used by GeneratedServerTestSuite"""
-        flavors = self._get_list_of_flavors(detail=True)
-
-        if self.flavors is None:
-            self.info("No --flavors given. Will use all of them")
-            self.avail_flavors = flavors
-        else:
-            self.avail_flavors = self._find_flavors(
-                self.flavors, flavors=flavors)
-        self.info("Found %s flavors to choose from", len(self.avail_flavors))
+        self.avail_flavors = self._parse_flavors()
 
     def test_003_create_testsuites(self):
         """Generate the GeneratedServerTestSuite tests"""

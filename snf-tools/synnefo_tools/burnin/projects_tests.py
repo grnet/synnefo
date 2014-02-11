@@ -36,15 +36,36 @@ This is the burnin class that tests the Projects functionality
 
 """
 
-from synnefo_tools.burnin.common import BurninTests, Proper
+import random
+
+from synnefo_tools.burnin.common import Proper
+from synnefo_tools.burnin.cyclades_common import CycladesTests
 
 
 # pylint: disable=too-many-public-methods
-class QuotasTestSuite(BurninTests):
+class QuotasTestSuite(CycladesTests):
     """Test Quotas functionality"""
-    project = Proper(value=None)
+    server = Proper(value=None)
 
     def test_001_check_skip(self):
         """Check if we are members in more than one projects"""
         self._skip_suite_if(len(self.quotas.keys()) < 2,
                             "This user is not a member of 2 or more projects")
+
+    def test_002_create(self):
+        """Create a machine to a different project than base"""
+        image = random.choice(self._parse_images())
+        flavors = self._parse_flavors()
+
+        # We want to create our machine in a project other than 'base'
+        projects = self.quotas.keys()
+        projects.remove(self._get_uuid())
+        (flavor, project) = self._find_project(flavors, projects)
+
+        # Create machine
+        self.server = self._create_server(image, flavor, network=True,
+                                          project_id=project)
+
+        # Wait for server to become active
+        self._insist_on_server_transition(
+            self.server, ["BUILD"], "ACTIVE")

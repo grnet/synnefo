@@ -1787,7 +1787,7 @@ of a server.
 
 Request body contents::
 
-  firewallProfile: { profile: <firewall profile>}
+  firewallProfile: {profile: <firewall profile>, nic: <nic id>}
 
 * **firewall profile** can be ``ENABLED``, ``DISABLED`` or ``PROTECTED``
 
@@ -1795,7 +1795,7 @@ Request body contents::
 
 .. code-block:: javascript
 
-  {"firewallProfile": {"profile": "ENABLED"}}
+  {"firewallProfile": {"profile": "ENABLED", "nic": 123}}
 
 .. note:: Response body should be empty
 
@@ -3338,7 +3338,7 @@ status           Server Status              ✔        ✔
 updated          Date of last modification  ✔        ✔
 created          Date of creation           ✔        ✔
 hostId           Physical host              empty    ✔
-image            A full image descreption   ✔        ✔
+image            A full image description   ✔        ✔
 flavor           A full flavor description  ✔        ✔
 adminPass        Superuser Password         ✔        ✔
 suspended        If server is suspended     ✔        ✔

@@ -73,17 +73,16 @@ class NetworkTest(BaseAPITest):
         request = {
             "network": {
                 "type": "MAC_FILTERED",
-                "name": ["Test"]
+                "name": ["Test", u"I need\u2602"]
             }
         }
         response = self.post(NETWORKS_URL, params=json.dumps(request))
-        code = response.status_code
         self.assertBadRequest(response)
 
     def test_create(self):
         request = {
             "network": {
-                "name": "sample_network",
+                "name": u"Funky Network\u2602",
                 "type": "MAC_FILTERED"
             }
         }
@@ -95,7 +94,7 @@ class NetworkTest(BaseAPITest):
         code = response.status_code
         self.assertEqual(code, 201)
         res = json.loads(response.content)
-        self.assertEqual(res["network"]["name"], "sample_network")
+        self.assertEqual(res["network"]["name"], u"Funky Network\u2602")
 
         # TEST QUOTAS!!!
         name, args, kwargs =\
@@ -199,10 +198,11 @@ class NetworkTest(BaseAPITest):
     def test_rename_network(self):
         test_net = dbmf.NetworkFactory(name="foo")
         url = join_urls(NETWORKS_URL, str(test_net.id))
-        request = {'network': {'name': "new_name"}}
+        request = {'network': {'name': u"Cloud \u2601"}}
         response = self.put(url, test_net.userid, json.dumps(request), 'json')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(Network.objects.get(id=test_net.id).name, "new_name")
+        self.assertEqual(Network.objects.get(id=test_net.id).name,
+                         u"Cloud \u2601")
         # test if server deleted
         test_net.deleted = True
         test_net.save()
@@ -225,135 +225,3 @@ class NetworkTest(BaseAPITest):
         url = join_urls(NETWORKS_URL, "42")
         response = self.post(url)
         self.assertMethodNotAllowed(response)
-
-
-#class NetworkNICsAPITest(BaseAPITest):
-#    def test_get_network_building_nics(self, mrapi):
-#        net = dbmf.NetworkFactory()
-#        machine = dbmf.VirtualMachineFactory(userid=net.userid)
-#        dbmf.NetworkInterfaceFactory(network=net, machine=machine,
-#                                     state="BUILDING")
-#        response = self.myget('networks/%d' % net.id, net.userid)
-#        self.assertSuccess(response)
-#        api_net = json.loads(response.content)["network"]
-#        self.assertEqual(len(api_net["attachments"]), 0)
-#
-#
-#    def test_add_nic(self, mrapi):
-#        user = 'userr'
-#        vm = dbmf.VirtualMachineFactory(name='yo', userid=user)
-#        net = dbmf.NetworkFactory(state='ACTIVE', userid=user)
-#        mrapi().ModifyInstance.return_value = 1
-#        request = {'add': {'serverRef': vm.id}}
-#        response = self.mypost('networks/%d/action' % net.id,
-#                               net.userid, json.dumps(request), 'json')
-#        self.assertEqual(response.status_code, 202)
-#
-#    def test_add_nic_to_deleted_network(self, mrapi):
-#        user = 'userr'
-#        vm = dbmf.VirtualMachineFactory(name='yo', userid=user,
-#                                            operstate="ACTIVE")
-#        net = dbmf.NetworkFactory(state='ACTIVE', userid=user,
-#                                      deleted=True)
-#        request = {'add': {'serverRef': vm.id}}
-#        response = self.mypost('networks/%d/action' % net.id,
-#                               net.userid, json.dumps(request), 'json')
-#        self.assertBadRequest(response)
-#        self.assertFalse(mrapi.called)
-#
-#    def test_add_nic_to_public_network(self, mrapi):
-#        user = 'userr'
-#        vm = dbmf.VirtualMachineFactory(name='yo', userid=user)
-#        net = dbmf.NetworkFactory(state='ACTIVE', userid=user, public=True)
-#        request = {'add': {'serverRef': vm.id}}
-#        response = self.mypost('networks/%d/action' % net.id,
-#                               net.userid, json.dumps(request), 'json')
-#        self.assertFault(response, 403, 'forbidden')
-#        self.assertFalse(mrapi.called)
-#
-#    def test_add_nic_malformed_1(self, mrapi):
-#        user = 'userr'
-#        vm = dbmf.VirtualMachineFactory(name='yo', userid=user)
-#        net = dbmf.NetworkFactory(state='ACTIVE', userid=user)
-#        request = {'add': {'serveRef': vm.id}}
-#        response = self.mypost('networks/%d/action' % net.id,
-#                               net.userid, json.dumps(request), 'json')
-#        self.assertBadRequest(response)
-#        self.assertFalse(mrapi.called)
-#
-#    def test_add_nic_malformed_2(self, mrapi):
-#        user = 'userr'
-#        vm = dbmf.VirtualMachineFactory(name='yo', userid=user)
-#        net = dbmf.NetworkFactory(state='ACTIVE', userid=user)
-#        request = {'add': {'serveRef': [vm.id, 22]}}
-#        response = self.mypost('networks/%d/action' % net.id,
-#                               net.userid, json.dumps(request), 'json')
-#        self.assertBadRequest(response)
-#        self.assertFalse(mrapi.called)
-#
-#    def test_add_nic_not_active(self, mrapi):
-#        """Test connecting VM to non-active network"""
-#        user = 'dummy'
-#        vm = dbmf.VirtualMachineFactory(name='yo', userid=user)
-#        net = dbmf.NetworkFactory(state='PENDING', subnet='10.0.0.0/31',
-#                                      userid=user)
-#        request = {'add': {'serverRef': vm.id}}
-#        response = self.mypost('networks/%d/action' % net.id,
-#                               net.userid, json.dumps(request), 'json')
-#        # Test that returns BuildInProgress
-#        self.assertEqual(response.status_code, 409)
-#        self.assertFalse(mrapi.called)
-#
-#    def test_add_nic_full_network(self, mrapi):
-#        """Test connecting VM to a full network"""
-#        user = 'userr'
-#        vm = dbmf.VirtualMachineFactory(name='yo', userid=user,
-#                                            operstate="STARTED")
-#        net = dbmf.NetworkFactory(state='ACTIVE', subnet='10.0.0.0/30',
-#                                      userid=user, dhcp=True)
-#        pool = net.get_pool()
-#        while not pool.empty():
-#            pool.get()
-#        pool.save()
-#        pool = net.get_pool()
-#        self.assertTrue(pool.empty())
-#        request = {'add': {'serverRef': vm.id}}
-#        response = self.mypost('networks/%d/action' % net.id,
-#                               net.userid, json.dumps(request), 'json')
-#        # Test that returns OverLimit
-#        self.assertEqual(response.status_code, 413)
-#        self.assertFalse(mrapi.called)
-#
-#    def test_remove_nic(self, mrapi):
-#        user = 'userr'
-#        vm = dbmf.VirtualMachineFactory(name='yo', userid=user,
-#                                            operstate="ACTIVE")
-#        net = dbmf.NetworkFactory(state='ACTIVE', userid=user)
-#        nic = dbmf.NetworkInterfaceFactory(machine=vm, network=net)
-#        mrapi().ModifyInstance.return_value = 1
-#        request = {'remove': {'attachment': "%s" % nic.id}}
-#        response = self.mypost('networks/%d/action' % net.id,
-#                               net.userid, json.dumps(request), 'json')
-#        self.assertEqual(response.status_code, 202)
-#        vm.task = None
-#        vm.task_job_id = None
-#        vm.save()
-#
-#    def test_remove_nic_malformed(self, mrapi):
-#        user = 'userr'
-#        vm = dbmf.VirtualMachineFactory(name='yo', userid=user)
-#        net = dbmf.NetworkFactory(state='ACTIVE', userid=user)
-#        nic = dbmf.NetworkInterfaceFactory(machine=vm, network=net)
-#        request = {'remove': {'att234achment': '%s' % nic.id}}
-#        response = self.mypost('networks/%d/action' % net.id,
-#                               net.userid, json.dumps(request), 'json')
-#        self.assertBadRequest(response)
-#
-#    def test_remove_nic_malformed_2(self, mrapi):
-#        user = 'userr'
-#        vm = dbmf.VirtualMachineFactory(name='yo', userid=user)
-#        net = dbmf.NetworkFactory(state='ACTIVE', userid=user)
-#        request = {'remove': {'attachment': 'nic-%s' % vm.id}}
-#        response = self.mypost('networks/%d/action' % net.id,
-#                               net.userid, json.dumps(request), 'json')
-#        self.assertBadRequest(response)

@@ -424,7 +424,7 @@ class ImageBackend(object):
         self._update_meta(image_url, meta)
         self._update_permissions(image_url, permissions)
         logger.debug("User '%s' created image '%s'('%s')", self.user,
-                     image_url, name)
+                     image_url, uenc(name))
         return self._get_image(image_url)
 
     def _list_images(self, user=None, filters=None, params=None):

@@ -187,6 +187,7 @@ def network_to_dict(network, detail=True):
         d['created'] = api.utils.isoformat(network.created)
         d['status'] = state
         d['public'] = network.public
+        d['shared'] = network.public
         d['router:external'] = network.external_router
         d['admin_state_up'] = True
         d['subnets'] = subnet_ids

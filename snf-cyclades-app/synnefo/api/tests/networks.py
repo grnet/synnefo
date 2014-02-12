@@ -214,6 +214,13 @@ class NetworkTest(BaseAPITest):
         response = self.put(url, test_net.userid, json.dumps(request), 'json')
         self.assertFault(response, 403, 'forbidden')
 
+    def test_rename_network_invalid_name(self):
+        test_net = dbmf.NetworkFactory(name="foo")
+        url = join_urls(NETWORKS_URL, str(test_net.id))
+        request = {'network': {'name': 'a' * 500}}
+        response = self.put(url, test_net.userid, json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 400)
+
     def test_method_not_allowed(self, *args):
         # /networks/ allows only POST, GET
         response = self.put(NETWORKS_URL, '', '')

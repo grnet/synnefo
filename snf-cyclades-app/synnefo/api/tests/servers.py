@@ -282,6 +282,13 @@ class ServerAPITest(ComputeAPITest):
         self.assertSuccess(response)
         self.assertEqual(VirtualMachine.objects.get(id=vm.id).name, "new_name")
 
+    def test_rename_server_invalid_name(self):
+        vm = self.vm2
+        request = {'server': {'name': 'a' * 500}}
+        response = self.myput('servers/%d' % vm.id, vm.userid,
+                              json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
     def test_catch_wrong_api_paths(self):
         response = self.myget('nonexistent')
         self.assertEqual(response.status_code, 400)
@@ -737,6 +744,10 @@ class ServerActionAPITest(ComputeAPITest):
         response = self.mypost('servers/%d/action' % vm.id,
                                vm.userid, json.dumps(request), 'json')
         self.assertItemNotFound(response)
+        request = {'firewallProfile': {'profile': 'PROTECTED', "nic": "error"}}
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, json.dumps(request), 'json')
+        self.assertBadRequest(response)
         nic = mfactory.NetworkInterfaceFactory(machine=vm)
         request = {'firewallProfile': {'profile': 'PROTECTED', "nic": nic.id}}
         response = self.mypost('servers/%d/action' % vm.id,

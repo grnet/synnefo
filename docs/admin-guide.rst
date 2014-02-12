@@ -316,12 +316,25 @@ Upon success, the system renews the token (if it has expired), logins the user
 and sets the cookie, before redirecting the user to the ``next`` parameter
 value.
 
-Setting quota limits
-~~~~~~~~~~~~~~~~~~~~
+Projects and quota
+~~~~~~~~~~~~~~~~~~
 
-Set default quota
-`````````````````
-To inspect current default base quota limits, run::
+Synnefo supports granting resources and controling their quota through the
+mechanism of *projects*. A project is considered as a pool of finite
+resources. Every actual resources allocated by a user (e.g. a Cyclades VM or
+a Pithos container) is also assigned to a project where the user is a
+member to. For each resource a project specifies the maximum amount that can
+be assigned to it and the maximum amount that a single member can assign to it.
+
+Default quota
+`````````````
+
+Upon user creation, a special purpose user-specific project is automatically
+created in order to hold the base quota provided by the system. These *base*
+projects are identified with the same UUID as the user.
+
+To inspect the quota that future users will receive by default through their
+base projects, check column ``base_default`` in::
 
    # snf-manage resource-list
 
@@ -329,48 +342,24 @@ You can modify the default base quota limit for all future users with::
 
    # snf-manage resource-modify <resource_name> --base-default <value>
 
-Set base quota for individual users
-```````````````````````````````````
+Grant extra quota through projects
+``````````````````````````````````
 
-For individual users that need different quota than the default
-you can set it for each resource like this::
+A user can apply for a new project through the web interface or the API.
+Once it is approved by the administrators, the applicant can join the
+project and let other users in too.
 
-    # use this to display quota / uuid
-    # snf-manage user-show 'uuid or email' --quota
+A project member can make use of the quota granted by the project by
+specifying this particular project when creating a new quotable entity.
 
-    # snf-manage user-modify <user-uuid> --base-quota 'cyclades.vm' 10
+Note that quota are not accumulative: in order to allocate a 100GB disk,
+one must be in a project that grants at least 100GB; it is not possible to
+add up quota from different projects. Note also that if allocating an entity
+requires multiple resources (e.g. cpu and ram for a Cyclades VM) these must
+be all assigned to a single project.
 
-You can set base quota for all existing users, with possible exceptions, using::
-
-    # snf-manage user-modify --all --base-quota cyclades.vm 10 --exclude uuid1,uuid2
-
-All quota for which values different from the default have been set,
-can be listed with::
-
-    # snf-manage quota-list --with-custom=True
-
-
-Enable the Projects feature
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you want to enable the projects feature so that users may apply
-on their own for resources by creating and joining projects,
-in ``20-snf-astakos-app-settings.conf`` set::
-
-    # this will make the 'projects' page visible in the dashboard
-    ASTAKOS_PROJECTS_VISIBLE = True
-
-You can change the maximum allowed number of pending project applications
-per user with::
-
-    # snf-manage resource-modify astakos.pending_app --base-default <number>
-
-You can also set a user-specific limit with::
-
-    # snf-manage user-modify <user-uuid> --base-quota 'astakos.pending_app' 5
-
-When users apply for projects they are not automatically granted
-the resources. They must first be approved by the administrator.
+Control projects
+````````````````
 
 To list pending project applications in astakos::
 
@@ -385,13 +374,39 @@ To deny an application::
 
     # snf-manage project-control --deny <app id>
 
-Users designated as *project admins* can approve, deny, or modify
+Before taking an action, on can inspect project status, settings and quota
+limits with::
+
+   # snf-manage project-show <project-uuid>
+
+For an initialized project, option ``--quota`` also reports the resource
+usage.
+
+Users designated as *project admins* can approve or deny
 an application through the web interface. In
 ``20-snf-astakos-app-settings.conf`` set::
 
     # UUIDs of users that can approve or deny project applications from the web.
     ASTAKOS_PROJECT_ADMINS = [<uuid>, ...]
 
+Set quota limits
+````````````````
+
+One can change the quota limits of an initialized project with::
+
+   # snf-manage project-modify <project-uuid> --limit <resource_name> <member_limit> <project_limit>
+
+One can set base quota for all accepted users (that is, set limits for base
+project), with possible exceptions, with::
+
+   # snf-manage project-modify --all-base-projects --exclude <uuid1>,<uuid2> --limit ...
+
+Quota for a given resource are reported for all projects that the user is
+member in with::
+
+   # snf-manage user-show <user-uuid> --quota
+
+With option ``--projects``, owned projects and memberships are also reported.
 
 Astakos advanced operations
 ---------------------------

@@ -266,6 +266,8 @@ class UserProjectsTable(UserTable):
     members_count_f = tables.Column(verbose_name=_("Members"),
                                     empty_values=(),
                                     orderable=False)
+    owner = tables.Column(verbose_name=_("Owner"),
+                                    accessor='application.owner')
     membership_status = tables.Column(verbose_name=_("Status"),
                                       empty_values=(),
                                       orderable=False)
@@ -313,7 +315,7 @@ class UserProjectsTable(UserTable):
         return mark_safe(str(members_count) + append)
 
     class Meta:
-        sequence = ('name', 'membership_status', 'issue_date', 'end_date',
+        sequence = ('name', 'membership_status','owner', 'issue_date', 'end_date',
                     'members_count_f', 'project_action')
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
         template = "im/table_render.html"

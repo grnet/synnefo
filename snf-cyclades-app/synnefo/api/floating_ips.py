@@ -141,9 +141,9 @@ def allocate_floating_ip(request):
     req = utils.get_request_dict(request)
     floating_ip_dict = api.utils.get_attribute(req, "floatingip",
                                                required=True, attr_type=dict)
-    log.info('allocate_floating_ip %s', req)
-
     userid = request.user_uniq
+    log.info('allocate_floating_ip user: %s request: %s', userid, req)
+
 
     # the network_pool is a mandatory field
     network_id = api.utils.get_attribute(floating_ip_dict,

@@ -370,8 +370,8 @@ def create_server(request):
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413)
     req = utils.get_request_dict(request)
-    log.info('create_server %s', req)
     user_id = request.user_uniq
+    log.info('create_server user: %s request: %s', user_id, req)
 
     try:
         server = req['server']

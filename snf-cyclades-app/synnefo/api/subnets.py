@@ -102,7 +102,8 @@ def create_subnet(request):
 
     """
     dictionary = utils.get_request_dict(request)
-    log.info('create subnet %s', dictionary)
+    user_id = request.user_uniq
+    log.info('create subnet user: %s request: %s', user_id, dictionary)
 
     try:
         subnet = dictionary['subnet']
@@ -153,7 +154,7 @@ def create_subnet(request):
                                 dns_nameservers=dns,
                                 allocation_pools=allocation_pools,
                                 host_routes=hosts,
-                                user_id=request.user_uniq)
+                                user_id=user_id)
 
     subnet_dict = subnet_to_dict(sub)
     data = json.dumps({'subnet': subnet_dict})

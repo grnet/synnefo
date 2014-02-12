@@ -110,7 +110,7 @@ def list_networks(request, detail=True):
 def create_network(request):
     userid = request.user_uniq
     req = api.utils.get_request_dict(request)
-    log.info('create_network %s', req)
+    log.info('create_network user: %s request: %s', userid, req)
 
     network_dict = api.utils.get_attribute(req, "network",
                                            attr_type=dict)

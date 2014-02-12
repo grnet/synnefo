@@ -117,6 +117,8 @@ def create_network(request):
     flavor = api.utils.get_attribute(network_dict, "type",
                                      attr_type=basestring)
 
+    if flavor not in Network.FLAVORS.keys():
+        raise api.faults.BadRequest("Invalid network type '%s'" % flavor)
     if flavor not in settings.API_ENABLED_NETWORK_FLAVORS:
         raise api.faults.Forbidden("Cannot create network of type '%s'." %
                                    flavor)

@@ -249,10 +249,9 @@ class BurninTests(unittest.TestCase):
         self.info("Pithos url is %s", self.clients.pithos_url)
         self.info("Image url is %s", self.clients.image_url)
 
-        user_uuid = self._get_uuid()
         self.quotas = self._get_quotas()
         for puuid, quotas in self.quotas.items():
-            project_name = self._get_project_name(puuid, user_uuid)
+            project_name = self._get_project_name(puuid)
             self.info("  Project %s:", project_name)
             self.info("    Disk usage is         %s bytes",
                       quotas['cyclades.disk']['usage'])
@@ -580,10 +579,9 @@ class BurninTests(unittest.TestCase):
 
     # ----------------------------------
     # Projects
-    def _get_project_name(self, puuid, uuid=None):
+    def _get_project_name(self, puuid):
         """Get the name of a project"""
-        if uuid is None:
-            uuid = self._get_uuid()
+        uuid = self._get_uuid()
         if puuid == uuid:
             return "base"
         else:

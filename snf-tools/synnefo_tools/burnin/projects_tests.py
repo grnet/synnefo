@@ -39,7 +39,8 @@ This is the burnin class that tests the Projects functionality
 import random
 
 from synnefo_tools.burnin.common import Proper
-from synnefo_tools.burnin.cyclades_common import CycladesTests
+from synnefo_tools.burnin.cyclades_common import CycladesTests, \
+    QADD, QREMOVE, MB, GB, QDISK, QVM, QRAM, QCPU
 
 
 # pylint: disable=too-many-public-methods
@@ -69,3 +70,38 @@ class QuotasTestSuite(CycladesTests):
         # Wait for server to become active
         self._insist_on_server_transition(
             self.server, ["BUILD"], "ACTIVE")
+
+    def test_003_assign(self):
+        """Re-Assign the machine to a different project"""
+        # We will use the base project for now
+        new_project = self._get_uuid()
+        project_name = self._get_project_name(new_project)
+        self.info("Assign %s to project %s", self.server['name'], project_name)
+
+        # Reassign server
+        old_project = self.server['tenant_id']
+        self.clients.cyclades.reassign_server(self.server['id'], new_project)
+
+        # Check tenant_id
+        self.server = self._get_server_details(self.server, quiet=True)
+        self.assertEqual(self.server['tenant_id'], new_project)
+
+        # Check new quotas
+        flavor = self.clients.compute.get_flavor_details(
+            self.server['flavor']['id'])
+        changes = \
+            {old_project:
+                [(QDISK, QREMOVE, flavor['disk'], GB),
+                 (QVM, QREMOVE, 1, None),
+                 (QRAM, QREMOVE, flavor['ram'], MB),
+                 (QCPU, QREMOVE, flavor['vcpus'], None)],
+             new_project:
+                [(QDISK, QADD, flavor['disk'], GB),
+                 (QVM, QADD, 1, None),
+                 (QRAM, QADD, flavor['ram'], MB),
+                 (QCPU, QADD, flavor['vcpus'], None)]}
+        self._check_quotas(changes)
+
+    def test_004_cleanup(self):
+        """Remove test server"""
+        self._delete_servers([self.server])

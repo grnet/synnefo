@@ -60,6 +60,12 @@ class Command(SynnefoCommand):
                           "of users, e.g uuid1,uuid2")),
         make_option("--exclude-users",
                     help=("Exclude list of users from resource enforcement")),
+        make_option("--projects",
+                    help=("Enforce resources only for the specified list "
+                          "of projects, e.g uuid1,uuid2")),
+        make_option("--exclude-projects",
+                    help=("Exclude list of projects from resource enforcement")
+                    ),
         make_option("--resources",
                     help="Specify resources to check, default: %s" %
                     ",".join(DEFAULT_RESOURCES)),
@@ -110,6 +116,7 @@ class Command(SynnefoCommand):
         write = self.stderr.write
         fix = options["fix"]
         force = options["force"]
+        handlers = self.get_handlers(options["resources"])
         maxops = options["max_operations"]
         if maxops is not None:
             try:
@@ -126,19 +133,35 @@ class Command(SynnefoCommand):
                 m = "Expected integer shutdown timeout."
                 raise CommandError(m)
 
-        users = options['users']
-        if users is not None:
-            users = users.split(',')
+        excluded_users = options['exclude_users']
+        excluded_users = set(excluded_users.split(',')
+                             if excluded_users is not None else [])
 
-        excluded = options['exclude_users']
-        excluded = set(excluded.split(',') if excluded is not None else [])
+        users_to_check = options['users']
+        if users_to_check is not None:
+            users_to_check = set(users_to_check.split(',')) - excluded_users
 
-        handlers = self.get_handlers(options["resources"])
         try:
-            qh_holdings = util.get_qh_users_holdings(users)
+            qh_holdings = util.get_qh_users_holdings(users_to_check)
         except errors.AstakosClientException as e:
             raise CommandError(e)
 
+        excluded_projects = options["exclude_projects"]
+        excluded_projects = set(excluded_projects.split(',')
+                                if excluded_projects is not None else [])
+
+        projects_to_check = options["projects"]
+        if projects_to_check is not None:
+            projects_to_check = set(projects_to_check.split(',')) - \
+                excluded_projects
+
+        try:
+            qh_project_holdings = util.get_qh_project_holdings(
+                projects_to_check)
+        except errors.AstakosClientException as e:
+            raise CommandError(e)
+
+        qh_project_holdings = sorted(qh_project_holdings.items())
         qh_holdings = sorted(qh_holdings.items())
         resources = set(h[0] for h in handlers)
         dangerous = bool(resources.difference(DEFAULT_RESOURCES))
@@ -147,15 +170,52 @@ class Command(SynnefoCommand):
         actions = {}
         overlimit = []
         viol_id = 0
+
+        for resource, handle_resource, resource_type in handlers:
+            if resource_type not in actions:
+                actions[resource_type] = OrderedDict()
+            actual_resources = enforce.get_actual_resources(
+                resource_type, projects=projects_to_check)
+            for project, project_quota in qh_project_holdings:
+                if enforce.skip_check(project, projects_to_check,
+                                      excluded_projects):
+                    continue
+                try:
+                    qh = util.transform_project_quotas(project_quota)
+                    qh_value, qh_limit, qh_pending = qh[resource]
+                except KeyError:
+                    write("Resource '%s' does not exist in Quotaholder"
+                          " for project '%s'!\n" %
+                          (resource, project))
+                    continue
+                if qh_pending:
+                    write("Pending commission for project '%s', "
+                          "resource '%s'. Skipping\n" %
+                          (project, resource))
+                    continue
+                diff = qh_value - qh_limit
+                if diff > 0:
+                    viol_id += 1
+                    overlimit.append((viol_id, "project", project, "",
+                                      resource, qh_limit, qh_value))
+                    relevant_resources = enforce.pick_project_resources(
+                        actual_resources[project], users=users_to_check,
+                        excluded_users=excluded_users)
+                    handle_resource(viol_id, resource, relevant_resources,
+                                    diff, actions)
+
         for resource, handle_resource, resource_type in handlers:
             if resource_type not in actions:
                 actions[resource_type] = OrderedDict()
             actual_resources = enforce.get_actual_resources(resource_type,
-                                                            users)
+                                                            users_to_check)
             for user, user_quota in qh_holdings:
-                if user in excluded:
+                if enforce.skip_check(user, users_to_check, excluded_users):
                     continue
                 for source, source_quota in user_quota.iteritems():
+                    if enforce.skip_check(source, projects_to_check,
+                                          excluded_projects):
+                        continue
                     try:
                         qh = util.transform_quotas(source_quota)
                         qh_value, qh_limit, qh_pending = qh[resource]
@@ -172,9 +232,9 @@ class Command(SynnefoCommand):
                     diff = qh_value - qh_limit
                     if diff > 0:
                         viol_id += 1
-                        overlimit.append((viol_id, user, source, resource,
-                                          qh_limit, qh_value))
-                        relevant_resources = actual_resources[user]
+                        overlimit.append((viol_id, "user", user, source,
+                                          resource, qh_limit, qh_value))
+                        relevant_resources = actual_resources[source][user]
                         handle_resource(viol_id, resource, relevant_resources,
                                         diff, actions)
 
@@ -182,7 +242,8 @@ class Command(SynnefoCommand):
             write("No violations.\n")
             return
 
-        headers = ("#", "User", "Source", "Resource", "Limit", "Usage")
+        headers = ("#", "Type", "Holder", "Source", "Resource", "Limit",
+                   "Usage")
         pprint_table(self.stdout, overlimit, headers,
                      options["output_format"], title="Violations")
 

@@ -143,7 +143,7 @@ def allocate_public_ip(userid, floating_ip=False, backend=None, networks=None):
 
 
 @transaction.commit_on_success
-def create_floating_ip(userid, network=None, address=None):
+def create_floating_ip(userid, network=None, address=None, project=None):
     if network is None:
         floating_ip = allocate_public_ip(userid, floating_ip=True)
     else:
@@ -159,6 +159,10 @@ def create_floating_ip(userid, network=None, address=None):
         floating_ip = allocate_ip(network, userid, address=address,
                                   floating_ip=True)
 
+    if project is None:
+        project = userid
+    floating_ip.project = project
+    floating_ip.save()
     # Issue commission (quotas)
     quotas.issue_and_accept_commission(floating_ip)
     transaction.commit()
@@ -226,3 +230,13 @@ def delete_floating_ip(floating_ip):
     log.info("Deleted floating IP '%s' of user '%s", floating_ip,
              floating_ip.userid)
     floating_ip.delete()
+
+
+@transaction.commit_on_success
+def reassign_floating_ip(floating_ip, project):
+    action_fields = {"to_project": project,
+                     "from_project": floating_ip.project}
+    floating_ip.project = project
+    floating_ip.save()
+    quotas.issue_and_accept_commission(floating_ip, action="REASSIGN",
+                                       action_fields=action_fields)

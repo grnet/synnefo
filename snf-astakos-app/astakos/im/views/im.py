@@ -74,6 +74,8 @@ from astakos.im import quotas
 from astakos.im.views.util import render_response, _resources_catalog
 from astakos.im.views.decorators import cookie_fix, signed_terms_required,\
     required_auth_methods_assigned, valid_astakos_user_required, login_required
+from astakos.api import projects as projects_api
+from astakos.api.util import _dthandler
 
 logger = logging.getLogger(__name__)
 
@@ -840,8 +842,11 @@ def resource_usage(request):
 
     resources_meta = presentation.RESOURCES
 
-    current_usage = quotas.get_user_quotas(request.user)
-    current_usage = json.dumps(current_usage['system'])
+    user_memberships = request.user.projectmembership_set.actually_accepted()
+    sources = [quotas.project_ref(m.project.uuid) for m in user_memberships]
+    user_quotas = quotas.get_user_quotas(request.user, sources=sources)
+    projects = [m.project for m in user_memberships]
+    user_projects = projects_api.get_projects_details(projects)
     resource_catalog, resource_groups = _resources_catalog()
     if resource_catalog is False:
         # on fail resource_groups contains the result object
@@ -852,16 +857,20 @@ def resource_usage(request):
     resource_catalog = json.dumps(resource_catalog)
     resource_groups = json.dumps(resource_groups)
     resources_order = json.dumps(resources_meta.get('resources_order'))
+    projects_details = json.dumps(user_projects, default=_dthandler)
+    user_quotas = json.dumps(user_quotas)
 
+
+    interval = settings.USAGE_UPDATE_INTERVAL
     return render_response('im/resource_usage.html',
                            context_instance=get_context(request),
                            resource_catalog=resource_catalog,
                            resource_groups=resource_groups,
                            resources_order=resources_order,
-                           current_usage=current_usage,
+                           projects_details=projects_details,
+                           user_quotas=user_quotas,
                            token_cookie_name=settings.COOKIE_NAME,
-                           usage_update_interval=
-                           settings.USAGE_UPDATE_INTERVAL)
+                           usage_update_interval=interval)
 
 
 # TODO: action only on POST and user should confirm the removal

@@ -6,6 +6,70 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+v0.15next
+=============
+
+Released: UNRELEASED
+
+Synnefo-wide
+------------
+
+* Replace accumulative projects with pool projects:
+
+  * Projects are now viewed as a source of finite resources. A member can
+    reserve a part of these resources up to a specified limit.
+
+  * Base quota are now offered through a special purpose user-specific base
+    project, identified with the same UUID as the user.
+
+  * Each actual resource (Cyclades VM, network, floating IP and Pithos
+    container) is now also associated with a project besides the owner.
+
+  * In resource creation, project defaults to the user-specific base
+    project, if not specified otherwise. It is also possible to change the
+    project assignment of an existing resource.
+
+  * All existing resources have been assigned to the respective
+    user-specific base projects.
+
+Astakos
+-------
+
+* Decouple projects from applications:
+
+  * Support project creation (by the system) and modification (by a
+    privileged user) without the need to submit/approve an application.
+
+  * View applications as modifications. When a project is uninitialized
+    (e.g. an application for a new project is pending), no further
+    modification is allowed.
+
+  * Applications are removed from the API. A project's last application is
+    only accessible as part of the project details.
+
+  * Decouple project state from application state; they can be combined by
+    an API client, if needed.
+
+* Changes concerning quota and pool projects:
+
+  * A project must provide limits for all registered resources. On project
+    activation, resources missing are automatically completed using a
+    skeleton.
+
+  * Field `uplimit' of registed resources is exposed as `base_default' and
+    provide the skeleton for user-specific base projects. A new field
+    `project_default' is introduce to act as a skeleton for conventional
+    projects.
+
+  * The quotaholder now also records project quota besides user quota. The
+    two types of holders are distinguished with a prefix: `user:' and
+    `project:'.
+
+  * The quota API is extended to make project quota available.
+
+* Projects can be set `private', making it accessible only to its owner and
+  members.
+
 v0.14next
 =========
 

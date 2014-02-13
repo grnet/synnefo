@@ -34,6 +34,16 @@
 from astakos.im.tests.common import *
 
 
+NotFound = type('NotFound', (), {})
+
+
+def find(f, seq):
+    for item in seq:
+        if f(item):
+            return item
+    return NotFound
+
+
 class ProjectAPITest(TestCase):
 
     def setUp(self):
@@ -47,14 +57,14 @@ class ProjectAPITest(TestCase):
                       "service_origin": "service1",
                       "ui_visible": True}
         r, _ = register.add_resource(resource11)
-        register.update_resources([(r, 100)])
+        register.update_base_default(r, 100)
         resource12 = {"name": "service1.resource12",
                       "desc": "resource11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
                       "unit": "bytes"}
         r, _ = register.add_resource(resource12)
-        register.update_resources([(r, 1024)])
+        register.update_base_default(r, 1024)
 
         # create user
         self.user1 = get_local_user("test@grnet.gr")
@@ -73,9 +83,10 @@ class ProjectAPITest(TestCase):
                        "ui_visible": False,
                        "api_visible": False}
         r, _ = register.add_resource(pending_app)
-        register.update_resources([(r, 3)])
-        accepted = AstakosUser.objects.accepted()
-        quotas.update_base_quota(accepted, r.name, 3)
+        register.update_base_default(r, 3)
+        request = {"resources": {r.name: {"member_capacity": 3,
+                                          "project_capacity": 3}}}
+        functions.modify_projects_in_bulk(Q(is_base=True), request)
 
     def create(self, app, headers):
         dump = json.dumps(app)
@@ -87,23 +98,18 @@ class ProjectAPITest(TestCase):
     def modify(self, app, project_id, headers):
         dump = json.dumps(app)
         kwargs = {"project_id": project_id}
-        r = self.client.post(reverse("api_project", kwargs=kwargs), dump,
+        r = self.client.put(reverse("api_project", kwargs=kwargs), dump,
                              content_type="application/json", **headers)
         body = json.loads(r.content)
         return r.status_code, body
 
-    def project_action(self, project_id, action, headers):
-        action = json.dumps({action: "reason"})
+    def project_action(self, project_id, action, app_id=None, headers=None):
+        action_data = {"reason": ""}
+        if app_id is not None:
+            action_data["app_id"] = app_id
+        action = json.dumps({action: action_data})
         r = self.client.post(reverse("api_project_action",
                                      kwargs={"project_id": project_id}),
-                             action, content_type="application/json",
-                             **headers)
-        return r.status_code
-
-    def app_action(self, app_id, action, headers):
-        action = json.dumps({action: "reason"})
-        r = self.client.post(reverse("api_application_action",
-                                     kwargs={"app_id": app_id}),
                              action, content_type="application/json",
                              **headers)
         return r.status_code
@@ -148,25 +154,23 @@ class ProjectAPITest(TestCase):
         r = client.get(reverse("api_project", kwargs={"project_id": 1}),
                        **h_owner)
         self.assertEqual(r.status_code, 404)
-        r = client.get(reverse("api_application", kwargs={"app_id": 1}),
-                       **h_owner)
-        self.assertEqual(r.status_code, 404)
-        r = client.get(reverse("api_membership", kwargs={"memb_id": 1}),
+        r = client.get(reverse("api_membership", kwargs={"memb_id": 100}),
                        **h_owner)
         self.assertEqual(r.status_code, 404)
 
         status = self.memb_action(1, "accept", h_admin)
-        self.assertEqual(status, 404)
+        self.assertEqual(status, 409)
 
         app1 = {"name": "test.pr",
                 "end_date": "2013-5-5T20:20:20Z",
                 "join_policy": "auto",
                 "max_members": 5,
                 "resources": {"service1.resource11": {
+                    "project_capacity": 1024,
                     "member_capacity": 512}}
                 }
 
-        status, body = self.modify(app1, 1, h_owner)
+        status, body = self.modify(app1, 100, h_owner)
         self.assertEqual(status, 404)
 
         # Create
@@ -182,12 +186,14 @@ class ProjectAPITest(TestCase):
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
         self.assertEqual(body["id"], project_id)
-        self.assertEqual(body["application"], app_id)
-        self.assertEqual(body["state"], "pending")
+        self.assertEqual(body["last_application"]["id"], app_id)
+        self.assertEqual(body["last_application"]["state"], "pending")
+        self.assertEqual(body["state"], "uninitialized")
         self.assertEqual(body["owner"], self.user1.uuid)
 
         # Approve forbidden
-        status = self.app_action(app_id, "approve", h_owner)
+        status = self.project_action(project_id, "approve", app_id=app_id,
+                                     headers=h_owner)
         self.assertEqual(status, 403)
 
         # Create another with the same name
@@ -201,6 +207,7 @@ class ProjectAPITest(TestCase):
         app_p3["name"] = "new.pr"
         status, body = self.create(app_p3, h_owner)
         self.assertEqual(status, 201)
+        project3_id = body["id"]
         project3_app_id = body["application"]
 
         # No more pending allowed
@@ -208,10 +215,18 @@ class ProjectAPITest(TestCase):
         self.assertEqual(status, 409)
 
         # Cancel
-        status = self.app_action(project3_app_id, "cancel", h_owner)
+        status = self.project_action(project3_id, "cancel",
+                                     app_id=project3_app_id, headers=h_owner)
         self.assertEqual(status, 200)
 
-        # Modify
+        # Get project
+        r = client.get(reverse("api_project",
+                               kwargs={"project_id": project3_id}),
+                       **h_owner)
+        body = json.loads(r.content)
+        self.assertEqual(body["state"], "deleted")
+
+        # Modify of uninitialized failed
         app2 = {"name": "test.pr",
                 "start_date": "2013-5-5T20:20:20Z",
                 "end_date": "2013-7-5T20:20:20Z",
@@ -219,59 +234,77 @@ class ProjectAPITest(TestCase):
                 "leave_policy": "auto",
                 "max_members": 3,
                 "resources": {"service1.resource11": {
+                    "project_capacity": 1024,
                     "member_capacity": 1024}}
                 }
-
         status, body = self.modify(app2, project_id, h_owner)
+        self.assertEqual(status, 409)
+
+        # Create the project again
+        status, body = self.create(app2, h_owner)
         self.assertEqual(status, 201)
-        self.assertEqual(project_id, body["id"])
-        app2_id = body["application"]
-        assertGreater(app2_id, app_id)
+        project_id = body["id"]
+        app_id = body["application"]
 
         # Dismiss failed
-        status = self.app_action(app2_id, "dismiss", h_owner)
+        status = self.project_action(project_id, "dismiss", app_id,
+                                     headers=h_owner)
         self.assertEqual(status, 409)
 
         # Deny
-        status = self.app_action(app2_id, "deny", h_admin)
+        status = self.project_action(project_id, "deny", app_id,
+                                     headers=h_admin)
         self.assertEqual(status, 200)
 
-        r = client.get(reverse("api_application", kwargs={"app_id": app2_id}),
+        # Get project
+        r = client.get(reverse("api_project",
+                               kwargs={"project_id": project_id}),
                        **h_owner)
         body = json.loads(r.content)
-        self.assertEqual(body["state"], "denied")
+        self.assertEqual(body["last_application"]["id"], app_id)
+        self.assertEqual(body["last_application"]["state"], "denied")
+        self.assertEqual(body["state"], "uninitialized")
 
         # Dismiss
-        status = self.app_action(app2_id, "dismiss", h_owner)
+        status = self.project_action(project_id, "dismiss", app_id,
+                                     headers=h_owner)
         self.assertEqual(status, 200)
 
-        # Resubmit
-        status, body = self.modify(app2, project_id, h_owner)
+        # Get project
+        r = client.get(reverse("api_project",
+                               kwargs={"project_id": project_id}),
+                       **h_owner)
+        body = json.loads(r.content)
+        self.assertEqual(body["last_application"]["id"], app_id)
+        self.assertEqual(body["last_application"]["state"], "dismissed")
+        self.assertEqual(body["state"], "deleted")
+
+        # Create the project again
+        status, body = self.create(app2, h_owner)
         self.assertEqual(status, 201)
-        app3_id = body["application"]
+        project_id = body["id"]
+        app_id = body["application"]
 
         # Approve
-        status = self.app_action(app3_id, "approve", h_admin)
+        status = self.project_action(project_id, "approve", app_id,
+                                     headers=h_admin)
         self.assertEqual(status, 200)
 
-        # Get related apps
-        req = {"body": json.dumps({"project": project_id})}
-        r = client.get(reverse("api_applications"), req, **h_owner)
-        self.assertEqual(r.status_code, 200)
+        # Check memberships
+        r = client.get(reverse("api_memberships"), **h_plain)
         body = json.loads(r.content)
-        self.assertEqual(len(body), 3)
-
-        # Get apps
-        r = client.get(reverse("api_applications"), **h_owner)
-        self.assertEqual(r.status_code, 200)
-        body = json.loads(r.content)
-        self.assertEqual(len(body), 5)
+        self.assertEqual(len(body), 1)
 
         # Enroll
         status, body = self.enroll(project_id, self.user3, h_owner)
         self.assertEqual(status, 200)
         m_plain_id = body["id"]
 
+        # Get project
+        r = client.get(reverse("api_project",
+                               kwargs={"project_id": project_id}),
+                       **h_owner)
+        body = json.loads(r.content)
         # Join
         status, body = self.join(project_id, h_owner)
         self.assertEqual(status, 200)
@@ -280,14 +313,15 @@ class ProjectAPITest(TestCase):
         # Check memberships
         r = client.get(reverse("api_memberships"), **h_plain)
         body = json.loads(r.content)
-        self.assertEqual(len(body), 1)
-        m = body[0]
+        self.assertEqual(len(body), 2)
+        m = find(lambda m: m["project"] == project_id, body)
+        self.assertNotEqual(m, NotFound)
         self.assertEqual(m["user"], self.user3.uuid)
         self.assertEqual(m["state"], "accepted")
 
         r = client.get(reverse("api_memberships"), **h_owner)
         body = json.loads(r.content)
-        self.assertEqual(len(body), 2)
+        self.assertEqual(len(body), 3)
 
         # Check membership
         r = client.get(reverse("api_membership", kwargs={"memb_id": memb_id}),
@@ -359,31 +393,31 @@ class ProjectAPITest(TestCase):
         ## Simple user mode
         r = client.get(reverse("api_projects"), **h_plain)
         body = json.loads(r.content)
-        self.assertEqual(len(body), 1)
+        self.assertEqual(len(body), 2)
         p = body[0]
         with assertRaises(KeyError):
             p["pending_application"]
 
         ## Owner mode
-        filters = {"filter": {"state": ["active", "cancelled"]}}
-        req = {"body": json.dumps(filters)}
-        r = client.get(reverse("api_projects"), req, **h_owner)
+        filters = {"state": "active"}
+        r = client.get(reverse("api_projects"), filters, **h_owner)
         body = json.loads(r.content)
         self.assertEqual(len(body), 2)
-        assertIn("pending_application", body[0])
 
-        filters = {"filter": {"state": "pending"}}
-        req = {"body": json.dumps(filters)}
-        r = client.get(reverse("api_projects"), req, **h_owner)
-        body = json.loads(r.content)
-        self.assertEqual(len(body), 1)
-        self.assertEqual(body[0]["id"], project2_id)
-
-        filters = {"filter": {"name": "test.pr"}}
-        req = {"body": json.dumps(filters)}
-        r = client.get(reverse("api_projects"), req, **h_owner)
+        filters = {"state": "deleted"}
+        r = client.get(reverse("api_projects"), filters, **h_owner)
         body = json.loads(r.content)
         self.assertEqual(len(body), 2)
+
+        filters = {"state": "uninitialized"}
+        r = client.get(reverse("api_projects"), filters, **h_owner)
+        body = json.loads(r.content)
+        self.assertEqual(len(body), 2)
+
+        filters = {"name": "test.pr"}
+        r = client.get(reverse("api_projects"), filters, **h_owner)
+        body = json.loads(r.content)
+        self.assertEqual(len(body), 4)
 
         # Leave failed
         status = self.memb_action(m_plain_id, "leave", h_owner)
@@ -394,15 +428,15 @@ class ProjectAPITest(TestCase):
         self.assertEqual(status, 200)
 
         # Suspend failed
-        status = self.project_action(project_id, "suspend", h_owner)
+        status = self.project_action(project_id, "suspend", headers=h_owner)
         self.assertEqual(status, 403)
 
         # Unsuspend failed
-        status = self.project_action(project_id, "unsuspend", h_admin)
+        status = self.project_action(project_id, "unsuspend", headers=h_admin)
         self.assertEqual(status, 409)
 
         # Suspend
-        status = self.project_action(project_id, "suspend", h_admin)
+        status = self.project_action(project_id, "suspend", headers=h_admin)
         self.assertEqual(status, 200)
 
         # Cannot view project
@@ -411,15 +445,16 @@ class ProjectAPITest(TestCase):
         self.assertEqual(r.status_code, 403)
 
         # Unsuspend
-        status = self.project_action(project_id, "unsuspend", h_admin)
+        status = self.project_action(project_id, "unsuspend", headers=h_admin)
         self.assertEqual(status, 200)
 
         # Cannot approve, project with same name exists
-        status = self.app_action(project2_app_id, "approve", h_admin)
+        status = self.project_action(project2_id, "approve", project2_app_id,
+                                     headers=h_admin)
         self.assertEqual(status, 409)
 
         # Terminate
-        status = self.project_action(project_id, "terminate", h_admin)
+        status = self.project_action(project_id, "terminate", headers=h_admin)
         self.assertEqual(status, 200)
 
         # Join failed
@@ -427,7 +462,8 @@ class ProjectAPITest(TestCase):
         self.assertEqual(status, 409)
 
         # Can approve now
-        status = self.app_action(project2_app_id, "approve", h_admin)
+        status = self.project_action(project2_id, "approve", project2_app_id,
+                                     headers=h_admin)
         self.assertEqual(status, 200)
 
         # Join new project
@@ -436,8 +472,8 @@ class ProjectAPITest(TestCase):
         m_project2 = body["id"]
 
         # Get memberships of project
-        body = {"body": json.dumps({"project": project2_id})}
-        r = client.get(reverse("api_memberships"), body, **h_owner)
+        filters = {"project": project2_id}
+        r = client.get(reverse("api_memberships"), filters, **h_owner)
         body = json.loads(r.content)
         self.assertEqual(len(body), 1)
         self.assertEqual(body[0]["id"], m_project2)
@@ -447,7 +483,7 @@ class ProjectAPITest(TestCase):
         self.assertEqual(status, 200)
 
         # Reinstate failed
-        status = self.project_action(project_id, "reinstate", h_admin)
+        status = self.project_action(project_id, "reinstate", headers=h_admin)
         self.assertEqual(status, 409)
 
         # Rename
@@ -461,29 +497,33 @@ class ProjectAPITest(TestCase):
         r = client.get(reverse("api_project",
                                kwargs={"project_id": project_id}), **h_owner)
         body = json.loads(r.content)
-        self.assertEqual(body["application"], app3_id)
-        self.assertEqual(body["pending_application"], app2_renamed_id)
+        self.assertEqual(body["last_application"]["id"], app2_renamed_id)
         self.assertEqual(body["state"], "terminated")
         assertIn("deactivation_date", body)
-
-        # Get application
-        r = client.get(reverse("api_application",
-                               kwargs={"app_id": app2_renamed_id}), **h_plain)
-        self.assertEqual(r.status_code, 403)
-
-        r = client.get(reverse("api_application",
-                               kwargs={"app_id": app2_renamed_id}), **h_owner)
+        self.assertEqual(body["last_application"]["state"], "pending")
+        self.assertEqual(body["last_application"]["name"], "new.name")
+        status = self.project_action(project_id, "approve", app2_renamed_id,
+                                     headers=h_admin)
         self.assertEqual(r.status_code, 200)
+
+        # Change homepage
+        status, body = self.modify({"homepage": "new.page"},
+                                   project_id, h_owner)
+        self.assertEqual(status, 201)
+
+        r = client.get(reverse("api_project",
+                               kwargs={"project_id": project_id}), **h_owner)
         body = json.loads(r.content)
-        self.assertEqual(body["state"], "pending")
-        self.assertEqual(body["name"], "new.name")
-
-        # Approve (automatically reinstates)
-        action = json.dumps({"approve": ""})
-        r = client.post(reverse("api_application_action",
-                                kwargs={"app_id": app2_renamed_id}),
-                        action, content_type="application/json", **h_admin)
+        self.assertEqual(body["homepage"], "")
+        self.assertEqual(body["last_application"]["homepage"], "new.page")
+        homepage_app = body["last_application"]["id"]
+        status = self.project_action(project_id, "approve", homepage_app,
+                                     headers=h_admin)
         self.assertEqual(r.status_code, 200)
+        r = client.get(reverse("api_project",
+                               kwargs={"project_id": project_id}), **h_owner)
+        body = json.loads(r.content)
+        self.assertEqual(body["homepage"], "new.page")
 
         # Bad requests
         r = client.head(reverse("api_projects"), **h_admin)
@@ -495,15 +535,11 @@ class ProjectAPITest(TestCase):
         self.assertEqual(r.status_code, 405)
         self.assertTrue('Allow' in r)
 
-        r = client.head(reverse("api_applications"), **h_admin)
-        self.assertEqual(r.status_code, 405)
-        self.assertTrue('Allow' in r)
-
         r = client.head(reverse("api_memberships"), **h_admin)
         self.assertEqual(r.status_code, 405)
         self.assertTrue('Allow' in r)
 
-        status = self.project_action(1, "nonex", h_owner)
+        status = self.project_action(1, "nonex", headers=h_owner)
         self.assertEqual(status, 400)
 
         action = json.dumps({"suspend": "", "unsuspend": ""})
@@ -561,7 +597,13 @@ class ProjectAPITest(TestCase):
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 400)
 
-        ap["resources"] = {"service1.resource11": {"member_capacity": 512}}
+        ap["resources"] = {"service1.resource11": {
+                "member_capacity": 512}}
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap["resources"] = {"service1.resource11": {"member_capacity": 512,
+                                                   "project_capacity": 1024}}
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 201)
 
@@ -570,26 +612,9 @@ class ProjectAPITest(TestCase):
         self.assertEqual(status, 400)
 
         ap["name"] = "domain.name"
-        ap.pop("max_members")
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
 
-        filters = {"filter": {"state": "nonex"}}
-        req = {"body": json.dumps(filters)}
-        r = client.get(reverse("api_projects"), req, **h_owner)
-        self.assertEqual(r.status_code, 400)
-
-        filters = {"filter": {"nonex": "nonex"}}
-        req = {"body": json.dumps(filters)}
-        r = client.get(reverse("api_projects"), req, **h_owner)
-        self.assertEqual(r.status_code, 400)
-
-        req = {"body": json.dumps({"project": "nonex"})}
-        r = client.get(reverse("api_applications"), req, **h_owner)
-        self.assertEqual(r.status_code, 400)
-
-        req = {"body": json.dumps({"project": "nonex"})}
-        r = client.get(reverse("api_memberships"), req, **h_owner)
+        filters = {"state": "nonex"}
+        r = client.get(reverse("api_projects"), filters, **h_owner)
         self.assertEqual(r.status_code, 400)
 
 
@@ -601,6 +626,7 @@ class TestProjects(TestCase):
         # astakos resources
         self.resource = Resource.objects.create(name="astakos.pending_app",
                                                 uplimit=0,
+                                                project_default=0,
                                                 ui_visible=False,
                                                 api_visible=False,
                                                 service_type="astakos")
@@ -608,6 +634,7 @@ class TestProjects(TestCase):
         # custom service resources
         self.resource = Resource.objects.create(name="service1.resource",
                                                 uplimit=100,
+                                                project_default=0,
                                                 service_type="service1")
         self.admin = get_local_user("projects-admin@synnefo.org")
         self.admin.uuid = 'uuid1'
@@ -673,7 +700,12 @@ class TestProjects(TestCase):
     @im_settings(PROJECT_ADMINS=['uuid1'])
     def test_applications(self):
         # let user have 2 pending applications
-        quotas.update_base_quota([self.user], 'astakos.pending_app', 2)
+
+        # TODO figure this out
+        request = {"resources": {"astakos.pending_app":
+                                     {"member_capacity": 3,
+                                      "project_capacity": 3}}}
+        functions.modify_project(self.user.uuid, request)
 
         r = self.user_client.get(reverse('project_add'), follow=True)
         self.assertRedirects(r, reverse('project_add'))

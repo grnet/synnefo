@@ -1,0 +1,32 @@
+{% load astakos_tags filters %}
+
+{% for group, resources in resource_catalog_dict.items %}
+{% for resource, rinfo in resources.items %}
+{% with type="hidden" %}
+    {% with value=object|get_member_resource_grant_value:resource %}
+      <input type="{{ type }}" 
+             id="id_{{resource}}_m_uplimit" 
+             name="{{resource}}_m_uplimit"  
+          {% if value %}value="{{value}}"{% endif %} />
+    {% endwith %}
+    {% with value=object|get_project_resource_grant_value:resource %}
+      <input type="{{ type }}" 
+             id="id_{{resource}}_p_uplimit" 
+             name="{{resource}}_p_uplimit"  
+          {% if value %}value="{{value}}"{% endif %} />
+    {% endwith %}
+    {% endwith %}
+  {% endfor %}
+{% endfor %}
+
+<div class="visible">&nbsp;</div>
+<div class="not-visible">
+{% for group, resources in resource_catalog_dict.items %}
+<div class="group group_{{group}}" id="{{ group }}">
+  <a href="#icons" class="delete">X remove resource</a>	
+  {% for resource, rinfo in resources.items %}
+  {% include "im/projects/_form_resource_field.html" %}
+  {% endfor %}
+</div>
+{% endfor %}
+</div>

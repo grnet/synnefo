@@ -643,33 +643,43 @@ class Astakos(SynnefoComponent):
             ]
 
     def set_default_quota(self):
-        cmd = "snf-manage resource-modify --default-quota"
+        cmd = "snf-manage resource-modify"
         return [
-            "%s 40G pithos.diskspace" % cmd,
-            "%s 2 astakos.pending_app" % cmd,
-            "%s 4 cyclades.vm" % cmd,
-            "%s 40G cyclades.disk" % cmd,
-            "%s 16G cyclades.total_ram" % cmd,
-            "%s 8G cyclades.ram" % cmd,
-            "%s 32 cyclades.total_cpu" % cmd,
-            "%s 16 cyclades.cpu" % cmd,
-            "%s 4 cyclades.network.private" % cmd,
-            "%s 4 cyclades.floating_ip" % cmd,
+            "%s --base-default 40G pithos.diskspace" % cmd,
+            "%s --base-default 2 astakos.pending_app" % cmd,
+            "%s --base-default 4 cyclades.vm" % cmd,
+            "%s --base-default 40G cyclades.disk" % cmd,
+            "%s --base-default 16G cyclades.total_ram" % cmd,
+            "%s --base-default 8G cyclades.ram" % cmd,
+            "%s --base-default 32 cyclades.total_cpu" % cmd,
+            "%s --base-default 16 cyclades.cpu" % cmd,
+            "%s --base-default 4 cyclades.network.private" % cmd,
+            "%s --base-default 4 cyclades.floating_ip" % cmd,
+            "%s --project-default 0 pithos.diskspace" % cmd,
+            "%s --project-default 0 astakos.pending_app" % cmd,
+            "%s --project-default 0 cyclades.vm" % cmd,
+            "%s --project-default 0 cyclades.disk" % cmd,
+            "%s --project-default inf cyclades.total_ram" % cmd,
+            "%s --project-default 0 cyclades.ram" % cmd,
+            "%s --project-default inf cyclades.total_cpu" % cmd,
+            "%s --project-default 0 cyclades.cpu" % cmd,
+            "%s --project-default 0 cyclades.network.private" % cmd,
+            "%s --project-default 0 cyclades.floating_ip" % cmd,
             ]
 
     def modify_all_quota(self):
-        cmd = "snf-manage user-modify -f --all --base-quota"
+        cmd = "snf-manage project-modify --all-base-projects --limit"
         return [
-            "%s pithos.diskspace 40G" % cmd,
-            "%s astakos.pending_app 2" % cmd,
-            "%s cyclades.vm 4" % cmd,
-            "%s cyclades.disk 40G" % cmd,
-            "%s cyclades.total_ram 16G" % cmd,
-            "%s cyclades.ram 8G" % cmd,
-            "%s cyclades.total_cpu 32" % cmd,
-            "%s cyclades.cpu 16" % cmd,
-            "%s cyclades.network.private 4" % cmd,
-            "%s cyclades.floating_ip 4" % cmd,
+            "%s pithos.diskspace 40G 40G" % cmd,
+            "%s astakos.pending_app 2 2" % cmd,
+            "%s cyclades.vm 4 4" % cmd,
+            "%s cyclades.disk 40G 40G" % cmd,
+            "%s cyclades.total_ram 16G 16G" % cmd,
+            "%s cyclades.ram 8G 8G" % cmd,
+            "%s cyclades.total_cpu 32 32" % cmd,
+            "%s cyclades.cpu 16 16" % cmd,
+            "%s cyclades.network.private 4 4" % cmd,
+            "%s cyclades.floating_ip 4 4" % cmd,
             ]
 
     def get_services(self):

@@ -68,6 +68,7 @@ INSTALL_REQUIRES = [
     'Django>=1.4, <1.5',
     'South>=0.7.3',
     'httplib2>=0.6.0',
+    'python-dateutil>=1.4.1',
     'snf-common',
     'django-tables2',
     'recaptcha-client>=1.0.5',

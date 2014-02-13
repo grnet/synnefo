@@ -37,12 +37,11 @@ from snf_django.utils.testing import assertGreater, assertIn, assertRaises
 from astakos.quotaholder_app import models
 import astakos.quotaholder_app.callpoint as qh
 from astakos.quotaholder_app.exception import (
-    InvalidDataError,
     NoCommissionError,
     NoQuantityError,
     NoCapacityError,
     NoHoldingError,
-    DuplicateError)
+)
 
 
 class QuotaholderTest(TestCase):
@@ -139,21 +138,6 @@ class QuotaholderTest(TestCase):
         self.assertEqual(provision['source'], source)
         self.assertEqual(provision['resource'], resource1)
         self.assertEqual(provision['quantity'], 1)
-
-        with assertRaises(DuplicateError) as cm:
-            self.issue_commission([((holder, source, resource1), 1),
-                                   ((holder, source, resource1), 2)])
-
-        e = cm.exception
-        provision = e.data['provision']
-        self.assertEqual(provision['holder'], holder)
-        self.assertEqual(provision['source'], source)
-        self.assertEqual(provision['resource'], resource1)
-        self.assertEqual(provision['quantity'], 2)
-
-        with assertRaises(InvalidDataError):
-            self.issue_commission([((holder, source, resource1), 1),
-                                   ((holder, source, resource1), "nan")])
 
         r = qh.get_quota(holders=[holder])
         quotas = {(holder, source, resource1): (limit1, 0, limit1/2),

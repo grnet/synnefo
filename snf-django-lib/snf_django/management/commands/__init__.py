@@ -250,10 +250,10 @@ class ListCommand(SynnefoCommand):
 
         objects = self.object_class.objects
         try:
-            for sr in select_related:
-                objects = objects.select_related(sr)
-            for pr in prefetch_related:
-                objects = objects.prefetch_related(pr)
+            if select_related:
+                objects = objects.select_related(*select_related)
+            if prefetch_related:
+                objects = objects.prefetch_related(*prefetch_related)
             objects = objects.filter(**self.filters)
             objects = objects.exclude(**self.excludes)
         except FieldError as e:

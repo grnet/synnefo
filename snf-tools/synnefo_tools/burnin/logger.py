@@ -220,7 +220,7 @@ class Log(object):
 
     """
     # ----------------------------------
-    # Too many arguments. pylint: disable-msg=R0913
+    # pylint: disable=too-many-arguments
     def __init__(self, output_dir, verbose=1, use_colors=True,
                  in_parallel=False, log_level=0, curr_time=None):
         """Initialize our loggers

@@ -66,7 +66,8 @@ def network_command(action):
 
 @transaction.commit_on_success
 def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
-           floating_ip_pool=False, tags=None, public=False, drained=False):
+           floating_ip_pool=False, tags=None, public=False, drained=False,
+           project=None):
     if flavor is None:
         raise faults.BadRequest("Missing request parameter 'type'")
     elif flavor not in Network.FLAVORS.keys():
@@ -101,9 +102,13 @@ def create(userid, name, flavor, link=None, mac_prefix=None, mode=None,
         msg = "Link '%s' is already used." % link
         raise faults.BadRequest(msg)
 
+    if project is None:
+        project = userid
+
     network = Network.objects.create(
         name=name,
         userid=userid,
+        project=project,
         flavor=flavor,
         mode=mode,
         link=link,
@@ -168,4 +173,14 @@ def delete(network):
     else:
         # If network does not exist in any backend, update the network state
         backend_mod.update_network_state(network)
+    return network
+
+
+@network_command("REASSIGN")
+def reassign(network, project):
+    action_fields = {"to_project": project, "from_project": network.project}
+    network.project = project
+    network.save()
+    quotas.issue_and_accept_commission(network, action="REASSIGN",
+                                       action_fields=action_fields)
     return network

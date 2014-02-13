@@ -165,7 +165,7 @@ def server_command(action, action_fields=None):
 
 @transaction.commit_on_success
 def create(userid, name, password, flavor, image, metadata={},
-           personality=[], networks=None, use_backend=None):
+           personality=[], networks=None, use_backend=None, project=None):
     if use_backend is None:
         # Allocate server to a Ganeti backend
         use_backend = allocate_new_server(userid, flavor)
@@ -188,11 +188,15 @@ def create(userid, name, password, flavor, image, metadata={},
     else:
         flavor.disk_provider = None
 
+    if project is None:
+        project = userid
+
     # We must save the VM instance now, so that it gets a valid
     # vm.backend_vm_id.
     vm = VirtualMachine.objects.create(name=name,
                                        backend=use_backend,
                                        userid=userid,
+                                       project=project,
                                        imageid=image["id"],
                                        flavor=flavor,
                                        operstate="BUILD")
@@ -327,6 +331,15 @@ def _resize(vm, flavor):
 
     log.info("Resizing VM from flavor '%s' to '%s", old_flavor, flavor)
     return backend.resize_instance(vm, vcpus=flavor.cpu, memory=flavor.ram)
+
+
+@transaction.commit_on_success
+def reassign(vm, project):
+    action_fields = {"to_project": project, "from_project": vm.project}
+    vm.project = project
+    vm.save()
+    quotas.issue_and_accept_commission(vm, action="REASSIGN",
+                                       action_fields=action_fields)
 
 
 @server_command("SET_FIREWALL_PROFILE")

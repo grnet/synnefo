@@ -1,0 +1,28 @@
+{% extends "im/projects/project_detail.html" %}
+
+{% block project.title %}
+{% if is_modification %}
+<a class="back-to-action" href="{% url project_detail project.uuid %}">&lt; back to project</a>
+{% endif %}
+{{ project.realname|upper }}
+{% endblock %}
+
+{% block object.actions %}
+{% include "im/projects/_project_application_detail_actions.html" %}
+{% endblock %}
+
+{% block object.status %}
+{% if project.is_initialized %}
+PROJECT MODIFICATION {{ object.state_display|upper}}
+{% else %}
+PROJECT APPLICATION {{ object.state_display|upper}}
+{% endif %}
+{% endblock %}
+
+{% block object.details.name %}
+{{ object.name }}
+{% endblock %}
+
+{% block object.created_at %}
+<dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
+{% endblock %}

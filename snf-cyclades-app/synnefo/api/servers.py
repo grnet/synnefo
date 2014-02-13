@@ -171,7 +171,7 @@ def vm_to_dict(vm, detail=False):
     d['links'] = util.vm_to_links(vm.id)
     if detail:
         d['user_id'] = vm.userid
-        d['tenant_id'] = vm.userid
+        d['tenant_id'] = vm.project
         d['status'] = logic_utils.get_rsapi_state(vm)
         d['SNF:task_state'] = logic_utils.get_task_state(vm)
         d['progress'] = 100 if d['status'] == 'ACTIVE' else vm.buildpercentage
@@ -385,6 +385,7 @@ def create_server(request):
         networks = server.get("networks")
         if networks is not None:
             assert isinstance(networks, list)
+        project = server.get("project")
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
 
@@ -403,7 +404,7 @@ def create_server(request):
 
     vm = servers.create(user_id, name, password, flavor, image,
                         metadata=metadata, personality=personality,
-                        networks=networks)
+                        project=project, networks=networks)
 
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'
@@ -478,7 +479,7 @@ def delete_server(request, server_id):
 
 
 # additional server actions
-ARBITRARY_ACTIONS = ['console', 'firewallProfile']
+ARBITRARY_ACTIONS = ['console', 'firewallProfile', 'reassign']
 
 
 def key_to_action(key):
@@ -875,6 +876,15 @@ def confirm_resize(request, vm, args):
 @server_action('revertResize')
 def revert_resize(request, vm, args):
     raise faults.NotImplemented('Resize not supported.')
+
+
+@server_action('reassign')
+def reassign(request, vm, args):
+    project = args.get("project")
+    if project is None:
+        raise faults.BadRequest("Missing 'project' attribute.")
+    servers.reassign(vm, project)
+    return HttpResponse(status=200)
 
 
 @network_action('add')

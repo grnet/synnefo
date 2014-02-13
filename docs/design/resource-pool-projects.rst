@@ -379,9 +379,8 @@ the container level.
 Changes in the projects API
 ```````````````````````````
 
-``PUT /projects`` will be used to make a new project replacing ``POST``.
-
-``POST /projects/<proj_id>`` now expects a dictionary with just the desired
+``PUT /projects/<proj_id>`` will be used to mod a new project replacing
+``POST``. It now expects a dictionary with just the desired
 changes, not a complete project definition. It is only allowed if the
 project is already activated.
 

@@ -66,14 +66,14 @@ class QuotaAPITest(TestCase):
                       "service_origin": "service1",
                       "ui_visible": True}
         r, _ = register.add_resource(resource11)
-        register.update_resources([(r, 100)])
+        register.update_base_default(r, 100)
         resource12 = {"name": "service1.resource12",
                       "desc": "resource11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
                       "unit": "bytes"}
         r, _ = register.add_resource(resource12)
-        register.update_resources([(r, 1024)])
+        register.update_base_default(r, 1024)
 
         # create user
         user = get_local_user('test@grnet.gr')
@@ -93,7 +93,7 @@ class QuotaAPITest(TestCase):
                       "service_origin": "service2",
                       "ui_visible": False}
         r, _ = register.add_resource(resource21)
-        register.update_resources([(r, 3)])
+        register.update_base_default(r, 3)
 
         resource_names = [r['name'] for r in
                           [resource11, resource12, resource21]]
@@ -113,10 +113,10 @@ class QuotaAPITest(TestCase):
         r = client.get(u('quotas/'), **headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
-        system_quota = body['system']
-        assertIn('system', body)
+        assertIn(user.uuid, body)
+        base_quota = body[user.uuid]
         for name in resource_names:
-            assertIn(name, system_quota)
+            assertIn(name, base_quota)
 
         nmheaders = {'HTTP_X_AUTH_TOKEN': non_moderated_user.auth_token}
         r = client.get(u('quotas/'), **nmheaders)
@@ -149,14 +149,14 @@ class QuotaAPITest(TestCase):
             "name": "my commission",
             "provisions": [
                 {
-                    "holder": user.uuid,
-                    "source": "system",
+                    "holder": "user:" + user.uuid,
+                    "source": "project:" + user.uuid,
                     "resource": resource11['name'],
                     "quantity": 1
                 },
                 {
-                    "holder": user.uuid,
-                    "source": "system",
+                    "holder": "user:" + user.uuid,
+                    "source": "project:" + user.uuid,
                     "resource": resource12['name'],
                     "quantity": 30000
                 }]}
@@ -172,14 +172,14 @@ class QuotaAPITest(TestCase):
             "name": "my commission",
             "provisions": [
                 {
-                    "holder": user.uuid,
-                    "source": "system",
+                    "holder": "user:" + user.uuid,
+                    "source": "project:" + user.uuid,
                     "resource": resource11['name'],
                     "quantity": 1
                 },
                 {
-                    "holder": user.uuid,
-                    "source": "system",
+                    "holder": "user:" + user.uuid,
+                    "source": "project:" + user.uuid,
                     "resource": resource12['name'],
                     "quantity": 100
                 }]}
@@ -226,10 +226,15 @@ class QuotaAPITest(TestCase):
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
         user_quota = body[user.uuid]
-        system_quota = user_quota['system']
-        r11 = system_quota[resource11['name']]
+        base_quota = user_quota[user.uuid]
+        r11 = base_quota[resource11['name']]
         self.assertEqual(r11['usage'], 3)
         self.assertEqual(r11['pending'], 3)
+
+        r = client.get(u('service_project_quotas'), **s1_headers)
+        self.assertEqual(r.status_code, 200)
+        body = json.loads(r.content)
+        assertIn(user.uuid, body)
 
         # resolve pending commissions
         resolve_data = {
@@ -256,14 +261,14 @@ class QuotaAPITest(TestCase):
             "name": "my commission",
             "provisions": [
                 {
-                    "holder": user.uuid,
-                    "source": "system",
+                    "holder": "user:" + user.uuid,
+                    "source": "project:" + user.uuid,
                     "resource": resource11['name'],
                     "quantity": 1
                 },
                 {
-                    "holder": user.uuid,
-                    "source": "system",
+                    "holder": "user:" + user.uuid,
+                    "source": "project:" + user.uuid,
                     "resource": resource12['name'],
                     "quantity": 100
                 }]}
@@ -285,8 +290,8 @@ class QuotaAPITest(TestCase):
             "name": "my commission",
             "provisions": [
                 {
-                    "holder": user.uuid,
-                    "source": "system",
+                    "holder": "user:" + user.uuid,
+                    "source": "project:" + user.uuid,
                     "resource": resource11['name'],
                 }
             ]}
@@ -316,14 +321,14 @@ class QuotaAPITest(TestCase):
             "name": "my commission",
             "provisions": [
                 {
-                    "holder": user.uuid,
-                    "source": "system",
+                    "holder": "user:" + user.uuid,
+                    "source": "project:" + user.uuid,
                     "resource": "non existent",
                     "quantity": 1
                 },
                 {
-                    "holder": user.uuid,
-                    "source": "system",
+                    "holder": "user:" + user.uuid,
+                    "source": "project:" + user.uuid,
                     "resource": resource12['name'],
                     "quantity": 100
                 }]}
@@ -337,8 +342,8 @@ class QuotaAPITest(TestCase):
         commission_request = {
             "provisions": [
                 {
-                    "holder": user.uuid,
-                    "source": "system",
+                    "holder": "user:" + user.uuid,
+                    "source": "project:" + user.uuid,
                     "resource": resource11['name'],
                     "quantity": -1
                 }
@@ -368,8 +373,8 @@ class QuotaAPITest(TestCase):
             "force": True,
             "provisions": [
                 {
-                    "holder": user.uuid,
-                    "source": "system",
+                    "holder": "user:" + user.uuid,
+                    "source": "project:" + user.uuid,
                     "resource": resource11['name'],
                     "quantity": 100
                 }]}
@@ -383,8 +388,8 @@ class QuotaAPITest(TestCase):
             "force": True,
             "provisions": [
                 {
-                    "holder": user.uuid,
-                    "source": "system",
+                    "holder": "user:" + user.uuid,
+                    "source": "project:" + user.uuid,
                     "resource": resource11['name'],
                     "quantity": -200
                 }]}
@@ -397,8 +402,8 @@ class QuotaAPITest(TestCase):
         r = client.get(u('quotas'), **headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
-        system_quota = body['system']
-        r11 = system_quota[resource11['name']]
+        base_quota = body[user.uuid]
+        r11 = base_quota[resource11['name']]
         self.assertEqual(r11['usage'], 102)
         self.assertEqual(r11['pending'], 101)
 
@@ -753,7 +758,7 @@ class WrongPathAPITest(TestCase):
 class ValidateAccessToken(TestCase):
     def setUp(self):
         self.oa2_backend = DjangoBackend()
-        self.user = AstakosUser.objects.create(username="user@synnefo.org")
+        self.user = get_local_user("user@synnefo.org")
         self.token = self.oa2_backend.token_model.create(
             code='12345',
             expires_at=datetime.now() + timedelta(seconds=5),

@@ -67,6 +67,7 @@ class Command(SynnefoCommand):
             'name': server.name,
             'owner_uuid': userid,
             'owner_name': usercache.get_name(userid),
+            'project': server.project,
             'created': utils.format_date(server.created),
             'updated': utils.format_date(server.updated),
             'image': image,

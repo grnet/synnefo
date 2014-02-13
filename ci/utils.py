@@ -261,6 +261,12 @@ class SynnefoCI(object):
                              fip['floating_ip_address'])
             self.network_client.delete_floatingip(fip['id'])
 
+    # pylint: disable= no-self-use
+    @_check_fabric
+    def shell_connect(self):
+        """Open shell to remote server"""
+        fabric.open_shell("export TERM=xterm")
+
     def _create_floating_ip(self):
         """Create a new floating ip"""
         networks = self.network_client.list_networks(detail=True)

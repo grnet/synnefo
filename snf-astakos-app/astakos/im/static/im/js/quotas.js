@@ -43,6 +43,7 @@ function group_form_toggle_resources(el){
 function bytesToSize2(bytes) {
     var sizes = [ 'n/a', 'bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
     var i = +Math.floor(Math.log(bytes) / Math.log(1024));
+    if (!isFinite(i)) { return 0 + 'KB'}
     return  (bytes / Math.pow(1024, i)).toFixed( 0 ) + sizes[ isNaN( bytes ) ? 0 : i+1 ];
 }
 
@@ -270,34 +271,27 @@ $(document).ready(function() {
 	
  
 	 
-	$('.group input[name$="_uplimit_proxy"]').each(function() {
+	$('.group input[name$="_m_uplimit_proxy"], .group input[name$="_p_uplimit_proxy"]').each(function() {
 		if ($(this).val()){
-			
 			// get value from input
 	 		var value = $(this).val();
 			
-			
 			// get hidden input name
 			hidden_name = $(this).attr('name');
-			hidden_field_name = hidden_name.replace("_proxy","");
+			hidden_field_name = hidden_name.replace("_proxy", "");
 			$("input[name='"+hidden_field_name+"']").val(value);
 			var field = $(this); 
-			
 			
 			if ( (field.hasClass('dehumanize')) && !($(this).parents('.form-row').hasClass('with-errors'))) {
 				// for dehumanize fields transform bytes to KB, MB, etc
 				// unless there is an error
-				field.val(bytesToSize2(value))
+				field.val(bytesToSize2(value) || 0)
 			} else {
 				// else just return the value
 				field.val(value);	
 			}
-			
 			var group_class = field.parents('div[class^="group"]').attr('class').replace('group ', '');
-			
-			 
-			 
-			
+            
 			// select group icon
 			$('.quotas-form ul li a').each(function() {
 				
@@ -311,18 +305,13 @@ $(document).ready(function() {
 				 	$("input[name='"+hidden_name+"']").val("1");  
 				 	
 				 	group_form_show_resources($(this));
-					
 				}
 			}); 
-			
-		
 			
 			// if the field has class error, transfer error to the proxy fields
 			if ( $(this).parents('.form-row').hasClass('with-errors') ) {
 				field.parents('.form-row').addClass('with-errors');
 			}
-			
-			 
 		}
 	});  
 	

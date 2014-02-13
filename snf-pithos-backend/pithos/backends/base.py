@@ -112,8 +112,8 @@ class BaseBackend(object):
         """
         return []
 
-    def get_account_meta(self, user, account, domain, until=None,
-                         include_user_defined=True, external_quota=None):
+    def get_account_meta(self, user, account, domain=None, until=None,
+                         include_user_defined=True):
         """Return a dictionary with the account metadata for the domain.
 
         The keys returned are all user-defined, except:
@@ -127,11 +127,10 @@ class BaseBackend(object):
 
             'until_timestamp': Last modification until the timestamp provided
 
-            'external_quota': The quota computed from external quota holder
-                              mechanism
-
         Raises:
             NotAllowedError: Operation not permitted
+
+            ValueError: if domain is None and include_user_defined==True
         """
         return {}
 
@@ -242,7 +241,7 @@ class BaseBackend(object):
         """
         return []
 
-    def get_container_meta(self, user, account, container, domain, until=None,
+    def get_container_meta(self, user, account, container, domain=None, until=None,
                            include_user_defined=True):
         """Return a dictionary with the container metadata for the domain.
 
@@ -261,6 +260,8 @@ class BaseBackend(object):
             NotAllowedError: Operation not permitted
 
             ItemNotExists: Container does not exist
+
+            ValueError: if domain is None and include_user_defined==True
         """
         return {}
 
@@ -411,7 +412,7 @@ class BaseBackend(object):
         """Return a mapping of object paths to public ids under a container."""
         return {}
 
-    def get_object_meta(self, user, account, container, name, domain,
+    def get_object_meta(self, user, account, container, name, domain=None,
                         version=None, include_user_defined=True):
         """Return a dictionary with the object metadata for the domain.
 
@@ -444,6 +445,8 @@ class BaseBackend(object):
             ItemNotExists: Container/object does not exist
 
             VersionNotExists: Version does not exist
+
+            ValueError: if domain is None and include_user_defined==True
         """
         return {}
 

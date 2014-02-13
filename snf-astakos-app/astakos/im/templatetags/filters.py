@@ -40,11 +40,14 @@ from collections import defaultdict
 from django import template
 from django.core.paginator import Paginator, EmptyPage
 from django.db.models.query import QuerySet
+from django.utils.safestring import mark_safe
 
 from synnefo.lib.ordereddict import OrderedDict
 
 from astakos.im import settings
 from astakos.im.models import ProjectResourceGrant
+from astakos.im.views import util as views_util
+from astakos.im import util
 
 register = template.Library()
 
@@ -180,30 +183,79 @@ def get_value_after_dot(value):
 
 @register.filter
 def truncatename(v, max=18, append="..."):
-    length = len(v)
-    if length > max:
-        return v[:max] + append
-    else:
-        return v
+    util.truncatename(v, max, append)
 
 
 @register.filter
-def resource_groups(project_definition):
-    try:
-        grants = project_definition.projectresourcegrant_set
-        return grants.values_list('resource__group', flat=True)
-    except:
-        return ()
+def selected_resource_groups(project_or_app):
+    if not project_or_app:
+        return []
+
+    grants = project_or_app.resource_set
+    resources = grants.values_list('resource__name', flat=True)
+    return map(lambda r: r.split(".")[0], resources)
 
 
 @register.filter
-def resource_grants(project_definition):
+def resource_grants(project_or_app):
     try:
-        grants = project_definition.projectresourcegrant_set
+        grants = project_or_app.resource_set
         grants = grants.values_list(
-            'resource__name',
-            'member_capacity'
-        )
-        return dict((e[0], e[1]) for e in grants)
+            'resource__name', 'member_capacity', 'project_capacity')
+        return dict((e[0], {'member':e[1], 'project':e[2]}) for e in grants)
     except:
         return {}
+
+
+def get_resource_grant(project_or_app, rname, capacity_for):
+    if project_or_app is None:
+        return None
+
+    resource_set = project_or_app.resource_set
+    if not resource_set.filter(resource__name=rname).count():
+        return None
+
+    resource = resource_set.get(resource__name=rname)
+    return getattr(resource, '%s_capacity' % capacity_for)
+
+
+@register.filter
+def get_member_resource_grant_value(project_or_app, rname):
+    return get_resource_grant(project_or_app, rname, "member")
+
+
+@register.filter
+def get_project_resource_grant_value(project_or_app, rname):
+    return get_resource_grant(project_or_app, rname, "project")
+
+
+@register.filter
+def resource_diff(r, member_or_project):
+    if not hasattr(r, 'display_project_diff'):
+        return ''
+
+    project, member = r.display_project_diff()
+    diff = dict(zip(['project', 'member'],
+                     r.display_project_diff())).get(member_or_project)
+    tpl = '<span class="policy-diff %s">(%s)</span>'
+    cls = 'red' if diff.startswith("-") else 'green'
+    return mark_safe(tpl % (cls, diff))
+
+
+@register.filter
+def sorted_resources(resources_set):
+    return views_util.sorted_resources(resources_set)
+
+
+@register.filter
+def is_pending_app(app):
+    if not app:
+        return False
+    return app.state in [app.PENDING]
+
+
+@register.filter
+def is_denied_app(app):
+    if not app:
+        return False
+    return app.state in [app.DENIED]

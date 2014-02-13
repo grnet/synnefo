@@ -49,12 +49,38 @@ import subprocess
 
 from kamaki.clients import ClientError
 
-from synnefo_tools.burnin.common import BurninTests, MB, GB
+from synnefo_tools.burnin.common import BurninTests, MB, GB, QADD, QREMOVE, \
+    QDISK, QVM, QRAM, QIP, QCPU, QNET
 
 
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class CycladesTests(BurninTests):
     """Extends the BurninTests class for Cyclades"""
+    def _parse_images(self):
+        """Find images given to command line"""
+        if self.images is None:
+            self.info("No --images given. Will use the default %s",
+                      "^Debian Base$")
+            filters = ["name:^Debian Base$"]
+        else:
+            filters = self.images
+        avail_images = self._find_images(filters)
+        self.info("Found %s images to choose from", len(avail_images))
+        return avail_images
+
+    def _parse_flavors(self):
+        """Find flavors given to command line"""
+        flavors = self._get_list_of_flavors(detail=True)
+
+        if self.flavors is None:
+            self.info("No --flavors given. Will use all of them")
+            avail_flavors = flavors
+        else:
+            avail_flavors = self._find_flavors(self.flavors, flavors=flavors)
+
+        self.info("Found %s flavors to choose from", len(avail_flavors))
+        return avail_flavors
+
     def _try_until_timeout_expires(self, opmsg, check_fun):
         """Try to perform an action until timeout expires"""
         assert callable(check_fun), "Not a function"
@@ -113,10 +139,12 @@ class CycladesTests(BurninTests):
                       server['name'], server['id'])
         return self.clients.cyclades.get_server_details(server['id'])
 
-    def _create_server(self, image, flavor, personality=None, network=False):
+    # pylint: disable=too-many-arguments
+    def _create_server(self, image, flavor, personality=None,
+                       network=False, project_id=None):
         """Create a new server"""
         if network:
-            fip = self._create_floating_ip()
+            fip = self._create_floating_ip(project_id=project_id)
             port = self._create_port(fip['floating_network_id'],
                                      floating_ip=fip)
             networks = [{'port': port['id']}]
@@ -129,7 +157,8 @@ class CycladesTests(BurninTests):
         self.info("Using flavor %s with id %s", flavor['name'], flavor['id'])
         server = self.clients.cyclades.create_server(
             servername, flavor['id'], image['id'],
-            personality=personality, networks=networks)
+            personality=personality, networks=networks,
+            project=project_id)
 
         self.info("Server id: %s", server['id'])
         self.info("Server password: %s", server['adminPass'])
@@ -138,12 +167,18 @@ class CycladesTests(BurninTests):
         self.assertEqual(server['flavor']['id'], flavor['id'])
         self.assertEqual(server['image']['id'], image['id'])
         self.assertEqual(server['status'], "BUILD")
+        if project_id is None:
+            project_id = self._get_uuid()
+        self.assertEqual(server['tenant_id'], project_id)
 
         # Verify quotas
-        self._check_quotas(disk=+int(flavor['disk'])*GB,
-                           vm=+1,
-                           ram=+int(flavor['ram'])*MB,
-                           cpu=+int(flavor['vcpus']))
+        changes = \
+            {project_id:
+                [(QDISK, QADD, flavor['disk'], GB),
+                 (QVM, QADD, 1, None),
+                 (QRAM, QADD, flavor['ram'], MB),
+                 (QCPU, QADD, flavor['vcpus'], None)]}
+        self._check_quotas(changes)
 
         return server
 
@@ -180,26 +215,25 @@ class CycladesTests(BurninTests):
             self.assertNotIn(srv['id'], new_servers)
 
         # Verify quotas
-        flavors = \
-            [self.clients.compute.get_flavor_details(srv['flavor']['id'])
-             for srv in servers]
-        self._verify_quotas_deleted(flavors)
+        self._verify_quotas_deleted(servers)
 
-    def _verify_quotas_deleted(self, flavors):
+    def _verify_quotas_deleted(self, servers):
         """Verify quotas for a number of deleted servers"""
-        used_disk = 0
-        used_vm = 0
-        used_ram = 0
-        used_cpu = 0
-        for flavor in flavors:
-            used_disk += int(flavor['disk']) * GB
-            used_vm += 1
-            used_ram += int(flavor['ram']) * MB
-            used_cpu += int(flavor['vcpus'])
-        self._check_quotas(disk=-used_disk,
-                           vm=-used_vm,
-                           ram=-used_ram,
-                           cpu=-used_cpu)
+        changes = dict()
+        for server in servers:
+            project = server['tenant_id']
+            if project not in changes:
+                changes[project] = []
+            flavor = \
+                self.clients.compute.get_flavor_details(server['flavor']['id'])
+            new_changes = [
+                (QDISK, QREMOVE, flavor['disk'], GB),
+                (QVM, QREMOVE, 1, None),
+                (QRAM, QREMOVE, flavor['ram'], MB),
+                (QCPU, QREMOVE, flavor['vcpus'], None)]
+            changes[project].extend(new_changes)
+
+        self._check_quotas(changes)
 
     def _get_connection_username(self, server):
         """Determine the username to use to connect to the server"""
@@ -320,7 +354,7 @@ class CycladesTests(BurninTests):
                            "Can not get IPs from server attachments")
 
         for addr in addrs:
-            self.assertEquals(IPy.IP(addr).version(), version)
+            self.assertEqual(IPy.IP(addr).version(), version)
 
         if network is None:
             msg = "Server's public IPv%s is %s"
@@ -356,7 +390,7 @@ class CycladesTests(BurninTests):
         d_image = self.clients.cyclades.get_image_details(image['id'])
         return d_image['metadata']['osfamily'].lower().find(osfamily) >= 0
 
-    # Method could be a function. pylint: disable-msg=R0201
+    # pylint: disable=no-self-use
     def _ssh_execute(self, hostip, username, password, command):
         """Execute a command via ssh"""
         ssh = paramiko.SSHClient()
@@ -393,7 +427,7 @@ class CycladesTests(BurninTests):
         self.info("Server's hostname is %s", hostname)
         return hostname
 
-    # Too many arguments. pylint: disable-msg=R0913
+    # pylint: disable=too-many-arguments
     def _check_file_through_ssh(self, hostip, username, password,
                                 remotepath, content):
         """Fetch file from server and compare contents"""
@@ -411,21 +445,28 @@ class CycladesTests(BurninTests):
 
     # ----------------------------------
     # Networks
-    def _create_network(self, cidr="10.0.1.0/28", dhcp=True):
+    def _create_network(self, cidr="10.0.1.0/28", dhcp=True,
+                        project_id=None):
         """Create a new private network"""
         name = self.run_id
         network = self.clients.network.create_network(
-            "MAC_FILTERED", name=name, shared=False)
+            "MAC_FILTERED", name=name, shared=False,
+            project=project_id)
         self.info("Network with id %s created", network['id'])
         subnet = self.clients.network.create_subnet(
             network['id'], cidr=cidr, enable_dhcp=dhcp)
         self.info("Subnet with id %s created", subnet['id'])
 
         # Verify quotas
-        self._check_quotas(network=+1)
+        if project_id is None:
+            project_id = self._get_uuid()
+        changes = \
+            {project_id: [(QNET, QADD, 1, None)]}
+        self._check_quotas(changes)
 
         #Test if the right name is assigned
         self.assertEqual(network['name'], name)
+        self.assertEqual(network['tenant_id'], project_id)
 
         return network
 
@@ -450,7 +491,9 @@ class CycladesTests(BurninTests):
             self.assertNotIn(net['id'], new_networks)
 
         # Verify quotas
-        self._check_quotas(network=-len(networks))
+        changes = \
+            {self._get_uuid(): [(QNET, QREMOVE, len(networks), None)]}
+        self._check_quotas(changes)
 
     def _get_public_network(self, networks=None):
         """Get the public network"""
@@ -462,20 +505,27 @@ class CycladesTests(BurninTests):
                 return net
         self.fail("Could not find a public network to use")
 
-    def _create_floating_ip(self):
+    def _create_floating_ip(self, project_id=None):
         """Create a new floating ip"""
         pub_net = self._get_public_network()
         self.info("Creating a new floating ip for network with id %s",
                   pub_net['id'])
-        fip = self.clients.network.create_floatingip(pub_net['id'])
+        fip = self.clients.network.create_floatingip(
+            pub_net['id'], project=project_id)
         # Verify that floating ip has been created
         fips = self.clients.network.list_floatingips()
         fips = [f['id'] for f in fips]
         self.assertIn(fip['id'], fips)
         # Verify quotas
-        self._check_quotas(ip=+1)
+        if project_id is None:
+            project_id = self._get_uuid()
+        changes = \
+            {project_id: [(QIP, QADD, 1, None)]}
+        self._check_quotas(changes)
+
         # Check that IP is IPv4
-        self.assertEquals(IPy.IP(fip['floating_ip_address']).version(), 4)
+        self.assertEqual(IPy.IP(fip['floating_ip_address']).version(), 4)
+        self.assertEqual(fip['tenant_id'], project_id)
 
         self.info("Floating IP %s with id %s created",
                   fip['floating_ip_address'], fip['id'])
@@ -567,7 +617,13 @@ class CycladesTests(BurninTests):
 
     def _delete_floating_ips(self, fips):
         """Delete floating ips"""
-        for fip in fips:
+        # Renew the list of floating IP objects
+        # (It may have been changed, i.e. a port may have been deleted).
+        fip_ids = [f['id'] for f in fips]
+        new_fips = [f for f in self.clients.network.list_floatingips()
+                    if f['id'] in fip_ids]
+
+        for fip in new_fips:
             port_id = fip['port_id']
             if port_id:
                 self.info("Destroying port with id %s", port_id)
@@ -582,8 +638,51 @@ class CycladesTests(BurninTests):
         list_ips = [f['id'] for f in self.clients.network.list_floatingips()]
         for fip in fips:
             self.assertNotIn(fip['id'], list_ips)
+
         # Verify quotas
-        self._check_quotas(ip=-len(fips))
+        changes = dict()
+        for fip in fips:
+            project = fip['tenant_id']
+            if project not in changes:
+                changes[project] = []
+            changes[project].append((QIP, QREMOVE, 1, None))
+        self._check_quotas(changes)
+
+    def _find_project(self, flavors, projects=None):
+        """Return a pair of flavor, project that we can use"""
+        if projects is None:
+            projects = self.quotas.keys()
+
+        # XXX: Well there seems to be no easy way to find how many resources
+        # we have left in a project (we have to substract usage from limit,
+        # check both per_user and project quotas, blah, blah). For now
+        # just return the first flavor with the first project and lets hope
+        # that it fits.
+        return (flavors[0], projects[0])
+
+        # # Get only the quotas for the given 'projects'
+        # quotas = dict()
+        # for prj, qts in self.quotas.items():
+        #     if prj in projects:
+        #         quotas[prj] = qts
+        #
+        # results = []
+        # for flv in flavors:
+        #     for prj, qts in quotas.items():
+        #         self.debug("Testing flavor %s, project %s", flv['name'], prj)
+        #         condition = \
+        #             (flv['ram'] <= qts['cyclades.ram']['usage'] and
+        #              flv['vcpus'] <= qts['cyclades.cpu']['usage'] and
+        #              flv['disk'] <= qts['cyclades.disk']['usage'] and
+        #              qts['cyclades.vm']['usage'] >= 1)
+        #         if condition:
+        #             results.append((flv, prj))
+        #
+        # if not results:
+        #     msg = "Couldn't find a suitable flavor to use for current qutoas"
+        #     self.error(msg)
+        #
+        # return random.choice(results)
 
 
 class Retry(Exception):

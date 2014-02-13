@@ -40,7 +40,7 @@ from synnefo_tools.burnin.common import Proper, SNF_TEST_PREFIX
 from synnefo_tools.burnin.cyclades_common import CycladesTests
 
 
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class StaleServersTestSuite(CycladesTests):
     """Handle stale Servers"""
     stale_servers = Proper(value=None)
@@ -72,7 +72,7 @@ class StaleServersTestSuite(CycladesTests):
             self._delete_servers(self.stale_servers, error=True)
 
 
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class StaleFloatingIPsTestSuite(CycladesTests):
     """Handle stale Floating IPs"""
     stale_ips = Proper(value=None)
@@ -107,7 +107,7 @@ class StaleFloatingIPsTestSuite(CycladesTests):
             self._delete_floating_ips(self.stale_ips)
 
 
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class StaleNetworksTestSuite(CycladesTests):
     """Handle stale Networks"""
     stale_networks = Proper(value=None)

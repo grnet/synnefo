@@ -155,7 +155,7 @@ Status  Description
 Modify a Project
 ................
 
-**POST** /account/v1.0/projects/<proj_id>
+**PUT** /account/v1.0/projects/<proj_id>
 
 ====================  =========================
 Request Header Name   Value

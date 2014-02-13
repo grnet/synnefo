@@ -98,7 +98,7 @@ class ProjectAPITest(TestCase):
     def modify(self, app, project_id, headers):
         dump = json.dumps(app)
         kwargs = {"project_id": project_id}
-        r = self.client.post(reverse("api_project", kwargs=kwargs), dump,
+        r = self.client.put(reverse("api_project", kwargs=kwargs), dump,
                              content_type="application/json", **headers)
         body = json.loads(r.content)
         return r.status_code, body

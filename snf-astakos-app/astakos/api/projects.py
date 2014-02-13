@@ -329,9 +329,9 @@ def project(request, project_id):
     method = request.method
     if method == "GET":
         return get_project(request, project_id)
-    if method == "POST":
+    if method == "PUT":
         return modify_project(request, project_id)
-    return api.api_method_not_allowed(request, allowed_methods=['GET', 'POST'])
+    return api.api_method_not_allowed(request, allowed_methods=['GET', 'PUT'])
 
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
@@ -352,7 +352,7 @@ def _get_project(project_id, request_user=None):
     return project
 
 
-@api.api_method(http_method="POST", token_required=True, user_required=False)
+@api.api_method(http_method="PUT", token_required=True, user_required=False)
 @user_from_token
 @transaction.commit_on_success
 def modify_project(request, project_id):

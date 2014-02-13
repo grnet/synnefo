@@ -861,7 +861,7 @@ class AstakosClient(object):
                                   method="POST")
 
     # ------------------------------------------
-    # do a POST to ``API_PROJECTS``/<project_id>
+    # do a PUT to ``API_PROJECTS``/<project_id>
     def modify_project(self, project_id, specs):
         """Submit application to modify an existing project
 
@@ -875,7 +875,7 @@ class AstakosClient(object):
         req_headers = {'content-type': 'application/json'}
         req_body = parse_request(specs, self.logger)
         return self._call_astakos(path, headers=req_headers,
-                                  body=req_body, method="POST")
+                                  body=req_body, method="PUT")
 
     # -------------------------------------------------
     # do a POST to ``API_PROJECTS``/<project_id>/action

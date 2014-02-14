@@ -37,8 +37,10 @@ from astakos.im.models import (
 import astakos.quotaholder_app.callpoint as qh
 from astakos.quotaholder_app.exception import NoCapacityError
 from django.db.models import Q
-from synnefo.util.keypath import set_path
+from collections import defaultdict
 
+
+QuotaDict = lambda: defaultdict(lambda: defaultdict(dict))
 
 PROJECT_TAG = "project:"
 USER_TAG = "user:"
@@ -104,13 +106,12 @@ def get_related_sources(counters):
 
 
 def mk_quota_dict(users_counters, project_counters):
-    quota = {}
+    quota = QuotaDict()
     for (holder, source, resource), u_value in users_counters.iteritems():
         p_value = project_counters[(source, None, resource)]
         values_dict = from_holding(u_value)
         values_dict.update(from_holding(p_value, is_project=True))
-        set_path(quota, [holder, source, resource], values_dict,
-                 createpath=True)
+        quota[holder][source][resource] = values_dict
     return quota
 
 
@@ -144,19 +145,17 @@ def service_get_quotas(component, users=None):
 
 
 def mk_limits_dict(counters):
-    quota = {}
-    for key, (limit, _, _) in counters.iteritems():
-        path = list(key)
-        set_path(quota, path, limit, createpath=True)
+    quota = QuotaDict()
+    for (holder, source, resource), (limit, _, _) in counters.iteritems():
+        quota[holder][source][resource] = limit
     return quota
 
 
 def mk_project_quota_dict(project_counters):
-    quota = {}
+    quota = QuotaDict()
     for (holder, _, resource), p_value in project_counters.iteritems():
         values_dict = from_holding(p_value, is_project=True)
-        set_path(quota, [holder, resource], values_dict,
-                 createpath=True)
+        quota[holder][resource] = values_dict
     return quota
 
 
@@ -263,8 +262,8 @@ def astakos_project_quotas(projects, resource=None):
         "person", "project")
     memberships_d = _partition_by(lambda m: m.project_id, memberships)
 
-    user_quota = {}
-    project_quota = {}
+    user_quota = QuotaDict()
+    project_quota = QuotaDict()
 
     for project in projects:
         pr_ref = get_project_ref(project)
@@ -276,14 +275,12 @@ def astakos_project_quotas(projects, resource=None):
         project_memberships = memberships_d.get(project.id, [])
         for grant in project_grants:
             resource = grant.resource.name
-            path = [pr_ref, None, resource]
             val = grant.project_capacity if state == Project.NORMAL else 0
-            set_path(project_quota, path, val, createpath=True)
+            project_quota[pr_ref][None][resource] = val
             for membership in project_memberships:
                 u_ref = get_user_ref(membership.person)
-                path = [u_ref, pr_ref, resource]
                 val = grant.member_capacity if membership.is_active() else 0
-                set_path(user_quota, path, val, createpath=True)
+                user_quota[u_ref][pr_ref][resource] = val
 
     return project_quota, user_quota
 
@@ -309,13 +306,12 @@ def membership_quota(membership):
     u_ref = get_user_ref(membership.person)
     objs = ProjectResourceQuota.objects.select_related()
     grants = objs.filter(project=project)
-    user_quota = {}
+    user_quota = QuotaDict()
     is_active = membership.is_active()
     for grant in grants:
         resource = grant.resource.name
-        path = [u_ref, pr_ref, resource]
         value = grant.member_capacity if is_active else 0
-        set_path(user_quota, path, value, createpath=True)
+        user_quota[u_ref][pr_ref][resource] = value
     return user_quota
 
 

@@ -35,8 +35,9 @@ from django.db.models import Sum, Count, Q
 
 from synnefo.db.models import VirtualMachine, Network, IPAddress
 from synnefo.quotas import Quotaholder
-from synnefo.util.keypath import set_path
+from collections import defaultdict
 
+QuotaDict = lambda: defaultdict(lambda: defaultdict(dict))
 
 MiB = 2 ** 20
 GiB = 2 ** 30
@@ -44,7 +45,7 @@ GiB = 2 ** 30
 
 def get_db_holdings(user=None, project=None):
     """Get holdings from Cyclades DB."""
-    holdings = {}
+    holdings = QuotaDict()
 
     vms = VirtualMachine.objects.filter(deleted=False)
     networks = Network.objects.filter(deleted=False)
@@ -74,7 +75,7 @@ def get_db_holdings(user=None, project=None):
                "cyclades.total_cpu": vm_res["total_cpu"],
                "cyclades.disk": vm_res["disk"] * GiB,
                "cyclades.total_ram": vm_res["total_ram"] * MiB}
-        set_path(holdings, [user, project], res, createpath=True)
+        holdings[user][project] = res
 
     vm_active_resources = vms.values("userid", "project")\
         .filter(Q(operstate="STARTED") | Q(operstate="BUILD") |
@@ -85,10 +86,8 @@ def get_db_holdings(user=None, project=None):
     for vm_res in vm_active_resources.iterator():
         user = vm_res['userid']
         project = vm_res['project']
-        set_path(holdings, [user, project, "cyclades.cpu"], vm_res["cpu"],
-                 createpath=True)
-        set_path(holdings, [user, project, "cyclades.ram"],
-                 vm_res["ram"] * MiB, createpath=True)
+        holdings[user][project]["cyclades.cpu"] = vm_res["cpu"]
+        holdings[user][project]["cyclades.ram"] = vm_res["ram"] * MiB
 
     # Get resources related with networks
     net_resources = networks.values("userid", "project")\
@@ -99,8 +98,7 @@ def get_db_holdings(user=None, project=None):
         if user is None:
             continue
         project = net_res['project']
-        set_path(holdings, [user, project, "cyclades.network.private"],
-                 net_res["num"], createpath=True)
+        holdings[user][project]["cyclades.network.private"] = net_res["num"]
 
     floating_ips_resources = floating_ips.values("userid", "project")\
                                          .annotate(num=Count("id"))
@@ -108,15 +106,15 @@ def get_db_holdings(user=None, project=None):
     for floating_ip_res in floating_ips_resources.iterator():
         user = floating_ip_res["userid"]
         project = floating_ip_res["project"]
-        set_path(holdings, [user, project, "cyclades.floating_ip"],
-                 floating_ip_res["num"], createpath=True)
+        holdings[user][project]["cyclades.floating_ip"] = \
+            floating_ip_res["num"]
 
     return holdings
 
 
 def get_db_project_holdings(project=None):
     """Get holdings from Cyclades DB."""
-    holdings = {}
+    holdings = QuotaDict()
 
     vms = VirtualMachine.objects.filter(deleted=False)
     networks = Network.objects.filter(deleted=False)
@@ -140,7 +138,7 @@ def get_db_project_holdings(project=None):
                "cyclades.total_cpu": vm_res["total_cpu"],
                "cyclades.disk": vm_res["disk"] * GiB,
                "cyclades.total_ram": vm_res["total_ram"] * MiB}
-        set_path(holdings, [project], res, createpath=True)
+        holdings[project] = res
 
     vm_active_resources = vms.values("project")\
         .filter(Q(operstate="STARTED") | Q(operstate="BUILD") |
@@ -150,10 +148,8 @@ def get_db_project_holdings(project=None):
 
     for vm_res in vm_active_resources.iterator():
         project = vm_res['project']
-        set_path(holdings, [project, "cyclades.cpu"], vm_res["cpu"],
-                 createpath=True)
-        set_path(holdings, [project, "cyclades.ram"],
-                 vm_res["ram"] * MiB, createpath=True)
+        holdings[project]["cyclades.cpu"] = vm_res["cpu"]
+        holdings[project]["cyclades.ram"] = vm_res["ram"] * MiB
 
     # Get resources related with networks
     net_resources = networks.values("project").annotate(num=Count("id"))
@@ -162,16 +158,14 @@ def get_db_project_holdings(project=None):
         project = net_res['project']
         if project is None:
             continue
-        set_path(holdings, [project, "cyclades.network.private"],
-                 net_res["num"], createpath=True)
+        holdings[project]["cyclades.network.private"] = net_res["num"]
 
     floating_ips_resources = floating_ips.values("project")\
         .annotate(num=Count("id"))
 
     for floating_ip_res in floating_ips_resources.iterator():
         project = floating_ip_res["project"]
-        set_path(holdings, [project, "cyclades.floating_ip"],
-                 floating_ip_res["num"], createpath=True)
+        holdings[project]["cyclades.floating_ip"] = floating_ip_res["num"]
 
     return holdings
 

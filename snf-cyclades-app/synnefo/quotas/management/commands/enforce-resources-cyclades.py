@@ -139,7 +139,8 @@ class Command(SynnefoCommand):
 
         users_to_check = options['users']
         if users_to_check is not None:
-            users_to_check = set(users_to_check.split(',')) - excluded_users
+            users_to_check = list(set(users_to_check.split(',')) -
+                                  excluded_users)
 
         try:
             qh_holdings = util.get_qh_users_holdings(users_to_check)
@@ -152,8 +153,8 @@ class Command(SynnefoCommand):
 
         projects_to_check = options["projects"]
         if projects_to_check is not None:
-            projects_to_check = set(projects_to_check.split(',')) - \
-                excluded_projects
+            projects_to_check = list(set(projects_to_check.split(',')) -
+                                     excluded_projects)
 
         try:
             qh_project_holdings = util.get_qh_project_holdings(

@@ -35,7 +35,7 @@ import logging
 
 from django.conf import settings
 from synnefo.lib import join_urls, parse_base_url
-from synnefo.util.keypath import get_path, set_path, unpack
+from synnefo.util.keypath import get_path, set_path
 from synnefo.api.services import cyclades_services as vanilla_cyclades_services
 from synnefo.lib.services import fill_endpoints
 from astakosclient import AstakosClient
@@ -57,16 +57,16 @@ CUSTOMIZE_SERVICES = getattr(settings, 'CYCLADES_CUSTOMIZE_SERVICES', ())
 cyclades_services = deepcopy(vanilla_cyclades_services)
 fill_endpoints(cyclades_services, BASE_URL)
 for path, value in CUSTOMIZE_SERVICES:
-    set_path(cyclades_services, unpack(path), value, createpath=True)
+    set_path(cyclades_services, path, value, createpath=True)
 
-COMPUTE_PREFIX = get_path(cyclades_services, ['cyclades_compute', 'prefix'])
-NETWORK_PREFIX = get_path(cyclades_services, ['cyclades_network', 'prefix'])
-VMAPI_PREFIX = get_path(cyclades_services, ['cyclades_vmapi', 'prefix'])
-PLANKTON_PREFIX = get_path(cyclades_services, ['cyclades_plankton', 'prefix'])
-HELPDESK_PREFIX = get_path(cyclades_services, ['cyclades_helpdesk', 'prefix'])
-UI_PREFIX = get_path(cyclades_services, ['cyclades_ui', 'prefix'])
-USERDATA_PREFIX = get_path(cyclades_services, ['cyclades_userdata', 'prefix'])
-ADMIN_PREFIX = get_path(cyclades_services, ['cyclades_admin', 'prefix'])
+COMPUTE_PREFIX = get_path(cyclades_services, 'cyclades_compute.prefix')
+NETWORK_PREFIX = get_path(cyclades_services, 'cyclades_network.prefix')
+VMAPI_PREFIX = get_path(cyclades_services, 'cyclades_vmapi.prefix')
+PLANKTON_PREFIX = get_path(cyclades_services, 'cyclades_plankton.prefix')
+HELPDESK_PREFIX = get_path(cyclades_services, 'cyclades_helpdesk.prefix')
+UI_PREFIX = get_path(cyclades_services, 'cyclades_ui.prefix')
+USERDATA_PREFIX = get_path(cyclades_services, 'cyclades_userdata.prefix')
+ADMIN_PREFIX = get_path(cyclades_services, 'cyclades_admin.prefix')
 
 COMPUTE_ROOT_URL = join_urls(BASE_URL, COMPUTE_PREFIX)
 

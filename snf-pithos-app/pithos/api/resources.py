@@ -34,5 +34,4 @@
 from synnefo.util.keypath import get_path
 from pithos.api.settings import pithos_services
 
-resources = get_path(pithos_services,
-                     ['pithos_object-store', 'resources']).values()
+resources = get_path(pithos_services, 'pithos_object-store.resources').values()

@@ -50,11 +50,11 @@ BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
 
 astakos_services = deepcopy(vanilla_astakos_services)
 fill_endpoints(astakos_services, BASE_URL)
-ACCOUNTS_PREFIX = get_path(astakos_services, ['astakos_account', 'prefix'])
-VIEWS_PREFIX = get_path(astakos_services, ['astakos_ui', 'prefix'])
-KEYSTONE_PREFIX = get_path(astakos_services, ['astakos_identity', 'prefix'])
-WEBLOGIN_PREFIX = get_path(astakos_services, ['astakos_weblogin', 'prefix'])
-ADMIN_PREFIX = get_path(astakos_services, ['astakos_admin', 'prefix'])
+ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
+VIEWS_PREFIX = get_path(astakos_services, 'astakos_ui.prefix')
+KEYSTONE_PREFIX = get_path(astakos_services, 'astakos_identity.prefix')
+WEBLOGIN_PREFIX = get_path(astakos_services, 'astakos_weblogin.prefix')
+ADMIN_PREFIX = get_path(astakos_services, 'astakos_admin.prefix')
 
 # Set the expiration time of newly created auth tokens
 # to be this many hours after their creation time.

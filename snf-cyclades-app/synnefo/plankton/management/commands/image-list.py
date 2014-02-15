@@ -32,7 +32,7 @@ from django.core.management.base import BaseCommand
 from optparse import make_option
 
 from snf_django.management.utils import pprint_table
-from synnefo.plankton.utils import image_backend
+from synnefo.plankton.backend import PlanktonBackend
 
 
 class Command(BaseCommand):
@@ -50,7 +50,7 @@ class Command(BaseCommand):
     def handle(self, **options):
         user = options['userid']
 
-        with image_backend(user) as backend:
+        with PlanktonBackend(user) as backend:
             images = backend._list_images(user)
             images.sort(key=lambda x: x['created_at'], reverse=True)
 

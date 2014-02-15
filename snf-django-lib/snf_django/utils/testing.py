@@ -221,6 +221,12 @@ class BaseAPITest(TestCase):
                 response = self.client.get(url, *args, **kwargs)
         return response
 
+    def head(self, url, user='user', *args, **kwargs):
+        with astakos_user(user):
+            with mocked_quotaholder():
+                response = self.client.head(url, *args, **kwargs)
+        return response
+
     def delete(self, url, user='user'):
         with astakos_user(user):
             with mocked_quotaholder() as m:

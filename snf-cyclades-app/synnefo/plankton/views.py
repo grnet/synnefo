@@ -43,8 +43,8 @@ from django.http import HttpResponse
 from snf_django.lib import api
 from snf_django.lib.api import faults
 from synnefo.util.text import uenc
-from synnefo.plankton.utils import image_backend
-from synnefo.plankton.backend import split_url, InvalidLocation
+from synnefo.plankton.backend import PlanktonBackend
+from synnefo.plankton.backend import split_url
 
 
 FILTERS = ('name', 'container_format', 'disk_format', 'status', 'size_min',
@@ -109,10 +109,10 @@ def _get_image_headers(request):
     for key, val in request.META.items():
         if key.startswith(META_PROPERTY_PREFIX):
             name = normalize(key[META_PROPERTY_PREFIX_LEN:])
-            headers['properties'][unquote(name)] = unquote(val)
+            headers['properties'][unquote(name)] = unquote(uenc(val))
         elif key.startswith(META_PREFIX):
             name = normalize(key[META_PREFIX_LEN:])
-            headers[unquote(name)] = unquote(val)
+            headers[unquote(name)] = unquote(uenc(val))
 
     is_public = headers.get('is_public', None)
     if is_public is not None:
@@ -149,7 +149,7 @@ def add_image(request):
     if not set(params.keys()).issubset(set(ADD_FIELDS)):
         raise faults.BadRequest("Invalid parameters")
 
-    name = params.pop('name')
+    name = params.pop('name', None)
     if name is None:
         raise faults.BadRequest("Image 'name' parameter is required")
     elif len(uenc(name)) == 0:
@@ -160,13 +160,13 @@ def add_image(request):
 
     try:
         split_url(location)
-    except InvalidLocation:
+    except AssertionError:
         raise faults.BadRequest("Invalid location '%s'" % location)
 
     validate_fields(params)
 
     if location:
-        with image_backend(request.user_uniq) as backend:
+        with PlanktonBackend(request.user_uniq) as backend:
             image = backend.register(name, location, params)
     else:
         #f = StringIO(request.body)
@@ -193,7 +193,7 @@ def delete_image(request, image_id):
     """
     log.info("delete_image '%s'" % image_id)
     userid = request.user_uniq
-    with image_backend(userid) as backend:
+    with PlanktonBackend(userid) as backend:
         backend.unregister(image_id)
     log.info("User '%s' deleted image '%s'" % (userid, image_id))
     return HttpResponse(status=204)
@@ -211,7 +211,7 @@ def add_image_member(request, image_id, member):
     """
 
     log.debug('add_image_member %s %s', image_id, member)
-    with image_backend(request.user_uniq) as backend:
+    with PlanktonBackend(request.user_uniq) as backend:
         backend.add_user(image_id, member)
     return HttpResponse(status=204)
 
@@ -250,7 +250,7 @@ def get_image_meta(request, image_id):
     3.4. Requesting Detailed Metadata on a Specific Image
     """
 
-    with image_backend(request.user_uniq) as backend:
+    with PlanktonBackend(request.user_uniq) as backend:
         image = backend.get_image(image_id)
     return _create_image_response(image)
 
@@ -263,7 +263,7 @@ def list_image_members(request, image_id):
     3.7. Requesting Image Memberships
     """
 
-    with image_backend(request.user_uniq) as backend:
+    with PlanktonBackend(request.user_uniq) as backend:
         users = backend.list_users(image_id)
 
     members = [{'member_id': u, 'can_share': False} for u in users]
@@ -313,7 +313,7 @@ def list_images(request, detail=False):
         except ValueError:
             raise faults.BadRequest("Malformed request.")
 
-    with image_backend(request.user_uniq) as backend:
+    with PlanktonBackend(request.user_uniq) as backend:
         images = backend.list_images(filters, params)
 
     # Remove keys that should not be returned
@@ -342,10 +342,9 @@ def list_shared_images(request, member):
     log.debug('list_shared_images %s', member)
 
     images = []
-    with image_backend(request.user_uniq) as backend:
+    with PlanktonBackend(request.user_uniq) as backend:
         for image in backend.list_shared_images(member=member):
-            image_id = image['id']
-            images.append({'image_id': image_id, 'can_share': False})
+            images.append({'image_id': image["id"], 'can_share': False})
 
     data = json.dumps({'shared_images': images}, indent=settings.DEBUG)
     return HttpResponse(data)
@@ -360,7 +359,7 @@ def remove_image_member(request, image_id, member):
     """
 
     log.debug('remove_image_member %s %s', image_id, member)
-    with image_backend(request.user_uniq) as backend:
+    with PlanktonBackend(request.user_uniq) as backend:
         backend.remove_user(image_id, member)
     return HttpResponse(status=204)
 
@@ -386,7 +385,7 @@ def update_image(request, image_id):
 
     validate_fields(meta)
 
-    with image_backend(request.user_uniq) as backend:
+    with PlanktonBackend(request.user_uniq) as backend:
         image = backend.update_metadata(image_id, meta)
     return _create_image_response(image)
 
@@ -411,7 +410,7 @@ def update_image_members(request, image_id):
     except (ValueError, KeyError, TypeError):
         return HttpResponse(status=400)
 
-    with image_backend(request.user_uniq) as backend:
+    with PlanktonBackend(request.user_uniq) as backend:
         backend.replace_users(image_id, members)
     return HttpResponse(status=204)
 

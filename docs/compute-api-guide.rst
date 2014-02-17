@@ -2788,7 +2788,7 @@ deleted             ✔        **✘**
 
 * **user_id** The UUID of the owner of the virtual server
 
-* **tenant_id** The UUID of the main project for this user
+* **tenant_id** The UUID of the project that defines this resource
 
 * *hostId*, **accessIPv4** and **accessIPv6** are always empty and are used for
   compatibility with OS/Compute
@@ -2938,5 +2938,7 @@ minRam           Minimum required RAM   **✘**    ✔
 
 * **metadata** is a collection of ``key``:``values`` pairs of custom metadata,
   under the tag ``values`` which lies under the tag ``metadata``.
+
+* **tenant_id** The UUID of the project that defines this resource
 
 .. note:: in OS/Compute, the ``values`` layer is missing

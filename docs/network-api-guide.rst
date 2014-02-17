@@ -1322,8 +1322,7 @@ links             ✔                **✘**
     List of dictionaries of the form:
     [{“start”: “192.168.2.0”, “end”: 192.168.2.10”}, ...]
 * **user_id** The UUID of the network owner, None if the network is public
-* **tenant_id** Used for compatibility with OpenStack/Neutron, always equal to
-    ``user_id``
+* **tenant_id** The UUID of the project that defines this resource
 * **host_routes** Routes that should be used by devices with IPs from this
     subnet (list)
 * **dns_nameservers** Used for compatibility with OpenStack/Neutron
@@ -1360,8 +1359,7 @@ links                ✔                **✘**
 * **network_id**  UUID of the attached network
 * **user_id** The UUID of the owner of the network, or None if the network is
     public
-* **tenant_id** Used for compatibility with OpenStack/Neutron and always has
-    the same value as the user_id
+* **tenant_id** The UUID of the project that defines this resource
 * **device_owner** ID of the entity using this port. e.g.,
     network:router, network:router_gateway
 * **fixed_ips** IP information for the port (list of dicts). Each IP item
@@ -1399,5 +1397,5 @@ router_id              ✔                ✔
 * **port_id** The port where this IP is attached, if any
 * **instance_id** The device using this floating IP, if any
 * **user_id** The UUID of the owner of the floating IP
-* **tenant_id:** Used for compatibility, always equal ``to user_id``
+* **tenant_id** The UUID of the project that defines this resource
 * **router_id** The ID of the router, if any

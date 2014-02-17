@@ -36,7 +36,6 @@ from django import http
 from django.utils import simplejson as json
 from snf_django.lib import api
 from astakos.im import settings
-from synnefo.lib.services import get_path
 
 from astakos.admin import stats
 
@@ -44,8 +43,8 @@ logger = logging.getLogger(__name__)
 
 PERMITTED_GROUPS = settings.ADMIN_STATS_PERMITTED_GROUPS
 try:
-    AUTH_URL = get_path(settings.astakos_services,
-                        "astakos_identity.endpoints")[0]["publicURL"]
+    AUTH_URL = settings.astakos_services\
+        ["astakos_identity"]["endpoints"][0]["publicURL"]
 except (IndexError, KeyError) as e:
     logger.error("Failed to load Astakos Auth URL: %s", e)
     AUTH_URL = None

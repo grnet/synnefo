@@ -31,7 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.util.keypath import get_path
 from pithos.api.settings import pithos_services
 
-resources = get_path(pithos_services, 'pithos_object-store.resources').values()
+resources = pithos_services['pithos_object-store']['resources'].values()

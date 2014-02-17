@@ -31,9 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.util.keypath import get_path
 from synnefo.api.services import cyclades_services
 
 resources = \
-    get_path(cyclades_services, 'cyclades_compute.resources').values() +\
-    get_path(cyclades_services, 'cyclades_network.resources').values()
+    cyclades_services['cyclades_compute']['resources'].values() +\
+    cyclades_services['cyclades_network']['resources'].values()

@@ -33,22 +33,21 @@
 
 from copy import deepcopy
 from synnefo.lib import join_urls
-from synnefo.util.keypath import get_path, set_path
 from urlparse import urlparse
 
 
 def fill_endpoints(services, base_url):
     for name, service in services.iteritems():
-        prefix = get_path(service, 'prefix')
-        endpoints = get_path(service, 'endpoints')
+        prefix = service['prefix']
+        endpoints = service['endpoints']
         for endpoint in endpoints:
-            version = get_path(endpoint, 'versionId')
-            publicURL = get_path(endpoint, 'publicURL')
+            version = endpoint['versionId']
+            publicURL = endpoint['publicURL']
             if publicURL is not None:
                 continue
 
             publicURL = join_urls(base_url, prefix, version).rstrip('/')
-            set_path(endpoint, 'publicURL', publicURL)
+            endpoint['publicURL'] = publicURL
 
 
 def filter_public(services):

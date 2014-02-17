@@ -37,7 +37,6 @@ import logging
 from django.conf import settings
 from synnefo.lib import parse_base_url, join_urls
 from synnefo.lib.services import fill_endpoints
-from synnefo.util.keypath import get_path
 from pithos.api.services import pithos_services as vanilla_pithos_services
 from astakosclient import AstakosClient
 
@@ -59,9 +58,9 @@ BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
 
 pithos_services = deepcopy(vanilla_pithos_services)
 fill_endpoints(pithos_services, BASE_URL)
-PITHOS_PREFIX = get_path(pithos_services, 'pithos_object-store.prefix')
-PUBLIC_PREFIX = get_path(pithos_services, 'pithos_public.prefix')
-UI_PREFIX = get_path(pithos_services, 'pithos_ui.prefix')
+PITHOS_PREFIX = pithos_services['pithos_object-store']['prefix']
+PUBLIC_PREFIX = pithos_services['pithos_public']['prefix']
+UI_PREFIX = pithos_services['pithos_ui']['prefix']
 VIEW_PREFIX = join_urls(UI_PREFIX, 'view')
 
 

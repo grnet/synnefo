@@ -255,7 +255,8 @@ class ListCommand(SynnefoCommand):
             if prefetch_related:
                 objects = objects.prefetch_related(*prefetch_related)
             objects = objects.filter(**self.filters)
-            objects = objects.exclude(**self.excludes)
+            for key, value in self.excludes.iteritems():
+                objects = objects.exclude(**{key:value})
         except FieldError as e:
             raise CommandError(e)
         except Exception as e:

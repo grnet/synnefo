@@ -1239,14 +1239,14 @@ class ModularBackend(BaseBackend):
         # Lock container paths in alphabetical order
         if src_container_path < dest_container_path:
             src_container_node = self._lookup_container(src_account,
-							src_container)[-1]
+                                                        src_container)[-1]
             dest_container_node = self._lookup_container(dest_account,
-							 dest_container)[-1]
+                                                         dest_container)[-1]
         else:
             dest_container_node = self._lookup_container(dest_account,
-							 dest_container)[-1]
+                                                         dest_container)[-1]
             src_container_node = self._lookup_container(src_account,
-							src_container)[-1]
+                                                        src_container)[-1]
 
         cross_account = src_account != dest_account
         cross_container = src_container != dest_container

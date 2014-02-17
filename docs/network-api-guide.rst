@@ -1194,11 +1194,15 @@ Request body contents::
 ===================== ================ ==========
 Floating IP Attribute Cyclades/Network OS/Neutron Extensions
 ===================== ================ ==========
-floating network_id   required         required
+floating_network_id   ✔                required
 floating_ip_address   ✔                ✔
 port_id               **✘**            ✔
 fixed_ip_address      **✘**            ✔
 ===================== ================ ==========
+
+* In Cyclades/Network, if ``floating_network_id`` is not used, the service
+  will automatically pick a public network with a sufficient number of
+  available IPs
 
 * All the attributes are explained `here <#floating-ip-ref>`_
 
@@ -1272,17 +1276,17 @@ links              ✔                **✘**
 
 * **admin_state_up** The administrative state of the network (true, false)
 * **shared** Used for compatibility with OS/Neutron and has the same value as
-    public
+  public
 * **public** If the network is publicly accessible (true, false)
 * **status** ACTIVE, DOWN, BUILD, ERROR, SNF:DRAINED
-    The later means that no new ports or floating IPs can be created from this
-    network
+  The later means that no new ports or floating IPs can be created from this
+  network
 * **tenant_id** Used for compatibility with OS/Neutron and has the same value
-    as user_id
+  as user_id
 * **user_id** The owner of the network if private or None if public
 * **network_type** MAC_FILTERED, IP_LESS_ROUTED, PHYSICAL_VLAN
 * **router:external**  Whether the network is connected to an external router
-    (true, false)
+  (true, false)
 
 .. _subnet-ref:
 
@@ -1314,17 +1318,17 @@ links             ✔                **✘**
 * **ip_version** The IP version (4, 6) of the subnet (default is 4)
 * **cidr** CIDR represents IP range for this subnet, based on the IP version
 * **gateway_ip** Default gateway used by devices in this subnet. If not
-    specified the service will be the first available IP address. Tto get no
-    gateway, set to None
+  specified the service will be the first available IP address. Tto get no
+  gateway, set to None
 * **enable_dhcp** Wheather nfdhcpd is enabled for this subnet (true, false)
 * **enable_slaac** Whether SLAAC is enabled for this subnet (true, false)
 * **allocation_pools(CR)** Subranges of cidr available for dynamic allocation.
-    List of dictionaries of the form:
-    [{“start”: “192.168.2.0”, “end”: 192.168.2.10”}, ...]
+  List of dictionaries of the form:
+  [{“start”: “192.168.2.0”, “end”: 192.168.2.10”}, ...]
 * **user_id** The UUID of the network owner, None if the network is public
 * **tenant_id** The UUID of the project that defines this resource
 * **host_routes** Routes that should be used by devices with IPs from this
-    subnet (list)
+  subnet (list)
 * **dns_nameservers** Used for compatibility with OpenStack/Neutron
 
 .. _port-ref:
@@ -1355,17 +1359,17 @@ links                ✔                **✘**
 
 * **status** ACTIVE, DOWN, BUILD, ERROR
 * **admin_state_up** The administrative state of the network (true, false). If
-    false, the network does not forward packets
+  false, the network does not forward packets
 * **network_id**  UUID of the attached network
 * **user_id** The UUID of the owner of the network, or None if the network is
-    public
+  public
 * **tenant_id** The UUID of the project that defines this resource
 * **device_owner** ID of the entity using this port. e.g.,
-    network:router, network:router_gateway
+  network:router, network:router_gateway
 * **fixed_ips** IP information for the port (list of dicts). Each IP item
-    (dictionary) consists of a ``subnet`` and an ``ip_address`` field.
+  (dictionary) consists of a ``subnet`` and an ``ip_address`` field.
 * **device_id** The ID of the device that uses this port i.e., a virtual server
-    or a router
+  or a router
 
 * **security_groups** List of security group IDs associated with this port
 
@@ -1391,7 +1395,7 @@ router_id              ✔                ✔
 
 * **id** The UUID for the floating IP
 * **floating_network_id** The UUID of the external network associated to this
-    floating IP is associated.
+  floating IP is associated.
 * **floating_ip_address** The IPv4 address of the floating IP
 * **fixed_ip_address** Used for compatibility, always None
 * **port_id** The port where this IP is attached, if any

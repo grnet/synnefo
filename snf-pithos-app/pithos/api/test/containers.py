@@ -943,6 +943,35 @@ class ContainerPost(PithosAPITest):
 
         r = self.upload_object('c1', length=1)
 
+    def test_upload_blocks(self):
+        cname = self.create_container()[0]
+
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.post(url, data=get_random_data())
+        self.assertEqual(r.status_code, 202)
+
+        url = join_urls(self.pithos_path, 'chuck', cname)
+        r = self.post(url, data=get_random_data())
+        self.assertEqual(r.status_code, 403)
+
+        # share object for read only
+        oname = self.upload_object(cname)[0]
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
+                  HTTP_X_OBJECT_SHARING='read=*')
+        url = join_urls(self.pithos_path, 'chuck', cname)
+        r = self.post(url, data=get_random_data())
+        self.assertEqual(r.status_code, 403)
+
+        # share object for write only
+        oname = self.upload_object(cname)[0]
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
+                  HTTP_X_OBJECT_SHARING='write=*')
+        url = join_urls(self.pithos_path, 'chuck', cname)
+        r = self.post(url, data=get_random_data())
+        self.assertEqual(r.status_code, 403)
+
 
 class ContainerDelete(PithosAPITest):
     def setUp(self):

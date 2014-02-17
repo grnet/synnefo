@@ -1947,6 +1947,9 @@ class ModularBackend(BaseBackend):
         if user != account:
             raise NotAllowedError
 
+    def can_write_container(self, user, account, container):
+        return self._can_write_container(user, account, container)
+
     @check_allowed_paths(action=0)
     def _can_read_object(self, user, account, container, name):
         if user == account:

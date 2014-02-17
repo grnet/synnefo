@@ -564,6 +564,13 @@ def container_update(request, v_account, v_container):
     if (content_type
             and content_type == 'application/octet-stream'
             and content_length != 0):
+
+        try:
+            request.backend.can_write_container(request.user_uniq, v_account,
+                                                v_container)
+        except NotAllowedError:
+            raise faults.Forbidden('Not allowed')
+
         for data in socket_read_iterator(request, content_length,
                                          request.backend.block_size):
             # TODO: Raise 408 (Request Timeout) if this takes too long.

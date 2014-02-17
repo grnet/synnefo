@@ -88,7 +88,11 @@ class Command(ListCommand):
                     action='store_true',
                     dest='deleted',
                     default=False,
-                    help="Also so cancelled/terminated projects"),
+                    help="Also show cancelled/terminated projects"),
+        make_option('--base-projects',
+                    action='store_true',
+                    default=False,
+                    help="Also show base projects"),
     )
 
     def get_owner(project):
@@ -131,6 +135,9 @@ class Command(ListCommand):
 
         if not options['deleted']:
             self.excludes["state__in"] = Project.SKIP_STATES
+
+        if not options['base_projects']:
+            self.excludes["is_base"] = True
 
         if options["pending"]:
             self.filter_pending()

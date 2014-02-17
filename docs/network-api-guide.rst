@@ -112,7 +112,7 @@ The attributes of a network are listed `here <#network-ref>`_
 
 .. code-block:: javascript
 
-  GET https://example.com/network/v2.0/networks
+  GET https://example.org/network/v2.0/networks
 
 
   {
@@ -126,19 +126,19 @@ The attributes of a network are listed `here <#network-ref>`_
         "user_id": None
         "links":[
           {
-            "href": "https://example.com/network/v2.0/networks/2718"
+            "href": "https://example.org/network/v2.0/networks/2718"
             "rel": "self"
           }, {
-            "href": "https://example.com/network/v2.0/networks/2718"
+            "href": "https://example.org/network/v2.0/networks/2718"
             "rel": "bookmark"
           }
         ]
         "created": "2013-12-17T17:15:48.617049+00:00"
-        "tenant_i"d: None
+        "tenant_id": None
         "admin_state_up": true
-        "SNF:floating_ip_poo"l: false
-        "publi"c: true
-        "subnet"s:[
+        "SNF:floating_ip_pool": false
+        "public": true
+        "subnets":[
           28
         ]
         "type": "IP_LESS_ROUTED",
@@ -152,11 +152,11 @@ The attributes of a network are listed `here <#network-ref>`_
         "user_id": "s0m3-u5e7-1d", 
         "links": [
           {
-              "href": "https://example.com/network/v2.0/networks/3141", 
+              "href": "https://example.org/network/v2.0/networks/3141", 
               "rel": "self"
           }, 
           {
-              "href": "https://example.com/network/v2.0/networks/3141", 
+              "href": "https://example.org/network/v2.0/networks/3141", 
               "rel": "bookmark"
           }
         ], 
@@ -213,7 +213,7 @@ The attributes of a network are listed `here <#network-ref>`_
 
 .. code-block:: javascript
 
-  GET https://example.com/network/v2.0/networks/3141
+  GET https://example.org/network/v2.0/networks/3141
 
 
   {
@@ -226,11 +226,11 @@ The attributes of a network are listed `here <#network-ref>`_
       "user_id": "s0m3-u5e7-1d", 
       "links": [
         {
-            "href": "https://example.com/network/v2.0/networks/3141", 
+            "href": "https://example.org/network/v2.0/networks/3141", 
             "rel": "self"
         }, 
         {
-            "href": "https://example.com/network/v2.0/networks/3141", 
+            "href": "https://example.org/network/v2.0/networks/3141", 
             "rel": "bookmark"
         }
       ], 
@@ -436,7 +436,7 @@ The attributes of a subnet are listed `here <#subnet-ref>`_
 
 .. code-block:: javascript
 
-  GET https://example.com/network/v2.0/subnets
+  GET https://example.org/network/v2.0/subnets
 
   {
     "subnets": [
@@ -536,7 +536,7 @@ The attributes of a subnet are listed `here <#subnet-ref>`_
 
 .. code-block:: javascript
 
-  GET https://example.com/network/v2.0/subnets/1413
+  GET https://example.org/network/v2.0/subnets/1413
 
 
   {
@@ -734,7 +734,7 @@ The attributes of a port are listed `here <#port-ref>`_
 
 .. code-block:: javascript
 
-  GET https://example.com/network/v2.0/ports
+  GET https://example.org/network/v2.0/ports
 
   {
     "ports": [
@@ -745,11 +745,11 @@ The attributes of a port are listed `here <#port-ref>`_
         "name": "Port to public network",
         "links": [
             {
-                "href": "https://example.com/network/v2.0/ports/18", 
+                "href": "https://example.org/network/v2.0/ports/18", 
                 "rel": "self"
             }, 
             {
-                "href": "https://example.com/network/v2.0/ports/18", 
+                "href": "https://example.org/network/v2.0/ports/18", 
                 "rel": "bookmark"
             }
         ], 
@@ -775,11 +775,11 @@ The attributes of a port are listed `here <#port-ref>`_
         "name": "Port to public network",
         "links": [
             {
-                "href": "https://example.com/network/v2.0/ports/19", 
+                "href": "https://example.org/network/v2.0/ports/19", 
                 "rel": "self"
             }, 
             {
-                "href": "https://example.com/network/v2.0/ports/19", 
+                "href": "https://example.org/network/v2.0/ports/19", 
                 "rel": "bookmark"
             }
         ], 
@@ -844,7 +844,7 @@ The attributes of a port are listed `here <#port-ref>`_
 
 .. code-block:: javascript
 
-  GET https://example.com/network/v2.0/ports/18
+  GET https://example.org/network/v2.0/ports/18
 
 
   {
@@ -855,11 +855,11 @@ The attributes of a port are listed `here <#port-ref>`_
       "name": "Port to public network",
       "links": [
         {
-            "href": "https://example.com/network/v2.0/ports/18", 
+            "href": "https://example.org/network/v2.0/ports/18", 
             "rel": "self"
         }, 
         {
-            "href": "https://example.com/network/v2.0/ports/18", 
+            "href": "https://example.org/network/v2.0/ports/18", 
             "rel": "bookmark"
         }
       ], 
@@ -1088,7 +1088,7 @@ The attributes of a floating ip are listed `here <#floating-ip-ref>`_
 
 .. code-block:: javascript
 
-  GET https://example.com/network/v2.0/floatingips
+  GET https://example.org/network/v2.0/floatingips
 
   {
     "floatingips": [
@@ -1104,7 +1104,7 @@ The attributes of a floating ip are listed `here <#floating-ip-ref>`_
         "floating_network_id": 4178
         "fixed_ip_address": None
         "floating_ip_address": 192.168.1.3
-        "port_i"d: 38
+        "port_id": 38
       }
     ]
   }
@@ -1150,7 +1150,7 @@ The attributes of a floating ip are listed `here <#floating-ip-ref>`_
 
 .. code-block:: javascript
 
-  GET https://example.com/network/v2.0/floatingips/19
+  GET https://example.org/network/v2.0/floatingips/19
 
 
   {

@@ -88,8 +88,8 @@ Description                                        URI                          
 `Get Details <#get-server-details>`_               ``/servers/<server id>``                  GET    ✔        ✔
 `Rename <#rename-server>`_                         ``/servers/<server id>``                  PUT    ✔        ✔
 `Delete <#delete-server>`_                         ``/servers/<server id>``                  DELETE ✔        ✔
-`List Addresses <#list-server-addresses>`_         ``/servers/<server id>/ips``              GET    ✔        ✔
-`Get NICs by Net <#get-server-nics-by-network>`_   ``/servers/<server id>/ips/<network id>`` GET    ✔        ✔
+`List Connections <#list-server-connections>`_     ``/servers/<server id>/ips``              GET    ✔        ✔
+`Get Connection <#connection-with-network>`_       ``/servers/<server id>/ips/<network id>`` GET    ✔        ✔
 `List Metadata <#list-server-metadata>`_           ``/servers/<server-id>/metadata``         GET    ✔        ✔
 `Update Metadata <#set-update-server-metadata>`_   ``/servers/<server-id>/metadata``         PUT    **✘**    ✔
 \                                                  ``/servers/<server-id>/metadata``         POST   ✔        ✔
@@ -207,6 +207,7 @@ The server attributes are listed `here <#server-ref>`_
 
   GET https://example.org/compute/v2.0/servers
 
+
   {
     "servers": [
       {
@@ -238,6 +239,9 @@ The server attributes are listed `here <#server-ref>`_
   }
 
 *Example List Servers: JSON (detail)*
+
+  GET https://example.org/compute/v2.0/servers/detail
+
 
 .. code-block:: javascript
 
@@ -473,7 +477,6 @@ URI          Method Cyclades OS/Compute
 ============ ====== ======== ==========
 
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -482,14 +485,7 @@ Content-Type    Type or request body      required required
 Content-Length  Length of request body    required required
 ==============  ========================= ======== ==========
 
-*Example Request Headers*::
-
-  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
-  Content-Type:   application/json
-  Content-Length: 735
-
 |
-
 ================= ===============
 Request Parameter Value
 ================= ===============
@@ -503,24 +499,25 @@ Request body contents::
       <server attribute>: <value>,
       ...
       personality: [
-        {
-          <personality attribute>: <value>,
-          ...
-        },
         ...
       ],
+      networks: [
+        ...
+      ]
       ...
   }
 
-=========== ==================== ======== ==========
-Attributes  Description          Cyclades OS/Compute
-=========== ==================== ======== ==========
-name        The server name      ✔        ✔
-imageRef    Image id             ✔        ✔
-flavorRef   Resources flavor     ✔        ✔
-personality Personality contents ✔        ✔
-metadata    Custom metadata      ✔        ✔
-=========== ==================== ======== ==========
+=========== ====================== ======== ==========
+Attributes  Description            Cyclades OS/Compute
+=========== ====================== ======== ==========
+name        The server name        ✔        ✔
+imageRef    Image id               ✔        ✔
+flavorRef   Resources flavor       ✔        ✔
+personality Personality contents   ✔        ✔
+metadata    Custom metadata        ✔        ✔
+networks    Connection information ✔        ✔
+project     Project UUID           ✔        **✘**
+=========== ====================== ======== ==========
 
 * **name** can be any string
 
@@ -528,55 +525,14 @@ metadata    Custom metadata      ✔        ✔
   flavors accessible by the user
 
 * **metadata** are ``key``:``value`` pairs of custom server-specific metadata.
-  There are no semantic limitations.
+  There are no semantic limitations, although the ``OS`` and ``USERS`` values
+  should rather be defined
 
-* **personality** (optional) is a list of personality injections. A personality
-  injection is a way to add a file into a virtual server while creating it.
-  Each change modifies/creates a file on the virtual server. The injected data
-  (``contents``) should not exceed 10240 *bytes* in size and must be base64
-  encoded. The file mode should be a number, not a string. A personality
-  injection contains the following attributes:
+* **personality** (optional) is a list of
+  `personality injections <#personality-ref>`_
 
-====================== =================== ======== ==========
-Personality Attributes Description         Cyclades OS/Compute
-====================== =================== ======== ==========
-path                   File path on server ✔        ✔
-contents               Data to inject      ✔        ✔
-group                  User group          ✔        **✘**
-mode                   File access mode    ✔        **✘**
-owner                  File owner          ✔        **✘**
-====================== =================== ======== ==========
-
-*Example Create Server Request: JSON*
-
-.. code-block:: javascript
-
-  {
-    "server": {
-      "name": "My Server Name: Example Name",
-      "imageRef": "da7a211f-...-f901ce81a3e6",
-      "flavorRef": 289,
-      "personality": [
-        {
-          "path": "/Users/myusername/personlities/example1.file",
-          "contents": "some data to inject",
-          "group": "remotely-set user group",
-          "mode": 0600,
-          "owner": "ausername"
-        }, {
-          "path": "/Users/myusername/personlities/example2.file",
-          "contents": "some more data to inject",
-          "group": "",
-          "mode": 0777,
-          "owner": "anotherusername"
-        }
-      ],
-      "metadata": {
-        "EloquentDescription": "Example server with personality",
-        "ShortDescription": "Trying VMs"
-      }
-    }
-  }
+* **networks** (optional) is a list of
+  `network connections <#network-on-vm-ref>`_.
 
 .. rubric:: Response
 
@@ -588,8 +544,7 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired user token
 403 (Forbidden)             User is not allowed to perform this operation
 404 (Not Found)             Image or Flavor not found
-413 (Over Limit)            Exceeded some resource limit (#VMs, personality
-size, etc.)
+413 (Over Limit)            Exceeded some resource limit
 415 (Bad Media Type)        
 500 (Internal Server Error) The request cannot be completed because of an
 \                           internal error
@@ -608,84 +563,134 @@ Response body contents::
 
 Server attributes are `listed here <#server-ref>`_.
 
+.. note:: The ``adminPass`` attribute is generated in the response. This is the
+    only case where this attribute appears in a response.
+
 *Example Create Server Response: JSON*
 
 .. code-block:: javascript
 
+  POST https://example.org/compute/v2.0/servers
+
+
   {
     "server": {
-      "addresses": 
-      "id": 28130,
-        "links": [
-            {
-                "href": "https://example.org/compute/v2.0/servers/42", 
-                "rel": "self"
-            }, 
-            {
-                "href": "https://example.org/compute/v2.0/servers/42", 
-                "rel": "bookmark"
-            }
-        ],
-
-      "image": {
-        "id": im4g3-1d
-        "links": [
-            {
-                "href": "https://example.org/compute/v2.0/images/im4g3-1d"
-                "rel": "self"
-            }, {
-                "href": "https://example.org/compute/v2.0/images/im4g3-1d"
-                "rel": "bookmark"
-            }, {
-                "href": "https://example.org/image/v1.0/images/im4g3-1d"
-                "rel": "alternate"
-            }
-        ]
-      },
-      "flavor": {
-        "id": 289
-        "links": [
-            {
-                "href": "https://example.org/compute/v2.0/flavors/289"
-                "rel": "self"
-            }, {
-                "href": "https://example.org/compute/v2.0/flavors/289"
-                "rel": "bookmark"
-            }
-        ]
-      },
+      "name": "My Example Server",
+      "id": 5678,
       "status": "BUILD",
-      "updated": "2013-04-10T13:52:18.140686+00:00",
-      "hostId": "",
-      "name": "My Server Name: Example Name",
       "created": "2013-04-10T13:52:17.085402+00:00",
+      "updated": "2013-04-10T13:52:17.085402+00:00",
       "adminPass": "fKCqlZe2at",
-      "suspended": false,
       "progress": 0
       "metadata": {
-        "EloquentDescription": "Example server with personality",
-        "ShortDescription": "Trying VMs"
-      }
+        "OS": "debian",
+        "USERS": "root"
+      },
+      ...
     }
   }
 
-*Example Create Server Response: XML*
+.. _personality-ref:
 
-.. code-block:: xml
+Personality: injecting files while creating a virtual server
+............................................................
 
-  <?xml version="1.0" encoding="UTF-8"?>
-  <server xmlns="http://docs.openstack.org/compute/api/v1.1"\
-    xmlns:atom="http://www.w3.org/2005/Atom"
-    id="1"
-    status="BUILD"
-    hostId="",
-    name="My Server Name: Example Name"
-    created="2013-04-10T13:52:17.085402+00:00"
-    adminPass="fKCqlZe2at"
-    suspended="false"
-    progress="0"
-    ...
-  />
+The term "personality" refers to a mechanism for injecting data as files into
+the file system of a virtual server while the server is being created. This
+mechanism has many application e.g., the injection of ``ssh keys`` for secure
+password-less access, automation in user profile configuration, etc.
+
+A personality injection contains the following attributes:
+
+====================== =================== ======== ==========
+Personality Attributes Description         Cyclades OS/Compute
+====================== =================== ======== ==========
+path                   File path on server ✔        ✔
+contents               Data to inject      ✔        ✔
+group                  User group          ✔        **✘**
+mode                   File access mode    ✔        **✘**
+owner                  File owner          ✔        **✘**
+====================== =================== ======== ==========
+
+* **path** is the path (including name) for the file on the remote server. If
+  the file does not exist, it will be created
+* **contents** is the data to be injected, must not exceed 10240 *bytes* and
+  must be base64-encoded
+* **mode** is the access mode of the created remote file and must be a number
+  (usually octal or decimal)
+
+*Example Create Server Request: JSON*
+
+.. code-block:: javascript
+
+  POST https://example.org/compute/v2.0/servers
+  {
+    "server": {
+      "name": "My Password-less Server",
+      "personality": [
+        {
+          "path": "/home/someuser/.ssh/authorized_keys",
+          "contents": "Some users public key",
+          "group": "users",
+          "mode": 0600,
+          "owner": "someuser"
+        }, {
+          "path": "/home/someuser/.bashrc",
+          "contents": "bash configuration",
+          "group": "users",
+          "mode": 0777,
+          "owner": "someuser"
+        }
+      ],
+      ...
+    }
+  }
+
+.. _network-on-vm-ref:
+
+Network connections on virtual server creation
+..............................................
+
+A network connection is established by creating a port that connects a virtual
+device with a network. There are five cases:
+
+* The ``network`` attribute is not provided. In that case, the service will
+  apply its default policy (e.g., automatic public network and IP assignment)
+* The ``network`` attribute is an empty list. In that case, the virtual server
+  will not have any network connections
+* Provide an existing network ID. In that case, the virtual server will be
+  connected to that network.
+* Provide an existing network ID and an IP (which is already associated to that
+  network). In that case, the virtual server will be connected to that network
+  with this specific IP attached.
+* Provide an existing port ID to establish a connection through it.
+
+========================================= ======== ==========
+Network attributes on server construction Cyclades OS/Compute
+========================================= ======== ==========
+uuid                                      ✔        ✔
+fixed_ip                                  ✔        ✔
+port                                      ✔        ✔
+========================================= ======== ==========
+
+E.g., the following example connects a public network with an IP (2719) and a
+private network (9876) on the virtual server under construction:
+
+* Example Connect server on various networks*
+
+.. code-block:: python
+
+  POST https://example.org/compute/v2.0/servers
+  {
+    "server": {
+      "networks": [
+        {"uuid": 9876},
+        {"uuid": 2719, "fixed_ip": "192.168.1.2"},
+      ],
+      ...
+    }
+  }
+
 
 Get Server Stats
 ----------------
@@ -702,10 +707,7 @@ URI                            Method Cyclades OS/Compute
 ``/servers/<server-id>/stats`` GET    ✔        **✘**
 ============================== ====== ======== ==========
 
-* **server-id** is the identifier of the virtual server
-
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -713,7 +715,6 @@ X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
 |
-
 ================= ===============
 Request Parameter Value          
 ================= ===============
@@ -723,8 +724,6 @@ xml               Respond in xml
 
 * **json** and **xml** parameters are mutually exclusive. If none supported,
 the response will be formated in json.
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -763,10 +762,10 @@ netTimeSeries Network load / time graph URL
 *Example Get Server Stats Response: JSON*
 
 .. code-block:: javascript
-
+  GET https://example.org/compute/v2.0/servers/5678/stats
   {
     "stats": {
-      "serverRef": 1,
+      "serverRef": 5678,
       "refresh": 60,
       "cpuBar": "http://stats.okeanos.grnet.gr/b9a...048c/cpu-bar.png",
       "cpuTimeSeries": "http://stats.okeanos.grnet.gr/b9a...048c/cpu-ts.png",
@@ -774,21 +773,6 @@ netTimeSeries Network load / time graph URL
       "netTimeSeries": "http://stats.okeanos.grnet.gr/b9a...048c/net-ts.png"
     }
   }
-
-*Example Get Network Details Response: XML*
-
-.. code-block:: xml
-
-  <?xml version="1.0" encoding="UTF-8"?>
-  <stats xmlns="http://docs.openstack.org/compute/api/v1.1"\
-    xmlns:atom="http://www.w3.org/2005/Atom"
-    serverRef="1"
-    refresh="60"
-    cpuBar="https://www.example.org/stats/snf-42/cpu-bar/",
-    netTimeSeries="https://example.org/stats/snf-42/net-ts/",
-    netBar="https://example.org/stats/snf-42/net-bar/",
-    cpuTimeSeries="https://www.example.org/stats/snf-42/cpu-ts/"
-  </stats>
 
 Get Server Diagnostics
 ----------------------
@@ -805,19 +789,12 @@ URI                                  Method Cyclades OS/Compute
 ``/servers/<server-id>/diagnostics`` GET    ✔        **✘**
 ==================================== ====== ======== ==========
 
-* **server-id** is the identifier of the virtual server
-
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
-
-.. note:: Request parameters should be empty
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -842,9 +819,6 @@ Response body contents::
     {
       <diagnostic attribute}: <value>,
       ...
-    }, {
-      <diagnostic attribute}: <value>,
-      ...
     },
     ...
   ]
@@ -864,6 +838,7 @@ details              Detailed log description
 
 .. code-block:: javascript
 
+  GET https://example.org/compute/v2.0/servers/5678/diagnostics
   [
     {
       "level": "DEBUG",
@@ -879,13 +854,6 @@ details              Detailed log description
       "source_date": "2013-04-09T15:25:46.404477+00:00",
       "message": "Starting customization VM...",
       "details": null
-    }, {
-      "level": "DEBUG",
-      "created": "2013-04-09T15:25:46.207038+00:00",
-      "source": "image-info",
-      "source_date": "2013-04-09T15:25:46.197183+00:00",
-      "message": "Image copy finished.",
-      "details": "All operations finished as they should. No errors reported."
     }
   ]
 
@@ -902,8 +870,6 @@ URI                      Method Cyclades OS/Compute
 ``/servers/<server id>`` GET    ✔        ✔
 ======================== ====== ======== ==========
 
-* **server-id** is the identifier of the virtual server
-
 |
 
 ==============  ========================= ======== ==========
@@ -911,10 +877,6 @@ Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
-
-.. note:: Request parameters should be empty
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -941,123 +903,120 @@ Response body contents::
     ...
   }
 
-================= ====================== ======== ==========
-Server Attributes Description            Cyclades OS/Compute
-================= ====================== ======== ==========
-id                The server id          ✔        ✔
-name              The server name        ✔        ✔
-hostId            Server playground      empty    ✔
-created           Creation date          ✔        ✔
-updated           Creation date          ✔        ✔
-flavor            The flavor id          ✔        ✔
-image             The image id           ✔        ✔
-progress          Build progress         ✔        ✔
-status            Server status          ✔        ✔
-suspended         If server is suspended ✔        **✘**
-attachments       Network interfaces     ✔        **✘**
-addresses         Network interfaces     **✘**    ✔
-metadata          Server custom metadata ✔        ✔
-diagnostics       Diagnostic information ✔        **✘**
-================= ====================== ======== ==========
+Server attributes are explained `here <#server-ref>`_
 
-* **hostId** is not used in Cyclades, but is returned as an empty string for
-  compatibility
-
-* **progress** is changing while the server is building up and has values
-  between 0 and 100. When it reaches 100 the server is built.
-
-* **status** refers to `the status <#status-ref>`_ of the server
-
-* **metadata** are custom key:value pairs used to specify various attributes of
-  the VM (e.g. OS, super user, etc.)
-
-* **attachments** in Cyclades are lists of network interfaces (NICs).
-  **Attachments** are different to OS/Compute's **addresses**. The former is a
-  list of the server's `network interface connections <#attachments-ref>`_ while the
-  later is just a list of networks. Thus, a Cyclades virtual server may be
-  connected to the same network through more than one distinct network
-  interfaces.
-
-* **diagnostics** is a list of items that contain key:value information useful
-  for diagnosing the server behavior and may be used by the administrators of
-  deployed Synnefo setups.
-
-*Example Details for server with id 42042: JSON*
+*Example get server Details*
 
 .. code-block:: javascript
 
+  GET https://example.org/compute/v2.0/servers/84
+
+
   {
     "server": {
-        "attachments": [
-            {
-              "network_id": "1888",
-              "mac_address": "aa:0c:f5:ad:16:41",
-              "firewallProfile": "DISABLED",
-              "ipv4": "83.212.112.56",
-              "ipv6": "2001:648:2ffc:1119:a80c:f5ff:fead:1641",
-              "id": "nic-42042-0"
-            }
+      "addresses": [
+        "2718": [
+          {
+            "version": 6,
+            "addr": "2001:443:2dfc:1232:a810:3cf:fe9b:21cd",
+            "OS-EXT-IPS:type": "fixed"
+          }
         ],
+        "4178": [
+          {
+            "version": 4,
+            "addr": "192.168.1.3",
+            "OS-EXT-IPS:type": "floating"
+          }
+        ]
+      ],
+      "attachments": [
+          {
+            "id": "36",
+            "network_id": "2718",
+            "mac_address": "aa:01:02:6c:34:cd",
+            "firewallProfile": "DISABLED",
+            "ipv4": "",
+            "ipv6": "2001:443:2dfc:1232:a810:3cf:fe9b:21cd"
+            "OS-EXT-IPS:type": "fixed"
+          }, {
+            "id": "38",
+            "network_id": "4178",
+            "mac_address": "aa:00:0c:6d:34:cc",
+            "firewallProfile": "PROTECTED",
+            "ipv4": "192.168.1.3",
+            "ipv6": ""
+            "OS-EXT-IPS:type": "floating"
+          }
+      ],
+      "links": [
+        {
+          "href": "https://example.org/compute/v2.0/servers/84", 
+          "rel": "self"
+        }, {
+          "href": "https://example.org/compute/v2.0/servers/84", 
+          "rel": "bookmark"
+        }
+      ],
+      "image": {
+        "id": "im4g3-1d",
         "links": [
-            {
-                "href": "https://example.org/compute/v2.0/servers/42031", 
-                "rel": "self"
-            }, 
-            {
-                "href": "https://example.org/compute/v2.0/servers/42042",
-                "rel": "bookmark"
-            }
-        ],
-        "created": "2011-05-02T20:51:08.527759+00:00",
-        "flavor": {
-            "id": 1,
-            "links": [
-                {
-                    "href": "https://example.org/compute/v2.0/flavors/1", 
-                    "rel": "self"
-                }, 
-                {
-                    "href": "https://example.org/compute/v2.0/flavors/1", 
-                    "rel": "bookmark"
-                }
-            ]
-
-        },
-        "hostId": "",
-        "id": "42042",
-        "image": {
-            "id": "im4g3-1d",
-            "links": [
-                {
-                    "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
-                    "rel": "self"
-                }, 
-                {
-                    "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
-                    "rel": "bookmark"
-                }, 
-                {
-                    "href": "https://example.org/image/v1.0/images/im4g3-1d", 
-                    "rel": "alternate"
-                }
-            ]
-        },
-        "name": "My Example Server",
-        "description": "A sample server to showcase server requests",
-        "progress": "0",
-        "status": "ACTIVE",
-        "updated": "2011-05-29T14:59:11.267087+00:00",
-        "suspended": false,
-        "diagnostics": [
-            {
-                "level": "DEBUG",
-                "created": "2013-04-18T10:09:52.776920+00:00",
-                "source": "image-info",
-                "source_date": "2013-04-18T10:09:52.709791+00:00",
-                "message": "Image customization finished successfully.",
-                "details": null
-            }
-        ],
+          {
+            "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+            "rel": "self"
+          }, {
+            "href": "https://example.org/compute/v2.0/images/im4g3-1d", 
+            "rel": "bookmark"
+          }, {
+            "href": "https://example.org/image/v1.0/images/im4g3-1d", 
+            "rel": "alternate"
+          }
+        ]
+      },
+      "suspended": false,
+      "created': '2011-04-21T10:18:52.085737+00:00',
+      "flavor": {
+        "id": 3",
+        "links": [
+          {
+            "href": "https://example.org/compute/v2.0/flavors/3", 
+            "rel": "self"
+          }, {
+            "href": "https://example.org/compute/v2.0/flavors/3", 
+            "rel": "bookmark"
+          }
+        ]
+      },
+      "id": "84",
+      "security_groups": [{"name": "default"}],
+      "user_id": "s0m5-u5e7-1d",
+      "accessIPv4": "",
+      "accessIPv6": "",
+      "progress": 100,
+      "config_drive": "",
+      "status": "ACTIVE",
+      "updated": "2011-05-30T14:07:07.037602+00:00",
+      "hostId": "",
+      "SNF:fqdn": "snf-84.vm.example.org",
+      "key_name": null,
+      "name": "My Other Server",
+      "created": "2014-02-21T08:31:37.834542+00:00",
+      "tenant_id": "s0m5-u5e7-1d",
+      "SNF:port_forwarding": {},
+      "SNF:task_state": "",
+      "diagnostics": [
+        {
+          "level": "DEBUG",
+          "created": "2014-02-21T08:31:37.834542+00:00",
+          "source": "image-info",
+          "source_date": "2014-02-21T08:32:35.929507+00:00",
+          "message": "Image customization finished successfully.",
+          "details": null
+        }
+      ],
+      "metadata": {
+        "os": "debian",
+        "users": "root"
       }
     }
   }
@@ -1065,8 +1024,8 @@ diagnostics       Diagnostic information ✔        **✘**
 Rename Server
 -------------
 
-Modify the ``name`` attribute of a virtual server. OS/Compute API also features
-the modification of IP addresses
+In Synnefo/Cyclades, only the ``name`` attribute of a virtual server can be
+modified with this call.
 
 .. rubric:: Response
 
@@ -1076,10 +1035,7 @@ URI                      Method Cyclades OS/Compute
 ``/servers/<server id>`` PUT    ✔        ✔
 ======================== ====== ======== ==========
 
-* **server-id** is the identifier of the virtual server
-
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -1087,14 +1043,6 @@ X-Auth-Token    User authentication token required required
 Content-Type    Type or request body      required required
 Content-Length  Length of request body    required required
 ==============  ========================= ======== ==========
-
-**Example Request Headers**::
-
-  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
-  Content-Type:   application/json
-  Content-Length: 54
-
-.. note:: Request parameters should be empty
 
 Request body contents::
 
@@ -1111,14 +1059,15 @@ accessIPv4  IP v4 address        **✘**    ✔
 accessIPv6  IP v6 address        **✘**    ✔
 =========== ==================== ======== ==========
 
-* Cyclades support multiple network connections per virtual server, which
-  explains the above differences in request body attributes.
+* **accessIPv4** and **accessIPv6** are ignored. Cyclades features a different
+  `mechanism for managing network connections <network-api-guide.html>`_ on
+  servers
 
 *Example Rename Server Request: JSON*
 
 .. code-block:: javascript
 
-  {"server": {"name": "A new name for my virtual server"}}
+  {"server": {"name": "New name"}}
 
 .. rubric:: Response
 
@@ -1145,8 +1094,8 @@ Return Code                 Description
 Delete Server
 -------------
 
-Delete a virtual server. When a server is deleted, all its connections are
-deleted as well.
+Delete a virtual server. When a server is deleted, all its attachments (ports)
+are deleted as well.
 
 .. rubric:: Request
 
@@ -1159,16 +1108,11 @@ URI                      Method Cyclades OS/Compute
 * **server-id** is the identifier of the virtual server.
 
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
-
-.. note:: Request parameters should be empty
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -1186,18 +1130,11 @@ Return Code                 Description
 \                           unavailable
 =========================== =====================
 
-.. note:: In case of a 204 code, response body should be empty
+List Server Connections
+-----------------------
 
-List Server Addresses
----------------------
-
-List all network connections of a server. In Cyclades API, connections are
-represented as Network Connection Interfaces (NICs), which describe a server -
-network relation through their respective identifiers. This mechanism ensures
-flexibility and multiple networks connecting the same virtual servers.
-
-The Synnefo/Cyclades approach in this matter differs substantially to the
-`one suggested by the OS/Compute API <http://docs.openstack.org/api/openstack-compute/2/content/List_Addresses-d1e3014.html>`_.
+List a server's network connections. In Cyclades, connections are ports between
+a network and the server.
 
 .. rubric:: Request
 
@@ -1207,19 +1144,12 @@ URI                          Method Cyclades OS/Compute
 ``/servers/<server id>/ips`` GET    ✔        ✔
 ============================ ====== ======== ==========
 
-* **server-id** is the identifier of the virtual server
-
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
-
-.. note:: Request parameters should be empty
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -1239,49 +1169,74 @@ Return Code                 Description
 Response body contents::
 
   addresses: [
+    <network id>: [
+      {
+        version: <4 or 6>,
+        addr: <IP address, if any>
+        OS-EXT-TYPE:type: <floating or fixed>
+      },
+      ...
+    ],
+    ...
+  ],
+  attachments: [
     {
-      <NIC attribute>: <value>,
+      <attachment attribute>: ...,
       ...
     },
     ...
   ]
 
-A Network Interface Connection (or NIC) connects the current server to a
-network, through their respective identifiers. More information in NIC
-attributes are `enlisted here <#attachments-ref>`_.
+Attachment attributes are explained `here <#attachments-ref>`_
 
 *Example List Addresses: JSON*
 
 .. code-block:: javascript
 
+  GET https://example.org/compute/v2.0/servers/84/ips/
+
   {
-    "addresses": [
-      {
-        "id": "nic-25455-0"
-        "network_id": "1",
-        "mac_address": "aa:00:03:7a:84:bb",
-        "firewallProfile": "DISABLED",
-        "ipv4": "192.168.0.27",
-        "ipv6": "2001:646:2ffc:1222:a820:3fd:fe7a:84bb",
-      }, {
-        "id": "nic-25455-1"
-        "network_id": "7",
-        "mac_address": "aa:00:03:7a:84:cc",
-        "firewallProfile": "DISABLED",
-        "ipv4": "192.168.0.28",
-        "ipv6": "2002:646:2fec:1222:a820:3fd:fe7a:84bc",
-      },
-    ]
+      "addresses": [
+        "2718": [
+          {
+            "version": 6,
+            "addr": "2001:443:2dfc:1232:a810:3cf:fe9b:21cd",
+            "OS-EXT-IPS:type": "fixed"
+          }
+        ],
+        "4178": [
+          {
+            "version": 4,
+            "addr": "192.168.1.3",
+            "OS-EXT-IPS:type": "floating"
+          }
+        ]
+      ],
+      "attachments": [
+          {
+            "id": "36",
+            "network_id": "2718",
+            "mac_address": "aa:01:02:6c:34:cd",
+            "firewallProfile": "DISABLED",
+            "ipv4": "",
+            "ipv6": "2001:443:2dfc:1232:a810:3cf:fe9b:21cd"
+            "OS-EXT-IPS:type": "fixed"
+          }, {
+            "id": "38",
+            "network_id": "4178",
+            "mac_address": "aa:00:0c:6d:34:cc",
+            "firewallProfile": "PROTECTED",
+            "ipv4": "192.168.1.3",
+            "ipv6": ""
+            "OS-EXT-IPS:type": "floating"
+          }
+      ]
   }
 
-Get Server NICs by Network
---------------------------
+Connection with network
+-----------------------
 
-Return the NIC that connects a server to a network.
-
-The semantics of this operation are substantially different to the respective
-OS/Compute
-`List Addresses by Network semantics <http://docs.openstack.org/api/openstack-compute/2/content/List_Addresses_by_Network-d1e3118.html>`_.
+Get information on a network connected on a server
 
 .. rubric:: Request
 
@@ -1291,21 +1246,12 @@ URI                                       Method Cyclades OS/Compute
 ``/servers/<server id>/ips/<network id>`` GET    ✔        ✔
 ========================================= ====== ======== ==========
 
-* **server id** is the identifier of the virtual server
-
-* **network id** is the identifier of the network
-
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
-
-.. note:: Request parameters should be empty
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -1327,32 +1273,33 @@ Return Code                 Description
 Response body contents::
 
   network: {
-    <NIC attributes>: <value>,
-    ...
+    <network id>: [
+      {
+        version: <4 or 6>,
+        addr: <IP address, if any>
+        OS-EXT-TYPE:type: <floating or fixed>
+      },
   }
 
-Network Interface Connection (NIC) attributes are listed `here <#attachments-ref>`_.
-
-**List Server NICs Example with server id 25455, network id 7: JSON**
+**Example**
 
 .. code-block:: javascript
 
-  {
-    "network": {
-      "id": "nic-25455-0"
-      "network_id": "7",
-      "mac_address": "aa:00:03:7a:84:bb",
-      "firewallProfile": "DISABLED",
-      "ipv4": "192.168.0.27",
-      "ipv6": "2001:646:2ffc:1222:a820:3fd:fe7a:84bb",
-    }
-  }
+  GET https://example.org/compute/v2.0/servers/84/ips/2718
 
+
+  "network": {
+    "2718": [
+      {
+        "version": 6,
+        "addr": "2001:443:2dfc:1232:a810:3cf:fe9b:21cd",
+        "OS-EXT-IPS:type": "fixed"
+      }
+    ]
+  }
 
 List Server Metadata
 --------------------
-
-List the metadata of a server
 
 .. note:: This operation is semantically equivalent in Cyclades and OS/Compute
   besides the different URI.
@@ -1365,19 +1312,12 @@ URI                               Method Cyclades OS/Compute
 ``/servers/<server-id>/metadata`` GET    ✔        ✔
 ================================= ====== ======== ==========
 
-* **server-id** is the identifier of the virtual server
-
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
-
-.. note:: Request parameters should be empty
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -1401,6 +1341,8 @@ Response body contents::
       ...
   }
 
+* Key is in uppercase by convention
+
 *Example List Server Metadata: JSON*
 
 .. code-block:: javascript
@@ -1408,7 +1350,7 @@ Response body contents::
   {
     ""metadata": {
       "OS": "Linux",
-      "users": "root"
+      "USERS": "root"
     }
   }
 
@@ -1435,10 +1377,7 @@ URI                               Method Cyclades OS/Compute
 ``/servers/<server-id>/metadata`` POST   ✔       ✔
 ================================= ====== ======== ==========
 
-* **server-id** is the identifier of the virtual server
-
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -1446,14 +1385,6 @@ X-Auth-Token    User authentication token required required
 Content-Type    Type or request body      required required
 Content-Length  Length of request body    required required
 ==============  ========================= ======== ==========
-
-**Example Request Headers**::
-
-  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
-  Content-Type:   application/json
-  Content-Length: 56
-
-.. note:: Request parameters should be empty
 
 Request body contents::
 
@@ -1510,21 +1441,12 @@ URI                                     Method Cyclades OS/Compute
 ``/servers/<server-id>/metadata/<key>`` GET    ✔        ✔
 ======================================= ====== ======== ==========
 
-* **server-id** is the identifier of the virtual server
-
-* **key** is the key of a mata ``key``:``value`` pair
-
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
-
-.. note:: Request parameters should be empty
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -1564,10 +1486,6 @@ URI                                     Method Cyclades OS/Compute
 ``/servers/<server-id>/metadata/<key>`` PUT    ✔        ✔
 ======================================= ====== ======== ==========
 
-* **server-id** is the identifier of the virtual server
-
-* **key** is the key of a ``key``:``value`` pair piece of metadata
-
 |
 
 ==============  ========================= ======== ==========
@@ -1577,14 +1495,6 @@ X-Auth-Token    User authentication token required required
 Content-Type    Type or request body      required required
 Content-Length  Length of request body    required required
 ==============  ========================= ======== ==========
-
-**Example Request Headers**::
-
-  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
-  Content-Type:   application/json
-  Content-Length: 29
-
-.. note:: Request parameters should be empty
 
 Request body content::
 
@@ -1635,21 +1545,12 @@ URI                                     Method Cyclades OS/Compute
 ``/servers/<server-id>/metadata/<key>`` DELETE ✔        ✔
 ======================================= ====== ======== ==========
 
-* **server-id** is the identifier of the virtual server
-
-* **key** is the key of a mata ``key``:``value`` pair
-
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
-
-.. note:: Request parameters should be empty
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -1665,8 +1566,6 @@ Return Code                 Description
 \                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
-
-.. note:: In case of a 204 code, response body should be empty
 
 Server Actions
 --------------
@@ -1687,7 +1586,7 @@ Operations                                      Cyclades OS/Compute
 `Set Firewall <#set-server-firewall-profile>`_  ✔        **✘**
 `Change Admin Password <#os-compute-specific>`_ **✘**    ✔
 `Rebuild <#os-compute-specific>`_               **✘**    ✔
-`Resize <#os-compute-specific>`_                **✘**    ✔
+`Resize <#resize-server>`_                      ✔        ✔
 `Confirm Resized <#os-compute-specific>`_       **✘**    ✔
 `Revert Resized <#os-compute-specific>`_        **✘**    ✔
 `Create Image <#os-compute-specific>`_          **✘**    ✔
@@ -1702,7 +1601,6 @@ URI                             Method Cyclades OS/Compute
 =============================== ====== ======== ==========
 
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -1710,16 +1608,6 @@ X-Auth-Token    User authentication token required required
 Content-Type    Type or request body      required required
 Content-Length  Length of request body    required required
 ==============  ========================= ======== ==========
-
-**Example Request Headers**::
-
-  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
-  Content-Type:   application/json
-  Content-Length: 32
-
-.. note:: Request parameters should be empty
-
-.. note:: Request body varies between operations (see bellow)
 
 .. rubric:: Response
 
@@ -1753,8 +1641,6 @@ Request body contents::
 
   {"start": {}}
 
-.. note:: Response body should be empty
-
 Reboot Server
 .............
 
@@ -1778,7 +1664,19 @@ Request body contents::
 
   {"reboot" : { "type": "soft"}}
 
-.. note:: Response body should be empty
+Resize Server
+.............
+
+This operation changes the flavor of the server, which is the equivalent of
+upgrading the hardware of a physical machine.
+
+Request body contents::
+
+  resize: {flavorRef: <flavor ID>}
+
+.. code-block:: javascript
+
+  {"resize" : { "flavorRef": 153}}
 
 Shutdown server
 ...............
@@ -1874,7 +1772,6 @@ Synnefo/Cyclades, but are parts of the OS/Compute API:
 
 * `Change Administrator Password <http://docs.openstack.org/api/openstack-compute/2/content/Change_Password-d1e3234.html>`_
 * `Rebuild Server <http://docs.openstack.org/api/openstack-compute/2/content/Rebuild_Server-d1e3538.html>`_
-* `Resize Server <http://docs.openstack.org/api/openstack-compute/2/content/Resize_Server-d1e3707.html>`_
 * `Confirm Resized Server <http://docs.openstack.org/api/openstack-compute/2/content/Confirm_Resized_Server-d1e3868.html>`_
 * `Revert Resized Server <http://docs.openstack.org/api/openstack-compute/2/content/Revert_Resized_Server-d1e4024.html>`_
 * `Create Image <http://docs.openstack.org/api/openstack-compute/2/content/Create_Image-d1e4655.html>`_
@@ -2921,7 +2818,7 @@ name             Image name             ✔        ✔
 updated          Last update date       ✔        ✔
 created          Image creation date    ✔        ✔
 progress         Ready status progress  ✔        **✘**
-status           Image status           **✘**    ✔
+status           Image status           **✘**    ✔:
 tenant_id        Image creator          **✘**    ✔
 user_id          Image users            **✘**    ✔
 metadata         Custom metadata        ✔        ✔

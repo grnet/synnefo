@@ -138,7 +138,10 @@ def get_vm(server_id, user_id, for_update=False, non_deleted=False,
         if for_update:
             servers = servers.select_for_update()
         if prefetch_related is not None:
-            servers = servers.prefetch_related(prefetch_related)
+            if isinstance(prefetch_related, list):
+                servers = servers.prefetch_related(*prefetch_related)
+            else:
+                servers = servers.prefetch_related(prefetch_related)
         vm = servers.get(id=server_id, userid=user_id)
         if non_deleted and vm.deleted:
             raise faults.BadRequest("Server has been deleted.")

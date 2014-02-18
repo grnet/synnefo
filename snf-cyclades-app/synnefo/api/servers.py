@@ -341,7 +341,7 @@ def list_servers(request, detail=False):
     log.debug('list_servers detail=%s', detail)
     user_vms = VirtualMachine.objects.filter(userid=request.user_uniq)
     if detail:
-        user_vms = user_vms.prefetch_related("nics__ips")
+        user_vms = user_vms.prefetch_related("nics__ips", "metadata")
 
     user_vms = utils.filter_modified_since(request, objects=user_vms)
 
@@ -426,7 +426,7 @@ def get_server_details(request, server_id):
 
     log.debug('get_server_details %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq,
-                     prefetch_related="nics__ips")
+                     prefetch_related=["nics__ips", "metadata"])
     server = vm_to_dict(vm, detail=True)
     return render_server(request, server)
 

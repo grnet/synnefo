@@ -516,7 +516,7 @@ flavorRef   Resources flavor       ✔        ✔
 personality Personality contents   ✔        ✔
 metadata    Custom metadata        ✔        ✔
 networks    Connection information ✔        ✔
-project     Project UUID           ✔        **✘**
+.. project  .. Project UUID        .. ✔     .. **✘**
 =========== ====================== ======== ==========
 
 * **name** can be any string
@@ -1590,6 +1590,7 @@ Operations                                      Cyclades OS/Compute
 `Confirm Resized <#os-compute-specific>`_       **✘**    ✔
 `Revert Resized <#os-compute-specific>`_        **✘**    ✔
 `Create Image <#os-compute-specific>`_          **✘**    ✔
+.. `Reassign to project <#server-reassign>`_    .. ✔     .. **✘**
 =============================================== ======== ==========
 
 .. rubric:: Request
@@ -1673,6 +1674,8 @@ upgrading the hardware of a physical machine.
 Request body contents::
 
   resize: {flavorRef: <flavor ID>}
+
+*Example Resize Server: JSON*
 
 .. code-block:: javascript
 
@@ -1764,6 +1767,24 @@ Request body contents::
 
 .. note:: Response body should be empty
 
+.. Server reassign
+.. .............
+
+.. Each resource is assigned to a project. A Synnefo project is a set of resource
+.. limits e.g., maximum number of CPU cores per user, maximum ammount of RAM, etc.
+
+.. Although its resource is assigned exactly one project, a user may be a member
+.. of more, so that different resources are registered to different projects.
+
+.. Project reassignment is the process of assigning a project to a different
+.. project
+
+.. Request body contents::
+..   reassign: { project: <project ID>}
+
+.. .. code-block:: javascript
+..   "reassign": { "project": "s0m3-pr0j3ct-1d"}
+
 OS/Compute Specific
 ...................
 
@@ -1838,6 +1859,8 @@ only ``id`` and ``name`` attributes.
 
 .. code-block:: javascript
 
+  GET https://example.org/compute/v2.0/flavors
+
   {
     "flavors": [
       {
@@ -1886,6 +1909,8 @@ only ``id`` and ``name`` attributes.
 
 .. code-block:: javascript
 
+  GET https://example.org/compute/v2.0/flavors/detail
+
   {
     "flavors": [
       {
@@ -1894,7 +1919,7 @@ only ``id`` and ``name`` attributes.
         "ram": 1024,
         "SNF:disk_template": "drbd",
         "disk": 20,
-        "cpu": 1,
+        "vcpus": 1,
         "links": [
             {
                 "href": "https://example.org/compute/v2.0/flavors/1", 
@@ -1911,7 +1936,7 @@ only ``id`` and ``name`` attributes.
         "ram": 1024,
         "SNF:disk_template": "drbd",
         "disk": 40,
-        "cpu": 4,
+        "vcpus": 4,
         "links": [
             {
                 "href": "https://example.org/compute/v2.0/flavors/3", 
@@ -1929,8 +1954,6 @@ only ``id`` and ``name`` attributes.
 Get Flavor Details
 ------------------
 
-Get the configuration of a specific flavor
-
 .. rubric:: Request
 
 ======================= ====== ======== ==========
@@ -1939,10 +1962,7 @@ URI                     Method Cyclades OS/Compute
 ``/flavors/<flavor-id`` GET    ✔        ✔
 ======================= ====== ======== ==========
 
-* **flavor-id** is the identifier of the flavor
-
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -1950,15 +1970,12 @@ X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
 |
-
 ================= ===============
 Request Parameter Value
 ================= ===============
 json              Respond in json
 xml               Respond in xml
 ================= ===============
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -1986,6 +2003,8 @@ All flavor attributes are `listed here <#flavor-ref>`_.
 
 *Example Flavor Details: JSON*
 
+  GET https://example.org/compute/v2.0/flavors/1
+
 .. code-block:: javascript
 
   {
@@ -1996,7 +2015,7 @@ All flavor attributes are `listed here <#flavor-ref>`_.
         "ram": 1024,
         "SNF:disk_template": "drbd",
         "disk": 20,
-        "cpu": 1,
+        "vcpus": 1,
         "links": [
             {
                 "href": "https://example.org/compute/v2.0/flavors/1", 
@@ -2010,15 +2029,6 @@ All flavor attributes are `listed here <#flavor-ref>`_.
       }
     }
   }
-
-*Example Flavor Details: XML*
-
-.. code-block:: xml
-
-  <?xml version="1.0" encoding="UTF-8"?>
-  <flavor xmlns="http://docs.openstack.org/compute/api/v1"
-    xmlns:atom="http://www.w3.org/2005/Atom"
-    id="1" name="One core" ram="1024" disk="20" cpu="1" />
 
 List Images
 -----------
@@ -2035,7 +2045,6 @@ URI                 Method Cyclades OS/Compute
 =================== ====== ======== ==========
 
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -2043,7 +2052,6 @@ X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
 
 |
-
 ================= ======================== ======== ==========
 Request Parameter Value                    Cyclades OS/Compute
 ================= ======================== ======== ==========
@@ -2060,8 +2068,6 @@ type              Request filter type      **✘**    ✔
   the image ``updated_at`` attribute and it should be a date in the window
   [- POLL_LIMIT ... now]. POLL_LIMIT default value is 3600 seconds except if it
   is set otherwise at server side.
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -2100,37 +2106,31 @@ a collections of the `image attributes listed here <#image-ref>`_.
 
 .. code-block:: javascript
 
+  GET https://example.org/compute/v2.0/images
+
   {
     "images: [
       {
         "status": "ACTIVE",
         "updated": "2013-03-02T15:57:03+00:00",
-        "name": "edx_saas",
+        "name": "Verbal description",
         "created": "2013-03-02T12:21:00+00:00",
-        "progress": 100,
-        "id": "175716...526236",
+        "id": "s0m3-1m4g3-1d",
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/images/175716...526236", 
+            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d", 
             "rel": "self"
           }, 
           {
-            "href": "https://example.org/compute/v2.0/images/175716...526236", 
+            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d", 
             "rel": "bookmark"
-          }, 
-          {
-            "href": "https://example.org/image/v1.0/images/175716...526236", 
-            "rel": "alternate"
           }
         ],
         "metadata": {
-          "partition_table": "msdos",
-          "osfamily": "linux",
-          "users": "root saasbook",
-          "exclude_task_changepassword": "yes",
-          "os": "ubuntu",
-          "root_partition": "1",
-          "description": "Ubuntu 12.04 LTS"
+          "PARTITION_TABLE": "msdos",
+          "OSFAMILY": "linux",
+          "USERS": "root",
+          "OS": "ubuntu",
         }
       }, {
         "status": "ACTIVE",
@@ -2138,29 +2138,22 @@ a collections of the `image attributes listed here <#image-ref>`_.
         "name": "edx_saas",
         "created": "2013-03-02T12:21:00+00:00",
         "progress": 100,
-        "id": "1357163d...c526206",
+        "id": "07h3r-1m4g3-1d",
         "links": [
           {
-            "href": "https://example.org/compute/v2.0/images/1357163d...c526206", 
+            "href": "https://example.org/compute/v2.0/images/07h3r-1m4g3-1d", 
             "rel": "self"
           }, 
           {
-            "href": "https://example.org/compute/v2.0/images/1357163d...c526206", 
+            "href": "https://example.org/compute/v2.0/images/07h3r-1m4g3-1d", 
             "rel": "bookmark"
-          }, 
-          {
-            "href": "https://example.org/image/v1.0/images/1357163d...c526206", 
-            "rel": "alternate"
           }
         ],
         "metadata": {
-          "partition_table": "msdos",
-          "osfamily": "windows",
-          "users": "Administratior",
-          "exclude_task_changepassword": "yes",
-          "os": "WinME",
-          "root_partition": "1",
-          "description": "Rerto Windows"
+          "PARTITION_TABLE": "ext3",
+          "OSFAMILY": "Linux",
+          "USERS": "root",
+          "OS": "Debian"
         }
       }
     ]
@@ -2179,19 +2172,12 @@ URI                    Method Cyclades OS/Compute
 ``/images/<image-id>`` GET    ✔        ✔
 ====================== ====== ======== ==========
 
-* **image-id** is the identifier of the virtual image
-
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
-
-.. note:: Request parameters should be empty
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -2225,41 +2211,34 @@ Image attributes are `listed here <#image-ref>`_.
 
 .. code-block:: javascript
 
-  {
-  "image": {
-    "id": "6404619d-...-aef57eaff4af",
-    "name": "FreeBSD",
-    "status": "ACTIVE",
-    "updated": "2013-04-24T12:06:02+00:00",
-    "created": "2013-04-24T11:52:16+00:00",
-    "progress": 100,
-    "links": [
-      {
-        "href": "https://example.org/compute/v2.0/images/6404619d-...-aef57eaff4af", 
-        "rel": "self"
-      }, 
-      {
-        "href": "https://example.org/compute/v2.0/images/6404619d-...-aef57eaff4af", 
-        "rel": "bookmark"
-      }, 
-      {
-        "href": "https://example.org/image/v1.0/images/6404619d-...-aef57eaff4af", 
-        "rel": "alternate"
-      }
-    ],
-    "metadata": {
-      "kernel": "9.1 RELEASE",
-      "osfamily": "freebsd",
-      "users": "root",
-      "gui": "No GUI",
-      "sortorder": "9",
-      "os": "freebsd",
-      "root_partition": "2",
-      "description": "FreeBSD 9"
-      }
-    }
-  }
+  GET https://example.org/compute/v2.0/images/s0m3-1m4g3-1d
 
+  {
+    "image":
+      {
+        "status": "ACTIVE",
+        "updated": "2013-03-02T15:57:03+00:00",
+        "name": "Verbal description",
+        "created": "2013-03-02T12:21:00+00:00",
+        "id": "s0m3-1m4g3-1d",
+        "links": [
+          {
+            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d", 
+            "rel": "self"
+          }, 
+          {
+            "href": "https://example.org/compute/v2.0/images/s0m3-1m4g3-1d", 
+            "rel": "bookmark"
+          }
+        ],
+        "metadata": {
+          "PARTITION_TABLE": "msdos",
+          "OSFAMILY": "linux",
+          "USERS": "root",
+          "OS": "ubuntu",
+        }
+    }
+}
 
 Delete Image
 ------------
@@ -2274,19 +2253,12 @@ URI                    Method Cyclades OS/Compute
 ``/images/<image id>`` DELETE ✔        ✔
 ====================== ====== ======== ==========
 
-* **image id** is the identifier of the image
-
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
-
-.. note:: Request parameters should be empty
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -2316,18 +2288,12 @@ URI                             Method Cyclades OS/Compute
 ``/images/<image-id>/metadata`` GET    ✔        ✔
 =============================== ====== ======== ==========
 
-* **image-id** is the identifier of the virtual image
-
 |
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
-
-.. note:: Request parameters should be empty
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -2356,17 +2322,14 @@ Response body content::
 
 .. code-block:: javascript
 
+  GET https://example.org/compute/v2.0/images/s0m3-1m4g3-1d/metadata
+
   {
     "metadata": {
-      "partition_table": "msdos",
-      "kernel": "3.2.0",
-      "osfamily": "linux",
-      "users": "user",
-      "gui": "Unity 5",
-      "sortorder": "3",
-      "os": "ubuntu",
-      "root_partition": "1",
-      "description": "Ubuntu 12 LTS"
+      "PARTITION_TABLE": "msdos",
+      "OSFAMILY": "linux",
+      "USERS": "root",
+      "OS": "ubuntu",
     }
   }
 
@@ -2395,8 +2358,6 @@ URI                             Method Cyclades OS/Compute
 ``/images/<image-id>/metadata`` POST   ✔        ✔
 =============================== ====== ======== ==========
 
-* **image-id** is the identifier of the virtual image
-
 |
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
@@ -2405,12 +2366,6 @@ X-Auth-Token    User authentication token required required
 Content-Type    Type or request body      required required
 Content-Length  Length of request body    required required
 ==============  ========================= ======== ==========
-
-**Example Request Headers**::
-
-  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
-  Content-Type:   application/json
-  Content-Length: 52
 
 .. note:: Request parameters should be empty
 
@@ -2425,7 +2380,9 @@ Request body content::
 
 .. code-block:: javascript
 
-  {"metadata": {"NewAttr": "NewVal", "os": "Xubuntu'}}
+  POST https://example.org/compute/v2.0/images/s0m3-1m4g3-1d/metadata
+
+  {"metadata": {"NewAttr": "NewVal", "OS": "Xubuntu'}}
 
 .. rubric:: Response
 
@@ -2456,16 +2413,11 @@ Response body content::
 
   {
     "metadata": {
-      "partition_table": "msdos",
-      "kernel": "3.2.0",
-      "osfamily": "linux",
-      "users": "user",
-      "gui": "Unity 5",
-      "sortorder": "3",
-      "os": "Xubuntu",
-      "root_partition": "1",
-      "description": "Ubuntu 12 LTS",
-      "NewAttr": "NewVal"
+      "PARTITION_TABLE": "msdos",
+      "OSFAMILY": "linux",
+      "USERS": "root",
+      "OS": "Xubuntu",
+      "NEWATTR": "NewVal"
     }
   }
 
@@ -2480,21 +2432,12 @@ URI                                   Method Cyclades OS/Compute
 ``/images/<image-id>/metadata/<key>`` GET    ✔        ✔
 ===================================== ====== ======== ==========
 
-* **image-id** is the identifier of the image
-
-* **key** is the key of a mata ``key``:``value`` pair
-
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
-
-.. note:: Request parameters should be empty
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -2519,7 +2462,9 @@ Response body content::
 
 .. code-block:: javascript
 
-  {"metadata": {"os": "Xubuntu"}}
+  GET https://example.org/compute/v2.0/images/s0m3-1m4g3-1d/metadata/OS
+
+  {"metadata": {"OS": "Xubuntu"}}
 
 .. note:: In OS/Compute, ``metadata`` is ``meta``
 
@@ -2534,12 +2479,7 @@ URI                                   Method Cyclades OS/Compute
 ``/images/<image-id>/metadata/<key>`` PUT    ✔        ✔
 ===================================== ====== ======== ==========
 
-* **image-id** is the identifier of the image
-
-* **key** is the key of a matadata ``key``:``value`` pair
-
 |
-
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
@@ -2547,14 +2487,6 @@ X-Auth-Token    User authentication token required required
 Content-Type    Type or request body      required required
 Content-Length  Length of request body    required required
 ==============  ========================= ======== ==========
-
-**Example Request Headers**::
-
-  X-Auth-Token:   z31uRXUn1LZy45p1r7V==
-  Content-Type:   application/json
-  Content-Length: 27
-
-|
 
 .. note:: Request parameters should be empty
 
@@ -2566,7 +2498,10 @@ Request body content::
 
 .. code-block:: javascript
 
-  {"metadata": {"os": "Kubuntu"}}
+  PUT https://example.org/compute/v2.0/images/s0m3-1m4g3-1d/metadata/OS
+  {
+    "metadata": {"OS": "Kubuntu"}
+  }
 
 .. rubric:: Response
 
@@ -2592,7 +2527,7 @@ Request body content::
 
 .. code-block:: javascript
 
-  {"metadata": {"os": "Kubuntu"}}
+  {"metadata": {"OS": "Kubuntu"}}
 
 Delete Image Metadata
 ---------------------
@@ -2607,20 +2542,12 @@ URI                                   Method Cyclades OS/Compute
 ``/images/<image-id>/metadata/<key>`` DELETE ✔        ✔
 ===================================== ====== ======== ==========
 
-* **image-id** is the identifier of the image
-
-* **key** is the key of a mata ``key``:``value`` pair
-
 |
 ==============  ========================= ======== ==========
 Request Header  Value                     Cyclades OS/Compute
 ==============  ========================= ======== ==========
 X-Auth-Token    User authentication token required required
 ==============  ========================= ======== ==========
-
-.. note:: Request parameters should be empty
-
-.. note:: Request body should be empty
 
 .. rubric:: Response
 
@@ -2636,8 +2563,6 @@ Return Code                 Description
 \                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
-
-.. note:: In case of a 204 code, the response body should be empty.
 
 Index of Attributes
 -------------------
@@ -2781,23 +2706,17 @@ ram               Server RAM size      ✔        ✔
 SNF:disk_template Storage mechanism    ✔        **✘**
 disk              Server disk size     ✔        ✔
 vcpus             # of Virtual CPUs    ✔        ✔
-links rel         Atom link rel field  **✘**    ✔
-links href        Atom link href field **✘**    ✔
+links rel         Atom link rel field  ✔        ✔
+links href        Atom link href field ✔        ✔
 ================= ==================== ======== ==========
 
 * **id** is the flavor unique id (a possitive integer)
-
 * **name** is the flavor name (a string)
-
 * **ram** is the server RAM size in MB
-
 * **SNF:disk_template** is a reference to the underlying storage mechanism
-  used by the Cyclades server. It is Cyclades specific.
-
+  used by the Cyclades server (e.g., drdb, ext_elmc).
 * **disk** the servers disk size in GB
-
 * **vcpus** refer to the number of virtual CPUs assigned to a server
-
 * **link ref** and **link href** refer to the Atom link attributes that are
   `used in OS/Compute API <http://docs.openstack.org/api/openstack-compute/2/content/List_Flavors-d1e4188.html>`_.
 

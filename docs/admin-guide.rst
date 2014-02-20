@@ -2536,6 +2536,112 @@ Node10:
 All sections: :ref:`Scale out Guide <i-synnefo>`
 
 
+Regions, Zones and Clusters
+===========================
+
+Region
+------
+
+A Region is a single Synnefo installation, with
+Compute/Network/Image/Volume/Object Store services. A Region is associated with
+one set of Synnefo DBs (Astakos DB, Pithos DB and Cyclades DB). Every Region has a
+distinct set of API endpoints, e.g.,
+`https://cloud.example.com/cyclades/compute/v2.0`. Two Regions are most times
+located geographically far from each other, e.g. "Europe", "US-East". A Region
+comprises multiple Zones.
+
+Zone
+----
+
+A Zone is a set of Ganeti clusters, in a potentially geographically distinct
+location, e.g. "Athens", "Rome". All clusters have access to the same physical
+networks, and are considered a single failure domain, e.g., they access the
+network over the same router. A Zone comprises muliple Ganeti clusters.
+
+Ganeti cluster
+--------------
+
+A Ganeti cluster is a set of Ganeti nodes (physical machines). One of the nodes
+has the role of "Ganeti master". If this node goes down, another node may
+undertake the master role. Ganeti nodes run Virtual Machines (VMs). VMs can live
+migrate inside a Ganeti cluster. A Ganeti cluster comprises multiple physical
+hardware nodes, most times geographically close to each other.
+
+VM mobility
+-----------
+
+VMs may move across Regions, Zones, Ganeti clusters and physical nodes. Before we
+describe how that's possible, we will describe the different kinds of moving,
+providing the corresponding terminology:
+
+Live migration
+~~~~~~~~~~~~~~
+
+The act of moving a running VM from physical node to physical node without any
+impact on its operation. The VM continues to run on its new physical location,
+completely unaffected, and without any service downtime or dropped connections.
+Live migration typically requires shared storage and networking between the source
+and destination nodes.
+
+Live migration is issued by the administrator in the background and is transparent
+to the VM user.
+
+Failover
+~~~~~~~~
+
+The act of moving a VM from physical node to physical node by stopping it first on
+the source node, then re-starting it on the destination node. There is short
+service downtime, during the time the VM boots up, and client connections are
+dropped.
+
+Failover is issued by the administrator in the background and the VM user will
+experience a reboot.
+
+Snapshot Failover
+~~~~~~~~~~~~~~~~~
+
+The act of moving a VM from physical node to physical node via a point-in-time
+snapshot. That is, stopping a VM on the source node, taking a snapshot, then
+creating a new VM from that snapshot.
+
+Snapshot failover is issued by the VM user and not the administrator.
+
+Disaster Recovery
+-----------------
+
+In Synnefo terminology, Disaster Recovery is the process of sustaining a disaster
+in one datacenter, and ensuring business continuity by performing live migration
+or failover of running/existing VMs, or respawning VMs from previously made
+snapshots. Based on the method used, this can work inside a single Ganeti cluster,
+across Ganeti clusters in the same Zone, or across Zones.
+
+Specifically:
+
+Live migration is only supported inside a single Ganeti cluster. Ganeti supports
+live migration between nodes in the same cluster with or without shared storage.
+Live migration is done at the Ganeti level and is transparent to Synnefo.
+
+Failover is supported inside a Ganeti cluster, across Ganeti clusters and across
+Zones. Ganeti supports failover inside a Ganeti cluster with or without shared
+storage, which poses minimum downtime for the VM. Failover inside the same Ganeti
+cluster is done at the Ganeti level and is transparent to Synnefo.
+
+Ganeti also provides tools for failing over VMs across different Ganeti clusters,
+meaning that one can use them to failover VMs across Ganeti clusters of the same
+Zone or across Ganeti clusters of different Zones, thus moving across Zones.
+Failing over across different Ganeti clusters requires copying of data, resulting
+in longer downtimes, depending on the geographical distance and network between
+them. Failover across Ganeti clusters, either in the same or different Zones, is
+not transparent to Synnefo and requires manual import of intances at Synnefo level
+too, by the administrator.
+
+Snapshot failover supports moving VMs across all domains. It is issued by the VM
+user and is done at the Synnefo level without the need of running anything at the
+Ganeti level or by the administrator.
+
+In the future Synnefo will also support moving VMs across different Regions.
+
+
 Upgrade Notes
 =============
 

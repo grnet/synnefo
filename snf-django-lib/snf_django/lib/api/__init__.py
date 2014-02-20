@@ -75,6 +75,11 @@ def api_method(http_method=None, token_required=True, user_required=True,
         @wraps(func)
         def wrapper(request, *args, **kwargs):
             try:
+                # Explicitly set request encoding to UTF-8 instead of relying
+                # to the DEFAULT_CHARSET setting. See:
+                # https://docs.djangoproject.com/en/1.4/ref/unicode/#form-submission
+                request.encoding = 'utf-8'
+
                 # Get the requested serialization format
                 serialization = get_serialization(
                     request, format_allowed, serializations[0])

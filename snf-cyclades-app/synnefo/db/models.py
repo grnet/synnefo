@@ -65,11 +65,14 @@ class Flavor(models.Model):
     @property
     def name(self):
         """Returns flavor name (generated)"""
-        return u'C%dR%dD%d%s' % (self.cpu, self.ram, self.disk,
+        return u'C%sR%sD%s%s' % (self.cpu, self.ram, self.disk,
                                  self.disk_template)
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
-        return "<%s:%s>" % (str(self.id), self.name)
+        return u"<%s:%s>" % (self.id, self.name)
 
 
 class Backend(models.Model):
@@ -113,8 +116,11 @@ class Backend(models.Model):
         verbose_name = u'Backend'
         ordering = ["clustername"]
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
-        return self.clustername + "(id=" + str(self.id) + ")"
+        return u"%s(id:%s)" % (self.clustername, self.id)
 
     @property
     def backend_id(self):
@@ -212,6 +218,9 @@ class QuotaHolderSerial(models.Model):
     class Meta:
         verbose_name = u'Quota Serial'
         ordering = ["serial"]
+
+    def __str__(self):
+        return self.__unicode__()
 
     def __unicode__(self):
         return u"<serial: %s>" % self.serial
@@ -380,6 +389,9 @@ class VirtualMachine(models.Model):
         verbose_name = u'Virtual machine instance'
         get_latest_by = 'created'
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
         return u"<vm:%s@backend:%s>" % (self.id, self.backend_id)
 
@@ -420,8 +432,11 @@ class VirtualMachineMetadata(models.Model):
         unique_together = (('meta_key', 'vm'),)
         verbose_name = u'Key-value pair of metadata for a VM.'
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
-        return u'%s: %s' % (self.meta_key, self.meta_value)
+        return u'<Metadata %s: %s>' % (self.meta_key, self.meta_value)
 
 
 class Network(models.Model):
@@ -510,8 +525,11 @@ class Network(models.Model):
                                null=True, on_delete=models.SET_NULL)
     subnet_ids = fields.SeparatedValuesField("Subnet IDs", null=True)
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
-        return "<Network: %s>" % str(self.id)
+        return u"<Network: %s>" % self.id
 
     @property
     def backend_id(self):
@@ -636,6 +654,9 @@ class Subnet(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
         msg = u"<Subnet %s, Network: %s, CIDR: %s>"
         return msg % (self.id, self.network_id, self.cidr)
@@ -719,8 +740,11 @@ class BackendNetwork(models.Model):
                                               mac_prefix)
             self.mac_prefix = mac_prefix
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
-        return '<%s@%s>' % (self.network, self.backend)
+        return u'<BackendNetwork %s@%s>' % (self.network, self.backend)
 
 
 class IPAddress(models.Model):
@@ -743,6 +767,9 @@ class IPAddress(models.Model):
     serial = models.ForeignKey(QuotaHolderSerial,
                                related_name="ips", null=True,
                                on_delete=models.SET_NULL)
+
+    def __str__(self):
+        return self.__unicode__()
 
     def __unicode__(self):
         ip_type = "floating" if self.floating_ip else "static"
@@ -783,6 +810,9 @@ class IPAddressLog(models.Model):
                                        null=True)
     active = models.BooleanField("Whether IP still allocated to server",
                                  default=True)
+
+    def __str__(self):
+        return self.__unicode__()
 
     def __unicode__(self):
         return u"<Address: %s, Server: %s, Network: %s, Allocated at: %s>"\
@@ -826,14 +856,17 @@ class NetworkInterface(models.Model):
     public = models.BooleanField(default=False)
     device_owner = models.CharField('Device owner', max_length=128, null=True)
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
-        return "<NIC %s:vm:%s network:%s>" % (self.id, self.machine_id,
+        return u"<NIC %s:vm:%s network:%s>" % (self.id, self.machine_id,
                                               self.network_id)
 
     @property
     def backend_uuid(self):
         """Return the backend id by prepending backend-prefix."""
-        return "%snic-%s" % (settings.BACKEND_PREFIX_ID, str(self.id))
+        return u"%snic-%s" % (settings.BACKEND_PREFIX_ID, str(self.id))
 
     @property
     def ipv4_address(self):
@@ -892,12 +925,18 @@ class PoolTable(models.Model):
 class BridgePoolTable(PoolTable):
     manager = pools.BridgePool
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
         return u"<BridgePool id:%s>" % self.id
 
 
 class MacPrefixPoolTable(PoolTable):
     manager = pools.MacPrefixPool
+
+    def __str__(self):
+        return self.__unicode__()
 
     def __unicode__(self):
         return u"<MACPrefixPool id:%s>" % self.id
@@ -909,6 +948,9 @@ class IPPoolTable(PoolTable):
     subnet = models.ForeignKey('Subnet', related_name="ip_pools",
                                on_delete=models.PROTECT,
                                db_index=True, null=True)
+
+    def __str__(self):
+        return self.__unicode__()
 
     def __unicode__(self):
         return u"<IPv4AdressPool, Subnet: %s>" % self.subnet_id
@@ -1099,8 +1141,11 @@ class Volume(models.Model):
         elif source_type == "blank":
             return None
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
-        return "<Volume %s:vm:%s>" % (self.id, self.machine_id)
+        return u"<Volume %s:vm:%s>" % (self.id, self.machine_id)
 
 
 class Metadata(models.Model):
@@ -1111,6 +1156,9 @@ class Metadata(models.Model):
 
     class Meta:
         abstract = True
+
+    def __str__(self):
+        return self.__unicode__()
 
     def __unicode__(self):
         return u"<%s: %s>" % (self.key, self.value)

@@ -482,7 +482,7 @@ def split_container_object_string(s):
 
 def copy_or_move_object(request, src_account, src_container, src_name,
                         dest_account, dest_container, dest_name,
-                        move=False, delimiter=None):
+                        move=False, delimiter=None, listing_limit=None):
     """Copy or move an object."""
 
     if 'ignore_content_type' in request.GET and 'CONTENT_TYPE' in request.META:
@@ -494,13 +494,14 @@ def copy_or_move_object(request, src_account, src_container, src_name,
             version_id = request.backend.move_object(
                 request.user_uniq, src_account, src_container, src_name,
                 dest_account, dest_container, dest_name,
-                content_type, 'pithos', meta, False, permissions, delimiter)
+                content_type, 'pithos', meta, False, permissions, delimiter,
+                listing_limit=listing_limit)
         else:
             version_id = request.backend.copy_object(
                 request.user_uniq, src_account, src_container, src_name,
                 dest_account, dest_container, dest_name,
                 content_type, 'pithos', meta, False, permissions,
-                src_version, delimiter)
+                src_version, delimiter, listing_limit=listing_limit)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except (ItemNotExists, VersionNotExists):

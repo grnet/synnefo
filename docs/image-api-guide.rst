@@ -48,6 +48,17 @@ identity credentials.
 <http://docs.openstack.org/developer/glance/glanceapi.html#authentication>`_,
 with the only difference being the suggested identity manager.
 
+Image Metadata Format
+---------------------
+
+In Cyclades Image API all image metadata are viewed as HTTP headers that are
+starting with the `x-image-meta-` prefix. All metadata must be encoded with the
+`UTF-8` encoding. Since the image metadata must be valid HTTP headers, user
+defined metadata like the image's name or properties must also be properly
+quoted.  Finally, image properties that are viewed as HTTP headers and are
+starting with the `x-image-meta-property-` prefix, are not case-sensitive and
+all punctuation characters will be replaced with underscore.
+
 
 List Available Images
 ---------------------

@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 import json
+import urllib
 
 from mock import patch
 from functools import wraps
@@ -62,7 +63,7 @@ class PlanktonTest(BaseAPITest):
     def test_register_image(self, backend):
         required = {
             "HTTP_X_IMAGE_META_NAME": u"TestImage\u2602",
-            "HTTP_X_IMAGE_META_LOCATION": "pithos://4321-4321/images/foo"}
+            "HTTP_X_IMAGE_META_LOCATION": "pithos://4321-4321/%E2%98%82/foo"}
         # Check valid name
         headers = deepcopy(required)
         headers.pop("HTTP_X_IMAGE_META_NAME")
@@ -137,7 +138,7 @@ class PlanktonTest(BaseAPITest):
         self.assertBadRequest(response)
 
         backend().get_uuid.return_value =\
-            ("4321-4321", "images", "foo")
+            ("4321-4321", u"\u2602", "foo")
         backend().get_object_permissions.return_value = \
             ("foo", "foo", {"read": []})
         backend().get_object_meta.side_effect = \
@@ -156,7 +157,7 @@ class PlanktonTest(BaseAPITest):
         response = self.post(IMAGES_URL, **headers)
         self.assertSuccess(response)
         self.assertEqual(response["x-image-meta-location"],
-                         "pithos://4321-4321/images/foo")
+                         "pithos://4321-4321/%E2%98%82/foo")
         self.assertEqual(response["x-image-meta-id"], "1234-1234-1234")
         self.assertEqual(response["x-image-meta-status"], "AVAILABLE")
         self.assertEqual(response["x-image-meta-deleted-at"], "")
@@ -164,7 +165,7 @@ class PlanktonTest(BaseAPITest):
         self.assertEqual(response["x-image-meta-owner"], "4321-4321")
         self.assertEqual(response["x-image-meta-size"], "42")
         self.assertEqual(response["x-image-meta-checksum"], "unique_hash")
-        self.assertEqual(response["x-image-meta-name"],
+        self.assertEqual(urllib.unquote(response["x-image-meta-name"]),
                          u"TestImage\u2602".encode("utf-8"))
         self.assertEqual(response["x-image-meta-container-format"], "bare")
         self.assertEqual(response["x-image-meta-disk-format"], "diskdump")
@@ -194,8 +195,7 @@ class PlanktonTest(BaseAPITest):
         name, args, kwargs = backend().update_object_meta.mock_calls[-1]
         metadata = args[5]
         self.assertEqual(metadata["plankton:property:key1"], "val1")
-        self.assertEqual(metadata["plankton:property:key2"],
-                         u"\u2601".encode("utf-8"))
+        self.assertEqual(metadata["plankton:property:key2"], u"\u2601")
         self.assertSuccess(response)
 
     def test_unregister_image(self, backend):
@@ -281,7 +281,7 @@ class PlanktonTest(BaseAPITest):
         self.assertEqual(response["x-image-meta-owner"], "img_owner")
         self.assertEqual(response["x-image-meta-size"], "42")
         self.assertEqual(response["x-image-meta-checksum"], "unique_hash")
-        self.assertEqual(response["x-image-meta-name"],
+        self.assertEqual(urllib.unquote(response["x-image-meta-name"]),
                          u"TestImage\u2602".encode("utf-8"))
         self.assertEqual(response["x-image-meta-container-format"], "bare")
         self.assertEqual(response["x-image-meta-disk-format"], "diskdump")

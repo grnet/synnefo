@@ -101,7 +101,7 @@ def create_subnet(request):
     network_id and the desired cidr are mandatory, everything else is optional
 
     """
-    dictionary = utils.get_request_dict(request)
+    dictionary = utils.get_json_body(request)
     user_id = request.user_uniq
     log.info('create subnet user: %s request: %s', user_id, dictionary)
 
@@ -188,7 +188,7 @@ def update_subnet(request, sub_id):
 
     """
 
-    dictionary = utils.get_request_dict(request)
+    dictionary = utils.get_json_body(request)
     user_id = request.user_uniq
 
     try:

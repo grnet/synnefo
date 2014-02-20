@@ -247,7 +247,7 @@ def update_metadata(request, image_id):
     #                       badMediaType(415),
     #                       overLimit (413)
 
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     log.info('update_image_metadata %s %s', image_id, req)
     with backend.PlanktonBackend(request.user_uniq) as b:
         image = b.get_image(image_id)
@@ -296,7 +296,7 @@ def create_metadata_item(request, image_id, key):
     #                       badMediaType(415),
     #                       overLimit (413)
 
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     log.info('create_image_metadata_item %s %s %s', image_id, key, req)
     try:
         metadict = req['meta']

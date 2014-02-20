@@ -88,10 +88,11 @@ def isoparse(s):
     return utc_since
 
 
-def get_request_dict(request):
-    """Return data sent by the client as python dictionary.
+def get_json_body(request):
+    """Get the JSON request body as a Python object.
 
-    Only JSON format is supported
+    Check that the content type is json and deserialize the body of the
+    request that contains a JSON document to a Python object.
 
     """
     data = request.body
@@ -101,8 +102,10 @@ def get_request_dict(request):
     if content_type.startswith("application/json"):
         try:
             return json.loads(data)
+        except UnicodeDecodeError:
+            raise faults.BadRequest("Could not decode request as UTF-8 string")
         except ValueError:
-            raise faults.BadRequest("Invalid JSON data")
+            raise faults.BadRequest("Could not decode request body as JSON")
     else:
         raise faults.BadRequest("Unsupported Content-type: '%s'" %
                                 content_type)

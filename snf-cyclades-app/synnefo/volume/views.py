@@ -100,7 +100,7 @@ def get_volume_attachments(volume):
 def create_volume(request):
     """Create a new Volume."""
 
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     log.debug("create_volume %s", req)
     user_id = request.user_uniq
 
@@ -196,7 +196,7 @@ def get_volume(request, volume_id):
 
 @api.api_method(http_method="PUT", user_required=True, logger=log)
 def update_volume(request, volume_id):
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     log.debug('update_volume volume_id: %s, request: %s', volume_id, req)
 
     volume = util.get.volume(request.user_uniq, volume_id, for_update=True)
@@ -243,7 +243,7 @@ def snapshot_to_dict(snapshot, detail=True):
 def create_snapshot(request):
     """Create a new Snapshot."""
 
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     log.debug("create_snapshot %s", req)
     user_id = request.user_uniq
 
@@ -327,7 +327,7 @@ def get_snapshot(request, snapshot_id):
 
 @api.api_method(http_method="PUT", user_required=True, logger=log)
 def update_snapshot(request, snapshot_id):
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     log.debug('update_snapshot snapshot_id: %s, request: %s', snapshot_id, req)
     snapshot = util.get_snapshot(request.user_uniq, snapshot_id)
 

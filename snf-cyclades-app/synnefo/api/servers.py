@@ -401,7 +401,7 @@ def create_server(request):
     #                       badRequest (400),
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413)
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     user_id = request.user_uniq
     log.info('create_server user: %s request: %s', user_id, req)
 
@@ -539,7 +539,7 @@ def update_server_name(request, server_id):
     #                       buildInProgress (409),
     #                       overLimit (413)
 
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     log.info('update_server_name %s %s', server_id, req)
 
     req = utils.get_attribute(req, "server", attr_type=dict, required=True)
@@ -591,7 +591,7 @@ def key_to_action(key):
 @api.api_method(http_method='POST', user_required=True, logger=log)
 @transaction.commit_on_success
 def demux_server_action(request, server_id):
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     log.debug('server_action %s %s', server_id, req)
 
     if not isinstance(req, dict) and len(req) != 1:
@@ -690,7 +690,7 @@ def update_metadata(request, server_id):
     #                       badMediaType(415),
     #                       overLimit (413)
 
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     log.info('update_server_metadata %s %s', server_id, req)
     vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
     metadata = utils.get_attribute(req, "metadata", required=True,
@@ -739,7 +739,7 @@ def create_metadata_item(request, server_id, key):
     #                       badMediaType(415),
     #                       overLimit (413)
 
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     log.info('create_server_metadata_item %s %s %s', server_id, key, req)
     vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
     try:
@@ -1095,7 +1095,7 @@ def get_volume_info(request, server_id, volume_id):
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
 def attach_volume(request, server_id):
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     log.debug("attach_volume server_id %s request", server_id, req)
     user_id = request.user_uniq
     vm = util.get_vm(server_id, user_id, for_update=True)

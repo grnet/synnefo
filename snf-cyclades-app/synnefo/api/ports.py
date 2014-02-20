@@ -104,7 +104,7 @@ def list_ports(request, detail=True):
 @transaction.commit_on_success
 def create_port(request):
     user_id = request.user_uniq
-    req = api.utils.get_request_dict(request)
+    req = api.utils.get_json_body(request)
     log.info('create_port user: %s request: %s', user_id, req)
 
     port_dict = api.utils.get_attribute(req, "port", attr_type=dict)
@@ -200,7 +200,7 @@ def update_port(request, port_id):
     You can update only name, security_groups
     '''
     port = util.get_port(port_id, request.user_uniq, for_update=True)
-    req = api.utils.get_request_dict(request)
+    req = api.utils.get_json_body(request)
 
     port_info = api.utils.get_attribute(req, "port", required=True,
                                         attr_type=dict)

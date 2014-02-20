@@ -86,7 +86,7 @@ def network_demux(request, network_id):
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
 def network_action_demux(request, network_id):
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     network = util.get_network(network_id, request.user_uniq, for_update=True)
     action = req.keys()[0]
     try:
@@ -126,7 +126,7 @@ def list_networks(request, detail=True):
 @api.api_method(http_method='POST', user_required=True, logger=log)
 def create_network(request):
     userid = request.user_uniq
-    req = api.utils.get_request_dict(request)
+    req = api.utils.get_json_body(request)
     log.info('create_network user: %s request: %s', userid, req)
 
     network_dict = api.utils.get_attribute(req, "network",
@@ -163,7 +163,7 @@ def get_network_details(request, network_id):
 
 @api.api_method(http_method='PUT', user_required=True, logger=log)
 def update_network(request, network_id):
-    info = api.utils.get_request_dict(request)
+    info = api.utils.get_json_body(request)
 
     network = api.utils.get_attribute(info, "network", attr_type=dict,
                                       required=True)

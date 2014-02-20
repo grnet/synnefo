@@ -545,7 +545,8 @@ class TokensApiTest(TestCase):
         r = client.post(url, "not json", content_type='application/json')
         self.assertEqual(r.status_code, 400)
         body = json.loads(r.content)
-        self.assertEqual(body['badRequest']['message'], 'Invalid JSON data')
+        self.assertEqual(body['badRequest']['message'],
+                         'Could not decode request body as JSON')
 
         # Check auth with token
         post_data = """{"auth":{"token": {"id":"%s"},

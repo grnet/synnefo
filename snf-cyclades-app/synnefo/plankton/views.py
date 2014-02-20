@@ -415,13 +415,15 @@ def update_image_members(request, image_id):
     """
 
     log.debug('update_image_members %s', image_id)
+    data = api.utils.get_json_body(request)
     members = []
-    try:
-        data = json.loads(request.body)
-        for member in data['memberships']:
-            members.append(member['member_id'])
-    except (ValueError, KeyError, TypeError):
-        return HttpResponse(status=400)
+
+    memberships = api.utils.get_attribute(data, "memberships", attr_type=list)
+    for member in memberships:
+        if not isinstance(member, dict):
+            raise faults.BadRequest("Invalid 'memberships' field")
+        member = api.utils.get_attribute(member, "member_id")
+        members.append(member)
 
     with PlanktonBackend(request.user_uniq) as backend:
         backend.replace_users(image_id, members)

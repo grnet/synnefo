@@ -61,7 +61,7 @@ def get_cyclades_stats(request):
     images = True
     backend = None
     if request.body:
-        req = utils.get_request_dict(request)
+        req = utils.get_json_body(request)
         req_stats = utils.get_attribute(req, "stats", required=True,
                                         attr_type=dict)
         # Check backend

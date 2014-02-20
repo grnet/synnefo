@@ -91,7 +91,7 @@ def authenticate(request):
 
     d = defaultdict(dict)
     if not public_mode:
-        req = utils.get_request_dict(request)
+        req = utils.get_json_body(request)
 
         uuid = None
         try:

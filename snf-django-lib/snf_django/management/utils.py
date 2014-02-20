@@ -38,8 +38,7 @@ import operator
 from datetime import datetime
 from django.utils.timesince import timesince, timeuntil
 from django.db.models.query import QuerySet
-
-from synnefo.util.text import uenc, udec
+from django.utils.encoding import smart_unicode
 
 
 def parse_bool(value, strict=True):
@@ -179,15 +178,9 @@ def pprint_table(out, table, headers=None, output_format='pretty',
 
     sep = separator if separator else "  "
 
-    def stringnify(obj):
-        if isinstance(obj, (unicode, str)):
-            return udec(obj)
-        else:
-            return str(obj)
-
     if headers:
-        headers = map(stringnify, headers)
-    table = [map(stringnify, row) for row in table]
+        headers = map(smart_unicode, headers)
+    table = [map(smart_unicode, row) for row in table]
 
     if output_format == "json":
         assert(headers is not None), "json output format requires headers"
@@ -198,7 +191,6 @@ def pprint_table(out, table, headers=None, output_format='pretty',
         cw = csv.writer(out)
         if headers:
             table.insert(0, headers)
-        table = map(functools.partial(map, uenc), table)
         cw.writerows(table)
     elif output_format == "pretty":
         if vertical:
@@ -207,8 +199,7 @@ def pprint_table(out, table, headers=None, output_format='pretty',
             max_key = max(map(len, headers))
             for row in table:
                 for (k, v) in zip(headers, row):
-                    k = uenc(k.ljust(max_key))
-                    v = uenc(v)
+                    k = k.ljust(max_key)
                     out.write("%s: %s\n" % (k, v))
         else:
             # Find out the max width of each column
@@ -223,14 +214,14 @@ def pprint_table(out, table, headers=None, output_format='pretty',
                 out.write("-" * t_length + "\n")
             if headers:
                 # pretty print the headers
-                line = sep.join(uenc(v.rjust(w))
+                line = sep.join(v.rjust(w)
                                 for v, w in zip(headers, widths))
                 out.write(line + "\n")
                 out.write("-" * t_length + "\n")
 
             # print the rest table
             for row in table:
-                line = sep.join(uenc(v.rjust(w)) for v, w in zip(row, widths))
+                line = sep.join(v.rjust(w) for v, w in zip(row, widths))
                 out.write(line + "\n")
     else:
         raise ValueError("Unknown output format '%s'" % output_format)

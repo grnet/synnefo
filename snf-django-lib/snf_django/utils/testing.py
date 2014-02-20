@@ -35,7 +35,7 @@
 from contextlib import contextmanager
 from django.test import TestCase
 from django.utils import simplejson as json
-from synnefo.util import text
+from django.utils.encoding import smart_unicode
 from mock import patch
 
 
@@ -138,14 +138,14 @@ def astakos_user(user):
                     "expires": "2013-06-19T15:23:59.975572+00:00",
                     "id": "DummyToken",
                     "tenant": {
-                        "id": text.udec(user, 'utf8'),
+                        "id": smart_unicode(user, encoding='utf-8'),
                         "name": "Firstname Lastname"
                         }
                     },
                 "serviceCatalog": [],
                 "user": {
                     "roles_links": [],
-                    "id": text.udec(user, 'utf8'),
+                    "id": smart_unicode(user, encoding='utf-8'),
                     "roles": [{"id": 1, "name": "default"}],
                     "name": "Firstname Lastname"}}
                 }
@@ -205,6 +205,7 @@ def mocked_quotaholder(success=True):
             return (len(astakos.return_value.issue_one_commission.mock_calls) +
                     serial)
         astakos.return_value.issue_one_commission.side_effect = foo
+
         def resolve_mock(*args, **kwargs):
             return {"failed": [],
                     "accepted": args[0],

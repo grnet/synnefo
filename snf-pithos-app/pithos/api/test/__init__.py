@@ -47,13 +47,13 @@ from pithos.backends.migrate import initialize_db
 
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
-from synnefo.util import text
 
 from django.test import TestCase
 from django.test.client import Client, MULTIPART_CONTENT, FakePayload
 from django.test.simple import DjangoTestSuiteRunner
 from django.conf import settings
 from django.utils.http import urlencode
+from django.utils.encoding import smart_unicode
 from django.db.backends.creation import TEST_DATABASE_PREFIX
 
 import django.utils.simplejson as json
@@ -230,7 +230,9 @@ class PithosAPITest(TestCase):
         mock_validate_token = self.create_patch(
             'astakosclient.AstakosClient.validate_token')
         mock_validate_token.return_value = {
-            'access': {'user': {'id': text.udec(self.user, 'utf8')}}}
+            'access': {
+                'user': {'id': smart_unicode(self.user, encoding='utf-8')}}
+            }
 
         # patch astakosclient.AstakosClient.get_token
         mock_get_token = self.create_patch(

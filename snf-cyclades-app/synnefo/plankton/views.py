@@ -39,10 +39,10 @@ from urllib import unquote
 
 from django.conf import settings
 from django.http import HttpResponse
+from django.utils.encoding import smart_unicode
 
 from snf_django.lib import api
 from snf_django.lib.api import faults
-from synnefo.util.text import uenc
 from synnefo.plankton.backend import PlanktonBackend
 from synnefo.plankton.backend import split_url
 
@@ -94,7 +94,7 @@ def _create_image_response(image):
         if key == 'properties':
             for k, v in image.get('properties', {}).items():
                 name = 'x-image-meta-property-' + k.replace('_', '-')
-                response[name] = uenc(v)
+                response[name] = smart_unicode(v, encoding="utf-8")
         else:
             if key == "status":
                 img_status = image.get(key, "").upper()
@@ -103,7 +103,8 @@ def _create_image_response(image):
                 response["x-image-meta-status"] = status
             else:
                 name = 'x-image-meta-' + key.replace('_', '-')
-                response[name] = uenc(image.get(key, ''))
+                response[name] = smart_unicode(image.get(key, ''),
+                                               encoding="utf-8")
 
     return response
 
@@ -122,10 +123,12 @@ def _get_image_headers(request):
     for key, val in request.META.items():
         if key.startswith(META_PROPERTY_PREFIX):
             name = normalize(key[META_PROPERTY_PREFIX_LEN:])
-            headers['properties'][unquote(name)] = unquote(uenc(val))
+            headers['properties'][unquote(name)] = \
+                unquote(smart_unicode(val, encoding='utf-8'))
         elif key.startswith(META_PREFIX):
             name = normalize(key[META_PREFIX_LEN:])
-            headers[unquote(name)] = unquote(uenc(val))
+            headers[unquote(name)] = \
+                unquote(smart_unicode(val, encoding='utf-8'))
 
     is_public = headers.get('is_public', None)
     if is_public is not None:
@@ -165,7 +168,7 @@ def add_image(request):
     name = params.pop('name', None)
     if name is None:
         raise faults.BadRequest("Image 'name' parameter is required")
-    elif len(uenc(name)) == 0:
+    elif len(smart_unicode(name, encoding="utf-8")) == 0:
         raise faults.BadRequest("Invalid image name")
     location = params.pop('location', None)
     if location is None:

@@ -59,12 +59,12 @@ from time import time, gmtime, strftime
 from functools import wraps
 from operator import itemgetter
 from collections import namedtuple
+from copy import deepcopy
 
 from django.conf import settings
 from django.utils import importlib
+from django.utils.encoding import smart_unicode
 from pithos.backends.base import NotAllowedError, VersionNotExists, QuotaError
-from synnefo.util.text import uenc
-from copy import deepcopy
 from snf_django.lib.api import faults
 
 Location = namedtuple("ObjectLocation", ["account", "container", "path"])
@@ -217,7 +217,7 @@ class PlanktonBackend(object):
         prefixed = {}
         for k, v in _prefixed_metadata.items():
             # Encode to UTF-8
-            k, v = uenc(k), uenc(v)
+            k, v = smart_unicode(k), smart_unicode(v)
             # Check the length of key/value
             if len(k) > 128:
                 raise faults.BadRequest('Metadata keys should be less than %s'

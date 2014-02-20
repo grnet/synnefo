@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from django.http import HttpResponse
+from django.utils.encoding import smart_str
 
 import gd
 import os
@@ -46,7 +47,6 @@ from hashlib import sha256
 
 from synnefo_stats import settings
 
-from synnefo.util.text import uenc
 from snf_django.lib.api import faults, api_method
 
 from logging import getLogger
@@ -252,12 +252,12 @@ available_graph_types = {'cpu-bar': draw_cpu_bar,
 @api_method(http_method='GET', token_required=False, user_required=False,
             format_allowed=False, logger=log)
 def grapher(request, graph_type, hostname):
-    hostname = decrypt(uenc(hostname))
-    fname = uenc(os.path.join(settings.RRD_PREFIX, hostname))
+    hostname = decrypt(smart_str(hostname))
+    fname = smart_str(os.path.join(settings.RRD_PREFIX, hostname))
     if not os.path.isdir(fname):
         raise faults.ItemNotFound('No such instance')
 
-    outfname = uenc(os.path.join(settings.GRAPH_PREFIX, hostname))
+    outfname = smart_str(os.path.join(settings.GRAPH_PREFIX, hostname))
     draw_func = available_graph_types[graph_type]
 
     response = HttpResponse(draw_func(fname, outfname),

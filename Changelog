@@ -28,6 +28,12 @@ Pithos
 
 * Fix performance issue due to missing index
 
+Cyclades
+--------
+
+* Fix a few occurrences of HTTP 500 errors being triggered due to insufficient
+ validation of incoming requests in the Network API
+
 .. _Changelog-0.15rc4:
 
 v0.15rc4

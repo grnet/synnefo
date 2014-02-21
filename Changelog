@@ -6,10 +6,34 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
-v0.14next
-=========
+v0.15rc5
+========
 
 Released: UNRELEASED
+
+Astakos
+-------
+
+* Fix request authorisation code failures due to Unicode issue:
+  https://code.grnet.gr/issues/4971
+
+Pithos
+------
+
+* Extend API to optionally enforce a specific content disposition type
+  in view and public requests: https://code.grnet.gr/issues/5019
+
+* Fix bulk operation (delete/copy/move) failures in overpopulated
+  containers/folders: https://code.grnet.gr/issues/5119
+
+* Fix performance issue due to missing index
+
+.. _Changelog-0.15rc4:
+
+v0.15rc4
+========
+
+Released: Wed Jan 15 10:56:10 EET 2014
 
 Synnefo-wide
 ------------

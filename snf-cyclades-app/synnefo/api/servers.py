@@ -178,8 +178,8 @@ def vm_to_dict(vm, detail=False):
         d['hostId'] = vm.hostid
         d['updated'] = utils.isoformat(vm.updated)
         d['created'] = utils.isoformat(vm.created)
-        d['flavor'] = {"id": vm.flavor.id,
-                       "links": util.flavor_to_links(vm.flavor.id)}
+        d['flavor'] = {"id": vm.flavor_id,
+                       "links": util.flavor_to_links(vm.flavor_id)}
         d['image'] = {"id": vm.imageid,
                       "links": util.image_to_links(vm.imageid)}
         d['suspended'] = vm.suspended

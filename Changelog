@@ -33,6 +33,7 @@ Cyclades
 
 * Fix a few occurrences of HTTP 500 errors being triggered due to insufficient
  validation of incoming requests in the Network API
+* Speed up some API calls by fixing the relevant DB queries
 
 .. _Changelog-0.15rc4:
 

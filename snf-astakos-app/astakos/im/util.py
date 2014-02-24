@@ -231,22 +231,6 @@ def prepare_response(request, user, next='', renew=False):
     return response
 
 
-class lazy_string(object):
-    def __init__(self, function, *args, **kwargs):
-        self.function = function
-        self.args = args
-        self.kwargs = kwargs
-
-    def __str__(self):
-        if not hasattr(self, 'str'):
-            self.str = self.function(*self.args, **self.kwargs)
-        return self.str
-
-
-def reverse_lazy(*args, **kwargs):
-    return lazy_string(reverse, *args, **kwargs)
-
-
 def reserved_email(email):
     return AstakosUser.objects.user_exists(email)
 

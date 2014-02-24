@@ -251,7 +251,7 @@ class ActivationBackend(object):
         user.moderated_at = datetime.datetime.now()
         user.moderated_data = json.dumps(user.__dict__,
                                          default=lambda obj:
-                                         str(obj))
+                                         unicode(obj))
         user.save()
         functions.enable_base_project(user)
 
@@ -323,7 +323,7 @@ class ActivationBackend(object):
         user.moderated_at = datetime.datetime.now()
         user.moderated_data = json.dumps(user.__dict__,
                                          default=lambda obj:
-                                         str(obj))
+                                         unicode(obj))
         user.is_rejected = True
         user.rejected_reason = reason
         user.save()

@@ -120,7 +120,7 @@ def commissions(request):
 @api.api_method(http_method='GET', token_required=True, user_required=False)
 @component_from_token
 def get_pending_commissions(request):
-    client_key = str(request.component_instance)
+    client_key = unicode(request.component_instance)
 
     result = qh.get_pending_commissions(clientkey=client_key)
     return json_response(result)
@@ -139,7 +139,7 @@ def _provisions_to_list(provisions):
             if not is_integer(quantity):
                 raise ValueError()
         except (TypeError, KeyError, ValueError):
-            raise BadRequest("Malformed provision %s" % str(provision))
+            raise BadRequest("Malformed provision %s" % unicode(provision))
     return lst
 
 
@@ -153,7 +153,7 @@ def issue_commission(request):
     except json.JSONDecodeError:
         raise BadRequest("POST data should be in json format.")
 
-    client_key = str(request.component_instance)
+    client_key = unicode(request.component_instance)
     provisions = input_data.get('provisions')
     if provisions is None:
         raise BadRequest("Provisions are missing.")
@@ -243,7 +243,7 @@ def resolve_pending_commissions(request):
     except json.JSONDecodeError:
         raise BadRequest("POST data should be in json format.")
 
-    client_key = str(request.component_instance)
+    client_key = unicode(request.component_instance)
     accept = input_data.get('accept', [])
     reject = input_data.get('reject', [])
 
@@ -273,7 +273,7 @@ def resolve_pending_commissions(request):
 @component_from_token
 def get_commission(request, serial):
     data = request.GET
-    client_key = str(request.component_instance)
+    client_key = unicode(request.component_instance)
     try:
         serial = int(serial)
     except ValueError:
@@ -304,7 +304,7 @@ def serial_action(request, serial):
     except ValueError:
         raise BadRequest("Serial should be an integer.")
 
-    client_key = str(request.component_instance)
+    client_key = unicode(request.component_instance)
 
     accept = 'accept' in input_data
     reject = 'reject' in input_data

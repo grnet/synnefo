@@ -160,7 +160,7 @@ def issue_commission(clientkey, provisions, name="", force=False):
             try:
                 th = holdings[key]
             except KeyError:
-                m = ("There is no such holding %s" % str(key))
+                m = ("There is no such holding %s" % unicode(key))
                 provision = _mkProvision(key, quantity)
                 raise NoHoldingError(m,
                                      provision=provision)

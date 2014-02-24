@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -60,15 +61,15 @@ class QuotaAPITest(TestCase):
         component1 = Component.objects.create(name="comp1")
         register.add_service(component1, "service1", "type1", [])
         # custom service resources
-        resource11 = {"name": "service1.resource11",
-                      "desc": "resource11 desc",
+        resource11 = {"name": u"service1.ρίσορς11",
+                      "desc": "ρίσορς11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
                       "ui_visible": True}
         r, _ = register.add_resource(resource11)
         register.update_base_default(r, 100)
         resource12 = {"name": "service1.resource12",
-                      "desc": "resource11 desc",
+                      "desc": "ρίσορς11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
                       "unit": "bytes"}
@@ -88,7 +89,7 @@ class QuotaAPITest(TestCase):
         register.add_service(component2, "service2", "type2", [])
         # create another service
         resource21 = {"name": "service2.resource21",
-                      "desc": "resource11 desc",
+                      "desc": "ρίσορς11 desc",
                       "service_type": "type2",
                       "service_origin": "service2",
                       "ui_visible": False}
@@ -169,7 +170,7 @@ class QuotaAPITest(TestCase):
         commission_request = {
             "force": False,
             "auto_accept": False,
-            "name": "my commission",
+            "name": u"ναμε",
             "provisions": [
                 {
                     "holder": "user:" + user.uuid,
@@ -218,8 +219,10 @@ class QuotaAPITest(TestCase):
         body = json.loads(r.content)
         self.assertEqual(body['serial'], serial1)
         assertIn('issue_time', body)
+        self.assertEqual(body["name"], u"ναμε")
         provisions = sorted(body['provisions'], key=lambda p: p['resource'])
-        self.assertEqual(provisions, commission_request['provisions'])
+        crp = sorted(commission_request['provisions'], key=lambda p: p['resource'])
+        self.assertEqual(provisions, crp)
         self.assertEqual(body['name'], commission_request['name'])
 
         r = client.get(u('service_quotas?user=' + user.uuid), **s1_headers)
@@ -303,7 +306,7 @@ class QuotaAPITest(TestCase):
 
         commission_request = {
             "auto_accept": True,
-            "name": "my commission",
+            "name": "κομίσσιον",
             "provisions": "dummy"}
 
         post_data = json.dumps(commission_request)

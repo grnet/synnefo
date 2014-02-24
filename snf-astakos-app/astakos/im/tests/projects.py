@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -49,19 +50,19 @@ class ProjectAPITest(TestCase):
     def setUp(self):
         self.client = Client()
         component1 = Component.objects.create(name="comp1")
-        register.add_service(component1, "service1", "type1", [])
+        register.add_service(component1, "σέρβις1", "type1", [])
         # custom service resources
-        resource11 = {"name": "service1.resource11",
-                      "desc": "resource11 desc",
+        resource11 = {"name": u"σέρβις1.ρίσορς11",
+                      "desc": u"ρίσορς11 desc",
                       "service_type": "type1",
-                      "service_origin": "service1",
+                      "service_origin": u"σέρβις1",
                       "ui_visible": True}
         r, _ = register.add_resource(resource11)
         register.update_base_default(r, 100)
-        resource12 = {"name": "service1.resource12",
-                      "desc": "resource11 desc",
+        resource12 = {"name": u"σέρβις1.resource12",
+                      "desc": "resource12 desc",
                       "service_type": "type1",
-                      "service_origin": "service1",
+                      "service_origin": u"σέρβις1",
                       "unit": "bytes"}
         r, _ = register.add_resource(resource12)
         register.update_base_default(r, 1024)
@@ -162,10 +163,11 @@ class ProjectAPITest(TestCase):
         self.assertEqual(status, 409)
 
         app1 = {"name": "test.pr",
+                "description": u"δεσκρίπτιον",
                 "end_date": "2013-5-5T20:20:20Z",
                 "join_policy": "auto",
                 "max_members": 5,
-                "resources": {"service1.resource11": {
+                "resources": {u"σέρβις1.ρίσορς11": {
                     "project_capacity": 1024,
                     "member_capacity": 512}}
                 }
@@ -190,6 +192,7 @@ class ProjectAPITest(TestCase):
         self.assertEqual(body["last_application"]["state"], "pending")
         self.assertEqual(body["state"], "uninitialized")
         self.assertEqual(body["owner"], self.user1.uuid)
+        self.assertEqual(body["description"], u"δεσκρίπτιον")
 
         # Approve forbidden
         status = self.project_action(project_id, "approve", app_id=app_id,
@@ -233,7 +236,7 @@ class ProjectAPITest(TestCase):
                 "join_policy": "moderated",
                 "leave_policy": "auto",
                 "max_members": 3,
-                "resources": {"service1.resource11": {
+                "resources": {u"σέρβις1.ρίσορς11": {
                     "project_capacity": 1024,
                     "member_capacity": 1024}}
                 }
@@ -602,13 +605,13 @@ class ProjectAPITest(TestCase):
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 400)
 
-        ap["resources"] = {"service1.resource11": {
+        ap["resources"] = {u"σέρβις1.ρίσορς11": {
                 "member_capacity": 512}}
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 400)
 
-        ap["resources"] = {"service1.resource11": {"member_capacity": 512,
-                                                   "project_capacity": 1024}}
+        ap["resources"] = {u"σέρβις1.ρίσορς11": {"member_capacity": 512,
+                                                 "project_capacity": 1024}}
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 201)
 

@@ -1,4 +1,4 @@
-# Copyright 2012 - 2013 GRNET S.A. All rights reserved.
+# Copyright 2012 - 2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -33,12 +33,37 @@
 
 import json
 import csv
-import functools
 import operator
+import locale
+import unicodedata
+
 from datetime import datetime
 from django.utils.timesince import timesince, timeuntil
 from django.db.models.query import QuerySet
-from django.utils.encoding import smart_unicode
+from django.utils.encoding import smart_unicode, smart_str
+
+
+def smart_locale_unicode(s, **kwargs):
+    """Wrapper around 'smart_unicode' using user's preferred encoding."""
+    encoding = locale.getpreferredencoding()
+    return smart_unicode(s, encoding=encoding, **kwargs)
+
+
+def smart_locale_str(s, errors='replace', **kwargs):
+    """Wrapper around 'smart_str' using user's preferred encoding."""
+    encoding = locale.getpreferredencoding()
+    return smart_str(s, encoding=encoding, errors=errors, **kwargs)
+
+
+def safe_string(s):
+    """Escape control characters from unicode and string objects."""
+    if not isinstance(s, basestring):
+        return s
+    if isinstance(s, unicode):
+        return "".join(ch.encode("unicode_escape")
+                       if unicodedata.category(ch)[0] == "C" else
+                       ch for ch in s)
+    return s.encode("string_escape")
 
 
 def parse_bool(value, strict=True):

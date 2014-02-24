@@ -38,11 +38,9 @@ import datetime
 import logging
 from optparse import (make_option, OptionParser, OptionGroup,
                       TitledHelpFormatter)
-
 from synnefo import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import FieldError
-
 from snf_django.management import utils
 from snf_django.lib.astakos import UserCache
 from snf_django.utils.line_logging import NewlineStreamHandler
@@ -107,7 +105,7 @@ class SynnefoCommand(BaseCommand):
     stderr = SynnefoOutputWrapper()
 
     def run_from_argv(self, argv):
-        """Initialize logger for 'SynnefoOutputWrapper' and call super
+        """Initialize loggers and convert arguments to unicode objects
 
         Create a filename based on the timestamp, the running
         command and the pid. Then create a new logger that will
@@ -118,6 +116,9 @@ class SynnefoCommand(BaseCommand):
 
         Commands that match the 'LOGGER_EXCLUE_COMMANDS' pattern will not be
         logged (by default all *-list and *-show commands).
+
+        Also, convert command line arguments and options to unicode objects
+        using user's preferred encoding.
 
         """
         curr_time = datetime.datetime.now()
@@ -188,7 +189,9 @@ class SynnefoCommand(BaseCommand):
                     % (filename, err)
                 sys.stderr.write(msg)
 
+        argv = [utils.smart_locale_unicode(a) for a in argv]
         super(SynnefoCommand, self).run_from_argv(argv)
+
         if stream is not None:
             stream.close()
             fd = None

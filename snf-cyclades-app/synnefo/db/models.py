@@ -506,6 +506,7 @@ class Network(models.Model):
     external_router = models.BooleanField(default=False)
     serial = models.ForeignKey(QuotaHolderSerial, related_name='network',
                                null=True, on_delete=models.SET_NULL)
+    subnet_ids = fields.SeparatedValuesField("Subnet IDs", null=True)
 
     def __unicode__(self):
         return "<Network: %s>" % str(self.id)

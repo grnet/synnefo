@@ -1,4 +1,4 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -107,8 +107,6 @@ def list_networks(request, detail=True):
     user_networks = Network.objects.filter(Q(userid=request.user_uniq) |
                                            Q(public=True))\
                                    .order_by('id')
-    if detail:
-        user_networks = user_networks.prefetch_related("subnets")
 
     user_networks = api.utils.filter_modified_since(request,
                                                     objects=user_networks)
@@ -193,12 +191,6 @@ def network_to_dict(network, detail=True):
     d = {'id': str(network.id), 'name': network.name}
     d['links'] = util.network_to_links(network.id)
     if detail:
-        # Loop over subnets. Do not perform any extra query because of prefetch
-        # related!
-        subnet_ids = []
-        for subnet in network.subnets.all():
-            subnet_ids.append(subnet.id)
-
         state = "SNF:DRAINED" if network.drained else network.state
         d['user_id'] = network.userid
         d['tenant_id'] = network.project
@@ -209,7 +201,7 @@ def network_to_dict(network, detail=True):
         d['public'] = network.public
         d['router:external'] = network.external_router
         d['admin_state_up'] = True
-        d['subnets'] = subnet_ids
+        d['subnets'] = network.subnet_ids
         d['SNF:floating_ip_pool'] = network.floating_ip_pool
         d['deleted'] = network.deleted
     return d
@@ -219,7 +211,7 @@ def network_to_dict(network, detail=True):
 def reassign_network(request, network, args):
     project = args.get("project")
     if project is None:
-        raise faults.BadRequest("Missing 'project' attribute.")
+        raise api.faults.BadRequest("Missing 'project' attribute.")
     networks.reassign(network, project)
     return HttpResponse(status=200)
 

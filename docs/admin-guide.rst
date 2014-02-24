@@ -2655,6 +2655,7 @@ Upgrade Notes
    v0.14.7 -> v0.14.8 <upgrade/upgrade-0.14.8>
    v0.14.9 -> v0.14.10 <upgrade/upgrade-0.14.10>
    v0.14 -> v0.15 <upgrade/upgrade-0.15>
+   v0.15 -> v0.16 <upgrade/upgrade-0.16>
 
 
 Changelog, NEWS

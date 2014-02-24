@@ -756,10 +756,6 @@ class IPAddress(models.Model):
     class Meta:
         unique_together = ("network", "address", "deleted")
 
-    @property
-    def public(self):
-        return self.network.public
-
     def release_address(self):
         """Release the IPv4 address."""
         if self.ipversion == 4:
@@ -825,6 +821,7 @@ class NetworkInterface(models.Model):
     security_groups = models.ManyToManyField("SecurityGroup", null=True)
     state = models.CharField(max_length=32, null=False, default="ACTIVE",
                              choices=STATES)
+    public = models.BooleanField(default=False)
     device_owner = models.CharField('Device owner', max_length=128, null=True)
 
     def __unicode__(self):

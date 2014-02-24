@@ -498,6 +498,7 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
                                            state="DOWN",
                                            userid=userid,
                                            device_owner=None,
+                                           public=network.public,
                                            name=name)
 
     # add the security groups if any

@@ -221,7 +221,7 @@ def get_server_public_ip(vm_nics, version=4):
     """
     for nic in vm_nics:
         for ip in nic.ips.all():
-            if ip.ipversion == version and ip.public:
+            if nic.public and ip.ipversion == version:
                 return ip
     return None
 

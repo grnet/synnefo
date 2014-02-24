@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Synnefo admin</title>
+    <link href="{{ ADMIN_MEDIA_URL }}css/bootstrap.css" rel="stylesheet">
+    <link href="{{ ADMIN_MEDIA_URL }}css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="{{ ADMIN_MEDIA_URL }}css/extra.css" rel="stylesheet">
+    <style>
+    </style>
+  </head>
+  
+  <body>
+    <div class="container-fluid">
+        <div class="row-fluid">
+            <div class="span7">
+              <h1><a href="{% url admin-index %}">Synnefo admin</a>
+              {% block extraheader %}{% endblock %}</h1>
+            </div>
+            <div class="span5">
+                <form class="form-horizontal account-form" method="get" action=".">
+                  <input type="text" class="input-medium search-query" name="account">
+                  <button type="submit" class="btn">View account</button>
+              </form>
+          </div>
+      </div>
+          {% if messages %}
+          <div class="messages cleafix row-fuild">
+            {% for message in messages %}
+                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                  <button class="close" data-dismiss="alert">×</button>
+                  {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+          <div class="messages cleafix row-fuild">
+    {% block content %}
+    {% endblock %}
+
+</div>
+    </div>
+    <script src="{{ MEDIA_URL }}admin/js/jquery.js"></script>
+    <script src="{{ MEDIA_URL }}admin/js/bootstrap.js"></script>
+    <script src="{{ MEDIA_URL }}admin/js/jquery.tablesorter.js"></script>
+    <script src="{{ MEDIA_URL }}admin/js/common.js"></script> 
+  </body>
+</html>

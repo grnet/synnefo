@@ -38,7 +38,7 @@ class Migration(DataMigration):
 
     def make_base_project(self, orm, user):
         chain = self.new_chain(orm)
-        proj = orm.Project.objects.create(
+        orm.Project.objects.create(
             id=chain.chain,
             uuid=user.uuid,
             last_application=None,
@@ -53,8 +53,6 @@ class Migration(DataMigration):
             private=True,
             is_base=True)
 
-        base_grants = self.base_resources(orm, user)
-        self.set_resources(proj, base_grants)
         user.base_project_id = chain.chain
         user.save()
 
@@ -69,6 +67,8 @@ class Migration(DataMigration):
         project.name = project.realname
         project.state = ACTIVATED
         project.save()
+        base_grants = self.base_resources(orm, user)
+        self.set_resources(project, base_grants)
         self.new_membership(orm, project, user)
 
     def forwards(self, orm):

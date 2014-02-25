@@ -132,6 +132,12 @@ class PlanktonTest(BaseAPITest):
         self.assertBadRequest(response)
         self.assertTrue("size" in response.content)
 
+        # Unicode Error:
+        headers["HTTP_X_IMAGE_META_NAME"] = "\xc2"
+        response = self.post(IMAGES_URL, **headers)
+        self.assertBadRequest(response)
+        headers["HTTP_X_IMAGE_META_NAME"] = u"TestImage\u2602"
+
         headers["HTTP_X_IMAGE_META_SIZE"] = 42
         headers["HTTP_X_IMAGE_META_CHECKSUM"] = "wrong_checksum"
         response = self.post(IMAGES_URL, **headers)

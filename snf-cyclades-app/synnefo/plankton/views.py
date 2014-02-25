@@ -39,7 +39,8 @@ from urllib import unquote, quote
 
 from django.conf import settings
 from django.http import HttpResponse
-from django.utils.encoding import smart_unicode, smart_str
+from django.utils.encoding import (smart_unicode, smart_str,
+                                   DjangoUnicodeDecodeError)
 
 from snf_django.lib import api
 from snf_django.lib.api import faults
@@ -141,22 +142,26 @@ def headers_to_image_params(request):
 
     params = {}
     properties = {}
-    for key, val in request.META.items():
-        if key.startswith(META_PREFIX):
-            if key.startswith(META_PROPERTY_PREFIX):
-                key = key[META_PROPERTY_PREFIX_LEN:]
-                key = smart_unicode(unquote(key), encoding='utf-8')
-                val = smart_unicode(unquote(val), encoding='utf-8')
-                properties[normalize(key)] = val
-            else:
-                key = smart_unicode(key[META_PREFIX_LEN:], encoding='utf-8')
-                key = normalize(key)
-                if key in PLANKTON_FIELDS:
-                    if key == "name":
-                        val = smart_unicode(unquote(val), encoding='utf-8')
-                    elif key == "is_public" and not isinstance(val, bool):
-                        val = True if val.lower() == 'true' else False
-                    params[key] = val
+    try:
+        for key, val in request.META.items():
+            if key.startswith(META_PREFIX):
+                if key.startswith(META_PROPERTY_PREFIX):
+                    key = key[META_PROPERTY_PREFIX_LEN:]
+                    key = smart_unicode(unquote(key), encoding='utf-8')
+                    val = smart_unicode(unquote(val), encoding='utf-8')
+                    properties[normalize(key)] = val
+                else:
+                    key = smart_unicode(key[META_PREFIX_LEN:],
+                                        encoding='utf-8')
+                    key = normalize(key)
+                    if key in PLANKTON_FIELDS:
+                        if key == "name":
+                            val = smart_unicode(unquote(val), encoding='utf-8')
+                        elif key == "is_public" and not isinstance(val, bool):
+                            val = True if val.lower() == 'true' else False
+                        params[key] = val
+    except DjangoUnicodeDecodeError:
+        raise faults.BadRequest("Could not decode request as UTF-8 string")
 
     params['properties'] = properties
 

@@ -62,8 +62,6 @@ class FileMapper(object):
     def _read_rear_map(self, maphash):
         filename = hexlify(maphash)
         dir = join(self.mappath, filename[0:2], filename[2:4], filename[4:6])
-        if not exists(dir):
-            makedirs(dir)
         name = join(dir, filename)
         return ContextFile(name, O_RDONLY)
 

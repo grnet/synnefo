@@ -38,6 +38,7 @@ from rados import *
 
 CEPH_CONF_FILE = "/etc/ceph/ceph.conf"
 
+
 class RadosMapper(object):
     """Mapper.
        Required constructor parameters: mappath, namelen.
@@ -55,7 +56,6 @@ class RadosMapper(object):
             cls.rados.connect()
             cls.rados_ctx = cls.rados.open_ioctx(pool)
         return cls.rados_ctx
-
 
     def __init__(self, **params):
         self.params = params

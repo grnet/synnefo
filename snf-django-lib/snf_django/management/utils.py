@@ -32,7 +32,6 @@
 # or implied, of GRNET S.A.
 
 import json
-import csv
 import operator
 import locale
 import unicodedata
@@ -41,6 +40,7 @@ from datetime import datetime
 from django.utils.timesince import timesince, timeuntil
 from django.db.models.query import QuerySet
 from django.utils.encoding import smart_unicode, smart_str
+from snf_django.management.unicodecsv import UnicodeWriter
 
 
 def smart_locale_unicode(s, **kwargs):
@@ -213,7 +213,8 @@ def pprint_table(out, table, headers=None, output_format='pretty',
         out.write(json.dumps(table, indent=4))
         out.write("\n")
     elif output_format == "csv":
-        cw = csv.writer(out)
+        enc = locale.getpreferredencoding()
+        cw = UnicodeWriter(out, encoding=enc)
         if headers:
             table.insert(0, headers)
         cw.writerows(table)

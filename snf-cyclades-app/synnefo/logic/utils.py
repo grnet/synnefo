@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -42,7 +42,7 @@ def id_from_instance_name(name):
     Strips the ganeti prefix atm. Needs a better name!
 
     """
-    sname = str(name)
+    sname = smart_unicode(name)
     if not sname.startswith(settings.BACKEND_PREFIX_ID):
         raise VirtualMachine.InvalidBackendIdError(sname)
     ns = sname.replace(settings.BACKEND_PREFIX_ID, "", 1)
@@ -53,7 +53,7 @@ def id_from_instance_name(name):
 
 
 def id_to_instance_name(id):
-    return "%s%s" % (settings.BACKEND_PREFIX_ID, str(id))
+    return "%s%s" % (settings.BACKEND_PREFIX_ID, smart_unicode(id))
 
 
 def id_from_network_name(name):
@@ -62,26 +62,26 @@ def id_from_network_name(name):
     Strips the ganeti prefix atm. Needs a better name!
 
     """
-    if not str(name).startswith(settings.BACKEND_PREFIX_ID):
-        raise Network.InvalidBackendIdError(str(name))
-    ns = str(name).replace(settings.BACKEND_PREFIX_ID + 'net-', "", 1)
+    if not smart_unicode(name).startswith(settings.BACKEND_PREFIX_ID):
+        raise Network.InvalidBackendIdError(smart_unicode(name))
+    ns = smart_unicode(name).replace(settings.BACKEND_PREFIX_ID + 'net-', "", 1)
     if not ns.isdigit():
-        raise Network.InvalidBackendIdError(str(name))
+        raise Network.InvalidBackendIdError(smart_unicode(name))
 
     return int(ns)
 
 
 def id_to_network_name(id):
-    return "%snet-%s" % (settings.BACKEND_PREFIX_ID, str(id))
+    return "%snet-%s" % (settings.BACKEND_PREFIX_ID, smart_unicode(id))
 
 
 def id_from_nic_name(name):
     """Returns NIC's Django id, given a Ganeti's NIC name.
 
     """
-    if not str(name).startswith(settings.BACKEND_PREFIX_ID):
+    if not smart_unicode(name).startswith(settings.BACKEND_PREFIX_ID):
         raise ValueError("Invalid NIC name: %s" % name)
-    ns = str(name).replace(settings.BACKEND_PREFIX_ID + 'nic-', "", 1)
+    ns = smart_unicode(name).replace(settings.BACKEND_PREFIX_ID + 'nic-', "", 1)
     if not ns.isdigit():
         raise ValueError("Invalid NIC name: %s" % name)
 

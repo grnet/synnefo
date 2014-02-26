@@ -317,6 +317,7 @@ class Command(BaseCommand):
         if password:
             self.stdout.write('User\'s new password: %s\n' % password)
 
+        force = options['force']
         delete = options.get('delete')
         if delete:
             if user.is_accepted():

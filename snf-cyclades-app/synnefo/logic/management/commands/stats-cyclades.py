@@ -48,7 +48,7 @@ class Command(SynnefoCommand):
     help = "Get available statistics of Cyclades service"
     can_import_settings = True
 
-    option_list = SynnefoCommand.option_list + (
+    command_option_list = (
         make_option("--backend",
                     dest="backend",
                     help="Include statistics only for this backend."),

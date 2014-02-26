@@ -52,7 +52,8 @@ DEFAULT_RESOURCES = ["cyclades.cpu",
 class Command(SynnefoCommand):
     help = """Check and fix quota violations for Cyclades resources.
     """
-    option_list = SynnefoCommand.option_list + (
+
+    command_option_list = (
         make_option("--max-operations",
                     help="Limit operations per backend."),
         make_option("--users", dest="users",

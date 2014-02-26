@@ -6,6 +6,8 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.15rc5:
+
 v0.15rc5
 ========
 
@@ -14,8 +16,11 @@ Released: UNRELEASED
 Astakos
 -------
 
-* Fix request authorisation code failures due to Unicode issue:
+* Fix request authorization code failures due to Unicode issue:
   https://code.grnet.gr/issues/4971
+* Omit validation issues for non-required metadata values received from the
+  third party authentication provider.
+
 
 Pithos
 ------
@@ -31,8 +36,12 @@ Pithos
 Cyclades
 --------
 
+* Extend flavors with 'allow_create' attribute. Flavors that have this
+  attribute unset cannot be used by users to create new servers.
+* Store each image property(metadata) as a separate Pithos metadata and check
+  that the size of each property is valid.
 * Fix a few occurrences of HTTP 500 errors being triggered due to insufficient
- validation of incoming requests in the Network API
+  validation of incoming requests in the Network API
 * Speed up some API calls by fixing the relevant DB queries
 
 .. _Changelog-0.15rc4:
@@ -57,7 +66,7 @@ Synnefo-wide
   and Astakos' ui service is under '_astakos/ui'.
 
 * Add 'mail_admins' handler to 'django.request' logger in order to send email
-  notifactions to users listed in 'ADMINS' setting about unhandled exceptions
+  notifications to users listed in 'ADMINS' setting about unhandled exceptions
   in the code.
 
 * Extend astakosclient to request and validate OAuth 2.0 access tokens
@@ -110,7 +119,7 @@ Astakos
 * Export basic statistics about Astakos service from '/admin/stats/detail' API
   endpoint. Access to this endpoint is only allowed to users that belong to
   the Astakos groups that are defined in the
-  'ASTAKOS_ADMIN_STATS_PERMITTED_GROUPS' setting. Statistics are also availble
+  'ASTAKOS_ADMIN_STATS_PERMITTED_GROUPS' setting. Statistics are also available
   from 'snf-manage stats-astakos' management command.
 
 * Implement OAuth 2.0 Authorization Code Grant
@@ -123,9 +132,6 @@ Astakos
 
 * Automatically fill third party signup form fields when available by the
   the third party provider.
-
-* Omit validation issues for non-required metadata values received from the 
-  third party authentication provider.
 
 * Management commands:
 
@@ -199,14 +205,14 @@ Cyclades
   CYCLADES_SERVERS_FQDN to set the template for servers FDQN. Remove
   'UI_VM_HOSTNAME_FORMAT' setting.
 * Extend servers info API response with 'SNF:port_forwarding' attribute,
-  describing port fowarding rules (DNAT) that are applied to vms. The
+  describing port forwarding rules (DNAT) that are applied to vms. The
   description of such rules is done via the new CYCLADES_PORT_FORWARDING
   setting.
 * Speed up server reconciliation, by performing parallel reconciliation for
   each backend.
 * Change --dhcp option of network management commands from a flag to a boolean
   value, e.g. --dhcp=True
-* Remove 'ARCHIPELAGO_BACKENDS' setting used to distinquish between backends
+* Remove 'ARCHIPELAGO_BACKENDS' setting used to distinguish between backends
   that hosted only archipelago backends. Instead allocation is based on which
   disk-templates are enabled in each backend.
 * Implement 'snf-manage server-remove' management command.
@@ -220,7 +226,7 @@ Cyclades
 * Export basic statistics about Cyclades Service from '/admin/stats/detail'
   API endpoint. Access to this endpoint is only allowed to users that belong
   to the Astakos groups that are defined in the 'ADMIN_STATS_PERMITTED_GROUPS'
-  setting.  Statistics are also availble from 'snf-manage stats-cyclades'
+  setting.  Statistics are also available from 'snf-manage stats-cyclades'
   management command.
 * Support enforcing quota through command 'enforce-resources-cyclades'.
 * Remove command 'resource-export-cyclades' subsumed by
@@ -238,8 +244,6 @@ Cyclades
 * Remove 'DEFAULT_ROUTING_TABLE' setting. If a link for an IP_LESS_ROUTED
   network is not specified, the link will be uniquely named
   'snf-link-$network_id'.
-* Extend flavors with 'allow_create' attribute. Flavors that have this
-  attribute unset cannot be used by users to create new servers.
 
 
 Cyclades UI

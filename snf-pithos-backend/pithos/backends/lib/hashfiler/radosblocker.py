@@ -125,7 +125,7 @@ class RadosBlocker(object):
             if h == self.emptyhash:
                 append(self._pad(''))
                 continue
-            with self._get_rear_block(h, 0) as rbl:
+            with self._get_rear_block(h) as rbl:
                 if not rbl:
                     break
                 for block in rbl.sync_read_chunks(blocksize, 1, 0):
@@ -147,7 +147,7 @@ class RadosBlocker(object):
         missing = [i for i, h in enumerate(hashlist) if not
                    self._check_rear_block(h)]
         for i in missing:
-            with self._get_rear_block(hashlist[i], 1) as rbl:
+            with self._get_rear_block(hashlist[i]) as rbl:
                 rbl.sync_write(blocklist[i])  # XXX: verify?
 
         return hashlist, missing

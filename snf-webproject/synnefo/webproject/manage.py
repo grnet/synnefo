@@ -244,7 +244,8 @@ class SynnefoManagementUtility(ManagementUtility):
         # checks if something is tty:
         # https://bugzilla.redhat.com/show_bug.cgi?id=841152
         if not subcommand in ['test'] and not 'shell' in subcommand:
-            sys.stdout = EncodedStdOut(sys.stdout)
+            sys.stdout = EncodedStream(sys.stdout)
+            sys.stderr = EncodedStream(sys.stderr)
 
         if subcommand == 'help':
             if len(args) > 2:
@@ -309,22 +310,22 @@ def configure_logging():
         log.warning("SNF_MANAGE_LOGGING_SETUP setting missing.")
 
 
-class EncodedStdOut(object):
-    def __init__(self, stdout):
+class EncodedStream(object):
+    def __init__(self, stream):
         try:
-            std_encoding = stdout.encoding
+            std_encoding = stream.encoding
         except AttributeError:
             std_encoding = None
         self.encoding = std_encoding or locale.getpreferredencoding()
-        self.original_stdout = stdout
+        self.original_stream = stream
 
     def write(self, string):
         if isinstance(string, unicode):
-            string = string.encode(self.encoding)
-        self.original_stdout.write(string)
+            string = string.encode(self.encoding, errors="replace")
+        self.original_stream.write(string)
 
     def __getattr__(self, name):
-        return getattr(self.original_stdout, name)
+        return getattr(self.original_stream, name)
 
 
 def main():

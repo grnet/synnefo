@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from synnefo.util import units
-from django.core.management import CommandError
+from snf_django.management.commands import CommandError
 from django.db.models import Q
 
 

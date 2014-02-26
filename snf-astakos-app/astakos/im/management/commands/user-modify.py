@@ -38,14 +38,13 @@ from optparse import make_option
 
 from django.core import management
 from django.db import transaction
-from django.core.management.base import CommandError
+from snf_django.management.commands import SynnefoCommand, CommandError
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
 from astakos.im.models import AstakosUser
 from astakos.im import activation_backends
-from snf_django.management.commands import SynnefoCommand
 from ._common import (remove_user_permission, add_user_permission, is_uuid)
 
 activation_backend = activation_backends.get_backend()

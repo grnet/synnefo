@@ -32,10 +32,9 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from django.core.management.base import CommandError
 
 from synnefo.lib.ordereddict import OrderedDict
-from snf_django.management.commands import SynnefoCommand
+from snf_django.management.commands import SynnefoCommand, CommandError
 from snf_django.management import utils
 from astakos.im.models import ProjectApplication, Project
 from astakos.im import quotas

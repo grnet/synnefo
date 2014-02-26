@@ -31,8 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import CommandError
-from snf_django.management.commands import ListCommand
+from snf_django.management.commands import ListCommand, CommandError
 
 from optparse import make_option
 from astakos.quotaholder_app.models import Commission

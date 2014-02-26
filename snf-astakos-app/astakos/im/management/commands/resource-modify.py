@@ -32,13 +32,12 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from django.core.management.base import CommandError
+from snf_django.management.commands import SynnefoCommand, CommandError
 
 from snf_django.management import utils
 from astakos.im.models import Resource
 from astakos.im import register
 from ._common import style_options, check_style, units
-from snf_django.management.commands import SynnefoCommand
 
 
 class Command(SynnefoCommand):

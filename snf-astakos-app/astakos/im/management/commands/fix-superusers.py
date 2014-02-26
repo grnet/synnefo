@@ -32,10 +32,9 @@
 # or implied, of GRNET S.A.
 
 from django.db import transaction
-from django.core.management.base import CommandError
+from snf_django.management.commands import SynnefoCommand, CommandError
 
 from astakos.im.auth import fix_superusers
-from snf_django.management.commands import SynnefoCommand
 
 
 class Command(SynnefoCommand):

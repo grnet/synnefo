@@ -35,10 +35,9 @@ import string
 
 from optparse import make_option
 
-from django.core.management.base import CommandError
+from snf_django.management.commands import SynnefoCommand, CommandError
 
 from astakos.im.models import AuthProviderPolicyProfile as Profile
-from snf_django.management.commands import SynnefoCommand
 
 option_list = list(SynnefoCommand.option_list) + [
     make_option('--update',

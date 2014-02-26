@@ -34,7 +34,7 @@
 from optparse import make_option
 
 from django.db.models import Q
-from django.core.management.base import CommandError
+from snf_django.management.commands import SynnefoCommand, CommandError
 from django.db import transaction
 from synnefo.util import units
 from astakos.im import functions
@@ -43,7 +43,6 @@ import astakos.api.projects as api
 import synnefo.util.date as date_util
 from snf_django.management import utils
 from astakos.im.management.commands import _common
-from snf_django.management.commands import SynnefoCommand
 
 
 def make_policies(limits):

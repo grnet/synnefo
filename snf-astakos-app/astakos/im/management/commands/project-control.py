@@ -34,12 +34,11 @@
 from optparse import make_option
 
 from django.db import transaction
-from django.core.management.base import CommandError
 from snf_django.management import utils
+from snf_django.management.commands import SynnefoCommand, CommandError
 from astakos.im.functions import (terminate, suspend, unsuspend,
                                   reinstate, check_expiration,
                                   approve_application, deny_application)
-from snf_django.management.commands import SynnefoCommand
 
 
 class Command(SynnefoCommand):

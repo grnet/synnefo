@@ -31,13 +31,11 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import CommandError
-
+from snf_django.management.commands import SynnefoCommand, CommandError
 from astakos.im import activation_backends
 activation_backend = activation_backends.get_backend()
 
 from ._common import get_user
-from snf_django.management.commands import SynnefoCommand
 
 
 class Command(SynnefoCommand):

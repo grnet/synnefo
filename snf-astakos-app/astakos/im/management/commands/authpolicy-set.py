@@ -34,9 +34,7 @@
 from optparse import make_option
 
 from django.db import transaction
-from django.core.management.base import CommandError
-
-from snf_django.management.commands import SynnefoCommand
+from snf_django.management.commands import SynnefoCommand, CommandError
 from astakos.im.models import AuthProviderPolicyProfile as Profile
 from astakos.im.models import AstakosUser, Group
 

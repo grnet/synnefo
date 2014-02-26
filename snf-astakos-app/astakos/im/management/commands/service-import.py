@@ -34,11 +34,10 @@
 from optparse import make_option
 
 from django.db import transaction
-from django.core.management.base import CommandError
+from snf_django.management.commands import SynnefoCommand, CommandError
 from django.utils import simplejson as json
 
 from astakos.im.register import add_service, add_resource, RegisterException
-from snf_django.management.commands import SynnefoCommand
 from astakos.im.models import Component
 from ._common import read_from_file
 

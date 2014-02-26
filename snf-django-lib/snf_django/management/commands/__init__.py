@@ -39,7 +39,8 @@ import logging
 from optparse import (make_option, OptionParser, OptionGroup,
                       TitledHelpFormatter)
 from synnefo import settings
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import (BaseCommand,
+                                         CommandError as DjangoCommandError)
 from django.core.exceptions import FieldError
 from snf_django.management import utils
 from snf_django.lib.astakos import UserCache
@@ -80,6 +81,11 @@ class SynnefoOutputWrapper(object):
             self.logger.info(msg)
         if self.django_wrapper is not None:
             self.django_wrapper.write(msg, *args, **kwargs)
+
+
+class CommandError(DjangoCommandError):
+    def __str__(self):
+        return utils.smart_locale_str(self.message, errors='replace')
 
 
 class SynnefoCommandFormatter(TitledHelpFormatter):

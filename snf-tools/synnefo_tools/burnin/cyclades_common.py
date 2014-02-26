@@ -452,34 +452,45 @@ class CycladesTests(BurninTests):
         # Verify quotas
         self._check_quotas(network=-len(networks))
 
-    def _get_public_network(self, networks=None):
-        """Get the public network"""
+    def _get_public_networks(self, networks=None):
+        """Get the public networks"""
         if networks is None:
             networks = self._get_list_of_networks(detail=True)
-        self.info("Getting the public network")
+        self.info("Getting the public networks")
+        public_networks = []
         for net in networks:
             if net['SNF:floating_ip_pool'] and net['public']:
-                return net
-        self.fail("Could not find a public network to use")
+                public_networks.append(net)
+
+        self.assertNotEqual(public_networks, [],
+                            "Could not find a public network to use")
+        return public_networks
 
     def _create_floating_ip(self):
         """Create a new floating ip"""
-        pub_net = self._get_public_network()
-        self.info("Creating a new floating ip for network with id %s",
-                  pub_net['id'])
-        fip = self.clients.network.create_floatingip(pub_net['id'])
-        # Verify that floating ip has been created
-        fips = self.clients.network.list_floatingips()
-        fips = [f['id'] for f in fips]
-        self.assertIn(fip['id'], fips)
-        # Verify quotas
-        self._check_quotas(ip=+1)
-        # Check that IP is IPv4
-        self.assertEquals(IPy.IP(fip['floating_ip_address']).version(), 4)
+        pub_nets = self._get_public_networks()
+        for pub_net in pub_nets:
+            self.info("Creating a new floating ip for network with id %s",
+                      pub_net['id'])
+            try:
+                fip = self.clients.network.create_floatingip(pub_net['id'])
+            except ClientError as err:
+                self.warning("%s: %s", err.message, err.details)
+                continue
+            # Verify that floating ip has been created
+            fips = self.clients.network.list_floatingips()
+            fips = [f['id'] for f in fips]
+            self.assertIn(fip['id'], fips)
+            # Verify quotas
+            self._check_quotas(ip=+1)
+            # Check that IP is IPv4
+            self.assertEquals(IPy.IP(fip['floating_ip_address']).version(), 4)
 
-        self.info("Floating IP %s with id %s created",
-                  fip['floating_ip_address'], fip['id'])
-        return fip
+            self.info("Floating IP %s with id %s created",
+                      fip['floating_ip_address'], fip['id'])
+            return fip
+
+        self.fail("No more IP addresses available")
 
     def _create_port(self, network_id, device_id=None, floating_ip=None):
         """Create a new port attached to the a specific network"""
@@ -540,8 +551,10 @@ class CycladesTests(BurninTests):
     def _disconnect_from_network(self, server, network=None):
         """Disconnnect server from network"""
         if network is None:
-            # Disconnect from public network
-            network = self._get_public_network()
+            # Disconnect from all public networks
+            for net in self._get_public_networks():
+                self._disconnect_from_network(server, network=net)
+            return
 
         lports = self.clients.network.list_ports()
         ports = []
@@ -567,7 +580,21 @@ class CycladesTests(BurninTests):
 
     def _delete_floating_ips(self, fips):
         """Delete floating ips"""
-        for fip in fips:
+        # Renew the list of floating IP objects
+        # (It may have been changed, i.e. a port may have been deleted).
+        if not fips:
+            return
+        fip_ids = [f['id'] for f in fips]
+        new_fips = [f for f in self.clients.network.list_floatingips()
+                    if f['id'] in fip_ids]
+
+        for fip in new_fips:
+            port_id = fip['port_id']
+            if port_id:
+                self.info("Destroying port with id %s", port_id)
+                self.clients.network.delete_port(port_id)
+                self._insist_on_port_deletion(port_id)
+
             self.info("Destroying floating IP %s with id %s",
                       fip['floating_ip_address'], fip['id'])
             self.clients.network.delete_floatingip(fip['id'])

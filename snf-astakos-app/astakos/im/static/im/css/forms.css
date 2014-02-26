@@ -23,7 +23,7 @@ form .form-row.submit 						{ margin: 22px 0 ;}
 form .form-row .extra-link 					{ color: #808080; text-decoration: none; border: none; margin-top:15px; line-height:98%; display:inline-block; padding-top:15px;   float: right; position:absolute; right:0; top:0; }
 form .form-row .extra-link:hover			{ border-bottom:1px solid #9e9e9e;}
 form .form-row label 						{ font-size: 1.077em; }
-form.innerlabels label 						{ position: absolute; bottom: 11px; left: 1.5em; color: #808080 ; }
+form.innerlabels label 						{ display: none;}
 form.innerlabels p 							{ margin:0; position: relative;}
 form.innerlabels p.p15px					{ font-size:1.154em;}
 form.innerlabels p.p15px a					{ margin:0 5px;}
@@ -151,7 +151,12 @@ form.link-like.alone input[type="submit"]		{ padding:0; }
 .projects .minimal select						{ padding:3px; width:250px; }
 .projects .minimal label						{ position:absolute; right:290px; top:5px; white-space:nowrap}
 
+form.contactform label 							{ display: block; margin-bottom: 1em; float:none;}
+form.contactform textarea 						{ width: 406px; height:177px; max-width: 406px; max-height: 177px;}
+form.contactform input[type="submit"] 			{ margin:15px 0 0;}
+
 @media screen and (max-width : 630px) 		{ 
+    form.contactform textarea                   { width:90%;}
 	form.withlabels .extra-img	   				{ left:260px; }
     form.withlabels span.info 	   				{ left:260px; }
     form .extra-img	               				{ left:260px; }
@@ -191,6 +196,7 @@ form.link-like.alone input[type="submit"]		{ padding:0; }
     form.withlabels input[type="text"], 
     form.withlabels input[type="password"],
     form.withlabels textarea,
+    form.contactform textarea,
     form textarea, 
 	form input.text, 
 	form input[type="text"], 
@@ -223,3 +229,22 @@ form .refresh.open p:hover span.extra-img:hover		{ background-position: -33px -5
 
 form.withlabels.upperlabels label 					{ text-transform: uppercase;}
 form.withlabels.upperlabels textarea				{ margin-top:10px;}
+form.innerlabels input::-webkit-input-placeholder {
+   color: #808080;
+   font-style: normal;
+}
+
+form.innerlabels input:-moz-placeholder { /* Firefox 18- */
+   color: #808080;
+   font-style: normal;
+}
+
+form.innerlabels input::-moz-placeholder {  /* Firefox 19+ */
+   color: #808080;
+   font-style: normal;
+}
+
+form.innerlabels input:-ms-input-placeholder {  
+   color: #808080;
+   font-style: normal;
+}

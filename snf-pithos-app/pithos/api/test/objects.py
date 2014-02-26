@@ -41,7 +41,7 @@ from functools import partial
 from pithos.api.test import (PithosAPITest, pithos_settings,
                              AssertMappingInvariant, AssertUUidInvariant,
                              TEST_BLOCK_SIZE, TEST_HASH_ALGORITHM,
-                             DATE_FORMATS)
+                             DATE_FORMATS, pithos_test_settings)
 from pithos.api.test.util import (md5_hash, merkle, strnextling,
                                   get_random_data, get_random_name)
 
@@ -599,6 +599,14 @@ class ObjectPut(PithosAPITest):
         meta = {'test': 'test1'}
         headers = dict(('HTTP_X_OBJECT_META_%s' % k.upper(), v)
                        for k, v in meta.iteritems())
+        headers['HTTP_CONTENT_DISPOSITION'] = 'attachment; filename="%f2"'
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.put(url, data=data, content_type='application/pdf',
+                     quote_extra=False, **headers)
+        self.assertEqual(r.status_code, 400)
+
+        headers['HTTP_CONTENT_DISPOSITION'] = ('attachment; filename="%s"' %
+                                               oname)
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.put(url, data=data, content_type='application/pdf', **headers)
         self.assertEqual(r.status_code, 201)
@@ -924,18 +932,17 @@ class ObjectPutCopy(PithosAPITest):
                          get_random_name(), self.object))
         self.assertEqual(r.status_code, 404)
 
+    @pithos_test_settings(API_LIST_LIMIT=10)
     def test_copy_dir(self):
         folder = self.create_folder(self.container)[0]
         subfolder = self.create_folder(
             self.container, oname='%s/%s' % (folder, get_random_name()))[0]
         objects = [subfolder]
         append = objects.append
-        append(self.upload_object(self.container,
-                                  '%s/%s' % (folder, get_random_name()),
-                                  depth='1')[0])
-        append(self.upload_object(self.container,
-                                  '%s/%s' % (subfolder, get_random_name()),
-                                  depth='2')[0])
+        for i in range(11):
+            append(self.upload_object(self.container,
+                                      '%s/%d' % (folder, i),
+                                      depth='1')[0])
         other = self.upload_object(self.container, strnextling(folder))[0]
 
         # copy dir
@@ -1006,18 +1013,17 @@ class ObjectPutMove(PithosAPITest):
         r = self.head(url)
         self.assertEqual(r.status_code, 404)
 
+    @pithos_test_settings(API_LIST_LIMIT=10)
     def test_move_dir(self):
         folder = self.create_folder(self.container)[0]
         subfolder = self.create_folder(
             self.container, oname='%s/%s' % (folder, get_random_name()))[0]
         objects = [subfolder]
         append = objects.append
-        append(self.upload_object(self.container,
-                                  '%s/%s' % (folder, get_random_name()),
-                                  depth='1')[0])
-        append(self.upload_object(self.container,
-                                  '%s/%s' % (subfolder, get_random_name()),
-                                  depth='1')[0])
+        for i in range(11):
+            append(self.upload_object(self.container,
+                                      '%s/%d' % (folder, i),
+                                      depth='1')[0])
         other = self.upload_object(self.container, strnextling(folder))[0]
 
         # move dir
@@ -1212,7 +1218,7 @@ class ObjectCopy(PithosAPITest):
             self.assertTrue('X-Object-Hash' in r)
             self.assertEqual(r['X-Object-Hash'], self.etag)
 
-                        # assert source object still exists
+            # assert source object still exists
             url = join_urls(self.pithos_path, self.user, self.container,
                             self.object)
             r = self.head(url)
@@ -1228,6 +1234,43 @@ class ObjectCopy(PithosAPITest):
             # assert etag is the same
             self.assertTrue('X-Object-Hash' in r)
             self.assertEqual(r['X-Object-Hash'], self.etag)
+
+    @pithos_test_settings(API_LIST_LIMIT=10)
+    def test_copy_dir_contents(self):
+        folder = self.create_folder(self.container)[0]
+        subfolder = self.create_folder(
+            self.container, oname='%s/%s' % (folder, get_random_name()))[0]
+        objects = [subfolder]
+        append = objects.append
+        for i in range(11):
+            append(self.upload_object(self.container,
+                                      '%s/%d' % (folder, i),
+                                      depth='1')[0])
+        other = self.upload_object(self.container, strnextling(folder))[0]
+
+        # copy dir
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        folder)
+        copy_folder = self.create_folder(self.container)[0]
+        r = self.copy('%s?delimiter=/' % url,
+                      HTTP_X_OBJECT_META_TEST='testcopy',
+                      HTTP_DESTINATION='/%s/%s' % (self.container,
+                                                   copy_folder))
+        self.assertEqual(r.status_code, 201)
+
+        for obj in objects:
+            # assert object exists
+            url = join_urls(self.pithos_path, self.user, self.container,
+                            obj.replace(folder, copy_folder))
+            r = self.head(url)
+            self.assertEqual(r.status_code, 200)
+
+        # assert other has not been created under copy folder
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        '%s/%s' % (copy_folder,
+                                   other.replace(folder, copy_folder)))
+        r = self.head(url)
+        self.assertEqual(r.status_code, 404)
 
     def test_copy_to_other_account(self):
         # create a container under alice account
@@ -1344,6 +1387,42 @@ class ObjectMove(PithosAPITest):
         # assert source object does not exist
         url = join_urls(self.pithos_path, self.user, self.container,
                         self.object)
+        r = self.head(url)
+        self.assertEqual(r.status_code, 404)
+
+    @pithos_test_settings(API_LIST_LIMIT=10)
+    def test_move_dir_contents(self):
+        folder = self.create_folder(self.container)[0]
+        subfolder = self.create_folder(
+            self.container, oname='%s/%s' % (folder, get_random_name()))[0]
+        objects = [subfolder]
+        append = objects.append
+        for i in range(11):
+            append(self.upload_object(self.container,
+                                      '%s/%d' % (folder, i),
+                                      depth='1')[0])
+        other = self.upload_object(self.container, strnextling(folder))[0]
+
+        # copy dir
+        url = join_urls(self.pithos_path, self.user, self.container, folder)
+        copy_folder = self.create_folder(self.container)[0]
+        r = self.move('%s?delimiter=/' % url,
+                      HTTP_X_OBJECT_META_TEST='testcopy',
+                      HTTP_DESTINATION='/%s/%s' % (self.container,
+                                                   copy_folder))
+        self.assertEqual(r.status_code, 201)
+
+        for obj in objects:
+            # assert object exists
+            url = join_urls(self.pithos_path, self.user, self.container,
+                            obj.replace(folder, copy_folder))
+            r = self.head(url)
+            self.assertEqual(r.status_code, 200)
+
+        # assert other has not been created under copy folder
+        url = join_urls(self.pithos_path, self.user, self.container,
+                        '%s/%s' % (copy_folder,
+                                   other.replace(folder, copy_folder)))
         r = self.head(url)
         self.assertEqual(r.status_code, 404)
 
@@ -1920,18 +1999,17 @@ class ObjectDelete(PithosAPITest):
         r = self.delete(url)
         self.assertEqual(r.status_code, 404)
 
+    @pithos_test_settings(API_LIST_LIMIT=10)
     def test_delete_dir(self):
         folder = self.create_folder(self.container)[0]
         subfolder = self.create_folder(
             self.container, oname='%s/%s' % (folder, get_random_name()))[0]
         objects = [subfolder]
         append = objects.append
-        append(self.upload_object(self.container,
-                                  '%s/%s' % (folder, get_random_name()),
-                                  depth='1')[0])
-        append(self.upload_object(self.container,
-                                  '%s/%s' % (subfolder, get_random_name()),
-                                  depth='2')[0])
+        for i in range(11):
+            append(self.upload_object(self.container,
+                                      '%s/%d' % (folder, i),
+                                      depth='1')[0])
         other = self.upload_object(self.container, strnextling(folder))[0]
 
         # move dir

@@ -40,6 +40,9 @@ import json
 from base64 import b64encode, b64decode
 from hashlib import sha512
 
+from synnefo.util.text import uenc
+from synnefo.util import urltools
+
 import logging
 logger = logging.getLogger(__name__)
 
@@ -47,7 +50,13 @@ logger = logging.getLogger(__name__)
 def urlencode(params):
     if hasattr(params, 'urlencode') and callable(getattr(params, 'urlencode')):
         return params.urlencode()
+    for k in params:
+        params[uenc(k)] = uenc(params.pop(k))
     return urllib.urlencode(params)
+
+
+def normalize(url):
+    return urltools.normalize(uenc(url))
 
 
 def handles_oa2_requests(func):
@@ -450,7 +459,7 @@ class SimpleBackend(object):
                                  scope=None, token_type="Bearer"):
         if scope and code_instance.scope != scope:
             raise OA2Error("Invalid scope")
-        if redirect_uri != code_instance.redirect_uri:
+        if normalize(redirect_uri) != normalize(code_instance.redirect_uri):
             raise OA2Error("The redirect uri does not match "
                            "the one used during authorization")
         token = self.add_token_for_client(token_type, code_instance)
@@ -478,10 +487,10 @@ class SimpleBackend(object):
             return None, None
         pass
 
-    def _get_authorization(self, params, headers):
+    def _get_authorization(self, params, headers, authorization_required=True):
         scheme, client_credentials = self._get_credentials(params, headers)
         no_authorization = scheme is None and client_credentials is None
-        if no_authorization:
+        if authorization_required and no_authorization:
             raise OA2Error("Missing authorization header")
         return client_credentials
 
@@ -524,15 +533,17 @@ class SimpleBackend(object):
 
         client_credentials = None
         try:  # check authorization header
-            client_credentials = self._get_authorization(params, meta)
+            client_credentials = self._get_authorization(
+                params, meta, authorization_required=False)
+        except:
+            pass
+        else:
             if client_credentials is not None:
                 _client_id = client_credentials[0]
                 if client_id is not None and client_id != _client_id:
                     raise OA2Error("Client identification conflicts "
                                    "with client authorization")
                 client_id = _client_id
-        except:
-            pass
 
         if client_id is None:
             raise OA2Error("Missing client identification")
@@ -560,7 +571,8 @@ class SimpleBackend(object):
                 raise OA2Error("Redirect uri length limit exceeded")
             if not client.redirect_uri_is_valid(redirect_uri):
                 raise OA2Error("Mismatching redirect uri")
-            if expected_value is not None and redirect_uri != expected_value:
+            if expected_value is not None and \
+                    normalize(redirect_uri) != normalize(expected_value):
                 raise OA2Error("Invalid redirect uri")
         else:
             try:
@@ -572,7 +584,7 @@ class SimpleBackend(object):
 
     def validate_state(self, client, params, headers):
         return params.get('state')
-        raise OA2Error("Invalid state")
+        #raise OA2Error("Invalid state")
 
     def validate_scope(self, client, params, headers):
         scope = params.get('scope')

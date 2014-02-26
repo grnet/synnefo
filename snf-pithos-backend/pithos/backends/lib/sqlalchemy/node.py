@@ -39,6 +39,7 @@ from sqlalchemy import (Table, Integer, BigInteger, DECIMAL, Boolean,
                         Column, String, MetaData, ForeignKey)
 from sqlalchemy.schema import Index
 from sqlalchemy.sql import func, and_, or_, not_, select, bindparam, exists
+from sqlalchemy.sql.expression import true
 from sqlalchemy.exc import NoSuchTableError
 
 from dbworker import DBWorker, ESCAPE_CHAR
@@ -122,6 +123,7 @@ def create_tables(engine):
     nodes = Table('nodes', metadata, *columns, mysql_engine='InnoDB')
     Index('idx_nodes_path', nodes.c.path, unique=True)
     Index('idx_nodes_parent', nodes.c.parent)
+    Index('idx_latest_version', nodes.c.latest_version)
 
     #create policy table
     columns = []
@@ -674,26 +676,26 @@ class Node(DBWorker):
         # This is why the full path is stored.
         if before != inf:
             s = select([func.count(v.c.serial),
-                    func.sum(v.c.size),
-                    func.max(v.c.mtime)])
+                        func.sum(v.c.size),
+                        func.max(v.c.mtime)])
             c1 = select([func.max(self.versions.c.serial)],
                         and_(self.versions.c.mtime < before,
                              self.versions.c.node == v.c.node))
         else:
-            inner_join = \
-                    self.versions.join(self.nodes, onclause=\
-                    self.versions.c.serial == self.nodes.c.latest_version)
+            inner_join = self.versions.join(
+                self.nodes,
+                onclause=self.versions.c.serial == self.nodes.c.latest_version)
             s = select([func.count(self.versions.c.serial),
-                    func.sum(self.versions.c.size),
-                    func.max(self.versions.c.mtime)], from_obj=[inner_join])
+                       func.sum(self.versions.c.size),
+                       func.max(self.versions.c.mtime)], from_obj=[inner_join])
 
         c2 = select([self.nodes.c.node],
                     self.nodes.c.path.like(self.escape_like(path) + '%',
                                            escape=ESCAPE_CHAR))
         if before != inf:
             s = s.where(and_(v.c.serial == c1,
-                         v.c.cluster != except_cluster,
-                         v.c.node.in_(c2)))
+                             v.c.cluster != except_cluster,
+                             v.c.node.in_(c2)))
         else:
             s = s.where(and_(self.versions.c.cluster != except_cluster,
                         self.versions.c.node.in_(c2)))
@@ -999,12 +1001,13 @@ class Node(DBWorker):
                                    v.c.node == self.versions.c.node))
         else:
             filtered = select([self.nodes.c.latest_version])
-            filtered = filtered.where(self.nodes.c.node == \
-			    self.versions.c.node).correlate(self.versions)
+            filtered = filtered.where(
+                self.nodes.c.node == self.versions.c.node).\
+                correlate(self.versions)
         s = s.where(self.versions.c.serial == filtered)
         s = s.where(self.versions.c.cluster != except_cluster)
         s = s.where(self.versions.c.node.in_(select([self.nodes.c.node],
-                                        self.nodes.c.parent == parent)))
+                                             self.nodes.c.parent == parent)))
         s = s.where(self.attributes.c.serial == self.versions.c.serial)
         s = s.where(self.attributes.c.domain == domain)
         s = s.where(self.nodes.c.node == self.versions.c.node)
@@ -1013,12 +1016,12 @@ class Node(DBWorker):
         conjb = []
         for path, match in pathq:
             if match == MATCH_PREFIX:
-                conja.append(self.nodes.c.path.like(self.escape_like(path) + '%',
-                                          escape=ESCAPE_CHAR))
+                conja.append(self.nodes.c.path.like(
+                    self.escape_like(path) + '%', escape=ESCAPE_CHAR))
             elif match == MATCH_EXACT:
                 conjb.append(path)
         if conja or conjb:
-            s = s.where(or_(self.nodes.c.path.in_(conjb),*conja))
+            s = s.where(or_(self.nodes.c.path.in_(conjb), *conja))
         rp = self.conn.execute(s)
         rows = rp.fetchall()
         rp.close()
@@ -1084,24 +1087,24 @@ class Node(DBWorker):
         nextling = strnextling(prefix)
 
         v = self.versions.alias('v')
-        n = self.nodes.alias('n')
         if before != inf:
             filtered = select([func.max(v.c.serial)],
                               and_(v.c.mtime < before,
                                    v.c.node == self.versions.c.node))
-            inner_join = \
-                    self.nodes.join(self.versions,
-                            onclause=self.versions.c.serial==filtered)
+            inner_join = self.nodes.join(
+                self.versions,
+                onclause=self.versions.c.serial == filtered)
         else:
             filtered = select([self.nodes.c.latest_version])
-            filtered = filtered.where(self.nodes.c.node == self.versions.c.node).correlate(self.versions)
-            inner_join = \
-                    self.nodes.join(self.versions,
-                            onclause=\
-                            self.versions.c.serial==filtered)
+            filtered = filtered.where(
+                self.nodes.c.node == self.versions.c.node).\
+                correlate(self.versions)
+            inner_join = self.nodes.join(
+                self.versions,
+                onclause=self.versions.c.serial == filtered)
         if not all_props:
-            s = select([self.nodes.c.path,
-                self.versions.c.serial],from_obj=[inner_join]).distinct()
+            s = select([self.nodes.c.path, self.versions.c.serial],
+                       from_obj=[inner_join]).distinct()
         else:
             s = select([self.nodes.c.path,
                         self.versions.c.serial, self.versions.c.node,
@@ -1111,7 +1114,8 @@ class Node(DBWorker):
                         self.versions.c.mtime, self.versions.c.muser,
                         self.versions.c.uuid,
                         self.versions.c.checksum,
-                        self.versions.c.cluster],from_obj=[inner_join]).distinct()
+                        self.versions.c.cluster],
+                       from_obj=[inner_join]).distinct()
 
         s = s.where(self.versions.c.cluster != except_cluster)
         s = s.where(self.versions.c.node.in_(select([self.nodes.c.node],
@@ -1119,17 +1123,18 @@ class Node(DBWorker):
 
         s = s.where(self.versions.c.node == self.nodes.c.node)
         s = s.where(and_(self.nodes.c.path > bindparam('start'),
-			 self.nodes.c.path < nextling))
+                    self.nodes.c.path < nextling))
         conja = []
         conjb = []
         for path, match in pathq:
             if match == MATCH_PREFIX:
-                conja.append(self.nodes.c.path.like(self.escape_like(path) + '%',
-                             escape=ESCAPE_CHAR))
+                conja.append(
+                    self.nodes.c.path.like(self.escape_like(path) + '%',
+                                           escape=ESCAPE_CHAR))
             elif match == MATCH_EXACT:
                 conjb.append(path)
         if conja or conjb:
-            s = s.where(or_(self.nodes.c.path.in_(conjb),*conja))
+            s = s.where(or_(self.nodes.c.path.in_(conjb), *conja))
 
         if sizeq and len(sizeq) == 2:
             if sizeq[0]:
@@ -1138,27 +1143,35 @@ class Node(DBWorker):
                 s = s.where(self.versions.c.size < sizeq[1])
 
         if domain and filterq:
-            a = self.attributes.alias('a')
             included, excluded, opers = parse_filters(filterq)
             if included:
                 subs = select([1])
-                subs = subs.where(self.attributes.c.serial == self.versions.c.serial).correlate(self.versions)
+                subs = subs.where(
+                    self.attributes.c.serial ==
+                    self.versions.c.serial).correlate(self.versions)
                 subs = subs.where(self.attributes.c.domain == domain)
-                subs = subs.where(or_(*[self.attributes.c.key.op('=')(x) for x in included]))
+                subs = subs.where(or_(*[self.attributes.c.key.op('=')(x) for
+                                  x in included]))
                 s = s.where(exists(subs))
             if excluded:
                 subs = select([1])
-                subs = subs.where(self.attributes.c.serial == self.versions.c.serial).correlate(self.versions)
+                subs = subs.where(
+                    self.attributes.c.serial == self.versions.c.serial).\
+                    correlate(self.versions)
                 subs = subs.where(self.attributes.c.domain == domain)
-                subs = subs.where(or_(*[self.attributes.c.key.op('=')(x) for x in excluded]))
+                subs = subs.where(or_(*[self.attributes.c.key.op('=')(x) for
+                                  x in excluded]))
                 s = s.where(not_(exists(subs)))
             if opers:
                 for k, o, val in opers:
                     subs = select([1])
-                    subs = subs.where(self.attributes.c.serial == self.versions.c.serial).correlate(self.versions)
+                    subs = subs.where(
+                        self.attributes.c.serial == self.versions.c.serial).\
+                        correlate(self.versions)
                     subs = subs.where(self.attributes.c.domain == domain)
                     subs = subs.where(
-                        and_(self.attributes.c.key.op('=')(k), self.attributes.c.value.op(o)(val)))
+                        and_(self.attributes.c.key.op('=')(k),
+                             self.attributes.c.value.op(o)(val)))
                     s = s.where(exists(subs))
 
         s = s.order_by(self.nodes.c.path)
@@ -1247,7 +1260,7 @@ class Node(DBWorker):
         s = s.where(v.c.serial == a.c.serial)
         s = s.where(a.c.domain == domain)
         s = s.where(a.c.node == n.c.node)
-        s = s.where(a.c.is_latest == True)
+        s = s.where(a.c.is_latest == true())
         if paths:
             s = s.where(n.c.path.in_(paths))
 
@@ -1263,11 +1276,12 @@ class Node(DBWorker):
 
     def get_props(self, paths):
         inner_join = \
-            self.nodes.join(self.versions,
+            self.nodes.join(
+                self.versions,
                 onclause=self.versions.c.serial == self.nodes.c.latest_version)
         cc = self.nodes.c.path.in_(paths)
         s = select([self.nodes.c.path, self.versions.c.type],
-                    from_obj=[inner_join]).where(cc).distinct()
+                   from_obj=[inner_join]).where(cc).distinct()
         r = self.conn.execute(s)
         rows = r.fetchall()
         r.close()

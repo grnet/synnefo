@@ -37,6 +37,7 @@ from hashlib import new as newhasher
 from binascii import hexlify
 
 from context_file import ContextFile, file_sync_read_chunks
+from os import O_RDONLY, O_WRONLY
 
 
 class FileBlocker(object):
@@ -78,13 +79,19 @@ class FileBlocker(object):
     def _pad(self, block):
         return block + ('\x00' * (self.blocksize - len(block)))
 
-    def _get_rear_block(self, blkhash, create=0):
+    def _read_rear_block(self, blkhash):
+        filename = hexlify(blkhash)
+        dir = join(self.blockpath, filename[0:2], filename[2:4], filename[4:6])
+        name = join(dir, filename)
+        return ContextFile(name, O_RDONLY)
+
+    def _write_rear_block(self, blkhash):
         filename = hexlify(blkhash)
         dir = join(self.blockpath, filename[0:2], filename[2:4], filename[4:6])
         if not exists(dir):
             makedirs(dir)
         name = join(dir, filename)
-        return ContextFile(name, create)
+        return ContextFile(name, O_WRONLY)
 
     def _check_rear_block(self, blkhash):
         filename = hexlify(blkhash)
@@ -122,7 +129,7 @@ class FileBlocker(object):
             if h == self.emptyhash:
                 append(self._pad(''))
                 continue
-            with self._get_rear_block(h, 0) as rbl:
+            with self._read_rear_block(h) as rbl:
                 if not rbl:
                     break
                 for block in rbl.sync_read_chunks(blocksize, 1, 0):
@@ -144,7 +151,7 @@ class FileBlocker(object):
         missing = [i for i, h in enumerate(hashlist) if not
                    self._check_rear_block(h)]
         for i in missing:
-            with self._get_rear_block(hashlist[i], 1) as rbl:
+            with self._write_rear_block(hashlist[i]) as rbl:
                 rbl.sync_write(blocklist[i])  # XXX: verify?
 
         return hashlist, missing

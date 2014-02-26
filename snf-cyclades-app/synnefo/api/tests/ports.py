@@ -84,38 +84,13 @@ class PortTest(BaseAPITest):
     def test_update_port_name(self):
         nic = dbmf.NetworkInterfaceFactory(device_owner='vm')
         url = join_urls(PORTS_URL, str(nic.id))
-        request = {'port': {"name": "test-name"}}
+        request = {'port': {"name": u"test-name\u2601\u2602"}}
         response = self.put(url, params=json.dumps(request),
                             user=nic.userid)
         self.assertEqual(response.status_code, 200)
         res = json.loads(response.content)
-        self.assertEqual(res['port']['name'], "test-name")
-
-    # def test_update_port_sg_unfound(self):
-    #     sg1 = dbmf.SecurityGroupFactory()
-    #     nic = dbmf.NetworkInterfaceFactory(device_owner='vm')
-    #     nic.security_groups.add(sg1)
-    #     nic.save()
-    #     url = join_urls(PORTS_URL, str(nic.id))
-    #     request = {'port': {"security_groups": ["123"]}}
-    #     response = self.put(url, params=json.dumps(request),
-    #                         user=nic.userid)
-    #     self.assertEqual(response.status_code, 404)
-
-    # def test_update_port_sg(self):
-    #     sg1 = dbmf.SecurityGroupFactory()
-    #     sg2 = dbmf.SecurityGroupFactory()
-    #     sg3 = dbmf.SecurityGroupFactory()
-    #     nic = dbmf.NetworkInterfaceFactory(device_owner='vm')
-    #     nic.security_groups.add(sg1)
-    #     nic.save()
-    #     url = join_urls(PORTS_URL, str(nic.id))
-    #     request = {'port': {"security_groups": [str(sg2.id), str(sg3.id)]}}
-    #     response = self.put(url, params=json.dumps(request),
-    #                         user=nic.userid)
-    #     res = json.loads(response.content)
-    #     self.assertEqual(res['port']['security_groups'],
-    #                      [str(sg2.id), str(sg3.id)])
+        self.assertEqual(res['port']['name'],
+                         u"test-name\u2601\u2602")
 
     def test_create_port_invalid(self):
         # No network
@@ -133,7 +108,7 @@ class PortTest(BaseAPITest):
             "port": {
                 "name": "port1",
                 "network_id": net.id,
-                "fixed_ips": ["lala"]
+                "fixed_ips": [u"lala\u2608"]
             }
         }
         response = self.post(PORTS_URL, params=json.dumps(request))
@@ -170,7 +145,7 @@ class PortTest(BaseAPITest):
         vm = dbmf.VirtualMachineFactory(userid=net.userid)
         request = {
             "port": {
-                "name": "port1",
+                "name": u"Port in the \u2601",
                 "network_id": str(net.id),
                 "device_id": str(vm.id),
             }
@@ -184,7 +159,7 @@ class PortTest(BaseAPITest):
         vm = dbmf.VirtualMachineFactory(userid=net.userid)
         request = {
             "port": {
-                "name": "port1",
+                "name": u"Port in the \u2601",
                 "network_id": str(net.id),
                 "device_id": str(vm.id),
                 "fixed_ips": [{"ip_address": "8.8.8.8"}]
@@ -233,7 +208,7 @@ class PortTest(BaseAPITest):
                                      userid=vm.userid)
         request = {
             "port": {
-                "name": "port1",
+                "name": "Port in the \u2601",
                 "network_id": str(fip.network_id),
                 "device_id": str(vm.id),
                 "fixed_ips": [{"ip_address": fip.address}]

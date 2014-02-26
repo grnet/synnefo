@@ -102,7 +102,8 @@ class ObjectGetView(PithosAPITest):
     def setUp(self):
         PithosAPITest.setUp(self)
         self.cname = self.create_container()[0]
-        self.oname, self.odata = self.upload_object(self.cname)[:-1]
+        self.oname, self.odata = self.upload_object(self.cname,
+                                                    'φωτογραφία.JPG')[:-1]
 
         self.view_path = join_urls(get_service_path(
             pithos_settings.pithos_services, 'pithos_ui'), 'view')
@@ -140,6 +141,20 @@ class ObjectGetView(PithosAPITest):
         r = self.get(add_url_params(self.view_url, access_token='valid_token'))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.content, self.odata)
+
+        r = self.get('%s&disposition-type=inline' %
+                     add_url_params(self.view_url, access_token='valid_token'))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.content, self.odata)
+        self.assertTrue('Content-Disposition' in r)
+        self.assertTrue('inline' in r['Content-Disposition'])
+
+        r = self.get('%s&disposition-type=attachment' %
+                     add_url_params(self.view_url, access_token='valid_token'))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.content, self.odata)
+        self.assertTrue('Content-Disposition' in r)
+        self.assertTrue('attachment' in r['Content-Disposition'])
 
     def test_forbidden(self):
         container = self.create_container(user='alice')[0]

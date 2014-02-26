@@ -99,7 +99,9 @@ def ip_to_dict(floating_ip):
             "floating_ip_address": floating_ip.address,
             "port_id": str(port_id) if port_id else None,
             "floating_network_id": str(floating_ip.network_id),
-            "deleted": floating_ip.deleted}
+            "deleted": floating_ip.deleted,
+            "tenant_id": floating_ip.userid,
+            "user_id": floating_ip.userid}
 
 
 @api.api_method(http_method="GET", user_required=True, logger=log,
@@ -141,9 +143,8 @@ def allocate_floating_ip(request):
     req = utils.get_request_dict(request)
     floating_ip_dict = api.utils.get_attribute(req, "floatingip",
                                                required=True, attr_type=dict)
-    log.info('allocate_floating_ip %s', req)
-
     userid = request.user_uniq
+    log.info('allocate_floating_ip user: %s request: %s', userid, req)
 
     # the network_pool is a mandatory field
     network_id = api.utils.get_attribute(floating_ip_dict,

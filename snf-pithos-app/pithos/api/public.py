@@ -157,11 +157,4 @@ def public_read(request, v_public):
             hashmaps.append(h)
         except:
             raise faults.ItemNotFound('Object does not exist')
-
-    if 'Content-Disposition' not in meta:
-        name = v_object.rstrip('/').split('/')[-1]
-        if not name:
-            name = v_public
-        meta['Content-Disposition'] = 'attachment; filename=%s' % (name,)
-
     return object_data_response(request, sizes, hashmaps, meta, True)

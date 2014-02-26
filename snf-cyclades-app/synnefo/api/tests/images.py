@@ -87,9 +87,9 @@ class ImageAPITest(ComputeAPITest):
     @assert_backend_closed
     def test_list_images(self, mimage):
         """Test that expected list of images is returned"""
-        images = [{'id': 1, 'name': 'image-1'},
-                  {'id': 2, 'name': 'image-2'},
-                  {'id': 3, 'name': 'image-3'}]
+        images = [{'id': 1, 'name': u'image-1 \u2601'},
+                  {'id': 2, 'name': u'image-2 \u2602'},
+                  {'id': 3, 'name': u'image-3 \u2603'}]
         mimage().list_images.return_value = images
         response = self.myget('images', 'user')
         self.assertSuccess(response)
@@ -99,13 +99,13 @@ class ImageAPITest(ComputeAPITest):
     @assert_backend_closed
     def test_list_images_detail(self, mimage):
         images = [{'id': 1,
-                   'name': 'image-1',
-                   'status':'available',
+                   'name': u'image-1 \u2601',
+                   'status': 'available',
                    'created_at': '2012-11-26 11:52:54',
                    'updated_at': '2012-12-26 11:52:54',
                    'owner': 'user1',
                    'deleted_at': '',
-                   'properties': {'foo':'bar'}},
+                   'properties': {u'foo\u2610': u'bar\u2611'}},
                   {'id': 2,
                    'name': 'image-2',
                    'status': 'deleted',
@@ -124,14 +124,14 @@ class ImageAPITest(ComputeAPITest):
                    'properties': ''}]
         result_images = [
                   {'id': 1,
-                   'name': 'image-1',
-                   'status':'ACTIVE',
+                   'name': u'image-1 \u2601',
+                   'status': 'ACTIVE',
                    'progress': 100,
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
                    'user_id': 'user1',
                    'tenant_id': 'user1',
-                   'metadata': {'foo':'bar'}},
+                   'metadata': {u'foo\u2610': u'bar\u2611'}},
                   {'id': 2,
                    'name': 'image-2',
                    'status': 'DELETED',

@@ -599,6 +599,13 @@ class ObjectPut(PithosAPITest):
         meta = {'test': 'test1'}
         headers = dict(('HTTP_X_OBJECT_META_%s' % k.upper(), v)
                        for k, v in meta.iteritems())
+        headers['HTTP_CONTENT_DISPOSITION'] = 'attachment; filename="%f2"'
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.put(url, data=data, content_type='application/pdf', **headers)
+        self.assertEqual(r.status_code, 400)
+
+        headers['HTTP_CONTENT_DISPOSITION'] = ('attachment; filename="%s"' %
+                                               oname)
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.put(url, data=data, content_type='application/pdf', **headers)
         self.assertEqual(r.status_code, 201)

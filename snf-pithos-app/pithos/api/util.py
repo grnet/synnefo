@@ -1059,12 +1059,12 @@ def update_request_headers(request):
         try:
             k.decode('ascii')
             v.decode('ascii')
+            if '%' in k or '%' in v:
+                del(request.META[k])
+                request.META[unquote(k)] = smart_unicode(unquote(
+                    v), strings_only=True)
         except UnicodeDecodeError:
             raise faults.BadRequest('Bad character in headers.')
-        if '%' in k or '%' in v:
-            del(request.META[k])
-            request.META[unquote(k)] = smart_unicode(unquote(
-                v), strings_only=True)
 
 
 def update_response_headers(request, response):

@@ -601,7 +601,8 @@ class ObjectPut(PithosAPITest):
                        for k, v in meta.iteritems())
         headers['HTTP_CONTENT_DISPOSITION'] = 'attachment; filename="%f2"'
         url = join_urls(self.pithos_path, self.user, cname, oname)
-        r = self.put(url, data=data, content_type='application/pdf', **headers)
+        r = self.put(url, data=data, content_type='application/pdf',
+                     quote_extra=False, **headers)
         self.assertEqual(r.status_code, 400)
 
         headers['HTTP_CONTENT_DISPOSITION'] = ('attachment; filename="%s"' %

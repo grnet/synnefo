@@ -307,9 +307,11 @@ class PithosAPITest(TestCase):
         return response
 
     def put(self, url, user='user', token='DummyToken', data={},
-            content_type='application/octet-stream', follow=False, **extra):
+            content_type='application/octet-stream', follow=False,
+            quote_extra=True, **extra):
         with astakos_user(user):
-            extra = dict((quote(k), quote(v)) for k, v in extra.items())
+            if quote_extra:
+                extra = dict((quote(k), quote(v)) for k, v in extra.items())
             if token:
                 extra['HTTP_X_AUTH_TOKEN'] = token
             response = self.client.put(url, data, content_type, follow,

@@ -49,6 +49,9 @@ def parse_bool(value, strict=True):
     converted to boolean. Otherwise the string will be returned as is.
 
     """
+    if isinstance(value, bool):
+        return value
+
     if value.lower() in ("yes", "true", "t", "1"):
         return True
     if value.lower() in ("no", "false", "f", "0"):

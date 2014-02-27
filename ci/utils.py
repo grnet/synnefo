@@ -496,14 +496,19 @@ class SynnefoCI(object):
         # Use the first network as IPv4
         server_ip = networks[0]['ipv4']
 
-        if (".okeanos.io" in self.cyclades_client.base_url or
-           ".demo.synnefo.org" in self.cyclades_client.base_url):
-            tmp1 = int(server_ip.split(".")[2])
-            tmp2 = int(server_ip.split(".")[3])
-            server_ip = "gate.okeanos.io"
-            server_port = 10000 + tmp1 * 256 + tmp2
+        # Check if config has ssh_port option and if so, use that port.
+        if self.config.has_option("Deployment", "ssh_port"):
+            server_port = self.config.get("Deployment", "ssh_port")
         else:
-            server_port = 22
+            if (".okeanos.io" in self.cyclades_client.base_url or
+            ".demo.synnefo.org" in self.cyclades_client.base_url):
+                tmp1 = int(server_ip.split(".")[2])
+                tmp2 = int(server_ip.split(".")[3])
+                server_ip = "gate.okeanos.io"
+                server_port = 10000 + tmp1 * 256 + tmp2
+            else:
+                server_port = 22
+
         self.write_temp_config('server_ip', server_ip)
         self.logger.debug("Server's IPv4 is %s" % _green(server_ip))
         self.write_temp_config('server_port', server_port)

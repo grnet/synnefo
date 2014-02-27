@@ -419,6 +419,11 @@ class ProjectAPITest(TestCase):
         body = json.loads(r.content)
         self.assertEqual(len(body), 4)
 
+        filters = {"mode": "member"}
+        r = client.get(reverse("api_projects"), filters, **h_owner)
+        body = json.loads(r.content)
+        self.assertEqual(len(body), 2)
+
         # Leave failed
         status = self.memb_action(m_plain_id, "leave", h_owner)
         self.assertEqual(status, 403)
@@ -616,6 +621,21 @@ class ProjectAPITest(TestCase):
         filters = {"state": "nonex"}
         r = client.get(reverse("api_projects"), filters, **h_owner)
         self.assertEqual(r.status_code, 400)
+
+        # directly modify a base project
+        with assertRaises(functions.ProjectBadRequest):
+            functions.modify_project(self.user1.uuid,
+                                     {"description": "new description",
+                                      "member_join_policy":
+                                          functions.MODERATED_POLICY})
+        functions.modify_project(self.user1.uuid,
+                                 {"member_join_policy":
+                                      functions.MODERATED_POLICY})
+        r = client.get(reverse("api_project",
+                               kwargs={"project_id": self.user1.uuid}),
+                       **h_owner)
+        body = json.loads(r.content)
+        self.assertEqual(body["join_policy"], "moderated")
 
 
 class TestProjects(TestCase):

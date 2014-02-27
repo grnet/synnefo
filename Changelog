@@ -33,6 +33,9 @@ Pithos
 
 * Fix performance issue due to missing index
 
+* Fix backend open hashfile bug
+  https://code.grnet.gr/issues/5011
+
 Cyclades
 --------
 

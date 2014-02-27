@@ -2635,6 +2635,7 @@
                 var usage_active = usage;
 
                 var id = uuid + ":" + key;
+                if (available < 0) { available = 0 }
                 return _.extend(value, {
                           'name': key, 
                           'id': id, 

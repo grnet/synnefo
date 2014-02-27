@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -33,7 +33,7 @@
 
 from django.core.management.base import CommandError
 from snf_django.management.commands import SynnefoCommand
-from synnefo.management.common import (format_vm_state, get_vm,
+from synnefo.management.common import (format_vm_state, get_resource,
                                        get_image)
 from snf_django.lib.astakos import UserCache
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
@@ -49,7 +49,7 @@ class Command(SynnefoCommand):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")
 
-        server = get_vm(args[0])
+        server = get_resource("server", args[0])
 
         flavor = '%s (%s)' % (server.flavor.id, server.flavor.name)
         userid = server.userid

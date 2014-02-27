@@ -31,7 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
+#from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.management import pprint, common
@@ -46,7 +46,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a subnet ID.")
 
-        subnet = common.get_subnet(args[0])
+        subnet = common.get_resource("subnet", args[0])
 
         pprint.pprint_subnet_in_db(subnet, stdout=self.stdout)
         self.stdout.write("\n\n")

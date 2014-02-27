@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -71,8 +71,9 @@ class Command(BaseCommand):
             raise CommandError("'owner' is required for floating IP creation")
 
         if network_id is not None:
-            network = util.get_network(network_id, owner, for_update=True,
-                                       non_deleted=True)
+            network = util.get_resource("network", network_id, for_update=True)
+            if network.deleted:
+                raise CommandError("Network '%s' is deleted" % network.id)
             if not network.floating_ip_pool:
                 raise CommandError("Network '%s' is not a floating IP pool."
                                    % network)

@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -66,8 +66,8 @@ class Command(BaseCommand):
         if not name:
             raise CommandError("--name is mandatory")
 
-        subnet = common.get_subnet(subnet_id)
-        user_id = common.get_network(subnet.network.id).userid
+        subnet = common.get_resource("subnet", subnet_id, for_update=True)
+        user_id = common.get_resource("network", subnet.network.id).userid
 
         subnets.update_subnet(sub_id=subnet_id,
                               name=name,

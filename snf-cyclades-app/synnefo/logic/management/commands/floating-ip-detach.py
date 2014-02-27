@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -49,8 +49,8 @@ class Command(BaseCommand):
         floating_ip_id = args[0]
 
         #get the floating-ip
-        floating_ip = common.get_floating_ip_by_id(floating_ip_id,
-                                                   for_update=True)
+        floating_ip = common.get_resource("floating-ip", floating_ip_id,
+                                          for_update=True)
 
         if not floating_ip.nic:
             raise CommandError('This floating IP is not attached to a device')

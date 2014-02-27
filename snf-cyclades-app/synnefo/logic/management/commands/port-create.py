@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -127,12 +127,12 @@ class Command(BaseCommand):
         owner = None
         if server_id:
             owner = "vm"
-            vm = common.get_vm(server_id, for_update=True)
+            vm = common.get_resource("server", server_id, for_update=True)
             #if vm.router:
             #    raise CommandError("Server '%s' does not exist." % server_id)
         elif router_id:
             owner = "router"
-            vm = common.get_vm(router_id, for_update=True)
+            vm = common.get_resource("server", router_id, for_update=True)
             if not vm.router:
                 raise CommandError("Router '%s' does not exist." % router_id)
 
@@ -143,20 +143,19 @@ class Command(BaseCommand):
                 raise CommandError("Please specify the owner of the port.")
 
         # get the network
-        network = common.get_network(network_id)
+        network = common.get_resource("network", network_id)
 
         # Get either floating IP or fixed ip address
         ipaddress = None
         floating_ip_id = options["floating_ip_id"]
         ipv4_address = options["ipv4_address"]
         if floating_ip_id:
-            ipaddress = common.get_floating_ip_by_id(floating_ip_id,
-                                                     for_update=True)
+            ipaddress = common.get_resource("floating-ip", floating_ip_id,
+                                            for_update=True)
             if ipv4_address is not None and ipaddress.address != ipv4_address:
                 raise CommandError("Floating IP address '%s' is different from"
                                    " specified address '%s'" %
                                    (ipaddress.address, ipv4_address))
-
 
         # validate security groups
         sg_list = []

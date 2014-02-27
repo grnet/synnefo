@@ -1,4 +1,4 @@
-# Copyright 2012-2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -54,7 +54,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a network ID.")
 
-        network = common.get_network(args[0])
+        network = common.get_resource("network", args[0])
         displayname = options['displayname']
 
         pprint.pprint_network(network, display_mails=displayname,

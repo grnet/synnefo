@@ -384,7 +384,7 @@ class VirtualMachine(models.Model):
         return u"<vm:%s@backend:%s>" % (self.id, self.backend_id)
 
     # Error classes
-    class InvalidBackendIdError(Exception):
+    class InvalidBackendIdError(ValueError):
         def __init__(self, value):
             self.value = value
 
@@ -587,7 +587,7 @@ class Network(models.Model):
             free += ip_pool.count_available()
         return total, free
 
-    class InvalidBackendIdError(Exception):
+    class InvalidBackendIdError(ValueError):
         def __init__(self, value):
             self.value = value
 

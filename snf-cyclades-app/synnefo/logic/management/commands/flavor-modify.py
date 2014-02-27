@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -34,7 +34,7 @@
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_flavor
+from synnefo.management.common import get_resource
 from snf_django.management.utils import parse_bool
 
 
@@ -67,7 +67,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a flavor ID")
 
-        flavor = get_flavor(args[0], for_update=True)
+        flavor = get_resource("flavor", args[0], for_update=True)
 
         deleted = options['deleted']
 

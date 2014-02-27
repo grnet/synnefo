@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -38,8 +38,6 @@ from synnefo.management import common
 from snf_django.management.utils import parse_bool
 from synnefo.management import pprint
 from synnefo.logic import subnets
-
-import ipaddr
 
 HELP_MSG = """
 
@@ -103,7 +101,7 @@ class Command(BaseCommand):
         if not cidr:
             raise CommandError("cidr is mandatory")
 
-        user_id = common.get_network(network_id).userid
+        user_id = common.get_resource("network", network_id).userid
         name = options["name"] or ""
         allocation_pools = options["allocation_pools"]
         ipversion = options["ipversion"] or 4

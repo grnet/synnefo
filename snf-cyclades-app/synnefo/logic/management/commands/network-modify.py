@@ -1,4 +1,4 @@
-# Copyright 2012-2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -36,7 +36,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.db.models import Backend
-from synnefo.management.common import (get_network, get_backend)
+from synnefo.management.common import get_resource
 from snf_django.management.utils import parse_bool
 from synnefo.logic import networks, backend as backend_mod
 from django.db import transaction
@@ -95,7 +95,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a network ID")
 
-        network = get_network(args[0])
+        network = get_resource("network", args[0])
 
         new_name = options.get("name")
         if new_name is not None:
@@ -159,7 +159,7 @@ class Command(BaseCommand):
 
         add_to_backend = options["add_to_backend"]
         if add_to_backend is not None:
-            backend = get_backend(add_to_backend)
+            backend = get_resource("backend", add_to_backend)
             bnet, jobs = backend_mod.ensure_network_is_active(backend,
                                                               network.id)
             if jobs:
@@ -168,7 +168,7 @@ class Command(BaseCommand):
 
         remove_from_backend = options["remove_from_backend"]
         if remove_from_backend is not None:
-            backend = get_backend(remove_from_backend)
+            backend = get_resource("backend", remove_from_backend)
             if network.nics.filter(machine__backend=backend,
                                    machine__deleted=False).exists():
                 msg = "Cannot remove. There are still connected VMs to this"\

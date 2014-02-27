@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -35,7 +35,7 @@ from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.db.models import Backend
 from snf_django.management.utils import parse_bool
-from synnefo.management.common import (get_backend, check_backend_credentials)
+from synnefo.management import common
 
 HYPERVISORS = [h[0] for h in Backend.HYPERVISORS]
 
@@ -82,7 +82,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a backend ID")
 
-        backend = get_backend(args[0])
+        backend = common.get_resource("backend", args[0], for_update=True)
 
         # Ensure fields correspondence with options and Backend model
         credentials_changed = False
@@ -95,8 +95,10 @@ class Command(BaseCommand):
 
         if credentials_changed:
                 # check credentials, if any of them changed!
-                check_backend_credentials(backend.clustername, backend.port,
-                                          backend.username, backend.password)
+                common.check_backend_credentials(backend.clustername,
+                                                 backend.port,
+                                                 backend.username,
+                                                 backend.password)
         if options['drained']:
             backend.drained = parse_bool(options['drained'], strict=True)
         if options['offline']:

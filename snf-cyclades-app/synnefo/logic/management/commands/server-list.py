@@ -1,4 +1,4 @@
-# Copyright 2012-2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -36,7 +36,7 @@ from functools import partial
 
 from snf_django.management.commands import ListCommand
 from synnefo.db.models import VirtualMachine
-from synnefo.management.common import get_backend
+from synnefo.management.common import get_resource
 from synnefo.api.util import get_image
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_AUTH_URL)
@@ -120,7 +120,7 @@ class Command(ListCommand):
             self.filters["suspended"] = True
 
         if options["backend_id"]:
-            backend = get_backend(options["backend_id"])
+            backend = get_resource("backend", options["backend_id"])
             self.filters["backend"] = backend.id
 
         if options["build"]:

@@ -1,4 +1,4 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -62,7 +62,7 @@ class Command(RemoveCommand):
         for port_id in args:
             self.stdout.write("\n")
             try:
-                port = common.get_port(port_id, for_update=True)
+                port = common.get_resource("port", port_id, for_update=True)
 
                 servers.delete_port(port)
 

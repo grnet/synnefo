@@ -1,4 +1,4 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -39,7 +39,7 @@ import logging
 import subprocess
 from optparse import make_option
 from django.core.management.base import BaseCommand
-from synnefo.management.common import get_backend
+from synnefo.management.common import get_resource
 from synnefo.logic import reconciliation
 from snf_django.management.utils import parse_bool
 
@@ -87,7 +87,7 @@ class Command(BaseCommand):
     def handle(self, **options):
         backend_id = options['backend-id']
         if backend_id:
-            backends = [get_backend(backend_id)]
+            backends = [get_resource("backend", backend_id)]
         else:
             backends = reconciliation.get_online_backends()
 

@@ -173,38 +173,39 @@ class Command(SynnefoCommand):
         overlimit = []
         viol_id = 0
 
-        for resource, handle_resource, resource_type in handlers:
-            if resource_type not in actions:
-                actions[resource_type] = OrderedDict()
-            actual_resources = enforce.get_actual_resources(
-                resource_type, projects=projects_to_check)
-            for project, project_quota in qh_project_holdings:
-                if enforce.skip_check(project, projects_to_check,
-                                      excluded_projects):
-                    continue
-                try:
-                    qh = util.transform_project_quotas(project_quota)
-                    qh_value, qh_limit, qh_pending = qh[resource]
-                except KeyError:
-                    write("Resource '%s' does not exist in Quotaholder"
-                          " for project '%s'!\n" %
-                          (resource, project))
-                    continue
-                if qh_pending:
-                    write("Pending commission for project '%s', "
-                          "resource '%s'. Skipping\n" %
-                          (project, resource))
-                    continue
-                diff = qh_value - qh_limit
-                if diff > 0:
-                    viol_id += 1
-                    overlimit.append((viol_id, "project", project, "",
-                                      resource, qh_limit, qh_value))
-                    relevant_resources = enforce.pick_project_resources(
-                        actual_resources[project], users=users_to_check,
-                        excluded_users=excluded_users)
-                    handle_resource(viol_id, resource, relevant_resources,
-                                    diff, actions)
+        if users_to_check is None:
+            for resource, handle_resource, resource_type in handlers:
+                if resource_type not in actions:
+                    actions[resource_type] = OrderedDict()
+                actual_resources = enforce.get_actual_resources(
+                    resource_type, projects=projects_to_check)
+                for project, project_quota in qh_project_holdings:
+                    if enforce.skip_check(project, projects_to_check,
+                                          excluded_projects):
+                        continue
+                    try:
+                        qh = util.transform_project_quotas(project_quota)
+                        qh_value, qh_limit, qh_pending = qh[resource]
+                    except KeyError:
+                        write("Resource '%s' does not exist in Quotaholder"
+                              " for project '%s'!\n" %
+                              (resource, project))
+                        continue
+                    if qh_pending:
+                        write("Pending commission for project '%s', "
+                              "resource '%s'. Skipping\n" %
+                              (project, resource))
+                        continue
+                    diff = qh_value - qh_limit
+                    if diff > 0:
+                        viol_id += 1
+                        overlimit.append((viol_id, "project", project, "",
+                                          resource, qh_limit, qh_value))
+                        relevant_resources = enforce.pick_project_resources(
+                            actual_resources[project], users=users_to_check,
+                            excluded_users=excluded_users)
+                        handle_resource(viol_id, resource, relevant_resources,
+                                        diff, actions)
 
         for resource, handle_resource, resource_type in handlers:
             if resource_type not in actions:

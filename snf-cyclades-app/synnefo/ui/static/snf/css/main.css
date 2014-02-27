@@ -3568,6 +3568,11 @@ div.machine a.manage-metadata:hover {
     width: 140px;
 }
 
+.single .column1 .project-name-cont {
+    margin-top: 27px;
+    text-align: center;
+}
+
 .single .column1 .state {
     float: left;
     margin-left: 4px;
@@ -3672,6 +3677,7 @@ div.machine a.manage-metadata:hover {
     line-height: 17px;
     margin: 0 0 10px 5px;
     width: 358px;
+    margin-bottom: 80px;
 }
 
 .single .column2 .machine-labels {
@@ -3964,7 +3970,6 @@ div.single div.column3 div.server-name:hover {
     background: transparent;
     margin-bottom: 10px;
     overflow: visible;
-    overflow: hidden;
     width: 700px;
     background: #EFF7FA repeat scroll 0 0;
 }
@@ -6906,7 +6911,7 @@ input.has-errors {
 .collection .empty-list {
   padding: 10px;
   padding-top:6px;
-  padding-left: 0;
+  padding-left: 10px;
   font-size: 0.8em;
   color: #333;
 }
@@ -7712,13 +7717,17 @@ input.has-errors {
 
 .project-name-cont {
   cursor: pointer;
-  position: absolute;
-  top: 40px;
   font-weight: normal;
-  right: 5px;
-  padding: 3px 6px;
   font-size: 11px;
   color: #222;
+  padding: 3px 6px;
+}
+
+.collection .project-name-cont,
+.icon .project-name-cont {
+  position: absolute;
+  top: 40px;
+  right: 5px;
 }
 
 .icon .machine-data {

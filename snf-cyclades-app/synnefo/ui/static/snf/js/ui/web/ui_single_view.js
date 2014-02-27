@@ -383,6 +383,10 @@
             var el = this.vm(vm);
             if (vm != this.current_vm_instance) { return };
 
+            var project = vm.get('project');
+            if (project) {
+              el.find(".project-name").text(_.truncate(project.get('name'), 20));
+            }
             // truncate name
             el.find(".machine-detail.name").text(util.truncate(vm.get("name"), 53));
             el.find(".fqdn").text(vm.get("fqdn") || synnefo.config.no_fqdn_message);

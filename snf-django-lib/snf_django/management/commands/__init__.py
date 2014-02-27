@@ -92,6 +92,9 @@ class SynnefoCommand(BaseCommand):
 
         return parser
 
+    def pprint_table(self, *args, **kwargs):
+        utils.pprint_table(self.stdout, *args, **kwargs)
+
 
 class ListCommand(SynnefoCommand):
     """Generic *-list management command.

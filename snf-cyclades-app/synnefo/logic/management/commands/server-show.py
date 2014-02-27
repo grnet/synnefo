@@ -80,5 +80,5 @@ class Command(SynnefoCommand):
             'task_job_id': server.task_job_id,
         }
 
-        utils.pprint_table(self.stdout, [kv.values()], kv.keys(),
-                           options["output_format"], vertical=True)
+        self.pprint_table([kv.values()], kv.keys(), options["output_format"],
+                          vertical=True)

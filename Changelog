@@ -6,6 +6,17 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.15rc6:
+
+v0.15rc6
+========
+
+Released: Thu Feb 27 13:08:02 EET 2014
+
+* Fix backend open hashfile bug:
+  https://code.grnet.gr/issues/5011
+
+
 .. _Changelog-0.15rc5:
 
 v0.15rc5
@@ -32,9 +43,6 @@ Pithos
   containers/folders: https://code.grnet.gr/issues/5119
 
 * Fix performance issue due to missing index
-
-* Fix backend open hashfile bug
-  https://code.grnet.gr/issues/5011
 
 Cyclades
 --------

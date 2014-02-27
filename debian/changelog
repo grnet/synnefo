@@ -1,3 +1,9 @@
+synnefo (0.15~rc6-1~wheezy) wheezy; urgency=low
+
+  * New upstream version
+
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Thu, 27 Feb 2014 13:10:25 +0200
+
 synnefo (0.15~rc5-1~wheezy) wheezy; urgency=low
 
   * New upstream version
@@ -152,6 +158,7 @@ synnefo (0.12.5-1) stable; urgency=low
   [ Dimitris Aragiorgis ]
 
  -- Dimitris Aragiorgis <dimara@grnet.gr>  Fri, 04 Jan 2013 14:46:35 +0200
+
 
 
 

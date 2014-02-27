@@ -215,6 +215,13 @@ def put_container_headers(request, response, meta, policy):
 
 def get_object_headers(request):
     content_type = request.META.get('CONTENT_TYPE', None)
+    if content_type:
+        try:
+            content_type.decode('ascii')
+            # TODO: check format ?
+        except UnicodeDecodeError:
+            raise faults.BadRequest('Bad characters in Content-Type.')
+
     meta = get_header_prefix(request, 'X-Object-Meta-')
     check_meta_headers(meta)
     if request.META.get('HTTP_CONTENT_ENCODING'):

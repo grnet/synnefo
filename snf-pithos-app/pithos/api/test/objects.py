@@ -608,6 +608,9 @@ class ObjectPut(PithosAPITest):
         headers['HTTP_CONTENT_DISPOSITION'] = ('attachment; filename="%s"' %
                                                oname)
         url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.put(url, data=data, content_type='㌀', **headers)
+        self.assertEqual(r.status_code, 400)
+
         r = self.put(url, data=data, content_type='application/pdf', **headers)
         self.assertEqual(r.status_code, 201)
         self.assertTrue('ETag' in r)

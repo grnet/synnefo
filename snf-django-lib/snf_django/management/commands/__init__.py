@@ -375,9 +375,10 @@ class ListCommand(SynnefoCommand):
         utils.pprint_table(self.stdout, table, headers)
 
 
-class RemoveCommand(BaseCommand):
+class RemoveCommand(SynnefoCommand):
     help = "Generic remove command"
-    option_list = BaseCommand.option_list + (
+
+    command_option_list = (
         make_option(
             "-f", "--force",
             dest="force",

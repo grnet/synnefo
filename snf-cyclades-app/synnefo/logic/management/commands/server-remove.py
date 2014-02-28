@@ -46,7 +46,7 @@ class Command(RemoveCommand):
     args = "<Server ID> [<Server ID> ...]"
     help = "Remove a server by deleting the instance from the Ganeti backend."
 
-    option_list = RemoveCommand.option_list + (
+    command_option_list = RemoveCommand.command_option_list + (
         make_option(
             '--wait',
             dest='wait',

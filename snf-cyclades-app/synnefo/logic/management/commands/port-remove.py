@@ -40,7 +40,7 @@ class Command(RemoveCommand):
     can_import_settings = True
     args = "<Port ID> [<Port ID> ...]"
     help = "Remove a port from the Database and from the VMs attached to"
-    option_list = RemoveCommand.option_list + (
+    command_option_list = RemoveCommand.command_option_list + (
         make_option(
             "--wait",
             dest="wait",

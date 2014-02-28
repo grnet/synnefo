@@ -44,7 +44,7 @@ class Command(RemoveCommand):
     help = "Remove a pool."
     args = "<pool ID>"
     output_transaction = True
-    option_list = RemoveCommand.option_list + (
+    command_option_list = RemoveCommand.command_option_list + (
         make_option("--type", dest="type",
                     choices=POOL_CHOICES,
                     help="Type of pool"

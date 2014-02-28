@@ -106,7 +106,7 @@ class SSH(SynnefoComponent):
     def initialize(self):
         f = "/root/.ssh/authorized_keys"
         return [
-            "test -e {0}.bak && cat {0}.bak >> {0}".format(f)
+            "test -e {0}.bak && cat {0}.bak >> {0} || true".format(f)
             ]
 
     def test(self):

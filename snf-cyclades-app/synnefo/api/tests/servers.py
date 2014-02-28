@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -837,9 +837,19 @@ class ServerVNCConsole(ComputeAPITest):
         vm.save()
 
         data = json.dumps({'console': {'type': 'vnc'}})
-        with override_settings(settings, TEST=True):
-            response = self.mypost('servers/%d/action' % vm.id,
-                                   vm.userid, data, 'json')
+        with patch('synnefo.logic.rapi_pool.GanetiRapiClient') as rapi:
+            rapi().GetInstance.return_value = {"pnode": "node1",
+                                               "network_port": 5055,
+                                               "oper_state": True,
+                                               "hvparams": {
+                                                   "serial_console": False
+                                               }}
+            with patch("synnefo.logic.servers.request_vnc_forwarding") as vnc:
+                vnc.return_value = {"status": "OK",
+                                    "source_port": 42}
+                response = self.mypost('servers/%d/action' % vm.id,
+                                       vm.userid, data, 'json')
+
         self.assertEqual(response.status_code, 200)
         reply = json.loads(response.content)
         self.assertEqual(reply.keys(), ['console'])

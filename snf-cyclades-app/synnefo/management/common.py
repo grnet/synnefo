@@ -81,17 +81,18 @@ def get_resource(name, value, for_update=False):
     else:
         capital_name = name.capitalize()
 
-    if name in ["server", "network", "port"]:
-        try:
-            if value.startswith(settings.BACKEND_PREFIX_ID):
+    if isinstance(value, basestring) and name in ["server", "network", "port"]:
+        if value.startswith(settings.BACKEND_PREFIX_ID):
+            try:
                 if name == "server":
                     value = id_from_instance_name(value)
                 elif name == "network":
                     value = id_from_network_name(value)
                 elif name == "port":
                     value = id_from_nic_name(value)
-        except ValueError:
-            raise CommandError("Invalid {} ID: {}".format(capital_name, value))
+            except ValueError:
+                raise CommandError("Invalid {} ID: {}".format(capital_name,
+                                                              value))
 
     if for_update:
         objects = objects.select_for_update()

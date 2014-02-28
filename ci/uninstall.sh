@@ -8,11 +8,8 @@ cd "$cwd"/..
 # Do common tasks for install/uninstall purposes
 . ./ci/develop-common.sh
 
-# Update version
-devflow-update-version
-
 for project in $PROJECTS; do
   cd $project
-  python setup.py develop -N $OPTIONS
+  python setup.py develop --uninstall $OPTIONS
   cd -
 done

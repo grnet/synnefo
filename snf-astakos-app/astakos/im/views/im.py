@@ -1,4 +1,4 @@
-# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -940,12 +940,11 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                     url=request.build_absolute_uri(reverse('resource_usage')),
                     name="Usage"))
 
-            if settings.PROJECTS_VISIBLE:
-                append(
-                    item(
-                        url=request.build_absolute_uri(
-                            reverse('project_list')),
-                        name="Projects"))
+            append(
+                item(
+                    url=request.build_absolute_uri(
+                        reverse('project_list')),
+                    name="Projects"))
 
             append(item(url=request.build_absolute_uri(reverse('feedback')),
                         name="Contact"))

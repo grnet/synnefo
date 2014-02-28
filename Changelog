@@ -67,6 +67,9 @@ Astakos
 
   * The quota API is extended to make project quota available.
 
+  * Removed setting `ASTAKOS_PROJECTS_VISIBLE'; we now always display
+    projects in Astakos menu.
+
 * Projects can be set `private', making it accessible only to its owner and
   members.
 

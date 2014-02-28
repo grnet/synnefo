@@ -220,9 +220,6 @@ default_success_url = join_urls('/', BASE_PATH, VIEWS_PREFIX, "landing")
 LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL',
                             default_success_url)
 
-# Whether or not to display projects in astakos menu
-PROJECTS_VISIBLE = getattr(settings, 'ASTAKOS_PROJECTS_VISIBLE', False)
-
 # A way to extend the components presentation metadata
 COMPONENTS_META = getattr(settings, 'ASTAKOS_COMPONENTS_META', {})
 

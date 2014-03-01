@@ -145,7 +145,7 @@ def parse_arguments(args):
         "--system-user", action="store",
         type="string", default=None, dest="system_user",
         help="Owner of system images (typed option in the form of "
-             "\"name:user_name\" or \"id:uuuid\")")
+             "\"name:user_name\" or \"id:uuid\")")
     parser.add_option(
         "--show-stale", action="store_true",
         default=False, dest="show_stale",

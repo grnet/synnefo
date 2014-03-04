@@ -31,13 +31,13 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.utils import simplejson as json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.db import transaction
 
 from snf_django.lib import api
 from snf_django.lib.api.faults import BadRequest, ItemNotFound
+from snf_django.lib.api import utils
 from django.core.cache import cache
 
 from astakos.im import settings
@@ -48,7 +48,7 @@ from astakos.im.quotas import get_user_quotas, service_get_quotas, \
 import astakos.quotaholder_app.exception as qh_exception
 import astakos.quotaholder_app.callpoint as qh
 
-from .util import (json_response, is_integer, are_integer,
+from .util import (json_response, is_integer, are_integer, check_is_dict,
                    user_from_token, component_from_token)
 
 
@@ -147,11 +147,8 @@ def _provisions_to_list(provisions):
 @api.api_method(http_method='POST', token_required=True, user_required=False)
 @component_from_token
 def issue_commission(request):
-    data = request.body
-    try:
-        input_data = json.loads(data)
-    except json.JSONDecodeError:
-        raise BadRequest("POST data should be in json format.")
+    input_data = utils.get_json_body(request)
+    check_is_dict(input_data)
 
     client_key = unicode(request.component_instance)
     provisions = input_data.get('provisions')
@@ -237,11 +234,8 @@ def conflictingCF(serial):
 @component_from_token
 @transaction.commit_on_success
 def resolve_pending_commissions(request):
-    data = request.body
-    try:
-        input_data = json.loads(data)
-    except json.JSONDecodeError:
-        raise BadRequest("POST data should be in json format.")
+    input_data = utils.get_json_body(request)
+    check_is_dict(input_data)
 
     client_key = unicode(request.component_instance)
     accept = input_data.get('accept', [])
@@ -293,11 +287,8 @@ def get_commission(request, serial):
 @component_from_token
 @transaction.commit_on_success
 def serial_action(request, serial):
-    data = request.body
-    try:
-        input_data = json.loads(data)
-    except json.JSONDecodeError:
-        raise BadRequest("POST data should be in json format.")
+    input_data = utils.get_json_body(request)
+    check_is_dict(input_data)
 
     try:
         serial = int(serial)

@@ -415,6 +415,22 @@ class QuotaAPITest(TestCase):
         self.assertEqual(r.status_code, 405)
         self.assertTrue('Allow' in r)
 
+        r = client.post(u('commissions'), "\"\xff\"",
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 400)
+
+        r = client.post(u('commissions'), "\"nodict\"",
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 400)
+
+        r = client.post(u('commissions/' + "123" + '/action'), "\"\xff\"",
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 400)
+
+        r = client.post(u('commissions/' + "123" + '/action'), "\"nodict\"",
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 400)
+
 
 class TokensApiTest(TestCase):
     def setUp(self):

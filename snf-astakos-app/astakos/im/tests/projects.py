@@ -640,6 +640,21 @@ class ProjectAPITest(TestCase):
         body = json.loads(r.content)
         self.assertEqual(body["join_policy"], "moderated")
 
+        r = self.client.post(reverse("api_projects"), "\xff",
+                             content_type="application/json", **h_owner)
+        self.assertEqual(r.status_code, 400)
+
+        r = self.client.post(reverse("api_project_action",
+                                     kwargs={"project_id": "1234"}),
+                             "\"nondict\"", content_type="application/json",
+                             **h_owner)
+        self.assertEqual(r.status_code, 400)
+
+        r = client.get(reverse("api_project",
+                               kwargs={"project_id": u"πρότζεκτ"}),
+                       **h_owner)
+        self.assertEqual(r.status_code, 404)
+
 
 class TestProjects(TestCase):
     """

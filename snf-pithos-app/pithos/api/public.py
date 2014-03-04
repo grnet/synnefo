@@ -37,7 +37,7 @@ from django.views.decorators.csrf import csrf_exempt
 from snf_django.lib import api
 from snf_django.lib.api import faults
 
-from pithos.api.settings import UNSAFE_DOMAIN
+from pithos.api.settings import UNSAFE_DOMAIN, UPDATE_MD5
 from pithos.api.util import (put_object_headers, update_manifest_meta,
                              validate_modification_preconditions,
                              validate_matching_preconditions,
@@ -123,7 +123,7 @@ def public_read(request, v_public):
         validate_matching_preconditions(request, meta)
     except faults.NotModified:
         response = HttpResponse(status=304)
-        response['ETag'] = meta['ETag']
+        response['ETag'] = meta['hash'] if not UPDATE_MD5 else meta['checksum']
         return response
 
     sizes = []

@@ -6,6 +6,24 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.15rc7:
+
+v0.15rc7
+========
+
+Released: Tue Mar  4 14:53:14 EET 2014
+
+Cyclades
+--------
+
+* Fix UI to filter available flavors in VM wizard
+
+Pithos
+------
+
+* Fix GET request for public path with If-None-Match
+  https://code.grnet.gr/issues/5168
+
 .. _Changelog-0.15rc6:
 
 v0.15rc6

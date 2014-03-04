@@ -32,23 +32,23 @@
 # or implied, of GRNET S.A.
 
 from datetime import datetime
-from django.core.management.base import BaseCommand
 from optparse import make_option
 
 from synnefo import quotas
 from synnefo.quotas import util
 from snf_django.management.utils import pprint_table
+from snf_django.management.commands import SynnefoCommand
 from snf_django.utils import reconcile
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = """Reconcile resource usage of Astakos with Cyclades DB.
 
     Detect unsynchronized usage between Astakos and Cyclades DB resources and
     synchronize them if specified so.
 
     """
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option("--userid", dest="userid",
                     default=None,
                     help="Reconcile resources only for this user"),

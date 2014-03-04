@@ -28,7 +28,9 @@
 # policies, either expressed or implied, of GRNET S.A.
 #
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
+
+from snf_django.management.commands import SynnefoCommand
 from synnefo.management import common
 from synnefo.logic import backend as backend_mod
 from synnefo.db.models import Backend
@@ -42,7 +44,7 @@ this Backend.  Removal of a backend will fail if the backend hosts any
 non-deleted instances."""
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<backend_id>"
     help = HELP_MSG
 

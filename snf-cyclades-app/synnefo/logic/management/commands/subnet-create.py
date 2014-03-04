@@ -33,8 +33,10 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
+
 from synnefo.management import common
+from snf_django.management.commands import SynnefoCommand
 from snf_django.management.utils import parse_bool
 from synnefo.management import pprint
 from synnefo.logic import subnets
@@ -47,10 +49,10 @@ Network ID.
 """
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = "Create a new Subnet." + HELP_MSG
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option("--network-id", dest="network_id",
                     help="Specify the Network to attach the subnet. To get the"
                          " networks of a user, use snf-manage network-list"),

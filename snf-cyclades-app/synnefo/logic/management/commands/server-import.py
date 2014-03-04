@@ -33,12 +33,13 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from synnefo.management import common
 
 from synnefo.db.models import VirtualMachine, Network, Flavor
 from synnefo.logic.utils import id_from_network_name, id_from_instance_name
 from synnefo.logic.backend import wait_for_job, connect_to_network
+from snf_django.management.commands import SynnefoCommand
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic import servers
 from synnefo import quotas
@@ -58,12 +59,12 @@ connected to a public network of Synnefo.
 """
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = "Import an existing Ganeti VM into Synnefo." + HELP_MSG
     args = "<ganeti_instance_name>"
     output_transaction = True
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             "--backend-id",
             dest="backend_id",

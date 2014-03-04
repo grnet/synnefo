@@ -33,18 +33,18 @@ import os
 
 from django.utils.importlib import import_module
 from optparse import make_option
-
-from django.core.management.base import BaseCommand
 from django.conf import settings
+
+from snf_django.management.commands import SynnefoCommand
 
 STATIC_FILES = getattr(settings, "STATIC_FILES", {})
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
 
     help = 'Symlink static files to directory specified'
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             '--static-root',
             action='store',

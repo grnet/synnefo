@@ -32,19 +32,20 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from snf_django.management import utils
 from astakos.im.models import Resource
 from astakos.im import register
 from ._common import style_options, check_style, units
+from snf_django.management.commands import SynnefoCommand
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<resource name>"
     help = "Modify a resource's quota defaults and boolean flags."
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--base-default',
                     metavar='<limit>',
                     help="Specify default quota for base projects"),

@@ -32,17 +32,18 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
+from snf_django.management.commands import SynnefoCommand
 from synnefo.management import common
 from synnefo.management import pprint
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = "Inspect a server on DB and Ganeti"
     args = "<server_id>"
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             '--jobs',
             action='store_true',

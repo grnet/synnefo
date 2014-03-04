@@ -2,9 +2,10 @@
 # http://code.google.com/p/django-command-extensions/
 
 from django.conf import settings
-from django.core.management.base import BaseCommand
 from django.core.management import color
 from django.utils import termcolors
+
+from snf_django.management.commands import SynnefoCommand
 
 
 def color_style():
@@ -26,7 +27,7 @@ except ImportError:
         extract_views_from_urlpatterns, simplify_regex
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = "Displays all of the url matching routes for the project."
 
     requires_model_validation = True

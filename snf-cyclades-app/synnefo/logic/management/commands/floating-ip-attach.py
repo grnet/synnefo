@@ -33,16 +33,18 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
+
+from snf_django.management.commands import SynnefoCommand
 from synnefo.management import common
 from synnefo.logic import servers
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<floating_ip_id>"
     help = "Attach a floating IP to a VM or router"
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             '--machine',
             dest='machine',

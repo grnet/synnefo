@@ -32,22 +32,22 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from datetime import datetime
 
 from django.db import transaction
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser, get_latest_terms
+from snf_django.management.commands import SynnefoCommand
 from astakos.im.auth import make_local_user
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<email> <first name> <last name>"
     help = "Create a user"
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--password',
                     dest='password',
                     metavar='PASSWORD',

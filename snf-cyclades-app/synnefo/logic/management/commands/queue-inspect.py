@@ -31,17 +31,18 @@
 import pprint
 
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from synnefo.lib.amqp import AMQPClient
+from snf_django.management.commands import SynnefoCommand
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<queue_name>"
     help = "Inspect the messages of a queue. Close all other clients in "\
            "order to be able to inspect unacknowledged messages."
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--no-requeue', action='store_false', dest='requeue',
                     default=True, help="Do not requeue the messages"),
         make_option('-i', '--interactive', action='store_true', default=False,

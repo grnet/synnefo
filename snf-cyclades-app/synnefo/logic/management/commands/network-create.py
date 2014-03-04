@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -33,7 +33,9 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
+
+from snf_django.management.commands import SynnefoCommand
 from synnefo.management.common import convert_api_faults
 from snf_django.management.utils import parse_bool
 
@@ -41,18 +43,17 @@ from synnefo.db.models import Network
 from synnefo.logic import networks, subnets
 from synnefo.management import pprint
 
-import ipaddr
 
 NETWORK_FLAVORS = Network.FLAVORS.keys()
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     can_import_settings = True
     output_transaction = True
 
     help = "Create a new network"
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             '--name',
             dest='name',

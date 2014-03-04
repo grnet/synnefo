@@ -33,11 +33,12 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from synnefo.api import util
 from synnefo.management import common, pprint
 from snf_django.management.utils import parse_bool
+from snf_django.management.commands import SynnefoCommand
 from synnefo.logic import servers
 
 HELP_MSG = """Create a new port.
@@ -48,10 +49,10 @@ Otherwise, the port will get an IP address for each Subnet that is associated
 with the network."""
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = HELP_MSG
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             "--name",
             dest="name",

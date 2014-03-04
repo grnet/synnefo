@@ -28,11 +28,12 @@
 # policies, either expressed or implied, of GRNET S.A.
 #
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from synnefo.db.models import Backend, Network
 from django.db.utils import IntegrityError
 from synnefo.logic import backend as backend_mod
+from snf_django.management.commands import SynnefoCommand
 from synnefo.management.common import check_backend_credentials
 from snf_django.management.utils import pprint_table
 
@@ -40,11 +41,11 @@ from snf_django.management.utils import pprint_table
 HYPERVISORS = [h[0] for h in Backend.HYPERVISORS]
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     can_import_settings = True
 
     help = 'Create a new backend.'
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--clustername', dest='clustername'),
         make_option('--port', dest='port', default=5080),
         make_option('--user', dest='username'),

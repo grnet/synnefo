@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -34,18 +34,19 @@
 from optparse import make_option
 
 from django.db import transaction
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from django.utils import simplejson as json
 
 from astakos.im.register import add_service, add_resource, RegisterException
+from snf_django.management.commands import SynnefoCommand
 from astakos.im.models import Component
 from ._common import read_from_file
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = "Register services"
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--json',
                     dest='json',
                     metavar='<json.file>',

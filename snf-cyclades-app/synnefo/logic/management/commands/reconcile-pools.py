@@ -1,4 +1,4 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -29,8 +29,9 @@
 #
 import logging
 from optparse import make_option
-from django.core.management.base import BaseCommand
+
 from synnefo.logic import reconciliation
+from snf_django.management.commands import SynnefoCommand
 
 
 HELP_MSG = """\
@@ -46,10 +47,10 @@ The pools for the following resources are checked:
     * Pool of IPv4 addresses for each network"""
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = HELP_MSG
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option("--fix", action="store_true",
                     dest="fix", default=False,
                     help='Fix all issues.'),

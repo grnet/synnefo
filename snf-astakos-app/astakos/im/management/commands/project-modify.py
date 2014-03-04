@@ -34,7 +34,7 @@
 from optparse import make_option
 
 from django.db.models import Q
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from django.db import transaction
 from synnefo.util import units
 from astakos.im import functions
@@ -43,6 +43,7 @@ import astakos.api.projects as api
 import synnefo.util.date as date_util
 from snf_django.management import utils
 from astakos.im.management.commands import _common
+from snf_django.management.commands import SynnefoCommand
 
 
 def make_policies(limits):
@@ -112,10 +113,10 @@ def make_options():
     return tuple(options)
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<project id> (or --all-base-projects)"
     help = "Modify an already initialized project"
-    option_list = BaseCommand.option_list + make_options() + (
+    option_list = SynnefoCommand.option_list + make_options() + (
         make_option('--all-base-projects',
                     action='store_true',
                     default=False,

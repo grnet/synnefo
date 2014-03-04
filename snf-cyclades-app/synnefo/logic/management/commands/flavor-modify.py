@@ -33,7 +33,9 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
+
+from snf_django.management.commands import SynnefoCommand
 from synnefo.management.common import get_resource
 from snf_django.management.utils import parse_bool
 
@@ -42,11 +44,11 @@ from logging import getLogger
 log = getLogger(__name__)
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<flavor_id>"
     help = "Modify a flavor"
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             "--deleted",
             dest="deleted",

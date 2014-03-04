@@ -33,16 +33,18 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
+
+from snf_django.management.commands import SynnefoCommand
 from synnefo.management.common import convert_api_faults
 from synnefo.logic import ips
 from synnefo.api import util
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = "Allocate a new floating IP"
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             '--network',
             dest='network_id',

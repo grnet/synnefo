@@ -31,20 +31,21 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from optparse import make_option
 
 from synnefo.db.pools import bitarray_to_map
 from synnefo.management import pprint, common
+from snf_django.management.commands import SynnefoCommand
 
 POOL_CHOICES = ['bridge', 'mac-prefix']
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<pool_id>"
     help = "Show a pool"
     output_transaction = True
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--type', dest='type',
                     choices=POOL_CHOICES,
                     help="Type of pool"

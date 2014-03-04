@@ -34,7 +34,7 @@
 from optparse import make_option
 from datetime import datetime
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from django.db import transaction
 
 from snf_django.utils import reconcile
@@ -44,9 +44,10 @@ from astakos.im import quotas
 from astakos.im.functions import count_pending_app
 import astakos.quotaholder_app.callpoint as qh
 import astakos.quotaholder_app.exception as qh_exception
+from snf_django.management.commands import SynnefoCommand
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = """Reconcile resource usage of Quotaholder with Astakos DB.
 
     Detect unsynchronized usage between Quotaholder and Astakos DB resources
@@ -54,7 +55,7 @@ class Command(BaseCommand):
 
     """
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option("--userid", dest="userid",
                     default=None,
                     help="Reconcile resources only for this user"),
@@ -78,7 +79,7 @@ class Command(BaseCommand):
         userid = options['userid']
         project = options['project']
 
-        RESOURCES = [quotas.PENDING_APP_RESOURCE]
+        resources = [quotas.PENDING_APP_RESOURCE]
 
         try:
             astakos = Component.objects.get(name="astakos")
@@ -109,11 +110,11 @@ class Command(BaseCommand):
             db_project_holdings.update(user_holdings)
 
         unsynced_users, users_pending, users_unknown =\
-            reconcile.check_users(self.stderr, RESOURCES,
+            reconcile.check_users(self.stderr, resources,
                                   db_holdings, qh_holdings)
 
         unsynced_projects, projects_pending, projects_unknown =\
-            reconcile.check_projects(self.stderr, RESOURCES,
+            reconcile.check_projects(self.stderr, resources,
                                      db_project_holdings, qh_project_holdings)
         pending_exists = users_pending or projects_pending
         unknown_exists = users_unknown or projects_unknown

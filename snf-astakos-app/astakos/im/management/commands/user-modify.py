@@ -1,4 +1,4 @@
-# Copyright 2012, 2013, 2014 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -38,23 +38,24 @@ from optparse import make_option
 
 from django.core import management
 from django.db import transaction
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
 from astakos.im.models import AstakosUser
 from astakos.im import activation_backends
+from snf_django.management.commands import SynnefoCommand
 from ._common import (remove_user_permission, add_user_permission, is_uuid)
 
 activation_backend = activation_backends.get_backend()
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<user ID> (or --all)"
     help = "Modify a user's attributes"
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--all',
                     action='store_true',
                     default=False,

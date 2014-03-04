@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -34,15 +34,16 @@
 from itertools import product
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
+from snf_django.management.commands import SynnefoCommand
 from synnefo.db.models import Flavor
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     output_transaction = True
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option("-n", "--dry-run", dest="dry_run", action="store_true"),
     )
     args = "<cpu>[,<cpu>,...] " \
@@ -83,7 +84,8 @@ class Command(BaseCommand):
                     self.stdout.write("Flavor '%s' already exists\n"
                                       % flavor.name)
                     if flavor.deleted:
-                        msg = "Flavor '%s' is marked as deleted. Use"\
-                        " 'snf-manage flavor-modify' to restore this flavor\n"\
-                        % flavor.name
+                        msg = "Flavor '%s' is marked as deleted." \
+                              " Use 'snf-manage flavor-modify' to" \
+                              " restore this flavor\n" \
+                              % flavor.name
                         self.stdout.write(msg)

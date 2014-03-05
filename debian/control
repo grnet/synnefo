@@ -48,7 +48,8 @@ Depends: ${misc:Depends}, ${python:Depends},
   snf-branding (= ${binary:Version}), snf-webproject (= ${binary:Version}),
   python-astakosclient (= ${binary:Version}),
   snf-pithos-backend (= ${binary:Version}),
- python-django-south (>= 0.7.3)
+  python-django-south (>= 0.7.3),
+  python-requests (>= 0.12.1)
 Provides: ${python:Provides}
 Replaces: snf-network
 Recommends: snf-webproject

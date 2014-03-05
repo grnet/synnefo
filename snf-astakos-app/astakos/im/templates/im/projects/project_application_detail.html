@@ -1,4 +1,5 @@
 {% extends "im/projects/project_detail.html" %}
+{% load filters %}
 
 {% block project.title %}
 {% if is_modification %}
@@ -19,10 +20,50 @@ PROJECT APPLICATION {{ object.state_display|upper}}
 {% endif %}
 {% endblock %}
 
-{% block object.details.name %}
-{{ object.name }}
+
+{% block page.project_details %}
+<dt>Name</dt>
+<dd>
+{{ application|display_modification_param:"name" }}&nbsp;
+</dd>
+<dt>Homepage url</dt>
+<dd>
+{{ application|display_modification_param:"homepage" }}&nbsp;
+</dd>
+<dt>Description</dt>
+<dd>
+{{ application|display_modification_param:"description" }}&nbsp;
+</dd>
+<dt>End Date</dt>
+<dd>{{ application|display_date_modification_param:"end_date,d/m/Y" }}&nbsp;</dd>
+<dt>Owner</dt>
+{% if admin_mode %}
+<dd>{{ application|display_modification_param:"owner,owner_admin" }}&nbsp;</dd>
+{% else %}
+{% if owner_mode %}
+<dd>{{ application|display_modification_param:"owner,owner_owner" }}&nbsp;</dd>
+{% else %}
+<dd>{{ application|display_modification_param:"owner,owner" }}&nbsp;</dd>
+{% endif %}
+{% endif %}
+</dl>
+</div>
+<div class="full-dotted">
+<h3>MEMBERSHIP OPTIONS</h3>
+<dl class="alt-style">			    
+<dt>Member join policy</dt>
+<dd>{{ application|display_modification_param:"member_join_policy" }}&nbsp;</dd>
+<dt>Member leave policy</dt>
+<dd>{{ application|display_modification_param:"member_leave_policy" }}&nbsp;</dd>
+<dt>Total number of members</dt>
+<dd>{{ application|display_modification_param_diff:"limit_on_members_number" }}&nbsp;</dd>
 {% endblock %}
 
-{% block object.created_at %}
-<dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
+{% block page.members %}{% endblock %}
+{% block page.resources_heading %}
+{% if is_modification %}
+MODIFIED RESOURCES (per user / total)
+{% else %}
+{{ block.super }}
+{% endif %}
 {% endblock %}

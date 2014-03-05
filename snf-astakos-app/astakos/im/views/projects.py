@@ -293,6 +293,7 @@ def project_or_app_detail(request, project_uuid, app_id=None):
         queryset = ProjectApplication.objects.select_related()
         object_id = application.pk
         resources_set = application.resource_set
+        project_resources_set = project.resource_set
         template_name = "im/projects/project_application_detail.html"
 
     return object_detail(

@@ -212,9 +212,26 @@ h2 .header-actions { float: right; font-size: 0.8em;}
     color:#F24E53;
     font-family: monospace;
 }
+
 .policy-diff.green {
     color: green;
 }
+
+.policy-diff.gray {
+    color: #444;
+}
+
 .policy-diff.red {
     color: red;
+}
+
+.policy-diff.details span {
+    color: #aaa;
+}
+
+.policy-diff.details {
+    display: block;
+    padding: 0;
+    margin: 0;
+    font-size: 0.8em;
 }

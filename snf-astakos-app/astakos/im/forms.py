@@ -767,7 +767,7 @@ class ProjectApplicationForm(forms.ModelForm):
 
     def clean(self):
         userid = self.data.get('user', None)
-        self.resource_policies
+        policies = self.resource_policies
         self.user = None
         if userid:
             try:
@@ -776,8 +776,8 @@ class ProjectApplicationForm(forms.ModelForm):
                 pass
         if not self.user:
             raise forms.ValidationError(_(astakos_messages.NO_APPLICANT))
-        super(ProjectApplicationForm, self).clean()
-        return self.cleaned_data
+        cleaned_data = super(ProjectApplicationForm, self).clean()
+        return cleaned_data
 
     @property
     def resource_policies(self):
@@ -908,7 +908,7 @@ class ProjectApplicationForm(forms.ModelForm):
 
         return policies
 
-    def fill_api_data(self):
+    def get_api_data(self):
         data = dict(self.cleaned_data)
         is_new = self.instance.id is None
         if isinstance(self.instance, Project):
@@ -916,18 +916,45 @@ class ProjectApplicationForm(forms.ModelForm):
         else:
             data['project_id'] = self.instance.chain.id if not is_new else None
 
-        data['owner'] = self.user.uuid if is_new else self.instance.owner.uuid
-        data['resources'] = self.cleaned_resource_policies()
-        data['request_user'] = self.user
+        user_uuid = self.user.uuid if is_new else self.instance.owner.uuid
+        data['owner'] = AstakosUser.objects.get(uuid=user_uuid)
+
+        exclude_keys = ['owner', 'comments', 'project_id', 'start_date']
+
+        # is_valid changes instance attributes
+        instance = self.instance
+        if not is_new:
+            instance = Project.objects.get(pk=self.instance.pk)
+
+        for key in [dkey for dkey in data.keys() if not dkey in exclude_keys]:
+            if not is_new and \
+                   (getattr(instance, key) == data.get(key)):
+                del data[key]
+
+        resources = self.cleaned_resource_policies()
+        if resources:
+            data['resources'] = resources
+
         if data.get('start_date', None):
             data['start_date'] = date_util.isoformat(data.get('start_date'))
-        data['end_date'] = date_util.isoformat(data.get('end_date'))
-        data['max_members'] = data.get('limit_on_members_number')
+        else:
+            del data['start_date']
+
+        if data.get('end_date', None):
+            data['end_date'] = date_util.isoformat(data.get('end_date'))
+
+        if 'limit_on_members_number' in data:
+            data['max_members'] = data.get('limit_on_members_number')
+
+        data['request_user'] = self.user
+        if 'owner' in data:
+            data['owner'] = data['owner'].uuid
+
         return data
 
     def save(self, commit=True, **kwargs):
         from astakos.api import projects as api
-        data = self.fill_api_data()
+        data = self.get_api_data()
         return api.submit_new_project(data, self.user)
 
 
@@ -941,7 +968,7 @@ class ProjectModificationForm(ProjectApplicationForm):
 
     def save(self, commit=True, **kwargs):
         from astakos.api import projects as api
-        data = self.fill_api_data()
+        data = self.get_api_data()
         return api.submit_modification(data, self.user, self.instance.uuid)
 
 

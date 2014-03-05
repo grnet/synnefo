@@ -36,16 +36,15 @@
   <div class="full-dotted">
     <h3>PROJECT DETAILS</h3>
     <dl class="alt-style">
+      {% block page.project_details %}
       <dt>Name</dt>
-      <dd>
-        {% block object.details.name %}{{ object.realname|upper }}{% endblock %}&nbsp;
-      </dd>
+      <dd>{{ object.realname }}&nbsp;</dd>
       <dt>Homepage url</dt>
       <dd>
         {% if object.homepage %}
-        <a href="{{ object.homepage }}">{{ object.homepage }}</a>
+            <a href="{{ object.homepage }}">{{ object.homepage }}</a>
         {% else %}
-        Not set yet
+            Not set yet
         {% endif %}
       </dd>
       <dt>Description</dt>
@@ -63,19 +62,23 @@
 
       <dt>Owner</dt>
       <dd>
-        {% if owner_mode %}
-        Me
-        {% else %}
-        {{object.owner.realname}} {% if admin_mode or user.is_superuser %}({{object.owner.email}}){% endif %}
+          {% if owner_mode %}
+              Me
+          {% else %} 
+          {{ object.owner.realname }} 
+          {% if admin_mode or user.is_superuser %}
+            ({{object.owner.email}})
+          {% endif %}
         {% endif %}
         &nbsp;
       </dd>
+      {% endblock page.project_details %}
     </dl>
   </div>
  
 
   <div class="full-dotted">
-    <h3>RESOURCES (per user / total)</h3>
+      <h3>{% block page.resources_heading %}RESOURCES (per user / total){% endblock %}</h3>
     {% if resources_set.all %}
     <dl class="alt-style">
         {% for rp in resources_set.all|sorted_resources %}
@@ -102,7 +105,7 @@
     {% endif %}
   </div>
 
-    
+  {% block page.members %} 
   <div class="full-dotted">
 
     <h3>
@@ -158,6 +161,7 @@
        {% endif %}
 
    </div>
+  {% endblock page.members %} 
 
 {% endblock inner_project %}  
   <div class="full-dotted">

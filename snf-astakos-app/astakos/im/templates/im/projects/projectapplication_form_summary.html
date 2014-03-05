@@ -8,12 +8,19 @@
 {% block page.body %}
 
 <h2>
-{% if update_form %}REQUEST PROJECT MODIFICATION{% else %}REQUEST PROJECT{% endif %}
+{% block page.heading %}
+REQUEST PROJECT
+{% endblock %}
 </h2>
 
-<p>These are the specifications of the Project you want to create. If you hit the "Submit" button
-this form will be officially sent to {{ BRANDING_COMPANY_NAME }} for review. Please make sure the following reflect
-exactly your request.</p>
+
+<p>
+{% block page.description %}
+These are the specifications of the Project you want to create. If you hit the
+"Submit" button this form will be officially sent to {{ BRANDING_COMPANY_NAME }}
+for review. Please make sure the following reflect exactly your request.
+{% endblock %}
+</p>
 
 <div class="projects summary">
 	<form action="?edit=0&verify=0" method="post" class="quotas-form">{% csrf_token %}
@@ -23,9 +30,10 @@ exactly your request.</p>
 	        {% endif %}
 	    {% endfor %}
 		<div class="full-dotted">
-			<h3>PROJECT DETAILS</h3>
+            <h3>{% block page.project_details.heading %}PROJECT DETAILS{% endblock %}</h3>
 			<p class="restricted">{{ form_data.desc }}</p>
-			<dl class="alt-style">
+            <dl class="alt-style">
+                {% block page.project_details %}
 				<dt>Name</dt>
 			 	<dd>{{ form_data.name }}&nbsp;</dd>
 			 	<dt>Homepage Url</dt>
@@ -40,18 +48,20 @@ exactly your request.</p>
 			 	<dd>{{ form_data.end_date|date:"d/m/Y"}}&nbsp;</dd>		
 			 	<dt>Comments</dt>
 				<dd>{{ form_data.comments }}&nbsp;</dd>	    
-				
+                {% endblock %}
 			</dl>
 		</div>
 		<div class="full-dotted">
 			 <h3>MEMBERSHIP OPTIONS</h3>
 			 <dl class="alt-style">			    
+                {% block page.project_membership_details %}
                 <dt>Member join policy</dt>
 			 	<dd>{{ join_policies|lookup:form_data.member_join_policy|title }}</dd>
 			 	<dt>Member leave policy</dt>
 			 	<dd>{{ leave_policies|lookup:form_data.member_leave_policy|title }}</dd>
 			 	<dt>Total number of members</dt>
 			 	<dd>{{ form_data.limit_on_members_number }}</dd>
+                {% endblock %}
 			 </dl>
 		 </div>
 		 <div class="full-dotted">
@@ -75,8 +85,9 @@ exactly your request.</p>
                     {% if rp.p_diff %}
                     {% with rp.p_diff as diff %}
                         <span class="policy-diff 
-                            {% if diff.increased %}green{% else %}red{% endif %}"
-                        >({{diff.operator}}{{ diff.diff_display }})</span>
+                            {% if diff.increased %}green{% else %}red{% endif %}">
+                            ({{diff.operator}}{{ diff.diff_display }})
+                        </span>
                     {% endwith %}
                     {% endif %}
                     </dd>
@@ -92,7 +103,8 @@ exactly your request.</p>
 		 
 		<input type="hidden" name="user"  id="id_user" value="{{user.id}}">
 		<div class="form-row submit">
-            <input type="submit" value="BACK" class="submit lt"  onclick='this.form.action="?edit=1&verify=0";'>
+            <input type="submit" value="BACK" class="submit lt" 
+                onclick='this.form.action="?edit=1&verify=0";'>
             <input type="submit" value="SUBMIT" class="submit" >
             <a href="{% url project_list %}" class="rt-link">CANCEL</a>
         </div>

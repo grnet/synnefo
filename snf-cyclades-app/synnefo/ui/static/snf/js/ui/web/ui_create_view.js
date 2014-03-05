@@ -1573,6 +1573,7 @@
             this.name = this.$("h3.vm-name");
             this.keys = this.$(".confirm-params.ssh");
             this.meta = this.$(".confirm-params.meta");
+            this.project = this.$(".confirm-cont.image .project-title");
             this.ip_addresses = this.$(".confirm-params.ip-addresses");
             this.private_networks = this.$(".confirm-params.private-networks");
             this.init_handlers();
@@ -1694,6 +1695,10 @@
             this.update_image_details();
             this.update_flavor_details();
             this.update_network_details();
+            
+            var project_name = this.get_project().get('name');
+            project_name = util.truncate(project_name, 25);
+            this.project.text(project_name);
 
             if (!params.image.supports('ssh')) {
                 this.keys.hide();

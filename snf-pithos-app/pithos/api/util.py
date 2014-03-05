@@ -438,9 +438,7 @@ def validate_modification_preconditions(request, meta):
 def validate_matching_preconditions(request, meta):
     """Check that the ETag conforms with the preconditions set."""
 
-    etag = meta['hash'] if not UPDATE_MD5 else meta['checksum']
-    if not etag:
-        etag = None
+    etag = meta.get('hash') if not UPDATE_MD5 else meta.get('checksum')
 
     if_match = request.META.get('HTTP_IF_MATCH')
     if if_match is not None:

@@ -67,8 +67,6 @@ class ExceptionHandler(object):
 
     def __exit__(self, exc_type, value, traceback):
         if value is not None:  # exception
-            import traceback as tb
-            tb.print_exception(exc_type, value, traceback)
             logger.exception(value)
             m = _(astakos_messages.GENERIC_ERROR)
             messages.error(self.request, m)

@@ -43,9 +43,11 @@ from django.http import HttpResponse
 from snf_django.lib import api
 from snf_django.lib.api import faults
 from synnefo.util.text import uenc
-from synnefo.plankton.backend import PlanktonBackend
+from synnefo.plankton.backend import get_backend
 from synnefo.plankton.backend import split_url
 
+
+PlanktonBackend = get_backend()
 
 FILTERS = ('name', 'container_format', 'disk_format', 'status', 'size_min',
            'size_max')

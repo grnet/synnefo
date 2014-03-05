@@ -59,6 +59,8 @@ urlpatterns = patterns(
 )
 
 
+PlanktonBackend = backend.get_backend()
+
 def demux(request):
     if request.method == 'GET':
         return list_images(request)
@@ -131,7 +133,7 @@ def list_images(request, detail=False):
 
     log.debug('list_images detail=%s', detail)
     since = utils.isoparse(request.GET.get('changes-since'))
-    with backend.PlanktonBackend(request.user_uniq) as b:
+    with PlanktonBackend(request.user_uniq) as b:
         images = b.list_images()
         if since:
             updated_since = lambda img: date_parse(img["updated_at"]) >= since
@@ -180,7 +182,7 @@ def get_image_details(request, image_id):
     #                       overLimit (413)
 
     log.debug('get_image_details %s', image_id)
-    with backend.PlanktonBackend(request.user_uniq) as b:
+    with PlanktonBackend(request.user_uniq) as b:
         image = b.get_image(image_id)
     reply = image_to_dict(image)
 
@@ -202,7 +204,7 @@ def delete_image(request, image_id):
     #                       overLimit (413)
 
     log.info('delete_image %s', image_id)
-    with backend.PlanktonBackend(request.user_uniq) as b:
+    with PlanktonBackend(request.user_uniq) as b:
         b.unregister(image_id)
     log.info('User %s deleted image %s', request.user_uniq, image_id)
     return HttpResponse(status=204)
@@ -218,7 +220,7 @@ def list_metadata(request, image_id):
     #                       overLimit (413)
 
     log.debug('list_image_metadata %s', image_id)
-    with backend.PlanktonBackend(request.user_uniq) as b:
+    with PlanktonBackend(request.user_uniq) as b:
         image = b.get_image(image_id)
     metadata = image['properties']
     return util.render_metadata(request, metadata, use_values=False,
@@ -238,7 +240,7 @@ def update_metadata(request, image_id):
 
     req = utils.get_request_dict(request)
     log.info('update_image_metadata %s %s', image_id, req)
-    with backend.PlanktonBackend(request.user_uniq) as b:
+    with PlanktonBackend(request.user_uniq) as b:
         image = b.get_image(image_id)
         try:
             metadata = req['metadata']
@@ -265,7 +267,7 @@ def get_metadata_item(request, image_id, key):
     #                       overLimit (413)
 
     log.debug('get_image_metadata_item %s %s', image_id, key)
-    with backend.PlanktonBackend(request.user_uniq) as b:
+    with PlanktonBackend(request.user_uniq) as b:
         image = b.get_image(image_id)
     val = image['properties'].get(key)
     if val is None:
@@ -296,7 +298,7 @@ def create_metadata_item(request, image_id, key):
         raise faults.BadRequest('Malformed request.')
 
     val = metadict[key]
-    with backend.PlanktonBackend(request.user_uniq) as b:
+    with PlanktonBackend(request.user_uniq) as b:
         image = b.get_image(image_id)
         properties = image['properties']
         properties[key] = val
@@ -319,7 +321,7 @@ def delete_metadata_item(request, image_id, key):
     #                       overLimit (413),
 
     log.info('delete_image_metadata_item %s %s', image_id, key)
-    with backend.PlanktonBackend(request.user_uniq) as b:
+    with PlanktonBackend(request.user_uniq) as b:
         image = b.get_image(image_id)
         properties = image['properties']
         properties.pop(key, None)

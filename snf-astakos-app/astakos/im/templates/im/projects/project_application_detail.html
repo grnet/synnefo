@@ -22,6 +22,10 @@ PROJECT APPLICATION {{ object.state_display|upper}}
 
 
 {% block page.project_details %}
+{% if application.state == object.DENIED and application.response %}
+<dt>Reason denied</dt>
+<dd><em>{{ application.response }}</em></dd>
+{% endif %}
 <dt>Name</dt>
 <dd>
 {{ application|display_modification_param:"name" }}&nbsp;

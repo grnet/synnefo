@@ -304,7 +304,7 @@ class AMQPPukaClient(object):
             self.unsend.pop(body)
 
     @reconnect_decorator
-    def basic_consume(self, queue, callback, prefetch_count=0):
+    def basic_consume(self, queue, callback, no_ack=False, prefetch_count=0):
         """Consume from a queue.
 
         @type queue: string or list of strings
@@ -327,7 +327,8 @@ class AMQPPukaClient(object):
         consume_promise = \
             self.client.basic_consume(queue=queue,
                                       prefetch_count=prefetch_count,
-                                      callback=handle_delivery)
+                                      callback=handle_delivery,
+                                      no_ack=no_ack)
 
         self.consume_promises.append(consume_promise)
         return consume_promise
@@ -347,14 +348,14 @@ class AMQPPukaClient(object):
             return self.client.wait(self.consume_promises, timeout)
 
     @reconnect_decorator
-    def basic_get(self, queue):
+    def basic_get(self, queue, no_ack=False):
         """Get a single message from a queue.
 
         This is a non-blocking method for getting messages from a queue.
         It will return None if the queue is empty.
 
         """
-        get_promise = self.client.basic_get(queue=queue)
+        get_promise = self.client.basic_get(queue=queue, no_ack=no_ack)
         result = self.client.wait(get_promise)
         if 'empty' in result:
             # The queue is empty

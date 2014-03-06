@@ -227,7 +227,7 @@ class AMQPHaighaClient():
         (exchange, routing_key, body) = self.unacked[mid]
         self.basic_publish(exchange, routing_key, body)
 
-    def basic_consume(self, queue, callback):
+    def basic_consume(self, queue, callback, no_ack=False, exclusive=False):
         """Consume from a queue.
 
         @type queue: string or list of strings
@@ -238,7 +238,8 @@ class AMQPHaighaClient():
         """
 
         self.consumers[queue] = callback
-        self.channel.basic.consume(queue, consumer=callback, no_ack=False)
+        self.channel.basic.consume(queue, consumer=callback, no_ack=no_ack,
+                                   exclusive=exclusive)
 
     @reconnect_decorator
     def basic_wait(self):
@@ -254,8 +255,8 @@ class AMQPHaighaClient():
         gevent.sleep(0)
 
     @reconnect_decorator
-    def basic_get(self, queue):
-        self.channel.basic.get(queue, no_ack=False)
+    def basic_get(self, queue, no_ack=False):
+        self.channel.basic.get(queue, no_ack=no_ack)
 
     @reconnect_decorator
     def basic_ack(self, message):

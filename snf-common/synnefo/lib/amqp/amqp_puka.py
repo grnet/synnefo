@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -188,7 +188,7 @@ class AMQPPukaClient(object):
     @reconnect_decorator
     def queue_declare(self, queue, exclusive=False,
                       mirrored=True, mirrored_nodes='all',
-                      dead_letter_exchange=None):
+                      dead_letter_exchange=None, ttl=None):
         """Declare a queue
 
         @type queue: string
@@ -203,6 +203,8 @@ class AMQPPukaClient(object):
                   the specified nodes, and the master will be the
                   first node in the list. Node names must be provided
                   and not host IP. example: [node1@rabbit,node2@rabbit]
+        @type ttl: int
+        @param ttl: Queue TTL in seconds
 
         """
         self.log.info('Declaring queue: %s', queue)
@@ -217,6 +219,9 @@ class AMQPPukaClient(object):
                 raise AttributeError
         else:
             arguments = {}
+
+        if ttl is not None:
+            arguments['x-expires'] = ttl * 1000
 
         if dead_letter_exchange:
             arguments['x-dead-letter-exchange'] = dead_letter_exchange

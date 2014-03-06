@@ -27,6 +27,11 @@ def find(f, seq):
     return NotFound
 
 
+def get_pending_apps(user):
+    return quotas.get_user_quotas(user)\
+        [user.base_project.uuid]['astakos.pending_app']['usage']
+
+
 class ProjectAPITest(TestCase):
 
     def setUp(self):
@@ -609,6 +614,18 @@ class ProjectAPITest(TestCase):
         r = client.get(reverse("api_projects"), filters, **h_owner)
         self.assertEqual(r.status_code, 400)
 
+        app = {"max_members": 33, "name": "new.name"}
+        status, body = self.modify(app, self.user1.uuid, h_owner)
+        self.assertEqual(status, 403)
+
+        app = {"max_members": 33, "name": "new.name"}
+        status, body = self.modify(app, self.user1.uuid, h_admin)
+        self.assertEqual(status, 409)
+
+        app = {"max_members": 33}
+        status, body = self.modify(app, self.user1.uuid, h_admin)
+        self.assertEqual(status, 201)
+
         # directly modify a base project
         with assertRaises(functions.ProjectBadRequest):
             functions.modify_project(self.user1.uuid,
@@ -638,6 +655,40 @@ class ProjectAPITest(TestCase):
                                kwargs={"project_id": u"πρότζεκτ"}),
                        **h_owner)
         self.assertEqual(r.status_code, 404)
+
+        # Check pending app quota integrity
+        r = client.get(reverse("api_project",
+                               kwargs={"project_id": project_id}),
+                       **h_owner)
+        body = json.loads(r.content)
+        self.assertNotEqual(body['last_application']['state'], 'pending')
+
+        admin_pa0 = get_pending_apps(self.user2)
+        owner_pa0 = get_pending_apps(self.user1)
+
+        app = {"max_members": 11}
+        status, body = self.modify(app, project_id, h_admin)
+        self.assertEqual(status, 201)
+
+        admin_pa1 = get_pending_apps(self.user2)
+        owner_pa1 = get_pending_apps(self.user1)
+        self.assertEqual(admin_pa1, admin_pa0+1)
+        self.assertEqual(owner_pa1, owner_pa0)
+        status, body = self.modify(app, project_id, h_owner)
+        self.assertEqual(status, 201)
+
+        admin_pa2 = get_pending_apps(self.user2)
+        owner_pa2 = get_pending_apps(self.user1)
+        self.assertEqual(admin_pa2, admin_pa1-1)
+        self.assertEqual(owner_pa2, owner_pa1+1)
+
+        status, body = self.modify(app, project_id, h_owner)
+        self.assertEqual(status, 201)
+
+        admin_pa3 = get_pending_apps(self.user2)
+        owner_pa3 = get_pending_apps(self.user1)
+        self.assertEqual(admin_pa3, admin_pa2)
+        self.assertEqual(owner_pa3, owner_pa2)
 
 
 class TestProjects(TestCase):

@@ -203,6 +203,7 @@ NOT_ALLOWED_NEXT_PARAM = 'Not allowed next parameter.'
 MISSING_KEY_PARAMETER = 'Missing key parameter.'
 INVALID_KEY_PARAMETER = 'Invalid key.'
 DOMAIN_VALUE_ERR = 'Enter a valid domain.'
+BASE_PROJECT_NAME_ERR = 'Enter a valid base project name.'
 QH_SYNC_ERROR = 'Failed to get synchronized with quotaholder.'
 UNIQUE_PROJECT_NAME_CONSTRAIN_ERR = (
     'The project name (as specified in its application\'s definition) must '

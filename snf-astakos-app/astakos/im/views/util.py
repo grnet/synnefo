@@ -278,7 +278,7 @@ def _resources_catalog(as_dict=False):
     return resource_catalog_new, resource_groups
 
 
-def get_user_projects_table(projects, user, prefix):
+def get_user_projects_table(projects, user, prefix, request=None):
     apps = ProjectApplication.objects.pending_per_project(projects)
     memberships = user.projectmembership_set.one_per_project()
     objs = ProjectMembership.objects
@@ -289,7 +289,8 @@ def get_user_projects_table(projects, user, prefix):
                                     pending_apps=apps,
                                     memberships=memberships,
                                     accepted=accepted_ms,
-                                    requested=requested_ms)
+                                    requested=requested_ms,
+                                    request=request)
 
 
 @transaction.commit_on_success

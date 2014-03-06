@@ -249,6 +249,12 @@ class Resource(models.Model):
             'help_text_input_each', default)
 
     @property
+    def help_text_input_total(self):
+        default = "%s resource" % self.name
+        key = 'help_text_input_total'
+        return get_presentation(str(self)).get(key, default)
+
+    @property
     def is_abbreviation(self):
         return get_presentation(unicode(self)).get('is_abbreviation', False)
 
@@ -1493,12 +1499,12 @@ class ProjectResourceGrant(models.Model):
 
     def display_project_diff(self):
         proj, member = self.project_diffs()
-        proj_abs, member_abs = abs(proj), abs(member)
+        proj_abs, member_abs = proj, member
         unit = self.resource.unit
 
         def disp(v):
             sign = u'+' if v >= 0 else u'-'
-            return sign + unicode(units.show(v, unit))
+            return sign + unicode(units.show(abs(v), unit))
         return map(disp, [proj_abs, member_abs])
 
     def __unicode__(self):
@@ -1958,8 +1964,8 @@ class ProjectMembership(models.Model):
         ACCEPTED:        _('Accepted member'),
         LEAVE_REQUESTED: _('Requested to leave'),
         USER_SUSPENDED:  _('Suspended member'),
-        REJECTED:        _('Request rejected'),
-        CANCELLED:       _('Request cancelled'),
+        REJECTED:        _('Join request rejected'),
+        CANCELLED:       _('Join request cancelled'),
         REMOVED:         _('Removed member'),
     }
 

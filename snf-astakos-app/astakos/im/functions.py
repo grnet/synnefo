@@ -825,6 +825,11 @@ def submit_application(owner=None,
             private=private)
         if policies is not None:
             set_project_resources(project, policies)
+    elif project.is_base:
+        if [x for x in [owner, name, homepage, description] if x is not None]:
+            raise ProjectConflict(
+                "Cannot modify fields 'owner', 'name', 'homepage', and "
+                "'description' of a base project.")
 
     application = ProjectApplication.objects.create(
         applicant=request_user,
@@ -1157,8 +1162,8 @@ def _partition_by(f, l):
 def count_pending_app(users):
     users = list(users)
     apps = ProjectApplication.objects.filter(state=ProjectApplication.PENDING,
-                                             owner__in=users)
-    apps_d = _partition_by(lambda a: a.owner.uuid, apps)
+                                             applicant__in=users)
+    apps_d = _partition_by(lambda a: a.applicant.uuid, apps)
 
     usage = quotas.QuotaDict()
     for user in users:
@@ -1168,27 +1173,27 @@ def count_pending_app(users):
     return usage
 
 
-def get_pending_app_diff(project):
-    if project is None:
-        diff = 1
-    else:
-        objs = ProjectApplication.objects
-        q = objs.filter(chain=project, state=ProjectApplication.PENDING)
-        count = q.count()
-        diff = 1 - count
-    return diff
+def get_existing_pending_app(project):
+    objs = ProjectApplication.objects
+    apps = objs.filter(chain=project, state=ProjectApplication.PENDING)
+    apps_d = _partition_by(lambda a: a.applicant, apps)
+    for user, userapps in apps_d.iteritems():
+        apps_d[user] = len(userapps)
+
+    return apps_d
 
 
-def qh_add_pending_app(user, project=None, force=False, assign_project=None):
-    if assign_project is None:
-        assign_project = user.base_project
-    diff = get_pending_app_diff(project)
-    return quotas.register_pending_apps(user, assign_project,
-                                        diff, force=force)
+def qh_add_pending_app(user, project=None, force=False):
+    provisions = [(user, user.base_project, 1)]
+    existing = get_existing_pending_app(project)
+    for applicant, value in existing.iteritems():
+        provisions.append((applicant, applicant.base_project, -value))
+    return quotas.register_pending_apps(provisions, force=force)
 
 
 def check_pending_app_quota(user, project=None):
-    diff = get_pending_app_diff(project)
+    existing = get_existing_pending_app(project).get(user, 0)
+    diff = 1 - existing
     quota = quotas.get_pending_app_quota(user)
     limit = quota['limit']
     usage = quota['usage']
@@ -1197,7 +1202,5 @@ def check_pending_app_quota(user, project=None):
     return True, None
 
 
-def qh_release_pending_app(user, assign_project=None):
-    if assign_project is None:
-        assign_project = user.base_project
-    quotas.register_pending_apps(user, assign_project, -1)
+def qh_release_pending_app(user):
+    quotas.register_pending_apps([(user, user.base_project, -1)])

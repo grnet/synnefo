@@ -46,6 +46,9 @@ RESOURCES = {
             'help_text_input_each': ('This is the total amount of space on '
                                      'Pithos that will be granted to each '
                                      'user of this Project '),
+            'help_text_input_total': ('This is the total amount of space on '
+                                      'Pithos that will be granted for use '
+                                      'across all users of this Project '),
             'is_abbreviation': False,
             'report_desc': 'Storage Space',
             'placeholder': 'eg. 10GB',
@@ -59,7 +62,12 @@ RESOURCES = {
                                      "that will be granted to each user of "
                                      "this Project (this refers to the total "
                                      "System Disk of all VMs, not each VM's "
-                                     "System Disk)  "),
+                                     "System Disk)"),
+            'help_text_input_total': ("This is the total amount of System "
+                                      "Disk that will be granted across all "
+                                      "users of this Project (this refers to "
+                                      "the total System Disk of all VMs, not "
+                                      "each VM's System Disk)"),
             'is_abbreviation': False,
             'report_desc': 'System Disk',
             'placeholder': 'eg. 5GB, 2GB etc',
@@ -71,6 +79,9 @@ RESOURCES = {
             'help_text_input_each': ('This is the total amount of RAM that '
                                      'will be granted to each user of this '
                                      'Project (on all VMs)  '),
+            'help_text_input_total': ('This is the total amount of RAM that '
+                                      'will be granted across all users of '
+                                      'this Project (on all VMs)'),
             'is_abbreviation': True,
             'report_desc': 'Total RAM',
             'placeholder': 'eg. 4GB',
@@ -83,6 +94,9 @@ RESOURCES = {
             'help_text_input_each': ('This is the total amount of RAM that '
                                      'will be granted to each user of this '
                                      'Project (on all active VMs)  '),
+            'help_text_input_total': ('This is the total amount of RAM that '
+                                      'will be granted across all users of '
+                                      'this Project (on all active VMs)'),
             'is_abbreviation': False,
             'report_desc': 'RAM',
             'placeholder': 'eg. 4GB',
@@ -94,7 +108,10 @@ RESOURCES = {
             'help_text': 'CPUs used by VMs ',
             'help_text_input_each': ('This is the total number of CPUs that '
                                      'will be granted to each user of this '
-                                     'Project (on all VMs)  '),
+                                     'Project (on all VMs)'),
+            'help_text_input_total': ('This is the total number of CPUs that '
+                                      'will be granted across all users of '
+                                      'this Project (on all VMs)'),
             'is_abbreviation': True,
             'report_desc': 'Total CPUs',
             'placeholder': 'eg. 1',
@@ -107,6 +124,9 @@ RESOURCES = {
             'help_text_input_each': ('This is the total number of CPUs that '
                                      'will be granted to each user of this '
                                      'Project (on all active VMs)  '),
+            'help_text_input_total': ('This is the total number of CPUs that '
+                                      'will be granted across all users '
+                                      'of this Project (on all active VMs)  '),
             'is_abbreviation': False,
             'report_desc': 'CPUs',
             'placeholder': 'eg. 1',
@@ -120,6 +140,9 @@ RESOURCES = {
             'help_text_input_each': ('This is the total number of VMs that '
                                      'will be granted to each user of this '
                                      'Project '),
+            'help_text_input_total': ('This is the total number of VMs that '
+                                      'will be granted across all users '
+                                      'of this Project in total'),
             'is_abbreviation': True,
             'report_desc': 'Virtual Machines',
             'placeholder': 'eg. 2',
@@ -133,6 +156,9 @@ RESOURCES = {
             'help_text_input_each': ('This is the total number of Private '
                                      'Networks that will be granted to each '
                                      'user of this Project '),
+            'help_text_input_total': ('This is the total number of Private '
+                                      'Networks that will be granted across '
+                                      'all users of this Project'),
             'is_abbreviation': False,
             'report_desc': 'Private Networks',
             'placeholder': 'eg. 1',
@@ -146,6 +172,9 @@ RESOURCES = {
             'help_text_input_each': ('This is the total number of Public '
                                      '(Floating) IPs that will be granted to '
                                      'each user of this Project '),
+            'help_text_input_total': ('This is the number of Public '
+                                      '(Floating) IPs that will be granted '
+                                      'across all users of this Project'),
             'is_abbreviation': False,
             'report_desc': 'Public (Floating) IPs',
             'placeholder': 'eg. 1',
@@ -157,6 +186,9 @@ RESOURCES = {
             'help_text': ('Pending project applications limit'),
             'help_text_input_each': ('Total pending project applications user '
                                      'is allowed to create'),
+            'help_text_input_total': ('Total pending project applications '
+                                      ' project users are allowed to create '
+                                      ' in total'),
             'is_abbreviation': False,
             'report_desc': 'Pending Project Applications',
             'placeholder': 'eg. 2',

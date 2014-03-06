@@ -65,31 +65,42 @@ for review. Please make sure the following reflect exactly your request.
 			 </dl>
 		 </div>
 		 <div class="full-dotted">
-            <h3>RESOURCES (per user / total)</h3>
-            <dl class="alt-style">
+             <div class="resources-heading clearfix">
+                 <h3>{% block page.resources_heading %}RESOURCES{% endblock %}</h3>
+                 <div class="resource-label">
+                    <em>Total</em>
+                 </div>
+                 <div class="resource-label">
+                    <em>Per user</em>
+                 </div>
+             </div>
+            <dl class="alt-style resources">
                 {% for rp in form.resource_policies %}
                     <dt>
-                        {{rp.pluralized_display_name}}
+                        {{ rp.pluralized_display_name }}
                     </dt>
-                    <dd>
-                    {{ rp.display_m_uplimit|default:"(not set)" }} 
-                    {% if rp.m_diff %}
-                    {% with rp.m_diff as diff %}
-                        <span class="policy-diff 
-                            {% if diff.increased %}green{% else %}red{% endif %}"
-                            >({{diff.operator}}{{ diff.diff_display }})</span>
-                    {% endwith %}
-                    {% endif %}
-                    / 
+                    <dd class="clearfix">
+                    <div class="per-user resource">
                     {{ rp.display_p_uplimit|default:"(not set)" }}
                     {% if rp.p_diff %}
                     {% with rp.p_diff as diff %}
                         <span class="policy-diff 
                             {% if diff.increased %}green{% else %}red{% endif %}">
-                            ({{diff.operator}}{{ diff.diff_display }})
+                            ({{ diff.operator }}{{ diff.diff_display }})
                         </span>
                     {% endwith %}
                     {% endif %}
+                    </div>
+                    <div class="resource total">
+                    {{ rp.display_m_uplimit|default:"(not set)" }} 
+                    {% if rp.m_diff %}
+                    {% with rp.m_diff as diff %}
+                        <span class="policy-diff 
+                            {% if diff.increased %}green{% else %}red{% endif %}"
+                            >({{ diff.operator }}{{ diff.diff_display }})</span>
+                    {% endwith %}
+                    {% endif %}
+                    </div>
                     </dd>
                 {% empty %}
                     No resources

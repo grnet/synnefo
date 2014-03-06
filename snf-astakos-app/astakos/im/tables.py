@@ -218,7 +218,18 @@ def project_name_append(project, column):
 # Table classes
 class UserProjectsTable(UserTable):
 
+    _links = [
+        {'url': '?show_base=1', 'label': 'Show base projects'},
+        {'url': '?', 'label': 'Hide base projects'}
+    ]
+    links = []
+
     def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
+        if self.request and self.request.user.is_project_admin():
+            self.links = [self._links[0]]
+            if self.request and self.request.GET.get('show_base', False):
+                self.links = [self._links[1]]
         self.pending_apps = kwargs.pop('pending_apps')
         self.memberships = kwargs.pop('memberships')
         self.accepted = kwargs.pop('accepted')

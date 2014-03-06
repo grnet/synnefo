@@ -160,8 +160,7 @@ $(document).ready(function() {
 		 			msg="Please enter an integer";
 		 		} else {
 		 			var num = parseInt(value);
-					if ( num == '0' ) { 
-						flag = 1 ; msg="This value can not be zero. Try something like 10GB, 2MB etc"
+					if ( num == '0' ) {
 					} else {
 						if ( value && !num ) { flag = 1 ; msg="Invalid format. Try something like 10GB, 2MB etc"}
 				 	
@@ -225,20 +224,13 @@ $(document).ready(function() {
 		 	 
 		 	// validation actions for int fields
 		 	else {
-		 		var is_int = value.match (new RegExp('^[1-9][0-9]*$'));
+		 		var is_int = value.match (new RegExp('^[0-9][0-9]*$'));
 		 		if ( !is_int ){ 
 		 			$(this).parents('.form-row').find('.error-msg').html('Enter a positive integer');
 			 		$(this).parents('.form-row').addClass('with-errors');
 			 		 
 			 	} else {
-			 		if ( value == '0'){
-			 			$(this).parents('.form-row').find('.error-msg').html('Ensure this value is greater than or equal to 1');
-			 			$(this).parents('.form-row').addClass('with-errors');
-			 		}else {
-			 			$(this).parents('.form-row').removeClass('with-errors');
-			 		}
-			 		
-			 		
+                    $(this).parents('.form-row').removeClass('with-errors');
 			 	}
 			 	hidden_input.val(value);
 	
@@ -362,6 +354,7 @@ $(document).ready(function() {
 	  $(this).parents('.with-errors').removeClass('strong-error');
 	   
 	});
-	
-	
+	  
+    // enforce uplimit updates
+	$('.quotas-form .quota input[type="text"]').trigger("keyup");
 });

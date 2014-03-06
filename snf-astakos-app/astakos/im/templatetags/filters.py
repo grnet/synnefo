@@ -257,7 +257,7 @@ def _owner_formatter(form_or_app, value, changed):
         changed_name = None
     else:
         changed_name = changed.realname
-    return value.realname, changed_name, None, None
+    return value.realname if value else None, changed_name, None, None
 
 
 def _owner_admin_formatter(form_or_app, value, changed):
@@ -265,7 +265,7 @@ def _owner_admin_formatter(form_or_app, value, changed):
         changed_name = None
     else:
         changed_name = changed.realname + " (%s)" % changed.email
-    return value.realname + " (%s)" % value.email, changed_name, None, None
+    return value.realname + " (%s)" % value.email if value else None, changed_name, None, None
 
 
 def _owner_owner_formatter(form_or_app, value, changed):
@@ -340,6 +340,9 @@ def display_modification_param(form_or_app, param, formatter=None):
     if changed:
         tpl += """<span class="policy-diff %(changed_cls)s">""" + \
                """%(changed_prefix)s%(changed)s</span>"""
+
+    if not app_value:
+        app_value = "(not set)"
 
     return mark_safe(tpl % {
         'value': app_value,

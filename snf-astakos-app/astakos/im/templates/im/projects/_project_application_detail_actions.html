@@ -6,7 +6,7 @@
 {% endif %}
 
 <div class="project-actions">
-{% if owner_mode %}
+{% if owner_mode or admin_mode %}
   {% if project.is_initialized %}
     {% if object.can_approve %}
     {% confirm_link "CANCEL PROJECT MODIFICATION" "project_modification_cancel" "project_app_cancel" "project.uuid,object.pk" "" "OK" %}

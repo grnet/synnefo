@@ -10,9 +10,9 @@ manages multiple Ganeti clusters at the backend. Cyclades issues commands to a
 Ganeti cluster using Ganeti's Remote API (RAPI). The administrator can expand
 the infrastructure dynamically by adding new Ganeti clusters to reach
 datacenter scale. Cyclades knows nothing about low-level VM management
-operations, e.g., handling of VM creations, migrations among physical nodes,
-and handling of node downtimes; the design and implementation of the end-user
-API is orthogonal to VM handling at the backend.
+operations, e.g., the handling of VM creations, migrations among physical
+nodes and node downtimes; the design and implementation of the
+end-user API is orthogonal to VM handling at the backend.
 
 There are two distinct, asynchronous paths in the interaction between Synnefo
 and Ganeti. The `effect` path is activated in response to a user request;

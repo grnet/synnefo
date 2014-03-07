@@ -8,7 +8,7 @@ Synnefo is a complete open source cloud stack written in Python that provides
 Compute, Network, Image, Volume and Storage services, similar to the ones
 offered by AWS. Synnefo manages multiple
 [Ganeti](http://code.google.com/p/ganeti)  clusters at the backend for handling
-of low-level VM operations and uses
+low-level VM operations and uses
 [Archipelago](http://www.synnefo.org/docs/archipelago/latest/)  to unify cloud
 storage. To boost 3rd-party compatibility, Synnefo exposes the OpenStack APIs
 to users.
@@ -35,7 +35,7 @@ information on installing and configuring Synnefo.
 Community - Support
 -------------------
 
-Please the the [community page](http://www.synnefo.org/community.html)
+Please see the [community page](http://www.synnefo.org/community.html)
 for more information on the Synnefo users and developers lists.
 
 

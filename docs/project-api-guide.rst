@@ -89,7 +89,9 @@ Status  Description
       "end_date": date,
       "join_policy": "auto" | "moderated" | "closed",
       "leave_policy": "auto" | "moderated" | "closed",
-      "max_members": natural number
+      "max_members": int,
+      "private": boolean,
+      "base_project": boolean,
       "resources": {"cyclades.vm": {"project_capacity": int,
                                     "member_capacity": int
                                    }
@@ -123,6 +125,8 @@ X-Auth-Token          User authentication token
       "end_date": date,
       "join_policy": "auto" | "moderated" | "closed",  # default: "moderated"
       "leave_policy": "auto" | "moderated" | "closed",  # default: "auto"
+      "max_members": int, # optional
+      "private": boolean, # default: false
       "resources": {"cyclades.vm": {"project_capacity": int,
                                     "member_capacity": int
                                    }

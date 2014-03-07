@@ -664,7 +664,7 @@ you can provide a cloud that can handle thousands of virtual servers and
 networks.
 
 Cyclades does not include any virtualization software and knows nothing about
-the low-level VM management operations, e.g. handling of VM creation or
+the low-level VM management operations, e.g. the handling of VM creation or
 migrations among physical nodes. Instead, Cyclades is the component that
 handles multiple Ganeti backends and exposes the REST APIs. The administrator
 can expand the infrastructure dynamically either by adding more Ganeti nodes
@@ -1024,9 +1024,9 @@ IP. Instead, floating IPs are directly assigned to virtual interfaces of VMs.
 Exactly like VMS, networks can be handled as Ganeti networks via `gnt-network`
 commands. All Ganeti networks that belong to Synnefo are named with the prefix
 `${BACKEND_PREFIX_ID}-net-`. Also, there are a number of `snf-manage` commands
-for handling of `networks`, `subnets`, `ports` and `floating IPs`. Below
-we will present a use case scenario using some of these commands. For better
-understanding of these commands, refer to their help messages.
+that can be used to handle `networks`, `subnets`, `ports` and `floating IPs`.
+Below we will present a use case scenario using some of these commands. For
+better understanding of these commands, refer to their help messages.
 
 Create a virtual private network for user
 `7cf4d078-67bf-424d-8ff2-8669eb4841ea` using the `PHYSICAL_VLAN` flavor, which
@@ -1248,8 +1248,8 @@ MAC Prefixes
 ************
 
 Cyclades also use a pool of MAC prefixes to assign to networks of flavor
-`MAC_FILTERED`. Handling of this pool is done exactly as with pool of bridges,
-except that the type option must be set to mac-prefix:
+`MAC_FILTERED`. The handling of this pool is done exactly as with pool of
+bridges, except that the type option must be set to mac-prefix:
 
 .. code-block:: console
 
@@ -1263,7 +1263,7 @@ externally reserved, to exclude from allocation.
 Quotas
 ~~~~~~
 
-Handling of quotas for Cyclades resources is powered by Astakos quota
+The andling of quotas for Cyclades resources is powered by Astakos quota
 mechanism. During registration of Cyclades service to Astakos, the Cyclades
 resources are also imported to Astakos for accounting and presentation.
 

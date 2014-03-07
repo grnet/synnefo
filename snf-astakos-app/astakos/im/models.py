@@ -603,23 +603,22 @@ class AstakosUser(User):
 
     @property
     def status_display(self):
-        msg = ""
-        if self.is_active:
-            msg = "Accepted/Active"
-        if self.is_rejected:
+        if not self.email_verified:
+            msg = "Pending email verification"
+        elif not self.moderated:
+            msg = "Pending moderation"
+        elif self.is_rejected:
             msg = "Rejected"
             if self.rejected_reason:
                 msg += " (%s)" % self.rejected_reason
-        if not self.email_verified:
-            msg = "Pending email verification"
-        if not self.moderated:
-            msg = "Pending moderation"
-        if not self.is_active and self.email_verified:
-            msg = "Accepted/Inactive"
-            if self.deactivated_reason:
-                msg += " (%s)" % (self.deactivated_reason)
-
-        if self.moderated and not self.is_rejected:
+        # accepted
+        else:
+            if self.is_active:
+                msg = "Accepted/Active"
+            else:
+                msg = "Accepted/Inactive"
+                if self.deactivated_reason:
+                    msg += " (%s)" % (self.deactivated_reason)
             if self.accepted_policy == 'manual':
                 msg += " (manually accepted)"
             else:

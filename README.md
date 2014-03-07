@@ -25,6 +25,11 @@ You can try out a full Synnefo installation at the [Synnefo demo
 site](https://accounts.demo.synnefo.org/ui/login), or download the [Synnefo
 Live CD](http://www.synnefo.org/redirect/livecd.iso).
 
+Note that members of the Greek Academic and Research community have public
+access to a Synnefo installation called [~okeanos](https://okeanos.grnet.gr).
+Similarly, members of the GÉANT Research and Academic Community have public
+access to [~okeanos-global](https://okeanos-global.grnet.gr).
+
 Documentation
 -------------
 

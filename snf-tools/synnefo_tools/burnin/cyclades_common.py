@@ -516,7 +516,8 @@ class CycladesTests(BurninTests):
             self.info("Creating a new floating ip for network with id %s",
                       pub_net['id'])
             try:
-                fip = self.clients.network.create_floatingip(pub_net['id'])
+                fip = self.clients.network.create_floatingip(
+                    pub_net['id'], project=project_id)
             except ClientError as err:
                 self.warning("%s: %s", err.message, err.details)
                 continue
@@ -524,8 +525,13 @@ class CycladesTests(BurninTests):
             fips = self.clients.network.list_floatingips()
             fips = [f['id'] for f in fips]
             self.assertIn(fip['id'], fips)
+
             # Verify quotas
-            self._check_quotas(ip=+1)
+            if project_id is None:
+                project_id = self._get_uuid()
+            changes = \
+                {project_id: [(QIP, QADD, 1, None)]}
+            self._check_quotas(changes)
             # Check that IP is IPv4
             self.assertEquals(IPy.IP(fip['floating_ip_address']).version(), 4)
 

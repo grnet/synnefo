@@ -89,7 +89,7 @@ def send_verification(user, template_name='im/activation_email.txt'):
     send_mail(_(astakos_messages.VERIFICATION_EMAIL_SUBJECT), message, sender,
               [user.email],
               connection=get_connection())
-    logger.info("Sent user verirfication email: %s", user.log_display)
+    logger.info("Sent user verification email: %s", user.log_display)
 
 
 def _send_admin_notification(template_name,

@@ -31,6 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from datetime import datetime
 from django.core.management.base import BaseCommand
 from optparse import make_option
 
@@ -38,8 +39,7 @@ from optparse import make_option
 from synnefo import quotas
 from synnefo.quotas.util import (get_db_holdings, get_quotaholder_holdings,
                                  transform_quotas)
-from synnefo.webproject.management.utils import pprint_table
-from synnefo.settings import CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN
+from snf_django.management.utils import pprint_table
 
 
 class Command(BaseCommand):
@@ -65,7 +65,7 @@ class Command(BaseCommand):
     )
 
     def handle(self, *args, **options):
-        write = self.stdout.write
+        write = self.stderr.write
         userid = options['userid']
 
         # Get holdings from Cyclades DB
@@ -117,17 +117,19 @@ class Command(BaseCommand):
 
         headers = ("User", "Resource", "Database", "Quotaholder")
         if unsynced:
-            pprint_table(self.stderr, unsynced, headers)
+            pprint_table(self.stdout, unsynced, headers)
             if options["fix"]:
                 qh = quotas.Quotaholder.get()
                 request = {}
                 request["force"] = options["force"]
                 request["auto_accept"] = True
-                request["name"] = "RECONCILE"
+                request["name"] = \
+                    ("client: reconcile-resources-cyclades, time: %s"
+                     % datetime.now())
                 request["provisions"] = map(create_provision, unsynced)
                 try:
-                    qh.issue_commission(ASTAKOS_TOKEN, request)
-                except quotas.QuotaLimit:
+                    qh.issue_commission(request)
+                except quotas.errors.QuotaLimit:
                     write("Reconciling failed because a limit has been "
                           "reached. Use --force to ignore the check.\n")
                     return

@@ -33,42 +33,33 @@
 
 from optparse import make_option
 
-from synnefo.webproject.management.commands import SynnefoCommand, CommandError
+from snf_django.management.commands import SynnefoCommand, CommandError
 
-from astakos.im.models import Chain
-from synnefo.webproject.management import utils
+from astakos.im.models import Project
+from django.db.models import Q
+from snf_django.management import utils
 from ._common import is_uuid, is_email
 
 
 class Command(SynnefoCommand):
-    help = """
-    List projects and project status.
+    help = """List projects and project status.
 
     Project status can be one of:
-      Pending              an application <AppId> for a new project
+      Pending              an uninitialized project, pending review
 
       Active               an active project
 
-      Active - Pending     an active project with
-                           a pending modification <AppId>
-
-      Denied               an application for a new project,
-                           denied by the admin
+      Denied               an uninitialized project, denied by the admin
 
       Dismissed            a denied project, dismissed by the applicant
 
-      Cancelled            an application for a new project,
-                           cancelled by the applicant
+      Cancelled            an uninitialized project, cancelled by the applicant
 
       Suspended            a project suspended by the admin;
                            it can later be resumed
 
-      Suspended - Pending  a suspended project with
-                           a pending modification <AppId>
-
       Terminated           a terminated project; its name can be claimed
-                           by a new project
-"""
+                           by a new project"""
 
     option_list = SynnefoCommand.option_list + (
         make_option('--all',
@@ -80,7 +71,7 @@ class Command(SynnefoCommand):
                     action='store_true',
                     dest='new',
                     default=False,
-                    help="List only new project applications"),
+                    help="List only new pending uninitialized projects"),
         make_option('--modified',
                     action='store_true',
                     dest='modified',
@@ -107,86 +98,74 @@ class Command(SynnefoCommand):
 
     def handle(self, *args, **options):
 
-        chain_dict = Chain.objects.all_full_state()
+        flt = Q()
+        owner = options['owner']
+        if owner:
+            flt &= filter_by_owner(owner)
+
+        name = options['name']
+        if name:
+            flt &= filter_by_name(name)
+
+        chains = Project.objects.all_with_pending(flt)
 
         if not options['all']:
-            f_states = []
-            if options['new']:
-                f_states.append(Chain.PENDING)
-            if options['modified']:
-                f_states += Chain.MODIFICATION_STATES
-            if options['pending']:
-                f_states.append(Chain.PENDING)
-                f_states += Chain.MODIFICATION_STATES
             if options['skip']:
-                if not f_states:
-                    f_states = Chain.RELEVANT_STATES
+                pred = lambda c: (
+                    c[0].overall_state() not in Project.SKIP_STATES
+                    or c[1] is not None)
+                chains = filter_preds([pred], chains)
 
-            if f_states:
-                chain_dict = filter_by(in_states(f_states), chain_dict)
+            preds = []
+            if options['new'] or options['pending']:
+                preds.append(
+                    lambda c: c[0].overall_state() == Project.O_PENDING)
+            if options['modified'] or options['pending']:
+                preds.append(
+                    lambda c: c[0].overall_state() != Project.O_PENDING
+                    and c[1] is not None)
 
-            name = options['name']
-            if name:
-                chain_dict = filter_by(is_name(name), chain_dict)
+            if preds:
+                chains = filter_preds(preds, chains)
 
-            owner = options['owner']
-            if owner:
-                chain_dict = filter_by(is_owner(owner), chain_dict)
+        labels = ('ProjID', 'Name', 'Owner', 'Email', 'Status',
+                  'Pending AppID')
 
-        labels = ('ProjID', 'Name', 'Owner', 'Email', 'Status', 'AppID')
-
-        info = chain_info(chain_dict)
+        info = chain_info(chains)
         utils.pprint_table(self.stdout, info, labels,
                            options["output_format"])
 
 
-def is_name(name):
-    def f(state, project, app):
-        n = project.application.name if project else app.name
-        return name == n
-    return f
+def filter_preds(preds, chains):
+    return [c for c in chains
+            if any(map(lambda f: f(c), preds))]
 
 
-def in_states(states):
-    def f(state, project, app):
-        return state in states
-    return f
+def filter_by_name(name):
+    return Q(application__name=name)
 
 
-def is_owner(s):
-    def f(state, project, app):
-        owner = app.owner
-        if is_email(s):
-            return owner.email == s
-        if is_uuid(s):
-            return owner.uuid == s
-        raise CommandError("Expecting either email or uuid.")
-    return f
+def filter_by_owner(s):
+    if is_email(s):
+        return Q(application__owner__email=s)
+    if is_uuid(s):
+        return Q(application__owner__uuid=s)
+    raise CommandError("Expecting either email or uuid.")
 
 
-def filter_by(f, chain_dict):
-    d = {}
-    for chain, tpl in chain_dict.iteritems():
-        if f(*tpl):
-            d[chain] = tpl
-    return d
-
-
-def chain_info(chain_dict):
+def chain_info(chains):
     l = []
-    for chain, (state, project, app) in chain_dict.iteritems():
-        status = Chain.state_display(state)
-        if state in Chain.PENDING_STATES:
-            appid = str(app.id)
-        else:
-            appid = ""
+    for project, pending_app in chains:
+        status = project.state_display()
+        pending_appid = pending_app.id if pending_app is not None else ""
+        application = project.application
 
-        t = (chain,
-             project.application.name if project else app.name,
-             app.owner.realname,
-             app.owner.email,
+        t = (project.pk,
+             application.name,
+             application.owner.realname,
+             application.owner.email,
              status,
-             appid,
+             pending_appid,
              )
         l.append(t)
     return l

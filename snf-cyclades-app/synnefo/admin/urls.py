@@ -31,10 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-try:
-    from django.conf.urls import url, patterns
-except ImportError:  # Django==1.2
-    from django.conf.urls.defaults import url, patterns
+from django.conf.urls import url, patterns
 
 from synnefo.admin import views
 from django.http import Http404
@@ -43,7 +40,10 @@ from django.http import Http404
 def index(request):
     raise Http404
 
-urlpatterns = patterns('',
+
+urlpatterns = patterns(
+    '',
     url(r'^$', index),
-    url(r'^stats$', views.get_stats),
+    url(r'^stats$', views.get_public_stats),
+    url(r'^stats/detail$', views.get_cyclades_stats),
 )

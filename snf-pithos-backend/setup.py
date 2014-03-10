@@ -61,7 +61,7 @@ INSTALL_REQUIRES = [
     'snf-common',
     'SQLAlchemy>=0.6.3, <=0.7.8',
     'alembic>=0.3.4, <0.4',
-    'objpool>=0.2'
+    'objpool>=0.3'
 ]
 
 EXTRAS_REQUIRES = {

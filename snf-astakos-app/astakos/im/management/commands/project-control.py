@@ -33,10 +33,11 @@
 
 from optparse import make_option
 
+from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
-from astakos.im.functions import (terminate, suspend, resume, check_expiration,
+from astakos.im.functions import (terminate, suspend, unsuspend,
+                                  reinstate, check_expiration,
                                   approve_application, deny_application)
-from snf_django.lib.db.transaction import commit_on_success_strict
 
 
 class Command(BaseCommand):
@@ -60,9 +61,14 @@ class Command(BaseCommand):
                     metavar='<project id>',
                     help="Suspend a project"),
         make_option('--unsuspend',
-                    dest='resume',
+                    dest='unsuspend',
                     metavar='<project id>',
                     help="Resume a suspended project"),
+        make_option('--reinstate',
+                    dest='reinstate',
+                    metavar='<project id>',
+                    help=("Resume a terminated project; this will fail if its "
+                          "name has been reserved by another project")),
         make_option('--check-expired',
                     action='store_true',
                     dest='check_expired',
@@ -80,14 +86,15 @@ class Command(BaseCommand):
                           "e.g. when denying a project")),
     )
 
-    @commit_on_success_strict()
+    @transaction.commit_on_success
     def handle(self, *args, **options):
 
         message = options['message']
 
         actions = {
             'terminate': terminate,
-            'resume': resume,
+            'reinstate': reinstate,
+            'unsuspend': unsuspend,
             'suspend': suspend,
             'approve': approve_application,
             'deny': lambda a: deny_application(a, reason=message),
@@ -117,23 +124,23 @@ class Command(BaseCommand):
             s = '1 expired project:\n'
         else:
             s = '%d expired projects:\n' % (length,)
-        self.stdout.write(s)
+        self.stderr.write(s)
 
         if length > 0:
             labels = ('Project', 'Name', 'Status', 'Expiration date')
             columns = (10, 30, 14, 30)
 
             line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stdout.write(line + '\n')
+            self.stderr.write(line + '\n')
             sep = '-' * len(line)
-            self.stdout.write(sep + '\n')
+            self.stderr.write(sep + '\n')
 
             for project in projects:
                 line = ' '.join(f.rjust(w) for f, w in zip(project, columns))
-                self.stdout.write(line + '\n')
+                self.stderr.write(line + '\n')
 
             if execute:
-                self.stdout.write('%d projects have been terminated.\n' % (
+                self.stderr.write('%d projects have been terminated.\n' % (
                     length,))
 
     def expire(self, execute=False):

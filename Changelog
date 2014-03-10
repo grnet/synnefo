@@ -6,6 +6,309 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.15:
+
+v0.15
+=====
+
+Released: Mon Mar 10 14:01:32 EET 2014
+
+
+Synnefo-wide
+------------
+
+* Integrate Pithos tests in continuous integration.
+
+* Change astakosclient to accept AUTH_URL instead of BASE_URL
+  ASTAKOS_BASE_URL settings has been removed from Pithos and Cyclades
+  and has been replaced with ASTAKOS_AUTH_URL. Both Pithos and Cyclades
+  proxy the Astakos services under ASTAKOS_PROXY_PREFIX path.
+  ASTAKOS_PROXY_PREFIX by default has a value of '_astakos'.
+  More specifically, Astakos' identity service is proxied under
+  '_astakos/identity', Astakos' account service is under '_astakos/account'
+  and Astakos' ui service is under '_astakos/ui'.
+
+* Add 'mail_admins' handler to 'django.request' logger in order to send email
+  notifications to users listed in 'ADMINS' setting about unhandled exceptions
+  in the code.
+
+* Extend astakosclient to request and validate OAuth 2.0 access tokens
+
+* Change response status code from 400 (Bad Request) to 405 (Not allowed
+  method) in case of an unexpected request method.
+
+Astakos
+-------
+
+* Changes in project schema:
+
+  * A Project entry is created when submitting an application for a new
+    project, rather than on approval. Its state is dependent on the state
+    of its `reference' application (current definition). Lock Project rather
+    than Chain (the latter is semantically obsolete).
+
+  * Project states "Active - Pending" and "Suspended - Pending" have been
+    removed. In management command `project-list', the existence of a pending
+    modification is indicated by a non-blank `Pending AppID'.
+
+  * Improve recording of project, application, and membership actions.
+
+* Implement API calls for projects.
+* Store the base URL of a component. Deployer should provide it when adding
+  a new component. Service endpoints originating from a component are
+  expected to match its base URL; otherwise, a warning is issued.
+  Re-registration with `snf-component-register' affects both the base and
+  the ui URL.
+* Changes in resource and quota handling:
+
+  * New resources are registered with unlimited default base quota,
+    represented by 2**63-1.
+  * Each newly accepted user copies the default value for all resources
+    as their own base quota. A base quota is considered 'custom' if its
+    value differs from the default.
+  * Changing resource's default quota affects the base quota *only* of
+    future users.
+  * Resource definition got flags 'api_visible' and 'ui_visible',
+    replacing flag 'allow_in_projects'. They control whether a user can
+    access these resources. The system internally always accounts for
+    all resources, and a user can get off quota even for a resource that
+    is not visible.
+
+* Remove API call GET /account/v1.0/authenticate in favor of
+  POST /identity/v2.0/tokens.
+* Export basic statistics about Astakos service at the '/admin/stats/detail' API
+  endpoint. Access to this endpoint is only allowed to users that belong to
+  the Astakos groups that are defined in the
+  'ASTAKOS_ADMIN_STATS_PERMITTED_GROUPS' setting. Statistics are also available
+  through the 'snf-manage stats-astakos' management command.
+* Implement OAuth 2.0 Authorization Code Grant
+  Add API calls for authorization code and access token generation
+* Add API call for validating OAuth 2.0 access tokens
+* **Shibboleth module** Extract unique identifier from the
+  ``REMOTE_USER`` header.
+* Automatically fill third-party signup form fields when available by the
+  the third-party provider.
+* Management commands:
+
+  * Introduced new commands:
+
+    * component-show
+    * quota-list (replacing quota, supports various filters)
+    * quota-verify (replacing quota)
+    * oauth2-client-add (register OAuth 2.0 client)
+    * oauth2-client-list (list registered oauth 2.0 clients)
+    * oauth2-client-remove (remove OAuth 2.0 client)
+
+  * Changed commands:
+
+    * component-add got options --base-url and --ui-url
+    * resource-modify --limit became --default-quota
+    * user-modify can operate on multiple users with --all and --exclude
+    * user-modify --set-base-quota became --base-quota
+
+  * Removed commands:
+
+    * quota
+    * resource-import (subsumed by service-import)
+    * resource-export-astakos (subsumed by service-export-astakos)
+
+* Fix request authorization code failures due to Unicode issue:
+  https://code.grnet.gr/issues/4971
+* Omit validation issues for non-required metadata values received from the
+  third-party authentication provider.
+
+Cyclades
+--------
+
+* Major changes to Cyclades networks:
+
+  * Implement 'cyclades_network' service, containing the /networks, /ports,
+    /subnets and /floatingips API endpoints under '/network/v2.0'. The old
+    /networks API of 'cyclades_compute' (under /compute/v2.0) is
+    removed.
+  * Implement `snf-manage subnet-{create, list, modify, inspect}' management
+    commands for handling of subnets.
+  * Implement `snf-manage port-{create, list, remove, inspect}' management
+    commands for handling of ports.
+  * Add two new settings, 'CYCLADES_FORCED_SERVER_NETWORKS' and
+    'CYCLADES_DEFAULT_SERVER_NETWORKS' to control the networks that newly
+    created servers will be connected.
+
+* Implement Floating IP addresses, which are IPv4 addresses that can be
+  dynamically added and removed to a running server.
+
+  * Add new 'cyclades.floating_ip' resource.
+  * Implement 'snf-manage floating-ip-{create,list,remove,attach,detach}'
+    management commands to handle floating IPs.
+  * Add 'floating_ip_pool' attribute to networks to mark networks that can
+    be used as floating IP pools.
+
+* Implement 'resize' server action.
+
+  * Implement the 'resize' server action, to change the flavor of a server.
+    Only 'cpu' and 'memory' resizing is supported.
+
+* Compute quotas for CPU and memory of running VMs.
+
+  * Change 'cyclades.cpu' and 'cyclades.ram' resources to represent the CPU
+    and RAM for running VMs. Total CPU and RAM usage is represented by new
+    'cyclades.total_cpu' and 'cyclades.total_ram' resources.
+
+* Refer to Ganeti NICs by their name instead of their index.
+
+  * Make cyclades give a unique name to each Ganeti NIC. NICs are refered by
+    their unique name and not by their index inside the VM that are connected
+    to.
+
+* Support firewall profile for all NICs of an instance. Change firewall
+  settings to be filled with the unique name of the NIC. The affected settings
+  are the GANETI_FIREWALL_{ENABLED, DISABLED, PROTECTED}_TAG settings.
+* Add accounting for public IP addresses that is accessible via `snf-manage
+  ip-list` management command and via the helpdesk app.
+* Implement IPv6 only networks.
+* Extend servers info API response with 'SNF:fqdn' attribute, and introduce
+  CYCLADES_SERVERS_FQDN to set the template for servers FDQN. Remove
+  'UI_VM_HOSTNAME_FORMAT' setting.
+* Extend servers info API response with 'SNF:port_forwarding' attribute,
+  describing port forwarding rules (DNAT) that are applied to vms. The
+  description of such rules is done via the new CYCLADES_PORT_FORWARDING
+  setting.
+* Speed up server reconciliation, by performing parallel reconciliation for
+  each backend.
+* Change --dhcp option of network management commands from a flag to a boolean
+  value, e.g. --dhcp=True
+* Remove 'ARCHIPELAGO_BACKENDS' setting used to distinguish between backends
+  that hosted only archipelago backends. Instead allocation is based on which
+  disk-templates are enabled in each backend.
+* Implement 'snf-manage server-remove' management command.
+* Move reconciliation of IP pools from 'reconcile-networks' to
+  'reconcile-pools'. The IP pool reconciliation does not reconcile the IP
+  pools with Ganeti. Instead it checks if the pool is consistent with the
+  IPs that are used by instances.
+* Do not automatically release externally reserved IPs if they are released
+  from a Ganeti backend. Management of externally reserved IPs must be
+  performed from Cyclades with 'network-modify' command.
+* Export basic statistics about Cyclades Service at the '/admin/stats/detail'
+  API endpoint. Access to this endpoint is only allowed to users that belong
+  to the Astakos groups that are defined in the 'ADMIN_STATS_PERMITTED_GROUPS'
+  setting.  Statistics are also available through the 'snf-manage stats-cyclades'
+  management command.
+* Support enforcing quota through command 'enforce-resources-cyclades'.
+* Remove command 'resource-export-cyclades' subsumed by
+  'service-export-cyclades'.
+* Obsolete PUBLIC_USE_POOL setting, since Cyclades manages IP pool for all
+  type of networks.
+* Encrypt / decrypt the instance id / hostname in the  stats URL in
+  snf-cyclades-app and snf-stats-app, using the 'CYCLADES_STATS_SECRET_KEY'
+  and 'STATS_SECRET_KEY' respectively.
+* Add support for snf-vncauthproxy-1.5 and the setting
+  'CYCLADES_VNCAUTHPROXY_OPTS', which configures the extra options / arguments
+  needed by the newer version of snf-vncauthproxy. Support for older versions
+  of snf-vncauthproxy has been dropped. See also the upgrade notes for Synnefo
+  and snf-vncauthproxy-1.5.
+* Remove 'DEFAULT_ROUTING_TABLE' setting. If a link for an IP_LESS_ROUTED
+  network is not specified, the link will be uniquely named
+  'snf-link-$network_id'.
+* Extend flavors with 'allow_create' attribute. Flavors that have this
+  attribute unset cannot be used by users to create new servers.
+* Store each image property(metadata) as a separate Pithos metadata and check
+  that the size of each property is valid.
+* Fix a few occurrences of HTTP 500 errors being triggered due to insufficient
+  validation of incoming requests in the Network API
+* Speed up some API calls by fixing the relevant DB queries
+
+
+Cyclades UI
+-----------
+
+- Retrieve all networks information from the introduced cyclades network
+  service.
+- New IPs pane from which user can manage floating IPs.
+- Redesign public keys overlay as an additional pane view.
+- Split networking configuration into an additional step in machine create
+  wizard.
+- Display forced networks and choices of the available floating IPs which will
+  be assigned to the created machine.
+- Support for machine resize action. Explicit handling when machine is started
+  by displaying an utility shutdown button within the resize overlay.
+- Machine IPs toggling subview in icon/single views.
+- Replace IPv4/IPv6 with machine's FQDN in icon/single view. When no FQDN can
+  be resolved display a message. Message can be configured using the introduced
+  ``UI_NO_FQDN_MESSAGE``. Setting ``UI_VM_HOSTNAME_FORMAT`` has been removed
+  and no longer used.
+- Respect ``SNF:task_state`` machine attribute in order to improve machine
+  status display.
+- Append software version as a url parameter in HTML static files in order
+  to force browser cache invalidation between versions.
+- Configurable Google fonts base url. Fonts base url can be changed usint the
+  ``SYNNEFO_FONTS_BASE_URL`` setting.
+- Regression fix: Display reboot required notification on machine firewall
+  parameters.
+- Handling of ``GANETI_USE_HOTPLUG`` setting. Do not allow live network actions
+  when setting is set to ``False``.
+- Double escaping fix in machine create wizard images list and machine details
+  subview.
+- Fix image ordering in machine create wizard.
+- New setting ``UI_SSH_SUPPORT_OSFAMILY_EXCLUDE_LIST``. A list of image OS
+  families for which ui will disable ssh key injection in machine wizard.
+- Setting ``UI_SUPPORT_SSH_OS_LIST`` removed and no longer used.
+- Group public networks by name if setting ``UI_GROUP_PUBLIC_NETWORKS`` is set 
+  to True.
+- Setting ``UI_GROUPED_PUBLIC_NETWORK_NAME`` has been deprecated and no longer 
+  used.
+- Fix UI to filter available flavors in VM wizard
+
+
+Cyclades Userdata
+-----------------
+
+- Maximum allowed length of ssh key content. Configurable from the 
+  ``USERDATA_SSH_KEY_MAX_CONTENT_SIZE`` setting.
+
+
+Pithos
+------
+
+* Rewrite tests.
+* Performance optimizations in object listing.
+* Introduce backend method decorator for handling transaction management if no
+  transaction is initiated from the frontend.
+* Fix Internal Server Errors https://code.grnet.gr/issues/4501 &
+  https://code.grnet.gr/issues/4502.
+* Fix REQUEST ENTITY TOO LARGE request failure during move operations
+  https://code.grnet.gr/issues/4154.
+* Fix FORBIDDEN request failure while listing implicitly shared objects
+  https://code.grnet.gr/issues/4131.
+* Fix issue with the computed size of an updated object.
+* Reply with the Merkle hash in the ETag header if MD5 is deactivated.
+* Reply with FORBIDDEN (403) to public listing requests performed by non path
+  owners.
+* Change response status to NOT FOUND (404) while trying to delete an
+  already deleted object.
+* Change SQLAlchemy version to 0.7
+* Change view authorization
+  The pithos views do not use the cookie information for user authentication.
+  They request (from Astakos) and use a short-term access token for a
+  specific resource.
+* Remove PITHOS_ASTAKOS_COOKIE_NAME setting, since it is no longer useful
+* Add PITHOS_OAUTH2_CLIENT_CREDENTIALS setting to authenticate the views with
+  astakos during the resource access token generation procedure
+* Add PITHOS_UNSAFE_DOMAIN setting to restrict file serving endpoints to a
+  specific host
+* Added new 'file-show' management command
+* Remove command 'resource-export-pithos' subsumed by 'service-export-pithos'.
+* Extend API to optionally enforce a specific content disposition type
+  in view and public requests: https://code.grnet.gr/issues/5019
+
+* Fix bulk operation (delete/copy/move) failures in overpopulated
+  containers/folders: https://code.grnet.gr/issues/5119
+
+* Fix performance issue due to missing index
+* Fix backend open hashfile bug:
+  https://code.grnet.gr/issues/5011
+* Fix GET request for public path with If-None-Match
+  https://code.grnet.gr/issues/5168
+
 .. _Changelog-0.14.10:
 
 v0.14.10
@@ -31,9 +334,6 @@ v0.14.9
 =======
 
 Released: Mon Nov 11 12:13:31 EET 2013
-
-Astakos
--------
 
 * Astakos: Fix minor problems with logging in the Astakos module, which could
   lead to unexpected exceptions
@@ -82,7 +382,6 @@ Cyclades
 
 * Fix bug in helpdesk view
 
-
 .. _Changelog-0.14.6:
 
 v0.14.6
@@ -110,6 +409,7 @@ Branding
 
 * Add new BRANDING_FOOTER_EXTRA_MESSAGE setting.
 
+
 .. _Changelog-0.14.5:
 
 v0.14.5
@@ -121,6 +421,7 @@ Pithos
 ------
 
 * Fix security issue with handling Pithos versions.
+
 
 .. _Changelog-0.14.4:
 
@@ -154,16 +455,23 @@ Synnefo-wide
 
 .. _Changelog-0.14.2:
 
+Released: Fri Jul 12 13:13:32 EEST 2013
+
 v0.14.2
 =======
-
-Released: Fri Jul 12 13:13:32 EEST 2013
 
 Cyclades
 --------
 
 * Add new setting PITHOS_BACKEND_POOL_SIZE, which configures the size
   of the pool of Pithos backends that are used by plankton.
+
+Pithos
+------
+
+* Refactor metadata schema (table attributes) in Pithos DB to speedup current
+objects by domain attribute. This is used by Plankton for listing VM images.
+
 
 .. _Changelog-0.14:
 
@@ -187,7 +495,7 @@ Synnefo-wide
   a user-configurable <COMPONENT>_BASE_URL. Each API (compute, image, etc.)
   is deployable under a developer-configurable prefix beneath BASE_URL.
 
-* Deprecate CLOUDBAR_ACTIVE_SERVICE setting from all apps. 
+* Deprecate CLOUDBAR_ACTIVE_SERVICE setting from all apps.
 
 * Common synnefo 404/500 templates (located in snf-webproject)
 
@@ -249,16 +557,16 @@ Astakos
 
 * Added fine grain user auth provider's policies.
 
-  * Administrator can override default auth provider policies to a specific 
+  * Administrator can override default auth provider policies to a specific
     user or group of users.
   * Optionally a user can be assigned to a list of groups, based on the
     authentication method he choosed to signup.
 
-* Removed explicit handling of SMTP errors on each email delivery. Exceptions 
+* Removed explicit handling of SMTP errors on each email delivery. Exceptions
   are now propagated to base django exception handler.
 
-* Email used in html/email tempaltes which prompt user to contact for service 
-  support prompts is now defined in ``CONTACT_EMAIL`` setting introduced in 
+* Email used in html/email tempaltes which prompt user to contact for service
+  support prompts is now defined in ``CONTACT_EMAIL`` setting introduced in
   snf-common settings.
 
 * Improvements in user activation flow
@@ -266,7 +574,7 @@ Astakos
   * User moderation now takes place after the user has verified his email
     address.
   * User model enriched with additional user state fields
-  * Split activation email from moderation process. Administrator is required 
+  * Split activation email from moderation process. Administrator is required
     to moderate user explicitly using the `user-modify --accept` or
     `user-modify --reject` commands.
   * Improved logging throught out user activation procedures.
@@ -274,26 +582,26 @@ Astakos
 * Remove deprecated AstakosUser model fields: `provider`,
   `third_party_identifier`
 
-* Allow override of authentication provider messages using the following 
+* Allow override of authentication provider messages using the following
   format in setting names: ``ASTAKOS_<PROVIDER_MODULE>_<MSGID>_MSG``
 
-* Cloudbar automatically tries to identify the active service based on window 
+* Cloudbar automatically tries to identify the active service based on window
   location.
 
 * Removing authentication provider view is now CSRF protected.
 
-* New `API access` view, containing useful information to users on how to 
+* New `API access` view, containing useful information to users on how to
   access available Synnefo services API's.
 
-* Remove of ASTAKOS_*_EMAIL_SUBJECT settings. All email subjects are now 
-  defined in astakos.im.messages module. Overriding default values can be 
+* Remove of ASTAKOS_*_EMAIL_SUBJECT settings. All email subjects are now
+  defined in astakos.im.messages module. Overriding default values can be
   achieved using custom gettext files or using astakos messages settings::
-	
+
 	#change of greeting email subject
   	ASTAKOS_GREETING_EMAIL_SUBJECT_MESSAGE = 'Welcome to my cloud'
 
-* Remove ``ASTAKOS_ACTIVATION_REDIRECT_URL`` and ``ASTAKOS_LOGIN_SUCCESS_URL`` 
-  from astakos .conf file. Settings are dynamically computed based on 
+* Remove ``ASTAKOS_ACTIVATION_REDIRECT_URL`` and ``ASTAKOS_LOGIN_SUCCESS_URL``
+  from astakos .conf file. Settings are dynamically computed based on
   ``ASTAKOS_BASE_URL``.
 
 * Management commands:
@@ -361,6 +669,9 @@ Pithos
   'PITHOS_USER_LOGIN_URL' settings.
 * Remove PITHOS_USE_QUOTAHOLDER, PITHOS_QUOTAHOLDER_URL,
   PITHOS_QUOTAHOLDER_TOKEN and PITHOS_ASTAKOSCLIENT_POOLSIZE
+
+* Enforce container-level atomicity in (most) Pithos API calls.
+
 
 Tools
 -----
@@ -431,10 +742,10 @@ Astakos
 
 * refactored/improved /login endpoint used by desktop/mobile clients.
   * endpoint url is now exposed by `weblogin` service
-  * clients should use unauthenticated identity/tokens api to resolve the 
+  * clients should use unauthenticated identity/tokens api to resolve the
     endpoint url
   * view only allows redirects to `pithos://` scheme urls
-  * removed uuid from redirect parameters. Client should use authenticated 
+  * removed uuid from redirect parameters. Client should use authenticated
     request to identity/tokens to retrieve user uuid.
 
 
@@ -459,14 +770,14 @@ Cyclades
 UI
 ^^
 * Removed feedback endpoint. Feedback requests delegate to astakos feedback
-  service. ``FEEDBACK_CONTACTS``, ``FEEDBACK_EMAIL_FROM`` settings removed, 
+  service. ``FEEDBACK_CONTACTS``, ``FEEDBACK_EMAIL_FROM`` settings removed,
   and no longer used.
-* ``UI_LOGIN_URL``, ``UI_GLANCE_URL``, ``COMPUTE_URL`` settings no longer 
+* ``UI_LOGIN_URL``, ``UI_GLANCE_URL``, ``COMPUTE_URL`` settings no longer
   required to be set and are dynamically computed based on ``ASTAKOS_BASE_URL``
   and ``CYCLADES_BASE_URL`` settings.
-* File group is no longer included in ssh keys personality metadata sent in 
+* File group is no longer included in ssh keys personality metadata sent in
   create vm calls.
-  
+
 
 Pithos
 ------
@@ -476,7 +787,7 @@ Pithos
   * new settings:
     PITHOS_RADOS_STORAGE, PITHOS_RADOS_POOL_BLOCKS, PITHOS_RADOS_POOL_MAPS
 
-* X-Object-Public now contains full url (domain + proper component prefix + 
+* X-Object-Public now contains full url (domain + proper component prefix +
   file path)
 
 * Rewritten support for public URLs, with admin-selectable length

@@ -32,15 +32,15 @@
 # or implied, of GRNET S.A.
 
 from django.core.management.base import BaseCommand, CommandError
+from django.db import transaction
 from astakos.im.models import Component
-from snf_django.lib.db.transaction import commit_on_success_strict
 
 
 class Command(BaseCommand):
     args = "<component ID or name>"
     help = "Remove a component along with its registered services"
 
-    @commit_on_success_strict()
+    @transaction.commit_on_success
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a component ID or name")

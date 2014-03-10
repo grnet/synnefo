@@ -31,14 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-try:
-    from django.conf.urls import include, patterns
-except ImportError:  # Django==1.2
-    from django.conf.urls.defaults import include, patterns
+from django.conf.urls import include, patterns
 
-from synnefo.lib import join_urls
-from astakos.im.settings import (
-    BASE_PATH, ACCOUNTS_PREFIX, VIEWS_PREFIX, KEYSTONE_PREFIX, WEBLOGIN_PREFIX)
+from astakos.im.settings import BASE_PATH, ACCOUNTS_PREFIX, \
+    VIEWS_PREFIX, KEYSTONE_PREFIX, WEBLOGIN_PREFIX, ADMIN_PREFIX
 from snf_django.lib.api.utils import prefix_pattern
 from snf_django.utils.urls import \
     extend_with_root_redirects, extend_endpoint_with_slash
@@ -56,8 +52,9 @@ astakos_patterns = patterns(
     (prefix_pattern(ACCOUNTS_PREFIX), include('astakos.api.urls')),
     (prefix_pattern(KEYSTONE_PREFIX), include('astakos.api.keystone_urls')),
     (prefix_pattern(WEBLOGIN_PREFIX), include('astakos.im.weblogin_urls')),
+    (prefix_pattern(ADMIN_PREFIX), include('astakos.admin.admin_urls')),
+    ('', include('astakos.oa2.urls')),
 )
-
 
 urlpatterns += patterns(
     '',

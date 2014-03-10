@@ -31,10 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q
 
-from synnefo.db.models import VirtualMachine, Network
-from synnefo.quotas import Quotaholder, ASTAKOS_TOKEN
+from synnefo.db.models import VirtualMachine, Network, IPAddress
+from synnefo.quotas import Quotaholder
 
 
 def get_db_holdings(user=None):
@@ -43,32 +43,53 @@ def get_db_holdings(user=None):
 
     vms = VirtualMachine.objects.filter(deleted=False)
     networks = Network.objects.filter(deleted=False)
+    floating_ips = IPAddress.objects.filter(deleted=False, floating_ip=True)
 
     if user is not None:
         vms = vms.filter(userid=user)
         networks = networks.filter(userid=user)
+        floating_ips = floating_ips.filter(userid=user)
 
     # Get resources related with VMs
-    vm_resources = vms.values("userid").annotate(num=Count("id"),
-                                                 ram=Sum("flavor__ram"),
-                                                 cpu=Sum("flavor__cpu"),
-                                                 disk=Sum("flavor__disk"))
-    for vm_res in vm_resources:
+    vm_resources = vms.values("userid")\
+                      .annotate(num=Count("id"),
+                                total_ram=Sum("flavor__ram"),
+                                total_cpu=Sum("flavor__cpu"),
+                                disk=Sum("flavor__disk"))
+    vm_active_resources = \
+        vms.values("userid")\
+           .filter(Q(operstate="STARTED") | Q(operstate="BUILD") |
+                   Q(operstate="ERROR"))\
+           .annotate(ram=Sum("flavor__ram"),
+                     cpu=Sum("flavor__cpu"))
+
+    for vm_res in vm_resources.iterator():
         user = vm_res['userid']
         res = {"cyclades.vm": vm_res["num"],
-               "cyclades.cpu": vm_res["cpu"],
+               "cyclades.total_cpu": vm_res["total_cpu"],
                "cyclades.disk": 1073741824 * vm_res["disk"],
-               "cyclades.ram": 1048576 * vm_res["ram"]}
+               "cyclades.total_ram": 1048576 * vm_res["total_ram"]}
         holdings[user] = res
+
+    for vm_res in vm_active_resources.iterator():
+        user = vm_res['userid']
+        holdings[user]["cyclades.cpu"] = vm_res["cpu"]
+        holdings[user]["cyclades.ram"] = 1048576 * vm_res["ram"]
 
     # Get resources related with networks
     net_resources = networks.values("userid")\
                             .annotate(num=Count("id"))
-    for net_res in net_resources:
+    for net_res in net_resources.iterator():
         user = net_res['userid']
-        if user not in holdings:
-            holdings[user] = {}
+        holdings.setdefault(user, {})
         holdings[user]["cyclades.network.private"] = net_res["num"]
+
+    floating_ips_resources = floating_ips.values("userid")\
+                                         .annotate(num=Count("id"))
+    for floating_ip_res in floating_ips_resources.iterator():
+        user = floating_ip_res["userid"]
+        holdings.setdefault(user, {})
+        holdings[user]["cyclades.floating_ip"] = floating_ip_res["num"]
 
     return holdings
 
@@ -79,7 +100,27 @@ def get_quotaholder_holdings(user=None):
     Returns quotas for all users, unless a single user is specified.
     """
     qh = Quotaholder.get()
-    return qh.service_get_quotas(ASTAKOS_TOKEN, user)
+    return qh.service_get_quotas(user)
+
+
+def get_qh_users_holdings(users=None):
+    qh = Quotaholder.get()
+    if users is None or len(users) != 1:
+        req = None
+    else:
+        req = users[0]
+    quotas = qh.service_get_quotas(req)
+
+    if users is None:
+        return quotas
+
+    qs = {}
+    for user in users:
+        try:
+            qs[user] = quotas[user]
+        except KeyError:
+            pass
+    return qs
 
 
 def transform_quotas(quotas):

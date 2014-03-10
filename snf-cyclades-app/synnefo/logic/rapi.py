@@ -2,6 +2,7 @@
 #
 
 # Copyright (C) 2010, 2011 Google Inc.
+# Copyright (C) 2013, GRNET S.A.
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,33 +20,15 @@
 # 02110-1301, USA.
 
 
-"""Ganeti RAPI client.
-
-@attention: To use the RAPI client, the application B{must} call
-            C{pycurl.global_init} during initialization and
-            C{pycurl.global_cleanup} before exiting the process. This is very
-            important in multi-threaded programs. See curl_global_init(3) and
-            curl_global_cleanup(3) for details. The decorator L{UsesRapiClient}
-            can be used.
-
-"""
+"""Ganeti RAPI client."""
 
 # No Ganeti-specific modules should be imported. The RAPI client is supposed to
 # be standalone.
 
+import requests
 import logging
 import simplejson
-import socket
-import urllib
-import threading
-import pycurl
 import time
-
-try:
-  from cStringIO import StringIO
-except ImportError:
-  from StringIO import StringIO
-
 
 GANETI_RAPI_PORT = 5080
 GANETI_RAPI_VERSION = 2
@@ -118,19 +101,6 @@ ECODE_NORES = "insufficient_resources"
 #: Temporarily out of resources; operation can be tried again
 ECODE_TEMP_NORES = "temp_insufficient_resources"
 
-# Older pycURL versions don't have all error constants
-try:
-  _CURLE_SSL_CACERT = pycurl.E_SSL_CACERT
-  _CURLE_SSL_CACERT_BADFILE = pycurl.E_SSL_CACERT_BADFILE
-except AttributeError:
-  _CURLE_SSL_CACERT = 60
-  _CURLE_SSL_CACERT_BADFILE = 77
-
-_CURL_SSL_CERT_ERRORS = frozenset([
-  _CURLE_SSL_CACERT,
-  _CURLE_SSL_CACERT_BADFILE,
-  ])
-
 
 class Error(Exception):
   """Base error class for this module.
@@ -189,128 +159,6 @@ def _SetItemIf(container, condition, item, value):
   return condition
 
 
-def UsesRapiClient(fn):
-  """Decorator for code using RAPI client to initialize pycURL.
-
-  """
-  def wrapper(*args, **kwargs):
-    # curl_global_init(3) and curl_global_cleanup(3) must be called with only
-    # one thread running. This check is just a safety measure -- it doesn't
-    # cover all cases.
-    assert threading.activeCount() == 1, \
-           "Found active threads when initializing pycURL"
-
-    pycurl.global_init(pycurl.GLOBAL_ALL)
-    try:
-      return fn(*args, **kwargs)
-    finally:
-      pycurl.global_cleanup()
-
-  return wrapper
-
-
-def GenericCurlConfig(verbose=False, use_signal=False,
-                      use_curl_cabundle=False, cafile=None, capath=None,
-                      proxy=None, verify_hostname=False,
-                      connect_timeout=None, timeout=None,
-                      _pycurl_version_fn=pycurl.version_info):
-  """Curl configuration function generator.
-
-  @type verbose: bool
-  @param verbose: Whether to set cURL to verbose mode
-  @type use_signal: bool
-  @param use_signal: Whether to allow cURL to use signals
-  @type use_curl_cabundle: bool
-  @param use_curl_cabundle: Whether to use cURL's default CA bundle
-  @type cafile: string
-  @param cafile: In which file we can find the certificates
-  @type capath: string
-  @param capath: In which directory we can find the certificates
-  @type proxy: string
-  @param proxy: Proxy to use, None for default behaviour and empty string for
-                disabling proxies (see curl_easy_setopt(3))
-  @type verify_hostname: bool
-  @param verify_hostname: Whether to verify the remote peer certificate's
-                          commonName
-  @type connect_timeout: number
-  @param connect_timeout: Timeout for establishing connection in seconds
-  @type timeout: number
-  @param timeout: Timeout for complete transfer in seconds (see
-                  curl_easy_setopt(3)).
-
-  """
-  if use_curl_cabundle and (cafile or capath):
-    raise Error("Can not use default CA bundle when CA file or path is set")
-
-  def _ConfigCurl(curl, logger):
-    """Configures a cURL object
-
-    @type curl: pycurl.Curl
-    @param curl: cURL object
-
-    """
-    logger.debug("Using cURL version %s", pycurl.version)
-
-    # pycurl.version_info returns a tuple with information about the used
-    # version of libcurl. Item 5 is the SSL library linked to it.
-    # e.g.: (3, '7.18.0', 463360, 'x86_64-pc-linux-gnu', 1581, 'GnuTLS/2.0.4',
-    # 0, '1.2.3.3', ...)
-    sslver = _pycurl_version_fn()[5]
-    if not sslver:
-      raise Error("No SSL support in cURL")
-
-    lcsslver = sslver.lower()
-    if lcsslver.startswith("openssl/"):
-      pass
-    elif lcsslver.startswith("nss/"):
-      # TODO: investigate compatibility beyond a simple test
-      pass
-    elif lcsslver.startswith("gnutls/"):
-      if capath:
-        raise Error("cURL linked against GnuTLS has no support for a"
-                    " CA path (%s)" % (pycurl.version, ))
-    else:
-      raise NotImplementedError("cURL uses unsupported SSL version '%s'" %
-                                sslver)
-
-    curl.setopt(pycurl.VERBOSE, verbose)
-    curl.setopt(pycurl.NOSIGNAL, not use_signal)
-
-    # Whether to verify remote peer's CN
-    if verify_hostname:
-      # curl_easy_setopt(3): "When CURLOPT_SSL_VERIFYHOST is 2, that
-      # certificate must indicate that the server is the server to which you
-      # meant to connect, or the connection fails. [...] When the value is 1,
-      # the certificate must contain a Common Name field, but it doesn't matter
-      # what name it says. [...]"
-      curl.setopt(pycurl.SSL_VERIFYHOST, 2)
-    else:
-      curl.setopt(pycurl.SSL_VERIFYHOST, 0)
-
-    if cafile or capath or use_curl_cabundle:
-      # Require certificates to be checked
-      curl.setopt(pycurl.SSL_VERIFYPEER, True)
-      if cafile:
-        curl.setopt(pycurl.CAINFO, str(cafile))
-      if capath:
-        curl.setopt(pycurl.CAPATH, str(capath))
-      # Not changing anything for using default CA bundle
-    else:
-      # Disable SSL certificate verification
-      curl.setopt(pycurl.SSL_VERIFYPEER, False)
-
-    if proxy is not None:
-      curl.setopt(pycurl.PROXY, str(proxy))
-
-    # Timeouts
-    if connect_timeout is not None:
-      curl.setopt(pycurl.CONNECTTIMEOUT, connect_timeout)
-    if timeout is not None:
-      curl.setopt(pycurl.TIMEOUT, timeout)
-
-  return _ConfigCurl
-
-
 class GanetiRapiClient(object): # pylint: disable=R0904
   """Ganeti RAPI client.
 
@@ -319,8 +167,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
   _json_encoder = simplejson.JSONEncoder(sort_keys=True)
 
   def __init__(self, host, port=GANETI_RAPI_PORT,
-               username=None, password=None, logger=logging,
-               curl_config_fn=None, curl_factory=None):
+               username=None, password=None, logger=logging):
     """Initializes this class.
 
     @type host: string
@@ -331,24 +178,11 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     @param username: the username to connect with
     @type password: string
     @param password: the password to connect with
-    @type curl_config_fn: callable
-    @param curl_config_fn: Function to configure C{pycurl.Curl} object
     @param logger: Logging object
 
     """
-    self._username = username
-    self._password = password
     self._logger = logger
-    self._curl_config_fn = curl_config_fn
-    self._curl_factory = curl_factory
-
-    try:
-      socket.inet_pton(socket.AF_INET6, host)
-      address = "[%s]:%s" % (host, port)
-    except socket.error:
-      address = "%s:%s" % (host, port)
-
-    self._base_url = "https://%s" % address
+    self._base_url = "https://%s:%s" % (host, port)
 
     if username is not None:
       if password is None:
@@ -356,71 +190,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     elif password:
       raise Error("Specified password without username")
 
-  def _CreateCurl(self):
-    """Creates a cURL object.
-
-    """
-    # Create pycURL object if no factory is provided
-    if self._curl_factory:
-      curl = self._curl_factory()
-    else:
-      curl = pycurl.Curl()
-
-    # Default cURL settings
-    curl.setopt(pycurl.VERBOSE, False)
-    curl.setopt(pycurl.FOLLOWLOCATION, False)
-    curl.setopt(pycurl.MAXREDIRS, 5)
-    curl.setopt(pycurl.NOSIGNAL, True)
-    curl.setopt(pycurl.USERAGENT, self.USER_AGENT)
-    curl.setopt(pycurl.SSL_VERIFYHOST, 0)
-    curl.setopt(pycurl.SSL_VERIFYPEER, False)
-    curl.setopt(pycurl.HTTPHEADER, [
-      "Accept: %s" % HTTP_APP_JSON,
-      "Content-type: %s" % HTTP_APP_JSON,
-      ])
-
-    assert ((self._username is None and self._password is None) ^
-            (self._username is not None and self._password is not None))
-
-    if self._username:
-      # Setup authentication
-      curl.setopt(pycurl.HTTPAUTH, pycurl.HTTPAUTH_BASIC)
-      curl.setopt(pycurl.USERPWD,
-                  str("%s:%s" % (self._username, self._password)))
-
-    # Call external configuration function
-    if self._curl_config_fn:
-      self._curl_config_fn(curl, self._logger)
-
-    return curl
-
-  @staticmethod
-  def _EncodeQuery(query):
-    """Encode query values for RAPI URL.
-
-    @type query: list of two-tuples
-    @param query: Query arguments
-    @rtype: list
-    @return: Query list with encoded values
-
-    """
-    result = []
-
-    for name, value in query:
-      if value is None:
-        result.append((name, ""))
-
-      elif isinstance(value, bool):
-        # Boolean values must be encoded as 0 or 1
-        result.append((name, int(value)))
-
-      elif isinstance(value, (list, tuple, dict)):
-        raise ValueError("Invalid query data type %r" % type(value).__name__)
-
-      else:
-        result.append((name, value))
-
-    return result
+    self._auth = (username, password)
 
   def _SendRequest(self, method, path, query, content):
     """Sends an HTTP request.
@@ -445,58 +215,32 @@ class GanetiRapiClient(object): # pylint: disable=R0904
 
     """
     assert path.startswith("/")
+    url = "%s%s" % (self._base_url, path)
 
-    curl = self._CreateCurl()
-
+    headers = {}
     if content is not None:
       encoded_content = self._json_encoder.encode(content)
+      headers = {"content-type": HTTP_APP_JSON,
+                 "accept": HTTP_APP_JSON}
     else:
       encoded_content = ""
 
-    # Build URL
-    urlparts = [self._base_url, path]
-    if query:
-      urlparts.append("?")
-      urlparts.append(urllib.urlencode(self._EncodeQuery(query)))
+    if query is not None:
+        query = dict(query)
 
-    url = "".join(urlparts)
+    self._logger.debug("Sending request %s %s (query=%r) (content=%r)",
+                       method, url, query, encoded_content)
 
-    self._logger.debug("Sending request %s %s (content=%r)",
-                       method, url, encoded_content)
+    req_method = getattr(requests, method.lower())
+    r = req_method(url, auth=self._auth, headers=headers, params=query,
+                   data=encoded_content, verify=False)
 
-    # Buffer for response
-    encoded_resp_body = StringIO()
 
-    # Configure cURL
-    curl.setopt(pycurl.CUSTOMREQUEST, str(method))
-    curl.setopt(pycurl.URL, str(url))
-    curl.setopt(pycurl.POSTFIELDS, str(encoded_content))
-    curl.setopt(pycurl.WRITEFUNCTION, encoded_resp_body.write)
-
-    try:
-      # Send request and wait for response
-      try:
-        curl.perform()
-      except pycurl.error, err:
-        if err.args[0] in _CURL_SSL_CERT_ERRORS:
-          raise CertificateError("SSL certificate error %s" % err,
-                                 code=err.args[0])
-
-        raise GanetiApiError(str(err), code=err.args[0])
-    finally:
-      # Reset settings to not keep references to large objects in memory
-      # between requests
-      curl.setopt(pycurl.POSTFIELDS, "")
-      curl.setopt(pycurl.WRITEFUNCTION, lambda _: None)
-
-    # Get HTTP response code
-    http_code = curl.getinfo(pycurl.RESPONSE_CODE)
-
-    # Was anything written to the response buffer?
-    if encoded_resp_body.tell():
-      response_content = simplejson.loads(encoded_resp_body.getvalue())
+    http_code = r.status_code
+    if r.content is not None:
+        response_content = simplejson.loads(r.content)
     else:
-      response_content = None
+        response_content = None
 
     if http_code != HTTP_OK:
       if isinstance(response_content, dict):
@@ -721,7 +465,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
 
       conflicts = set(kwargs.iterkeys()) & set(body.iterkeys())
       if conflicts:
-        raise GanetiApiError("Required fields can not be specified as"
+        raise GanetiApiError("Required fields cannot be specified as"
                              " keywords: %s" % ", ".join(conflicts))
 
       body.update((key, value) for key, value in kwargs.iteritems()
@@ -733,7 +477,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     return self._SendRequest(HTTP_POST, "/%s/instances" % GANETI_RAPI_VERSION,
                              query, body)
 
-  def DeleteInstance(self, instance, dry_run=False):
+  def DeleteInstance(self, instance, dry_run=False, shutdown_timeout=None):
     """Deletes an instance.
 
     @type instance: str
@@ -746,9 +490,13 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     query = []
     _AppendDryRunIf(query, dry_run)
 
+    body = None
+    if shutdown_timeout is not None:
+        body = {"shutdown_timeout": shutdown_timeout}
+
     return self._SendRequest(HTTP_DELETE,
                              ("/%s/instances/%s" %
-                              (GANETI_RAPI_VERSION, instance)), query, None)
+                              (GANETI_RAPI_VERSION, instance)), query, body)
 
   def ModifyInstance(self, instance, **kwargs):
     """Modifies an instance.
@@ -903,7 +651,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
                               (GANETI_RAPI_VERSION, instance)), query, None)
 
   def RebootInstance(self, instance, reboot_type=None, ignore_secondaries=None,
-                     dry_run=False):
+                     dry_run=False, shutdown_timeout=None):
     """Reboots an instance.
 
     @type instance: str
@@ -925,11 +673,16 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     _AppendIf(query, ignore_secondaries is not None,
               ("ignore_secondaries", ignore_secondaries))
 
+    body = None
+    if shutdown_timeout is not None:
+        body = {"shutdown_timeout": shutdown_timeout}
+
     return self._SendRequest(HTTP_POST,
                              ("/%s/instances/%s/reboot" %
-                              (GANETI_RAPI_VERSION, instance)), query, None)
+                              (GANETI_RAPI_VERSION, instance)), query, body)
 
-  def ShutdownInstance(self, instance, dry_run=False, no_remember=False):
+  def ShutdownInstance(self, instance, dry_run=False, no_remember=False,
+                       timeout=None):
     """Shuts down an instance.
 
     @type instance: str
@@ -945,10 +698,14 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     query = []
     _AppendDryRunIf(query, dry_run)
     _AppendIf(query, no_remember, ("no-remember", 1))
+    body = None
+    if timeout is not None:
+        body = {"timeout": timeout}
+
 
     return self._SendRequest(HTTP_PUT,
                              ("/%s/instances/%s/shutdown" %
-                              (GANETI_RAPI_VERSION, instance)), query, None)
+                              (GANETI_RAPI_VERSION, instance)), query, body)
 
   def StartupInstance(self, instance, dry_run=False, no_remember=False):
     """Starts up an instance.
@@ -1179,17 +936,23 @@ class GanetiRapiClient(object): # pylint: disable=R0904
                              ("/%s/instances/%s/console" %
                               (GANETI_RAPI_VERSION, instance)), None, None)
 
-  def GetJobs(self):
+  def GetJobs(self, bulk=False):
     """Gets all jobs for the cluster.
 
     @rtype: list of int
     @return: job ids for the cluster
 
     """
-    return [int(j["id"])
-            for j in self._SendRequest(HTTP_GET,
-                                       "/%s/jobs" % GANETI_RAPI_VERSION,
-                                       None, None)]
+    query = []
+    _AppendIf(query, bulk, ("bulk", 1))
+
+    jobs = self._SendRequest(HTTP_GET, "/%s/jobs" % GANETI_RAPI_VERSION,
+                             query, None)
+    if bulk:
+        return jobs
+    else:
+        return [int(j["id"]) for j in jobs]
+
 
   def GetJobStatus(self, job_id):
     """Gets the status of a job.

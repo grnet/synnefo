@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -37,6 +37,7 @@ import mock
 from django.test import TestCase, Client
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from snf_django.utils.testing import mocked_quotaholder
 
 
 USER1 = "5edcb5aa-1111-4146-a8ed-2b6287824353"
@@ -56,13 +57,13 @@ class AstakosClientMock():
     def __init__(*args, **kwargs):
         pass
 
-    def get_username(self, token, uuid):
+    def get_username(self, uuid):
         try:
             return USERS_UUIDS.get(uuid)['displayname']
         except TypeError:
             return None
 
-    def get_uuid(self, token, display_name):
+    def get_uuid(self, display_name):
         try:
             return USERS_DISPLAYNAMES.get(display_name)['uuid']
         except TypeError:
@@ -83,12 +84,42 @@ def get_user_mock(request, *args, **kwargs):
     request.user = None
     if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
         request.user_uniq = 'test'
-        request.user = {'uniq': 'test', 'auth_token': '0000'}
+        request.user = {"access": {
+                        "token": {
+                            "expires": "2013-06-19T15:23:59.975572+00:00",
+                            "id": "0000",
+                            "tenant": {
+                                "id": "test",
+                                "name": "Firstname Lastname"
+                                }
+                            },
+                        "serviceCatalog": [],
+                        "user": {
+                            "roles_links": [],
+                            "id": "test",
+                            "roles": [{"id": 1, "name": "default"}],
+                            "name": "Firstname Lastname"}}
+                        }
+
     if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0001':
         request.user_uniq = 'test'
-        request.user = {'uniq': 'test', 'groups': ['default',
-                                                   'helpdesk'],
-                        'auth_token': '0001'}
+        request.user = {"access": {
+                        "token": {
+                            "expires": "2013-06-19T15:23:59.975572+00:00",
+                            "id": "0001",
+                            "tenant": {
+                                "id": "test",
+                                "name": "Firstname Lastname"
+                                }
+                            },
+                        "serviceCatalog": [],
+                        "user": {
+                            "roles_links": [],
+                            "id": "test",
+                            "roles": [{"id": 1, "name": "default"},
+                                      {"id": 2, "name": "helpdesk"}],
+                            "name": "Firstname Lastname"}}
+                        }
 
 
 @mock.patch("astakosclient.AstakosClient", new=AstakosClientMock)
@@ -111,12 +142,19 @@ class HelpdeskTests(TestCase):
         vm2u2 = mfactory.VirtualMachineFactory(userid=USER2, name="user2 vm2",
                                                pk=1003)
 
-        netpub = mfactory.NetworkFactory(public=True)
-        net1u1 = mfactory.NetworkFactory(public=False, userid=USER1)
-
-        nic1 = mfactory.NetworkInterfaceFactory(machine=vm1u2, network=net1u1)
-        nic2 = mfactory.NetworkInterfaceFactory(machine=vm1u1, network=netpub,
-                                                ipv4="195.251.222.211")
+        nic1 = mfactory.NetworkInterfaceFactory(machine=vm1u2,
+                                                userid=vm1u2.userid,
+                                                network__public=False,
+                                                network__userid=USER1)
+        ip2 = mfactory.IPv4AddressFactory(nic__machine=vm1u1,
+                                          userid=vm1u1.userid,
+                                          network__public=True,
+                                          network__userid=None,
+                                          address="195.251.222.211")
+        mfactory.IPAddressLogFactory(address=ip2.address,
+                                     server_id=vm1u1.id,
+                                     network_id=ip2.network.id,
+                                     active=True)
 
     def test_enabled_setting(self):
         settings.HELPDESK_ENABLED = False
@@ -133,12 +171,16 @@ class HelpdeskTests(TestCase):
         # ip does not exist, proper message gets displayed
         r = self.client.get(reverse('helpdesk-details',
                             args=["195.251.221.122"]), user_token='0001')
-        self.assertContains(r, 'User with IP')
+        self.assertFalse(r.context["ip_exists"])
+        self.assertEqual(list(r.context["ips"]), [])
 
-        # ip exists, 'test' account discovered
+        # ip exists
         r = self.client.get(reverse('helpdesk-details',
                             args=["195.251.222.211"]), user_token='0001')
-        self.assertEqual(r.context['account'], USER1)
+        self.assertTrue(r.context["ip_exists"])
+        ips = r.context["ips"]
+        for ip in ips:
+            self.assertEqual(ip.address, "195.251.222.211")
 
     def test_vm_lookup(self):
         # vm id does not exist
@@ -278,19 +320,23 @@ class HelpdeskTests(TestCase):
         self.assertEqual(r.status_code, 403)
 
         backend.shutdown_instance = shutdown = mock.Mock()
+        shutdown.return_value = 1
         self.vm1.operstate = 'STARTED'
         self.vm1.save()
-        r = self.client.post(reverse('helpdesk-vm-shutdown', args=(pk,)),
-                             data={'token': '0001'}, user_token='0001')
+        with mocked_quotaholder():
+            r = self.client.post(reverse('helpdesk-vm-shutdown', args=(pk,)),
+                                 data={'token': '0001'}, user_token='0001')
         self.assertEqual(r.status_code, 302)
         self.assertTrue(shutdown.called)
         self.assertEqual(len(shutdown.mock_calls), 1)
 
         backend.startup_instance = startup = mock.Mock()
+        startup.return_value = 2
         self.vm1.operstate = 'STOPPED'
         self.vm1.save()
-        r = self.client.post(reverse('helpdesk-vm-start', args=(pk,)),
-                             data={'token': '0001'}, user_token='0001')
+        with mocked_quotaholder():
+            r = self.client.post(reverse('helpdesk-vm-start', args=(pk,)),
+                                 data={'token': '0001'}, user_token='0001')
         self.assertEqual(r.status_code, 302)
         self.assertTrue(startup.called)
         self.assertEqual(len(startup.mock_calls), 1)

@@ -31,21 +31,12 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import datetime
-import ipaddr
-
-from base64 import b64encode, b64decode
-from datetime import timedelta, tzinfo
-from functools import wraps
+from base64 import urlsafe_b64encode, b64decode
+from urllib import quote
 from hashlib import sha256
 from logging import getLogger
 from random import choice
 from string import digits, lowercase, uppercase
-from time import time
-from traceback import format_exc
-from wsgiref.handlers import format_date_time
-
-import dateutil.parser
 
 from Crypto.Cipher import AES
 
@@ -53,18 +44,14 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
-from django.utils.cache import add_never_cache_headers
 from django.db.models import Q
 
 from snf_django.lib.api import faults
 from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
-                               Network, BackendNetwork, NetworkInterface,
-                               BridgePoolTable, MacPrefixPoolTable, Backend)
-from synnefo.db.pools import EmptyPool
-
-from snf_django.lib.astakos import get_user
+                               Network, NetworkInterface, SecurityGroup,
+                               BridgePoolTable, MacPrefixPoolTable, IPAddress,
+                               IPPoolTable)
 from synnefo.plankton.utils import image_backend
-from synnefo.settings import MAX_CIDR_BLOCK
 
 from synnefo.cyclades_settings import cyclades_services, BASE_HOST
 from synnefo.lib.services import get_service_path
@@ -74,13 +61,20 @@ COMPUTE_URL = \
     join_urls(BASE_HOST,
               get_service_path(cyclades_services, "compute", version="v2.0"))
 SERVERS_URL = join_urls(COMPUTE_URL, "servers/")
-NETWORKS_URL = join_urls(COMPUTE_URL, "networks/")
 FLAVORS_URL = join_urls(COMPUTE_URL, "flavors/")
 IMAGES_URL = join_urls(COMPUTE_URL, "images/")
 PLANKTON_URL = \
     join_urls(BASE_HOST,
               get_service_path(cyclades_services, "image", version="v1.0"))
 IMAGES_PLANKTON_URL = join_urls(PLANKTON_URL, "images/")
+
+NETWORK_URL = \
+    join_urls(BASE_HOST,
+              get_service_path(cyclades_services, "network", version="v2.0"))
+NETWORKS_URL = join_urls(NETWORK_URL, "networks/")
+PORTS_URL = join_urls(NETWORK_URL, "ports/")
+SUBNETS_URL = join_urls(NETWORK_URL, "subnets/")
+FLOATING_IPS_URL = join_urls(NETWORK_URL, "floatingips/")
 
 PITHOSMAP_PREFIX = "pithosmap://"
 
@@ -125,17 +119,17 @@ def zeropad(s):
     return s + '\x00' * npad
 
 
-def encrypt(plaintext):
+def stats_encrypt(plaintext):
     # Make sure key is 32 bytes long
-    key = sha256(settings.SECRET_KEY).digest()
+    key = sha256(settings.CYCLADES_STATS_SECRET_KEY).digest()
 
     aes = AES.new(key)
     enc = aes.encrypt(zeropad(plaintext))
-    return b64encode(enc)
+    return quote(urlsafe_b64encode(enc))
 
 
 def get_vm(server_id, user_id, for_update=False, non_deleted=False,
-           non_suspended=False):
+           non_suspended=False, prefetch_related=None):
     """Find a VirtualMachine instance based on ID and owner."""
 
     try:
@@ -143,13 +137,18 @@ def get_vm(server_id, user_id, for_update=False, non_deleted=False,
         servers = VirtualMachine.objects
         if for_update:
             servers = servers.select_for_update()
+        if prefetch_related is not None:
+            if isinstance(prefetch_related, list):
+                servers = servers.prefetch_related(*prefetch_related)
+            else:
+                servers = servers.prefetch_related(prefetch_related)
         vm = servers.get(id=server_id, userid=user_id)
         if non_deleted and vm.deleted:
             raise faults.BadRequest("Server has been deleted.")
         if non_suspended and vm.suspended:
             raise faults.Forbidden("Administratively Suspended VM")
         return vm
-    except ValueError:
+    except (ValueError, TypeError):
         raise faults.BadRequest('Invalid server ID.')
     except VirtualMachine.DoesNotExist:
         raise faults.ItemNotFound('Server not found.')
@@ -188,7 +187,6 @@ def get_image_dict(image_id, user_id):
     image["metadata"] = dict((key.upper(), val)
                              for key, val in properties.items())
 
-
     return image
 
 
@@ -201,7 +199,9 @@ def get_flavor(flavor_id, include_deleted=False):
             return Flavor.objects.get(id=flavor_id)
         else:
             return Flavor.objects.get(id=flavor_id, deleted=include_deleted)
-    except (ValueError, Flavor.DoesNotExist):
+    except (ValueError, TypeError):
+        raise faults.BadRequest("Invalid flavor ID '%s'" % flavor_id)
+    except Flavor.DoesNotExist:
         raise faults.ItemNotFound('Flavor not found.')
 
 
@@ -220,7 +220,7 @@ def get_flavor_provider(flavor):
     return disk_template, provider
 
 
-def get_network(network_id, user_id, for_update=False):
+def get_network(network_id, user_id, for_update=False, non_deleted=False):
     """Return a Network instance or raise ItemNotFound."""
 
     try:
@@ -228,139 +228,104 @@ def get_network(network_id, user_id, for_update=False):
         objects = Network.objects
         if for_update:
             objects = objects.select_for_update()
-        return objects.get(Q(userid=user_id) | Q(public=True), id=network_id)
-    except (ValueError, Network.DoesNotExist):
-        raise faults.ItemNotFound('Network not found.')
+        network = objects.get(Q(userid=user_id) | Q(public=True),
+                              id=network_id)
+        if non_deleted and network.deleted:
+            raise faults.BadRequest("Network has been deleted.")
+        return network
+    except (ValueError, TypeError):
+        raise faults.BadRequest("Invalid network ID '%s'" % network_id)
+    except Network.DoesNotExist:
+        raise faults.ItemNotFound('Network %s not found.' % network_id)
 
 
-def validate_network_params(subnet, gateway=None, subnet6=None, gateway6=None):
-    try:
-        # Use strict option to not all subnets with host bits set
-        network = ipaddr.IPv4Network(subnet, strict=True)
-    except ValueError:
-        raise faults.BadRequest("Invalid network IPv4 subnet")
-
-    # Check that network size is allowed!
-    if not validate_network_size(network.prefixlen):
-        raise faults.OverLimit(message="Unsupported network size",
-                        details="Network mask must be in range (%s, 29]" %
-                                MAX_CIDR_BLOCK)
-
-    # Check that gateway belongs to network
-    if gateway:
-        try:
-            gateway = ipaddr.IPv4Address(gateway)
-        except ValueError:
-            raise faults.BadRequest("Invalid network IPv4 gateway")
-        if not gateway in network:
-            raise faults.BadRequest("Invalid network IPv4 gateway")
-
-    if subnet6:
-        try:
-            # Use strict option to not all subnets with host bits set
-            network6 = ipaddr.IPv6Network(subnet6, strict=True)
-        except ValueError:
-            raise faults.BadRequest("Invalid network IPv6 subnet")
-        if gateway6:
-            try:
-                gateway6 = ipaddr.IPv6Address(gateway6)
-            except ValueError:
-                raise faults.BadRequest("Invalid network IPv6 gateway")
-            if not gateway6 in network6:
-                raise faults.BadRequest("Invalid network IPv6 gateway")
-
-
-def validate_network_size(cidr_block):
-    """Return True if network size is allowed."""
-    return cidr_block <= 29 and cidr_block > MAX_CIDR_BLOCK
-
-
-def allocate_public_address(backend):
-    """Allocate a public IP for a vm."""
-    for network in backend_public_networks(backend):
-        try:
-            address = get_network_free_address(network)
-            return (network, address)
-        except EmptyPool:
-            pass
-    return (None, None)
-
-
-def get_public_ip(backend):
-    """Reserve an IP from a public network.
-
-    This method should run inside a transaction.
-
+def get_port(port_id, user_id, for_update=False):
     """
+    Return a NetworkInteface instance or raise ItemNotFound.
+    """
+    try:
+        objects = NetworkInterface.objects.filter(userid=user_id)
+        if for_update:
+            objects = objects.select_for_update()
+        # if (port.device_owner != "vm") and for_update:
+        #     raise faults.BadRequest('Cannot update non vm port')
+        return objects.get(id=port_id)
+    except (ValueError, TypeError):
+        raise faults.BadRequest("Invalid port ID '%s'" % port_id)
+    except NetworkInterface.DoesNotExist:
+        raise faults.ItemNotFound("Port '%s' not found." % port_id)
 
-    # Guarantee exclusive access to backend, because accessing the IP pools of
-    # the backend networks may result in a deadlock with backend allocator
-    # which also checks that backend networks have a free IP.
-    backend = Backend.objects.select_for_update().get(id=backend.id)
 
-    address = None
-    if settings.PUBLIC_USE_POOL:
-        (network, address) = allocate_public_address(backend)
-    else:
-        for net in list(backend_public_networks(backend)):
-            pool = net.get_pool()
-            if not pool.empty():
-                address = 'pool'
-                network = net
-                break
-    if address is None:
-        log.error("Public networks of backend %s are full", backend)
-        raise faults.OverLimit("Can not allocate IP for new machine."
-                        " Public networks are full.")
-    return (network, address)
+def get_security_group(sg_id):
+    try:
+        sg = SecurityGroup.objects.get(id=sg_id)
+        return sg
+    except (ValueError, SecurityGroup.DoesNotExist):
+        raise faults.ItemNotFound("Not valid security group")
+
+
+def get_floating_ip_by_address(userid, address, for_update=False):
+    try:
+        objects = IPAddress.objects
+        if for_update:
+            objects = objects.select_for_update()
+        return objects.get(userid=userid, floating_ip=True,
+                           address=address, deleted=False)
+    except IPAddress.DoesNotExist:
+        raise faults.ItemNotFound("Floating IP does not exist.")
+
+
+def get_floating_ip_by_id(userid, floating_ip_id, for_update=False):
+    try:
+        floating_ip_id = int(floating_ip_id)
+        objects = IPAddress.objects
+        if for_update:
+            objects = objects.select_for_update()
+        return objects.get(id=floating_ip_id, floating_ip=True,
+                           userid=userid, deleted=False)
+    except IPAddress.DoesNotExist:
+        raise faults.ItemNotFound("Floating IP with ID %s does not exist." %
+                                  floating_ip_id)
+    except (ValueError, TypeError):
+        raise faults.BadRequest("Invalid Floating IP ID %s" % floating_ip_id)
+
+
+def backend_has_free_public_ip(backend):
+    """Check if a backend has a free public IPv4 address."""
+    ip_pool_rows = IPPoolTable.objects.select_for_update()\
+        .filter(subnet__network__public=True)\
+        .filter(subnet__network__drained=False)\
+        .filter(subnet__deleted=False)\
+        .filter(subnet__network__backend_networks__backend=backend)
+    for pool_row in ip_pool_rows:
+        pool = pool_row.pool
+        if pool.empty():
+            continue
+        else:
+            return True
 
 
 def backend_public_networks(backend):
-    """Return available public networks of the backend.
-
-    Iterator for non-deleted public networks that are available
-    to the specified backend.
-
-    """
-    for network in Network.objects.filter(public=True, deleted=False,
-                                          drained=False):
-        if BackendNetwork.objects.filter(network=network,
-                                         backend=backend).exists():
-            yield network
+    return Network.objects.filter(deleted=False, public=True,
+                                  backend_networks__backend=backend)
 
 
-def get_network_free_address(network):
-    """Reserve an IP address from the IP Pool of the network.
-
-    Raises EmptyPool
-
-    """
-
-    pool = network.get_pool()
-    address = pool.get()
-    pool.save()
-    return address
-
-
-def get_nic(machine, network):
+def get_vm_nic(vm, nic_id):
+    """Get a VMs NIC by its ID."""
     try:
-        return NetworkInterface.objects.get(machine=machine, network=network)
+        nic_id = int(nic_id)
+        return vm.nics.get(id=nic_id)
     except NetworkInterface.DoesNotExist:
-        raise faults.ItemNotFound('Server not connected to this network.')
+        raise faults.ItemNotFound("NIC '%s' not found" % nic_id)
+    except (ValueError, TypeError):
+        raise faults.BadRequest("Invalid NIC ID '%s'" % nic_id)
 
 
-def get_nic_from_index(vm, nic_index):
-    """Returns the nic_index-th nic of a vm
-       Error Response Codes: itemNotFound (404), badMediaType (415)
-    """
-    matching_nics = vm.nics.filter(index=nic_index)
-    matching_nics_len = len(matching_nics)
-    if matching_nics_len < 1:
-        raise faults.ItemNotFound('NIC not found on VM')
-    elif matching_nics_len > 1:
-        raise faults.BadMediaType('NIC index conflict on VM')
-    nic = matching_nics[0]
-    return nic
+def get_nic(nic_id):
+    try:
+        return NetworkInterface.objects.get(id=nic_id)
+    except NetworkInterface.DoesNotExist:
+        raise faults.ItemNotFound("NIC '%s' not found" % nic_id)
 
 
 def render_metadata(request, metadata, use_values=False, status=200):
@@ -384,15 +349,11 @@ def render_meta(request, meta, status=200):
     return HttpResponse(data, status=status)
 
 
-def construct_nic_id(nic):
-    return "-".join(["nic", unicode(nic.machine.id), unicode(nic.index)])
-
-
 def verify_personality(personality):
     """Verify that a a list of personalities is well formed"""
     if len(personality) > settings.MAX_PERSONALITY:
         raise faults.OverLimit("Maximum number of personalities"
-                        " exceeded")
+                               " exceeded")
     for p in personality:
         # Verify that personalities are well-formed
         try:
@@ -490,6 +451,16 @@ def network_to_links(network_id):
     return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
 
 
+def subnet_to_links(subnet_id):
+    href = join_urls(SUBNETS_URL, str(subnet_id))
+    return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
+
+
+def port_to_links(port_id):
+    href = join_urls(PORTS_URL, str(port_id))
+    return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
+
+
 def flavor_to_links(flavor_id):
     href = join_urls(FLAVORS_URL, str(flavor_id))
     return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
@@ -501,3 +472,12 @@ def image_to_links(image_id):
     links.append({"rel": "alternate",
                   "href": join_urls(IMAGES_PLANKTON_URL, str(image_id))})
     return links
+
+
+def start_action(vm, action, jobId):
+    vm.action = action
+    vm.backendjobid = jobId
+    vm.backendopcode = None
+    vm.backendjobstatus = None
+    vm.backendlogmsg = None
+    vm.save()

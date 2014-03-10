@@ -17,6 +17,8 @@ SECRET_KEY = 'ly6)mw6a7x%n)-e#zzk4jo6f2=uqu!1o%)2-(7lo+f9yd^k^bg'
 # sets this header is in use.
 USE_X_FORWARDED_HOST = True
 
+# Custom exception filter to 'cleanse' setting variables
+DEFAULT_EXCEPTION_REPORTER_FILTER = "synnefo.webproject.exception_filter.SynnefoExceptionReporterFilter"
 # Settings / Cookies / Headers that should be 'cleansed'
 HIDDEN_SETTINGS = 'SECRET|PASSWORD|PROFANITIES_LIST|SIGNATURE|AMQP_HOSTS|'\
                   'PRIVATE_KEY|DB_CONNECTION|TOKEN'
@@ -24,7 +26,7 @@ HIDDEN_COOKIES = ['password', '_pithos2_a', 'token', 'sessionid', 'shibstate',
                   'shibsession', 'CSRF_COOKIE']
 HIDDEN_HEADERS = ['HTTP_X_AUTH_TOKEN', 'HTTP_COOKIE']
 # Mail size limit for unhandled exception
-MAIL_MAX_LEN = 100 * 1024 # (100KB)
+MAIL_MAX_LEN = 100 * 1024  # (100KB)
 
 #When set to True, if the request URL does not match any of the patterns in the
 #URLconf and it doesn't end in a slash, an HTTP redirect is issued to the same

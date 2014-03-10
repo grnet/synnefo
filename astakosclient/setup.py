@@ -59,7 +59,7 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    "objpool >= 0.2",
+    "objpool>=0.3",
     "simplejson"
 ]
 
@@ -176,6 +176,7 @@ setup(
     zip_safe=False,
 
     install_requires=INSTALL_REQUIRES,
+    tests_require=['mock'],
 
     entry_points={},
 )

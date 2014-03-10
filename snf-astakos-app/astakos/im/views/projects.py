@@ -48,22 +48,20 @@ from django.utils.translation import ugettext as _
 from django.views.generic.list_detail import object_list, object_detail
 from django.core.exceptions import PermissionDenied
 from django.views.decorators.http import require_http_methods
-from django.db.models import Q
-
-from snf_django.lib.db.transaction import commit_on_success_strict
+from django.db import transaction
 
 import astakos.im.messages as astakos_messages
 
 from astakos.im import tables
-from astakos.im.models import ProjectApplication, ProjectMembership
+from astakos.im.models import ProjectApplication, ProjectMembership, Project
 from astakos.im.util import get_context, restrict_next
 from astakos.im.forms import ProjectApplicationForm, AddProjectMembersForm, \
     ProjectSearchForm
 from astakos.im.functions import check_pending_app_quota, accept_membership, \
     reject_membership, remove_membership, cancel_membership, leave_project, \
     join_project, enroll_member, can_join_request, can_leave_request, \
-    get_related_project_id, get_by_chain_or_404, approve_application, \
-    deny_application, cancel_application, dismiss_application
+    get_related_project_id, approve_application, \
+    deny_application, cancel_application, dismiss_application, ProjectError
 from astakos.im import settings
 from astakos.im.util import redirect_back
 from astakos.im.views.util import render_response, _create_object, \
@@ -99,7 +97,7 @@ def project_add(request):
                       "end_date", "comments"]
     membership_fields = ["member_join_policy", "member_leave_policy",
                          "limit_on_members_number"]
-    resource_catalog, resource_groups = _resources_catalog(for_project=True)
+    resource_catalog, resource_groups = _resources_catalog()
     if resource_catalog is False:
         # on fail resource_groups contains the result object
         result = resource_groups
@@ -114,16 +112,7 @@ def project_add(request):
 
     response = None
     with ExceptionHandler(request):
-        response = _create_object(
-            request,
-            template_name='im/projects/projectapplication_form.html',
-            summary_template_name='im/projects/projectapplication_form_summary.html',
-            extra_context=extra_context,
-            post_save_redirect=reverse('project_list'),
-            form_class=ProjectApplicationForm,
-            msg=_("The %(verbose_name)s has been received and "
-                  "is under consideration."),
-            )
+        response = create_app_object(request, extra_context=extra_context)
 
     if response is not None:
         return response
@@ -133,21 +122,52 @@ def project_add(request):
     return redirect(next)
 
 
+@transaction.commit_on_success
+def create_app_object(request, extra_context=None):
+    try:
+        summary = 'im/projects/projectapplication_form_summary.html'
+        return _create_object(
+            request,
+            template_name='im/projects/projectapplication_form.html',
+            summary_template_name=summary,
+            extra_context=extra_context,
+            post_save_redirect=reverse('project_list'),
+            form_class=ProjectApplicationForm,
+            msg=_("The %(verbose_name)s has been received and "
+                  "is under consideration."))
+    except ProjectError as e:
+        messages.error(request, e)
+
+
+def get_user_projects_table(projects, user, prefix):
+    apps = ProjectApplication.objects.pending_per_project(projects)
+    memberships = user.projectmembership_set.one_per_project()
+    objs = ProjectMembership.objects
+    accepted_ms = objs.any_accepted_per_project(projects)
+    requested_ms = objs.requested_per_project(projects)
+    return tables.UserProjectsTable(projects, user=user,
+                                    prefix=prefix,
+                                    pending_apps=apps,
+                                    memberships=memberships,
+                                    accepted=accepted_ms,
+                                    requested=requested_ms)
+
+
 @require_http_methods(["GET"])
 @cookie_fix
 @valid_astakos_user_required
 def project_list(request):
-    projects = ProjectApplication.objects.user_accessible_projects(request.user).select_related()
-    table = tables.UserProjectApplicationsTable(projects, user=request.user,
-                                                prefix="my_projects_")
-    RequestConfig(request, paginate={"per_page": settings.PAGINATE_BY}).configure(table)
+    projects = Project.objects.user_accessible_projects(request.user)
+    table = (get_user_projects_table(projects, user=request.user,
+                                     prefix="my_projects_")
+             if list(projects) else None)
 
     return object_list(
         request,
         projects,
         template_name='im/projects/project_list.html',
         extra_context={
-            'is_search':False,
+            'is_search': False,
             'table': table,
         })
 
@@ -171,14 +191,15 @@ def project_app_cancel(request, application_id):
     next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
 
-@commit_on_success_strict()
+
+@transaction.commit_on_success
 def _project_app_cancel(request, application_id):
     chain_id = None
     try:
         application_id = int(application_id)
         chain_id = get_related_project_id(application_id)
         cancel_application(application_id, request.user)
-    except (IOError, PermissionDenied), e:
+    except ProjectError as e:
         messages.error(request, e)
 
     else:
@@ -204,7 +225,7 @@ def project_modify(request, application_id):
 
     if not user.is_project_admin():
         owner = app.owner
-        ok, limit = check_pending_app_quota(owner, precursor=app)
+        ok, limit = check_pending_app_quota(owner, project=app.chain)
         if not ok:
             m = _(astakos_messages.PENDING_APPLICATION_LIMIT_MODIFY) % limit
             messages.error(request, m)
@@ -216,7 +237,7 @@ def project_modify(request, application_id):
                       "end_date", "comments"]
     membership_fields = ["member_join_policy", "member_leave_policy",
                          "limit_on_members_number"]
-    resource_catalog, resource_groups = _resources_catalog(for_project=True)
+    resource_catalog, resource_groups = _resources_catalog()
     if resource_catalog is False:
         # on fail resource_groups contains the result object
         result = resource_groups
@@ -233,16 +254,8 @@ def project_modify(request, application_id):
 
     response = None
     with ExceptionHandler(request):
-        response = _update_object(
-            request,
-            object_id=application_id,
-            template_name='im/projects/projectapplication_form.html',
-            summary_template_name='im/projects/projectapplication_form_summary.html',
-            extra_context=extra_context,
-            post_save_redirect=reverse('project_list'),
-            form_class=ProjectApplicationForm,
-            msg=_("The %(verbose_name)s has been received and is under "
-                  "consideration."))
+        response = update_app_object(request, application_id,
+                                     extra_context=extra_context)
 
     if response is not None:
         return response
@@ -251,11 +264,31 @@ def project_modify(request, application_id):
     next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
 
+
+@transaction.commit_on_success
+def update_app_object(request, object_id, extra_context=None):
+    try:
+        summary = 'im/projects/projectapplication_form_summary.html'
+        return _update_object(
+            request,
+            object_id=object_id,
+            template_name='im/projects/projectapplication_form.html',
+            summary_template_name=summary,
+            extra_context=extra_context,
+            post_save_redirect=reverse('project_list'),
+            form_class=ProjectApplicationForm,
+            msg=_("The %(verbose_name)s has been received and is under "
+                  "consideration."))
+    except ProjectError as e:
+        messages.error(request, e)
+
+
 @require_http_methods(["GET", "POST"])
 @cookie_fix
 @valid_astakos_user_required
 def project_app(request, application_id):
     return common_detail(request, application_id, project_view=False)
+
 
 @require_http_methods(["GET", "POST"])
 @cookie_fix
@@ -263,17 +296,17 @@ def project_app(request, application_id):
 def project_detail(request, chain_id):
     return common_detail(request, chain_id)
 
-@commit_on_success_strict()
+
+@transaction.commit_on_success
 def addmembers(request, chain_id, addmembers_form):
     if addmembers_form.is_valid():
         try:
             chain_id = int(chain_id)
-            map(lambda u: enroll_member(
-                    chain_id,
-                    u,
-                    request_user=request.user),
+            map(lambda u: enroll_member(chain_id,
+                                        u,
+                                        request_user=request.user),
                 addmembers_form.valid_users)
-        except (IOError, PermissionDenied), e:
+        except ProjectError as e:
             messages.error(request, e)
 
 
@@ -305,7 +338,8 @@ def common_detail(request, chain_or_app_id, project_view=True,
         else:
             addmembers_form = AddProjectMembersForm()  # initialize form
 
-        project, application = get_by_chain_or_404(chain_id)
+        project = get_object_or_404(Project, pk=chain_id)
+        application = project.application
         if project:
             members = project.projectmembership_set
             approved_members_count = project.members_count()
@@ -317,14 +351,13 @@ def common_detail(request, chain_or_app_id, project_view=True,
             flt = MEMBERSHIP_STATUS_FILTER.get(members_status_filter)
             if flt is not None:
                 members = flt(members)
+            else:
+                members = members.associated()
             members = members.select_related()
             members_table = tables.ProjectMembersTable(project,
                                                        members,
                                                        user=request.user,
                                                        prefix="members_")
-            RequestConfig(request, paginate={"per_page": settings.PAGINATE_BY}
-                          ).configure(members_table)
-
         else:
             members_table = None
 
@@ -335,8 +368,6 @@ def common_detail(request, chain_or_app_id, project_view=True,
         members_table = None
         addmembers_form = None
 
-    modifications_table = None
-
     user = request.user
     is_project_admin = user.is_project_admin(application_id=application.id)
     is_owner = user.owns_application(application)
@@ -344,18 +375,15 @@ def common_detail(request, chain_or_app_id, project_view=True,
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 
-    if (not (is_owner or is_project_admin) and project_view and
-        not user.non_owner_can_view(project)):
+    if (
+        not (is_owner or is_project_admin) and project_view and
+        not user.non_owner_can_view(project)
+    ):
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 
-    following_applications = list(application.pending_modifications())
-    following_applications.reverse()
-    modifications_table = (
-        tables.ProjectModificationApplicationsTable(following_applications,
-                                                    user=request.user,
-                                                    prefix="modifications_"))
-
+    membership = user.get_membership(project) if project else None
+    membership_id = membership.id if membership else None
     mem_display = user.membership_display(project) if project else None
     can_join_req = can_join_request(project, user) if project else False
     can_leave_req = can_leave_request(project, user) if project else False
@@ -375,13 +403,14 @@ def common_detail(request, chain_or_app_id, project_view=True,
             'members_table': members_table,
             'owner_mode': is_owner,
             'admin_mode': is_project_admin,
-            'modifications_table': modifications_table,
             'mem_display': mem_display,
+            'membership_id': membership_id,
             'can_join_request': can_join_req,
             'can_leave_request': can_leave_req,
-            'members_status_filter':members_status_filter,
+            'members_status_filter': members_status_filter,
             'remaining_memberships_count': remaining_memberships_count,
-            })
+        })
+
 
 @require_http_methods(["GET", "POST"])
 @cookie_fix
@@ -399,33 +428,35 @@ def project_search(request):
             q = None
 
     if q is None:
-        projects = ProjectApplication.objects.none()
+        projects = Project.objects.none()
     else:
-        accepted_projects = request.user.projectmembership_set.filter(
-            ~Q(acceptance_date__isnull=True)).values_list('project', flat=True)
-        projects = ProjectApplication.objects.search_by_name(q)
-        projects = projects.filter(~Q(project__last_approval_date__isnull=True))
-        projects = projects.exclude(project__in=accepted_projects)
+        accepted = request.user.projectmembership_set.filter(
+            state__in=ProjectMembership.ACCEPTED_STATES).values_list(
+            'project', flat=True)
 
-    table = tables.UserProjectApplicationsTable(projects, user=request.user,
-                                                prefix="my_projects_")
+        projects = Project.objects.search_by_name(q)
+        projects = projects.filter(Project.o_state_q(Project.O_ACTIVE))
+        projects = projects.exclude(id__in=accepted).select_related(
+            'application', 'application__owner', 'application__applicant')
+
+    table = get_user_projects_table(projects, user=request.user,
+                                    prefix="my_projects_")
     if request.method == "POST":
         table.caption = _('SEARCH RESULTS')
     else:
         table.caption = _('ALL PROJECTS')
-
-    RequestConfig(request, paginate={"per_page": settings.PAGINATE_BY}).configure(table)
 
     return object_list(
         request,
         projects,
         template_name='im/projects/project_list.html',
         extra_context={
-          'form': form,
-          'is_search': True,
-          'q': q,
-          'table': table
+            'form': form,
+            'is_search': True,
+            'q': q,
+            'table': table
         })
+
 
 @require_http_methods(["POST"])
 @cookie_fix
@@ -439,99 +470,95 @@ def project_join(request, chain_id):
     with ExceptionHandler(request):
         _project_join(request, chain_id)
 
-
     next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def _project_join(request, chain_id):
     try:
         chain_id = int(chain_id)
-        auto_accepted = join_project(chain_id, request.user)
-        if auto_accepted:
+        membership = join_project(chain_id, request.user)
+        if membership.state != membership.REQUESTED:
             m = _(astakos_messages.USER_JOINED_PROJECT)
         else:
             m = _(astakos_messages.USER_JOIN_REQUEST_SUBMITTED)
         messages.success(request, m)
-    except (IOError, PermissionDenied), e:
+    except ProjectError as e:
         messages.error(request, e)
 
 
 @require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
-def project_leave(request, chain_id):
+def project_leave(request, memb_id):
     next = request.GET.get('next')
     if not next:
         next = reverse('astakos.im.views.project_list')
 
     with ExceptionHandler(request):
-        _project_leave(request, chain_id)
+        _project_leave(request, memb_id)
 
     next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
 
 
-@commit_on_success_strict()
-def _project_leave(request, chain_id):
+@transaction.commit_on_success
+def _project_leave(request, memb_id):
     try:
-        chain_id = int(chain_id)
-        auto_accepted = leave_project(chain_id, request.user)
+        memb_id = int(memb_id)
+        auto_accepted = leave_project(memb_id, request.user)
         if auto_accepted:
             m = _(astakos_messages.USER_LEFT_PROJECT)
         else:
             m = _(astakos_messages.USER_LEAVE_REQUEST_SUBMITTED)
         messages.success(request, m)
-    except (IOError, PermissionDenied), e:
+    except ProjectError as e:
         messages.error(request, e)
 
 
 @require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
-def project_cancel(request, chain_id):
+def project_cancel_member(request, memb_id):
     next = request.GET.get('next')
     if not next:
         next = reverse('astakos.im.views.project_list')
 
     with ExceptionHandler(request):
-        _project_cancel(request, chain_id)
+        _project_cancel_member(request, memb_id)
 
     next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
     return redirect(next)
 
 
-@commit_on_success_strict()
-def _project_cancel(request, chain_id):
+@transaction.commit_on_success
+def _project_cancel_member(request, memb_id):
     try:
-        chain_id = int(chain_id)
-        cancel_membership(chain_id, request.user)
+        cancel_membership(memb_id, request.user)
         m = _(astakos_messages.USER_REQUEST_CANCELLED)
         messages.success(request, m)
-    except (IOError, PermissionDenied), e:
+    except ProjectError as e:
         messages.error(request, e)
-
 
 
 @require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
-def project_accept_member(request, chain_id, memb_id):
+def project_accept_member(request, memb_id):
 
     with ExceptionHandler(request):
-        _project_accept_member(request, chain_id, memb_id)
+        _project_accept_member(request, memb_id)
 
     return redirect_back(request, 'project_list')
 
 
-@commit_on_success_strict()
-def _project_accept_member(request, chain_id, memb_id):
+@transaction.commit_on_success
+def _project_accept_member(request, memb_id):
     try:
-        chain_id = int(chain_id)
         memb_id = int(memb_id)
-        m = accept_membership(chain_id, memb_id, request.user)
-    except (IOError, PermissionDenied), e:
+        m = accept_membership(memb_id, request.user)
+    except ProjectError as e:
         messages.error(request, e)
 
     else:
@@ -543,21 +570,20 @@ def _project_accept_member(request, chain_id, memb_id):
 @require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
-def project_remove_member(request, chain_id, memb_id):
+def project_remove_member(request, memb_id):
 
     with ExceptionHandler(request):
-        _project_remove_member(request, chain_id, memb_id)
+        _project_remove_member(request, memb_id)
 
     return redirect_back(request, 'project_list')
 
 
-@commit_on_success_strict()
-def _project_remove_member(request, chain_id, memb_id):
+@transaction.commit_on_success
+def _project_remove_member(request, memb_id):
     try:
-        chain_id = int(chain_id)
         memb_id = int(memb_id)
-        m = remove_membership(chain_id, memb_id, request.user)
-    except (IOError, PermissionDenied), e:
+        m = remove_membership(memb_id, request.user)
+    except ProjectError as e:
         messages.error(request, e)
     else:
         email = escape(m.person.email)
@@ -568,21 +594,20 @@ def _project_remove_member(request, chain_id, memb_id):
 @require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
-def project_reject_member(request, chain_id, memb_id):
+def project_reject_member(request, memb_id):
 
     with ExceptionHandler(request):
-        _project_reject_member(request, chain_id, memb_id)
+        _project_reject_member(request, memb_id)
 
     return redirect_back(request, 'project_list')
 
 
-@commit_on_success_strict()
-def _project_reject_member(request, chain_id, memb_id):
+@transaction.commit_on_success
+def _project_reject_member(request, memb_id):
     try:
-        chain_id = int(chain_id)
         memb_id = int(memb_id)
-        m = reject_membership(chain_id, memb_id, request.user)
-    except (IOError, PermissionDenied), e:
+        m = reject_membership(memb_id, request.user)
+    except ProjectError as e:
         messages.error(request, e)
     else:
         email = escape(m.person.email)
@@ -601,7 +626,7 @@ def project_app_approve(request, application_id):
         raise PermissionDenied(m)
 
     try:
-        app = ProjectApplication.objects.get(id=application_id)
+        ProjectApplication.objects.get(id=application_id)
     except ProjectApplication.DoesNotExist:
         raise Http404
 
@@ -614,7 +639,7 @@ def project_app_approve(request, application_id):
     return redirect(reverse('project_detail', args=(chain_id,)))
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def _project_app_approve(request, application_id):
     approve_application(application_id)
 
@@ -634,7 +659,7 @@ def project_app_deny(request, application_id):
         raise PermissionDenied(m)
 
     try:
-        app = ProjectApplication.objects.get(id=application_id)
+        ProjectApplication.objects.get(id=application_id)
     except ProjectApplication.DoesNotExist:
         raise Http404
 
@@ -644,7 +669,7 @@ def project_app_deny(request, application_id):
     return redirect(reverse('project_list'))
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def _project_app_deny(request, application_id, reason):
     deny_application(application_id, reason=reason)
 
@@ -684,7 +709,7 @@ def _project_app_dismiss(request, application_id):
 @valid_astakos_user_required
 def project_members(request, chain_id, members_status_filter=None,
                     template_name='im/projects/project_members.html'):
-    project, application = get_by_chain_or_404(chain_id)
+    project = get_object_or_404(Project, pk=chain_id)
 
     user = request.user
     if not user.owns_project(project) and not user.is_project_admin():
@@ -709,7 +734,7 @@ def project_members_action(request, chain_id, action=None, redirect_to=''):
         raise PermissionDenied
 
     member_ids = request.POST.getlist('members')
-    project, application = get_by_chain_or_404(chain_id)
+    project = get_object_or_404(Project, pk=chain_id)
 
     user = request.user
     if not user.owns_project(project) and not user.is_project_admin():
@@ -722,6 +747,6 @@ def project_members_action(request, chain_id, action=None, redirect_to=''):
     for member_id in member_ids:
         member_id = int(member_id)
         with ExceptionHandler(request):
-            action_func(request, chain_id, member_id)
+            action_func(request, member_id)
 
     return redirect_back(request, 'project_list')

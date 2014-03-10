@@ -31,34 +31,44 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from astakos.im.models import Component
 
 
 class Command(BaseCommand):
-    args = "<name> <component URL>"
+    args = "<name>"
     help = "Register a component"
 
+    option_list = BaseCommand.option_list + (
+        make_option('--ui-url',
+                    dest='ui_url',
+                    default=None,
+                    help="Set UI URL"),
+        make_option('--base-url',
+                    dest='base_url',
+                    default=None,
+                    help="Set base URL"),
+    )
+
     def handle(self, *args, **options):
-        if len(args) < 2:
+        if len(args) != 1:
             raise CommandError("Invalid number of arguments")
 
         name = args[0]
-        url = args[1]
+        base_url = options['base_url']
+        ui_url = options['ui_url']
+
         try:
-            s = Component.objects.get(name=name)
+            Component.objects.get(name=name)
             m = "There already exists a component named '%s'." % name
             raise CommandError(m)
         except Component.DoesNotExist:
             pass
 
-        components = list(Component.objects.filter(url=url))
-        if components:
-            m = "Component URL '%s' is registered for another service." % url
-            raise CommandError(m)
-
         try:
-            c = Component.objects.create(name=name, url=url)
+            c = Component.objects.create(
+                name=name, url=ui_url, base_url=base_url)
         except BaseException:
             raise CommandError("Failed to register component.")
         else:

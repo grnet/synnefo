@@ -1,7 +1,40 @@
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+#
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+#
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+
 from django.conf import settings
 from synnefo_branding import settings as synnefo_settings
 from synnefo.lib import parse_base_url
-from astakosclient import astakos_services as vanilla_astakos_services
+from astakos.api.services import astakos_services as vanilla_astakos_services
 from synnefo.util.keypath import get_path
 from synnefo.lib import join_urls
 from synnefo.lib.services import fill_endpoints
@@ -21,6 +54,7 @@ ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
 VIEWS_PREFIX = get_path(astakos_services, 'astakos_ui.prefix')
 KEYSTONE_PREFIX = get_path(astakos_services, 'astakos_identity.prefix')
 WEBLOGIN_PREFIX = get_path(astakos_services, 'astakos_weblogin.prefix')
+ADMIN_PREFIX = get_path(astakos_services, 'astakos_admin.prefix')
 
 # Set the expiration time of newly created auth tokens
 # to be this many hours after their creation time.
@@ -72,7 +106,8 @@ SITENAME = getattr(settings, 'ASTAKOS_SITENAME', synnefo_settings.SERVICE_NAME)
 RECAPTCHA_PUBLIC_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PUBLIC_KEY', '')
 RECAPTCHA_PRIVATE_KEY = getattr(settings, 'ASTAKOS_RECAPTCHA_PRIVATE_KEY', '')
 RECAPTCHA_OPTIONS = getattr(settings, 'ASTAKOS_RECAPTCHA_OPTIONS',
-                            {'theme': 'custom', 'custom_theme_widget': 'okeanos_recaptcha'})
+                            {'theme': 'custom',
+                             'custom_theme_widget': 'okeanos_recaptcha'})
 RECAPTCHA_USE_SSL = getattr(settings, 'ASTAKOS_RECAPTCHA_USE_SSL', True)
 RECAPTCHA_ENABLED = getattr(settings, 'ASTAKOS_RECAPTCHA_ENABLED', False)
 
@@ -84,26 +119,31 @@ RE_USER_EMAIL_PATTERNS = getattr(
     settings, 'ASTAKOS_RE_USER_EMAIL_PATTERNS', [])
 
 # Messages to display on login page header
-# e.g. {'warning': 'This warning message will be displayed on the top of login page'}
+# e.g. {'warning':
+#       'This warning message will be displayed on the top of login page'}
 LOGIN_MESSAGES = getattr(settings, 'ASTAKOS_LOGIN_MESSAGES', [])
 
 # Messages to display on login page header
-# e.g. {'warning': 'This warning message will be displayed on the top of signup page'}
+# e.g. {'warning':
+#       'This warning message will be displayed on the top of signup page'}
 SIGNUP_MESSAGES = getattr(settings, 'ASTAKOS_SIGNUP_MESSAGES', [])
 
 # Messages to display on login page header
-# e.g. {'warning': 'This warning message will be displayed on the top of profile page'}
+# e.g. {'warning':
+#       'This warning message will be displayed on the top of profile page'}
 PROFILE_MESSAGES = getattr(settings, 'ASTAKOS_PROFILE_MESSAGES', [])
 
 # Messages to display on all pages
-# e.g. {'warning': 'This warning message will be displayed on the top of every page'}
+# e.g. {'warning':
+#       'This warning message will be displayed on the top of every page'}
 GLOBAL_MESSAGES = getattr(settings, 'ASTAKOS_GLOBAL_MESSAGES', [])
 
 # messages to display as extra actions in account forms
 # e.g. {'https://www.myhomepage.com': 'Back to <service_name>'}
 PROFILE_EXTRA_LINKS = getattr(settings, 'ASTAKOS_PROFILE_EXTRA_LINKS', {})
 
-# The number of unsuccessful login requests per minute allowed for a specific user
+# The number of unsuccessful login requests per minute allowed
+# for a specific user
 RATELIMIT_RETRIES_ALLOWED = getattr(
     settings, 'ASTAKOS_RATELIMIT_RETRIES_ALLOWED', 3)
 
@@ -134,7 +174,16 @@ USAGE_UPDATE_INTERVAL = getattr(settings, 'ASTAKOS_USAGE_UPDATE_INTERVAL',
                                 5000)
 
 # Permit local account migration
-ENABLE_LOCAL_ACCOUNT_MIGRATION = getattr(settings, 'ASTAKOS_ENABLE_LOCAL_ACCOUNT_MIGRATION', True)
+ENABLE_LOCAL_ACCOUNT_MIGRATION = getattr(
+    settings, 'ASTAKOS_ENABLE_LOCAL_ACCOUNT_MIGRATION', True)
+
+# Migrate eppn identifiers to remote id
+SHIBBOLETH_MIGRATE_EPPN = getattr(settings, 'ASTAKOS_SHIBBOLETH_MIGRATE_EPPN',
+                                  False)
+
+# Migrate eppn identifiers to remote id
+SHIBBOLETH_MIGRATE_EPPN = getattr(settings, 'ASTAKOS_SHIBBOLETH_MIGRATE_EPPN',
+                                  False)
 
 # Strict shibboleth usage
 SHIBBOLETH_REQUIRE_NAME_INFO = getattr(settings,
@@ -147,7 +196,7 @@ ACTIVATION_REDIRECT_URL = getattr(settings, 'ASTAKOS_ACTIVATION_REDIRECT_URL',
                                   default_activation_redirect_url)
 
 # If true, this enables a ui compatibility layer for the introduction of UUIDs
-# in identity management. WARNING: Setting to True will break your installation.
+# in identity management. WARNING: Setting to True will break your installation
 TRANSLATE_UUIDS = getattr(settings, 'ASTAKOS_TRANSLATE_UUIDS', False)
 
 # Users that can approve or deny project applications from the web.
@@ -156,8 +205,8 @@ PROJECT_ADMINS = getattr(settings, 'ASTAKOS_PROJECT_ADMINS', set())
 # OAuth2 Twitter credentials.
 TWITTER_TOKEN = getattr(settings, 'ASTAKOS_TWITTER_TOKEN', '')
 TWITTER_SECRET = getattr(settings, 'ASTAKOS_TWITTER_SECRET', '')
-TWITTER_AUTH_FORCE_LOGIN = getattr(settings, 'ASTAKOS_TWITTER_AUTH_FORCE_LOGIN',
-                                  False)
+TWITTER_AUTH_FORCE_LOGIN = getattr(
+    settings, 'ASTAKOS_TWITTER_AUTH_FORCE_LOGIN', False)
 
 # OAuth2 Google credentials.
 GOOGLE_CLIENT_ID = getattr(settings, 'ASTAKOS_GOOGLE_CLIENT_ID', '')
@@ -195,4 +244,16 @@ KAMAKI_CONFIG_CLOUD_NAME = getattr(settings,
 
 REDIRECT_ALLOWED_SCHEMES = getattr(settings,
                                    'ASTAKOS_REDIRECT_ALLOWED_SCHEMES',
-                                   ('pithos',))
+                                   ('pithos', 'pithosdev'))
+
+ADMIN_STATS_PERMITTED_GROUPS = getattr(settings,
+                                       'ASTAKOS_ADMIN_STATS_PERMITTED_GROUPS',
+                                       ['admin-stats'])
+
+ENDPOINT_CACHE_TIMEOUT = getattr(settings,
+                                 'ASTAKOS_ENDPOINT_CACHE_TIMEOUT',
+                                 60)
+
+RESOURCE_CACHE_TIMEOUT = getattr(settings,
+                                 'ASTAKOS_RESOURCE_CACHE_TIMEOUT',
+                                 60)

@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -33,10 +33,11 @@
 
 from functools import wraps
 from datetime import datetime
-from urllib import quote, unquote
+from urllib import quote, unquote, urlencode
+from urlparse import urlunsplit, urlsplit, parse_qsl
 
-from django.http import (HttpResponse, HttpResponseRedirect, Http404,
-                         HttpResponseForbidden)
+from django.http import (HttpResponse, Http404, HttpResponseRedirect,
+                         HttpResponseNotAllowed)
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import http_date, parse_etags
@@ -44,6 +45,7 @@ from django.utils.encoding import smart_unicode, smart_str
 from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 from django.core.urlresolvers import reverse
+from django.core.exceptions import PermissionDenied
 
 from snf_django.lib.api.parsedate import parse_http_date_safe, parse_http_date
 from snf_django.lib import api
@@ -56,23 +58,28 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_QUEUE_EXCHANGE,
                                  ASTAKOSCLIENT_POOLSIZE,
                                  SERVICE_TOKEN,
-                                 ASTAKOS_BASE_URL,
-                                 BACKEND_ACCOUNT_QUOTA, BACKEND_CONTAINER_QUOTA,
-                                 BACKEND_VERSIONING,
-                                 BACKEND_FREE_VERSIONING, BACKEND_POOL_SIZE,
+                                 ASTAKOS_AUTH_URL,
+                                 BACKEND_ACCOUNT_QUOTA,
+                                 BACKEND_CONTAINER_QUOTA,
+                                 BACKEND_VERSIONING, BACKEND_FREE_VERSIONING,
+                                 BACKEND_POOL_ENABLED, BACKEND_POOL_SIZE,
+                                 BACKEND_BLOCK_SIZE, BACKEND_HASH_ALGORITHM,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
-                                 PUBLIC_URL_SECURITY,
-                                 PUBLIC_URL_ALPHABET,
-                                 COOKIE_NAME, BASE_HOST, LOGIN_URL)
+                                 PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
+                                 BASE_HOST, UPDATE_MD5, VIEW_PREFIX,
+                                 OAUTH2_CLIENT_CREDENTIALS, UNSAFE_DOMAIN)
+
 from pithos.api.resources import resources
+from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
 
 from synnefo.lib import join_urls
+from synnefo.util import text
 
 from astakosclient import AstakosClient
-from astakosclient.errors import NoUserName, NoUUID
+from astakosclient.errors import NoUserName, NoUUID, AstakosClientException
 
 import logging
 import re
@@ -103,9 +110,12 @@ def printable_header_dict(d):
     Format 'last_modified' timestamp.
     """
 
-    if 'last_modified' in d and d['last_modified']:
-        d['last_modified'] = utils.isoformat(
-            datetime.fromtimestamp(d['last_modified']))
+    timestamps = ('last_modified', 'x_container_until_timestamp',
+                  'x_acount_until_timestamp')
+    for timestamp in timestamps:
+        if timestamp in d and d[timestamp]:
+            d[timestamp] = utils.isoformat(
+                datetime.fromtimestamp(d[timestamp]))
     return dict([(k.lower().replace('-', '_'), v) for k, v in d.iteritems()])
 
 
@@ -199,11 +209,19 @@ def put_container_headers(request, response, meta, policy):
             int(meta['until_timestamp']))
     for k, v in policy.iteritems():
         response[smart_str(format_header_key('X-Container-Policy-' + k),
-                           strings_only=True)] = smart_str(v, strings_only=True)
+                           strings_only=True)] = smart_str(v,
+                                                           strings_only=True)
 
 
 def get_object_headers(request):
     content_type = request.META.get('CONTENT_TYPE', None)
+    if content_type:
+        try:
+            content_type.decode('ascii')
+            # TODO: check format ?
+        except UnicodeDecodeError:
+            raise faults.BadRequest('Bad characters in Content-Type.')
+
     meta = get_header_prefix(request, 'X-Object-Meta-')
     check_meta_headers(meta)
     if request.META.get('HTTP_CONTENT_ENCODING'):
@@ -215,8 +233,9 @@ def get_object_headers(request):
     return content_type, meta, get_sharing(request), get_public(request)
 
 
-def put_object_headers(response, meta, restricted=False, token=None):
-    response['ETag'] = meta['checksum']
+def put_object_headers(response, meta, restricted=False, token=None,
+                       disposition_type=None):
+    response['ETag'] = meta['hash'] if not UPDATE_MD5 else meta['checksum']
     response['Content-Length'] = meta['bytes']
     response.override_serialization = True
     response['Content-Type'] = meta.get('type', 'application/octet-stream')
@@ -245,6 +264,11 @@ def put_object_headers(response, meta, restricted=False, token=None):
         for k in ('Content-Encoding', 'Content-Disposition'):
             if k in meta:
                 response[k] = smart_str(meta[k], strings_only=True)
+    disposition_type = disposition_type if disposition_type in \
+        ('inline', 'attachment') else None
+    if disposition_type is not None:
+        response['Content-Disposition'] = smart_str('%s; filename=%s' % (
+            disposition_type, meta['name']), strings_only=True)
 
 
 def update_manifest_meta(request, v_account, meta):
@@ -260,11 +284,11 @@ def update_manifest_meta(request, v_account, meta):
                 request.user_uniq, v_account,
                 src_container, prefix=src_name, virtual=False)
             for x in objects:
-                src_meta = request.backend.get_object_meta(request.user_uniq,
-                                                           v_account,
-                                                           src_container,
-                                                           x[0], 'pithos', x[1])
-                etag += src_meta['checksum']
+                src_meta = request.backend.get_object_meta(
+                    request.user_uniq, v_account, src_container, x[0],
+                    'pithos', x[1])
+                etag += (src_meta['hash'] if not UPDATE_MD5 else
+                         src_meta['checksum'])
                 bytes += src_meta['bytes']
         except:
             # Ignore errors.
@@ -291,10 +315,11 @@ def is_uuid(str):
 ##########################
 
 def retrieve_displayname(token, uuid, fail_silently=True):
-    astakos = AstakosClient(ASTAKOS_BASE_URL, retry=2, use_pool=True,
+    astakos = AstakosClient(token, ASTAKOS_AUTH_URL,
+                            retry=2, use_pool=True,
                             logger=logger)
     try:
-        displayname = astakos.get_username(token, uuid)
+        displayname = astakos.get_username(uuid)
     except NoUserName:
         if not fail_silently:
             raise ItemNotExists(uuid)
@@ -305,9 +330,10 @@ def retrieve_displayname(token, uuid, fail_silently=True):
 
 
 def retrieve_displaynames(token, uuids, return_dict=False, fail_silently=True):
-    astakos = AstakosClient(ASTAKOS_BASE_URL, retry=2, use_pool=True,
+    astakos = AstakosClient(token, ASTAKOS_AUTH_URL,
+                            retry=2, use_pool=True,
                             logger=logger)
-    catalog = astakos.get_usernames(token, uuids) or {}
+    catalog = astakos.get_usernames(uuids) or {}
     missing = list(set(uuids) - set(catalog))
     if missing and not fail_silently:
         raise ItemNotExists('Unknown displaynames: %s' % ', '.join(missing))
@@ -318,19 +344,21 @@ def retrieve_uuid(token, displayname):
     if is_uuid(displayname):
         return displayname
 
-    astakos = AstakosClient(ASTAKOS_BASE_URL, retry=2, use_pool=True,
+    astakos = AstakosClient(token, ASTAKOS_AUTH_URL,
+                            retry=2, use_pool=True,
                             logger=logger)
     try:
-        uuid = astakos.get_uuid(token, displayname)
+        uuid = astakos.get_uuid(displayname)
     except NoUUID:
         raise ItemNotExists(displayname)
     return uuid
 
 
 def retrieve_uuids(token, displaynames, return_dict=False, fail_silently=True):
-    astakos = AstakosClient(ASTAKOS_BASE_URL, retry=2, use_pool=True,
+    astakos = AstakosClient(token, ASTAKOS_AUTH_URL,
+                            retry=2, use_pool=True,
                             logger=logger)
-    catalog = astakos.get_uuids(token, displaynames) or {}
+    catalog = astakos.get_uuids(displaynames) or {}
     missing = list(set(displaynames) - set(catalog))
     if missing and not fail_silently:
         raise ItemNotExists('Unknown uuids: %s' % ', '.join(missing))
@@ -401,7 +429,7 @@ def update_public_meta(public, meta):
 
 
 def validate_modification_preconditions(request, meta):
-    """Check that the modified timestamp conforms with the preconditions set."""
+    """Check the modified timestamp conforms with the preconditions set."""
 
     if 'modified' not in meta:
         return  # TODO: Always return?
@@ -424,7 +452,7 @@ def validate_modification_preconditions(request, meta):
 def validate_matching_preconditions(request, meta):
     """Check that the ETag conforms with the preconditions set."""
 
-    etag = meta['checksum']
+    etag = meta['hash'] if not UPDATE_MD5 else meta['checksum']
     if not etag:
         etag = None
 
@@ -440,8 +468,8 @@ def validate_matching_preconditions(request, meta):
     if if_none_match is not None:
         # TODO: If this passes, must ignore If-Modified-Since header.
         if etag is not None:
-            if (if_none_match == '*'
-                    or etag in [x.lower() for x in parse_etags(if_none_match)]):
+            if (if_none_match == '*' or etag in [x.lower() for x in
+                                                 parse_etags(if_none_match)]):
                 # TODO: Continue if an If-Modified-Since header is present.
                 if request.method in ('HEAD', 'GET'):
                     raise faults.NotModified('Resource ETag matches')
@@ -461,7 +489,7 @@ def split_container_object_string(s):
 
 def copy_or_move_object(request, src_account, src_container, src_name,
                         dest_account, dest_container, dest_name,
-                        move=False, delimiter=None):
+                        move=False, delimiter=None, listing_limit=None):
     """Copy or move an object."""
 
     if 'ignore_content_type' in request.GET and 'CONTENT_TYPE' in request.META:
@@ -473,13 +501,14 @@ def copy_or_move_object(request, src_account, src_container, src_name,
             version_id = request.backend.move_object(
                 request.user_uniq, src_account, src_container, src_name,
                 dest_account, dest_container, dest_name,
-                content_type, 'pithos', meta, False, permissions, delimiter)
+                content_type, 'pithos', meta, False, permissions, delimiter,
+                listing_limit=listing_limit)
         else:
             version_id = request.backend.copy_object(
                 request.user_uniq, src_account, src_container, src_name,
                 dest_account, dest_container, dest_name,
                 content_type, 'pithos', meta, False, permissions,
-                src_version, delimiter)
+                src_version, delimiter, listing_limit=listing_limit)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except (ItemNotExists, VersionNotExists):
@@ -696,7 +725,7 @@ MAX_UPLOAD_SIZE = 5 * (1024 * 1024 * 1024)  # 5GB
 
 
 def socket_read_iterator(request, length=0, blocksize=4096):
-    """Return a maximum of blocksize data read from the socket in each iteration
+    """Return maximum of blocksize data read from the socket in each iteration
 
     Read up to 'length'. If 'length' is negative, will attempt a chunked read.
     The maximum ammount of data read is controlled by MAX_UPLOAD_SIZE.
@@ -773,12 +802,12 @@ class SaveToBackendHandler(FileUploadHandler):
         if len(self.data) >= length:
             block = self.data[:length]
             self.file.hashmap.append(self.backend.put_block(block))
-            self.md5.update(block)
+            self.checksum_compute.update(block)
             self.data = self.data[length:]
 
     def new_file(self, field_name, file_name, content_type,
                  content_length, charset=None):
-        self.md5 = hashlib.md5()
+        self.checksum_compute = NoChecksum() if not UPDATE_MD5 else Checksum()
         self.data = ''
         self.file = UploadedFile(
             name=file_name, content_type=content_type, charset=charset)
@@ -795,7 +824,7 @@ class SaveToBackendHandler(FileUploadHandler):
         l = len(self.data)
         if l > 0:
             self.put_data(l)
-        self.file.etag = self.md5.hexdigest().lower()
+        self.file.etag = self.checksum_compute.hexdigest()
         return self.file
 
 
@@ -931,7 +960,8 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
     response = HttpResponse(wrapper, status=ret)
     put_object_headers(
         response, meta, restricted=public,
-        token=getattr(request, 'token', None))
+        token=getattr(request, 'token', None),
+        disposition_type=request.GET.get('disposition-type'))
     if ret == 206:
         if len(ranges) == 1:
             offset, length = ranges[0]
@@ -992,31 +1022,38 @@ else:
     BLOCK_PARAMS = {'mappool': None,
                     'blockpool': None, }
 
+BACKEND_KWARGS = dict(
+    db_module=BACKEND_DB_MODULE,
+    db_connection=BACKEND_DB_CONNECTION,
+    block_module=BACKEND_BLOCK_MODULE,
+    block_path=BACKEND_BLOCK_PATH,
+    block_umask=BACKEND_BLOCK_UMASK,
+    block_size=BACKEND_BLOCK_SIZE,
+    hash_algorithm=BACKEND_HASH_ALGORITHM,
+    queue_module=BACKEND_QUEUE_MODULE,
+    queue_hosts=BACKEND_QUEUE_HOSTS,
+    queue_exchange=BACKEND_QUEUE_EXCHANGE,
+    astakos_auth_url=ASTAKOS_AUTH_URL,
+    service_token=SERVICE_TOKEN,
+    astakosclient_poolsize=ASTAKOSCLIENT_POOLSIZE,
+    free_versioning=BACKEND_FREE_VERSIONING,
+    block_params=BLOCK_PARAMS,
+    public_url_security=PUBLIC_URL_SECURITY,
+    public_url_alphabet=PUBLIC_URL_ALPHABET,
+    account_quota_policy=BACKEND_ACCOUNT_QUOTA,
+    container_quota_policy=BACKEND_CONTAINER_QUOTA,
+    container_versioning_policy=BACKEND_VERSIONING)
 
-_pithos_backend_pool = PithosBackendPool(
-        size=BACKEND_POOL_SIZE,
-        db_module=BACKEND_DB_MODULE,
-        db_connection=BACKEND_DB_CONNECTION,
-        block_module=BACKEND_BLOCK_MODULE,
-        block_path=BACKEND_BLOCK_PATH,
-        block_umask=BACKEND_BLOCK_UMASK,
-        queue_module=BACKEND_QUEUE_MODULE,
-        queue_hosts=BACKEND_QUEUE_HOSTS,
-        queue_exchange=BACKEND_QUEUE_EXCHANGE,
-        astakos_url=ASTAKOS_BASE_URL,
-        service_token=SERVICE_TOKEN,
-        astakosclient_poolsize=ASTAKOSCLIENT_POOLSIZE,
-        free_versioning=BACKEND_FREE_VERSIONING,
-        block_params=BLOCK_PARAMS,
-        public_url_security=PUBLIC_URL_SECURITY,
-        public_url_alphabet=PUBLIC_URL_ALPHABET,
-        account_quota_policy=BACKEND_ACCOUNT_QUOTA,
-        container_quota_policy=BACKEND_CONTAINER_QUOTA,
-        container_versioning_policy=BACKEND_VERSIONING)
+_pithos_backend_pool = PithosBackendPool(size=BACKEND_POOL_SIZE,
+                                         **BACKEND_KWARGS)
 
 
 def get_backend():
-    backend = _pithos_backend_pool.pool_get()
+    if BACKEND_POOL_ENABLED:
+        backend = _pithos_backend_pool.pool_get()
+    else:
+        backend = connect_backend(**BACKEND_KWARGS)
+    backend.serials = []
     backend.messages = []
     return backend
 
@@ -1029,12 +1066,12 @@ def update_request_headers(request):
         try:
             k.decode('ascii')
             v.decode('ascii')
+            if '%' in k or '%' in v:
+                del(request.META[k])
+                request.META[unquote(k)] = smart_unicode(unquote(
+                    v), strings_only=True)
         except UnicodeDecodeError:
             raise faults.BadRequest('Bad character in headers.')
-        if '%' in k or '%' in v:
-            del(request.META[k])
-            request.META[unquote(k)] = smart_unicode(unquote(
-                v), strings_only=True)
 
 
 def update_response_headers(request, response):
@@ -1047,25 +1084,16 @@ def update_response_headers(request, response):
             response[quote(k)] = quote(v, safe='/=,:@; ')
 
 
-def get_pithos_usage(token):
-    """Get Pithos Usage from astakos."""
-    astakos = AstakosClient(ASTAKOS_BASE_URL, retry=2, use_pool=True,
-                            logger=logger)
-    quotas = astakos.get_quotas(token)['system']
-    pithos_resources = [r['name'] for r in resources]
-    map(quotas.pop, filter(lambda k: k not in pithos_resources, quotas.keys()))
-    return quotas.popitem()[-1] # assume only one resource
-
-
-def api_method(http_method=None, token_required=True, user_required=True, logger=None,
-               format_allowed=False, serializations=None,
-               strict_serlization=False):
+def api_method(http_method=None, token_required=True, user_required=True,
+               logger=None, format_allowed=False, serializations=None,
+               strict_serlization=False, lock_container_path=False):
     serializations = serializations or ['json', 'xml']
+
     def decorator(func):
         @api.api_method(http_method=http_method, token_required=token_required,
                         user_required=user_required,
                         logger=logger, format_allowed=format_allowed,
-                        astakos_url=ASTAKOS_BASE_URL,
+                        astakos_auth_url=ASTAKOS_AUTH_URL,
                         serializations=serializations,
                         strict_serlization=strict_serlization)
         @wraps(func)
@@ -1076,54 +1104,160 @@ def api_method(http_method=None, token_required=True, user_required=True, logger
             if len(args) > 2 and len(args[2]) > 1024:
                 raise faults.BadRequest('Object name too large.')
 
+            success_status = False
             try:
                 # Add a PithosBackend as attribute of the request object
                 request.backend = get_backend()
+                request.backend.pre_exec(lock_container_path)
+
                 # Many API method expect thet X-Auth-Token in request,token
                 request.token = request.x_auth_token
                 update_request_headers(request)
                 response = func(request, *args, **kwargs)
                 update_response_headers(request, response)
+
+                success_status = True
                 return response
             finally:
                 # Always close PithosBackend connection
                 if getattr(request, "backend", None) is not None:
+                    request.backend.post_exec(success_status)
                     request.backend.close()
         return wrapper
     return decorator
 
 
-def get_token_from_cookie(request):
-    assert(request.method == 'GET'),\
-        "Cookie based authentication is only allowed to GET requests"
-    token = None
-    if COOKIE_NAME in request.COOKIES:
-        cookie_value = unquote(request.COOKIES.get(COOKIE_NAME, ''))
-        account, sep, token = cookie_value.partition('|')
-    return token
+def restrict_to_host(host=None):
+    """
+    View decorator which restricts wrapped view to be accessed only under the
+    host set. If an invalid host is identified and request HTTP method is one
+    of ``GET``, ``HOST``, the decorator will return a redirect response using a
+    clone of the request with host replaced to the one the restriction applies
+    to.
+
+    e.g.
+    @restrict_to_host('files.example.com')
+    my_restricted_view(request, path):
+        return HttpResponse(file(path).read())
+
+    A get to ``https://api.example.com/my_restricted_view/file_path/?param=1``
+    will return a redirect response with Location header set to
+    ``https://files.example.com/my_restricted_view/file_path/?param=1``.
+
+    If host is set to ``None`` no restriction will be applied.
+    """
+    def decorator(func):
+        # skip decoration if no host is set
+        if not host:
+            return func
+
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            request_host = request.get_host()
+            if host != request_host:
+                proto = 'https' if request.is_secure() else 'http'
+                if request.method in ['GET', 'HEAD']:
+                    full_path = request.get_full_path()
+                    redirect_uri = "%s://%s%s" % (proto, host, full_path)
+                    return HttpResponseRedirect(redirect_uri)
+                else:
+                    raise PermissionDenied
+            return func(request, *args, **kwargs)
+        return wrapper
+    return decorator
 
 
 def view_method():
     """Decorator function for views."""
 
     def decorator(func):
+        @restrict_to_host(UNSAFE_DOMAIN)
         @wraps(func)
         def wrapper(request, *args, **kwargs):
-            token = get_token_from_cookie(request)
-            if token is None:
-                return HttpResponseRedirect('%s?next=%s' % (
-                    LOGIN_URL, join_urls(BASE_HOST, request.path)))
-            request.META['HTTP_X_AUTH_TOKEN'] = token
-            # Get the response object
-            response = func(request, *args, **kwargs)
-            if response.status_code in [200, 206, 304, 412, 416]:
-                return response
-            elif response.status_code == 404:
-                raise Http404()
-            elif response.status_code in [401, 403]:
-                return HttpResponseForbidden()
-            else:
-                # unexpected response status
-                raise Exception(response.status_code)
+            if request.method not in ['GET', 'HEAD']:
+                return HttpResponseNotAllowed(['GET', 'HEAD'])
+
+            try:
+                access_token = request.GET.get('access_token')
+                requested_resource = text.uenc(request.path.split(VIEW_PREFIX,
+                                                                  2)[-1])
+                astakos = AstakosClient(SERVICE_TOKEN, ASTAKOS_AUTH_URL,
+                                        retry=2, use_pool=True,
+                                        logger=logger)
+                if access_token is not None:
+                    # authenticate using the short-term access token
+                    try:
+                        request.user = astakos.validate_token(
+                            access_token, requested_resource)
+                    except AstakosClientException:
+                        return HttpResponseRedirect(request.path)
+                    request.user_uniq = request.user["access"]["user"]["id"]
+
+                    _func = api_method(token_required=False,
+                                       user_required=False)(func)
+                    response = _func(request, *args, **kwargs)
+                    if response.status_code == 404:
+                        raise Http404
+                    elif response.status_code == 403:
+                        raise PermissionDenied
+                    return response
+
+                client_id, client_secret = OAUTH2_CLIENT_CREDENTIALS
+                # TODO: check if client credentials are not set
+                authorization_code = request.GET.get('code')
+                redirect_uri = unquote(request.build_absolute_uri(
+                    request.get_full_path()))
+                if authorization_code is None:
+                    # request authorization code
+                    params = {'response_type': 'code',
+                              'client_id': client_id,
+                              'redirect_uri': redirect_uri,
+                              'state': '',  # TODO include state for security
+                              'scope': requested_resource}
+                    return HttpResponseRedirect('%s?%s' %
+                                                (join_urls(astakos.oauth2_url,
+                                                           'auth'),
+                                                 urlencode(params)))
+                else:
+                    # request short-term access token
+                    parts = list(urlsplit(redirect_uri))
+                    params = dict(parse_qsl(parts[3], keep_blank_values=True))
+                    if 'code' in params:  # always True
+                        del params['code']
+                    if 'state' in params:
+                        del params['state']
+                    parts[3] = urlencode(params)
+                    redirect_uri = urlunsplit(parts)
+                    data = astakos.get_token('authorization_code',
+                                             *OAUTH2_CLIENT_CREDENTIALS,
+                                             redirect_uri=redirect_uri,
+                                             scope=requested_resource,
+                                             code=authorization_code)
+                    params['access_token'] = data.get('access_token', '')
+                    parts[3] = urlencode(params)
+                    redirect_uri = urlunsplit(parts)
+                    return HttpResponseRedirect(redirect_uri)
+            except AstakosClientException, err:
+                logger.exception(err)
+                raise PermissionDenied
         return wrapper
     return decorator
+
+
+class Checksum:
+    def __init__(self):
+        self.md5 = hashlib.md5()
+
+    def update(self, data):
+        self.md5.update(data)
+
+    def hexdigest(self):
+        return self.md5.hexdigest().lower()
+
+
+class NoChecksum:
+    def update(self, data):
+        pass
+
+    def hexdigest(self):
+        return ''

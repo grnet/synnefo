@@ -32,11 +32,7 @@
 # or implied, of GRNET S.A.
 
 from logging import getLogger
-
-try:
-    from django.conf.urls import patterns
-except ImportError:  # Django==1.2
-    from django.conf.urls.defaults import patterns
+from django.conf.urls import patterns
 
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -66,6 +62,7 @@ def flavor_to_dict(flavor, detail=True):
         d['disk'] = flavor.disk
         d['vcpus'] = flavor.cpu
         d['SNF:disk_template'] = flavor.disk_template
+        d['SNF:allow_create'] = flavor.allow_create
     return d
 
 

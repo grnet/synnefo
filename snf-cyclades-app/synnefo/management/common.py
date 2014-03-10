@@ -32,10 +32,15 @@
 # or implied, of GRNET S.A.
 
 from django.core.management import CommandError
-from synnefo.db.models import Backend, VirtualMachine, Network, Flavor
+from synnefo.db.models import (Backend, VirtualMachine, Network,
+                               Flavor, IPAddress, Subnet,
+                               BridgePoolTable, MacPrefixPoolTable,
+                               NetworkInterface, IPAddressLog)
+from functools import wraps
 
 from snf_django.lib.api import faults
 from synnefo.api import util
+from synnefo.logic import backend as backend_mod
 from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
 from synnefo.logic.utils import (id_from_instance_name,
                                  id_from_network_name)
@@ -49,20 +54,6 @@ def format_vm_state(vm):
         return "BUILD(" + str(vm.buildpercentage) + "%)"
     else:
         return vm.operstate
-
-
-def validate_network_info(options):
-    subnet = options['subnet']
-    gateway = options['gateway']
-    subnet6 = options['subnet6']
-    gateway6 = options['gateway6']
-
-    try:
-        util.validate_network_params(subnet, gateway)
-    except (faults.BadRequest, faults.OverLimit) as e:
-        raise CommandError(e)
-
-    return subnet, gateway, subnet6, gateway6
 
 
 def get_backend(backend_id):
@@ -89,7 +80,7 @@ def get_image(image_id, user_id):
         raise CommandError("image-id is mandatory")
 
 
-def get_vm(server_id):
+def get_vm(server_id, for_update=False):
     """Get a VirtualMachine object by its ID.
 
     @type server_id: int or string
@@ -105,14 +96,17 @@ def get_vm(server_id):
             raise CommandError("Invalid server ID: %s" % server_id)
 
     try:
-        return VirtualMachine.objects.get(id=server_id)
+        objs = VirtualMachine.objects
+        if for_update:
+            objs = objs.select_for_update()
+        return objs.get(id=server_id)
     except VirtualMachine.DoesNotExist:
         raise CommandError("Server with ID %s not found in DB."
                            " Use snf-manage server-list to find out"
                            " available server IDs." % server_id)
 
 
-def get_network(network_id):
+def get_network(network_id, for_update=True):
     """Get a Network object by its ID.
 
     @type network_id: int or string
@@ -128,24 +122,100 @@ def get_network(network_id):
         except Network.InvalidBackendIdError:
             raise CommandError("Invalid network ID: %s" % network_id)
 
+    networks = Network.objects
+    if for_update:
+        networks = networks.select_for_update()
     try:
-        return Network.objects.get(id=network_id)
+        return networks.get(id=network_id)
     except Network.DoesNotExist:
         raise CommandError("Network with ID %s not found in DB."
                            " Use snf-manage network-list to find out"
                            " available network IDs." % network_id)
 
 
-def get_flavor(flavor_id):
+def get_subnet(subnet_id, for_update=True):
+    """Get a Subnet object by its ID."""
+    try:
+        subet_id = int(subnet_id)
+    except (ValueError, TypeError):
+        raise CommandError("Invalid subnet ID: %s" % subnet_id)
+
+    try:
+        subnets = Subnet.objects
+        if for_update:
+            subnets.select_for_update()
+        return subnets.get(id=subnet_id)
+    except Subnet.DoesNotExist:
+        raise CommandError("Subnet with ID %s not found in DB."
+                           " Use snf-manage subnet-list to find out"
+                           " available subnet IDs" % subnet_id)
+
+
+def get_port(port_id, for_update=True):
+    """Get a port object by its ID."""
+    try:
+        port_id = int(port_id)
+    except (ValueError, TypeError):
+        raise CommandError("Invalid port ID: %s" % port_id)
+
+    try:
+        ports = NetworkInterface.objects
+        if for_update:
+            ports.select_for_update()
+        return ports.get(id=port_id)
+    except NetworkInterface.DoesNotExist:
+        raise CommandError("Port with ID %s not found in DB."
+                           " Use snf-manage port-list to find out"
+                           " available port IDs" % port_id)
+
+
+def get_flavor(flavor_id, for_update=False):
     try:
         flavor_id = int(flavor_id)
-        return Flavor.objects.get(id=flavor_id)
+        objs = Flavor.objects
+        if for_update:
+            objs = objs.select_for_update()
+        return objs.get(id=flavor_id)
     except ValueError:
         raise CommandError("Invalid flavor ID: %s", flavor_id)
     except Flavor.DoesNotExist:
         raise CommandError("Flavor with ID %s not found in DB."
                            " Use snf-manage flavor-list to find out"
                            " available flavor IDs." % flavor_id)
+
+
+def get_floating_ip_by_address(address, for_update=False):
+    try:
+        objects = IPAddress.objects
+        if for_update:
+            objects = objects.select_for_update()
+        return objects.get(floating_ip=True, address=address, deleted=False)
+    except IPAddress.DoesNotExist:
+        raise CommandError("Floating IP does not exist.")
+
+
+def get_floating_ip_log_by_address(address):
+    try:
+        objects = IPAddressLog.objects
+        return objects.filter(address=address).order_by("released_at")
+    except IPAddressLog.DoesNotExist:
+        raise CommandError("Floating IP does not exist or it hasn't be"
+                           "attached to any server yet")
+
+
+def get_floating_ip_by_id(floating_ip_id, for_update=False):
+    try:
+        floating_ip_id = int(floating_ip_id)
+    except (ValueError, TypeError):
+        raise CommandError("Invalid floating-ip ID: %s" % floating_ip_id)
+
+    try:
+        objects = IPAddress.objects
+        if for_update:
+            objects = objects.select_for_update()
+        return objects.get(floating_ip=True, id=floating_ip_id, deleted=False)
+    except IPAddress.DoesNotExist:
+        raise CommandError("Floating IP %s does not exist." % floating_ip_id)
 
 
 def check_backend_credentials(clustername, port, username, password):
@@ -164,5 +234,48 @@ def check_backend_credentials(clustername, port, username, password):
                            " Ganeti Cluster name: %s" % info_name)
 
 
+def convert_api_faults(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except faults.Fault as e:
+            raise CommandError(e.message)
+    return wrapper
+
+
 class Omit(object):
     pass
+
+
+def wait_server_task(server, wait, stdout):
+    jobID = server.task_job_id
+    if jobID is None:
+        return
+    if wait:
+        msg = "Issued job '%s'. Waiting to complete...\n"
+        stdout.write(msg % jobID)
+        client = server.get_client()
+        wait_ganeti_job(client, jobID, stdout)
+    else:
+        msg = "Issued job '%s'.\n"
+        stdout.write(msg % jobID)
+
+
+def wait_ganeti_job(client, jobID, stdout):
+    status, error = backend_mod.wait_for_job(client, jobID)
+    if status == "success":
+        stdout.write("Job finished successfully.\n")
+    else:
+        raise CommandError("Job failed! Error: %s\n" % error)
+
+
+def pool_table_from_type(type_):
+    if type_ == "mac-prefix":
+        return MacPrefixPoolTable
+    elif type_ == "bridge":
+        return BridgePoolTable
+    # elif type == "ip":
+    #     return IPPoolTable
+    else:
+        raise ValueError("Invalid pool type")

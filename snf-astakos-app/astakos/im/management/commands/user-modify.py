@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013, 2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,12 +32,16 @@
 # or implied, of GRNET S.A.
 
 import string
+from datetime import datetime
 
 from optparse import make_option
 
+from django.core import management
+from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 
 from synnefo.util import units
 from astakos.im.models import AstakosUser, Resource
@@ -45,16 +49,24 @@ from astakos.im import quotas
 from astakos.im import activation_backends
 from ._common import (remove_user_permission, add_user_permission, is_uuid,
                       show_resource_value)
-from snf_django.lib.db.transaction import commit_on_success_strict
 
 activation_backend = activation_backends.get_backend()
 
 
 class Command(BaseCommand):
-    args = "<user ID>"
+    args = "<user ID> (or --all)"
     help = "Modify a user's attributes"
 
     option_list = BaseCommand.option_list + (
+        make_option('--all',
+                    action='store_true',
+                    default=False,
+                    help=("Operate on all users. Currently only setting "
+                          "base quota is supported in this mode. Can be "
+                          "combined with `--exclude'.")),
+        make_option('--exclude',
+                    help=("If `--all' is given, exclude users given as a "
+                          "list of uuids: uuid1,uuid2,uuid3")),
         make_option('--invitations',
                     dest='invitations',
                     metavar='NUM',
@@ -127,7 +139,11 @@ class Command(BaseCommand):
         make_option('--reject-reason',
                     dest='reject_reason',
                     help="Reason user got rejected"),
-        make_option('--set-base-quota',
+        make_option('--sign-terms',
+                    default=False,
+                    action='store_true',
+                    help="Sign terms"),
+        make_option('--base-quota',
                     dest='set_base_quota',
                     metavar='<resource> <capacity>',
                     nargs=2,
@@ -140,16 +156,34 @@ class Command(BaseCommand):
                     default=False,
                     dest='force',
                     help="Do not ask for confirmation"),
+        make_option('--set-email',
+                    dest='set-email',
+                    help="Change user's email"),
+        make_option('--delete',
+                    dest='delete',
+                    action='store_true',
+                    help="Delete a non-accepted user"),
     )
 
-    @commit_on_success_strict()
+    @transaction.commit_on_success
     def handle(self, *args, **options):
+        if options['all']:
+            if not args:
+                return self.handle_all_users(*args, **options)
+            else:
+                raise CommandError("Please provide a user ID or --all")
+
         if len(args) != 1:
-            raise CommandError("Please provide a user ID")
+            raise CommandError("Please provide a user ID or --all")
+
+        if options["exclude"] is not None:
+            m = "Option --exclude is meaningful only combined with --all."
+            raise CommandError(m)
 
         if args[0].isdigit():
             try:
-                user = AstakosUser.objects.get(id=int(args[0]))
+                user = AstakosUser.objects.select_for_update().\
+                    get(id=int(args[0]))
             except AstakosUser.DoesNotExist:
                 raise CommandError("Invalid user ID")
         elif is_uuid(args[0]):
@@ -223,7 +257,7 @@ class Command(BaseCommand):
                 group = Group.objects.get(name=groupname)
                 user.groups.add(group)
             except Group.DoesNotExist, e:
-                self.stdout.write(
+                self.stderr.write(
                     "Group named %s does not exist\n" % groupname)
 
         groupname = options.get('delete-group')
@@ -232,7 +266,7 @@ class Command(BaseCommand):
                 group = Group.objects.get(name=groupname)
                 user.groups.remove(group)
             except Group.DoesNotExist, e:
-                self.stdout.write(
+                self.stderr.write(
                     "Group named %s does not exist\n" % groupname)
 
         pname = options.get('add-permission')
@@ -240,13 +274,13 @@ class Command(BaseCommand):
             try:
                 r, created = add_user_permission(user, pname)
                 if created:
-                    self.stdout.write(
+                    self.stderr.write(
                         'Permission: %s created successfully\n' % pname)
                 if r > 0:
-                    self.stdout.write(
+                    self.stderr.write(
                         'Permission: %s added successfully\n' % pname)
                 elif r == 0:
-                    self.stdout.write(
+                    self.stderr.write(
                         'User has already permission: %s\n' % pname)
             except Exception, e:
                 raise CommandError(e)
@@ -256,12 +290,12 @@ class Command(BaseCommand):
             try:
                 r = remove_user_permission(user, pname)
                 if r < 0:
-                    self.stdout.write(
+                    self.stderr.write(
                         'Invalid permission codename: %s\n' % pname)
                 elif r == 0:
-                    self.stdout.write('User has not permission: %s\n' % pname)
+                    self.stderr.write('User has not permission: %s\n' % pname)
                 elif r > 0:
-                    self.stdout.write(
+                    self.stderr.write(
                         'Permission: %s removed successfully\n' % pname)
             except Exception, e:
                 raise CommandError(e)
@@ -282,6 +316,10 @@ class Command(BaseCommand):
         if options['renew_token']:
             user.renew_token()
 
+        if options['sign_terms']:
+            user.has_signed_terms = True
+            user.date_signed_terms = datetime.now()
+
         try:
             user.save()
         except ValidationError, e:
@@ -294,48 +332,112 @@ class Command(BaseCommand):
 
         set_base_quota = options.get('set_base_quota')
         if set_base_quota is not None:
+            if not user.is_accepted():
+                m = "%s is not an accepted user." % user
+                raise CommandError(m)
             resource, capacity = set_base_quota
-            self.set_limit(user, resource, capacity, force)
+            self.set_limits([user], resource, capacity, force)
 
-    def set_limit(self, user, resource, capacity, force):
+        delete = options.get('delete')
+        if delete:
+            if user.is_accepted():
+                m = "Cannot delete. User %s is accepted." % user
+                raise CommandError(m)
+            management.call_command('user-show', str(user.pk),
+                                    list_quotas=True)
+
+            if not force:
+                self.stdout.write("About to delete user %s. " % user.uuid)
+                self.confirm()
+            user.delete()
+
+        # Change users email address
+        newemail = options.get('set-email', None)
+        if newemail is not None:
+            newemail = newemail.strip()
+            try:
+                validate_email(newemail)
+            except ValidationError:
+                m = "Invalid email address."
+                raise CommandError(m)
+
+            if AstakosUser.objects.user_exists(newemail):
+                m = "A user with this email address already exists."
+                raise CommandError(m)
+
+            user.set_email(newemail)
+            user.save()
+
+    def confirm(self):
+        self.stdout.write("Confirm? [y/N] ")
+        try:
+            response = raw_input()
+        except EOFError:
+            response = "ABORT"
+        if string.lower(response) not in ['y', 'yes']:
+            self.stderr.write("Aborted.\n")
+            exit()
+
+    def handle_limits_user(self, user, res, capacity, style):
+        default_capacity = res.uplimit
+        resource = res.name
+        quota = user.get_resource_policy(resource)
+        s_default = show_resource_value(default_capacity, resource, style)
+        s_current = show_resource_value(quota.capacity, resource, style)
+        s_capacity = (show_resource_value(capacity, resource, style)
+                      if capacity != 'default' else capacity)
+        self.stdout.write("user: %s (%s)\n" % (user.uuid, user.username))
+        self.stdout.write("default capacity: %s\n" % s_default)
+        self.stdout.write("current capacity: %s\n" % s_current)
+        self.stdout.write("new capacity: %s\n" % s_capacity)
+        self.confirm()
+
+    def handle_limits_all(self, res, capacity, exclude, style):
+        m = "This will set base quota for all users"
+        app = (" except %s" % ", ".join(exclude)) if exclude else ""
+        self.stdout.write(m+app+".\n")
+        resource = res.name
+        self.stdout.write("resource: %s\n" % resource)
+        s_capacity = (show_resource_value(capacity, resource, style)
+                      if capacity != 'default' else capacity)
+        self.stdout.write("capacity: %s\n" % s_capacity)
+        self.confirm()
+
+    def set_limits(self, users, resource, capacity, force=False, exclude=None):
+        try:
+            r = Resource.objects.get(name=resource)
+        except Resource.DoesNotExist:
+            raise CommandError("No such resource '%s'." % resource)
+
         style = None
-        if capacity != 'default':
+        if capacity != "default":
             try:
                 capacity, style = units.parse_with_style(capacity)
             except:
-                m = "Please specify capacity as a decimal integer or 'default'"
+                m = ("Please specify capacity as a decimal integer or "
+                     "'default'")
                 raise CommandError(m)
 
-        try:
-            quota, default_capacity = user.get_resource_policy(resource)
-        except Resource.DoesNotExist:
-            raise CommandError("No such resource: %s" % resource)
-
         if not force:
-            s_default = show_resource_value(default_capacity, resource, style)
-            s_current = (show_resource_value(quota.capacity, resource, style)
-                         if quota is not None else 'default')
-            s_capacity = (show_resource_value(capacity, resource, style)
-                          if capacity != 'default' else capacity)
-            self.stdout.write("user: %s (%s)\n" % (user.uuid, user.username))
-            self.stdout.write("default capacity: %s\n" % s_default)
-            self.stdout.write("current capacity: %s\n" % s_current)
-            self.stdout.write("new capacity: %s\n" % s_capacity)
-            self.stdout.write("Confirm? (y/n) ")
-            response = raw_input()
-            if string.lower(response) not in ['y', 'yes']:
-                self.stdout.write("Aborted.\n")
-                return
+            if len(users) == 1:
+                self.handle_limits_user(users[0], r, capacity, style)
+            else:
+                self.handle_limits_all(r, capacity, exclude, style)
 
-        if capacity == 'default':
-            try:
-                quotas.remove_base_quota(user, resource)
-            except Exception as e:
-                import traceback
-                traceback.print_exc()
-                raise CommandError("Failed to remove policy: %s" % e)
-        else:
-            try:
-                quotas.add_base_quota(user, resource, capacity)
-            except Exception as e:
-                raise CommandError("Failed to add policy: %s" % e)
+        if capacity == "default":
+            capacity = r.uplimit
+        quotas.update_base_quota(users, resource, capacity)
+
+    def handle_all_users(self, *args, **options):
+        force = options["force"]
+        exclude = options["exclude"]
+        if exclude is not None:
+            exclude = exclude.split(',')
+
+        set_base_quota = options.get('set_base_quota')
+        if set_base_quota is not None:
+            users = AstakosUser.objects.accepted().select_for_update()
+            if exclude:
+                users = users.exclude(uuid__in=exclude)
+            resource, capacity = set_base_quota
+            self.set_limits(users, resource, capacity, force, exclude)

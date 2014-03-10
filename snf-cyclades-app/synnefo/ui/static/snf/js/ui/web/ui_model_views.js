@@ -61,6 +61,7 @@
         
         force_reset_before_fetch: true,
         auto_append_actions: true,
+        fetch_params: {},
 
         initialize: function(options) {
             views.CollectionView.__super__.initialize.apply(this, arguments);
@@ -85,7 +86,10 @@
         },
         
         update_models: function() {
-            this.collection.fetch({success:this.handle_reset});
+            var params = {};
+            _.extend(params, this.fetch_params);
+            params['success'] = this.handle_reset;
+            this.collection.fetch(params);
         },
         
         init_handlers: function() {
@@ -287,9 +291,11 @@
         cancel_confirm_remove: function(el, model) {
             el.closest(".model-item").removeClass("pending-delete");
         },
+      
+        _list_el: "<li></li>",
 
         new_list_el: function(model) {
-            var list_el = $("<li></li>");
+            var list_el = $(this._list_el);
             el = this.create_model_element(model);
             list_el.attr("id", this.id_tpl.format(model.id));
             list_el.addClass("model-item");
@@ -337,8 +343,7 @@
                     var form_error = resp_error != "" ? 
                                 this.create_failed_msg + " ({0})".format(resp_error) : 
                                 this.create_failed_msg;
-
-                    this.show_form_errors({'': form_error || 'Entry submition failed'})
+                    this.show_form_errors({'': form_error || this.submit_failed_msg || 'Entry submition failed'})
                 }, this),
 
                 complete: _.bind(function(){

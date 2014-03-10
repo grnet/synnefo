@@ -1,0 +1,114 @@
+{% load i18n %}
+
+<div id="ip-port-view-tpl" class="hidden ip-port-view model-item">
+  <div class="outer">
+    <div data-rv-class="model.vm.status|vm_status_cls">
+      <div class="model-logo vm-icon medium2 state1"
+        data-rv-style="model.vm.status|vm_style"></div>
+      <h3 class="title" data-rv-text="model.vm.name|truncate 30"></h3>
+      <h5 class="subtitle">
+        <img data-rv-show="model.in_progress" 
+             src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
+             class="progress-indicator" />
+        <div data-rv-hide="model.in_progress">
+          <span data-rv-show="model.mac_address" class="key">MAC:</span>
+          <span data-rv-show="model.mac_address" class="value" data-rv-text="model.mac_address"></span>
+          <span data-rv-hide="model.device_id" class="value no-device">
+            No device assigned. 
+            Detach IP, in order to be able to reattach it to a machine.
+          </span>
+        </div>
+      </h5>
+    </div>
+  </div>
+</div>
+
+<div id="ip-view-tpl" data-rv-class-actionpending="model.actions.pending"
+  data-rv-class-clearfix="model.id" class="hidden model-item model-view with-actions">
+  <div class="clearfix">
+    <div class="main-content clearfix">
+      <div class="main-content-inner clearfix">
+        <img class="logo" data-rv-src="model.status|model_icon" />
+        <div class="entry inline" data-rv-class-connected="model.device_id">
+          <h3 class="title floating-ip">
+            <span data-rv-text="model.floating_ip_address">IP ADDRESS</span>
+          </h3>
+          <div data-rv-if="model.port" class="ports nested-model-list proxy inline">
+            <div data-rv-if="model.port">
+              <div data-rv-show="model.port" data-rv-model-view="model.port|IpPortView"></div>
+            </div>
+          </div>
+        </div>
+        <div class="entry-right">
+          <div data-rv-class="model.status|status_cls" class="status">
+            <div class="status-title">
+              <span data-rv-text="model.status|status_display">Active</span>
+              <span data-rv-show="model.in_progress">...</span>
+            </div>
+            <div class="status-indicator clearfix">
+              <div class="indicator indicator1"></div>
+              <div class="indicator indicator2"></div>
+              <div class="indicator indicator3"></div>
+              <div class="indicator indicator4"></div>
+            </div>
+            <div class="state state-indicator">
+              <div class="action-indicator"></div>
+            </div>
+            <div data-show="model.status|in_progress" class="status-progress"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+      <div class="actions-content">
+        <div class="action-container connect" 
+           data-rv-class-isactive="model.can_connect"
+           data-rv-class-selected="model.actions.connect|intEq 1"
+           data-rv-on-click="view.show_connect_overlay">
+          <a>Attach</a>
+        </div>
+        <div class="action-container disconnect" 
+             data-rv-class-isactive="model.can_disconnect" 
+             data-rv-class-selected="model.actions.disconnect|intEq 1"
+             data-rv-on-click="view.set_disconnect_confirm">
+             <a>Detach</a>
+          <div class="confirm-single clearfix">
+            <span class="yes" data-rv-on-click="view.disconnect">
+              {% trans "Confirm" %}
+            </span>
+            <span class="no" 
+                  data-rv-on-click="view.unset_disconnect_confirm">X</span>
+          </div>
+        </div>
+        <div class="action-container remove warn" 
+           data-rv-class-isactive="model.can_remove"
+           data-rv-class-selected="model.actions.remove|intEq 1"
+           data-rv-on-click="view.set_remove_confirm">
+          <a>Destroy</a>
+          <div class="confirm-single clearfix">
+            <span class="yes" data-rv-on-click="view.remove">
+              {% trans "Confirm" %}
+            </span>
+            <span class="no" data-rv-on-click="view.unset_remove_confirm">X</span>
+          </div>
+        </div>
+      </div>
+  </div>
+</div>
+
+<div id="ips-list-view" class="collection-list-view">
+  <div class="collection">
+
+    <div id="create-ip" class="create-button">
+      <a href="#">{% trans "New IP Address +" %}</a>
+    </div>
+
+    <div class="empty-list hidden">
+      <p>{% blocktrans %}You don't have any IP addresses yet. Start by
+ clicking the orange button on the top left.{% endblocktrans %}
+        </p>
+    </div>
+
+    <div class="items-list clearfix">
+    </div>
+  </div>
+</div>

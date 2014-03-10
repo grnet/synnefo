@@ -31,14 +31,13 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from hashlib import new as newhasher
-from binascii import hexlify
-
 from fileblocker import FileBlocker
+
 
 def intersect(a, b):
     """ return the intersection of two lists """
     return list(set(a) & set(b))
+
 
 def union(a, b):
     """ return the union of two lists """
@@ -57,7 +56,7 @@ class Blocker(object):
             if params['blockpool']:
                 from radosblocker import RadosBlocker
                 self.rblocker = RadosBlocker(**params)
-	except KeyError:
+        except KeyError:
             pass
 
         self.fblocker = FileBlocker(**params)
@@ -94,7 +93,6 @@ class Blocker(object):
             (_, r_missing) = self.rblocker.block_stor(blocklist)
         return (hashes, union(r_missing, f_missing))
 
-
     def block_delta(self, blkhash, offset, data):
         """Construct and store a new block from a given block
            and a data 'patch' applied at offset. Return:
@@ -105,7 +103,8 @@ class Blocker(object):
         r_existed = True
         (f_hash, f_existed) = self.fblocker.block_delta(blkhash, offset, data)
         if self.rblocker:
-            (r_hash, r_existed) = self.rblocker.block_delta(blkhash, offset, data)
+            (r_hash, r_existed) = self.rblocker.block_delta(blkhash, offset,
+                                                            data)
         if not r_hash and not f_hash:
             return None, None
         if self.rblocker and not r_hash:

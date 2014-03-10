@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -34,8 +34,6 @@
 
 import os
 
-from urlparse import urlparse
-
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 from django.template import loader
@@ -45,13 +43,9 @@ from django.utils import simplejson as json
 from synnefo_branding.utils import render_to_string
 from django.core.urlresolvers import reverse
 from django.template import RequestContext
-from synnefo_branding import settings as snf_settings
 
 from synnefo.util.version import get_component_version
-from synnefo.lib import join_urls
 
-from snf_django.lib.astakos import get_user
-from synnefo import cyclades_settings
 from synnefo.ui import settings as uisettings
 
 SYNNEFO_JS_LIB_VERSION = get_component_version('app')
@@ -83,7 +77,10 @@ IMAGE_DELETED_TITLE = \
 IMAGE_DELETED_SIZE_TITLE = \
     getattr(settings, 'UI_IMAGE_DELETED_SIZE_TITLE', '(none)')
 
-SUPPORT_SSH_OS_LIST = getattr(settings, "UI_SUPPORT_SSH_OS_LIST",)
+
+SSH_SUPPORT_OSFAMILY_EXCLUDE_LIST = getattr(
+    settings, "UI_SSH_SUPPORT_OSFAMILY_EXCLUDE_LIST", ['windows'])
+
 OS_CREATED_USERS = getattr(settings, "UI_OS_DEFAULT_USER_MAP")
 UNKNOWN_OS = getattr(settings, "UI_UNKNOWN_OS", "unknown")
 
@@ -101,11 +98,7 @@ SKIP_TIMEOUTS = getattr(settings, "UI_SKIP_TIMEOUTS", 1)
 
 # Additional settings
 VM_NAME_TEMPLATE = getattr(settings, "VM_CREATE_NAME_TPL", "My {0} server")
-VM_HOSTNAME_FORMAT = getattr(settings, "UI_VM_HOSTNAME_FORMAT",
-                                    'snf-%(id)s.vm.synnefo.org')
-
-if isinstance(VM_HOSTNAME_FORMAT, basestring):
-    VM_HOSTNAME_FORMAT = VM_HOSTNAME_FORMAT % {'id': '{0}'}
+NO_FQDN_MESSAGE = getattr(settings, "UI_NO_FQDN_MESSAGE", "No available FQDN")
 
 MAX_SSH_KEYS_PER_USER = getattr(settings, "USERDATA_MAX_SSH_KEYS_PER_USER")
 FLAVORS_DISK_TEMPLATES_INFO = \
@@ -116,7 +109,7 @@ CUSTOM_IMAGE_HELP_URL = getattr(settings, "UI_CUSTOM_IMAGE_HELP_URL", None)
 # MEDIA PATHS
 UI_MEDIA_URL = \
     getattr(settings, "UI_MEDIA_URL",
-            "%ssnf-%s/" % (settings.MEDIA_URL, SYNNEFO_JS_LIB_VERSION))
+            "%sui/static/snf/" % (settings.MEDIA_URL,))
 UI_SYNNEFO_IMAGES_URL = \
     getattr(settings,
             "UI_SYNNEFO_IMAGES_URL", UI_MEDIA_URL + "images/")
@@ -131,6 +124,9 @@ UI_SYNNEFO_JS_LIB_URL = \
             "UI_SYNNEFO_JS_LIB_URL", UI_SYNNEFO_JS_URL + "lib/")
 UI_SYNNEFO_JS_WEB_URL = \
     getattr(settings, "UI_SYNNEFO_JS_WEB_URL", UI_SYNNEFO_JS_URL + "ui/web/")
+UI_SYNNEFO_FONTS_BASE_URL = \
+    getattr(settings,
+            "UI_FONTS_BASE_URL", "//fonts.googleapis.com/")
 
 # extensions
 ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
@@ -162,89 +158,97 @@ AUTOMATIC_NETWORK_RANGE_FORMAT = getattr(settings,
                                          "192.168.%d.0/24").replace("%d",
                                                                     "{0}")
 GROUP_PUBLIC_NETWORKS = getattr(settings, 'UI_GROUP_PUBLIC_NETWORKS', True)
-GROUPED_PUBLIC_NETWORK_NAME = \
-    getattr(settings, 'UI_GROUPED_PUBLIC_NETWORK_NAME', 'Internet')
 
+DEFAULT_FORCED_SERVER_NETWORKS = \
+    getattr(settings, "CYCLADES_FORCED_SERVER_NETWORKS", [])
+FORCED_SERVER_NETWORKS = getattr(settings, "UI_FORCED_SERVER_NETWORKS",
+                                 DEFAULT_FORCED_SERVER_NETWORKS)
+
+DEFAULT_HOTPLUG_ENABLED = getattr(settings, "CYCLADES_GANETI_USE_HOTPLUG",
+                                  True)
+HOTPLUG_ENABLED = getattr(settings, "UI_HOTPLUG_ENABLED",
+                          DEFAULT_HOTPLUG_ENABLED)
 
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
     current_template = template_path + name + '.html'
     t = loader.get_template(current_template)
     media_context = {
-       'UI_MEDIA_URL': UI_MEDIA_URL,
-       'SYNNEFO_JS_URL': UI_SYNNEFO_JS_URL,
-       'SYNNEFO_JS_LIB_URL': UI_SYNNEFO_JS_LIB_URL,
-       'SYNNEFO_JS_WEB_URL': UI_SYNNEFO_JS_WEB_URL,
-       'SYNNEFO_IMAGES_URL': UI_SYNNEFO_IMAGES_URL,
-       'SYNNEFO_CSS_URL': UI_SYNNEFO_CSS_URL,
-       'SYNNEFO_JS_LIB_VERSION': SYNNEFO_JS_LIB_VERSION,
-       'DEBUG': settings.DEBUG
+        'UI_MEDIA_URL': UI_MEDIA_URL,
+        'SYNNEFO_JS_URL': UI_SYNNEFO_JS_URL,
+        'SYNNEFO_JS_LIB_URL': UI_SYNNEFO_JS_LIB_URL,
+        'SYNNEFO_FONTS_BASE_URL': UI_SYNNEFO_FONTS_BASE_URL,
+        'SYNNEFO_JS_WEB_URL': UI_SYNNEFO_JS_WEB_URL,
+        'SYNNEFO_IMAGES_URL': UI_SYNNEFO_IMAGES_URL,
+        'SYNNEFO_CSS_URL': UI_SYNNEFO_CSS_URL,
+        'SYNNEFO_JS_LIB_VERSION': SYNNEFO_JS_LIB_VERSION,
+        'DEBUG': settings.DEBUG
     }
     context.update(media_context)
     return HttpResponse(t.render(RequestContext(request, context)))
 
 
 def home(request):
-    context = {'timeout': TIMEOUT,
-               'project': '+nefo',
-               'request': request,
-               'current_lang': get_language() or 'en',
-               'compute_api_url': json.dumps(uisettings.COMPUTE_URL),
-               'user_catalog_url': json.dumps(uisettings.USER_CATALOG_URL),
-               'feedback_post_url': json.dumps(uisettings.FEEDBACK_URL),
-               'accounts_api_url': json.dumps(uisettings.ACCOUNT_URL),
-               'logout_redirect': json.dumps(uisettings.LOGOUT_REDIRECT),
-               'login_redirect': json.dumps(uisettings.LOGIN_URL),
-               'glance_api_url': json.dumps(uisettings.GLANCE_URL),
-               'translate_uuids': json.dumps(True),
-               # update interval settings
-               'update_interval': UPDATE_INTERVAL,
-               'update_interval_increase': UPDATE_INTERVAL_INCREASE,
-               'update_interval_increase_after_calls':
-                UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT,
-               'update_interval_fast': UPDATE_INTERVAL_FAST,
-               'update_interval_max': UPDATE_INTERVAL_MAX,
-               'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
-               'image_icons': IMAGE_ICONS,
-               'auth_cookie_name': AUTH_COOKIE_NAME,
-               'auth_skip_redirects': json.dumps(AUTH_SKIP_REDIRECTS),
-               'suggested_flavors': json.dumps(SUGGESTED_FLAVORS),
-               'suggested_roles': json.dumps(SUGGESTED_ROLES),
-               'vm_image_common_metadata': json.dumps(VM_IMAGE_COMMON_METADATA),
-               'synnefo_version': SYNNEFO_JS_LIB_VERSION,
-               'delay_on_blur': json.dumps(DELAY_ON_BLUR),
-               'update_hidden_views': json.dumps(UPDATE_HIDDEN_VIEWS),
-               'handle_window_exceptions': json.dumps(HANDLE_WINDOW_EXCEPTIONS),
-               'skip_timeouts': json.dumps(SKIP_TIMEOUTS),
-               'vm_name_template': json.dumps(VM_NAME_TEMPLATE),
-               'flavors_disk_templates_info':
-               json.dumps(FLAVORS_DISK_TEMPLATES_INFO),
-               'support_ssh_os_list': json.dumps(SUPPORT_SSH_OS_LIST),
-               'unknown_os': json.dumps(UNKNOWN_OS),
-               'os_created_users': json.dumps(OS_CREATED_USERS),
-               'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),
-               'use_glance': json.dumps(ENABLE_GLANCE),
-               'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS),
-               'custom_image_help_url': CUSTOM_IMAGE_HELP_URL,
-               'image_deleted_title': json.dumps(IMAGE_DELETED_TITLE),
-               'image_deleted_size_title': json.dumps(IMAGE_DELETED_SIZE_TITLE),
-               'network_suggested_subnets': json.dumps(NETWORK_SUBNETS),
-               'network_available_types': json.dumps(NETWORK_TYPES),
-               'network_allow_duplicate_vm_nics':
-               json.dumps(NETWORK_DUPLICATE_NICS),
-               'network_strict_destroy': json.dumps(NETWORK_STRICT_DESTROY),
-               'network_allow_multiple_destroy':
-               json.dumps(NETWORK_ALLOW_MULTIPLE_DESTROY),
-               'automatic_network_range_format':
-               json.dumps(AUTOMATIC_NETWORK_RANGE_FORMAT),
-               'grouped_public_network_name':
-               json.dumps(GROUPED_PUBLIC_NETWORK_NAME),
-               'group_public_networks': json.dumps(GROUP_PUBLIC_NETWORKS),
-               'diagnostics_update_interval':
-               json.dumps(DIAGNOSTICS_UPDATE_INTERVAL),
-               'vm_hostname_format': json.dumps(VM_HOSTNAME_FORMAT)
-               }
+    context = {
+        'timeout': TIMEOUT,
+        'project': '+nefo',
+        'request': request,
+        'current_lang': get_language() or 'en',
+        'compute_api_url': json.dumps(uisettings.COMPUTE_URL),
+        'network_api_url': json.dumps(uisettings.NETWORK_URL),
+        'user_catalog_url': json.dumps(uisettings.USER_CATALOG_URL),
+        'feedback_post_url': json.dumps(uisettings.FEEDBACK_URL),
+        'accounts_api_url': json.dumps(uisettings.ACCOUNT_URL),
+        'logout_redirect': json.dumps(uisettings.LOGOUT_REDIRECT),
+        'login_redirect': json.dumps(uisettings.LOGIN_URL),
+        'glance_api_url': json.dumps(uisettings.GLANCE_URL),
+        'translate_uuids': json.dumps(True),
+        # update interval settings
+        'update_interval': UPDATE_INTERVAL,
+        'update_interval_increase': UPDATE_INTERVAL_INCREASE,
+        'update_interval_increase_after_calls':
+        UPDATE_INTERVAL_INCREASE_AFTER_CALLS_COUNT,
+        'update_interval_fast': UPDATE_INTERVAL_FAST,
+        'update_interval_max': UPDATE_INTERVAL_MAX,
+        'changes_since_alignment': CHANGES_SINCE_ALIGNMENT,
+        'image_icons': IMAGE_ICONS,
+        'auth_cookie_name': AUTH_COOKIE_NAME,
+        'auth_skip_redirects': json.dumps(AUTH_SKIP_REDIRECTS),
+        'suggested_flavors': json.dumps(SUGGESTED_FLAVORS),
+        'suggested_roles': json.dumps(SUGGESTED_ROLES),
+        'vm_image_common_metadata': json.dumps(VM_IMAGE_COMMON_METADATA),
+        'synnefo_version': SYNNEFO_JS_LIB_VERSION,
+        'delay_on_blur': json.dumps(DELAY_ON_BLUR),
+        'update_hidden_views': json.dumps(UPDATE_HIDDEN_VIEWS),
+        'handle_window_exceptions': json.dumps(HANDLE_WINDOW_EXCEPTIONS),
+        'skip_timeouts': json.dumps(SKIP_TIMEOUTS),
+        'vm_name_template': json.dumps(VM_NAME_TEMPLATE),
+        'flavors_disk_templates_info': json.dumps(FLAVORS_DISK_TEMPLATES_INFO),
+        'ssh_support_osfamily_exclude_list': json.dumps(SSH_SUPPORT_OSFAMILY_EXCLUDE_LIST),
+        'unknown_os': json.dumps(UNKNOWN_OS),
+        'os_created_users': json.dumps(OS_CREATED_USERS),
+        'userdata_keys_limit': json.dumps(MAX_SSH_KEYS_PER_USER),
+        'use_glance': json.dumps(ENABLE_GLANCE),
+        'system_images_owners': json.dumps(SYSTEM_IMAGES_OWNERS),
+        'custom_image_help_url': CUSTOM_IMAGE_HELP_URL,
+        'image_deleted_title': json.dumps(IMAGE_DELETED_TITLE),
+        'image_deleted_size_title': json.dumps(IMAGE_DELETED_SIZE_TITLE),
+        'network_suggested_subnets': json.dumps(NETWORK_SUBNETS),
+        'network_available_types': json.dumps(NETWORK_TYPES),
+        'forced_server_networks': json.dumps(FORCED_SERVER_NETWORKS),
+        'network_allow_duplicate_vm_nics': json.dumps(NETWORK_DUPLICATE_NICS),
+        'network_strict_destroy': json.dumps(NETWORK_STRICT_DESTROY),
+        'network_allow_multiple_destroy':
+        json.dumps(NETWORK_ALLOW_MULTIPLE_DESTROY),
+        'automatic_network_range_format':
+        json.dumps(AUTOMATIC_NETWORK_RANGE_FORMAT),
+        'group_public_networks': json.dumps(GROUP_PUBLIC_NETWORKS),
+        'hotplug_enabled': json.dumps(HOTPLUG_ENABLED),
+        'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL),
+        'no_fqdn_message': json.dumps(NO_FQDN_MESSAGE)
+    }
     return template('home', request, context)
+
 
 def machines_console(request):
     host, port, password = ('', '', '')
@@ -255,7 +259,8 @@ def machines_console(request):
     host_ip = request.GET.get('host_ip', '')
     host_ip_v6 = request.GET.get('host_ip_v6', '')
     context = {'host': host, 'port': port, 'password': password,
-               'machine': machine, 'host_ip': host_ip, 'host_ip_v6': host_ip_v6}
+               'machine': machine, 'host_ip': host_ip,
+               'host_ip_v6': host_ip_v6}
     return template('machines_console', request, context)
 
 
@@ -274,7 +279,8 @@ CONNECT_LINUX_WINDOWS_MESSAGE = \
 <a target="_blank"
 href="http://en.wikipedia.org/wiki/Remote_Desktop_Services">
 Remote Desktop Service</a>.
-To do so, open the following file with an appropriate remote desktop client.""")
+To do so, open the following file with an appropriate \
+remote desktop client.""")
 CONNECT_LINUX_WINDOWS_SUBMESSAGE = \
     _("""If you don't have a Remote Desktop client already installed,
 we suggest the use of <a target="_blank"
@@ -314,14 +320,17 @@ CONNECT_PROMPT_MESSAGES = {
         'linux': [CONNECT_LINUX_LINUX_MESSAGE, ""],
         'windows': [CONNECT_LINUX_WINDOWS_MESSAGE,
                     CONNECT_LINUX_WINDOWS_SUBMESSAGE],
-        'ssh_message': "ssh %(user)s@%(hostname)s"
+        'ssh_message': "ssh %(user)s@%(hostname)s",
+        'ssh_message_port': "ssh -p %(port)s %(user)s@%(hostname)s"
+
     },
     'windows': {
         'linux': [CONNECT_WINDOWS_LINUX_MESSAGE,
                   CONNECT_WINDOWS_LINUX_SUBMESSAGE],
         'windows': [CONNECT_WINDOWS_WINDOWS_MESSAGE,
                     CONNECT_WINDOWS_WINDOWS_SUBMESSAGE],
-        'ssh_message': "%(user)s@%(hostname)s"
+        'ssh_message': "%(user)s@%(hostname)s",
+        'ssh_message_port': "%(user)s@%(hostname)s (port: %(port)s)"
     },
 }
 
@@ -346,6 +355,7 @@ def machines_connect(request):
     host_os = request.GET.get('host_os', 'Linux').lower()
     username = request.GET.get('username', None)
     domain = request.GET.get("domain", DOMAIN_TPL % int(server_id))
+    ports = json.loads(request.GET.get('ports', '{}'))
 
     # guess host os
     if host_os != "windows":
@@ -361,6 +371,9 @@ def machines_connect(request):
         if metadata_os.lower() == "windows":
             username = "Administrator"
 
+    ssh_forward = ports.get("22", None)
+    rdp_forward = ports.get("3389", None)
+
     # operating system provides ssh access
     ssh = False
     if operating_system != "windows":
@@ -370,6 +383,12 @@ def machines_connect(request):
     # rdp param is set, the user requested rdp file
     # check if we are on windows
     if operating_system == 'windows' and request.GET.get("rdp", False):
+        port = '3389'
+        if rdp_forward:
+            hostname = rdp_forward.get('host', hostname)
+            ip_address = rdp_forward.get('host', ip_address)
+            port = str(rdp_forward.get('port', '3389'))
+
         extra_rdp_content = ''
         # UI sent domain info (from vm metadata) use this
         # otherwise use our default snf-<vm_id> domain
@@ -384,14 +403,16 @@ def machines_connect(request):
                         'server_id': server_id,
                         'ip_address': ip_address,
                         'hostname': hostname,
-                        'user': username
-                      }
+                        'user': username,
+                        'port': port
+                    }
 
         rdp_context = {
             'username': username,
             'domain': domain,
             'ip_address': ip_address,
             'hostname': hostname,
+            'port': request.GET.get('port', port),
             'extra_content': extra_rdp_content
         }
 
@@ -402,9 +423,19 @@ def machines_connect(request):
         filename = "%d-%s.rdp" % (int(server_id), hostname)
         response['Content-Disposition'] = 'attachment; filename=%s' % filename
     else:
-        ssh_message = CONNECT_PROMPT_MESSAGES['linux'].get('ssh_message')
+        message_key = "ssh_message"
+        ip_address = ip_address
+        hostname = hostname
+        port = ''
+        if ssh_forward:
+            message_key = 'ssh_message_port'
+            hostname = ssh_forward.get('host', hostname)
+            ip_address = ssh_forward.get('host', ip_address)
+            port = str(ssh_forward.get('port', '22'))
+
+        ssh_message = CONNECT_PROMPT_MESSAGES['linux'].get(message_key)
         if host_os == 'windows':
-            ssh_message = CONNECT_PROMPT_MESSAGES['windows'].get('ssh_message')
+            ssh_message = CONNECT_PROMPT_MESSAGES['windows'].get(message_key)
         if callable(ssh_message):
             link_title = ssh_message(server_id, ip_address, hostname, username)
         else:
@@ -412,19 +443,26 @@ def machines_connect(request):
                 'server_id': server_id,
                 'ip_address': ip_address,
                 'hostname': hostname,
-                'user': username
+                'user': username,
+                'port': port
             }
         if (operating_system != "windows"):
             link_url = None
 
         else:
             link_title = _("Remote desktop to %s") % ip_address
+            if rdp_forward:
+                hostname = rdp_forward.get('host', hostname)
+                ip_address = rdp_forward.get('host', ip_address)
+                port = str(rdp_forward.get('port', '3389'))
+                link_title = _("Remote desktop to %s (port %s)") % (ip_address,
+                                                                    port)
             link_url = \
                 "%s?ip_address=%s&os=%s&rdp=1&srv=%d&username=%s&domain=%s" \
-                "&hostname=%s" % (
+                "&hostname=%s&port=%s" % (
                     reverse("ui_machines_connect"), ip_address,
                     operating_system, int(server_id), username,
-                    domain, hostname)
+                    domain, hostname, port)
 
         # try to find a specific message
         try:
@@ -450,4 +488,3 @@ def machines_connect(request):
                          mimetype='application/json')  # no windows, no rdp
 
     return response
-

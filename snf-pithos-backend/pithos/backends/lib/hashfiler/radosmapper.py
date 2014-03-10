@@ -33,10 +33,11 @@
 
 from binascii import hexlify
 
-from context_object import RadosObject, file_sync_read_chunks
+from context_object import RadosObject
 from rados import *
 
-CEPH_CONF_FILE="/etc/ceph/ceph.conf"
+CEPH_CONF_FILE = "/etc/ceph/ceph.conf"
+
 
 class RadosMapper(object):
     """Mapper.
@@ -45,23 +46,28 @@ class RadosMapper(object):
 
     mappool = None
     namelen = None
+    rados = None
+    rados_ctx = None
+
+    @classmethod
+    def get_rados_ctx(cls, pool):
+        if cls.rados_ctx is None:
+            cls.rados = Rados(conffile=CEPH_CONF_FILE)
+            cls.rados.connect()
+            cls.rados_ctx = cls.rados.open_ioctx(pool)
+        return cls.rados_ctx
 
     def __init__(self, **params):
         self.params = params
         self.namelen = params['namelen']
         mappool = params['mappool']
 
-        rados = Rados(conffile=CEPH_CONF_FILE)
-        rados.connect()
-        ioctx = rados.open_ioctx(mappool)
-
         self.mappool = mappool
-        self.rados = rados
-        self.ioctx = ioctx
+        self.ioctx = RadosMapper.get_rados_ctx(mappool)
 
-    def _get_rear_map(self, maphash, create=0):
+    def _get_rear_map(self, maphash):
         name = hexlify(maphash)
-        return RadosObject(name, self.ioctx, create)
+        return RadosObject(name, self.ioctx)
 
     def _check_rear_map(self, maphash):
         name = hexlify(maphash)
@@ -84,11 +90,10 @@ class RadosMapper(object):
                 hashes = list(rmap.sync_read_chunks(namelen, nr, blkoff))
         return hashes
 
-    def map_stor(self, maphash, hashes=(), blkoff=0, create=1):
+    def map_stor(self, maphash, hashes=(), blkoff=0):
         """Store hashes in the given hashes map."""
         namelen = self.namelen
         if self._check_rear_map(maphash):
             return
-        with self._get_rear_map(maphash, 1) as rmap:
+        with self._get_rear_map(maphash) as rmap:
             rmap.sync_write_chunks(namelen, blkoff, hashes, None)
-

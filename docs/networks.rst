@@ -14,106 +14,133 @@ needs of the system administrator. However, to do so, the administrator needs
 to understand how each level handles Virtual Networks, to be able to setup the
 backend appropriately.
 
-Since v0.11 Synnefo supports multiple Ganeti clusters (backends). Having in
-mind that every backend has its locality, there is a high possibility each
-cluster to have different infrastracture (wires, routers, subnets, gateways,
-etc.).
-
 In the following sections we investigate in a top-down approach, the way
-networks are defined from the Cyclades, Ganeti, and Backend persperctive.
+networks are defined from the Cyclades, Ganeti, and Backend persperctive. For
+an introduction to the concepts of Cyclades networking and the exposed API see
+:doc:`Cyclades networking design document <design/cyclades-networking>`.
 
 Network @ Cyclades level
 ------------------------
 
-Cyclades understands two types of Virtual Networks:
+Cyclades networks support a range of different options to cover the specific
+needs of each deployment.
 
-a) Public Networks
-b) Private Networks
+First of all, as far as visibility and accessibility is concerned, a network
+can be either `public` or `private`. Public networks are created by the
+administrator via the command line interface (`snf-manage network-create`) and
+are visible to all end-users. On the other hand, private networks are created
+by the end-user from the Web UI or the kamaki client and provide isolated Layer
+2 connectivity to the end-user.
 
-Public Networks are created by the administrator via `snf-manage` commands
-and can be used by all end-users. Each public network is assigned to a
-single backend but one backend can have multiple public networks.
+Both networks can have an IPv4 subnet or/and an IPv6 subnet along with the
+corresponding gateway. When a virtual server is connected to a virtual network
+it will be assigned an IP address from each of the subnets of the network. By
+default the allocation pool of the network covers all IP addresses in the CIDR,
+excluding the address for the subnet gateway. However, for IPv4 subnets,
+allocation pools can be limited to specific ranges using the 'allocation-pool'
+option of `snf-manage network-create` command. For example, the following
+command will create a virtual network that will assign IPs only in the range
+[192.168.2.10, 192.168.2.20] and [192.168.2.30, 192.168.2.40]:
 
-Private Networks are created by the end-user from the Web UI or the kamaki
-client and provide isolated Layer 2 connectivity to the end-user. With regard
-to the fact that a user's VMs may be allocated across different Ganeti clusters
-(backends), private networks are created in all backends to ensure VMs
-connectivity.
+.. code-block:: console
 
-Both types of networks are created dynamically.
+  snf-manage network-create --subnet=192.168.2.0 --gateway=192.168.2.1 --allocation-pool=192.168.2.10,192.168.2.20 --allocation-pool=192.168.2.30,192.168.2.40
 
-From the VM perspective, each NIC is attached to a specific Network.
 
-When a new VM is created the backend allocator (in Cyclades) decides in which
-backend  to spawn it. Depending on the chosen backend, Synnefo finds the first
-non-full public Network that exists in the backend. Then attaches the VM's
-first NIC to this network.
+By default, Cyclades will assign IP addresses to virtual servers by responding
+to DHCP requests via the `nfdhcp` daemon. This functionality can be disabled by
+using the `--dhcp=False` option during network creation.
 
-Once the VM is created, the user is able to connect the VM to multiple
-private networks, that himself has already created.
+A public network can also be marked as a floating IP pool with the
+`--floating-ip-pool` option. Floating IPs, are IPv4 addresses that can be
+dynamically by added and removed from running VMs. A user can reserve and
+release a floating IP address that he can later add and remove it from running
+VMs. Also the user can release a floating IP if it not used by any of his VMs.
 
-A Network can have the following attributes:
+Since private networks and floating IPs must be accesible to all virtual
+servers that may be distributed accross different Ganeti backends, networks
+must also be available to all Ganeti backends. Specially for private networks,
+to avoid the overhead of creating the network to all backends, Cyclades create
+these networks on demand, when an instance that lives in a backend tries to
+connect to this network.
 
- - IPv4 subnet (mandatory)
- - IPv4 gateway
- - IPv6 subnet
- - IPv6 gateway
- - public/private flag
- - flavor
+The administrator may also want to connect instances to force connection to
+some networks (e.g. a public IPv6 network or a network that contains a special
+metadata server). This can be achieved by setting the
+`CYCLADES_FORCED_SERVER_NETWORKS` setting to the list of the selected networks.
+Each member of the list may be a network UUID, a tuple of network UUIDs,
+"SNF:ANY_PUBLIC_IPV4" [any public network with an IPv4 subnet defined],
+"SNF:ANY_PUBLIC_IPV6 [any public network with only an IPV6 subnet defined], or
+"SNF:ANY_PUBLIC" [any public network]. For this setting, no access control or
+quota policy are enforced.  The server will get all IPv4/IPv6 addresses needed
+to connect to the networks specified in CYCLADES_FORCED_SERVER_NETWORKS,
+regardless of the state of the floating IP pool of the user, and without
+allocating any floating IPs.
 
-Flavor is a way to abstact infrastructure specific options, that are used to
-ensure connectivity and isolation to the VMs connected to the network. It is a
-set of options that eventually will guide scripts to set up rules, while
-creating virtual interfaces in the node level. The available flavors and their
-options can be found in the Synnefo settings and are configurable.
+Also, the administrator can set the `CYCLADES_DEFAULT_SERVER_NETWORKS` setting,
+which has the exact same format with `CYCLADES_FORCED_SERVER_NETWORKS` and
+contains a list of networks to connect a newly created server to, if the user
+has not specified them explicitly in the POST /server API call.  Access
+control and quota policy are enforced, just as if the user had specified the
+value of CYCLADES_DEFAULT_SERVER_NETWORKS in the content of the POST /call,
+after processing of "SNF:\*" directives.
+
+Another distinction between networks is their flavor. Flavor is a way to
+abstract infrastructure specific options, that are used to ensure connectivity
+and isolation to the VMs connected to the network. It is a set of options that
+eventually will guide scripts to set up rules, while creating virtual
+interfaces in the node level. Each of these flavors define attributes that will
+be used at Ganeti level to create the physical network. These attributes are:
+
+* ``mode``: Whether the network is in 'bridged' or 'routed' mode.
+* ``link``: Bridge for 'bridged' networks and routing table for 'routed'
+  networks. e.g. 'br100', 'rt200'
+* ``mac_prefix``: A MAC prefix for the network. e.g. 'aa:00:05'
+* ``tags``: A list of tags to be used at the Ganeti level.
 
 To ensure L2 isolation, Synnefo supports two different mechanisms (see also Node
 Level section):
 
- - assigning one physical VLAN per network
- - assigning one MAC prefix per network, so that every NIC attached to this
-   network will have this prefix. Isolation is then achieved by filtering
-   rules (via `ebtables`) based on a specific mask (ff:ff:f0:00:00:00, see Node
-   Level section for more details).
+* assigning one physical VLAN per network
+* assigning one MAC prefix per network, so that every NIC attached to this
+  network will have this prefix. Isolation is then achieved by filtering
+  rules (via `ebtables`) based on a specific mask (ff:ff:f0:00:00:00, see Node
+  Level section for more details).
 
 Having this in mind and in order to prevent assignment of duplicate VLAN/MAC
 prefix to different networks, Synnefo supports two types of Pools:
 
- - Bridge Pool (corresponding to a number of VLANs bridged to those bridges)
- - MAC prefix Pool
+- Bridge Pool (corresponding to a number of VLANs bridged to those bridges)
+- MAC prefix Pool
 
-For Pool handling refer to the corresponding doc section.
-
-Finally, each supported flavor must declare the following options (see also
-Ganeti Level section):
-
- - ``mode`` ('bridged' or 'routed'),
- - ``link`` ('br100', 'rt200', 'pool')
- - ``mac_prefix`` ('aa:00:05', 'pool', None)
- - ``tags`` (['ip-less-routed' or 'mac-filtered' or 'physical-vlan' or None])
+For Pool handling refer to the corresponding doc section. To use this pools,
+set either `--link` or `--mac-prefix` to the reserved keyword `pool`.
 
 Existing network flavors are the following:
 
 ==============   =======   ===============================   ======================  ==================
 Flavor Name      Mode      Link                              MAC prefix              Tags
 ==============   =======   ===============================   ======================  ==================
-IP_LESS_ROUTED   routed    ``DEFAULT_ROUTING_TABLE``         ``DEFAULT_MAC_PREFIX``  'ip-less-routed'
+IP_LESS_ROUTED   routed    ``snf-link-$network_id``          ``DEFAULT_MAC_PREFIX``  'ip-less-routed'
 MAC_FILTERED     bridged   ``DEFAULT_MAC_FILTERED_BRIDGE``   'pool'                  'private'filtered'
 PHYSICAL_VLAN    bridged   'pool'                            ``DEFAULT_MAC_PREFIX``  'physical-vlan'
 CUSTOM           bridged   ``DEFAULT_BRIDGE``                ``DEFAULT_MAC_PREFIX``
 ==============   =======   ===============================   ======================  ==================
 
-``DEFAULT_ROUTING_TABLE``, ``DEFAULT_MAC_PREFIX``, ``DEFAULT_BRIDGE``, ``DEFAULT_MAC_FILTERED_BRIDGE``
-are all configurable settings in ``/etc/synnefo/20-snf-cyclades-app-api.conf``. 'pool' is used
-to denote that a link or MAC prefix will be allocated from the corresponging Pool.
+``DEFAULT_MAC_PREFIX``, ``DEFAULT_BRIDGE``,
+``DEFAULT_MAC_FILTERED_BRIDGE`` are all configurable settings in
+``/etc/synnefo/20-snf-cyclades-app-api.conf``. 'pool' is used to denote that a
+link or MAC prefix will be allocated from the corresponding Pool. Finally,
+most of these attributes, may be overridden when creating networks with
+`snf-manage network-create command`.
 
 The administrator is able to create any of the above flavors
 and override their default values by explicitly passing mode, link, etc. using
-the `snf-manage network-create` command. 
+the `snf-manage network-create` command.
 
-The end-user is allowed to create only networks of flavor ``MAC_FILTERED`` and
-``PHYSICAL_VLAN``. Currently, only ``MAC_FILTERED`` and ``PHYSICAL_VLAN`` can
-use existing pools and cannot be overriden.
+The administrator can create networks of any flavor, but end-users is allowed
+to create via API only networks with flavors that are set in the
+`API_ENABLED_NETWORK_FLAVORS` setting.
 
 Network @ Ganeti level
 ----------------------
@@ -218,7 +245,7 @@ Then in Cyclades run:
 
 .. code-block:: console
 
-   # snf-manage network-create --subnet=5.6.7.0/27 --gateway=5.6.7.1 --subnet6=2001:648:2FFC:1322::/64 --gateway6=2001:648:2FFC:1322::1 --public --dhcp --flavor=CUSTOM --link=br100 ----name=default --backend-id=1
+   # snf-manage network-create --subnet=5.6.7.0/27 --gateway=5.6.7.1 --subnet6=2001:648:2FFC:1322::/64 --gateway6=2001:648:2FFC:1322::1 --public --dhcp=True --flavor=CUSTOM --link=br100 ----name=default --backend-id=1
 
    # snf-manage network-list
    id    name     flavor   owner mac_prefix   dhcp    state         link  vms public IPv4 Subnet   IPv4 Gateway
@@ -272,7 +299,7 @@ Then in Cyclades run:
 
 .. code-block:: console
 
-   # snf-manage network-create --subnet=5.6.7.0/27 --gateway=5.6.7.1 --subnet6=2001:648:2FFC:1322::/64 --gateway6=2001:648:2FFC:1322::1 --public --dhcp --flavor=IP_LESS_ROUTED --name=routed --backend-id=1
+   # snf-manage network-create --subnet=5.6.7.0/27 --gateway=5.6.7.1 --subnet6=2001:648:2FFC:1322::/64 --gateway6=2001:648:2FFC:1322::1 --public --dhcp=True --flavor=IP_LESS_ROUTED --name=routed --backend-id=1
 
    # snf-manage network-list
    id    name     flavor         owner mac_prefix   dhcp    state   link      vms  public IPv4 Subnet   IPv4 Gateway
@@ -329,7 +356,7 @@ and the create the network:
 
 .. code-block:: console
 
-   # snf-manage network-create --subnet=192.168.1.0/24 --gateway=192.168.1.0/24 --dhcp --flavor=MAC_FILTERED --link=prv0 --name=mac --backend-id=1
+   # snf-manage network-create --subnet=192.168.1.0/24 --gateway=192.168.1.0/24 --dhcp=True --flavor=MAC_FILTERED --link=prv0 --name=mac --backend-id=1
    # snf-manage network-list
    id    name     flavor       owner mac_prefix   dhcp    state         link  vms public IPv4 Subnet    IPv4 Gateway
    3     mac      MAC_FILTERED       aa:00:01     True    ACTIVE        prv0      False  192.168.1.0/24 192.168.1.1
@@ -392,7 +419,7 @@ and the create the network:
 
 .. code-block:: console
 
-   # snf-manage network-create --subnet=192.168.1.0/24  --gateway=192.168.1.0/24  --dhcp --flavor=PHYSICAL_VLAN  --name=vlan  --backend-id=1
+   # snf-manage network-create --subnet=192.168.1.0/24  --gateway=192.168.1.0/24  --dhcp=True --flavor=PHYSICAL_VLAN  --name=vlan  --backend-id=1
 
    # snf-manage network-list
    id    name     flavor       owner mac_prefix   dhcp    state         link  vms public IPv4 Subnet    IPv4 Gateway
@@ -426,7 +453,7 @@ that he can access the VPN. Then we run in Cyclades:
 
 .. code-block:: console
 
-   # snf-manage network-create --subnet=192.168.1.0/24 --gateway=192.168.1.0/24 --dhcp --flavor=CUSTOM --mode=bridged --link=br200 --mac-prefix=bb:00:44 --owner=user@grnet.gr --tags=nfdhcpd,vpn --name=vpn --backend-id=1
+   # snf-manage network-create --subnet=192.168.1.0/24 --gateway=192.168.1.0/24 --dhcp=True --flavor=CUSTOM --mode=bridged --link=br200 --mac-prefix=bb:00:44 --owner=user@grnet.gr --tags=nfdhcpd,vpn --name=vpn --backend-id=1
 
    # snf-manage network-list
    id    name     flavor       owner              mac_prefix   dhcp    state         link  vms public IPv4 Subnet    IPv4 Gateway

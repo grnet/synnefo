@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from astakos.im.models import Service
-from synnefo.webproject.management.commands import ListCommand
+from snf_django.management.commands import ListCommand
 
 
 class Command(ListCommand):

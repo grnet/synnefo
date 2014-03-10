@@ -34,7 +34,7 @@
 from optparse import make_option
 from django.core.management.base import BaseCommand, CommandError
 from synnefo.db.models import Backend
-from synnefo.webproject.management.utils import parse_bool
+from snf_django.management.utils import parse_bool
 from synnefo.management.common import (get_backend, check_backend_credentials)
 
 HYPERVISORS = [h[0] for h in Backend.HYPERVISORS]

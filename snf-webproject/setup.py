@@ -58,9 +58,8 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-        'Django >=1.2, <=1.4.5',
+        'Django>=1.4, <1.5',
         'snf-common',
-        'snf-django-lib',
 ]
 
 EXTRAS_REQUIRES = {

@@ -42,6 +42,7 @@ logger = logging.getLogger(__name__)
 
 CLIENTKEY = 'pithos'
 
+
 class Command(NoArgsCommand):
     help = "Display unresolved commissions and trigger their recovery"
 
@@ -56,30 +57,29 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **options):
         b = get_backend()
         try:
-            pending_commissions = b.astakosclient.get_pending_commissions(
-                token=b.service_token)
+            b.pre_exec()
+            pending_commissions = b.astakosclient.get_pending_commissions()
 
             if pending_commissions:
                 self.stdout.write(
                     "Unresolved commissions: %s\n" % pending_commissions
                 )
             else:
-                self.stdout.write( "No unresolved commissions were found\n")
+                self.stdout.write("No unresolved commissions were found\n")
                 return
 
             if options['fix']:
                 to_accept = b.commission_serials.lookup(pending_commissions)
                 to_reject = list(set(pending_commissions) - set(to_accept))
                 response = b.astakosclient.resolve_commissions(
-                    token=b.service_token,
                     accept_serials=to_accept,
                     reject_serials=to_reject
                 )
                 accepted = response['accepted']
                 rejected = response['rejected']
                 failed = response['failed']
-                self.stdout.write("Accepted commissions: %s\n" %  accepted)
-                self.stdout.write("Rejected commissions: %s\n" %  rejected)
+                self.stdout.write("Accepted commissions: %s\n" % accepted)
+                self.stdout.write("Rejected commissions: %s\n" % rejected)
                 self.stdout.write("Failed commissions:\n")
                 for i in failed:
                     self.stdout.write('%s\n' % i)
@@ -87,6 +87,9 @@ class Command(NoArgsCommand):
                 b.commission_serials.delete_many(accepted)
         except Exception, e:
             logger.exception(e)
+            b.post_exec(False)
             raise CommandError(e)
+        else:
+            b.post_exec(True)
         finally:
             b.close()

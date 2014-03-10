@@ -32,10 +32,7 @@
 # or implied, of GRNET S.A.
 
 from functools import partial
-try:
-    from django.conf.urls import include, patterns
-except ImportError:  # Django==1.2
-    from django.conf.urls.defaults import include, patterns
+from django.conf.urls import include, patterns
 
 from snf_django.lib.api.proxy import proxy
 from snf_django.lib.api.utils import prefix_pattern
@@ -43,10 +40,10 @@ from snf_django.lib.api.urls import api_patterns
 from snf_django.lib.api import api_endpoint_not_found
 from snf_django.utils.urls import extend_endpoint_with_slash
 from pithos.api.settings import (
-    pithos_services,
-    BASE_PATH, ASTAKOS_BASE_URL, BASE_ASTAKOS_PROXY_PATH,
-    ASTAKOS_ACCOUNTS_PREFIX, PROXY_USER_SERVICES,
-    PITHOS_PREFIX, PUBLIC_PREFIX, UI_PREFIX)
+    BASE_PATH, PITHOS_PREFIX, PUBLIC_PREFIX, VIEW_PREFIX,
+    ASTAKOS_AUTH_PROXY_PATH, ASTAKOS_AUTH_URL,
+    ASTAKOS_ACCOUNT_PROXY_PATH, ASTAKOS_ACCOUNT_URL,
+    ASTAKOS_UI_PROXY_PATH, ASTAKOS_UI_URL, pithos_services)
 
 
 urlpatterns = []
@@ -60,17 +57,18 @@ pithos_api_patterns = api_patterns(
     'pithos.api.functions',
     (r'^$', 'top_demux'),
     (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$',
-    'object_demux'),
+     'object_demux'),
     (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/?$',
-    'container_demux'),
+     'container_demux'),
     (r'^(?P<v_account>.+?)/?$', 'account_demux'))
 
 pithos_view_patterns = patterns(
     'pithos.api.views',
-    (r'^view/(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$',
-    'object_read'))
+    (r'^(?P<v_account>.+?)/(?P<v_container>.+?)/(?P<v_object>.+?)$',
+     'object_read'))
 
-pithos_patterns = patterns(
+pithos_patterns = []
+pithos_patterns += patterns(
     '',
     (r'{0}v1/'.format(prefix_pattern(PITHOS_PREFIX)),
         include(pithos_api_patterns)),
@@ -78,7 +76,11 @@ pithos_patterns = patterns(
         api_endpoint_not_found),
     (r'{0}(?P<v_public>.+?)/?$'.format(prefix_pattern(PUBLIC_PREFIX)),
         'pithos.api.public.public_demux'),
-    (r'{0}'.format(prefix_pattern(UI_PREFIX)),
+)
+
+pithos_patterns += patterns(
+    '',
+    (r'{0}'.format(prefix_pattern(VIEW_PREFIX)),
         include(pithos_view_patterns)))
 
 urlpatterns += patterns(
@@ -86,19 +88,27 @@ urlpatterns += patterns(
     (prefix_pattern(BASE_PATH), include(pithos_patterns)),
 )
 
-if PROXY_USER_SERVICES:
-    astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
-                            target_base=ASTAKOS_BASE_URL)
 
-    proxy_patterns = api_patterns(
-        '',
-        (r'^login/?$', astakos_proxy),
-        (r'^feedback/?$', astakos_proxy),
-        (r'^user_catalogs/?$', astakos_proxy),
-        (prefix_pattern(ASTAKOS_ACCOUNTS_PREFIX), astakos_proxy),
-    )
+# --------------------------------------
+# PROXY settings
+astakos_auth_proxy = \
+    partial(proxy, proxy_base=ASTAKOS_AUTH_PROXY_PATH,
+            target_base=ASTAKOS_AUTH_URL)
+astakos_account_proxy = \
+    partial(proxy, proxy_base=ASTAKOS_ACCOUNT_PROXY_PATH,
+            target_base=ASTAKOS_ACCOUNT_URL)
 
-    urlpatterns += patterns(
-        '',
-        (prefix_pattern(BASE_ASTAKOS_PROXY_PATH), include(proxy_patterns)),
-    )
+# ui views serve html content, redirect instead of proxing
+astakos_ui_proxy = \
+    partial(proxy, proxy_base=ASTAKOS_UI_PROXY_PATH,
+            target_base=ASTAKOS_UI_URL, redirect=True)
+
+urlpatterns += api_patterns(
+    '',
+    (prefix_pattern(ASTAKOS_AUTH_PROXY_PATH), astakos_auth_proxy),
+    (prefix_pattern(ASTAKOS_ACCOUNT_PROXY_PATH), astakos_account_proxy),
+)
+urlpatterns += patterns(
+    '',
+    (prefix_pattern(ASTAKOS_UI_PROXY_PATH), astakos_ui_proxy),
+)

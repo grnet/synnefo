@@ -1,6 +1,6 @@
-function setContainerMinHeight( applicableDiv){
-	
-    if ( $(applicableDiv).length > 0 ) {
+function setContainerMinHeight(applicableDiv) {
+
+    if ($(applicableDiv).length > 0) {
         //var h = $('.header').height(); div.header is not found 
         var f = $('.footer').height();
         var w = $(window).height();
@@ -84,7 +84,92 @@ if (navigator.userAgent.match(/iPhone/i)) {
 }
 //end of fix
 
- 
+
+/* project members page js */
+function check_form_actions_inactive(){
+  if ( $('#members-table tbody td.check input:checked').length >0 ) {
+    $('.projects .form-actions').removeClass('inactive');
+  } else {
+    $('.projects .form-actions').addClass('inactive');
+  }
+
+  // updating form data
+  var forms = $("form.link-like:has('input.members-batch-action')");
+  forms.each(function(index, form){
+    var member_ids, checked;
+    form = $(form);
+    form.find("input.member-option").remove();
+    checked = $('#members-table tbody td.check input:checked');
+    member_ids = _.map(checked, function(el) {
+      return parseInt($(el).val());
+    });
+
+    _.each(member_ids, function(id) {
+      var newel;
+      newel = $("<input name='members' class='member-option' type='hidden' value='"+id+"'>");
+      form.append(newel);
+    });
+  })
+}
+
+
+function tableSort(tableEl, iDisplayLength, bFilter) {
+
+  // bFilter is an optional parameter
+  // if bFilter is provided, search input will be visible
+  bFilter = typeof bFilter !== 'undefined' ? bFilter : true;
+
+  // iDisplayLength is an optional parameter
+  // iDisplayLength controls the max number of rows visible to each page
+  iDisplayLength = typeof iDisplayLength !== 'undefined' ? iDisplayLength : 10;
+
+  // return if table holds no data
+  if (tableEl.find('tbody').find('tr').length <2 ){
+    return;
+  }
+
+  var dateArr = [];
+  var numHTMLArr = [];
+
+  _.each(tableEl.find('th'),function(value, key, list){
+    if ( $(value).attr('class').indexOf("date")> -1 ) {
+      dateArr.push(key);
+    }
+    if ( $(value).attr('class').indexOf("members_count")> -1) {
+      numHTMLArr.push(key);
+    };
+
+  });
+
+  // control pagination & table sorting for projects intro page
+  tableEl
+    .bind('page', function () {
+      $('#members-table input').attr('checked', false);
+      check_form_actions_inactive();
+     })
+    .dataTable({
+    "bFilter": bFilter,
+    "iDisplayLength": iDisplayLength,
+    "bLengthChange": true,
+    "sDom": '<"top">frt<"clearfix"><"bottom"i<"select"l>p>',
+    "bStateSave": true,
+    "aoColumnDefs": [
+         { "sType": "num-html", "aTargets": numHTMLArr },
+         { "sType": "date-uk", "aTargets": dateArr },
+    ],
+    "oLanguage": {
+      "sLengthMenu": 'Pagination <select>'+
+           '<option value="10">10</option>'+
+           '<option value="25">25</option>'+
+           '<option value="50">50</option>'+
+           '<option value="-1">All</option>'+
+           '</select>'
+    },
+  });
+
+  $('.dataTables_wrapper').addClass('clearfix');
+}
+
 $(document).ready(function() {
 	
     var is_firefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
@@ -312,24 +397,19 @@ $(document).ready(function() {
     $('.hidden-submit input[readonly!="True"]').focus(function () {
          $('.hidden-submit .form-row.submit').slideDown(500);
     });
-    
-    
-    
-   
       
-    
-    setTimeout(function() {
-      if ($('input#id_username').val()){ 
-      	$('input#id_username').siblings('label').css('opacity','0');
-      };
-      if ($('input#id_password').val()){ 
-      	$('input#id_password').siblings('label').css('opacity','0');
-      }
-	}, 100);
+    var innerInputs = $('form.innerlabels input[type="text"], form.innerlabels input[type="password"]');
+    _.each(innerInputs, function(val, key, list){
+        var txt =  $(val).siblings('label').text();
+        $(val).attr('placeholder',txt);
+    });
+
+    $(function() {
+      $('input, textarea').placeholder();
+    });
+
 	
-	
-	
-	// landing-page initialization
+	  // landing-page initialization
     if ($('.landing-page').length > 0) {
       var wrapper = $(".landing-page");
       var services = wrapper.find(".landing-service");
@@ -368,32 +448,8 @@ $(document).ready(function() {
 	$('#okeanos_recaptcha').parents('.form-row').find('.extra-img').hide();	  
    
    check_form_actions_inactive();  
-/* project members page js */	 
-function check_form_actions_inactive(){
-   if ( $('#members-table tbody td.check input:checked').length >0 ) {
-    $('.projects .form-actions').removeClass('inactive');
-  } else {
-    $('.projects .form-actions').addClass('inactive');
-  }
 
-  // updating form data
-  var forms = $("form.link-like:has('input.members-batch-action')");
-  forms.each(function(index, form){
-    var member_ids, checked;
-    form = $(form);
-    form.find("input.member-option").remove();
-    checked = $('#members-table tbody td.check input:checked');
-    member_ids = _.map(checked, function(el) {
-      return parseInt($(el).val());
-    });
-    
-    _.each(member_ids, function(id) {
-      var newel;
-      newel = $("<input name='members' class='member-option' type='hidden' value='"+id+"'>");
-      form.append(newel);
-    });
-  })
-}
+
 
 $('#members-table td.email').click(function(e){
   var that = $(this).parent('tr').find('.check').find('input[type="checkbox"]')
@@ -406,10 +462,7 @@ $('#members-table td.email').click(function(e){
 
 })
 
-
-
-
-$('#members-table tr th.check input').click(function(e){
+$('#members-table tr th.check input').change(function(e){
   if($(this).is(":checked")){
     $('#members-table tbody td.check input').attr('checked', 'checked');
   } else {
@@ -420,8 +473,6 @@ $('#members-table tr th.check input').click(function(e){
 $('#members-table tr .check input').click(function(e){
   check_form_actions_inactive()
 });
-
-/* end of project members page js */
 
   $('.renew-token a.confirm').click(function(e){
     e.preventDefault();
@@ -444,12 +495,16 @@ $('#members-table tr .check input').click(function(e){
     $('.renew-token a.do').show();
   })
 
+  tableSort($('.projects-intro').siblings('table#projects-list'), 10, true );
+  tableSort($('.search-projects').siblings('table#projects-list'), 25, true);
+  tableSort($('#members-table'), 3, true);
+
 
 });
+
 	
 $(window).resize(function() {
     
    setContainerMinHeight('.container .wrapper');
-    
 
 });

@@ -51,7 +51,7 @@ def override_settings(settings, **kwargs):
     >>> from synnefo.util.testing import override_settings
     >>> from django.conf import settings
     >>> with override_settings(settings, DEBUG=True):
-    >>>     assert settings.DEBUG == True
+    ...     assert settings.DEBUG == True
 
     The special arguemnt ``prefix`` can be set to prefix all setting keys with
     the provided value.
@@ -59,11 +59,11 @@ def override_settings(settings, **kwargs):
     >>> from django.conf import settings
     >>> from django.core import mail
     >>> with override_settings(settings, CONTACT_EMAILS=['kpap@grnet.gr'],
-    >>>                        prefix='MYAPP_'):
-    >>>     from django.core.mail import send_mail
-    >>>     send_mail("hello", "I love you kpap", settings.DEFAULT_FROM_EMAIL,
-    >>>               settings.MYAPP_CONTACT_EMAILS)
-    >>>     assert 'kpap@grnet.gr' in mail.mailbox[0].recipients()
+    ...                        prefix='MYAPP_'):
+    ...     from django.core.mail import send_mail
+    ...     send_mail("hello", "I love you kpap", settings.DEFAULT_FROM_EMAIL,
+    ...               settings.MYAPP_CONTACT_EMAILS)
+    ...     assert 'kpap@grnet.gr' in mail.mailbox[0].recipients()
 
     If you plan to reuse it
 
@@ -71,8 +71,8 @@ def override_settings(settings, **kwargs):
     >>> from synnefo.util.testing import override_settings
     >>> from django.conf import settings
     >>> myapp_settings = functools.partial(override_settings, prefix='MYAPP_')
-    >>> with myapp_settings(CONTACT_EMAILS=['kpap@grnet.gr'])
-    >>>     assert settings.MYAPP_CONTACT_EMAILS == ['kpap@grnet.gr']
+    >>> with myapp_settings(CONTACT_EMAILS=['kpap@grnet.gr']):
+    ...     assert settings.MYAPP_CONTACT_EMAILS == ['kpap@grnet.gr']
 
     """
 
@@ -117,6 +117,8 @@ def with_settings(settings, prefix='', **override):
         return inner
     return wrapper
 
+serial = 0
+
 
 @contextmanager
 def astakos_user(user):
@@ -130,10 +132,26 @@ def astakos_user(user):
     """
     with patch("snf_django.lib.api.get_token") as get_token:
         get_token.return_value = "DummyToken"
-        with patch('astakosclient.AstakosClient.get_user_info') as m:
-            m.return_value = {"uuid": text.uenc(user, 'utf8')}
-            with patch('astakosclient.AstakosClient.get_quotas') as m2:
-                m2.return_value = {
+        with patch('astakosclient.AstakosClient.authenticate') as m2:
+            m2.return_value = {"access": {
+                "token": {
+                    "expires": "2013-06-19T15:23:59.975572+00:00",
+                    "id": "DummyToken",
+                    "tenant": {
+                        "id": text.udec(user, 'utf8'),
+                        "name": "Firstname Lastname"
+                        }
+                    },
+                "serviceCatalog": [],
+                "user": {
+                    "roles_links": [],
+                    "id": text.udec(user, 'utf8'),
+                    "roles": [{"id": 1, "name": "default"}],
+                    "name": "Firstname Lastname"}}
+                }
+
+            with patch('astakosclient.AstakosClient.get_quotas') as m3:
+                m3.return_value = {
                     "system": {
                         "pithos.diskspace": {
                             "usage": 0,
@@ -142,7 +160,8 @@ def astakos_user(user):
                         }
                     }
                 }
-                issue_fun = "astakosclient.AstakosClient.issue_one_commission"
+                issue_fun = \
+                    "astakosclient.AstakosClient.issue_one_commission"
                 with patch(issue_fun) as m3:
                     serials = []
                     append = serials.append
@@ -160,7 +179,8 @@ def astakos_user(user):
                         m4.return_value = {'accepted': serials,
                                            'rejected': [],
                                            'failed': []}
-                        users_fun = 'astakosclient.AstakosClient.get_usernames'
+                        users_fun = \
+                            'astakosclient.AstakosClient.get_usernames'
                         with patch(users_fun) as m5:
 
                             def get_usernames(*args, **kwargs):
@@ -184,58 +204,81 @@ def mocked_quotaholder(success=True):
             return (len(astakos.return_value.issue_one_commission.mock_calls) +
                     serial)
         astakos.return_value.issue_one_commission.side_effect = foo
-        astakos.return_value.resolve_commissions.return_value = {"failed": []}
-        yield
+        def resolve_mock(*args, **kwargs):
+            return {"failed": [],
+                    "accepted": args[0],
+                    "rejected": args[1],
+                    }
+        astakos.return_value.resolve_commissions.side_effect = resolve_mock
+        yield astakos.return_value
 
 
 class BaseAPITest(TestCase):
     def get(self, url, user='user', *args, **kwargs):
         with astakos_user(user):
-            response = self.client.get(url, *args, **kwargs)
+            with mocked_quotaholder():
+                response = self.client.get(url, *args, **kwargs)
         return response
 
     def delete(self, url, user='user'):
         with astakos_user(user):
-            response = self.client.delete(url)
+            with mocked_quotaholder() as m:
+                self.mocked_quotaholder = m
+                response = self.client.delete(url)
         return response
 
     def post(self, url, user='user', params={}, ctype='json', *args, **kwargs):
         if ctype == 'json':
             content_type = 'application/json'
         with astakos_user(user):
-            response = self.client.post(url, params, content_type=content_type,
-                                        *args, **kwargs)
+            with mocked_quotaholder() as m:
+                self.mocked_quotaholder = m
+                response = self.client.post(url, params,
+                                            content_type=content_type,
+                                            *args, **kwargs)
         return response
 
     def put(self, url, user='user', params={}, ctype='json', *args, **kwargs):
         if ctype == 'json':
             content_type = 'application/json'
         with astakos_user(user):
-            response = self.client.put(url, params, content_type=content_type,
-                                       *args, **kwargs)
+            with mocked_quotaholder() as m:
+                self.mocked_quotaholder = m
+                response = self.client.put(url, params,
+                                           content_type=content_type,
+                                           *args, **kwargs)
         return response
 
     def assertSuccess(self, response):
-        self.assertTrue(response.status_code in [200, 203, 204])
+        self.assertTrue(response.status_code in [200, 202, 203, 204],
+                        msg=response.content)
 
-    def assertFault(self, response, status_code, name):
-        self.assertEqual(response.status_code, status_code)
+    def assertSuccess201(self, response):
+        self.assertEqual(response.status_code, 201, msg=response.content)
+
+    def assertFault(self, response, status_code, name, msg=''):
+        self.assertEqual(response.status_code, status_code,
+                         msg=msg)
         fault = json.loads(response.content)
         self.assertEqual(fault.keys(), [name])
 
     def assertBadRequest(self, response):
-        self.assertFault(response, 400, 'badRequest')
+        self.assertFault(response, 400, 'badRequest', msg=response.content)
+
+    def assertConflict(self, response):
+        self.assertFault(response, 409, 'conflict', msg=response.content)
 
     def assertItemNotFound(self, response):
-        self.assertFault(response, 404, 'itemNotFound')
+        self.assertFault(response, 404, 'itemNotFound', msg=response.content)
 
     def assertMethodNotAllowed(self, response):
-        self.assertFault(response, 400, 'badRequest')
+        self.assertFault(response, 405, 'notAllowed', msg=response.content)
+        self.assertTrue('Allow' in response)
         try:
             error = json.loads(response.content)
         except ValueError:
             self.assertTrue(False)
-        self.assertEqual(error['badRequest']['message'], 'Method not allowed')
+        self.assertEqual(error['notAllowed']['message'], 'Method not allowed')
 
 
 # Imitate unittest assertions new in Python 2.7

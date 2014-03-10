@@ -31,9 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from binascii import hexlify
-
 from filemapper import FileMapper
+
 
 class Mapper(object):
     """Mapper.
@@ -47,7 +46,7 @@ class Mapper(object):
             if params['mappool']:
                 from radosmapper import RadosMapper
                 self.rmap = RadosMapper(**params)
-	except KeyError:
+        except KeyError:
             pass
 
         self.fmap = FileMapper(**params)
@@ -59,8 +58,8 @@ class Mapper(object):
         """
         return self.fmap.map_retr(maphash, blkoff, nr)
 
-    def map_stor(self, maphash, hashes=(), blkoff=0, create=1):
+    def map_stor(self, maphash, hashes=(), blkoff=0):
         """Store hashes in the given hashes map."""
         if self.rmap:
-            self.rmap.map_stor(maphash, hashes, blkoff, create)
-        self.fmap.map_stor(maphash, hashes, blkoff, create)
+            self.rmap.map_stor(maphash, hashes, blkoff)
+        self.fmap.map_stor(maphash, hashes, blkoff)

@@ -1,4 +1,4 @@
-<form action="{% url project_detail object.chain %}#members-table"
+<form action="{% url project_detail object.chain_id %}#members-table"
     method="post" class="withlabels upperlabels" id="members-table" >
     {% csrf_token %}
     {% with addmembers_form as form %}

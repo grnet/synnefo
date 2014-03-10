@@ -39,9 +39,11 @@ DEFAULT_ALPHABET = ("0123456789"
                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                     "abcdefghijklmnopqrstuvwxyz")
 
+
 def get_random_word(length, alphabet=DEFAULT_ALPHABET):
     remainder = getrandbits(length * 8)
     return encode_word(remainder, alphabet=alphabet)
+
 
 def encode_word(number, alphabet=DEFAULT_ALPHABET):
     base = len(alphabet)

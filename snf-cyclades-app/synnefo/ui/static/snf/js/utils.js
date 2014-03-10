@@ -143,7 +143,7 @@
 
     synnefo.util.formatDate = function(d) {
         var dt = synnefo.util.FormatDigits(d.getDate()) + '/';
-        dt += synnefo.util.FormatDigits(d.getMonth(), 2);
+        dt += synnefo.util.FormatDigits(d.getMonth() + 1, 2);
         dt += '/' + d.getFullYear();
         dt += ' ' + synnefo.util.FormatDigits(d.getHours(), 2) + ':';
         dt += synnefo.util.FormatDigits(d.getMinutes(), 2) + ':';
@@ -248,13 +248,15 @@
 
     synnefo.i18n.API_ERROR_MESSAGES = {
         'timeout': {
+            'title': 'API error',
             'message': 'TIMEOUT', 
             'allow_report': false,
             'type': 'Network'
         },
         
         'error': {
-            'message': 'API error'
+            'title': 'API error',
+            'message': null
         }, 
 
         'abort': {},
@@ -575,14 +577,20 @@
         options = _.extend(options, synnefo.i18n.API_ERROR_MESSAGES[error_message] || {});
         options = _.extend(options, synnefo.i18n.API_ERROR_MESSAGES[code] || {});
         
+        options.api_message = options.message;
+
         if (window.ERROR_OVERRIDES && window.ERROR_OVERRIDES[options.message]) {
             options.message = window.ERROR_OVERRIDES[options.message];
+            options.api_message = '';
         }
         
         if (code && window.ERROR_OVERRIDES && window.ERROR_OVERRIDES[code]) {
             options.message = window.ERROR_OVERRIDES[code];
         }
-
+        
+        if (options.api_message == options.message) {
+          options.api_message = '';
+        }
         options = _.extend(defaults, options);
         options.code = code;
 

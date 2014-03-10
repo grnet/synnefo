@@ -8,7 +8,7 @@
 
 # IMAGE_DIR: directory location for disk images
 # IMAGE_DIR="/var/lib/snf-image"
-IMAGE_DIR=/srv/okeanos
+IMAGE_DIR=%IMAGE_DIR%
 
 # IMAGE_DEBUG: turn on debugging output for the scripts
 # IMAGE_DEBUG=no

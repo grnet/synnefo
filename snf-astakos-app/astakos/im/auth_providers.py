@@ -36,7 +36,7 @@ import json
 
 from synnefo.lib.ordereddict import OrderedDict
 
-from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse, NoReverseMatch
 from django.utils.translation import ugettext as _
 from django.contrib.auth.models import Group
 from django import template
@@ -55,6 +55,10 @@ logger = logging.getLogger(__name__)
 # providers registry
 PROVIDERS = {}
 REQUIRED_PROVIDERS = {}
+
+
+class InvalidProvider(Exception):
+    pass
 
 
 class AuthProviderBase(type):
@@ -245,7 +249,10 @@ class AuthProvider(object):
                 self.module, identifier=self.identifier)
 
             if pending:
-                pending._instance.delete()
+                user = pending._instance.user
+                logger.info("Removing existing unverified user (%r)",
+                            user.log_display)
+                user.delete()
 
         create_params = {
             'module': self.module,
@@ -263,11 +270,11 @@ class AuthProvider(object):
         return create
 
     def __repr__(self):
-        r = "'%s' module" % self.__class__.__name__
+        r = "'%r' module" % self.__class__.__name__
         if self.user:
-            r += ' (user: %s)' % self.user
+            r += ' (user: %r)' % self.user
         if self.identifier:
-            r += '(identifier: %s)' % self.identifier
+            r += '(identifier: %r)' % self.identifier
         return r
 
     def _message_params(self, **extra_params):
@@ -299,8 +306,9 @@ class AuthProvider(object):
         else:
             params['username'] = self.identifier
 
-        branding_params = dict(map(lambda k: (k[0].lower(), k[1]),
-            branding_utils.get_branding_dict().iteritems()))
+        branding_params = dict(
+            map(lambda k: (k[0].lower(), k[1]),
+                branding_utils.get_branding_dict().iteritems()))
         params.update(branding_params)
 
         if not self.message_tpls_compiled:
@@ -555,7 +563,7 @@ class AuthProvider(object):
 class LocalAuthProvider(AuthProvider):
     module = 'local'
 
-    login_view = 'password_change'
+    login_view = 'login'
     remote_authenticate = False
     username_key = 'user_email'
 
@@ -575,9 +583,16 @@ class LocalAuthProvider(AuthProvider):
     @property
     def urls(self):
         urls = super(LocalAuthProvider, self).urls
-        urls['change_password'] = reverse('password_change')
+
+        password_change_url = None
+        try:
+            password_change_url = reverse('password_change')
+        except NoReverseMatch:
+            pass
+
+        urls['change_password'] = password_change_url
         if self.user:
-            urls['add'] = reverse('password_change')
+            urls['add'] = password_change_url
         if self._instance:
             urls.update({
                 'remove': reverse('remove_auth_provider',
@@ -604,6 +619,7 @@ class ShibbolethAuthProvider(AuthProvider):
 
     messages = {
         'title': _('Academic'),
+        'method_details': '{account_prompt}: {provider_info_eppn}',
         'login_description': _('If you are a student, professor or researcher'
                                ' you can login using your academic account.'),
         'add_prompt': _('Allows you to login using your Academic '
@@ -655,6 +671,6 @@ def get_provider(module, user_obj=None, identifier=None, **params):
     Return a provider instance from the auth providers registry.
     """
     if not module in PROVIDERS:
-        raise Exception('Invalid auth provider "%s"' % id)
+        raise InvalidProvider('Invalid auth provider "%s"' % module)
 
     return PROVIDERS.get(module)(user_obj, identifier, **params)

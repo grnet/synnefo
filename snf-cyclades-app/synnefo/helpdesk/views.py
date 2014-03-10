@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -46,11 +46,10 @@ from urllib import unquote
 import astakosclient
 from snf_django.lib import astakos
 
-from synnefo.db.models import VirtualMachine, NetworkInterface, Network
+from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 
 # server actions specific imports
-from synnefo.api import servers
-from synnefo.logic import backend as servers_backend
+from synnefo.logic import servers as servers_backend
 from synnefo.ui.views import UI_MEDIA_URL
 
 logger = logging.getLogger(__name__)
@@ -95,8 +94,13 @@ def token_check(func):
             raise PermissionDenied
 
         token = request.POST.get('token', None)
-        if token and token == request.user.get('auth_token', None):
-            return func(request, *args, **kwargs)
+        if token:
+            try:
+                req_token = request.user["access"]["token"]["id"]
+                if token == req_token:
+                    return func(request, *args, **kwargs)
+            except KeyError:
+                pass
 
         raise PermissionDenied
 
@@ -114,14 +118,15 @@ def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
             raise Http404
 
         token = get_token_from_cookie(request, AUTH_COOKIE_NAME)
-        astakos.get_user(request, settings.ASTAKOS_BASE_URL,
+        astakos.get_user(request, settings.ASTAKOS_AUTH_URL,
                          fallback_token=token, logger=logger)
         if hasattr(request, 'user') and request.user:
-            groups = request.user.get('groups', [])
+            groups = request.user['access']['user']['roles']
+            groups = [g["name"] for g in groups]
 
             if not groups:
-                logger.error("Failed to access helpdesk view. User: %r",
-                             request.user_uniq)
+                logger.info("Failed to access helpdesk view. User: %r",
+                            request.user_uniq)
                 raise PermissionDenied
 
             has_perm = False
@@ -130,13 +135,13 @@ def helpdesk_user_required(func, permitted_groups=PERMITTED_GROUPS):
                     has_perm = True
 
             if not has_perm:
-                logger.error("Failed to access helpdesk view %r. No valid "
-                             "helpdesk group (%r) matches user groups (%r)",
-                             request.user_uniq, permitted_groups, groups)
+                logger.info("Failed to access helpdesk view %r. No valid "
+                            "helpdesk group (%r) matches user groups (%r)",
+                            request.user_uniq, permitted_groups, groups)
                 raise PermissionDenied
         else:
-            logger.error("Failed to access helpdesk view %r. No authenticated "
-                         "user found.", request.user_uniq)
+            logger.info("Failed to access helpdesk view %r. No authenticated "
+                        "user found.", request.user_uniq)
             raise PermissionDenied
 
         logging.info("User %s accessed helpdesk view (%s)", request.user_uniq,
@@ -154,7 +159,7 @@ def index(request):
     # if form submitted redirect to details
     account = request.GET.get('account', None)
     if account:
-        return redirect('synnefo.helpdesk.views.account',
+        return redirect('helpdesk-details',
                         search_query=account)
 
     # show index template
@@ -171,6 +176,7 @@ def account(request, search_query):
 
     logging.info("Helpdesk search by %s: %s", request.user_uniq, search_query)
     show_deleted = bool(int(request.GET.get('deleted', SHOW_DELETED_VMS)))
+    error = request.GET.get('error', None)
 
     account_exists = True
     # flag to indicate successfull astakos calls
@@ -181,17 +187,11 @@ def account(request, search_query):
     is_uuid = UUID_SEARCH_REGEX.match(search_query)
     is_vm = VM_SEARCH_REGEX.match(search_query)
     account_name = search_query
-    auth_token = request.user.get('auth_token')
+    auth_token = request.user['access']['token']['id']
 
     if is_ip:
-        try:
-            nic = NetworkInterface.objects.filter(ipv4=search_query).exclude(
-                machine__deleted=True).get()
-            search_query = nic.machine.userid
-            is_uuid = True
-        except NetworkInterface.DoesNotExist:
-            account_exists = False
-            account = None
+        # Search the IPAddressLog for the full use history of this IP
+        return search_by_ip(request, search_query)
 
     if is_vm:
         vmid = is_vm.groupdict().get('vmid')
@@ -204,22 +204,22 @@ def account(request, search_query):
             account = None
             search_query = vmid
 
-    astakos_client = astakosclient.AstakosClient(settings.ASTAKOS_BASE_URL,
-                                                 retry=2, use_pool=True,
-                                                 logger=logger)
+    astakos_client = astakosclient.AstakosClient(
+        auth_token, settings.ASTAKOS_AUTH_URL,
+        retry=2, use_pool=True, logger=logger)
 
     account = None
     if is_uuid:
         account = search_query
         try:
-            account_name = astakos_client.get_username(auth_token, account)
+            account_name = astakos_client.get_username(account)
         except:
             logger.info("Failed to resolve '%s' into account" % account)
 
     if account_exists and not is_uuid:
         account_name = search_query
         try:
-            account = astakos_client.get_uuid(auth_token, account_name)
+            account = astakos_client.get_uuid(account_name)
         except:
             logger.info("Failed to resolve '%s' into account" % account_name)
 
@@ -250,6 +250,7 @@ def account(request, search_query):
 
     user_context = {
         'account_exists': account_exists,
+        'error': error,
         'is_ip': is_ip,
         'is_vm': is_vm,
         'is_uuid': is_uuid,
@@ -258,13 +259,49 @@ def account(request, search_query):
         'vms': vms,
         'show_deleted': show_deleted,
         'account_name': account_name,
-        'token': request.user['auth_token'],
+        'token': request.user['access']['token']['id'],
         'networks': networks,
         'HELPDESK_MEDIA_URL': HELPDESK_MEDIA_URL,
         'UI_MEDIA_URL': UI_MEDIA_URL
     }
 
     return direct_to_template(request, "helpdesk/account.html",
+                              extra_context=user_context)
+
+
+def search_by_ip(request, search_query):
+    """Search IP history for all uses of an IP address."""
+    auth_token = request.user['access']['token']['id']
+    astakos_client = astakosclient.AstakosClient(auth_token,
+                                                 settings.ASTAKOS_AUTH_URL,
+                                                 retry=2, use_pool=True,
+                                                 logger=logger)
+
+    ips = IPAddressLog.objects.filter(address=search_query)\
+                              .order_by("allocated_at")
+
+    for ip in ips:
+        # Annotate IPs with the VM, Network and account attributes
+        ip.vm = VirtualMachine.objects.get(id=ip.server_id)
+        ip.network = Network.objects.get(id=ip.network_id)
+        userid = ip.vm.userid
+
+        try:
+            ip.account = astakos_client.get_username(userid)
+        except:
+            ip.account = userid
+            logger.info("Failed to resolve '%s' into account" % userid)
+
+    user_context = {
+        'ip_exists': bool(ips),
+        'ips': ips,
+        'search_query': search_query,
+        'token': auth_token,
+        'HELPDESK_MEDIA_URL': HELPDESK_MEDIA_URL,
+        'UI_MEDIA_URL': UI_MEDIA_URL
+    }
+
+    return direct_to_template(request, "helpdesk/ip.html",
                               extra_context=user_context)
 
 
@@ -295,10 +332,17 @@ def vm_suspend_release(request, vm_id):
 def vm_shutdown(request, vm_id):
     logging.info("VM %s shutdown by %s", vm_id, request.user_uniq)
     vm = VirtualMachine.objects.get(pk=vm_id)
-    servers.start_action(vm, 'STOP')
-    servers_backend.shutdown_instance(vm)
     account = vm.userid
-    return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))
+    error = None
+    try:
+        jobId = servers_backend.stop(vm)
+    except Exception, e:
+        error = e.message
+
+    redirect = reverse('helpdesk-details', args=(account,))
+    if error:
+        redirect = "%s?error=%s" % (redirect, error)
+    return HttpResponseRedirect(redirect)
 
 
 @helpdesk_user_required
@@ -306,7 +350,14 @@ def vm_shutdown(request, vm_id):
 def vm_start(request, vm_id):
     logging.info("VM %s start by %s", vm_id, request.user_uniq)
     vm = VirtualMachine.objects.get(pk=vm_id)
-    servers.start_action(vm, 'START')
-    servers_backend.startup_instance(vm)
     account = vm.userid
-    return HttpResponseRedirect(reverse('helpdesk-details', args=(account,)))
+    error = None
+    try:
+        jobId = servers_backend.start(vm)
+    except Exception, e:
+        error = e.message
+
+    redirect = reverse('helpdesk-details', args=(account,))
+    if error:
+        redirect = "%s?error=%s" % (redirect, error)
+    return HttpResponseRedirect(redirect)

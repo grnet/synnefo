@@ -36,15 +36,15 @@ and implements the message wait and dispatch loops. Actual messages are
 handled in the dispatched functions.
 
 """
-from django.core.management import setup_environ
 
 # Fix path to import synnefo settings
 import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
 sys.path.append(path)
-from synnefo import settings
-setup_environ(settings)
+
+os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
+from django.conf import settings
 
 from django.db import close_connection
 
@@ -296,7 +296,7 @@ def main():
     (opts, args) = parse_arguments(sys.argv[1:])
 
     # Rename this process so 'ps' output looks like this is a native
-    # executable.  Can not seperate command-line arguments from actual name of
+    # executable.  Cannot seperate command-line arguments from actual name of
     # the executable by NUL bytes, so only show the name of the executable
     # instead.  setproctitle.setproctitle("\x00".join(sys.argv))
     setproctitle.setproctitle(sys.argv[0])

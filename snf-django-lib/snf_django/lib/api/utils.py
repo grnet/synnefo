@@ -94,7 +94,7 @@ def get_request_dict(request):
     Only JSON format is supported
 
     """
-    data = request.raw_post_data
+    data = request.body
     content_type = request.META.get("CONTENT_TYPE")
     if content_type is None:
         raise faults.BadRequest("Missing Content-Type header field")
@@ -104,7 +104,8 @@ def get_request_dict(request):
         except ValueError:
             raise faults.BadRequest("Invalid JSON data")
     else:
-        raise faults.BadRequest("Unsupported Content-type: '%s'" % content_type)
+        raise faults.BadRequest("Unsupported Content-type: '%s'" %
+                                content_type)
 
 
 def prefix_pattern(prefix, append_slash=True):
@@ -114,3 +115,33 @@ def prefix_pattern(prefix, append_slash=True):
         prefix += '/'
     pattern = '^' + prefix
     return pattern
+
+
+def filter_modified_since(request, objects):
+    """Filter DB objects based on 'changes-since' request parameter.
+
+    Parse request for 'changes-since' parameter and get only the DB objects
+    that have been updated after that time. Otherwise, return the non-deleted
+    objects.
+
+    """
+    since = isoparse(request.GET.get("changes-since"))
+    if since:
+        modified_objs = objects.filter(updated__gte=since)
+        if not modified_objs:
+            raise faults.NotModified()
+        return modified_objs
+    else:
+        return objects.filter(deleted=False)
+
+
+def get_attribute(request, attribute, attr_type=None, required=True):
+    value = request.get(attribute, None)
+    if required and value is None:
+        raise faults.BadRequest("Malformed request. Missing attribute '%s'." %
+                                attribute)
+    if attr_type is not None and value is not None\
+       and not isinstance(value, attr_type):
+        raise faults.BadRequest("Malformed request. Invalid '%s' field"
+                                % attribute)
+    return value

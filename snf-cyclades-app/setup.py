@@ -58,7 +58,7 @@ CLASSIFIERS = []
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'Django >=1.2, <=1.4.5',
+    'Django>=1.4, <1.5',
     'simplejson>=2.1.1',
     'pycurl>=7.19.0',
     'python-dateutil>=1.4.1',
@@ -68,17 +68,19 @@ INSTALL_REQUIRES = [
     'puka',
     'python-daemon>=1.5.5, <1.6',
     'snf-common',
-    'vncauthproxy>=1.2',
+    'vncauthproxy>1.4',
     'snf-pithos-backend',
     'lockfile>=0.8, <0.9',
     'ipaddr',
     'setproctitle>=1.0.1',
     'bitarray>=0.8',
-    'objpool>=0.2',
+    'objpool>=0.3',
     'astakosclient',
     'snf-django-lib',
     'snf-branding',
-    'snf-webproject'
+    'snf-webproject',
+    'requests>=0.12.1',
+    'paramiko'
 ]
 
 EXTRAS_REQUIRES = {

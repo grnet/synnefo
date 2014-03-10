@@ -31,7 +31,7 @@
 from django.core.management.base import BaseCommand, CommandError
 
 from synnefo.plankton.utils import image_backend
-from synnefo.webproject.management import utils
+from snf_django.management import utils
 
 
 class Command(BaseCommand):

@@ -34,16 +34,23 @@
 from optparse import make_option
 from datetime import datetime
 
+from django.db import transaction
 from django.core.management.base import NoArgsCommand, CommandError
 
-from astakos.im.models import fix_superusers
+from astakos.im.auth import fix_superusers
 
 
 class Command(NoArgsCommand):
     help = "Transform superusers created by syncdb into AstakosUser instances"
 
+    @transaction.commit_on_success
     def handle(self, **options):
         try:
-            fix_superusers()
+            fixed = fix_superusers()
+            count = len(fixed)
+            if count != 0:
+                self.stderr.write("Fixed %s superuser(s).\n" % count)
+            else:
+                self.stderr.write("No superuser needed a fix.\n")
         except BaseException, e:
             raise CommandError(e)

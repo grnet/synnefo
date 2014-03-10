@@ -35,9 +35,9 @@ from optparse import make_option
 from django.core.management.base import CommandError
 
 from synnefo.lib.ordereddict import OrderedDict
-from synnefo.webproject.management.commands import SynnefoCommand
-from synnefo.webproject.management import utils
-from astakos.im.models import Chain, ProjectApplication
+from snf_django.management.commands import SynnefoCommand
+from snf_django.management import utils
+from astakos.im.models import ProjectApplication, Project
 from ._common import show_resource_value, style_options, check_style
 
 
@@ -93,15 +93,15 @@ class Command(SynnefoCommand):
             app = get_app(id_)
             self.print_app(app)
         else:
-            state, project, app = get_chain_state(id_)
-            self.print_project(state, project, app)
+            project, pending_app = get_chain_state(id_)
+            self.print_project(project, pending_app)
             if show_members and project is not None:
                 self.stdout.write("\n")
                 fields, labels = members_fields(project)
                 self.pprint_table(fields, labels, title="Members")
-            if show_pending and state in Chain.PENDING_STATES:
+            if show_pending and pending_app is not None:
                 self.stdout.write("\n")
-                self.print_app(app)
+                self.print_app(pending_app)
 
     def pprint_dict(self, d, vertical=True):
         utils.pprint_table(self.stdout, [d.values()], d.keys(),
@@ -116,11 +116,11 @@ class Command(SynnefoCommand):
         self.pprint_dict(app_info)
         self.print_resources(app)
 
-    def print_project(self, state, project, app):
+    def print_project(self, project, app):
         if project is None:
             self.print_app(app)
         else:
-            self.pprint_dict(project_fields(state, project, app))
+            self.pprint_dict(project_fields(project, app))
             self.print_resources(project.application)
 
     def print_resources(self, app):
@@ -139,17 +139,10 @@ def get_app(app_id):
 
 def get_chain_state(project_id):
     try:
-        chain = Chain.objects.get(chain=project_id)
-        return chain.full_state()
-    except Chain.DoesNotExist:
+        chain = Project.objects.get(id=project_id)
+        return chain, chain.last_pending_application()
+    except Project.DoesNotExist:
         raise CommandError("Project with id %s not found." % project_id)
-
-
-def chain_fields(state, project, app):
-    if project is not None:
-        return project_fields(state, project, app)
-    else:
-        return app_fields(app)
 
 
 def resource_fields(app, style):
@@ -170,7 +163,7 @@ def app_fields(app):
     mem_limit_show = mem_limit if mem_limit is not None else "unlimited"
 
     d = OrderedDict([
-        ('project id', app.chain),
+        ('project id', app.chain_id),
         ('application id', app.id),
         ('name', app.name),
         ('status', app.state_display()),
@@ -190,17 +183,17 @@ def app_fields(app):
     return d
 
 
-def project_fields(s, project, last_app):
+def project_fields(project, pending_app):
     app = project.application
 
     d = OrderedDict([
         ('project id', project.id),
         ('application id', app.id),
         ('name', app.name),
-        ('status', Chain.state_display(s)),
+        ('status', project.state_display()),
     ])
-    if s in Chain.PENDING_STATES:
-        d.update([('pending application', last_app.id)])
+    if pending_app is not None:
+        d.update([('pending application', pending_app.id)])
 
     d.update([('owner', app.owner),
               ('applicant', app.applicant),
@@ -213,9 +206,9 @@ def project_fields(s, project, last_app):
               ('request end date', app.end_date),
               ])
 
-    deact_date = project.deactivation_date
-    if deact_date is not None:
-        d['deactivation date'] = deact_date
+    deact = project.last_deactivation()
+    if deact is not None:
+        d['deactivation date'] = deact.date
 
     mem_limit = app.limit_on_members_number
     mem_limit_show = mem_limit if mem_limit is not None else "unlimited"

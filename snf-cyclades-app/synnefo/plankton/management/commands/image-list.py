@@ -31,7 +31,7 @@
 from django.core.management.base import BaseCommand
 from optparse import make_option
 
-from synnefo.webproject.management.utils import pprint_table
+from snf_django.management.utils import pprint_table
 from synnefo.plankton.utils import image_backend
 
 

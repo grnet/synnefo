@@ -36,6 +36,7 @@ import json
 from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
+from django.core.validators import ValidationError
 from django.db import transaction
 
 from astakos.im.models import PendingThirdPartyUser, AstakosUser
@@ -68,8 +69,8 @@ def add_pending_auth_provider(request, third_party_token, provider):
         # a third party provider account
         try:
             pending = PendingThirdPartyUser.objects.get(
-                                token=third_party_token,
-                                provider=provider.module)
+                token=third_party_token,
+                provider=provider.module)
             provider = pending.get_provider()
             provider.add_to_user()
             pending.delete()
@@ -78,7 +79,8 @@ def add_pending_auth_provider(request, third_party_token, provider):
 
 
 def get_pending_key(request):
-    third_party_token = get_query(request).get('key', request.session.get('pending_key', False))
+    third_party_token = get_query(request).get(
+        'key', request.session.get('pending_key', False))
     if 'pending_key' in request.session:
         del request.session['pending_key']
     return third_party_token
@@ -131,6 +133,18 @@ def handle_third_party_signup(request, userid, provider_module,
 
     user.info = json.dumps(provider_info)
     user.generate_token()
+
+    # skip non required fields validation errors. Reset the field instead of
+    # raising a validation exception.
+    try:
+        user.full_clean()
+    except ValidationError, e:
+        non_required_fields = ['email', 'first_name',
+                               'last_name', 'affiliation']
+        for field in e.message_dict.keys():
+            if field in non_required_fields:
+                setattr(user, field, None)
+
     user.save()
 
     extra_context['provider'] = provider.module
@@ -157,8 +171,9 @@ def handle_third_party_login(request, provider_module, identifier,
     if not affiliation:
         affiliation = provider_module.title()
 
-    next_redirect = request.GET.get('next', request.session.get('next_url',
-                                                                None))
+    next_redirect = request.GET.get(
+        'next', request.session.get('next_url', None))
+
     if 'next_url' in request.session:
         del request.session['next_url']
 

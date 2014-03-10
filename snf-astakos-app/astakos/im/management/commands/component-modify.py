@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -43,10 +43,13 @@ class Command(BaseCommand):
     help = "Modify component attributes"
 
     option_list = BaseCommand.option_list + (
-        make_option('--url',
-                    dest='url',
+        make_option('--ui-url',
+                    dest='ui_url',
                     default=None,
-                    help="Set component url"),
+                    help="Set UI URL"),
+        make_option('--base-url',
+                    dest='base_url',
+                    help="Set base URL"),
         make_option('--auth-token',
                     dest='auth_token',
                     default=None,
@@ -79,16 +82,21 @@ class Command(BaseCommand):
                 "Component does not exist. You may run snf-manage "
                 "component-list for available component IDs.")
 
-        url = options.get('url')
+        ui_url = options.get('ui_url')
+        base_url = options.get('base_url')
         auth_token = options.get('auth_token')
         renew_token = options.get('renew_token')
         purge_services = options.get('purge_services')
 
-        if not any([url, auth_token, renew_token, purge_services]):
+        if not any([ui_url, base_url, auth_token, renew_token,
+                    purge_services]):
             raise CommandError("No option specified.")
 
-        if url:
-            component.url = url
+        if ui_url:
+            component.url = ui_url
+
+        if base_url:
+            component.base_url = base_url
 
         if auth_token:
             component.auth_token = auth_token

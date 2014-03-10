@@ -30,7 +30,7 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-
+import sys
 from functools import wraps
 from traceback import format_exc
 from time import time
@@ -51,6 +51,7 @@ from snf_django.lib.api import faults
 import itertools
 
 log = getLogger(__name__)
+django_logger = getLogger("django.request")
 
 
 def get_token(request):
@@ -62,7 +63,7 @@ def get_token(request):
 
 
 def api_method(http_method=None, token_required=True, user_required=True,
-               logger=None, format_allowed=True, astakos_url=None,
+               logger=None, format_allowed=True, astakos_auth_url=None,
                serializations=None, strict_serlization=False):
     """Decorator function for views that implement an API method."""
     if not logger:
@@ -90,7 +91,8 @@ def api_method(http_method=None, token_required=True, user_required=True,
 
                 # Check HTTP method
                 if http_method and request.method != http_method:
-                    raise faults.BadRequest("Method not allowed")
+                    raise faults.NotAllowed("Method not allowed",
+                                            allowed_methods=[http_method])
 
                 # Get authentication token
                 request.x_auth_token = None
@@ -104,13 +106,20 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 # Authenticate
                 if user_required:
                     assert(token_required), "Can not get user without token"
-                    astakos = astakos_url or settings.ASTAKOS_BASE_URL
-                    astakos = AstakosClient(astakos,
+                    astakos_url = astakos_auth_url
+                    if astakos_url is None:
+                        try:
+                            astakos_url = settings.ASTAKOS_AUTH_URL
+                        except AttributeError:
+                            logger.error("Cannot authenticate without having"
+                                         " an Astakos Authentication URL")
+                            raise
+                    astakos = AstakosClient(token, astakos_url,
                                             use_pool=True,
                                             retry=2,
                                             logger=logger)
-                    user_info = astakos.get_user_info(token)
-                    request.user_uniq = user_info["uuid"]
+                    user_info = astakos.authenticate()
+                    request.user_uniq = user_info["access"]["user"]["id"]
                     request.user = user_info
 
                 # Get the response object
@@ -119,26 +128,41 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 # Fill in response variables
                 update_response_headers(request, response)
                 return response
-            except faults.Fault, fault:
+            except faults.Fault as fault:
                 if fault.code >= 500:
-                    logger.exception("API ERROR")
+                    django_logger.error("Unexpected API Error: %s",
+                                        request.path,
+                                        exc_info=sys.exc_info(),
+                                        extra={
+                                            "status_code": fault.code,
+                                            "request": request})
                 return render_fault(request, fault)
             except AstakosClientException as err:
                 fault = faults.Fault(message=err.message,
                                      details=err.details,
                                      code=err.status)
                 if fault.code >= 500:
-                    logger.exception("Astakos ERROR")
+                    django_logger.error("Unexpected AstakosClient Error: %s",
+                                        request.path,
+                                        exc_info=sys.exc_info(),
+                                        extra={
+                                            "status_code": fault.code,
+                                            "request": request})
                 return render_fault(request, fault)
             except:
-                logger.exception("Unexpected ERROR")
+                django_logger.error("Internal Server Error: %s", request.path,
+                                    exc_info=sys.exc_info(),
+                                    extra={
+                                        "status_code": '500',
+                                        "request": request})
                 fault = faults.InternalServerError("Unexpected error")
                 return render_fault(request, fault)
         return csrf.csrf_exempt(wrapper)
     return decorator
 
 
-def get_serialization(request, format_allowed=True, default_serialization="json"):
+def get_serialization(request, format_allowed=True,
+                      default_serialization="json"):
     """Return the serialization format requested.
 
     Valid formats are 'json' and 'xml' and 'text'
@@ -189,12 +213,9 @@ def update_response_headers(request, response):
         response["Date"] = format_date_time(time())
 
     if not response.has_header("Content-Length"):
-        _is_string = getattr(response, '_is_string', None)  # Django==1.2
         _base_content_is_iter = getattr(response, '_base_content_is_iter',
                                         None)
-        if (_is_string is not None and _is_string) or\
-                (_base_content_is_iter is not None and
-                    not _base_content_is_iter):
+        if (_base_content_is_iter is not None and not _base_content_is_iter):
             response["Content-Length"] = len(response.content)
         else:
             if not (response.has_header('Content-Type') and
@@ -233,6 +254,8 @@ def render_fault(request, fault):
         data = json.dumps(d)
 
     response = HttpResponse(data, status=fault.code)
+    if response.status_code == 405 and hasattr(fault, 'allowed_methods'):
+        response['Allow'] = ','.join(fault.allowed_methods)
     update_response_headers(request, response)
     return response
 
@@ -243,8 +266,9 @@ def api_endpoint_not_found(request):
 
 
 @api_method(token_required=False, user_required=False)
-def api_method_not_allowed(request):
-    raise faults.BadRequest('Method not allowed')
+def api_method_not_allowed(request, allowed_methods):
+    raise faults.NotAllowed("Method not allowed",
+                            allowed_methods=allowed_methods)
 
 
 def allow_jsonp(key='callback'):
@@ -252,6 +276,7 @@ def allow_jsonp(key='callback'):
     Wrapper to enable jsonp responses.
     """
     def wrapper(func):
+        @wraps(func)
         def view_wrapper(request, *args, **kwargs):
             response = func(request, *args, **kwargs)
             if 'content-type' in response._headers and \
@@ -265,3 +290,41 @@ def allow_jsonp(key='callback'):
             return response
         return view_wrapper
     return wrapper
+
+
+def user_in_groups(permitted_groups, logger=None):
+    """Check that the request user belongs to one of permitted groups.
+
+    Django view wrapper to check that the already identified request user
+    belongs to one of the allowed groups.
+
+    """
+    if not logger:
+        logger = log
+
+    def decorator(func):
+        @wraps(func)
+        def wrapper(request, *args, **kwargs):
+            if hasattr(request, "user") and request.user is not None:
+                groups = request.user["access"]["user"]["roles"]
+                groups = [g["name"] for g in groups]
+            else:
+                raise faults.Forbidden
+
+            common_groups = set(groups) & set(permitted_groups)
+
+            if not common_groups:
+                msg = ("Not allowing access to '%s' by user '%s'. User does"
+                       " not belong to a valid group. User groups: %s,"
+                       " Required groups %s"
+                       % (request.path, request.user, groups,
+                          permitted_groups))
+                logger.error(msg)
+                raise faults.Forbidden
+
+            logger.info("User '%s' in groups '%s' accessed view '%s'",
+                        request.user_uniq, groups, request.path)
+
+            return func(request, *args, **kwargs)
+        return wrapper
+    return decorator

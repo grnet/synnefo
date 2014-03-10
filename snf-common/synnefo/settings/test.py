@@ -6,6 +6,8 @@ from synnefo.settings import *
 DEBUG = False
 TEST = True
 
+CACHE_BACKEND = os.environ.get('SNF_TEST_CACHE_BACKEND', 'locmem://')
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -15,7 +17,7 @@ DATABASES = {
 }
 
 LOGGING_SETUP['handlers']['console']['level'] = \
-    os.environ.get('SYNNEFO_TESTS_LOGGING_LEVEL', 'WARNING')
+    os.environ.get('SYNNEFO_TESTS_LOGGING_LEVEL', 'INFO')
 
 LOGIN_URL = 'http://host:port/'
 
@@ -56,13 +58,14 @@ else:
 
 ASTAKOS_IM_MODULES = ['local', 'shibboleth']
 
-CYCLADES_PROXY_USER_SERVICES = False
-PITHOS_PROXY_USER_SERVICES = False
 
 ASTAKOS_BASE_URL = 'http://accounts.example.synnefo.org/astakos/'
+ASTAKOS_AUTH_URL = 'http://accounts.example.synnefo.org/astakos/identity/v2.0'
 COMPUTE_BASE_URL = 'http://compute.example.synnefo.org/cyclades/'
 PITHOS_BASE_URL = 'http://storage.example.synnefo.org/pithos/'
 
 CLOUDBAR_LOCATION = '/static/im/cloudbar/'
 CLOUDBAR_SERVICES_URL = '/ui/get_services'
 CLOUDBAR_MENU_URL = '/ui/get_menu'
+
+TEST_RUNNER = 'pithos.api.test.PithosTestSuiteRunner'

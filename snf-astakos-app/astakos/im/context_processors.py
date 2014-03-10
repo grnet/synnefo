@@ -49,6 +49,7 @@ PROFILE_EXTRA_LINKS = settings.PROFILE_EXTRA_LINKS
 def im_modules(request):
     return {'im_modules': settings.IM_MODULES}
 
+
 def auth_providers(request):
     active_auth_providers = []
     for module in settings.IM_MODULES:
@@ -59,6 +60,7 @@ def auth_providers(request):
     return {'auth_providers': active_auth_providers,
             'master_auth_provider': active_auth_providers[0]}
 
+
 def next(request):
     return {'next': get_query(request).get('next', '')}
 
@@ -66,8 +68,11 @@ def next(request):
 def code(request):
     return {'code': request.GET.get('code', '')}
 
+
 def last_login_method(request):
-    return {'last_login_method': request.COOKIES.get('astakos_last_login_method', None)}
+    return {'last_login_method':
+            request.COOKIES.get('astakos_last_login_method', None)}
+
 
 def invitations(request):
     return {'invitations_enabled': settings.INVITATIONS_ENABLED}
@@ -112,7 +117,7 @@ def menu(request):
     else:
         return {'menu': menu_items}
 
+
 def membership_policies(request):
     return {'join_policies': presentation.PROJECT_MEMBER_JOIN_POLICIES,
             'leave_policies': presentation.PROJECT_MEMBER_LEAVE_POLICIES}
-

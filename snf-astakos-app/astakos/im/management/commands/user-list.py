@@ -34,7 +34,7 @@
 from optparse import make_option
 
 from astakos.im.models import AstakosUser
-from synnefo.webproject.management.commands import ListCommand
+from snf_django.management.commands import ListCommand
 
 
 def get_providers(user):

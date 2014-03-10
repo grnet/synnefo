@@ -34,68 +34,56 @@
 import logging
 from django import http
 from django.utils import simplejson as json
-from synnefo.db.models import VirtualMachine, Network
-from django.db.models import Count, Sum
+from django.conf import settings
 from snf_django.lib import api
-from copy import copy
+from snf_django.lib.api import utils, faults
+from synnefo.db.models import Backend
 
+from synnefo.admin import stats
 
-log = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @api.api_method(http_method='GET', user_required=False, token_required=False,
-                logger=log, serializations=['json'])
+                logger=logger, serializations=['json'])
 @api.allow_jsonp()
-def get_stats(request):
-    stats = get_statistics()
-    data = json.dumps(stats)
+def get_public_stats(request):
+    _stats = stats.get_public_stats()
+    data = json.dumps(_stats)
     return http.HttpResponse(data, status=200, content_type='application/json')
 
 
-def get_statistics():
-    # VirtualMachines
-    vm_objects = VirtualMachine.objects
-    servers = vm_objects.values("deleted", "operstate")\
-                        .annotate(count=Count("id"),
-                                  cpu=Sum("flavor__cpu"),
-                                  ram=Sum("flavor__ram"),
-                                  disk=Sum("flavor__disk"))
-    zero_stats = {"count": 0, "cpu": 0, "ram": 0, "disk": 0}
-    server_stats = {}
-    for state in VirtualMachine.RSAPI_STATE_FROM_OPER_STATE.values():
-        server_stats[state] = copy(zero_stats)
+@api.api_method(http_method='GET', user_required=True, token_required=True,
+                logger=logger, serializations=['json'])
+@api.user_in_groups(permitted_groups=settings.ADMIN_STATS_PERMITTED_GROUPS,
+                    logger=logger)
+def get_cyclades_stats(request):
+    images = True
+    backend = None
+    if request.body:
+        req = utils.get_request_dict(request)
+        req_stats = utils.get_attribute(req, "stats", required=True,
+                                        attr_type=dict)
+        # Check backend
+        backend_id = utils.get_attribute(req_stats, "backend", required=False,
+                                         attr_type=(basestring, int))
+        if backend_id is not None:
+            try:
+                try:
+                    backend_id = int(backend_id)
+                    backend = Backend.objects.get(id=backend_id)
+                except (ValueError, TypeError):
+                    backend = Backend.objects.get(clustername=backend_id)
+            except Backend.DoesNotExist:
+                raise faults.BadRequest("Invalid backend '%s'" % backend_id)
+        include_images = utils.get_attribute(req_stats, "images",
+                                             required=False,
+                                             attr_type=bool)
+        if include_images is not None:
+            images = include_images
 
-    for stats in servers:
-        deleted = stats.pop("deleted")
-        operstate = stats.pop("operstate")
-        state = VirtualMachine.RSAPI_STATE_FROM_OPER_STATE.get(operstate)
-        if deleted:
-            for key in zero_stats.keys():
-                server_stats["DELETED"][key] += stats.get(key, 0)
-        elif state:
-            for key in zero_stats.keys():
-                server_stats[state][key] += stats.get(key, 0)
-
-    #Networks
-    net_objects = Network.objects
-    networks = net_objects.values("deleted", "state")\
-                          .annotate(count=Count("id"))
-    zero_stats = {"count": 0}
-    network_stats = {}
-    for state in Network.RSAPI_STATE_FROM_OPER_STATE.values():
-        network_stats[state] = copy(zero_stats)
-
-    for stats in networks:
-        deleted = stats.pop("deleted")
-        state = stats.pop("state")
-        state = Network.RSAPI_STATE_FROM_OPER_STATE.get(state)
-        if deleted:
-            for key in zero_stats.keys():
-                network_stats["DELETED"][key] += stats.get(key, 0)
-        elif state:
-            for key in zero_stats.keys():
-                network_stats[state][key] += stats.get(key, 0)
-
-    statistics = {"servers": server_stats,
-                  "networks": network_stats}
-    return statistics
+    _stats = stats.get_cyclades_stats(backend=backend, clusters=True,
+                                      servers=True, resources=True,
+                                      networks=True, images=images)
+    data = json.dumps(_stats)
+    return http.HttpResponse(data, status=200, content_type='application/json')

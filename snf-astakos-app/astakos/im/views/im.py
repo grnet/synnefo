@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -53,8 +53,6 @@ from django.template import RequestContext
 
 from synnefo_branding import utils as branding
 from synnefo_branding import settings as branding_settings
-
-from synnefo.lib import join_urls
 
 import astakos.im.messages as astakos_messages
 
@@ -131,11 +129,12 @@ def index(request, authenticated_redirect='landing',
 @require_http_methods(["POST"])
 @cookie_fix
 @valid_astakos_user_required
+@transaction.commit_on_success
 def update_token(request):
     """
     Update api token view.
     """
-    user = request.user
+    user = AstakosUser.objects.select_for_update().get(id=request.user.id)
     user.renew_token()
     user.save()
     messages.success(request, astakos_messages.TOKEN_UPDATED)
@@ -150,9 +149,10 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
     """
     Allows a user to invite somebody else.
 
-    In case of GET request renders a form for providing the invitee information.
-    In case of POST checks whether the user has not run out of invitations and then
-    sends an invitation email to singup to the service.
+    In case of GET request renders a form for providing the invitee
+    information.
+    In case of POST checks whether the user has not run out of invitations and
+    then sends an invitation email to singup to the service.
 
     The number of the user invitations is going to be updated only if the email
     has been successfully sent.
@@ -207,7 +207,6 @@ def invite(request, template_name='im/invitations.html', extra_context=None):
     return render_response(template_name,
                            invitation_form=form,
                            context_instance=context)
-
 
 
 @require_http_methods(["GET", "POST"])
@@ -273,6 +272,7 @@ def api_access(request, template_name='im/api_access.html',
 @login_required
 @cookie_fix
 @signed_terms_required
+@transaction.commit_on_success
 def edit_profile(request, template_name='im/profile.html', extra_context=None):
     """
     Allows a user to edit his/her profile.
@@ -302,6 +302,9 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
 
     * LOGIN_URL: login uri
     """
+
+    request.user = AstakosUser.objects.select_for_update().\
+        get(id=request.user.id)
     extra_context = extra_context or {}
     form = ProfileForm(
         instance=request.user,
@@ -356,7 +359,7 @@ def edit_profile(request, template_name='im/profile.html', extra_context=None):
                            user_disabled_providers=user_disabled_providers,
                            user_available_providers=user_available_providers,
                            context_instance=get_context(request,
-                                                          extra_context))
+                                                        extra_context))
 
 
 @transaction.commit_on_success
@@ -406,6 +409,12 @@ def signup(request, template_name='im/signup.html', on_success='index',
         return HttpResponseRedirect(reverse('index'))
 
     provider = get_query(request).get('provider', 'local')
+    try:
+        auth.get_provider(provider)
+    except auth.InvalidProvider, e:
+        messages.error(request, e.message)
+        return HttpResponseRedirect(reverse("signup"))
+
     if not auth.get_provider(provider).get_create_policy:
         logger.error("%s provider not available for signup", provider)
         raise PermissionDenied
@@ -415,6 +424,7 @@ def signup(request, template_name='im/signup.html', on_success='index',
     # user registered using third party provider
     third_party_token = request.REQUEST.get('third_party_token', None)
     unverified = None
+    pending = None
     if third_party_token:
         # retreive third party entry. This was created right after the initial
         # third party provider handshake.
@@ -431,14 +441,17 @@ def signup(request, template_name='im/signup.html', on_success='index',
         unverified = get_unverified(pending.provider,
                                     identifier=pending.third_party_identifier)
 
+        get_verified = AstakosUserAuthProvider.objects.verified
+        verified = get_verified(pending.provider,
+                                identifier=pending.third_party_identifier)
+        if verified:
+            # an existing verified user already exists for the third party
+            # identifier
+            pending.delete()
+            raise Http404
+
         if unverified and request.method == 'GET':
             messages.warning(request, unverified.get_pending_registration_msg)
-            if unverified.user.moderated:
-                messages.warning(request,
-                                 unverified.get_pending_resend_activation_msg)
-            else:
-                messages.warning(request,
-                                 unverified.get_pending_moderation_msg)
 
     # prepare activation backend based on current request
     if not activation_backend:
@@ -448,8 +461,16 @@ def signup(request, template_name='im/signup.html', on_success='index',
     if third_party_token:
         form_kwargs['third_party_token'] = third_party_token
 
+    if pending:
+        form_kwargs['initial'] = {
+            'first_name': pending.first_name,
+            'last_name': pending.last_name,
+            'email': pending.email
+        }
+
     form = activation_backend.get_signup_form(
         provider, None, **form_kwargs)
+
 
     if request.method == 'POST':
         form = activation_backend.get_signup_form(
@@ -458,14 +479,7 @@ def signup(request, template_name='im/signup.html', on_success='index',
             **form_kwargs)
 
         if form.is_valid():
-            user = form.save(commit=False)
-
-            # delete previously unverified accounts
-            if AstakosUser.objects.user_exists(user.email):
-                AstakosUser.objects.get_by_identifier(user.email).delete()
-
-            # store_user so that user auth providers get initialized
-            form.store_user(user, request)
+            user = form.create_user()
             result = activation_backend.handle_registration(user)
             if result.status == \
                     activation_backend.Result.PENDING_MODERATION:
@@ -489,11 +503,12 @@ def signup(request, template_name='im/signup.html', on_success='index',
             messages.add_message(request, status, message)
             return HttpResponseRedirect(reverse(on_success))
 
-    return render_response(template_name,
-                           signup_form=form,
-                           third_party_token=third_party_token,
-                           provider=provider,
-                           context_instance=get_context(request, extra_context))
+    return render_response(
+        template_name,
+        signup_form=form,
+        third_party_token=third_party_token,
+        provider=provider,
+        context_instance=get_context(request, extra_context))
 
 
 @require_http_methods(["GET", "POST"])
@@ -501,11 +516,13 @@ def signup(request, template_name='im/signup.html', on_success='index',
 @login_required
 @cookie_fix
 @signed_terms_required
-def feedback(request, template_name='im/feedback.html', email_template_name='im/feedback_mail.txt', extra_context=None):
+def feedback(request, template_name='im/feedback.html',
+             email_template_name='im/feedback_mail.txt', extra_context=None):
     """
     Allows a user to send feedback.
 
-    In case of GET request renders a form for providing the feedback information.
+    In case of GET request renders a form for providing the feedback
+    information.
     In case of POST sends an email to support team.
 
     If the user isn't logged in, redirects to settings.LOGIN_URL.
@@ -578,12 +595,18 @@ def logout(request, template='registration/logged_out.html',
         response['Location'] = settings.LOGOUT_NEXT
         response.status_code = 301
     else:
-        last_provider = request.COOKIES.get('astakos_last_login_method', 'local')
-        provider = auth.get_provider(last_provider)
+        last_provider = request.COOKIES.get(
+            'astakos_last_login_method', 'local')
+        try:
+            provider = auth.get_provider(last_provider)
+        except auth.InvalidProvider:
+            provider = auth.get_provider('local')
+
         message = provider.get_logout_success_msg
         extra = provider.get_logout_success_extra_msg
+
         if extra:
-            message += "<br />"  + extra
+            message += "<br />" + extra
         messages.success(request, message)
         response['Location'] = reverse('index')
         response.status_code = 301
@@ -613,9 +636,11 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
         return HttpResponseRedirect(reverse('index'))
 
     try:
-        user = AstakosUser.objects.get(verification_code=token)
+        user = AstakosUser.objects.select_for_update().\
+            get(verification_code=token)
     except AstakosUser.DoesNotExist:
-        raise Http404
+        messages.error(request, astakos_messages.INVALID_ACTIVATION_KEY)
+        return HttpResponseRedirect(reverse('index'))
 
     if user.email_verified:
         message = _(astakos_messages.ACCOUNT_ALREADY_VERIFIED)
@@ -636,29 +661,48 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
     return response
 
 
+@login_required
+def _approval_terms_post(request, template_name, terms, extra_context):
+    next = restrict_next(
+        request.POST.get('next'),
+        domain=settings.COOKIE_DOMAIN
+    )
+    if not next:
+        next = reverse('index')
+    form = SignApprovalTermsForm(request.POST, instance=request.user)
+    if not form.is_valid():
+        return render_response(template_name,
+                               terms=terms,
+                               approval_terms_form=form,
+                               context_instance=get_context(request,
+                                                            extra_context))
+    user = form.save()
+    return HttpResponseRedirect(next)
+
+
 @require_http_methods(["GET", "POST"])
 @cookie_fix
 def approval_terms(request, term_id=None,
                    template_name='im/approval_terms.html', extra_context=None):
     extra_context = extra_context or {}
-    term = None
+    terms_record = None
     terms = None
     if not term_id:
         try:
-            term = ApprovalTerms.objects.order_by('-id')[0]
+            terms_record = ApprovalTerms.objects.order_by('-id')[0]
         except IndexError:
             pass
     else:
         try:
-            term = ApprovalTerms.objects.get(id=term_id)
+            terms_record = ApprovalTerms.objects.get(id=term_id)
         except ApprovalTerms.DoesNotExist, e:
             pass
 
-    if not term:
+    if not terms_record:
         messages.error(request, _(astakos_messages.NO_APPROVAL_TERMS))
         return HttpResponseRedirect(reverse('index'))
     try:
-        f = open(term.location, 'r')
+        f = open(terms_record.location, 'r')
     except IOError:
         messages.error(request, _(astakos_messages.GENERIC_ERROR))
         return render_response(
@@ -668,21 +712,8 @@ def approval_terms(request, term_id=None,
     terms = f.read()
 
     if request.method == 'POST':
-        next = restrict_next(
-            request.POST.get('next'),
-            domain=settings.COOKIE_DOMAIN
-        )
-        if not next:
-            next = reverse('index')
-        form = SignApprovalTermsForm(request.POST, instance=request.user)
-        if not form.is_valid():
-            return render_response(template_name,
-                                   terms=terms,
-                                   approval_terms_form=form,
-                                   context_instance=get_context(request,
-                                                                extra_context))
-        user = form.save()
-        return HttpResponseRedirect(next)
+        return _approval_terms_post(request, template_name, terms,
+                                    extra_context)
     else:
         form = None
         if request.user.is_authenticated() and not request.user.signed_terms:
@@ -717,9 +748,11 @@ def change_email(request, activation_key=None,
                              "code, %s", activation_key)
                 raise Http404
 
-            if (request.user.is_authenticated() and \
-                request.user == email_change.user) or not \
-                    request.user.is_authenticated():
+            if (
+                request.user.is_authenticated() and
+                request.user == email_change.user or not
+                request.user.is_authenticated()
+            ):
                 user = EmailChange.objects.change_email(activation_key)
                 msg = _(astakos_messages.EMAIL_CHANGED)
                 messages.success(request, msg)
@@ -736,8 +769,9 @@ def change_email(request, activation_key=None,
 
         return render_response(confirm_template_name,
                                modified_user=user if 'user' in locals()
-                               else None, context_instance=get_context(request,
-                               extra_context))
+                               else None,
+                               context_instance=get_context(request,
+                                                            extra_context))
 
     if not request.user.is_authenticated():
         path = quote(request.get_full_path())
@@ -761,7 +795,8 @@ def change_email(request, activation_key=None,
         return HttpResponseRedirect(reverse('edit_profile'))
 
     if request.user.email_change_is_pending():
-        messages.warning(request, astakos_messages.PENDING_EMAIL_CHANGE_REQUEST)
+        messages.warning(request,
+                         astakos_messages.PENDING_EMAIL_CHANGE_REQUEST)
 
     return render_response(
         form_template_name,
@@ -771,6 +806,7 @@ def change_email(request, activation_key=None,
 
 
 @cookie_fix
+@transaction.commit_on_success
 def send_activation(request, user_id, template_name='im/login.html',
                     extra_context=None):
 
@@ -779,7 +815,7 @@ def send_activation(request, user_id, template_name='im/login.html',
 
     extra_context = extra_context or {}
     try:
-        u = AstakosUser.objects.get(id=user_id)
+        u = AstakosUser.objects.select_for_update().get(id=user_id)
     except AstakosUser.DoesNotExist:
         messages.error(request, _(astakos_messages.ACCOUNT_UNKNOWN))
     else:
@@ -806,7 +842,7 @@ def resource_usage(request):
 
     current_usage = quotas.get_user_quotas(request.user)
     current_usage = json.dumps(current_usage['system'])
-    resource_catalog, resource_groups = _resources_catalog(for_usage=True)
+    resource_catalog, resource_groups = _resources_catalog()
     if resource_catalog is False:
         # on fail resource_groups contains the result object
         result = resource_groups
@@ -877,8 +913,10 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             append(item(url=request.build_absolute_uri(reverse('landing')),
                         name="Dashboard"))
         if with_extra_links:
-            append(item(url=request.build_absolute_uri(reverse('edit_profile')),
-                        name="Profile"))
+            append(
+                item(
+                    url=request.build_absolute_uri(reverse('edit_profile')),
+                    name="Profile"))
 
         if with_extra_links:
             if settings.INVITATIONS_ENABLED:
@@ -888,12 +926,17 @@ def get_menu(request, with_extra_links=False, with_signout=True):
             append(item(url=request.build_absolute_uri(reverse('api_access')),
                         name="API access"))
 
-            append(item(url=request.build_absolute_uri(reverse('resource_usage')),
-                        name="Usage"))
+            append(
+                item(
+                    url=request.build_absolute_uri(reverse('resource_usage')),
+                    name="Usage"))
 
             if settings.PROJECTS_VISIBLE:
-                append(item(url=request.build_absolute_uri(reverse('project_list')),
-                            name="Projects"))
+                append(
+                    item(
+                        url=request.build_absolute_uri(
+                            reverse('project_list')),
+                        name="Projects"))
 
             append(item(url=request.build_absolute_uri(reverse('feedback')),
                         name="Contact"))

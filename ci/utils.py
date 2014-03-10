@@ -15,10 +15,11 @@ import tempfile
 from ConfigParser import ConfigParser, DuplicateSectionError
 
 from kamaki.cli import config as kamaki_config
-from kamaki.clients.astakos import AstakosClient
-from kamaki.clients.cyclades import CycladesClient
+from kamaki.clients.astakos import AstakosClient, parse_endpoints
+from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
 from kamaki.clients.image import ImageClient
 from kamaki.clients.compute import ComputeClient
+from kamaki.clients import ClientError
 import filelocker
 
 DEFAULT_CONFIG_FILE = "ci_wheezy.conf"
@@ -92,13 +93,13 @@ class _MyFormatter(logging.Formatter):
     def format(self, record):
         format_orig = self._fmt
         if record.levelno == logging.DEBUG:
-            self._fmt = "  %(msg)s"
+            self._fmt = "  %(message)s"
         elif record.levelno == logging.INFO:
-            self._fmt = "%(msg)s"
+            self._fmt = "%(message)s"
         elif record.levelno == logging.WARNING:
-            self._fmt = _yellow("[W] %(msg)s")
+            self._fmt = _yellow("[W] %(message)s")
         elif record.levelno == logging.ERROR:
-            self._fmt = _red("[E] %(msg)s")
+            self._fmt = _red("[E] %(message)s")
         result = logging.Formatter.format(self, record)
         self._fmt = format_orig
         return result
@@ -155,7 +156,9 @@ class SynnefoCI(object):
         self.temp_config.optionxform = str
         self.temp_config.read(self.temp_config_file)
         self.build_id = build_id
-        self.logger.info("Will use \"%s\" as build id" % _green(self.build_id))
+        if build_id is not None:
+            self.logger.info("Will use \"%s\" as build id" %
+                             _green(self.build_id))
 
         # Set kamaki cloud
         if cloud is not None:
@@ -171,6 +174,7 @@ class SynnefoCI(object):
         self.fabric_installed = False
         self.kamaki_installed = False
         self.cyclades_client = None
+        self.network_client = None
         self.compute_client = None
         self.image_client = None
         self.astakos_client = None
@@ -183,7 +187,11 @@ class SynnefoCI(object):
 
         config = kamaki_config.Config()
         if self.kamaki_cloud is None:
-            self.kamaki_cloud = config.get_global("default_cloud")
+            try:
+                self.kamaki_cloud = config.get("global", "default_cloud")
+            except AttributeError:
+                # Compatibility with kamaki version <=0.10
+                self.kamaki_cloud = config.get("global", "default_cloud")
 
         self.logger.info("Setup kamaki client, using cloud '%s'.." %
                          self.kamaki_cloud)
@@ -193,21 +201,24 @@ class SynnefoCI(object):
         #self.logger.debug("Token is %s" % _green(token))
 
         self.astakos_client = AstakosClient(auth_url, token)
+        endpoints = self.astakos_client.authenticate()
 
-        cyclades_url = \
-            self.astakos_client.get_service_endpoints('compute')['publicURL']
+        cyclades_url = get_endpoint_url(endpoints, "compute")
         self.logger.debug("Cyclades API url is %s" % _green(cyclades_url))
         self.cyclades_client = CycladesClient(cyclades_url, token)
         self.cyclades_client.CONNECTION_RETRY_LIMIT = 2
 
-        image_url = \
-            self.astakos_client.get_service_endpoints('image')['publicURL']
+        network_url = get_endpoint_url(endpoints, "network")
+        self.logger.debug("Network API url is %s" % _green(network_url))
+        self.network_client = CycladesNetworkClient(network_url, token)
+        self.network_client.CONNECTION_RETRY_LIMIT = 2
+
+        image_url = get_endpoint_url(endpoints, "image")
         self.logger.debug("Images API url is %s" % _green(image_url))
         self.image_client = ImageClient(cyclades_url, token)
         self.image_client.CONNECTION_RETRY_LIMIT = 2
 
-        compute_url = \
-            self.astakos_client.get_service_endpoints('compute')['publicURL']
+        compute_url = get_endpoint_url(endpoints, "compute")
         self.logger.debug("Compute API url is %s" % _green(compute_url))
         self.compute_client = ComputeClient(compute_url, token)
         self.compute_client.CONNECTION_RETRY_LIMIT = 2
@@ -225,7 +236,7 @@ class SynnefoCI(object):
                 self.logger.error(
                     "Waiting for server to become %s timed out" % new_status)
                 self.destroy_server(False)
-                sys.exit(-1)
+                sys.exit(1)
             elif server['status'] == current_status:
                 # Sleep for #n secs and continue
                 timeout = timeout - sleep_time
@@ -234,19 +245,54 @@ class SynnefoCI(object):
                 self.logger.error(
                     "Server failed with status %s" % server['status'])
                 self.destroy_server(False)
-                sys.exit(-1)
+                sys.exit(1)
 
     @_check_kamaki
     def destroy_server(self, wait=True):
         """Destroy slave server"""
         server_id = int(self.read_temp_config('server_id'))
+        fips = [f for f in self.network_client.list_floatingips()
+                if str(f['instance_id']) == str(server_id)]
         self.logger.info("Destoying server with id %s " % server_id)
         self.cyclades_client.delete_server(server_id)
         if wait:
             self._wait_transition(server_id, "ACTIVE", "DELETED")
+        for fip in fips:
+            self.logger.info("Destroying floating ip %s",
+                             fip['floating_ip_address'])
+            self.network_client.delete_floatingip(fip['id'])
+
+    def _create_floating_ip(self):
+        """Create a new floating ip"""
+        networks = self.network_client.list_networks(detail=True)
+        pub_nets = [n for n in networks
+                    if n['SNF:floating_ip_pool'] and n['public']]
+        for pub_net in pub_nets:
+            # Try until we find a public network that is not full
+            try:
+                fip = self.network_client.create_floatingip(pub_net['id'])
+            except ClientError as err:
+                self.logger.warning("%s: %s", err.message, err.details)
+                continue
+            self.logger.debug("Floating IP %s with id %s created",
+                              fip['floating_ip_address'], fip['id'])
+            return fip
+        self.logger.error("No mor IP addresses available")
+        sys.exit(1)
+
+    def _create_port(self, floating_ip):
+        """Create a new port for our floating IP"""
+        net_id = floating_ip['floating_network_id']
+        self.logger.debug("Creating a new port to network with id %s", net_id)
+        fixed_ips = [{'ip_address': floating_ip['floating_ip_address']}]
+        port = self.network_client.create_port(
+            net_id, device_id=None, fixed_ips=fixed_ips)
+        return port
 
     @_check_kamaki
-    def create_server(self, image=None, flavor=None, ssh_keys=None):
+    # Too many local variables. pylint: disable-msg=R0914
+    def create_server(self, image=None, flavor=None, ssh_keys=None,
+                      server_name=None):
         """Create slave server"""
         self.logger.info("Create a new server..")
 
@@ -259,11 +305,20 @@ class SynnefoCI(object):
         flavor_id = self._find_flavor(flavor)
 
         # Create Server
-        server_name = self.config.get("Deployment", "server_name")
+        networks = []
+        if self.config.get("Deployment", "allocate_floating_ip") == "True":
+            fip = self._create_floating_ip()
+            port = self._create_port(fip)
+            networks.append({'port': port['id']})
+        private_networks = self.config.get('Deployment', 'private_networks')
+        if private_networks:
+            private_networks = [p.strip() for p in private_networks.split(",")]
+            networks.extend([{"uuid": uuid} for uuid in private_networks])
+        if server_name is None:
+            server_name = self.config.get("Deployment", "server_name")
+            server_name = "%s(BID: %s)" % (server_name, self.build_id)
         server = self.cyclades_client.create_server(
-            "%s(BID: %s)" % (server_name, self.build_id),
-            flavor_id,
-            image_id)
+            server_name, flavor_id, image_id, networks=networks)
         server_id = server['id']
         self.write_temp_config('server_id', server_id)
         self.logger.debug("Server got id %s" % _green(server_id))
@@ -274,7 +329,7 @@ class SynnefoCI(object):
         self.write_temp_config('server_passwd', server_passwd)
 
         server = self._wait_transition(server_id, "BUILD", "ACTIVE")
-        self._get_server_ip_and_port(server)
+        self._get_server_ip_and_port(server, private_networks)
         self._copy_ssh_keys(ssh_keys)
 
         # Setup Firewall
@@ -297,6 +352,7 @@ class SynnefoCI(object):
         self.logger.debug("Setup apt. Install x2goserver and firefox")
         cmd = """
         echo 'APT::Install-Suggests "false";' >> /etc/apt/apt.conf
+        echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf
         apt-get update
         apt-get install curl --yes --force-yes
         echo -e "\n\n{0}" >> /etc/apt/sources.list
@@ -417,10 +473,23 @@ class SynnefoCI(object):
         self.logger.error("No matching image found.. aborting")
         sys.exit(1)
 
-    def _get_server_ip_and_port(self, server):
+    def _get_server_ip_and_port(self, server, private_networks):
         """Compute server's IPv4 and ssh port number"""
         self.logger.info("Get server connection details..")
-        server_ip = server['attachments'][0]['ipv4']
+        if private_networks:
+            # Choose the networks that belong to private_networks
+            networks = [n for n in server['attachments']
+                        if n['network_id'] in private_networks]
+        else:
+            # Choose the networks that are public
+            networks = [n for n in server['attachments']
+                        if self.network_client.
+                        get_network_details(n['network_id'])['public']]
+        # Choose the networks with IPv4
+        networks = [n for n in networks if n['ipv4']]
+        # Use the first network as IPv4
+        server_ip = networks[0]['ipv4']
+
         if (".okeanos.io" in self.cyclades_client.base_url or
            ".demo.synnefo.org" in self.cyclades_client.base_url):
             tmp1 = int(server_ip.split(".")[2])
@@ -562,7 +631,7 @@ class SynnefoCI(object):
         self.logger.debug("Remote file has sha256 hash %s" % hash2)
         if hash1 != hash2:
             self.logger.error("Hashes differ.. aborting")
-            sys.exit(-1)
+            sys.exit(1)
 
     @_check_fabric
     def clone_repo(self, local_repo=False):
@@ -577,6 +646,14 @@ class SynnefoCI(object):
                    self.config.get('Global', 'git_config_mail'))
         _run(cmd, False)
 
+        # Clone synnefo_repo
+        synnefo_branch = self.clone_synnefo_repo(local_repo=local_repo)
+        # Clone pithos-web-client
+        self.clone_pithos_webclient_repo(synnefo_branch)
+
+    @_check_fabric
+    def clone_synnefo_repo(self, local_repo=False):
+        """Clone Synnefo repo to remote server"""
         # Find synnefo_repo and synnefo_branch to use
         synnefo_repo = self.config.get('Global', 'synnefo_repo')
         synnefo_branch = self.config.get("Global", "synnefo_branch")
@@ -590,9 +667,9 @@ class SynnefoCI(object):
                     subprocess.Popen(
                         ["git", "rev-parse", "--short", "HEAD"],
                         stdout=subprocess.PIPE).communicate()[0].strip()
-        self.logger.info("Will use branch \"%s\"" % _green(synnefo_branch))
+        self.logger.debug("Will use branch \"%s\"" % _green(synnefo_branch))
 
-        if local_repo or synnefo_branch == "":
+        if local_repo or synnefo_repo == "":
             # Use local_repo
             self.logger.debug("Push local repo to server")
             # Firstly create the remote repo
@@ -609,7 +686,7 @@ class SynnefoCI(object):
                            -q "$@"' > {4}
             chmod u+x {4}
             export GIT_SSH="{4}"
-            echo "{0}" | git push --mirror ssh://{1}@{2}:{3}/~/synnefo
+            echo "{0}" | git push --quiet --mirror ssh://{1}@{2}:{3}/~/synnefo
             rm -f {4}
             """.format(fabric.env.password,
                        fabric.env.user,
@@ -619,46 +696,111 @@ class SynnefoCI(object):
             os.system(cmd)
         else:
             # Clone Synnefo from remote repo
-            # Currently clonning synnefo can fail unexpectedly
-            cloned = False
-            for i in range(10):
-                self.logger.debug("Clone synnefo from %s" % synnefo_repo)
-                try:
-                    _run("git clone %s synnefo" % synnefo_repo, False)
-                    cloned = True
-                    break
-                except BaseException:
-                    self.logger.warning(
-                        "Clonning synnefo failed.. retrying %s" % i)
-            if not cloned:
-                self.logger.error("Can not clone Synnefo repo.")
-                sys.exit(-1)
+            self.logger.debug("Clone synnefo from %s" % synnefo_repo)
+            self._git_clone(synnefo_repo)
 
         # Checkout the desired synnefo_branch
         self.logger.debug("Checkout \"%s\" branch/commit" % synnefo_branch)
         cmd = """
         cd synnefo
-        for branch in `git branch -a | grep remotes | \
-                       grep -v HEAD | grep -v master`; do
+        for branch in `git branch -a | grep remotes | grep -v HEAD`; do
             git branch --track ${branch##*/} $branch
         done
         git checkout %s
         """ % (synnefo_branch)
         _run(cmd, False)
 
+        return synnefo_branch
+
     @_check_fabric
-    def build_synnefo(self):
-        """Build Synnefo packages"""
-        self.logger.info("Build Synnefo packages..")
-        self.logger.debug("Install development packages")
+    def clone_pithos_webclient_repo(self, synnefo_branch):
+        """Clone Pithos WebClient repo to remote server"""
+        # Find pithos_webclient_repo and pithos_webclient_branch to use
+        pithos_webclient_repo = \
+            self.config.get('Global', 'pithos_webclient_repo')
+        pithos_webclient_branch = \
+            self.config.get('Global', 'pithos_webclient_branch')
+
+        # Clone pithos-webclient from remote repo
+        self.logger.debug("Clone pithos-webclient from %s" %
+                          pithos_webclient_repo)
+        self._git_clone(pithos_webclient_repo)
+
+        # Track all pithos-webclient branches
+        cmd = """
+        cd pithos-web-client
+        for branch in `git branch -a | grep remotes | grep -v HEAD`; do
+            git branch --track ${branch##*/} $branch > /dev/null 2>&1
+        done
+        git --no-pager branch --no-color
+        """
+        webclient_branches = _run(cmd, False)
+        webclient_branches = webclient_branches.split()
+
+        # If we have pithos_webclient_branch in config file use this one
+        # else try to use the same branch as synnefo_branch
+        # else use an appropriate one.
+        if pithos_webclient_branch == "":
+            if synnefo_branch in webclient_branches:
+                pithos_webclient_branch = synnefo_branch
+            else:
+                # If synnefo_branch starts with one of
+                # 'master', 'hotfix'; use the master branch
+                if synnefo_branch.startswith('master') or \
+                        synnefo_branch.startswith('hotfix'):
+                    pithos_webclient_branch = "master"
+                # If synnefo_branch starts with one of
+                # 'develop', 'feature'; use the develop branch
+                elif synnefo_branch.startswith('develop') or \
+                        synnefo_branch.startswith('feature'):
+                    pithos_webclient_branch = "develop"
+                else:
+                    self.logger.warning(
+                        "Cannot determine which pithos-web-client branch to "
+                        "use based on \"%s\" synnefo branch. "
+                        "Will use develop." % synnefo_branch)
+                    pithos_webclient_branch = "develop"
+        # Checkout branch
+        self.logger.debug("Checkout \"%s\" branch" %
+                          _green(pithos_webclient_branch))
+        cmd = """
+        cd pithos-web-client
+        git checkout {0}
+        """.format(pithos_webclient_branch)
+        _run(cmd, False)
+
+    def _git_clone(self, repo):
+        """Clone repo to remote server
+
+        Currently clonning from code.grnet.gr can fail unexpectedly.
+        So retry!!
+
+        """
+        cloned = False
+        for i in range(1, 11):
+            try:
+                _run("git clone %s" % repo, False)
+                cloned = True
+                break
+            except BaseException:
+                self.logger.warning("Clonning failed.. retrying %s/10" % i)
+        if not cloned:
+            self.logger.error("Can not clone repo.")
+            sys.exit(1)
+
+    @_check_fabric
+    def build_packages(self):
+        """Build packages needed by Synnefo software"""
+        self.logger.info("Install development packages")
         cmd = """
         apt-get update
         apt-get install zlib1g-dev dpkg-dev debhelper git-buildpackage \
-                python-dev python-all python-pip --yes --force-yes
+                python-dev python-all python-pip ant --yes --force-yes
         pip install -U devflow
         """
         _run(cmd, False)
 
+        # Patch pydist bug
         if self.config.get('Global', 'patch_pydist') == "True":
             self.logger.debug("Patch pydist.py module")
             cmd = r"""
@@ -668,7 +810,15 @@ class SynnefoCI(object):
             _run(cmd, False)
 
         # Build synnefo packages
-        self.logger.debug("Build synnefo packages")
+        self.build_synnefo()
+        # Build pithos-web-client packages
+        self.build_pithos_webclient()
+
+    @_check_fabric
+    def build_synnefo(self):
+        """Build Synnefo packages"""
+        self.logger.info("Build Synnefo packages..")
+
         cmd = """
         devflow-autopkg snapshot -b ~/synnefo_build-area --no-sign
         """
@@ -689,6 +839,24 @@ class SynnefoCI(object):
         self.logger.debug("Copy synnefo debs to snf-deploy packages dir")
         cmd = """
         cp ~/synnefo_build-area/*.deb /var/lib/snf-deploy/packages/
+        """
+        _run(cmd, False)
+
+    @_check_fabric
+    def build_pithos_webclient(self):
+        """Build pithos-web-client packages"""
+        self.logger.info("Build pithos-web-client packages..")
+
+        cmd = """
+        devflow-autopkg snapshot -b ~/webclient_build-area --no-sign
+        """
+        with fabric.cd("pithos-web-client"):
+            _run(cmd, True)
+
+        # Setup pithos-web-client packages for snf-deploy
+        self.logger.debug("Copy webclient debs to snf-deploy packages dir")
+        cmd = """
+        cp ~/webclient_build-area/*.deb /var/lib/snf-deploy/packages/
         """
         _run(cmd, False)
 
@@ -751,6 +919,7 @@ class SynnefoCI(object):
         cmd = """
         pip install -U mock
         pip install -U factory_boy
+        pip install -U nose
         """
         _run(cmd, False)
 
@@ -773,17 +942,8 @@ class SynnefoCI(object):
         token=$(grep -e '^token =' .kamakirc | cut -d' ' -f3)
         images_user=$(kamaki image list -l | grep owner | \
                       cut -d':' -f2 | tr -d ' ')
-        snf-burnin --auth-url=$auth_url --token=$token \
-            --force-flavor=2 --image-id=all \
-            --system-images-user=$images_user \
-            {0}
+        snf-burnin --auth-url=$auth_url --token=$token {0}
         BurninExitStatus=$?
-        log_folder=$(ls -1d /var/log/burnin/* | tail -n1)
-        for i in $(ls $log_folder/*/details*); do
-            echo -e "\\n\\n"
-            echo -e "***** $i\\n"
-            cat $i
-        done
         exit $BurninExitStatus
         """.format(self.config.get('Burnin', 'cmd_options'))
         _run(cmd, True)
@@ -824,6 +984,7 @@ class SynnefoCI(object):
         if not os.path.exists(dest):
             os.makedirs(dest)
         self.fetch_compressed("synnefo_build-area", dest)
+        self.fetch_compressed("webclient_build-area", dest)
         self.logger.info("Downloaded debian packages to %s" %
                          _green(dest))
 
@@ -885,3 +1046,10 @@ def parse_typed_option(option, value):
     except ValueError:
         msg = "Invalid %s format. Must be [id|name]:.+" % option
         raise ValueError(msg)
+
+
+def get_endpoint_url(endpoints, endpoint_type):
+    """Get the publicURL for the specified endpoint"""
+
+    service_catalog = parse_endpoints(endpoints, ep_type=endpoint_type)
+    return service_catalog[0]['endpoints'][0]['publicURL']

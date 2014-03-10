@@ -99,22 +99,22 @@ def basictag(takes_context=False):
 
             if takes_context:
                 if params[0] == 'context':
-                    max_args -= 1 # Ignore context
+                    max_args -= 1  # Ignore context
                 else:
-                    raise TemplateSyntaxError, \
-                        "Any tag function decorated with takes_context=True " \
+                    m = "Any tag function decorated with takes_context=True " \
                         "must have a first argument of 'context'"
+                    raise TemplateSyntaxError(m)
 
             min_args = max_args - len(defaults or [])
 
             if not min_args <= len(bits) <= max_args:
                 if min_args == max_args:
-                    raise TemplateSyntaxError, \
-                        "%r tag takes %d arguments." % (tag_name, min_args)
+                    m = "%r tag takes %d arguments." % (tag_name, min_args)
+                    raise TemplateSyntaxError(m)
                 else:
-                    raise TemplateSyntaxError, \
-                        "%r tag takes %d to %d arguments, got %d." % \
+                    m = "%r tag takes %d to %d arguments, got %d." % \
                         (tag_name, min_args, max_args, len(bits))
+                    raise TemplateSyntaxError(m)
 
             return BasicTagNode(takes_context, tag_name, tag_func, bits)
 
@@ -180,10 +180,12 @@ class MessagesNode(template.Node):
 def get_grant_value(rname, form):
     grants = form.instance.grants
     try:
-        r = form.instance.projectresourcegrant_set.get(resource__name=rname).member_capacity
+        r = form.instance.projectresourcegrant_set.get(
+            resource__name=rname).member_capacity
     except Exception, e:
         r = ''
     return r
+
 
 @register.tag(name="provider_login_url")
 @basictag(takes_context=True)

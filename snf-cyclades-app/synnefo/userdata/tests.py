@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,58 +32,97 @@
 # or implied, of GRNET S.A.
 #
 
+from django import http
 from django.test import TransactionTestCase
 from django.conf import settings
 from django.test.client import Client
-from django.core.urlresolvers import clear_url_caches
 from django.utils import simplejson as json
-from django.conf import settings
 from django.core.urlresolvers import reverse
+from django.core.validators import MaxLengthValidator
 
-from synnefo.userdata.models import *
+from snf_django.utils.testing import with_settings
+
+from mock import patch
+
+from synnefo.userdata.models import PublicKeyPair, SSH_KEY_MAX_CONTENT_LENGTH
+
+
+def get_user_mock(request, *args, **kwargs):
+    if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
+        request.user_uniq = 'test'
+        request.user = {"access": {
+                        "token": {
+                            "expires": "2013-06-19T15:23:59.975572+00:00",
+                            "id": "token",
+                            "tenant": {
+                                "id": "test",
+                                "name": "Firstname Lastname"
+                                }
+                            },
+                        "serviceCatalog": [],
+                        "user": {
+                            "roles_links": [],
+                            "id": "test",
+                            "roles": [{"id": 1, "name": "default"}],
+                            "name": "Firstname Lastname"}}
+                        }
 
 
 class AaiClient(Client):
 
     def request(self, **request):
-        request['HTTP_X_AUTH_TOKEN'] = '0000'
-        return super(AaiClient, self).request(**request)
+        # mock the astakos authentication function
+        with patch("synnefo.userdata.rest.get_user",
+                   new=get_user_mock):
+            with patch("synnefo.userdata.views.get_user",
+                       new=get_user_mock):
+                request['HTTP_X_AUTH_TOKEN'] = '0000'
+                return super(AaiClient, self).request(**request)
+
 
 class TestRestViews(TransactionTestCase):
 
     fixtures = ['users']
 
     def setUp(self):
-        def get_user_mock(request, *Args, **kwargs):
-            if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
-                request.user_uniq = 'test'
-                request.user = {'uniq': 'test'}
-
-        # mock the astakos authentication function
-        from snf_django.lib import astakos
-        astakos.get_user = get_user_mock
+        settings.USERDATA_MAX_SSH_KEYS_PER_USER = 10
 
         settings.SKIP_SSH_VALIDATION = True
         self.client = AaiClient()
         self.user = 'test'
         self.keys_url = reverse('ui_keys_collection')
 
+    def test_key_content_length_limit(self):
+        # patch validator
+        PublicKeyPair._meta.fields[3].validators = [MaxLengthValidator(10)]
+        resp = self.client.post(self.keys_url,
+                                json.dumps({'name': 'key pair 2',
+                                            'content': """0123456789+"""}),
+                                content_type='application/json')
+        self.assertEqual(resp.status_code, 422)
+        resp = json.loads(resp.content)
+        assert 'errors' in resp
+        assert 'content' in resp['errors']
+        self.assertEqual(PublicKeyPair.objects.count(), 0)
+        PublicKeyPair._meta.fields[3].validators = \
+            [MaxLengthValidator(SSH_KEY_MAX_CONTENT_LENGTH)]
+
     def test_keys_collection_get(self):
         resp = self.client.get(self.keys_url)
         self.assertEqual(resp.content, "[]")
 
         PublicKeyPair.objects.create(user=self.user, name="key pair 1",
-                content="content1")
+                                     content="content1")
 
         resp = self.client.get(self.keys_url)
-        resp_list = json.loads(resp.content);
+        resp_list = json.loads(resp.content)
         exp_list = [{"content": "content1", "id": 1,
-                    "uri": self.keys_url + "/1", "name": "key pair 1",
-                    "fingerprint": "unknown fingerprint"}]
+                     "uri": self.keys_url + "/1", "name": "key pair 1",
+                     "fingerprint": "unknown fingerprint"}]
         self.assertEqual(resp_list, exp_list)
 
         PublicKeyPair.objects.create(user=self.user, name="key pair 2",
-                content="content2")
+                                     content="content2")
 
         resp = self.client.get(self.keys_url)
         resp_list = json.loads(resp.content)
@@ -103,9 +142,9 @@ class TestRestViews(TransactionTestCase):
 
         # create a public key
         PublicKeyPair.objects.create(user=self.user, name="key pair 1",
-                content="content1")
+                                     content="content1")
         resp = self.client.get(self.keys_url + "/1")
-        resp_dict = json.loads(resp.content);
+        resp_dict = json.loads(resp.content)
         exp_dict = {"content": "content1", "id": 1,
                     "uri": self.keys_url + "/1", "name": "key pair 1",
                     "fingerprint": "unknown fingerprint"}
@@ -113,7 +152,7 @@ class TestRestViews(TransactionTestCase):
 
         # update
         resp = self.client.put(self.keys_url + "/1",
-                               json.dumps({'name':'key pair 1 new name'}),
+                               json.dumps({'name': 'key pair 1 new name'}),
                                content_type='application/json')
 
         pk = PublicKeyPair.objects.get(pk=1)
@@ -131,11 +170,11 @@ class TestRestViews(TransactionTestCase):
 
         # test rest create
         resp = self.client.post(self.keys_url,
-                                json.dumps({'name':'key pair 2',
-                                            'content':"""key 2 content"""}),
+                                json.dumps({'name': 'key pair 2',
+                                            'content': """key 2 content"""}),
                                 content_type='application/json')
         self.assertEqual(PublicKeyPair.objects.count(), 1)
-        pk = PublicKeyPair.objects.get(pk=1)
+        pk = PublicKeyPair.objects.get()
         self.assertEqual(pk.name, "key pair 2")
         self.assertEqual(pk.content, "key 2 content")
 
@@ -147,11 +186,11 @@ class TestRestViews(TransactionTestCase):
         self.assertNotEqual(resp, "")
 
         data = json.loads(resp.content)
-        self.assertEqual(data.has_key('private'), True)
-        self.assertEqual(data.has_key('private'), True)
+        self.assertEqual('private' in data, True)
+        self.assertEqual('private' in data, True)
 
         # public key is base64 encoded
-        base64.b64decode(data['public'].replace("ssh-rsa ",""))
+        base64.b64decode(data['public'].replace("ssh-rsa ", ""))
 
         # remove header/footer
         private = "".join(data['private'].split("\n")[1:-1])
@@ -166,31 +205,42 @@ class TestRestViews(TransactionTestCase):
         new_key.full_clean()
         new_key.save()
 
+    def test_generate_limit(self):
+        settings.USERDATA_MAX_SSH_KEYS_PER_USER = 1
+        self.client.post(self.keys_url,
+                         json.dumps({'name': 'key1',
+                                     'content': """key 1 content"""}),
+                         content_type='application/json')
+        genpath = self.keys_url + "/generate"
+        r = self.client.post(genpath)
+        assert isinstance(r, http.HttpResponseServerError)
+
     def test_invalid_data(self):
         resp = self.client.post(self.keys_url,
-                                json.dumps({'content':"""key 2 content"""}),
+                                json.dumps({'content': """key 2 content"""}),
                                 content_type='application/json')
 
-        self.assertEqual(resp.status_code, 500)
-        self.assertEqual(resp.content, """{"non_field_key": "__all__", "errors": """
-                                       """{"name": ["This field cannot be blank."]}}""")
+        self.assertEqual(resp.status_code, 422)
+        self.assertEqual(resp.content,
+                         """{"non_field_key": "__all__", "errors": """
+                         """{"name": ["This field cannot be blank."]}}""")
 
         settings.USERDATA_MAX_SSH_KEYS_PER_USER = 2
 
         # test ssh limit
         resp = self.client.post(self.keys_url,
-                                json.dumps({'name':'key1',
-                                            'content':"""key 1 content"""}),
+                                json.dumps({'name': 'key1',
+                                            'content': """key 1 content"""}),
                                 content_type='application/json')
         resp = self.client.post(self.keys_url,
-                                json.dumps({'name':'key1',
-                                            'content':"""key 1 content"""}),
+                                json.dumps({'name': 'key1',
+                                            'content': """key 1 content"""}),
                                 content_type='application/json')
         resp = self.client.post(self.keys_url,
-                                json.dumps({'name':'key1',
-                                            'content':"""key 1 content"""}),
+                                json.dumps({'name': 'key1',
+                                            'content': """key 1 content"""}),
                                 content_type='application/json')
-        self.assertEqual(resp.status_code, 500)
-        self.assertEqual(resp.content, """{"non_field_key": "__all__", "errors": """
-                                       """{"__all__": ["SSH keys limit exceeded."]}}""")
-
+        self.assertEqual(resp.status_code, 422)
+        self.assertEqual(resp.content,
+                         """{"non_field_key": "__all__", "errors": """
+                         """{"__all__": ["SSH keys limit exceeded."]}}""")

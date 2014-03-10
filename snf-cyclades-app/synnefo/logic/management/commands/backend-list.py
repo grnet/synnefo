@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,8 +31,9 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.db.models import Backend, IPPoolTable
-from synnefo.webproject.management.commands import ListCommand
+from synnefo.db.models import Backend
+from snf_django.management.commands import ListCommand
+from synnefo.api import util
 
 
 class Command(ListCommand):
@@ -51,17 +52,10 @@ class Command(ListCommand):
     def get_ips(backend):
         free_ips = 0
         total_ips = 0
-        for bnet in backend.networks.filter(deleted=False,
-                                            network__drained=False,
-                                            network__public=True,
-                                            network__deleted=False):
-            network = bnet.network
-            try:
-                pool = IPPoolTable.objects.get(id=network.pool_id).pool
-                free_ips += pool.count_available()
-                total_ips += pool.pool_size
-            except IPPoolTable.DoesNotExist:
-                pass
+        for network in util.backend_public_networks(backend):
+            total, free = network.ip_count()
+            total_ips += total
+            free_ips += free
         return "%s/%s" % (free_ips, total_ips)
 
     FIELDS = {
@@ -76,7 +70,8 @@ class Command(ListCommand):
         "mem": (get_mem, "free/total memory (MB)"),
         "disk": (get_mem, "free/total disk (GB)"),
         "hypervisor": ("hypervisor", "The hypervisor the backend is using"),
+        "disk_templates": ("disk_templates", "Enabled disk-templates"),
     }
 
     fields = ["id", "clustername", "port", "username", "drained", "offline",
-              "vms", "hypervisor", "ips"]
+              "vms", "hypervisor", "ips", "disk_templates"]

@@ -31,10 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-try:
-    from django.conf.urls import patterns
-except ImportError:  # Django==1.2
-    from django.conf.urls.defaults import patterns
+from django.conf.urls import patterns
 
 from django.http import HttpResponse
 from django.utils import simplejson as json
@@ -55,14 +52,14 @@ def demux(request):
     if request.method == 'GET':
         return list_extensions(request)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request, allowed_methods=['GET'])
 
 
 def demux_extension(request, extension_alias):
     if request.method == 'GET':
         return get_extension(request, extension_alias)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request, allowed_methods=['GET'])
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)

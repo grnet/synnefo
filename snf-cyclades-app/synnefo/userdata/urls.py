@@ -32,10 +32,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-try:
-    from django.conf.urls import patterns, url
-except ImportError:  # Django==1.2
-    from django.conf.urls.defaults import patterns, url
+from django.conf.urls import patterns, url
 
 from synnefo.userdata import views
 from django.http import Http404
@@ -44,13 +41,14 @@ from django.http import Http404
 def index(request):
     raise Http404
 
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
     url(r'^$', index, name='ui_userdata'),
     url(r'^keys$',
         views.PublicKeyPairCollectionView.as_view('ui_keys_resource'),
         name='ui_keys_collection'),
     url(r'^keys/(?P<id>\d+)',
-    views.PublicKeyPairResourceView.as_view('ui_keys_resource'),
+        views.PublicKeyPairResourceView.as_view('ui_keys_resource'),
         name="ui_keys_resource"),
     url(r'keys/generate', views.generate_key_pair,
         name="ui_generate_public_key"),

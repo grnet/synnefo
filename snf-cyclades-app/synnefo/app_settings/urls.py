@@ -31,22 +31,20 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-try:
-    from django.conf.urls import patterns, include
-except ImportError:  # Django==1.2
-    from django.conf.urls.defaults import patterns, include
+from django.conf.urls import patterns, include
 
-from django.conf import settings
 from snf_django.lib.api.proxy import proxy
 from snf_django.lib.api.utils import prefix_pattern
 from snf_django.utils.urls import \
     extend_with_root_redirects, extend_endpoint_with_slash
 from snf_django.lib.api.urls import api_patterns
 from synnefo.cyclades_settings import (
-    BASE_URL, BASE_HOST, BASE_PATH, COMPUTE_PREFIX, VMAPI_PREFIX,
-    PLANKTON_PREFIX, HELPDESK_PREFIX, UI_PREFIX, ASTAKOS_BASE_URL,
-    USERDATA_PREFIX, ADMIN_PREFIX, ASTAKOS_BASE_PATH, BASE_ASTAKOS_PROXY_PATH,
-    ASTAKOS_ACCOUNTS_PREFIX, ASTAKOS_VIEWS_PREFIX, PROXY_USER_SERVICES,
+    BASE_PATH, COMPUTE_PREFIX, NETWORK_PREFIX, VMAPI_PREFIX,
+    PLANKTON_PREFIX, HELPDESK_PREFIX, UI_PREFIX,
+    USERDATA_PREFIX, ADMIN_PREFIX,
+    ASTAKOS_AUTH_PROXY_PATH, ASTAKOS_AUTH_URL,
+    ASTAKOS_ACCOUNT_PROXY_PATH, ASTAKOS_ACCOUNT_URL,
+    ASTAKOS_UI_PROXY_PATH, ASTAKOS_UI_URL,
     cyclades_services)
 
 from functools import partial
@@ -60,19 +58,23 @@ extend_endpoint_with_slash(urlpatterns, cyclades_services, 'cyclades_helpdesk')
 extend_endpoint_with_slash(urlpatterns, cyclades_services, 'admin')
 extend_endpoint_with_slash(urlpatterns, cyclades_services, 'cyclades_userdata')
 
-astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
-                        target_base=ASTAKOS_BASE_URL)
-
-cyclades_patterns = api_patterns('',
+cyclades_patterns = api_patterns(
+    '',
     (prefix_pattern(VMAPI_PREFIX), include('synnefo.vmapi.urls')),
     (prefix_pattern(PLANKTON_PREFIX), include('synnefo.plankton.urls')),
-    (prefix_pattern(COMPUTE_PREFIX), include('synnefo.api.urls')),
+    (prefix_pattern(COMPUTE_PREFIX), include('synnefo.api.compute_urls')),
+    (prefix_pattern(NETWORK_PREFIX), include('synnefo.api.network_urls')),
     (prefix_pattern(USERDATA_PREFIX), include('synnefo.userdata.urls')),
     (prefix_pattern(ADMIN_PREFIX), include('synnefo.admin.urls')),
 )
 
-cyclades_patterns += patterns('',
+cyclades_patterns += patterns(
+    '',
     (prefix_pattern(UI_PREFIX), include('synnefo.ui.urls')),
+)
+
+cyclades_patterns += api_patterns(
+    '',
     (prefix_pattern(HELPDESK_PREFIX), include('synnefo.helpdesk.urls')),
 )
 
@@ -81,26 +83,32 @@ urlpatterns += patterns(
     (prefix_pattern(BASE_PATH), include(cyclades_patterns)),
 )
 
-if PROXY_USER_SERVICES:
-    astakos_proxy = partial(proxy, proxy_base=BASE_ASTAKOS_PROXY_PATH,
-                            target_base=ASTAKOS_BASE_URL)
 
-    proxy_patterns = patterns('', 
-        (prefix_pattern(ASTAKOS_VIEWS_PREFIX), astakos_proxy),
-    )
-    proxy_patterns += api_patterns(
-        '',
-        (r'^login/?$', astakos_proxy),
-        (r'^feedback/?$', astakos_proxy),
-        (r'^user_catalogs/?$', astakos_proxy),
-        (prefix_pattern(ASTAKOS_ACCOUNTS_PREFIX), astakos_proxy),
-    )
+# --------------------------------------
+# PROXY settings
+astakos_auth_proxy = \
+    partial(proxy, proxy_base=ASTAKOS_AUTH_PROXY_PATH,
+            target_base=ASTAKOS_AUTH_URL)
+astakos_account_proxy = \
+    partial(proxy, proxy_base=ASTAKOS_ACCOUNT_PROXY_PATH,
+            target_base=ASTAKOS_ACCOUNT_URL)
 
-    urlpatterns += patterns(
-        '',
-        (prefix_pattern(BASE_ASTAKOS_PROXY_PATH), include(proxy_patterns)),
-    )
+# ui views serve html content, redirect instead of proxing
+astakos_ui_proxy = \
+    partial(proxy, proxy_base=ASTAKOS_UI_PROXY_PATH,
+            target_base=ASTAKOS_UI_URL, redirect=True)
 
+urlpatterns += api_patterns(
+    '',
+    (prefix_pattern(ASTAKOS_AUTH_PROXY_PATH), astakos_auth_proxy),
+    (prefix_pattern(ASTAKOS_ACCOUNT_PROXY_PATH), astakos_account_proxy),
+)
+urlpatterns += patterns(
+    '',
+    (prefix_pattern(ASTAKOS_UI_PROXY_PATH), astakos_ui_proxy),
+)
+
+# --------------------------------------
 # set utility redirects
 extend_with_root_redirects(urlpatterns, cyclades_services, 'cyclades_ui',
                            BASE_PATH)

@@ -31,18 +31,27 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from synnefo.util import units
 from astakos.im.models import Resource, Service, Endpoint, EndpointData
-
-from astakos.im.quotas import qh_add_resource_limit, qh_sync_new_resource
+from astakos.im import quotas
 import logging
 
 logger = logging.getLogger(__name__)
 
-resource_fields = ['desc', 'unit', 'allow_in_projects']
+main_fields = ['desc', 'unit']
+config_fields = ['ui_visible', 'api_visible']
 
 
 class RegisterException(Exception):
     pass
+
+
+def different_component(service, resource):
+    try:
+        registered_for = Service.objects.get(name=resource.service_origin)
+        return registered_for.component != service.component
+    except Service.DoesNotExist:
+        return False
 
 
 def add_resource(resource_dict):
@@ -59,32 +68,43 @@ def add_resource(resource_dict):
         raise RegisterException(m)
 
     try:
-        r = Resource.objects.get_for_update(name=name)
+        r = Resource.objects.select_for_update().get(name=name)
         exists = True
-        if r.service_type != service_type:
+        if r.service_type != service_type and \
+                different_component(service, r):
             m = ("There already exists a resource named %s with service "
                  "type %s." % (name, r.service_type))
             raise RegisterException(m)
-        if r.service_origin != service_origin:
+        if r.service_origin != service_origin and \
+                different_component(service, r):
             m = ("There already exists a resource named %s registered for "
                  "service %s." % (name, r.service_origin))
             raise RegisterException(m)
-
+        r.service_origin = service_origin
+        r.service_type = service_type
     except Resource.DoesNotExist:
         r = Resource(name=name,
-                     uplimit=0,
+                     uplimit=units.PRACTICALLY_INFINITE,
                      service_type=service_type,
                      service_origin=service_origin)
         exists = False
+        for field in config_fields:
+            value = resource_dict.get(field)
+            if value is not None:
+                setattr(r, field, value)
 
-    for field in resource_fields:
+    for field in main_fields:
         value = resource_dict.get(field)
         if value is not None:
             setattr(r, field, value)
 
+    if r.ui_visible and not r.api_visible:
+        m = "Flag 'ui_visible' should entail 'api_visible'."
+        raise RegisterException(m)
+
     r.save()
     if not exists:
-        qh_sync_new_resource(r, 0)
+        quotas.qh_sync_new_resource(r)
 
     if exists:
         logger.info("Updated resource %s." % (name))
@@ -93,16 +113,26 @@ def add_resource(resource_dict):
     return r, exists
 
 
-def update_resource(resource, uplimit):
-    old_uplimit = resource.uplimit
-    resource.uplimit = uplimit
-    resource.save()
+def update_resources(updates):
+    resources = []
+    for resource, uplimit in updates:
+        resources.append(resource)
+        old_uplimit = resource.uplimit
+        if uplimit == old_uplimit:
+            logger.info("Resource %s has limit %s; no need to update."
+                        % (resource.name, uplimit))
+        else:
+            resource.uplimit = uplimit
+            resource.save()
+            logger.info("Updated resource %s with limit %s."
+                        % (resource.name, uplimit))
 
-    logger.info("Updated resource %s with limit %s."
-                % (resource.name, uplimit))
-    diff = uplimit - old_uplimit
-    if diff != 0:
-        qh_add_resource_limit(resource, diff)
+
+def resources_to_dict(resources):
+    resource_dict = {}
+    for r in resources:
+        resource_dict[r.name] = r.get_info()
+    return resource_dict
 
 
 def get_resources(resources=None, services=None):
@@ -114,21 +144,28 @@ def get_resources(resources=None, services=None):
     if services is not None:
         rs = rs.filter(service__in=services)
 
-    resource_dict = {}
-    for r in rs:
-        resource_dict[r.full_name()] = r.get_info()
-
-    return resource_dict
+    return rs
 
 
-def add_endpoint(service, endpoint_dict):
+def get_api_visible_resources(resources=None, services=None):
+    rs = get_resources(resources, services)
+    return rs.filter(api_visible=True)
+
+
+def add_endpoint(component, service, endpoint_dict, out=None):
     endpoint = Endpoint.objects.create(service=service)
     for key, value in endpoint_dict.iteritems():
+        base_url = component.base_url
+        if key == "publicURL" and (base_url is None or
+                                   not value.startswith(base_url)):
+            warn = out.write if out is not None else logger.warning
+            warn("Warning: Endpoint URL '%s' does not start with "
+                 "assumed component base URL '%s'.\n" % (value, base_url))
         EndpointData.objects.create(
             endpoint=endpoint, key=key, value=value)
 
 
-def add_service(component, name, service_type, endpoints):
+def add_service(component, name, service_type, endpoints, out=None):
     defaults = {'component': component,
                 'type': service_type,
                 }
@@ -141,12 +178,11 @@ def add_service(component, name, service_type, endpoints):
                  (name, service.component.name))
             raise RegisterException(m)
         service.endpoints.all().delete()
-    else:
-        service.component = component
-        service.type = service_type
+        for key, value in defaults.iteritems():
+            setattr(service, key, value)
         service.save()
 
     for endpoint in endpoints:
-        add_endpoint(service, endpoint)
+        add_endpoint(component, service, endpoint, out=out)
 
     return not created

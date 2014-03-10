@@ -48,21 +48,22 @@
   	  <script src="{{ IM_STATIC_URL }}js/os.js"></script>	
       <script src="{{ IM_STATIC_URL }}js/modernizr-2.0.6.js"></script>	
       <script src="{{ IM_STATIC_URL }}js/jquery.js"></script>	
-      <script src="{{ IM_STATIC_URL }}js/jquery.infieldlabel.js"></script>	
       <script src="{{ IM_STATIC_URL }}js/forms.js"></script>
       <script src="{{ IM_STATIC_URL }}js/jquery.dropkick-1.0.0.js"></script>
       <script src="{{ IM_STATIC_URL }}js/jquery-ui-1.8.21.custom.min.js"></script>
-      <script src="{{ IM_STATIC_URL }}js/jquery.tablesorter.js"></script>	 	 
       <script src="{{ IM_STATIC_URL }}js/jquery.cookie.js"></script>	 	 
       <script src="{{ IM_STATIC_URL }}js/mustache.js"></script>
-	  <script src="{{ IM_STATIC_URL }}js/retina.js"></script>	 	 
+      <script src="{{ IM_STATIC_URL }}js/retina.js"></script>
+      <script src="{{ IM_STATIC_URL }}js/jquery.dataTables.js"></script>
+      <script src="{{ IM_STATIC_URL }}js/dataTables.date.js"></script>
+      <script src="{{ IM_STATIC_URL }}js/dataTables.numbersHTML.js"></script>
+      <script src="{{ IM_STATIC_URL }}js/jquery.placeholder.js"></script>
       <script src="{{ IM_STATIC_URL }}js/common.js"></script> 
   {% endblock headjs %}
   {% block endhead %}{% endblock endhead %}
 
   <script type="text/javascript">
       $(document).ready(function() {
-          $("form.innerlabels label").inFieldLabels();
           $("form").each(function(){
             if ($(this).hasClass("login")) { return }
             

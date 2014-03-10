@@ -42,7 +42,7 @@ def allocate(backends, vm):
     if len(backends) == 1:
         return backends[0]
 
-    # Filter those that can not host the vm
+    # Filter those that cannot host the vm
     capable_backends = [backend for backend in backends
                         if vm_fits_in_backend(backend, vm)]
 
@@ -78,7 +78,10 @@ def vm_fits_in_backend(backend, vm):
 
 
 def backend_score(backend, flavor):
-    mem_ratio = 1 - (backend.mfree / backend.mtotal)
-    disk_ratio = 1 - (backend.dfree / backend.dtotal)
-    cpu_ratio = ((backend.pinst_cnt + 1) * 4) / (backend.ctotal * 3)
+    mem_ratio = 1 - (backend.mfree / backend.mtotal) if backend.mtotal else 0
+    disk_ratio = 1 - (backend.dfree / backend.dtotal) if backend.dtotal else 0
+    if backend.ctotal:
+        cpu_ratio = ((backend.pinst_cnt + 1) * 4) / (backend.ctotal * 3)
+    else:
+        cpu_ratio = 1
     return 0.5 * cpu_ratio + 0.5 * (mem_ratio + disk_ratio)

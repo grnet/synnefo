@@ -31,9 +31,13 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from os import SEEK_CUR, SEEK_SET, fsync
-from errno import ENOENT, EROFS
-
+from os import (
+    SEEK_CUR,
+    SEEK_SET,
+    O_RDONLY,
+    O_WRONLY,
+    O_RDWR
+)
 
 _zeros = ''
 
@@ -64,7 +68,7 @@ def file_sync_write_chunks(openfile, chunksize, offset, chunks, size=None):
 
     try:
         seek(offset * chunksize)
-    except IOError, e:
+    except IOError:
         seek = None
         for x in xrange(offset):
             fwrite(zeros(chunksize))
@@ -105,7 +109,7 @@ def file_sync_read_chunks(openfile, chunksize, nr, offset=0):
     seek = openfile.seek
     try:
         seek(remains)
-    except IOError, e:
+    except IOError:
         seek = None
         while 1:
             s = fread(remains)
@@ -131,25 +135,24 @@ def file_sync_read_chunks(openfile, chunksize, nr, offset=0):
 
 
 class ContextFile(object):
-    __slots__ = ("name", "fdesc", "create")
+    __slots__ = ("name", "fdesc", "oflag")
 
-    def __init__(self, name, create=0):
+    def __init__(self, name, oflag):
         self.name = name
         self.fdesc = None
-        self.create = create
+        self.oflag = oflag
         #self.dirty = 0
 
     def __enter__(self):
         name = self.name
-        try:
-            fdesc = open(name, 'rb+')
-        except IOError, e:
-            if self.create and e.errno == ENOENT:
-                fdesc = open(name, 'w+')
-            elif not self.create and e.errno == EROFS:
-                fdesc = open(name, 'rb')
-            else:
-                raise
+        if self.oflag == O_RDONLY:
+            fdesc = open(name, 'rb')
+        elif self.oflag == O_WRONLY:
+            fdesc = open(name, 'wb')
+        elif self.oflag == O_RDWR:
+            fdesc = open(name, 'wb+')
+        else:
+            raise Exception("Wrong file acccess mode.")
 
         self.fdesc = fdesc
         return self
@@ -177,7 +180,8 @@ class ContextFile(object):
 
     def sync_write_chunks(self, chunksize, offset, chunks, size=None):
         #self.dirty = 1
-        return file_sync_write_chunks(self.fdesc, chunksize, offset, chunks, size)
+        return file_sync_write_chunks(self.fdesc, chunksize, offset, chunks,
+                                      size)
 
     def sync_read(self, size):
         read = self.fdesc.read

@@ -65,7 +65,7 @@ CLASSIFIERS = [
 
 # Package requirements
 INSTALL_REQUIRES = [
-    'Django>=1.2, <=1.4.5',
+    'Django>=1.4, <1.5',
     'South>=0.7.3',
     'httplib2>=0.6.0',
     'snf-common',
@@ -77,7 +77,6 @@ INSTALL_REQUIRES = [
     'snf-django-lib',
     'snf-branding',
     'snf-webproject',
-    'astakosclient',
 ]
 
 EXTRAS_REQUIRES = {
@@ -90,7 +89,8 @@ TESTS_REQUIRES = [
 # of replicating them:
 standard_exclude = ["*.py", "*.pyc", "*$py.class", "*~", ".*", "*.bak"]
 standard_exclude_directories = [
-    ".*", "CVS", "_darcs", "./build", "./dist", "EGG-INFO", "*.egg-info", "snf-0.7"
+    ".*", "CVS", "_darcs", "./build", "./dist", "EGG-INFO", "*.egg-info",
+    "snf-0.7"
 ]
 
 # (c) 2005 Ian Bicking and contributors; written for Paste (http://pythonpaste.org)
@@ -212,7 +212,6 @@ setup(
             'web_static = astakos.synnefo_settings:static_files'
         ],
         'console_scripts': [
-            'astakos-migrate-0.14 = astakos.scripts.upgrade.migrate_014:main',
             'snf-service-export = astakos.scripts.snf_service_export:main',
         ],
     }

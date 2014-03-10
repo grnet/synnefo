@@ -31,6 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+"""
+Astakos Client utility module
+"""
+
 from httplib import HTTPConnection, HTTPSConnection
 from contextlib import closing
 
@@ -39,8 +43,10 @@ from objpool.http import PooledHTTPConnection
 from astakosclient.errors import AstakosClientException, BadValue
 
 
-def retry(func):
+def retry_dec(func):
+    """Class Method Decorator"""
     def decorator(self, *args, **kwargs):
+        """Retry `self.retry' times if connection fails"""
         attemps = 0
         while True:
             try:
@@ -64,13 +70,16 @@ def retry(func):
 def scheme_to_class(scheme, use_pool, pool_size):
     """Return the appropriate conn class for given scheme"""
     def _objpool(netloc):
+        """Helper function to return a PooledHTTPConnection object"""
         return PooledHTTPConnection(
             netloc=netloc, scheme=scheme, size=pool_size)
 
     def _http_connection(netloc):
+        """Helper function to return an HTTPConnection object"""
         return closing(HTTPConnection(netloc))
 
     def _https_connection(netloc):
+        """Helper function to return an HTTPSConnection object"""
         return closing(HTTPSConnection(netloc))
 
     if scheme == "http":
@@ -92,16 +101,22 @@ def parse_request(request, logger):
     try:
         return simplejson.dumps(request)
     except Exception as err:
-        m = "Cannot parse request \"%s\" with simplejson: %s" \
-            % (request, str(err))
-        logger.error(m)
-        raise BadValue(m)
+        msg = "Cannot parse request \"%s\" with simplejson: %s" \
+              % (request, str(err))
+        logger.error(msg)
+        raise BadValue(msg)
 
 
 def check_input(function_name, logger, **kwargs):
     """Check if given arguments are not None"""
     for i in kwargs:
         if kwargs[i] is None:
-            m = "in " + function_name + ": " + str(i) + " parameter not given"
-            logger.error(m)
-            raise BadValue(m)
+            msg = "in " + function_name + ": " + \
+                  str(i) + " parameter not given"
+            logger.error(msg)
+            raise BadValue(msg)
+
+
+def join_urls(url_a, url_b):
+    """Join_urls from synnefo.lib"""
+    return url_a.rstrip("/") + "/" + url_b.lstrip("/")

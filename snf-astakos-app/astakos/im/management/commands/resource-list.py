@@ -33,7 +33,7 @@
 
 from optparse import make_option
 from astakos.im.models import Resource
-from synnefo.webproject.management.commands import ListCommand
+from snf_django.management.commands import ListCommand
 from ._common import show_resource_value, style_options, check_style
 
 
@@ -51,16 +51,18 @@ class Command(ListCommand):
     FIELDS = {
         "id": ("id", "ID"),
         "name": ("name", "Resource Name"),
-        "service type": ("service_type", "Service type"),
-        "service origin": ("service_origin", "Service"),
-        "limit": ("limit_with_unit", "Base Quota"),
+        "service_type": ("service_type", "Service type"),
+        "service_origin": ("service_origin", "Service"),
+        "unit": ("unit", "Unit of measurement"),
+        "default_quota": ("limit_with_unit", "Default Quota"),
         "description": ("desc", "Description"),
-        "allow_in_projects": ("allow_in_projects",
-                              "Make resource available in projects"),
+        "api_visible": ("api_visible",
+                        "Resource accessibility through the API"),
+        "ui_visible": ("ui_visible",
+                       "Resource accessibility through the UI"),
     }
 
-    fields = ["id", "name", "service origin", "limit",
-              "description"]
+    fields = ["id", "name", "default_quota", "api_visible", "ui_visible"]
 
     def show_limit(self, resource):
         limit = resource.uplimit

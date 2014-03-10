@@ -609,18 +609,35 @@
         update_valid_predefined: function() {
             this.update_unavailable_values();
             var self = this;
-            this.valid_predefined = _.select(_.map(this.predefined_flavors, function(flv, key){
-                var existing = storage.flavors.get_flavor(flv.cpu, flv.ram, flv.disk, flv.disk_template, self.flavors);
+            this.valid_predefined = _.select(
+              _.map(this.predefined_flavors, function(flv, key){
+                var existing = storage.flavors.get_flavor(flv.cpu, 
+                                                          flv.ram, 
+                                                          flv.disk, 
+                                                          flv.disk_template, 
+                                                          self.flavors);
                 // non existing
                 if (!existing) {
                     return false;
                 }
                 
                 // not available for image
-                if (self.unavailable_values && self.unavailable_values.disk.indexOf(existing.get_disk_size()) > -1) {
-                    return false
+                if (self.unavailable_values && self.unavailable_values.disk.indexOf(
+                    existing.get("disk")) > -1) {
+                      return false
                 }
-
+                
+                // quota check
+                var quotas = synnefo.storage.quotas.get_available_for_vm();
+                var unavailable_check = 
+                  synnefo.storage.flavors.unavailable_values_for_quotas;
+                var unavailable = unavailable_check(quotas, [existing]);
+                if ((_.filter(unavailable, function(values, flvkey) {
+                  return values.length > 0
+                })).length > 0) {
+                  return false;
+                }
+                
                 return key;
             }), function(ret) { return ret });
             
@@ -645,14 +662,13 @@
         },
         
         update_flavors_data: function() {
-            this.flavors = storage.flavors.active();
+            this.flavors = this.get_active_flavors();
             this.flavors_data = storage.flavors.get_data(this.flavors);
             
             var self = this;
             var set = false;
             
             // FIXME: validate current flavor
-            
             if (!this.current_flavor) {
                 _.each(this.valid_predefined, function(key) {
                     var flv = self.predefined_flavors[key];
@@ -677,8 +693,8 @@
               image_excluded = storage.flavors.unavailable_values_for_image(this.current_image);
             }
 
-            quotas = this.get_vm_params_quotas();
-            user_excluded = storage.flavors.unavailable_values_for_quotas(quotas);
+            var quotas = synnefo.storage.quotas.get_available_for_vm({active: true});
+            var user_excluded = storage.flavors.unavailable_values_for_quotas(quotas);
 
             unavailable.disk = user_excluded.disk.concat(image_excluded.disk);
             unavailable.ram = user_excluded.ram.concat(image_excluded.ram);
@@ -687,23 +703,13 @@
             this.unavailable_values = unavailable;
         },
         
-        get_vm_params_quotas: function() {
-          var quotas = synnefo.storage.quotas;
-          var quota = {
-            'ram': quotas.get('cyclades.ram').get('available'),
-            'cpu': quotas.get('cyclades.cpu').get('available'),
-            'disk': quotas.get('cyclades.disk').get('available')
-          }
-          return quota;
-        },
-
         flavor_is_valid: function(flv) {
             if (!flv) { return false };
 
             var existing = storage.flavors.get_flavor(flv.get("cpu"), flv.get("ram"), flv.get("disk"), flv.get("disk_template"), this.flavors);
             if (!existing) { return false };
             
-            if (this.unavailable_values && (this.unavailable_values.disk.indexOf(parseInt(flv.get("disk")) * 1000) > -1)) {
+            if (this.unavailable_values && (this.unavailable_values.disk.indexOf(parseInt(flv.get("disk"))) > -1)) {
                 return false;
             }
             if (this.unavailable_values && (this.unavailable_values.ram.indexOf(parseInt(flv.get("ram"))) > -1)) {
@@ -760,7 +766,7 @@
             if (!this.unavailable_values) { return }
             
             this.$("#create-vm-flavor-options .flavor-options.disk li").each(_.bind(function(i, el){
-                var el_value = $(el).data("value") * 1000;
+                var el_value = $(el).data("value");
                 if (this.unavailable_values.disk.indexOf(el_value) > -1) {
                     $(el).addClass("disabled");
                     $(el).removeClass("selected");
@@ -923,7 +929,9 @@
         },
         
         get_active_flavors: function() {
-            return storage.flavors.active();
+            return storage.flavors.active().filter(function(flv) {
+	        return flv.get("SNF:allow_create")
+	    });
         },
 
         get_valid_flavors: function() {
@@ -942,8 +950,10 @@
 
           var quotas = synnefo.storage.quotas;
           _.each(["disk", "ram", "cpu"], function(type) {
-            var available_dsp = quotas.get('cyclades.'+type).get_readable('available');
-            var available = quotas.get('cyclades.'+type).get('available');
+            var active = true;
+            var key = 'available';
+            var available_dsp = quotas.get('cyclades.'+type).get_readable(key, active);
+            var available = quotas.get('cyclades.'+type).get_available(key);
             var content = "({0} left)".format(available_dsp);
             if (available <= 0) { content = "(None left)" }
             
@@ -975,11 +985,281 @@
         get: function() {
             return {'flavor': this.current_flavor}
         }
+    });
+    
 
+    views.CreateColumnSelectOptionView = bb.View.extend({
+        tagName: 'li',
+        el: undefined,
+        model: undefined,
+        id_prefix: 'model-',
+        tpl: '<input type="checkbox" class="check"/><span class="title"></span>',
+        className: 'list-item-option clearfix',
+        events: {
+          'click': 'handle_click'
+        },
+
+        initialize: function(options) {
+          _.bindAll(this);
+          this.model.bind("change", this.render);
+          this.model.bind("remove", this.remove);
+          this.selected = false;
+          if (options.get_model_title) {
+            this.get_model_title = _.bind(options.get_model_title, this);
+          }
+          this.model_title_attr = options.model_title_attr;
+          $(this.el).append($(this.tpl));
+        },
+        
+        id: function() {
+          return this.id_prefix + this.model && this.model.id || '';
+        },
+        
+        handle_click: function() {
+          this.selected = !this.selected;
+          this.render();
+        },
+
+        remove: function() {
+          this.model.unbind("change", this.render);
+          this.model.unbind("remove", this.remove);
+        },
+        
+        get_model_title: function() {
+          return this.model.get(this.model_title_attr || 'id');
+        },
+
+        render: function() {
+          $(this.el).find(".title").text(this.get_model_title());
+          $(this.el).toggleClass('selected', this.selected);
+          if (this.selected) {
+            $(this.el).find("input").attr("checked", true);
+          } else {
+            $(this.el).find("input").attr("checked", false);
+          }
+        }
+    });
+    
+    views.CreateColumnIPOptionView = views.CreateColumnSelectOptionView.extend({
+      get_model_title: function() {
+        return this.model.get('ip');
+      }
+    });
+
+    views.CreateColumnPrivateNetworkOptionView = views.CreateColumnSelectOptionView.extend({
+      get_model_title: function() {
+        return this.model.get('name');
+      }
+    });
+
+    views.CreateColumnSelectListView = bb.View.extend({
+        collection: undefined,
+        header: undefined,
+        tagName: 'div',
+        extra_class: '',
+        el: undefined,
+        title_tpl: undefined,
+        title: 'List view',
+        description: 'List view description.',
+        empty_msg: 'No entries.',
+        item_cls: views.CreateColumnSelectOptionView,
+        className: 'list-cont create-column-select personalize-cont',
+
+        initialize: function(options) {
+          _.bindAll(this);
+          if (options.extra_class) {
+            $(this.el).addClass(options.extra_class);
+          }
+          this.update_collection = options.update_collection;
+          this.title = options.title || this.title;
+          this.titple_tpl = options.title_tpl || this.title_tpl;
+          this.description = options.description || this.description;
+          this.empty_msg = options.empty_msg || this.empty_msg;
+          this.item_cls = options.item_cls || this.item_cls;
+          this.select_first_as_default = options.select_first_as_default;
+          this.filter_items = options.filter_items;
+          this.post_render_entries = options.post_render_entries || function() {};
+          this.init_events = options.init_events || function() {};
+
+          this.init_events = _.bind(this.init_events, this);
+          this.post_render_entries = _.bind(this.post_render_entries, this);
+
+          this._ul = $('<ul class="confirm-params">');
+          this._title = $("<h4>");
+          this._description = $("<p class='desc'>");
+          this._empty = $("<p class='empty hidden desc'>");
+          this._empty.html(this.empty_msg);
+        
+          this.item_views = [];
+
+          $(this.el).append(this._title);
+          $(this.el).append(this._description);
+          $(this.el).append(this._empty);
+          $(this.el).append(this._ul);
+
+          this['$el'] = $(this.el);
+
+          if (!this.title_tpl) { this.title_tpl = this.title };
+
+          this.collection.bind("change", this.render_entries);
+          this.collection.bind("reset", this.render_entries);
+          this.collection.bind("add", this.render_entries);
+          this.collection.bind("remove", this.remove_entry);
+          
+          this.fetcher = undefined;
+          if (this.update_collection) {
+              this.fetcher_params = [snf.config.update_interval, 
+                    snf.config.update_interval_increase || 500,
+                    snf.config.fast_interval || snf.config.update_interval/2, 
+                    snf.config.update_interval_increase_after_calls || 4,
+                    snf.config.update_interval_max || 20000,
+                    true, 
+                    {is_recurrent: true, update: true}];
+              this.fetcher = this.collection.get_fetcher.apply(this.collection, 
+                                                _.clone(this.fetcher_params));
+              this.fetcher.start();
+          }
+          this.render();
+          this.init_events();
+        },
+        
+        render: function() {
+          this._title.html(this.title_tpl);
+          this._description.html(this.description);
+          this.render_entries();
+        },
+        
+        remove_entry: function(model) {
+          if (!this.item_views[model.id]) { return }
+          this.item_views[model.id].remove();
+          delete this.item_views[model.pk]
+        },
+        
+        get_selected: function() {
+          return _.map(_.filter(this.item_views, function(v) { 
+            return v.selected
+          }), function(v) {
+            return v.model
+          });
+        },
+        
+        check_empty: function() {
+          if (this.item_views.length == 0) {
+            this._empty.show();
+          } else {
+            this._empty.hide();
+          }
+        },
+
+        render_entries: function() {
+          var entries;
+          if (this.filter_items) {
+            entries = this.collection.filter(this.filter_items);
+          } else {
+            entries = this.collection.models;
+          }
+          
+          var selected = this.get_selected();
+          
+          _.each(entries, _.bind(function(model) {
+            if (this.item_views[model.id]) {
+              this.item_views[model.id].render();
+            } else {
+              var view = new this.item_cls({model:model});
+              if (!selected.length && this.select_first_as_default) { 
+                view.selected = true; selected = [1] 
+              }
+              view.render();
+              this.item_views[model.id] = view;
+              this._ul.append($(view.el));
+            }
+          }, this));
+          this.check_empty();
+          this.post_render_entries();
+        },
+
+        remove: function() {
+          _.each(this.item_views, function(v){
+            v.remove();
+          });
+          if (this.update_collection) { this.fetcher.stop() }
+          this.unbind();
+          this.collection.unbind("change", this.render_entries);
+          this.collection.unbind("reset", this.render_entries);
+          this.collection.unbind("add", this.render_entries);
+          this.collection.unbind("remove", this.remove_entry);
+          views.CreateColumnSelectListView.__super__.remove.apply(this, arguments);
+        }
+    });
+
+    views.CreateNetworkingView = views.CreateVMStepView.extend({
+        step: 3,
+        initialize: function() {
+            views.CreateNetworkingView.__super__.initialize.apply(this, arguments);
+            this.init_handlers();
+            this.selected_keys = [];
+            this.cont = this.$(".step-cont");
+        },
+        
+        init_subviews: function() {
+            var create_view = this.parent;
+            if (!this.networks_view) {
+              this.networks_view = new views.NetworkSelectView({
+                container: this.cont
+              });
+              this.networks_view.hide(true);
+            }
+        },
+
+        init_handlers: function() {
+        },
+
+        show: function() {
+            views.CreateNetworkingView.__super__.show.apply(this, arguments);
+            this.init_subviews();
+            this.update_layout();
+            this.networks_view.show(true);
+        },
+        
+        hide_step: function() {
+            this.networks_view && this.networks_view.hide(true);
+        },
+
+        update_layout: function() {
+        },
+
+        reset: function() {
+            this.selected_keys = [];
+            this.update_layout();
+        },
+        
+        get_selected_networks: function() {
+            if (!this.networks_view) { return [] }
+            return this.networks_view.get_selected_networks();
+        },
+        
+        get_selected_addresses: function() {
+            if (!this.networks_view) { return [] }
+            return this.networks_view.get_selected_floating_ips();
+        },
+
+        get: function() {
+            return {
+              'addresses': this.get_selected_addresses(),
+              'networks': this.get_selected_networks()
+            }
+        },
+
+        remove: function() {
+          if (this.networks_view) {
+            this.networks_view.remove();
+            delete this.networks_view;
+          }
+        }
     });
 
     views.CreatePersonalizeView = views.CreateVMStepView.extend({
-        step: 3,
+        step: 4,
         initialize: function() {
             views.CreateSubmitView.__super__.initialize.apply(this, arguments);
             this.roles = this.$("li.predefined-meta.role .values");
@@ -991,13 +1271,6 @@
             this.selected_keys = [];
 
             var self = this;
-            this.$(".create-ssh-key").click(function() {
-                var confirm_close = true;
-                if (confirm_close) {
-                    snf.ui.main.public_keys_view.show(self.parent);
-                } else {
-                }
-            });
         },
 
         init_suggested_roles: function() {
@@ -1051,7 +1324,8 @@
                 this.$(".ssh .empty").hide();
             }
             _.each(keys, _.bind(function(key){
-                var el = $('<li id="ssh-key-option-{1}" class="ssh-key-option">{0}</li>'.format(_.escape(key.get("name")), key.id));
+                var name = _.escape(util.truncate(key.get("name"), 45));
+                var el = $('<li id="ssh-key-option-{1}" class="ssh-key-option">{0}</li>'.format(name, key.id));
                 var check = $('<input class="check" type="checkbox"></input>')
                 el.append(check);
                 el.data("model", key);
@@ -1062,7 +1336,7 @@
         init_handlers: function() {
             this.name.bind("keypress", _.bind(function(e) {
                 this.name_changed = true;
-                if (e.keyCode == 13) { this.parent.set_step(4); this.parent.update_layout() };    
+                if (e.keyCode == 13) { this.parent.set_step(5); this.parent.update_layout() };    
             }, this));
 
             this.name.bind("click", _.bind(function() {
@@ -1084,14 +1358,17 @@
 
             if (!params.image) { return }
             var vm_name_tpl = snf.config.vm_name_template || "My {0} server";
-            var vm_name = vm_name_tpl.format(_.escape(params.image.get("name")));
+            //if (params.image.is_snapshot()) { vm_name_tpl = "{0}" };
+            var vm_name = vm_name_tpl.format(params.image.get("name"));
             var orig_name = vm_name;
             
             var existing = true;
             var j = 0;
 
             while (existing && !this.name_changed) {
-                var existing = storage.vms.select(function(vm){return vm.get("name") == vm_name}).length
+                var existing = storage.vms.select(function(vm){
+                  return vm.get("name") == vm_name
+                }).length;
                 if (existing) {
                     j++;
                     vm_name = orig_name + " " + j;
@@ -1166,7 +1443,7 @@
     });
 
     views.CreateSubmitView = views.CreateVMStepView.extend({
-        step: 4,
+        step: 5,
         initialize: function() {
             views.CreateSubmitView.__super__.initialize.apply(this, arguments);
             this.roles = this.$("li.predefined-meta.role .values");
@@ -1174,6 +1451,8 @@
             this.name = this.$("h3.vm-name");
             this.keys = this.$(".confirm-params.ssh");
             this.meta = this.$(".confirm-params.meta");
+            this.ip_addresses = this.$(".confirm-params.ip-addresses");
+            this.private_networks = this.$(".confirm-params.private-networks");
             this.init_handlers();
         },
 
@@ -1185,6 +1464,35 @@
             this.update_layout();
         },
         
+        update_network_details: function() {
+            var data = this.parent.get_params();
+            var ips = data.addresses;
+            var networks = data.networks;
+
+            this.ip_addresses.empty();
+            if (!ips|| ips.length == 0) {
+                this.ip_addresses.append(this.make("li", {'class':'empty'}, 
+                                           'No ip addresses selected'))
+            }
+            _.each(ips, _.bind(function(ip) {
+                var el = this.make("li", {'class':'selected-ip-address'}, 
+                                  ip.get('floating_ip_address'));
+                this.ip_addresses.append(el);
+            }, this))
+
+            this.private_networks.empty();
+            if (!networks || networks.length == 0) {
+                this.private_networks.append(this.make("li", {'class':'empty'}, 
+                                             'No private networks selected'))
+            }
+            _.each(networks, _.bind(function(network) {
+                var el = this.make("li", {'class':'selected-private-network'}, 
+                                  network.get('name'));
+                this.private_networks.append(el);
+            }, this))
+
+        },
+
         update_flavor_details: function() {
             var flavor = this.parent.get_params().flavor;
 
@@ -1210,7 +1518,7 @@
             }
             
             set_detail("description", image.get_description());
-            set_detail("name");
+            set_detail("name", util.truncate(image.get("name"), 30));
             set_detail("os", _(image.get_os()).capitalize());
             set_detail("gui", image.get_gui());
             set_detail("size", _.escape(image.get_readable_size()));
@@ -1223,7 +1531,8 @@
                 this.keys.append(this.make("li", {'class':'empty'}, 'No keys selected'))
             }
             _.each(keys, _.bind(function(key) {
-                var el = this.make("li", {'class':'selected-ssh-key'}, key.get('name'));
+                var name = _.escape(util.truncate(key.get("name"), 20))
+                var el = this.make("li", {'class':'selected-ssh-key'}, name);
                 this.keys.append(el);
             }, this))
         },
@@ -1234,9 +1543,9 @@
                 this.meta.append(this.make("li", {'class':'empty'}, 'No tags selected'))
             }
             _.each(meta, _.bind(function(value, key) {
-                var el = this.make("li", {'class':"confirm-value"});
-                var name = this.make("span", {'class':"ckey"}, key);
-                var value = this.make("span", {'class':"cval"}, value);
+                var el = this.make("li", {'class':'confirm-value'});
+                var name = this.make("span", {'class':'ckey'}, key);
+                var value = this.make("span", {'class':'cval'}, value);
 
                 $(el).append(name)
                 $(el).append(value);
@@ -1250,7 +1559,7 @@
 
             if (!params.image) { return }
 
-            this.name.text(params.name);
+            this.name.text(util.truncate(params.name, 50));
 
             this.confirm.find("li.image .value").text(params.flavor.get("image"));
             this.confirm.find("li.cpu .value").text(params.flavor.get("cpu") + "x");
@@ -1262,6 +1571,7 @@
 
             this.update_image_details();
             this.update_flavor_details();
+            this.update_network_details();
 
             if (!params.image.supports('ssh')) {
                 this.keys.hide();
@@ -1308,8 +1618,9 @@
             this.steps[1].bind("change", _.bind(function(data) {this.trigger("image:change", data)}, this));
 
             this.steps[2] = new views.CreateFlavorSelectView(this);
-            this.steps[3] = new views.CreatePersonalizeView(this);
-            this.steps[4] = new views.CreateSubmitView(this);
+            this.steps[3] = new views.CreateNetworkingView(this);
+            this.steps[4] = new views.CreatePersonalizeView(this);
+            this.steps[5] = new views.CreateSubmitView(this);
 
             this.cancel_btn = this.$(".create-controls .cancel");
             this.next_btn = this.$(".create-controls .next");
@@ -1370,39 +1681,64 @@
                 this.submiting = true;
                 if (data.metadata) { meta = data.metadata; }
                 if (data.keys && data.keys.length > 0) {
-                    personality.push(data.image.personality_data_for_keys(data.keys))
+                    personality.push(
+                      data.image.personality_data_for_keys(data.keys))
                 }
 
                 if (personality.length) {
                     extra['personality'] = _.flatten(personality);
                 }
+                
+                extra['networks'] = [];
+                _.each(data.networks, function(n) {
+                  extra.networks.push({'uuid': n.get('id')})
+                });
+                _.each(data.addresses, function(ip) {
+                  extra.networks.push({
+                    'uuid': ip.get('network').get('id'),
+                    'fixed_ip': ip.get('floating_ip_address')
+                  });
+                });
 
-                storage.vms.create(data.name, data.image, data.flavor, meta, extra, _.bind(function(data){
+                _.map(data.networks, function(n) { return n.get('id') });
+                storage.vms.create(data.name, data.image, data.flavor, 
+                                   meta, extra, _.bind(function(data){
+                    _.each(data.addresses, function(ip) {
+                      ip.set({'status': 'connecting'});
+                    });
                     this.close_all();
-                    this.password_view.show(data.server.adminPass, data.server.id);
-                    this.submiting = false;
+                    this.password_view.show(data.server.adminPass, 
+                                            data.server.id);
+                    var self = this;
+                    window.setTimeout(function() {
+                      self.submiting = false;
+                    }, 1000);
                 }, this));
             }
         },
 
         close_all: function() {
-            this.hide();
+          this.hide();
+        },
+
+        onClose: function() {
+          this.steps[3].remove();
         },
 
         reset: function() {
-            this.current_step = 1;
+          this.current_step = 1;
 
-            this.steps[1].reset();
-            this.steps[2].reset();
-            this.steps[3].reset();
-            this.steps[4].reset();
+          this.steps[1].reset();
+          this.steps[2].reset();
+          this.steps[3].reset();
+          this.steps[4].reset();
 
-            this.steps[1].show();
-            this.steps[2].show();
-            this.steps[3].show();
-            this.steps[4].show();
+          //this.steps[1].show();
+          //this.steps[2].show();
+          //this.steps[3].show();
+          //this.steps[4].show();
 
-            this.submit_btn.removeClass("in-progress");
+          this.submit_btn.removeClass("in-progress");
         },
 
         onShow: function() {
@@ -1440,7 +1776,8 @@
             // FIXME: this shouldn't be here
             // but since we are not calling step.hide this should work
             this.steps[1].image_details.hide();
-
+            
+            this.current_view && this.current_view.hide_step && this.current_view.hide_step();
             this.current_view = this.steps[step];
             this.update_controls();
 
@@ -1491,7 +1828,7 @@
         },
 
         get_params: function() {
-            return _.extend({}, this.steps[1].get(), this.steps[2].get(), this.steps[3].get());
+            return _.extend({}, this.steps[1].get(), this.steps[2].get(), this.steps[3].get(), this.steps[4].get());
         }
     });
     

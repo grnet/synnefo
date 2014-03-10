@@ -1,10 +1,7 @@
-try:
-    from django.conf.urls import patterns, url
-except ImportError:  # Django==1.2
-    from django.conf.urls.defaults import patterns, url
+from django.conf.urls import patterns, url
 
-
-urlpatterns = patterns('',
+urlpatterns = patterns(
+    '',
     url(r'^$', 'synnefo.helpdesk.views.index', name='helpdesk-index'),
     url(r'^actions/vm-suspend/(?P<vm_id>[0-9]+)$',
         'synnefo.helpdesk.views.vm_suspend',
@@ -21,4 +18,3 @@ urlpatterns = patterns('',
     url(r'^(?P<search_query>.*)$', 'synnefo.helpdesk.views.account',
         name='helpdesk-details'),
 )
-

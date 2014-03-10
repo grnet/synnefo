@@ -1,5 +1,6 @@
 import os
 os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
+import sys
 from optparse import OptionParser
 from synnefo.lib.services import fill_endpoints, filter_public
 from django.utils import simplejson as json
@@ -21,7 +22,8 @@ astakos_services = {
                 'name': "astakos.pending_app",
                 'service_type': "account",
                 'service_origin': "astakos_account",
-                'allow_in_projects': False},
+                "ui_visible": False,
+                "api_visible": False},
         },
     },
 
@@ -58,7 +60,23 @@ astakos_services = {
              'publicURL': None},
         ],
     },
+
+    'astakos_admin': {
+        'type': 'astakos_admin',
+        'component': 'astakos',
+        'prefix': 'admin',
+        'public': False,
+        'endpoints': [
+            {'versionId': '',
+             'publicURL': None},
+        ],
+        'resources': {},
+    },
+
 }
+
+from astakos.oa2.services import oa2_services
+astakos_services.update(oa2_services)
 
 cyclades_services = {
     'cyclades_compute': {
@@ -77,15 +95,33 @@ cyclades_services = {
                 "service_type": "compute",
                 "service_origin": "cyclades_compute",
             },
-            'cpu': {
-                "name": "cyclades.cpu",
+            'total_cpu': {
+                "name": "cyclades.total_cpu",
                 "desc": "Number of virtual machine processors",
                 "service_type": "compute",
                 "service_origin": "cyclades_compute",
+                "ui_visible": False,
+                "api_visible": False,
+            },
+            'cpu': {
+                "name": "cyclades.cpu",
+                "desc": "Number of virtual machine processors of running"
+                        " servers",
+                "service_type": "compute",
+                "service_origin": "cyclades_compute",
+            },
+            'total_ram': {
+                "name": "cyclades.total_ram",
+                "desc": "Virtual machine memory size",
+                "unit": "bytes",
+                "service_type": "compute",
+                "service_origin": "cyclades_compute",
+                "ui_visible": False,
+                "api_visible": False,
             },
             'ram': {
                 "name": "cyclades.ram",
-                "desc": "Virtual machine memory size",
+                "desc": "Virtual machine memory size of running servers",
                 "unit": "bytes",
                 "service_type": "compute",
                 "service_origin": "cyclades_compute",
@@ -94,12 +130,6 @@ cyclades_services = {
                 "name": "cyclades.disk",
                 "desc": "Virtual machine disk size",
                 "unit": "bytes",
-                "service_type": "compute",
-                "service_origin": "cyclades_compute",
-            },
-            'network-private': {
-                "name": "cyclades.network.private",
-                "desc": "Number of private networks",
                 "service_type": "compute",
                 "service_origin": "cyclades_compute",
             },
@@ -116,6 +146,31 @@ cyclades_services = {
              'publicURL': None},
         ],
         'resources': {},
+    },
+
+    'cyclades_network': {
+        'type': 'network',
+        'component': 'cyclades',
+        'prefix': 'network',
+        'public': True,
+        'endpoints': [
+            {'versionId': 'v2.0',
+             'publicURL': None},
+        ],
+        'resources': {
+            'network-private': {
+                "name": "cyclades.network.private",
+                "desc": "Number of private networks",
+                "service_type": "network",
+                "service_origin": "cyclades_network",
+            },
+            'floating_ip': {
+                "name": "cyclades.floating_ip",
+                "desc": "Number of Floating IP addresses",
+                "service_type": "network",
+                "service_origin": "cyclades_network",
+            },
+        },
     },
 
     'cyclades_vmapi': {
@@ -249,7 +304,7 @@ def main():
     try:
         services = definitions[component]
     except KeyError:
-        print "Unrecognized component %s" % component
+        print >> sys.stderr, "Unrecognized component %s" % component
         exit(1)
     base_url = args[1]
     print_definitions(services, base_url)

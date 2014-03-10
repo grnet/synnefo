@@ -116,12 +116,12 @@ def get_instance_nics(instance, logger):
     """
     try:
         client = cli.GetClient()
-        fields = ["nic.networks.names", "nic.ips", "nic.macs", "nic.modes",
-                  "nic.links", "nic.names", "tags"]
+        fields = ["nic.names", "nic.networks.names", "nic.ips", "nic.macs",
+                  "nic.modes", "nic.links", "tags"]
         info = client.QueryInstances([instance], fields, use_locking=False)
-        networks, ips, macs, modes, links, names, tags = info[0]
-        nic_keys = ["network", "ip", "mac", "mode", "link", "name"]
-        nics = zip(networks, ips, macs, modes, links, names)
+        names, networks, ips, macs, modes, links, tags = info[0]
+        nic_keys = ["name", "network", "ip", "mac", "mode", "link"]
+        nics = zip(names, networks, ips, macs, modes, links)
         nics = map(lambda x: dict(zip(nic_keys, x)), nics)
     except ganeti_errors.OpPrereqError:
         # Not running on master! Load the conf file
@@ -143,14 +143,10 @@ def get_instance_nics(instance, logger):
             if len(t) != 4:
                 logger.error("Malformed synefo tag %s", tag)
                 continue
-            try:
-                index = int(t[2])
-                nics[index]['firewall'] = t[3]
-            except ValueError:
-                logger.error("Malformed synnefo tag %s", tag)
-            except IndexError:
-                logger.error("Found tag %s for non-existent NIC %d",
-                             tag, index)
+            nic_name = t[2]
+            firewall = t[3]
+            [nic.setdefault("firewall", firewall)
+             for nic in nics if nic["name"] == nic_name]
     return nics
 
 
@@ -193,7 +189,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.client.exchange_declare(settings.EXCHANGE_GANETI, type='topic')
 
         self.op_handlers = {"INSTANCE": self.process_instance_op,
-                            "NETWORK": self.process_network_op}
+                            "NETWORK": self.process_network_op,
+                            "CLUSTER": self.process_cluster_op}
                             # "GROUP": self.process_group_op}
 
     def process_IN_CLOSE_WRITE(self, event):
@@ -247,11 +244,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
                         "result": op.result,
                         "jobId": job_id})
 
-            if op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_SET_PARAMS",
-                         "OP_INSTANCE_STARTUP"]:
-                if op.status == "success":
-                    nics = get_instance_nics(msg["instance"], self.logger)
-                    msg["nics"] = nics
+            if op.status == "success":
+                msg["result"] = op.result
 
             if op_id == "OP_INSTANCE_CREATE" and op.status == "error":
                 # In case an instance creation fails send the job input
@@ -289,9 +283,23 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.logger.debug("Job: %d: %s(%s) %s", job_id, op_id,
                           instances, op.status)
 
+        job_fields = {}
+        if op_id in ["OP_INSTANCE_SET_PARAMS", "OP_INSTANCE_CREATE"]:
+            job_fields = {"nics": get_field(input, "nics"),
+                          "disks": get_field(input, "disks"),
+                          "beparams": get_field(input, "beparams")}
+
         msg = {"type": "ganeti-op-status",
                "instance": instances,
-               "operation": op_id}
+               "operation": op_id,
+               "job_fields": job_fields}
+
+        if ((op_id in ["OP_INSTANCE_CREATE", "OP_INSTANCE_STARTUP"] and
+             op.status == "success") or
+            (op_id == "OP_INSTANCE_SET_PARAMS" and
+             op.status in ["success", "error", "cancelled"])):
+                nics = get_instance_nics(msg["instance"], self.logger)
+                msg["instance_nics"] = nics
 
         routekey = "ganeti.%s.event.op" % prefix_from_name(instances)
 
@@ -312,29 +320,44 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.logger.debug("Job: %d: %s(%s) %s", job_id, op_id,
                           network_name, op.status)
 
+        job_fields = {
+            'subnet': get_field(input, 'network'),
+            'gateway': get_field(input, 'gateway'),
+            "add_reserved_ips": get_field(input, "add_reserved_ips"),
+            "remove_reserved_ips": get_field(input, "remove_reserved_ips"),
+            # 'network_mode': get_field(input, 'network_mode'),
+            # 'network_link': get_field(input, 'network_link'),
+            'group_name': get_field(input, 'group_name')}
+
         msg = {'operation':    op_id,
                'type':         "ganeti-network-status",
                'network':      network_name,
-               'subnet':       get_field(input, 'network'),
-               # 'network_mode': get_field(input, 'network_mode'),
-               # 'network_link': get_field(input, 'network_link'),
-               'gateway':      get_field(input, 'gateway'),
-               'group_name':   get_field(input, 'group_name')}
+               'job_fields':   job_fields}
 
-        if op_id == "OP_NETWORK_SET_PARAMS":
-            msg["add_reserved_ips"] = get_field(input, "add_reserved_ips")
-            msg["remove_reserved_ips"] = get_field(input,
-                                                   "remove_reserved_ips")
         routekey = "ganeti.%s.event.network" % prefix_from_name(network_name)
 
         return msg, routekey
 
+    def process_cluster_op(self, op, job_id):
+        """ Process OP_CLUSTER_* opcodes.
 
-    # def process_group_op(self, op, job_id):
-    #     """ Process OP_GROUP_* opcodes.
+        """
 
-    #     """
-    #     return None, None
+        input = op.input
+        op_id = input.OP_ID
+
+        self.logger.debug("Job: %d: %s %s", job_id, op_id, op.status)
+
+        if op_id != "OP_CLUSTER_SET_PARAMS":
+            # Send only modifications of cluster
+            return None, None
+
+        msg = {'operation':    op_id,
+               'type':         "ganeti-cluster-status"}
+
+        routekey = "ganeti.event.cluster"
+
+        return msg, routekey
 
 
 def find_cluster_name():

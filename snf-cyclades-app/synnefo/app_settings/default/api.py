@@ -13,9 +13,37 @@ CYCLADES_BASE_URL = "https://compute.example.synnefo.org/compute/"
 # parameter refers to a point in time more than POLL_LIMIT seconds ago.
 POLL_LIMIT = 3600
 
+# Astakos groups that have access to '/admin' views.
+ADMIN_STATS_PERMITTED_GROUPS = ["admin-stats"]
+
 #
 # Network Configuration
 #
+
+# CYCLADES_DEFAULT_SERVER_NETWORKS setting contains a list of networks to
+# connect a newly created server to, *if the user has not* specified them
+# explicitly in the POST /server API call.
+# Each member of the list may be a network UUID, a tuple of network UUIDs,
+# "SNF:ANY_PUBLIC_IPV4" [any public network with an IPv4 subnet defined],
+# "SNF:ANY_PUBLIC_IPV6 [any public network with only an IPV6 subnet defined],
+#  or "SNF:ANY_PUBLIC" [any public network].
+#
+# Access control and quota policy are enforced, just as if the user had
+# specified the value of CYCLADES_DEFAULT_SERVER_NETWORKS in the content
+# of the POST /call, after processing of "SNF:*" directives."
+CYCLADES_DEFAULT_SERVER_NETWORKS = []
+
+# This setting contains a list of networks which every new server
+# will be forced to connect to, regardless of the contents of the POST
+# /servers call, or the value of CYCLADES_DEFAULT_SERVER_NETWORKS.
+# Its format is identical to that of CYCLADES_DEFAULT_SERVER_NETWORKS.
+
+# WARNING: No access control or quota policy are enforced.
+# The server will get all IPv4/IPv6 addresses needed to connect to the
+# networks specified in CYCLADES_FORCED_SERVER_NETWORKS, regardless
+# of the state of the floating IP pool of the user, and without
+# allocating any floating IPs."
+CYCLADES_FORCED_SERVER_NETWORKS = []
 
 # Maximum allowed network size for private networks.
 MAX_CIDR_BLOCK = 22
@@ -24,21 +52,9 @@ MAX_CIDR_BLOCK = 22
 DEFAULT_MAC_PREFIX = 'aa:00:0'
 DEFAULT_BRIDGE = 'br0'
 
-# Boolean value indicating whether synnefo would hold a Pool and allocate IP
-# addresses. If this setting is set to False, IP pool management will be
-# delegated to Ganeti. If machines have been created with this option as False,
-# you must run network reconciliation after turning it to True.
-PUBLIC_USE_POOL = True
-
 # Network flavors that users are allowed to create through API requests
+# Available flavors are IP_LESS_ROUTED, MAC_FILTERED, PHYSICAL_VLAN
 API_ENABLED_NETWORK_FLAVORS = ['MAC_FILTERED']
-
-# Settings for IP_LESS_ROUTED network:
-# -----------------------------------
-# In this case VMCs act as routers that forward the traffic to/from VMs, based
-# on the defined routing table($DEFAULT_ROUTING_TABLE) and ip rules, that
-# exist in every node, implenting an IP-less routed and proxy-arp setup.
-DEFAULT_ROUTING_TABLE = 'snf_public'
 
 # Settings for MAC_FILTERED network:
 # ------------------------------------------
@@ -48,10 +64,11 @@ DEFAULT_ROUTING_TABLE = 'snf_public'
 DEFAULT_MAC_FILTERED_BRIDGE = 'prv0'
 
 
-# Firewalling
-GANETI_FIREWALL_ENABLED_TAG = 'synnefo:network:0:protected'
-GANETI_FIREWALL_DISABLED_TAG = 'synnefo:network:0:unprotected'
-GANETI_FIREWALL_PROTECTED_TAG = 'synnefo:network:0:limited'
+# Firewalling. Firewall tags should contain '%d' to be filled with the NIC
+# ID.
+GANETI_FIREWALL_ENABLED_TAG = 'synnefo:network:%s:protected'
+GANETI_FIREWALL_DISABLED_TAG = 'synnefo:network:%s:unprotected'
+GANETI_FIREWALL_PROTECTED_TAG = 'synnefo:network:%s:limited'
 
 # The default firewall profile that will be in effect if no tags are defined
 DEFAULT_FIREWALL_PROFILE = 'DISABLED'
@@ -60,17 +77,20 @@ DEFAULT_FIREWALL_PROFILE = 'DISABLED'
 # e.g. BACKEND_PER_USER = {'example@synnefo.org': 2}
 BACKEND_PER_USER = {}
 
-# List of backend IDs used *only* for archipelago.
-ARCHIPELAGO_BACKENDS = []
 
+# Encryption key for the instance hostname in the stat graphs URLs. Set it to
+# a random string and update the STATS_SECRET_KEY setting in the snf-stats-app
+# host (20-snf-stats-app-settings.conf) accordingly.
+CYCLADES_STATS_SECRET_KEY = "secret_key"
 
 # URL templates for the stat graphs.
 # The API implementation replaces '%s' with the encrypted backend id.
-# FIXME: For now we do not encrypt the backend id.
-CPU_BAR_GRAPH_URL = 'http://stats.synnefo.org/%s/cpu-bar.png'
-CPU_TIMESERIES_GRAPH_URL = 'http://stats.synnefo.org/%s/cpu-ts.png'
-NET_BAR_GRAPH_URL = 'http://stats.synnefo.org/%s/net-bar.png'
-NET_TIMESERIES_GRAPH_URL = 'http://stats.synnefo.org/%s/net-ts.png'
+CPU_BAR_GRAPH_URL = 'http://stats.example.synnefo.org/stats/v1.0/cpu-bar/%s'
+CPU_TIMESERIES_GRAPH_URL = \
+    'http://stats.example.synnefo.org/stats/v1.0/cpu-ts/%s'
+NET_BAR_GRAPH_URL = 'http://stats.example.synnefo.org/stats/v1.0/net-bar/%s'
+NET_TIMESERIES_GRAPH_URL = \
+    'http://stats.example.synnefo.org/stats/v1.0/net-ts/%s'
 
 # Recommended refresh period for server stats
 STATS_REFRESH_PERIOD = 60
@@ -83,8 +103,8 @@ MAX_PERSONALITY = 5
 MAX_PERSONALITY_SIZE = 10240
 
 
-# Top-level URL of the astakos instance to be used for user management
-ASTAKOS_BASE_URL = 'https://accounts.example.synnefo.org/'
+# Authentication URL of the astakos instance to be used for user management
+ASTAKOS_AUTH_URL = 'https://accounts.example.synnefo.org/identity/v2.0'
 
 # Tune the size of the Astakos http client connection pool
 # This limit the number of concurrent requests to Astakos.
@@ -102,7 +122,47 @@ SECRET_ENCRYPTION_KEY = "Password Encryption Key"
 # using a user uuid)
 CYCLADES_SERVICE_TOKEN = ''
 
-# Let cyclades proxy user specific api calls to astakos, via self served
-# endpoints. Set this to False if you deploy cyclades-app/astakos-app on the
-# same machine.
-CYCLADES_PROXY_USER_SERVICES = True
+# Template to use to build the FQDN of VMs. The setting will be formated with
+# the id of the VM.
+CYCLADES_SERVERS_FQDN = 'snf-%(id)s.vm.example.synnefo.org'
+
+# Description of applied port forwarding rules (DNAT) for Cyclades VMs. This
+# setting contains a mapping from the port of each VM to a tuple contaning the
+# destination IP/hostname and the new port: (host, port). Instead of a tuple a
+# python callable object may be used which must return such a tuple. The caller
+# will pass to the callable the following positional arguments, in the
+# following order:
+# * server_id: The ID of the VM in the DB
+# * ip_address: The IPv4 address of the public VM NIC
+# * fqdn: The FQDN of the VM
+# * user: The UUID of the owner of the VM
+#
+# Here is an example describing the mapping of the SSH port of all VMs to
+# the external address 'gate.example.synnefo.org' and port 60000+server_id.
+# e.g. iptables -t nat -A prerouting -d gate.example.synnefo.org \
+# --dport (61000 + $(VM_ID)) -j DNAT --to-destination $(VM_IP):22
+#CYCLADES_PORT_FORWARDING = {
+#    22: lambda ip_address, server_id, fqdn, user:
+#               ("gate.example.synnefo.org", 61000 + server_id),
+#}
+CYCLADES_PORT_FORWARDING = {}
+
+# Extra configuration options required for snf-vncauthproxy (>=1.5)
+CYCLADES_VNCAUTHPROXY_OPTS = {
+    # These values are required for VNC console support. They should match a
+    # user / password configured in the snf-vncauthproxy authentication / users
+    # file (/var/lib/vncauthproxy/users).
+    'auth_user': 'synnefo',
+    'auth_password': 'secret_password',
+    # server_address and server_port should reflect the --listen-address and
+    # --listen-port options passed to the vncauthproxy daemon
+    'server_address': '127.0.0.1',
+    'server_port': 24999,
+    # Set to True to enable SSL support on the control socket.
+    'enable_ssl': False,
+    # If you enabled SSL support for snf-vncauthproxy you can optionally
+    # provide a path to a CA file and enable strict checkfing for the server
+    # certficiate.
+    'ca_cert': None,
+    'strict': False,
+}

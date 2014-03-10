@@ -1,6 +1,36 @@
+# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+#
+#   1. Redistributions of source code must retain the above copyright
+#      notice, this list of conditions and the following disclaimer.
+#
+#  2. Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and documentation are
+# those of the authors and should not be interpreted as representing official
+# policies, either expressed or implied, of GRNET S.A.
+
 from django import template
 
 register = template.Library()
+
 
 @register.filter(name="vm_public_ip")
 def vm_public_ip(vm):
@@ -9,7 +39,7 @@ def vm_public_ip(vm):
     address
     """
     try:
-        return vm.nics.filter(network__public=True)[0].ipv4
+        return vm.nics.filter(network__public=True)[0].ipv4_address
     except IndexError:
         return "No public ip"
 
@@ -23,7 +53,9 @@ VM_STATE_CSS_MAP = {
         'ACTIVE': 'success',
         'DESTROYED': 'inverse'
 }
-@register.filter(name="object_status_badge")
+
+
+@register.filter(name="object_status_badge", is_safe=True)
 def object_status_badge(vm_or_net):
     """
     Return a span badge styled based on the vm current status
@@ -38,9 +70,8 @@ def object_status_badge(vm_or_net):
         deleted_badge = '<span class="badge badge-important">Deleted</span>'
     return '%s\n<span class="%s">%s</span>' % (deleted_badge, badge_cls, state)
 
-object_status_badge.is_safe = True
 
-@register.filter(name="network_deleted_badge")
+@register.filter(name="network_deleted_badge", is_safe=True)
 def network_deleted_badge(network):
     """
     Return a span badge styled based on the vm current status
@@ -50,18 +81,16 @@ def network_deleted_badge(network):
         deleted_badge = '<span class="badge badge-important">Deleted</span>'
     return deleted_badge
 
-network_deleted_badge.is_safe = True
 
-@register.filter(name="get_os")
+@register.filter(name="get_os", is_safe=True)
 def get_os(vm):
     try:
         return vm.metadata.filter(meta_key="OS").get().meta_value
     except:
         return "unknown"
 
-get_os.is_safe = True
 
-@register.filter(name="network_vms")
+@register.filter(name="network_vms", is_safe=True)
 def network_vms(network, account, show_deleted=False):
     vms = []
     nics = network.nics.filter(machine__userid=account)
@@ -71,7 +100,6 @@ def network_vms(network, account, show_deleted=False):
         vms.append(nic.machine)
     return vms
 
-network_vms.is_safe = True
 
 @register.filter(name="network_nics")
 def network_nics(network, account, show_deleted=False):
@@ -81,7 +109,8 @@ def network_nics(network, account, show_deleted=False):
         nics = nics.filter(machine__deleted=False).distinct()
     return nics
 
-@register.filter(name="backend_info")
+
+@register.filter(name="backend_info", is_safe=True)
 def backend_info(vm):
     content = ""
     backend = vm.backend
@@ -96,5 +125,3 @@ def backend_info(vm):
         content += '<dt>Backend ' + field.name + '</dt><dd>' + \
                    str(getattr(backend, field.name)) + '</dd>'
     return content
-
-backend_info.is_safe = True

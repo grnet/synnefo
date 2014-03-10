@@ -4,7 +4,7 @@ d=`dirname $0`
 export SYNNEFO_SETTINGS_DIR=$d/settings
 
 HOST=127.0.0.1
-P=8008
+P=8000
 
 pkill -f "runserver"
 
@@ -18,5 +18,3 @@ while true; do
     else sleep 0.1
     fi
 done
-
-snf-manage astakos-init --load-service-resources

@@ -4,7 +4,7 @@ from south.db import db
 from south.v2 import DataMigration
 from django.db import models
 
-from synnefo import settings
+from django.conf import settings
 
 class Migration(DataMigration):
 

@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from pithos.api.manage_accounts import ManageAccounts
-from synnefo.webproject.management.utils import pprint_table
+from snf_django.management.utils import pprint_table
 
 import argparse
 

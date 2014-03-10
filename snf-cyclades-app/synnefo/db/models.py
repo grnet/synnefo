@@ -32,17 +32,15 @@ import datetime
 from copy import deepcopy
 from django.conf import settings
 from django.db import models
-from django.db import IntegrityError
 
 import utils
 from contextlib import contextmanager
 from hashlib import sha1
 from snf_django.lib.api import faults
-from synnefo import settings as snf_settings
+from django.conf import settings as snf_settings
 from aes_encrypt import encrypt_db_charfield, decrypt_db_charfield
 
-from synnefo.db.managers import ForUpdateManager, ProtectedDeleteManager
-from synnefo.db import pools
+from synnefo.db import pools, fields
 
 from synnefo.logic.rapi_pool import (get_rapi_client,
                                      put_rapi_client)
@@ -57,6 +55,8 @@ class Flavor(models.Model):
     disk = models.IntegerField('Disk size in GiB', default=0)
     disk_template = models.CharField('Disk template', max_length=32)
     deleted = models.BooleanField('Deleted', default=False)
+    # Whether the flavor can be used to create new servers
+    allow_create = models.BooleanField(default=True, null=False)
 
     class Meta:
         verbose_name = u'Virtual machine flavor'
@@ -69,7 +69,7 @@ class Flavor(models.Model):
                                  self.disk_template)
 
     def __unicode__(self):
-        return str(self.id)
+        return "<%s:%s>" % (str(self.id), self.name)
 
 
 class Backend(models.Model):
@@ -90,6 +90,7 @@ class Backend(models.Model):
     # Type of hypervisor
     hypervisor = models.CharField('Hypervisor', max_length=32, default="kvm",
                                   null=False)
+    disk_templates = fields.SeparatedValuesField("Disk Templates", null=True)
     # Last refresh of backend resources
     updated = models.DateTimeField(auto_now_add=True)
     # Backend resources
@@ -101,8 +102,6 @@ class Backend(models.Model):
                                             null=False)
     ctotal = models.PositiveIntegerField('Total number of logical processors',
                                          default=0, null=False)
-    # Custom object manager to protect from cascade delete
-    objects = ProtectedDeleteManager()
 
     HYPERVISORS = (
         ("kvm", "Linux KVM hypervisor"),
@@ -124,7 +123,8 @@ class Backend(models.Model):
     def get_client(self):
         """Get or create a client. """
         if self.offline:
-            raise faults.ServiceUnavailable
+            raise faults.ServiceUnavailable("Backend '%s' is offline" %
+                                            self)
         return get_rapi_client(self.id, self.hash,
                                self.clustername,
                                self.port,
@@ -159,24 +159,6 @@ class Backend(models.Model):
             self.virtual_machines.filter(deleted=False)\
                                  .update(backend_hash=self.hash)
 
-    def delete(self, *args, **kwargs):
-        # Integrity Error if non-deleted VMs are associated with Backend
-        if self.virtual_machines.filter(deleted=False).count():
-            raise IntegrityError("Non-deleted virtual machines are associated "
-                                 "with backend: %s" % self)
-        else:
-            # ON_DELETE = SET NULL
-            for vm in self.virtual_machines.all():
-                vm.backend = None
-                vm.save()
-            self.virtual_machines.all().backend = None
-            # Remove BackendNetworks of this Backend.
-            # Do not use networks.all().delete(), since delete() method of
-            # BackendNetwork will not be called!
-            for net in self.networks.all():
-                net.delete()
-            super(Backend, self).delete(*args, **kwargs)
-
     def __init__(self, *args, **kwargs):
         super(Backend, self).__init__(*args, **kwargs)
         if not self.pk:
@@ -186,7 +168,7 @@ class Backend(models.Model):
                 first_free = [x for x in xrange(0, 16) if x not in indexes][0]
                 self.index = first_free
             except IndexError:
-                raise Exception("Can not create more than 16 backends")
+                raise Exception("Cannot create more than 16 backends")
 
     def use_hotplug(self):
         return self.hypervisor == "kvm" and snf_settings.GANETI_USE_HOTPLUG
@@ -231,6 +213,9 @@ class QuotaHolderSerial(models.Model):
         verbose_name = u'Quota Serial'
         ordering = ["serial"]
 
+    def __unicode__(self):
+        return u"<serial: %s>" % self.serial
+
 
 class VirtualMachine(models.Model):
     # The list of possible actions for a VM
@@ -240,7 +225,10 @@ class VirtualMachine(models.Model):
         ('STOP', 'Shutdown VM'),
         ('SUSPEND', 'Admin Suspend VM'),
         ('REBOOT', 'Reboot VM'),
-        ('DESTROY', 'Destroy VM')
+        ('DESTROY', 'Destroy VM'),
+        ('RESIZE', 'Resize a VM'),
+        ('ADDFLOATINGIP', 'Add floating IP to VM'),
+        ('REMOVEFLOATINGIP', 'Add floating IP to VM'),
     )
 
     # The internal operating state of a VM
@@ -249,7 +237,8 @@ class VirtualMachine(models.Model):
         ('ERROR', 'Creation failed'),
         ('STOPPED', 'Stopped'),
         ('STARTED', 'Started'),
-        ('DESTROYED', 'Destroyed')
+        ('DESTROYED', 'Destroyed'),
+        ('RESIZE', 'Resizing')
     )
 
     # The list of possible operations on the backend
@@ -304,25 +293,31 @@ class VirtualMachine(models.Model):
         "ERROR": "ERROR",
         "STOPPED": "STOPPED",
         "STARTED": "ACTIVE",
-        "DESTROYED": "DELETED"
+        'RESIZE': 'RESIZE',
+        'DESTROYED': 'DELETED',
     }
 
-    name = models.CharField('Virtual Machine Name', max_length=255)
+    VIRTUAL_MACHINE_NAME_LENGTH = 255
+
+    name = models.CharField('Virtual Machine Name',
+                            max_length=VIRTUAL_MACHINE_NAME_LENGTH)
     userid = models.CharField('User ID of the owner', max_length=100,
                               db_index=True, null=False)
     backend = models.ForeignKey(Backend, null=True,
-                                related_name="virtual_machines",)
+                                related_name="virtual_machines",
+                                on_delete=models.PROTECT)
     backend_hash = models.CharField(max_length=128, null=True, editable=False)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     imageid = models.CharField(max_length=100, null=False)
     hostid = models.CharField(max_length=100)
-    flavor = models.ForeignKey(Flavor)
+    flavor = models.ForeignKey(Flavor, on_delete=models.PROTECT)
     deleted = models.BooleanField('Deleted', default=False, db_index=True)
     suspended = models.BooleanField('Administratively Suspended',
                                     default=False)
     serial = models.ForeignKey(QuotaHolderSerial,
-                               related_name='virtual_machine', null=True)
+                               related_name='virtual_machine', null=True,
+                               on_delete=models.SET_NULL)
 
     # VM State
     # The following fields are volatile data, in the sense
@@ -333,8 +328,10 @@ class VirtualMachine(models.Model):
     # In the future they could be moved to a separate caching layer
     # and removed from the database.
     # [vkoukis] after discussion with [faidon].
-    action = models.CharField(choices=ACTIONS, max_length=30, null=True)
-    operstate = models.CharField(choices=OPER_STATES, max_length=30, null=True)
+    action = models.CharField(choices=ACTIONS, max_length=30, null=True,
+                              default=None)
+    operstate = models.CharField(choices=OPER_STATES, max_length=30,
+                                 null=False, default="BUILD")
     backendjobid = models.PositiveIntegerField(null=True)
     backendopcode = models.CharField(choices=BACKEND_OPCODES, max_length=30,
                                      null=True)
@@ -344,13 +341,16 @@ class VirtualMachine(models.Model):
     buildpercentage = models.IntegerField(default=0)
     backendtime = models.DateTimeField(default=datetime.datetime.min)
 
-    objects = ForUpdateManager()
+    # Latest action and corresponding Ganeti job ID, for actions issued
+    # by the API
+    task = models.CharField(max_length=64, null=True)
+    task_job_id = models.BigIntegerField(null=True)
 
     def get_client(self):
         if self.backend:
             return self.backend.get_client()
         else:
-            raise faults.ServiceUnavailable
+            raise faults.ServiceUnavailable("VirtualMachine without backend")
 
     def get_last_diagnostic(self, **filters):
         try:
@@ -361,19 +361,6 @@ class VirtualMachine(models.Model):
     @staticmethod
     def put_client(client):
             put_rapi_client(client)
-
-    def __init__(self, *args, **kw):
-        """Initialize state for just created VM instances."""
-        super(VirtualMachine, self).__init__(*args, **kw)
-        # This gets called BEFORE an instance gets save()d for
-        # the first time.
-        if not self.pk:
-            self.action = None
-            self.backendjobid = None
-            self.backendjobstatus = None
-            self.backendopcode = None
-            self.backendlogmsg = None
-            self.operstate = 'BUILD'
 
     def save(self, *args, **kwargs):
         # Store hash for first time saved vm
@@ -393,7 +380,7 @@ class VirtualMachine(models.Model):
         get_latest_by = 'created'
 
     def __unicode__(self):
-        return str(self.id)
+        return u"<vm:%s@backend:%s>" % (self.id, self.backend_id)
 
     # Error classes
     class InvalidBackendIdError(Exception):
@@ -423,7 +410,8 @@ class VirtualMachine(models.Model):
 class VirtualMachineMetadata(models.Model):
     meta_key = models.CharField(max_length=50)
     meta_value = models.CharField(max_length=500)
-    vm = models.ForeignKey(VirtualMachine, related_name='metadata')
+    vm = models.ForeignKey(VirtualMachine, related_name='metadata',
+                           on_delete=models.CASCADE)
 
     class Meta:
         unique_together = (('meta_key', 'vm'),)
@@ -444,6 +432,8 @@ class Network(models.Model):
     ACTIONS = (
         ('CREATE', 'Create Network'),
         ('DESTROY', 'Destroy Network'),
+        ('ADD', 'Add server to Network'),
+        ('REMOVE', 'Remove server from Network'),
     )
 
     RSAPI_STATE_FROM_OPER_STATE = {
@@ -463,7 +453,7 @@ class Network(models.Model):
         },
         'IP_LESS_ROUTED': {
             'mode': 'routed',
-            'link': settings.DEFAULT_ROUTING_TABLE,
+            'link': None,
             'mac_prefix': settings.DEFAULT_MAC_PREFIX,
             'tags': 'ip-less-routed',
             'desc': "Flavor used for an IP-less routed network using"
@@ -488,14 +478,11 @@ class Network(models.Model):
         },
     }
 
-    name = models.CharField('Network Name', max_length=128)
+    NETWORK_NAME_LENGTH = 128
+
+    name = models.CharField('Network Name', max_length=NETWORK_NAME_LENGTH)
     userid = models.CharField('User ID of the owner', max_length=128,
                               null=True, db_index=True)
-    subnet = models.CharField('Subnet', max_length=32, default='10.0.0.0/24')
-    subnet6 = models.CharField('IPv6 Subnet', max_length=64, null=True)
-    gateway = models.CharField('Gateway', max_length=32, null=True)
-    gateway6 = models.CharField('IPv6 Gateway', max_length=64, null=True)
-    dhcp = models.BooleanField('DHCP', default=True)
     flavor = models.CharField('Flavor', max_length=32, null=False)
     mode = models.CharField('Network Mode', max_length=16, null=True)
     link = models.CharField('Network Link', max_length=32, null=True)
@@ -512,19 +499,14 @@ class Network(models.Model):
     action = models.CharField(choices=ACTIONS, max_length=32, null=True,
                               default=None)
     drained = models.BooleanField("Drained", default=False, null=False)
-
-    pool = models.OneToOneField('IPPoolTable', related_name='network',
-                default=lambda: IPPoolTable.objects.create(available_map='',
-                                                           reserved_map='',
-                                                           size=0),
-                null=True)
+    floating_ip_pool = models.BooleanField('Floating IP Pool', null=False,
+                                           default=False)
+    external_router = models.BooleanField(default=False)
     serial = models.ForeignKey(QuotaHolderSerial, related_name='network',
-                               null=True)
-
-    objects = ForUpdateManager()
+                               null=True, on_delete=models.SET_NULL)
 
     def __unicode__(self):
-        return str(self.id)
+        return "<Network: %s>" % str(self.id)
 
     @property
     def backend_id(self):
@@ -546,8 +528,8 @@ class Network(models.Model):
     def create_backend_network(self, backend=None):
         """Create corresponding BackendNetwork entries."""
 
-        backends = [backend] if backend\
-                             else Backend.objects.filter(offline=False)
+        backends = [backend] if backend else\
+            Backend.objects.filter(offline=False)
         for backend in backends:
             backend_exists =\
                 BackendNetwork.objects.filter(backend=backend, network=self)\
@@ -555,24 +537,52 @@ class Network(models.Model):
             if not backend_exists:
                 BackendNetwork.objects.create(backend=backend, network=self)
 
-    def get_pool(self):
-        if not self.pool_id:
-            self.pool = IPPoolTable.objects.create(available_map='',
-                                                   reserved_map='',
-                                                   size=0)
-            self.save()
-        return IPPoolTable.objects.select_for_update().get(id=self.pool_id)\
-                                                      .pool
+    def get_ip_pools(self, locked=True):
+        subnets = self.subnets.filter(ipversion=4, deleted=False)\
+                              .prefetch_related("ip_pools")
+        return [ip_pool for subnet in subnets
+                for ip_pool in subnet.get_ip_pools(locked=locked)]
 
-    def reserve_address(self, address):
-        pool = self.get_pool()
-        pool.reserve(address)
-        pool.save()
+    def reserve_address(self, address, external=False):
+        for ip_pool in self.get_ip_pools():
+            if ip_pool.contains(address):
+                ip_pool.reserve(address, external=external)
+                ip_pool.save()
+                return
+        raise pools.InvalidValue("Network %s does not have an IP pool that"
+                                 " contains address %s" % (self, address))
 
-    def release_address(self, address):
-        pool = self.get_pool()
-        pool.put(address)
-        pool.save()
+    def release_address(self, address, external=False):
+        for ip_pool in self.get_ip_pools():
+            if ip_pool.contains(address):
+                ip_pool.put(address, external=external)
+                ip_pool.save()
+                return
+        raise pools.InvalidValue("Network %s does not have an IP pool that"
+                                 " contains address %s" % (self, address))
+
+    @property
+    def subnet4(self):
+        return self.get_subnet(version=4)
+
+    @property
+    def subnet6(self):
+        return self.get_subnet(version=6)
+
+    def get_subnet(self, version=4):
+        for subnet in self.subnets.all():
+            if subnet.ipversion == version:
+                return subnet
+        return None
+
+    def ip_count(self):
+        """Return the total and free IPv4 addresses of the network."""
+        total, free = 0, 0
+        ip_pools = self.get_ip_pools(locked=False)
+        for ip_pool in ip_pools:
+            total += ip_pool.pool_size
+            free += ip_pool.count_available()
+        return total, free
 
     class InvalidBackendIdError(Exception):
         def __init__(self, value):
@@ -596,6 +606,40 @@ class Network(models.Model):
 
         def __str__(self):
             return repr(str(self._action))
+
+
+class Subnet(models.Model):
+    SUBNET_NAME_LENGTH = 128
+
+    userid = models.CharField('User ID of the owner', max_length=128,
+                              null=True, db_index=True)
+    public = models.BooleanField(default=False, db_index=True)
+
+    network = models.ForeignKey('Network', null=False, db_index=True,
+                                related_name="subnets",
+                                on_delete=models.PROTECT)
+    name = models.CharField('Subnet Name', max_length=SUBNET_NAME_LENGTH,
+                            null=True, default="")
+    ipversion = models.IntegerField('IP Version', default=4, null=False)
+    cidr = models.CharField('Subnet', max_length=64, null=False)
+    gateway = models.CharField('Gateway', max_length=64, null=True)
+    dhcp = models.BooleanField('DHCP', default=True, null=False)
+    deleted = models.BooleanField('Deleted', default=False, db_index=True,
+                                  null=False)
+    host_routes = fields.SeparatedValuesField('Host Routes', null=True)
+    dns_nameservers = fields.SeparatedValuesField('DNS Nameservers', null=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+
+    def __unicode__(self):
+        msg = u"<Subnet %s, Network: %s, CIDR: %s>"
+        return msg % (self.id, self.network_id, self.cidr)
+
+    def get_ip_pools(self, locked=True):
+        ip_pools = self.ip_pools
+        if locked:
+            ip_pools = ip_pools.select_for_update()
+        return map(lambda ip_pool: ip_pool.pool, ip_pools.all())
 
 
 class BackendNetwork(models.Model):
@@ -631,8 +675,10 @@ class BackendNetwork(models.Model):
         'OP_NETWORK_QUERY_DATA': None
     }
 
-    network = models.ForeignKey(Network, related_name='backend_networks')
-    backend = models.ForeignKey(Backend, related_name='networks')
+    network = models.ForeignKey(Network, related_name='backend_networks',
+                                on_delete=models.PROTECT)
+    backend = models.ForeignKey(Backend, related_name='networks',
+                                on_delete=models.PROTECT)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     deleted = models.BooleanField('Deleted', default=False)
@@ -672,6 +718,76 @@ class BackendNetwork(models.Model):
         return '<%s@%s>' % (self.network, self.backend)
 
 
+class IPAddress(models.Model):
+    subnet = models.ForeignKey("Subnet", related_name="ips", null=False,
+                               on_delete=models.PROTECT)
+    network = models.ForeignKey(Network, related_name="ips", null=False,
+                                on_delete=models.PROTECT)
+    nic = models.ForeignKey("NetworkInterface", related_name="ips", null=True,
+                            on_delete=models.SET_NULL)
+    userid = models.CharField("UUID of the owner", max_length=128, null=False,
+                              db_index=True)
+    address = models.CharField("IP Address", max_length=64, null=False)
+    floating_ip = models.BooleanField("Floating IP", null=False, default=False)
+    ipversion = models.IntegerField("IP Version", null=False)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    deleted = models.BooleanField(default=False, null=False)
+
+    serial = models.ForeignKey(QuotaHolderSerial,
+                               related_name="ips", null=True,
+                               on_delete=models.SET_NULL)
+
+    def __unicode__(self):
+        ip_type = "floating" if self.floating_ip else "static"
+        return u"<IPAddress: %s, Network: %s, Subnet: %s, Type: %s>"\
+               % (self.address, self.network_id, self.subnet_id, ip_type)
+
+    def in_use(self):
+        if self.nic is None or self.nic.machine is None:
+            return False
+        else:
+            return (not self.nic.machine.deleted)
+
+    class Meta:
+        unique_together = ("network", "address", "deleted")
+
+    @property
+    def public(self):
+        return self.network.public
+
+    def release_address(self):
+        """Release the IPv4 address."""
+        if self.ipversion == 4:
+            for pool_row in self.subnet.ip_pools.all():
+                ip_pool = pool_row.pool
+                if ip_pool.contains(self.address):
+                    ip_pool.put(self.address)
+                    ip_pool.save()
+                    return
+            log.error("Cannot release address %s of NIC %s. Address does not"
+                      " belong to any of the IP pools of the subnet %s !",
+                      self.address, self.nic, self.subnet_id)
+
+
+class IPAddressLog(models.Model):
+    address = models.CharField("IP Address", max_length=64, null=False,
+                               db_index=True)
+    server_id = models.IntegerField("Server", null=False)
+    network_id = models.IntegerField("Network", null=False)
+    allocated_at = models.DateTimeField("Datetime IP allocated to server",
+                                        auto_now_add=True)
+    released_at = models.DateTimeField("Datetime IP released from server",
+                                       null=True)
+    active = models.BooleanField("Whether IP still allocated to server",
+                                 default=True)
+
+    def __unicode__(self):
+        return u"<Address: %s, Server: %s, Network: %s, Allocated at: %s>"\
+               % (self.address, self.network_id, self.server_id,
+                  self.allocated_at)
+
+
 class NetworkInterface(models.Model):
     FIREWALL_PROFILES = (
         ('ENABLED', 'Enabled'),
@@ -681,25 +797,63 @@ class NetworkInterface(models.Model):
 
     STATES = (
         ("ACTIVE", "Active"),
-        ("BUILDING", "Building"),
+        ("BUILD", "Building"),
+        ("ERROR", "Error"),
+        ("DOWN", "Down"),
     )
 
-    machine = models.ForeignKey(VirtualMachine, related_name='nics')
-    network = models.ForeignKey(Network, related_name='nics')
+    NETWORK_IFACE_NAME_LENGTH = 128
+
+    name = models.CharField('NIC name', max_length=NETWORK_IFACE_NAME_LENGTH,
+                            null=True, default="")
+    userid = models.CharField("UUID of the owner", max_length=128,
+                              null=False, db_index=True)
+    machine = models.ForeignKey(VirtualMachine, related_name='nics',
+                                on_delete=models.PROTECT, null=True)
+    network = models.ForeignKey(Network, related_name='nics',
+                                on_delete=models.PROTECT)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
-    index = models.IntegerField(null=False)
+    index = models.IntegerField(null=True)
     mac = models.CharField(max_length=32, null=True, unique=True)
-    ipv4 = models.CharField(max_length=15, null=True)
-    ipv6 = models.CharField(max_length=100, null=True)
     firewall_profile = models.CharField(choices=FIREWALL_PROFILES,
                                         max_length=30, null=True)
-    dirty = models.BooleanField(default=False)
+    security_groups = models.ManyToManyField("SecurityGroup", null=True)
     state = models.CharField(max_length=32, null=False, default="ACTIVE",
                              choices=STATES)
+    device_owner = models.CharField('Device owner', max_length=128, null=True)
 
     def __unicode__(self):
-        return '%s@%s' % (self.machine.name, self.network.name)
+        return "<%s:vm:%s network:%s>" % (self.id, self.machine_id,
+                                          self.network_id)
+
+    @property
+    def backend_uuid(self):
+        """Return the backend id by prepending backend-prefix."""
+        return "%snic-%s" % (settings.BACKEND_PREFIX_ID, str(self.id))
+
+    @property
+    def ipv4_address(self):
+        return self.get_ip_address(version=4)
+
+    @property
+    def ipv6_address(self):
+        return self.get_ip_address(version=6)
+
+    def get_ip_address(self, version=4):
+        for ip in self.ips.all():
+            if ip.ipversion == version:
+                return ip.address
+        return None
+
+    def get_ip_addresses_subnets(self):
+        return self.ips.values_list("address", "subnet__id")
+
+
+class SecurityGroup(models.Model):
+    SECURITY_GROUP_NAME_LENGTH = 128
+    name = models.CharField('group name',
+                            max_length=SECURITY_GROUP_NAME_LENGTH)
 
     @property
     def backend_uuid(self):
@@ -715,8 +869,6 @@ class PoolTable(models.Model):
     # Optional Fields
     base = models.CharField(null=True, max_length=32)
     offset = models.IntegerField(null=True)
-
-    objects = ForUpdateManager()
 
     class Meta:
         abstract = True
@@ -737,13 +889,26 @@ class PoolTable(models.Model):
 class BridgePoolTable(PoolTable):
     manager = pools.BridgePool
 
+    def __unicode__(self):
+        return u"<BridgePool id:%s>" % self.id
+
 
 class MacPrefixPoolTable(PoolTable):
     manager = pools.MacPrefixPool
 
+    def __unicode__(self):
+        return u"<MACPrefixPool id:%s>" % self.id
+
 
 class IPPoolTable(PoolTable):
     manager = pools.IPPool
+
+    subnet = models.ForeignKey('Subnet', related_name="ip_pools",
+                               on_delete=models.PROTECT,
+                               db_index=True, null=True)
+
+    def __unicode__(self):
+        return u"<IPv4AdressPool, Subnet: %s>" % self.subnet_id
 
 
 @contextmanager
@@ -755,7 +920,8 @@ def pooled_rapi_client(obj):
 
         if backend.offline:
             log.warning("Trying to connect with offline backend: %s", backend)
-            raise faults.ServiceUnavailable
+            raise faults.ServiceUnavailable("Cannot connect to offline"
+                                            " backend: %s" % backend)
 
         b = backend
         client = get_rapi_client(b.id, b.hash, b.clustername, b.port,
@@ -806,7 +972,8 @@ class VirtualMachineDiagnostic(models.Model):
     objects = VirtualMachineDiagnosticManager()
 
     created = models.DateTimeField(auto_now_add=True)
-    machine = models.ForeignKey('VirtualMachine', related_name="diagnostics")
+    machine = models.ForeignKey('VirtualMachine', related_name="diagnostics",
+                                on_delete=models.CASCADE)
     level = models.CharField(max_length=20, choices=TYPES)
     source = models.CharField(max_length=100)
     source_date = models.DateTimeField(null=True)

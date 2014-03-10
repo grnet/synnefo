@@ -32,8 +32,8 @@
 # or implied, of GRNET S.A.
 
 from django.core.management.base import CommandError
-from synnefo.webproject.management.commands import SynnefoCommand
-from synnefo.webproject.management import utils
+from snf_django.management.commands import SynnefoCommand
+from snf_django.management import utils
 
 from astakos.quotaholder_app.models import Commission, Provision
 

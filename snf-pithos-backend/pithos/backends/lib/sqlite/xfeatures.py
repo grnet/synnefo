@@ -58,7 +58,8 @@ class XFeatures(DBWorker):
                             key        integer,
                             value      text,
                             primary key (feature_id, key, value)
-                            foreign key (feature_id) references xfeatures(feature_id)
+                            foreign key (feature_id) references
+                                xfeatures(feature_id)
                             on delete cascade ) """)
 
 #     def xfeature_inherit(self, path):
@@ -79,6 +80,19 @@ class XFeatures(DBWorker):
         r = self.fetchone()
         if r is not None:
             return r[0]
+        return None
+
+    def xfeature_get_bulk(self, paths):
+        """Return features for paths."""
+
+        paths = list(set(paths))
+        q = ("select feature_id, path from xfeatures "
+             "where path in (%s) "
+             "order by path") % ','.join('?' for _ in paths)
+        self.execute(q, paths)
+        rows = self.fetchall()
+        if rows:
+            return rows
         return None
 
     def xfeature_create(self, path):
@@ -119,13 +133,15 @@ class XFeatures(DBWorker):
     def feature_set(self, feature, key, value):
         """Associate a key, value pair with a feature."""
 
-        q = "insert or ignore into xfeaturevals (feature_id, key, value) values (?, ?, ?)"
+        q = ("insert or ignore into xfeaturevals (feature_id, key, value) "
+             "values (?, ?, ?)")
         self.execute(q, (feature, key, value))
 
     def feature_setmany(self, feature, key, values):
         """Associate the given key, and values with a feature."""
 
-        q = "insert or ignore into xfeaturevals (feature_id, key, value) values (?, ?, ?)"
+        q = ("insert or ignore into xfeaturevals (feature_id, key, value) "
+             "values (?, ?, ?)")
         self.executemany(q, ((feature, key, v) for v in values))
 
     def feature_unset(self, feature, key, value):

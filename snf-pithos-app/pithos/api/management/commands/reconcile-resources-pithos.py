@@ -39,7 +39,7 @@ from pithos.api.util import get_backend
 from pithos.api.resources import resources
 from pithos.backends.modular import DEFAULT_SOURCE
 
-from synnefo.webproject.management import utils
+from snf_django.management import utils
 
 from astakosclient.errors import QuotaLimit, NotFound
 
@@ -70,6 +70,7 @@ class Command(NoArgsCommand):
 
     def handle_noargs(self, **options):
         try:
+            backend.pre_exec()
             userid = options['userid']
 
             # Get holding from Pithos DB
@@ -84,8 +85,7 @@ class Command(NoArgsCommand):
 
             # Get holding from Quotaholder
             try:
-                qh_result = backend.astakosclient.service_get_quotas(
-                    backend.service_token, userid)
+                qh_result = backend.astakosclient.service_get_quotas(userid)
             except NotFound:
                 self.stdout.write(
                     "User '%s' does not exist in Quotaholder!\n" % userid)
@@ -126,7 +126,7 @@ class Command(NoArgsCommand):
 
                         qh_value = qh_resource['usage']
 
-                        if  db_value != qh_value:
+                        if db_value != qh_value:
                             data = (uuid, resource, db_value, qh_value)
                             unsynced.append(data)
 
@@ -140,13 +140,13 @@ class Command(NoArgsCommand):
                     request['name'] = "RECONCILE"
                     request['provisions'] = map(create_provision, unsynced)
                     try:
-                        backend.astakosclient.issue_commission(
-                            backend.service_token, request)
+                        backend.astakosclient.issue_commission(request)
                     except QuotaLimit:
                         self.stdout.write(
                             "Reconciling failed because a limit has been "
                             "reached. Use --force to ignore the check.\n")
                         return
+                    self.stdout.write("Fixed unsynced resources\n")
 
             if pending_exists:
                 self.stdout.write(
@@ -154,6 +154,11 @@ class Command(NoArgsCommand):
                     " reconcile-commissions-pithos'\n")
             elif not (unsynced or unknown_user_exists):
                 self.stdout.write("Everything in sync.\n")
+        except BaseException as e:
+            backend.post_exec(False)
+            self.stdout.write(str(e) + "\n")
+        else:
+            backend.post_exec(True)
         finally:
             backend.close()
 

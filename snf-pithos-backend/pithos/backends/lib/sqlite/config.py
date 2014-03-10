@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 # from collections import defaultdict
-# 
+#
 from dbworker import DBWorker
 
 
@@ -47,7 +47,6 @@ class Config(DBWorker):
         execute(""" create table if not exists config
                           ( key text primary key,
                             value text ) """)
-    
 
     def get_value(self, key):
         """Return configuration value for key."""
@@ -58,7 +57,7 @@ class Config(DBWorker):
         if r is not None:
             return r[0]
         return None
-    
+
     def set_value(self, key, value):
         """Set configuration entry.
         """

@@ -33,8 +33,7 @@
 
 from django.core.management.base import BaseCommand
 from optparse import make_option
-
-from util import pool_table_from_type
+from synnefo.management.common import pool_table_from_type
 
 POOL_CHOICES = ['bridge', 'mac-prefix']
 

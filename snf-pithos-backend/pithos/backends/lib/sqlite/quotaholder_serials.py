@@ -33,6 +33,7 @@
 
 from dbworker import DBWorker
 
+
 class QuotaholderSerial(DBWorker):
     """QuotaholderSerial keeps track of quota holder serials."""
 

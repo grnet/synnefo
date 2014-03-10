@@ -33,10 +33,10 @@
 
 from optparse import make_option
 
+from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import simplejson as json
 
-from snf_django.lib.db.transaction import commit_on_success_strict
 from astakos.im.register import add_service, add_resource, RegisterException
 from astakos.im.models import Component
 from ._common import read_from_file
@@ -52,7 +52,7 @@ class Command(BaseCommand):
                     help="Load service definitions from a json file"),
     )
 
-    @commit_on_success_strict()
+    @transaction.commit_on_success
     def handle(self, *args, **options):
 
         json_file = options['json']
@@ -73,7 +73,7 @@ class Command(BaseCommand):
         self.add_services(data)
 
     def add_services(self, data):
-        write = self.stdout.write
+        write = self.stderr.write
         output = []
         for name, service_dict in data.iteritems():
             try:
@@ -90,7 +90,8 @@ class Command(BaseCommand):
                 raise CommandError(m)
 
             try:
-                existed = add_service(component, name, service_type, endpoints)
+                existed = add_service(component, name, service_type, endpoints,
+                                      out=self.stderr)
             except RegisterException as e:
                 raise CommandError(e.message)
 
@@ -112,8 +113,8 @@ class Command(BaseCommand):
                 if exists:
                     m = "Resource '%s' updated in database.\n" % (r.name)
                 else:
-                    m = ("Resource '%s' created in database with default "
-                         "quota limit 0.\n" % (r.name))
+                    m = ("Resource '%s' created in database with unlimited "
+                         "quota.\n" % (r.name))
                 output.append(m)
 
         for line in output:

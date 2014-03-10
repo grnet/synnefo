@@ -31,11 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from snf_django.lib.db.fields import intDecimalField
-
 from django.db.models import (Model, BigIntegerField, CharField, DateTimeField,
                               ForeignKey, AutoField)
-from snf_django.lib.db.managers import ForUpdateManager
 
 
 class Holding(Model):
@@ -44,11 +41,9 @@ class Holding(Model):
     source = CharField(max_length=4096, null=True)
     resource = CharField(max_length=4096, null=False)
 
-    limit = intDecimalField()
-    usage_min = intDecimalField(default=0)
-    usage_max = intDecimalField(default=0)
-
-    objects = ForUpdateManager()
+    limit = BigIntegerField()
+    usage_min = BigIntegerField(default=0)
+    usage_max = BigIntegerField(default=0)
 
     class Meta:
         unique_together = (('holder', 'source', 'resource'),)
@@ -61,8 +56,6 @@ class Commission(Model):
     clientkey = CharField(max_length=4096, null=False)
     issue_datetime = DateTimeField()
 
-    objects = ForUpdateManager()
-
 
 class Provision(Model):
 
@@ -73,9 +66,7 @@ class Provision(Model):
     source = CharField(max_length=4096, null=True)
     resource = CharField(max_length=4096, null=False)
 
-    quantity = intDecimalField()
-
-    objects = ForUpdateManager()
+    quantity = BigIntegerField()
 
     def todict(self):
         return {'holder':   self.holder,
@@ -97,10 +88,8 @@ class ProvisionLog(Model):
     holder = CharField(max_length=4096)
     source = CharField(max_length=4096, null=True)
     resource = CharField(max_length=4096)
-    limit = intDecimalField()
-    usage_min = intDecimalField()
-    usage_max = intDecimalField()
-    delta_quantity = intDecimalField()
+    limit = BigIntegerField()
+    usage_min = BigIntegerField()
+    usage_max = BigIntegerField()
+    delta_quantity = BigIntegerField()
     reason = CharField(max_length=4096)
-
-    objects = ForUpdateManager()

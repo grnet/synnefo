@@ -38,7 +38,7 @@ from django.core.urlresolvers import reverse
 
 from synnefo.lib import join_urls
 
-from synnefo.api.servers import server_created
+from synnefo.logic.servers import server_created
 from synnefo.vmapi import backend, get_key, get_uuid, settings
 
 log = getLogger('synnefo.vmapi')

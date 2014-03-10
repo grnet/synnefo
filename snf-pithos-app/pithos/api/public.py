@@ -37,17 +37,19 @@ from django.views.decorators.csrf import csrf_exempt
 from snf_django.lib import api
 from snf_django.lib.api import faults
 
+from pithos.api.settings import UNSAFE_DOMAIN, UPDATE_MD5
 from pithos.api.util import (put_object_headers, update_manifest_meta,
                              validate_modification_preconditions,
                              validate_matching_preconditions,
                              object_data_response, api_method,
-                             split_container_object_string)
+                             split_container_object_string, restrict_to_host)
 
 import logging
 logger = logging.getLogger(__name__)
 
 
 @csrf_exempt
+@restrict_to_host(UNSAFE_DOMAIN)
 def public_demux(request, v_public):
     if request.method == 'HEAD':
         return public_meta(request, v_public)
@@ -121,7 +123,7 @@ def public_read(request, v_public):
         validate_matching_preconditions(request, meta)
     except faults.NotModified:
         response = HttpResponse(status=304)
-        response['ETag'] = meta['ETag']
+        response['ETag'] = meta['hash'] if not UPDATE_MD5 else meta['checksum']
         return response
 
     sizes = []
@@ -155,11 +157,4 @@ def public_read(request, v_public):
             hashmaps.append(h)
         except:
             raise faults.ItemNotFound('Object does not exist')
-
-    if 'Content-Disposition' not in meta:
-        name = v_object.rstrip('/').split('/')[-1]
-        if not name:
-            name = v_public
-        meta['Content-Disposition'] = 'attachment; filename=%s' % (name,)
-
     return object_data_response(request, sizes, hashmaps, meta, True)

@@ -33,15 +33,19 @@
 
 from astakos.im.tests.common import *
 from astakos.im.settings import astakos_services, BASE_HOST
+from astakos.oa2.backends import DjangoBackend
+
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 
-from django.test import TestCase
 from django.core.urlresolvers import reverse
+
+from datetime import date
 
 #from xml.dom import minidom
 
 import json
+import time
 
 ROOT = "/%s/%s/%s/" % (
     astakos_settings.BASE_PATH, astakos_settings.ACCOUNTS_PREFIX, 'v1.0')
@@ -60,16 +64,16 @@ class QuotaAPITest(TestCase):
                       "desc": "resource11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
-                      "allow_in_projects": True}
+                      "ui_visible": True}
         r, _ = register.add_resource(resource11)
-        register.update_resource(r, 100)
+        register.update_resources([(r, 100)])
         resource12 = {"name": "service1.resource12",
                       "desc": "resource11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
                       "unit": "bytes"}
         r, _ = register.add_resource(resource12)
-        register.update_resource(r, 1024)
+        register.update_resources([(r, 1024)])
 
         # create user
         user = get_local_user('test@grnet.gr')
@@ -87,9 +91,9 @@ class QuotaAPITest(TestCase):
                       "desc": "resource11 desc",
                       "service_type": "type2",
                       "service_origin": "service2",
-                      "allow_in_projects": False}
+                      "ui_visible": False}
         r, _ = register.add_resource(resource21)
-        register.update_resource(r, 3)
+        register.update_resources([(r, 3)])
 
         resource_names = [r['name'] for r in
                           [resource11, resource12, resource21]]
@@ -185,32 +189,34 @@ class QuotaAPITest(TestCase):
                         content_type='application/json', **s1_headers)
         self.assertEqual(r.status_code, 201)
         body = json.loads(r.content)
-        serial = body['serial']
-        self.assertEqual(serial, 1)
+        serial1 = body['serial']
+        assertGreater(serial1, 0)
 
         post_data = json.dumps(commission_request)
         r = client.post(u('commissions'), post_data,
                         content_type='application/json', **s1_headers)
         self.assertEqual(r.status_code, 201)
         body = json.loads(r.content)
-        self.assertEqual(body['serial'], 2)
+        serial2 = body['serial']
+        assertGreater(serial2, serial1)
 
         post_data = json.dumps(commission_request)
         r = client.post(u('commissions'), post_data,
                         content_type='application/json', **s1_headers)
         self.assertEqual(r.status_code, 201)
         body = json.loads(r.content)
-        self.assertEqual(body['serial'], 3)
+        serial3 = body['serial']
+        assertGreater(serial3, serial2)
 
         r = client.get(u('commissions'), **s1_headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
-        self.assertEqual(body, [1, 2, 3])
+        self.assertEqual(len(body), 3)
 
-        r = client.get(u('commissions/' + str(serial)), **s1_headers)
+        r = client.get(u('commissions/' + str(serial1)), **s1_headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
-        self.assertEqual(body['serial'], serial)
+        self.assertEqual(body['serial'], serial1)
         assertIn('issue_time', body)
         provisions = sorted(body['provisions'], key=lambda p: p['resource'])
         self.assertEqual(provisions, commission_request['provisions'])
@@ -227,8 +233,8 @@ class QuotaAPITest(TestCase):
 
         # resolve pending commissions
         resolve_data = {
-            "accept": [1, 3],
-            "reject": [2, 3, 4],
+            "accept": [serial1, serial3],
+            "reject": [serial2, serial3, serial3 + 1],
         }
         post_data = json.dumps(resolve_data)
 
@@ -236,12 +242,12 @@ class QuotaAPITest(TestCase):
                         content_type='application/json', **s1_headers)
         self.assertEqual(r.status_code, 200)
         body = json.loads(r.content)
-        self.assertEqual(body['accepted'], [1])
-        self.assertEqual(body['rejected'], [2])
+        self.assertEqual(body['accepted'], [serial1])
+        self.assertEqual(body['rejected'], [serial2])
         failed = body['failed']
         self.assertEqual(len(failed), 2)
 
-        r = client.get(u('commissions/' + str(serial)), **s1_headers)
+        r = client.get(u('commissions/' + str(serial1)), **s1_headers)
         self.assertEqual(r.status_code, 404)
 
         # auto accept
@@ -267,10 +273,10 @@ class QuotaAPITest(TestCase):
                         content_type='application/json', **s1_headers)
         self.assertEqual(r.status_code, 201)
         body = json.loads(r.content)
-        serial = body['serial']
-        self.assertEqual(serial, 4)
+        serial4 = body['serial']
+        assertGreater(serial4, serial3)
 
-        r = client.get(u('commissions/' + str(serial)), **s1_headers)
+        r = client.get(u('commissions/' + str(serial4)), **s1_headers)
         self.assertEqual(r.status_code, 404)
 
         # malformed
@@ -398,21 +404,22 @@ class QuotaAPITest(TestCase):
 
         # Bad Request
         r = client.head(u('commissions'))
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
 
 
 class TokensApiTest(TestCase):
     def setUp(self):
         backend = activation_backends.get_backend()
 
-        self.user1 = AstakosUser.objects.create(
-            email='test1', email_verified=True, moderated=True,
+        self.user1 = get_local_user(
+            'test1@example.org', email_verified=True, moderated=True,
             is_rejected=False)
         backend.activate_user(self.user1)
         assert self.user1.is_active is True
 
-        self.user2 = AstakosUser.objects.create(
-            email='test2', email_verified=True, moderated=True,
+        self.user2 = get_local_user(
+            'test2@example.org', email_verified=True, moderated=True,
             is_rejected=False)
         backend.activate_user(self.user2)
         assert self.user2.is_active is True
@@ -442,13 +449,23 @@ class TokensApiTest(TestCase):
         e3.data.create(key='versionId', value='v2.0')
         e3.data.create(key='publicURL', value='http://localhost:8000/s3/v2.0')
 
+        oa2_backend = DjangoBackend()
+        self.token = oa2_backend.token_model.create(
+            code='12345',
+            expires_at=datetime.now() + timedelta(seconds=5),
+            user=self.user1,
+            client=oa2_backend.client_model.create(type='public'),
+            redirect_uri='https://server.com/handle_code')
+
     def test_authenticate(self):
         client = Client()
+        url = reverse('astakos.api.tokens.authenticate')
 
         # Check not allowed method
-        url = reverse('astakos.api.tokens.authenticate')
         r = client.get(url, post_data={})
-        self.assertEqual(r.status_code, 400)
+        self.assertEqual(r.status_code, 405)
+        self.assertTrue('Allow' in r)
+        self.assertEqual(r['Allow'], 'POST')
 
         # check public mode
         r = client.post(url, CONTENT_LENGTH=0)
@@ -463,7 +480,6 @@ class TokensApiTest(TestCase):
         self.assertTrue('serviceCatalog' in body.get('access'))
 
         # Check unsupported xml input
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """
             <?xml version="1.0" encoding="UTF-8"?>
                 <auth xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -479,7 +495,6 @@ class TokensApiTest(TestCase):
                          "Unsupported Content-type: 'application/xml'")
 
         # Check malformed request: missing password
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"username":"%s"},
                                 "tenantName":"%s"}}""" % (
             self.user1.uuid, self.user1.uuid)
@@ -490,7 +505,6 @@ class TokensApiTest(TestCase):
                         startswith('Malformed request'))
 
         # Check malformed request: missing username
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"password":"%s"},
                                 "tenantName":"%s"}}""" % (
             self.user1.auth_token, self.user1.uuid)
@@ -501,7 +515,6 @@ class TokensApiTest(TestCase):
                         startswith('Malformed request'))
 
         # Check invalid pass
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"username":"%s",
                                                        "password":"%s"},
                                 "tenantName":"%s"}}""" % (
@@ -513,7 +526,6 @@ class TokensApiTest(TestCase):
                          'Invalid token')
 
         # Check inconsistent pass
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"passwordCredentials":{"username":"%s",
                                                        "password":"%s"},
                                 "tenantName":"%s"}}""" % (
@@ -525,14 +537,12 @@ class TokensApiTest(TestCase):
                          'Invalid credentials')
 
         # Check invalid json data
-        url = reverse('astakos.api.tokens.authenticate')
         r = client.post(url, "not json", content_type='application/json')
         self.assertEqual(r.status_code, 400)
         body = json.loads(r.content)
         self.assertEqual(body['badRequest']['message'], 'Invalid JSON data')
 
         # Check auth with token
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"token": {"id":"%s"},
                         "tenantName":"%s"}}""" % (
             self.user1.auth_token, self.user1.uuid)
@@ -545,7 +555,6 @@ class TokensApiTest(TestCase):
             self.fail(e)
 
         # Check malformed request: missing token
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"auth_token":{"id":"%s"},
                                 "tenantName":"%s"}}""" % (
             self.user1.auth_token, self.user1.uuid)
@@ -556,7 +565,6 @@ class TokensApiTest(TestCase):
                         startswith('Malformed request'))
 
         # Check bad request: inconsistent tenant
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"token":{"id":"%s"},
                                 "tenantName":"%s"}}""" % (
             self.user1.auth_token, self.user2.uuid)
@@ -567,15 +575,13 @@ class TokensApiTest(TestCase):
                          'Not conforming tenantName')
 
         # Check bad request: inconsistent tenant
-        url = reverse('astakos.api.tokens.authenticate')
         post_data = """{"auth":{"token":{"id":"%s"},
                                 "tenantName":""}}""" % (
             self.user1.auth_token)
         r = client.post(url, post_data, content_type='application/json')
         self.assertEqual(r.status_code, 200)
 
-        # Check successful json response
-        url = reverse('astakos.api.tokens.authenticate')
+        # Check successful json response: user credential auth
         post_data = """{"auth":{"passwordCredentials":{"username":"%s",
                                                        "password":"%s"},
                                 "tenantName":"%s"}}""" % (
@@ -599,8 +605,30 @@ class TokensApiTest(TestCase):
         self.assertEqual(user, self.user1.uuid)
         self.assertEqual(len(service_catalog), 3)
 
+        # Check successful json response: token auth
+        post_data = """{"auth":{"token":{"id":"%s"},
+                                "tenantName":"%s"}}""" % (
+            self.user1.auth_token, self.user1.uuid)
+        r = client.post(url, post_data, content_type='application/json')
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r['Content-Type'].startswith('application/json'))
+        try:
+            body = json.loads(r.content)
+        except Exception, e:
+            self.fail(e)
+
+        try:
+            token = body['access']['token']['id']
+            user = body['access']['user']['id']
+            service_catalog = body['access']['serviceCatalog']
+        except KeyError:
+            self.fail('Invalid response')
+
+        self.assertEqual(token, self.user1.auth_token)
+        self.assertEqual(user, self.user1.uuid)
+        self.assertEqual(len(service_catalog), 3)
+
         # Check successful xml response
-        url = reverse('astakos.api.tokens.authenticate')
         headers = {'HTTP_ACCEPT': 'application/xml'}
         post_data = """{"auth":{"passwordCredentials":{"username":"%s",
                                                        "password":"%s"},
@@ -614,6 +642,90 @@ class TokensApiTest(TestCase):
 #            body = minidom.parseString(r.content)
 #        except Exception, e:
 #            self.fail(e)
+
+        # oath access token authorization
+        post_data = """{"auth":{"token":{"id":"%s"},
+                                "tenantName":"%s"}}""" % (
+            self.token.code, self.user1.uuid)
+        r = client.post(url, post_data, content_type='application/json')
+        self.assertEqual(r.status_code, 401)
+
+
+class UserCatalogsTest(TestCase):
+    def test_get_uuid_displayname_catalogs(self):
+        self.user = get_local_user(
+            'test1@example.org', email_verified=True, moderated=True,
+            is_rejected=False, is_active=False)
+
+        client = Client()
+        url = reverse('astakos.api.user.get_uuid_displayname_catalogs')
+        d = dict(uuids=[self.user.uuid], displaynames=[self.user.username])
+
+        # assert Unauthorized: missing authentication token
+        r = client.post(url,
+                        data=json.dumps(d),
+                        content_type='application/json')
+        self.assertEqual(r.status_code, 401)
+
+        # assert Unauthorized: invalid authentication token
+        r = client.post(url,
+                        data=json.dumps(d),
+                        content_type='application/json',
+                        HTTP_X_AUTH_TOKEN='1234')
+        self.assertEqual(r.status_code, 401)
+
+        # assert Unauthorized: inactive token holder
+        r = client.post(url,
+                        data=json.dumps(d),
+                        content_type='application/json',
+                        HTTP_X_AUTH_TOKEN=self.user.auth_token)
+        self.assertEqual(r.status_code, 401)
+
+        backend = activation_backends.get_backend()
+        backend.activate_user(self.user)
+        assert self.user.is_active is True
+
+        r = client.post(url,
+                        data=json.dumps(d),
+                        content_type='application/json',
+                        HTTP_X_AUTH_TOKEN=self.user.auth_token)
+        self.assertEqual(r.status_code, 200)
+        try:
+            data = json.loads(r.content)
+        except:
+            self.fail('Response body should be json formatted')
+        else:
+            if not isinstance(data, dict):
+                self.fail('Response body should be json formatted dictionary')
+
+            self.assertTrue('uuid_catalog' in data)
+            self.assertEqual(data['uuid_catalog'],
+                             {self.user.uuid: self.user.username})
+
+            self.assertTrue('displayname_catalog' in data)
+            self.assertEqual(data['displayname_catalog'],
+                             {self.user.username: self.user.uuid})
+
+        # assert Unauthorized: expired token
+        self.user.auth_token_expires = date.today() - timedelta(1)
+        self.user.save()
+
+        r = client.post(url,
+                        data=json.dumps(d),
+                        content_type='application/json',
+                        HTTP_X_AUTH_TOKEN=self.user.auth_token)
+        self.assertEqual(r.status_code, 401)
+
+        # assert Unauthorized: expired token
+        self.user.auth_token_expires = date.today() + timedelta(1)
+        self.user.save()
+
+        # assert badRequest
+        r = client.post(url,
+                        data=json.dumps(str(d)),
+                        content_type='application/json',
+                        HTTP_X_AUTH_TOKEN=self.user.auth_token)
+        self.assertEqual(r.status_code, 400)
 
 
 class WrongPathAPITest(TestCase):
@@ -633,6 +745,75 @@ class WrongPathAPITest(TestCase):
         response = self.client.get(path)
         self.assertEqual(response.status_code, 400)
         try:
-            error = json.loads(response.content)
+            json.loads(response.content)
         except ValueError:
             self.assertTrue(False)
+
+
+class ValidateAccessToken(TestCase):
+    def setUp(self):
+        self.oa2_backend = DjangoBackend()
+        self.user = AstakosUser.objects.create(username="user@synnefo.org")
+        self.token = self.oa2_backend.token_model.create(
+            code='12345',
+            expires_at=datetime.now() + timedelta(seconds=5),
+            user=self.user,
+            client=self.oa2_backend.client_model.create(type='public'),
+            redirect_uri='https://server.com/handle_code',
+            scope='user-scope')
+
+    def test_validate_token(self):
+        # invalid token
+        url = reverse('astakos.api.tokens.validate_token',
+                      kwargs={'token_id': 'invalid'})
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 404)
+
+        # valid token
+        url = reverse('astakos.api.tokens.validate_token',
+                      kwargs={'token_id': self.token.code})
+
+        r = self.client.head(url)
+        self.assertEqual(r.status_code, 405)
+        r = self.client.put(url)
+        self.assertEqual(r.status_code, 405)
+        r = self.client.post(url)
+        self.assertEqual(r.status_code, 405)
+
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r['Content-Type'].startswith('application/json'))
+        try:
+            body = json.loads(r.content)
+            user = body['access']['user']['id']
+            self.assertEqual(user, self.user.uuid)
+        except Exception:
+            self.fail('Unexpected response content')
+
+        # inconsistent belongsTo parameter
+        r = self.client.get('%s?belongsTo=invalid' % url)
+        self.assertEqual(r.status_code, 404)
+
+        # consistent belongsTo parameter
+        r = self.client.get('%s?belongsTo=%s' % (url, self.token.scope))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r['Content-Type'].startswith('application/json'))
+        try:
+            body = json.loads(r.content)
+            user = body['access']['user']['id']
+            self.assertEqual(user, self.user.uuid)
+        except Exception:
+            self.fail('Unexpected response content')
+
+        # expired token
+        sleep_time = (self.token.expires_at - datetime.now()).total_seconds()
+        time.sleep(max(sleep_time, 0))
+        r = self.client.get(url)
+        self.assertEqual(r.status_code, 404)
+        # assert expired token has been deleted
+        self.assertEqual(self.oa2_backend.token_model.count(), 0)
+
+        # user authentication token
+        url = reverse('astakos.api.tokens.validate_token',
+                      kwargs={'token_id': self.user.auth_token})
+        self.assertEqual(r.status_code, 404)

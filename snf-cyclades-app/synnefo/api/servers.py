@@ -31,13 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import datetime
-from django import dispatch
 from django.conf import settings
-try:
-    from django.conf.urls import patterns
-except ImportError:  # Django==1.2
-    from django.conf.urls.defaults import patterns
+from django.conf.urls import patterns
 
 from django.db import transaction
 from django.http import HttpResponse
@@ -46,19 +41,10 @@ from django.utils import simplejson as json
 
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils
-from synnefo.api import util
-from synnefo.api.actions import server_actions
-from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,
-                               NetworkInterface)
-from synnefo.logic.backend import (create_instance, delete_instance,
-                                   process_op_status, job_is_still_running,
-                                   vm_exists_in_backend)
-from synnefo.logic.utils import get_rsapi_state
-from synnefo.logic.backend_allocator import BackendAllocator
-from synnefo import quotas
 
-# server creation signal
-server_created = dispatch.Signal(providing_args=["created_vm_params"])
+from synnefo.api import util
+from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
+from synnefo.logic import servers, utils as logic_utils
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -68,7 +54,7 @@ urlpatterns = patterns(
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_servers', {'detail': True}),
     (r'^/(\d+)(?:.json|.xml)?$', 'server_demux'),
-    (r'^/(\d+)/action(?:.json|.xml)?$', 'server_action'),
+    (r'^/(\d+)/action(?:.json|.xml)?$', 'demux_server_action'),
     (r'^/(\d+)/ips(?:.json|.xml)?$', 'list_addresses'),
     (r'^/(\d+)/ips/(.+?)(?:.json|.xml)?$', 'list_addresses_by_network'),
     (r'^/(\d+)/metadata(?:.json|.xml)?$', 'metadata_demux'),
@@ -84,7 +70,8 @@ def demux(request):
     elif request.method == 'POST':
         return create_server(request)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET', 'POST'])
 
 
 def server_demux(request, server_id):
@@ -95,7 +82,10 @@ def server_demux(request, server_id):
     elif request.method == 'DELETE':
         return delete_server(request, server_id)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET',
+                                                           'PUT',
+                                                           'DELETE'])
 
 
 def metadata_demux(request, server_id):
@@ -104,7 +94,8 @@ def metadata_demux(request, server_id):
     elif request.method == 'POST':
         return update_metadata(request, server_id)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET', 'POST'])
 
 
 def metadata_item_demux(request, server_id, key):
@@ -115,33 +106,63 @@ def metadata_item_demux(request, server_id, key):
     elif request.method == 'DELETE':
         return delete_metadata_item(request, server_id, key)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET',
+                                                           'PUT',
+                                                           'DELETE'])
 
 
-def nic_to_dict(nic):
-    d = {'id': util.construct_nic_id(nic),
-         'network_id': str(nic.network.id),
+def nic_to_attachments(nic):
+    """Convert a NIC object to 'attachments attribute.
+
+    Convert a NIC object to match the format of 'attachments' attribute of the
+    response to the /servers API call.
+
+    NOTE: The 'ips' of the NIC object have been prefetched in order to avoid DB
+    queries. No subsequent queries for 'ips' (like filtering) should be
+    performed because this will return in a new DB query.
+
+    """
+    d = {'id': nic.id,
+         'network_id': str(nic.network_id),
          'mac_address': nic.mac,
-         'ipv4': nic.ipv4 if nic.ipv4 else None,
-         'ipv6': nic.ipv6 if nic.ipv6 else None}
+         'ipv4': '',
+         'ipv6': ''}
 
     if nic.firewall_profile:
         d['firewallProfile'] = nic.firewall_profile
+
+    for ip in nic.ips.all():
+        if not ip.deleted:
+            ip_type = "floating" if ip.floating_ip else "fixed"
+            if ip.ipversion == 4:
+                d["ipv4"] = ip.address
+                d["OS-EXT-IPS:type"] = ip_type
+            else:
+                d["ipv6"] = ip.address
+                d["OS-EXT-IPS:type"] = ip_type
     return d
 
 
-def nics_to_addresses(nics):
+def attachments_to_addresses(attachments):
+    """Convert 'attachments' attribute to 'addresses'.
+
+    Convert a a list of 'attachments' attribute to a list of 'addresses'
+    attribute, as expected in the response to /servers API call.
+
+    """
     addresses = {}
-    for nic in nics:
-        net_nics = []
-        net_nics.append({"version": 4,
-                         "addr": nic.ipv4,
-                         "OS-EXT-IPS:type": "fixed"})
-        if nic.ipv6:
-            net_nics.append({"version": 6,
-                             "addr": nic.ipv6,
-                             "OS-EXT-IPS:type": "fixed"})
-        addresses[nic.network.id] = net_nics
+    for nic in attachments:
+        net_addrs = []
+        if nic["ipv4"]:
+            net_addrs.append({"version": 4,
+                              "addr": nic["ipv4"],
+                              "OS-EXT-IPS:type": nic["OS-EXT-IPS:type"]})
+        if nic["ipv6"]:
+            net_addrs.append({"version": 6,
+                              "addr": nic["ipv6"],
+                              "OS-EXT-IPS:type": nic["OS-EXT-IPS:type"]})
+        addresses[nic["network_id"]] = net_addrs
     return addresses
 
 
@@ -151,14 +172,14 @@ def vm_to_dict(vm, detail=False):
     if detail:
         d['user_id'] = vm.userid
         d['tenant_id'] = vm.userid
-        d['status'] = get_rsapi_state(vm)
-        d['progress'] = 100 if get_rsapi_state(vm) == 'ACTIVE' \
-            else vm.buildpercentage
+        d['status'] = logic_utils.get_rsapi_state(vm)
+        d['SNF:task_state'] = logic_utils.get_task_state(vm)
+        d['progress'] = 100 if d['status'] == 'ACTIVE' else vm.buildpercentage
         d['hostId'] = vm.hostid
         d['updated'] = utils.isoformat(vm.updated)
         d['created'] = utils.isoformat(vm.created)
-        d['flavor'] = {"id": vm.flavor.id,
-                       "links": util.flavor_to_links(vm.flavor.id)}
+        d['flavor'] = {"id": vm.flavor_id,
+                       "links": util.flavor_to_links(vm.flavor_id)}
         d['image'] = {"id": vm.imageid,
                       "links": util.image_to_links(vm.imageid)}
         d['suspended'] = vm.suspended
@@ -166,10 +187,12 @@ def vm_to_dict(vm, detail=False):
         metadata = dict((m.meta_key, m.meta_value) for m in vm.metadata.all())
         d['metadata'] = metadata
 
-        vm_nics = vm.nics.filter(state="ACTIVE").order_by("index")
-        attachments = map(nic_to_dict, vm_nics)
+        nics = vm.nics.all()
+        active_nics = filter(lambda nic: nic.state == "ACTIVE", nics)
+        active_nics.sort(key=lambda nic: nic.id)
+        attachments = map(nic_to_attachments, active_nics)
         d['attachments'] = attachments
-        d['addresses'] = nics_to_addresses(vm_nics)
+        d['addresses'] = attachments_to_addresses(attachments)
 
         # include the latest vm diagnostic, if set
         diagnostic = vm.get_last_diagnostic()
@@ -183,8 +206,71 @@ def vm_to_dict(vm, detail=False):
         d["config_drive"] = ""
         d["accessIPv4"] = ""
         d["accessIPv6"] = ""
-
+        fqdn = get_server_fqdn(vm, active_nics)
+        d["SNF:fqdn"] = fqdn
+        d["SNF:port_forwarding"] = get_server_port_forwarding(vm, active_nics,
+                                                              fqdn)
+        d['deleted'] = vm.deleted
     return d
+
+
+def get_server_public_ip(vm_nics, version=4):
+    """Get the first public IP address of a server.
+
+    NOTE: 'vm_nics' objects have prefetched the ips
+    """
+    for nic in vm_nics:
+        for ip in nic.ips.all():
+            if ip.ipversion == version and ip.public:
+                return ip
+    return None
+
+
+def get_server_fqdn(vm, vm_nics):
+    fqdn_setting = settings.CYCLADES_SERVERS_FQDN
+    if fqdn_setting is None:
+        return None
+    elif isinstance(fqdn_setting, basestring):
+        return fqdn_setting % {"id": vm.id}
+    else:
+        msg = ("Invalid setting: CYCLADES_SERVERS_FQDN."
+               " Value must be a string.")
+        raise faults.InternalServerError(msg)
+
+
+def get_server_port_forwarding(vm, vm_nics, fqdn):
+    """Create API 'port_forwarding' attribute from corresponding setting.
+
+    Create the 'port_forwarding' API vm attribute based on the corresponding
+    setting (CYCLADES_PORT_FORWARDING), which can be either a tuple
+    of the form (host, port) or a callable object returning such tuple. In
+    case of callable object, must be called with the following arguments:
+    * ip_address
+    * server_id
+    * fqdn
+    * owner UUID
+
+    NOTE: 'vm_nics' objects have prefetched the ips
+    """
+    port_forwarding = {}
+    public_ip = get_server_public_ip(vm_nics)
+    if public_ip is None:
+        return port_forwarding
+    for dport, to_dest in settings.CYCLADES_PORT_FORWARDING.items():
+        if hasattr(to_dest, "__call__"):
+            to_dest = to_dest(public_ip.address, vm.id, fqdn, vm.userid)
+        msg = ("Invalid setting: CYCLADES_PORT_FOWARDING."
+               " Value must be a tuple of two elements (host, port).")
+        if not isinstance(to_dest, tuple) or len(to_dest) != 2:
+                raise faults.InternalServerError(msg)
+        else:
+            try:
+                host, port = to_dest
+            except (TypeError, ValueError):
+                raise faults.InternalServerError(msg)
+
+        port_forwarding[dport] = {"host": host, "port": str(port)}
+    return port_forwarding
 
 
 def diagnostics_to_dict(diagnostics):
@@ -254,25 +340,20 @@ def list_servers(request, detail=False):
 
     log.debug('list_servers detail=%s', detail)
     user_vms = VirtualMachine.objects.filter(userid=request.user_uniq)
+    if detail:
+        user_vms = user_vms.prefetch_related("nics__ips", "metadata")
 
-    since = utils.isoparse(request.GET.get('changes-since'))
+    user_vms = utils.filter_modified_since(request, objects=user_vms)
 
-    if since:
-        user_vms = user_vms.filter(updated__gte=since)
-        if not user_vms:
-            return HttpResponse(status=304)
-    else:
-        user_vms = user_vms.filter(deleted=False)
-
-    servers = [vm_to_dict(server, detail)
-               for server in user_vms.order_by('id')]
+    servers_dict = [vm_to_dict(server, detail)
+                    for server in user_vms.order_by('id')]
 
     if request.serialization == 'xml':
         data = render_to_string('list_servers.xml', {
-            'servers': servers,
+            'servers': servers_dict,
             'detail': detail})
     else:
-        data = json.dumps({'servers': servers})
+        data = json.dumps({'servers': servers_dict})
 
     return HttpResponse(data, status=200)
 
@@ -289,8 +370,8 @@ def create_server(request):
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413)
     req = utils.get_request_dict(request)
-    log.info('create_server %s', req)
     user_id = request.user_uniq
+    log.info('create_server user: %s request: %s', user_id, req)
 
     try:
         server = req['server']
@@ -301,6 +382,9 @@ def create_server(request):
         flavor_id = server['flavorRef']
         personality = server.get('personality', [])
         assert isinstance(personality, list)
+        networks = server.get("networks")
+        if networks is not None:
+            assert isinstance(networks, list)
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
 
@@ -310,11 +394,16 @@ def create_server(request):
     image = util.get_image_dict(image_id, user_id)
     # Get flavor (ensure it is active)
     flavor = util.get_flavor(flavor_id, include_deleted=False)
+    if not flavor.allow_create:
+        msg = ("It is not allowed to create a server from flavor with id '%d',"
+               " see 'allow_create' flavor attribute")
+        raise faults.Forbidden(msg % flavor.id)
     # Generate password
     password = util.random_password()
 
-    vm = do_create_server(user_id, name, password, flavor, image,
-                          metadata=metadata, personality=personality)
+    vm = servers.create(user_id, name, password, flavor, image,
+                        metadata=metadata, personality=personality,
+                        networks=networks)
 
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'
@@ -323,106 +412,6 @@ def create_server(request):
     response = render_server(request, server, status=202)
 
     return response
-
-
-@transaction.commit_manually
-def do_create_server(userid, name, password, flavor, image, metadata={},
-                     personality=[], network=None, backend=None):
-    # Fix flavor for archipelago
-    disk_template, provider = util.get_flavor_provider(flavor)
-    if provider:
-        flavor.disk_template = disk_template
-        flavor.disk_provider = provider
-        flavor.disk_origin = image['checksum']
-        image['backend_id'] = 'null'
-    else:
-        flavor.disk_provider = None
-        flavor.disk_origin = None
-
-    try:
-        if backend is None:
-            # Allocate backend to host the server.
-            backend_allocator = BackendAllocator()
-            backend = backend_allocator.allocate(userid, flavor)
-            if backend is None:
-                log.error("No available backend for VM with flavor %s", flavor)
-                raise faults.ServiceUnavailable("No available backends")
-
-        if network is None:
-            # Allocate IP from public network
-            (network, address) = util.get_public_ip(backend)
-        else:
-            address = util.get_network_free_address(network)
-
-        # We must save the VM instance now, so that it gets a valid
-        # vm.backend_vm_id.
-        vm = VirtualMachine.objects.create(
-            name=name,
-            backend=backend,
-            userid=userid,
-            imageid=image["id"],
-            flavor=flavor,
-            action="CREATE")
-
-        log.info("Created entry in DB for VM '%s'", vm)
-
-        # Create VM's public NIC. Do not wait notification form ganeti hooks to
-        # create this NIC, because if the hooks never run (e.g. building error)
-        # the VM's public IP address will never be released!
-        nic = NetworkInterface.objects.create(machine=vm, network=network,
-                                              index=0, ipv4=address,
-                                              state="BUILDING")
-
-        # Also we must create the VM metadata in the same transaction.
-        for key, val in metadata.items():
-            VirtualMachineMetadata.objects.create(
-                meta_key=key,
-                meta_value=val,
-                vm=vm)
-        # Issue commission to Quotaholder and accept it since at the end of
-        # this transaction the VirtualMachine object will be created in the DB.
-        # Note: the following call does a commit!
-        quotas.issue_and_accept_commission(vm)
-    except:
-        transaction.rollback()
-        raise
-    else:
-        transaction.commit()
-
-    try:
-        vm = VirtualMachine.objects.select_for_update().get(id=vm.id)
-        # dispatch server created signal needed to trigger the 'vmapi', which
-        # enriches the vm object with the 'config_url' attribute which must be
-        # passed to the Ganeti job.
-        server_created.send(sender=vm, created_vm_params={
-            'img_id': image['backend_id'],
-            'img_passwd': password,
-            'img_format': str(image['format']),
-            'img_personality': json.dumps(personality),
-            'img_properties': json.dumps(image['metadata']),
-        })
-
-        jobID = create_instance(vm, nic, flavor, image)
-        # At this point the job is enqueued in the Ganeti backend
-        vm.backendopcode = "OP_INSTANCE_CREATE"
-        vm.backendjobid = jobID
-        vm.save()
-        transaction.commit()
-        log.info("User %s created VM %s, NIC %s, Backend %s, JobID %s",
-                 userid, vm, nic, backend, str(jobID))
-    except:
-        # If an exception is raised, then the user will never get the VM id.
-        # In order to delete it from DB and release it's resources, we
-        # mock a successful OP_INSTANCE_REMOVE job.
-        process_op_status(vm=vm,
-                          etime=datetime.datetime.now(),
-                          jobid=-0,
-                          opcode="OP_INSTANCE_REMOVE",
-                          status="success",
-                          logmsg="Reconciled eventd: VM creation failed.")
-        raise
-
-    return vm
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
@@ -436,12 +425,14 @@ def get_server_details(request, server_id):
     #                       overLimit (413)
 
     log.debug('get_server_details %s', server_id)
-    vm = util.get_vm(server_id, request.user_uniq)
+    vm = util.get_vm(server_id, request.user_uniq,
+                     prefetch_related=["nics__ips", "metadata"])
     server = vm_to_dict(vm, detail=True)
     return render_server(request, server)
 
 
 @api.api_method(http_method='PUT', user_required=True, logger=log)
+@transaction.commit_on_success
 def update_server_name(request, server_id):
     # Normal Response Code: 204
     # Error Response Codes: computeFault (400, 500),
@@ -456,21 +447,19 @@ def update_server_name(request, server_id):
     req = utils.get_request_dict(request)
     log.info('update_server_name %s %s', server_id, req)
 
-    try:
-        name = req['server']['name']
-    except (TypeError, KeyError):
-        raise faults.BadRequest("Malformed request")
+    req = utils.get_attribute(req, "server", attr_type=dict, required=True)
+    name = utils.get_attribute(req, "name", attr_type=basestring,
+                               required=True)
 
     vm = util.get_vm(server_id, request.user_uniq, for_update=True,
                      non_suspended=True)
-    vm.name = name
-    vm.save()
+
+    servers.rename(vm, new_name=name)
 
     return HttpResponse(status=204)
 
 
 @api.api_method(http_method='DELETE', user_required=True, logger=log)
-@transaction.commit_on_success
 def delete_server(request, server_id):
     # Normal Response Codes: 204
     # Error Response Codes: computeFault (400, 500),
@@ -484,46 +473,12 @@ def delete_server(request, server_id):
     log.info('delete_server %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq, for_update=True,
                      non_suspended=True)
-    # XXX: Workaround for race where OP_INSTANCE_REMOVE starts executing on
-    # Ganeti before OP_INSTANCE_CREATE. This will be fixed when
-    # OP_INSTANCE_REMOVE supports the 'depends' request attribute.
-    if (vm.backendopcode == "OP_INSTANCE_CREATE" and
-       vm.backendjobstatus not in ["success", "error", "canceled"]):
-        if job_is_still_running(vm) and not vm_exists_in_backend(vm):
-            raise faults.BuildInProgress("Server is being build")
-
-    start_action(vm, 'DESTROY')
-    delete_instance(vm)
+    vm = servers.destroy(vm)
     return HttpResponse(status=204)
 
 
 # additional server actions
 ARBITRARY_ACTIONS = ['console', 'firewallProfile']
-
-
-@api.api_method(http_method='POST', user_required=True, logger=log)
-def server_action(request, server_id):
-    req = utils.get_request_dict(request)
-    log.debug('server_action %s %s', server_id, req)
-
-    if len(req) != 1:
-        raise faults.BadRequest("Malformed request")
-
-    # Do not allow any action on deleted or suspended VMs
-    vm = util.get_vm(server_id, request.user_uniq, for_update=True,
-                     non_deleted=True, non_suspended=True)
-
-    try:
-        key = req.keys()[0]
-        if key not in ARBITRARY_ACTIONS:
-            start_action(vm, key_to_action(key))
-        val = req[key]
-        assert isinstance(val, dict)
-        return server_actions[key](request, vm, val)
-    except KeyError:
-        raise faults.BadRequest("Unknown action")
-    except AssertionError:
-        raise faults.BadRequest("Invalid argument")
 
 
 def key_to_action(key):
@@ -538,29 +493,30 @@ def key_to_action(key):
         return key.upper()
 
 
-def start_action(vm, action):
-    log.debug("Applying action %s to VM %s", action, vm)
-    if not action:
-        return
+@api.api_method(http_method='POST', user_required=True, logger=log)
+@transaction.commit_on_success
+def demux_server_action(request, server_id):
+    req = utils.get_request_dict(request)
+    log.debug('server_action %s %s', server_id, req)
 
-    if not action in [x[0] for x in VirtualMachine.ACTIONS]:
-        raise faults.ServiceUnavailable("Action %s not supported" % action)
+    if not isinstance(req, dict) and len(req) != 1:
+        raise faults.BadRequest("Malformed request")
 
-    # No actions to deleted VMs
-    if vm.deleted:
-        raise faults.BadRequest("VirtualMachine has been deleted.")
+    # Do not allow any action on deleted or suspended VMs
+    vm = util.get_vm(server_id, request.user_uniq, for_update=True,
+                     non_deleted=True, non_suspended=True)
 
-    # No actions to machines being built. They may be destroyed, however.
-    if vm.operstate == 'BUILD' and action != 'DESTROY':
-        raise faults.BuildInProgress("Server is being build.")
+    action = req.keys()[0]
+    if not isinstance(action, basestring):
+        raise faults.BadRequest("Malformed Request. Invalid action.")
 
-    vm.action = action
-    vm.backendjobid = None
-    vm.backendopcode = None
-    vm.backendjobstatus = None
-    vm.backendlogmsg = None
+    if key_to_action(action) not in [x[0] for x in VirtualMachine.ACTIONS]:
+        if action not in ARBITRARY_ACTIONS:
+            raise faults.BadRequest("Action %s not supported" % action)
+    action_args = utils.get_attribute(req, action, required=True,
+                                      attr_type=dict)
 
-    vm.save()
+    return server_actions[action](request, vm, action_args)
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
@@ -573,9 +529,11 @@ def list_addresses(request, server_id):
     #                       overLimit (413)
 
     log.debug('list_addresses %s', server_id)
-    vm = util.get_vm(server_id, request.user_uniq)
-    attachments = [nic_to_dict(nic) for nic in vm.nics.all()]
-    addresses = nics_to_addresses(vm.nics.all())
+    vm = util.get_vm(server_id, request.user_uniq,
+                     prefetch_related="nics__ips")
+    attachments = [nic_to_attachments(nic)
+                   for nic in vm.nics.filter(state="ACTIVE")]
+    addresses = attachments_to_addresses(attachments)
 
     if request.serialization == 'xml':
         data = render_to_string('list_addresses.xml', {'addresses': addresses})
@@ -598,8 +556,8 @@ def list_addresses_by_network(request, server_id, network_id):
     log.debug('list_addresses_by_network %s %s', server_id, network_id)
     machine = util.get_vm(server_id, request.user_uniq)
     network = util.get_network(network_id, request.user_uniq)
-    nics = machine.nics.filter(network=network).all()
-    addresses = nics_to_addresses(nics)
+    nics = machine.nics.filter(network=network, state="ACTIVE")
+    addresses = attachments_to_addresses(map(nic_to_attachments, nics))
 
     if request.serialization == 'xml':
         data = render_to_string('address.xml', {'addresses': addresses})
@@ -626,6 +584,7 @@ def list_metadata(request, server_id):
 
 
 @api.api_method(http_method='POST', user_required=True, logger=log)
+@transaction.commit_on_success
 def update_metadata(request, server_id):
     # Normal Response Code: 201
     # Error Response Codes: computeFault (400, 500),
@@ -639,13 +598,13 @@ def update_metadata(request, server_id):
     req = utils.get_request_dict(request)
     log.info('update_server_metadata %s %s', server_id, req)
     vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
-    try:
-        metadata = req['metadata']
-        assert isinstance(metadata, dict)
-    except (KeyError, AssertionError):
-        raise faults.BadRequest("Malformed request")
+    metadata = utils.get_attribute(req, "metadata", required=True,
+                                   attr_type=dict)
 
     for key, val in metadata.items():
+        if not isinstance(key, (basestring, int)) or\
+           not isinstance(val, (basestring, int)):
+            raise faults.BadRequest("Malformed Request. Invalid metadata.")
         meta, created = vm.metadata.get_or_create(meta_key=key)
         meta.meta_value = val
         meta.save()
@@ -740,8 +699,7 @@ def server_stats(request, server_id):
 
     log.debug('server_stats %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq)
-    #secret = util.encrypt(vm.backend_vm_id)
-    secret = vm.backend_vm_id      # XXX disable backend id encryption
+    secret = util.stats_encrypt(vm.backend_vm_id)
 
     stats = {
         'serverRef': vm.id,
@@ -757,3 +715,241 @@ def server_stats(request, server_id):
         data = json.dumps({'stats': stats})
 
     return HttpResponse(data, status=200)
+
+
+# ACTIONS
+
+
+server_actions = {}
+network_actions = {}
+
+
+def server_action(name):
+    '''Decorator for functions implementing server actions.
+    `name` is the key in the dict passed by the client.
+    '''
+
+    def decorator(func):
+        server_actions[name] = func
+        return func
+    return decorator
+
+
+def network_action(name):
+    '''Decorator for functions implementing network actions.
+    `name` is the key in the dict passed by the client.
+    '''
+
+    def decorator(func):
+        network_actions[name] = func
+        return func
+    return decorator
+
+
+@server_action('start')
+def start(request, vm, args):
+    # Normal Response Code: 202
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404)
+    vm = servers.start(vm)
+    return HttpResponse(status=202)
+
+
+@server_action('shutdown')
+def shutdown(request, vm, args):
+    # Normal Response Code: 202
+    # Error Response Codes: serviceUnavailable (503),
+    #                       itemNotFound (404)
+    vm = servers.stop(vm)
+    return HttpResponse(status=202)
+
+
+@server_action('reboot')
+def reboot(request, vm, args):
+    # Normal Response Code: 202
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       buildInProgress (409),
+    #                       overLimit (413)
+
+    reboot_type = args.get("type", "SOFT")
+    if reboot_type not in ["SOFT", "HARD"]:
+        raise faults.BadRequest("Invalid 'type' attribute.")
+    vm = servers.reboot(vm, reboot_type=reboot_type)
+    return HttpResponse(status=202)
+
+
+@server_action('firewallProfile')
+def set_firewall_profile(request, vm, args):
+    # Normal Response Code: 200
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       buildInProgress (409),
+    #                       overLimit (413)
+    profile = args.get("profile")
+    if profile is None:
+        raise faults.BadRequest("Missing 'profile' attribute")
+    nic_id = args.get("nic")
+    if nic_id is None:
+        raise faults.BadRequest("Missing 'nic' attribute")
+    nic = util.get_vm_nic(vm, nic_id)
+    servers.set_firewall_profile(vm, profile=profile, nic=nic)
+    return HttpResponse(status=202)
+
+
+@server_action('resize')
+def resize(request, vm, args):
+    # Normal Response Code: 202
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       buildInProgress (409),
+    #                       serverCapacityUnavailable (503),
+    #                       overLimit (413),
+    #                       resizeNotAllowed (403)
+    flavorRef = args.get("flavorRef")
+    if flavorRef is None:
+        raise faults.BadRequest("Missing 'flavorRef' attribute.")
+    flavor = util.get_flavor(flavor_id=flavorRef, include_deleted=False)
+    servers.resize(vm, flavor=flavor)
+    return HttpResponse(status=202)
+
+
+@server_action('console')
+def get_console(request, vm, args):
+    # Normal Response Code: 200
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       buildInProgress (409),
+    #                       overLimit (413)
+
+    log.info("Get console  VM %s: %s", vm, args)
+
+    console_type = args.get("type")
+    if console_type is None:
+        raise faults.BadRequest("No console 'type' specified.")
+    elif console_type != "vnc":
+        raise faults.BadRequest("Console 'type' can only be 'vnc'.")
+    console_info = servers.console(vm, console_type)
+
+    if request.serialization == 'xml':
+        mimetype = 'application/xml'
+        data = render_to_string('console.xml', {'console': console_info})
+    else:
+        mimetype = 'application/json'
+        data = json.dumps({'console': console_info})
+
+    return HttpResponse(data, mimetype=mimetype, status=200)
+
+
+@server_action('changePassword')
+def change_password(request, vm, args):
+    raise faults.NotImplemented('Changing password is not supported.')
+
+
+@server_action('rebuild')
+def rebuild(request, vm, args):
+    raise faults.NotImplemented('Rebuild not supported.')
+
+
+@server_action('confirmResize')
+def confirm_resize(request, vm, args):
+    raise faults.NotImplemented('Resize not supported.')
+
+
+@server_action('revertResize')
+def revert_resize(request, vm, args):
+    raise faults.NotImplemented('Resize not supported.')
+
+
+@network_action('add')
+@transaction.commit_on_success
+def add(request, net, args):
+    # Normal Response Code: 202
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       buildInProgress (409),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       overLimit (413)
+    server_id = args.get('serverRef', None)
+    if not server_id:
+        raise faults.BadRequest('Malformed Request.')
+
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
+    servers.connect(vm, network=net)
+    return HttpResponse(status=202)
+
+
+@network_action('remove')
+@transaction.commit_on_success
+def remove(request, net, args):
+    # Normal Response Code: 202
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       overLimit (413)
+
+    attachment = args.get("attachment")
+    if attachment is None:
+        raise faults.BadRequest("Missing 'attachment' attribute.")
+    try:
+        nic_id = int(attachment)
+    except (ValueError, TypeError):
+        raise faults.BadRequest("Invalid 'attachment' attribute.")
+
+    nic = util.get_nic(nic_id=nic_id)
+    server_id = nic.machine_id
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
+
+    servers.disconnect(vm, nic)
+
+    return HttpResponse(status=202)
+
+
+@server_action("addFloatingIp")
+def add_floating_ip(request, vm, args):
+    address = args.get("address")
+    if address is None:
+        raise faults.BadRequest("Missing 'address' attribute")
+
+    userid = vm.userid
+    floating_ip = util.get_floating_ip_by_address(userid, address,
+                                                  for_update=True)
+    servers.create_port(userid, floating_ip.network, machine=vm,
+                        user_ipaddress=floating_ip)
+    return HttpResponse(status=202)
+
+
+@server_action("removeFloatingIp")
+def remove_floating_ip(request, vm, args):
+    address = args.get("address")
+    if address is None:
+        raise faults.BadRequest("Missing 'address' attribute")
+    floating_ip = util.get_floating_ip_by_address(vm.userid, address,
+                                                  for_update=True)
+    if floating_ip.nic is None:
+        raise faults.BadRequest("Floating IP %s not attached to instance"
+                                % address)
+    servers.delete_port(floating_ip.nic)
+    return HttpResponse(status=202)

@@ -69,8 +69,8 @@ def decrypt_db_charfield_old(ciphertext):
     plaintext = plaintext[SALT_LEN:]
 
     if salt != pure_salt:
-        # Can not decrtypt password
-        raise CorruptedPassword("Can not decrypt password. Check the key")
+        # Cannot decrtypt password
+        raise CorruptedPassword("Cannot decrypt password. Check the key")
     else:
         return plaintext
 
@@ -108,8 +108,8 @@ def decrypt_db_charfield(ciphertext):
     plaintext = plaintext[SALT_LEN:]
 
     if salt != pure_salt:
-        # Can not decrtypt password
-        raise CorruptedPassword("Can not decrypt password. Check the key")
+        # Cannot decrtypt password
+        raise CorruptedPassword("Cannot decrypt password. Check the key")
     else:
         return plaintext
 

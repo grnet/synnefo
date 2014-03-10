@@ -45,7 +45,7 @@ import django.contrib.auth.views as django_auth_views
 from astakos.im.util import prepare_response, get_query
 from astakos.im.models import PendingThirdPartyUser
 from astakos.im.forms import LoginForm, ExtendedPasswordChangeForm, \
-                             ExtendedSetPasswordForm
+    ExtendedSetPasswordForm
 from astakos.im import settings
 import astakos.im.messages as astakos_messages
 from astakos.im import auth_providers as auth
@@ -85,8 +85,8 @@ def login(request, on_failure='im/login.html'):
 
         return render_to_response(
             on_failure,
-            {'login_form':form,
-             'next':next,
+            {'login_form': form,
+             'next': next,
              'key': third_party_token},
             context_instance=RequestContext(request))
 
@@ -152,14 +152,14 @@ def password_reset_confirm_done(request, *args, **kwargs):
 @cookie_fix
 def password_reset(request, *args, **kwargs):
     kwargs['post_reset_redirect'] = reverse(
-            'astakos.im.views.target.local.password_reset_done')
+        'astakos.im.views.target.local.password_reset_done')
     return django_auth_views.password_reset(request, *args, **kwargs)
 
 
 @cookie_fix
 def password_reset_confirm(request, *args, **kwargs):
     kwargs['post_reset_redirect'] = reverse(
-            'astakos.im.views.target.local.password_reset_complete')
+        'astakos.im.views.target.local.password_reset_complete')
     return django_auth_views.password_reset_confirm(request, *args, **kwargs)
 
 
@@ -173,8 +173,10 @@ def password_reset_complete(request, *args, **kwargs):
 @login_required
 @cookie_fix
 @requires_auth_provider('local', login=True)
-def password_change(request, template_name='registration/password_change_form.html',
-                    post_change_redirect=None, password_change_form=ExtendedPasswordChangeForm):
+def password_change(request,
+                    template_name='registration/password_change_form.html',
+                    post_change_redirect=None,
+                    password_change_form=ExtendedPasswordChangeForm):
 
     create_password = False
 
@@ -216,4 +218,3 @@ def password_change(request, template_name='registration/password_change_form.ht
         'form': form,
     }, context_instance=RequestContext(request, {'create_password':
                                                  create_password}))
-

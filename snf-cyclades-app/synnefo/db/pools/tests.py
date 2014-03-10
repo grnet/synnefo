@@ -35,7 +35,8 @@
 from django.test import TestCase
 from synnefo.db.pools import (PoolManager, EmptyPool, BridgePool,
                               MacPrefixPool, IPPool, find_padding,
-                              bitarray_to_map)
+                              bitarray_to_map, ValueNotAvailable,
+                              InvalidValue)
 from bitarray import bitarray
 
 
@@ -101,7 +102,7 @@ class PoolManagerTestCase(TestCase):
         obj = DummyObject(42)
         pool = DummyPool(obj)
         for i in range(42, 48):
-            self.assertEqual(pool.is_available(i), False)
+            self.assertRaises(InvalidValue, pool.is_available, i)
         pool.reserve(32, external=True)
         values = []
         while True:
@@ -188,7 +189,7 @@ class MacPrefixPoolTestCase(TestCase):
         obj = DummyObject(65636)
         obj.base = 'ab:ff:ff'
         pool = MacPrefixPool(obj)
-        for i in range(0, 65536):
+        for i in range(0, 65535):
             self.assertEqual(pool.is_available(i, index=True), False)
 
     def test_mac_prefix_conversion(self):
@@ -208,27 +209,19 @@ class MacPrefixPoolTestCase(TestCase):
 
 
 class IPPoolTestCase(TestCase):
-    def test_auto_reservations(self):
-        obj = DummyObject(0)
-        network = DummyObject(0)
-        obj.network = network
-        network.subnet = '192.168.2.0/24'
-        network.gateway = '192.168.2.1'
+    def test_get_with_value(self):
+        obj = DummyObject(16)
+        subnet = DummyObject(0)
+        obj.subnet = subnet
+        subnet.cidr = "192.168.2.0/28"
+        subnet.gateway = None
+        obj.base = "192.168.2.0/28"
+        obj.offset = 0
         pool = IPPool(obj)
-        self.assertEqual(pool.is_available('192.168.2.0'), False)
-        self.assertEqual(pool.is_available('192.168.2.1'), False)
-        self.assertEqual(pool.is_available('192.168.2.255'), False)
-        self.assertEqual(pool.count_available(), 253)
-        self.assertEqual(pool.get(), '192.168.2.2')
-
-    def test_auto_reservations_2(self):
-        obj = DummyObject(0)
-        network = DummyObject(0)
-        obj.network = network
-        network.subnet = '192.168.2.0/31'
-        network.gateway = '192.168.2.1'
-        pool = IPPool(obj)
-        self.assertEqual(pool.is_available('192.168.2.0'), False)
-        self.assertEqual(pool.is_available('192.168.2.1'), False)
-        self.assertEqual(pool.size(), 8)
-        self.assertEqual(pool.empty(), True)
+        # Test if reserved
+        pool.reserve("192.168.2.2")
+        self.assertRaises(ValueNotAvailable, pool.get, "192.168.2.2")
+        # Test if externally reserved
+        pool.reserve("192.168.2.3", external=True)
+        self.assertRaises(ValueNotAvailable, pool.get, "192.168.2.3")
+        self.assertRaises(InvalidValue, pool.get, "192.168.2.16")

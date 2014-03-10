@@ -362,7 +362,7 @@
             img = img + '<img src="'+snf.config.indicators_icons_url+'medium/wave.gif" class="wave" />';
             img = img + '<span class="action-indicator" />';
 
-            var name = util.truncate(vm.get('name'), 25);
+            var name = _.escape(util.truncate(vm.get('name'), 25));
             var flavor = vm.get_flavor().details_string();
             var status = STATE_TEXTS[vm.state()];
             
@@ -524,13 +524,11 @@
         'ERROR':            ['error-state'],
         'DELETED':          ['destroying-state'],
         'DESTROY':          ['destroying-state'],
-        'BUILD_INIT':       ['build-state'], 
-        'BUILD_COPY':       ['build-state'],
-        'BUILD_FINAL':      ['build-state'],
         'SHUTDOWN':         ['shutting-state'],
         'START':            ['starting-state'],
         'CONNECT':          ['connecting-state'],
-        'DISCONNECT':       ['disconnecting-state']
+        'DISCONNECT':       ['disconnecting-state'],
+        'RESIZE':           ['rebooting-state']
     };
 
 })(this);

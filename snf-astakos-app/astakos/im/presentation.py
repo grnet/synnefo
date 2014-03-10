@@ -84,27 +84,51 @@ RESOURCES = {
             'verbose_name': 'System Disk',
             'group': 'compute'
         },
-        'cyclades.ram': {
+        'cyclades.total_ram': {
             'help_text': 'RAM used by VMs ',
             'help_text_input_each': ('This is the total amount of RAM that '
                                      'will be granted to each user of this '
                                      'Project (on all VMs)  '),
             'is_abbreviation': True,
-            'report_desc': 'RAM',
+            'report_desc': 'Total RAM',
             'placeholder': 'eg. 4GB',
-            'verbose_name': 'ram',
+            'verbose_name': 'Total ram',
             'group': 'compute'
 
         },
-        'cyclades.cpu': {
+        'cyclades.ram': {
+            'help_text': 'RAM used by active VMs ',
+            'help_text_input_each': ('This is the total amount of RAM that '
+                                     'will be granted to each user of this '
+                                     'Project (on all active VMs)  '),
+            'is_abbreviation': False,
+            'report_desc': 'RAM',
+            'placeholder': 'eg. 4GB',
+            'verbose_name': 'RAM',
+            'group': 'compute'
+
+        },
+        'cyclades.total_cpu': {
             'help_text': 'CPUs used by VMs ',
             'help_text_input_each': ('This is the total number of CPUs that '
                                      'will be granted to each user of this '
                                      'Project (on all VMs)  '),
             'is_abbreviation': True,
+            'report_desc': 'Total CPUs',
+            'placeholder': 'eg. 1',
+            'verbose_name': 'Total cpu',
+            'group': 'compute'
+
+        },
+        'cyclades.cpu': {
+            'help_text': 'CPUs used by active VMs ',
+            'help_text_input_each': ('This is the total number of CPUs that '
+                                     'will be granted to each user of this '
+                                     'Project (on all active VMs)  '),
+            'is_abbreviation': False,
             'report_desc': 'CPUs',
             'placeholder': 'eg. 1',
-            'verbose_name': 'cpu',
+            'verbose_name': 'CPU',
             'group': 'compute'
 
         },
@@ -134,6 +158,19 @@ RESOURCES = {
             'group': 'network'
 
         },
+        'cyclades.floating_ip': {
+            'help_text': ('These are the Public (Floating) IPs one can '
+                          'reserve on the Cyclades UI. '),
+            'help_text_input_each': ('This is the total number of Public '
+                                     '(Floating) IPs that will be granted to '
+                                     'each user of this Project '),
+            'is_abbreviation': False,
+            'report_desc': 'Public (Floating) IPs',
+            'placeholder': 'eg. 1',
+            'verbose_name': 'Public (Floating) IP',
+            'group': 'network'
+
+        },
         'astakos.pending_app': {
             'help_text': ('Pending project applications limit'),
             'help_text_input_each': ('Total pending project applications user '
@@ -149,13 +186,15 @@ RESOURCES = {
     'groups_order': ['storage', 'compute', 'network', 'accounts'],
     'resources_order': ['pithos.diskspace',
                         'cyclades.disk',
+                        'cyclades.total_cpu',
                         'cyclades.cpu',
+                        'cyclades.total_ram',
                         'cyclades.ram',
                         'cyclades.vm',
                         'cyclades.network.private',
+                        'cyclades.floating_ip',
                         'astakos.pending_app'
                         ],
-    'exclude_from_usage': ['astakos.pending_app']
 }
 
 # extend from settings

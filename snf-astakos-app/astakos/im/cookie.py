@@ -67,7 +67,8 @@ class CookieHandler():
 
     @property
     def is_valid(self):
-        cookie_attribute = 'uuid' if not settings.TRANSLATE_UUIDS else 'username'
+        cookie_attribute = ('uuid' if not settings.TRANSLATE_UUIDS
+                            else 'username')
         return (self.uuid == getattr(self.user, cookie_attribute, '') and
                 self.auth_token == getattr(self.user, 'auth_token', ''))
 

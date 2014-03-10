@@ -31,24 +31,31 @@ from django.utils import simplejson as json
 from django.db import transaction
 
 from snf_django.lib.api import faults
-from synnefo.db.models import QuotaHolderSerial, VirtualMachine, Network
+from synnefo.db.models import (QuotaHolderSerial, VirtualMachine, Network,
+                               IPAddress)
 
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
-                              ASTAKOS_BASE_URL)
+                              ASTAKOS_AUTH_URL)
 from astakosclient import AstakosClient
-from astakosclient.errors import AstakosClientException, QuotaLimit
-from functools import wraps
+from astakosclient import errors
 
 import logging
 log = logging.getLogger(__name__)
 
+
+QUOTABLE_RESOURCES = [VirtualMachine, Network, IPAddress]
+
+
 DEFAULT_SOURCE = 'system'
 RESOURCES = [
     "cyclades.vm",
+    "cyclades.total_cpu",
     "cyclades.cpu",
     "cyclades.disk",
+    "cyclades.total_ram",
     "cyclades.ram",
-    "cyclades.network.private"
+    "cyclades.network.private",
+    "cyclades.floating_ip",
 ]
 
 
@@ -58,29 +65,35 @@ class Quotaholder(object):
     @classmethod
     def get(cls):
         if cls._object is None:
-            cls._object = AstakosClient(
-                ASTAKOS_BASE_URL,
-                use_pool=True,
-                retry=3,
-                logger=log)
+            cls._object = AstakosClient(ASTAKOS_TOKEN,
+                                        ASTAKOS_AUTH_URL,
+                                        use_pool=True,
+                                        retry=3,
+                                        logger=log)
         return cls._object
 
 
-def handle_astakosclient_error(func):
-    """Decorator for converting astakosclient errors to 500."""
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except AstakosClientException:
-            log.exception("Unexpected error")
+class AstakosClientExceptionHandler(object):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, value, traceback):
+        if value is not None:  # exception
+            if not isinstance(value, errors.AstakosClientException):
+                return False  # reraise
+            if exc_type is errors.QuotaLimit:
+                msg, details = render_overlimit_exception(value)
+                raise faults.OverLimit(msg, details=details)
+
+            log.exception("Unexpected error %s" % value.message)
             raise faults.InternalServerError("Unexpected error")
-    return wrapper
 
 
-@handle_astakosclient_error
-def issue_commission(user, source, provisions,
-                     force=False, auto_accept=False):
+def issue_commission(resource, action, name="", force=False, auto_accept=False,
+                     action_fields=None):
     """Issue a new commission to the quotaholder.
 
     Issue a new commission to the quotaholder, and create the
@@ -88,38 +101,82 @@ def issue_commission(user, source, provisions,
 
     """
 
-    qh = Quotaholder.get()
-    try:
-        serial = qh.issue_one_commission(ASTAKOS_TOKEN,
-                                         user, source, provisions,
-                                         force=force, auto_accept=auto_accept)
-    except QuotaLimit as e:
-        msg, details = render_overlimit_exception(e)
-        raise faults.OverLimit(msg, details=details)
+    provisions = get_commission_info(resource=resource, action=action,
+                                     action_fields=action_fields)
 
-    if serial:
-        return QuotaHolderSerial.objects.create(serial=serial)
-    else:
+    if provisions is None:
+        return None
+
+    user = resource.userid
+    source = DEFAULT_SOURCE
+
+    qh = Quotaholder.get()
+    if True:  # placeholder
+        with AstakosClientExceptionHandler():
+            serial = qh.issue_one_commission(user, source,
+                                             provisions, name=name,
+                                             force=force,
+                                             auto_accept=auto_accept)
+
+    if not serial:
         raise Exception("No serial")
 
+    serial_info = {"serial": serial}
+    if auto_accept:
+        serial_info["pending"] = False
+        serial_info["accept"] = True
+        serial_info["resolved"] = True
 
-def accept_commissions(accepted, strict=True):
-    return resolve_commissions(accept=accepted, strict=strict)
+    serial = QuotaHolderSerial.objects.create(**serial_info)
+
+    # Correlate the serial with the resource. Resolved serials are not
+    # attached to resources
+    if not auto_accept:
+        resource.serial = serial
+        resource.save()
+
+    return serial
 
 
-def reject_commissions(rejected, strict=True):
-    return resolve_commissions(reject=rejected, strict=strict)
+def accept_resource_serial(resource, strict=True):
+    serial = resource.serial
+    assert serial.pending or serial.accept, "%s can't be accepted" % serial
+    log.debug("Accepting serial %s of resource %s", serial, resource)
+    _resolve_commissions(accept=[serial.serial], strict=strict)
+    resource.serial = None
+    resource.save()
+    return resource
 
 
-@handle_astakosclient_error
-def resolve_commissions(accept=None, reject=None, strict=True):
+def reject_resource_serial(resource, strict=True):
+    serial = resource.serial
+    assert serial.pending or not serial.accept, "%s can't be rejected" % serial
+    log.debug("Rejecting serial %s of resource %s", serial, resource)
+    _resolve_commissions(reject=[serial.serial], strict=strict)
+    resource.serial = None
+    resource.save()
+    return resource
+
+
+def _resolve_commissions(accept=None, reject=None, strict=True):
     if accept is None:
         accept = []
     if reject is None:
         reject = []
 
     qh = Quotaholder.get()
-    response = qh.resolve_commissions(ASTAKOS_TOKEN, accept, reject)
+    with AstakosClientExceptionHandler():
+        response = qh.resolve_commissions(accept, reject)
+
+    accepted = response.get("accepted", [])
+    rejected = response.get("rejected", [])
+
+    if accepted:
+        QuotaHolderSerial.objects.filter(serial__in=accepted).update(
+            accept=True, pending=False, resolved=True)
+    if rejected:
+        QuotaHolderSerial.objects.filter(serial__in=rejected).update(
+            accept=False, pending=False, resolved=True)
 
     if strict:
         failed = response["failed"]
@@ -130,9 +187,13 @@ def resolve_commissions(accept=None, reject=None, strict=True):
     return response
 
 
-def fix_pending_commissions():
-    (accepted, rejected) = resolve_pending_commissions()
-    resolve_commissions(accept=accepted, reject=rejected)
+def reconcile_resolve_commissions(accept=None, reject=None, strict=True):
+    response = _resolve_commissions(accept=accept,
+                                    reject=reject,
+                                    strict=strict)
+    affected = response.get("accepted", []) + response.get("rejected", [])
+    for resource in QUOTABLE_RESOURCES:
+        resource.objects.filter(serial__in=affected).update(serial=None)
 
 
 def resolve_pending_commissions():
@@ -142,7 +203,7 @@ def resolve_pending_commissions():
     to accepted and rejected, according to the state of the
     QuotaHolderSerial DB table. A pending commission in the quotaholder
     can exist in the QuotaHolderSerial table and be either accepted or
-    rejected, or can not exist in this table, so it is rejected.
+    rejected, or cannot exist in this table, so it is rejected.
 
     """
 
@@ -164,7 +225,7 @@ def resolve_pending_commissions():
 
 def get_quotaholder_pending():
     qh = Quotaholder.get()
-    pending_serials = qh.get_pending_commissions(ASTAKOS_TOKEN)
+    pending_serials = qh.get_pending_commissions()
     return pending_serials
 
 
@@ -172,7 +233,8 @@ def render_overlimit_exception(e):
     resource_name = {"vm": "Virtual Machine",
                      "cpu": "CPU",
                      "ram": "RAM",
-                     "network.private": "Private Network"}
+                     "network.private": "Private Network",
+                     "floating_ip": "Floating IP address"}
     details = json.loads(e.details)
     data = details['overLimit']['data']
     usage = data["usage"]
@@ -194,101 +256,143 @@ def render_overlimit_exception(e):
     return msg, details
 
 
-@transaction.commit_manually
-def issue_and_accept_commission(resource, delete=False):
+@transaction.commit_on_success
+def issue_and_accept_commission(resource, action="BUILD", action_fields=None):
     """Issue and accept a commission to Quotaholder.
 
     This function implements the Commission workflow, and must be called
     exactly after and in the same transaction that created/updated the
     resource. The workflow that implements is the following:
     0) Resolve previous unresolved commission if exists
-    1) Issue commission and get a serial
-    2) Store the serial in DB and mark is as one to accept
-    3) Correlate the serial with the resource
-    4) COMMIT!
-    5) Accept commission to QH (reject if failed until 5)
-    6) Mark serial as resolved
-    7) COMMIT!
+    1) Issue commission, get a serial and correlate it with the resource
+    2) Store the serial in DB as a serial to accept
+    3) COMMIT!
+    4) Accept commission to QH
 
     """
-    previous_serial = resource.serial
-    if previous_serial is not None and not previous_serial.resolved:
-        if previous_serial.pending:
-            msg = "Issuing commission for resource '%s' while previous serial"\
-                  " '%s' is still pending." % (resource, previous_serial)
-            raise Exception(msg)
-        elif previous_serial.accept:
-            accept_commissions(accepted=[previous_serial.serial], strict=False)
-        else:
-            reject_commissions(rejected=[previous_serial.serial], strict=False)
-        previous_serial.resolved = True
-        previous_serial.save()
+    commission_reason = ("client: api, resource: %s, action: %s"
+                         % (resource, action))
+    serial = handle_resource_commission(resource=resource, action=action,
+                                        action_fields=action_fields,
+                                        commission_name=commission_reason)
 
-    try:
-        # Convert resources in the format expected by Quotaholder
-        qh_resources = prepare_qh_resources(resource)
-        if delete:
-            qh_resources = reverse_quantities(qh_resources)
+    if serial is None:
+        return
 
-        # Issue commission and get the assigned serial
-        serial = issue_commission(resource.userid, DEFAULT_SOURCE,
-                                  qh_resources)
-    except:
-        transaction.rollback()
-        raise
-
-    try:
-        # Mark the serial as one to accept. This step is necessary for
-        # reconciliation
-        serial.pending = False
-        serial.accept = True
-        serial.save()
-
-        # Associate serial with the resource
-        resource.serial = serial
-        resource.save()
-
-        # Commit transaction in the DB! If this commit succeeds, then the
-        # serial is created in the DB with all the necessary information to
-        # reconcile commission
-        transaction.commit()
-    except:
-        transaction.rollback()
-        serial.pending = False
-        serial.accept = False
-        serial.save()
-        transaction.commit()
-        raise
-
-    if serial.accept:
-        # Accept commission to Quotaholder
-        accept_commissions(accepted=[serial.serial])
-    else:
-        reject_commissions(rejected=[serial.serial])
-
-    # Mark the serial as resolved, indicating that no further actions are
-    # needed for this serial
-    serial.resolved = True
+    # Mark the serial as one to accept and associate it with the resource
+    serial.pending = False
+    serial.accept = True
     serial.save()
     transaction.commit()
 
-    return serial
+    try:
+        # Accept the commission to quotaholder
+        accept_resource_serial(resource)
+    except:
+        # Do not crash if we can not accept commission to Quotaholder. Quotas
+        # have already been reserved and the resource already exists in DB.
+        # Just log the error
+        log.exception("Failed to accept commission: %s", resource.serial)
 
 
-def prepare_qh_resources(resource):
+def get_commission_info(resource, action, action_fields=None):
     if isinstance(resource, VirtualMachine):
         flavor = resource.flavor
-        return {'cyclades.vm': 1,
-                'cyclades.cpu': flavor.cpu,
-                'cyclades.disk': 1073741824 * flavor.disk,  # flavor.disk in GB
-                # 'public_ip': 1,
-                #'disk_template': flavor.disk_template,
-                'cyclades.ram': 1048576 * flavor.ram}  # flavor.ram is in MB
+        resources = {"cyclades.vm": 1,
+                     "cyclades.total_cpu": flavor.cpu,
+                     "cyclades.disk": 1073741824 * flavor.disk,
+                     "cyclades.total_ram": 1048576 * flavor.ram}
+        online_resources = {"cyclades.cpu": flavor.cpu,
+                            "cyclades.ram": 1048576 * flavor.ram}
+        if action == "BUILD":
+            resources.update(online_resources)
+            return resources
+        if action == "START":
+            if resource.operstate == "STOPPED":
+                return online_resources
+            else:
+                return None
+        elif action == "STOP":
+            if resource.operstate in ["STARTED", "BUILD", "ERROR"]:
+                return reverse_quantities(online_resources)
+            else:
+                return None
+        elif action == "REBOOT":
+            if resource.operstate == "STOPPED":
+                return online_resources
+            else:
+                return None
+        elif action == "DESTROY":
+            if resource.operstate in ["STARTED", "BUILD", "ERROR"]:
+                resources.update(online_resources)
+            return reverse_quantities(resources)
+        elif action == "RESIZE" and action_fields:
+            beparams = action_fields.get("beparams")
+            cpu = beparams.get("vcpus", flavor.cpu)
+            ram = beparams.get("maxmem", flavor.ram)
+            return {"cyclades.total_cpu": cpu - flavor.cpu,
+                    "cyclades.total_ram": 1048576 * (ram - flavor.ram)}
+        else:
+            #["CONNECT", "DISCONNECT", "SET_FIREWALL_PROFILE"]:
+            return None
     elif isinstance(resource, Network):
-        return {"cyclades.network.private": 1}
-    else:
-        raise ValueError("Unknown Resource '%s'" % resource)
+        resources = {"cyclades.network.private": 1}
+        if action == "BUILD":
+            return resources
+        elif action == "DESTROY":
+            return reverse_quantities(resources)
+    elif isinstance(resource, IPAddress):
+        if resource.floating_ip:
+            resources = {"cyclades.floating_ip": 1}
+            if action == "BUILD":
+                return resources
+            elif action == "DESTROY":
+                return reverse_quantities(resources)
+        else:
+            return None
 
 
 def reverse_quantities(resources):
     return dict((r, -s) for r, s in resources.items())
+
+
+def handle_resource_commission(resource, action, commission_name,
+                               force=False, auto_accept=False,
+                               action_fields=None):
+    """Handle a issuing of a commission for a resource.
+
+    Create a new commission for a resource based on the action that
+    is performed. If the resource has a previous pending commission,
+    resolved it before issuing the new one.
+
+    """
+    # Try to resolve previous serial:
+    # If action is DESTROY, we must always reject the previous commission,
+    # since multiple DESTROY actions are allowed in the same resource (e.g. VM)
+    # The one who succeeds will be finally accepted, and all other will be
+    # rejected
+    force = force or (action == "DESTROY")
+    resolve_resource_commission(resource, force=force)
+
+    serial = issue_commission(resource, action, name=commission_name,
+                              force=force, auto_accept=auto_accept,
+                              action_fields=action_fields)
+    return serial
+
+
+class ResolveError(Exception):
+    pass
+
+
+def resolve_resource_commission(resource, force=False):
+    serial = resource.serial
+    if serial is None or serial.resolved:
+        return
+    if serial.pending and not force:
+        m = "Could not resolve commission: serial %s is undecided" % serial
+        raise ResolveError(m)
+    log.warning("Resolving pending commission: %s", serial)
+    if not serial.pending and serial.accept:
+        accept_resource_serial(resource)
+    else:
+        reject_resource_serial(resource)

@@ -44,15 +44,16 @@ import astakos.im.messages as astakos_messages
 
 logger = logging.getLogger(__name__)
 
-def build_notification(
-    sender, recipients, subject, message=None, template=None, dictionary=None):
+
+def build_notification(sender, recipients, subject, message=None,
+                       template=None, dictionary=None):
     return EmailNotification(
         sender, recipients, subject, message, template, dictionary)
 
+
 class Notification(object):
-    def __init__(
-        self, sender, recipients, subject,
-        message=None, template=None, dictionary=None):
+    def __init__(self, sender, recipients, subject,
+                 message=None, template=None, dictionary=None):
         if not message and not template:
             raise IOError('message and template cannot be both None.')
         dictionary = dictionary or {}
@@ -63,6 +64,7 @@ class Notification(object):
 
     def send(self):
         pass
+
 
 class EmailNotification(Notification):
     def send(self):
@@ -77,8 +79,9 @@ class EmailNotification(Notification):
             logger.exception(e)
             raise NotificationError(self)
 
+
 class NotificationError(Exception):
     def __init__(self, nofication):
-        self.message = _(astakos_messages.DETAILED_NOTIFICATION_SEND_ERR) % nofication.__dict__
+        self.message = (_(astakos_messages.DETAILED_NOTIFICATION_SEND_ERR) %
+                        nofication.__dict__)
         super(NotificationError, self).__init__()
-

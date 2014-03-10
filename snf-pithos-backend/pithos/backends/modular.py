@@ -37,6 +37,10 @@ import logging
 import hashlib
 import binascii
 
+from collections import defaultdict
+from functools import wraps, partial
+from traceback import format_exc
+
 try:
     from astakosclient import AstakosClient
 except ImportError:
@@ -45,7 +49,8 @@ except ImportError:
 from base import (DEFAULT_ACCOUNT_QUOTA, DEFAULT_CONTAINER_QUOTA,
                   DEFAULT_CONTAINER_VERSIONING, NotAllowedError, QuotaError,
                   BaseBackend, AccountExists, ContainerExists, AccountNotEmpty,
-                  ContainerNotEmpty, ItemNotExists, VersionNotExists)
+                  ContainerNotEmpty, ItemNotExists, VersionNotExists,
+                  InvalidHash)
 
 
 class DisabledAstakosClient(object):
@@ -94,8 +99,10 @@ DEFAULT_DB_CONNECTION = 'sqlite:///backend.db'
 DEFAULT_BLOCK_MODULE = 'pithos.backends.lib.hashfiler'
 DEFAULT_BLOCK_PATH = 'data/'
 DEFAULT_BLOCK_UMASK = 0o022
+DEFAULT_BLOCK_SIZE = 4 * 1024 * 1024  # 4MB
+DEFAULT_HASH_ALGORITHM = 'sha256'
 #DEFAULT_QUEUE_MODULE = 'pithos.backends.lib.rabbitmq'
-DEFAULT_BLOCK_PARAMS = { 'mappool': None, 'blockpool': None }
+DEFAULT_BLOCK_PARAMS = {'mappool': None, 'blockpool': None}
 #DEFAULT_QUEUE_HOSTS = '[amqp://guest:guest@localhost:5672]'
 #DEFAULT_QUEUE_EXCHANGE = 'pithos'
 DEFAULT_PUBLIC_URL_ALPHABET = ('0123456789'
@@ -114,54 +121,95 @@ inf = float('inf')
 ULTIMATE_ANSWER = 42
 
 DEFAULT_SOURCE = 'system'
+DEFAULT_DISKSPACE_RESOURCE = 'pithos.diskspace'
 
 logger = logging.getLogger(__name__)
 
 
-def backend_method(func=None, autocommit=1):
-    if func is None:
-        def fn(func):
-            return backend_method(func, autocommit)
-        return fn
-
-    if not autocommit:
-        return func
-
-    def fn(self, *args, **kw):
-        self.wrapper.execute()
-        serials = []
-        self.serials = serials
-        self.messages = []
+def backend_method(func):
+    @wraps(func)
+    def wrapper(self, *args, **kw):
+        # if we are inside a database transaction
+        # just proceed with the method execution
+        # otherwise manage a new transaction
+        if self.in_transaction:
+            return func(self, *args, **kw)
 
         try:
-            ret = func(self, *args, **kw)
-            for m in self.messages:
-                self.queue.send(*m)
-            if self.serials:
-                self.commission_serials.insert_many(self.serials)
-
-                # commit to ensure that the serials are registered
-                # even if accept commission fails
-                self.wrapper.commit()
-                self.wrapper.execute()
-
-                r = self.astakosclient.resolve_commissions(
-                            token=self.service_token,
-                            accept_serials=self.serials,
-                            reject_serials=[])
-                self.commission_serials.delete_many(r['accepted'])
-
-            self.wrapper.commit()
-            return ret
+            self.pre_exec()
+            result = func(self, *args, **kw)
+            success_status = True
+            return result
         except:
-            if self.serials:
-                self.astakosclient.resolve_commissions(
-                    token=self.service_token,
-                    accept_serials=[],
-                    reject_serials=self.serials)
-            self.wrapper.rollback()
+            success_status = False
             raise
-    return fn
+        finally:
+            self.post_exec(success_status)
+    return wrapper
+
+
+def debug_method(func):
+    @wraps(func)
+    def wrapper(self, *args, **kw):
+        try:
+            result = func(self, *args, **kw)
+            return result
+        except:
+            result = format_exc()
+            raise
+        finally:
+            all_args = map(repr, args)
+            map(all_args.append, ('%s=%s' % (k, v) for k, v in kw.iteritems()))
+            logger.debug(">>> %s(%s) <<< %s" % (
+                func.__name__, ', '.join(all_args).rstrip(', '), result))
+    return wrapper
+
+
+def check_allowed_paths(action):
+    """Decorator for backend methods checking path access granted to user.
+
+    The 1st argument of the decorated method is expected to be a
+    ModularBackend instance, the 2nd the user performing the request and
+    the path join of the rest arguments is supposed to be the requested path.
+
+    The decorator checks whether the requested path is among the user's allowed
+    cached paths.
+    If this is the case, the decorator returns immediately to reduce the
+    interactions with the database.
+    Otherwise, it proceeds with the execution of the decorated method and if
+    the method returns successfully (no exceptions are raised), the requested
+    path is added to the user's cached allowed paths.
+
+    :param action: (int) 0 for reads / 1 for writes
+    :raises NotAllowedError: the user does not have access to the path
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(self, *args):
+            user = args[0]
+            if action == self.READ:
+                d = self.read_allowed_paths
+            else:
+                d = self.write_allowed_paths
+            path = '/'.join(args[1:])
+            if path in d.get(user, []):
+                return  # access is already checked
+            else:
+                func(self, *args)   # proceed with access check
+                d[user].add(path)  # add path in the allowed user paths
+        return wrapper
+    return decorator
+
+
+def list_method(func):
+    @wraps(func)
+    def wrapper(self, *args, **kw):
+        marker = kw.get('marker')
+        limit = kw.get('limit')
+        result = func(self, *args, **kw)
+        start, limit = self._list_limits(result, marker, limit)
+        return result[start:start + limit]
+    return wrapper
 
 
 class ModularBackend(BaseBackend):
@@ -172,8 +220,9 @@ class ModularBackend(BaseBackend):
 
     def __init__(self, db_module=None, db_connection=None,
                  block_module=None, block_path=None, block_umask=None,
+                 block_size=None, hash_algorithm=None,
                  queue_module=None, queue_hosts=None, queue_exchange=None,
-                 astakos_url=None, service_token=None,
+                 astakos_auth_url=None, service_token=None,
                  astakosclient_poolsize=None,
                  free_versioning=True, block_params=None,
                  public_url_security=None,
@@ -187,6 +236,8 @@ class ModularBackend(BaseBackend):
         block_path = block_path or DEFAULT_BLOCK_PATH
         block_umask = block_umask or DEFAULT_BLOCK_UMASK
         block_params = block_params or DEFAULT_BLOCK_PARAMS
+        block_size = block_size or DEFAULT_BLOCK_SIZE
+        hash_algorithm = hash_algorithm or DEFAULT_HASH_ALGORITHM
         #queue_module = queue_module or DEFAULT_QUEUE_MODULE
         account_quota_policy = account_quota_policy or DEFAULT_ACCOUNT_QUOTA
         container_quota_policy = container_quota_policy \
@@ -202,11 +253,13 @@ class ModularBackend(BaseBackend):
         #queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
         #queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
 
-        self.public_url_security = public_url_security or DEFAULT_PUBLIC_URL_SECURITY
-        self.public_url_alphabet = public_url_alphabet or DEFAULT_PUBLIC_URL_ALPHABET
+        self.public_url_security = (public_url_security or
+                                    DEFAULT_PUBLIC_URL_SECURITY)
+        self.public_url_alphabet = (public_url_alphabet or
+                                    DEFAULT_PUBLIC_URL_ALPHABET)
 
-        self.hash_algorithm = 'sha256'
-        self.block_size = 4 * 1024 * 1024  # 4MB
+        self.hash_algorithm = hash_algorithm
+        self.block_size = block_size
         self.free_versioning = free_versioning
 
         def load_module(m):
@@ -222,8 +275,12 @@ class ModularBackend(BaseBackend):
         for x in ['READ', 'WRITE']:
             setattr(self, x, getattr(self.db_module, x))
         self.node = self.db_module.Node(**params)
-        for x in ['ROOTNODE', 'SERIAL', 'HASH', 'SIZE', 'TYPE', 'MTIME', 'MUSER', 'UUID', 'CHECKSUM', 'CLUSTER', 'MATCH_PREFIX', 'MATCH_EXACT']:
+        for x in ['ROOTNODE', 'SERIAL', 'NODE', 'HASH', 'SIZE', 'TYPE',
+                  'MTIME', 'MUSER', 'UUID', 'CHECKSUM', 'CLUSTER',
+                  'MATCH_PREFIX', 'MATCH_EXACT']:
             setattr(self, x, getattr(self.db_module, x))
+
+        self.ALLOWED = ['read', 'write']
 
         self.block_module = load_module(block_module)
         self.block_params = block_params
@@ -250,22 +307,72 @@ class ModularBackend(BaseBackend):
 
             self.queue = NoQueue()
 
-        self.astakos_url = astakos_url
+        self.astakos_auth_url = astakos_auth_url
         self.service_token = service_token
 
-        if not astakos_url or not AstakosClient:
+        if not astakos_auth_url or not AstakosClient:
             self.astakosclient = DisabledAstakosClient(
-                astakos_url,
+                service_token, astakos_auth_url,
                 use_pool=True,
                 pool_size=astakosclient_poolsize)
         else:
             self.astakosclient = AstakosClient(
-                astakos_url,
+                service_token, astakos_auth_url,
                 use_pool=True,
                 pool_size=astakosclient_poolsize)
 
         self.serials = []
         self.messages = []
+
+        self._move_object = partial(self._copy_object, is_move=True)
+
+        self.lock_container_path = False
+
+        self.in_transaction = False
+
+        self._reset_allowed_paths()
+
+    def pre_exec(self, lock_container_path=False):
+        self.lock_container_path = lock_container_path
+        self.wrapper.execute()
+        self.serials = []
+        self._reset_allowed_paths()
+        self.in_transaction = True
+
+    def post_exec(self, success_status=True):
+        if success_status:
+            # send messages produced
+            for m in self.messages:
+                self.queue.send(*m)
+
+            # register serials
+            if self.serials:
+                self.commission_serials.insert_many(
+                    self.serials)
+
+                # commit to ensure that the serials are registered
+                # even if resolve commission fails
+                self.wrapper.commit()
+
+                # start new transaction
+                self.wrapper.execute()
+
+                r = self.astakosclient.resolve_commissions(
+                    accept_serials=self.serials,
+                    reject_serials=[])
+                self.commission_serials.delete_many(
+                    r['accepted'])
+
+            self.wrapper.commit()
+        else:
+            if self.serials:
+                r = self.astakosclient.resolve_commissions(
+                    accept_serials=[],
+                    reject_serials=self.serials)
+                self.commission_serials.delete_many(
+                    r['rejected'])
+            self.wrapper.rollback()
+        self.in_transaction = False
 
     def close(self):
         self.wrapper.close()
@@ -275,26 +382,32 @@ class ModularBackend(BaseBackend):
     def using_external_quotaholder(self):
         return not isinstance(self.astakosclient, DisabledAstakosClient)
 
+    @debug_method
     @backend_method
     def list_accounts(self, user, marker=None, limit=10000):
         """Return a list of accounts the user can access."""
 
-        logger.debug("list_accounts: %s %s %s", user, marker, limit)
         allowed = self._allowed_accounts(user)
         start, limit = self._list_limits(allowed, marker, limit)
         return allowed[start:start + limit]
 
+    def _get_account_quotas(self, account):
+        """Get account usage from astakos."""
+
+        quotas = self.astakosclient.service_get_quotas(account)[account]
+        return quotas.get(DEFAULT_SOURCE, {}).get(DEFAULT_DISKSPACE_RESOURCE,
+                                                  {})
+
+    @debug_method
     @backend_method
-    def get_account_meta(
-            self, user, account, domain, until=None, include_user_defined=True,
-            external_quota=None):
+    def get_account_meta(self, user, account, domain, until=None,
+                         include_user_defined=True):
         """Return a dictionary with the account metadata for the domain."""
 
-        logger.debug(
-            "get_account_meta: %s %s %s %s", user, account, domain, until)
+        self._can_read_account(user, account)
         path, node = self._lookup_account(account, user == account)
         if user != account:
-            if until or node is None or account not in self._allowed_accounts(user):
+            if until or (node is None):
                 raise NotAllowedError
         try:
             props = self._get_properties(node, until)
@@ -322,43 +435,38 @@ class ModularBackend(BaseBackend):
                 meta.update({'until_timestamp': tstamp})
             meta.update({'name': account, 'count': count, 'bytes': bytes})
             if self.using_external_quotaholder:
-                external_quota = external_quota or {}
+                external_quota = self._get_account_quotas(account)
                 meta['bytes'] = external_quota.get('usage', 0)
         meta.update({'modified': modified})
         return meta
 
+    @debug_method
     @backend_method
     def update_account_meta(self, user, account, domain, meta, replace=False):
         """Update the metadata associated with the account for the domain."""
 
-        logger.debug("update_account_meta: %s %s %s %s %s", user,
-                     account, domain, meta, replace)
-        if user != account:
-            raise NotAllowedError
+        self._can_write_account(user, account)
         path, node = self._lookup_account(account, True)
         self._put_metadata(user, node, domain, meta, replace,
                            update_statistics_ancestors_depth=-1)
 
+    @debug_method
     @backend_method
     def get_account_groups(self, user, account):
-        """Return a dictionary with the user groups defined for this account."""
+        """Return a dictionary with the user groups defined for the account."""
 
-        logger.debug("get_account_groups: %s %s", user, account)
+        self._can_read_account(user, account)
         if user != account:
-            if account not in self._allowed_accounts(user):
-                raise NotAllowedError
             return {}
         self._lookup_account(account, True)
         return self.permissions.group_dict(account)
 
+    @debug_method
     @backend_method
     def update_account_groups(self, user, account, groups, replace=False):
         """Update the groups associated with the account."""
 
-        logger.debug("update_account_groups: %s %s %s %s", user,
-                     account, groups, replace)
-        if user != account:
-            raise NotAllowedError
+        self._can_write_account(user, account)
         self._lookup_account(account, True)
         self._check_groups(groups)
         if replace:
@@ -369,42 +477,38 @@ class ModularBackend(BaseBackend):
             if v:
                 self.permissions.group_addmany(account, k, v)
 
+    @debug_method
     @backend_method
-    def get_account_policy(self, user, account, external_quota=None):
+    def get_account_policy(self, user, account):
         """Return a dictionary with the account policy."""
 
-        logger.debug("get_account_policy: %s %s", user, account)
+        self._can_read_account(user, account)
         if user != account:
-            if account not in self._allowed_accounts(user):
-                raise NotAllowedError
             return {}
         path, node = self._lookup_account(account, True)
         policy = self._get_policy(node, is_account_policy=True)
         if self.using_external_quotaholder:
-            external_quota = external_quota or {}
+            external_quota = self._get_account_quotas(account)
             policy['quota'] = external_quota.get('limit', 0)
         return policy
 
+    @debug_method
     @backend_method
     def update_account_policy(self, user, account, policy, replace=False):
         """Update the policy associated with the account."""
 
-        logger.debug("update_account_policy: %s %s %s %s", user,
-                     account, policy, replace)
-        if user != account:
-            raise NotAllowedError
+        self._can_write_account(user, account)
         path, node = self._lookup_account(account, True)
         self._check_policy(policy, is_account_policy=True)
         self._put_policy(node, policy, replace, is_account_policy=True)
 
+    @debug_method
     @backend_method
     def put_account(self, user, account, policy=None):
         """Create a new account with the given name."""
 
-        logger.debug("put_account: %s %s %s", user, account, policy)
         policy = policy or {}
-        if user != account:
-            raise NotAllowedError
+        self._can_write_account(user, account)
         node = self.node.node_lookup(account)
         if node is not None:
             raise AccountExists('Account already exists')
@@ -414,13 +518,12 @@ class ModularBackend(BaseBackend):
                               update_statistics_ancestors_depth=-1)
         self._put_policy(node, policy, True, is_account_policy=True)
 
+    @debug_method
     @backend_method
     def delete_account(self, user, account):
         """Delete the account with the given name."""
 
-        logger.debug("delete_account: %s %s", user, account)
-        if user != account:
-            raise NotAllowedError
+        self._can_write_account(user, account)
         node = self.node.node_lookup(account)
         if node is None:
             return
@@ -429,14 +532,19 @@ class ModularBackend(BaseBackend):
             raise AccountNotEmpty('Account is not empty')
         self.permissions.group_destroy(account)
 
+        # remove all the cached allowed paths
+        # removing the specific path could be more expensive
+        self._reset_allowed_paths()
+
+    @debug_method
     @backend_method
-    def list_containers(self, user, account, marker=None, limit=10000, shared=False, until=None, public=False):
+    def list_containers(self, user, account, marker=None, limit=10000,
+                        shared=False, until=None, public=False):
         """Return a list of containers existing under an account."""
 
-        logger.debug("list_containers: %s %s %s %s %s %s %s", user,
-                     account, marker, limit, shared, until, public)
+        self._can_read_account(user, account)
         if user != account:
-            if until or account not in self._allowed_accounts(user):
+            if until:
                 raise NotAllowedError
             allowed = self._allowed_containers(user, account)
             start, limit = self._list_limits(allowed, marker, limit)
@@ -444,9 +552,11 @@ class ModularBackend(BaseBackend):
         if shared or public:
             allowed = set()
             if shared:
-                allowed.update([x.split('/', 2)[1] for x in self.permissions.access_list_shared(account)])
+                allowed.update([x.split('/', 2)[1] for x in
+                               self.permissions.access_list_shared(account)])
             if public:
-                allowed.update([x[0].split('/', 2)[1] for x in self.permissions.public_list(account)])
+                allowed.update([x[0].split('/', 2)[1] for x in
+                               self.permissions.public_list(account)])
             allowed = sorted(allowed)
             start, limit = self._list_limits(allowed, marker, limit)
             return allowed[start:start + limit]
@@ -457,33 +567,32 @@ class ModularBackend(BaseBackend):
             [x[0] for x in containers], marker, limit)
         return containers[start:start + limit]
 
+    @debug_method
     @backend_method
-    def list_container_meta(self, user, account, container, domain, until=None):
-        """Return a list with all the container's object meta keys for the domain."""
+    def list_container_meta(self, user, account, container, domain,
+                            until=None):
+        """Return a list of the container's object meta keys for a domain."""
 
-        logger.debug("list_container_meta: %s %s %s %s %s", user,
-                     account, container, domain, until)
+        self._can_read_container(user, account, container)
         allowed = []
         if user != account:
             if until:
                 raise NotAllowedError
-            allowed = self.permissions.access_list_paths(
-                user, '/'.join((account, container)))
-            if not allowed:
-                raise NotAllowedError
         path, node = self._lookup_container(account, container)
         before = until if until is not None else inf
         allowed = self._get_formatted_paths(allowed)
-        return self.node.latest_attribute_keys(node, domain, before, CLUSTER_DELETED, allowed)
+        return self.node.latest_attribute_keys(node, domain, before,
+                                               CLUSTER_DELETED, allowed)
 
+    @debug_method
     @backend_method
-    def get_container_meta(self, user, account, container, domain, until=None, include_user_defined=True):
+    def get_container_meta(self, user, account, container, domain, until=None,
+                           include_user_defined=True):
         """Return a dictionary with the container metadata for the domain."""
 
-        logger.debug("get_container_meta: %s %s %s %s %s", user,
-                     account, container, domain, until)
+        self._can_read_container(user, account, container)
         if user != account:
-            if until or container not in self._allowed_containers(user, account):
+            if until:
                 raise NotAllowedError
         path, node = self._lookup_container(account, container)
         props = self._get_properties(node, until)
@@ -510,14 +619,13 @@ class ModularBackend(BaseBackend):
         meta.update({'modified': modified})
         return meta
 
+    @debug_method
     @backend_method
-    def update_container_meta(self, user, account, container, domain, meta, replace=False):
+    def update_container_meta(self, user, account, container, domain, meta,
+                              replace=False):
         """Update the metadata associated with the container for the domain."""
 
-        logger.debug("update_container_meta: %s %s %s %s %s %s",
-                     user, account, container, domain, meta, replace)
-        if user != account:
-            raise NotAllowedError
+        self._can_write_container(user, account, container)
         path, node = self._lookup_container(account, container)
         src_version_id, dest_version_id = self._put_metadata(
             user, node, domain, meta, replace,
@@ -529,40 +637,35 @@ class ModularBackend(BaseBackend):
                 self.node.version_remove(src_version_id,
                                          update_statistics_ancestors_depth=0)
 
+    @debug_method
     @backend_method
     def get_container_policy(self, user, account, container):
         """Return a dictionary with the container policy."""
 
-        logger.debug(
-            "get_container_policy: %s %s %s", user, account, container)
+        self._can_read_container(user, account, container)
         if user != account:
-            if container not in self._allowed_containers(user, account):
-                raise NotAllowedError
             return {}
         path, node = self._lookup_container(account, container)
         return self._get_policy(node, is_account_policy=False)
 
+    @debug_method
     @backend_method
-    def update_container_policy(self, user, account, container, policy, replace=False):
+    def update_container_policy(self, user, account, container, policy,
+                                replace=False):
         """Update the policy associated with the container."""
 
-        logger.debug("update_container_policy: %s %s %s %s %s",
-                     user, account, container, policy, replace)
-        if user != account:
-            raise NotAllowedError
+        self._can_write_container(user, account, container)
         path, node = self._lookup_container(account, container)
         self._check_policy(policy, is_account_policy=False)
         self._put_policy(node, policy, replace, is_account_policy=False)
 
+    @debug_method
     @backend_method
     def put_container(self, user, account, container, policy=None):
         """Create a new container with the given name."""
 
-        logger.debug(
-            "put_container: %s %s %s %s", user, account, container, policy)
         policy = policy or {}
-        if user != account:
-            raise NotAllowedError
+        self._can_write_container(user, account, container)
         try:
             path, node = self._lookup_container(account, container)
         except NameError:
@@ -577,14 +680,13 @@ class ModularBackend(BaseBackend):
             update_statistics_ancestors_depth=-1)
         self._put_policy(node, policy, True, is_account_policy=False)
 
+    @debug_method
     @backend_method
-    def delete_container(self, user, account, container, until=None, prefix='', delimiter=None):
+    def delete_container(self, user, account, container, until=None, prefix='',
+                         delimiter=None, listing_limit=None):
         """Delete/purge the container with the given name."""
 
-        logger.debug("delete_container: %s %s %s %s %s %s", user,
-                     account, container, until, prefix, delimiter)
-        if user != account:
-            raise NotAllowedError
+        self._can_write_container(user, account, container)
         path, node = self._lookup_container(account, container)
 
         if until is not None:
@@ -598,7 +700,7 @@ class ModularBackend(BaseBackend):
             if not self.free_versioning:
                 self._report_size_change(
                     user, account, -size, {
-                        'action':'container purge',
+                        'action': 'container purge',
                         'path': path,
                         'versions': ','.join(str(i) for i in serials)
                     }
@@ -619,18 +721,24 @@ class ModularBackend(BaseBackend):
             if not self.free_versioning:
                 self._report_size_change(
                     user, account, -size, {
-                        'action':'container purge',
+                        'action': 'container purge',
                         'path': path,
                         'versions': ','.join(str(i) for i in serials)
                     }
                 )
         else:
             # remove only contents
-            src_names = self._list_objects_no_limit(user, account, container, prefix='', delimiter=None, virtual=False, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
+            src_names = self._list_objects_no_limit(
+                user, account, container, prefix='', delimiter=None,
+                virtual=False, domain=None, keys=[], shared=False, until=None,
+                size_range=None, all_props=True, public=False,
+                listing_limit=listing_limit)
             paths = []
             for t in src_names:
                 path = '/'.join((account, container, t[0]))
                 node = t[2]
+                if not self._exists(node):
+                    continue
                 src_version_id, dest_version_id = self._put_version_duplicate(
                     user, node, size=0, type='', hash=None, checksum='',
                     cluster=CLUSTER_DELETED,
@@ -639,18 +747,22 @@ class ModularBackend(BaseBackend):
                     account, container, src_version_id,
                     update_statistics_ancestors_depth=1)
                 self._report_size_change(
-                        user, account, -del_size, {
-                                'action': 'object delete',
-                                'path': path,
-                        'versions': ','.join([str(dest_version_id)])
-                     }
-                )
+                    user, account, -del_size, {
+                        'action': 'object delete',
+                        'path': path,
+                        'versions': ','.join([str(dest_version_id)])})
                 self._report_object_change(
                     user, account, path, details={'action': 'object delete'})
                 paths.append(path)
             self.permissions.access_clear_bulk(paths)
 
-    def _list_objects(self, user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, all_props, public):
+        # remove all the cached allowed paths
+        # removing the specific path could be more expensive
+        self._reset_allowed_paths()
+
+    def _list_objects(self, user, account, container, prefix, delimiter,
+                      marker, limit, virtual, domain, keys, shared, until,
+                      size_range, all_props, public):
         if user != account and until:
             raise NotAllowedError
         if shared and public:
@@ -661,7 +773,9 @@ class ModularBackend(BaseBackend):
             if shared_paths:
                 path, node = self._lookup_container(account, container)
                 shared_paths = self._get_formatted_paths(shared_paths)
-                objects |= set(self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, shared_paths, all_props))
+                objects |= set(self._list_object_properties(
+                    node, path, prefix, delimiter, marker, limit, virtual,
+                    domain, keys, until, size_range, shared_paths, all_props))
 
             # get public
             objects |= set(self._list_public_object_properties(
@@ -685,34 +799,45 @@ class ModularBackend(BaseBackend):
             return []
         path, node = self._lookup_container(account, container)
         allowed = self._get_formatted_paths(allowed)
-        objects = self._list_object_properties(node, path, prefix, delimiter, marker, limit, virtual, domain, keys, until, size_range, allowed, all_props)
+        objects = self._list_object_properties(
+            node, path, prefix, delimiter, marker, limit, virtual, domain,
+            keys, until, size_range, allowed, all_props)
         start, limit = self._list_limits(
             [x[0] for x in objects], marker, limit)
         return objects[start:start + limit]
 
-    def _list_public_object_properties(self, user, account, container, prefix, all_props):
+    def _list_public_object_properties(self, user, account, container, prefix,
+                                       all_props):
         public = self._list_object_permissions(
             user, account, container, prefix, shared=False, public=True)
         paths, nodes = self._lookup_objects(public)
         path = '/'.join((account, container))
         cont_prefix = path + '/'
         paths = [x[len(cont_prefix):] for x in paths]
-        props = self.node.version_lookup_bulk(nodes, all_props=all_props)
-        objects = [(path,) + props for path, props in zip(paths, props)]
+        objects = [(p,) + props for p, props in
+                   zip(paths, self.node.version_lookup_bulk(
+                       nodes, all_props=all_props, order_by_path=True))]
         return objects
 
-    def _list_objects_no_limit(self, user, account, container, prefix, delimiter, virtual, domain, keys, shared, until, size_range, all_props, public):
+    def _list_objects_no_limit(self, user, account, container, prefix,
+                               delimiter, virtual, domain, keys, shared, until,
+                               size_range, all_props, public,
+                               listing_limit=10000):
         objects = []
         while True:
-            marker = objects[-1] if objects else None
-            limit = 10000
-            l = self._list_objects(user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, all_props, public)
+            marker = objects[-1][0] if objects else None
+            limit = listing_limit
+            l = self._list_objects(
+                user, account, container, prefix, delimiter, marker, limit,
+                virtual, domain, keys, shared, until, size_range, all_props,
+                public)
             objects.extend(l)
             if not l or len(l) < limit:
                 break
         return objects
 
-    def _list_object_permissions(self, user, account, container, prefix, shared, public):
+    def _list_object_permissions(self, user, account, container, prefix,
+                                 shared, public):
         allowed = []
         path = '/'.join((account, container, prefix)).rstrip('/')
         if user != account:
@@ -731,64 +856,76 @@ class ModularBackend(BaseBackend):
                 return []
         return allowed
 
+    @debug_method
     @backend_method
-    def list_objects(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=None, shared=False, until=None, size_range=None, public=False):
-        """Return a list of object (name, version_id) tuples existing under a container."""
+    def list_objects(self, user, account, container, prefix='', delimiter=None,
+                     marker=None, limit=10000, virtual=True, domain=None,
+                     keys=None, shared=False, until=None, size_range=None,
+                     public=False):
+        """List (object name, object version_id) under a container."""
 
-        logger.debug("list_objects: %s %s %s %s %s %s %s %s %s %s %s %s %s %s", user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, public)
         keys = keys or []
-        return self._list_objects(user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, False, public)
+        return self._list_objects(
+            user, account, container, prefix, delimiter, marker, limit,
+            virtual, domain, keys, shared, until, size_range, False, public)
 
+    @debug_method
     @backend_method
-    def list_object_meta(self, user, account, container, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=None, shared=False, until=None, size_range=None, public=False):
-        """Return a list of object metadata dicts existing under a container."""
+    def list_object_meta(self, user, account, container, prefix='',
+                         delimiter=None, marker=None, limit=10000,
+                         virtual=True, domain=None, keys=None, shared=False,
+                         until=None, size_range=None, public=False):
+        """Return a list of metadata dicts of objects under a container."""
 
-        logger.debug("list_object_meta: %s %s %s %s %s %s %s %s %s %s %s %s %s %s", user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, public)
         keys = keys or []
-        props = self._list_objects(user, account, container, prefix, delimiter, marker, limit, virtual, domain, keys, shared, until, size_range, True, public)
+        props = self._list_objects(
+            user, account, container, prefix, delimiter, marker, limit,
+            virtual, domain, keys, shared, until, size_range, True, public)
         objects = []
         for p in props:
             if len(p) == 2:
                 objects.append({'subdir': p[0]})
             else:
-                objects.append({'name': p[0],
-                                'bytes': p[self.SIZE + 1],
-                                'type': p[self.TYPE + 1],
-                                'hash': p[self.HASH + 1],
-                                'version': p[self.SERIAL + 1],
-                                'version_timestamp': p[self.MTIME + 1],
-                                'modified': p[self.MTIME + 1] if until is None else None,
-                                'modified_by': p[self.MUSER + 1],
-                                'uuid': p[self.UUID + 1],
-                                'checksum': p[self.CHECKSUM + 1]})
+                objects.append({
+                    'name': p[0],
+                    'bytes': p[self.SIZE + 1],
+                    'type': p[self.TYPE + 1],
+                    'hash': p[self.HASH + 1],
+                    'version': p[self.SERIAL + 1],
+                    'version_timestamp': p[self.MTIME + 1],
+                    'modified': p[self.MTIME + 1] if until is None else None,
+                    'modified_by': p[self.MUSER + 1],
+                    'uuid': p[self.UUID + 1],
+                    'checksum': p[self.CHECKSUM + 1]})
         return objects
 
+    @debug_method
     @backend_method
     def list_object_permissions(self, user, account, container, prefix=''):
-        """Return a list of paths that enforce permissions under a container."""
+        """Return a list of paths enforce permissions under a container."""
 
-        logger.debug("list_object_permissions: %s %s %s %s", user,
-                     account, container, prefix)
-        return self._list_object_permissions(user, account, container, prefix, True, False)
+        return self._list_object_permissions(user, account, container, prefix,
+                                             True, False)
 
+    @debug_method
     @backend_method
     def list_object_public(self, user, account, container, prefix=''):
-        """Return a dict mapping paths to public ids for objects that are public under a container."""
+        """Return a mapping of object paths to public ids under a container."""
 
-        logger.debug("list_object_public: %s %s %s %s", user,
-                     account, container, prefix)
         public = {}
-        for path, p in self.permissions.public_list('/'.join((account, container, prefix))):
+        for path, p in self.permissions.public_list('/'.join((account,
+                                                              container,
+                                                              prefix))):
             public[path] = p
         return public
 
+    @debug_method
     @backend_method
-    def get_object_meta(self, user, account, container, name, domain, version=None, include_user_defined=True):
+    def get_object_meta(self, user, account, container, name, domain,
+                        version=None, include_user_defined=True):
         """Return a dictionary with the object metadata for the domain."""
 
-        logger.debug("get_object_meta: %s %s %s %s %s %s", user,
-                     account, container, name, domain, version)
-        self._can_read(user, account, container, name)
+        self._can_read_object(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version)
         if version is None:
@@ -820,13 +957,13 @@ class ModularBackend(BaseBackend):
                      'checksum': props[self.CHECKSUM]})
         return meta
 
+    @debug_method
     @backend_method
-    def update_object_meta(self, user, account, container, name, domain, meta, replace=False):
-        """Update the metadata associated with the object for the domain and return the new version."""
+    def update_object_meta(self, user, account, container, name, domain, meta,
+                           replace=False):
+        """Update object metadata for a domain and return the new version."""
 
-        logger.debug("update_object_meta: %s %s %s %s %s %s %s",
-                     user, account, container, name, domain, meta, replace)
-        self._can_write(user, account, container, name)
+        self._can_write_object(user, account, container, name)
 
         path, node = self._lookup_object(account, container, name,
                                          lock_container=True)
@@ -837,84 +974,126 @@ class ModularBackend(BaseBackend):
                                update_statistics_ancestors_depth=1)
         return dest_version_id
 
+    @debug_method
+    @backend_method
+    def get_object_permissions_bulk(self, user, account, container, names):
+        """Return the action allowed on the object, the path
+        from which the object gets its permissions from,
+        along with a dictionary containing the permissions."""
+
+        permissions_path = self._get_permissions_path_bulk(account, container,
+                                                           names)
+        access_objects = self.permissions.access_check_bulk(permissions_path,
+                                                            user)
+        #group_parents = access_objects['group_parents']
+        nobject_permissions = {}
+        cpath = '/'.join((account, container, ''))
+        cpath_idx = len(cpath)
+        for path in permissions_path:
+            allowed = 1
+            name = path[cpath_idx:]
+            if user != account:
+                try:
+                    allowed = access_objects[path]
+                except KeyError:
+                    raise NotAllowedError
+            access_dict, allowed = \
+                self.permissions.access_get_for_bulk(access_objects[path])
+            nobject_permissions[name] = (self.ALLOWED[allowed], path,
+                                         access_dict)
+        self._lookup_objects(permissions_path)
+        return nobject_permissions
+
+    @debug_method
     @backend_method
     def get_object_permissions(self, user, account, container, name):
         """Return the action allowed on the object, the path
         from which the object gets its permissions from,
         along with a dictionary containing the permissions."""
 
-        logger.debug("get_object_permissions: %s %s %s %s", user,
-                     account, container, name)
         allowed = 'write'
         permissions_path = self._get_permissions_path(account, container, name)
         if user != account:
-            if self.permissions.access_check(permissions_path, self.WRITE, user):
+            if self.permissions.access_check(permissions_path, self.WRITE,
+                                             user):
                 allowed = 'write'
-            elif self.permissions.access_check(permissions_path, self.READ, user):
+            elif self.permissions.access_check(permissions_path, self.READ,
+                                               user):
                 allowed = 'read'
             else:
                 raise NotAllowedError
         self._lookup_object(account, container, name)
-        return (allowed, permissions_path, self.permissions.access_get(permissions_path))
+        return (allowed,
+                permissions_path,
+                self.permissions.access_get(permissions_path))
 
+    @debug_method
     @backend_method
-    def update_object_permissions(self, user, account, container, name, permissions):
+    def update_object_permissions(self, user, account, container, name,
+                                  permissions):
         """Update the permissions associated with the object."""
 
-        logger.debug("update_object_permissions: %s %s %s %s %s",
-                     user, account, container, name, permissions)
         if user != account:
             raise NotAllowedError
         path = self._lookup_object(account, container, name,
                                    lock_container=True)[0]
         self._check_permissions(path, permissions)
-        self.permissions.access_set(path, permissions)
-        self._report_sharing_change(user, account, path, {'members':
-                                    self.permissions.access_members(path)})
+        try:
+            self.permissions.access_set(path, permissions)
+        except:
+            raise ValueError
+        else:
+            self._report_sharing_change(user, account, path, {'members':
+                                        self.permissions.access_members(path)})
 
+        # remove all the cached allowed paths
+        # filtering out only those affected could be more expensive
+        self._reset_allowed_paths()
+
+    @debug_method
     @backend_method
     def get_object_public(self, user, account, container, name):
         """Return the public id of the object if applicable."""
 
-        logger.debug(
-            "get_object_public: %s %s %s %s", user, account, container, name)
-        self._can_read(user, account, container, name)
+        self._can_read_object(user, account, container, name)
         path = self._lookup_object(account, container, name)[0]
         p = self.permissions.public_get(path)
         return p
 
+    @debug_method
     @backend_method
     def update_object_public(self, user, account, container, name, public):
         """Update the public status of the object."""
 
-        logger.debug("update_object_public: %s %s %s %s %s", user,
-                     account, container, name, public)
-        self._can_write(user, account, container, name)
+        self._can_write_object(user, account, container, name)
         path = self._lookup_object(account, container, name,
                                    lock_container=True)[0]
         if not public:
             self.permissions.public_unset(path)
         else:
             self.permissions.public_set(
-                path, self.public_url_security, self.public_url_alphabet
-            )
+                path, self.public_url_security, self.public_url_alphabet)
 
+    @debug_method
     @backend_method
     def get_object_hashmap(self, user, account, container, name, version=None):
         """Return the object's size and a list with partial hashes."""
 
-        logger.debug("get_object_hashmap: %s %s %s %s %s", user,
-                     account, container, name, version)
-        self._can_read(user, account, container, name)
+        self._can_read_object(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version)
-        hashmap = self.store.map_get(binascii.unhexlify(props[self.HASH]))
+        if props[self.HASH] is None:
+            return 0, ()
+        hashmap = self.store.map_get(self._unhexlify_hash(props[self.HASH]))
         return props[self.SIZE], [binascii.hexlify(x) for x in hashmap]
 
-    def _update_object_hash(self, user, account, container, name, size, type, hash, checksum, domain, meta, replace_meta, permissions, src_node=None, src_version_id=None, is_copy=False):
+    def _update_object_hash(self, user, account, container, name, size, type,
+                            hash, checksum, domain, meta, replace_meta,
+                            permissions, src_node=None, src_version_id=None,
+                            is_copy=False, report_size_change=True):
         if permissions is not None and user != account:
             raise NotAllowedError
-        self._can_write(user, account, container, name)
+        self._can_write_object(user, account, container, name)
         if permissions is not None:
             path = '/'.join((account, container, name))
             self._check_permissions(path, permissions)
@@ -942,23 +1121,18 @@ class ModularBackend(BaseBackend):
         if size_delta > 0:
             # Check account quota.
             if not self.using_external_quotaholder:
-                account_quota = long(
-                    self._get_policy(account_node, is_account_policy=True
-                    )['quota']
-                )
-                account_usage = self._get_statistics(account_node, compute=True)[1]
+                account_quota = long(self._get_policy(
+                    account_node, is_account_policy=True)['quota'])
+                account_usage = self._get_statistics(account_node,
+                                                     compute=True)[1]
                 if (account_quota > 0 and account_usage > account_quota):
                     raise QuotaError(
                         'Account quota exceeded: limit: %s, usage: %s' % (
-                            account_quota, account_usage
-                        )
-                    )
+                            account_quota, account_usage))
 
             # Check container quota.
-            container_quota = long(
-                self._get_policy(container_node, is_account_policy=False
-                )['quota']
-            )
+            container_quota = long(self._get_policy(
+                container_node, is_account_policy=False)['quota'])
             container_usage = self._get_statistics(container_node)[1]
             if (container_quota > 0 and container_usage > container_quota):
                 # This must be executed in a transaction, so the version is
@@ -969,27 +1143,33 @@ class ModularBackend(BaseBackend):
                     )
                 )
 
-        self._report_size_change(user, account, size_delta,
-                                 {'action': 'object update', 'path': path,
-                                  'versions': ','.join([str(dest_version_id)])})
+        if report_size_change:
+            self._report_size_change(
+                user, account, size_delta,
+                {'action': 'object update', 'path': path,
+                 'versions': ','.join([str(dest_version_id)])})
         if permissions is not None:
             self.permissions.access_set(path, permissions)
-            self._report_sharing_change(user, account, path, {'members': self.permissions.access_members(path)})
+            self._report_sharing_change(
+                user, account, path,
+                {'members': self.permissions.access_members(path)})
 
-        self._report_object_change(user, account, path, details={'version': dest_version_id, 'action': 'object update'})
+        self._report_object_change(
+            user, account, path,
+            details={'version': dest_version_id, 'action': 'object update'})
         return dest_version_id
 
-    @backend_method
-    def update_object_hashmap(self, user, account, container, name, size, type, hashmap, checksum, domain, meta=None, replace_meta=False, permissions=None):
-        """Create/update an object with the specified size and partial hashes."""
+    @debug_method
+    def update_object_hashmap(self, user, account, container, name, size, type,
+                              hashmap, checksum, domain, meta=None,
+                              replace_meta=False, permissions=None):
+        """Create/update an object's hashmap and return the new version."""
 
-        logger.debug("update_object_hashmap: %s %s %s %s %s %s %s %s", user,
-                     account, container, name, size, type, hashmap, checksum)
         meta = meta or {}
         if size == 0:  # No such thing as an empty hashmap.
             hashmap = [self.put_block('')]
         map = HashMap(self.block_size, self.hash_algorithm)
-        map.extend([binascii.unhexlify(x) for x in hashmap])
+        map.extend([self._unhexlify_hash(x) for x in hashmap])
         missing = self.store.block_search(map)
         if missing:
             ie = IndexError()
@@ -997,32 +1177,44 @@ class ModularBackend(BaseBackend):
             raise ie
 
         hash = map.hash()
+        hexlified = binascii.hexlify(hash)
         # _update_object_hash() locks destination path
-        dest_version_id = self._update_object_hash(user, account, container, name, size, type, binascii.hexlify(hash), checksum, domain, meta, replace_meta, permissions)
+        dest_version_id = self._update_object_hash(
+            user, account, container, name, size, type, hexlified, checksum,
+            domain, meta, replace_meta, permissions)
         self.store.map_put(hash, map)
-        return dest_version_id
+        return dest_version_id, hexlified
 
+    @debug_method
     @backend_method
-    def update_object_checksum(self, user, account, container, name, version, checksum):
+    def update_object_checksum(self, user, account, container, name, version,
+                               checksum):
         """Update an object's checksum."""
 
-        logger.debug("update_object_checksum: %s %s %s %s %s %s",
-                     user, account, container, name, version, checksum)
-        # Update objects with greater version and same hashmap and size (fix metadata updates).
-        self._can_write(user, account, container, name)
+        # Update objects with greater version and same hashmap
+        # and size (fix metadata updates).
+        self._can_write_object(user, account, container, name)
         path, node = self._lookup_object(account, container, name,
                                          lock_container=True)
         props = self._get_version(node, version)
         versions = self.node.node_get_versions(node)
         for x in versions:
-            if x[self.SERIAL] >= int(version) and x[self.HASH] == props[self.HASH] and x[self.SIZE] == props[self.SIZE]:
+            if (x[self.SERIAL] >= int(version) and
+                x[self.HASH] == props[self.HASH] and
+                    x[self.SIZE] == props[self.SIZE]):
                 self.node.version_put_property(
                     x[self.SERIAL], 'checksum', checksum)
 
-    def _copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, dest_domain=None, dest_meta=None, replace_meta=False, permissions=None, src_version=None, is_move=False, delimiter=None):
+    def _copy_object(self, user, src_account, src_container, src_name,
+                     dest_account, dest_container, dest_name, type,
+                     dest_domain=None, dest_meta=None, replace_meta=False,
+                     permissions=None, src_version=None, is_move=False,
+                     delimiter=None, listing_limit=10000):
+
+        report_size_change = not is_move
         dest_meta = dest_meta or {}
         dest_version_ids = []
-        self._can_read(user, src_account, src_container, src_name)
+        self._can_read_object(user, src_account, src_container, src_name)
 
         src_container_path = '/'.join((src_account, src_container))
         dest_container_path = '/'.join((dest_account, dest_container))
@@ -1043,18 +1235,29 @@ class ModularBackend(BaseBackend):
         size = props[self.SIZE]
         is_copy = not is_move and (src_account, src_container, src_name) != (
             dest_account, dest_container, dest_name)  # New uuid.
-        dest_version_ids.append(self._update_object_hash(user, dest_account, dest_container, dest_name, size, type, hash, None, dest_domain, dest_meta, replace_meta, permissions, src_node=node, src_version_id=src_version_id, is_copy=is_copy))
-        if is_move and (src_account, src_container, src_name) != (dest_account, dest_container, dest_name):
-            self._delete_object(user, src_account, src_container, src_name)
+        dest_version_ids.append(self._update_object_hash(
+            user, dest_account, dest_container, dest_name, size, type, hash,
+            None, dest_domain, dest_meta, replace_meta, permissions,
+            src_node=node, src_version_id=src_version_id, is_copy=is_copy,
+            report_size_change=report_size_change))
+        if is_move and ((src_account, src_container, src_name) !=
+                        (dest_account, dest_container, dest_name)):
+            self._delete_object(user, src_account, src_container, src_name,
+                                report_size_change=report_size_change)
 
         if delimiter:
-            prefix = src_name + \
-                delimiter if not src_name.endswith(delimiter) else src_name
-            src_names = self._list_objects_no_limit(user, src_account, src_container, prefix, delimiter=None, virtual=False, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
+            prefix = (src_name + delimiter if not
+                      src_name.endswith(delimiter) else src_name)
+            src_names = self._list_objects_no_limit(
+                user, src_account, src_container, prefix, delimiter=None,
+                virtual=False, domain=None, keys=[], shared=False, until=None,
+                size_range=None, all_props=True, public=False,
+                listing_limit=listing_limit)
             src_names.sort(key=lambda x: x[2])  # order by nodes
             paths = [elem[0] for elem in src_names]
             nodes = [elem[2] for elem in src_names]
-            # TODO: Will do another fetch of the properties in duplicate version...
+            # TODO: Will do another fetch of the properties
+            # in duplicate version...
             props = self._get_versions(nodes)  # Check to see if source exists.
 
             for prop, path, node in zip(props, paths, nodes):
@@ -1066,32 +1269,56 @@ class ModularBackend(BaseBackend):
                     delimiter) else dest_name
                 vdest_name = path.replace(prefix, dest_prefix, 1)
                 # _update_object_hash() locks destination path
-                dest_version_ids.append(self._update_object_hash(user, dest_account, dest_container, vdest_name, size, vtype, hash, None, dest_domain, meta={}, replace_meta=False, permissions=None, src_node=node, src_version_id=src_version_id, is_copy=is_copy))
-                if is_move and (src_account, src_container, src_name) != (dest_account, dest_container, dest_name):
-                    self._delete_object(user, src_account, src_container, path)
-        return dest_version_ids[0] if len(dest_version_ids) == 1 else dest_version_ids
+                dest_version_ids.append(self._update_object_hash(
+                    user, dest_account, dest_container, vdest_name, size,
+                    vtype, hash, None, dest_domain, meta={},
+                    replace_meta=False, permissions=None, src_node=node,
+                    src_version_id=src_version_id, is_copy=is_copy,
+                    report_size_change=report_size_change))
+                if is_move and ((src_account, src_container, src_name) !=
+                                (dest_account, dest_container, dest_name)):
+                    self._delete_object(user, src_account, src_container, path,
+                                        report_size_change=report_size_change)
+        return (dest_version_ids[0] if len(dest_version_ids) == 1 else
+                dest_version_ids)
 
+    @debug_method
     @backend_method
-    def copy_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta=None, replace_meta=False, permissions=None, src_version=None, delimiter=None):
+    def copy_object(self, user, src_account, src_container, src_name,
+                    dest_account, dest_container, dest_name, type, domain,
+                    meta=None, replace_meta=False, permissions=None,
+                    src_version=None, delimiter=None, listing_limit=None):
         """Copy an object's data and metadata."""
 
-        logger.debug("copy_object: %s %s %s %s %s %s %s %s %s %s %s %s %s %s", user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions, src_version, delimiter)
         meta = meta or {}
-        dest_version_id = self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions, src_version, False, delimiter)
+        dest_version_id = self._copy_object(
+            user, src_account, src_container, src_name, dest_account,
+            dest_container, dest_name, type, domain, meta, replace_meta,
+            permissions, src_version, False, delimiter,
+            listing_limit=listing_limit)
         return dest_version_id
 
+    @debug_method
     @backend_method
-    def move_object(self, user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta=None, replace_meta=False, permissions=None, delimiter=None):
+    def move_object(self, user, src_account, src_container, src_name,
+                    dest_account, dest_container, dest_name, type, domain,
+                    meta=None, replace_meta=False, permissions=None,
+                    delimiter=None, listing_limit=None):
         """Move an object's data and metadata."""
 
-        logger.debug("move_object: %s %s %s %s %s %s %s %s %s %s %s %s %s", user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions, delimiter)
         meta = meta or {}
         if user != src_account:
             raise NotAllowedError
-        dest_version_id = self._copy_object(user, src_account, src_container, src_name, dest_account, dest_container, dest_name, type, domain, meta, replace_meta, permissions, None, True, delimiter)
+        dest_version_id = self._move_object(
+            user, src_account, src_container, src_name, dest_account,
+            dest_container, dest_name, type, domain, meta, replace_meta,
+            permissions, None, delimiter=delimiter,
+            listing_limit=listing_limit)
         return dest_version_id
 
-    def _delete_object(self, user, account, container, name, until=None, delimiter=None):
+    def _delete_object(self, user, account, container, name, until=None,
+                       delimiter=None, report_size_change=True,
+                       listing_limit=None):
         if user != account:
             raise NotAllowedError
 
@@ -1100,8 +1327,6 @@ class ModularBackend(BaseBackend):
                                          lock_container=True)
 
         if until is not None:
-            path = '/'.join((account, container, name))
-            node = self.node.node_lookup(path)
             if node is None:
                 return
             hashes = []
@@ -1123,7 +1348,7 @@ class ModularBackend(BaseBackend):
             self.node.node_purge(node, until, CLUSTER_DELETED,
                                  update_statistics_ancestors_depth=1)
             try:
-                props = self._get_version(node)
+                self._get_version(node)
             except NameError:
                 self.permissions.access_clear(path)
             self._report_size_change(
@@ -1135,25 +1360,37 @@ class ModularBackend(BaseBackend):
             )
             return
 
+        if not self._exists(node):
+            raise ItemNotExists('Object is deleted.')
+
         src_version_id, dest_version_id = self._put_version_duplicate(
             user, node, size=0, type='', hash=None, checksum='',
             cluster=CLUSTER_DELETED, update_statistics_ancestors_depth=1)
         del_size = self._apply_versioning(account, container, src_version_id,
                                           update_statistics_ancestors_depth=1)
-        self._report_size_change(user, account, -del_size,
-                                 {'action': 'object delete', 'path': path,
-                                  'versions': ','.join([str(dest_version_id)])})
+        if report_size_change:
+            self._report_size_change(
+                user, account, -del_size,
+                {'action': 'object delete',
+                 'path': path,
+                 'versions': ','.join([str(dest_version_id)])})
         self._report_object_change(
             user, account, path, details={'action': 'object delete'})
         self.permissions.access_clear(path)
 
         if delimiter:
             prefix = name + delimiter if not name.endswith(delimiter) else name
-            src_names = self._list_objects_no_limit(user, account, container, prefix, delimiter=None, virtual=False, domain=None, keys=[], shared=False, until=None, size_range=None, all_props=True, public=False)
+            src_names = self._list_objects_no_limit(
+                user, account, container, prefix, delimiter=None,
+                virtual=False, domain=None, keys=[], shared=False, until=None,
+                size_range=None, all_props=True, public=False,
+                listing_limit=listing_limit)
             paths = []
             for t in src_names:
                 path = '/'.join((account, container, t[0]))
                 node = t[2]
+                if not self._exists(node):
+                    continue
                 src_version_id, dest_version_id = self._put_version_duplicate(
                     user, node, size=0, type='', hash=None, checksum='',
                     cluster=CLUSTER_DELETED,
@@ -1161,84 +1398,89 @@ class ModularBackend(BaseBackend):
                 del_size = self._apply_versioning(
                     account, container, src_version_id,
                     update_statistics_ancestors_depth=1)
-                self._report_size_change(user, account, -del_size,
-                                         {'action': 'object delete',
-                                          'path': path,
-                                          'versions': ','.join([str(dest_version_id)])})
+                if report_size_change:
+                    self._report_size_change(
+                        user, account, -del_size,
+                        {'action': 'object delete',
+                         'path': path,
+                         'versions': ','.join([str(dest_version_id)])})
                 self._report_object_change(
                     user, account, path, details={'action': 'object delete'})
                 paths.append(path)
             self.permissions.access_clear_bulk(paths)
 
+        # remove all the cached allowed paths
+        # removing the specific path could be more expensive
+        self._reset_allowed_paths()
+
+    @debug_method
     @backend_method
-    def delete_object(self, user, account, container, name, until=None, prefix='', delimiter=None):
+    def delete_object(self, user, account, container, name, until=None,
+                      prefix='', delimiter=None, listing_limit=None):
         """Delete/purge an object."""
 
-        logger.debug("delete_object: %s %s %s %s %s %s %s", user,
-                     account, container, name, until, prefix, delimiter)
-        self._delete_object(user, account, container, name, until, delimiter)
+        self._delete_object(user, account, container, name, until, delimiter,
+                            listing_limit=listing_limit)
 
+    @debug_method
     @backend_method
     def list_versions(self, user, account, container, name):
-        """Return a list of all (version, version_timestamp) tuples for an object."""
+        """Return a list of all object (version, version_timestamp) tuples."""
 
-        logger.debug(
-            "list_versions: %s %s %s %s", user, account, container, name)
-        self._can_read(user, account, container, name)
+        self._can_read_object(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
         versions = self.node.node_get_versions(node)
-        return [[x[self.SERIAL], x[self.MTIME]] for x in versions if x[self.CLUSTER] != CLUSTER_DELETED]
+        return [[x[self.SERIAL], x[self.MTIME]] for x in versions if
+                x[self.CLUSTER] != CLUSTER_DELETED]
 
+    @debug_method
     @backend_method
-    def get_uuid(self, user, uuid):
+    def get_uuid(self, user, uuid, check_permissions=True):
         """Return the (account, container, name) for the UUID given."""
 
-        logger.debug("get_uuid: %s %s", user, uuid)
         info = self.node.latest_uuid(uuid, CLUSTER_NORMAL)
         if info is None:
             raise NameError
         path, serial = info
         account, container, name = path.split('/', 2)
-        self._can_read(user, account, container, name)
+        if check_permissions:
+            self._can_read_object(user, account, container, name)
         return (account, container, name)
 
+    @debug_method
     @backend_method
     def get_public(self, user, public):
         """Return the (account, container, name) for the public id given."""
 
-        logger.debug("get_public: %s %s", user, public)
         path = self.permissions.public_path(public)
         if path is None:
             raise NameError
         account, container, name = path.split('/', 2)
-        self._can_read(user, account, container, name)
+        self._can_read_object(user, account, container, name)
         return (account, container, name)
 
-    @backend_method(autocommit=0)
     def get_block(self, hash):
         """Return a block's data."""
 
         logger.debug("get_block: %s", hash)
-        block = self.store.block_get(binascii.unhexlify(hash))
+        block = self.store.block_get(self._unhexlify_hash(hash))
         if not block:
             raise ItemNotExists('Block does not exist')
         return block
 
-    @backend_method(autocommit=0)
     def put_block(self, data):
         """Store a block and return the hash."""
 
         logger.debug("put_block: %s", len(data))
         return binascii.hexlify(self.store.block_put(data))
 
-    @backend_method(autocommit=0)
     def update_block(self, hash, data, offset=0):
         """Update a known block and return the hash."""
 
         logger.debug("update_block: %s %s %s", hash, len(data), offset)
         if offset == 0 and len(data) == self.block_size:
             return self.put_block(data)
-        h = self.store.block_update(binascii.unhexlify(hash), offset, data)
+        h = self.store.block_update(self._unhexlify_hash(hash), offset, data)
         return binascii.hexlify(h)
 
     # Path functions.
@@ -1270,8 +1512,9 @@ class ModularBackend(BaseBackend):
         return account, node
 
     def _lookup_container(self, account, container):
+        for_update = True if self.lock_container_path else False
         path = '/'.join((account, container))
-        node = self.node.node_lookup(path, for_update=True)
+        node = self.node.node_lookup(path, for_update)
         if node is None:
             raise ItemNotExists('Container does not exist')
         return path, node
@@ -1302,12 +1545,13 @@ class ModularBackend(BaseBackend):
         return props
 
     def _get_statistics(self, node, until=None, compute=False):
-        """Return count, sum of size and latest timestamp of everything under node."""
+        """Return (count, sum of size, timestamp) of everything under node."""
 
         if until is not None:
             stats = self.node.statistics_latest(node, until, CLUSTER_DELETED)
         elif compute:
-            stats = self.node.statistics_latest(node, except_cluster=CLUSTER_DELETED)
+            stats = self.node.statistics_latest(node,
+                                                except_cluster=CLUSTER_DELETED)
         else:
             stats = self.node.statistics_get(node, CLUSTER_NORMAL)
         if stats is None:
@@ -1353,7 +1597,8 @@ class ModularBackend(BaseBackend):
             src_type = ''
             src_checksum = ''
         if size is None:  # Set metadata.
-            hash = src_hash  # This way hash can be set to None (account or container).
+            hash = src_hash  # This way hash can be set to None
+                             # (account or container).
             size = src_size
         if type is None:
             type = src_type
@@ -1401,7 +1646,8 @@ class ModularBackend(BaseBackend):
 
         src_version_id, dest_version_id = self._put_version_duplicate(
             user, node,
-            update_statistics_ancestors_depth=update_statistics_ancestors_depth)
+            update_statistics_ancestors_depth=
+            update_statistics_ancestors_depth)
         self._put_metadata_duplicate(
             src_version_id, dest_version_id, domain, node, meta, replace)
         return src_version_id, dest_version_id
@@ -1417,7 +1663,11 @@ class ModularBackend(BaseBackend):
             limit = 10000
         return start, limit
 
-    def _list_object_properties(self, parent, path, prefix='', delimiter=None, marker=None, limit=10000, virtual=True, domain=None, keys=None, until=None, size_range=None, allowed=None, all_props=False):
+    def _list_object_properties(self, parent, path, prefix='', delimiter=None,
+                                marker=None, limit=10000, virtual=True,
+                                domain=None, keys=None, until=None,
+                                size_range=None, allowed=None,
+                                all_props=False):
         keys = keys or []
         allowed = allowed or []
         cont_prefix = path + '/'
@@ -1427,7 +1677,9 @@ class ModularBackend(BaseBackend):
         filterq = keys if domain else []
         sizeq = size_range
 
-        objects, prefixes = self.node.latest_version_list(parent, prefix, delimiter, start, limit, before, CLUSTER_DELETED, allowed, domain, filterq, sizeq, all_props)
+        objects, prefixes = self.node.latest_version_list(
+            parent, prefix, delimiter, start, limit, before, CLUSTER_DELETED,
+            allowed, domain, filterq, sizeq, all_props)
         objects.extend([(p, None) for p in prefixes] if virtual else [])
         objects.sort(key=lambda x: x[0])
         objects = [(x[0][len(cont_prefix):],) + x[1:] for x in objects]
@@ -1435,6 +1687,8 @@ class ModularBackend(BaseBackend):
 
     # Reporting functions.
 
+    @debug_method
+    @backend_method
     def _report_size_change(self, user, account, size, details=None):
         details = details or {}
 
@@ -1444,11 +1698,9 @@ class ModularBackend(BaseBackend):
         account_node = self._lookup_account(account, True)[1]
         total = self._get_statistics(account_node, compute=True)[1]
         details.update({'user': user, 'total': total})
-        logger.debug(
-            "_report_size_change: %s %s %s %s", user, account, size, details)
-        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('resource.diskspace',),
-                              account, QUEUE_INSTANCE_ID, 'diskspace',
-                              float(size), details))
+        self.messages.append(
+            (QUEUE_MESSAGE_KEY_PREFIX % ('resource.diskspace',),
+             account, QUEUE_INSTANCE_ID, 'diskspace', float(size), details))
 
         if not self.using_external_quotaholder:
             return
@@ -1456,32 +1708,32 @@ class ModularBackend(BaseBackend):
         try:
             name = details['path'] if 'path' in details else ''
             serial = self.astakosclient.issue_one_commission(
-                token=self.service_token,
                 holder=account,
                 source=DEFAULT_SOURCE,
                 provisions={'pithos.diskspace': size},
-                name=name
-                )
+                name=name)
         except BaseException, e:
             raise QuotaError(e)
         else:
             self.serials.append(serial)
 
+    @debug_method
+    @backend_method
     def _report_object_change(self, user, account, path, details=None):
         details = details or {}
         details.update({'user': user})
-        logger.debug("_report_object_change: %s %s %s %s", user,
-                     account, path, details)
         self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('object',),
-                              account, QUEUE_INSTANCE_ID, 'object', path, details))
+                              account, QUEUE_INSTANCE_ID, 'object', path,
+                              details))
 
+    @debug_method
+    @backend_method
     def _report_sharing_change(self, user, account, path, details=None):
-        logger.debug("_report_permissions_change: %s %s %s %s",
-                     user, account, path, details)
         details = details or {}
         details.update({'user': user})
         self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('sharing',),
-                              account, QUEUE_INSTANCE_ID, 'sharing', path, details))
+                              account, QUEUE_INSTANCE_ID, 'sharing', path,
+                              details))
 
     # Policy functions.
 
@@ -1551,15 +1803,16 @@ class ModularBackend(BaseBackend):
 
     def _get_formatted_paths(self, paths):
         formatted = []
-        for p in paths:
-            node = self.node.node_lookup(p)
-            props = None
-            if node is not None:
-                props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
-            if props is not None:
-                if props[self.TYPE].split(';', 1)[0].strip() in ('application/directory', 'application/folder'):
-                    formatted.append((p.rstrip('/') + '/', self.MATCH_PREFIX))
-                formatted.append((p, self.MATCH_EXACT))
+        if len(paths) == 0:
+            return formatted
+        props = self.node.get_props(paths)
+        if props:
+            for prop in props:
+                if prop[1].split(';', 1)[0].strip() in (
+                        'application/directory', 'application/folder'):
+                    formatted.append((prop[0].rstrip('/') + '/',
+                                      self.MATCH_PREFIX))
+                formatted.append((prop[0], self.MATCH_EXACT))
         return formatted
 
     def _get_permissions_path(self, account, container, name):
@@ -1578,11 +1831,71 @@ class ModularBackend(BaseBackend):
                 if node is not None:
                     props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
                 if props is not None:
-                    if props[self.TYPE].split(';', 1)[0].strip() in ('application/directory', 'application/folder'):
+                    if props[self.TYPE].split(';', 1)[0].strip() in (
+                            'application/directory', 'application/folder'):
                         return p
         return None
 
-    def _can_read(self, user, account, container, name):
+    def _get_permissions_path_bulk(self, account, container, names):
+        formatted_paths = []
+        for name in names:
+            path = '/'.join((account, container, name))
+            formatted_paths.append(path)
+        permission_paths = self.permissions.access_inherit_bulk(
+            formatted_paths)
+        permission_paths.sort()
+        permission_paths.reverse()
+        permission_paths_list = []
+        lookup_list = []
+        for p in permission_paths:
+            if p in formatted_paths:
+                permission_paths_list.append(p)
+            else:
+                if p.count('/') < 2:
+                    continue
+                lookup_list.append(p)
+
+        if len(lookup_list) > 0:
+            props = self.node.get_props(lookup_list)
+            if props:
+                for prop in props:
+                    if prop[1].split(';', 1)[0].strip() in (
+                            'application/directory', 'application/folder'):
+                        permission_paths_list.append(prop[0])
+
+        if len(permission_paths_list) > 0:
+            return permission_paths_list
+
+        return None
+
+    def _reset_allowed_paths(self):
+        self.read_allowed_paths = defaultdict(set)
+        self.write_allowed_paths = defaultdict(set)
+
+    @check_allowed_paths(action=0)
+    def _can_read_account(self, user, account):
+        if user != account:
+            if account not in self._allowed_accounts(user):
+                raise NotAllowedError
+
+    @check_allowed_paths(action=1)
+    def _can_write_account(self, user, account):
+        if user != account:
+            raise NotAllowedError
+
+    @check_allowed_paths(action=0)
+    def _can_read_container(self, user, account, container):
+        if user != account:
+            if container not in self._allowed_containers(user, account):
+                raise NotAllowedError
+
+    @check_allowed_paths(action=1)
+    def _can_write_container(self, user, account, container):
+        if user != account:
+            raise NotAllowedError
+
+    @check_allowed_paths(action=0)
+    def _can_read_object(self, user, account, container, name):
         if user == account:
             return True
         path = '/'.join((account, container, name))
@@ -1591,10 +1904,12 @@ class ModularBackend(BaseBackend):
         path = self._get_permissions_path(account, container, name)
         if not path:
             raise NotAllowedError
-        if not self.permissions.access_check(path, self.READ, user) and not self.permissions.access_check(path, self.WRITE, user):
+        if (not self.permissions.access_check(path, self.READ, user) and not
+                self.permissions.access_check(path, self.WRITE, user)):
             raise NotAllowedError
 
-    def _can_write(self, user, account, container, name):
+    @check_allowed_paths(action=1)
+    def _can_write_object(self, user, account, container, name):
         if user == account:
             return True
         path = '/'.join((account, container, name))
@@ -1607,17 +1922,22 @@ class ModularBackend(BaseBackend):
     def _allowed_accounts(self, user):
         allow = set()
         for path in self.permissions.access_list_paths(user):
-            allow.add(path.split('/', 1)[0])
+            p = path.split('/', 1)[0]
+            allow.add(p)
+        self.read_allowed_paths[user] |= allow
         return sorted(allow)
 
     def _allowed_containers(self, user, account):
         allow = set()
         for path in self.permissions.access_list_paths(user, account):
-            allow.add(path.split('/', 2)[1])
+            p = path.split('/', 2)[1]
+            allow.add(p)
+        self.read_allowed_paths[user] |= allow
         return sorted(allow)
 
     # Domain functions
 
+    @debug_method
     @backend_method
     def get_domain_objects(self, domain, user=None):
         allowed_paths = self.permissions.access_list_paths(
@@ -1643,21 +1963,20 @@ class ModularBackend(BaseBackend):
                 'modified_by': props[self.MUSER],
                 'uuid': props[self.UUID],
                 'checksum': props[self.CHECKSUM]}
-        if include_user_defined and user_defined != None:
+        if include_user_defined and user_defined is not None:
             meta.update(user_defined)
         return meta
 
-    def _has_read_access(self, user, path):
+    def _exists(self, node):
         try:
-            account, container, object = path.split('/', 2)
-        except ValueError:
-            raise ValueError('Invalid object path')
-
-        assert isinstance(user, basestring), "Invalid user"
-
-        try:
-            self._can_read(user, account, container, object)
-        except NotAllowedError:
+            self._get_version(node)
+        except ItemNotExists:
             return False
         else:
             return True
+
+    def _unhexlify_hash(self, hash):
+        try:
+            return binascii.unhexlify(hash)
+        except TypeError:
+            raise InvalidHash(hash)

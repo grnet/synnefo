@@ -30,8 +30,10 @@
 # Utility functions
 
 from synnefo.db.models import VirtualMachine, Network
+from snf_django.lib.api import faults
 from django.conf import settings
 from copy import deepcopy
+from synnefo.util.text import uenc
 
 
 def id_from_instance_name(name):
@@ -55,7 +57,7 @@ def id_to_instance_name(id):
 
 
 def id_from_network_name(name):
-    """Returns Network's Django id, given a ganeti machine name.
+    """Returns Network's Django id, given a ganeti network name.
 
     Strips the ganeti prefix atm. Needs a better name!
 
@@ -115,12 +117,69 @@ def get_rsapi_state(vm):
     if vm.deleted:
         return "DELETED"
     # A machine is in REBOOT if an OP_INSTANCE_REBOOT request is in progress
-    in_reboot = (r == 'ACTIVE') and\
+    in_reboot = (r == "ACTIVE") and\
                 (vm.backendopcode == "OP_INSTANCE_REBOOT") and\
-                (vm.backendjobstatus in ('queued', 'waiting', 'running'))
+                (vm.backendjobstatus in ("queued", "waiting", "running"))
     if in_reboot:
         return "REBOOT"
+    in_resize = (r == "STOPPED") and\
+                (vm.backendopcode == "OP_INSTANCE_MODIFY") and\
+                (vm.task == "RESIZE") and \
+                (vm.backendjobstatus in ("queued", "waiting", "running"))
+    if in_resize:
+        return "RESIZE"
     return r
+
+
+TASK_STATE_FROM_ACTION = {
+    "BUILD": "BUILDING",
+    "START": "STARTING",
+    "STOP": "STOPPING",
+    "REBOOT": "REBOOTING",
+    "DESTROY": "DESTROYING",
+    "RESIZE": "RESIZING",
+    "CONNECT": "CONNECTING",
+    "DISCONNECT": "DISCONNECTING"}
+
+
+def get_task_state(vm):
+    if vm.task is None:
+        return ""
+    try:
+        return TASK_STATE_FROM_ACTION[vm.task]
+    except KeyError:
+        return "UNKNOWN"
+
+
+OPCODE_TO_ACTION = {
+    "OP_INSTANCE_CREATE": "BUILD",
+    "OP_INSTANCE_STARTUP": "START",
+    "OP_INSTANCE_SHUTDOWN": "STOP",
+    "OP_INSTANCE_REBOOT": "REBOOT",
+    "OP_INSTANCE_REMOVE": "DESTROY"}
+
+
+def get_action_from_opcode(opcode, job_fields):
+    if opcode == "OP_INSTANCE_SET_PARAMS":
+        nics = job_fields.get("nics")
+        beparams = job_fields.get("beparams")
+        if nics:
+            try:
+                nic_action = nics[0][0]
+                if nic_action == "add":
+                    return "CONNECT"
+                elif nic_action == "remove":
+                    return "DISCONNECT"
+                else:
+                    return None
+            except:
+                return None
+        elif beparams:
+            return "RESIZE"
+        else:
+            return None
+    else:
+        return OPCODE_TO_ACTION.get(opcode, None)
 
 
 def hide_pass(kw):
@@ -130,3 +189,9 @@ def hide_pass(kw):
         return kw1
     else:
         return kw
+
+
+def check_name_length(name, max_length, message):
+    """Check if a string is within acceptable value length"""
+    if len(uenc(name)) > max_length:
+        raise faults.BadRequest(message)

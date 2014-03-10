@@ -34,13 +34,14 @@
 from django.utils import simplejson as json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
-
-from snf_django.lib.db.transaction import commit_on_success_strict
+from django.db import transaction
 
 from snf_django.lib import api
 from snf_django.lib.api.faults import BadRequest, ItemNotFound
+from django.core.cache import cache
 
-from astakos.im.register import get_resources
+from astakos.im import settings
+from astakos.im import register
 from astakos.im.quotas import get_user_quotas, service_get_quotas
 
 import astakos.quotaholder_app.exception as qh_exception
@@ -49,10 +50,22 @@ import astakos.quotaholder_app.callpoint as qh
 from .util import (json_response, is_integer, are_integer,
                    user_from_token, component_from_token)
 
+
+def get_visible_resources():
+    key = "resources"
+    result = cache.get(key)
+    if result is None:
+        result = register.get_api_visible_resources()
+        cache.set(key, result, settings.RESOURCE_CACHE_TIMEOUT)
+    return result
+
+
 @api.api_method(http_method='GET', token_required=True, user_required=False)
 @user_from_token
 def quotas(request):
-    result = get_user_quotas(request.user)
+    visible_resources = get_visible_resources()
+    resource_names = [r.name for r in visible_resources]
+    result = get_user_quotas(request.user, resources=resource_names)
     return json_response(result)
 
 
@@ -71,7 +84,8 @@ def service_quotas(request):
 
 @api.api_method(http_method='GET', token_required=False, user_required=False)
 def resources(request):
-    result = get_resources()
+    resources = get_visible_resources()
+    result = register.resources_to_dict(resources)
     return json_response(result)
 
 
@@ -82,13 +96,12 @@ def commissions(request):
         return get_pending_commissions(request)
     elif method == 'POST':
         return issue_commission(request)
-    return api.api_method_not_allowed(request)
+    return api.api_method_not_allowed(request, allowed_methods=['GET', 'POST'])
 
 
 @api.api_method(http_method='GET', token_required=True, user_required=False)
 @component_from_token
 def get_pending_commissions(request):
-    data = request.GET
     client_key = str(request.component_instance)
 
     result = qh.get_pending_commissions(clientkey=client_key)
@@ -116,7 +129,7 @@ def _provisions_to_list(provisions):
 @api.api_method(http_method='POST', token_required=True, user_required=False)
 @component_from_token
 def issue_commission(request):
-    data = request.raw_post_data
+    data = request.body
     try:
         input_data = json.loads(data)
     except json.JSONDecodeError:
@@ -175,15 +188,14 @@ def issue_commission(request):
     return json_response(data, status_code=status_code)
 
 
-@commit_on_success_strict()
+@transaction.commit_on_success
 def _issue_commission(clientkey, provisions, name, force, accept):
     serial = qh.issue_commission(clientkey=clientkey,
                                  provisions=provisions,
                                  name=name,
                                  force=force)
     if accept:
-        done = qh.resolve_pending_commission(clientkey=clientkey,
-                                             serial=serial)
+        qh.resolve_pending_commission(clientkey=clientkey, serial=serial)
 
     return serial
 
@@ -205,9 +217,9 @@ def conflictingCF(serial):
 @csrf_exempt
 @api.api_method(http_method='POST', token_required=True, user_required=False)
 @component_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def resolve_pending_commissions(request):
-    data = request.raw_post_data
+    data = request.body
     try:
         input_data = json.loads(data)
     except json.JSONDecodeError:
@@ -254,16 +266,16 @@ def get_commission(request, serial):
                                  serial=serial)
         status_code = 200
         return json_response(data, status_code)
-    except qh_exception.NoCommissionError as e:
+    except qh_exception.NoCommissionError:
         return HttpResponse(status=404)
 
 
 @csrf_exempt
 @api.api_method(http_method='POST', token_required=True, user_required=False)
 @component_from_token
-@commit_on_success_strict()
+@transaction.commit_on_success
 def serial_action(request, serial):
-    data = request.raw_post_data
+    data = request.body
     try:
         input_data = json.loads(data)
     except json.JSONDecodeError:

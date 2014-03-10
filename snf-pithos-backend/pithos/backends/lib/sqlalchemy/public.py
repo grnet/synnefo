@@ -45,6 +45,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def create_tables(engine):
     metadata = MetaData()
     columns = []
@@ -80,7 +81,7 @@ class Public(DBWorker):
             candidate = get_random_word(length=l, alphabet=public_url_alphabet)
             if self.public_path(candidate) is None:
                 return candidate
-            l +=1
+            l += 1
 
     def public_set(self, path, public_security, public_url_alphabet):
         s = select([self.public.c.public_id])

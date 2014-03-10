@@ -33,7 +33,6 @@
 
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
-from django.core.exceptions import PermissionDenied
 from django.core.xheaders import populate_xheaders
 from django.http import HttpResponse
 from django.shortcuts import redirect
@@ -43,8 +42,6 @@ from django.views.generic.create_update import apply_extra_context, \
     get_model_and_form_class, lookup_object
 
 from synnefo.lib.ordereddict import OrderedDict
-
-from snf_django.lib.db.transaction import commit_on_success_strict
 
 from astakos.im import presentation
 from astakos.im.util import model_to_dict
@@ -70,11 +67,12 @@ class ExceptionHandler(object):
             return True  # suppress exception
 
 
-def render_response(template, tab=None, status=200, context_instance=None, **kwargs):
+def render_response(template, tab=None, status=200, context_instance=None,
+                    **kwargs):
     """
-    Calls ``django.template.loader.render_to_string`` with an additional ``tab``
-    keyword argument and returns an ``django.http.HttpResponse`` with the
-    specified ``status``.
+    Calls ``django.template.loader.render_to_string`` with an additional
+    ``tab`` keyword argument and returns an ``django.http.HttpResponse``
+    with the specified ``status``.
     """
     if tab is None:
         tab = template.partition('_')[0].partition('.html')[0]
@@ -84,120 +82,115 @@ def render_response(template, tab=None, status=200, context_instance=None, **kwa
     response = HttpResponse(html, status=status)
     return response
 
-@commit_on_success_strict()
+
 def _create_object(request, model=None, template_name=None,
-        template_loader=template_loader, extra_context=None, post_save_redirect=None,
-        login_required=False, context_processors=None, form_class=None,
-        msg=None, summary_template_name=None):
+                   template_loader=template_loader, extra_context=None,
+                   post_save_redirect=None, login_required=False,
+                   context_processors=None, form_class=None, msg=None,
+                   summary_template_name=None):
     """
     Based of django.views.generic.create_update.create_object which displays a
     summary page before creating the object.
     """
-    response = None
 
-    if extra_context is None: extra_context = {}
+    if extra_context is None:
+        extra_context = {}
     if login_required and not request.user.is_authenticated():
         return redirect_to_login(request.path)
-    try:
 
-        model, form_class = get_model_and_form_class(model, form_class)
-        extra_context['edit'] = 0
-        if request.method == 'POST':
-            form = form_class(request.POST, request.FILES)
-            if form.is_valid():
-                verify = request.GET.get('verify')
-                edit = request.GET.get('edit')
-                if verify == '1':
-                    extra_context['show_form'] = False
-                    extra_context['form_data'] = form.cleaned_data
-                    template_name = summary_template_name
-                elif edit == '1':
-                    extra_context['show_form'] = True
-                else:
-                    new_object = form.save()
-                    if not msg:
-                        msg = _("The %(verbose_name)s was created successfully.")
-                    msg = msg % model._meta.__dict__
-                    messages.success(request, msg, fail_silently=True)
-                    response = redirect(post_save_redirect, new_object)
-        else:
-            form = form_class()
-    except (IOError, PermissionDenied), e:
-        messages.error(request, e)
-        return None
+    model, form_class = get_model_and_form_class(model, form_class)
+    extra_context['edit'] = 0
+    if request.method == 'POST':
+        form = form_class(request.POST, request.FILES)
+        if form.is_valid():
+            verify = request.GET.get('verify')
+            edit = request.GET.get('edit')
+            if verify == '1':
+                extra_context['show_form'] = False
+                extra_context['form_data'] = form.cleaned_data
+                template_name = summary_template_name
+            elif edit == '1':
+                extra_context['show_form'] = True
+            else:
+                new_object = form.save()
+                if not msg:
+                    msg = _(
+                        "The %(verbose_name)s was created successfully.")
+                msg = msg % model._meta.__dict__
+                messages.success(request, msg, fail_silently=True)
+                return redirect(post_save_redirect, new_object)
     else:
-        if response == None:
-            # Create the template, context, response
-            if not template_name:
-                template_name = "%s/%s_form.html" %\
-                     (model._meta.app_label, model._meta.object_name.lower())
-            t = template_loader.get_template(template_name)
-            c = RequestContext(request, {
-                'form': form
-            }, context_processors)
-            apply_extra_context(extra_context, c)
-            response = HttpResponse(t.render(c))
-        return response
+        form = form_class()
 
-@commit_on_success_strict()
+    # Create the template, context, response
+    if not template_name:
+        template_name = "%s/%s_form.html" % \
+            (model._meta.app_label, model._meta.object_name.lower())
+    t = template_loader.get_template(template_name)
+    c = RequestContext(request, {
+        'form': form
+    }, context_processors)
+    apply_extra_context(extra_context, c)
+    return HttpResponse(t.render(c))
+
+
 def _update_object(request, model=None, object_id=None, slug=None,
-        slug_field='slug', template_name=None, template_loader=template_loader,
-        extra_context=None, post_save_redirect=None, login_required=False,
-        context_processors=None, template_object_name='object',
-        form_class=None, msg=None, summary_template_name=None):
+                   slug_field='slug', template_name=None,
+                   template_loader=template_loader, extra_context=None,
+                   post_save_redirect=None, login_required=False,
+                   context_processors=None, template_object_name='object',
+                   form_class=None, msg=None, summary_template_name=None):
     """
     Based of django.views.generic.create_update.update_object which displays a
     summary page before updating the object.
     """
-    response = None
 
-    if extra_context is None: extra_context = {}
+    if extra_context is None:
+        extra_context = {}
     if login_required and not request.user.is_authenticated():
         return redirect_to_login(request.path)
 
-    try:
-        model, form_class = get_model_and_form_class(model, form_class)
-        obj = lookup_object(model, object_id, slug, slug_field)
+    model, form_class = get_model_and_form_class(model, form_class)
+    obj = lookup_object(model, object_id, slug, slug_field)
 
-        if request.method == 'POST':
-            form = form_class(request.POST, request.FILES, instance=obj)
-            if form.is_valid():
-                verify = request.GET.get('verify')
-                edit = request.GET.get('edit')
-                if verify == '1':
-                    extra_context['show_form'] = False
-                    extra_context['form_data'] = form.cleaned_data
-                    template_name = summary_template_name
-                elif edit == '1':
-                    extra_context['show_form'] = True
-                else:
-                    obj = form.save()
-                    if not msg:
-                        msg = _("The %(verbose_name)s was created successfully.")
-                    msg = msg % model._meta.__dict__
-                    messages.success(request, msg, fail_silently=True)
-                    response = redirect(post_save_redirect, obj)
-        else:
-            form = form_class(instance=obj)
-    except (IOError, PermissionDenied), e:
-        messages.error(request, e)
-        return None
+    if request.method == 'POST':
+        form = form_class(request.POST, request.FILES, instance=obj)
+        if form.is_valid():
+            verify = request.GET.get('verify')
+            edit = request.GET.get('edit')
+            if verify == '1':
+                extra_context['show_form'] = False
+                extra_context['form_data'] = form.cleaned_data
+                template_name = summary_template_name
+            elif edit == '1':
+                extra_context['show_form'] = True
+            else:
+                obj = form.save()
+                if not msg:
+                    msg = _(
+                        "The %(verbose_name)s was created successfully.")
+                msg = msg % model._meta.__dict__
+                messages.success(request, msg, fail_silently=True)
+                return redirect(post_save_redirect, obj)
     else:
-        if response == None:
-            if not template_name:
-                template_name = "%s/%s_form.html" %\
-                    (model._meta.app_label, model._meta.object_name.lower())
-            t = template_loader.get_template(template_name)
-            c = RequestContext(request, {
-                'form': form,
-                template_object_name: obj,
-            }, context_processors)
-            apply_extra_context(extra_context, c)
-            response = HttpResponse(t.render(c))
-            populate_xheaders(request, response, model, getattr(obj, obj._meta.pk.attname))
-        return response
+        form = form_class(instance=obj)
 
-def _resources_catalog(for_project=False, for_usage=False):
+    if not template_name:
+        template_name = "%s/%s_form.html" % \
+            (model._meta.app_label, model._meta.object_name.lower())
+    t = template_loader.get_template(template_name)
+    c = RequestContext(request, {
+        'form': form,
+        template_object_name: obj,
+    }, context_processors)
+    apply_extra_context(extra_context, c)
+    response = HttpResponse(t.render(c))
+    populate_xheaders(request, response, model,
+                      getattr(obj, obj._meta.pk.attname))
+    return response
+
+
+def _resources_catalog():
     """
     `resource_catalog` contains a list of tuples. Each tuple contains the group
     key the resource is assigned to and resources list of dicts that contain
@@ -259,21 +252,16 @@ def _resources_catalog(for_project=False, for_usage=False):
                     resource_groups.pop(gindex)
 
     # filter out resources which user cannot request in a project application
-    exclude = resources_meta.get('exclude_from_usage', [])
-    for group_index, group_resources in enumerate(list(resource_catalog)):
-        group, resources = group_resources
-        for index, resource in list(enumerate(resources)):
-            if for_project and not resource.get('allow_in_projects'):
-                resources.remove(resource)
-            if resource.get('str_repr') in exclude and for_usage:
+    for group, resources in list(resource_catalog):
+        for resource in resources:
+            if not resource.get('ui_visible'):
                 resources.remove(resource)
 
     # cleanup empty groups
-    for group_index, group_resources in enumerate(list(resource_catalog)):
-        group, resources = group_resources
+    resource_catalog_new = []
+    for group, resources in list(resource_catalog):
         if len(resources) == 0:
-            resource_catalog.pop(group_index)
             resource_groups.pop(group)
-
-
-    return resource_catalog, resource_groups
+        else:
+            resource_catalog_new.append((group, resources))
+    return resource_catalog_new, resource_groups

@@ -71,13 +71,15 @@ class Groups(DBWorker):
     def group_add(self, owner, group, member):
         """Add a member to a group."""
 
-        q = "insert or ignore into groups (owner, name, member) values (?, ?, ?)"
+        q = ("insert or ignore into groups (owner, name, member) "
+             "values (?, ?, ?)")
         self.execute(q, (owner, group, member))
 
     def group_addmany(self, owner, group, members):
         """Add members to a group."""
 
-        q = "insert or ignore into groups (owner, name, member) values (?, ?, ?)"
+        q = ("insert or ignore into groups (owner, name, member) "
+             "values (?, ?, ?)")
         self.executemany(q, ((owner, group, member) for member in members))
 
     def group_remove(self, owner, group, member):

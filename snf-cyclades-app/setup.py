@@ -79,7 +79,7 @@ INSTALL_REQUIRES = [
     'snf-django-lib',
     'snf-branding',
     'snf-webproject',
-    'requests',
+    'requests>=0.12.1',
     'paramiko'
 ]
 

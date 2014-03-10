@@ -1,45 +1,8 @@
-synnefo (0.15~rc7-1~wheezy) wheezy; urgency=low
+synnefo (0.15-1~wheezy) wheezy; urgency=low
 
   * New upstream version
 
- -- Christos Stavrakakis <cstavr@grnet.gr>  Tue, 04 Mar 2014 14:55:28 +0200
-
-synnefo (0.15~rc6-1~wheezy) wheezy; urgency=low
-
-  * New upstream version
-
- -- Christos Stavrakakis <cstavr@grnet.gr>  Thu, 27 Feb 2014 13:10:25 +0200
-
-synnefo (0.15~rc5-1~wheezy) wheezy; urgency=low
-
-  * New upstream version
-
- -- Christos Stavrakakis <cstavr@grnet.gr>  Wed, 26 Feb 2014 15:32:53 +0200
-
-synnefo (0.15~rc4-1~wheezy) wheezy; urgency=low
-
-  * New upstream version
-
- -- Christos Stavrakakis <cstavr@grnet.gr>  Wed, 15 Jan 2014 12:56:15 +0200
-
-synnefo (0.15~rc3-1~wheezy) wheezy; urgency=low
-
-  * New upstream version
-
- -- Christos Stavrakakis <cstavr@grnet.gr>  Fri, 20 Dec 2013 15:45:04 +0200
-
-synnefo (0.15~rc2-1~wheezy) wheezy; urgency=low
-
-  * New upstream version
-    + UI fixes
-
- -- Christos Stavrakakis <cstavr@grnet.gr>  Mon, 16 Dec 2013 10:51:18 +0200
-
-synnefo (0.15~rc1-1~wheezy) wheezy; urgency=low
-
-  * First release candidate for v0.15
-
- -- Christos Stavrakakis <cstavr@grnet.gr>  Tue, 10 Dec 2013 18:09:58 +0200
+ -- Christos Stavrakakis <cstavr@grnet.gr>  Mon, 10 Mar 2014 14:04:56 +0200
 
 synnefo (0.14.10-1~wheezy) wheezy; urgency=low
 
@@ -164,6 +127,7 @@ synnefo (0.12.5-1) stable; urgency=low
   [ Dimitris Aragiorgis ]
 
  -- Dimitris Aragiorgis <dimara@grnet.gr>  Fri, 04 Jan 2013 14:46:35 +0200
+
 
 
 

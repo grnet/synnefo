@@ -42,7 +42,7 @@ import glob
 from snfdeploy.lib import check_pidfile, create_dir, get_default_route, \
     random_mac, Conf, Env, Status
 # from snfdeploy import fabfile
-from snfdeploy import fabfile2 as fabfile
+from snfdeploy import fabfile
 from fabric.api import hide, settings, execute, show
 
 

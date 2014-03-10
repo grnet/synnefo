@@ -105,7 +105,7 @@ def list_ports(request, detail=True):
 def create_port(request):
     user_id = request.user_uniq
     req = api.utils.get_request_dict(request)
-    log.info('create_port %s', req)
+    log.info('create_port user: %s request: %s', user_id, req)
 
     port_dict = api.utils.get_attribute(req, "port", attr_type=dict)
     net_id = api.utils.get_attribute(port_dict, "network_id",

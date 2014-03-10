@@ -398,17 +398,18 @@ $(document).ready(function() {
          $('.hidden-submit .form-row.submit').slideDown(500);
     });
       
-    setTimeout(function() {
-        var innerInputs = $('form.innerlabels input[type="text"], form.innerlabels input[type="password"]');
-        _.each(innerInputs, function(val, key,list){
-          if ($(val).val()){
-            $(val).siblings('label').css('opacity','0');
-          };
-        });
-    }, 200);
+    var innerInputs = $('form.innerlabels input[type="text"], form.innerlabels input[type="password"]');
+    _.each(innerInputs, function(val, key, list){
+        var txt =  $(val).siblings('label').text();
+        $(val).attr('placeholder',txt);
+    });
+
+    $(function() {
+      $('input, textarea').placeholder();
+    });
 
 	
-	// landing-page initialization
+	  // landing-page initialization
     if ($('.landing-page').length > 0) {
       var wrapper = $(".landing-page");
       var services = wrapper.find(".landing-service");

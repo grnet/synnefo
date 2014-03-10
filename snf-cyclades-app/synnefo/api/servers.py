@@ -178,8 +178,8 @@ def vm_to_dict(vm, detail=False):
         d['hostId'] = vm.hostid
         d['updated'] = utils.isoformat(vm.updated)
         d['created'] = utils.isoformat(vm.created)
-        d['flavor'] = {"id": vm.flavor.id,
-                       "links": util.flavor_to_links(vm.flavor.id)}
+        d['flavor'] = {"id": vm.flavor_id,
+                       "links": util.flavor_to_links(vm.flavor_id)}
         d['image'] = {"id": vm.imageid,
                       "links": util.image_to_links(vm.imageid)}
         d['suspended'] = vm.suspended
@@ -341,7 +341,7 @@ def list_servers(request, detail=False):
     log.debug('list_servers detail=%s', detail)
     user_vms = VirtualMachine.objects.filter(userid=request.user_uniq)
     if detail:
-        user_vms = user_vms.prefetch_related("nics__ips")
+        user_vms = user_vms.prefetch_related("nics__ips", "metadata")
 
     user_vms = utils.filter_modified_since(request, objects=user_vms)
 
@@ -370,8 +370,8 @@ def create_server(request):
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413)
     req = utils.get_request_dict(request)
-    log.info('create_server %s', req)
     user_id = request.user_uniq
+    log.info('create_server user: %s request: %s', user_id, req)
 
     try:
         server = req['server']
@@ -427,7 +427,7 @@ def get_server_details(request, server_id):
 
     log.debug('get_server_details %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq,
-                     prefetch_related="nics__ips")
+                     prefetch_related=["nics__ips", "metadata"])
     server = vm_to_dict(vm, detail=True)
     return render_server(request, server)
 

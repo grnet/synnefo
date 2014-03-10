@@ -46,6 +46,7 @@ from django.http import HttpResponseNotAllowed
 from django.views.decorators.csrf import csrf_exempt
 
 from synnefo.lib import join_urls
+from synnefo.util.text import uenc
 
 import logging
 logger = logging.getLogger(__name__)
@@ -120,7 +121,7 @@ class DjangoBackend(DjangoBackendORMMixin, oa2base.SimpleBackend,
         response.status_code = oa2response.status
         response.content = oa2response.body
         for key, value in oa2response.headers.iteritems():
-            response[key] = value
+            response[uenc(key)] = uenc(value)
         return response
 
     def build_request(self, django_request):

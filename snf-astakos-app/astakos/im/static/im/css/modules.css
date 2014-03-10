@@ -283,7 +283,7 @@ dl.alt-style dd									{ overflow:hidden; position:relative;}
 .projects dl.alt-style .dl-actions 				{ position:absolute; left:300px;}
 .projects form.members 							{ margin-top:20px;}
 .projects form.members label 					{ padding-top:0; text-transform: uppercase;}
-
+.my-projects .owner                             { display: none;}
 
 /* new faq-userguide styles */
 

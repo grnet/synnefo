@@ -127,7 +127,7 @@ def list_networks(request, detail=True):
 def create_network(request):
     userid = request.user_uniq
     req = api.utils.get_request_dict(request)
-    log.info('create_network %s', req)
+    log.info('create_network user: %s request: %s', userid, req)
 
     network_dict = api.utils.get_attribute(req, "network",
                                            attr_type=dict)
@@ -199,6 +199,7 @@ def network_to_dict(network, detail=True):
         d['created'] = api.utils.isoformat(network.created)
         d['status'] = state
         d['public'] = network.public
+        d['shared'] = network.public
         d['router:external'] = network.external_router
         d['admin_state_up'] = True
         d['subnets'] = network.subnet_ids

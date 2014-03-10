@@ -146,6 +146,8 @@ def create_network_in_backends(network):
 
 @network_command("RENAME")
 def rename(network, name):
+    utils.check_name_length(name, Network.NETWORK_NAME_LENGTH, "Network name "
+                            "is too long")
     network.name = name
     network.save()
     return network

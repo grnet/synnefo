@@ -484,8 +484,9 @@
                 }
                 
                 // create element
-                var new_el = $(this.tag_tpl.format(util.truncate(key, this.tag_key_truncate), 
-                                                 util.truncate(": " + _.escape(value), this.tag_value_truncate)));
+                var _key = _.escape(util.truncate(key, this.tag_key_truncate));
+                var _value = _.escape(util.truncate(": " + value, this.tag_value_truncate));
+                var new_el = $(this.tag_tpl.format(_key, _value));
 
                 // add title attributes, improve accesibility
                 // truncated values

@@ -128,6 +128,8 @@ class Node(DBWorker):
                     on nodes(path) """)
         execute(""" create index if not exists idx_nodes_parent
                     on nodes(parent) """)
+        execute(""" create index if not exists idx_latest_version
+                    on nodes(latest_version) """)
 
         execute(""" create table if not exists policy
                           ( node   integer,

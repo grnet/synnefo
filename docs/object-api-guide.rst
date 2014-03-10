@@ -27,7 +27,8 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
-0.14 (Jun 18, 2013)        Forbidden response for public listing by non path owners
+0.15 (Feb 01, 2014)        Optionally enforce a specific content disposition type.
+0.14 (Jun 18, 2013)        Forbidden response for public listing by non path owners.
 0.14 (Apr 23, 2013)        Reply with Merkle hash in the ETag if MD5 is not computed.
 0.13 (Mar 27, 2013)        Restrict public object listing only to the owner.
 \                          Do not propagate public URL information in shared objects.
@@ -830,6 +831,7 @@ Request Parameter Name  Value
 format                  Optional extended reply type (can be ``json`` or ``xml``)
 hashmap                 Optional request for hashmap (no value parameter)
 version                 Optional version identifier or ``list`` (specify a format if requesting a list)
+disposition-type        Optional enforcement of the specific content disposition type (can be ``inline`` or ``attachement`` otherwise it is ignored - this will override the object's Content-Disposition)
 ======================  ===================================
 
 The reply is the object's data (or part of it), except if a hashmap is requested with ``hashmap``, or a version list with ``version=list`` (in both cases an extended reply format must be specified). Object headers (as in a ``HEAD`` request) are always included.
@@ -1149,7 +1151,15 @@ A user may ``GET`` another account or container. The result will include a limit
 
 Shared objects that are also public do not expose the ``X-Object-Public`` meta information.
 
-Objects that are marked as public, via the ``X-Object-Public`` meta, are also available at the corresponding URI returned for ``HEAD`` or ``GET``. Requests for public objects do not need to include an ``X-Auth-Token``. Pithos will ignore request parameters and only include the following headers in the reply (all ``X-Object-*`` meta is hidden):
+Objects that are marked as public, via the ``X-Object-Public`` meta, are also available at the corresponding URI returned for ``HEAD`` or ``GET``. Requests for public objects do not need to include an ``X-Auth-Token``. Pithos will accept only the following request parameter: 
+
+======================  ===================================
+Request Parameter Name  Value
+======================  ===================================
+disposition-type        Optional enforcement of the specific content disposition type (can be ``inline`` or ``attachement`` otherwise it is ignored - this will override the object's Content-Disposition)
+======================  ===================================
+
+and only include the following headers in the reply (all ``X-Object-*`` meta is hidden):
 
 ==========================  ===============================
 Reply Header Name           Value

@@ -1,14 +1,14 @@
 """Set container quota source
 
 Revision ID: 4451e165da19
-Revises: 3b62b3f1bf6c
+Revises: 301fba21d9b8
 Create Date: 2013-09-27 13:36:27.477141
 
 """
 
 # revision identifiers, used by Alembic.
 revision = '4451e165da19'
-down_revision = '54dbdde2d187'
+down_revision = '301fba21d9b8'
 
 from alembic import op
 import sqlalchemy as sa

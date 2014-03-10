@@ -784,14 +784,13 @@
         
         update_flavors_data: function() {
             if (!this.parent.project) { return }
-            this.flavors = storage.flavors.active();
+            this.flavors = this.get_active_flavors();
             this.flavors_data = storage.flavors.get_data(this.flavors);
             
             var self = this;
             var set = false;
             
             // FIXME: validate current flavor
-            
             if (!this.current_flavor) {
                 _.each(this.valid_predefined, function(key) {
                     var flv = self.predefined_flavors[key];
@@ -1052,7 +1051,9 @@
         },
         
         get_active_flavors: function() {
-            return storage.flavors.active();
+            return storage.flavors.active().filter(function(flv) {
+	        return flv.get("SNF:allow_create")
+	    });
         },
 
         get_valid_flavors: function() {

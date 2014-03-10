@@ -34,6 +34,7 @@
 from functools import wraps
 from datetime import datetime
 from urllib import quote, unquote, urlencode
+from urlparse import urlunsplit, urlsplit, parse_qsl
 
 from django.http import (HttpResponse, Http404, HttpResponseRedirect,
                          HttpResponseNotAllowed)
@@ -214,6 +215,13 @@ def put_container_headers(request, response, meta, policy):
 
 def get_object_headers(request):
     content_type = request.META.get('CONTENT_TYPE', None)
+    if content_type:
+        try:
+            content_type.decode('ascii')
+            # TODO: check format ?
+        except UnicodeDecodeError:
+            raise faults.BadRequest('Bad characters in Content-Type.')
+
     meta = get_header_prefix(request, 'X-Object-Meta-')
     check_meta_headers(meta)
     if request.META.get('HTTP_CONTENT_ENCODING'):
@@ -225,7 +233,8 @@ def get_object_headers(request):
     return content_type, meta, get_sharing(request), get_public(request)
 
 
-def put_object_headers(response, meta, restricted=False, token=None):
+def put_object_headers(response, meta, restricted=False, token=None,
+                       disposition_type=None):
     response['ETag'] = meta['hash'] if not UPDATE_MD5 else meta['checksum']
     response['Content-Length'] = meta['bytes']
     response.override_serialization = True
@@ -255,6 +264,11 @@ def put_object_headers(response, meta, restricted=False, token=None):
         for k in ('Content-Encoding', 'Content-Disposition'):
             if k in meta:
                 response[k] = smart_str(meta[k], strings_only=True)
+    disposition_type = disposition_type if disposition_type in \
+        ('inline', 'attachment') else None
+    if disposition_type is not None:
+        response['Content-Disposition'] = smart_str('%s; filename=%s' % (
+            disposition_type, meta['name']), strings_only=True)
 
 
 def update_manifest_meta(request, v_account, meta):
@@ -473,7 +487,7 @@ def split_container_object_string(s):
 
 def copy_or_move_object(request, src_account, src_container, src_name,
                         dest_account, dest_container, dest_name,
-                        move=False, delimiter=None):
+                        move=False, delimiter=None, listing_limit=None):
     """Copy or move an object."""
 
     if 'ignore_content_type' in request.GET and 'CONTENT_TYPE' in request.META:
@@ -485,13 +499,14 @@ def copy_or_move_object(request, src_account, src_container, src_name,
             version_id = request.backend.move_object(
                 request.user_uniq, src_account, src_container, src_name,
                 dest_account, dest_container, dest_name,
-                content_type, 'pithos', meta, False, permissions, delimiter)
+                content_type, 'pithos', meta, False, permissions, delimiter,
+                listing_limit=listing_limit)
         else:
             version_id = request.backend.copy_object(
                 request.user_uniq, src_account, src_container, src_name,
                 dest_account, dest_container, dest_name,
                 content_type, 'pithos', meta, False, permissions,
-                src_version, delimiter)
+                src_version, delimiter, listing_limit=listing_limit)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except (ItemNotExists, VersionNotExists):
@@ -943,7 +958,8 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
     response = HttpResponse(wrapper, status=ret)
     put_object_headers(
         response, meta, restricted=public,
-        token=getattr(request, 'token', None))
+        token=getattr(request, 'token', None),
+        disposition_type=request.GET.get('disposition-type'))
     if ret == 206:
         if len(ranges) == 1:
             offset, length = ranges[0]
@@ -1048,12 +1064,12 @@ def update_request_headers(request):
         try:
             k.decode('ascii')
             v.decode('ascii')
+            if '%' in k or '%' in v:
+                del(request.META[k])
+                request.META[unquote(k)] = smart_unicode(unquote(
+                    v), strings_only=True)
         except UnicodeDecodeError:
             raise faults.BadRequest('Bad character in headers.')
-        if '%' in k or '%' in v:
-            del(request.META[k])
-            request.META[unquote(k)] = smart_unicode(unquote(
-                v), strings_only=True)
 
 
 def update_response_headers(request, response):
@@ -1187,12 +1203,13 @@ def view_method():
                 client_id, client_secret = OAUTH2_CLIENT_CREDENTIALS
                 # TODO: check if client credentials are not set
                 authorization_code = request.GET.get('code')
+                redirect_uri = unquote(request.build_absolute_uri(
+                    request.get_full_path()))
                 if authorization_code is None:
                     # request authorization code
                     params = {'response_type': 'code',
                               'client_id': client_id,
-                              'redirect_uri':
-                              request.build_absolute_uri(request.path),
+                              'redirect_uri': redirect_uri,
                               'state': '',  # TODO include state for security
                               'scope': requested_resource}
                     return HttpResponseRedirect('%s?%s' %
@@ -1201,15 +1218,23 @@ def view_method():
                                                  urlencode(params)))
                 else:
                     # request short-term access token
-                    redirect_uri = request.build_absolute_uri(request.path)
+                    parts = list(urlsplit(redirect_uri))
+                    params = dict(parse_qsl(parts[3], keep_blank_values=True))
+                    if 'code' in params:  # always True
+                        del params['code']
+                    if 'state' in params:
+                        del params['state']
+                    parts[3] = urlencode(params)
+                    redirect_uri = urlunsplit(parts)
                     data = astakos.get_token('authorization_code',
                                              *OAUTH2_CLIENT_CREDENTIALS,
                                              redirect_uri=redirect_uri,
                                              scope=requested_resource,
                                              code=authorization_code)
-                    params = {'access_token': data.get('access_token', '')}
-                    return HttpResponseRedirect('%s?%s' % (redirect_uri,
-                                                           urlencode(params)))
+                    params['access_token'] = data.get('access_token', '')
+                    parts[3] = urlencode(params)
+                    redirect_uri = urlunsplit(parts)
+                    return HttpResponseRedirect(redirect_uri)
             except AstakosClientException, err:
                 logger.exception(err)
                 raise PermissionDenied

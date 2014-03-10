@@ -999,13 +999,16 @@ class ContainerDelete(PithosAPITest):
         r = self.delete(url)
         self.assertEqual(r.status_code, 404)
 
+    @pithos_test_settings(API_LIST_LIMIT=10)
     def test_delete_contents(self):
         folder = self.create_folder('c1')[0]
-        descendant = strnextling(folder)
-        self.upload_object('c1', descendant)
+        for i in range(11):
+            descendant = '%s_%d' % (strnextling(folder), i)
+            self.upload_object('c1', descendant)
         self.create_folder('c1', '%s/%s' % (folder, get_random_data(5)))[0]
 
-        self.delete('%s?delimiter=/' % join_urls(
+        r = self.delete('%s?delimiter=/' % join_urls(
             self.pithos_path, self.user, 'c1'))
+        self.assertEqual(r.status_code, 204)
         self.assertEqual([], self.list_objects('c1'))
         self.assertTrue('c1' in self.list_containers(format=None))

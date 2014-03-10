@@ -702,7 +702,7 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def delete_container(self, user, account, container, until=None, prefix='',
-                         delimiter=None):
+                         delimiter=None, listing_limit=None):
         """Delete/purge the container with the given name."""
 
         self._can_write_container(user, account, container)
@@ -751,7 +751,8 @@ class ModularBackend(BaseBackend):
             src_names = self._list_objects_no_limit(
                 user, account, container, prefix='', delimiter=None,
                 virtual=False, domain=None, keys=[], shared=False, until=None,
-                size_range=None, all_props=True, public=False)
+                size_range=None, all_props=True, public=False,
+                listing_limit=listing_limit)
             paths = []
             for t in src_names:
                 path = '/'.join((account, container, t[0]))
@@ -836,11 +837,12 @@ class ModularBackend(BaseBackend):
 
     def _list_objects_no_limit(self, user, account, container, prefix,
                                delimiter, virtual, domain, keys, shared, until,
-                               size_range, all_props, public):
+                               size_range, all_props, public,
+                               listing_limit=10000):
         objects = []
         while True:
-            marker = objects[-1] if objects else None
-            limit = 10000
+            marker = objects[-1][0] if objects else None
+            limit = listing_limit
             l = self._list_objects(
                 user, account, container, prefix, delimiter, marker, limit,
                 virtual, domain, keys, shared, until, size_range, all_props,
@@ -1228,7 +1230,7 @@ class ModularBackend(BaseBackend):
                      dest_account, dest_container, dest_name, type,
                      dest_domain=None, dest_meta=None, replace_meta=False,
                      permissions=None, src_version=None, is_move=False,
-                     delimiter=None):
+                     delimiter=None, listing_limit=10000):
 
         dest_meta = dest_meta or {}
         dest_version_ids = []
@@ -1283,7 +1285,8 @@ class ModularBackend(BaseBackend):
             src_names = self._list_objects_no_limit(
                 user, src_account, src_container, prefix, delimiter=None,
                 virtual=False, domain=None, keys=[], shared=False, until=None,
-                size_range=None, all_props=True, public=False)
+                size_range=None, all_props=True, public=False,
+                listing_limit=listing_limit)
             src_names.sort(key=lambda x: x[2])  # order by nodes
             paths = [elem[0] for elem in src_names]
             nodes = [elem[2] for elem in src_names]
@@ -1318,14 +1321,15 @@ class ModularBackend(BaseBackend):
     def copy_object(self, user, src_account, src_container, src_name,
                     dest_account, dest_container, dest_name, type, domain,
                     meta=None, replace_meta=False, permissions=None,
-                    src_version=None, delimiter=None):
+                    src_version=None, delimiter=None, listing_limit=None):
         """Copy an object's data and metadata."""
 
         meta = meta or {}
         dest_version_id = self._copy_object(
             user, src_account, src_container, src_name, dest_account,
             dest_container, dest_name, type, domain, meta, replace_meta,
-            permissions, src_version, False, delimiter)
+            permissions, src_version, False, delimiter,
+            listing_limit=listing_limit)
         return dest_version_id
 
     @debug_method
@@ -1333,7 +1337,7 @@ class ModularBackend(BaseBackend):
     def move_object(self, user, src_account, src_container, src_name,
                     dest_account, dest_container, dest_name, type, domain,
                     meta=None, replace_meta=False, permissions=None,
-                    delimiter=None):
+                    delimiter=None, listing_limit=None):
         """Move an object's data and metadata."""
 
         meta = meta or {}
@@ -1342,11 +1346,13 @@ class ModularBackend(BaseBackend):
         dest_version_id = self._move_object(
             user, src_account, src_container, src_name, dest_account,
             dest_container, dest_name, type, domain, meta, replace_meta,
-            permissions, None, delimiter=delimiter)
+            permissions, None, delimiter=delimiter,
+            listing_limit=listing_limit)
         return dest_version_id
 
     def _delete_object(self, user, account, container, name, until=None,
-                       delimiter=None, report_size_change=True):
+                       delimiter=None, report_size_change=True,
+                       listing_limit=None):
         if user != account:
             raise NotAllowedError
 
@@ -1413,7 +1419,8 @@ class ModularBackend(BaseBackend):
             src_names = self._list_objects_no_limit(
                 user, account, container, prefix, delimiter=None,
                 virtual=False, domain=None, keys=[], shared=False, until=None,
-                size_range=None, all_props=True, public=False)
+                size_range=None, all_props=True, public=False,
+                listing_limit=listing_limit)
             paths = []
             for t in src_names:
                 path = '/'.join((account, container, t[0]))
@@ -1445,10 +1452,11 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def delete_object(self, user, account, container, name, until=None,
-                      prefix='', delimiter=None):
+                      prefix='', delimiter=None, listing_limit=None):
         """Delete/purge an object."""
 
-        self._delete_object(user, account, container, name, until, delimiter)
+        self._delete_object(user, account, container, name, until, delimiter,
+                            listing_limit=listing_limit)
 
     @debug_method
     @backend_method

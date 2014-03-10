@@ -15,12 +15,13 @@ for things that were missing or change frequently.
 Most Synnefo services have a corresponding OpenStack API:
 
 | Cyclades/Compute Service -> OpenStack Compute API
-| Cyclades/Network Service -> OpenStack Neutron API
-| Cyclades/Image Service -> OpenStack Glance API
-| Pithos/Storage Service -> OpenStack Object Store API
-| Astakos/Identity Service -> OpenStack Keystone API
+| Cyclades/Network Service -> OpenStack Networking ("Neutron") API
+| Cyclades/Image Service -> OpenStack Image ("Glance") API
+| Pithos/Storage Service -> OpenStack Object Storage API
+| Astakos/Identity Service -> OpenStack Identity ("Keystone") API
 | Astakos/Quota Service -> Proprietary API
 | Astakos/Resource Service -> Proprietary API
+| Astakos/Project Service -> Proprietary API
 
 Below, we will describe all Synnefo APIs with conjuction to the OpenStack APIs.
 
@@ -29,7 +30,7 @@ Identity Service API (Astakos)
 ==============================
 
 The Identity Management Service of Synnefo, which is part of Astakos, exposes
-the OpenStack Keystone API.
+the OpenStack Identity ("Keystone") API.
 
 The current Astakos/Identity API is:
 
@@ -80,7 +81,7 @@ Network Service API (Cyclades)
 ==============================
 
 The Network Service is implemented inside Cyclades. It exposes the OpenStack
-Neutron API.
+Networking ("Neutron") API.
 
 This is the Cyclades/Network API:
 
@@ -94,7 +95,7 @@ Image Service API (Cyclades)
 ============================
 
 The Image Service is implemented inside Cyclades. It exposes the OpenStack
-Glance API with minor changes wherever needed.
+Image ("Glance") API with minor changes wherever needed.
 
 This is the Cyclades/Image API:
 
@@ -147,15 +148,15 @@ which can be represented as folders or with other related icons:
    organization of folders and files.
  * The ``trash`` element, which contains files that have been marked for
    deletion, but can still be recovered.
- * The ``shared`` element, which contains all objects shared by the user to
-   other users of the system.
- * The ``others`` element, which contains all objects that other users share
-   with the user.
+ * The ``shared by me`` element, which contains all objects shared by the
+   user to other users of the system.
+ * The ``shared with me`` element, which contains all objects that other users
+   share with the user.
  * The ``groups`` element, which contains the names of groups the user has
    defined. Each group consists of a user list. Group creation, deletion, and
    manipulation is carried out by actions originating here.
- * The ``history`` element, which allows browsing past instances of ``home``
-   and - optionally - ``trash``.
+.. * The ``history`` element, which allows browsing past instances of ``home``
+..   and - optionally - ``trash``.
 
 Objects in Pithos can be:
 

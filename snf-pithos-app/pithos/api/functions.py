@@ -602,7 +602,7 @@ def container_delete(request, v_account, v_container):
     try:
         request.backend.delete_container(
             request.user_uniq, v_account, v_container,
-            until, delimiter=delimiter)
+            until, delimiter=delimiter, listing_limit=settings.API_LIST_LIMIT)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:
@@ -1049,7 +1049,8 @@ def object_write(request, v_account, v_container, v_object):
             version_id = copy_or_move_object(
                 request, src_account, src_container, src_name,
                 v_account, v_container, v_object,
-                move=True, delimiter=delimiter)
+                move=True, delimiter=delimiter,
+                listing_limit=settings.API_LIST_LIMIT)
         else:
             try:
                 src_container, src_name = split_container_object_string(
@@ -1059,7 +1060,8 @@ def object_write(request, v_account, v_container, v_object):
             version_id = copy_or_move_object(
                 request, src_account, src_container, src_name,
                 v_account, v_container, v_object,
-                move=False, delimiter=delimiter)
+                move=False, delimiter=delimiter,
+                listing_limit=settings.API_LIST_LIMIT)
         response = HttpResponse(status=201)
         response['X-Object-Version'] = version_id
         return response
@@ -1241,7 +1243,8 @@ def object_copy(request, v_account, v_container, v_object):
 
     version_id = copy_or_move_object(request, v_account, v_container, v_object,
                                      dest_account, dest_container, dest_name,
-                                     move=False, delimiter=delimiter)
+                                     move=False, delimiter=delimiter,
+                                     listing_limit=settings.API_LIST_LIMIT)
     response = HttpResponse(status=201)
     response['X-Object-Version'] = version_id
     return response
@@ -1536,7 +1539,8 @@ def object_delete(request, v_account, v_container, v_object):
     try:
         request.backend.delete_object(
             request.user_uniq, v_account, v_container,
-            v_object, until, delimiter=delimiter)
+            v_object, until, delimiter=delimiter,
+            listing_limit=settings.API_LIST_LIMIT)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:

@@ -7,7 +7,7 @@ Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
 v0.15next
-=============
+=========
 
 Released: UNRELEASED
 
@@ -73,10 +73,14 @@ Astakos
 * Projects can be set `private', making it accessible only to its owner and
   members.
 
-v0.14next
-=========
+=======
+.. _Changelog-0.15:
 
-Released: UNRELEASED
+v0.15
+=====
+
+Released: Mon Mar 10 14:01:32 EET 2014
+
 
 Synnefo-wide
 ------------
@@ -93,7 +97,7 @@ Synnefo-wide
   and Astakos' ui service is under '_astakos/ui'.
 
 * Add 'mail_admins' handler to 'django.request' logger in order to send email
-  notifactions to users listed in 'ADMINS' setting about unhandled exceptions
+  notifications to users listed in 'ADMINS' setting about unhandled exceptions
   in the code.
 
 * Extend astakosclient to request and validate OAuth 2.0 access tokens
@@ -118,13 +122,11 @@ Astakos
   * Improve recording of project, application, and membership actions.
 
 * Implement API calls for projects.
-
 * Store the base URL of a component. Deployer should provide it when adding
   a new component. Service endpoints originating from a component are
   expected to match its base URL; otherwise, a warning is issued.
   Re-registration with `snf-component-register' affects both the base and
   the ui URL.
-
 * Changes in resource and quota handling:
 
   * New resources are registered with unlimited default base quota,
@@ -142,45 +144,46 @@ Astakos
 
 * Remove API call GET /account/v1.0/authenticate in favor of
   POST /identity/v2.0/tokens.
-
-* Export basic statistics about Astakos service from '/admin/stats/detail' API
+* Export basic statistics about Astakos service at the '/admin/stats/detail' API
   endpoint. Access to this endpoint is only allowed to users that belong to
   the Astakos groups that are defined in the
-  'ASTAKOS_ADMIN_STATS_PERMITTED_GROUPS' setting. Statistics are also availble
-  from 'snf-manage stats-astakos' management command.
-
+  'ASTAKOS_ADMIN_STATS_PERMITTED_GROUPS' setting. Statistics are also available
+  through the 'snf-manage stats-astakos' management command.
 * Implement OAuth 2.0 Authorization Code Grant
   Add API calls for authorization code and access token generation
-
 * Add API call for validating OAuth 2.0 access tokens
-
 * **Shibboleth module** Extract unique identifier from the
   ``REMOTE_USER`` header.
-
-* Automatically fill third party signup form fields when available by the
-  the third party provider.
-
-* Omit validation issues for non-required metadata values received from the 
-  third party authentication provider.
-
+* Automatically fill third-party signup form fields when available by the
+  the third-party provider.
 * Management commands:
 
   * Introduced new commands:
-	* component-show
-	* quota-list (replacing quota, supports various filters)
-	* quota-verify (replacing quota)
-	* oauth2-client-add (register OAuth 2.0 client)
-	* oauth2-client-list (list registered oauth 2.0 clients)
-	* oauth2-client-remove (remove OAuth 2.0 client)
+
+    * component-show
+    * quota-list (replacing quota, supports various filters)
+    * quota-verify (replacing quota)
+    * oauth2-client-add (register OAuth 2.0 client)
+    * oauth2-client-list (list registered oauth 2.0 clients)
+    * oauth2-client-remove (remove OAuth 2.0 client)
+
   * Changed commands:
-	* component-add got options --base-url and --ui-url
-	* resource-modify --limit became --default-quota
-	* user-modify can operate on multiple users with --all and --exclude
-	* user-modify --set-base-quota became --base-quota
+
+    * component-add got options --base-url and --ui-url
+    * resource-modify --limit became --default-quota
+    * user-modify can operate on multiple users with --all and --exclude
+    * user-modify --set-base-quota became --base-quota
+
   * Removed commands:
-	* quota
-	* resource-import (subsumed by service-import)
-	* resource-export-astakos (subsumed by service-export-astakos)
+
+    * quota
+    * resource-import (subsumed by service-import)
+    * resource-export-astakos (subsumed by service-export-astakos)
+
+* Fix request authorization code failures due to Unicode issue:
+  https://code.grnet.gr/issues/4971
+* Omit validation issues for non-required metadata values received from the
+  third-party authentication provider.
 
 Cyclades
 --------
@@ -213,7 +216,7 @@ Cyclades
   * Implement the 'resize' server action, to change the flavor of a server.
     Only 'cpu' and 'memory' resizing is supported.
 
-* Compute quotas for CPU and memory of running vms.
+* Compute quotas for CPU and memory of running VMs.
 
   * Change 'cyclades.cpu' and 'cyclades.ram' resources to represent the CPU
     and RAM for running VMs. Total CPU and RAM usage is represented by new
@@ -235,14 +238,14 @@ Cyclades
   CYCLADES_SERVERS_FQDN to set the template for servers FDQN. Remove
   'UI_VM_HOSTNAME_FORMAT' setting.
 * Extend servers info API response with 'SNF:port_forwarding' attribute,
-  describing port fowarding rules (DNAT) that are applied to vms. The
+  describing port forwarding rules (DNAT) that are applied to vms. The
   description of such rules is done via the new CYCLADES_PORT_FORWARDING
   setting.
 * Speed up server reconciliation, by performing parallel reconciliation for
   each backend.
 * Change --dhcp option of network management commands from a flag to a boolean
   value, e.g. --dhcp=True
-* Remove 'ARCHIPELAGO_BACKENDS' setting used to distinquish between backends
+* Remove 'ARCHIPELAGO_BACKENDS' setting used to distinguish between backends
   that hosted only archipelago backends. Instead allocation is based on which
   disk-templates are enabled in each backend.
 * Implement 'snf-manage server-remove' management command.
@@ -253,10 +256,10 @@ Cyclades
 * Do not automatically release externally reserved IPs if they are released
   from a Ganeti backend. Management of externally reserved IPs must be
   performed from Cyclades with 'network-modify' command.
-* Export basic statistics about Cyclades Service from '/admin/stats/detail'
+* Export basic statistics about Cyclades Service at the '/admin/stats/detail'
   API endpoint. Access to this endpoint is only allowed to users that belong
   to the Astakos groups that are defined in the 'ADMIN_STATS_PERMITTED_GROUPS'
-  setting.  Statistics are also availble from 'snf-manage stats-cyclades'
+  setting.  Statistics are also available through the 'snf-manage stats-cyclades'
   management command.
 * Support enforcing quota through command 'enforce-resources-cyclades'.
 * Remove command 'resource-export-cyclades' subsumed by
@@ -276,6 +279,11 @@ Cyclades
   'snf-link-$network_id'.
 * Extend flavors with 'allow_create' attribute. Flavors that have this
   attribute unset cannot be used by users to create new servers.
+* Store each image property(metadata) as a separate Pithos metadata and check
+  that the size of each property is valid.
+* Fix a few occurrences of HTTP 500 errors being triggered due to insufficient
+  validation of incoming requests in the Network API
+* Speed up some API calls by fixing the relevant DB queries
 
 
 Cyclades UI
@@ -316,6 +324,7 @@ Cyclades UI
   to True.
 - Setting ``UI_GROUPED_PUBLIC_NETWORK_NAME`` has been deprecated and no longer 
   used.
+- Fix UI to filter available flavors in VM wizard
 
 
 Cyclades Userdata
@@ -356,6 +365,17 @@ Pithos
   specific host
 * Added new 'file-show' management command
 * Remove command 'resource-export-pithos' subsumed by 'service-export-pithos'.
+* Extend API to optionally enforce a specific content disposition type
+  in view and public requests: https://code.grnet.gr/issues/5019
+
+* Fix bulk operation (delete/copy/move) failures in overpopulated
+  containers/folders: https://code.grnet.gr/issues/5119
+
+* Fix performance issue due to missing index
+* Fix backend open hashfile bug:
+  https://code.grnet.gr/issues/5011
+* Fix GET request for public path with If-None-Match
+  https://code.grnet.gr/issues/5168
 
 .. _Changelog-0.14.10:
 

@@ -1,3 +1,4 @@
+# encoding: utf-8
 # Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
@@ -76,7 +77,8 @@ class ServerAPITest(ComputeAPITest):
     def setUp(self):
         self.user1 = 'user1'
         self.user2 = 'user2'
-        self.vm1 = mfactory.VirtualMachineFactory(userid=self.user1)
+        self.vm1 = mfactory.VirtualMachineFactory(userid=self.user1,
+                                                  name=u"Hi \u2601")
         self.vm2 = mfactory.VirtualMachineFactory(userid=self.user2)
         self.vm3 = mfactory.VirtualMachineFactory(deleted=True,
                                                   userid=self.user1)
@@ -96,7 +98,7 @@ class ServerAPITest(ComputeAPITest):
         servers = json.loads(response.content)['servers']
         db_server = self.vm1
         server = servers[0]
-        self.assertEqual(server["name"], db_server.name)
+        self.assertEqual(server["name"], u"Hi \u2601")
         self.assertEqual(server["id"], db_server.id)
 
     def test_server_list_detail(self):
@@ -280,6 +282,13 @@ class ServerAPITest(ComputeAPITest):
         self.assertSuccess(response)
         self.assertEqual(VirtualMachine.objects.get(id=vm.id).name, "new_name")
 
+    def test_rename_server_invalid_name(self):
+        vm = self.vm2
+        request = {'server': {'name': 'a' * 500}}
+        response = self.myput('servers/%d' % vm.id, vm.userid,
+                              json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
     def test_catch_wrong_api_paths(self):
         response = self.myget('nonexistent')
         self.assertEqual(response.status_code, 400)
@@ -332,12 +341,12 @@ class ServerCreateAPITest(ComputeAPITest):
         self.backend = mfactory.BackendFactory()
         self.request = {
             "server": {
-                "name": "new-server-test",
+                "name": u"Server in the \u2601",
                 "userid": "test_user",
                 "imageRef": 1,
                 "flavorRef": self.flavor.id,
                 "metadata": {
-                    "My Server Name": "Apache1"
+                    u"Meta \u2601": u"Meta in the \u2601"
                 },
                 "personality": []
             }
@@ -365,12 +374,12 @@ class ServerCreateAPITest(ComputeAPITest):
         api_server = json.loads(response.content)['server']
         self.assertEqual(api_server['status'], "BUILD")
         self.assertEqual(api_server['progress'], 0)
-        self.assertEqual(api_server['metadata'],
-                         {"My Server Name":  "Apache1"})
+        self.assertEqual(api_server['metadata'][u"Meta \u2601"],
+                         u"Meta in the \u2601")
         self.assertTrue('adminPass' in api_server)
 
         db_vm = VirtualMachine.objects.get(userid='test_user')
-        self.assertEqual(api_server['name'], db_vm.name)
+        self.assertEqual(api_server['name'], u"Server in the \u2601")
         self.assertEqual(api_server['status'], db_vm.operstate)
 
     def test_create_server_wrong_flavor(self, mrapi):
@@ -735,6 +744,10 @@ class ServerActionAPITest(ComputeAPITest):
         response = self.mypost('servers/%d/action' % vm.id,
                                vm.userid, json.dumps(request), 'json')
         self.assertItemNotFound(response)
+        request = {'firewallProfile': {'profile': 'PROTECTED', "nic": "error"}}
+        response = self.mypost('servers/%d/action' % vm.id,
+                               vm.userid, json.dumps(request), 'json')
+        self.assertBadRequest(response)
         nic = mfactory.NetworkInterfaceFactory(machine=vm)
         request = {'firewallProfile': {'profile': 'PROTECTED', "nic": nic.id}}
         response = self.mypost('servers/%d/action' % vm.id,

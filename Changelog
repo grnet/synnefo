@@ -48,7 +48,7 @@ Astakos
 * Fix request authorization code failures due to Unicode issue:
   https://code.grnet.gr/issues/4971
 * Omit validation issues for non-required metadata values received from the
-  third party authentication provider.
+  third-party authentication provider.
 
 
 Pithos
@@ -145,11 +145,11 @@ Astakos
 * Remove API call GET /account/v1.0/authenticate in favor of
   POST /identity/v2.0/tokens.
 
-* Export basic statistics about Astakos service from '/admin/stats/detail' API
+* Export basic statistics about Astakos service at the '/admin/stats/detail' API
   endpoint. Access to this endpoint is only allowed to users that belong to
   the Astakos groups that are defined in the
   'ASTAKOS_ADMIN_STATS_PERMITTED_GROUPS' setting. Statistics are also available
-  from 'snf-manage stats-astakos' management command.
+  through the 'snf-manage stats-astakos' management command.
 
 * Implement OAuth 2.0 Authorization Code Grant
   Add API calls for authorization code and access token generation
@@ -159,8 +159,8 @@ Astakos
 * **Shibboleth module** Extract unique identifier from the
   ``REMOTE_USER`` header.
 
-* Automatically fill third party signup form fields when available by the
-  the third party provider.
+* Automatically fill third-party signup form fields when available by the
+  the third-party provider.
 
 * Management commands:
 
@@ -212,7 +212,7 @@ Cyclades
   * Implement the 'resize' server action, to change the flavor of a server.
     Only 'cpu' and 'memory' resizing is supported.
 
-* Compute quotas for CPU and memory of running vms.
+* Compute quotas for CPU and memory of running VMs.
 
   * Change 'cyclades.cpu' and 'cyclades.ram' resources to represent the CPU
     and RAM for running VMs. Total CPU and RAM usage is represented by new
@@ -252,10 +252,10 @@ Cyclades
 * Do not automatically release externally reserved IPs if they are released
   from a Ganeti backend. Management of externally reserved IPs must be
   performed from Cyclades with 'network-modify' command.
-* Export basic statistics about Cyclades Service from '/admin/stats/detail'
+* Export basic statistics about Cyclades Service at the '/admin/stats/detail'
   API endpoint. Access to this endpoint is only allowed to users that belong
   to the Astakos groups that are defined in the 'ADMIN_STATS_PERMITTED_GROUPS'
-  setting.  Statistics are also available from 'snf-manage stats-cyclades'
+  setting.  Statistics are also available through the 'snf-manage stats-cyclades'
   management command.
 * Support enforcing quota through command 'enforce-resources-cyclades'.
 * Remove command 'resource-export-cyclades' subsumed by

@@ -132,16 +132,18 @@
                 this.ips_toggle.removeClass("open");
 
                 this.info_el.slideToggle();
-                this.view.vm(this.vm).toggleClass("light-background");
+                var vm_view = this.view.vm(this.vm);
 
                 if (this.info_toggle.hasClass("open")) {
                     this.info_toggle.removeClass("open");
                     this.vm.stop_stats_update();
+                    vm_view.removeClass("light-background");
                 } else {
                     this.info_toggle.addClass("open");
                     this.view.details_views[this.vm.id].update_layout();
                     this.view.tags_views[this.vm.id].update_layout();
                     this.view.stats_views[this.vm.id].update_layout();
+                    vm_view.addClass("light-background");
                 }
                 
                 var self = this;
@@ -154,14 +156,16 @@
                 }
                 this.info_el.slideUp();
                 this.info_toggle.removeClass("open");
+                var vm_view = this.view.vm(this.vm);
 
                 this.ips_el.slideToggle();
-                this.view.vm(this.vm).toggleClass("light-background");
                 var self = this;
                 if (this.ips_toggle.hasClass("open")) {
                     this.ips_toggle.removeClass("open");
+                    vm_view.removeClass("light-background");
                 } else {
                     this.ips_toggle.addClass("open");
+                    vm_view.addClass("light-background");
                 }
                 window.setTimeout(function() {$(self.view).trigger("resize")}, 300);
             }, this));
@@ -788,7 +792,6 @@
             // FIXME: code from old js api
             this.$("div.separator").show();
             this.$("div.machine-container:last-child").find("div.separator").hide();
-            fix_v6_addresses();
         },
   
         update_status_message: function(vm) {

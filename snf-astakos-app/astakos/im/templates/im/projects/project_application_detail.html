@@ -48,7 +48,11 @@ PROJECT APPLICATION {{ object.state_display|upper}}
 <dd>{{ application|display_date_modification_param:"end_date,d/m/Y" }}&nbsp;</dd>
 <dt>Owner</dt>
 {% if admin_mode %}
+{% if owner_mode %}
+<dd>{{ application|display_modification_param:"owner,owner_owner" }}&nbsp;</dd>
+{% else %}
 <dd>{{ application|display_modification_param:"owner,owner_admin" }}&nbsp;</dd>
+{% endif %}
 {% else %}
 {% if owner_mode %}
 <dd>{{ application|display_modification_param:"owner,owner_owner" }}&nbsp;</dd>

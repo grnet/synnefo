@@ -231,9 +231,14 @@
       resources: ['cyclades.vm', 'cyclades.ram', 
                   'cyclades.cpu', 'cyclades.disk'],
       model_usage: {},
+
       can_fit_func: function(project) {
           var quotas = this.model.get_flavor().quotas();
-          return project.quotas.can_fit(quotas);
+          var total = false;
+          if (this.model.get("status") == "STOPPED") {
+            total = true;
+          }
+          return project.quotas.can_fit(quotas, total);
       },
       
       update_model_details: function() {

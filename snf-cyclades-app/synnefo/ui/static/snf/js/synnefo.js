@@ -290,46 +290,6 @@ function get_short_v6(v6, parts_to_keep) {
     return new_parts.join(":");
 }
 
-function fix_v6_addresses() {
-
-    // what to prepend
-    var match = "...";
-    // long ip min length
-    var limit = 20;
-    // parts to show after the transformation
-    // (from the end)
-    var parts_to_keep_from_end = 4;
-
-    $(".machine .ipv6-text").each(function(index, el){
-        var el = $(el);
-        var ip = $(el).text();
-            
-        // transformation not applyied
-        // FIXME: use $.data for the condition
-        if (ip.indexOf(match) == -1 && ip != "pending") {
-            
-            // only too long ips
-            if (ip.length > 20) {
-                $(el).data("ipstring", ip);
-                $(el).text(match + get_short_v6(ip, parts_to_keep_from_end));
-                $(el).attr("title", ip);
-                $(el).tooltip({'tipClass':'tooltip ipv6-tip', 'position': 'center center'});
-            }
-        } else {
-            if (ip.indexOf(match) == 0) {
-            } else {
-                // not a long ip anymore
-                $(el).data("ipstring", undefined);
-                $(el).css({'text-decoration':'none'});
-
-                if ($(el).data('tooltip')) {
-                    $(el).data('tooltip').show = function () {};
-                }
-            }
-        }
-    });
-}
-
 // get stats
 function get_server_stats(serverID) {
     

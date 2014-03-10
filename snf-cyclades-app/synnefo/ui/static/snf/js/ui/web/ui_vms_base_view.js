@@ -413,6 +413,10 @@
         update_toggles_visibility: function(vm) {
           if (vm.is_building() || vm.in_error_state() || vm.get("status") == "DESTROY") {
             this.vm(vm).find(".cont-toggler-wrapper.ips").addClass("disabled");
+            var info_view = this.info_views && this.info_views[vm.id];
+            if (info_view && info_view.ips_el) {
+              info_view.ips_el.hide();
+            }
           } else {
             this.vm(vm).find(".cont-toggler-wrapper.ips").removeClass("disabled");
           }
@@ -677,6 +681,8 @@
                 this.view.hide_indicator(this.vm);
             }
                 
+            var vm_view = this.view.vm(this.vm);
+            vm_view.removeClass("action-pending");
             // update action link styles and shit
             _.each(models.VM.ACTIONS, function(action, index) {
                 if (actions.indexOf(action) > -1) {
@@ -694,6 +700,7 @@
                         this.action_confirm(action).show();
                         this.action(action).removeClass("disabled");
                         this.action_link(action).addClass("selected");
+                        vm_view.addClass("action-pending");
                     } else {
                         this.action_confirm_cont(action).hide();
                         this.action_confirm(action).hide();

@@ -1278,6 +1278,14 @@
             return this.get("pending_action") ? this.get("pending_action") : false;
         },
         
+        active_resources: function() {
+          if (this.get("status") == "STOPPED") {
+            return ["cyclades.vm", "cyclades.disk"]
+          }
+          return ["cyclades.vm", "cyclades.disk", "cyclades.cpu", 
+                  "cyclades.ram"]
+        },
+
         // machine is active
         is_active: function() {
             return models.VM.ACTIVE_STATES.indexOf(this.state()) > -1;
@@ -2692,7 +2700,7 @@
             if (!q) { issues.push(key); return }
             var quota = q.get('available_active');
             if (total) {
-              quota = q.get('available');
+              quota = q.get('total_available');
             }
             if (quota < value) {
               issues.push(key);

@@ -991,11 +991,14 @@ div.list div.actions a.enabled.destroy {
 .vm-actions .action-container.destroy a {
 }
 
-.icon .light-background .machine-data, div.network.light-background, div.network.expand {
+.icon .light-background .machine-data, 
+.icon .action-pending .machine-data, 
+div.network.light-background, div.network.expand {
     background-color:#aed2e3 !important;
 }
 
-.single .light-background {
+.single .light-background,
+.single .action-pending {
     background-color:#aed2e3;
 }
 
@@ -7758,6 +7761,14 @@ select .resource-value,
   color: #ddd;
 }
 
+.project.select-item .quota .resource-value {
+  font-weight: bold;
+}
+
+.project.select-item .quota .resource-key {
+  letter-spacing: -1px;
+}
+
 option.project.select-item.selected {
   background-color: transparent;
 }
@@ -7776,7 +7787,7 @@ option.project.select-item.selected {
 }
 
 .project.select-item .quota .resource-value {
-  margin-right: 20px;
+  margin-right: 15px;
   display: inline-block;
 }
 
@@ -7784,8 +7795,19 @@ option.project.select-item.selected {
 }
 
 .project.select-item {
-  padding: 5px 0;
+  padding: 5px 0 0 0;
   position: relative;
+}
+
+.project.select-item.selected .quota {
+}
+
+.project.select-item.disabled .quota {
+  background-color: #aaa;
+}
+
+.project.select-item .quota {
+  padding: 5px 5px 5px 0;
 }
 
 .project.select-item .quota {

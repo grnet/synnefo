@@ -548,7 +548,7 @@ def image_to_dict(location, metadata, permissions):
     return image
 
 
-class JSONFileBackend(PlanktonBackend):
+class JSONFileBackend(object):
     """
     A dummy image backend that loads available images from a file with json
     formatted content.
@@ -590,7 +590,6 @@ class JSONFileBackend(PlanktonBackend):
 
 def get_backend():
     backend_module = getattr(settings, 'PLANKTON_BACKEND_MODULE', None)
-
     if not backend_module:
         # no setting set
         return PlanktonBackend

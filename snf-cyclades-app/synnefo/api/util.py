@@ -51,13 +51,12 @@ from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, NetworkInterface, SecurityGroup,
                                BridgePoolTable, MacPrefixPoolTable, IPAddress,
                                IPPoolTable)
-from synnefo.plankton.backend import get_backend
+from synnefo.plankton.backend import PlanktonBackend
 
 from synnefo.cyclades_settings import cyclades_services, BASE_HOST
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 
-PlanktonBackend = get_backend()
 COMPUTE_URL = \
     join_urls(BASE_HOST,
               get_service_path(cyclades_services, "compute", version="v2.0"))

@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -98,9 +98,10 @@ class Command(BaseCommand):
         except BaseException, e:
             raise CommandError(e)
         else:
-            self.stdout.write('User created successfully ')
+            self.stdout.write('User created successfully with UUID: %s'
+                              % user.uuid)
             if not options.get('password'):
-                self.stdout.write('with password: %s\n' % password)
+                self.stdout.write(' and password: %s\n' % password)
             else:
                 self.stdout.write('\n')
 

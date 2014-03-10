@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -54,7 +54,7 @@ class Command(ListCommand):
 
     FIELDS = {
         'id': ('id', ('The id of the user')),
-        'real name': ('realname', 'The name of the user'),
+        'realname': ('realname', 'The name of the user'),
         'active': ('is_active', 'Whether the user is active or not'),
         'verified':
         ('email_verified', 'Whether the user has a verified email address'),
@@ -70,8 +70,7 @@ class Command(ListCommand):
         'groups': (get_groups, 'The groups of the user')
     }
 
-    fields = ['id', 'real name', 'active', 'verified', 'moderated', 'admin',
-              'uuid']
+    fields = ['id', 'displayname', 'realname', 'uuid', 'active', 'admin']
 
     option_list = ListCommand.option_list + (
         make_option('--auth-providers',
@@ -103,7 +102,7 @@ class Command(ListCommand):
                     dest="displayname",
                     action="store_true",
                     default=False,
-                    help="Display user displayname")
+                    help="Display user displayname (enabled by default)")
     )
 
     def handle_args(self, *args, **options):
@@ -120,5 +119,6 @@ class Command(ListCommand):
         if options['auth_providers']:
             self.fields.extend(['providers'])
 
-        if options['displayname']:
-            self.fields.extend(['displayname'])
+        DISPLAYNAME = 'displayname'
+        if options[DISPLAYNAME] and DISPLAYNAME not in self.fields:
+            self.fields.extend([DISPLAYNAME])

@@ -203,8 +203,9 @@ def SetupSynnefoRole(role):
             debug(env.host, "Base configuration already exists", c.__name__)
         else:
             AddSynnefoComponent(c)
-            env.env.status.update_status(env.host, c, "ok")
-            env.env.status.write_status()
+            if not env.dry_run:
+                env.env.status.update_status(env.host, c, "ok")
+                env.env.status.write_status()
 
 
 class AddSynnefoComponent(object):

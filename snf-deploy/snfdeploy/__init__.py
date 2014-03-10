@@ -370,6 +370,14 @@ def parse_options():
     parser.add_argument("-c", dest="confdir",
                         default="/etc/snf-deploy",
                         help="Directory to find default configuration")
+    parser.add_argument("-t", "--templates-dir", dest="templatesdir",
+                        default=None,
+                        help="Directory to find templates. Overrides"
+                             " the one found in the deploy.conf file")
+    parser.add_argument("-s", "--state-dir", dest="statedir",
+                        default=None,
+                        help="Directory to store current state. Overrides"
+                             " the one found in the deploy.conf")
     parser.add_argument("--dry-run", dest="dry_run",
                         default=False, action="store_true",
                         help="Do not execute or write anything.")
@@ -571,7 +579,7 @@ def main():
 
     conf = Conf(args)
     env = Env(conf)
-    env.status = Status(args)
+    env.status = Status(env)
 
     create_dir(env.run, False)
     create_dir(env.dns, False)

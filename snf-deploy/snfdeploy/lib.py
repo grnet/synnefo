@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-# Copyright (C) 2010, 2011, 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2013, 2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -210,10 +210,10 @@ class Status(object):
         except ConfigParser.NoSectionError:
             self.config.add_section(ip)
 
-    def __init__(self, args):
+    def __init__(self, env):
         self.config = ConfigParser.ConfigParser()
         self.config.optionxform = str
-        self.statusfile = os.path.join(args.confdir, "status.conf")
+        self.statusfile = os.path.join(env.state, "snf_deploy_status")
         self.config.read(self.statusfile)
 
     def check_status(self, ip, component_class):
@@ -255,6 +255,12 @@ class Conf(object):
                 for k, v in self.get_section(f, s):
                     if getattr(args, k, None):
                         self.set(f, s, k, getattr(args, k))
+        # Override conf file settings if
+        # --templates-dir and --state-dir args are passed
+        if args.templatesdir:
+            self.deploy.set("dirs", "templates", args.templatesdir)
+        if args.statedir:
+            self.deploy.set("dirs", "state", args.statedir)
         if args.autoconf:
             self.autoconf()
 

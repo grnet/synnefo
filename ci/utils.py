@@ -41,8 +41,10 @@ import os
 import re
 import sys
 import time
+import httplib
 import logging
 import fabric.api as fabric
+import simplejson as json
 import subprocess
 import tempfile
 from ConfigParser import ConfigParser, DuplicateSectionError
@@ -311,12 +313,12 @@ class SynnefoCI(object):
             try:
                 fip = self.network_client.create_floatingip(pub_net['id'])
             except ClientError as err:
-                self.logger.warning("%s: %s", err.message, err.details)
+                self.logger.warning("%s", str(err.message).strip())
                 continue
             self.logger.debug("Floating IP %s with id %s created",
                               fip['floating_ip_address'], fip['id'])
             return fip
-        self.logger.error("No mor IP addresses available")
+        self.logger.error("No more IP addresses available")
         sys.exit(1)
 
     def _create_port(self, floating_ip):
@@ -675,8 +677,8 @@ class SynnefoCI(object):
             sys.exit(1)
 
     @_check_fabric
-    def clone_repo(self, synnefo_repo=None,
-                   synnefo_branch=None, local_repo=False):
+    def clone_repo(self, synnefo_repo=None, synnefo_branch=None,
+                   local_repo=False, pull_request=None):
         """Clone Synnefo repo from slave server"""
         self.logger.info("Configure repositories on remote server..")
         self.logger.debug("Install/Setup git")
@@ -691,14 +693,51 @@ class SynnefoCI(object):
         # Clone synnefo_repo
         synnefo_branch = self.clone_synnefo_repo(
             synnefo_repo=synnefo_repo, synnefo_branch=synnefo_branch,
-            local_repo=local_repo)
+            local_repo=local_repo, pull_request=pull_request)
         # Clone pithos-web-client
         self.clone_pithos_webclient_repo(synnefo_branch)
 
     @_check_fabric
-    def clone_synnefo_repo(self, synnefo_repo=None,
-                           synnefo_branch=None, local_repo=False):
+    def clone_synnefo_repo(self, synnefo_repo=None, synnefo_branch=None,
+                           local_repo=False, pull_request=None):
         """Clone Synnefo repo to remote server"""
+
+        assert (pull_request is None or
+                (synnefo_branch is None and synnefo_repo is None))
+
+        pull_repo = None
+        if pull_request is not None:
+            # Get a Github pull request and run the testsuite in
+            # a sophisticated way.
+            # Sophisticated means that it will not just check the remote branch
+            # from which the pull request originated. Instead it will checkout
+            # the branch for which the pull request is indented (e.g.
+            # grnet:develop) and apply the pull request over it. This way it
+            # checks the pull request against the branch this pull request
+            # targets.
+            m = re.search("github.com/([^/]+)/([^/]+)/pull/(\d+)",
+                          pull_request)
+            group = m.group(1)
+            repo = m.group(2)
+            pull_number = m.group(3)
+
+            # Construct api url
+            api_url = "/repos/%s/%s/pulls/%s" % \
+                (group, repo, pull_number)
+            headers = {'User-Agent': "snf-ci"}
+            # Get pull request info
+            try:
+                conn = httplib.HTTPSConnection("api.github.com")
+                conn.request("GET", api_url, headers=headers)
+                response = conn.getresponse()
+                payload = json.load(response)
+                synnefo_repo = payload['base']['repo']['html_url']
+                synnefo_branch = payload['base']['ref']
+                pull_repo = (payload['head']['repo']['html_url'],
+                             payload['head']['ref'])
+            finally:
+                conn.close()
+
         # Find synnefo_repo and synnefo_branch to use
         if synnefo_repo is None:
             synnefo_repo = self.config.get('Global', 'synnefo_repo')
@@ -756,6 +795,16 @@ class SynnefoCI(object):
         git checkout %s
         """ % (synnefo_branch)
         _run(cmd, False)
+
+        # Apply a Github pull request
+        if pull_repo is not None:
+            self.logger.debug("Apply patches from pull request %s",
+                              pull_number)
+            cmd = """
+            cd synnefo
+            git pull --no-edit --no-rebase {0} {1}
+            """.format(pull_repo[0], pull_repo[1])
+            _run(cmd, False)
 
         return synnefo_branch
 

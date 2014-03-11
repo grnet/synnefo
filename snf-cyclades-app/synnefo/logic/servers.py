@@ -435,6 +435,7 @@ def console(vm, console_type):
                                  **vnc_extra_opts)
 
     if fwd['status'] != "OK":
+        log.error("vncauthproxy returned error status: '%s'" % fwd)
         raise faults.ServiceUnavailable('vncauthproxy returned error status')
 
     # Verify that the VNC server settings haven't changed

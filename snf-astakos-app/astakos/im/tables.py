@@ -266,6 +266,8 @@ class UserProjectsTable(UserTable):
     members_count_f = tables.Column(verbose_name=_("Members"),
                                     empty_values=(),
                                     orderable=False)
+    owner = tables.Column(verbose_name=_("Owner"),
+                          accessor='application.owner')
     membership_status = tables.Column(verbose_name=_("Status"),
                                       empty_values=(),
                                       orderable=False)
@@ -313,8 +315,8 @@ class UserProjectsTable(UserTable):
         return mark_safe(str(members_count) + append)
 
     class Meta:
-        sequence = ('name', 'membership_status', 'issue_date', 'end_date',
-                    'members_count_f', 'project_action')
+        sequence = ('name', 'membership_status', 'owner', 'issue_date',
+                    'end_date', 'members_count_f', 'project_action')
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
         template = "im/table_render.html"
         empty_text = _('No projects')
@@ -355,9 +357,9 @@ class ProjectMembersTable(UserTable):
     check = tables.Column(accessor="person.id", verbose_name=mark_safe(input),
                           orderable=False)
     email = tables.Column(accessor="person.email", verbose_name=_('Email'),
-                          orderable= False)
+                          orderable=False)
     status = tables.Column(accessor="state", verbose_name=_('Status'),
-                          orderable= False)
+                           orderable=False)
     project_action = RichLinkColumn(verbose_name=_('Action'),
                                     extra_context=member_action_extra_context,
                                     orderable=False)

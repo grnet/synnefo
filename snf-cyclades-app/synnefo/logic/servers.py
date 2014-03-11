@@ -416,6 +416,9 @@ def console(vm, console_type):
 
 def rename(server, new_name):
     """Rename a VirtualMachine."""
+    utils.check_name_length(new_name,
+                            VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
+                            "Server name is too long")
     old_name = server.name
     server.name = new_name
     server.save()

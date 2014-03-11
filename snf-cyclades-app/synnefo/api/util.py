@@ -138,7 +138,10 @@ def get_vm(server_id, user_id, for_update=False, non_deleted=False,
         if for_update:
             servers = servers.select_for_update()
         if prefetch_related is not None:
-            servers = servers.prefetch_related(prefetch_related)
+            if isinstance(prefetch_related, list):
+                servers = servers.prefetch_related(*prefetch_related)
+            else:
+                servers = servers.prefetch_related(prefetch_related)
         vm = servers.get(id=server_id, userid=user_id)
         if non_deleted and vm.deleted:
             raise faults.BadRequest("Server has been deleted.")
@@ -310,9 +313,12 @@ def backend_public_networks(backend):
 def get_vm_nic(vm, nic_id):
     """Get a VMs NIC by its ID."""
     try:
+        nic_id = int(nic_id)
         return vm.nics.get(id=nic_id)
     except NetworkInterface.DoesNotExist:
         raise faults.ItemNotFound("NIC '%s' not found" % nic_id)
+    except (ValueError, TypeError):
+        raise faults.BadRequest("Invalid NIC ID '%s'" % nic_id)
 
 
 def get_nic(nic_id):

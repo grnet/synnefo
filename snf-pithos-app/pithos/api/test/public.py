@@ -34,14 +34,24 @@
 import random
 import datetime
 import time as _time
+import re
+
+from functools import partial
 
 from synnefo.lib import join_urls
 
 import django.utils.simplejson as json
 
-from pithos.api.test import PithosAPITest
-from pithos.api.test.util import get_random_name
+from pithos.api.test import (PithosAPITest, DATE_FORMATS, TEST_BLOCK_SIZE,
+                             TEST_HASH_ALGORITHM)
+
+from pithos.api.test.util import (get_random_name, get_random_data, md5_hash,
+                                  merkle)
 from pithos.api import settings as pithos_settings
+
+merkle = partial(merkle,
+                 blocksize=TEST_BLOCK_SIZE,
+                 blockhash=TEST_HASH_ALGORITHM)
 
 
 class TestPublic(PithosAPITest):
@@ -249,3 +259,453 @@ class TestPublic(PithosAPITest):
         self.assertTrue(r.content, data)
         #self.assertTrue('X-Object-Manifest' in r)
         #self.assertEqual(r['X-Object-Manifest'], manifest)
+
+    def test_public_get_partial(self):
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname, length=512)[:-1]
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+
+        r = self.get(public_url, HTTP_RANGE='bytes=0-499')
+        self.assertEqual(r.status_code, 206)
+        data = r.content
+        self.assertEqual(data, odata[:500])
+        self.assertTrue('Content-Range' in r)
+        self.assertEqual(r['Content-Range'], 'bytes 0-499/%s' % len(odata))
+        self.assertTrue('Content-Type' in r)
+        self.assertTrue(r['Content-Type'], 'application/octet-stream')
+
+    def test_public_get_final_500(self):
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname, length=512)[:-1]
+        size = len(odata)
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+
+        r = self.get(public_url, HTTP_RANGE='bytes=-500')
+        self.assertEqual(r.status_code, 206)
+        self.assertEqual(r.content, odata[-500:])
+        self.assertTrue('Content-Range' in r)
+        self.assertEqual(r['Content-Range'],
+                         'bytes %s-%s/%s' % (size - 500, size - 1, size))
+        self.assertTrue('Content-Type' in r)
+        self.assertTrue(r['Content-Type'], 'application/octet-stream')
+
+    def test_public_get_rest(self):
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname, length=512)[:-1]
+        size = len(odata)
+        offset = len(odata) - random.randint(1, 512)
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+
+        r = self.get(public_url, HTTP_RANGE='bytes=%s-' % offset)
+        self.assertEqual(r.status_code, 206)
+        self.assertEqual(r.content, odata[offset:])
+        self.assertTrue('Content-Range' in r)
+        self.assertEqual(r['Content-Range'],
+                         'bytes %s-%s/%s' % (offset, size - 1, size))
+        self.assertTrue('Content-Type' in r)
+        self.assertTrue(r['Content-Type'], 'application/octet-stream')
+
+    def test_public_get_range_not_satisfiable(self):
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname, length=512)[:-1]
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+
+        offset = len(odata) + 1
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+
+        r = self.get(public_url, HTTP_RANGE='bytes=0-%s' % offset)
+        self.assertEqual(r.status_code, 416)
+
+    def test_public_multiple_range(self):
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname)[:-1]
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+
+        l = ['0-499', '-500', '1000-']
+        ranges = 'bytes=%s' % ','.join(l)
+        r = self.get(public_url, HTTP_RANGE=ranges)
+        self.assertEqual(r.status_code, 206)
+        self.assertTrue('content-type' in r)
+        p = re.compile(
+            'multipart/byteranges; boundary=(?P<boundary>[0-9a-f]{32}\Z)',
+            re.I)
+        m = p.match(r['content-type'])
+        if m is None:
+            self.fail('Invalid multiple range content type')
+        boundary = m.groupdict()['boundary']
+        cparts = r.content.split('--%s' % boundary)[1:-1]
+
+        # assert content parts length
+        self.assertEqual(len(cparts), len(l))
+
+        # for each content part assert headers
+        i = 0
+        for cpart in cparts:
+            content = cpart.split('\r\n')
+            headers = content[1:3]
+            content_range = headers[0].split(': ')
+            self.assertEqual(content_range[0], 'Content-Range')
+
+            r = l[i].split('-')
+            if not r[0] and not r[1]:
+                pass
+            elif not r[0]:
+                start = len(odata) - int(r[1])
+                end = len(odata)
+            elif not r[1]:
+                start = int(r[0])
+                end = len(odata)
+            else:
+                start = int(r[0])
+                end = int(r[1]) + 1
+            fdata = odata[start:end]
+            sdata = '\r\n'.join(content[4:-1])
+            self.assertEqual(len(fdata), len(sdata))
+            self.assertEquals(fdata, sdata)
+            i += 1
+
+    def test_public_multiple_range_not_satisfiable(self):
+        # perform get with multiple range
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname)[:-1]
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+
+        out_of_range = len(odata) + 1
+        l = ['0-499', '-500', '%d-' % out_of_range]
+        ranges = 'bytes=%s' % ','.join(l)
+        r = self.get(public_url, HTTP_RANGE=ranges)
+        self.assertEqual(r.status_code, 416)
+
+    def test_public_get_if_match(self):
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname)[:-1]
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+
+        def assert_matches(etag):
+            r = self.get(public_url, HTTP_IF_MATCH=etag)
+
+            # assert get success
+            self.assertEqual(r.status_code, 200)
+
+            # assert response content
+            self.assertEqual(r.content, odata)
+
+        # perform get with If-Match
+        if pithos_settings.UPDATE_MD5:
+            assert_matches(md5_hash(odata))
+        else:
+            assert_matches(merkle(odata))
+
+    def test_public_get_if_match_star(self):
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname)[:-1]
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+
+        # perform get with If-Match *
+        r = self.get(public_url, HTTP_IF_MATCH='*')
+
+        # assert get success
+        self.assertEqual(r.status_code, 200)
+
+        # assert response content
+        self.assertEqual(r.content, odata)
+
+    def test_public_get_multiple_if_match(self):
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname)[:-1]
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+
+        def assert_multiple_match(etag):
+            quoted = lambda s: '"%s"' % s
+            r = self.get(public_url, HTTP_IF_MATCH=','.join(
+                [quoted(etag), quoted(get_random_data(64))]))
+
+            # assert get success
+            self.assertEqual(r.status_code, 200)
+
+            # assert response content
+            self.assertEqual(r.content, odata)
+
+        # perform get with If-Match
+        if pithos_settings.UPDATE_MD5:
+            assert_multiple_match(md5_hash(odata))
+        else:
+            assert_multiple_match(merkle(odata))
+
+    def test_public_if_match_precondition_failed(self):
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname)[:-1]
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+
+        # perform get with If-Match
+        r = self.get(public_url, HTTP_IF_MATCH=get_random_name())
+        self.assertEqual(r.status_code, 412)
+
+    def test_public_if_none_match(self):
+        # upload object
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname)[:-1]
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+
+        def assert_non_match(etag):
+            # perform get with If-None-Match
+            r = self.get(public_url, HTTP_IF_NONE_MATCH=etag)
+
+            # assert precondition_failed
+            self.assertEqual(r.status_code, 304)
+
+            # update object data
+            r = self.append_object_data(cname, oname)[-1]
+            self.assertTrue(etag != r['ETag'])
+
+            # perform get with If-None-Match
+            r = self.get(public_url, HTTP_IF_NONE_MATCH=etag)
+
+            # assert get success
+            self.assertEqual(r.status_code, 200)
+
+        if pithos_settings.UPDATE_MD5:
+            assert_non_match(md5_hash(odata))
+        else:
+            assert_non_match(merkle(odata))
+
+    def test_public_if_none_match_star(self):
+        # upload object
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname)[:-1]
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+
+        # perform get with If-None-Match with star
+        r = self.get(public_url, HTTP_IF_NONE_MATCH='*')
+
+        self.assertEqual(r.status_code, 304)
+
+    def test_public_if_modified_sinse(self):
+        cname = get_random_name()
+        self.create_container(cname)
+        oname, odata = self.upload_object(cname)[:-1]
+        self._assert_not_public_object(cname, oname)
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public = info['X-Object-Public']
+
+        object_info = self.get_object_info(cname, oname)
+        last_modified = object_info['Last-Modified']
+        t1 = datetime.datetime.strptime(last_modified, DATE_FORMATS[-1])
+        t1_formats = map(t1.strftime, DATE_FORMATS)
+
+        for t in t1_formats:
+            r = self.get(public, user='user2', HTTP_IF_MODIFIED_SINCE=t,
+                         token=None)
+            self.assertEqual(r.status_code, 304)
+
+        _time.sleep(1)
+
+        # update object data
+        appended_data = self.append_object_data(cname, oname)[1]
+
+        # Check modified since
+        for t in t1_formats:
+            r = self.get(public, user='user2', HTTP_IF_MODIFIED_SINCE=t,
+                         token=None)
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(r.content, odata + appended_data)
+
+    def test_public_if_modified_since_invalid_date(self):
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname)[:-1]
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+
+        r = self.get(public_url, HTTP_IF_MODIFIED_SINCE='Monday')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.content, odata)
+
+    def test_public_if_public_not_modified_since(self):
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname)[:-1]
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+        last_modified = info['Last-Modified']
+        t = datetime.datetime.strptime(last_modified, DATE_FORMATS[-1])
+
+        # Check unmodified
+        t1 = t + datetime.timedelta(seconds=1)
+        t1_formats = map(t1.strftime, DATE_FORMATS)
+        for t in t1_formats:
+            r = self.get(public_url, HTTP_IF_UNMODIFIED_SINCE=t)
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(r.content, odata)
+
+        # modify object
+        _time.sleep(2)
+        self.append_object_data(cname, oname)
+
+        info = self.get_object_info(cname, oname)
+        last_modified = info['Last-Modified']
+        t = datetime.datetime.strptime(last_modified, DATE_FORMATS[-1])
+        t2 = t - datetime.timedelta(seconds=1)
+        t2_formats = map(t2.strftime, DATE_FORMATS)
+
+        # check modified
+        for t in t2_formats:
+            r = self.get(public_url, HTTP_IF_UNMODIFIED_SINCE=t)
+            self.assertEqual(r.status_code, 412)
+
+        # modify account: update object meta
+        _time.sleep(1)
+        self.update_object_meta(cname, oname, {'foo': 'bar'})
+
+        info = self.get_object_info(cname, oname)
+        last_modified = info['Last-Modified']
+        t = datetime.datetime.strptime(last_modified, DATE_FORMATS[-1])
+        t3 = t - datetime.timedelta(seconds=1)
+        t3_formats = map(t3.strftime, DATE_FORMATS)
+
+        # check modified
+        for t in t3_formats:
+            r = self.get(public_url, HTTP_IF_UNMODIFIED_SINCE=t)
+            self.assertEqual(r.status_code, 412)
+
+    def test_public_if_unmodified_since(self):
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname)[:-1]
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+        last_modified = info['Last-Modified']
+        t = datetime.datetime.strptime(last_modified, DATE_FORMATS[-1])
+        t = t + datetime.timedelta(seconds=1)
+        t_formats = map(t.strftime, DATE_FORMATS)
+
+        for tf in t_formats:
+            r = self.get(public_url, HTTP_IF_UNMODIFIED_SINCE=tf)
+            self.assertEqual(r.status_code, 200)
+            self.assertEqual(r.content, odata)
+
+    def test_public_if_unmodified_since_precondition_failed(self):
+        cname = self.create_container()[0]
+        oname, odata = self.upload_object(cname)[:-1]
+
+        # set public
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
+        self.assertEqual(r.status_code, 202)
+
+        info = self.get_object_info(cname, oname)
+        public_url = info['X-Object-Public']
+        last_modified = info['Last-Modified']
+        t = datetime.datetime.strptime(last_modified, DATE_FORMATS[-1])
+        t = t - datetime.timedelta(seconds=1)
+        t_formats = map(t.strftime, DATE_FORMATS)
+
+        for tf in t_formats:
+            r = self.get(public_url, HTTP_IF_UNMODIFIED_SINCE=tf)
+            self.assertEqual(r.status_code, 412)

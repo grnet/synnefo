@@ -143,6 +143,19 @@ class SubnetTest(BaseAPITest):
                              json.dumps(request), "json")
         self.assertBadRequest(response)
 
+    def test_create_subnet_with_malformed_network_id(self):
+        """Test create a subnet with an invalid network ID"""
+        test_net = mf.NetworkFactory()
+        request = {
+            'subnet': {
+                'network_id': 'error',
+                'cidr': '192.168.42.0/24',
+                'ip_version': 4}
+        }
+        response = self.post(SUBNETS_URL, test_net.userid,
+                             json.dumps(request), "json")
+        self.assertBadRequest(response)
+
     def test_create_subnet_success_ipv6(self):
         """Test create an IPv6 subnet successfully"""
         test_net = mf.NetworkFactory()

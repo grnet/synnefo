@@ -59,6 +59,7 @@ from django.db.backends.creation import TEST_DATABASE_PREFIX
 import django.utils.simplejson as json
 
 
+import sys
 import random
 import functools
 
@@ -151,8 +152,11 @@ class PithosTestSuiteRunner(DjangoTestSuiteRunner):
     def teardown_databases(self, old_config, **kwargs):
         from pithos.api.util import _pithos_backend_pool
         _pithos_backend_pool.shutdown()
-        super(PithosTestSuiteRunner, self).teardown_databases(old_config,
-                                                              **kwargs)
+        try:
+            super(PithosTestSuiteRunner, self).teardown_databases(old_config,
+                                                                  **kwargs)
+        except Exception as e:
+            sys.stderr.write("FAILED to teardown databases: %s\n" % str(e))
 
 
 class PithosTestClient(Client):
@@ -303,9 +307,11 @@ class PithosAPITest(TestCase):
         return response
 
     def put(self, url, user='user', token='DummyToken', data={},
-            content_type='application/octet-stream', follow=False, **extra):
+            content_type='application/octet-stream', follow=False,
+            quote_extra=True, **extra):
         with astakos_user(user):
-            extra = dict((quote(k), quote(v)) for k, v in extra.items())
+            if quote_extra:
+                extra = dict((quote(k), quote(v)) for k, v in extra.items())
             if token:
                 extra['HTTP_X_AUTH_TOKEN'] = token
             response = self.client.put(url, data, content_type, follow,

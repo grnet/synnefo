@@ -77,7 +77,9 @@ class FloatingIPAPITest(BaseAPITest):
                           "id": str(ip.id),
                           "port_id": str(ip.nic.id),
                           "deleted": False,
-                          "floating_network_id": str(ip.network_id)})
+                          "floating_network_id": str(ip.network_id),
+                          "tenant_id": ip.userid,
+                          "user_id": ip.userid})
 
     def test_get_ip(self):
         ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True)
@@ -92,7 +94,9 @@ class FloatingIPAPITest(BaseAPITest):
                           "id": str(ip.id),
                           "port_id": str(ip.nic.id),
                           "deleted": False,
-                          "floating_network_id": str(ip.network_id)})
+                          "floating_network_id": str(ip.network_id),
+                          "tenant_id": ip.userid,
+                          "user_id": ip.userid})
 
     def test_wrong_user(self):
         ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True)
@@ -124,7 +128,9 @@ class FloatingIPAPITest(BaseAPITest):
                           "id": str(ip.id),
                           "port_id": None,
                           "deleted": False,
-                          "floating_network_id": str(self.pool.id)})
+                          "floating_network_id": str(self.pool.id),
+                          "tenant_id": ip.userid,
+                          "user_id": ip.userid})
 
     def test_reserve_empty_body(self):
         """Test reserve FIP without specifying network."""
@@ -198,7 +204,9 @@ class FloatingIPAPITest(BaseAPITest):
                           "id": str(ip.id),
                           "port_id": None,
                           "deleted": False,
-                          "floating_network_id": str(self.pool.id)})
+                          "floating_network_id": str(self.pool.id),
+                          "tenant_id": ip.userid,
+                          "user_id": ip.userid})
 
         # Already reserved
         with mocked_quotaholder():

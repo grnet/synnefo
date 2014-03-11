@@ -104,12 +104,11 @@ def file_sync_read_chunks(radosobject, chunksize, nr, offset=0):
 
 
 class RadosObject(object):
-    __slots__ = ("name", "ioctx", "create", "offset")
+    __slots__ = ("name", "ioctx", "offset")
 
-    def __init__(self, name, ioctx, create=0):
+    def __init__(self, name, ioctx):
         self.name = name
         self.ioctx = ioctx
-        self.create = create
         self.offset = 0
         #self.dirty = 0
 

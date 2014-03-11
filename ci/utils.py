@@ -640,7 +640,8 @@ class SynnefoCI(object):
             sys.exit(1)
 
     @_check_fabric
-    def clone_repo(self, local_repo=False):
+    def clone_repo(self, synnefo_repo=None,
+                   synnefo_branch=None, local_repo=False):
         """Clone Synnefo repo from slave server"""
         self.logger.info("Configure repositories on remote server..")
         self.logger.debug("Install/Setup git")
@@ -653,16 +654,21 @@ class SynnefoCI(object):
         _run(cmd, False)
 
         # Clone synnefo_repo
-        synnefo_branch = self.clone_synnefo_repo(local_repo=local_repo)
+        synnefo_branch = self.clone_synnefo_repo(
+            synnefo_repo=synnefo_repo, synnefo_branch=synnefo_branch,
+            local_repo=local_repo)
         # Clone pithos-web-client
         self.clone_pithos_webclient_repo(synnefo_branch)
 
     @_check_fabric
-    def clone_synnefo_repo(self, local_repo=False):
+    def clone_synnefo_repo(self, synnefo_repo=None,
+                           synnefo_branch=None, local_repo=False):
         """Clone Synnefo repo to remote server"""
         # Find synnefo_repo and synnefo_branch to use
-        synnefo_repo = self.config.get('Global', 'synnefo_repo')
-        synnefo_branch = self.config.get("Global", "synnefo_branch")
+        if synnefo_repo is None:
+            synnefo_repo = self.config.get('Global', 'synnefo_repo')
+        if synnefo_branch is None:
+            synnefo_branch = self.config.get("Global", "synnefo_branch")
         if synnefo_branch == "":
             synnefo_branch = \
                 subprocess.Popen(

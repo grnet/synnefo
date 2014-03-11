@@ -1,4 +1,4 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -149,7 +149,7 @@ def add_image(request):
     if not set(params.keys()).issubset(set(ADD_FIELDS)):
         raise faults.BadRequest("Invalid parameters")
 
-    name = params.pop('name')
+    name = params.pop('name', None)
     if name is None:
         raise faults.BadRequest("Image 'name' parameter is required")
     elif len(uenc(name)) == 0:

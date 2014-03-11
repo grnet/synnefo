@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -139,7 +139,7 @@ def pretty_print_stats(stats, stdout):
 
     networks = stats.get("networks")
     if networks is not None:
-        public_ips = networks.pop("public_ips")
+        public_ips = networks.pop("public_ips", {})
         networks["total_public_ips"] = public_ips.get("total", 0)
         networks["free_public_ips"] = public_ips.get("free", 0)
         fields = ["total", "ACTIVE", "DELETED", "ERROR", "total_public_ips",

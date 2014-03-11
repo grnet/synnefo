@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -233,8 +233,8 @@ def get_public_stats():
         server_stats[state] = copy(zero_stats)
 
     for stats in servers:
-        deleted = stats.pop("deleted")
-        operstate = stats.pop("operstate")
+        deleted = stats.get("deleted")
+        operstate = stats.get("operstate")
         state = VirtualMachine.RSAPI_STATE_FROM_OPER_STATE.get(operstate)
         if deleted:
             for key in zero_stats.keys():
@@ -253,8 +253,8 @@ def get_public_stats():
         network_stats[state] = copy(zero_stats)
 
     for stats in networks:
-        deleted = stats.pop("deleted")
-        state = stats.pop("state")
+        deleted = stats.get("deleted")
+        state = stats.get("state")
         state = Network.RSAPI_STATE_FROM_OPER_STATE.get(state)
         if deleted:
             for key in zero_stats.keys():

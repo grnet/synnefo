@@ -21,6 +21,8 @@ CREATE_X2GO_FILE = "x2goplugin"
 SHELL_CONNECT = "shell"
 ALL_CMDS = "all"
 
+DEFAULT_CONFIG_FILE = os.path.expanduser("~/.synnefo_ci")
+
 COMMANDS_IN_ALL_MODE = [
     CREATE_SERVER_CMD,
     BUILD_SYNNEFO_CMD,
@@ -65,8 +67,10 @@ command:
 def main():  # pylint: disable=too-many-statements, too-many-branches
     """Parse command line options and run the specified actions"""
     parser = OptionParser(usage=USAGE)
-    parser.add_option("-c", "--conf", dest="config_file", default=None,
-                      help="Configuration file for SynnefoCI script")
+    parser.add_option("-c", "--conf", dest="config_file",
+                      default=DEFAULT_CONFIG_FILE,
+                      help="Configuration file for SynnefoCI"
+                           " script (Default: %s)" % DEFAULT_CONFIG_FILE)
     parser.add_option("--cloud", dest="kamaki_cloud", default=None,
                       help="Use specified cloud, as is in .kamakirc")
     parser.add_option("-f", "--flavor", dest="flavor", default=None,
@@ -144,7 +148,13 @@ def main():  # pylint: disable=too-many-statements, too-many-branches
     # ----------------------------------
     # Initialize SynnefoCi
     utils.USE_COLORS = options.use_colors
-    synnefo_ci = utils.SynnefoCI(config_file=options.config_file,
+    config_file = options.config_file
+    if config_file is not None:
+        config_file = os.path.expanduser(config_file)
+        if not os.path.exists(config_file):
+            print "Configuration file '%s' does not exist!" % config_file
+            config_file = None
+    synnefo_ci = utils.SynnefoCI(config_file=config_file,
                                  build_id=options.build_id,
                                  cloud=options.kamaki_cloud)
 

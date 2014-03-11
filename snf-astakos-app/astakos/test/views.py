@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -64,7 +64,8 @@ def submit(name, user_id, project_id=None):
     if not ok:
         raise ProjectForbidden('Limit %s reached', limit)
 
-    resource_policies = {'cyclades.network.private': {'member_capacity': 5}}
+    resource_policies = {'cyclades.network.private': {'member_capacity': 5,
+                                                      'project_capacity': 10}}
     data = {'owner': owner,
             'name': name,
             'project_id': project_id,

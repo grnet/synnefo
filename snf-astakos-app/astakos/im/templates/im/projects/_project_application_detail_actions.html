@@ -1,0 +1,30 @@
+{% load astakos_tags i18n %}
+
+<!-- make room for buttons -->
+{% if owner_mode or admin_mode %}
+<br />
+{% endif %}
+
+<div class="project-actions">
+{% if owner_mode %}
+  {% if project.is_initialized %}
+    {% if object.can_approve %}
+    {% confirm_link "CANCEL PROJECT MODIFICATION" "project_modification_cancel" "project_app_cancel" "project.uuid,object.pk" "" "OK" %}
+    {% endif %}
+  {% else %}
+    {% if object.can_approve %}
+    {% confirm_link "CANCEL PROJECT APPLICATION" "project_app_cancel" "project_app_cancel" "project.uuid,object.pk" "" "OK" %}
+    {% endif %}
+  {% endif %}
+  {% if object.can_dismiss %}
+    {% confirm_link "DISMISS" "project_app_dismiss" "project_app_dismiss" "project.uuid,object.pk" %}
+  {% endif %}
+{% endif %}
+
+{% if admin_mode %}
+  {% if object.can_approve %}
+    {% confirm_link "APPROVE" "project_app_approve" "project_app_approve" "project.uuid,object.pk" "" "OK" %}
+    {% confirm_link "DENY" "project_app_deny" "project_app_deny" "project.uuid,object.pk" %}
+  {% endif %}
+{% endif %}
+</div>

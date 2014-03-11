@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -36,110 +36,15 @@ import json
 from mock import patch
 from functools import wraps
 from copy import deepcopy
+from decimal import Decimal
 from snf_django.utils.testing import BaseAPITest
 from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 
-
-class PlanktonAPITest(BaseAPITest):
-    def setUp(self, *args, **kwargs):
-        super(PlanktonAPITest, self).setUp(*args, **kwargs)
-        self.api_path = get_service_path(cyclades_services, 'image',
-                                             version='v1.0')
-    def myget(self, path, *args, **kwargs):
-        path = join_urls(self.api_path, path)
-        return self.get(path, *args, **kwargs)
-
-    def myput(self, path, *args, **kwargs):
-        path = join_urls(self.api_path, path)
-        return self.put(path, *args, **kwargs)
-
-    def mypost(self, path, *args, **kwargs):
-        path = join_urls(self.api_path, path)
-        return self.post(path, *args, **kwargs)
-
-    def mydelete(self, path, *args, **kwargs):
-        path = join_urls(self.api_path, path)
-        return self.delete(path, *args, **kwargs)
-
-
-FILTERS = ('name', 'container_format', 'disk_format', 'status', 'size_min',
-           'size_max')
-PARAMS = ('sort_key', 'sort_dir')
-SORT_KEY_OPTIONS = ('id', 'name', 'status', 'size', 'disk_format',
-                    'container_format', 'created_at', 'updated_at')
-SORT_DIR_OPTIONS = ('asc', 'desc')
-LIST_FIELDS = ('status', 'name', 'disk_format', 'container_format', 'size',
-               'id')
-DETAIL_FIELDS = ('name', 'disk_format', 'container_format', 'size', 'checksum',
-                 'location', 'created_at', 'updated_at', 'deleted_at',
-                 'status', 'is_public', 'owner', 'properties', 'id')
-ADD_FIELDS = ('name', 'id', 'store', 'disk_format', 'container_format', 'size',
-              'checksum', 'is_public', 'owner', 'properties', 'location')
-UPDATE_FIELDS = ('name', 'disk_format', 'container_format', 'is_public',
-                 'owner', 'properties', 'status')
-
-
-DummyImages = {
- '0786a349-9725-48ec-8b86-8598eefc4043':
- {'checksum': u'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-  u'container_format': u'bare',
-  'created_at': '2012-12-04 09:50:20',
-  'deleted_at': '',
-  u'disk_format': u'diskdump',
-  'id': u'0786a349-9725-48ec-8b86-8598eefc4043',
-  'is_public': True,
-  'location': u'pithos://foo@example.com/container/foo3',
-  u'name': u'dummyname',
-  'owner': u'foo@example.com',
-  'properties': {},
-  'size': 500L,
-  u'status': u'available',
-  'store': 'pithos',
-  'updated_at': '2012-12-04 09:50:54'},
-
- 'd8aa85b8-410b-4550-953d-6797572534e6':
- {'checksum': u'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-  u'container_format': u'bare',
-  'created_at': '2012-11-26 11:56:42',
-  'deleted_at': '',
-  u'disk_format': u'diskdump',
-  'id': u'd8aa85b8-410b-4550-953d-6797572534e6',
-  'is_public': False,
-  'location': u'pithos://foo@example.com/container/private',
-  u'name': u'dummyname2',
-  'owner': u'foo@example.com',
-  'properties': {},
-  'size': 10000L,
-  u'status': u'available',
-  'store': 'pithos',
-  'updated_at': '2012-11-26 11:57:09'},
-
- '264fb9ac-2458-421c-b460-6a765a92825c':
- {'checksum': u'0c6d0586744781218672fff2d7ed94cc32efb02a6a8eb589a0628f0e22bd5a7f',
-  u'container_format': u'bare',
-  'created_at': '2012-11-26 11:52:54',
-  'deleted_at': '',
-  u'disk_format': u'diskdump',
-  'id': u'264fb9ac-2458-421c-b460-6a765a92825c',
-  'is_public': True,
-  'location': u'pithos://foo@example.com/container/baz.diskdump',
-  u'name': u'"dummyname3"',
-  'owner': u'foo@example.com',
-  'properties': {u'description': u'Debian Squeeze Base System',
-                 u'gui': u'No GUI',
-                 u'kernel': u'2.6.32',
-                 u'os': u'debian',
-                 u'osfamily': u'linux',
-                 u'root_partition': u'1',
-                 u'size': u'451',
-                 u'sortorder': u'1',
-                 u'users': u'root'},
-  'size': 473772032L,
-  u'status': u'available',
-  'store': 'pithos',
-  'updated_at': '2012-11-26 11:55:40'}}
+PLANKTON_URL = get_service_path(cyclades_services, 'image',
+                                version='v1.0')
+IMAGES_URL = join_urls(PLANKTON_URL, "images/")
 
 
 def assert_backend_closed(func):
@@ -152,121 +57,255 @@ def assert_backend_closed(func):
     return wrapper
 
 
-@patch("synnefo.plankton.backend.ImageBackend")
-class PlanktonTest(PlanktonAPITest):
-    @assert_backend_closed
-    def test_list_images(self, backend):
-        backend.return_value.list_images.return_value =\
-                deepcopy(DummyImages).values()
-        response = self.myget("images/")
-        self.assertSuccess(response)
-        images = json.loads(response.content)
-        for api_image in images:
-            id = api_image['id']
-            pithos_image = dict([(key, val)\
-                                for key, val in DummyImages[id].items()\
-                                if key in LIST_FIELDS])
-            self.assertEqual(api_image, pithos_image)
-        backend.return_value\
-                .list_images.assert_called_once_with({}, {'sort_key': 'created_at',
-                                                   'sort_dir': 'desc'})
+@patch("synnefo.plankton.backend.get_pithos_backend")
+class PlanktonTest(BaseAPITest):
+    def test_register_image(self, backend):
+        required = {
+            "HTTP_X_IMAGE_META_NAME": u"TestImage\u2602",
+            "HTTP_X_IMAGE_META_LOCATION": "pithos://4321-4321/images/foo"}
+        # Check valid name
+        headers = deepcopy(required)
+        headers.pop("HTTP_X_IMAGE_META_NAME")
+        response = self.post(IMAGES_URL, **headers)
+        self.assertBadRequest(response)
+        self.assertTrue("name" in response.content)
+        headers["HTTP_X_IMAGE_META_NAME"] = ""
+        response = self.post(IMAGES_URL, **headers)
+        self.assertBadRequest(response)
+        self.assertTrue("name" in response.content)
+        # Check valid location
+        headers = deepcopy(required)
+        headers.pop("HTTP_X_IMAGE_META_LOCATION")
+        response = self.post(IMAGES_URL, **headers)
+        self.assertBadRequest(response)
+        self.assertTrue("location" in response.content)
+        headers["HTTP_X_IMAGE_META_LOCATION"] = ""
+        response = self.post(IMAGES_URL, **headers)
+        self.assertBadRequest(response)
+        self.assertTrue("location" in response.content)
+        headers["HTTP_X_IMAGE_META_LOCATION"] = "pitho://4321-4321/images/foo"
+        response = self.post(IMAGES_URL, **headers)
+        self.assertBadRequest(response)
+        self.assertTrue("location" in response.content)
+        headers["HTTP_X_IMAGE_META_LOCATION"] = "pithos://4321-4321/foo"
+        response = self.post(IMAGES_URL, **headers)
+        self.assertBadRequest(response)
+        self.assertTrue("location" in response.content)
+        # ID not supported
+        headers = deepcopy(required)
+        headers["HTTP_X_IMAGE_META_ID"] = "1234"
+        response = self.post(IMAGES_URL, **headers)
+        self.assertBadRequest(response)
+        headers = deepcopy(required)
+        # ID not supported
+        headers = deepcopy(required)
+        headers["HTTP_X_IMAGE_META_LOLO"] = "1234"
+        response = self.post(IMAGES_URL, **headers)
+        self.assertBadRequest(response)
+        headers = deepcopy(required)
+        headers["HTTP_X_IMAGE_META_STORE"] = "pitho"
+        response = self.post(IMAGES_URL, **headers)
+        self.assertBadRequest(response)
+        self.assertTrue("store " in response.content)
+        headers = deepcopy(required)
+        headers["HTTP_X_IMAGE_META_DISK_FORMAT"] = "diskdumpp"
+        response = self.post(IMAGES_URL, **headers)
+        self.assertBadRequest(response)
+        self.assertTrue("disk format" in response.content)
+        headers = deepcopy(required)
+        headers["HTTP_X_IMAGE_META_CONTAINER_FORMAT"] = "baree"
+        response = self.post(IMAGES_URL, **headers)
+        self.assertBadRequest(response)
+        self.assertTrue("container format" in response.content)
 
-    @assert_backend_closed
-    def test_list_images_detail(self, backend):
-        backend.return_value.list_images.return_value =\
-                deepcopy(DummyImages).values()
-        response = self.myget("images/detail")
-        self.assertSuccess(response)
-        images = json.loads(response.content)
-        for api_image in images:
-            id = api_image['id']
-            pithos_image = dict([(key, val)\
-                                for key, val in DummyImages[id].items()\
-                                if key in DETAIL_FIELDS])
-            self.assertEqual(api_image, pithos_image)
-        backend.return_value\
-                .list_images.assert_called_once_with({}, {'sort_key': 'created_at',
-                                                   'sort_dir': 'desc'})
+        backend().get_object_meta.return_value = {"uuid": "1234-1234-1234",
+                                                  "bytes": 42,
+                                                  "hash": "unique_hash"}
+        headers = deepcopy(required)
+        headers["HTTP_X_IMAGE_META_SIZE"] = "foo"
+        response = self.post(IMAGES_URL, **headers)
+        self.assertBadRequest(response)
+        self.assertTrue("size" in response.content)
+        headers["HTTP_X_IMAGE_META_SIZE"] = "43"
+        response = self.post(IMAGES_URL, **headers)
+        self.assertBadRequest(response)
+        self.assertTrue("size" in response.content)
 
-    @assert_backend_closed
-    def test_list_images_filters(self, backend):
-        backend.return_value.list_images.return_value =\
-                deepcopy(DummyImages).values()
-        response = self.myget("images/?size_max=1000")
-        self.assertSuccess(response)
-        backend.return_value\
-                .list_images.assert_called_once_with({'size_max': 1000},
-                                                     {'sort_key': 'created_at',
-                                                     'sort_dir': 'desc'})
-
-    @assert_backend_closed
-    def test_list_images_filters_error_1(self, backend):
-        response = self.myget("images/?size_max=")
+        headers["HTTP_X_IMAGE_META_SIZE"] = 42
+        headers["HTTP_X_IMAGE_META_CHECKSUM"] = "wrong_checksum"
+        response = self.post(IMAGES_URL, **headers)
         self.assertBadRequest(response)
 
-    @assert_backend_closed
-    def test_list_images_filters_error_2(self, backend):
-        response = self.myget("images/?size_min=foo")
-        self.assertBadRequest(response)
-
-    @assert_backend_closed
-    def test_update_image(self, backend):
-        db_image = DummyImages.values()[0]
-        response = self.myput("images/%s" % db_image['id'],
-                              json.dumps({}),
-                              'json', HTTP_X_IMAGE_META_OWNER='user2')
+        backend().get_uuid.return_value =\
+            ("4321-4321", "images", "foo")
+        backend().get_object_permissions.return_value = \
+            ("foo", "foo", {"read": []})
+        backend().get_object_meta.side_effect = \
+            [{"uuid": "1234-1234-1234",
+              "bytes": 42,
+              "hash": "unique_hash"},
+             {"uuid": "1234-1234-1234",
+              "bytes": 42,
+              "hash": "unique_hash",
+              'version_timestamp': Decimal('1392487853.863673'),
+              "plankton:name": u"TestImage\u2602",
+              "plankton:container_format": "bare",
+              "plankton:disk_format": "diskdump",
+              "plankton:status": u"AVAILABLE"}]
+        headers = deepcopy(required)
+        response = self.post(IMAGES_URL, **headers)
         self.assertSuccess(response)
-        backend.return_value.update_metadata.assert_called_once_with(db_image['id'],
-                                                                     {"owner": "user2"})
+        self.assertEqual(response["x-image-meta-location"],
+                         "pithos://4321-4321/images/foo")
+        self.assertEqual(response["x-image-meta-id"], "1234-1234-1234")
+        self.assertEqual(response["x-image-meta-status"], "AVAILABLE")
+        self.assertEqual(response["x-image-meta-deleted-at"], "")
+        self.assertEqual(response["x-image-meta-is-public"], "False")
+        self.assertEqual(response["x-image-meta-owner"], "4321-4321")
+        self.assertEqual(response["x-image-meta-size"], "42")
+        self.assertEqual(response["x-image-meta-checksum"], "unique_hash")
+        self.assertEqual(response["x-image-meta-name"],
+                         u"TestImage\u2602".encode("utf-8"))
+        self.assertEqual(response["x-image-meta-container-format"], "bare")
+        self.assertEqual(response["x-image-meta-disk-format"], "diskdump")
+        self.assertEqual(response["x-image-meta-created-at"],
+                         "2014-02-15 18:10:53")
+        self.assertEqual(response["x-image-meta-updated-at"],
+                         "2014-02-15 18:10:53")
 
-    @assert_backend_closed
-    def test_add_image_member(self, backend):
-        image_id = DummyImages.values()[0]['id']
-        response = self.myput("images/%s/members/user3" % image_id,
-                              json.dumps({}), 'json')
+        # Extra headers,properties
+        backend().get_object_meta.side_effect = \
+            [{"uuid": "1234-1234-1234",
+              "bytes": 42,
+              "hash": "unique_hash"},
+             {"uuid": "1234-1234-1234",
+              "bytes": 42,
+              "hash": "unique_hash",
+              'version_timestamp': Decimal('1392487853.863673'),
+              "plankton:name": u"TestImage\u2602",
+              "plankton:container_format": "bare",
+              "plankton:disk_format": "diskdump",
+              "plankton:status": u"AVAILABLE"}]
+        headers = deepcopy(required)
+        headers["HTTP_X_IMAGE_META_IS_PUBLIC"] = True
+        headers["HTTP_X_IMAGE_META_PROPERTY_KEY1"] = "val1"
+        headers["HTTP_X_IMAGE_META_PROPERTY_KEY2"] = u"\u2601"
+        response = self.post(IMAGES_URL, **headers)
+        name, args, kwargs = backend().update_object_meta.mock_calls[-1]
+        metadata = args[5]
+        self.assertEqual(metadata["plankton:property:key1"], "val1")
+        self.assertEqual(metadata["plankton:property:key2"],
+                         u"\u2601".encode("utf-8"))
         self.assertSuccess(response)
-        backend.return_value.add_user.assert_called_once_with(image_id,
-                                                             'user3')
 
-    @assert_backend_closed
-    def test_remove_image_member(self, backend):
-        image_id = DummyImages.values()[0]['id']
-        response = self.mydelete("images/%s/members/user3" % image_id)
-        self.assertSuccess(response)
-        backend.return_value.remove_user.assert_called_once_with(image_id,
-                                                                'user3')
-
-    @assert_backend_closed
-    def test_add_image(self, backend):
-        location = "pithos://uuid/container/name/"
-        response = self.mypost("images/",
-                               json.dumps({}),
-                               'json',
-                               HTTP_X_IMAGE_META_NAME='dummy_name',
-                               HTTP_X_IMAGE_META_OWNER='dummy_owner',
-                               HTTP_X_IMAGE_META_LOCATION=location)
-        self.assertSuccess(response)
-        backend.return_value.register.assert_called_once_with('dummy_name',
-                                                              location,
-                                                      {'owner': 'dummy_owner'})
-
-    @assert_backend_closed
-    def test_get_image(self, backend):
-        response = self.myget("images/123")
-        self.assertEqual(response.status_code, 501)
-
-    @assert_backend_closed
-    def test_delete_image(self, backend):
-        response = self.mydelete("images/123")
+    def test_unregister_image(self, backend):
+        backend().get_uuid.return_value = ("img_owner", "images", "foo")
+        backend().get_object_meta.return_value = {"uuid": "img_uuid",
+                                                  "bytes": 42,
+                                                  "plankton:name": "test"}
+        response = self.delete(join_urls(IMAGES_URL, "img_uuid"))
         self.assertEqual(response.status_code, 204)
-        backend.return_value.unregister.assert_called_once_with('123')
-        backend.return_value._delete.assert_not_called()
+        backend().update_object_meta.assert_called_once_with(
+            "user", "img_owner", "images", "foo", "plankton", {}, True)
 
-    @assert_backend_closed
+    def test_users(self, backend):
+        """Test adding/removing and replacing image members"""
+        # Add user
+        backend.reset_mock()
+        backend().get_uuid.return_value = ("img_owner", "images", "foo")
+        backend().get_object_permissions.return_value = \
+            ("foo", "foo", {"read": []})
+        backend().get_object_meta.return_value = {"uuid": "img_uuid",
+                                                  "bytes": 42,
+                                                  "plankton:name": "test"}
+        response = self.put(join_urls(IMAGES_URL, "img_uuid/members/user1"),
+                            user="user1")
+        self.assertSuccess(response)
+        backend().update_object_permissions.assert_called_once_with(
+            "user1", "img_owner", "images", "foo", {"read": ["user1"]})
+
+        # Remove user
+        backend().update_object_permissions.reset_mock()
+        backend().get_object_permissions.return_value = \
+            ("foo", "foo", {"read": ["user1"]})
+        response = self.delete(join_urls(IMAGES_URL, "img_uuid/members/user1"),
+                               user="user1")
+        self.assertSuccess(response)
+        backend().update_object_permissions.assert_called_once_with(
+            "user1", "img_owner", "images", "foo", {"read": []})
+
+        # Update users
+        backend().get_object_permissions.return_value = \
+            ("foo", "foo", {"read": ["user1", "user2", "user3"]})
+        backend().update_object_permissions.reset_mock()
+        response = self.put(join_urls(IMAGES_URL, "img_uuid/members"),
+                            params=json.dumps({"memberships":
+                                               [{"member_id": "foo1"},
+                                                {"member_id": "foo2"}]}),
+                            ctype="json",
+                            user="user1")
+        self.assertSuccess(response)
+        backend().update_object_permissions.assert_called_once_with(
+            "user1", "img_owner", "images", "foo", {"read": ["foo1", "foo2"]})
+
+        # List users
+        backend().get_object_permissions.return_value = \
+            ("foo", "foo", {"read": ["user1", "user2", "user3"]})
+        response = self.get(join_urls(IMAGES_URL, "img_uuid/members"))
+        self.assertSuccess(response)
+        res_members = [{"member_id": m, "can_share": False}
+                       for m in ["user1", "user2", "user3"]]
+        self.assertEqual(json.loads(response.content)["members"], res_members)
+
+    def test_metadata(self, backend):
+        backend().get_uuid.return_value = ("img_owner", "images", "foo")
+        backend().get_object_meta.return_value = \
+            {"uuid": "img_uuid",
+             "bytes": 42,
+             "hash": "unique_hash",
+             'version_timestamp': Decimal('1392487853.863673'),
+             "plankton:name": u"TestImage\u2602",
+             "plankton:container_format": "bare",
+             "plankton:disk_format": "diskdump",
+             "plankton:status": u"AVAILABLE"}
+        backend().get_object_permissions.return_value = \
+            ("foo", "foo", {"read": ["*", "user1"]})
+        response = self.head(join_urls(IMAGES_URL, "img_uuid2"))
+        self.assertSuccess(response)
+        self.assertEqual(response["x-image-meta-location"],
+                         "pithos://img_owner/images/foo")
+        self.assertEqual(response["x-image-meta-id"], "img_uuid")
+        self.assertEqual(response["x-image-meta-status"], "AVAILABLE")
+        self.assertEqual(response["x-image-meta-deleted-at"], "")
+        self.assertEqual(response["x-image-meta-is-public"], "True")
+        self.assertEqual(response["x-image-meta-owner"], "img_owner")
+        self.assertEqual(response["x-image-meta-size"], "42")
+        self.assertEqual(response["x-image-meta-checksum"], "unique_hash")
+        self.assertEqual(response["x-image-meta-name"],
+                         u"TestImage\u2602".encode("utf-8"))
+        self.assertEqual(response["x-image-meta-container-format"], "bare")
+        self.assertEqual(response["x-image-meta-disk-format"], "diskdump")
+        self.assertEqual(response["x-image-meta-created-at"],
+                         "2014-02-15 18:10:53")
+        self.assertEqual(response["x-image-meta-updated-at"],
+                         "2014-02-15 18:10:53")
+        response = self.head(join_urls(IMAGES_URL, "img_uuid2"))
+
+        headers = {"HTTP_X_IMAGE_META_IS_PUBLIC": False,
+                   "HTTP_X_IMAGE_META_PROPERTY_KEY1": "Val1"}
+        response = self.put(join_urls(IMAGES_URL, "img_uuid"), **headers)
+        self.assertSuccess(response)
+        backend().update_object_permissions.assert_called_once_with(
+            "user", "img_owner", "images", "foo", {"read": ["user1"]})
+
     def test_catch_wrong_api_paths(self, *args):
-        response = self.myget('nonexistent')
+        response = self.get(join_urls(PLANKTON_URL, 'nonexistent'))
         self.assertEqual(response.status_code, 400)
         try:
-            error = json.loads(response.content)
+            json.loads(response.content)
         except ValueError:
             self.assertTrue(False)
+
+    def test_list_images_filters_error_1(self, backend):
+        response = self.get(join_urls(IMAGES_URL, "?size_max="))
+        self.assertBadRequest(response)

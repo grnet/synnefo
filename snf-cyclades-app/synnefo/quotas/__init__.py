@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -46,7 +46,6 @@ log = logging.getLogger(__name__)
 QUOTABLE_RESOURCES = [VirtualMachine, Network, IPAddress]
 
 
-DEFAULT_SOURCE = 'system'
 RESOURCES = [
     "cyclades.vm",
     "cyclades.total_cpu",
@@ -75,10 +74,29 @@ class Quotaholder(object):
 
 class AstakosClientExceptionHandler(object):
     def __init__(self, *args, **kwargs):
-        pass
+        self.user = kwargs.get("user")
+        self.projects = kwargs.get("projects")
 
     def __enter__(self):
         pass
+
+    def check_notFound(self):
+        if not self.user or not self.projects:
+            return
+        try:
+            qh = Quotaholder.get()
+            user_quota = qh.service_get_quotas(self.user)
+        except errors.AstakosClientException as e:
+            log.exception("Unexpected error %s" % e.message)
+            raise faults.InternalServerError("Unexpected error")
+
+        user_quota = user_quota[self.user]
+        for project in self.projects:
+            try:
+                user_quota[project]
+            except KeyError:
+                m = "User %s not in project %s" % (self.user, project)
+                raise faults.BadRequest(m)
 
     def __exit__(self, exc_type, value, traceback):
         if value is not None:  # exception
@@ -87,6 +105,8 @@ class AstakosClientExceptionHandler(object):
             if exc_type is errors.QuotaLimit:
                 msg, details = render_overlimit_exception(value)
                 raise faults.OverLimit(msg, details=details)
+            if exc_type is errors.NotFound:
+                self.check_notFound()
 
             log.exception("Unexpected error %s" % value.message)
             raise faults.InternalServerError("Unexpected error")
@@ -108,11 +128,25 @@ def issue_commission(resource, action, name="", force=False, auto_accept=False,
         return None
 
     user = resource.userid
-    source = DEFAULT_SOURCE
+    source = resource.project
 
     qh = Quotaholder.get()
-    if True:  # placeholder
-        with AstakosClientExceptionHandler():
+    if action == "REASSIGN":
+        try:
+            from_project = action_fields["from_project"]
+            to_project = action_fields["to_project"]
+        except KeyError:
+            raise Exception("Missing project attribute.")
+
+        projects = [from_project, to_project]
+        with AstakosClientExceptionHandler(user=user, projects=projects):
+            serial = qh.issue_resource_reassignment(user,
+                                                    from_project, to_project,
+                                                    provisions, name=name,
+                                                    force=force,
+                                                    auto_accept=auto_accept)
+    else:
+        with AstakosClientExceptionHandler(user=user, projects=[source]):
             serial = qh.issue_one_commission(user, source,
                                              provisions, name=name,
                                              force=force,
@@ -332,6 +366,10 @@ def get_commission_info(resource, action, action_fields=None):
             ram = beparams.get("maxmem", flavor.ram)
             return {"cyclades.total_cpu": cpu - flavor.cpu,
                     "cyclades.total_ram": 1048576 * (ram - flavor.ram)}
+        elif action == "REASSIGN":
+            if resource.operstate in ["STARTED", "BUILD", "ERROR"]:
+                resources.update(online_resources)
+            return resources
         else:
             #["CONNECT", "DISCONNECT", "SET_FIREWALL_PROFILE"]:
             return None
@@ -341,6 +379,8 @@ def get_commission_info(resource, action, action_fields=None):
             return resources
         elif action == "DESTROY":
             return reverse_quantities(resources)
+        elif action == "REASSIGN":
+            return resources
     elif isinstance(resource, IPAddress):
         if resource.floating_ip:
             resources = {"cyclades.floating_ip": 1}
@@ -348,6 +388,8 @@ def get_commission_info(resource, action, action_fields=None):
                 return resources
             elif action == "DESTROY":
                 return reverse_quantities(resources)
+            elif action == "REASSIGN":
+                return resources
         else:
             return None
 

@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -34,6 +34,7 @@
 from time import time
 from operator import itemgetter
 from itertools import groupby
+from collections import defaultdict
 
 from sqlalchemy import (Table, Integer, BigInteger, DECIMAL, Boolean,
                         Column, String, MetaData, ForeignKey)
@@ -46,7 +47,7 @@ from dbworker import DBWorker, ESCAPE_CHAR
 
 from pithos.backends.filter import parse_filters
 
-
+DEFAULT_DISKSPACE_RESOURCE = 'pithos.diskspace'
 ROOTNODE = 0
 
 (SERIAL, NODE, HASH, SIZE, TYPE, SOURCE, MTIME, MUSER, UUID, CHECKSUM,
@@ -280,6 +281,22 @@ class Node(DBWorker):
         r.close()
         return l
 
+    def node_get_parent_path(self, node):
+        """Return the node's parent path.
+           Return None if the node is not found.
+        """
+
+        n1 = self.nodes.alias('n1')
+        n2 = self.nodes.alias('n2')
+
+        s = select([n2.c.path])
+        s = s.where(n2.c.node == n1.c.parent)
+        s = s.where(n1.c.node == node)
+        r = self.conn.execute(s)
+        l = r.fetchone()
+        r.close()
+        return l[0] if l is not None else None
+
     def node_get_versions(self, node, keys=(), propnames=_propnames):
         """Return the properties of all versions at node.
            If keys is empty, return all properties in the order
@@ -485,11 +502,12 @@ class Node(DBWorker):
         r.close()
         return dict(rows)
 
-    def node_account_usage(self, account=None, cluster=0):
-        """Return usage for a specific account.
+    def node_account_usage(self, account=None, project=None, cluster=0):
+        """Return a dict of dicts with the project usage for a specific account.
 
         Keyword arguments:
-        account -- (default None: list usage for all the accounts)
+        account -- (default None: list usage for all accounts)
+        project -- (default None: list usage for all projects)
         cluster -- list current, history or deleted usage (default 0: normal)
         """
 
@@ -497,20 +515,61 @@ class Node(DBWorker):
         n2 = self.nodes.alias('n2')
         n3 = self.nodes.alias('n3')
 
-        s = select([n3.c.path, func.sum(self.versions.c.size)])
+        s = select([n3.c.path, self.policy.c.value,
+                    func.sum(self.versions.c.size)])
+        s = s.where(self.policy.c.key == 'project')
+        s = s.where(self.policy.c.node == n2.c.node)
         s = s.where(n1.c.node == self.versions.c.node)
         s = s.where(self.versions.c.cluster == cluster)
         s = s.where(n1.c.parent == n2.c.node)
         s = s.where(n2.c.parent == n3.c.node)
         s = s.where(n3.c.parent == 0)
         s = s.where(n3.c.node != 0)
+        s = s.group_by(n3.c.path, self.policy.c.value)
         if account:
             s = s.where(n3.c.path == account)
-        s = s.group_by(n3.c.path)
+        if project:
+            s = s.where(self.policy.c.value == project)
         r = self.conn.execute(s)
-        usage = r.fetchall()
+        rows = r.fetchall()
         r.close()
-        return dict(usage)
+        d = defaultdict(dict)
+        for account, project, usage in rows:
+            d[account][project][DEFAULT_DISKSPACE_RESOURCE] = usage
+        return d
+
+    def node_project_usage(self, project=None, cluster=0):
+        """Return a dict of dicts with the project usage for a specific account.
+
+        Keyword arguments:
+        project -- (default None: list usage for all projects)
+        cluster -- list current, history or deleted usage (default 0: normal)
+        """
+
+        n1 = self.nodes.alias('n1')
+        n2 = self.nodes.alias('n2')
+        n3 = self.nodes.alias('n3')
+
+        s = select([self.policy.c.value,
+                    func.sum(self.versions.c.size)])
+        s = s.where(self.policy.c.key == 'project')
+        s = s.where(self.policy.c.node == n2.c.node)
+        s = s.where(n1.c.node == self.versions.c.node)
+        s = s.where(self.versions.c.cluster == cluster)
+        s = s.where(n1.c.parent == n2.c.node)
+        s = s.where(n2.c.parent == n3.c.node)
+        # s = s.where(n3.c.parent == 0)
+        # s = s.where(n3.c.node != 0)
+        s = s.group_by(self.policy.c.value)
+        if project:
+            s = s.where(self.policy.c.value == project)
+        r = self.conn.execute(s)
+        rows = r.fetchall()
+        r.close()
+        d = defaultdict(dict)
+        for project, usage in rows:
+            d[project][DEFAULT_DISKSPACE_RESOURCE] = usage
+        return d
 
     def policy_get(self, node):
         s = select([self.policy.c.key, self.policy.c.value],

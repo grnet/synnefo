@@ -183,6 +183,7 @@ class NetworkInterfaceFactory(factory.DjangoModelFactory):
     index = factory.Sequence(lambda x: x, type=int)
     mac = factory.Sequence(lambda n: 'aa:{0}{0}:{0}{0}:aa:{0}{0}:{0}{0}'
                            .format(hex(int(n) % 15)[2:3]))
+    public = factory.LazyAttribute(lambda self: self.network.public)
     state = "ACTIVE"
     firewall_profile =\
         factory.Sequence(round_seq_first(FACTORY_FOR.FIREWALL_PROFILES))

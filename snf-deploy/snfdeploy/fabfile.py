@@ -6,7 +6,7 @@ Fabric file for snf-deploy
 """
 
 from __future__ import with_statement
-from fabric.api import hide, env, settings, local, roles
+from fabric.api import hide, env, settings, local, roles, execute
 from fabric.operations import run, put, get
 import fabric
 import re
@@ -15,6 +15,7 @@ import shutil
 import tempfile
 import ast
 from snfdeploy.lib import debug, Conf, Env, disable_color
+from snfdeploy.utils import *
 from snfdeploy import massedit
 
 
@@ -75,43 +76,6 @@ def setup_env(args):
         "ganeti": env.env.cluster_ips,
         "master": [env.env.master.ip],
     })
-
-
-def install_package(package):
-    debug(env.host, " * Installing package %s..." % package)
-    apt_get = "export DEBIAN_FRONTEND=noninteractive ;" + \
-              "apt-get install -y --force-yes "
-
-    host_info = env.env.ips_info[env.host]
-    env.env.update_packages(host_info.os)
-    if ast.literal_eval(env.env.use_local_packages):
-        with settings(warn_only=True):
-            deb = local("ls %s/%s*%s_*.deb"
-                        % (env.env.packages, package, host_info.os),
-                        capture=True)
-            if deb:
-                debug(env.host,
-                      " * Package %s found in %s..."
-                      % (package, env.env.packages))
-                try_put(deb, "/tmp/")
-                try_run("dpkg -i /tmp/%s || "
-                        % os.path.basename(deb) + apt_get + "-f")
-                try_run("rm /tmp/%s" % os.path.basename(deb))
-                return
-
-    info = getattr(env.env, package)
-    if info in \
-            ["squeeze-backports", "squeeze", "stable",
-             "testing", "unstable", "wheezy"]:
-        apt_get += " -t %s %s " % (info, package)
-    elif info:
-        apt_get += " %s=%s " % (package, info)
-    else:
-        apt_get += package
-
-    try_run(apt_get)
-
-    return
 
 
 @roles("ns")
@@ -324,39 +288,6 @@ def setup_hosts():
     try_run(cmd)
 
 
-def try_run(cmd, abort=True):
-    try:
-        if env.local:
-            return local(cmd, capture=True)
-        else:
-            return run(cmd)
-    except BaseException as e:
-        if abort:
-            fabric.utils.abort(e)
-        else:
-            debug(env.host, "WARNING: command failed. Continuing anyway...")
-
-
-def try_put(local_path=None, remote_path=None, abort=True, **kwargs):
-    try:
-        put(local_path=local_path, remote_path=remote_path, **kwargs)
-    except BaseException as e:
-        if abort:
-            fabric.utils.abort(e)
-        else:
-            debug(env.host, "WARNING: command failed. Continuing anyway...")
-
-
-def try_get(remote_path, local_path=None, abort=True, **kwargs):
-    try:
-        get(remote_path, local_path=local_path, **kwargs)
-    except BaseException as e:
-        if abort:
-            fabric.utils.abort(e)
-        else:
-            debug(env.host, "WARNING: command failed. Continuing anyway...")
-
-
 def create_bridges():
     debug(env.host, " * Creating bridges...")
     install_package("bridge-utils")
@@ -391,18 +322,6 @@ def setup_lvm():
         vgcreate {1} {0}
         """.format(env.env.extra_disk, env.env.vg)
         try_run(cmd)
-
-
-def customize_settings_from_tmpl(tmpl, replace):
-    debug(env.host, " * Customizing template %s..." % tmpl)
-    local = env.env.templates + tmpl
-    _, custom = tempfile.mkstemp()
-    shutil.copyfile(local, custom)
-    for k, v in replace.iteritems():
-        regex = "re.sub('%{0}%', '{1}', line)".format(k.upper(), v)
-        massedit.edit_files([custom], [regex], dry_run=False)
-
-    return custom
 
 
 @roles("nodes")
@@ -934,10 +853,8 @@ def add_rapi_user():
 
 @roles("master")
 def add_nodes():
-    nodes = env.env.cluster_nodes.split(",")
-    nodes.remove(env.env.master_node)
     debug(env.host, " * Adding nodes to Ganeti backend...")
-    for n in nodes:
+    for n in env.env.cluster_nodes:
         add_node(n)
 
 
@@ -1325,7 +1242,7 @@ def export_services():
         filename = "%s_services.json" % service
         cmd = "snf-manage service-export-%s > %s" % (service, filename)
         run(cmd)
-        try_get(filename, filename+".local")
+        try_get(filename, filename + ".local")
 
 
 @roles("accounts")
@@ -1339,16 +1256,16 @@ def import_services():
 
     debug(env.host, " * Setting default quota...")
     cmd = """
-    snf-manage resource-modify --default-quota 40G pithos.diskspace
-    snf-manage resource-modify --default-quota 2 astakos.pending_app
-    snf-manage resource-modify --default-quota 4 cyclades.vm
-    snf-manage resource-modify --default-quota 40G cyclades.disk
-    snf-manage resource-modify --default-quota 16G cyclades.total_ram
-    snf-manage resource-modify --default-quota 8G cyclades.ram
-    snf-manage resource-modify --default-quota 32 cyclades.total_cpu
-    snf-manage resource-modify --default-quota 16 cyclades.cpu
-    snf-manage resource-modify --default-quota 4 cyclades.network.private
-    snf-manage resource-modify --default-quota 4 cyclades.floating_ip
+    snf-manage resource-modify --base-default 40G pithos.diskspace
+    snf-manage resource-modify --base-default 2 astakos.pending_app
+    snf-manage resource-modify --base-default 4 cyclades.vm
+    snf-manage resource-modify --base-default 40G cyclades.disk
+    snf-manage resource-modify --base-default 16G cyclades.total_ram
+    snf-manage resource-modify --base-default 8G cyclades.ram
+    snf-manage resource-modify --base-default 32 cyclades.total_cpu
+    snf-manage resource-modify --base-default 16 cyclades.cpu
+    snf-manage resource-modify --base-default 4 cyclades.network.private
+    snf-manage resource-modify --base-default 4 cyclades.floating_ip
     """
     try_run(cmd)
 

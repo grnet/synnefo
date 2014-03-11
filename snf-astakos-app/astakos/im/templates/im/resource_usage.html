@@ -10,6 +10,29 @@
 {% block page.title %}Usage{% endblock %}
 
 {% block page.body %}
+<script id="projectQuotaTpl" type="text/template">
+  {% verbatim %}
+  <div class="resource-bar project clearfix project-{{id}} {{ usage.cls }}"
+      data-project="{{ id }}">
+      <div class="info" data-currvalue="" data-maxvalue="">
+        <h3>{{ name }}</h3>
+        <p>
+          <span class="currValue">{{ usage.curr }}</span> out of 
+          <span class="maxValue">{{ usage.max }}</span> {{ report_desc }}
+        </p>
+      </div>
+      <div class="bar">
+        <div>
+            <span style="width:{{ usage.perc }}%"></span>
+            <em class="value" 
+                style="left: {{ usage.label_left }}; color: {{ usage.label_color }}">
+                {{ usage.perc }}%
+            </em>
+        </div>
+      </div>
+  </div>
+  {% endverbatim %}
+</script>
 
 <script id="quotaTpl" type="text/template">
   {% verbatim %}
@@ -17,22 +40,26 @@
   <li class="clearfix {{ resource_name }} {{ usage.cls }}" 
       data-resource="{{ name }}">
   <div class="img-wrap">&nbsp;</div>
-  <div class="info" data-currvalue="" data-maxvalue="">
-    <h3>{{ report_desc }}</h3>
-    <p>
-      <span class="currValue">{{ usage.curr }}</span> out of 
-      <span class="maxValue">{{ usage.max }}</span> {{ report_desc }}
-    </p>
+  <div class="summary resource-bar clearfix {{ usage.cls }}">
+      <div class="info" data-currvalue="" data-maxvalue="">
+        <h3>{{ report_desc }}</h3>
+        <p>
+          <span class="currValue">{{ usage.curr }}</span> out of 
+          <span class="maxValue">{{ usage.max }}</span> {{ report_desc }}
+        </p>
+          <!--<span class="resource-extend">details</span>-->
+      </div>
+      <div class="bar">
+        <div>
+            <span style="width:{{ usage.perc }}%"></span>
+            <em class="value" 
+                style="left: {{ usage.label_left }}; color: {{ usage.label_color }}">
+                {{ usage.perc }}%
+            </em>
+        </div>
+      </div>
   </div>
-  <div class="bar">
-    <div>
-        <span style="width:{{ usage.perc }}%"></span>
-        <em 
-            class="value" 
-            style="left: {{ usage.label_left }}%; color: {{ usage.label_color }}">
-            {{ usage.perc }}%
-        </em>
-    </div>
+  <div class="projects">
   </div>
   </li>
   {{/resources}}
@@ -48,13 +75,15 @@
 $(document).ready(function(){
   var usageView = new UsageView({
     'url': '{% url astakos-api-quotas %}',
+    'projects_url': '{% url astakos.api.projects.projects %}',
     'cookie_name': '{{ token_cookie_name|safe }}',
     'dataType': 'json',
     'container': '#quota-container',
-    'quotas': {{ current_usage|safe }},
+    'quotas': {{ user_quotas|safe }},
     'meta': {
       'resources': {{ resource_catalog|safe }},
       'groups': {{ resource_groups|safe }},
+      'projects_details': {{ projects_details|safe }},
       'resources_order': {{ resources_order|safe }}
     }
   });

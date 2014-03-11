@@ -7,15 +7,15 @@
 
     <!-- changing between standard/list view -->
     <div id="view-select" class="clearfix">
-        <a class="machines_view_link" id="machines_view_icon_link" href="" title="{% trans "Icon view" %}">
-            <span class="ico"></span><span class="title">{% trans "icon" %}</span>
-        </a>
-        <a class="machines_view_link" id="machines_view_list_link" href="" title="{% trans "List view" %}">
-            <span class="ico"></span><span class="title">{% trans "list" %}</span>
-        </a>
-        <a class="machines_view_link" id="machines_view_single_link" href="" title="{% trans "Single view" %}">
-            <span class="ico"></span><span class="title">{% trans "single" %}</span>
-        </a>
+        <a class="machines_view_link" id="machines_view_icon_link" href=""
+          title="{% trans "Icon view" %}"> <span class="ico"></span><span
+            class="title">{% trans "icon" %}</span> </a> <a
+          class="machines_view_link" id="machines_view_list_link" href=""
+          title="{% trans "List view" %}"> <span class="ico"></span><span
+            class="title">{% trans "list" %}</span> </a> <a
+          class="machines_view_link" id="machines_view_single_link" href=""
+          title="{% trans "Single view" %}"> <span class="ico"></span><span
+            class="title">{% trans "single" %}</span> </a>
     </div>
 </div>
 
@@ -34,7 +34,7 @@
 
 <div id="vm-select-collection-tpl" class="hidden">
   <div class="collection fixed-ips-list">
-    <div class="empty-list hidden">No available machines.</div>
+    <div class="empty-list hidden">No machines available.</div>
     <div class="items-list clearfix"></div>
   </div>
 </div>
@@ -104,6 +104,45 @@
       <p>{% trans "No IP addresses" %}</p>
     </div>
     <div class="items-list ports-list clearfix">
+    </div>
+  </div>
+</div>
+
+<!-- project select -->
+<div id="project-select-content" class="overlay-content hidden">
+    <div class="description">
+        <p>{% trans "Select project to reassing this object to" %}</p>
+    </div>
+    <div class="model-usage">
+    </div>
+    <div class="clearfix projects-list">
+        <ul class="options-list three">
+        </ul>
+    </div>
+    <div class="form-actions clearfix">
+        <span class="form-action submit">{% trans "assign to project" %}</span>
+    </div>
+</div>
+
+<div id="project-select-collection-tpl" class="hidden">
+  <div class="collection fixed-ips-list">
+    <div class="empty-list hidden">No machines available.</div>
+    <div class="items-list clearfix"></div>
+  </div>
+</div>
+
+<div id="project-select-model-tpl" class="hidden">
+  <div class="select-item clearfix project">
+    <div class="checkbox">
+      <input type="radio" data-rv-data-id="model.id" name="project-reassign"/>
+    </div>
+    <div class="name">
+      <span class="" data-rv-text="model.name|truncate 40"></span>
+      <span data-rv-text="model._project_is_current|is_current_str" class="current">
+      </span>
+    </div>
+    <div class="quota">
+      <div data-rv-html="model._quotas|quotas_html"></div>
     </div>
   </div>
 </div>

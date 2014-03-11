@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -35,7 +35,7 @@ from optparse import make_option
 
 from django.db import transaction
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import (get_vm, get_flavor, convert_api_faults,
+from synnefo.management.common import (get_resource, convert_api_faults,
                                        wait_server_task)
 from snf_django.management.utils import parse_bool
 from synnefo.logic import servers
@@ -93,7 +93,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")
 
-        server = get_vm(args[0], for_update=True)
+        server = get_resource("server", args[0], for_update=True)
 
         new_name = options.get("name", None)
         if new_name is not None:
@@ -123,7 +123,7 @@ class Command(BaseCommand):
         wait = parse_bool(options["wait"])
         new_flavor_id = options.get("flavor")
         if new_flavor_id is not None:
-            new_flavor = get_flavor(new_flavor_id)
+            new_flavor = get_resource("flavor", new_flavor_id)
             old_flavor = server.flavor
             msg = "Resizing server '%s' from flavor '%s' to '%s'.\n"
             self.stdout.write(msg % (server, old_flavor, new_flavor))

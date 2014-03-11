@@ -42,7 +42,7 @@ from synnefo_tools.burnin.common import Proper
 from synnefo_tools.burnin.cyclades_common import CycladesTests
 
 
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class NetworkTestSuite(CycladesTests):
     """Test Networking in Cyclades"""
     avail_images = Proper(value=None)
@@ -53,27 +53,11 @@ class NetworkTestSuite(CycladesTests):
 
     def test_001_images_to_use(self):
         """Find images to be used to create our machines"""
-        if self.images is None:
-            self.info("No --images given. Will use the default %s",
-                      "^Debian Base$")
-            filters = ["name:^Debian Base$"]
-        else:
-            filters = self.images
-
-        self.avail_images = self._find_images(filters)
-        self.info("Found %s images to choose from", len(self.avail_images))
+        self.avail_images = self._parse_images()
 
     def test_002_flavors_to_use(self):
         """Find flavors to be used to create our machines"""
-        flavors = self._get_list_of_flavors(detail=True)
-
-        if self.flavors is None:
-            self.info("No --flavors given. Will use all of them")
-            self.avail_flavors = flavors
-        else:
-            self.avail_flavors = self._find_flavors(
-                self.flavors, flavors=flavors)
-        self.info("Found %s flavors to choose from", len(self.avail_flavors))
+        self.avail_flavors = self._parse_flavors()
 
     def test_003_submit_create_server_a(self):
         """Submit create server request for server A"""

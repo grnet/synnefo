@@ -1,4 +1,4 @@
-# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -30,6 +30,9 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
+import re
+import synnefo.util.date as date_util
+
 from random import random
 from datetime import datetime
 
@@ -731,7 +734,7 @@ class ProjectApplicationForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         instance = kwargs.get('instance')
-        self.precursor_application = instance
+
         super(ProjectApplicationForm, self).__init__(*args, **kwargs)
         # in case of new application remove closed join policy
         if not instance:
@@ -741,7 +744,7 @@ class ProjectApplicationForm(forms.ModelForm):
 
     def clean_start_date(self):
         start_date = self.cleaned_data.get('start_date')
-        if not self.precursor_application:
+        if not self.instance:
             today = datetime.now()
             today = datetime(today.year, today.month, today.day)
             if start_date and (start_date - today).days < 0:
@@ -764,7 +767,7 @@ class ProjectApplicationForm(forms.ModelForm):
 
     def clean(self):
         userid = self.data.get('user', None)
-        self.resource_policies
+        policies = self.resource_policies
         self.user = None
         if userid:
             try:
@@ -773,28 +776,40 @@ class ProjectApplicationForm(forms.ModelForm):
                 pass
         if not self.user:
             raise forms.ValidationError(_(astakos_messages.NO_APPLICANT))
-        super(ProjectApplicationForm, self).clean()
-        return self.cleaned_data
+        cleaned_data = super(ProjectApplicationForm, self).clean()
+        return cleaned_data
 
     @property
     def resource_policies(self):
         policies = []
         append = policies.append
+        resource_indexes = {}
+        include_diffs = False
+
+        existing_policies = []
+        if self.instance and self.instance.pk:
+            include_diffs = True
+            existing_policies = self.instance.resource_set
+
         for name, value in self.data.iteritems():
             if not value:
                 continue
-            uplimit = value
+
             if name.endswith('_uplimit'):
-                subs = name.split('_uplimit')
-                prefix, suffix = subs
+                is_project_limit = name.endswith('_p_uplimit')
+                suffix = '_p_uplimit' if is_project_limit else '_m_uplimit'
+                uplimit = value
+                prefix, _suffix = name.split(suffix)
+
                 try:
                     resource = Resource.objects.get(name=prefix)
                 except Resource.DoesNotExist:
                     raise forms.ValidationError("Resource %s does not exist" %
                                                 resource.name)
+
                 # keep only resource limits for selected resource groups
-                if self.data.get('is_selected_%s' %
-                                 resource.group, "0") == "1":
+                if self.data.get('is_selected_%s' % \
+                                     resource.group, "0") == "1":
                     if not resource.ui_visible:
                         raise forms.ValidationError("Invalid resource %s" %
                                                     resource.name)
@@ -804,10 +819,66 @@ class ProjectApplicationForm(forms.ModelForm):
                     except ValueError:
                         m = "Limit should be an integer"
                         raise forms.ValidationError(m)
+
                     display = units.show(uplimit, resource.unit)
-                    d.update(dict(resource=prefix, uplimit=uplimit,
-                                  display_uplimit=display))
-                    append(d)
+                    existing = resource_indexes.get(prefix)
+
+                    diff_data = None
+                    if include_diffs:
+                        try:
+                            policy = existing_policies.get(resource=resource)
+                            if is_project_limit:
+                                pval = policy.project_capacity
+                            else:
+                                pval = policy.member_capacity
+
+                            if pval != uplimit:
+                                diff = pval - uplimit
+                                diff_data = {
+                                    'prev': pval,
+                                    'prev_display': units.show(pval,
+                                                               resource.unit),
+                                    'diff': diff,
+                                    'diff_display': units.show(abs(diff),
+                                                               resource.unit),
+                                    'increased': diff < 0,
+                                    'operator': '+' if diff < 0 else '-'
+                                }
+
+                        except:
+                            pass
+
+                    if is_project_limit:
+                        d.update(dict(resource=prefix,
+                                      p_uplimit=uplimit,
+                                      display_p_uplimit=display))
+
+                        if diff_data:
+                            d.update(dict(resource=prefix, p_diff=diff_data))
+
+                        if not existing:
+                            d.update(dict(resource=prefix, m_uplimit=0,
+                                      display_m_uplimit=units.show(0,
+                                           resource.unit)))
+                    else:
+                        d.update(dict(resource=prefix, m_uplimit=uplimit,
+                                      display_m_uplimit=display))
+
+                        if diff_data:
+                            d.update(dict(resource=prefix, m_diff=diff_data))
+
+                        if not existing:
+                            d.update(dict(resource=prefix, p_uplimit=0,
+                                      display_p_uplimit=units.show(0,
+                                           resource.unit)))
+
+                    if resource_indexes.get(prefix, None) is not None:
+                        # already included in policies
+                        existing.update(d)
+                    else:
+                        # keep track of resource dicts
+                        append(d)
+                        resource_indexes[prefix] = d
 
         ordered_keys = presentation.RESOURCES['resources_order']
 
@@ -823,21 +894,82 @@ class ProjectApplicationForm(forms.ModelForm):
     def cleaned_resource_policies(self):
         policies = {}
         for d in self.resource_policies:
+            if self.instance.pk:
+                if not d.get('p_diff', None) and not d.get('m_diff', None):
+                    continue
+
             policies[d["name"]] = {
-                "project_capacity": None,
-                "member_capacity": d["uplimit"]
+                "project_capacity": d.get("p_uplimit", 0),
+                "member_capacity": d.get("m_uplimit", 0)
             }
+
+        if len(policies.keys()) == 0:
+            return {}
 
         return policies
 
-    def save(self, commit=True, **kwargs):
+    def get_api_data(self):
         data = dict(self.cleaned_data)
         is_new = self.instance.id is None
-        data['project_id'] = self.instance.chain.id if not is_new else None
-        data['owner'] = self.user if is_new else self.instance.owner
-        data['resources'] = self.cleaned_resource_policies()
+        if isinstance(self.instance, Project):
+            data['project_id'] = self.instance.id
+        else:
+            data['project_id'] = self.instance.chain.id if not is_new else None
+
+        user_uuid = self.user.uuid if is_new else self.instance.owner.uuid
+        data['owner'] = AstakosUser.objects.get(uuid=user_uuid)
+
+        exclude_keys = ['owner', 'comments', 'project_id', 'start_date']
+
+        # is_valid changes instance attributes
+        instance = self.instance
+        if not is_new:
+            instance = Project.objects.get(pk=self.instance.pk)
+
+        for key in [dkey for dkey in data.keys() if not dkey in exclude_keys]:
+            if not is_new and \
+                   (getattr(instance, key) == data.get(key)):
+                del data[key]
+
+        resources = self.cleaned_resource_policies()
+        if resources:
+            data['resources'] = resources
+
+        if data.get('start_date', None):
+            data['start_date'] = date_util.isoformat(data.get('start_date'))
+        else:
+            del data['start_date']
+
+        if data.get('end_date', None):
+            data['end_date'] = date_util.isoformat(data.get('end_date'))
+
+        if 'limit_on_members_number' in data:
+            data['max_members'] = data.get('limit_on_members_number')
+
         data['request_user'] = self.user
-        submit_application(**data)
+        if 'owner' in data:
+            data['owner'] = data['owner'].uuid
+
+        return data
+
+    def save(self, commit=True, **kwargs):
+        from astakos.api import projects as api
+        data = self.get_api_data()
+        return api.submit_new_project(data, self.user)
+
+
+class ProjectModificationForm(ProjectApplicationForm):
+
+    class Meta:
+        model = Project
+        fields = ('name', 'homepage', 'description',
+                  'end_date', 'comments', 'member_join_policy',
+                  'member_leave_policy', 'limit_on_members_number')
+
+    def save(self, commit=True, **kwargs):
+        from astakos.api import projects as api
+        data = self.get_api_data()
+        return api.submit_modification(data, self.user, self.instance.uuid)
 
 
 class ProjectSortForm(forms.Form):
@@ -879,9 +1011,9 @@ class AddProjectMembersForm(forms.Form):
         required=True,)
 
     def __init__(self, *args, **kwargs):
-        chain_id = kwargs.pop('chain_id', None)
-        if chain_id:
-            self.project = Project.objects.get(id=chain_id)
+        project_id = kwargs.pop('project_id', None)
+        if project_id:
+            self.project = Project.objects.get(id=project_id)
         self.request_user = kwargs.pop('request_user', None)
         super(AddProjectMembersForm, self).__init__(*args, **kwargs)
 
@@ -892,7 +1024,7 @@ class AddProjectMembersForm(forms.Form):
             raise forms.ValidationError(e)
 
         q = self.cleaned_data.get('q') or ''
-        users = q.split(',')
+        users = re.split("\r\n|\n|,", q)
         users = list(u.strip() for u in users if u)
         db_entries = AstakosUser.objects.accepted().filter(email__in=users)
         unknown = list(set(users) - set(u.email for u in db_entries))
@@ -904,10 +1036,7 @@ class AddProjectMembersForm(forms.Form):
 
     def get_valid_users(self):
         """Should be called after form cleaning"""
-        try:
-            return self.valid_users
-        except:
-            return ()
+        return self.valid_users
 
 
 class ProjectMembersSortForm(forms.Form):

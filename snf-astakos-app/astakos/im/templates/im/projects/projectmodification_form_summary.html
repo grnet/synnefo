@@ -1,0 +1,35 @@
+{% extends "im/projects/projectapplication_form_summary.html" %}
+{% load filters %}
+
+{% block page.heading %}
+REQUEST PROJECT MODIFICATION
+{% endblock %}
+
+{% block page.description %}
+These are the modifications you want to apply to the Project. If you hit the
+"Submit" button this form will be officially sent to {{ BRANDING_COMPANY_NAME }}
+for review. Please make sure the following reflect exactly your modification
+request.
+{% endblock %}
+
+{% block page.project_details %}
+<dt>Name</dt>
+<dd>{{ form|display_modification_param:"name" }}&nbsp;</dd>
+<dt>Homepage Url</dt>
+<dd>{{ form|display_modification_param:"homepage" }}&nbsp;</dd>
+<dt>Description</dt>
+<dd>{{ form|display_modification_param:"description" }}&nbsp;</dd>
+<dt>End Date</dt>
+<dd>{{ form|display_date_modification_param:"end_date,d/m/Y" }}&nbsp;</dd>
+<dt>Comments</dt>
+<dd>{{ form_data.comments }}&nbsp;</dd>	    
+{% endblock %}
+
+{% block page.project_membership_details %}
+<dt>Member join policy</dt>
+<dd>{{ form|display_modification_param:"member_join_policy" }}&nbsp;</dd>
+<dt>Member leave policy</dt>
+<dd>{{ form|display_modification_param:"member_leave_policy" }}&nbsp;</dd>
+<dt>Total number of members</dt>
+<dd>{{ form|display_modification_param_diff:"limit_on_members_number" }}&nbsp;</dd>
+{% endblock %}

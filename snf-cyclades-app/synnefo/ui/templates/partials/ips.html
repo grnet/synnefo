@@ -1,11 +1,31 @@
 {% load i18n %}
 
+<!-- add new network overlay -->
+<div id="ips-create-content" class="overlay-content hidden">
+    <div class="create-form">
+        <p class="info"></p>
+        <form>
+          <div class="col-fields bordered clearfix">
+            <div class="form-field">
+                <label for="network-create-name">Project</label>
+                <select class="project-select"></select>
+            </div>
+          </div>
+          <div class="form-actions plain clearfix">
+              <span class="form-action create">create ip address</span>
+          </div>
+        </form>
+    </div>
+    
+    <div class="ajax-submit"></div>
+</div>
+
 <div id="ip-port-view-tpl" class="hidden ip-port-view model-item">
   <div class="outer">
     <div data-rv-class="model.vm.status|vm_status_cls">
       <div class="model-logo vm-icon medium2 state1"
         data-rv-style="model.vm.status|vm_style"></div>
-      <h3 class="title" data-rv-text="model.vm.name|truncate 30"></h3>
+      <h3 class="title" data-rv-text="model.vm.name|truncate 20"></h3>
       <h5 class="subtitle">
         <img data-rv-show="model.in_progress" 
              src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
@@ -26,15 +46,20 @@
 <div id="ip-view-tpl" data-rv-class-actionpending="model.actions.pending"
   data-rv-class-clearfix="model.id" class="hidden model-item model-view with-actions">
   <div class="clearfix">
-    <div class="main-content clearfix">
+    <div class="main-content clearfix" style="position: relative">
       <div class="main-content-inner clearfix">
+        <div class="project-name-cont" 
+          data-rv-on-click="view.show_reassign_view"
+          data-rv-show="model.tenant_id">
+            <span class="project-name" data-rv-text="model.project.name|truncate 20"></span>
+        </div>
         <img class="logo" data-rv-src="model.status|model_icon" />
         <div class="entry inline" data-rv-class-connected="model.device_id">
           <h3 class="title floating-ip">
             <span data-rv-text="model.floating_ip_address">IP ADDRESS</span>
           </h3>
           <div data-rv-if="model.port" class="ports nested-model-list proxy inline">
-            <div data-rv-if="model.port">
+            <div data-rv-if="model.port" class="ip-port-view-cont">
               <div data-rv-show="model.port" data-rv-model-view="model.port|IpPortView"></div>
             </div>
           </div>

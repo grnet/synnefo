@@ -1,4 +1,4 @@
-// Copyright 2013 GRNET S.A. All rights reserved.
+// Copyright 2014 GRNET S.A. All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or
 // without modification, are permitted provided that the following
@@ -71,6 +71,7 @@
             this.quotas = options.quotas || synnefo.storage.quotas;
             this.selected_flavor = options.selected_flavor || undefined;
             this.extra_quotas = options.extra_quotas || undefined;
+            this.project = options.project;
             this.render();
             if (this.selected_flavor) { this.set_flavor(this.selected_flavor)}
         },
@@ -158,7 +159,7 @@
         
         set_unavailable: function() {
             this.$el.find("li.choice").removeClass("disabled");
-            var quotas = this.quotas.get_available_for_vm({'active': true});
+            var quotas = this.project.quotas.get_available_for_vm({'active': true});
             var extra_quotas = this.extra_quotas;
             var user_excluded = storage.flavors.unavailable_values_for_quotas(
               quotas, 
@@ -296,6 +297,7 @@
             this.start_warning.hide();
             this.submit.removeClass("in-progress");
             this.vm = vm;
+            this.project = vm.get('project');
             this.vm.bind("change", this.handle_vm_change);
             if (this.flavors_view) {
                 this.flavors_view.remove();
@@ -314,7 +316,8 @@
                 el: this.$(".flavor-options-inner-cont div"),
                 hidden_choices:['disk', 'disk_template'],
                 selected_flavor: this.vm.get_flavor(),
-                extra_quotas: extra_quota
+                extra_quotas: extra_quota,
+                project: this.project
             });
             this.selected_flavor = this.vm.get_flavor();
             this.handle_flavor_select(this.selected_flavor);

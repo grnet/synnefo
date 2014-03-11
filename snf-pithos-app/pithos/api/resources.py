@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,7 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from synnefo.util.keypath import get_path
 from pithos.api.settings import pithos_services
 
-resources = get_path(pithos_services, 'pithos_object-store.resources').values()
+resources = pithos_services['pithos_object-store']['resources'].values()

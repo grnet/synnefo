@@ -42,10 +42,11 @@ import shutil
 
 from kamaki.clients import ClientError
 
-from synnefo_tools.burnin.common import BurninTests, Proper
+from synnefo_tools.burnin.common import BurninTests, Proper, \
+    QPITHOS, QADD, QREMOVE
 
 
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class FlavorsTestSuite(BurninTests):
     """Test flavor lists for consistency"""
     simple_flavors = Proper(value=None)
@@ -89,7 +90,7 @@ class FlavorsTestSuite(BurninTests):
 
 
 # --------------------------------------------------------------------
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class ImagesTestSuite(BurninTests):
     """Test image lists for consistency"""
     simple_images = Proper(value=None)
@@ -171,7 +172,9 @@ class ImagesTestSuite(BurninTests):
             self.clients.pithos.upload_object(self.temp_image_name, fin)
 
         # Verify quotas
-        self._check_quotas(diskspace=file_size)
+        changes = \
+            {self._get_uuid(): [(QPITHOS, QADD, file_size, None)]}
+        self._check_quotas(changes)
 
     def test_009_register_image(self):
         """Register image to Plankton"""
@@ -198,7 +201,9 @@ class ImagesTestSuite(BurninTests):
         self.clients.pithos.del_object(self.temp_image_name)
         # Verify quotas
         file_size = os.path.getsize(self.temp_image_file)
-        self._check_quotas(diskspace=-file_size)
+        changes = \
+            {self._get_uuid(): [(QPITHOS, QREMOVE, file_size, None)]}
+        self._check_quotas(changes)
         self.temp_image_name = None
         # Remove temp directory
         self.info("Deleting temp directory %s", self.temp_dir)

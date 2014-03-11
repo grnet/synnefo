@@ -177,14 +177,15 @@ class MessagesNode(template.Node):
 
 
 @register.simple_tag
-def get_grant_value(rname, form):
-    grants = form.instance.grants
-    try:
-        r = form.instance.projectresourcegrant_set.get(
-            resource__name=rname).member_capacity
-    except Exception, e:
-        r = ''
-    return r
+def get_grant_value(rname, project_or_app, for_project=True):
+    if not project_or_app:
+        return None
+    resource_set = project_or_app.grants
+    r = resource_set.get(resource__name=rname)
+    if for_project:
+        return r.project_capacity
+    else:
+        return r.member_capacity
 
 
 @register.tag(name="provider_login_url")
@@ -233,6 +234,7 @@ CONFIRM_LINK_PROMPT_MAP = {
                              'project ?'),
     'project_join': _('Are you sure you want to join this project ?'),
     'project_leave': _('Are you sure you want to leave from the project ?'),
+    'project_cancel_member': _('Are you sure you want to cancel your join request ?'),
 }
 
 
@@ -250,8 +252,14 @@ def confirm_link(context, title, prompt='', url=None, urlarg=None,
         if isinstance(urlarg, basestring) and "," in urlarg:
             args = urlarg.split(",")
             for index, arg in enumerate(args):
+                property = None
+                if "." in arg:
+                    arg, property = arg.split(".")
                 if context.get(arg, None) is not None:
-                    args[index] = context.get(arg)
+                    val = context.get(arg)
+                    if property:
+                        val = getattr(val, property)
+                    args[index] = val
             urlargs = args
         else:
             urlargs = (urlarg,)

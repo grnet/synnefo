@@ -912,7 +912,7 @@ resource.
 
 .. code-block:: console
 
-    # snf-manage resource-modify --default-quota-interactive
+    # snf-manage resource-modify cyclades.vm --base-default 2
 
 Setting Resource Visibility
 ---------------------------
@@ -992,8 +992,8 @@ Now we need to activate that user. Return to a command prompt at node1 and run:
     root@node1:~ # snf-manage user-list
 
 This command should show you a list with only one user; the one we just created.
-This user should have an id with a value of ``1`` and flag "active" and
-"verified" set to False. Now run:
+This user should have an id with a value of ``1`` and flag "active"
+set to False. Now run:
 
 .. code-block:: console
 

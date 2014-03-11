@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -35,7 +35,6 @@ import logging
 
 from django.conf import settings
 from synnefo.lib import join_urls, parse_base_url
-from synnefo.util.keypath import get_path, set_path
 from synnefo.api.services import cyclades_services as vanilla_cyclades_services
 from synnefo.lib.services import fill_endpoints
 from astakosclient import AstakosClient
@@ -53,20 +52,17 @@ BASE_URL = getattr(settings, 'CYCLADES_BASE_URL',
 BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
 SERVICE_TOKEN = getattr(settings, 'CYCLADES_SERVICE_TOKEN', "")
 
-CUSTOMIZE_SERVICES = getattr(settings, 'CYCLADES_CUSTOMIZE_SERVICES', ())
 cyclades_services = deepcopy(vanilla_cyclades_services)
 fill_endpoints(cyclades_services, BASE_URL)
-for path, value in CUSTOMIZE_SERVICES:
-    set_path(cyclades_services, path, value, createpath=True)
 
-COMPUTE_PREFIX = get_path(cyclades_services, 'cyclades_compute.prefix')
-NETWORK_PREFIX = get_path(cyclades_services, 'cyclades_network.prefix')
-VMAPI_PREFIX = get_path(cyclades_services, 'cyclades_vmapi.prefix')
-PLANKTON_PREFIX = get_path(cyclades_services, 'cyclades_plankton.prefix')
-HELPDESK_PREFIX = get_path(cyclades_services, 'cyclades_helpdesk.prefix')
-UI_PREFIX = get_path(cyclades_services, 'cyclades_ui.prefix')
-USERDATA_PREFIX = get_path(cyclades_services, 'cyclades_userdata.prefix')
-ADMIN_PREFIX = get_path(cyclades_services, 'cyclades_admin.prefix')
+COMPUTE_PREFIX = cyclades_services['cyclades_compute']['prefix']
+NETWORK_PREFIX = cyclades_services['cyclades_network']['prefix']
+VMAPI_PREFIX = cyclades_services['cyclades_vmapi']['prefix']
+PLANKTON_PREFIX = cyclades_services['cyclades_plankton']['prefix']
+HELPDESK_PREFIX = cyclades_services['cyclades_helpdesk']['prefix']
+UI_PREFIX = cyclades_services['cyclades_ui']['prefix']
+USERDATA_PREFIX = cyclades_services['cyclades_userdata']['prefix']
+ADMIN_PREFIX = cyclades_services['cyclades_admin']['prefix']
 
 COMPUTE_ROOT_URL = join_urls(BASE_URL, COMPUTE_PREFIX)
 

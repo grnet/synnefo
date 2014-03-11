@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -85,6 +85,7 @@ def add_resource(resource_dict):
     except Resource.DoesNotExist:
         r = Resource(name=name,
                      uplimit=units.PRACTICALLY_INFINITE,
+                     project_default=units.PRACTICALLY_INFINITE,
                      service_type=service_type,
                      service_origin=service_origin)
         exists = False
@@ -113,19 +114,28 @@ def add_resource(resource_dict):
     return r, exists
 
 
-def update_resources(updates):
-    resources = []
-    for resource, uplimit in updates:
-        resources.append(resource)
-        old_uplimit = resource.uplimit
-        if uplimit == old_uplimit:
-            logger.info("Resource %s has limit %s; no need to update."
-                        % (resource.name, uplimit))
-        else:
-            resource.uplimit = uplimit
-            resource.save()
-            logger.info("Updated resource %s with limit %s."
-                        % (resource.name, uplimit))
+def update_base_default(resource, base_default):
+    old_base_default = resource.uplimit
+    if base_default == old_base_default:
+        logger.info("Resource %s has base default %s; no need to update."
+                    % (resource.name, base_default))
+    else:
+        resource.uplimit = base_default
+        resource.save()
+        logger.info("Updated resource %s with base default %s."
+                    % (resource.name, base_default))
+
+
+def update_project_default(resource, project_default):
+    old_project_default = resource.project_default
+    if project_default == old_project_default:
+        logger.info("Resource %s has project default %s; no need to update."
+                    % (resource.name, project_default))
+    else:
+        resource.project_default = project_default
+        resource.save()
+        logger.info("Updated resource %s with project default %s."
+                    % (resource.name, project_default))
 
 
 def resources_to_dict(resources):

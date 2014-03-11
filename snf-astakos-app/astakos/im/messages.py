@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -228,6 +228,7 @@ UNIQUE_PROJECT_NAME_CONSTRAIN_ERR = (
 NOT_ALIVE_PROJECT = 'Project %s is not alive.'
 NOT_SUSPENDED_PROJECT = 'Project %s is not suspended.'
 NOT_TERMINATED_PROJECT = 'Project %s is not terminated.'
+BASE_NO_TERMINATE = "Cannot terminate: %s is a base project."
 NOT_ALLOWED = 'You do not have the permissions to perform this action.'
 MEMBER_NUMBER_LIMIT_REACHED = (
     'You have reached the maximum number of members for this Project.')
@@ -271,8 +272,13 @@ APPLICATION_CANNOT_DENY = "Cannot deny application %s in state '%s'"
 APPLICATION_CANNOT_DISMISS = "Cannot dismiss application %s in state '%s'"
 APPLICATION_CANNOT_CANCEL = "Cannot cancel application %s in state '%s'"
 APPLICATION_CANCELLED = "Your project application has been cancelled."
+APPLICATION_APPROVED = "Project application has been approved."
+APPLICATION_DENIED = "Project application has been denied."
+APPLICATION_DISMISSED = "Project application has been dismissed."
 REACHED_PENDING_APPLICATION_LIMIT = ("You have reached the maximum number "
                                      "of pending project applications: %s.")
+UNINITIALIZED_NO_MODIFY = "Cannot modify: project %s is not initialized."
+BASE_NO_MODIFY_FIELDS = "Cannot modify field(s) '%s' of base projects."
 
 PENDING_APPLICATION_LIMIT_ADD = \
     ("You are not allowed to create a new project "

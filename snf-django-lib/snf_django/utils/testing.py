@@ -150,13 +150,14 @@ def astakos_user(user):
                     "name": "Firstname Lastname"}}
                 }
 
-            with patch('astakosclient.AstakosClient.get_quotas') as m3:
-                m3.return_value = {
+            with patch('astakosclient.AstakosClient.service_get_quotas') as m2:
+                m2.return_value = {user: {
                     "system": {
                         "pithos.diskspace": {
                             "usage": 0,
                             "limit": 1073741824,  # 1GB
                             "pending": 0
+                            }
                         }
                     }
                 }
@@ -218,6 +219,12 @@ class BaseAPITest(TestCase):
         with astakos_user(user):
             with mocked_quotaholder():
                 response = self.client.get(url, *args, **kwargs)
+        return response
+
+    def head(self, url, user='user', *args, **kwargs):
+        with astakos_user(user):
+            with mocked_quotaholder():
+                response = self.client.head(url, *args, **kwargs)
         return response
 
     def delete(self, url, user='user'):

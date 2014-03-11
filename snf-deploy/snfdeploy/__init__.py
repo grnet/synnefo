@@ -1,3 +1,36 @@
+# Copyright (C) 2010, 2011, 2012, 2013 GRNET S.A. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+#
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+#
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A. OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+
 import time
 import os
 import argparse
@@ -5,9 +38,11 @@ import sys
 import re
 import random
 import ast
+import glob
 from snfdeploy.lib import check_pidfile, create_dir, get_default_route, \
-    random_mac, Conf, Env
-from snfdeploy import fabfile
+    random_mac, Conf, Env, Status
+# from snfdeploy import fabfile
+from snfdeploy import fabfile2 as fabfile
 from fabric.api import hide, settings, execute, show
 
 
@@ -35,36 +70,13 @@ Usage: snf-deploy vcluster
 
   """
 
-    if command == "prepare":
-        print """
-Usage: snf-deploy prepare
-
-  Run the following actions concerning deployment preparation:
-
-    - Setup an internal Domain Name Server
-    - Tweak hosts and add ssh keys
-    - Check network setup
-    - Setup apt repository and apt-get update
-    - Setup the nfs server and clients among all nodes
-
-  """
-
     if command == "backend":
         print """
-Usage: snf-deploy backend [update]
+Usage: snf-deploy backend
 
   Run the following actions concerning a ganeti backend:
 
     - Create and add a backend to cyclades
-    - Does all the net-infra specific actions in backend nodes
-      (create/connect bridges, iptables..)
-    - Does all the storage-infra specific actions in backend nodes
-      depending on the --extra-disk option \
-(create VG, enable lvm/drbd storage..)
-
-    or
-
-    - Update packages in an already registered backend in cyclades.
 
   """
 
@@ -74,38 +86,43 @@ Usage: snf-deploy run <action> [<action>...]
 
   Run any of the following fabric commands:
 
+    Role setup:
 
-    Setup commands:        Init commands:                Admin commands:
-      setup_apache           add_pools                     activate_user
-      setup_apt              add_rapi_user                 add_backend
-      setup_astakos          add_nodes                     add_image_locally
-      setup_cms              astakos_loaddata              add_network
-      setup_collectd
-      setup_common           astakos_register_components   add_ns
-      setup_cyclades         cms_loaddata                  add_user
-      setup_db               cyclades_loaddata             connect_bridges
-      setup_ganeti           enable_drbd                   create_bridges
-      setup_ganeti_collectd
-      setup_gtools           init_cluster                  create_vlans
-      setup_gunicorn         setup_nfs_clients             destroy_db
-      setup_hosts            setup_nfs_server              \
-get_auth_token_from_db
-      setup_image_helper     update_ns_for_ganeti          get_service_details
-      setup_image_host       astakos_register_pithos_view  gnt_instance_add
-      setup_iptables                                       gnt_network_add
-      setup_kamaki         Test commands:                  register_image
-      setup_lvm              test                          restart_services
-      setup_mq                                             setup_drbd_dparams
-      setup_net_infra
-      setup_network
-      setup_ns
-      setup_pithos
-      setup_pithos_dir
-      setup_router
-      setup_stats
-      setup_stats_collectd
-      setup_vncauthproxy
-      setup_webproject
+      setup_ns_role
+      setup_nfs_role
+      setup_db_role
+      setup_mq_role
+      setup_astakos_role
+      setup_pithos_role
+      setup_cyclades_role
+      setup_cms_role
+      setup_ganeti_role
+      setup_master_role
+      setup_stats_role
+      setup_client_role
+
+    Helper commands:
+
+      update_env_with_user_info
+      update_env_with_service_info
+      update_env_with_backend_info
+
+    Admin commands:
+
+      update_ns_for_node
+      update_exports_for_node
+      allow_db_access
+      add_ganeti_backend
+      add_synnefo_user
+      activate_user
+      set_default_quota
+      add_public_networks
+      add_image
+
+
+    Custom command:
+
+      setup --node NODE [--role ROLE | --method METHOD --component COMPONENT]
 
   """
 
@@ -216,6 +233,7 @@ def network(args, env):
 
 
 def image(args, env):
+    #FIXME: Create a clean wheezy image and use it for vcluster
     if env.os == "ubuntu":
         url = env.ubuntu_image_url
     else:
@@ -270,16 +288,15 @@ def fabcommand(args, env, actions, nodes=[]):
     if nodes:
         ips = [env.nodes_info[n].ip for n in nodes]
 
-    fabfile.setup_env(args)
+    fabfile.setup_env(args, env)
     with settings(hide(*lhide), show(*lshow)):
         print " ".join(actions)
         for a in actions:
             fn = getattr(fabfile, a)
-            if not args.dry_run:
-                if nodes:
-                    execute(fn, hosts=ips)
-                else:
-                    execute(fn)
+            if nodes:
+                execute(fn, hosts=ips)
+            else:
+                execute(fn)
 
 
 def cluster(args, env):
@@ -379,7 +396,8 @@ def parse_options():
                              "console or not")
     parser.add_argument("--force", dest="force",
                         default=False, action="store_true",
-                        help="Force the creation of new ssh key pairs")
+                        help="Force things (creation of key pairs"
+                             " do not abort execution if something fails")
 
     parser.add_argument("-i", "--ssh-key", dest="ssh_key",
                         default=None,
@@ -399,12 +417,27 @@ def parse_options():
                         default=None,
                         help="The node to add to the existing cluster")
 
+    # options related to custom setup
+    parser.add_argument("--component", dest="component",
+                        default=None,
+                        help="The component class")
+
+    parser.add_argument("--method", dest="method",
+                        default=None,
+                        help="The component method")
+
+    parser.add_argument("--role", dest="role",
+                        default=None,
+                        help="The target node's role")
+
+    parser.add_argument("--node", dest="node",
+                        default="node1",
+                        help="The target node")
+
     # available commands
     parser.add_argument("command", type=str,
-                        choices=["packages", "vcluster", "prepare",
-                                 "synnefo", "backend", "ganeti",
-                                 "run", "cleanup", "test",
-                                 "all", "add", "keygen"],
+                        choices=["packages", "vcluster", "cleanup",
+                                 "run", "test", "all", "keygen"],
                         help="Run on of the supported deployment commands")
 
     # available actions for the run command
@@ -421,76 +454,38 @@ def parse_options():
 
 def get_actions(*args):
     actions = {
-        # prepare actions
-        "ns":  ["setup_ns", "setup_resolv_conf"],
-        "hosts": ["setup_hosts", "add_keys"],
-        "check": ["check_dhcp", "check_dns",
-                  "check_connectivity", "check_ssh"],
-        "apt": ["apt_get_update", "setup_apt"],
-        "nfs": ["setup_nfs_server", "setup_nfs_clients"],
-        "prepare":  [
-            "setup_hosts", "add_keys",
-            "setup_ns", "setup_resolv_conf",
-            "check_dhcp", "check_dns", "check_connectivity", "check_ssh",
-            "apt_get_update", "setup_apt",
-            "setup_nfs_server", "setup_nfs_clients"
-        ],
-        # synnefo actions
-        "synnefo": [
-            "setup_mq", "setup_db",
-            "setup_astakos",
-            #TODO: astakos-quota fails if no user is added.
-            #      add_user fails if no groups found
-            "astakos_loaddata", "add_user", "activate_user",
-            "astakos_register_components",
-            "astakos_register_pithos_view",
-            "setup_cms", "cms_loaddata",
-            "setup_pithos",
-            "setup_vncauthproxy",
-            "setup_cyclades", "cyclades_loaddata", "add_pools",
-            "export_services", "import_services", "set_user_quota",
-            "setup_kamaki", "upload_image", "register_image",
-            "setup_burnin",
-            "setup_stats"
-        ],
-        "supdate": [
-            "apt_get_update", "setup_astakos",
-            "setup_cms", "setup_pithos", "setup_cyclades"
-        ],
-        # backend actions
         "backend": [
-            "setup_hosts",
-            "update_ns_for_ganeti",
-            "setup_ganeti", "init_cluster",
-            "add_rapi_user", "add_nodes",
-            "setup_image_host", "setup_image_helper",
-            "setup_network",
-            "setup_gtools", "add_backend", "add_network",
-            "setup_lvm", "enable_lvm",
-            "enable_drbd", "setup_drbd_dparams",
-            "setup_net_infra", "setup_iptables", "setup_router",
-            "setup_ganeti_collectd"
+            "setup_master_role",
+            "setup_ganeti_role",
+            "add_ganeti_backend",
         ],
-        "bstorage": [
-            "setup_lvm", "enable_lvm",
-            "enable_drbd", "setup_drbd_dparams"
-        ],
-        "bnetwork": ["setup_net_infra", "setup_iptables", "setup_router"],
-        "bupdate": [
-            "apt_get_update", "setup_ganeti", "setup_image_host",
-            "setup_image_helper", "setup_network", "setup_gtools"
-        ],
-        # ganeti actions
         "ganeti": [
-            "update_ns_for_ganeti",
-            "setup_ganeti", "init_cluster", "add_nodes",
-            "setup_image_host", "setup_image_helper", "add_image_locally",
-            "debootstrap", "setup_net_infra",
-            "setup_lvm", "enable_lvm", "enable_drbd", "setup_drbd_dparams",
-            "setup_ganeti_collectd"
+            "setup_ns_role",
+            "setup_nfs_role",
+            "setup_master_role",
+            "setup_ganeti_role",
         ],
-        "gupdate": ["setup_apt", "setup_ganeti"],
-        "gdestroy": ["destroy_cluster"],
+        "all": [
+            "setup_ns_role",
+            "setup_nfs_role",
+            "setup_db_role",
+            "setup_mq_role",
+            "setup_astakos_role",
+            "setup_pithos_role",
+            "setup_cyclades_role",
+            "setup_cms_role",
+            "setup_master_role",
+            "setup_ganeti_role",
+            "setup_stats_role",
+            "set_default_quota",
+            "add_ganeti_backend",
+            "add_public_networks",
+            "add_synnefo_user",
+            "activate_user",
+            "setup_client_role",
+            "add_image",
+        ],
+
     }
 
     ret = []
@@ -500,15 +495,10 @@ def get_actions(*args):
     return ret
 
 
-def must_create_keys(force, env):
-    """Check if we need to create ssh keys
-
-    If force is true we are going to overide the old keys.
-    Else if there are already generated keys to use, don't create new ones.
+def must_create_keys(env):
+    """Check if we ssh keys already exist
 
     """
-    if force:
-        return True
     d = os.path.join(env.templates, "root/.ssh")
     auth_keys_exists = os.path.exists(os.path.join(d, "authorized_keys"))
     dsa_exists = os.path.exists(os.path.join(d, "id_dsa"))
@@ -536,41 +526,38 @@ def do_create_keys(args, env):
         os.system(cmd)
 
 
-def add_node(args, env):
-    actions = [
-        "update_ns_for_node:" + args.cluster_node,
-    ]
-    fabcommand(args, env, actions)
-    actions = [
-        "setup_resolv_conf",
-        "apt_get_update",
-        "setup_apt",
-        "setup_hosts",
-        "add_keys",
-    ]
-    fabcommand(args, env, actions, [args.cluster_node])
+def must_create_ddns_keys(env):
+    d = os.path.join(env.templates, "root/ddns")
+    key_exists = glob.glob(os.path.join(d, "Kddns*key"))
+    private_exists = glob.glob(os.path.join(d, "Kddns*private"))
+    bind_key_exists = os.path.exists(os.path.join(d, "ddns.key"))
+    return not (key_exists and private_exists and bind_key_exists)
 
-    actions = get_actions("check")
-    fabcommand(args, env, actions)
 
-    actions = [
-        "setup_nfs_clients",
-        "setup_ganeti",
-        "setup_image_host", "setup_image_helper",
-        "setup_network", "setup_gtools",
-    ]
-    fabcommand(args, env, actions, [args.cluster_node])
+def find_ddns_key_files(env):
+    d = os.path.join(env.templates, "root/ddns")
+    keys = glob.glob(os.path.join(d, "Kddns*"))
+    # Here we must have a key!
+    return map(os.path.basename, keys)
 
-    actions = [
-        "add_node:" + args.cluster_node,
-    ]
-    fabcommand(args, env, actions)
 
-    actions = [
-        "setup_lvm", "enable_drbd",
-        "setup_net_infra", "setup_iptables",
-    ]
-    fabcommand(args, env, actions, [args.cluster_node])
+def do_create_ddns_keys(args, env):
+    d = os.path.join(env.templates, "root/ddns")
+    if not os.path.exists(d):
+        os.mkdir(d)
+    for filename in os.listdir(d):
+        os.remove(os.path.join(d, filename))
+    cmd = """
+dnssec-keygen -a HMAC-MD5 -b 128 -K {0} -r /dev/urandom -n USER DDNS_UPDATE
+key=$(cat {0}/Kddns_update*.key | awk '{{ print $7 }}')
+cat > {0}/ddns.key <<EOF
+key DDNS_UPDATE {{
+        algorithm HMAC-MD5.SIG-ALG.REG.INT;
+        secret "$key";
+}};
+EOF
+""".format(d)
+    os.system(cmd)
 
 
 def main():
@@ -578,23 +565,28 @@ def main():
 
     conf = Conf(args)
     env = Env(conf)
+    env.status = Status(args)
 
     create_dir(env.run, False)
     create_dir(env.dns, False)
 
     # Check if there are keys to use
     if args.command == "keygen":
-        if must_create_keys(args.force, env):
-            do_create_keys(args, env)
-            return 0
-        else:
-            print "Keys already existed.. aborting"
-            return 1
+        if not args.force:
+            if not must_create_keys(env) or not must_create_ddns_keys(env):
+                print "Keys already exist.."
+                print "To override existing ones use --force."
+                return 1
+        do_create_keys(args, env)
+        do_create_ddns_keys(args, env)
+        return 0
     else:
-        if (args.key_inject and (args.ssh_key is None)
-                and must_create_keys(False, env)):
-            print "No ssh keys to use. Run `snf-deploy keygen' first."
+        if ((args.key_inject and not args.ssh_key and
+             must_create_keys(env)) or must_create_ddns_keys(env)):
+            print "No ssh/ddns keys to use. Run `snf-deploy keygen' first."
             return 1
+        env.ddns_keys = find_ddns_key_files(env)
+        env.ddns_private_key = "/root/ddns/" + env.ddns_keys[0]
 
     if args.command == "test":
         conf.print_config()
@@ -613,14 +605,6 @@ def main():
         dnsmasq(args, env)
         cluster(args, env)
 
-    if args.command == "prepare":
-        actions = get_actions("prepare")
-        fabcommand(args, env, actions)
-
-    if args.command == "synnefo":
-        actions = get_actions("synnefo")
-        fabcommand(args, env, actions)
-
     if args.command == "backend":
         actions = get_actions("backend")
         fabcommand(args, env, actions)
@@ -630,15 +614,8 @@ def main():
         fabcommand(args, env, actions)
 
     if args.command == "all":
-        actions = get_actions("prepare", "synnefo", "backend")
+        actions = get_actions("all")
         fabcommand(args, env, actions)
-
-    if args.command == "add":
-        if args.cluster_node:
-            add_node(args, env)
-        else:
-            actions = get_actions("backend")
-            fabcommand(args, env, actions)
 
     if args.command == "run":
         if not args.actions:
@@ -646,6 +623,7 @@ def main():
         else:
             fabcommand(args, env, args.actions)
 
+    return 0
 
 if __name__ == "__main__":
     sys.exit(main())

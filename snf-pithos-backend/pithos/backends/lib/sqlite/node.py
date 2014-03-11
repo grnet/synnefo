@@ -245,6 +245,17 @@ class Node(DBWorker):
         self.execute(q, (node,))
         return self.fetchone()
 
+    def node_get_parent_path(self, node):
+        """Return the node's parent path.
+           Return None if the node is not found.
+        """
+
+        q = ("select path from nodes as n1, nodes as n2 "
+             "where n2.node = n1.parent and n1.node = ?")
+        self.execute(q, (node,))
+        l = self.fetchone()
+        return l[0] if l is not None else None
+
     def node_get_versions(self, node, keys=(), propnames=_propnames):
         """Return the properties of all versions at node.
            If keys is empty, return all properties in the order

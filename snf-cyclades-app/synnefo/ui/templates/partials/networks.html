@@ -7,6 +7,12 @@
         <form>
           <div class="col-fields bordered clearfix">
             <div class="form-field">
+                <label for="network-create-name">Project</label>
+                <select class="project-select"></select>
+            </div>
+          </div>
+          <div class="col-fields bordered clearfix">
+            <div class="form-field">
                 <label for="network-create-name">Network name:</label>
                 <input type="text" class="network-create-name" name="network-create-name" id="network-create-name" />
             </div>
@@ -173,8 +179,13 @@
   data-rv-class-clearfix="model.id"
   class="hidden model-item model-view with-actions">
   <div class="clearfix">
-    <div class="main-content clearfix">
+    <div class="main-content clearfix" style="position: relative">
       <div class="main-content-inner clearfix">
+        <div class="project-name-cont" 
+          data-rv-on-click="view.show_reassign_view"
+          data-rv-show="model.tenant_id">
+            <span class="project-name" data-rv-text="model.project.name|truncate 20"></span>
+        </div>
         <img class="logo" data-rv-src="model.is_public|get_network_icon" />
         <div class="entry">
           <div data-rv-show="model" 
@@ -298,7 +309,8 @@
     </div>
   </div>
   <div data-rv-show="model.is_public" class="floating-ips">
-    <div data-rv-collection-view="model.available_floating_ips|NetworkSelectFloatingIpsView">
+    <div
+      data-rv-collection-view="model.available_floating_ips|NetworkSelectFloatingIpsView,resolve_floating_ip_view_params">
     </div>
   </div>
 </div>

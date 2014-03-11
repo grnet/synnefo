@@ -62,12 +62,16 @@
             this.error = this.vm_view.find(".action-error");
             this.close = this.vm_view.find(".close-action-error");
             this.show_btn = this.vm_view.find(".show-action-error");
+            this.project_view = this.vm_view.find(".project-name");
 
             this.init_handlers();
             this.update_layout();
         },
-
+        
         init_handlers: function() {
+            this.project_view.bind('click', _.bind(function() {
+              synnefo.ui.main.vm_reassign_view.show(this.vm);
+            }, this));
             // action call failed notify the user
             this.vm.bind("action:fail", _.bind(function(args){
                 if (this.vm.action_error) {
@@ -100,6 +104,10 @@
             this.vm.bind("action:fail:reset", _.bind(function(){
                 this.error.hide();
             }, this));
+        },
+
+        show_reassign_view: function(vm) {
+          synnefo.ui.main.reassign_view.show(vm);
         },
 
         show_error_overlay: function(args) {
@@ -826,6 +834,10 @@
         // update vm details
         update_details: function(vm) {
             var el = this.vm(vm);
+            var project = vm.get('project')
+            if (project) {
+              el.find(".project-name").text(_.truncate(project.get('name'), 20));
+            }
             // truncate name
             el.find("span.name").text(util.truncate(vm.get("name"), 40));
 

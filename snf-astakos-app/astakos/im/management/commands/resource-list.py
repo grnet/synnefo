@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -54,7 +54,9 @@ class Command(ListCommand):
         "service_type": ("service_type", "Service type"),
         "service_origin": ("service_origin", "Service"),
         "unit": ("unit", "Unit of measurement"),
-        "default_quota": ("limit_with_unit", "Default Quota"),
+        "base_default": ("limit_with_unit", "Base project default quota"),
+        "project_default": ("project_limit_with_unit",
+                            "Project default quota"),
         "description": ("desc", "Description"),
         "api_visible": ("api_visible",
                         "Resource accessibility through the API"),
@@ -62,11 +64,8 @@ class Command(ListCommand):
                        "Resource accessibility through the UI"),
     }
 
-    fields = ["id", "name", "default_quota", "api_visible", "ui_visible"]
-
-    def show_limit(self, resource):
-        limit = resource.uplimit
-        return show_resource_value(limit, resource.name, self.unit_style)
+    fields = ["id", "name", "base_default", "project_default",
+              "api_visible", "ui_visible"]
 
     def handle_args(self, *args, **options):
         self.unit_style = options['unit_style']
@@ -74,4 +73,7 @@ class Command(ListCommand):
 
     def handle_db_objects(self, rows, *args, **kwargs):
         for resource in rows:
-            resource.limit_with_unit = self.show_limit(resource)
+            resource.limit_with_unit = show_resource_value(
+                resource.uplimit, resource.name, self.unit_style)
+            resource.project_limit_with_unit = show_resource_value(
+                resource.project_default, resource.name, self.unit_style)

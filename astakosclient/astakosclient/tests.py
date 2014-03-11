@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (C) 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -781,7 +781,7 @@ class TestCommissions(unittest.TestCase):
         global auth_url
         try:
             client = AstakosClient(token['id'], auth_url)
-            response = client.issue_commission(commission_request)
+            response = client._issue_commission(commission_request)
         except Exception as err:
             self.fail("Shouldn't raise Exception %s" % err)
         self.assertEqual(response, commission_successful_response['serial'])
@@ -795,7 +795,7 @@ class TestCommissions(unittest.TestCase):
         new_request['provisions'][1]['quantity'] = 520000000
         try:
             client = AstakosClient(token['id'], auth_url)
-            client.issue_commission(new_request)
+            client._issue_commission(new_request)
         except QuotaLimit:
             pass
         except Exception as err:

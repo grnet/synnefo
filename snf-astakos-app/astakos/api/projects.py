@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -47,8 +47,10 @@ from .util import user_from_token, invert_dict, read_json_body
 from astakos.im import functions
 from astakos.im.models import (
     AstakosUser, Project, ProjectApplication, ProjectMembership,
-    ProjectResourceGrant, ProjectLog, ProjectMembershipLog)
+    ProjectResourceQuota, ProjectResourceGrant, ProjectLog,
+    ProjectMembershipLog)
 import synnefo.util.date as date_util
+from synnefo.util import units
 
 
 MEMBERSHIP_POLICY_SHOW = {
@@ -69,13 +71,11 @@ APPLICATION_STATE_SHOW = {
 }
 
 PROJECT_STATE_SHOW = {
-    Project.O_PENDING:    "pending",
-    Project.O_ACTIVE:     "active",
-    Project.O_DENIED:     "denied",
-    Project.O_DISMISSED:  "dismissed",
-    Project.O_CANCELLED:  "cancelled",
-    Project.O_SUSPENDED:  "suspended",
-    Project.O_TERMINATED: "terminated",
+    Project.UNINITIALIZED: "uninitialized",
+    Project.NORMAL:        "active",
+    Project.SUSPENDED:     "suspended",
+    Project.TERMINATED:    "terminated",
+    Project.DELETED:       "deleted",
 }
 
 PROJECT_STATE = invert_dict(PROJECT_STATE_SHOW)
@@ -91,8 +91,7 @@ MEMBERSHIP_STATE_SHOW = {
 }
 
 
-def _application_details(application, all_grants):
-    grants = all_grants.get(application.id, [])
+def _grant_details(grants):
     resources = {}
     for grant in grants:
         if not grant.resource.api_visible:
@@ -101,71 +100,75 @@ def _application_details(application, all_grants):
             "member_capacity": grant.member_capacity,
             "project_capacity": grant.project_capacity,
         }
+    return resources
 
-    join_policy = MEMBERSHIP_POLICY_SHOW[application.member_join_policy]
-    leave_policy = MEMBERSHIP_POLICY_SHOW[application.member_leave_policy]
+
+def _application_details(application, all_grants):
+    grants = all_grants.get(application.id, [])
+    resources = _grant_details(grants)
+    join_policy = MEMBERSHIP_POLICY_SHOW.get(application.member_join_policy)
+    leave_policy = MEMBERSHIP_POLICY_SHOW.get(application.member_leave_policy)
 
     d = {
+        "id": application.id,
+        "state": APPLICATION_STATE_SHOW[application.state],
         "name": application.name,
-        "owner": application.owner.uuid,
+        "owner": application.owner.uuid if application.owner else None,
         "applicant": application.applicant.uuid,
         "homepage": application.homepage,
         "description": application.description,
         "start_date": application.start_date,
         "end_date": application.end_date,
+        "comments": application.comments,
         "join_policy": join_policy,
         "leave_policy": leave_policy,
         "max_members": application.limit_on_members_number,
+        "private": application.private,
         "resources": resources,
     }
     return d
 
 
-def get_applications_details(applications):
-    grants = ProjectResourceGrant.objects.grants_per_app(applications)
-
-    l = []
-    for application in applications:
-        d = {
-            "id": application.id,
-            "project": application.chain_id,
-            "state": APPLICATION_STATE_SHOW[application.state],
-            "comments": application.comments,
-        }
-        d.update(_application_details(application, grants))
-        l.append(d)
-    return l
-
-
-def get_application_details(application):
-    return get_applications_details([application])[0]
-
-
 def get_projects_details(projects, request_user=None):
-    pendings = ProjectApplication.objects.pending_per_project(projects)
-    applications = [p.application for p in projects]
-    grants = ProjectResourceGrant.objects.grants_per_app(applications)
+    applications = [p.last_application for p in projects if p.last_application]
+    proj_quotas = ProjectResourceQuota.objects.quotas_per_project(projects)
+    app_grants = ProjectResourceGrant.objects.grants_per_app(applications)
     deactivations = ProjectLog.objects.last_deactivations(projects)
 
     l = []
     for project in projects:
-        application = project.application
+        join_policy = MEMBERSHIP_POLICY_SHOW[project.member_join_policy]
+        leave_policy = MEMBERSHIP_POLICY_SHOW[project.member_leave_policy]
+        quotas = proj_quotas.get(project.id, [])
+        resources = _grant_details(quotas)
+
         d = {
-            "id": project.id,
-            "application": application.id,
-            "state": PROJECT_STATE_SHOW[project.overall_state()],
+            "id": project.uuid,
+            "state": PROJECT_STATE_SHOW[project.state],
             "creation_date": project.creation_date,
-        }
+            "name": project.realname,
+            "owner": project.owner.uuid if project.owner else None,
+            "homepage": project.homepage,
+            "description": project.description,
+            "end_date": project.end_date,
+            "join_policy": join_policy,
+            "leave_policy": leave_policy,
+            "max_members": project.limit_on_members_number,
+            "private": project.private,
+            "base_project": project.is_base,
+            "resources": resources,
+            }
+
         check = functions.project_check_allowed
         if check(project, request_user,
                  level=functions.APPLICANT_LEVEL, silent=True):
-            d["comments"] = application.comments
-            pending = pendings.get(project.id)
-            d["pending_application"] = pending.id if pending else None
+            application = project.last_application
+            if application:
+                d["last_application"] = _application_details(
+                    application, app_grants)
             deact = deactivations.get(project.id)
             if deact is not None:
                 d["deactivation_date"] = deact.date
-        d.update(_application_details(application, grants))
         l.append(d)
     return l
 
@@ -189,7 +192,7 @@ def get_memberships_details(memberships, request_user):
         d = {
             "id": membership.id,
             "user": membership.person.uuid,
-            "project": membership.project_id,
+            "project": membership.project.uuid,
             "state": MEMBERSHIP_STATE_SHOW[membership.state],
             "allowed_actions": allowed_actions,
         }
@@ -219,13 +222,13 @@ def _get_project_state(val):
 def _project_state_query(val):
     if isinstance(val, list):
         states = [_get_project_state(v) for v in val]
-        return Project.o_states_q(states)
-    return Project.o_state_q(_get_project_state(val))
+        return Q(state__in=states)
+    return Q(state=_get_project_state(val))
 
 
 PROJECT_QUERY = {
-    "name": _query("application__name"),
-    "owner": _query("application__owner__uuid"),
+    "name": _query("realname"),
+    "owner": _query("owner__uuid"),
     "state": _project_state_query,
 }
 
@@ -276,27 +279,39 @@ def projects(request):
 @transaction.commit_on_success
 def get_projects(request):
     user = request.user
-    input_data = read_json_body(request, default={})
-    filters = input_data.get("filter", {})
+    filters = {}
+    for key in PROJECT_QUERY.keys():
+        value = request.GET.get(key)
+        if value is not None:
+            filters[key] = value
+    mode = request.GET.get("mode", "default")
     query = make_project_query(filters)
-    projects = _get_projects(query, request_user=user)
+    projects = _get_projects(query, mode=mode, request_user=user)
     data = get_projects_details(projects, request_user=user)
     return json_response(data)
 
 
-def _get_projects(query, request_user=None):
+def _get_projects(query, mode="default", request_user=None):
     projects = Project.objects.filter(query)
 
-    if not request_user.is_project_admin():
-        membs = request_user.projectmembership_set.any_accepted()
+    if mode == "member":
+        membs = request_user.projectmembership_set.\
+            actually_accepted_and_active()
         memb_projects = membs.values_list("project", flat=True)
         is_memb = Q(id__in=memb_projects)
-        owned = (Q(application__owner=request_user) |
-                 Q(application__applicant=request_user))
-        active = Project.o_state_q(Project.O_ACTIVE)
-        projects = projects.filter(is_memb | owned | active)
-    return projects.select_related(
-        "application", "application__owner", "application__applicant")
+        projects = projects.filter(is_memb)
+    elif mode == "default":
+        if not request_user.is_project_admin():
+            membs = request_user.projectmembership_set.any_accepted()
+            memb_projects = membs.values_list("project", flat=True)
+            is_memb = Q(id__in=memb_projects)
+            owned = Q(owner=request_user)
+            active = (Q(state=Project.NORMAL) &
+                      Q(private=False))
+            projects = projects.filter(is_memb | owned | active)
+    else:
+        raise faults.BadRequest("Unrecognized mode '%s'." % mode)
+    return projects.select_related("last_application")
 
 
 @api.api_method(http_method="POST", token_required=True, user_required=False)
@@ -306,7 +321,7 @@ def create_project(request):
     user = request.user
     data = request.body
     app_data = json.loads(data)
-    return submit_application(app_data, user, project_id=None)
+    return submit_new_project(app_data, user)
 
 
 @csrf_exempt
@@ -314,9 +329,9 @@ def project(request, project_id):
     method = request.method
     if method == "GET":
         return get_project(request, project_id)
-    if method == "POST":
+    if method == "PUT":
         return modify_project(request, project_id)
-    return api.api_method_not_allowed(request, allowed_methods=['GET', 'POST'])
+    return api.api_method_not_allowed(request, allowed_methods=['GET', 'PUT'])
 
 
 @api.api_method(http_method="GET", token_required=True, user_required=False)
@@ -331,20 +346,20 @@ def get_project(request, project_id):
 
 
 def _get_project(project_id, request_user=None):
-    project = functions.get_project_by_id(project_id)
+    project = functions.get_project_by_uuid(project_id)
     functions.project_check_allowed(
         project, request_user, level=functions.ANY_LEVEL)
     return project
 
 
-@api.api_method(http_method="POST", token_required=True, user_required=False)
+@api.api_method(http_method="PUT", token_required=True, user_required=False)
 @user_from_token
 @transaction.commit_on_success
 def modify_project(request, project_id):
     user = request.user
     data = request.body
     app_data = json.loads(data)
-    return submit_application(app_data, user, project_id=project_id)
+    return submit_modification(app_data, user, project_id=project_id)
 
 
 def _get_date(d, key):
@@ -358,10 +373,21 @@ def _get_date(d, key):
         return None
 
 
-def _get_maybe_string(d, key):
+def _get_maybe_string(d, key, default=None):
     value = d.get(key)
     if value is not None and not isinstance(value, basestring):
         raise faults.BadRequest("%s must be string" % key)
+    if value is None:
+        return default
+    return value
+
+
+def _get_maybe_boolean(d, key, default=None):
+    value = d.get(key)
+    if value is not None and not isinstance(value, bool):
+        raise faults.BadRequest("%s must be boolean" % key)
+    if value is None:
+        return default
     return value
 
 
@@ -374,7 +400,17 @@ def valid_project_name(name):
     return DOMAIN_VALUE_REGEX.match(name) is not None
 
 
-def submit_application(app_data, user, project_id=None):
+def _parse_max_members(s):
+    try:
+        max_members = units.parse(s)
+        if max_members < 0:
+            raise faults.BadRequest("Invalid max_members")
+        return max_members
+    except units.ParseError:
+        raise faults.BadRequest("Invalid max_members")
+
+
+def submit_new_project(app_data, user):
     uuid = app_data.get("owner")
     if uuid is None:
         owner = user
@@ -410,10 +446,76 @@ def submit_application(app_data, user, project_id=None):
     if end_date is None:
         raise faults.BadRequest("Missing end date")
 
-    max_members = app_data.get("max_members")
-    if not isinstance(max_members, (int, long)) or max_members < 0:
-        raise faults.BadRequest("Invalid max_members")
+    try:
+        max_members = _parse_max_members(app_data["max_members"])
+    except KeyError:
+        max_members = units.PRACTICALLY_INFINITE
 
+    private = bool(_get_maybe_boolean(app_data, "private"))
+    homepage = _get_maybe_string(app_data, "homepage", "")
+    description = _get_maybe_string(app_data, "description", "")
+    comments = _get_maybe_string(app_data, "comments", "")
+    resources = app_data.get("resources", {})
+
+    submit = functions.submit_application
+    with ExceptionHandler():
+        application = submit(
+            owner=owner,
+            name=name,
+            project_id=None,
+            homepage=homepage,
+            description=description,
+            start_date=start_date,
+            end_date=end_date,
+            member_join_policy=join_policy,
+            member_leave_policy=leave_policy,
+            limit_on_members_number=max_members,
+            private=private,
+            comments=comments,
+            resources=resources,
+            request_user=user)
+
+    result = {"application": application.id,
+              "id": application.chain.uuid,
+              }
+    return json_response(result, status_code=201)
+
+
+def submit_modification(app_data, user, project_id):
+    owner = app_data.get("owner")
+    if owner is not None:
+        try:
+            owner = AstakosUser.objects.accepted().get(uuid=owner)
+        except AstakosUser.DoesNotExist:
+            raise faults.BadRequest("User does not exist.")
+
+    name = app_data.get("name")
+
+    if name is not None and not valid_project_name(name):
+        raise faults.BadRequest("Project name should be in domain format")
+
+    join_policy = app_data.get("join_policy")
+    if join_policy is not None:
+        try:
+            join_policy = MEMBERSHIP_POLICY[join_policy]
+        except KeyError:
+            raise faults.BadRequest("Invalid join policy")
+
+    leave_policy = app_data.get("leave_policy")
+    if leave_policy is not None:
+        try:
+            leave_policy = MEMBERSHIP_POLICY[leave_policy]
+        except KeyError:
+            raise faults.BadRequest("Invalid leave policy")
+
+    start_date = _get_date(app_data, "start_date")
+    end_date = _get_date(app_data, "end_date")
+
+    max_members = app_data.get("max_members")
+    if max_members is not None:
+        max_members = _parse_max_members(max_members)
+
+    private = _get_maybe_boolean(app_data, "private")
     homepage = _get_maybe_string(app_data, "homepage")
     description = _get_maybe_string(app_data, "description")
     comments = _get_maybe_string(app_data, "comments")
@@ -432,12 +534,13 @@ def submit_application(app_data, user, project_id=None):
             member_join_policy=join_policy,
             member_leave_policy=leave_policy,
             limit_on_members_number=max_members,
+            private=private,
             comments=comments,
             resources=resources,
             request_user=user)
 
     result = {"application": application.id,
-              "id": application.chain_id
+              "id": application.chain.uuid,
               }
     return json_response(result, status_code=201)
 
@@ -465,6 +568,18 @@ PROJECT_ACTION = {
 }
 
 
+APPLICATION_ACTION = {
+    "approve": functions.approve_application,
+    "deny":    functions.deny_application,
+    "dismiss": functions.dismiss_application,
+    "cancel":  functions.cancel_application,
+}
+
+
+PROJECT_ACTION.update(APPLICATION_ACTION)
+APP_ACTION_FUNCS = APPLICATION_ACTION.values()
+
+
 @csrf_exempt
 @api.api_method(http_method="POST", token_required=True, user_required=False)
 @user_from_token
@@ -476,89 +591,12 @@ def project_action(request, project_id):
 
     func, action_data = get_action(PROJECT_ACTION, input_data)
     with ExceptionHandler():
-        func(project_id, request_user=user, reason=action_data)
-    return HttpResponse()
-
-
-@csrf_exempt
-def applications(request):
-    method = request.method
-    if method == "GET":
-        return get_applications(request)
-    return api.api_method_not_allowed(request, allowed_methods=['GET'])
-
-
-def make_application_query(input_data):
-    project_id = input_data.get("project")
-    if project_id is not None:
-        if not isinstance(project_id, (int, long)):
-            raise faults.BadRequest("'project' must be integer")
-        return Q(chain=project_id)
-    return Q()
-
-
-@api.api_method(http_method="GET", token_required=True, user_required=False)
-@user_from_token
-@transaction.commit_on_success
-def get_applications(request):
-    user = request.user
-    input_data = read_json_body(request, default={})
-    query = make_application_query(input_data)
-    apps = _get_applications(query, request_user=user)
-    data = get_applications_details(apps)
-    return json_response(data)
-
-
-def _get_applications(query, request_user=None):
-    apps = ProjectApplication.objects.filter(query)
-
-    if not request_user.is_project_admin():
-        owned = (Q(owner=request_user) |
-                 Q(applicant=request_user))
-        apps = apps.filter(owned)
-    return apps.select_related()
-
-
-@csrf_exempt
-@api.api_method(http_method="GET", token_required=True, user_required=False)
-@user_from_token
-@transaction.commit_on_success
-def application(request, app_id):
-    user = request.user
-    with ExceptionHandler():
-        application = _get_application(app_id, user)
-    data = get_application_details(application)
-    return json_response(data)
-
-
-def _get_application(app_id, request_user=None):
-    application = functions.get_application(app_id)
-    functions.app_check_allowed(
-        application, request_user, level=functions.APPLICANT_LEVEL)
-    return application
-
-
-APPLICATION_ACTION = {
-    "approve": functions.approve_application,
-    "deny": functions.deny_application,
-    "dismiss": functions.dismiss_application,
-    "cancel": functions.cancel_application,
-}
-
-
-@csrf_exempt
-@api.api_method(http_method="POST", token_required=True, user_required=False)
-@user_from_token
-@transaction.commit_on_success
-def application_action(request, app_id):
-    user = request.user
-    data = request.body
-    input_data = json.loads(data)
-
-    func, action_data = get_action(APPLICATION_ACTION, input_data)
-    with ExceptionHandler():
-        func(app_id, request_user=user, reason=action_data)
-
+        kwargs = {"request_user": user,
+                  "reason": action_data.get("reason", ""),
+                  }
+        if func in APP_ACTION_FUNCS:
+            kwargs["application_id"] = action_data["app_id"]
+        func(project_id=project_id, **kwargs)
     return HttpResponse()
 
 
@@ -575,9 +613,7 @@ def memberships(request):
 def make_membership_query(input_data):
     project_id = input_data.get("project")
     if project_id is not None:
-        if not isinstance(project_id, (int, long)):
-            raise faults.BadRequest("'project' must be integer")
-        return Q(project=project_id)
+        return Q(project__uuid=project_id)
     return Q()
 
 
@@ -586,8 +622,7 @@ def make_membership_query(input_data):
 @transaction.commit_on_success
 def get_memberships(request):
     user = request.user
-    input_data = read_json_body(request, default={})
-    query = make_membership_query(input_data)
+    query = make_membership_query(request.GET)
     memberships = _get_memberships(query, request_user=user)
     data = get_memberships_details(memberships, user)
     return json_response(data)
@@ -596,14 +631,12 @@ def get_memberships(request):
 def _get_memberships(query, request_user=None):
     memberships = ProjectMembership.objects
     if not request_user.is_project_admin():
-        owned = Q(project__application__owner=request_user)
+        owned = Q(project__owner=request_user)
         memb = Q(person=request_user)
         memberships = memberships.filter(owned | memb)
 
     return memberships.select_related(
-        "project", "project__application",
-        "project__application__owner", "project__application__applicant",
-        "person").filter(query)
+        "project", "project__owner", "person").filter(query)
 
 
 def join_project(data, request_user):

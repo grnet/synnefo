@@ -85,7 +85,7 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
 
     try:
         network_id = int(network_id)
-        network = Network.objects.get(id=network_id)
+        network = Network.objects.select_for_update().get(id=network_id)
     except (ValueError, TypeError):
         raise api.faults.BadRequest("Malformed network ID")
     except Network.DoesNotExist:
@@ -124,6 +124,9 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
                                 userid=network.userid, public=network.public,
                                 dhcp=dhcp, host_routes=host_routes,
                                 dns_nameservers=dns_nameservers)
+
+    network.subnet_ids.append(sub.id)
+    network.save()
 
     gateway_ip = ipaddr.IPAddress(gateway) if gateway else None
 

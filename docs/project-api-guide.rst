@@ -19,18 +19,19 @@ Request Header Name   Value
 X-Auth-Token          User authentication token
 ====================  =========================
 
-Request can specify a filter.
+The request can include the following filters as GET parameters:
+``state``, ``owner``, ``name``.
+
+It also supports parameter ``mode`` with possible values: ``member``,
+``default``. The former restricts the result to active projects where the
+request user is an active member. By default it returns all accessible
+projects; see below.
 
 **Example Request**:
 
 .. code-block:: javascript
 
-  {
-      "filter": {
-          "state": ["active", "suspended"],
-          "owner": [uuid]
-      }
-  }
+GET /account/v1.0/projects?state=active&owner=uuid
 
 **Response Codes**:
 
@@ -79,25 +80,21 @@ Status  Description
 
   {
       "id": proj_id,
-      "application": app_id,
-      "state": "pending" | "active" | "denied" | "dismissed" | "cancelled" | "suspended" | "terminated",
+      "state": "uninitialized" | "active" | "suspended" | "terminated" | "deleted",
       "creation_date": "2013-06-26T11:48:06.579100+00:00",
       "name": "name",
       "owner": uuid,
-      "homepage": homepage or null,
-      "description": description or null,
-      "start_date": date,
+      "homepage": homepage,
+      "description": description,
       "end_date": date,
       "join_policy": "auto" | "moderated" | "closed",
       "leave_policy": "auto" | "moderated" | "closed",
       "max_members": natural number
-      "resources": {"cyclades.vm": {"project_capacity": int or null,
+      "resources": {"cyclades.vm": {"project_capacity": int,
                                     "member_capacity": int
                                    }
                    }
-      # only if request user is admin or project owner:
-      "comments": comments,
-      "pending_application": last pending app id or null,
+      "last_application": last application or null,
       "deactivation_date": date  # if applicable
   }
 
@@ -126,7 +123,7 @@ X-Auth-Token          User authentication token
       "end_date": date,
       "join_policy": "auto" | "moderated" | "closed",  # default: "moderated"
       "leave_policy": "auto" | "moderated" | "closed",  # default: "auto"
-      "resources": {"cyclades.vm": {"project_capacity": int or null,
+      "resources": {"cyclades.vm": {"project_capacity": int,
                                     "member_capacity": int
                                    }
                    }
@@ -158,7 +155,7 @@ Status  Description
 Modify a Project
 ................
 
-**POST** /account/v1.0/projects/<proj_id>
+**PUT** /account/v1.0/projects/<proj_id>
 
 ====================  =========================
 Request Header Name   Value
@@ -205,132 +202,14 @@ X-Auth-Token          User authentication token
 .. code-block:: javascript
 
   {
-      <action>: "reason"
+      <action>: {"reason": reason,
+                 "app_id": app_id  # only for app related actions
+                }
   }
 
-<action> can be: "suspend", "unsuspend", "terminate", "reinstate"
-
-**Response Codes**:
-
-======  ============================
-Status  Description
-======  ============================
-200     Success
-400     Bad Request
-401     Unauthorized (Missing token)
-403     Forbidden
-404     Not Found
-409     Conflict
-500     Internal Server Error
-======  ============================
-
-Retrieve List of Applications
-.............................
-
-**GET** /account/v1.0/projects/apps
-
-====================  =========================
-Request Header Name   Value
-====================  =========================
-X-Auth-Token          User authentication token
-====================  =========================
-
-Get all accessible applications. See below.
-
-**Example optional request**
-
-.. code-block:: javascript
-
-  {
-      "project": <project_id>
-  }
-
-**Response Codes**:
-
-======  ============================
-Status  Description
-======  ============================
-200     Success
-400     Bad Request
-401     Unauthorized (Missing token)
-500     Internal Server Error
-======  ============================
-
-**Example Successful Response**:
-
-List of application details. See below.
-
-Retrieve an Application
-.......................
-
-**GET** /account/v1.0/projects/apps/<app_id>
-
-====================  =========================
-Request Header Name   Value
-====================  =========================
-X-Auth-Token          User authentication token
-====================  =========================
-
-An application is accessible when the request user is admin or the
-application owner/applicant.
-
-**Response Codes**:
-
-======  ============================
-Status  Description
-======  ============================
-200     Success
-401     Unauthorized (Missing token)
-403     Forbidden
-404     Not Found
-500     Internal Server Error
-======  ============================
-
-**Example Successful Response**
-
-.. code-block:: javascript
-
-  {
-      "id": app_id,
-      "project": project_id,
-      "state": "pending" | "approved" | "replaced" | "denied" | "dismissed" | "cancelled",
-      "name": "name",
-      "owner": uuid,
-      "applicant": uuid,
-      "homepage": homepage or null,
-      "description": description or null,
-      "start_date": date,
-      "end_date": date,
-      "join_policy": "auto" | "moderated" | "closed",
-      "leave_policy": "auto" | "moderated" | "closed",
-      "max_members": int or null
-      "comments": comments,
-      "resources": {"cyclades.vm": {"project_capacity": int or null,
-                                    "member_capacity": int
-                                   }
-                   }
-  }
-
-Take Action on an Application
-.............................
-
-**POST** /account/v1.0/projects/apps/<app_id>/action
-
-====================  ============================
-Request Header Name   Value
-====================  ============================
-X-Auth-Token          User authentication token
-====================  ============================
-
-**Example Request**:
-
-.. code-block:: javascript
-
-  {
-      <action>: "reason"
-  }
-
-<action> can be one of "approve", "deny", "dismiss", "cancel".
+<action> can be: "suspend", "unsuspend", "terminate", "reinstate",
+"approve", "deny", "dismiss", "cancel". The last four actions operate on the
+project's last application and require its ``app_id``.
 
 **Response Codes**:
 
@@ -357,15 +236,8 @@ Request Header Name   Value
 X-Auth-Token          User authentication token
 ====================  ============================
 
-Get all accessible memberships. See below.
-
-**Example Optional Request**
-
-.. code-block:: javascript
-
-  {
-      "project": <proj_id>
-  }
+Get all accessible memberships. Filtering by project is possible via the GET
+parameter ``project``.
 
 **Response Codes**:
 

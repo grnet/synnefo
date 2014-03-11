@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -65,7 +65,8 @@ class FloatingIPAPITest(BaseAPITest):
         self.assertEqual(json.loads(response.content)["floatingips"], [])
 
     def test_list_ips(self):
-        ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True)
+        ip = mf.IPv4AddressFactory(userid="user1", project="user1",
+                                   floating_ip=True)
         with mocked_quotaholder():
             response = self.get(URL, "user1")
         self.assertSuccess(response)
@@ -77,12 +78,13 @@ class FloatingIPAPITest(BaseAPITest):
                           "id": str(ip.id),
                           "port_id": str(ip.nic.id),
                           "deleted": False,
-                          "floating_network_id": str(ip.network_id),
-                          "tenant_id": ip.userid,
-                          "user_id": ip.userid})
+                          "user_id": "user1",
+                          "tenant_id": "user1",
+                          "floating_network_id": str(ip.network_id)})
 
     def test_get_ip(self):
-        ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True)
+        ip = mf.IPv4AddressFactory(userid="user1", project="user1",
+                                   floating_ip=True)
         with mocked_quotaholder():
             response = self.get(URL + "/%s" % ip.id, "user1")
         self.assertSuccess(response)
@@ -94,9 +96,9 @@ class FloatingIPAPITest(BaseAPITest):
                           "id": str(ip.id),
                           "port_id": str(ip.nic.id),
                           "deleted": False,
-                          "floating_network_id": str(ip.network_id),
-                          "tenant_id": ip.userid,
-                          "user_id": ip.userid})
+                          "user_id": "user1",
+                          "tenant_id": "user1",
+                          "floating_network_id": str(ip.network_id)})
 
     def test_wrong_user(self):
         ip = mf.IPv4AddressFactory(userid="user1", floating_ip=True)
@@ -128,9 +130,9 @@ class FloatingIPAPITest(BaseAPITest):
                           "id": str(ip.id),
                           "port_id": None,
                           "deleted": False,
-                          "floating_network_id": str(self.pool.id),
-                          "tenant_id": ip.userid,
-                          "user_id": ip.userid})
+                          "user_id": "test_user",
+                          "tenant_id": "test_user",
+                          "floating_network_id": str(self.pool.id)})
 
     def test_reserve_empty_body(self):
         """Test reserve FIP without specifying network."""
@@ -204,9 +206,9 @@ class FloatingIPAPITest(BaseAPITest):
                           "id": str(ip.id),
                           "port_id": None,
                           "deleted": False,
-                          "floating_network_id": str(self.pool.id),
-                          "tenant_id": ip.userid,
-                          "user_id": ip.userid})
+                          "user_id": "test_user",
+                          "tenant_id": "test_user",
+                          "floating_network_id": str(self.pool.id)})
 
         # Already reserved
         with mocked_quotaholder():

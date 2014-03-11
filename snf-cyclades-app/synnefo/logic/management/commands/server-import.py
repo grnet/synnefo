@@ -129,8 +129,8 @@ class Command(BaseCommand):
 
 def import_server(instance_name, backend_id, flavor_id, image_id, user_id,
                   new_public_nic, stream=sys.stdout):
-    flavor = common.get_flavor(flavor_id)
-    backend = common.get_backend(backend_id)
+    flavor = common.get_resource("flavor", flavor_id)
+    backend = common.get_resource("backend", backend_id)
 
     backend_client = backend.get_client()
 

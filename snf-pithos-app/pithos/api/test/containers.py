@@ -418,11 +418,25 @@ class ContainerGet(PithosAPITest):
         container_url = join_urls(self.pithos_path, self.user, cname)
         onames = self.objects[cname].keys()
 
+        r = self.get('%s?shared=&public=&format=json' % container_url)
+        self.assertEqual(r.status_code, 200)
+        objects = json.loads(r.content)
+        self.assertEqual(len(objects), 0)
+
         # publish an object
         public1 = onames.pop()
         url = join_urls(container_url, public1)
         r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
         self.assertEqual(r.status_code, 202)
+
+        r = self.get('%s?shared=&public=&format=json' % container_url)
+        self.assertEqual(r.status_code, 200)
+        objects = json.loads(r.content)
+        self.assertEqual(len(objects), 1)
+        self.assertEqual(objects[0]['name'], public1)
+        self.assertEqual(objects[0]['bytes'],
+                         len(self.objects[cname][public1]))
+        self.assertTrue('x_object_public' in objects[0])
 
         # publish another
         public2 = onames.pop()
@@ -469,7 +483,7 @@ class ContainerGet(PithosAPITest):
         # create child object
         descendant = strnextling(public1)
         self.upload_object(cname, descendant)
-        # request public and assert child obejct is not listed
+        # request public and assert child object is not listed
         r = self.get('%s?shared=&public=' % container_url)
         objects = r.content.split('\n')
         if '' in objects:
@@ -490,6 +504,29 @@ class ContainerGet(PithosAPITest):
             objects.remove('')
         self.assertTrue(folder in objects)
         self.assertTrue(descendant not in objects)
+
+        # unpublish public1
+        url = join_urls(container_url, public1)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='false')
+        self.assertEqual(r.status_code, 202)
+
+        # unpublish public2
+        url = join_urls(container_url, public2)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='false')
+        self.assertEqual(r.status_code, 202)
+
+        # unpublish folder
+        url = join_urls(container_url, folder)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='false')
+        self.assertEqual(r.status_code, 202)
+
+        r = self.get('%s?shared=&public=' % container_url)
+        self.assertEqual(r.status_code, 200)
+        objects = r.content.split('\n')
+        if '' in objects:
+            objects.remove('')
+        l = sorted([shared1, shared2])
+        self.assertEqual(objects, l)
 
     def test_list_objects(self):
         cname = self.cnames[0]
@@ -905,6 +942,35 @@ class ContainerPost(PithosAPITest):
         self.assertEqual(r.status_code, 202)
 
         r = self.upload_object('c1', length=1)
+
+    def test_upload_blocks(self):
+        cname = self.create_container()[0]
+
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.post(url, data=get_random_data())
+        self.assertEqual(r.status_code, 202)
+
+        url = join_urls(self.pithos_path, 'chuck', cname)
+        r = self.post(url, data=get_random_data())
+        self.assertEqual(r.status_code, 403)
+
+        # share object for read only
+        oname = self.upload_object(cname)[0]
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
+                  HTTP_X_OBJECT_SHARING='read=*')
+        url = join_urls(self.pithos_path, 'chuck', cname)
+        r = self.post(url, data=get_random_data())
+        self.assertEqual(r.status_code, 403)
+
+        # share object for write only
+        oname = self.upload_object(cname)[0]
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
+                  HTTP_X_OBJECT_SHARING='write=*')
+        url = join_urls(self.pithos_path, 'chuck', cname)
+        r = self.post(url, data=get_random_data())
+        self.assertEqual(r.status_code, 403)
 
 
 class ContainerDelete(PithosAPITest):

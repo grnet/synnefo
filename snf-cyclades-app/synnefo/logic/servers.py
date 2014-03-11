@@ -1,4 +1,4 @@
-# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -29,6 +29,7 @@
 
 import logging
 
+from datetime import datetime
 from socket import getfqdn
 from functools import wraps
 from django import dispatch
@@ -42,7 +43,8 @@ from synnefo.api import util
 from synnefo.logic import backend, ips, utils
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.db.models import (NetworkInterface, VirtualMachine,
-                               VirtualMachineMetadata, IPAddressLog, Network)
+                               VirtualMachineMetadata, IPAddressLog, Network,
+                               pooled_rapi_client)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 from synnefo.logic import rapi
 
@@ -165,7 +167,7 @@ def server_command(action, action_fields=None):
 
 @transaction.commit_on_success
 def create(userid, name, password, flavor, image, metadata={},
-           personality=[], networks=None, use_backend=None):
+           personality=[], networks=None, use_backend=None, project=None):
     if use_backend is None:
         # Allocate server to a Ganeti backend
         use_backend = allocate_new_server(userid, flavor)
@@ -188,11 +190,15 @@ def create(userid, name, password, flavor, image, metadata={},
     else:
         flavor.disk_provider = None
 
+    if project is None:
+        project = userid
+
     # We must save the VM instance now, so that it gets a valid
     # vm.backend_vm_id.
     vm = VirtualMachine.objects.create(name=name,
                                        backend=use_backend,
                                        userid=userid,
+                                       project=project,
                                        imageid=image["id"],
                                        flavor=flavor,
                                        operstate="BUILD")
@@ -329,6 +335,17 @@ def _resize(vm, flavor):
     return backend.resize_instance(vm, vcpus=flavor.cpu, memory=flavor.ram)
 
 
+@transaction.commit_on_success
+def reassign(vm, project):
+    action_fields = {"to_project": project, "from_project": vm.project}
+    log.info("Reassigning VM %s from project %s to %s",
+             vm, vm.project, project)
+    vm.project = project
+    vm.save()
+    quotas.issue_and_accept_commission(vm, action="REASSIGN",
+                                       action_fields=action_fields)
+
+
 @server_command("SET_FIREWALL_PROFILE")
 def set_firewall_profile(vm, profile, nic):
     log.info("Setting VM %s, NIC %s, firewall %s", vm, nic, profile)
@@ -369,18 +386,41 @@ def console(vm, console_type):
     """
     log.info("Get console  VM %s, type %s", vm, console_type)
 
-    # Use RAPI to get VNC console information for this instance
     if vm.operstate != "STARTED":
         raise faults.BadRequest('Server not in ACTIVE state.')
 
-    if settings.TEST:
-        console_data = {'kind': 'vnc', 'host': 'ganeti_node', 'port': 1000}
-    else:
-        console_data = backend.get_instance_console(vm)
+    # Use RAPI to get VNC console information for this instance
+    # RAPI GetInstanceConsole() returns endpoints to the vnc_bind_address,
+    # which is a cluster-wide setting, either 0.0.0.0 or 127.0.0.1, and pretty
+    # useless (see #783).
+    #
+    # Until this is fixed on the Ganeti side, construct a console info reply
+    # directly.
+    #
+    # WARNING: This assumes that VNC runs on port network_port on
+    #          the instance's primary node, and is probably
+    #          hypervisor-specific.
+    def get_console_data(i):
+        return {"kind": "vnc",
+                "host": i["pnode"],
+                "port": i["network_port"]}
+    with pooled_rapi_client(vm) as c:
+        i = c.GetInstance(vm.backend_vm_id)
+    console_data = get_console_data(i)
 
-    if console_data['kind'] != 'vnc':
-        message = 'got console of kind %s, not "vnc"' % console_data['kind']
-        raise faults.ServiceUnavailable(message)
+    if vm.backend.hypervisor == "kvm" and i['hvparams']['serial_console']:
+        raise Exception("hv parameter serial_console cannot be true")
+
+    # Check that the instance is really running
+    if not i["oper_state"]:
+        log.warning("VM '%s' is marked as '%s' in DB while DOWN in Ganeti",
+                    vm.id, vm.operstate)
+        # Instance is not running. Mock a shutdown job to sync DB
+        backend.process_op_status(vm, etime=datetime.now(), jobid=0,
+                                  opcode="OP_INSTANCE_SHUTDOWN",
+                                  status="success",
+                                  logmsg="Reconciliation simulated event")
+        raise faults.BadRequest('Server not in ACTIVE state.')
 
     # Let vncauthproxy decide on the source port.
     # The alternative: static allocation, e.g.
@@ -390,20 +430,18 @@ def console(vm, console_type):
     dport = console_data['port']
     password = util.random_password()
 
-    if settings.TEST:
-        fwd = {'source_port': 1234, 'status': 'OK'}
-    else:
-        vnc_extra_opts = settings.CYCLADES_VNCAUTHPROXY_OPTS
-        fwd = request_vnc_forwarding(sport, daddr, dport, password,
-                                     **vnc_extra_opts)
+    vnc_extra_opts = settings.CYCLADES_VNCAUTHPROXY_OPTS
+    fwd = request_vnc_forwarding(sport, daddr, dport, password,
+                                 **vnc_extra_opts)
 
     if fwd['status'] != "OK":
         raise faults.ServiceUnavailable('vncauthproxy returned error status')
 
     # Verify that the VNC server settings haven't changed
-    if not settings.TEST:
-        if console_data != backend.get_instance_console(vm):
-            raise faults.ServiceUnavailable('VNC Server settings changed.')
+    with pooled_rapi_client(vm) as c:
+        i = c.GetInstance(vm.backend_vm_id)
+    if get_console_data(i) != console_data:
+        raise faults.ServiceUnavailable('VNC Server settings changed.')
 
     console = {
         'type': 'vnc',
@@ -488,6 +526,7 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
                                            state="DOWN",
                                            userid=userid,
                                            device_owner=None,
+                                           public=network.public,
                                            name=name)
 
     # add the security groups if any

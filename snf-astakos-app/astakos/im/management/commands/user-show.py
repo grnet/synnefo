@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -36,7 +36,7 @@ from optparse import make_option
 
 from django.db.models import Q
 from astakos.im.models import AstakosUser, get_latest_terms, Project
-from astakos.im.quotas import list_user_quotas
+from astakos.im.quotas import get_user_quotas
 
 from synnefo.lib.ordereddict import OrderedDict
 from snf_django.management.commands import SynnefoCommand
@@ -96,7 +96,6 @@ class Command(SynnefoCommand):
                     ('email', user.email),
                     ('first name', user.first_name),
                     ('last name', user.last_name),
-                    ('active', user.is_active),
                     ('admin', user.is_superuser),
                     ('last login', user.last_login),
                     ('date joined', user.date_joined),
@@ -104,12 +103,14 @@ class Command(SynnefoCommand):
                     #('token', user.auth_token),
                     ('token expiration', user.auth_token_expires),
                     ('providers', user.auth_providers_display),
-                    ('verified', user.is_verified),
                     ('groups', [elem.name for elem in user.groups.all()]),
                     ('permissions', [elem.codename
                                      for elem in user.user_permissions.all()]),
                     ('group permissions', user.get_group_permissions()),
-                    ('email verified', user.email_verified),
+                    ('email_verified', user.email_verified),
+                    ('moderated', user.moderated),
+                    ('rejected', user.is_rejected),
+                    ('active', user.is_active),
                     ('username', user.username),
                     ('activation_sent_date', user.activation_sent),
                 ])
@@ -127,12 +128,10 @@ class Command(SynnefoCommand):
                 unit_style = options["unit_style"]
                 check_style(unit_style)
 
-                quotas, initial = list_user_quotas([user])
-                h_quotas = quotas[user.uuid]
-                h_initial = initial[user.uuid]
+                quotas = get_user_quotas(user)
                 if quotas:
                     self.stdout.write("\n")
-                    print_data, labels = show_user_quotas(h_quotas, h_initial,
+                    print_data, labels = show_user_quotas(quotas,
                                                           style=unit_style)
                     utils.pprint_table(self.stdout, print_data, labels,
                                        options["output_format"],
@@ -161,28 +160,29 @@ def memberships(user):
 
     for m in ms:
         project = m.project
-        print_data.append((project.id,
-                           project.application.name,
+        print_data.append((project.uuid,
+                           project.realname,
                            m.state_display(),
                            ))
     return print_data, labels
 
 
 def ownerships(user):
-    chains = Project.objects.all_with_pending(Q(application__owner=user))
+    chains = Project.objects.select_related("last_application").\
+        filter(owner=user)
     return chain_info(chains)
 
 
 def chain_info(chains):
     labels = ('project id', 'project name', 'status', 'pending app id')
     l = []
-    for project, pending_app in chains:
+    for project in chains:
         status = project.state_display()
-        pending_appid = pending_app.id if pending_app is not None else ""
-        application = project.application
+        app = project.last_application
+        pending_appid = app.id if app and app.state == app.PENDING else ""
 
-        t = (project.pk,
-             application.name,
+        t = (project.uuid,
+             project.realname,
              status,
              pending_appid,
              )

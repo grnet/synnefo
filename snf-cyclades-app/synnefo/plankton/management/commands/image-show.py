@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -30,7 +30,7 @@
 
 from django.core.management.base import BaseCommand, CommandError
 
-from synnefo.plankton.utils import image_backend
+from synnefo.plankton.backend import PlanktonBackend
 from snf_django.management import utils
 
 
@@ -44,11 +44,7 @@ class Command(BaseCommand):
             raise CommandError("Please provide an image ID")
         image_id = args[0]
 
-        with image_backend(None) as backend:
-            images = backend._list_images(None)
-            try:
-                image = filter(lambda x: x["id"] == image_id, images)[0]
-            except IndexError:
-                raise CommandError("Image not found. Use snf-manage image-list"
-                                   " to get the list of all images.")
-        utils.pprint_table(out=self.stdout, table=[image.values()], headers=image.keys(), vertical=True)
+        with PlanktonBackend(None) as backend:
+            image = backend.get_image(image_id)
+        utils.pprint_table(out=self.stdout, table=[image.values()],
+                           headers=image.keys(), vertical=True)

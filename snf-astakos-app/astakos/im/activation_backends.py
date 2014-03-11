@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -39,8 +39,6 @@ from astakos.im import models
 from astakos.im import functions
 from astakos.im import settings
 from astakos.im import forms
-
-from astakos.im.quotas import qh_sync_new_user
 
 import astakos.im.messages as astakos_messages
 
@@ -255,7 +253,7 @@ class ActivationBackend(object):
                                          default=lambda obj:
                                          str(obj))
         user.save()
-        qh_sync_new_user(user)
+        functions.enable_base_project(user)
 
         if user.is_rejected:
             logger.warning("User has previously been "
@@ -337,7 +335,7 @@ class ActivationBackend(object):
         return self.prepare_user(user, email_verified=email_verified)
 
     def handle_verification(self, user, activation_code):
-        logger.info("Handling user email verirfication: %s", user.log_display)
+        logger.info("Handling user email verification: %s", user.log_display)
         return self.verify_user(user, activation_code)
 
     def handle_moderation(self, user, accept=True, reject_reason=None):
@@ -364,7 +362,7 @@ class ActivationBackend(object):
         Send corresponding notifications based on the status of activation
         result.
 
-        Result.PENDING_VERIRFICATION
+        Result.PENDING_VERIFICATION
             * Send user the email verification url
 
         Result.PENDING_MODERATION

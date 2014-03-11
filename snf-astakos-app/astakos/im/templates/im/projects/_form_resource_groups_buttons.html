@@ -1,0 +1,18 @@
+{% load astakos_tags filters %}
+<ul class="clearfix">
+  {% with object|selected_resource_groups as selected_groups %}
+    {% for group, info in resource_groups_dict.items %}
+    <li>
+      <a href="#{{group}}" id="group_{{group}}" 
+        {% if group in selected_groups %}class="selected"{% endif %}>
+          <img src="{{ IM_STATIC_URL }}images/create-{{group}}.png" 
+               alt="{{ group }}" />
+      </a>
+      <input type="hidden" name="is_selected_{{group}}"
+             id="proxy_id_is_selected_{{group}}"
+             {% if group in selected_groups %}value="1"{% else %}value="0"{% endif %}/>
+      <p class="msg">{{ info.help_text }}</p>
+    </li>
+    {% endfor %}
+  {% endwith %}
+</ul>

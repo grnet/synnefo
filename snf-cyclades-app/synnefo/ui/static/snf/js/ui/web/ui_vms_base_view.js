@@ -1,4 +1,4 @@
-// Copyright 2011 GRNET S.A. All rights reserved.
+// Copyright 2014 GRNET S.A. All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or
 // without modification, are permitted provided that the following
@@ -53,7 +53,7 @@
     var debug = _.bind(logger.debug, logger);
     
     var hasKey = Object.prototype.hasOwnProperty;
-
+    
     // base class for views that contain/handle VMS
     views.VMListView = views.View.extend({
 
@@ -397,6 +397,10 @@
             }
         },
         
+        show_reassign_view: function(vm) {
+          synnefo.ui.main.vm_reassign_view.show(vm);
+        },
+
         show_indicator: function(vm, action) {
             var action = action || vm.pending_action;
             this.sel('vm_wave', vm.id).hide();
@@ -654,14 +658,20 @@
                 // action links click events
                 $(this.el).find(".action-container."+action+" a").click(function(ev) {
                     ev.preventDefault();
-                    if (action == "start" && !self.vm.can_start() && !vm.in_error_state()) {
+                    if (
+                      action == "start" && 
+                      !self.vm.can_start() && 
+                      !vm.in_error_state()) {
                         ui.main.vm_resize_view.show_with_warning(self.vm);
                         return;
                     }
 
                     if (action == "resize") {
-                        ui.main.vm_resize_view.show(self.vm);
-                        return;
+                      ui.main.vm_resize_view.show(self.vm);
+                      return;
+                    } else if (action == "reassign") {
+                      ui.main.vm_reassign_view.show(self.vm);
+                      return;
                     } else {
                         self.set(action);
                     }

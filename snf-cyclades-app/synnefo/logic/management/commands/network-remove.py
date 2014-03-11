@@ -1,4 +1,4 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -32,7 +32,7 @@ from django.core.management.base import CommandError
 from snf_django.management.commands import RemoveCommand
 from snf_django.lib.api import faults
 from synnefo.logic import networks
-from synnefo.management.common import get_network, convert_api_faults
+from synnefo.management import common
 
 
 class Command(RemoveCommand):
@@ -40,7 +40,7 @@ class Command(RemoveCommand):
     args = "<Network ID> [<Network ID> ...]"
     help = "Remove a network from the Database, and Ganeti"
 
-    @convert_api_faults
+    @common.convert_api_faults
     def handle(self, *args, **options):
         if not args:
             raise CommandError("Please provide a network ID")
@@ -52,7 +52,8 @@ class Command(RemoveCommand):
         for network_id in args:
             self.stdout.write("\n")
             try:
-                network = get_network(network_id, for_update=True)
+                network = common.get_resource("network", network_id,
+                                              for_update=True)
                 self.stdout.write('Removing network: %s\n' %
                                   network.backend_id)
 

@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -40,7 +40,7 @@ from django_tables2 import A
 import django_tables2 as tables
 
 from astakos.im.models import *
-from astakos.im.templatetags.filters import truncatename
+from astakos.im.util import truncatename
 from astakos.im.functions import can_join_request, membership_allowed_actions
 
 
@@ -187,19 +187,19 @@ def action_extra_context(project, table, self):
         allowed = membership_allowed_actions(membership, user)
         if 'leave' in allowed:
             url = reverse('astakos.im.views.project_leave',
-                          args=(membership.id,))
+                          args=(membership.project.uuid,))
             action = _('Leave')
             confirm = True
             prompt = _('Are you sure you want to leave from the project?')
         elif 'cancel' in allowed:
-            url = reverse('astakos.im.views.project_cancel_member',
-                          args=(membership.id,))
+            url = reverse('project_cancel_join',
+                          args=(project.uuid,))
             action = _('Cancel')
             confirm = True
             prompt = _('Are you sure you want to cancel the join request?')
 
     if can_join_request(project, user, membership):
-        url = reverse('astakos.im.views.project_join', args=(project.id,))
+        url = reverse('project_join', args=(project.uuid,))
         action = _('Join')
         confirm = True
         prompt = _('Are you sure you want to join this project?')
@@ -225,9 +225,9 @@ class UserTable(tables.Table):
 
 
 def project_name_append(project, column):
-    pending_apps = column.table.pending_apps
-    app = pending_apps.get(project.id)
-    if app and app.id != project.application_id:
+    if project.state != project.UNINITIALIZED and \
+            project.last_application is not None and \
+            project.last_application.state == ProjectApplication.PENDING:
         return mark_safe("<br /><i class='tiny'>%s</i>" %
                          _('modifications pending'))
     return u''
@@ -245,24 +245,21 @@ class UserProjectsTable(UserTable):
 
     caption = _('My projects')
 
-    name = LinkColumn('astakos.im.views.project_detail',
+    name = LinkColumn('project_detail',
                       coerce=lambda x: truncatename(x, 25),
                       append=project_name_append,
-                      args=(A('id'),),
+                      args=(A('uuid'),),
                       orderable=False,
-                      accessor='application.name')
+                      accessor='realname')
 
-    issue_date = tables.DateColumn(verbose_name=_('Application'),
-                                   format=DEFAULT_DATE_FORMAT,
-                                   orderable=False,
-                                   accessor='application.issue_date')
-    start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT,
-                                   orderable=False,
-                                   accessor='application.start_date')
+    creation_date = tables.DateColumn(verbose_name=_('Application'),
+                                      format=DEFAULT_DATE_FORMAT,
+                                      orderable=False,
+                                      accessor='creation_date')
     end_date = tables.DateColumn(verbose_name=_('Expiration'),
                                  format=DEFAULT_DATE_FORMAT,
                                  orderable=False,
-                                 accessor='application.end_date')
+                                 accessor='end_date')
     members_count_f = tables.Column(verbose_name=_("Members"),
                                     empty_values=(),
                                     orderable=False)
@@ -294,7 +291,7 @@ class UserProjectsTable(UserTable):
         if c > 0:
             pending_members_url = reverse(
                 'project_pending_members',
-                kwargs={'chain_id': record.id})
+                kwargs={'project_uuid': record.uuid})
 
             pending_members = "<i class='tiny'> - %d %s</i>" % (
                 c, _('pending'))
@@ -307,7 +304,7 @@ class UserProjectsTable(UserTable):
                                    (pending_members_url, c, _('pending')))
             append = mark_safe(pending_members)
         members_url = reverse('project_approved_members',
-                              kwargs={'chain_id': record.id})
+                              kwargs={'project_uuid': record.uuid})
         members_count = len(self.accepted.get(project.id, []))
         if self.user.owns_project(record) or self.user.is_project_admin():
             members_count = '<a href="%s">%d</a>' % (members_url,
@@ -315,12 +312,11 @@ class UserProjectsTable(UserTable):
         return mark_safe(str(members_count) + append)
 
     class Meta:
-        sequence = ('name', 'membership_status', 'owner', 'issue_date',
+        sequence = ('name', 'membership_status', 'owner', 'creation_date',
                     'end_date', 'members_count_f', 'project_action')
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
         template = "im/table_render.html"
         empty_text = _('No projects')
-        exclude = ('start_date', )
 
 
 def member_action_extra_context(membership, table, col):
@@ -332,21 +328,22 @@ def member_action_extra_context(membership, table, col):
         return context
 
     if membership.state == ProjectMembership.REQUESTED:
-        urls = ['astakos.im.views.project_reject_member',
-                'astakos.im.views.project_accept_member']
+        urls = ['project_reject_member',
+                'project_accept_member']
         actions = [_('Reject'), _('Accept')]
         prompts = [_('Are you sure you want to reject this member?'),
                    _('Are you sure you want to accept this member?')]
         confirms = [True, True]
 
     if membership.state in ProjectMembership.ACCEPTED_STATES:
-        urls = ['astakos.im.views.project_remove_member']
+        urls = ['project_remove_member']
         actions = [_('Remove')]
         prompts = [_('Are you sure you want to remove this member?')]
         confirms = [True, True]
 
     for i, url in enumerate(urls):
-        context.append(dict(url=reverse(url, args=(membership.pk,)),
+        context.append(dict(url=reverse(url, args=(membership.project.uuid,
+                                                   membership.pk,)),
                             action=actions[i], prompt=prompts[i],
                             confirm=confirms[i]))
     return context

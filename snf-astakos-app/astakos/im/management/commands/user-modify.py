@@ -43,12 +43,9 @@ from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
-from synnefo.util import units
-from astakos.im.models import AstakosUser, Resource
-from astakos.im import quotas
+from astakos.im.models import AstakosUser
 from astakos.im import activation_backends
-from ._common import (remove_user_permission, add_user_permission, is_uuid,
-                      show_resource_value)
+from ._common import (remove_user_permission, add_user_permission, is_uuid)
 
 activation_backend = activation_backends.get_backend()
 
@@ -143,14 +140,6 @@ class Command(BaseCommand):
                     default=False,
                     action='store_true',
                     help="Sign terms"),
-        make_option('--base-quota',
-                    dest='set_base_quota',
-                    metavar='<resource> <capacity>',
-                    nargs=2,
-                    help=("Set base quota for a specified resource. "
-                          "The special value 'default' sets the user base "
-                          "quota to the default value.")
-                    ),
         make_option('-f', '--no-confirm',
                     action='store_true',
                     default=False,
@@ -329,15 +318,6 @@ class Command(BaseCommand):
             self.stdout.write('User\'s new password: %s\n' % password)
 
         force = options['force']
-
-        set_base_quota = options.get('set_base_quota')
-        if set_base_quota is not None:
-            if not user.is_accepted():
-                m = "%s is not an accepted user." % user
-                raise CommandError(m)
-            resource, capacity = set_base_quota
-            self.set_limits([user], resource, capacity, force)
-
         delete = options.get('delete')
         if delete:
             if user.is_accepted():
@@ -378,66 +358,5 @@ class Command(BaseCommand):
             self.stderr.write("Aborted.\n")
             exit()
 
-    def handle_limits_user(self, user, res, capacity, style):
-        default_capacity = res.uplimit
-        resource = res.name
-        quota = user.get_resource_policy(resource)
-        s_default = show_resource_value(default_capacity, resource, style)
-        s_current = show_resource_value(quota.capacity, resource, style)
-        s_capacity = (show_resource_value(capacity, resource, style)
-                      if capacity != 'default' else capacity)
-        self.stdout.write("user: %s (%s)\n" % (user.uuid, user.username))
-        self.stdout.write("default capacity: %s\n" % s_default)
-        self.stdout.write("current capacity: %s\n" % s_current)
-        self.stdout.write("new capacity: %s\n" % s_capacity)
-        self.confirm()
-
-    def handle_limits_all(self, res, capacity, exclude, style):
-        m = "This will set base quota for all users"
-        app = (" except %s" % ", ".join(exclude)) if exclude else ""
-        self.stdout.write(m+app+".\n")
-        resource = res.name
-        self.stdout.write("resource: %s\n" % resource)
-        s_capacity = (show_resource_value(capacity, resource, style)
-                      if capacity != 'default' else capacity)
-        self.stdout.write("capacity: %s\n" % s_capacity)
-        self.confirm()
-
-    def set_limits(self, users, resource, capacity, force=False, exclude=None):
-        try:
-            r = Resource.objects.get(name=resource)
-        except Resource.DoesNotExist:
-            raise CommandError("No such resource '%s'." % resource)
-
-        style = None
-        if capacity != "default":
-            try:
-                capacity, style = units.parse_with_style(capacity)
-            except:
-                m = ("Please specify capacity as a decimal integer or "
-                     "'default'")
-                raise CommandError(m)
-
-        if not force:
-            if len(users) == 1:
-                self.handle_limits_user(users[0], r, capacity, style)
-            else:
-                self.handle_limits_all(r, capacity, exclude, style)
-
-        if capacity == "default":
-            capacity = r.uplimit
-        quotas.update_base_quota(users, resource, capacity)
-
     def handle_all_users(self, *args, **options):
-        force = options["force"]
-        exclude = options["exclude"]
-        if exclude is not None:
-            exclude = exclude.split(',')
-
-        set_base_quota = options.get('set_base_quota')
-        if set_base_quota is not None:
-            users = AstakosUser.objects.accepted().select_for_update()
-            if exclude:
-                users = users.exclude(uuid__in=exclude)
-            resource, capacity = set_base_quota
-            self.set_limits(users, resource, capacity, force, exclude)
+        pass

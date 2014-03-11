@@ -47,6 +47,7 @@ from synnefo_tools.burnin.images_tests import \
 from synnefo_tools.burnin.pithos_tests import PithosTestSuite
 from synnefo_tools.burnin.server_tests import ServerTestSuite
 from synnefo_tools.burnin.network_tests import NetworkTestSuite
+from synnefo_tools.burnin.projects_tests import QuotasTestSuite
 from synnefo_tools.burnin.stale_tests import \
     StaleServersTestSuite, StaleFloatingIPsTestSuite, StaleNetworksTestSuite
 
@@ -60,6 +61,7 @@ TESTSUITES = [
     PithosTestSuite,
     ServerTestSuite,
     NetworkTestSuite,
+    QuotasTestSuite,
 ]
 TSUITES_NAMES = [tsuite.__name__ for tsuite in TESTSUITES]
 
@@ -92,8 +94,7 @@ def parse_arguments(args):
     kwargs["description"] = \
         "%prog runs a number of test scenarios on a Synnefo deployment."
 
-    # Used * or ** magic. pylint: disable-msg=W0142
-    parser = optparse.OptionParser(**kwargs)
+    parser = optparse.OptionParser(**kwargs)  # pylint: disable=star-args
     parser.disable_interspersed_args()
 
     parser.add_option(
@@ -144,7 +145,7 @@ def parse_arguments(args):
         "--system-user", action="store",
         type="string", default=None, dest="system_user",
         help="Owner of system images (typed option in the form of "
-             "\"name:user_name\" or \"id:uuuid\")")
+             "\"name:user_name\" or \"id:uuid\")")
     parser.add_option(
         "--show-stale", action="store_true",
         default=False, dest="show_stale",

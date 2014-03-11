@@ -2537,7 +2537,7 @@ div.list table thead .vmname {
 }
 
 .icon .spinner {
-    margin: 20px 4px 0 15px !important;
+    margin: 33px 4px 0 15px !important;
 }
 
 .single .state .spinner {
@@ -3568,6 +3568,11 @@ div.machine a.manage-metadata:hover {
     width: 140px;
 }
 
+.single .column1 .project-name-cont {
+    margin-top: 27px;
+    text-align: center;
+}
+
 .single .column1 .state {
     float: left;
     margin-left: 4px;
@@ -3672,6 +3677,7 @@ div.machine a.manage-metadata:hover {
     line-height: 17px;
     margin: 0 0 10px 5px;
     width: 358px;
+    margin-bottom: 80px;
 }
 
 .single .column2 .machine-labels {
@@ -3964,7 +3970,6 @@ div.single div.column3 div.server-name:hover {
     background: transparent;
     margin-bottom: 10px;
     overflow: visible;
-    overflow: hidden;
     width: 700px;
     background: #EFF7FA repeat scroll 0 0;
 }
@@ -4110,7 +4115,7 @@ div.console-footer {
 
 .icon .wave {
     margin-right: 4px !important;
-    margin-top: 15px !important;
+    margin-top: 33px !important;
 }
 
 .icon .status {
@@ -4127,7 +4132,7 @@ div.console-footer {
 }
 
 .icon div.action-indicator {
-    margin-top: 14px;
+    margin-top: 30px;
     margin-right: 4px;
 }
 
@@ -5233,7 +5238,7 @@ table.list-machines .wave {
 }
 
 #network-vms-select-content .empty-list {
-  font-size: 1.2em;
+  font-size: 1.2em !important;
 }
 
 #network-vms-select-content li.options-object .value {
@@ -5498,6 +5503,13 @@ table.list-machines .wave {
     border-top: 0px;
 }
 
+.no-project-notice {
+  float: right;
+  font-size: 0.9em;
+  color: #800;
+  padding: 10px;
+}
+
 .form-action {
     float: right;
     min-width: 140px;
@@ -5617,6 +5629,21 @@ table.list-machines .wave {
 .create-vm .step-cont {
     margin: 15px;
 }
+
+.create-vm .step-cont .project-select {
+  height: 44px;
+}
+
+.create-vm .step-cont .project-select select {
+  width: 100%;
+  margin-bottom: 10px;
+  padding: 3px;
+  background-color: #eee;
+  color: #444;
+  border: 1px solid #8FBCD1;
+}
+
+.create-vm .step-cont .project-select option {}
 
 .create-vm .create-step-cont {
     min-height: 250px;
@@ -6371,8 +6398,9 @@ table.list-machines .wave {
 
 .create-vm .personalize-cont,
 .create-vm .confirm-cont {
-    height: 250px;
+    height: 290px;
 }
+
 
 .create-vm .image-warning p {
   width: 80%;
@@ -6584,7 +6612,7 @@ table.list-machines .wave {
 }
 
 .create-vm .network-select {
-  height: 278px;
+  height: 310px;
   overflow-y: scroll;
   padding-right: 10px;
 }
@@ -6793,7 +6821,7 @@ input.has-errors {
 .pane-view .collection-list-view .model-view .main-content .state-indicator {
   width: 50px;
   position: absolute;
-  top: 30px;
+  top: 46px;
   right: 5px;
 }
 
@@ -6847,6 +6875,10 @@ input.has-errors {
   width: 182px;
 }
 
+.ips .model-item .actions-content.inline {
+  right: -180px;
+}
+
 .pane-view .collection-list-view .model-view .main-content .actions-content {
   width: 80px;
   float: left;
@@ -6879,6 +6911,8 @@ input.has-errors {
 
 .collection .empty-list {
   padding: 10px;
+  padding-top:6px;
+  padding-left: 10px;
   font-size: 0.8em;
   color: #333;
 }
@@ -7091,6 +7125,10 @@ input.has-errors {
 /* end vm sprites */
 
 /* ips */
+#ips-list-view .inline.ports.nested-model-list {
+  width: 280px;
+}
+
 .ip-port-view .title {
   width: 100%;
 }
@@ -7559,6 +7597,11 @@ input.has-errors {
   cursor: pointer;
 }
 
+.select-item.disabled {
+  background-color: #aaa !important;
+  color: #eeeeee;
+}
+
 .select-item.selected {
   background-color: #FF7F2A;
 }
@@ -7644,6 +7687,11 @@ input.has-errors {
   margin-top: 3px;
 }
 
+#project-select-content .select-item .name {
+  width: 100% !important;
+  float: none;
+}
+
 .select-item .name {
   float: left;
   width: 90%;
@@ -7657,4 +7705,111 @@ input.has-errors {
 .select-item .checkbox {
   float: left;
   width: 5%;
+}
+
+
+#ips-create-content .form-actions {
+  margin-top: -23px;
+}
+
+.project-name-cont:hover {
+  color: #444;
+}
+
+.project-name-cont {
+  cursor: pointer;
+  font-weight: normal;
+  font-size: 11px;
+  color: #222;
+  padding: 3px 6px;
+}
+
+.collection .project-name-cont,
+.icon .project-name-cont {
+  position: absolute;
+  top: 40px;
+  right: 5px;
+}
+
+.icon .machine-data {
+  position: relative;
+}
+
+.icon .machine-data .project-name-cont {
+  top: 48px; 
+}
+
+.main-content-inner {
+  min-height: 70px;
+}
+
+
+.project.select-item .checkbox {
+  margin-top: 10px;
+}
+
+select .resource-key,
+select .resource-value,
+.project.select-item.disabled .quota .resource-key,
+.project.select-item.disabled .quota .resource-value {
+  color: #ddd;
+}
+
+option.project.select-item.selected {
+  background-color: transparent;
+}
+
+.project.select-item.selected {
+  background-color: #74AEC9;
+}
+
+.project.select-item.selected .quota .resource-key {
+  color: #fff;
+}
+
+.project.select-item .quota .resource-key {
+  color: #444;
+  margin-right: 5px;
+}
+
+.project.select-item .quota .resource-value {
+  margin-right: 20px;
+  display: inline-block;
+}
+
+.project.select-item .quota .resource-value {
+}
+
+.project.select-item {
+  padding: 5px 0;
+  position: relative;
+}
+
+.project.select-item .quota {
+  margin-top: 5px;
+  font-size: 0.9em;
+}
+
+.project.select-item .current {
+  position: absolute;
+  right: 5px;
+  top: 2px;
+  font-size: 0.9em;
+  padding: 4px;
+  display: none;
+  color: #444;
+}
+
+.project.select-item.selected .current {
+  background-color: #74AEC9;
+  color: #FFF;
+}
+
+.model-item.current .project.select-item .current {
+  display: block;
+}
+
+
+.project.select-item.current {
+  background-color: #C7DEE9;
 }

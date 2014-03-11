@@ -1,4 +1,4 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -728,34 +728,6 @@ def resize_instance(vm, vcpus, memory):
                 "maxmem": int(memory)}
     with pooled_rapi_client(vm) as client:
         return client.ModifyInstance(vm.backend_vm_id, beparams=beparams)
-
-
-def get_instance_console(vm):
-    # RAPI GetInstanceConsole() returns endpoints to the vnc_bind_address,
-    # which is a cluster-wide setting, either 0.0.0.0 or 127.0.0.1, and pretty
-    # useless (see #783).
-    #
-    # Until this is fixed on the Ganeti side, construct a console info reply
-    # directly.
-    #
-    # WARNING: This assumes that VNC runs on port network_port on
-    #          the instance's primary node, and is probably
-    #          hypervisor-specific.
-    #
-    log.debug("Getting console for vm %s", vm)
-
-    console = {}
-    console['kind'] = 'vnc'
-
-    with pooled_rapi_client(vm) as client:
-        i = client.GetInstance(vm.backend_vm_id)
-
-    if vm.backend.hypervisor == "kvm" and i['hvparams']['serial_console']:
-        raise Exception("hv parameter serial_console cannot be true")
-    console['host'] = i['pnode']
-    console['port'] = i['network_port']
-
-    return console
 
 
 def get_instance_info(vm):

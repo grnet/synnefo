@@ -1,4 +1,4 @@
-// Copyright 2011 GRNET S.A. All rights reserved.
+// Copyright 2014 GRNET S.A. All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or
 // without modification, are permitted provided that the following
@@ -535,6 +535,16 @@
     api.stop_calls = false;
     api.STATES = { NORMAL:1, WARN:0, ERROR:-1 };
     api.error_state = api.STATES.NORMAL;
+
+    api.bind("quota:update", function(delay) {
+      if (delay == undefined) {
+        delay = 0
+      }
+
+      window.setTimeout(function() {
+        synnefo.storage.quotas.fetch({refresh: true});
+      }, delay);
+    });
 
     // on api error update the api error_state
     api.bind("error", function() {

@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -79,8 +79,4 @@ class NoQuantityError(OverLimitError):
 
 
 class NoHoldingError(CommissionException):
-    pass
-
-
-class DuplicateError(CommissionException):
     pass

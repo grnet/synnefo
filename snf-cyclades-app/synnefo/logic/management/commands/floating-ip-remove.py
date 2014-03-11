@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -57,8 +57,9 @@ class Command(RemoveCommand):
         for floating_ip_id in args:
             self.stdout.write("\n")
             try:
-                floating_ip = common.get_floating_ip_by_id(floating_ip_id,
-                                                           for_update=True)
+                floating_ip = common.get_resource("floating-ip",
+                                                  floating_ip_id,
+                                                  for_update=True)
                 ips.delete_floating_ip(floating_ip)
                 self.stdout.write("Deleted floating IP '%s'.\n" %
                                   floating_ip_id)

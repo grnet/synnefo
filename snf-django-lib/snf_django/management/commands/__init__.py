@@ -1,4 +1,4 @@
-# Copyright 2012-2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,7 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
+from optparse import (make_option, OptionParser, OptionGroup,
+                      TitledHelpFormatter)
 
 from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import FieldError
@@ -42,6 +43,13 @@ from snf_django.lib.astakos import UserCache
 import distutils
 
 USER_EMAIL_FIELD = "user.email"
+
+
+class SynnefoCommandFormatter(TitledHelpFormatter):
+    def format_heading(self, heading):
+        if heading == "Options":
+            return ""
+        return "%s\n%s\n" % (heading, "=-"[self.level] * len(heading))
 
 
 class SynnefoCommand(BaseCommand):
@@ -55,6 +63,37 @@ class SynnefoCommand(BaseCommand):
             help="Select the output format: pretty [the default], json, "
                  "csv [comma-separated output]"),
     )
+
+    def create_parser(self, prog_name, subcommand):
+        parser = OptionParser(prog=prog_name, add_help_option=False,
+                              formatter=SynnefoCommandFormatter())
+
+        parser.set_usage(self.usage(subcommand))
+        parser.version = self.get_version()
+
+        # Handle Django's and common options
+        common_options = OptionGroup(parser, "Common Options")
+        common_options.add_option("-h", "--help", action="help",
+                                  help="show this help message and exit")
+
+        common_options.add_option("--version", action="version",
+                                  help="show program's version number and"
+                                       "  exit")
+        [common_options.add_option(o) for o in self.option_list]
+        if common_options.option_list:
+            parser.add_option_group(common_options)
+
+        # Handle command specific options
+        command_options = OptionGroup(parser, "Command Specific Options")
+        [command_options.add_option(o)
+         for o in getattr(self, "command_option_list", ())]
+        if command_options.option_list:
+            parser.add_option_group(command_options)
+
+        return parser
+
+    def pprint_table(self, *args, **kwargs):
+        utils.pprint_table(self.stdout, *args, **kwargs)
 
 
 class ListCommand(SynnefoCommand):
@@ -250,12 +289,13 @@ class ListCommand(SynnefoCommand):
 
         objects = self.object_class.objects
         try:
-            for sr in select_related:
-                objects = objects.select_related(sr)
-            for pr in prefetch_related:
-                objects = objects.prefetch_related(pr)
+            if select_related:
+                objects = objects.select_related(*select_related)
+            if prefetch_related:
+                objects = objects.prefetch_related(*prefetch_related)
             objects = objects.filter(**self.filters)
-            objects = objects.exclude(**self.excludes)
+            for key, value in self.excludes.iteritems():
+                objects = objects.exclude(**{key:value})
         except FieldError as e:
             raise CommandError(e)
         except Exception as e:
@@ -335,9 +375,10 @@ class ListCommand(SynnefoCommand):
         utils.pprint_table(self.stdout, table, headers)
 
 
-class RemoveCommand(BaseCommand):
+class RemoveCommand(SynnefoCommand):
     help = "Generic remove command"
-    option_list = BaseCommand.option_list + (
+
+    command_option_list = (
         make_option(
             "-f", "--force",
             dest="force",

@@ -1,3 +1,37 @@
+// Copyright 2014 GRNET S.A. All rights reserved.
+// 
+// Redistribution and use in source and binary forms, with or
+// without modification, are permitted provided that the following
+// conditions are met:
+// 
+//   1. Redistributions of source code must retain the above
+//      copyright notice, this list of conditions and the following
+//      disclaimer.
+// 
+//   2. Redistributions in binary form must reproduce the above
+//      copyright notice, this list of conditions and the following
+//      disclaimer in the documentation and/or other materials
+//      provided with the distribution.
+// 
+// THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+// USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+// AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+// 
+// The views and conclusions contained in the software and
+// documentation are those of the authors and should not be
+// interpreted as representing official policies, either expressed
+// or implied, of GRNET S.A.
+// 
+
 ;(function(root){
     
     // root
@@ -39,7 +73,9 @@
         this.container = options && options.container;
         this._subviews = [];
         if (this.tpl) {
-          this.el = $(this.tpl).clone().removeClass("hidden").removeAttr('id');
+          var tpl = $(this.tpl);
+          if (tpl.hasClass("inner-tpl")) { tpl = tpl.children().get(0); }
+          this.el = $(tpl).clone().removeClass("hidden").removeAttr('id');
         }
         this.init.apply(this, arguments);
         this.post_init.apply(this, arguments);
@@ -53,7 +89,7 @@
         var cont = $(this.container);
         cont.append(this.el);
       },
-
+      
       create_view: function(view_cls, options) {
         var options = _.extend({}, options);
         options.parent_view = this;
@@ -203,7 +239,7 @@
       animation_speed: 200,
       quota_key: undefined,
       quota_limit_message: undefined,
-
+      list_el_selector: '.items-list',
       init: function() {
         var handlers = {};
         handlers[this.collection_name] = {
@@ -217,6 +253,7 @@
         this._model_views = {};
         this.list_el = $(this.$(".items-list").get(0));
         this.empty_el = $(this.$(".empty-list").get(0));
+        if (this._id) { debugger }
         if (this.create_view_cls) {
           this._create_view = new this.create_view_cls();
           this._create_view.parent_view = this;
@@ -231,35 +268,25 @@
           this.handle_create_click();
         }, this));
         
-        if (this.quota_key && !this.quota) {
-          this.quota = synnefo.storage.quotas.get(this.quota_key);
-        }
-
-        if (this.quota) {
-          this.quota.bind("change", _.bind(this.update_quota, this));
+        if (this.quota_key) {
+          synnefo.storage.quotas.bind("change", 
+                                      _.bind(this.update_quota, this));
           this.update_quota();
         }
       },
       
       update_quota: function() {
-        var available = this.quota.get_available();
-        if (available > 0) {
+        var can_create = synnefo.storage.quotas.can_create(this.quota_key);
+        if (can_create) {
           this.create_button.removeClass("disabled");
           this.create_button.attr("title", "");
         } else {
           this.create_button.addClass("disabled");
-          this.create_button.attr("title", this.quota_limit_message || "Quota limit reached")
+          this.create_button.attr("title", 
+                                  this.quota_limit_message || "Quota limit reached")
         }
       },
       
-      post_create: function() {
-        this.quota && this.quota.increase();
-      },
-
-      post_destroy: function() {
-        this.quota && this.quota.decrease();
-      },
-
       handle_create_click: function() {
         if (this.create_button.hasClass("disabled")) { return }
 
@@ -267,8 +294,18 @@
           this._create_view.show();
         }
       },
+      
+      post_hide: function() {
+        this.each_model_view(function(model, view) {
+          this.unbind_custom_view_handlers(view, model);
+        }, this);
+        views.ext.CollectionView.__super__.pre_hide.apply(this, arguments);
+      },
 
       pre_show: function() {
+        this.each_model_view(function(model, view) {
+          this.bind_custom_view_handlers(view, model);
+        }, this);
         views.ext.CollectionView.__super__.pre_show.apply(this, arguments);
         this.update_models();
       },
@@ -362,6 +399,8 @@
       get_model_view_cls: function(m) {
         return this.model_view_cls
       },
+      
+      model_view_options: function(m) { return {} },
 
       add_model: function(m, index) {
         // if no available class for model exists, skip model add
@@ -375,7 +414,11 @@
         this.check_empty();
         
         // initialize view
-        var view = this.create_view(this.get_model_view_cls(m), {model: m});
+        var model_view_options = {model: m}
+        var extra_options = this.model_view_options(m);
+        _.extend(model_view_options, extra_options);
+        var view = this.create_view(this.get_model_view_cls(m),
+                                    model_view_options);
         this.add_model_view(view, m, index);
       },
 
@@ -393,7 +436,9 @@
         this.add_subview(view);
         view.show(true);
         this.post_add_model_view(view, model);
+        this.bind_custom_view_handlers(view, model);
       },
+
       post_add_model_view: function() {},
 
       each_model_view: function(cb, context) {
@@ -413,12 +458,15 @@
         model_view.hide();
         model_view.el.remove();
         this.remove_view(model_view);
+        this.unbind_custom_view_handlers(model_view, m);
         this.post_remove_model_view(model_view, m);
         $(window).trigger("resize");
         delete this._model_views[m.id];
         this.check_empty();
       },
-
+      
+      bind_custom_view_handlers: function(view, model) {},
+      unbind_custom_view_handlers: function(view, model) {},
       post_remove_model_view: function() {},
 
       update_models: function(m) {
@@ -443,6 +491,67 @@
           }
         })
       }
+    });
+
+    views.ext.CollectionSelectView = views.ext.CollectionView.extend({
+      allow_multiple: false,
+      initialize: function(options) {
+        views.ext.CollectionSelectView.__super__.initialize.apply(this, [options]);
+        this.allow_multiple = options.allow_multiple != undefined ? options.allow_multiple : this.allow_multiple;
+        this.current = options.current != undefined ? options.current : undefined;
+      },
+
+      select: function(model) {
+        if (!this.allow_multiple) {
+          this.deselect_all();
+        }
+        this._model_views[model.id].select();
+      },
+
+      deselect: function(model) {
+        this._model_views[model.id].deselect();
+      },
+
+      deselect_all: function(model) {
+        _.each(this._model_views, function(view) {
+          view.deselect();
+        })
+      },    
+      
+      get_selected: function() {
+        var models = _.map(this._model_views, function(view) {
+          if (view.selected) { 
+            return view.model
+          }
+        });
+        return _.filter(models, function(m) { return m });
+      },
+      
+      handle_click: function(view) {
+        if (!view.selected && !view.disabled) {
+          if (!this.allow_multiple) {
+            this.deselect_all();
+          }
+        }
+      },
+
+      post_add_model_view: function(view, model) {
+        view.bind('click', function() {
+          this.handle_click(view);
+        }, this);
+
+        view.bind('selected', function(view) {
+          if (this.current != view.model) {
+            this.current = view.model;
+            this.trigger("change", this.get_selected());
+          }
+        }, this);
+      },
+
+      set_current: function(model) {
+        this._model_views[model.id].select();
+      }
+
     });
 
     views.ext.ModelView = views.ext.View.extend({
@@ -612,25 +721,36 @@
     });
 
     views.ext.SelectModelView = views.ext.ModelView.extend({
+      can_deselect: true,
       select: function() {
         if (!this.delegate_checked) {
           this.input.attr("checked", true);
           this.item.addClass("selected");
+          this.item.attr("selected", true);
         }
         this.selected = true;
         this.trigger("change:select", this, this.selected);
+        this.trigger("selected", this, this.selected);
+        this.parent_view && this.parent_view.trigger("change:select", this, this.selected);
       },
 
       deselect: function() {
         if (!this.delegate_checked) {
           this.input.attr("checked", false);
           this.item.removeClass("selected");
+          this.item.attr("selected", false);
         }
         this.selected = false;
         this.trigger("change:select", this, this.selected);
+        this.trigger("deselected", this, this.selected);
+        this.parent_view && this.parent_view.trigger("change:select", this, this.selected);
       },
       
       toggle_select: function() {
+        if (!this.can_deselect) {
+          this.select();
+          return;
+        }
         if (this.selected) { 
           this.deselect();
         } else {
@@ -641,6 +761,9 @@
       post_init_element: function() {
         this.input = $(this.$("input").get(0));
         this.item = $(this.$(".select-item").get(0));
+        if (!this.item.length) {
+          this.item = $(this.el);
+        }
         this.delegate_checked = this.model.get('noselect');
         this.deselect();
 
@@ -657,17 +780,34 @@
         }
         
         $(this.item).click(function(e) {
+          self.trigger('click');
           if (self.model.get('forced')) { return }
+          if (self.input.attr('disabled')) { return }
+          if (self.disabled) { return }
           e.stopPropagation();
           self.toggle_select();
         });
         
         views.ext.SelectModelView.__super__.post_init_element.apply(this,
                                                                     arguments);
+      },
+
+      set_disabled: function() {
+        this.disabled = true;
+        this.input.attr("disabled", true);
+        this.item.addClass("disabled");
+        this.item.attr("disabled", true);
+      },
+
+      set_enabled: function() {
+        this.disabled = false;
+        this.input.attr("disabled", false);
+        this.item.removeClass("disabled");
+        this.item.attr("disabled", false);
       }
+
     });
 
-    
     views.ext.ModelCreateView = views.ext.ModelView.extend({});
     views.ext.ModelEditView = views.ext.ModelCreateView.extend({});
 

@@ -294,6 +294,7 @@ def account_meta(request, v_account):
                     getattr(request, 'token', None), groups[k])
         policy = request.backend.get_account_policy(
             request.user_uniq, v_account)
+        logger.debug(policy)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
 
@@ -503,6 +504,8 @@ def container_create(request, v_account, v_container):
             raise faults.ItemNotFound('Container does not exist')
         except ValueError:
             raise faults.BadRequest('Invalid policy header')
+        except QuotaError, e:
+            raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     if meta:
         try:
             request.backend.update_container_meta(request.user_uniq, v_account,
@@ -540,6 +543,8 @@ def container_update(request, v_account, v_container):
             raise faults.ItemNotFound('Container does not exist')
         except ValueError:
             raise faults.BadRequest('Invalid policy header')
+        except QuotaError, e:
+            raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     if meta or replace:
         try:
             request.backend.update_container_meta(request.user_uniq, v_account,
@@ -559,6 +564,13 @@ def container_update(request, v_account, v_container):
     if (content_type
             and content_type == 'application/octet-stream'
             and content_length != 0):
+
+        try:
+            request.backend.can_write_container(request.user_uniq, v_account,
+                                                v_container)
+        except NotAllowedError:
+            raise faults.Forbidden('Not allowed')
+
         for data in socket_read_iterator(request, content_length,
                                          request.backend.block_size):
             # TODO: Raise 408 (Request Timeout) if this takes too long.

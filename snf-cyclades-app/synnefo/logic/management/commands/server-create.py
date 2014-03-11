@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -108,10 +108,10 @@ class Command(BaseCommand):
         if not image_id:
             raise CommandError("image-id is mandatory")
 
-        flavor = common.get_flavor(flavor_id)
+        flavor = common.get_resource("flavor", flavor_id)
         image = common.get_image(image_id, user_id)
         if backend_id:
-            backend = common.get_backend(backend_id)
+            backend = common.get_resource("backend", backend_id)
         else:
             backend = None
 
@@ -147,7 +147,8 @@ def parse_connections(con_list):
                     val = {"port": port_id}
                 elif con_kind == "floatingip":
                     fip_id = opt.split(":")[1]
-                    fip = common.get_floating_ip_by_id(fip_id, for_update=True)
+                    fip = common.get_resource("floating-ip", fip_id,
+                                              for_update=True)
                     val = {"uuid": fip.network_id, "fixed_ip": fip.address}
                 else:
                     raise CommandError("Unknown argument for option --port")

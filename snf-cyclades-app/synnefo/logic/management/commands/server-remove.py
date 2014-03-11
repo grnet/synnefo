@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -34,7 +34,7 @@
 from optparse import make_option
 
 from django.core.management.base import CommandError
-from synnefo.management.common import (get_vm, convert_api_faults,
+from synnefo.management.common import (get_resource, convert_api_faults,
                                        wait_server_task)
 from synnefo.logic import servers
 from snf_django.management.commands import RemoveCommand
@@ -46,7 +46,7 @@ class Command(RemoveCommand):
     args = "<Server ID> [<Server ID> ...]"
     help = "Remove a server by deleting the instance from the Ganeti backend."
 
-    option_list = RemoveCommand.option_list + (
+    command_option_list = RemoveCommand.command_option_list + (
         make_option(
             '--wait',
             dest='wait',
@@ -68,7 +68,7 @@ class Command(RemoveCommand):
         for server_id in args:
             self.stdout.write("\n")
             try:
-                server = get_vm(server_id)
+                server = get_resource("server", server_id, for_update=True)
 
                 self.stdout.write("Trying to remove server '%s' from backend "
                                   "'%s' \n" % (server.backend_vm_id,

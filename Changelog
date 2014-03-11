@@ -6,79 +6,81 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
-.. _Changelog-0.15rc7:
+v0.15next
+=========
 
-v0.15rc7
-========
+Released: UNRELEASED
 
-Released: Tue Mar  4 14:53:14 EET 2014
+Synnefo-wide
+------------
 
-Cyclades
---------
+* Replace accumulative projects with pool projects:
 
-* Fix UI to filter available flavors in VM wizard
+  * Projects are now viewed as a source of finite resources. A member can
+    reserve a part of these resources up to a specified limit.
 
-Pithos
-------
+  * Base quota are now offered through a special purpose user-specific base
+    project, identified with the same UUID as the user.
 
-* Fix GET request for public path with If-None-Match
-  https://code.grnet.gr/issues/5168
+  * Each actual resource (Cyclades VM, network, floating IP and Pithos
+    container) is now also associated with a project besides the owner.
 
-.. _Changelog-0.15rc6:
+  * In resource creation, project defaults to the user-specific base
+    project, if not specified otherwise. It is also possible to change the
+    project assignment of an existing resource.
 
-v0.15rc6
-========
-
-Released: Thu Feb 27 13:08:02 EET 2014
-
-* Fix backend open hashfile bug:
-  https://code.grnet.gr/issues/5011
-
-
-.. _Changelog-0.15rc5:
-
-v0.15rc5
-========
-
-Released: Wed Feb 26 15:27:10 EET 2014
+  * All existing resources have been assigned to the respective
+    user-specific base projects.
 
 Astakos
 -------
 
-* Fix request authorization code failures due to Unicode issue:
-  https://code.grnet.gr/issues/4971
-* Omit validation issues for non-required metadata values received from the
-  third party authentication provider.
+* Decouple projects from applications:
 
+  * Support project creation (by the system) and modification (by a
+    privileged user) without the need to submit/approve an application.
 
-Pithos
-------
+  * View applications as modifications. When a project is uninitialized
+    (e.g. an application for a new project is pending), no further
+    modification is allowed.
 
-* Extend API to optionally enforce a specific content disposition type
-  in view and public requests: https://code.grnet.gr/issues/5019
+  * Applications are removed from the API. A project's last application is
+    only accessible as part of the project details.
 
-* Fix bulk operation (delete/copy/move) failures in overpopulated
-  containers/folders: https://code.grnet.gr/issues/5119
+  * Decouple project state from application state; they can be combined by
+    an API client, if needed.
 
-* Fix performance issue due to missing index
+* Changes concerning quota and pool projects:
 
-Cyclades
---------
+  * A project must provide limits for all registered resources. On project
+    activation, resources missing are automatically completed using a
+    skeleton.
 
-* Extend flavors with 'allow_create' attribute. Flavors that have this
-  attribute unset cannot be used by users to create new servers.
-* Store each image property(metadata) as a separate Pithos metadata and check
-  that the size of each property is valid.
-* Fix a few occurrences of HTTP 500 errors being triggered due to insufficient
-  validation of incoming requests in the Network API
-* Speed up some API calls by fixing the relevant DB queries
+  * Field `uplimit' of registed resources is exposed as `base_default' and
+    provide the skeleton for user-specific base projects. A new field
+    `project_default' is introduce to act as a skeleton for conventional
+    projects.
 
-.. _Changelog-0.15rc4:
+  * The quotaholder now also records project quota besides user quota. The
+    two types of holders are distinguished with a prefix: `user:' and
+    `project:'.
 
-v0.15rc4
-========
+  * The quota API is extended to make project quota available.
 
-Released: Wed Jan 15 10:56:10 EET 2014
+  * Removed setting `ASTAKOS_PROJECTS_VISIBLE'; we now always display
+    projects in Astakos menu.
+
+* Projects can be set `private', making it accessible only to its owner and
+  members.
+
+=======
+.. _Changelog-0.15:
+
+v0.15
+=====
+
+Released: Mon Mar 10 14:01:32 EET 2014
+
 
 Synnefo-wide
 ------------
@@ -120,13 +122,11 @@ Astakos
   * Improve recording of project, application, and membership actions.
 
 * Implement API calls for projects.
-
 * Store the base URL of a component. Deployer should provide it when adding
   a new component. Service endpoints originating from a component are
   expected to match its base URL; otherwise, a warning is issued.
   Re-registration with `snf-component-register' affects both the base and
   the ui URL.
-
 * Changes in resource and quota handling:
 
   * New resources are registered with unlimited default base quota,
@@ -144,42 +144,46 @@ Astakos
 
 * Remove API call GET /account/v1.0/authenticate in favor of
   POST /identity/v2.0/tokens.
-
-* Export basic statistics about Astakos service from '/admin/stats/detail' API
+* Export basic statistics about Astakos service at the '/admin/stats/detail' API
   endpoint. Access to this endpoint is only allowed to users that belong to
   the Astakos groups that are defined in the
   'ASTAKOS_ADMIN_STATS_PERMITTED_GROUPS' setting. Statistics are also available
-  from 'snf-manage stats-astakos' management command.
-
+  through the 'snf-manage stats-astakos' management command.
 * Implement OAuth 2.0 Authorization Code Grant
   Add API calls for authorization code and access token generation
-
 * Add API call for validating OAuth 2.0 access tokens
-
 * **Shibboleth module** Extract unique identifier from the
   ``REMOTE_USER`` header.
-
-* Automatically fill third party signup form fields when available by the
-  the third party provider.
-
+* Automatically fill third-party signup form fields when available by the
+  the third-party provider.
 * Management commands:
 
   * Introduced new commands:
-	* component-show
-	* quota-list (replacing quota, supports various filters)
-	* quota-verify (replacing quota)
-	* oauth2-client-add (register OAuth 2.0 client)
-	* oauth2-client-list (list registered oauth 2.0 clients)
-	* oauth2-client-remove (remove OAuth 2.0 client)
+
+    * component-show
+    * quota-list (replacing quota, supports various filters)
+    * quota-verify (replacing quota)
+    * oauth2-client-add (register OAuth 2.0 client)
+    * oauth2-client-list (list registered oauth 2.0 clients)
+    * oauth2-client-remove (remove OAuth 2.0 client)
+
   * Changed commands:
-	* component-add got options --base-url and --ui-url
-	* resource-modify --limit became --default-quota
-	* user-modify can operate on multiple users with --all and --exclude
-	* user-modify --set-base-quota became --base-quota
+
+    * component-add got options --base-url and --ui-url
+    * resource-modify --limit became --default-quota
+    * user-modify can operate on multiple users with --all and --exclude
+    * user-modify --set-base-quota became --base-quota
+
   * Removed commands:
-	* quota
-	* resource-import (subsumed by service-import)
-	* resource-export-astakos (subsumed by service-export-astakos)
+
+    * quota
+    * resource-import (subsumed by service-import)
+    * resource-export-astakos (subsumed by service-export-astakos)
+
+* Fix request authorization code failures due to Unicode issue:
+  https://code.grnet.gr/issues/4971
+* Omit validation issues for non-required metadata values received from the
+  third-party authentication provider.
 
 Cyclades
 --------
@@ -212,7 +216,7 @@ Cyclades
   * Implement the 'resize' server action, to change the flavor of a server.
     Only 'cpu' and 'memory' resizing is supported.
 
-* Compute quotas for CPU and memory of running vms.
+* Compute quotas for CPU and memory of running VMs.
 
   * Change 'cyclades.cpu' and 'cyclades.ram' resources to represent the CPU
     and RAM for running VMs. Total CPU and RAM usage is represented by new
@@ -252,10 +256,10 @@ Cyclades
 * Do not automatically release externally reserved IPs if they are released
   from a Ganeti backend. Management of externally reserved IPs must be
   performed from Cyclades with 'network-modify' command.
-* Export basic statistics about Cyclades Service from '/admin/stats/detail'
+* Export basic statistics about Cyclades Service at the '/admin/stats/detail'
   API endpoint. Access to this endpoint is only allowed to users that belong
   to the Astakos groups that are defined in the 'ADMIN_STATS_PERMITTED_GROUPS'
-  setting.  Statistics are also available from 'snf-manage stats-cyclades'
+  setting.  Statistics are also available through the 'snf-manage stats-cyclades'
   management command.
 * Support enforcing quota through command 'enforce-resources-cyclades'.
 * Remove command 'resource-export-cyclades' subsumed by
@@ -273,6 +277,13 @@ Cyclades
 * Remove 'DEFAULT_ROUTING_TABLE' setting. If a link for an IP_LESS_ROUTED
   network is not specified, the link will be uniquely named
   'snf-link-$network_id'.
+* Extend flavors with 'allow_create' attribute. Flavors that have this
+  attribute unset cannot be used by users to create new servers.
+* Store each image property(metadata) as a separate Pithos metadata and check
+  that the size of each property is valid.
+* Fix a few occurrences of HTTP 500 errors being triggered due to insufficient
+  validation of incoming requests in the Network API
+* Speed up some API calls by fixing the relevant DB queries
 
 
 Cyclades UI
@@ -313,6 +324,7 @@ Cyclades UI
   to True.
 - Setting ``UI_GROUPED_PUBLIC_NETWORK_NAME`` has been deprecated and no longer 
   used.
+- Fix UI to filter available flavors in VM wizard
 
 
 Cyclades Userdata
@@ -353,6 +365,17 @@ Pithos
   specific host
 * Added new 'file-show' management command
 * Remove command 'resource-export-pithos' subsumed by 'service-export-pithos'.
+* Extend API to optionally enforce a specific content disposition type
+  in view and public requests: https://code.grnet.gr/issues/5019
+
+* Fix bulk operation (delete/copy/move) failures in overpopulated
+  containers/folders: https://code.grnet.gr/issues/5119
+
+* Fix performance issue due to missing index
+* Fix backend open hashfile bug:
+  https://code.grnet.gr/issues/5011
+* Fix GET request for public path with If-None-Match
+  https://code.grnet.gr/issues/5168
 
 .. _Changelog-0.14.10:
 

@@ -1,4 +1,4 @@
-# Copyright 2012-2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -38,26 +38,22 @@ from synnefo.lib.ordereddict import OrderedDict
 from snf_django.management.commands import SynnefoCommand
 from snf_django.management import utils
 from astakos.im.models import ProjectApplication, Project
+from astakos.im import quotas
 from ._common import show_resource_value, style_options, check_style
+from synnefo.util import units
 
 
 class Command(SynnefoCommand):
     args = "<id>"
-    help = "Show details for project (or application) <id>"
+    help = "Show details for project <id>"
 
     option_list = SynnefoCommand.option_list + (
-        make_option('--app',
-                    action='store_true',
-                    dest='app',
-                    default=False,
-                    help="Show details of applications instead of projects"
-                    ),
         make_option('--pending',
                     action='store_true',
                     dest='pending',
                     default=False,
                     help=("For a given project, show also pending "
-                          "modifications (applications), if any")
+                          "modification, if any")
                     ),
         make_option('--members',
                     action='store_true',
@@ -65,6 +61,11 @@ class Command(SynnefoCommand):
                     default=False,
                     help=("Show a list of project memberships")
                     ),
+        make_option('--quota',
+                    action='store_true',
+                    dest='list_quotas',
+                    default=False,
+                    help="List project quota"),
         make_option('--unit-style',
                     default='mb',
                     help=("Specify display unit for resource values "
@@ -80,28 +81,22 @@ class Command(SynnefoCommand):
 
         show_pending = bool(options['pending'])
         show_members = bool(options['members'])
-        search_apps = options['app']
+        show_quota = bool(options['list_quotas'])
         self.output_format = options['output_format']
 
         id_ = args[0]
-        try:
-            id_ = int(id_)
-        except ValueError:
-            raise CommandError("id should be an integer value.")
-
-        if search_apps:
-            app = get_app(id_)
-            self.print_app(app)
-        else:
-            project, pending_app = get_chain_state(id_)
-            self.print_project(project, pending_app)
+        if True:
+            project = get_chain_state(id_)
+            self.print_project(project, show_quota)
             if show_members and project is not None:
                 self.stdout.write("\n")
                 fields, labels = members_fields(project)
                 self.pprint_table(fields, labels, title="Members")
-            if show_pending and pending_app is not None:
-                self.stdout.write("\n")
-                self.print_app(pending_app)
+            if show_pending:
+                app = project.last_application
+                if app and app.state == ProjectApplication.PENDING:
+                    self.stdout.write("\n")
+                    self.print_app(app)
 
     def pprint_dict(self, d, vertical=True):
         utils.pprint_table(self.stdout, [d.values()], d.keys(),
@@ -114,109 +109,109 @@ class Command(SynnefoCommand):
     def print_app(self, app):
         app_info = app_fields(app)
         self.pprint_dict(app_info)
-        self.print_resources(app)
+        self.print_app_resources(app)
 
-    def print_project(self, project, app):
-        if project is None:
-            self.print_app(app)
-        else:
-            self.pprint_dict(project_fields(project, app))
-            self.print_resources(project.application)
+    def print_project(self, project, show_quota=False):
+        self.pprint_dict(project_fields(project))
+        quota = (quotas.get_project_quota(project)
+                 if show_quota else None)
+        self.print_resources(project, quota=quota)
 
-    def print_resources(self, app):
-        fields, labels = resource_fields(app, self.unit_style)
+    def print_resources(self, project, quota=None):
+        policies = project.projectresourcequota_set.all()
+        fields, labels = resource_fields(policies, quota, self.unit_style)
+        if fields:
+            self.stdout.write("\n")
+            self.pprint_table(fields, labels, title="Resource limits")
+
+    def print_app_resources(self, app):
+        policies = app.projectresourcegrant_set.all()
+        fields, labels = resource_fields(policies, None, self.unit_style)
         if fields:
             self.stdout.write("\n")
             self.pprint_table(fields, labels, title="Resource limits")
 
 
-def get_app(app_id):
-    try:
-        return ProjectApplication.objects.get(id=app_id)
-    except ProjectApplication.DoesNotExist:
-        raise CommandError("Application with id %s not found." % app_id)
-
-
 def get_chain_state(project_id):
     try:
-        chain = Project.objects.get(id=project_id)
-        return chain, chain.last_pending_application()
+        return Project.objects.get(uuid=project_id)
     except Project.DoesNotExist:
         raise CommandError("Project with id %s not found." % project_id)
 
 
-def resource_fields(app, style):
-    labels = ('name', 'description', 'max per member')
-    policies = app.projectresourcegrant_set.all()
+def resource_fields(policies, quota, style):
+    labels = ('name', 'max per member', 'max per project')
+    if quota:
+        labels += ('usage',)
     collect = []
     for policy in policies:
         name = policy.resource.name
-        desc = policy.resource.desc
         capacity = policy.member_capacity
-        collect.append((name, desc,
-                        show_resource_value(capacity, name, style)))
+        p_capacity = policy.project_capacity
+        row = (name,
+               show_resource_value(capacity, name, style),
+               show_resource_value(p_capacity, name, style))
+        if quota:
+            r_quota = quota.get(name)
+            usage = r_quota.get('project_usage')
+            row += (show_resource_value(usage, name, style),)
+        collect.append(row)
     return collect, labels
 
 
 def app_fields(app):
-    mem_limit = app.limit_on_members_number
-    mem_limit_show = mem_limit if mem_limit is not None else "unlimited"
-
     d = OrderedDict([
-        ('project id', app.chain_id),
+        ('project id', app.chain.uuid),
         ('application id', app.id),
-        ('name', app.name),
         ('status', app.state_display()),
-        ('owner', app.owner),
         ('applicant', app.applicant),
-        ('homepage', app.homepage),
-        ('description', app.description),
         ('comments for review', app.comments),
         ('request issue date', app.issue_date),
-        ('request start date', app.start_date),
-        ('request end date', app.end_date),
-        ('join policy', app.member_join_policy_display),
-        ('leave policy', app.member_leave_policy_display),
-        ('max members', mem_limit_show),
-    ])
+        ])
+    if app.name:
+        d['name'] = app.name
+    if app.owner:
+        d['owner'] = app.owner
+    if app.homepage:
+        d['homepage'] = app.homepage
+    if app.description:
+        d['description'] = app.description
+    if app.start_date:
+        d['request start date'] = app.start_date
+    if app.end_date:
+        d['request end date'] = app.end_date
+    if app.member_join_policy:
+        d['join policy'] = app.member_join_policy_display
+    if app.member_leave_policy:
+        d['leave policy'] = app.member_leave_policy_display
+    if app.limit_on_members_number:
+        d['max members'] = units.show(app.limit_on_members_number, None)
 
     return d
 
 
-def project_fields(project, pending_app):
-    app = project.application
+def project_fields(project):
+    app = project.last_application
 
     d = OrderedDict([
-        ('project id', project.id),
-        ('application id', app.id),
-        ('name', app.name),
+        ('project id', project.uuid),
+        ('name', project.realname),
         ('status', project.state_display()),
-    ])
-    if pending_app is not None:
-        d.update([('pending application', pending_app.id)])
-
-    d.update([('owner', app.owner),
-              ('applicant', app.applicant),
-              ('homepage', app.homepage),
-              ('description', app.description),
-              ('comments for review', app.comments),
-              ('request issue date', app.issue_date),
-              ('request start date', app.start_date),
-              ('creation date', project.creation_date),
-              ('request end date', app.end_date),
-              ])
+        ('owner', project.owner),
+        ('homepage', project.homepage),
+        ('description', project.description),
+        ('creation date', project.creation_date),
+        ('request end date', project.end_date),
+        ])
 
     deact = project.last_deactivation()
     if deact is not None:
         d['deactivation date'] = deact.date
 
-    mem_limit = app.limit_on_members_number
-    mem_limit_show = mem_limit if mem_limit is not None else "unlimited"
-
     d.update([
-            ('join policy', app.member_join_policy_display),
-            ('leave policy', app.member_leave_policy_display),
-            ('max members', mem_limit_show),
+            ('join policy', project.member_join_policy_display),
+            ('leave policy', project.member_leave_policy_display),
+            ('max members', units.show(project.limit_on_members_number, None)),
             ('total members', project.members_count()),
     ])
 

@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -197,48 +197,34 @@ def show_resource_value(number, resource, style):
     return units.show(number, unit, style)
 
 
-def collect_holder_quotas(holder_quotas, h_initial, style=None):
+def collect_holder_quotas(holder_quotas, style=None):
     print_data = []
     for source, source_quotas in holder_quotas.iteritems():
-        try:
-            s_initial = h_initial[source]
-        except KeyError:
-            continue
         for resource, values in source_quotas.iteritems():
-            try:
-                initial = s_initial[resource]
-            except KeyError:
-                continue
-            initial = show_resource_value(initial, resource, style)
             limit = show_resource_value(values['limit'], resource, style)
             usage = show_resource_value(values['usage'], resource, style)
-            fields = (source, resource, initial, limit, usage)
+            fields = (source, resource, limit, usage)
             print_data.append(fields)
     return print_data
 
 
-def show_user_quotas(holder_quotas, h_initial, style=None):
-    labels = ('source', 'resource', 'base_quota', 'total_quota', 'usage')
-    print_data = collect_holder_quotas(holder_quotas, h_initial, style=style)
+def show_user_quotas(holder_quotas, style=None):
+    labels = ('source', 'resource', 'limit', 'usage')
+    print_data = collect_holder_quotas(holder_quotas, style=style)
     return print_data, labels
 
 
-def show_quotas(qh_quotas, astakos_initial, info=None, style=None):
-    labels = ('user', 'source', 'resource', 'base_quota', 'total_quota',
-              'usage')
+def show_quotas(qh_quotas, info=None, style=None):
+    labels = ('holder', 'source', 'resource', 'limit', 'usage')
     if info is not None:
         labels = ('displayname',) + labels
 
     print_data = []
     for holder, holder_quotas in qh_quotas.iteritems():
-        h_initial = astakos_initial.get(holder)
-        if h_initial is None:
-            continue
-
         if info is not None:
             email = info.get(holder, "")
 
-        h_data = collect_holder_quotas(holder_quotas, h_initial, style=style)
+        h_data = collect_holder_quotas(holder_quotas, style=style)
         if info is not None:
             h_data = [(email, holder) + fields for fields in h_data]
         else:

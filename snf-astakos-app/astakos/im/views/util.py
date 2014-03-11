@@ -31,6 +31,10 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import logging
+import astakos.im.messages as astakos_messages
+
+from astakos.im import settings
 from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
 from django.core.xheaders import populate_xheaders
@@ -40,14 +44,16 @@ from django.template import RequestContext, loader as template_loader
 from django.utils.translation import ugettext as _
 from django.views.generic.create_update import apply_extra_context, \
     get_model_and_form_class, lookup_object
+from django.db import transaction
 
 from synnefo.lib.ordereddict import OrderedDict
 
 from astakos.im import presentation
 from astakos.im.util import model_to_dict
-from astakos.im.models import Resource
-import astakos.im.messages as astakos_messages
-import logging
+from astakos.im import tables
+from astakos.im.models import Resource, ProjectApplication, ProjectMembership
+from astakos.im import functions
+from astakos.im.util import get_context, restrict_next, restrict_reverse
 
 logger = logging.getLogger(__name__)
 
@@ -102,6 +108,7 @@ def _create_object(request, model=None, template_name=None,
     extra_context['edit'] = 0
     if request.method == 'POST':
         form = form_class(request.POST, request.FILES)
+
         if form.is_valid():
             verify = request.GET.get('verify')
             edit = request.GET.get('edit')
@@ -167,8 +174,7 @@ def _update_object(request, model=None, object_id=None, slug=None,
             else:
                 obj = form.save()
                 if not msg:
-                    msg = _(
-                        "The %(verbose_name)s was created successfully.")
+                    msg = _("The %(verbose_name)s was created successfully.")
                 msg = msg % model._meta.__dict__
                 messages.success(request, msg, fail_silently=True)
                 return redirect(post_save_redirect, obj)
@@ -190,7 +196,20 @@ def _update_object(request, model=None, object_id=None, slug=None,
     return response
 
 
-def _resources_catalog():
+def sorted_resources(resource_grant_or_quota_set):
+    meta = presentation.RESOURCES
+    order = meta.get('resources_order', [])
+    resources = list(resource_grant_or_quota_set)
+
+    def order_key(item):
+        name = item.resource.name
+        if name in order:
+            return order.index(name)
+        return -1
+    return sorted(resources, key=order_key)
+
+
+def _resources_catalog(as_dict=False):
     """
     `resource_catalog` contains a list of tuples. Each tuple contains the group
     key the resource is assigned to and resources list of dicts that contain
@@ -264,4 +283,53 @@ def _resources_catalog():
             resource_groups.pop(group)
         else:
             resource_catalog_new.append((group, resources))
+
+    if as_dict:
+        resource_catalog_new = OrderedDict(resource_catalog_new)
+        for name, resources in resource_catalog_new.iteritems():
+            _rs = OrderedDict()
+            for resource in resources:
+                _rs[resource.get('name')] = resource
+            resource_catalog_new[name] = _rs
+        resource_groups = OrderedDict(resource_groups)
+
     return resource_catalog_new, resource_groups
+
+
+def get_user_projects_table(projects, user, prefix):
+    apps = ProjectApplication.objects.pending_per_project(projects)
+    memberships = user.projectmembership_set.one_per_project()
+    objs = ProjectMembership.objects
+    accepted_ms = objs.any_accepted_per_project(projects)
+    requested_ms = objs.requested_per_project(projects)
+    return tables.UserProjectsTable(projects, user=user,
+                                    prefix=prefix,
+                                    pending_apps=apps,
+                                    memberships=memberships,
+                                    accepted=accepted_ms,
+                                    requested=requested_ms)
+
+
+@transaction.commit_on_success
+def handle_valid_members_form(request, project_id, addmembers_form):
+    if addmembers_form.is_valid():
+        try:
+            users = addmembers_form.valid_users
+            for user in users:
+                functions.enroll_member_by_email(project_id, user.email,
+                                                 request_user=request.user)
+        except functions.ProjectError as e:
+            messages.error(request, e)
+
+
+def redirect_to_next(request, default_resolve, *args, **kwargs):
+    next = kwargs.pop('next', None)
+    if not next:
+        default = restrict_reverse(default_resolve, *args,
+                                   restrict_domain=settings.COOKIE_DOMAIN,
+                                   **kwargs)
+        next = request.GET.get('next', default)
+
+    next = restrict_next(next, domain=settings.COOKIE_DOMAIN)
+    return redirect(next)
+

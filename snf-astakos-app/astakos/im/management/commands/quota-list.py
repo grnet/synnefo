@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -58,10 +58,6 @@ class Command(SynnefoCommand):
         make_option('--overlimit',
                     action='store_true',
                     help="Show quota that is over limit"),
-        make_option('--with-custom',
-                    metavar='True|False',
-                    help=("Filter quota different from the default or "
-                          "equal to it")),
         make_option('--filter-by',
                     help="Filter by field; "
                     "e.g. \"user=uuid,usage>=10M,base_quota<inf\""),
@@ -71,15 +67,11 @@ class Command(SynnefoCommand):
     )
 
     QHFLT = {
-        "total_quota": ("limit", filtering.parse_with_unit),
+        "limit": ("limit", filtering.parse_with_unit),
         "usage": ("usage_max", filtering.parse_with_unit),
         "user": ("holder", lambda x: x),
         "resource": ("resource", lambda x: x),
         "source": ("source", lambda x: x),
-        }
-
-    INITFLT = {
-        "base_quota": ("capacity", filtering.parse_with_unit),
         }
 
     @transaction.commit_on_success
@@ -95,30 +87,19 @@ class Command(SynnefoCommand):
         else:
             filters = []
 
-        QHQ, INITQ = Q(), Q()
+        QHQ = Q()
         for flt in filters:
             q = filtering.make_query(flt, self.QHFLT)
             if q is not None:
                 QHQ &= q
-            q = filtering.make_query(flt, self.INITFLT)
-            if q is not None:
-                INITQ &= q
 
         overlimit = bool(options["overlimit"])
         if overlimit:
             QHQ &= Q(usage_max__gt=F("limit"))
 
-        with_custom = options["with_custom"]
-        if with_custom is not None:
-            qeq = Q(capacity=F("resource__uplimit"))
-            try:
-                INITQ &= ~qeq if utils.parse_bool(with_custom) else qeq
-            except ValueError as e:
-                raise CommandError(e)
-
         users = AstakosUser.objects.accepted()
-        qh_quotas, astakos_i = list_user_quotas(
-            users, qhflt=QHQ, initflt=INITQ)
+        qh_quotas = list_user_quotas(
+            users, qhflt=QHQ)
 
         if displayname:
             info = {}
@@ -128,5 +109,5 @@ class Command(SynnefoCommand):
             info = None
 
         print_data, labels = common.show_quotas(
-            qh_quotas, astakos_i, info, style=unit_style)
+            qh_quotas, info, style=unit_style)
         utils.pprint_table(self.stdout, print_data, labels, output_format)

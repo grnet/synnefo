@@ -8,7 +8,6 @@
 
 # IMAGE_DIR: directory location for disk images
 # IMAGE_DIR="/var/lib/snf-image"
-IMAGE_DIR=%IMAGE_DIR%
 
 # IMAGE_DEBUG: turn on debugging output for the scripts
 # IMAGE_DEBUG=no
@@ -43,7 +42,6 @@ IMAGE_DIR=%IMAGE_DIR%
 # for days.
 # HELPER_SOFT_TIMEOUT="20"
 # HELPER_HARD_TIMEOUT="5"
-HELPER_SOFT_TIMEOUT=100
 
 # HELPER_USER: For security reasons, it is recommended that the helper VM
 # runs as an unprivileged user. KVM drops root privileges and runs as
@@ -60,17 +58,14 @@ HELPER_SOFT_TIMEOUT=100
 
 # PITHOS_DB: Pithos database in SQLAlchemy format
 # PITHOS_DB="sqlite:////var/lib/pithos/backend.db"
-PITHOS_DB=postgresql://%SYNNEFO_USER%:%SYNNEFO_DB_PASSWD%@%DB_NODE%:5432/snf_pithos
 
 # PITHOS_DATA: Directory where pithos data are hosted
 # PITHOS_DATA="/var/lib/pithos/data"
-PITHOS_DATA=%PITHOS_DIR%/data
 
 # PROGRESS_MONITOR: External program that monitors the progress of the image
 # deployment. The snf-image monitor messages will be redirected to the standard
 # input of this program.
 # PROGRESS_MONITOR=""
-PROGRESS_MONITOR=snf-progress-monitor
 
 # UNATTEND: This variables overwrites the unattend.xml file used when deploying
 # a windows image. snf-image-helper will use its own unattend.xml file if this
@@ -87,4 +82,9 @@ PROGRESS_MONITOR=snf-progress-monitor
 # INSTALL_MBR="install-mbr"
 # TIMELIMIT="timelimit"
 # CURL="curl"
+IMAGE_DIR=%IMAGE_DIR%
+HELPER_SOFT_TIMEOUT=100
+PITHOS_DB=postgresql://%SYNNEFO_USER%:%SYNNEFO_DB_PASSWD%@%DB_NODE%:5432/snf_pithos
+PITHOS_DATA=%PITHOS_DIR%/data
+PROGRESS_MONITOR=snf-progress-monitor
 CURL="curl -k"

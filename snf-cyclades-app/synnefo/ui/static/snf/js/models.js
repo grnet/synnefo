@@ -1,4 +1,4 @@
-// Copyright 2011 GRNET S.A. All rights reserved.
+// Copyright 2014 GRNET S.A. All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or
 // without modification, are permitted provided that the following
@@ -334,6 +334,23 @@
         api: snf.api,
         api_type: 'compute',
         supportIncUpdates: true,
+        
+        mapAttrs: function() {
+          var params = _.toArray(arguments);
+          return this.map(function(i) { 
+            return _.map(params, function(attr) { 
+              return i.get(attr);
+            });
+          })
+        },
+
+        mapAttr: function(attr) {
+          return this.map(function(i) { return i.get(attr)})
+        },
+
+        filterAttr: function(attr, eq) {
+          return this.filter(function(i) { return i.get(attr) === eq})
+        },
 
         initialize: function() {
             models.Collection.__super__.initialize.apply(this, arguments);
@@ -352,6 +369,12 @@
         url: function(options, method) {
             return getUrl.call(this, this.base_url) + (
                     options.details || this.details && method != 'create' ? '/detail' : '');
+        },
+        
+        delay_fetch: function(delay, options) {
+          window.setTimeout(_.bind(function() {
+            this.fetch(options)
+          }, this), delay);
         },
 
         fetch: function(options) {
@@ -392,6 +415,7 @@
                 if (coll.add_on_create) {
                   coll.add(nextModel, options);
                 }
+                synnefo.api.trigger("quota:update");
                 if (success) success(nextModel, resp, xhr);
             };
             model.save(null, options);
@@ -618,6 +642,34 @@
             return parseInt(this.get("ram")) * 1024 * 1024;
         },
 
+        get_readable: function(key) {
+          var parser = function(v) { return v }
+          var getter = this.get;
+          if (key == 'ram') {
+            parser = synnefo.util.readablizeBytes
+            getter = this.ram_to_bytes
+          }
+          if (key == 'disk') {
+            parser = synnefo.util.readablizeBytes
+            getter = this.ram_to_bytes
+          }
+          if (key == 'cpu') {
+            parser = function(v) { return v + 'x' }
+          }
+
+          var val = getter.call(this, key);
+          return parser(val);
+        },
+
+        quotas: function() {
+          return {
+            'cyclades.vm': 1,
+            'cyclades.disk': this.disk_to_bytes(), 
+            'cyclades.ram': this.ram_to_bytes(),
+            'cyclades.cpu': this.get('cpu')
+          }
+        }
+
     });
     
     models.ParamsList = function(){this.initialize.apply(this, arguments)};
@@ -735,6 +787,10 @@
               return this.in_transition();
             }
           ]
+        },
+
+        storage_attrs: {
+          'tenant_id': ['projects', 'project']
         },
 
         initialize: function(params) {
@@ -1104,8 +1160,10 @@
         },
         
         can_start: function(flv, count_current) {
+          var self = this;
           var get_quota = function(key) {
-            return synnefo.storage.quotas.get(key).get('available');
+            if (!self.get('project')) { return false }
+            return self.get('project').quotas.get(key).get('available');
           }
           var flavor = flv || this.get_flavor();
           var vm_ram_current = 0, vm_cpu_current = 0;
@@ -1134,6 +1192,10 @@
 
         can_resize: function() {
           return this.get('status') == 'STOPPED';
+        },
+
+        can_reassign: function() {
+          return true;
         },
 
         handle_stats_error: function() {
@@ -1399,6 +1461,7 @@
         // call rename api
         rename: function(new_name) {
             //this.set({'name': new_name});
+            var self = this;
             this.sync("update", this, {
                 critical: true,
                 data: {
@@ -1408,6 +1471,7 @@
                 }, 
                 success: _.bind(function(){
                     snf.api.trigger("call");
+                    this.set({'name': new_name});
                 }, this)
             });
         },
@@ -1515,9 +1579,21 @@
                                              // set state after successful call
                                              self.state('DESTROY');
                                              success.apply(this, arguments);
-
+                                             synnefo.api.trigger("quotas:call", 20);
                                          },  
                                          error, 'destroy', params);
+                    break;
+                case 'reassign':
+                    this.__make_api_call(this.get_action_url(), // vm actions url
+                                         "create", // create so that sync later uses POST to make the call
+                                         {reassign: {project:params.project_id}}, // payload
+                                         function() {
+                                             self.state('reassign');
+                                             self.set({'tenant_id': params.project_id});
+                                             success.apply(this, arguments);
+                                             snf.api.trigger("call");
+                                         },  
+                                         error, 'reassign', params);
                     break;
                 case 'resize':
                     this.__make_api_call(this.get_action_url(), // vm actions url
@@ -1660,15 +1736,17 @@
         'console',
         'destroy',
         'resize',
+        'reassign',
         'snapshot'
     ]
 
     models.VM.TASK_STATE_STATUS_MAP = {
-      'BULDING': 'BUILD',
+      'BUILDING': 'BUILD',
       'REBOOTING': 'REBOOT',
       'STOPPING': 'SHUTDOWN',
       'STARTING': 'START',
       'RESIZING': 'RESIZE',
+      'REASSIGNING': 'REASSIGN',
       'CONNECTING': 'CONNECT',
       'DISCONNECTING': 'DISCONNECT',
       'DESTROYING': 'DESTROY'
@@ -1678,8 +1756,8 @@
         'UNKNWON'       : ['destroy'],
         'BUILD'         : ['destroy'],
         'REBOOT'        : ['destroy'],
-        'STOPPED'       : ['start', 'destroy', 'resize', 'snapshot'],
-        'ACTIVE'        : ['shutdown', 'destroy', 'reboot', 'console', 'resize', 'snapshot'],
+        'STOPPED'       : ['start', 'destroy', 'reassign', 'resize', 'snapshot'],
+        'ACTIVE'        : ['shutdown', 'destroy', 'reboot', 'console', 'reassign', 'resize', 'snapshot'],
         'ERROR'         : ['destroy'],
         'DELETED'       : ['destroy'],
         'DESTROY'       : ['destroy'],
@@ -1687,7 +1765,8 @@
         'START'         : ['destroy'],
         'CONNECT'       : ['destroy'],
         'DISCONNECT'    : ['destroy'],
-        'RESIZE'        : ['destroy']
+        'RESIZE'        : ['destroy'],
+        'REASSIGN'      : ['destroy']
     }
     
     models.VM.AVAILABLE_ACTIONS_INACTIVE = {}
@@ -1701,6 +1780,7 @@
         'ACTIVE',
         'ERROR',
         'DELETED',
+        'REASSIGN',
         'RESIZE'
     ]
 
@@ -1719,18 +1799,20 @@
         'CONNECT',
         'DISCONNECT',
         'FIREWALL',
+        'REASSIGN',
         'RESIZE'
     ]);
     
     models.VM.STATES_TRANSITIONS = {
         'DESTROY' : ['DELETED'],
         'SHUTDOWN': ['ERROR', 'STOPPED', 'DESTROY'],
-        'STOPPED': ['ERROR', 'ACTIVE', 'DESTROY'],
-        'ACTIVE': ['ERROR', 'STOPPED', 'REBOOT', 'SHUTDOWN', 'DESTROY'],
+        'STOPPED': ['ERROR', 'ACTIVE', 'DESTROY', 'RESIZE', 'REASSIGN'],
+        'ACTIVE': ['ERROR', 'STOPPED', 'REBOOT', 'SHUTDOWN', 'DESTROY', 'REASSIGN'],
         'START': ['ERROR', 'ACTIVE', 'DESTROY'],
         'REBOOT': ['ERROR', 'ACTIVE', 'STOPPED', 'DESTROY'],
         'BUILD': ['ERROR', 'ACTIVE', 'DESTROY'],
-        'RESIZE': ['ERROR', 'STOPPED']
+        'RESIZE': ['ERROR', 'STOPPED'],
+        'REASSIGN': ['ERROR', 'STOPPED', 'ACTIVE']
     }
 
     models.VM.TRANSITION_STATES = [
@@ -1740,6 +1822,7 @@
         'REBOOT',
         'BUILD',
         'RESIZE',
+        'REASSIGN',
         'DISCONNECT',
         'CONNECT'
     ]
@@ -2165,7 +2248,7 @@
             return vm_data.metadata && vm_data.metadata
         },
 
-        create: function (name, image, flavor, meta, extra, callback) {
+        create: function (name, image, flavor, meta, project, extra, callback) {
 
             if (this.copy_image_meta) {
                 if (synnefo.config.vm_image_common_metadata) {
@@ -2183,11 +2266,11 @@
             }
             
             opts = {name: name, imageRef: image.id, flavorRef: flavor.id, 
-                    metadata:meta}
+                    metadata:meta, project: project.id}
             opts = _.extend(opts, extra);
             
             var cb = function(data) {
-              synnefo.storage.quotas.get('cyclades.vm').increase();
+              synnefo.api.trigger("quota:update");
               callback(data);
             }
 
@@ -2260,11 +2343,13 @@
 
         rename: function(new_name) {
           //this.set({'name': new_name});
+          var self = this;
           this.sync("update", this, {
             critical: true,
             data: {'name': new_name}, 
             success: _.bind(function(){
               snf.api.trigger("call");
+              this.set({'name': new_name});
             }, this)
           });
         },
@@ -2400,6 +2485,9 @@
 
   
     models.Quota = models.Model.extend({
+        storage_attrs: {
+          'project_id': ['projects', 'project']
+        },
 
         initialize: function() {
             models.Quota.__super__.initialize.apply(this, arguments);
@@ -2476,43 +2564,104 @@
             return snf.util.readablizeBytes(value);
         }
     });
-
+    
     models.Quotas = models.Collection.extend({
         model: models.Quota,
         api_type: 'accounts',
         path: 'quotas',
         supportIncUpdates: false,
+
+        required_quota: {
+          'vm': {
+            'cyclades.vm': 1,
+            'cyclades.ram': 1,
+            'cyclades.cpu': 1,
+            'cyclades.disk': 1
+          },
+          'network': {
+            'cyclades.network.private': 1
+          },
+          'ip': {
+            'cyclades.floating_ip': 1
+          }
+        },
+
         parse: function(resp) {
-            filtered = _.map(resp.system, function(value, key) {
-                var available = (value.limit - value.usage) || 0;
-                var available_active = available;
-                var keysplit = key.split(".");
-                var limit_active = value.limit;
-                var usage_active = value.usage;
-                keysplit[keysplit.length-1] = "total_" + keysplit[keysplit.length-1];
-                var activekey = keysplit.join(".");
-                var exists = resp.system[activekey];
-                if (exists) {
-                    available_active = exists.limit - exists.usage;
-                    limit_active = exists.limit;
-                    usage_active = exists.usage;
+            var parsed = [];
+            _.each(resp, function(resources, uuid) {
+              parsed = _.union(parsed, _.map(resources, function(value, key) {
+                var quota_available = value.limit - value.usage || 0;
+                var total_available = quota_available;
+                var project_available = value.project_limit - value.project_usage || 0;
+                var limit = value.limit;
+                var usage = value.usage;
+                
+                var available = quota_available;
+                var total_available = available;
+
+                // priority to project limits
+                if (project_available < available ) {
+                  available = project_available;
+                  limit = value.project_limit;
+                  usage = value.project_usage;
+                  total_available = available;
                 }
-                return _.extend(value, {'name': key, 'id': key, 
+
+                var available_active = available;
+
+                // corresponding total quota
+                var keysplit = key.split(".");
+                var last_part = keysplit.pop();
+                var activekey = keysplit.join(".") + "." + "total_" + last_part;
+                var total = resp[uuid][activekey];
+                if (total) {
+                  total_available = total.limit - total.usage;
+                  var total_project_available = total.project_limit - total.project_usage;
+                  var total_limit = total.limit;
+                  var total_usage = total.usage;
+                  if (total_project_available < total_available) {
+                    total_available = total_project_available;
+                    total_limit = total.project_limit;
+                    total_usage = total.project_usage;
+                  }
+                  if (total_available < available) {
+                    available = total_available;
+                    limit = total_limit;
+                    usage = total_usage;
+                  }
+                }
+
+                var limit_active = limit;
+                var usage_active = usage;
+
+                var id = uuid + ":" + key;
+                if (available < 0) { available = 0 }
+                return _.extend(value, {
+                          'name': key, 
+                          'id': id, 
                           'available': available,
                           'available_active': available_active,
+                          'total_available': total_available,
                           'limit_active': limit_active,
+                          'project_id': uuid,
                           'usage_active': usage_active,
-                          'resource': snf.storage.resources.get(key)});
+                          'resource': snf.storage.resources.get(key)
+                });
+              }));
             });
-            return filtered;
+            return parsed;
         },
         
+        project_key: function(project, key) {
+          return project + ":" + key;
+        },
+
         get_by_id: function(k) {
           return this.filter(function(q) { return q.get('name') == k})[0]
         },
 
         get_available_for_vm: function(options) {
-          var quotas = synnefo.storage.quotas;
+          var quotas = this;
           var key = 'available';
           var available_quota = {};
           _.each(['cyclades.ram', 'cyclades.cpu', 'cyclades.disk'], 
@@ -2521,6 +2670,34 @@
               available_quota[key.replace('cyclades.', '')] = value;
           });
           return available_quota;
+        },
+        
+        can_create: function(type) {
+          return this.get_available_projects(this.required_quota[type]).length > 0;
+        },
+
+        get_available_projects: function(quotas) {
+          return synnefo.storage.projects.filter(function(project) {
+            return project.quotas.can_fit(quotas);
+          });
+        },
+
+        can_fit: function(quotas, total, _issues) {
+          var issues = [];
+          if (total === undefined) { total = false }
+          _.each(quotas, function(value, key) {
+            var q = this.get(key);
+            if (!q) { issues.push(key); return }
+            var quota = q.get('available_active');
+            if (total) {
+              quota = q.get('available');
+            }
+            if (quota < value) {
+              issues.push(key);
+            }
+          }, this);
+          if (_issues) { return issues }
+          return issues.length === 0;
         }
     })
 
@@ -2533,11 +2710,88 @@
         api_type: 'accounts',
         path: 'resources',
         model: models.Network,
+        display_name_map: {
+          'cyclades.vm': 'Machines',
+          'cyclades.ram': 'Memory size',
+          'cyclades.total_ram': 'Memory size (total)',
+          'cyclades.cpu': 'CPUs',
+          'cyclades.total_cpu': 'CPUs (total)',
+          'cyclades.floating_ip': 'IP Addresses',
+          'pithos.diskpace': 'Storage space',
+          'cyclades.disk': 'Disk size',
+          'cyclades.network.private': 'Private networks'
+        },
 
         parse: function(resp) {
             return _.map(resp, function(value, key) {
-                return _.extend(value, {'name': key, 'id': key});
-            })
+                var display_name = this.display_name_map[key] || key;
+                return _.extend(value, {
+                  'name': key, 
+                  'id': key,
+                  'display_name': display_name
+                });
+            }, this);
+        }
+    });
+    
+    models.ProjectQuotas = models.Quotas.extend({})
+    _.extend(models.ProjectQuotas.prototype, Backbone.FilteredCollection.prototype);
+    models.ProjectQuotas.prototype.get = function(key) {
+      key = this.project_id + ":" + key;
+      return models.ProjectQuotas.__super__.get.call(this, key);
+    }
+
+    models.Project = models.Model.extend({
+        api_type: 'accounts',
+        path: 'projects',
+
+        initialize: function() {
+          var self = this;
+          this.quotas = new models.ProjectQuotas(undefined, {
+            collection: synnefo.storage.quotas,
+            collectionFilter: function(m) {
+              return self.id == m.get('project_id')
+          }});
+          this.quotas.bind('change', function() {
+            self.trigger('change:_quotas');
+          });
+          this.quotas.project_id = this.id;
+          models.Project.__super__.initialize.apply(this, arguments);
+        }
+    });
+
+    models.Projects = models.Collection.extend({
+        api_type: 'accounts',
+        path: 'projects',
+        model: models.Project,
+        supportIncUpdates: false,
+        user_project_uuid: null,
+        
+        url: function() {
+          var args = Array.prototype.splice.call(arguments, 0);
+          var url = models.Projects.__super__.url.apply(this, args);
+          return url + "?mode=member";
+        },
+
+        parse: function(resp) {
+          _.each(resp, function(project){
+            if (project.base_project) {
+              this.user_project_uuid = project.id;
+            }
+            if (project.id == synnefo.user.get_username()) {
+              project.name = "User project"
+            }
+          }, this);
+          return resp;
+        },
+
+        get_user_project: function() {
+          return this.get(synnefo.user.current_username);
+        },
+
+        comparator: function(project) {
+            if (project.get('base_project')) { return -100 }
+            return project.get('name');
         }
     });
     
@@ -2548,6 +2802,7 @@
     snf.storage.keys = new models.PublicKeys();
     snf.storage.resources = new models.Resources();
     snf.storage.quotas = new models.Quotas();
+    snf.storage.projects = new models.Projects();
     snf.storage.public_pools = new models.PublicPools();
 
 })(this);

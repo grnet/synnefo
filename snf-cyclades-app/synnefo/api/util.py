@@ -51,7 +51,7 @@ from synnefo.db.models import (Flavor, VirtualMachine, VirtualMachineMetadata,
                                Network, NetworkInterface, SecurityGroup,
                                BridgePoolTable, MacPrefixPoolTable, IPAddress,
                                IPPoolTable)
-from synnefo.plankton.utils import image_backend
+from synnefo.plankton.backend import PlanktonBackend
 
 from synnefo.cyclades_settings import cyclades_services, BASE_HOST
 from synnefo.lib.services import get_service_path
@@ -166,7 +166,7 @@ def get_vm_meta(vm, key):
 def get_image(image_id, user_id):
     """Return an Image instance or raise ItemNotFound."""
 
-    with image_backend(user_id) as backend:
+    with PlanktonBackend(user_id) as backend:
         return backend.get_image(image_id)
 
 

@@ -54,14 +54,25 @@ from synnefo_tools.burnin.logger import Log
 
 # --------------------------------------------------------------------
 # Global variables
-logger = None   # Invalid constant name. pylint: disable-msg=C0103
-success = None  # Invalid constant name. pylint: disable-msg=C0103
+logger = None   # pylint: disable=invalid-name
+success = None  # pylint: disable=invalid-name
 SNF_TEST_PREFIX = "snf-test-"
 CONNECTION_RETRY_LIMIT = 2
 SYSTEM_USERS = ["images@okeanos.grnet.gr", "images@demo.synnefo.org"]
 KB = 2**10
 MB = 2**20
 GB = 2**30
+
+QADD = 1
+QREMOVE = -1
+
+QDISK = "cyclades.disk"
+QVM = "cyclades.vm"
+QPITHOS = "pithos.diskspace"
+QRAM = "cyclades.ram"
+QIP = "cyclades.floating_ip"
+QCPU = "cyclades.cpu"
+QNET = "cyclades.network.private"
 
 
 # --------------------------------------------------------------------
@@ -79,7 +90,7 @@ class BurninTestResult(unittest.TestResult):
         super(BurninTestResult, self).startTest(test)
         logger.log(test.__class__.__name__, test.shortDescription())
 
-    # Method could be a function. pylint: disable-msg=R0201
+    # pylint: disable=no-self-use
     def _test_failed(self, test, err):
         """Test failed"""
         # Get class name
@@ -105,11 +116,25 @@ class BurninTestResult(unittest.TestResult):
         super(BurninTestResult, self).addFailure(test, err)
         self._test_failed(test, err)
 
+    # pylint: disable=fixme
+    def addSkip(self, test, reason):  # noqa
+        """Called when the test case test is skipped
+
+        If reason starts with "__SkipClass__: " then
+        we should stop the execution of all the TestSuite.
+
+        TODO: There should be a better way to do this
+
+        """
+        super(BurninTestResult, self).addSkip(test, reason)
+        if reason.startswith("__SkipClass__: "):
+            self.stop()
+
 
 # --------------------------------------------------------------------
 # Helper Classes
-# Too few public methods. pylint: disable-msg=R0903
-# Too many instance attributes. pylint: disable-msg=R0902
+# pylint: disable=too-few-public-methods
+# pylint: disable=too-many-instance-attributes
 class Clients(object):
     """Our kamaki clients"""
     auth_url = None
@@ -186,7 +211,7 @@ class Proper(object):
 
 # --------------------------------------------------------------------
 # BurninTests class
-# Too many public methods (45/20). pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class BurninTests(unittest.TestCase):
     """Common class that all burnin tests should implement"""
     clients = Clients()
@@ -203,6 +228,7 @@ class BurninTests(unittest.TestCase):
     failfast = None
 
     quotas = Proper(value=None)
+    uuid = Proper(value=None)
 
     @classmethod
     def setUpClass(cls):  # noqa
@@ -224,24 +250,27 @@ class BurninTests(unittest.TestCase):
         self.info("Image url is %s", self.clients.image_url)
 
         self.quotas = self._get_quotas()
-        self.info("  Disk usage is %s bytes",
-                  self.quotas['system']['cyclades.disk']['usage'])
-        self.info("  VM usage is %s",
-                  self.quotas['system']['cyclades.vm']['usage'])
-        self.info("  DiskSpace usage is %s bytes",
-                  self.quotas['system']['pithos.diskspace']['usage'])
-        self.info("  Ram usage is %s bytes",
-                  self.quotas['system']['cyclades.ram']['usage'])
-        self.info("  Floating IPs usage is %s",
-                  self.quotas['system']['cyclades.floating_ip']['usage'])
-        self.info("  CPU usage is %s",
-                  self.quotas['system']['cyclades.cpu']['usage'])
-        self.info("  Network usage is %s",
-                  self.quotas['system']['cyclades.network.private']['usage'])
+        for puuid, quotas in self.quotas.items():
+            project_name = self._get_project_name(puuid)
+            self.info("  Project %s:", project_name)
+            self.info("    Disk usage is         %s bytes",
+                      quotas['cyclades.disk']['usage'])
+            self.info("    VM usage is           %s",
+                      quotas['cyclades.vm']['usage'])
+            self.info("    DiskSpace usage is    %s bytes",
+                      quotas['pithos.diskspace']['usage'])
+            self.info("    Ram usage is          %s bytes",
+                      quotas['cyclades.ram']['usage'])
+            self.info("    Floating IPs usage is %s",
+                      quotas['cyclades.floating_ip']['usage'])
+            self.info("    CPU usage is          %s",
+                      quotas['cyclades.cpu']['usage'])
+            self.info("    Network usage is      %s",
+                      quotas['cyclades.network.private']['usage'])
 
     def _run_tests(self, tcases):
         """Run some generated testcases"""
-        global success  # Using global. pylint: disable-msg=C0103,W0603,W0602
+        global success  # pylint: disable=invalid-name, global-statement
 
         for tcase in tcases:
             self.info("Running testsuite %s", tcase.__name__)
@@ -270,15 +299,17 @@ class BurninTests(unittest.TestCase):
     def error(self, msg, *args):
         """Pass the section value to logger"""
         logger.error(self.suite_name, msg, *args)
+        self.fail(msg % args)
 
     # ----------------------------------
     # Helper functions that every testsuite may need
     def _get_uuid(self):
         """Get our uuid"""
-        authenticate = self.clients.astakos.authenticate()
-        uuid = authenticate['access']['user']['id']
-        self.info("User's uuid is %s", uuid)
-        return uuid
+        if self.uuid is None:
+            authenticate = self.clients.astakos.authenticate()
+            self.uuid = authenticate['access']['user']['id']
+            self.info("User's uuid is %s", self.uuid)
+        return self.uuid
 
     def _get_username(self):
         """Get our User Name"""
@@ -319,7 +350,6 @@ class BurninTests(unittest.TestCase):
                     return su_value
                 else:
                     self.error("Unrecognized system-user type %s", su_type)
-                    self.fail("Unrecognized system-user type")
             except ValueError:
                 msg = "Invalid system-user format: %s. Must be [id|name]:.+"
                 self.warning(msg, self.system_user)
@@ -342,6 +372,12 @@ class BurninTests(unittest.TestCase):
         if condition:
             self.info("Test skipped: %s" % msg)
             self.skipTest(msg)
+
+    def _skip_suite_if(self, condition, msg):
+        """Skip the whole testsuite"""
+        if condition:
+            self.info("TestSuite skipped: %s" % msg)
+            self.skipTest("__SkipClass__: %s" % msg)
 
     # ----------------------------------
     # Flavors
@@ -388,7 +424,6 @@ class BurninTests(unittest.TestCase):
                     [f for f in flavors if str(f['id']) == flv_value]
             else:
                 self.error("Unrecognized flavor type %s", flv_type)
-                self.fail("Unrecognized flavor type")
 
             # Append and continue
             ret_flavors.extend(filtered_flvs)
@@ -459,7 +494,6 @@ class BurninTests(unittest.TestCase):
                      i['id'].lower() == img_value.lower()]
             else:
                 self.error("Unrecognized image type %s", img_type)
-                self.fail("Unrecognized image type")
 
             # Append and continue
             ret_images.extend(filtered_imgs)
@@ -508,54 +542,51 @@ class BurninTests(unittest.TestCase):
     def _get_quotas(self):
         """Get quotas"""
         self.info("Getting quotas")
-        return self.clients.astakos.get_quotas()
+        return dict(self.clients.astakos.get_quotas())
 
-    # Invalid argument name. pylint: disable-msg=C0103
-    # Too many arguments. pylint: disable-msg=R0913
-    def _check_quotas(self, disk=None, vm=None, diskspace=None,
-                      ram=None, ip=None, cpu=None, network=None):
-        """Check that quotas' changes are consistent"""
-        assert any(v is None for v in
-                   [disk, vm, diskspace, ram, ip, cpu, network]), \
-            "_check_quotas require arguments"
+    # pylint: disable=invalid-name
+    # pylint: disable=too-many-arguments
+    def _check_quotas(self, changes):
+        """Check that quotas' changes are consistent
+
+        @param changes: A dict of the changes that have been made in quotas
+
+        """
+        if not changes:
+            return
 
         self.info("Check that quotas' changes are consistent")
         old_quotas = self.quotas
         new_quotas = self._get_quotas()
         self.quotas = new_quotas
 
-        # Check Disk usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.disk', disk)
-        # Check VM usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.vm', vm)
-        # Check DiskSpace usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'pithos.diskspace', diskspace)
-        # Check Ram usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.ram', ram)
-        # Check Floating IPs usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.floating_ip', ip)
-        # Check CPU usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.cpu', cpu)
-        # Check Network usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.network.private', network)
+        self.assertListEqual(sorted(old_quotas.keys()),
+                             sorted(new_quotas.keys()))
 
-    def _check_quotas_aux(self, old_quotas, new_quotas, resource, value):
-        """Auxiliary function for _check_quotas"""
-        old_value = old_quotas['system'][resource]['usage']
-        new_value = new_quotas['system'][resource]['usage']
-        if value is not None:
-            assert isinstance(value, int), \
-                "%s value has to be integer" % resource
-            old_value += value
-        self.assertEqual(old_value, new_value,
-                         "%s quotas don't match" % resource)
+        # Take old_quotas and apply changes
+        for prj, values in changes.items():
+            self.assertIn(prj, old_quotas.keys())
+            for q_name, q_mult, q_value, q_unit in values:
+                if q_unit is None:
+                    q_unit = 1
+                q_value = q_mult*int(q_value)*q_unit
+                assert isinstance(q_value, int), \
+                    "Project %s: %s value has to be integer" % (prj, q_name)
+                old_quotas[prj][q_name]['usage'] += q_value
+                old_quotas[prj][q_name]['project_usage'] += q_value
+
+        self.assertEqual(old_quotas, new_quotas)
+
+    # ----------------------------------
+    # Projects
+    def _get_project_name(self, puuid):
+        """Get the name of a project"""
+        uuid = self._get_uuid()
+        if puuid == uuid:
+            return "base"
+        else:
+            project_info = self.clients.astakos.get_project(puuid)
+            return project_info['name']
 
 
 # --------------------------------------------------------------------
@@ -567,7 +598,7 @@ def initialize(opts, testsuites, stale_testsuites):
 
     """
     # Initialize logger
-    global logger  # Using global statement. pylint: disable-msg=C0103,W0603
+    global logger  # pylint: disable=invalid-name, global-statement
     curr_time = datetime.datetime.now()
     logger = Log(opts.log_folder, verbose=opts.verbose,
                  use_colors=opts.use_colors, in_parallel=False,
@@ -609,7 +640,8 @@ def initialize(opts, testsuites, stale_testsuites):
 # Run Burnin
 def run_burnin(testsuites, failfast=False):
     """Run burnin testsuites"""
-    # Using global. pylint: disable-msg=C0103,W0603,W0602
+    # pylint: disable=invalid-name,global-statement
+    # pylint: disable=global-variable-not-assigned
     global logger, success
 
     success = True
@@ -624,7 +656,9 @@ def run_burnin(testsuites, failfast=False):
 
 def run_tests(tcases, failfast=False):
     """Run some testcases"""
-    global success  # Using global. pylint: disable-msg=C0103,W0603,W0602
+    # pylint: disable=invalid-name,global-statement
+    # pylint: disable=global-variable-not-assigned
+    global success
 
     for tcase in tcases:
         was_success = run_test(tcase)

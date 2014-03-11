@@ -43,7 +43,7 @@ from django.db.models import Count, Sum
 
 from snf_django.lib.astakos import UserCache
 from synnefo.db.models import VirtualMachine, Network, Backend
-from synnefo.plankton.utils import image_backend
+from synnefo.plankton.backend import PlanktonBackend
 from synnefo.logic import backend as backend_mod
 
 
@@ -204,7 +204,7 @@ class ImageCache(object):
     def get_image(self, imageid, userid):
         if not imageid in self.images:
             try:
-                with image_backend(userid) as ib:
+                with PlanktonBackend(userid) as ib:
                     image = ib.get_image(imageid)
                 properties = image.get("properties")
                 os = properties.get("os",

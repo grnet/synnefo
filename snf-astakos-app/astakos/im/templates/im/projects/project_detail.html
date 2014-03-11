@@ -3,109 +3,101 @@
 {% load astakos_tags filters django_tables2 %}
 
 {% block page.body %}
-{% with object.chain as project %}
 <div class="projects">
   <h2>
-    <em>
-      {% if owner_mode or admin_mode %}
-        {% if project_view %}
-           PROJECT {{ project.state_display|upper }}
-          {% with project.last_pending_modification as last_pending %}
-          {% if last_pending != None %} -
-             <a href="{% url astakos.im.views.project_app last_pending.pk %}">
-               MODIFICATION PENDING</a>
-          {% else %}
-             <!-- note that pending modifications have priority -->
-             {% if object.has_denied_modifications %} -
-             <a href="{% url astakos.im.views.project_app object.last_denied.pk %}">
-               MODIFICATION DENIED</a>
-             {% endif %}
-          {% endif %}
-          {% endwith %}
-        {% else %}
-          <!-- application view -->
-           PROJECT {% if object.is_modification %} MODIFICATION {% endif %}
-          {{ object.state_display|upper }} 
-        {% endif %}
+      <em>
+      {% block object.status %}
+         PROJECT {{ object.state_display|upper}}
+      {% endblock %}
 
-      {% else %}
-        <!-- third user -->
-        <!-- assert in project view -->
-        {% if project.is_deactivated %}
-        PROJECT {{ project.state_display|upper }} -
-        {% endif %}
-        {{ mem_display|upper }} 
+      {% if owner_mode or admin_mode %}
+      {% block object.modification_status %}
+      {% if last_app|is_pending_app %}
+          - <a href="{% url project_app project.uuid last_app.pk %}">PENDING MODIFICATION</a>
+      {% endif %}
+      {% if last_app|is_denied_app %}
+          - <a href="{% url project_app project.uuid last_app.pk %}">DENIED MODIFICATION</a>
+      {% endif %}
+      {% endblock %}
       {% endif %}
     </em>
 
     <span>
-      {% if not project_view %}
-        <!-- owner mode only assumed -->
-        {% if object.is_modification %}
-          <span class="extratitle">MODIFICATION OF </span>
-        {% endif %}
-      {% endif %}
-      {{ object.name|upper }} 
+        {% block project.title %}
+        {{ object.realname|upper }}
+        {% endblock %}
     </span>
-    
-    {% block project.actions %}
-    {% include "im/projects/_project_detail_actions.html" %}
+
+    {% block object.actions %}
+        {% include "im/projects/_project_detail_actions.html" %}
     {% endblock %}
   </h2>
   {% block inner_project %}
   <div class="full-dotted">
     <h3>PROJECT DETAILS</h3>
     <dl class="alt-style">
+      {% block page.project_details %}
       <dt>Name</dt>
-      <dd>{{ object.name }}&nbsp;</dd>
+      <dd>{{ object.realname }}&nbsp;</dd>
       <dt>Homepage url</dt>
       <dd>
         {% if object.homepage %}
-        <a href="{{ object.homepage }}">{{ object.homepage }}</a>
+            <a href="{{ object.homepage }}">{{ object.homepage }}</a>
         {% else %}
-        Not set yet
+            Not set yet
         {% endif %}
       </dd>
       <dt>Description</dt>
       <dd>{{ object.description }}&nbsp;</dd>
 
       {% if owner_mode %}
-        <dt>Application date</dt>
-        <dd>{{object.issue_date|date:"d/m/Y"}}&nbsp;</dd>
+      <dt>Creation date</dt>
+        {% block object.created_at %}
+        <dd>{{object.creation_date|date:"d/m/Y"}}&nbsp;</dd>
+        {% endblock %}
       {% endif %}
 
-      <dt>Start date</dt>
-      <dd>{{object.start_date|date:"d/m/Y"}}&nbsp;</dd>
       <dt>End Date</dt>
       <dd>{{object.end_date|date:"d/m/Y"}}&nbsp;</dd>
 
-      {% if owner_mode %}
-        <dt>Comments</dt>
-        <dd>{{ object.comments }}&nbsp;</dd>
-      {% endif %}
-
       <dt>Owner</dt>
       <dd>
-        {% if owner_mode %}
-        Me
-        {% else %}
-        {{object.owner.realname}} {% if admin_mode or user.is_superuser %}({{object.owner.email}}){% endif %}
+          {% if owner_mode %}
+              Me
+          {% else %} 
+          {{ object.owner.realname }} 
+          {% if admin_mode or user.is_superuser %}
+            ({{object.owner.email}})
+          {% endif %}
         {% endif %}
         &nbsp;
       </dd>
+      {% endblock page.project_details %}
     </dl>
   </div>
  
 
   <div class="full-dotted">
-    <h3>RESOURCES</h3>
-    {% if object.projectresourcegrant_set.all %}
+      <h3>{% block page.resources_heading %}RESOURCES (per user / total){% endblock %}</h3>
+    {% if resources_set.all %}
     <dl class="alt-style">
-      {% for rp in object.projectresourcegrant_set.all %}
-      <dt>{{rp.resource.pluralized_display_name}} per user</dt>
-      <dd>{{rp.display_member_capacity}}</dd>
+        {% for rp in resources_set.all|sorted_resources %}
+          {% if rp.resource.ui_visible %}
+          <dt>{{rp.resource.pluralized_display_name}}</dt>
+            <dd>
+                {{ rp.display_member_capacity|default:"(not set)" }}
+                {% if is_modification %}
+                {{ rp|resource_diff:"member" }}
+                {% endif %}
+                /
+                {{ rp.display_project_capacity|default:"(not set)" }}
+                {% if is_modification %}
+                {{ rp|resource_diff:"project" }}
+                {% endif %}
+            </dd>
+        {% endif %}
       {% empty %}
-      No resources
+      <p>No resources</p>
       {% endfor %}
     </dl>
     {% else %}
@@ -113,13 +105,13 @@
     {% endif %}
   </div>
 
- 
+  {% block page.members %} 
   <div class="full-dotted">
 
     <h3>
-      {% if owner_mode and project_view %}
+      {% if owner_mode %}
           {% if project.is_alive %}
-           <a href="{% url project_members object.chain_id %}">MEMBERS </a>
+           <a href="{% url project_members project.uuid %}">MEMBERS </a>
           {% else %}
           MEMBERS
           {% endif %}
@@ -145,9 +137,9 @@
       <dd>
         {{ object.member_leave_policy_display|title }}
       </dd>
-       {% if owner_mode and project_view %}
-          {% if project.is_alive %}
-      <dt><a href="{% url project_approved_members object.chain_id %}" title="view approved members">Approved members</a></dt>
+       {% if owner_mode %}
+          {% if object.is_alive %}
+      <dt><a href="{% url project_approved_members project.uuid %}" title="view approved members">Approved members</a></dt>
       <dd>{{ approved_members_count }}
         <span class="faint"> 
           {% if remaining_memberships_count != None %}
@@ -157,17 +149,20 @@
           {% else %}&nbsp;{% endif %} 
         </span>
       </dd>
-      <dt><a href="{% url project_pending_members object.chain_id %}" title="view pending members">Members pending approval</a></dt>
+      <dt><a href="{% url project_pending_members project.uuid %}" title="view pending members">Members pending approval</a></dt>
       <dd>{{ pending_members_count }}</dd>
-        {% if not project.is_deactivated %}
+        {% if not object.is_deactivated %}
     </dl>    
-    {% include 'im/projects/addmembers_form.html' %}
-           
+      {% if not is_application %}
+      {% include 'im/projects/addmembers_form.html' %}
+      {% endif %}
             {% endif %}
           {% endif %}
        {% endif %}
 
-  </div>
+   </div>
+  {% endblock page.members %} 
+
 {% endblock inner_project %}  
   <div class="full-dotted">
     <p>
@@ -175,5 +170,4 @@
     </p>
   </div>
 </div>
-{% endwith %}
 {% endblock %}

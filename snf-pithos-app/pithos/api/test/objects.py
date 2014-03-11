@@ -669,6 +669,24 @@ class ObjectPut(PithosAPITest):
         r = self.put(url, data=data, HTTP_ETAG='123')
         self.assertEqual(r.status_code, 422)
 
+    def test_upload_if_none_match(self):
+        cname = self.container
+        oname = get_random_name()
+        data = get_random_data()
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.put(url, data=data, HTTP_IF_NONE_MATCH='*')
+        self.assertEqual(r.status_code, 201)
+
+        r = self.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.content, data)
+        self.assertTrue('ETag' in r)
+        etag = r['ETag']
+
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.put(url, data=data, HTTP_IF_NONE_MATCH=etag)
+        self.assertEqual(r.status_code, 412)
+
 #    def test_chunked_transfer(self):
 #        cname = self.container
 #        oname = '/%s' % get_random_name()

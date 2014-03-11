@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -62,7 +62,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a port ID")
 
-        port = common.get_port(args[0])
+        port = common.get_resource("port", args[0])
 
         pprint.pprint_port(port, stdout=self.stdout)
         self.stdout.write('\n\n')

@@ -1,5 +1,38 @@
 #!/usr/bin/python
 
+# Copyright (C) 2010, 2011, 2012, 2013 GRNET S.A. All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or
+# without modification, are permitted provided that the following
+# conditions are met:
+#
+#   1. Redistributions of source code must retain the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer.
+#
+#   2. Redistributions in binary form must reproduce the above
+#      copyright notice, this list of conditions and the following
+#      disclaimer in the documentation and/or other materials
+#      provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
+# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A. OR
+# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
+# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# The views and conclusions contained in the software and
+# documentation are those of the authors and should not be
+# interpreted as representing official policies, either expressed
+# or implied, of GRNET S.A.
+
 import time
 import ipaddr
 import os
@@ -41,12 +74,13 @@ if not sys.stdout.isatty():
 
 
 class Host(object):
-    def __init__(self, hostname, ip, mac, domain, os):
+    def __init__(self, hostname, ip, mac, domain, os, passwd):
         self.hostname = hostname
         self.ip = ip
         self.mac = mac
         self.domain = domain
         self.os = os
+        self.passwd = passwd
 
     @property
     def fqdn(self):
@@ -54,23 +88,34 @@ class Host(object):
 
     @property
     def arecord(self):
-        return self.hostname + " IN A " + self.ip + "\n"
+        return self.fqdn + " 300 A " + self.ip
 
     @property
     def ptrrecord(self):
-        return ".".join(raddr(self.ip)) + " IN PTR " + self.fqdn + ".\n"
+        return ".".join(raddr(self.ip)) + ".in-addr.arpa 300 PTR " + self.fqdn
+
+    @property
+    def cnamerecord(self):
+        return ""
 
 
 class Alias(Host):
     def __init__(self, host, alias):
         super(Alias, self).__init__(host.hostname, host.ip, host.mac,
-                                    host.domain, host.os)
+                                    host.domain, host.os, host.passwd)
         self.alias = alias
 
     @property
     def cnamerecord(self):
-        return (self.alias + " IN CNAME " + self.hostname + "." +
-                self.domain + ".\n")
+        return self.fqdn + " 300 CNAME " + self.hostname + "." + self.domain
+
+    @property
+    def ptrrecord(self):
+        return ""
+
+    @property
+    def arecord(self):
+        return ""
 
     @property
     def fqdn(self):
@@ -97,17 +142,13 @@ class Env(object):
         self.node2ip = dict(conf.get_section("nodes", "ips"))
         self.node2mac = dict(conf.get_section("nodes", "macs"))
         self.node2os = dict(conf.get_section("nodes", "os"))
+        self.node2passwd = dict(conf.get_section("nodes", "passwords"))
+
         self.hostnames = [self.node2hostname[n]
                           for n in self.nodes.split(",")]
 
         self.ips = [self.node2ip[n]
                     for n in self.nodes.split(",")]
-
-        self.cluster_hostnames = [self.node2hostname[n]
-                                  for n in self.cluster_nodes.split(",")]
-
-        self.cluster_ips = [self.node2ip[n]
-                            for n in self.cluster_nodes.split(",")]
 
         self.net = ipaddr.IPNetwork(self.subnet)
 
@@ -117,20 +158,77 @@ class Env(object):
         for node in self.nodes.split(","):
             host = Host(self.node2hostname[node],
                         self.node2ip[node],
-                        self.node2mac[node], self.domain, self.node2os[node])
+                        self.node2mac[node], self.domain, self.node2os[node],
+                        self.node2passwd[node])
 
             self.nodes_info[node] = host
             self.hosts_info[host.hostname] = host
             self.ips_info[host.ip] = host
 
         self.cluster = Host(self.cluster_name, self.cluster_ip, None,
-                            self.domain, None)
+                            self.domain, None, None)
+
+        # This is needed because "".split(",") -> ['']
+        if self.cluster_nodes:
+            self.cluster_nodes = self.cluster_nodes.split(",")
+        else:
+            self.cluster_nodes = []
+
+        self.cluster_hostnames = [self.node2hostname[n]
+                                  for n in self.cluster_nodes]
+
+        self.cluster_ips = [self.node2ip[n]
+                            for n in self.cluster_nodes]
+
         self.master = self.nodes_info[self.master_node]
 
-        self.roles = {}
+        self.roles_info = {}
         for role, node in conf.get_section("synnefo", "roles"):
-            self.roles[role] = Alias(self.nodes_info[node], role)
-            setattr(self, role, self.roles[role])
+            self.roles_info[role] = Alias(self.nodes_info[node], role)
+            setattr(self, role, self.roles_info[role])
+
+        self.astakos = self.accounts
+        # This is the nodes that get nfs mount points
+        self.mount = self.ips[:]
+        self.mount.remove(self.pithos.ip)
+
+
+class Status(object):
+    STATUSES = [
+        "check",
+        "prepare",
+        "install",
+        "restart",
+        "initialize",
+        "test",
+        "ok",
+        ]
+
+    def create_section(self, ip):
+        try:
+            section = self.config.items(ip, True)
+        except ConfigParser.NoSectionError:
+            self.config.add_section(ip)
+
+    def __init__(self, args):
+        self.config = ConfigParser.ConfigParser()
+        self.config.optionxform = str
+        self.statusfile = os.path.join(args.confdir, "status.conf")
+        self.config.read(self.statusfile)
+
+    def check_status(self, ip, component_class):
+        try:
+            return self.config.get(ip, component_class.__name__, True)
+        except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
+            return None
+
+    def update_status(self, ip, component_class, status):
+        self.create_section(ip)
+        self.config.set(ip, component_class.__name__, status)
+
+    def write_status(self):
+        with open(self.statusfile, 'wb') as configfile:
+            self.config.write(configfile)
 
 
 class Conf(object):
@@ -140,7 +238,6 @@ class Conf(object):
         "deploy": ["dirs", "packages", "keys", "options"],
         "vcluster": ["cluster", "image", "network"],
         "synnefo": ["cred", "synnefo", "roles"],
-        "squeeze": ["debian", "ganeti", "synnefo", "other"],
         "wheezy": ["debian", "ganeti", "synnefo", "other"],
     }
     confdir = "/etc/snf-deploy"
@@ -196,10 +293,9 @@ class Conf(object):
             getattr(self, f).write(sys.stdout)
 
 
-def debug(host, msg):
+def debug(host, msg, info=""):
 
-    print HEADER + host + \
-        OKBLUE + ": " + msg + ENDC
+    print " ".join([HEADER, host, OKBLUE, msg, OKGREEN, info, ENDC])
 
 
 def check_pidfile(pidfile):

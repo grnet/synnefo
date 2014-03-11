@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -79,119 +79,84 @@ def membership_enroll_notify(project, user):
         logger.error(e.message)
 
 
-def membership_request_notify(project, requested_user):
-    try:
-        notification = build_notification(
-            SENDER,
-            [project.application.owner.email],
-            _(messages.PROJECT_MEMBERSHIP_REQUEST_SUBJECT) % project.__dict__,
-            template='im/projects/project_membership_request_notification.txt',
-            dictionary={'object': project, 'user': requested_user.email})
-        notification.send()
-    except NotificationError, e:
-        logger.error(e.message)
+MEMBERSHIP_REQUEST_DATA = {
+    "join": lambda p: (
+        _(messages.PROJECT_MEMBERSHIP_REQUEST_SUBJECT) % p.__dict__,
+        "im/projects/project_membership_request_notification.txt"),
+    "leave": lambda p: (
+        _(messages.PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT) % p.__dict__,
+        "im/projects/project_membership_leave_request_notification.txt"),
+}
 
 
-def membership_leave_request_notify(project, requested_user):
-    template = 'im/projects/project_membership_leave_request_notification.txt'
+def membership_request_notify(project, requested_user, action):
+    owner = project.owner
+    if owner is None:
+        return
+    subject, template = MEMBERSHIP_REQUEST_DATA[action](project)
     try:
-        notification = build_notification(
-            SENDER,
-            [project.application.owner.email],
-            _(messages.PROJECT_MEMBERSHIP_LEAVE_REQUEST_SUBJECT) %
-            project.__dict__,
+        build_notification(
+            SENDER, [owner.email], subject,
             template=template,
-            dictionary={'object': project, 'user': requested_user.email})
-        notification.send()
-    except NotificationError, e:
-        logger.error(e.message)
-
-
-def application_submit_notify(application):
-    try:
-        notification = build_notification(
-            SENDER, NOTIFY_RECIPIENTS,
-            _(messages.PROJECT_CREATION_SUBJECT) % application.__dict__,
-            template='im/projects/project_creation_notification.txt',
-            dictionary={'object': application})
-        notification.send()
-    except NotificationError, e:
-        logger.error(e.message)
-
-
-def application_deny_notify(application):
-    try:
-        notification = build_notification(
-            SENDER,
-            [application.owner.email],
-            _(messages.PROJECT_DENIED_SUBJECT) % application.__dict__,
-            template='im/projects/project_denial_notification.txt',
-            dictionary={'object': application})
-        notification.send()
-    except NotificationError, e:
-        logger.error(e.message)
-
-
-def application_approve_notify(application):
-    try:
-        notification = build_notification(
-            SENDER,
-            [application.owner.email],
-            _(messages.PROJECT_APPROVED_SUBJECT) % application.__dict__,
-            template='im/projects/project_approval_notification.txt',
-            dictionary={'object': application})
-        notification.send()
-    except NotificationError, e:
-        logger.error(e.message)
-
-
-def project_termination_notify(project):
-    app = project.application
-    try:
-        build_notification(
-            SENDER,
-            [project.application.owner.email],
-            _(messages.PROJECT_TERMINATION_SUBJECT) % app.__dict__,
-            template='im/projects/project_termination_notification.txt',
-            dictionary={'object': project}
+            dictionary={'object': project, 'user': requested_user.email}
         ).send()
     except NotificationError, e:
         logger.error(e.message)
 
 
-def project_suspension_notify(project):
+APPLICATION_DATA = {
+    "submit": lambda a: (
+        NOTIFY_RECIPIENTS,
+        _(messages.PROJECT_CREATION_SUBJECT) % a.__dict__,
+        "im/projects/project_creation_notification.txt"),
+    "deny": lambda a: (
+        [a.applicant.email],
+        _(messages.PROJECT_DENIED_SUBJECT) % a.__dict__,
+        "im/projects/project_denial_notification.txt"),
+    "approve": lambda a: (
+        [a.applicant.email],
+        _(messages.PROJECT_APPROVED_SUBJECT) % a.__dict__,
+        "im/projects/project_approval_notification.txt"),
+}
+
+
+def application_notify(application, action):
+    recipients, subject, template = APPLICATION_DATA[action](application)
     try:
         build_notification(
-            SENDER,
-            [project.application.owner.email],
-            _(messages.PROJECT_SUSPENSION_SUBJECT) % project.__dict__,
-            template='im/projects/project_suspension_notification.txt',
-            dictionary={'object': project}
+            SENDER, recipients, subject,
+            template=template,
+            dictionary={'object': application}
         ).send()
     except NotificationError, e:
         logger.error(e.message)
 
 
-def project_unsuspension_notify(project):
-    try:
-        build_notification(
-            SENDER,
-            [project.application.owner.email],
-            _(messages.PROJECT_UNSUSPENSION_SUBJECT) % project.__dict__,
-            template='im/projects/project_unsuspension_notification.txt',
-            dictionary={'object': project}
-        ).send()
-    except NotificationError, e:
-        logger.error(e.message)
+PROJECT_DATA = {
+    "terminate": lambda p: (
+        _(messages.PROJECT_TERMINATION_SUBJECT) % p.__dict__,
+        "im/projects/project_termination_notification.txt"),
+    "reinstate": lambda p: (
+        _(messages.PROJECT_REINSTATEMENT_SUBJECT) % p.__dict__,
+        "im/projects/project_reinstatement_notification.txt"),
+    "suspend": lambda p: (
+        _(messages.PROJECT_SUSPENSION_SUBJECT) % p.__dict__,
+        "im/projects/project_suspension_notification.txt"),
+    "unsuspend": lambda p: (
+        _(messages.PROJECT_UNSUSPENSION_SUBJECT) % p.__dict__,
+        "im/projects/project_unsuspension_notification.txt"),
+}
 
 
-def project_reinstatement_notify(project):
+def project_notify(project, action):
+    owner = project.owner
+    if owner is None:
+        return
+    subject, template = PROJECT_DATA[action](project)
     try:
         build_notification(
-            SENDER,
-            [project.application.owner.email],
-            _(messages.PROJECT_REINSTATEMENT_SUBJECT) % project.__dict__,
-            template='im/projects/project_reinstatement_notification.txt',
+            SENDER, [owner.email], subject,
+            template=template,
             dictionary={'object': project}
         ).send()
     except NotificationError, e:

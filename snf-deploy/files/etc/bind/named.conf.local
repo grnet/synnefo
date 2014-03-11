@@ -6,12 +6,37 @@
 // organization
 //include "/etc/bind/zones.rfc1918";
 
+include "/etc/bind/ddns.key";
+
+// all synnefo components share the same domain/zone
 zone "%DOMAIN%" in {
         type master;
+        notify no;
         file "/etc/bind/zones/%DOMAIN%";
+        allow-update { key DDNS_UPDATE; };
 };
 
+# domain/zone for the VMs
+zone "vm.%DOMAIN%" in {
+        type master;
+        notify no;
+        file "/etc/bind/zones/vm.%DOMAIN%";
+        allow-update { key DDNS_UPDATE; };
+};
+
+// reverse dns zone for all IPs
 zone "in-addr.arpa" in {
         type master;
+        notify no;
         file "/etc/bind/rev/synnefo.in-addr.arpa.zone";
+        allow-update { key DDNS_UPDATE; };
 };
+
+// v6 reverse dns zone for all IPs
+zone "ip6.arpa" in {
+        type master;
+        notify no;
+        file "/etc/bind/rev/synnefo.ip6.arpa.zone";
+        allow-update { key DDNS_UPDATE; };
+};
+

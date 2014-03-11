@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -77,6 +77,9 @@ def _parse_number_with_unit(s):
 
 
 def parse_with_style(s):
+    if isinstance(s, (int, long)):
+        return s, 0
+
     if s in ['inf', 'infinite']:
         return PRACTICALLY_INFINITE, 0
 

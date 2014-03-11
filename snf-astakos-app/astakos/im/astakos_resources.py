@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,6 +32,5 @@
 # or implied, of GRNET S.A.
 
 from astakos.im.settings import astakos_services
-from synnefo.util.keypath import get_path
 
-resources = get_path(astakos_services, 'astakos_account.resources').values()
+resources = astakos_services['astakos_account']['resources'].values()

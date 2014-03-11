@@ -1,4 +1,4 @@
-// Copyright 2011 GRNET S.A. All rights reserved.
+// Copyright 2014 GRNET S.A. All rights reserved.
 // 
 // Redistribution and use in source and binary forms, with or
 // without modification, are permitted provided that the following
@@ -70,6 +70,11 @@
             views.View.__super__.initialize.apply(this, [options]);
             this.log = new snf.logging.logger("SNF-VIEWS:" + this.view_id);
             this.parent_view = options && options.parent_view;
+        },
+        
+        destroy: function() {
+          this.hide(true);
+          $(this.el).remove();
         },
 
         // is the view visible ?

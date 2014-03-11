@@ -316,61 +316,50 @@ Upon success, the system renews the token (if it has expired), logins the user
 and sets the cookie, before redirecting the user to the ``next`` parameter
 value.
 
-Setting quota limits
-~~~~~~~~~~~~~~~~~~~~
+Projects and quota
+~~~~~~~~~~~~~~~~~~
 
-Set default quota
-`````````````````
-To inspect current default base quota limits, run::
+Synnefo supports granting resources and controling their quota through the
+mechanism of *projects*. A project is considered as a pool of finite
+resources. Every actual resources allocated by a user (e.g. a Cyclades VM or
+a Pithos container) is also assigned to a project where the user is a
+member to. For each resource a project specifies the maximum amount that can
+be assigned to it and the maximum amount that a single member can assign to it.
+
+Default quota
+`````````````
+
+Upon user creation, a special purpose user-specific project is automatically
+created in order to hold the base quota provided by the system. These *base*
+projects are identified with the same UUID as the user.
+
+To inspect the quota that future users will receive by default through their
+base projects, check column ``base_default`` in::
 
    # snf-manage resource-list
 
 You can modify the default base quota limit for all future users with::
 
-   # snf-manage resource-modify <resource_name> --default-quota <value>
+   # snf-manage resource-modify <resource_name> --base-default <value>
 
-Set base quota for individual users
-```````````````````````````````````
+Grant extra quota through projects
+``````````````````````````````````
 
-For individual users that need different quota than the default
-you can set it for each resource like this::
+A user can apply for a new project through the web interface or the API.
+Once it is approved by the administrators, the applicant can join the
+project and let other users in too.
 
-    # use this to display quota / uuid
-    # snf-manage user-show 'uuid or email' --quota
+A project member can make use of the quota granted by the project by
+specifying this particular project when creating a new quotable entity.
 
-    # snf-manage user-modify <user-uuid> --base-quota 'cyclades.vm' 10
+Note that quota are not accumulative: in order to allocate a 100GB disk,
+one must be in a project that grants at least 100GB; it is not possible to
+add up quota from different projects. Note also that if allocating an entity
+requires multiple resources (e.g. cpu and ram for a Cyclades VM) these must
+be all assigned to a single project.
 
-You can set base quota for all existing users, with possible exceptions, using::
-
-    # snf-manage user-modify --all --base-quota cyclades.vm 10 --exclude uuid1,uuid2
-
-All quota for which values different from the default have been set,
-can be listed with::
-
-    # snf-manage quota-list --with-custom=True
-
-
-Enable the Projects feature
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-If you want to enable the projects feature so that users may apply
-on their own for resources by creating and joining projects,
-in ``20-snf-astakos-app-settings.conf`` set::
-
-    # this will make the 'projects' page visible in the dashboard
-    ASTAKOS_PROJECTS_VISIBLE = True
-
-You can change the maximum allowed number of pending project applications
-per user with::
-
-    # snf-manage resource-modify astakos.pending_app --default-quota <number>
-
-You can also set a user-specific limit with::
-
-    # snf-manage user-modify <user-uuid> --base-quota 'astakos.pending_app' 5
-
-When users apply for projects they are not automatically granted
-the resources. They must first be approved by the administrator.
+Control projects
+````````````````
 
 To list pending project applications in astakos::
 
@@ -385,13 +374,39 @@ To deny an application::
 
     # snf-manage project-control --deny <app id>
 
-Users designated as *project admins* can approve, deny, or modify
+Before taking an action, on can inspect project status, settings and quota
+limits with::
+
+   # snf-manage project-show <project-uuid>
+
+For an initialized project, option ``--quota`` also reports the resource
+usage.
+
+Users designated as *project admins* can approve or deny
 an application through the web interface. In
 ``20-snf-astakos-app-settings.conf`` set::
 
     # UUIDs of users that can approve or deny project applications from the web.
     ASTAKOS_PROJECT_ADMINS = [<uuid>, ...]
 
+Set quota limits
+````````````````
+
+One can change the quota limits of an initialized project with::
+
+   # snf-manage project-modify <project-uuid> --limit <resource_name> <member_limit> <project_limit>
+
+One can set base quota for all accepted users (that is, set limits for base
+project), with possible exceptions, with::
+
+   # snf-manage project-modify --all-base-projects --exclude <uuid1>,<uuid2> --limit ...
+
+Quota for a given resource are reported for all projects that the user is
+member in with::
+
+   # snf-manage user-show <user-uuid> --quota
+
+With option ``--projects``, owned projects and memberships are also reported.
 
 Astakos advanced operations
 ---------------------------
@@ -649,7 +664,7 @@ you can provide a cloud that can handle thousands of virtual servers and
 networks.
 
 Cyclades does not include any virtualization software and knows nothing about
-the low-level VM management operations, e.g. handling of VM creation or
+the low-level VM management operations, e.g. the handling of VM creation or
 migrations among physical nodes. Instead, Cyclades is the component that
 handles multiple Ganeti backends and exposes the REST APIs. The administrator
 can expand the infrastructure dynamically either by adding more Ganeti nodes
@@ -1009,9 +1024,9 @@ IP. Instead, floating IPs are directly assigned to virtual interfaces of VMs.
 Exactly like VMS, networks can be handled as Ganeti networks via `gnt-network`
 commands. All Ganeti networks that belong to Synnefo are named with the prefix
 `${BACKEND_PREFIX_ID}-net-`. Also, there are a number of `snf-manage` commands
-for handling of `networks`, `subnets`, `ports` and `floating IPs`. Below
-we will present a use case scenario using some of these commands. For better
-understanding of these commands, refer to their help messages.
+that can be used to handle `networks`, `subnets`, `ports` and `floating IPs`.
+Below we will present a use case scenario using some of these commands. For
+better understanding of these commands, refer to their help messages.
 
 Create a virtual private network for user
 `7cf4d078-67bf-424d-8ff2-8669eb4841ea` using the `PHYSICAL_VLAN` flavor, which
@@ -1233,8 +1248,8 @@ MAC Prefixes
 ************
 
 Cyclades also use a pool of MAC prefixes to assign to networks of flavor
-`MAC_FILTERED`. Handling of this pool is done exactly as with pool of bridges,
-except that the type option must be set to mac-prefix:
+`MAC_FILTERED`. The handling of this pool is done exactly as with pool of
+bridges, except that the type option must be set to mac-prefix:
 
 .. code-block:: console
 
@@ -1248,7 +1263,7 @@ externally reserved, to exclude from allocation.
 Quotas
 ~~~~~~
 
-Handling of quotas for Cyclades resources is powered by Astakos quota
+The andling of quotas for Cyclades resources is powered by Astakos quota
 mechanism. During registration of Cyclades service to Astakos, the Cyclades
 resources are also imported to Astakos for accounting and presentation.
 
@@ -2521,6 +2536,112 @@ Node10:
 All sections: :ref:`Scale out Guide <i-synnefo>`
 
 
+Regions, Zones and Clusters
+===========================
+
+Region
+------
+
+A Region is a single Synnefo installation, with
+Compute/Network/Image/Volume/Object Store services. A Region is associated with
+one set of Synnefo DBs (Astakos DB, Pithos DB and Cyclades DB). Every Region has a
+distinct set of API endpoints, e.g.,
+`https://cloud.example.com/cyclades/compute/v2.0`. Two Regions are most times
+located geographically far from each other, e.g. "Europe", "US-East". A Region
+comprises multiple Zones.
+
+Zone
+----
+
+A Zone is a set of Ganeti clusters, in a potentially geographically distinct
+location, e.g. "Athens", "Rome". All clusters have access to the same physical
+networks, and are considered a single failure domain, e.g., they access the
+network over the same router. A Zone comprises muliple Ganeti clusters.
+
+Ganeti cluster
+--------------
+
+A Ganeti cluster is a set of Ganeti nodes (physical machines). One of the nodes
+has the role of "Ganeti master". If this node goes down, another node may
+undertake the master role. Ganeti nodes run Virtual Machines (VMs). VMs can live
+migrate inside a Ganeti cluster. A Ganeti cluster comprises multiple physical
+hardware nodes, most times geographically close to each other.
+
+VM mobility
+-----------
+
+VMs may move across Regions, Zones, Ganeti clusters and physical nodes. Before we
+describe how that's possible, we will describe the different kinds of moving,
+providing the corresponding terminology:
+
+Live migration
+~~~~~~~~~~~~~~
+
+The act of moving a running VM from physical node to physical node without any
+impact on its operation. The VM continues to run on its new physical location,
+completely unaffected, and without any service downtime or dropped connections.
+Live migration typically requires shared storage and networking between the source
+and destination nodes.
+
+Live migration is issued by the administrator in the background and is transparent
+to the VM user.
+
+Failover
+~~~~~~~~
+
+The act of moving a VM from physical node to physical node by stopping it first on
+the source node, then re-starting it on the destination node. There is short
+service downtime, during the time the VM boots up, and client connections are
+dropped.
+
+Failover is issued by the administrator in the background and the VM user will
+experience a reboot.
+
+Snapshot Failover
+~~~~~~~~~~~~~~~~~
+
+The act of moving a VM from physical node to physical node via a point-in-time
+snapshot. That is, stopping a VM on the source node, taking a snapshot, then
+creating a new VM from that snapshot.
+
+Snapshot failover is issued by the VM user and not the administrator.
+
+Disaster Recovery
+-----------------
+
+In Synnefo terminology, Disaster Recovery is the process of sustaining a disaster
+in one datacenter, and ensuring business continuity by performing live migration
+or failover of running/existing VMs, or respawning VMs from previously made
+snapshots. Based on the method used, this can work inside a single Ganeti cluster,
+across Ganeti clusters in the same Zone, or across Zones.
+
+Specifically:
+
+Live migration is only supported inside a single Ganeti cluster. Ganeti supports
+live migration between nodes in the same cluster with or without shared storage.
+Live migration is done at the Ganeti level and is transparent to Synnefo.
+
+Failover is supported inside a Ganeti cluster, across Ganeti clusters and across
+Zones. Ganeti supports failover inside a Ganeti cluster with or without shared
+storage, which poses minimum downtime for the VM. Failover inside the same Ganeti
+cluster is done at the Ganeti level and is transparent to Synnefo.
+
+Ganeti also provides tools for failing over VMs across different Ganeti clusters,
+meaning that one can use them to failover VMs across Ganeti clusters of the same
+Zone or across Ganeti clusters of different Zones, thus moving across Zones.
+Failing over across different Ganeti clusters requires copying of data, resulting
+in longer downtimes, depending on the geographical distance and network between
+them. Failover across Ganeti clusters, either in the same or different Zones, is
+not transparent to Synnefo and requires manual import of intances at Synnefo level
+too, by the administrator.
+
+Snapshot failover supports moving VMs across all domains. It is issued by the VM
+user and is done at the Synnefo level without the need of running anything at the
+Ganeti level or by the administrator.
+
+In the future Synnefo will also support moving VMs across different Regions.
+
+
 Upgrade Notes
 =============
 
@@ -2534,16 +2655,14 @@ Upgrade Notes
    v0.14.7 -> v0.14.8 <upgrade/upgrade-0.14.8>
    v0.14.9 -> v0.14.10 <upgrade/upgrade-0.14.10>
    v0.14 -> v0.15 <upgrade/upgrade-0.15>
+   v0.15 -> v0.16 <upgrade/upgrade-0.16>
 
 
 Changelog, NEWS
 ===============
 
 
-* v0.15rc7 :ref:`Changelog <Changelog-0.15rc7>`
-* v0.15rc6 :ref:`Changelog <Changelog-0.15rc6>`
-* v0.15rc5 :ref:`Changelog <Changelog-0.15rc5>`
-* v0.15rc4 :ref:`Changelog <Changelog-0.15rc4>`
+* v0.15 :ref:`Changelog <Changelog-0.15>`, :ref:`NEWS <NEWS-0.15>`
 * v0.14.10 :ref:`Changelog <Changelog-0.14.10>`, :ref:`NEWS <NEWS-0.14.10>`
 * v0.14.9 :ref:`Changelog <Changelog-0.14.9>`, :ref:`NEWS <NEWS-0.14.9>`
 * v0.14.8 :ref:`Changelog <Changelog-0.14.8>`, :ref:`NEWS <NEWS-0.14.8>`

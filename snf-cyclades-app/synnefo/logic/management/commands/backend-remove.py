@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -29,7 +29,7 @@
 #
 
 from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import get_backend
+from synnefo.management import common
 from synnefo.logic import backend as backend_mod
 from synnefo.db.models import Backend
 from django.db import transaction, models
@@ -50,7 +50,7 @@ class Command(BaseCommand):
         if len(args) < 1:
             raise CommandError("Please provide a backend ID")
 
-        backend = get_backend(args[0])
+        backend = common.get_resource("backend", args[0], for_update=True)
 
         write("Trying to remove backend: %s\n" % backend.clustername)
 

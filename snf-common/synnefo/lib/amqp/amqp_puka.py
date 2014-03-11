@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -261,14 +261,33 @@ class AMQPPukaClient(object):
     def _publish(self, exchange, routing_key, body, headers={}):
         # Persisent messages by default!
         headers['delivery_mode'] = 2
+
+        if self.confirms:
+            callback = self.handle_publisher_confirm
+        else:
+            callback = None
+
         promise = self.client.basic_publish(exchange=exchange,
                                             routing_key=routing_key,
-                                            body=body, headers=headers)
+                                            body=body, headers=headers,
+                                            callback=callback)
 
         if self.confirms:
             self.unacked[promise] = (exchange, routing_key, body)
 
         return promise
+
+    def handle_publisher_confirm(self, promise, result):
+        """Handle publisher confirmation message.
+
+        Callback function which handles publisher confirmation by removing
+        the promise (and message) from 'unacked' messages.
+
+        """
+        msg = self.unacked.pop(promise, None)
+        if msg is None:
+            self.log.warning("Received publisher confirmation for"
+                             " unknown promise '%s'", promise)
 
     @reconnect_decorator
     def flush_buffer(self):
@@ -277,9 +296,9 @@ class AMQPPukaClient(object):
 
     @reconnect_decorator
     def get_confirms(self):
-        for promise in self.unacked.keys():
-            self.client.wait(promise)
-            self.unacked.pop(promise)
+        """Wait for all publisher confirmations."""
+        while self.unacked:
+            self.client.wait(self.unacked.keys())
 
     @reconnect_decorator
     def _resend_unacked_messages(self):

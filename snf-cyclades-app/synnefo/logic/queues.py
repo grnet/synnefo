@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -86,3 +86,14 @@ def convert_queue_to_dead(queue):
 def convert_exchange_to_dead(exchange):
     """Convert the name of an exchange to the corresponding dead-letter one"""
     return exchange + "-dl"
+
+
+EVENTD_HEARTBEAT_ROUTING_KEY = "eventd.heartbeat"
+
+
+def get_dispatcher_request_queue(hostname, pid):
+    return "snf:dispatcher:%s:%s" % (hostname, pid)
+
+
+def get_dispatcher_heartbeat_queue(hostname, pid):
+    return "snf:dispatcher:heartbeat:%s:%s" % (hostname, pid)

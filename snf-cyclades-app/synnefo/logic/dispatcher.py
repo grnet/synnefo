@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -50,6 +50,9 @@ from django.db import close_connection
 
 import time
 
+import json
+import socket
+import traceback
 import daemon
 import daemon.runner
 from lockfile import LockTimeout
@@ -63,6 +66,7 @@ import setproctitle
 from synnefo.lib.amqp import AMQPClient
 from synnefo.logic import callbacks
 from synnefo.logic import queues
+from synnefo.db.models import Backend, pooled_rapi_client
 
 import logging
 
@@ -71,6 +75,24 @@ log_amqp = logging.getLogger("amqp")
 log_logic = logging.getLogger("synnefo.logic")
 
 LOGGERS = [log, log_amqp, log_logic]
+
+
+# Time out after S Seconds while waiting messages from Ganeti clusters to
+# arrive. Warning: During this period snf-dispatcher will not consume any other
+# messages.
+HEARTBEAT_TIMEOUT = 5
+# Seconds that the heartbeat queue will exist while there are no consumers.
+HEARTBEAT_QUEUE_TTL = 120
+# Time out after S seconds while waiting acknowledgment from snf-dispatcher
+# that the status check has started.
+CHECK_TOOL_ACK_TIMEOUT = 10
+# Time out after S seconds while waiting for the status report from
+# snf-dispatcher to arrive.
+CHECK_TOOL_REPORT_TIMEOUT = 30
+
+
+def get_hostname():
+    return socket.gethostbyaddr(socket.gethostname())[0]
 
 
 class Dispatcher:
@@ -108,7 +130,8 @@ class Dispatcher:
     def _init(self):
         log.info("Initializing")
 
-        self.client = AMQPClient(logger=log_amqp)
+        # Set confirm buffer to 1 for heartbeat messages
+        self.client = AMQPClient(logger=log_amqp, confirm_buffer=1)
         # Connect to AMQP host
         self.client.connect()
 
@@ -119,7 +142,6 @@ class Dispatcher:
                                      type="topic")
         self.client.exchange_declare(exchange=exchange_dl,
                                      type="topic")
-
         for queue in queues.QUEUES:
             # Queues are mirrored to all RabbitMQ brokers
             self.client.queue_declare(queue=queue, mirrored=True,
@@ -156,6 +178,92 @@ class Dispatcher:
             log.debug("Binding %s(%s) to queue %s with handler %s",
                       exchange, routing_key, queue, binding[3])
 
+        # Declare the queue that will be used for receiving requests, e.g. a
+        # status check request
+        hostname, pid = get_hostname(), os.getpid()
+        queue = queues.get_dispatcher_request_queue(hostname, pid)
+        self.client.queue_declare(queue=queue, mirrored=True, ttl=60)
+        self.client.basic_consume(queue=queue, callback=handle_request)
+        log.debug("Binding %s(%s) to queue %s with handler 'hadle_request'",
+                  exchange, routing_key, queue)
+
+
+def handle_request(client, msg):
+    """Callback function for handling requests.
+
+    Currently only 'status-check' action is supported.
+
+    """
+
+    client.basic_ack(msg)
+    log.debug("Received request message: %s", msg)
+    body = json.loads(msg["body"])
+    reply_to = None
+    try:
+        reply_to = body["reply_to"]
+        reply_to = reply_to.encode("utf-8")
+        action = body["action"]
+        assert(action == "status-check")
+    except (KeyError, AssertionError) as e:
+        log.warning("Invalid request message: %s. Error: %s", msg, e)
+        if reply_to is not None:
+            msg = {"status": "failed",
+                   "reason": "Invalid request"}
+            client.basic_publish("", reply_to, json.dumps(msg))
+        return
+
+    msg = {"action": action, "status": "started"}
+    client.basic_publish("", reply_to, json.dumps(msg))
+
+    # Declare 'heartbeat' queue and bind it to the exchange. The queue is
+    # declared with a 'ttl' option in order to be automatically deleted.
+    hostname, pid = get_hostname(), os.getpid()
+    queue = queues.get_dispatcher_heartbeat_queue(hostname, pid)
+    exchange = settings.EXCHANGE_GANETI
+    routing_key = queues.EVENTD_HEARTBEAT_ROUTING_KEY
+    client.queue_declare(queue=queue, mirrored=False, ttl=HEARTBEAT_QUEUE_TTL)
+    client.queue_bind(queue=queue, exchange=exchange,
+                      routing_key=routing_key)
+    log.debug("Binding %s(%s) to queue %s", exchange, routing_key, queue)
+
+    backends = Backend.objects.filter(offline=False)
+    status = {}
+
+    _OK = "ok"
+    _FAIL = "fail"
+    # Add cluster tag to trigger snf-ganeti-eventd
+    tag = "snf:eventd:heartbeat:%s:%s" % (hostname, pid)
+    for backend in backends:
+        cluster = backend.clustername
+        status[cluster] = {"RAPI": _FAIL, "eventd": _FAIL}
+        try:
+            with pooled_rapi_client(backend) as rapi:
+                rapi.AddClusterTags(tags=[tag], dry_run=True)
+        except:
+            log.exception("Failed to send job to Ganeti cluster '%s' during"
+                          " status check" % cluster)
+            continue
+        status[cluster]["RAPI"] = _OK
+
+    start = time.time()
+    while time.time() - start <= HEARTBEAT_TIMEOUT:
+        msg = client.basic_get(queue, no_ack=True)
+        if msg is None:
+            time.sleep(0.1)
+            continue
+        log.debug("Received heartbeat msg: %s", msg)
+        try:
+            body = json.loads(msg["body"])
+            cluster = body["cluster"]
+            status[cluster]["eventd"] = _OK
+        except:
+            log.error("Received invalid heartbat msg: %s", msg)
+        if not filter(lambda x: x["eventd"] == _FAIL, status.values()):
+            break
+
+    # Send back status report
+    client.basic_publish("", reply_to, json.dumps({"status": status}))
+
 
 def parse_arguments(args):
     from optparse import OptionParser
@@ -182,8 +290,85 @@ def parse_arguments(args):
                             " first (DANGEROUS!)"))
     parser.add_option("--drain-queue", dest="drain_queue",
                       help="Drain a queue from all outstanding messages")
+    parser.add_option("--status-check", dest="status_check",
+                      default=False, action="store_true",
+                      help="Trigger a status check for a running"
+                           " snf-dispatcher process, that will check"
+                           " communication between snf-dispatcher and Ganeti"
+                           " backends via AMQP brokers")
 
     return parser.parse_args(args)
+
+
+def check_dispatcher_status(pid_file):
+    """Check the status of a running snf-dispatcher process.
+
+    Check the status of a running snf-dispatcher process, the PID of which is
+    contained in the 'pid_file'. This function will send a 'status-check'
+    message to the running snf-dispatcher, wait for dispatcher's response and
+    pretty-print the results.
+
+    """
+    dispatcher_pid = pidlockfile.read_pid_from_pidfile(pid_file)
+    if dispatcher_pid is None:
+        sys.stdout.write("snf-dispatcher with PID file '%s' is not running."
+                         " PID file does not exist\n" % pid_file)
+        sys.exit(1)
+    sys.stdout.write("snf-dispatcher (PID: %s): running\n" % dispatcher_pid)
+
+    hostname = get_hostname()
+    local_queue = "snf:check_tool:%s:%s" % (hostname, os.getpid())
+    dispatcher_queue = queues.get_dispatcher_request_queue(hostname,
+                                                           dispatcher_pid)
+
+    log_amqp.setLevel(logging.WARNING)
+    try:
+        client = AMQPClient(logger=log_amqp)
+        client.connect()
+        client.queue_declare(queue=local_queue, mirrored=False, exclusive=True)
+        client.basic_consume(queue=local_queue, callback=lambda x, y: 0,
+                             no_ack=True)
+        msg = json.dumps({"action": "status-check", "reply_to": local_queue})
+        client.basic_publish("", dispatcher_queue, msg)
+    except:
+        sys.stdout.write("Error while connecting with AMQP\nError:\n")
+        traceback.print_exc()
+        sys.exit(1)
+
+    sys.stdout.write("AMQP -> snf-dispatcher: ")
+    msg = client.basic_wait(timeout=CHECK_TOOL_ACK_TIMEOUT)
+    if msg is None:
+        sys.stdout.write("fail\n")
+        sys.stdout.write("ERROR: No reply from snf-dipatcher after '%s'"
+                         " seconds.\n" % CHECK_TOOL_ACK_TIMEOUT)
+        sys.exit(1)
+    else:
+        try:
+            body = json.loads(msg["body"])
+            assert(body["action"] == "status-check"), "Invalid action"
+            assert(body["status"] == "started"), "Invalid status"
+            sys.stdout.write("ok\n")
+        except Exception as e:
+            sys.stdout.write("Received invalid msg from snf-dispatcher:"
+                             " msg: %s error: %s\n" % (msg, e))
+            sys.exit(1)
+
+    msg = client.basic_wait(timeout=CHECK_TOOL_REPORT_TIMEOUT)
+    if msg is None:
+        sys.stdout.write("fail\n")
+        sys.stdout.write("ERROR: No status repot after '%s' seconds.\n"
+                         % CHECK_TOOL_REPORT_TIMEOUT)
+        sys.exit(1)
+
+    sys.stdout.write("Backends:\n")
+    status = json.loads(msg["body"])["status"]
+    for backend, bstatus in sorted(status.items()):
+        sys.stdout.write(" * %s: \n" % backend)
+        sys.stdout.write("   snf-dispatcher -> ganeti: %s\n" %
+                         bstatus["RAPI"])
+        sys.stdout.write("   snf-ganeti-eventd -> AMQP: %s\n" %
+                         bstatus["eventd"])
+    sys.exit(0)
 
 
 def purge_queues():
@@ -281,7 +466,7 @@ def setup_logging(opts):
     import logging
     formatter = logging.Formatter("%(asctime)s %(name)s %(module)s"
                                   " [%(levelname)s] %(message)s")
-    if opts.debug:
+    if opts.debug or opts.status_check:
         log_handler = logging.StreamHandler()
         log_handler.setFormatter(formatter)
     else:
@@ -304,6 +489,10 @@ def main():
     # instead.  setproctitle.setproctitle("\x00".join(sys.argv))
     setproctitle.setproctitle(sys.argv[0])
     setup_logging(opts)
+
+    if opts.status_check:
+        check_dispatcher_status(opts.pid_file)
+        return
 
     # Special case for the clean up queues action
     if opts.purge_queues:

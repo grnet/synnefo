@@ -497,15 +497,12 @@ class SynnefoCI(object):
         server_ip = networks[0]['ipv4']
 
         # Check if config has ssh_port option and if so, use that port.
-        if self.config.has_option("Deployment", "ssh_port"):
-            server_port = self.config.get("Deployment", "ssh_port")
-        else:
-            if (".okeanos.io" in self.cyclades_client.base_url or
-            ".demo.synnefo.org" in self.cyclades_client.base_url):
-                tmp1 = int(server_ip.split(".")[2])
-                tmp2 = int(server_ip.split(".")[3])
-                server_ip = "gate.okeanos.io"
-                server_port = 10000 + tmp1 * 256 + tmp2
+        server_port = self.config.get("Deployment", "ssh_port")
+        if not server_port:
+            # No ssh port given. Get it from API (SNF:port_forwarding)
+            if '22' in server['SNF:port_forwarding']:
+                server_ip = server['SNF:port_forwarding']['22']['host']
+                server_port = int(server['SNF:port_forwarding']['22']['port'])
             else:
                 server_port = 22
 

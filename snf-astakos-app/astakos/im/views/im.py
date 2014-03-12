@@ -32,9 +32,6 @@
 # or implied, of GRNET S.A.
 
 import logging
-import inflect
-
-engine = inflect.engine()
 
 from urllib import quote
 

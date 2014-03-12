@@ -937,12 +937,17 @@ class SynnefoCI(object):
             schema = self.config.get('Global', 'schema')
         self.logger.debug("Will use \"%s\" schema" % _green(schema))
 
-        schema_dir = os.path.join(self.ci_dir, "schemas/%s" % schema)
-        if not (os.path.exists(schema_dir) and os.path.isdir(schema_dir)):
-            raise ValueError("Unknown schema: %s" % schema)
-
-        self.logger.debug("Upload schema files to server")
-        _put(os.path.join(schema_dir, "*"), "/etc/snf-deploy/")
+        self.logger.debug("Update schema files to server")
+        cmd = """
+        schema_dir="synnefo/ci/schemas/{0}"
+        if [ -d "$schema_dir" ]; then
+            cp "$schema_dir"/* /etc/snf-deploy/
+        else
+            echo "$schema_dir" does not exist
+            exit 1
+        fi
+        """.format(schema)
+        _run(cmd, False)
 
         self.logger.debug("Change password in nodes.conf file")
         cmd = """

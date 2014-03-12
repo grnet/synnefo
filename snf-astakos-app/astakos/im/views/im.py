@@ -473,7 +473,6 @@ def signup(request, template_name='im/signup.html', on_success='index',
     form = activation_backend.get_signup_form(
         provider, None, **form_kwargs)
 
-
     if request.method == 'POST':
         form = activation_backend.get_signup_form(
             provider,
@@ -859,7 +858,6 @@ def resource_usage(request):
     resources_order = json.dumps(resources_meta.get('resources_order'))
     projects_details = json.dumps(user_projects, default=_dthandler)
     user_quotas = json.dumps(user_quotas)
-
 
     interval = settings.USAGE_UPDATE_INTERVAL
     return render_response('im/resource_usage.html',

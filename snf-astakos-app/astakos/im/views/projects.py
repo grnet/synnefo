@@ -155,7 +155,7 @@ def project_add_or_modify(request, project_uuid=None):
 
     resource_catalog, resource_groups = _resources_catalog()
     resource_catalog_dict, resource_groups_dict = \
-            _resources_catalog(as_dict=True)
+        _resources_catalog(as_dict=True)
 
     extra_context = {
         'resource_catalog': resource_catalog,
@@ -171,7 +171,7 @@ def project_add_or_modify(request, project_uuid=None):
     with transaction.commit_on_success():
         template_name = 'im/projects/projectapplication_form.html'
         summary_template_name = \
-                'im/projects/projectapplication_form_summary.html'
+            'im/projects/projectapplication_form_summary.html'
         success_msg = _("The project application has been received and "
                         "is under consideration.")
         form_class = ProjectApplicationForm
@@ -179,7 +179,7 @@ def project_add_or_modify(request, project_uuid=None):
         if project:
             template_name = 'im/projects/projectmodification_form.html'
             summary_template_name = \
-                    'im/projects/projectmodification_form_summary.html'
+                'im/projects/projectmodification_form_summary.html'
             success_msg = _("The project modification has been received and "
                             "is under consideration.")
             form_class = ProjectModificationForm
@@ -216,9 +216,9 @@ def project_app_cancel(request, project_uuid, application_id):
         with transaction.commit_on_success():
             cancel_application(application_id, project_uuid,
                                request_user=request.user)
-            messages.success(request, _(astakos_messages.APPLICATION_CANCELLED))
+            messages.success(request,
+                             _(astakos_messages.APPLICATION_CANCELLED))
     return redirect(reverse('project_list'))
-
 
 
 @project_view(post=True)
@@ -230,7 +230,6 @@ def project_or_app_detail(request, project_uuid, app_id=None):
         application = get_object_or_404(ProjectApplication, id=app_id)
         if request.method == "POST":
             raise PermissionDenied
-
 
     if project.state in [Project.O_PENDING] and not application:
         return redirect(reverse('project_app',
@@ -281,7 +280,8 @@ def project_or_app_detail(request, project_uuid, app_id=None):
     mem_display = user.membership_display(project) if project else None
     can_join_req = can_join_request(project, user) if project else False
     can_leave_req = can_leave_request(project, user) if project else False
-    can_cancel_req = can_cancel_join_request(project, user) if project else False
+    can_cancel_req = can_cancel_join_request(project, user) if project else \
+        False
 
     is_modification = application.is_modification() if application else False
 
@@ -433,7 +433,7 @@ def project_app_deny(request, project_uuid, application_id):
         reason = request.POST.get("reason", "")
         with transaction.commit_on_success():
             deny_application(application_id, project_uuid,
-                                request_user=request.user, reason=reason)
+                             request_user=request.user, reason=reason)
             messages.success(request, _(astakos_messages.APPLICATION_DENIED))
     return redirect(reverse("project_list"))
 
@@ -493,7 +493,6 @@ def project_members(request, project_uuid, members_status_filter=None,
     RequestConfig(request, paginate={"per_page": settings.PAGINATE_BY}
                   ).configure(members_table)
 
-
     user = request.user
     is_project_admin = user.is_project_admin()
     is_owner = user.owns_application(project)
@@ -551,7 +550,6 @@ def project_members_action(request, project_uuid, action=None, redirect_to='',
         }
     }
 
-
     if not action in actions_map.keys():
         raise PermissionDenied
 
@@ -567,7 +565,8 @@ def project_members_action(request, project_uuid, action=None, redirect_to='',
         return redirect(reverse('index'))
 
     logger.info("Member(s) action from %s (project: %r, action: %s, "
-                "members: %r)", user.log_display, project.uuid, action, member_ids)
+                "members: %r)", user.log_display, project.uuid, action,
+                member_ids)
 
     action = actions_map.get(action)
     action_func = getattr(project_actions, action.get('method'))
@@ -581,7 +580,7 @@ def project_members_action(request, project_uuid, action=None, redirect_to='',
                     messages.error(request, e)
                 else:
                     email = escape(m.person.email)
-                    msg =  action.get('msg') % email
+                    msg = action.get('msg') % email
                     messages.success(request, msg)
 
     return redirect_back(request, 'project_list')

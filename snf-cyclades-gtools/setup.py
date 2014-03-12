@@ -60,7 +60,6 @@ setup(
         'python-daemon>=1.5.5',
         'pyinotify>=0.8.9',
         'puka',
-        'python-prctl>=1.1.1',
         'setproctitle>=1.0.1'
     ],
     entry_points={

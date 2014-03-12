@@ -1,4 +1,4 @@
-# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -60,7 +60,6 @@ CLASSIFIERS = []
 INSTALL_REQUIRES = [
     'Django>=1.4, <1.5',
     'simplejson>=2.1.1',
-    'pycurl>=7.19.0',
     'python-dateutil>=1.4.1',
     'IPy>=0.70',
     'South>=0.7.3',

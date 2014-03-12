@@ -1,4 +1,4 @@
-# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -64,12 +64,12 @@ setup(
         'setproctitle>=1.0.1'
     ],
     entry_points={
-     'console_scripts': [
-         'snf-ganeti-eventd = synnefo.ganeti.eventd:main',
-         'snf-progress-monitor = synnefo.ganeti.progress_monitor:main'
-         ],
-     'synnefo': [
+        'console_scripts': [
+            'snf-ganeti-eventd = synnefo.ganeti.eventd:main',
+            'snf-progress-monitor = synnefo.ganeti.progress_monitor:main'
+        ],
+        'synnefo': [
             'default_settings = synnefo.ganeti.settings'
-         ]
-     },
+        ]
+    },
 )

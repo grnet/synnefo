@@ -160,25 +160,28 @@ class Dispatcher:
 def parse_arguments(args):
     from optparse import OptionParser
 
-    default_pid_file = \
-        os.path.join(".", "var", "run", "synnefo", "dispatcher.pid")[1:]
-    parser = OptionParser()
-    parser.add_option("-d", "--debug", action="store_true", default=False,
-                      dest="debug", help="Enable debug mode")
-    parser.add_option("-w", "--workers", default=2, dest="workers",
-                      help="Number of workers to spawn", type="int")
+    default_pid_file = "/var/run/synnefo/snf_dispatcher.pid"
+    description = ("The Synnefo Dispatcher Daemon consumes messages from an"
+                   " AMQP broker and properly updates the Cyclades DB. These"
+                   " messages are mostly asynchronous notifications about the"
+                   " progress of jobs in the Ganeti backends.")
+    parser = OptionParser(description=description)
+    parser.add_option("-d", "--debug", action="store_true",
+                      default=False, dest="debug",
+                      help="Enable debug mode (do not turn into deamon)")
     parser.add_option("-p", "--pid-file", dest="pid_file",
                       default=default_pid_file,
-                      help="Save PID to file (default: %s)" % default_pid_file)
+                      help=("Location of PID file (default: %s)"
+                            % default_pid_file))
     parser.add_option("--purge-queues", action="store_true",
                       default=False, dest="purge_queues",
-                      help="Remove all declared queues (DANGEROUS!)")
+                      help="Remove all queues (DANGEROUS!)")
     parser.add_option("--purge-exchanges", action="store_true",
                       default=False, dest="purge_exchanges",
-                      help="Remove all exchanges. Implies deleting all queues \
-                           first (DANGEROUS!)")
+                      help=("Remove all exchanges. Implies deleting all queues"
+                            " first (DANGEROUS!)"))
     parser.add_option("--drain-queue", dest="drain_queue",
-                      help="Strips a queue from all outstanding messages")
+                      help="Drain a queue from all outstanding messages")
 
     return parser.parse_args(args)
 

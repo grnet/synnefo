@@ -26,6 +26,7 @@ from django.utils.safestring import mark_safe
 from django.template import defaultfilters
 
 from synnefo.lib.ordereddict import OrderedDict
+from synnefo.util import units
 
 from astakos.im import settings
 from astakos.im.models import ProjectResourceGrant, Project
@@ -232,6 +233,34 @@ def sorted_resources(resources_set):
 
 
 @register.filter
+def display_resource_usage_for_project(resource, project):
+    usage_map = presentation.USAGE_TAG_MAP
+    quota = quotas.get_project_quota(project).get(resource.name, None)
+
+    if not quota:
+        return "No usage"
+
+    cls = ''
+    usage = quota['project_usage']
+    limit = quota['project_limit']
+
+    if limit == 0 and usage == 0:
+        return "--"
+
+    usage_perc = "%d" % ((usage / limit) * 100) if limit else "100"
+    _keys = usage_map.keys()
+    closest = min(_keys, key=lambda x: abs(x - int(usage_perc)))
+    cls = usage_map[closest]
+
+    usage_display = units.show(usage, resource.unit)
+    usage_perc_display = "%s%%" % usage_perc
+
+    resp = """<span class="%s policy-diff">%s (%s)</span>""" % \
+            (cls, usage_perc_display, usage_display)
+    return mark_safe(resp)
+
+
+@register.filter
 def is_pending_app(app):
     if not app:
         return False
@@ -388,3 +417,14 @@ def display_date_modification_param(form_or_app, params):
 
     return display_modification_param(form_or_app, param, formatter)
 
+
+@register.filter
+def inf_display(value):
+    if value == units.PRACTICALLY_INFINITE:
+        return 'Infinite'
+    return value
+
+
+@register.filter
+def project_name_for_user(project, user):
+    return project.display_name_for_user(user)

@@ -14,11 +14,41 @@
 
 <div class="form-row resource-pair clearfix">
 <div class="form-row resource-col">
+    <p class="clearfix">
+    <label for="id_{{resource}}_m_uplimit_proxy" >
+      Max per member {{rdata.pluralized_display_name}}
+    </label>
+    <input	type="text" 
+            id="id_{{resource}}_m_uplimit_proxy" 
+            name="{{ resource }}_m_uplimit_proxy" 
+            placeholder="{{ rinfo.placeholder }}" 
+            {% if rinfo.unit == 'bytes' %} 
+                class="dehumanize"
+            {% endif  %}
+            {% if request.POST %}
+                {% with resource|add:'_m_uplimit' as input_value %}
+                  value = "{{ request.POST|lookup:input_value }}"
+                {% endwith %}
+            {% else %}
+              {% with value=object|get_member_resource_grant_value:resource %}
+                {% if value %}
+                  value = "{{ value }}"
+                {% endif %}
+              {% endwith %}
+            {% endif %}
+            autocomplete="off"> 
+    <span class="extra-img">&nbsp;</span>
+    <span class="info"><em>more info</em>
+    <span>{{ rinfo.help_text_input_each }}</span></span>
+  </p>
+  <p class="error-msg">Invalid format</p>
+  <p class="msg"></p>
+</div>
+<div class="form-row resource-col">
   <p class="clearfix">
     <label for="id_{{resource}}_p_uplimit_proxy" >
-      Total {{rinfo.pluralized_display_name}}
+      Total
     </label>
-
     <input	type="text" 
             id="id_{{resource}}_p_uplimit_proxy" 
             name="{{ resource }}_p_uplimit_proxy" 
@@ -44,37 +74,6 @@
     <span class="info"><em>more info</em>
     <span>{{ rinfo.help_text_input_total }}</span></span>
     </p>
-  <p class="error-msg">Invalid format</p>
-  <p class="msg"></p>
-  </div>
-<div class="form-row resource-col">
-    <p class="clearfix">
-    <label for="id_{{resource}}_m_uplimit_proxy" >
-      Per user {{rdata.pluralized_display_name}}
-    </label>
-    <input	type="text" 
-            id="id_{{resource}}_m_uplimit_proxy" 
-            name="{{ resource }}_m_uplimit_proxy" 
-            placeholder="{{ rinfo.placeholder }}" 
-            {% if rinfo.unit == 'bytes' %} 
-                class="dehumanize"
-            {% endif  %}
-            {% if request.POST %}
-                {% with resource|add:'_m_uplimit' as input_value %}
-                  value = "{{ request.POST|lookup:input_value }}"
-                {% endwith %}
-            {% else %}
-              {% with value=object|get_member_resource_grant_value:resource %}
-                {% if value %}
-                  value = "{{ value }}"
-                {% endif %}
-              {% endwith %}
-            {% endif %}
-            autocomplete="off"> 
-    <span class="extra-img">&nbsp;</span>
-    <span class="info"><em>more info</em>
-    <span>{{ rinfo.help_text_input_each }}</span></span>
-  </p>
   <p class="error-msg">Invalid format</p>
   <p class="msg"></p>
 </div>

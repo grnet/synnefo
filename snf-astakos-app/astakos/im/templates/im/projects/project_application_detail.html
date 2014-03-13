@@ -5,7 +5,10 @@
 {% if is_modification %}
 <a class="back-to-action" href="{% url project_detail project.uuid %}">&lt; back to project</a>
 {% endif %}
-{{ project.realname|upper }}
+{{ project|project_name_for_user:request.user }}
+{% if is_modification %}
+<span class="prefix"> MODIFICATION</span>
+{% endif %}
 {% endblock %}
 
 {% block object.actions %}
@@ -14,7 +17,7 @@
 
 {% block object.status %}
 {% if project.is_initialized %}
-PROJECT MODIFICATION {{ object.state_display|upper}}
+{{ object.state_display|upper}}
 {% else %}
 PROJECT APPLICATION {{ object.state_display|upper}}
 {% endif %}

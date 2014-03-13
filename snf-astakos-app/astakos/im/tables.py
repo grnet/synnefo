@@ -36,7 +36,11 @@ class LinkColumn(tables.LinkColumn):
         self.append = kwargs.pop('append', None)
         super(LinkColumn, self).__init__(*args, **kwargs)
 
+    def get_value(self, value, record, bound_column):
+        return value
+
     def render(self, value, record, bound_column):
+        value = self.get_value(value, record, bound_column)
         link = super(LinkColumn, self).render(value, record, bound_column)
         extra = ''
         if self.append:
@@ -50,6 +54,21 @@ class LinkColumn(tables.LinkColumn):
         if self.coerce:
             text = self.coerce(text)
         return super(LinkColumn, self).render_link(uri, text, attrs)
+
+
+class ProjectNameColumn(LinkColumn):
+
+    def get_value(self, value, record, bound_column):
+        # inspect columnt context to resolve user, fallback to value
+        # if failed
+        try:
+            table = getattr(bound_column, 'table', None)
+            if table:
+                user = getattr(table, 'request').user
+                value = record.display_name_for_user(user)
+        except:
+            pass
+        return value
 
 
 # Helper columns
@@ -219,8 +238,8 @@ def project_name_append(project, column):
 class UserProjectsTable(UserTable):
 
     _links = [
-        {'url': '?show_base=1', 'label': 'Show base projects'},
-        {'url': '?', 'label': 'Hide base projects'}
+        {'url': '?show_base=1', 'label': 'Show system projects'},
+        {'url': '?', 'label': 'Hide system projects'}
     ]
     links = []
 
@@ -236,14 +255,19 @@ class UserProjectsTable(UserTable):
         self.requested = kwargs.pop('requested')
         super(UserProjectsTable, self).__init__(*args, **kwargs)
 
+        if self.request and self.request.user.is_project_admin():
+            self.caption = _("Projects")
+            owner_col = dict(self.columns.items())['owner']
+            setattr(owner_col.column, 'accessor', 'owner.realname_with_email')
+
     caption = _('My projects')
 
-    name = LinkColumn('project_detail',
+    name = ProjectNameColumn('project_detail',
                       coerce=lambda x: truncatename(x, 25),
                       append=project_name_append,
                       args=(A('uuid'),),
                       orderable=False,
-                      accessor='realname')
+                      accessor='display_name')
 
     creation_date = tables.DateColumn(verbose_name=_('Application'),
                                       format=DEFAULT_DATE_FORMAT,
@@ -257,7 +281,7 @@ class UserProjectsTable(UserTable):
                                     empty_values=(),
                                     orderable=False)
     owner = tables.Column(verbose_name=_("Owner"),
-                          accessor='application.owner')
+                          accessor='owner.realname')
     membership_status = tables.Column(verbose_name=_("Status"),
                                       empty_values=(),
                                       orderable=False)

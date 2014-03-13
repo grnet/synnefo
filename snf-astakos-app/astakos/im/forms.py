@@ -648,7 +648,7 @@ leave_policy_label = _("Leaving policy")
 app_member_leave_policy_help = _("""
         Select how new members can leave the project.""")
 
-max_members_label = _("Maximum member count")
+max_members_label = _("Max members")
 max_members_help = _("""
         Specify the maximum number of members this project may have,
         including the owner. Beyond this number, no new members
@@ -712,7 +712,7 @@ class ProjectApplicationForm(forms.ModelForm):
         label=max_members_label,
         help_text=max_members_help,
         min_value=0,
-        required=True)
+        required=False)
 
     class Meta:
         model = ProjectApplication
@@ -735,6 +735,12 @@ class ProjectApplicationForm(forms.ModelForm):
                 name_field = self.fields['name']
                 name_field.validators = [base_app_name_validator]
 
+
+    def clean_limit_on_members_number(self):
+        value = self.cleaned_data.get('limit_on_members_number')
+        if value is None:
+            return units.PRACTICALLY_INFINITE
+        return value
 
     def clean_start_date(self):
         start_date = self.cleaned_data.get('start_date')
@@ -976,8 +982,11 @@ class ProjectApplicationForm(forms.ModelForm):
         if data.get('end_date', None):
             data['end_date'] = date_util.isoformat(data.get('end_date'))
 
-        if 'limit_on_members_number' in data:
+        limit = data.get('limit_on_members_number', None)
+        if limit:
             data['max_members'] = data.get('limit_on_members_number')
+        else:
+            data['max_members'] = units.PRACTICALLY_INFINITE
 
         data['request_user'] = self.user
         if 'owner' in data:

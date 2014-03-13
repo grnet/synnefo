@@ -28,7 +28,7 @@
 
     <span>
         {% block project.title %}
-        {{ object.realname|upper }}
+        {{ object|project_name_for_user:request.user }}
         {% endblock %}
     </span>
 
@@ -37,6 +37,7 @@
     {% endblock %}
   </h2>
   {% block inner_project %}
+  {% if not project.is_base %}
   <div class="full-dotted">
     <h3>PROJECT DETAILS</h3>
     <dl class="alt-style">
@@ -81,18 +82,23 @@
       {% endblock page.project_details %}
     </dl>
   </div>
- 
+  {% endif %}
 
   <div class="full-dotted">
 
      <div class="resources-heading clearfix">
          <h3>{% block page.resources_heading %}RESOURCES{% endblock %}</h3>
+     </div>
+     <div class="resources-heading clearfix">
+         <h3></h3>
+         {% if resources_set.count %}
+         <div class="resource-label">
+            <em>Max per member</em>
+         </div>
          <div class="resource-label">
             <em>Total</em>
          </div>
-         <div class="resource-label">
-            <em>Per user</em>
-         </div>
+         {% endif %}
      </div>
     {% if resources_set.all %}
     <dl class="alt-style resources">
@@ -100,19 +106,19 @@
           {% if rp.resource.ui_visible %}
           <dt>{{rp.resource.pluralized_display_name}}</dt>
           <dd>
-          <div class="resource">
-                {{ rp.display_member_capacity|default:"(not set)" }}
-                {% if is_modification %}
-                {{ rp|resource_diff:"member" }}
-                {% endif %}
-            </div>
             <div class="resource">
                 {{ rp.display_project_capacity|default:"(not set)" }}
                 {% if is_modification %}
                 {{ rp|resource_diff:"project" }}
                 {% endif %}
             </div>
-            </dd>
+            <div class="resource">
+                {{ rp.display_member_capacity|default:"(not set)" }}
+                {% if is_modification %}
+                {{ rp|resource_diff:"member" }}
+                {% endif %}
+            </div>
+          </dd>
         {% endif %}
       {% empty %}
       <p>No resources</p>
@@ -124,6 +130,7 @@
   </div>
 
   {% block page.members %} 
+  {% if not project.is_base %}
   <div class="full-dotted">
 
     <h3>
@@ -179,6 +186,7 @@
        {% endif %}
 
    </div>
+   {% endif %}
   {% endblock page.members %} 
 
 {% endblock inner_project %}  

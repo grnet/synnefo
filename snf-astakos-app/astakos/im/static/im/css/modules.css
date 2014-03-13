@@ -51,6 +51,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .container .navigation ul li.active a           { color:#F89A1C; }					
 
 .dotted                                         { background:url(../images/double-dots.jpg) no-repeat bottom center; padding:0 0 30px; margin-bottom:30px;}
+.full-dotted.hidden								{ display: none; }
 .full-dotted									{ background:url(../images/dots.jpg) repeat-x top; margin-top:20px; padding-top:20px; }
 .full-dotted:first-child						{ background:none; padding-top:0; margin-top:0; }
 .two-cols .rt                                   { float:right; width:400px;}
@@ -275,6 +276,7 @@ dl.alt-style dd									{ overflow:hidden; position:relative; margin-left: 0; }
 dl.resources dd                                 { width: 60%; }
 .projects										{ padding-bottom:30px; position:relative; }
 .projects h2 span								{ color:#3582AC;}
+.projects h2 span.prefix						{}
 .projects h2 em									{ float:right; }
 .projects h3									{ font-size:1.154em; }
 .projects h3 .rt-action 						{ float:right;}
@@ -422,6 +424,7 @@ table.alt-style tr td.info-td div				{ padding:15px; border:1px dashed #000 }
 
 /* quotas-form  */
 
+.quotas-form fieldset.hidden    				{ display: none; }
 .quotas-form fieldset							{ background:url(../images/dots.jpg) repeat-x scroll center bottom transparent; margin-bottom:3em; padding-bottom:5em; position:relative; }
 .quotas-form fieldset#icons						{ padding-bottom:3em; }
 .quotas-form legend								{ color:#55B577; font-size:1.308em;   position:relative; }

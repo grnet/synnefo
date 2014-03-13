@@ -115,7 +115,7 @@ def project_list(request, template_name="im/projects/project_list.html"):
         query = query & ~Q(Q(is_base=True) & \
                           ~Q(realname="base:%s" % request.user.uuid))
 
-    query = ~Q(state=Project.DELETED)
+    query = query & ~Q(state=Project.DELETED)
     mode = "default"
     if not request.user.is_project_admin():
         mode = "related"
@@ -237,7 +237,8 @@ def project_or_app_detail(request, project_uuid, app_id=None):
         if request.method == "POST":
             raise PermissionDenied
 
-    if project.state in [Project.O_PENDING] and not application:
+    if project.state in [Project.O_PENDING] and not application and \
+       project.last_application:
         return redirect(reverse('project_app',
                                 args=(project.uuid,
                                       project.last_application.id,)))
@@ -274,12 +275,24 @@ def project_or_app_detail(request, project_uuid, app_id=None):
     RequestConfig(request, paginate=paginate).configure(members_table)
 
     user = request.user
+    owns_base = False
+    if project and project.is_base and \
+                           project.realname == "base:%s" % request.user.uuid:
+        owns_base = True
     is_project_admin = user.is_project_admin()
     is_owner = user.owns_project(project)
-    is_applicant = application and application.applicant.pk == user.pk
+    is_applicant = False
+    last_pending_app = project.last_pending_application()
+    if last_pending_app:
+        is_applicant = last_pending_app and \
+                last_pending_app.applicant.pk == user.pk
 
     if not (is_owner or is_project_admin) and \
             not user.non_owner_can_view(project):
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    if project and project.is_base and not (owns_base or is_project_admin):
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 
@@ -300,8 +313,14 @@ def project_or_app_detail(request, project_uuid, app_id=None):
     if application:
         queryset = ProjectApplication.objects.select_related()
         object_id = application.pk
+        is_applicant = application.applicant.pk == user.pk
         resources_set = application.resource_set
         template_name = "im/projects/project_application_detail.html"
+
+    display_usage = False
+    if (owns_base or is_owner or membership or is_project_admin) \
+                                                               and not app_id:
+        display_usage = True
 
     return object_detail(
         request,
@@ -565,6 +584,7 @@ def project_members_action(request, project_uuid, action=None, redirect_to='',
 
     user = request.user
     if not user.owns_project(project) and not user.is_project_admin():
+        messages.error(request, astakos_messages.NOT_ALLOWED)
         return redirect(reverse('index'))
 
     logger.info("Member(s) action from %s (project: %r, action: %s, "

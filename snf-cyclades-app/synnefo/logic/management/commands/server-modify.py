@@ -45,7 +45,7 @@ ACTIONS = ["start", "stop", "reboot_hard", "reboot_soft"]
 
 
 class Command(BaseCommand):
-    args = "<server ID>"
+    args = "<server_id>"
     help = "Modify a server."
 
     option_list = BaseCommand.option_list + (

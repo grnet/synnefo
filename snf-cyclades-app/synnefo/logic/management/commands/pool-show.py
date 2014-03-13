@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -41,7 +41,7 @@ POOL_CHOICES = ['bridge', 'mac-prefix']
 
 
 class Command(BaseCommand):
-    args = "<pool ID>"
+    args = "<pool_id>"
     help = "Show a pool"
     output_transaction = True
     option_list = BaseCommand.option_list + (

@@ -43,6 +43,7 @@ non-deleted instances."""
 
 
 class Command(BaseCommand):
+    args = "<backend_id>"
     help = HELP_MSG
 
     def handle(self, *args, **options):

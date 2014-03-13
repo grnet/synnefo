@@ -47,7 +47,7 @@ be updated.
 
 class Command(BaseCommand):
     help = "Update a Subnet." + HELP_MSG
-    args = "<Subnet ID>"
+    args = "<subnet_id>"
     option_list = BaseCommand.option_list + (
         make_option("--name", dest="name",
                     help="The new subnet name."),

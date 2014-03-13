@@ -39,7 +39,7 @@ from synnefo.management import pprint, common
 
 class Command(BaseCommand):
     help = "Inspect a network on DB and Ganeti."
-    args = "<Network ID>"
+    args = "<network_id>"
 
     option_list = BaseCommand.option_list + (
         make_option(

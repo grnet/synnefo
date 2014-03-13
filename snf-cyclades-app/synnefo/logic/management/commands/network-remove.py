@@ -37,7 +37,7 @@ from synnefo.management import common
 
 class Command(RemoveCommand):
     can_import_settings = True
-    args = "<Network ID> [<Network ID> ...]"
+    args = "<network_id> [<network_id> ...]"
     help = "Remove a network from the Database, and Ganeti"
 
     @common.convert_api_faults

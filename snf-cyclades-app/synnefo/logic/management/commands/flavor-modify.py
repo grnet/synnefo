@@ -43,7 +43,7 @@ log = getLogger(__name__)
 
 
 class Command(BaseCommand):
-    args = "<flavor id>"
+    args = "<flavor_id>"
     help = "Modify a flavor"
 
     option_list = BaseCommand.option_list + (

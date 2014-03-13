@@ -40,7 +40,7 @@ from synnefo.management import pprint, common
 
 class Command(BaseCommand):
     help = "Inspect a port on DB and Ganeti"
-    args = "<port ID>"
+    args = "<port_id>"
 
     option_list = BaseCommand.option_list + (
         make_option(

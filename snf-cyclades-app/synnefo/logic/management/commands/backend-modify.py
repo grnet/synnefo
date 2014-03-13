@@ -42,7 +42,7 @@ HYPERVISORS = [h[0] for h in Backend.HYPERVISORS]
 
 class Command(BaseCommand):
     output_transaction = True
-    args = "<backend ID>"
+    args = "<backend_id>"
     help = "Modify a backend"
 
     option_list = BaseCommand.option_list + (

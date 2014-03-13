@@ -39,6 +39,7 @@ from synnefo.logic import servers
 
 
 class Command(BaseCommand):
+    args = "<floating_ip_id>"
     help = "Detach a floating IP from a VM or router"
 
     @common.convert_api_faults

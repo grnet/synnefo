@@ -38,7 +38,7 @@ from snf_django.management.commands import RemoveCommand
 
 class Command(RemoveCommand):
     can_import_settings = True
-    args = "<Port ID> [<Port ID> ...]"
+    args = "<port_id> [<port_id> ...]"
     help = "Remove a port from the Database and from the VMs attached to"
     command_option_list = RemoveCommand.command_option_list + (
         make_option(

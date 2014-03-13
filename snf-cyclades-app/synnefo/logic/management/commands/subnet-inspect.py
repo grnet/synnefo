@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -39,7 +39,7 @@ from synnefo.management import pprint, common
 
 class Command(BaseCommand):
     help = "Inspect a subnet on DB and Ganeti."
-    args = "<Subnet ID>"
+    args = "<subnet_id>"
     option_list = BaseCommand.option_list
 
     def handle(self, *args, **options):

@@ -43,7 +43,7 @@ from django.db import transaction
 
 
 class Command(BaseCommand):
-    args = "<Network ID>"
+    args = "<network_id>"
     help = "Modify a network."
 
     option_list = BaseCommand.option_list + (

@@ -42,7 +42,7 @@ from snf_django.management import utils
 
 
 class Command(SynnefoCommand):
-    args = "<server ID>"
+    args = "<server_id>"
     help = "Show server info"
 
     def handle(self, *args, **options):

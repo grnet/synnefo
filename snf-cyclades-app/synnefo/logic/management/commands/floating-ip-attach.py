@@ -39,6 +39,7 @@ from synnefo.logic import servers
 
 
 class Command(BaseCommand):
+    args = "<floating_ip_id>"
     help = "Attach a floating IP to a VM or router"
 
     option_list = BaseCommand.option_list + (

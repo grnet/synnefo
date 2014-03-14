@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -142,7 +142,7 @@ class AMQPHaighaClient():
                                       auto_delete=False, durable=True)
 
     def queue_declare(self, queue, exclusive=False, mirrored=True,
-                      mirrored_nodes='all'):
+                      mirrored_nodes='all', ttl=None):
         """Declare a queue
 
         @type queue: string
@@ -157,6 +157,8 @@ class AMQPHaighaClient():
                   the specified nodes, and the master will be the
                   first node in the list. Node names must be provided
                   and not host IP. example: [node1@rabbit,node2@rabbit]
+        @type ttl: int
+        @param tll: Queue TTL in seconds
 
         """
 
@@ -171,6 +173,9 @@ class AMQPHaighaClient():
                 raise AttributeError
         else:
             arguments = {}
+
+        if ttl is not None:
+            arguments['x-expires'] = ttl * 1000
 
         self.channel.queue.declare(queue, durable=True, exclusive=exclusive,
                                    auto_delete=False, arguments=arguments)
@@ -222,7 +227,7 @@ class AMQPHaighaClient():
         (exchange, routing_key, body) = self.unacked[mid]
         self.basic_publish(exchange, routing_key, body)
 
-    def basic_consume(self, queue, callback):
+    def basic_consume(self, queue, callback, no_ack=False, exclusive=False):
         """Consume from a queue.
 
         @type queue: string or list of strings
@@ -233,7 +238,8 @@ class AMQPHaighaClient():
         """
 
         self.consumers[queue] = callback
-        self.channel.basic.consume(queue, consumer=callback, no_ack=False)
+        self.channel.basic.consume(queue, consumer=callback, no_ack=no_ack,
+                                   exclusive=exclusive)
 
     @reconnect_decorator
     def basic_wait(self):
@@ -249,8 +255,8 @@ class AMQPHaighaClient():
         gevent.sleep(0)
 
     @reconnect_decorator
-    def basic_get(self, queue):
-        self.channel.basic.get(queue, no_ack=False)
+    def basic_get(self, queue, no_ack=False):
+        self.channel.basic.get(queue, no_ack=no_ack)
 
     @reconnect_decorator
     def basic_ack(self, message):

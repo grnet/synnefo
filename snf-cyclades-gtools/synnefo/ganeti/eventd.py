@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -190,7 +190,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
         self.op_handlers = {"INSTANCE": self.process_instance_op,
                             "NETWORK": self.process_network_op,
-                            "CLUSTER": self.process_cluster_op}
+                            "CLUSTER": self.process_cluster_op,
+                            "TAGS": self.process_tag_op}
                             # "GROUP": self.process_group_op}
 
     def process_IN_CLOSE_WRITE(self, event):
@@ -358,6 +359,28 @@ class JobFileHandler(pyinotify.ProcessEvent):
         routekey = "ganeti.event.cluster"
 
         return msg, routekey
+
+    def process_tag_op(self, op, job_id):
+        """ Process OP_TAGS_* opcodes.
+
+        """
+        input = op.input
+        op_id = input.OP_ID
+        if op_id == "OP_TAGS_SET":
+            if op.status == "waiting" and input.tags and input.dry_run and\
+               input.kind == "cluster":
+                # Special where a prefixed cluster tag operation in dry-run
+                # mode is used in order to trigger eventd to send a
+                # heartbeat message.
+                tag = input.tags[0]
+                if tag.startswith("snf:eventd:heartbeat"):
+                    self.logger.debug("Received heartbeat tag '%s'."
+                                      " Sending response.", tag)
+                    msg = {"type": "eventd-heartbeat",
+                           "cluster": self.cluster_name}
+                    return msg, "eventd.heartbeat"
+
+        return None, None
 
 
 def find_cluster_name():

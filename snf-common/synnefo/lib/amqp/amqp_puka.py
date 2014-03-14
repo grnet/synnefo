@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -188,7 +188,7 @@ class AMQPPukaClient(object):
     @reconnect_decorator
     def queue_declare(self, queue, exclusive=False,
                       mirrored=True, mirrored_nodes='all',
-                      dead_letter_exchange=None):
+                      dead_letter_exchange=None, ttl=None):
         """Declare a queue
 
         @type queue: string
@@ -203,6 +203,8 @@ class AMQPPukaClient(object):
                   the specified nodes, and the master will be the
                   first node in the list. Node names must be provided
                   and not host IP. example: [node1@rabbit,node2@rabbit]
+        @type ttl: int
+        @param ttl: Queue TTL in seconds
 
         """
         self.log.info('Declaring queue: %s', queue)
@@ -217,6 +219,9 @@ class AMQPPukaClient(object):
                 raise AttributeError
         else:
             arguments = {}
+
+        if ttl is not None:
+            arguments['x-expires'] = ttl * 1000
 
         if dead_letter_exchange:
             arguments['x-dead-letter-exchange'] = dead_letter_exchange
@@ -299,7 +304,7 @@ class AMQPPukaClient(object):
             self.unsend.pop(body)
 
     @reconnect_decorator
-    def basic_consume(self, queue, callback, prefetch_count=0):
+    def basic_consume(self, queue, callback, no_ack=False, prefetch_count=0):
         """Consume from a queue.
 
         @type queue: string or list of strings
@@ -322,7 +327,8 @@ class AMQPPukaClient(object):
         consume_promise = \
             self.client.basic_consume(queue=queue,
                                       prefetch_count=prefetch_count,
-                                      callback=handle_delivery)
+                                      callback=handle_delivery,
+                                      no_ack=no_ack)
 
         self.consume_promises.append(consume_promise)
         return consume_promise
@@ -342,14 +348,14 @@ class AMQPPukaClient(object):
             return self.client.wait(self.consume_promises, timeout)
 
     @reconnect_decorator
-    def basic_get(self, queue):
+    def basic_get(self, queue, no_ack=False):
         """Get a single message from a queue.
 
         This is a non-blocking method for getting messages from a queue.
         It will return None if the queue is empty.
 
         """
-        get_promise = self.client.basic_get(queue=queue)
+        get_promise = self.client.basic_get(queue=queue, no_ack=no_ack)
         result = self.client.wait(get_promise)
         if 'empty' in result:
             # The queue is empty

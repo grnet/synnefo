@@ -1,4 +1,4 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -30,13 +30,42 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-#
 
 """
-Django settings metadata. To be used in setup.py snf-webproject entry points.
+Routers for the admin app. They are used to specify which database will be used
+for each model.
+
+By convention, operations to synnefo.* apps go to 'cyclades' db and operations
+to astakos.* apps go to 'astakos' db.
 """
 
-installed_apps = ['synnefo_admin.admin']
-database_routers = ['synnefo_admin.admin.routers.AdminRouter']
-static_files = {'synnefo_admin' : 'admin'}
 
+def select_db(app):
+    """Generic selection of database."""
+    if app == "db":
+        return 'cyclades'
+    if app == "im":
+        return 'astakos'
+    return None
+
+
+class AdminRouter(object):
+
+    """ Router for cyclades/astakos models.
+
+    A router to control database operations on the models of two main apps:
+    synnefo (cyclades) and astakos.
+    """
+
+    def db_for_read(self, model, **hints):
+        """Select db to read."""
+        app = model._meta.app_label
+        return select_db(app)
+
+    def db_for_write(self, model, **hints):
+        """Select db to write."""
+        app = model._meta.app_label
+        return select_db(app)
+
+    # The rest of the methods are ommited since relations and syncing should
+    # affect the admin router.

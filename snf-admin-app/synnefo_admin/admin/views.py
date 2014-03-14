@@ -143,6 +143,7 @@ def admin_user_required(func, permitted_groups=PERMITTED_GROUPS):
         else:
             logger.info("Failed to access admin view %r. No authenticated "
                         "user found.", request.user_uniq)
+            logger.info("auth_url (%s)", settings.ASTAKOS_AUTH_URL)
             raise PermissionDenied
 
         logging.info("User %s accessed admininterface view (%s)", request.user_uniq,
@@ -170,11 +171,8 @@ def index(request):
 
 @admin_user_required
 def account(request, search_query):
-    """
-    Account details view.
-    """
-
-    logging.info("Admin-Interface search by %s: %s", request.user_uniq, search_query)
+    """Account details view."""
+    logging.info("Admin search by %s: %s", request.user_uniq, search_query)
     show_deleted = bool(int(request.GET.get('deleted', SHOW_DELETED_VMS)))
     error = request.GET.get('error', None)
 

@@ -179,6 +179,7 @@ setup(
     entry_points = {
      'synnefo': [
          'web_apps = synnefo_admin.synnefo_settings:installed_apps',
+         'db_routers = synnefo_admin.synnefo_settings:database_routers',
          'urls = synnefo_admin.urls:urlpatterns',
          'web_static = synnefo_admin.synnefo_settings:static_files'
          ]

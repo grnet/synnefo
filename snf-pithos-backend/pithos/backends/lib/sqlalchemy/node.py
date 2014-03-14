@@ -523,7 +523,7 @@ class Node(DBWorker):
         r = self.conn.execute(s)
         rows = r.fetchall()
         r.close()
-        d = defaultdict(dict)
+        d = defaultdict(lambda: defaultdict(dict))
         for account, project, usage in rows:
             d[account][project][DEFAULT_DISKSPACE_RESOURCE] = usage
         return d

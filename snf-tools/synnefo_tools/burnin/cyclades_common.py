@@ -517,7 +517,7 @@ class CycladesTests(BurninTests):
                       pub_net['id'])
             try:
                 fip = self.clients.network.create_floatingip(
-                    pub_net['id'], project=project_id)
+                    pub_net['id'], project_id=project_id)
             except ClientError as err:
                 self.warning("%s: %s", err.message, err.details)
                 continue

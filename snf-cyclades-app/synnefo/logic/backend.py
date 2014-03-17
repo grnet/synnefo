@@ -785,6 +785,7 @@ def network_exists_in_backend(backend_network):
     except rapi.GanetiApiError as e:
         if e.code == 404:
             return False
+        raise e
 
 
 def job_is_still_running(vm, job_id=None):
@@ -794,8 +795,10 @@ def job_is_still_running(vm, job_id=None):
                 job_id = vm.backendjobid
             job_info = c.GetJobStatus(job_id)
             return not (job_info["status"] in rapi.JOB_STATUS_FINALIZED)
-        except rapi.GanetiApiError:
-            return False
+        except rapi.GanetiApiError as e:
+            if e.code == 404:
+                return False
+            raise e
 
 
 def nic_is_stale(vm, nic, timeout=60):

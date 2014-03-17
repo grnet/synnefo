@@ -2335,6 +2335,12 @@ The logging configuration dictionary is defined in
 The administrator can have logging control by modifying the ``LOGGING_SETUP``
 dictionary, and defining subloggers with different handlers and log levels.
 
+By default snf-manage will log any command that is being executed along with
+its output under the directory ``LOG_DIR``/commands. The ``LOG_DIR`` directory
+can be changed from the ``00-snf-common-admins.conf`` configuration file and
+the whole snf-manage logging mechanism can be disabled by changing the
+``LOGGER_EXCLUDE_COMMANDS`` setting to ".\*".
+
 
 .. _scale-up:
 

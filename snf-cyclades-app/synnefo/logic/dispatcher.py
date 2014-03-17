@@ -268,7 +268,7 @@ def handle_request(client, msg):
 def parse_arguments(args):
     from optparse import OptionParser
 
-    default_pid_file = "/var/run/synnefo/snf_dispatcher.pid"
+    default_pid_file = "/var/run/synnefo/snf-dispatcher.pid"
     description = ("The Synnefo Dispatcher Daemon consumes messages from an"
                    " AMQP broker and properly updates the Cyclades DB. These"
                    " messages are mostly asynchronous notifications about the"

@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -27,10 +27,10 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 #
-from django.core.management.base import BaseCommand
 from optparse import make_option
 
 from synnefo.lib.amqp import AMQPClient
+from snf_django.management.commands import SynnefoCommand
 
 from synnefo.logic import queues
 
@@ -39,10 +39,10 @@ import logging
 log = logging.getLogger("")
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = "Resend messages from dead letter queues to original exchange"""
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             '--keep-zombies',
             action='store_true',

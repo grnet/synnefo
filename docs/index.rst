@@ -130,6 +130,15 @@ There are also the following tools:
 Design
 ======
 
+v0.16
+-----
+
+.. toctree::
+   :maxdepth: 1
+
+   Logging mechanism for Synnefo's management commands <design/logging-management-commands>
+
+
 v0.15
 -----
 

@@ -1,4 +1,4 @@
-# Copyright 2012, 2013, 2014 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -38,23 +38,24 @@ from optparse import make_option
 
 from django.core import management
 from django.db import transaction
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
 from astakos.im.models import AstakosUser
 from astakos.im import activation_backends
+from snf_django.management.commands import SynnefoCommand
 from ._common import (remove_user_permission, add_user_permission, is_uuid)
 
 activation_backend = activation_backends.get_backend()
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<user ID> (or --all)"
     help = "Modify a user's attributes"
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--all',
                     action='store_true',
                     default=False,
@@ -198,9 +199,9 @@ class Command(BaseCommand):
                 reject_reason=reject_reason)
             activation_backend.send_result_notifications(res, user)
             if res.is_error():
-                print "Failed to reject.", res.message
+                self.stderr.write("Failed to reject: %s\n" % res.message)
             else:
-                print "Account rejected"
+                self.stderr.write("Account rejected\n")
 
         if options.get('verify'):
             res = activation_backend.handle_verification(
@@ -208,33 +209,34 @@ class Command(BaseCommand):
                 user.verification_code)
             #activation_backend.send_result_notifications(res, user)
             if res.is_error():
-                print "Failed to verify.", res.message
+                self.stderr.write("Failed to verify: %s\n" % res.message)
             else:
-                print "Account verified (%s)" % res.status_display()
+                self.stderr.write("Account verified (%s)\n"
+                                  % res.status_display())
 
         if options.get('accept'):
             res = activation_backend.handle_moderation(user, accept=True)
             activation_backend.send_result_notifications(res, user)
             if res.is_error():
-                print "Failed to accept.", res.message
+                self.stderr.write("Failed to accept: %s\n" % res.message)
             else:
-                print "Account accepted and activated"
+                self.stderr.write("Account accepted and activated\n")
 
         if options.get('active'):
             res = activation_backend.activate_user(user)
             if res.is_error():
-                print "Failed to activate.", res.message
+                self.stderr.write("Failed to activate: %s\n" % res.message)
             else:
-                print "Account %s activated" % user.username
+                self.stderr.write("Account %s activated\n" % user.username)
 
         elif options.get('inactive'):
             res = activation_backend.deactivate_user(
                 user,
                 reason=options.get('inactive_reason', None))
             if res.is_error():
-                print "Failed to deactivate,", res.message
+                self.stderr.write("Failed to deactivate: %s\n" % res.message)
             else:
-                print "Account %s deactivated" % user.username
+                self.stderr.write("Account %s deactivated\n" % user.username)
 
         invitations = options.get('invitations')
         if invitations is not None:

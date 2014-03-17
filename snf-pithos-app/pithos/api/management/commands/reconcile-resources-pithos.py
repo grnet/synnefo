@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from datetime import datetime
-from django.core.management.base import NoArgsCommand, CommandError
+from django.core.management.base import CommandError
 
 from optparse import make_option
 
@@ -40,6 +40,7 @@ from pithos.api.util import get_backend
 
 from snf_django.management import utils
 
+from snf_django.management.commands import SynnefoCommand
 from astakosclient.errors import QuotaLimit, NotFound
 from snf_django.utils import reconcile
 
@@ -47,14 +48,14 @@ backend = get_backend()
 RESOURCES = ['pithos.diskspace']
 
 
-class Command(NoArgsCommand):
+class Command(SynnefoCommand):
     help = """Reconcile resource usage of Astakos with Pithos DB.
 
     Detect unsynchronized usage between Astakos and Pithos DB resources and
     synchronize them if specified so.
 
     """
-    option_list = NoArgsCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option("--userid", dest="userid",
                     default=None,
                     help="Reconcile resources only for this user"),
@@ -107,8 +108,8 @@ class Command(NoArgsCommand):
                                       db_usage, qh_result)
 
             unsynced_projects, projects_pending, projects_unknown =\
-            reconcile.check_projects(self.stderr, RESOURCES,
-                                     db_project_usage, qh_project_result)
+                reconcile.check_projects(self.stderr, RESOURCES,
+                                         db_project_usage, qh_project_result)
             pending_exists = users_pending or projects_pending
             unknown_exists = users_unknown or projects_unknown
 

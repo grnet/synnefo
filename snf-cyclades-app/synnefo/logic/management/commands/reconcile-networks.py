@@ -1,4 +1,4 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -36,11 +36,12 @@ logic/reconciliation.py for a description of reconciliation rules.
 """
 import logging
 from optparse import make_option
-from django.core.management.base import BaseCommand
+
 from synnefo.logic import reconciliation
+from snf_django.management.commands import SynnefoCommand
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = """Reconcile contents of Synnefo DB with state of Ganeti backend
 
 Network reconciliation can detect and fix the following cases:
@@ -53,7 +54,7 @@ Network reconciliation can detect and fix the following cases:
 """
 
     can_import_settings = True
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--fix-all', action='store_true',
                     dest='fix', default=False,
                     help='Fix all issues.'),

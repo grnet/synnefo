@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,10 +31,11 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import NoArgsCommand, CommandError
+from django.core.management.base import CommandError
 from optparse import make_option
 
 from pithos.api.util import get_backend
+from snf_django.management.commands import SynnefoCommand
 
 import logging
 
@@ -43,10 +44,10 @@ logger = logging.getLogger(__name__)
 CLIENTKEY = 'pithos'
 
 
-class Command(NoArgsCommand):
+class Command(SynnefoCommand):
     help = "Display unresolved commissions and trigger their recovery"
 
-    option_list = NoArgsCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--fix',
                     dest='fix',
                     action="store_true",

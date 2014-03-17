@@ -28,13 +28,14 @@
 # policies, either expressed or implied, of GRNET S.A.
 #
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
+from snf_django.management.commands import SynnefoCommand
 from synnefo.plankton.backend import PlanktonBackend
 from snf_django.management import utils
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<image_id>"
     help = "Display available information about an image"
 

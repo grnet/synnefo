@@ -32,6 +32,15 @@ Synnefo-wide
   * All existing resources have been assigned to the respective
     user-specific base projects.
 
+* Logging mechanism for Synnefo management commands
+
+  * Log all stdout and stderr output of every invocation of snf-manage,
+    on unique filenames under a given directory.
+
+  * Add a new setting in the snf-common package, namely 'LOG_DIR', which
+    specifies the directory to be used by Synnefo components to write
+    their log files.
+
 Astakos
 -------
 

@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,15 +31,16 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from astakos.im import activation_backends
 activation_backend = activation_backends.get_backend()
 
 from ._common import get_user
+from snf_django.management.commands import SynnefoCommand
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<user ID or email> [user ID or email] ..."
     help = "Sends an activation email to one or more users"
 

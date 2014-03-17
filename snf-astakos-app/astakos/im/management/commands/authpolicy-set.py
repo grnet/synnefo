@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -34,12 +34,13 @@
 from optparse import make_option
 
 from django.db import transaction
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
+from snf_django.management.commands import SynnefoCommand
 from astakos.im.models import AuthProviderPolicyProfile as Profile
 from astakos.im.models import AstakosUser, Group
 
-option_list = BaseCommand.option_list + (
+option_list = SynnefoCommand.option_list + (
     make_option('--group',
                 action='append',
                 dest='groups',
@@ -63,7 +64,7 @@ def update_profile(profile, users, groups):
     profile.users.add(*users)
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<name> <provider_name>"
     help = "Assign an existing authentication provider policy profile to " + \
            "a user or group. All previously set "

@@ -1,4 +1,4 @@
-# Copyright 2012-2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,12 +32,13 @@
 # or implied, of GRNET S.A.
 
 from django.utils import simplejson as json
-from django.core.management.base import NoArgsCommand
+
+from snf_django.management.commands import SynnefoCommand
 from synnefo.cyclades_settings import cyclades_services
 from synnefo.lib.services import filter_public
 
 
-class Command(NoArgsCommand):
+class Command(SynnefoCommand):
     help = "Export Cyclades services in JSON format."
 
     def handle(self, *args, **options):

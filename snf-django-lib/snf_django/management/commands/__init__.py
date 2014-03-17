@@ -31,18 +31,57 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import os
+import re
+import sys
+import datetime
+import logging
 from optparse import (make_option, OptionParser, OptionGroup,
                       TitledHelpFormatter)
 
+from synnefo import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.core.exceptions import FieldError
 
 from snf_django.management import utils
 from snf_django.lib.astakos import UserCache
+from snf_django.utils.line_logging import NewlineStreamHandler
 
 import distutils
 
 USER_EMAIL_FIELD = "user.email"
+LOGGER_EXCLUDE_COMMANDS = "-list$|-show$"
+
+
+class SynnefoOutputWrapper(object):
+    """Wrapper around stdout/stderr
+
+    This class replaces Django's 'OutputWrapper' which doesn't handle
+    logging to file.
+
+    Since 'BaseCommand' doesn't initialize the 'stdout' and 'stderr'
+    attributes at '__init__' but sets them only when it needs to,
+    this class has to be a descriptor.
+
+    We will use the old 'OutputWrapper' class for print to the screen and
+    a logger for logging to the file.
+
+    """
+    def __init__(self):
+        self.django_wrapper = None
+        self.logger = None
+
+    def __set__(self, obj, value):
+        self.django_wrapper = value
+
+    def __getattr__(self, name):
+        return getattr(self.django_wrapper, name)
+
+    def write(self, msg, *args, **kwargs):
+        if self.logger is not None:
+            self.logger.info(msg)
+        if self.django_wrapper is not None:
+            self.django_wrapper.write(msg, *args, **kwargs)
 
 
 class SynnefoCommandFormatter(TitledHelpFormatter):
@@ -63,6 +102,98 @@ class SynnefoCommand(BaseCommand):
             help="Select the output format: pretty [the default], json, "
                  "csv [comma-separated output]"),
     )
+
+    stdout = SynnefoOutputWrapper()
+    stderr = SynnefoOutputWrapper()
+
+    def run_from_argv(self, argv):
+        """Initialize logger for 'SynnefoOutputWrapper' and call super
+
+        Create a filename based on the timestamp, the running
+        command and the pid. Then create a new logger that will
+        write to this file and pass it to stdout and stderr
+        'SynnefoOutputWrapper' objects.
+
+        Modify all existing loggers to write to this file as well.
+
+        Commands that match the 'LOGGER_EXCLUE_COMMANDS' pattern will not be
+        logged (by default all *-list and *-show commands).
+
+        """
+        curr_time = datetime.datetime.now()
+        curr_time = datetime.datetime.strftime(curr_time, "%y%m%d%H%M%S")
+        command = argv[1]
+        pid = os.getpid()
+        fd = None
+        stream = None
+
+        exclude_commands = getattr(settings, "LOGGER_EXCLUDE_COMMANDS",
+                                   LOGGER_EXCLUDE_COMMANDS)
+        if re.search(exclude_commands, command) is None:
+            # The filename will be of the form time_command_pid.log
+            basename = "%s_%s_%s" % (curr_time, command, pid)
+            log_dir = os.path.join(settings.LOG_DIR, "commands")
+            # If log_dir is missing, create it
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
+            filename = os.path.join(log_dir, basename + ".log")
+
+            try:
+                fd = os.open(filename,
+                             os.O_RDWR | os.O_APPEND | os.O_CREAT,
+                             0600)
+                stream = os.fdopen(fd, 'a')
+
+                formatter = logging.Formatter(
+                    "%(asctime)s - %(levelname)s: %(message)s")
+                # Our file handler
+                # We need one handler without newline terminator
+                # for commnand-line's output (the programmer is
+                # responsible for formatting the output) and one
+                # FileHandler for the rest loggers.
+                # TODO: Replace 'NewlineStreamHandler' with pythons
+                # 'logging.StreamHandler' when python version >= 3.2
+                line_handler = NewlineStreamHandler(stream)
+                line_handler.terminator = ''
+                line_handler.setLevel(logging.DEBUG)
+                line_handler.setFormatter(formatter)
+
+                file_handler = logging.FileHandler(filename, mode='a')
+                file_handler.setLevel(logging.DEBUG)
+                file_handler.setFormatter(formatter)
+
+                # Change all loggers to use our new file_handler
+                all_loggers = logging.Logger.manager.loggerDict.keys()
+                for logger_name in all_loggers:
+                    logger = logging.getLogger(logger_name)
+                    logger.addHandler(file_handler)
+
+                # Create our new logger
+                logger = logging.getLogger(basename)
+                logger.setLevel(logging.DEBUG)
+                logger.propagate = False
+                logger.addHandler(line_handler)
+
+                # Write the command which is executed
+                header = "\n\tcommand: %s\n\tpid: %s\n" \
+                    % (" ".join(map(str, argv)), pid)
+                logger.info(header + "\n\nOutput:\n")
+
+                # Give the logger to our stdout, stderr objects
+                self.stdout.logger = logger
+                self.stderr.logger = logger
+            except OSError as err:
+                msg = "Could not open file %s for write: %s\n" + \
+                    "Will not log this command's output\n" \
+                    % (filename, err)
+                sys.stderr.write(msg)
+
+        super(SynnefoCommand, self).run_from_argv(argv)
+        if stream is not None:
+            stream.close()
+            fd = None
+        if fd is not None:
+            os.close(fd)
 
     def create_parser(self, prog_name, subcommand):
         parser = OptionParser(prog=prog_name, add_help_option=False,
@@ -295,7 +426,7 @@ class ListCommand(SynnefoCommand):
                 objects = objects.prefetch_related(*prefetch_related)
             objects = objects.filter(**self.filters)
             for key, value in self.excludes.iteritems():
-                objects = objects.exclude(**{key:value})
+                objects = objects.exclude(**{key: value})
         except FieldError as e:
             raise CommandError(e)
         except Exception as e:

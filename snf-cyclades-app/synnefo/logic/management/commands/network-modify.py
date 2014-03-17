@@ -33,20 +33,21 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from synnefo.db.models import Backend
 from synnefo.management.common import get_resource
+from snf_django.management.commands import SynnefoCommand
 from snf_django.management.utils import parse_bool
 from synnefo.logic import networks, backend as backend_mod
 from django.db import transaction
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<network_id>"
     help = "Modify a network."
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             '--name',
             dest='name',

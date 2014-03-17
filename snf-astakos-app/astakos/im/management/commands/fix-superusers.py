@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,16 +31,14 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from optparse import make_option
-from datetime import datetime
-
 from django.db import transaction
-from django.core.management.base import NoArgsCommand, CommandError
+from django.core.management.base import CommandError
 
 from astakos.im.auth import fix_superusers
+from snf_django.management.commands import SynnefoCommand
 
 
-class Command(NoArgsCommand):
+class Command(SynnefoCommand):
     help = "Transform superusers created by syncdb into AstakosUser instances"
 
     @transaction.commit_on_success

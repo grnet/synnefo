@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -35,11 +35,12 @@ import string
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from astakos.im.models import AuthProviderPolicyProfile as Profile
+from snf_django.management.commands import SynnefoCommand
 
-option_list = list(BaseCommand.option_list) + [
+option_list = list(SynnefoCommand.option_list) + [
     make_option('--update',
                 action='store_true',
                 dest='update',
@@ -68,7 +69,7 @@ for p in POLICIES:
                                    help="%s policy" % p.title()))
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<name> <provider_name>"
     help = "Create a new authentication provider policy profile"
     option_list = option_list

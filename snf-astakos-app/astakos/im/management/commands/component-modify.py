@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -33,16 +33,17 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from astakos.im.models import Component
+from snf_django.management.commands import SynnefoCommand
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<component ID or name>"
     help = "Modify component attributes"
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--ui-url',
                     dest='ui_url',
                     default=None,

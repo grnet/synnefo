@@ -32,7 +32,9 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
+
+from snf_django.management.commands import SynnefoCommand
 from synnefo.db.models import Backend
 from snf_django.management.utils import parse_bool
 from synnefo.management import common
@@ -40,12 +42,12 @@ from synnefo.management import common
 HYPERVISORS = [h[0] for h in Backend.HYPERVISORS]
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     output_transaction = True
     args = "<backend_id>"
     help = "Modify a backend"
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--clustername',
                     dest='clustername',
                     help="Set backend's clustername"),

@@ -1,4 +1,4 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright 2012-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,16 +31,17 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 
 from astakos.im.models import AuthProviderPolicyProfile as Profile
+from snf_django.management.commands import SynnefoCommand
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<profile_name>"
     help = "Remove an authentication provider policy"
 
-    option_list = BaseCommand.option_list + ()
+    option_list = SynnefoCommand.option_list + ()
 
     def handle(self, *args, **options):
         if len(args) != 1:

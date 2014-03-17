@@ -34,9 +34,11 @@
 from optparse import make_option
 
 from django.db import transaction
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
+
 from synnefo.management.common import (get_resource, convert_api_faults,
                                        wait_server_task)
+from snf_django.management.commands import SynnefoCommand
 from snf_django.management.utils import parse_bool
 from synnefo.logic import servers
 
@@ -44,11 +46,11 @@ from synnefo.logic import servers
 ACTIONS = ["start", "stop", "reboot_hard", "reboot_soft"]
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<server_id>"
     help = "Modify a server."
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             '--name',
             dest='name',

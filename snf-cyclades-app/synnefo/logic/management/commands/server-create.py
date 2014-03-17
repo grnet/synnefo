@@ -33,9 +33,11 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
+
 from synnefo.management import common, pprint
 from snf_django.management.utils import parse_bool
+from snf_django.management.commands import SynnefoCommand
 
 from synnefo.logic import servers
 
@@ -47,10 +49,10 @@ backend-id.
 """
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = "Create a new VM." + HELP_MSG
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option("--backend-id", dest="backend_id",
                     help="Unique identifier of the Ganeti backend."
                          " Use snf-manage backend-list to find out"

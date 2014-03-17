@@ -38,17 +38,18 @@ import sys
 import logging
 import subprocess
 from optparse import make_option
-from django.core.management.base import BaseCommand
+
+from snf_django.management.commands import SynnefoCommand
 from synnefo.management.common import get_resource
 from synnefo.logic import reconciliation
 from snf_django.management.utils import parse_bool
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     can_import_settings = True
 
     help = 'Reconcile contents of Synnefo DB with state of Ganeti backend'
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option('--backend-id', default=None, dest='backend-id',
                     help='Reconcilie VMs only for this backend'),
         make_option("--parallel",

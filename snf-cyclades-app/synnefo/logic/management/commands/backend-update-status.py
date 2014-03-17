@@ -1,4 +1,4 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -27,8 +27,7 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 #
-from django.core.management.base import BaseCommand
-
+from snf_django.management.commands import SynnefoCommand
 from synnefo.db.models import Backend
 from synnefo.logic import backend as backend_mod
 
@@ -41,7 +40,7 @@ This command updates:
 """
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = HELP_MSG
 
     def handle(self, **options):

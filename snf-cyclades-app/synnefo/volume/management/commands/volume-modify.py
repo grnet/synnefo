@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-from django.core.management.base import BaseCommand, CommandError
+from snf_django.management.commands import SynnefoCommand, CommandError
 
 from snf_django.management.utils import parse_bool
 from synnefo.management.common import convert_api_faults
@@ -40,11 +40,11 @@ from synnefo.management import pprint, common
 from synnefo.volume import volumes
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = "Modify a volume"
     args = "<volume ID>"
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             '--name',
             dest='name',

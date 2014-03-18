@@ -1,6 +1,7 @@
 from synnefo.db import models
 from snf_django.lib.api import faults
-from synnefo.api.util import get_image_dict, get_vm, image_backend
+from synnefo.api.util import get_image_dict, get_vm
+from synnefo.plankton.backend import PlanktonBackend
 from synnefo.cyclades_settings import cyclades_services, BASE_HOST
 from synnefo.lib import join_urls
 from synnefo.lib.services import get_service_path
@@ -23,7 +24,7 @@ def get_volume(user_id, volume_id, for_update=False,
 
 def get_snapshot(user_id, snapshot_id, exception=faults.ItemNotFound):
     try:
-        with image_backend(user_id) as b:
+        with PlanktonBackend(user_id) as b:
             return b.get_snapshot(user_id, snapshot_id)
     except faults.ItemNotFound:
         raise exception("Snapshot %s not found" % snapshot_id)
@@ -82,5 +83,5 @@ def get_disk_template_provider(disk_template):
 
 
 def update_snapshot_status(snapshot_id, user_id, status):
-    with image_backend(user_id) as b:
+    with PlanktonBackend(user_id) as b:
         return b.update_status(snapshot_id, status=status)

@@ -44,7 +44,8 @@ from snf_django.lib.api import faults, utils
 
 from synnefo.volume import volumes, snapshots, util
 from synnefo.db.models import Volume
-from synnefo.plankton.utils import image_backend
+from synnefo.plankton.backend import PlanktonBackend
+
 log = getLogger('synnefo.volume')
 
 
@@ -287,7 +288,7 @@ def create_snapshot(request):
 def list_snapshots(request, detail=False):
     log.debug('list_snapshots detail=%s', detail)
     since = utils.isoparse(request.GET.get('changes-since'))
-    with image_backend(request.user_uniq) as backend:
+    with PlanktonBackend(request.user_uniq) as backend:
         snapshots = backend.list_snapshots()
         if since:
             updated_since = lambda snap:\

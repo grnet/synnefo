@@ -33,17 +33,17 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from snf_django.management.commands import SynnefoCommand, CommandError
 from synnefo.management import common
 #from snf_django.management.utils import parse_bool
 from synnefo.volume import snapshots
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<volume ID>"
     help = "Create a snapshot from the specified volume"
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             '--wait',
             dest='wait',

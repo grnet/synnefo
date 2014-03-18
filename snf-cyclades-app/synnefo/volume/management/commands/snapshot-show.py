@@ -28,18 +28,18 @@
 # policies, either expressed or implied, of GRNET S.A.
 #
 
-from django.core.management.base import BaseCommand, CommandError
+from snf_django.management.commands import SynnefoCommand, CommandError
 from optparse import make_option
 
 from synnefo.management import common
-from synnefo.plankton.utils import image_backend
+from synnefo.plankton.backend import PlanktonBackend
 from snf_django.management import utils
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     args = "<snapshot_id>"
     help = "Display available information about a snapshot"
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             '--user-id',
             dest='userid',
@@ -55,9 +55,9 @@ class Command(BaseCommand):
             raise CommandError("Please provide a snapshot ID")
 
         snapshot_id = args[0]
-        user_id = options["userid"]
+        userid = options["userid"]
 
-        with image_backend(userid) as backend:
+        with PlanktonBackend(userid) as backend:
             snapshot = backend.get_snapshot(userid, snapshot_id)
         utils.pprint_table(out=self.stdout, table=[snapshot.values()],
                            headers=snapshot.keys(), vertical=True)

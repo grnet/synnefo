@@ -1,7 +1,7 @@
 import logging
 from django.db import transaction
 from snf_django.lib.api import faults
-from synnefo.plankton.utils import image_backend
+from synnefo.plankton.backend import PlanktonBackend
 from synnefo.logic import backend
 from synnefo.volume import util
 
@@ -87,7 +87,7 @@ def create(user_id, volume, name, description, metadata, force=False):
     # Convert size from Gbytes to bytes
     size = volume.size << 30
 
-    with image_backend(user_id) as pithos_backend:
+    with PlanktonBackend(user_id) as pithos_backend:
         # move this to plankton backend
         snapshot_id = pithos_backend.backend.register_object_map(
             user=user_id,
@@ -127,7 +127,7 @@ def delete(snapshot):
     """
     user_id = snapshot["owner"]
     log.info("Deleting snapshot '%s'", snapshot["location"])
-    with image_backend(user_id) as pithos_backend:
+    with PlanktonBackend(user_id) as pithos_backend:
         pithos_backend.delete_snapshot(snapshot["id"])
     return snapshot
 
@@ -145,5 +145,5 @@ def update(snapshot, name=None, description=None):
     if not metadata:
         return
     user_id = snapshot["owner"]
-    with image_backend(user_id) as b:
+    with PlanktonBackend(user_id) as b:
         return b.update_metadata(snapshot["id"], metadata)

@@ -83,7 +83,7 @@ log = getLogger('synnefo.plankton')
 
 API_STATUS_FROM_IMAGE_STATUS = {
     "CREATING": "SAVING",
-    "AVAILABLE": "ACTIVE",
+    "AVAILABLE": "AVAILABLE",
     "DELETED": "DELETED"}
 
 

@@ -33,7 +33,7 @@
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from snf_django.management.commands import SynnefoCommand, CommandError
 
 from snf_django.management.utils import parse_bool
 from synnefo.management import common, pprint
@@ -42,10 +42,10 @@ from synnefo.volume import volumes
 HELP_MSG = """Create a new volume."""
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = HELP_MSG
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             "--name",
             dest="name",

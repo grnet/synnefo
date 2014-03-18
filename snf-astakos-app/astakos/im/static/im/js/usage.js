@@ -1,6 +1,15 @@
 ;(function() {
 
 
+var truncate = function(str, n){
+  var p  = new RegExp("^.{0," + n + "}[\S]*", 'g');
+  var re = str.match(p);
+  var l  = re[0].length;
+  var re = re[0].replace(/\s$/,'');
+  if (l < str.length) return re + '&hellip;';
+  return str;
+};
+
 // helper humanize methods
 // https://github.com/taijinlee/humanize/blob/master/humanize.js 
 humanize = {};
@@ -55,6 +64,13 @@ function UsageView(settings) {
   this.url = this.settings.url;
   this.projects_url = this.settings.projects_url;
   this.container = $(this.settings.container);
+  this.project_url_tpl = this.settings.project_url_tpl;
+  
+  this.filter_all_btn = $("h2 .filter-all");
+  this.filter_base_btn = $("h2 .filter-base");
+  this.filter_all_btn.click(_.bind(this.handle_filter_action, this, 'all'));
+  this.filter_base_btn.click(_.bind(this.handle_filter_action, this, 'base'));
+
   this.meta = this.settings.meta;
   this.groups = this.settings.groups;
   this.projects = {};
@@ -67,7 +83,7 @@ function UsageView(settings) {
 
 _.extend(UsageView.prototype, {
   tpls: {
-      'main': '<div class="stats clearfix"><ul></ul></div>',
+      'main': '<div class="stats filter-base clearfix"><ul></ul></div>',
       'quotas': "#quotaTpl",
       'projectQuota': "#projectQuotaTpl"
   },
@@ -87,6 +103,18 @@ _.extend(UsageView.prototype, {
   
   $: function(selector) {
     return this.container;
+  },
+  
+  handle_filter_action: function(filter) {
+    if (filter == 'base') {
+      this.el.main.addClass('filter-base');
+      this.filter_all_btn.show();
+      this.filter_base_btn.hide();
+    } else {
+      this.el.main.removeClass('filter-base');
+      this.filter_all_btn.hide();
+      this.filter_base_btn.show();
+    }
   },
 
   render: function(tpl, params) {
@@ -112,12 +140,23 @@ _.extend(UsageView.prototype, {
       this.renderResourceProjects(this.container, resource);
     }, this);
     this.updateQuotas();
+    this.handle_filter_action('base');
     ul.show();
+    
+    // live is deprecated in latest jquery versions
+    $(".bar").live("mouseenter", function() {
+      var warn = $(this).find("i.warn");
+      if (warn.hasClass("visible")) {
+        $(this).find("i.warn-msg").addClass("hovered");
+      }
+    }).live("mouseleave", function() {
+      $(this).find("i.warn-msg").removeClass("hovered");
+    });
   },
   
   renderResourceProjects: function(list, resource) {
     var resource_el = list.find("li[data-resource='"+resource.name+"']");
-    var projects_el = resource_el.find(".projects");
+    var projects_el = resource_el.find(".resource-projects");
     projects_el.empty();
     _.each(resource.projects_list, function(project) {
       _.extend(project, {report_desc: resource.report_desc});
@@ -157,6 +196,8 @@ _.extend(UsageView.prototype, {
 
   addProject: function(uuid, details) {
     LOG("New project", uuid, details);
+    details.display_name = truncate(details.name, 35);
+    details.details_url = this.project_url_tpl.replace("UUID", details.id);
     this.projects[uuid] = details;
   },
 
@@ -179,7 +220,8 @@ _.extend(UsageView.prototype, {
       var usage = self.getUsage(key);
       if (!usage) { return }
       var el = self.$().find("li[data-resource='"+key+"']");
-      self.updateResourceElement(el.find(".summary.resource-bar"), usage);
+      el.removeClass("green yellow red");
+      el.addClass(usage.cls);
       _.each(self.resources[key].projects_list, function(project){
         var project_el = el.find(".project-" + project.id);
         if (project_el.length === 0) {
@@ -198,15 +240,17 @@ _.extend(UsageView.prototype, {
   },
 
   updateResourceElement: function(el, usage) {
-    var bar_el = el.find(".bar span");
+    var bar_el = el.find(".bar span.member");
     var bar_value = el.find(".bar .value");
+    var project_bar_el = el.find(".bar span.project");
 
     el.find(".currValue").text(usage.curr);
     el.find(".maxValue").text(usage.max);
-    bar_el.css({width:usage.perc+"%"});
-    bar_value.text(usage.perc+"%");
-    var left = usage.label_left == 'auto' ? 
-               usage.label_left : usage.label_left + "%";
+    bar_el.css({width:usage.ratio + "%"});
+    project_bar_el.css({width: usage.project_warn_ratio + "%"});
+
+    bar_value.text(usage.ratio+"%");
+    var left = usage.label_left + "%";
     bar_value.css({left:left});
     bar_value.css({color:usage.label_color});
     el.removeClass("green yellow red");
@@ -215,44 +259,95 @@ _.extend(UsageView.prototype, {
       el.parent().removeClass("green yellow red");
       el.parent().addClass(usage.cls);
     };
+
+    el.find("i.warn").removeClass("visible");
+    el.find("i.warn-msg").text(usage.project_warn_msg);
+    if (usage.project_warn) {
+      el.find("i.warn").addClass("visible");
+    } else {
+      el.find("i.warn-msg").removeClass("hovered");
+    }
   },
     
   getUsage: function(resource_name, quotas) {
     var resource = quotas ? quotas[resource_name] : this.quotas[resource_name];
     var resource_meta = this.resources[resource_name];
     if (!resource_meta) { return }
-    var value, limit, percentage; 
+    var value, limit, ratio, cls, label_left, label_col,
+        project_value, project_limit, project_ratio, project_cls, project_left;
     
     limit = resource.limit;
     value = resource.usage;
-    if (value < 0 ) { value = 0 }
+    project_limit = resource.project_limit;
+    project_value = resource.project_usage;
+    project_left = project_limit - project_value;
+
+    if (project_left < 0) { project_left = 0; }
+    if (value < 0) { value = 0; }
+    if (project_value < 0) { project_value = 0; }
   
-    percentage = (value/limit) * 100;
-    if (value == 0) { percentage = 0 }
+    ratio = (value/limit) * 100;
+    if (value == 0) { ratio = 0; }
     if (value > limit) {
-      percentage = 100;
+      ratio = 100;
+    }
+
+    project_ratio = (project_value/project_limit) * 100;
+    if (project_value == 0) { project_ratio = 0 }
+    if (project_value > project_limit) {
+      project_ratio = 100;
     }
   
     if (resource_meta.unit == 'bytes') {
       value = humanize.filesize(value);
       limit = humanize.filesize(limit);
+      project_value = humanize.filesize(value);
+      project_limit = humanize.filesize(limit);
+      project_left = humanize.filesize(project_left);
     }
 
-    var cls = 'green';
+    cls = 'green';
+    project_cls = 'green';
     _.each(this.usage_cls_map, function(ucls, u){
-      if (percentage >= u) {
-        cls = ucls
+      if (ratio >= u) {
+        cls = ucls;
       }
-    })
-  
-    var label_left = percentage >= 30 ? percentage - 17 : 'auto';
-    var label_col = label_left == 'auto' ? 'inherit' : '#fff';
-    if (label_left != 'auto') { label_left = label_left + "%" }
-    percentage = humanize.numberFormat(percentage, 0);
-    qdata = {'curr': value, 'max': limit, 'perc': percentage, 'cls': cls,
-             'label_left': label_left, 'label_color': label_col}
+      if (project_ratio >= u) {
+        project_cls = ucls;
+      }
+    });
+
+
+    var span = (ratio + '').length >= 3 ? 15 : 12;
+    label_left = ratio >= 30 ? ratio - span : ratio;
+    label_col = label_left == ratio ? 'inherit' : '#fff';
+    if (label_left != 'auto') { label_left = label_left + "%"; }
+
+    ratio = humanize.numberFormat(ratio , 0);
+    project_ratio = humanize.numberFormat(project_ratio , 0);
+    
+    var project_warn = project_ratio >= 80 && ratio != 100 ? true : false;
+    var project_warn_ratio = project_warn ? 100 - ratio : 0;
+    
+    var project_warn_msg = "WARNING: " + project_left + " left in project";
+
+    qdata = {
+      'curr': value, 
+      'max': limit, 
+      'ratio': ratio, 
+      'cls': cls,
+      'label_left': label_left, 
+      'label_color': label_col,
+      'project_curr': project_value,
+      'project_max': project_limit, 
+      'project_ratio': project_ratio, 
+      'project_cls': project_cls,
+      'project_warn': project_warn,
+      'project_warn_msg': project_warn_msg,
+      'project_warn_ratio': project_warn_ratio
+    };
     _.extend(qdata, resource);
-    return qdata
+    return qdata;
   },
   
   setQuotas: function(data, update_projects) {
@@ -319,7 +414,7 @@ _.extend(UsageView.prototype, {
         if (!resource.projects[uuid]) {
           resource.projects[uuid] = _.clone(self.projects[uuid]);
           if (self.projects[uuid].base_project) {
-            resource.projects[uuid].name = 'User quota'
+            resource.projects[uuid].display_name = 'System project';
           }
         }
         var resource_project = resource.projects[uuid];
@@ -339,10 +434,14 @@ _.extend(UsageView.prototype, {
             delete resource.projects_list[index];
           }
         });
+        
+        resource.projects_list = resource.projects_list.sort(function(p1, p2) {
+          if (p1.base_project && !p2.base_project) { return -1; }
+          if (!p1.base_project && p2.base_project) { return 1;  }
+          return p1.name > p2.name;
+        });
       });
-      
     });
-
   },
 
   _ajaxOptions: function(url) {

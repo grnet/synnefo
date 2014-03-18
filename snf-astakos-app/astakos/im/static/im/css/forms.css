@@ -78,6 +78,7 @@ form.innerlabels span.info					{ left: 290px; }
 form.withlabels span.info					{ left:485px;  }
 form span.info em 							{ display:block; overflow:hidden;  position:absolute; left:0; text-indent:-100px; top:0; height:21px; width:21px; background:url(../images/symbols.png) no-repeat -4px -31px;cursor:pointer; }
 form span.info:hover em 					{ background-position:-4px -3px; }
+.stats .bar i.warn-msg,
 form span.info span  						{ position:absolute; left:29px; top:-2px; width:120px; padding-left:30px; background:url(../images/black-line.jpg ) no-repeat left 8px; min-height:50px; display:none; font-size:0.846em;}
 form span.info:hover span 					{ display:block; }
 form span.extra-img:hover +span.info span	{ display:block; }

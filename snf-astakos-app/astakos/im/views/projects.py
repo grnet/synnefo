@@ -301,8 +301,8 @@ def project_or_app_detail(request, project_uuid, app_id=None):
     mem_display = user.membership_display(project) if project else None
     can_join_req = can_join_request(project, user) if project else False
     can_leave_req = can_leave_request(project, user) if project else False
-    can_cancel_req = can_cancel_join_request(project, user) if project else \
-        False
+    can_cancel_req = \
+            can_cancel_join_request(project, user) if project else False
 
     is_modification = application.is_modification() if application else False
 
@@ -331,6 +331,7 @@ def project_or_app_detail(request, project_uuid, app_id=None):
             'project': project,
             'application': application,
             'is_application': bool(application),
+            'display_usage': display_usage,
             'is_modification': is_modification,
             'addmembers_form': addmembers_form,
             'approved_members_count': approved_members_count,

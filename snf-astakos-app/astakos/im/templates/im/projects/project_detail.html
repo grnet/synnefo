@@ -84,7 +84,7 @@
   </div>
   {% endif %}
 
-  <div class="full-dotted">
+  <div class="full-dotted {% if display_usage %}with-usage{% endif %}">
 
      <div class="resources-heading clearfix">
          <h3>{% block page.resources_heading %}RESOURCES{% endblock %}</h3>
@@ -98,6 +98,11 @@
          <div class="resource-label">
             <em>Total</em>
          </div>
+         {% if display_usage %}
+         <div class="resource-label">
+            <em>Usage</em>
+         </div>
+         {% endif %}
          {% endif %}
      </div>
     {% if resources_set.all %}
@@ -112,12 +117,17 @@
                 {{ rp|resource_diff:"project" }}
                 {% endif %}
             </div>
-            <div class="resource">
+            <div class="resource fix-col">
                 {{ rp.display_member_capacity|default:"(not set)" }}
                 {% if is_modification %}
                 {{ rp|resource_diff:"member" }}
                 {% endif %}
             </div>
+            {% if display_usage %}
+            <div class="resource usage fix-col">
+                {{ rp.resource|display_resource_usage_for_project:project }}
+            </div>
+            {% endif %}
           </dd>
         {% endif %}
       {% empty %}

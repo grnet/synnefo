@@ -292,3 +292,9 @@ PROJECT_MEMBER_LEAVE_POLICIES = {
     2: 'owner accepts',
     3: 'closed',
 }
+
+USAGE_TAG_MAP = {
+    0: 'green',
+    33: 'yellow',
+    66: 'red'
+}

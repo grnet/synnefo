@@ -34,6 +34,8 @@ from astakos.im.views import util as views_util
 from astakos.im import util
 from astakos.im import presentation
 
+from astakos.im import quotas
+
 register = template.Library()
 
 DELIM = ','

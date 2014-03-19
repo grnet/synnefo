@@ -262,7 +262,7 @@ and returns only the service catalog.
 ========================================= =========  ==================
 Uri                                       Method     Description
 ========================================= =========  ==================
-``/identity/v2.0/tokens/``                POST       Checks whether the provided token is valid and conforms with the provided uuid (if present) and returns back information about the user
+``/identity/v2.0/tokens``                 POST       Checks whether the provided token is valid and conforms with the provided uuid (if present) and returns back information about the user
 ========================================= =========  ==================
 
 The input should be json formatted.

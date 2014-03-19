@@ -92,10 +92,10 @@ def network_action_demux(request, network_id):
     try:
         f = NETWORK_ACTIONS[action]
     except KeyError:
-        raise faults.BadRequest("Action %s not supported." % action)
+        raise api.faults.BadRequest("Action %s not supported." % action)
     action_args = req[action]
     if not isinstance(action_args, dict):
-        raise faults.BadRequest("Invalid argument.")
+        raise api.faults.BadRequest("Invalid argument.")
 
     return f(request, network, action_args)
 

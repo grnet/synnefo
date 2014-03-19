@@ -77,7 +77,7 @@ def api_method(http_method=None, token_required=True, user_required=True,
             try:
                 # Explicitly set request encoding to UTF-8 instead of relying
                 # to the DEFAULT_CHARSET setting. See:
-                # https://docs.djangoproject.com/en/1.4/ref/unicode/#form-submission
+                # https://docs.djangoproject.com/en/1.4/ref/unicode/#form-submission # flake8: noqa
                 request.encoding = 'utf-8'
 
                 # Get the requested serialization format

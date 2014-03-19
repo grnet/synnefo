@@ -129,8 +129,8 @@ class Command(SynnefoCommand):
                            self.output_format, title="Expired projects")
 
         if execute:
-            self.stderr.write('%d projects have been terminated.\n' % (
-                    length,))
+            self.stderr.write('%d projects have been terminated.\n' %
+                              (length,))
 
     def expire(self, execute=False):
         projects = check_expiration(execute=execute)

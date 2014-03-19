@@ -96,7 +96,7 @@ class QuotaAPITest(TestCase):
         r, _ = register.add_resource(resource21)
         register.update_base_default(r, 3)
 
-        resource_names = [r['name'] for r in
+        resource_names = [res['name'] for res in
                           [resource11, resource12, resource21]]
 
         # get resources
@@ -221,7 +221,8 @@ class QuotaAPITest(TestCase):
         assertIn('issue_time', body)
         self.assertEqual(body["name"], u"ναμε")
         provisions = sorted(body['provisions'], key=lambda p: p['resource'])
-        crp = sorted(commission_request['provisions'], key=lambda p: p['resource'])
+        crp = sorted(commission_request['provisions'],
+                     key=lambda p: p['resource'])
         self.assertEqual(provisions, crp)
         self.assertEqual(body['name'], commission_request['name'])
 
@@ -365,7 +366,6 @@ class QuotaAPITest(TestCase):
                         content_type='application/json', **s1_headers)
         self.assertEqual(r.status_code, 200)
 
-        reject_data = {'reject': ""}
         post_data = json.dumps(accept_data)
         r = client.post(u('commissions/' + str(serial) + '/action'), post_data,
                         content_type='application/json', **s1_headers)
@@ -760,7 +760,7 @@ class WrongPathAPITest(TestCase):
         response = self.client.get(path)
         self.assertEqual(response.status_code, 400)
         try:
-            error = json.loads(response.content)
+            json.loads(response.content)
         except ValueError:
             self.assertTrue(False)
 

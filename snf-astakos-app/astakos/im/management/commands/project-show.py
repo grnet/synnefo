@@ -190,8 +190,6 @@ def app_fields(app):
 
 
 def project_fields(project):
-    app = project.last_application
-
     d = OrderedDict([
         ('project id', project.uuid),
         ('name', project.realname),

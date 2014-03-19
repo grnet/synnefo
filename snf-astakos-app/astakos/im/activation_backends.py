@@ -83,20 +83,20 @@ class ActivationBackend(object):
     ActivationBackend handles user verification/activation.
 
     Example usage::
-    >>> # it is wise to not instantiate a backend class directly but use
-    >>> # get_backend method instead.
-    >>> backend = get_backend()
-    >>> formCls = backend.get_signup_form(request.POST)
-    >>> if form.is_valid():
-    >>>     user = form.create_user()
-    >>>     activation = backend.handle_registration(user)
-    >>>     # activation.status is one of backend.Result.{*} activation result
-    >>>     # types
-    >>>
-    >>>     # sending activation notifications is not done automatically
-    >>>     # we need to call send_result_notifications
-    >>>     backend.send_result_notifications(activation)
-    >>>     return HttpResponse(activation.message)
+    #>>> # it is wise to not instantiate a backend class directly but use
+    #>>> # get_backend method instead.
+    #>>> backend = get_backend()
+    #>>> formCls = backend.get_signup_form(request.POST)
+    #>>> if form.is_valid():
+    #>>>     user = form.create_user()
+    #>>>     activation = backend.handle_registration(user)
+    #>>>     # activation.status is one of backend.Result.{*} activation result
+    #>>>     # types
+    #>>>
+    #>>>     # sending activation notifications is not done automatically
+    #>>>     # we need to call send_result_notifications
+    #>>>     backend.send_result_notifications(activation)
+    #>>>     return HttpResponse(activation.message)
     """
 
     verification_template_name = 'im/activation_email.txt'

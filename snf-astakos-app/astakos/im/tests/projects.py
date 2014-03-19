@@ -100,7 +100,7 @@ class ProjectAPITest(TestCase):
         dump = json.dumps(app)
         kwargs = {"project_id": project_id}
         r = self.client.put(reverse("api_project", kwargs=kwargs), dump,
-                             content_type="application/json", **headers)
+                            content_type="application/json", **headers)
         body = json.loads(r.content)
         return r.status_code, body
 
@@ -605,13 +605,15 @@ class ProjectAPITest(TestCase):
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 400)
 
-        ap["resources"] = {u"σέρβις1.ρίσορς11": {
-                "member_capacity": 512}}
+        ap["resources"] = {u"σέρβις1.ρίσορς11": {"member_capacity": 512}}
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 400)
 
-        ap["resources"] = {u"σέρβις1.ρίσορς11": {"member_capacity": 512,
-                                                 "project_capacity": 1024}}
+        ap["resources"] = {
+            u"σέρβις1.ρίσορς11": {
+                "member_capacity": 512,
+                "project_capacity": 1024}
+            }
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 201)
 
@@ -630,10 +632,10 @@ class ProjectAPITest(TestCase):
             functions.modify_project(self.user1.uuid,
                                      {"description": "new description",
                                       "member_join_policy":
-                                          functions.MODERATED_POLICY})
+                                      functions.MODERATED_POLICY})
         functions.modify_project(self.user1.uuid,
                                  {"member_join_policy":
-                                      functions.MODERATED_POLICY})
+                                  functions.MODERATED_POLICY})
         r = client.get(reverse("api_project",
                                kwargs={"project_id": self.user1.uuid}),
                        **h_owner)
@@ -740,9 +742,13 @@ class TestProjects(TestCase):
         # let user have 2 pending applications
 
         # TODO figure this out
-        request = {"resources": {"astakos.pending_app":
-                                     {"member_capacity": 2,
-                                      "project_capacity": 2}}}
+        request = {
+            "resources": {
+                "astakos.pending_app": {
+                    "member_capacity": 2,
+                    "project_capacity": 2}
+                }
+            }
         functions.modify_project(self.user.uuid, request)
 
         r = self.user_client.get(reverse('project_add'), follow=True)

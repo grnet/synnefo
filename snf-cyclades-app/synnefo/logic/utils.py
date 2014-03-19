@@ -62,9 +62,10 @@ def id_from_network_name(name):
     Strips the ganeti prefix atm. Needs a better name!
 
     """
-    if not smart_unicode(name).startswith(settings.BACKEND_PREFIX_ID):
-        raise Network.InvalidBackendIdError(smart_unicode(name))
-    ns = smart_unicode(name).replace(settings.BACKEND_PREFIX_ID + 'net-', "", 1)
+    name = smart_unicode(name)
+    if not name.startswith(settings.BACKEND_PREFIX_ID):
+        raise Network.InvalidBackendIdError(name)
+    ns = name.replace(settings.BACKEND_PREFIX_ID + 'net-', "", 1)
     if not ns.isdigit():
         raise Network.InvalidBackendIdError(smart_unicode(name))
 
@@ -79,9 +80,10 @@ def id_from_nic_name(name):
     """Returns NIC's Django id, given a Ganeti's NIC name.
 
     """
-    if not smart_unicode(name).startswith(settings.BACKEND_PREFIX_ID):
+    name = smart_unicode(name)
+    if not name.startswith(settings.BACKEND_PREFIX_ID):
         raise ValueError("Invalid NIC name: %s" % name)
-    ns = smart_unicode(name).replace(settings.BACKEND_PREFIX_ID + 'nic-', "", 1)
+    ns = name.replace(settings.BACKEND_PREFIX_ID + 'nic-', "", 1)
     if not ns.isdigit():
         raise ValueError("Invalid NIC name: %s" % name)
 

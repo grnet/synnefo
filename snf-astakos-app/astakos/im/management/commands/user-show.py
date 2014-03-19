@@ -32,8 +32,6 @@
 # or implied, of GRNET S.A.
 
 from optparse import make_option
-
-from django.db.models import Q
 from astakos.im.models import AstakosUser, get_latest_terms, Project
 from astakos.im.quotas import get_user_quotas
 

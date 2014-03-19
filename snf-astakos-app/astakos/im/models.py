@@ -1505,7 +1505,7 @@ class ProjectResourceGrant(models.Model):
             return [self.project_capacity, self.member_capacity]
 
         project_diff = \
-                self.project_capacity - project_resource.project_capacity
+            self.project_capacity - project_resource.project_capacity
         member_diff = self.member_capacity - project_resource.member_capacity
         return [project_diff, member_diff]
 

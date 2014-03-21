@@ -1,6 +1,36 @@
-{% extends "admin/base.html" %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Synnefo admin</title>
+    <!-- <link href="../../static/bootstrap-3.1.1/css/bootstrap.css" rel="stylesheet"> -->
+    <link href="../../static/css/bootstrap.css" rel="stylesheet">
+    <link href="../../static/css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="../../static/css/extra.css" rel="stylesheet">
+    <link href="../../static/css/users.css" rel="stylesheet">
+    <style>
+    </style>
+  </head>
+  
+<body>
+  <div class="container-fluid">
+    <div class="row-fluid">
+      <div class="span7">
+        <h1>
+          <a href="#">Synnefo Admin</a>
+          <small>/ users</small>
+        </h1>
+      </div>
+      <div class="span5">
+        <form class="form-horizontal account-form" method="get" action=".">
+          <input type="text" class="input-medium search-query" name="account">
+          <button type="submit" class="btn">View account</button>
+        </form>
+      </div>
+    </div>
 
-{% block content %}
+    <!-- The content is placed inside div.messages -->
+    <div class="messages cleafix row-fuild">
       <div class="subnav">
           <ul class="nav nav-pills filters">
             <li>
@@ -53,7 +83,6 @@
             <th>Suspended VMs<span class="caret"></span></th>
           </tr>
         </thead>
-	<tbody>
          <tr data-state="inactive">
           <td class="checkbox-column">
               <input type="checkbox">
@@ -63,9 +92,87 @@
           <td>Inactive</td>
           <td>No</td>
         </tr>
-	</tbody>
+        <tr data-state="verified">
+          <td class="checkbox-column">
+              <input type="checkbox">
+          </td>
+          <td>Georgios. Papadakis</td>
+          <td>giorgios@mail.ntua.gr</td>
+          <td>Verified</td>
+          <td>No</td>
+        </tr>
+        <tr data-state="active">
+          <td class="checkbox-column">
+              <input type="checkbox">
+          </td>
+          <td>Athina Christina Lykogianni Bekakou</td>
+          <td>athinabek@admin.grnet.gr</td>
+          <td>Active</td>
+          <td>Yes</td>
+        </tr>
+        <tr data-state="inactive">
+          <td class="checkbox-column">
+              <input type="checkbox">
+          </td>
+          <td>G. Papadakis</td>
+          <td>giorgios@mail.com</td>
+          <td>Inactive</td>
+          <td>No</td>
+        </tr>
+        <tr data-state="verified">
+          <td class="checkbox-column">
+              <input type="checkbox">
+          </td>
+          <td>Georgios. Papadakis</td>
+          <td>giorgios@mail.ntua.gr</td>
+          <td>Verified</td>
+          <td>No</td>
+        </tr>
+        <tr data-state="active">
+          <td class="checkbox-column">
+              <input type="checkbox">
+          </td>
+          <td>Athina Christina Lykogianni Bekakou</td>
+          <td>athinabek@admin.grnet.gr</td>
+          <td>Active</td>
+          <td>Yes</td>
+        </tr>
+        <tr data-state="inactive">
+          <td class="checkbox-column">
+            <div class="checkbox">
+                <label>
+                  <input type="checkbox">
+                </label>
+            </div>
+          </td>
+          <td>G. Papadakis</td>
+          <td>giorgios@mail.com</td>
+          <td>Inactive</td>
+          <td>No</td>
+        </tr>
+        <tr data-state="verified">
+          <td class="checkbox-column">
+              <input type="checkbox">
+          </td>
+          <td>Georgios. Papadakis</td>
+          <td>giorgios@mail.ntua.gr</td>
+          <td>Verified</td>
+          <td>No</td>
+        </tr>
+        <tr data-state="active">
+          <td class="checkbox-column">
+              <input type="checkbox">
+          </td>
+          <td>Athina Christina Lykogianni Bekakou</td>
+          <td>athinabek@admin.grnet.gr</td>
+          <td>Active</td>
+          <td>Yes</td>
+        </tr>
         </table>
       </div>
+    </div>
+    </div>
+
 
 <!-- Modals -->
 <div class="modal fade in hide" id="activate-confirm">
@@ -186,4 +293,13 @@
     <a href="#" class="btn">Send</a>
   </div>
 </div>
-{% endblock %}
+
+
+  <script src="../../static/js/jquery.js"></script>
+  <!-- <script src="../../static/bootstrap-3.1.1/js/bootstrap.js"></script> -->
+  <script src="../../static/js/bootstrap.js"></script>
+  <script src="../../static/js/jquery.tablesorter.js"></script>
+  <script src="../../static/js/common.js"></script> 
+  <script src="../../static/js/users.js"></script> 
+</body>
+</html>

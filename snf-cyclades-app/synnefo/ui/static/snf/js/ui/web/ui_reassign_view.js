@@ -34,6 +34,16 @@
     views.ProjectSelectItemView = views.ext.SelectModelView.extend({
       tpl: '#project-select-model-tpl',
 
+      select: function() {
+        views.ProjectSelectItemView.__super__.select.call(this);
+        this.model.trigger("change:_quotas");
+      },
+      
+      deselect: function() {
+        views.ProjectSelectItemView.__super__.deselect.call(this);
+        this.model.trigger("change:_quotas");
+      },
+
       set_current: function() {
         this._is_current = true;
         this.model.trigger('change:_project_is_current');
@@ -57,14 +67,47 @@
 
       quotas_html: function() {
         var data = "<div>";
+        var resolve = this.options.quotas_keys.length;
+        var found = 0;
         _.each(this.options.quotas_keys, function(key) {
           var q = this.model.quotas.get(key);
           if (!q) { return }
+          found += 1;
+          
+          var limit = q.get_readable("limit");
+          var usage = q.get("usage");
+
+          if (this.selected && !this._is_current) {
+            var model_usage = this.parent_view.model_usage;
+            var model = this.parent_view.resource_model;
+            var usage_keys = model_usage.call(this.parent_view, model);
+            var use = usage_keys[key];
+            if (use) {
+              usage = usage + use;
+            }
+          }
+
+          if (!this.selected && this._is_current) {
+            var model_usage = this.parent_view.model_usage;
+            var model = this.parent_view.resource_model;
+            var usage_keys = model_usage.call(this.parent_view, model);
+            var use = usage_keys[key];
+            if (use) {
+              usage = usage - use;
+              if (usage < 0) { usage = 0; }
+            }
+          }
+          
+          usage = q.get_readable("usage", false, usage);
+          
           var content = '<span class="resource-key">{0}:</span>';
-          content += '<span class="resource-value">{1}</span>';
+          content += '<span class="resource-value">{1}/{2}</span>';
           data += content.format(q.get('resource').get('display_name'), 
-                                 q.get_readable('available'));
+                                 usage, limit);
         }, this);
+        if (found == 0) {
+          data += "<p>No resources available</p>"
+        }
         data += "</div>";
         return data;
       }
@@ -132,14 +175,18 @@
 
       set_selected: function(model) {
         this.deselect_all();
-        this._model_views[model.id].select();
+        if (this._model_views[model.id]) {
+          this._model_views[model.id].select();
+        }
       },
 
       set_current: function(model) {
         _.each(this._model_views, function(v) {
           v.unset_current();
         });
-        this._model_views[model.id].set_current();
+        if (this._model_views[model.id]) {
+          this._model_views[model.id].set_current();
+        }
       },
 
       model_view_options: function(model) {
@@ -156,7 +203,7 @@
         content_selector: "#project-select-content",
         css_class: "overlay-info",
         can_fit_func: function(project) { 
-          return project.quotas.can_fit(this.model_usage)
+          return project.quotas.can_fit(this.model_usage(this.model))
         },
 
         initialize: function(options) {
@@ -180,8 +227,13 @@
               quotas_keys: this.resources
             });
             this.collection_view.show(true);
-            this.collection_view.set_current(this.model.get('project'));
-            this.collection_view.set_selected(this.model.get('project'));
+            this.collection_view.model_usage = this.model_usage;
+            this.collection_view.resource_model = this.model;
+            var project = this.model.get('project');
+            if (project && !(project.get('missing') && !project.get('resolved'))) {
+              this.collection_view.set_current(this.model.get('project'));
+              this.collection_view.set_selected(this.model.get('project'));
+            }
             this.list.append($(this.collection_view.el));
         },
 
@@ -230,7 +282,14 @@
       description: 'Select project assign machine to',
       resources: ['cyclades.vm', 'cyclades.ram', 
                   'cyclades.cpu', 'cyclades.disk'],
-      model_usage: {},
+      model_usage: function(model) {
+          var quotas = model.get_flavor().quotas();
+          var total = false;
+          if (model.get("status") == "STOPPED") {
+            total = true;
+          }
+          return quotas;
+      },
 
       can_fit_func: function(project) {
           var quotas = this.model.get_flavor().quotas();
@@ -247,13 +306,15 @@
 
           var el = $("<div></div>");
           var cont = $(this.el).find(".model-usage");
-          cont.hide();
           cont.empty().append(el);
           
           var flavor = this.model.get_flavor();
           _.each(['ram', 'disk', 'cpu'], function(key) {
-            el.append($('<span class="key">' + key + '</span>'));
-            el.append($('<span class="val">' + flavor.get_readable(key) + '</span>'));
+            var res = synnefo.storage.resources.get('cyclades.' + key)
+            el.append($('<span class="key">' + res.get('display_name') + 
+                        ':</span>'));
+            el.append($('<span class="value">' + 
+                        flavor.get_readable(key) + '</span>'));
           });
       },
 
@@ -266,7 +327,7 @@
       title: 'Set IP address project',
       description: 'Select project to assign IP address to',
       resources: ['cyclades.floating_ip'],
-      model_usage: {'cyclades.floating_ip': 1},
+      model_usage: function() { return {'cyclades.floating_ip': 1}},
       assign_to_project: function(model, project, complete, fail) {
         this.model.reassign_to_project(project, complete, complete);
       }
@@ -276,7 +337,7 @@
       title: 'Set private network project',
       resources: ['cyclades.network.private'],
       description: 'Select project to assign private network to',
-      model_usage: {'cyclades.network.private': 1},
+      model_usage: function() { return {'cyclades.network.private': 1}},
       assign_to_project: function(model, project, complete, fail) {
         this.model.reassign_to_project(project, complete, complete);
       }

@@ -275,7 +275,10 @@
     <div class="checkbox">
       <input type="checkbox" data-rv-data-id="model.id" />
     </div>
-    <div class="name" data-rv-text="model.floating_ip_address"></div>
+    <div class="name">
+      <span data-rv-text="model.floating_ip_address"></span>
+      <span class="project-name" data-rv-text="model.project.name|truncate 30"></span>
+    </div>
   </div>
 </div>
 

@@ -46,11 +46,11 @@
         _.each(min_vm_quota, function(val, key) {
           var q = this.model.quotas.get(key);
           if (!q) { return }
-          var content = '{0}: {1}  ';
+          var content = '{0}: {1},  ';
           data += content.format(q.get('resource').get('display_name'), 
                                  q.get_readable('available'));
         }, this);
-        data = data.substring(0, data.length-2);
+        data = data.substring(0, data.length-3);
         data += ")";
         return data;
       }
@@ -1569,7 +1569,7 @@
             this.name = this.$("h3.vm-name");
             this.keys = this.$(".confirm-params.ssh");
             this.meta = this.$(".confirm-params.meta");
-            this.project = this.$(".confirm-cont.image .project-title");
+            this.project = this.$(".confirm-cont.flavor .project-name");
             this.ip_addresses = this.$(".confirm-params.ip-addresses");
             this.private_networks = this.$(".confirm-params.private-networks");
             this.init_handlers();
@@ -1594,8 +1594,16 @@
                                            'No ip addresses selected'))
             }
             _.each(ips, _.bind(function(ip) {
+                var ip_address = $('<span class="ip"></span>');
+                ip_address.text(ip.get('floating_ip_address'));
+
                 var el = this.make("li", {'class':'selected-ip-address'}, 
-                                  ip.get('floating_ip_address'));
+                                  ip_address);
+                var project_name = ip.get('project').get('name');
+                project_name = util.truncate(project_name, 30)
+                var name = $('<span class="project"></span>')
+                $(name).text(project_name);
+                $(el).append(name);
                 this.ip_addresses.append(el);
             }, this))
 

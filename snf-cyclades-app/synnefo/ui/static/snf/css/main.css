@@ -1064,8 +1064,8 @@ div.machine div.actions .disabled {
 }
 
 div.machine div.actions .disabled-visible a,
-div.machine div.vm-actions .disabled-visible a {
-  color: #aaa;
+div.vm-actions .disabled-visible a {
+  color: #aaa !important;
 }
 
 div.single-container div.vm-actions .disabled {
@@ -6354,6 +6354,15 @@ table.list-machines .wave {
     overflow: auto;
 }
 
+.create-vm .vm-confirm .confirm-params .selected-ip-address .ip {
+}
+
+.create-vm .vm-confirm .confirm-params .selected-ip-address .project {
+  display: block;
+  font-size: 0.8em;
+  color: #aaaaaa;
+}
+
 .create-vm .vm-confirm .confirm-params span.cval {
     margin-left: 8px;
     color: #444;
@@ -6468,6 +6477,10 @@ table.list-machines .wave {
 .create-vm .create-step-cont .confirm-cont ul li .title {
     width: 55px;
     float: left;
+}
+
+.create-vm .create-step-cont .list-cont ul li .project-name {
+  float: left !important;
 }
 
 .create-vm .create-step-cont .list-cont ul li .value {
@@ -7631,6 +7644,14 @@ input.has-errors {
   margin-top: -5px;
 }
 
+.select-item.floating-ip .project-name {
+  color: #777 !important;
+  float: right;
+  margin-right: -18px;
+  font-size: 0.8em;
+  margin-top: 4px;
+}
+
 .select-item.floating-ip.not-available {
   background-image: none;
 }
@@ -7761,11 +7782,36 @@ select .resource-value,
   color: #ddd;
 }
 
+#project-select-content .model-usage {
+  margin-bottom: 10px;
+}
+
+#project-select-content .model-usage .key {
+  display: inline-block;
+  font-size: 0.9em;
+  margin-right: 5px;
+}
+
+#project-select-content .model-usage .value {
+  display: inline-block;
+  color: #444;
+  letter-spacing: -1px;
+  font-weight: bold;
+  margin-right: 15px;
+}
+
 .project.select-item .quota .resource-value {
+  width: 29%;
+  margin-right: 2%;
+  display: block;
+  float: left;
   font-weight: bold;
 }
 
 .project.select-item .quota .resource-key {
+  width: 13%;
+  display: block;
+  float: left;
   letter-spacing: -1px;
 }
 
@@ -7787,7 +7833,7 @@ option.project.select-item.selected {
 }
 
 .project.select-item .quota .resource-value {
-  margin-right: 15px;
+  margin-right: 2px;
   display: inline-block;
 }
 
@@ -7813,6 +7859,7 @@ option.project.select-item.selected {
 .project.select-item .quota {
   margin-top: 5px;
   font-size: 0.9em;
+  margin-left: 28px;
 }
 
 .project.select-item .current {

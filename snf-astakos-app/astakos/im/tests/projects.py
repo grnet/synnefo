@@ -771,7 +771,7 @@ class TestProjects(TestCase):
         self.assertEqual(form.is_valid(), True)
 
     @im_settings(PROJECT_ADMINS=['uuid1'])
-    def no_test_applications(self):
+    def test_applications(self):
         # let user have 2 pending applications
 
         # TODO figure this out
@@ -798,13 +798,17 @@ class TestProjects(TestCase):
             'end_date': dto.strftime("%Y-%m-%d"),
             'member_join_policy': 2,
             'member_leave_policy': 1,
-            'service1.resource_m_uplimit': 100,
+            'service1.resource_m_uplimit': 10,
+            'service1.resource_p_uplimit': 100,
             'is_selected_service1.resource': "1",
             'user': self.user.pk
         }
         r = self.user_client.post(post_url, data=application_data, follow=True)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.context['form'].is_valid(), False)
+        form = r.context['form']
+        form.is_valid()
+        # no limit_on_members_number was set, form is still valid
+        self.assertEqual(r.context['form'].is_valid(), True)
 
         application_data['limit_on_members_number'] = 5
         r = self.user_client.post(post_url, data=application_data, follow=True)
@@ -837,35 +841,45 @@ class TestProjects(TestCase):
 
         # login
         self.admin_client.get(reverse("edit_profile"))
+
         # admin approves
         r = self.admin_client.post(reverse('project_app_approve',
-                                           kwargs={'application_id': app1_id}),
+                                           kwargs={
+                                            'application_id': app1_id,
+                                            'project_uuid': app1.chain.uuid}),
                                    follow=True)
         self.assertEqual(r.status_code, 200)
-
-        Q_ACTIVE = Project.o_state_q(Project.O_ACTIVE)
-        self.assertEqual(Project.objects.filter(Q_ACTIVE).count(), 1)
+        self.assertEqual(Project.objects.filter(is_base=False,
+            state=Project.O_ACTIVE).count(), 1)
 
         # login
         self.member_client.get(reverse("edit_profile"))
         # cannot join project2 (not approved yet)
-        join_url = reverse("project_join", kwargs={'chain_id': project2_id})
+        join_url = reverse("project_join", kwargs={
+            'project_uuid': app2.chain.uuid})
         r = self.member_client.post(join_url, follow=True)
 
         # can join project1
         self.member_client.get(reverse("edit_profile"))
-        join_url = reverse("project_join", kwargs={'chain_id': project1_id})
+        join_url = reverse("project_join", kwargs={
+            'project_uuid': app1.chain.uuid})
         r = self.member_client.post(join_url, follow=True)
         self.assertEqual(r.status_code, 200)
 
-        memberships = ProjectMembership.objects.all()
+        memberships = ProjectMembership.objects.filter(project__is_base=False)
         self.assertEqual(len(memberships), 1)
         memb_id = memberships[0].id
 
         reject_member_url = reverse('project_reject_member',
-                                    kwargs={'memb_id': memb_id})
+                                    kwargs={
+                                        'project_uuid': app1.chain.uuid,
+                                        'memb_id': memb_id
+                                    })
         accept_member_url = reverse('project_accept_member',
-                                    kwargs={'memb_id': memb_id})
+                                    kwargs={
+                                        'memb_id': memb_id,
+                                        'project_uuid': app1.chain.uuid
+                                    })
 
         # only project owner is allowed to reject
         r = self.member_client.post(reject_member_url, follow=True)
@@ -874,38 +888,45 @@ class TestProjects(TestCase):
 
         # user (owns project) rejects membership
         r = self.user_client.post(reject_member_url, follow=True)
-        self.assertEqual(ProjectMembership.objects.any_accepted().count(), 0)
+        membs = ProjectMembership.objects.any_accepted().filter(
+            project__is_base=False)
+        self.assertEqual(membs.count(), 0)
 
         # user rejoins
         self.member_client.get(reverse("edit_profile"))
-        join_url = reverse("project_join", kwargs={'chain_id': project1_id})
+        join_url = reverse("project_join", kwargs={'project_uuid':
+                                                   app1.chain.uuid})
         r = self.member_client.post(join_url, follow=True)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(ProjectMembership.objects.requested().count(), 1)
 
         # user (owns project) accepts membership
         r = self.user_client.post(accept_member_url, follow=True)
-        self.assertEqual(ProjectMembership.objects.any_accepted().count(), 1)
-        membership = ProjectMembership.objects.get()
+        self.assertEqual(membs.count(), 1)
+        membership = membs.get()
         self.assertEqual(membership.state, ProjectMembership.ACCEPTED)
 
-        user_quotas = quotas.get_users_quotas([self.member])
+        user_quotas = quotas.get_users_quotas([self.member]).get(
+            self.member.uuid).get(app1.chain.uuid)
         resource = 'service1.resource'
-        newlimit = user_quotas[self.member.uuid]['system'][resource]['limit']
-        # 100 from initial uplimit + 100 from project
-        self.assertEqual(newlimit, 200)
+        newlimit = user_quotas[resource]['limit']
+        self.assertEqual(newlimit, 10)
 
         remove_member_url = reverse('project_remove_member',
-                                    kwargs={'memb_id': membership.id})
+                                    kwargs={
+                                        'project_uuid': app1.chain.uuid,
+                                        'memb_id': membership.id
+                                    })
         r = self.user_client.post(remove_member_url, follow=True)
         self.assertEqual(r.status_code, 200)
 
-        user_quotas = quotas.get_users_quotas([self.member])
+        user_quotas = quotas.get_users_quotas([self.member]).get(
+            self.member.uuid).get(app1.chain.uuid)
         resource = 'service1.resource'
-        newlimit = user_quotas[self.member.uuid]['system'][resource]['limit']
-        # 200 - 100 from project
-        self.assertEqual(newlimit, 100)
+        newlimit = user_quotas[resource]['limit']
+        self.assertEqual(newlimit, 0)
 
+        # TODO: handy to be here, but should be moved to a separate test method
         # support email gets rendered in emails content
         for mail in get_mailbox('user@synnefo.org'):
             self.assertTrue(settings.CONTACT_EMAIL in

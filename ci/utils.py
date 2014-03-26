@@ -386,13 +386,23 @@ class SynnefoCI(object):
 
         Search by name (reg expression) or by id
         """
+        def _is_true(value):
+            """Boolean or string value that represents a bool"""
+            if isinstance(value, bool):
+                return value
+            elif isinstance(value, str):
+                return value in ["True", "true"]
+            else:
+                self.logger.error("Unrecognized boolean value %s" % value)
+                return False
+
         # Get a list of flavors from config file
         flavors = self.config.get('Deployment', 'flavors').split(",")
         if flavor is not None:
             # If we have a flavor_name to use, add it to our list
             flavors.insert(0, flavor)
 
-        list_flavors = self.compute_client.list_flavors()
+        list_flavors = self.compute_client.list_flavors(detail=True)
         for flv in flavors:
             flv_type, flv_value = parse_typed_option(option="flavor",
                                                      value=flv)
@@ -415,6 +425,8 @@ class SynnefoCI(object):
                 self.logger.error("Unrecognized flavor type %s" % flv_type)
 
             # Check if we found one
+            list_flvs = [f for f in list_flvs
+                         if _is_true(f['SNF:allow_create'])]
             if list_flvs:
                 self.logger.debug("Will use \"%s\" with id \"%s\""
                                   % (_green(list_flvs[0]['name']),

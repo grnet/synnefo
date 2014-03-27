@@ -447,6 +447,7 @@ def get_actions(*args):
         "backend": [
             "setup_master_role",
             "setup_ganeti_role",
+            "setup_snf_ganeti_role",
             "add_ganeti_backend",
         ],
         "ganeti": [
@@ -466,6 +467,7 @@ def get_actions(*args):
             "setup_cms_role",
             "setup_master_role",
             "setup_ganeti_role",
+            "setup_snf_ganeti_role",
             "setup_stats_role",
             "set_default_quota",
             "add_ganeti_backend",

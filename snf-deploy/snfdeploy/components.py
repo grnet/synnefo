@@ -323,6 +323,7 @@ class Ganeti(SynnefoComponent):
         "bridge-utils",
         "lvm2",
         "drbd8-utils",
+        "ganeti-instance-debootstrap",
         ]
 
     def check(self):
@@ -416,6 +417,14 @@ class Image(SynnefoComponent):
 
     def check(self):
         return ["mkdir -p %s" % self.env.env.image_dir]
+
+    def prepare(self):
+        url = self.env.env.debian_base_url
+        d = self.env.env.image_dir
+        image = "debian_base.diskdump"
+        return [
+            "test -e %s/%s || wget %s -O %s/%s" % (d, image, url, d, image)
+            ]
 
     def configure(self):
         tmpl = "/etc/default/snf-image"
@@ -793,12 +802,6 @@ class NFS(SynnefoComponent):
         "nfs-kernel-server"
         ]
 
-    def prepare_image(self):
-        url = self.env.env.debian_base_url
-        d = self.env.env.image_dir
-        image = "debian_base.diskdump"
-        return ["wget %s -O %s/%s" % (url, d, image)]
-
     def prepare(self):
         p = self.env.env.pithos_dir
         return [
@@ -808,7 +811,7 @@ class NFS(SynnefoComponent):
             "mkdir -p /srv/archip/maps",
             "chown www-data.www-data %s/data" % p,
             "chmod g+ws %s/data" % p,
-            ] + self.prepare_image()
+            ]
 
     def update_exports(self, node_info):
         cmd = """

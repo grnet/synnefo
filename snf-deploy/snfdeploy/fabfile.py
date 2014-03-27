@@ -278,6 +278,14 @@ def setup_ganeti_role():
     #FIXME: prepare_lvm ????
 
 
+@roles("ganeti", "master")
+def setup_snf_ganeti_role():
+    # needed in case of single node cluster
+    if not env.host:
+        return
+    SetupSynnefoRole("snf-ganeti")
+
+
 @roles("master")
 def setup_master_role():
     node_info = get_node_info(env.host)

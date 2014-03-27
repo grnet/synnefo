@@ -37,13 +37,13 @@ ROLES = {
     "client": [HW, SSH, DNS, APT, Kamaki, Burnin],
     "ganeti": [
         HW, SSH, DNS, DDNS, APT, Mount,
-        Ganeti, ExtStorage, PithosBackend, Archip, ArchipGaneti,
-        Image, Network, GTools, GanetiCollectd,
+        Ganeti, ExtStorage, Archip, ArchipGaneti, Network
         ],
     "master": [
-        HW, SSH, DNS, DDNS, APT, Mount,
-        Ganeti, ExtStorage, Master, PithosBackend, Archip, ArchipGaneti,
-        Image, Network, GTools, GanetiCollectd,
+        HW, SSH, DNS, DDNS, APT, Mount, Ganeti, Master, Network,
+        ],
+    "snf-ganeti": [
+        PithosBackend, Image, GTools, GanetiCollectd
         ],
     }
 

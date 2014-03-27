@@ -427,7 +427,7 @@ def parse_options():
     # available commands
     parser.add_argument("command", type=str,
                         choices=["packages", "vcluster", "cleanup",
-                                 "run", "test", "all", "keygen"],
+                                 "run", "test", "all", "keygen", "ganeti"],
                         help="Run on of the supported deployment commands")
 
     # available actions for the run command

@@ -1,4 +1,4 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -48,7 +48,7 @@ from synnefo_branding.version import __version__
 
 # Package info
 VERSION = __version__
-SHORT_DESCRIPTION = 'Synnefo stats grapher'
+SHORT_DESCRIPTION = 'Branding components for Synnefo'
 
 PACKAGES_ROOT = '.'
 PACKAGES = find_packages(PACKAGES_ROOT)
@@ -172,8 +172,8 @@ setup(
 
     dependency_links=['http://docs.dev.grnet.gr/pypi'],
     entry_points={
-        'synnefo': [ 
-             'web_apps = synnefo_branding.synnefo_settings:installed_apps',  
+        'synnefo': [
+             'web_apps = synnefo_branding.synnefo_settings:installed_apps',
              'web_context_processors = synnefo_branding.synnefo_settings:context_processors',
              'web_static = synnefo_branding.synnefo_settings:static_files',
         ]

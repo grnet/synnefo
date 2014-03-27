@@ -773,7 +773,7 @@ class Mount(SynnefoComponent):
 cat >> /etc/fstab <<EOF
 {0}:{1} {1}  nfs defaults,rw,noatime,rsize=131072,wsize=131072 0 0
 EOF
-""".format(self.env.env.pithos.ip, d)
+""".format(self.env.env.nfs.ip, d)
             ret.append(cmd)
 
         return ret

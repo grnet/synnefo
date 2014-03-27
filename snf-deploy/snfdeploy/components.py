@@ -339,10 +339,16 @@ class Ganeti(SynnefoComponent):
             ]
 
     def prepare_lvm(self):
-        return [
-            "pvcreate %s" % self.env.env.extra_disk,
-            "vgcreate %s %s" % (self.env.env.extra_disk, self.env.env.vg)
-            ]
+        ret = []
+        disk = self.env.env.extra_disk
+        vg = self.env.env.vg
+        if disk:
+            ret = [
+                "test -e %s" % disk,
+                "pvcreate %s" % disk,
+                "vgcreate %s %s" % (vg, disk)
+                ]
+        return ret
 
     def prepare_net_infra(self):
         br = self.env.env.common_bridge
@@ -354,7 +360,7 @@ class Ganeti(SynnefoComponent):
         return [
             "mkdir -p /srv/ganeti/file-storage/",
             "sed -i 's/^127.*$/127.0.0.1 localhost/g' /etc/hosts"
-            ] + self.prepare_net_infra()
+            ] + self.prepare_net_infra() + self.prepare_lvm()
 
     def restart(self):
         return ["/etc/init.d/ganeti restart"]

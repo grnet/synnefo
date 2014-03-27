@@ -275,7 +275,6 @@ def setup_ganeti_role():
     execute(update_exports_for_node, node_info)
     SetupSynnefoRole("ganeti")
     execute(add_ganeti_node, node_info)
-    #FIXME: prepare_lvm ????
 
 
 @roles("ganeti", "master")

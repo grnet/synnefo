@@ -100,6 +100,8 @@ class DNS(SynnefoComponent):
         return [
             "chattr -i /etc/resolv.conf",
             "sed -i 's/^127.*$/127.0.0.1 localhost/g' /etc/hosts",
+            "echo %s > /etc/hostname" % self.node_info.hostname,
+            "hostname %s" % self.node_info.hostname
             ]
 
     def configure(self):

@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 @transaction.commit_on_success
 def create(user_id, size, server_id, name=None, description=None,
            source_volume_id=None, source_snapshot_id=None,
-           source_image_id=None, metadata=None):
+           source_image_id=None, volume_type=None, metadata=None):
 
     # Currently we cannot create volumes without being attached to a server
     if server_id is None:

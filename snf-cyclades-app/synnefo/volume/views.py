@@ -60,7 +60,7 @@ def volume_to_dict(volume, detail=True):
     data = {
         "id": str(volume.id),
         "display_name": display_null_field(volume.name),
-        "links": util.volume_to_dict(volume.id),
+        "links": util.volume_to_links(volume.id),
     }
     if detail:
         details = {

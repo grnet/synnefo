@@ -1,0 +1,13 @@
+<div class="account-accept-form account-action {% if account_accepted %}inactive{% endif %}">
+{% if account_accepted %}
+<form method="post" action="{% url account-reject account %}">
+  <input type="hidden" name="token" value="{{ token }}" />
+  <input type="submit" value="REJECT" />
+</form>
+{% else %}
+<form method="post" action="{% url account-accept account %}">
+  <input type="hidden" name="token" value="{{ token }}" />
+  <input type="submit" value="ACCEPT" />
+</form>
+{% endif %}
+</div>

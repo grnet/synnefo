@@ -1,12 +1,12 @@
 {% extends "admin/base.html" %}
 
 {% block extraheader %}
-<small>/ {{ account_name }}</small>
+<small>/ {{ search_query }}</small>
 {% endblock %}
 
 {% block content %}
 
-{% if not account_exists %}
+{% if account_exists %}
 <div class="subnav">
   <ul class="nav nav-pills">
       
@@ -46,8 +46,10 @@
         </div>
     {% endif %}
     <div class="object-anchor" id="account"></div>
-    <h3 class="info">{{ account_name }} | {{ account }} | {{ vms|length }} VMs |  {{ networks|length }} Networks</h3>
+    <h3 class="info">{{ account_name }} | {{ account_mail }} | {{ account }} |
+        {{ vms|length }} VMs |  {{ networks|length }} Networks</h3>
     </div>
+	{% include "admin/_account_actions.html" %}
     <div class="object-anchor" id="vms"></div>
     <div class="vms info-block well">
     	<div class="show-hide-all toggle">
@@ -80,8 +82,15 @@
     </div>
 </div>
 {% else %}
-
-<p>{% if is_ip %}User with IP {% else %}{% if is_vm %}User with Virtual Machine
-{% else %}Account {% endif %}{% endif %}<em>{{ search_query }}</em> does not exist in cyclades database</p>
+    <p>
+    {% if is_ip %}
+        User with IP
+    {% elif is_vm %}
+        User with Virtual Machine
+    {% else %}
+        Account
+    {% endif %}
+    <em>{{ search_query }}</em> does not exist in astakos database
+    </p>
 {% endif %}
 {% endblock %}

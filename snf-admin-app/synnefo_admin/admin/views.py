@@ -1,4 +1,4 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2012 - 2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -37,9 +37,10 @@ import logging
 from django.shortcuts import redirect
 from django.views.generic.simple import direct_to_template
 from django.conf import settings
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.http import Http404, HttpResponseRedirect
 from django.core.urlresolvers import reverse
+from django.views.decorators.csrf import csrf_exempt
 
 from urllib import unquote
 
@@ -49,6 +50,11 @@ from snf_django.lib import astakos
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser
 
+# Get an activation backend for account actions
+from astakos.im import activation_backends
+abackend = activation_backends.get_backend()
+
+
 # server actions specific imports
 from synnefo.logic import servers as servers_backend
 from synnefo.ui.views import UI_MEDIA_URL
@@ -56,15 +62,24 @@ from synnefo.ui.views import UI_MEDIA_URL
 logger = logging.getLogger(__name__)
 
 ADMIN_MEDIA_URL = getattr(settings, 'ADMIN_MEDIA_URL',
-                             settings.MEDIA_URL + 'admin/')
+                          settings.MEDIA_URL + 'admin/')
 
 IP_SEARCH_REGEX = re.compile('([0-9]+)(?:\.[0-9]+){3}')
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
 VM_SEARCH_REGEX = re.compile('vm(-){0,}(?P<vmid>[0-9]+)')
 
+AUTH_COOKIE_NAME = getattr(settings, 'ADMIN_AUTH_COOKIE_NAME',
+                           getattr(settings, 'UI_AUTH_COOKIE_NAME',
+                                   '_pithos2_a'))
+PERMITTED_GROUPS = getattr(settings, 'ADMIN_PERMITTED_GROUPS', ['admin'])
+SHOW_DELETED_VMS = getattr(settings, 'ADMIN_SHOW_DELETED_VMS', False)
+
+
+### Helper functions
 
 def get_token_from_cookie(request, cookiename):
-    """
+    """Extract token from provided cookie.
+
     Extract token from the cookie name provided. Cookie should be in the same
     form as astakos service sets its cookie contents::
 
@@ -79,192 +94,23 @@ def get_token_from_cookie(request, cookiename):
     return None
 
 
-AUTH_COOKIE_NAME = getattr(settings, 'ADMIN_AUTH_COOKIE_NAME',
-                           getattr(settings, 'UI_AUTH_COOKIE_NAME',
-                                   '_pithos2_a'))
-PERMITTED_GROUPS = getattr(settings, 'ADMIN_PERMITTED_GROUPS', ['admin'])
-SHOW_DELETED_VMS = getattr(settings, 'ADMIN_SHOW_DELETED_VMS', False)
+def get_user(query):
+    """Get AstakosUser from query.
 
-
-def token_check(func):
+    The query can either be a user email or a UUID.
     """
-    Mimic csrf security check using user auth token.
-    """
-    def wrapper(request, *args, **kwargs):
-        if not hasattr(request, 'user'):
-            raise PermissionDenied
+    is_uuid = UUID_SEARCH_REGEX.match(query)
 
-        token = request.POST.get('token', None)
-        if token:
-            try:
-                req_token = request.user["access"]["token"]["id"]
-                if token == req_token:
-                    return func(request, *args, **kwargs)
-            except KeyError:
-                pass
-
-        raise PermissionDenied
-
-    return wrapper
-
-
-def admin_user_required(func, permitted_groups=PERMITTED_GROUPS):
-    """
-    Django view wrapper that checks if identified request user has admin
-    permissions (exists in admin group)
-    """
-    def wrapper(request, *args, **kwargs):
-        ADMIN_ENABLED = getattr(settings, 'ADMIN_ENABLED', True)
-        if not ADMIN_ENABLED:
-            raise Http404
-
-        token = get_token_from_cookie(request, AUTH_COOKIE_NAME)
-        astakos.get_user(request, settings.ASTAKOS_AUTH_URL,
-                         fallback_token=token, logger=logger)
-        if hasattr(request, 'user') and request.user:
-            groups = request.user['access']['user']['roles']
-            groups = [g["name"] for g in groups]
-
-            if not groups:
-                logger.info("Failed to access admin view. User: %r",
-                            request.user_uniq)
-                raise PermissionDenied
-
-            has_perm = False
-            for g in groups:
-                if g in permitted_groups:
-                    has_perm = True
-
-            if not has_perm:
-                logger.info("Failed to access admin view %r. No valid "
-                            "admin group (%r) matches user groups (%r)",
-                            request.user_uniq, permitted_groups, groups)
-                raise PermissionDenied
+    try:
+        if is_uuid:
+            user = AstakosUser.objects.get(uuid=query)
         else:
-            logger.info("Failed to access admin view %r. No authenticated "
-                        "user found.", request.user_uniq)
-            logger.info("auth_url (%s)", settings.ASTAKOS_AUTH_URL)
-            raise PermissionDenied
+            user = AstakosUser.objects.get(email=query)
+    except ObjectDoesNotExist:
+        logger.info("Failed to resolve '%s' into account" % query)
+        return None
 
-        logging.info("User %s accessed admininterface view (%s)", request.user_uniq,
-                     request.path)
-        return func(request, *args, **kwargs)
-
-    return wrapper
-
-@admin_user_required
-def index(request):
-    """
-    Admin-Interface index view.
-    """
-    # if form submitted redirect to details
-    account = request.GET.get('account', None)
-    if account:
-        return redirect('admin-details',
-                        search_query=account)
-
-    # show index template
-    return direct_to_template(request, "admin/index.html",
-                              extra_context={'ADMIN_MEDIA_URL':
-                                             ADMIN_MEDIA_URL})
-
-
-@admin_user_required
-def account(request, search_query):
-    """Account details view."""
-    logging.info("Admin search by %s: %s", request.user_uniq, search_query)
-    show_deleted = bool(int(request.GET.get('deleted', SHOW_DELETED_VMS)))
-    error = request.GET.get('error', None)
-
-    account_exists = True
-    # flag to indicate successfull astakos calls
-    account_resolved = False
-    vms = []
-    networks = []
-    is_ip = IP_SEARCH_REGEX.match(search_query)
-    is_uuid = UUID_SEARCH_REGEX.match(search_query)
-    is_vm = VM_SEARCH_REGEX.match(search_query)
-    account_name = search_query
-    auth_token = request.user['access']['token']['id']
-
-    if is_ip:
-        # Search the IPAddressLog for the full use history of this IP
-        return search_by_ip(request, search_query)
-
-    if is_vm:
-        vmid = is_vm.groupdict().get('vmid')
-        try:
-            vm = VirtualMachine.objects.get(pk=int(vmid))
-            search_query = vm.userid
-            is_uuid = True
-        except VirtualMachine.DoesNotExist:
-            account_exists = False
-            account = None
-            search_query = vmid
-
-    astakos_client = astakosclient.AstakosClient(
-        auth_token, settings.ASTAKOS_AUTH_URL,
-        retry=2, use_pool=True, logger=logger)
-
-    account = None
-    if is_uuid:
-        account = search_query
-        try:
-            account_name = astakos_client.get_username(account)
-        except:
-            logger.info("Failed to resolve '%s' into account" % account)
-
-    if account_exists and not is_uuid:
-        account_name = search_query
-        try:
-            account = astakos_client.get_uuid(account_name)
-        except:
-            logger.info("Failed to resolve '%s' into account" % account_name)
-
-    if not account:
-        account_exists = False
-    else:
-        account_resolved = True
-
-    filter_extra = {}
-    if not show_deleted:
-        filter_extra['deleted'] = False
-
-    # all user vms
-    vms = VirtualMachine.objects.filter(userid=account,
-                                        **filter_extra).order_by('deleted')
-    # return all user private and public networks
-    public_networks = Network.objects.filter(public=True,
-                                             nics__machine__userid=account,
-                                             **filter_extra
-                                             ).order_by('state').distinct()
-    private_networks = Network.objects.filter(userid=account,
-                                              **filter_extra).order_by('state')
-    networks = list(public_networks) + list(private_networks)
-
-    if vms.count() == 0 and private_networks.count() == 0 and not \
-            account_resolved:
-        account_exists = False
-
-    user_context = {
-        'account_exists': account_exists,
-        'error': error,
-        'is_ip': is_ip,
-        'is_vm': is_vm,
-        'is_uuid': is_uuid,
-        'account': account,
-        'search_query': search_query,
-        'vms': vms,
-        'show_deleted': show_deleted,
-        'account_name': account_name,
-        'token': request.user['access']['token']['id'],
-        'networks': networks,
-        'ADMIN_MEDIA_URL': ADMIN_MEDIA_URL,
-        'UI_MEDIA_URL': UI_MEDIA_URL
-    }
-
-    return direct_to_template(request, "admin/account.html",
-                              extra_context=user_context)
+    return user
 
 
 def search_by_ip(request, search_query):
@@ -300,6 +146,179 @@ def search_by_ip(request, search_query):
     }
 
     return direct_to_template(request, "admin/ip.html",
+                              extra_context=user_context)
+
+
+### Security functions
+
+def token_check(func):
+    """
+    Mimic csrf security check using user auth token.
+    """
+    def wrapper(request, *args, **kwargs):
+        if not hasattr(request, 'user'):
+            raise PermissionDenied
+
+        token = request.POST.get('token', None)
+        if token:
+            try:
+                req_token = request.user["access"]["token"]["id"]
+                if token == req_token:
+                    return func(request, *args, **kwargs)
+            except KeyError:
+                pass
+
+        raise PermissionDenied
+
+    return wrapper
+
+
+def admin_user_required(func, permitted_groups=PERMITTED_GROUPS):
+    """
+    Django view wrapper that checks if identified request user has admin
+    permissions (exists in admin group)
+    """
+    def wrapper(request, *args, **kwargs):
+        ADMIN_ENABLED = getattr(settings, 'ADMIN_ENABLED', True)
+        if not ADMIN_ENABLED:
+            raise Http404
+
+        token = get_token_from_cookie(request, AUTH_COOKIE_NAME)
+        logging.info("My token: %s", token)
+        astakos.get_user(request, settings.ASTAKOS_AUTH_URL,
+                         fallback_token=token, logger=logger)
+        if hasattr(request, 'user') and request.user:
+            groups = request.user['access']['user']['roles']
+            groups = [g["name"] for g in groups]
+
+            if not groups:
+                logger.info("Failed to access admin view. User: %r",
+                            request.user_uniq)
+                raise PermissionDenied
+
+            has_perm = False
+            for g in groups:
+                if g in permitted_groups:
+                    has_perm = True
+
+            if not has_perm:
+                logger.info("Failed to access admin view %r. No valid "
+                            "admin group (%r) matches user groups (%r)",
+                            request.user_uniq, permitted_groups, groups)
+                raise PermissionDenied
+        else:
+            logger.info("Failed to access admin view %r. No authenticated "
+                        "user found.", request.user_uniq)
+            logger.info("auth_url (%s)", settings.ASTAKOS_AUTH_URL)
+            raise PermissionDenied
+
+        logging.info("User %s accessed admininterface view (%s)",
+                     request.user_uniq, request.path)
+        return func(request, *args, **kwargs)
+
+    return wrapper
+
+
+### View functions
+
+@admin_user_required
+def index(request):
+    """
+    Admin-Interface index view.
+    """
+    # if form submitted redirect to details
+    account = request.GET.get('account', None)
+    if account:
+        return redirect('admin-details',
+                        search_query=account)
+
+    # show index template
+    return direct_to_template(request, "admin/index.html",
+                              extra_context={'ADMIN_MEDIA_URL':
+                                             ADMIN_MEDIA_URL})
+
+
+@admin_user_required
+def account(request, search_query):
+    """Account details view."""
+    logging.info("Admin search by %s: %s", request.user_uniq, search_query)
+    show_deleted = bool(int(request.GET.get('deleted', SHOW_DELETED_VMS)))
+    error = request.GET.get('error', None)
+
+    # By default we consider that the account exists
+    account_exists = True
+
+    # We may query the database for various stuff, so we will keep the original
+    # query here.
+    original_search_query = search_query
+
+    account_name = ""
+    account_email = ""
+    account = ""
+    vms = []
+    networks = []
+    is_ip = IP_SEARCH_REGEX.match(search_query)
+    is_vm = VM_SEARCH_REGEX.match(search_query)
+
+    if is_ip:
+        # Search the IPAddressLog for the full use history of this IP
+        return search_by_ip(request, search_query)
+    elif is_vm:
+        vmid = is_vm.groupdict().get('vmid')
+        try:
+            vm = VirtualMachine.objects.get(pk=int(vmid))
+            search_query = vm.userid
+        except ObjectDoesNotExist:
+            account_exists = False
+            account = None
+            search_query = vmid
+
+    if account_exists:
+        user = get_user(search_query)
+        if user:
+            account = user.uuid
+            account_email = user.email
+            account_name = user.realname
+            account_accepted = user.moderated
+        else:
+            account_exists = False
+
+    if account_exists:
+        filter_extra = {}
+        if not show_deleted:
+            filter_extra['deleted'] = False
+
+        # all user vms
+        vms = VirtualMachine.objects.filter(
+            userid=account, **filter_extra).order_by('deleted')
+        # return all user private and public networks
+        public_networks = Network.objects.filter(
+            public=True, nics__machine__userid=account,
+            **filter_extra).order_by('state').distinct()
+        private_networks = Network.objects.filter(
+            userid=account, **filter_extra).order_by('state')
+        networks = list(public_networks) + list(private_networks)
+
+    user_context = {
+        'account_exists': account_exists,
+        'error': error,
+        'is_ip': is_ip,
+        'is_vm': is_vm,
+        'account': account,
+        'search_query': original_search_query,
+        'vms': vms,
+        'show_deleted': show_deleted,
+        'user': user,
+        'account_mail': account_email,
+        'account_name': account_name,
+        'account_accepted': user.is_active,
+        'token': request.user['access']['token']['id'],
+        'networks': networks,
+        'ADMIN_MEDIA_URL': ADMIN_MEDIA_URL,
+        'UI_MEDIA_URL': UI_MEDIA_URL
+    }
+
+    return direct_to_template(request, "admin/account.html",
                               extra_context=user_context)
 
 
@@ -358,4 +377,57 @@ def vm_start(request, vm_id):
     redirect = reverse('admin-details', args=(account,))
     if error:
         redirect = "%s?error=%s" % (redirect, error)
+    return HttpResponseRedirect(redirect)
+
+
+# TODO: do not introduce logic of your own
+@csrf_exempt
+@admin_user_required
+def account_accept(request, account):
+    """Function to accept an account."""
+    logging.info("Account acceptance of  %s started by %s",
+                 account, request.user_uniq)
+
+    redirect = reverse('admin-details', args=(account,))
+    user = get_user(account)
+
+    if not user:
+        redirect = "%s?error=%s" % (redirect, "Account does not exist")
+        return HttpResponseRedirect(redirect)
+
+    #abackend.handle_verification
+    if not user.email_verified:
+        user.email_verified = True
+        user.save()
+
+    #abackend.handle_moderation(user, accept=True)
+    if not user.moderated:
+        user.moderated = True
+        user.save()
+
+    if not user.is_active:
+        user.is_active = True
+        user.save()
+
+    return HttpResponseRedirect(redirect)
+
+
+# TODO: do not introduce logic of your own
+@csrf_exempt
+@admin_user_required
+def account_reject(request, account):
+    """Function to accept an account."""
+    logging.info("Account rejection of  %s started by %s",
+                 account, request.user_uniq)
+
+    redirect = reverse('admin-details', args=(account,))
+    user = get_user(account)
+
+    if not user:
+        redirect = "%s?error=%s" % (redirect, "Account does not exist")
+        return HttpResponseRedirect(redirect)
+
+    user.moderated = False
+    abackend.deactivate_user(user)
+    abackend.handle_moderation(user, accept=False)
     return HttpResponseRedirect(redirect)

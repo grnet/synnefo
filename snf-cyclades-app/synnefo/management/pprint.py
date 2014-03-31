@@ -20,7 +20,6 @@ from snf_django.lib.astakos import UserCache
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_AUTH_URL)
 from synnefo.db.models import Backend, pooled_rapi_client
-from synnefo.db.pools import bitarray_to_map
 
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.reconciliation import (nics_from_instance,
@@ -143,11 +142,11 @@ def pprint_ippool(subnet, stdout=None, title=None):
 
     for pool in subnet.get_ip_pools():
         size = pool.pool_size
-        available = pool.available.count()
         info = OrderedDict([("First_IP", pool.return_start()),
                             ("Last_IP", pool.return_end()),
                             ("Size", size),
-                            ("Available", available)])
+                            ("Available", pool.count_available()),
+                            ("Reserved", pool.count_reserved())])
         pprint_table(stdout, info.items(), None, separator=" | ", title=None)
 
         reserved = [pool.index_to_value(index)
@@ -158,8 +157,7 @@ def pprint_ippool(subnet, stdout=None, title=None):
             stdout.write("\nExternally Reserved IPs:\n\n")
             stdout.write(", ".join(reserved) + "\n")
 
-        ip_sum = pool.available[:size] & pool.reserved[:size]
-        pprint_pool(None, bitarray_to_map(ip_sum), 80, stdout)
+        pprint_pool(None, pool.to_map(), 80, stdout)
         stdout.write("\n\n")
 
 

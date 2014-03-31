@@ -14,6 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+import ast
+import simplejson
 from snfdeploy.utils import debug
 from snfdeploy.lib import Host
 
@@ -1155,6 +1157,7 @@ class GanetiCollectd(SynnefoComponent):
             ]
 
 
+
 class Archip(SynnefoComponent):
     REQUIRED_PACKAGES = [
         "librados2",
@@ -1206,3 +1209,133 @@ class ExtStorage(SynnefoComponent):
         return [
             "git clone %s %s" % (url, extdir)
             ]
+
+class GanetiDev(SynnefoComponent):
+    REQUIRED_PACKAGES = [
+        "automake",
+        "bridge-utils",
+        "cabal-install",
+        "fakeroot",
+        "fping",
+        "ghc",
+        "ghc-haddock",
+        "git",
+        "graphviz",
+        "hlint",
+        "hscolour",
+        "iproute",
+        "iputils-arping",
+        "libcurl4-openssl-dev",
+        "libghc-attoparsec-dev",
+        "libghc-crypto-dev",
+        "libghc-curl-dev",
+        "libghc-haddock-dev",
+        "libghc-hinotify-dev",
+        "libghc-hslogger-dev",
+        "libghc-hunit-dev",
+        "libghc-json-dev",
+        "libghc-network-dev",
+        "libghc-parallel-dev",
+        "libghc-quickcheck2-dev",
+        "libghc-regex-pcre-dev",
+        "libghc-snap-server-dev",
+        "libghc-temporary-dev",
+        "libghc-test-framework-dev",
+        "libghc-test-framework-hunit-dev",
+        "libghc-test-framework-quickcheck2-dev",
+        "libghc-text-dev",
+        "libghc-utf8-string-dev",
+        "libghc-vector-dev",
+        "lvm2",
+        "make",
+        "ndisc6",
+        "openssl",
+        "pandoc",
+        "pep8",
+        "pylint",
+        "python",
+        "python-bitarray",
+        "python-coverage",
+        "python-epydoc",
+        "python-ipaddr",
+        "python-openssl",
+        "python-pip",
+        "python-pycurl",
+        "python-pyinotify",
+        "python-pyparsing",
+        "python-setuptools",
+        "python-simplejson",
+        "python-sphinx",
+        "python-yaml",
+        "qemu-kvm",
+        "socat",
+        "ssh",
+        "vim"
+        ]
+
+    CABAL = [
+        "hinotify==0.3.2",
+        "base64-bytestring",
+        "lifted-base==0.2.0.3",
+        "lens==3.10",
+        ]
+
+    def __init__(self, node_info, env, *args, **kwargs):
+        """ Take a node_info and env as argument and initialize local vars """
+        self.node_info = node_info
+        self.env = env
+        self.cluster = self.env.env.cluster
+        self.qa_nodes = [self.env.env.master]
+
+        for i, n in enumerate(self.env.env.cluster_nodes):
+            self.qa_nodes.append(self.env.env.get_node_info(n))
+
+        self.qa_nodes_list = []
+        for n in self.qa_nodes:
+            self.qa_nodes_list.append({
+                "primary": n.fqdn,
+                "secondary": n.ip,
+                })
+
+    def cabal(self):
+        ret = ["cabal update"]
+        for p in self.CABAL:
+            ret.append("cabal install %s" % p)
+        return ret
+
+    def prepare(self):
+        return self.cabal() + [
+            "git clone git://git.ganeti.org/ganeti.git"
+            ]
+
+    def configure(self):
+        """ Must return a list of tuples (tmpl_path, replace_dict, mode) """
+        repl = {
+            "CLUSTER_NAME": self.env.env.cluster_name,
+            "VG": self.env.env.vg,
+            "CLUSTER_NETDEV": self.env.env.cluster_netdev,
+            "NODES": simplejson.dumps({"nodes": self.qa_nodes_list}),
+            "DOMAIN": self.env.env.domain
+            }
+        return [
+            ("/root/qa-sample.json", repl, {}),
+            ]
+
+    def initialize(self):
+        """ Returs a list of bash commands that initialize the component """
+        return [
+            "cd ganeti; ./autogen.sh",
+            "cd ganeti; ./configure --localstatedir=/var --sysconfdir=/etc",
+            ]
+
+    def test(self):
+        """ Returs a list of bash commands that test existing installation """
+        ret = []
+        for n in self.qa_nodes:
+            ret.append("ssh %s date" % n.hostname)
+            ret.append("ssh %s date" % n.ip)
+            ret.append("ssh %s date" % n.fqdn)
+        return ret
+
+    def restart(self):
+        return []

@@ -1,0 +1,152 @@
+#!/usr/bin/env python
+"""Tool to update Ganeti instances.
+
+Add a unique name to the disks of all Ganeti instances, which is
+based on the PK of the corresponding Volume in Cyclades DB.
+
+"""
+
+# Gevent patching
+import gevent
+from gevent import monkey
+monkey.patch_all()
+
+import sys
+import subprocess
+from optparse import OptionParser, TitledHelpFormatter
+
+# Configure Django env
+from synnefo import settings
+from django.core.management import setup_environ
+setup_environ(settings)
+
+from django.db import close_connection
+from synnefo.db.models import Backend, pooled_rapi_client
+from synnefo.management.common import get_resource
+
+import logging
+logger = logging.getLogger("migrate_nics")
+handler = logging.StreamHandler()
+
+formatter = logging.Formatter("[%(levelname)s] %(message)s")
+handler.setFormatter(formatter)
+logger.setLevel(logging.DEBUG)
+logger.addHandler(handler)
+logger.propagate = False
+
+DESCRIPTION = """\
+Tool to update all Ganeti instances in order to add a unique name to the disks
+of all instances.
+"""
+
+
+def main():
+    parser = OptionParser(description=DESCRIPTION,
+                          formatter=TitledHelpFormatter())
+    parser.add_option("--backend-id", dest="backend_id",
+                      help="Update instances only of this Ganeti backend."),
+    parser.add_option("--dry-run", dest="dry_run", default=False,
+                      action="store_true",
+                      help="Do not send any jobs to Ganeti backend.")
+    parser.add_option("--ganeti-dry-run", dest="ganeti_dry_run", default=False,
+                      action="store_true",
+                      help="Pass --dry-run option to Ganeti jobs.")
+    parser.add_option("--parallel", dest="parallel", default=False,
+                      action="store_true",
+                      help="Use a seperate process for each backend.")
+    parser.add_option("-d", "--debug", dest="debug", default=False,
+                      action="store_true",
+                      help="Display debug information.")
+    options, args = parser.parse_args()
+
+    if options.backend_id:
+        backends = [get_resource("backend", options.backend_id)]
+    else:
+        if Backend.objects.filter(offline=True).exists():
+            msg = "Can not update intances. An 'offline' backend exists."
+            raise Exception(msg)
+        backends = Backend.objects.all()
+
+    if options.debug:
+        logger.setLevel(logging.DEBUG)
+
+    if len(backends) > 1 and options.parallel:
+        cmd = sys.argv
+        processes = []
+        for backend in backends:
+            p = subprocess.Popen(cmd + ["--backend-id=%s" % backend.id])
+            processes.append(p)
+        for p in processes:
+            p.wait()
+        return
+    else:
+        [upgrade_backend(b, options.dry_run, options.ganeti_dry_run)
+         for b in backends]
+    return
+
+
+def upgrade_backend(backend, dry_run, ganeti_dry_run):
+    jobs = []
+    instances_ids = get_instances_with_anonymous_disks(backend)
+    for vm in backend.virtual_machines.filter(id__in=instances_ids):
+        jobs.append(gevent.spawn(upgrade_vm, vm, dry_run, ganeti_dry_run))
+
+    if jobs:
+        for job_chunk in [jobs[x:x+25] for x in range(0, len(jobs), 25)]:
+            gevent.joinall(jobs)
+    else:
+        logger.info("No anonymous NICs in backend '%s'. Nothing to do!",
+                    backend.clustername)
+    return
+
+
+def get_instances_with_anonymous_disks(backend):
+    """Get all Ganeti instances that have Disks without names."""
+    with pooled_rapi_client(backend) as rc:
+        instances = rc.GetInstances(bulk=True)
+    # Filter snf- instances
+    instances = filter(lambda i:
+                       i["name"].startswith(settings.BACKEND_PREFIX_ID),
+                       instances)
+    # Filter instances with anonymous NICs
+    instances = filter(lambda i: None in i["disk.names"], instances)
+    # Get IDs of those instances
+    instances_ids = map(lambda i:
+                        i["name"].replace(settings.BACKEND_PREFIX_ID, "", 1),
+                        instances)
+    return instances_ids
+
+
+def upgrade_vm(vm, dry_run, ganeti_dry_run):
+    """Add names to Ganeti Disks."""
+    logger.info("Updating disks of instance %s" % vm.backend_vm_id)
+    index_to_uuid = {}
+    # Compute new Disk names
+    for vol in vm.volumes.all():
+        if vol.index is None:
+            msg = ("Cannot update disk '%s'. The index of the disk is unknown."
+                   " Please run snf-manage reconcile-servers --fix-all and"
+                   " retry!")
+            logger.critical(msg)
+            continue
+        uuid = vol.backend_volume_uuid
+        # Map index -> UUID
+        index_to_uuid[vol.index] = uuid
+
+    renamed_disks = [("modify", index, {"name": name})
+                     for index, name in index_to_uuid.items()]
+
+    #instance = vm.backend_vm_id
+    with pooled_rapi_client(vm) as rc:
+        # Add names to disks
+        logger.debug("Modifying disks of instance '%s'. New disks: '%s'",
+                     vm.backend_vm_id, renamed_disks)
+        if not dry_run:
+            rc.ModifyInstance(vm.backend_vm_id,
+                              disks=renamed_disks, dry_run=ganeti_dry_run)
+    close_connection()
+
+
+if __name__ == "__main__":
+    main()
+    sys.exit(0)

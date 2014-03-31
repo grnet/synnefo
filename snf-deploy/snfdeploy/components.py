@@ -15,6 +15,7 @@
 
 import datetime
 from snfdeploy.utils import debug
+from snfdeploy.lib import Host
 
 
 class SynnefoComponent(object):
@@ -59,6 +60,7 @@ class SynnefoComponent(object):
     #TODO: add cleanup method for each component
     def clean(self):
         return []
+
 
 
 class HW(SynnefoComponent):
@@ -191,6 +193,17 @@ EOF
             self.update_cnamerecord(node_info),
             self.update_ptrrecord(node_info)
             ]
+
+    def add_qa_instances(self):
+        instances = [
+            ("xen-test-inst1", "1.2.3.4"),
+            ("xen-test-inst2", "1.2.3.5"),
+            ("xen-test-inst3", "1.2.3.6"),
+            ("xen-test-inst4", "1.2.3.7"),
+            ]
+        for name, ip in instances:
+            n = Host(name, ip, None, "vm." + self.env.env.domain, None, None)
+            self.update_ns_for_node(n)
 
     def initialize(self):
         a = [self.update_arecord(n)
@@ -367,6 +380,12 @@ class Ganeti(SynnefoComponent):
 
 
 class Master(SynnefoComponent):
+    def add_qa_rapi_user(self):
+        cmd = """
+echo ganeti-qa qa_example_passwd write >> /var/lib/ganeti/rapi/users
+"""
+        return [cmd] + self.restart()
+
     def add_rapi_user(self):
         user = self.env.env.synnefo_user
         passwd = self.env.env.synnefo_rapi_passwd
@@ -406,6 +425,11 @@ EOF
             --hypervisor-parameters kvm:kernel_path=,vnc_bind_address=0.0.0.0 \
             --no-ssh-init --no-etc-hosts \
             --enabled-disk-templates file,plain,ext,drbd \
+            --ipolicy-std-specs \
+cpu-count=1,disk-count=1,disk-size=1024,memory-size=128,nic-count=1,spindle-use=1 \
+            --ipolicy-bounds-specs \
+min:cpu-count=1,disk-count=1,disk-size=512,memory-size=128,nic-count=0,spindle-use=1/\
+max:cpu-count=8,disk-count=16,disk-size=1048576,memory-size=32768,nic-count=8,spindle-use=12 \
             {2}
         """.format(self.env.env.common_bridge,
                    self.env.env.cluster_netdev, self.env.env.cluster.fqdn)

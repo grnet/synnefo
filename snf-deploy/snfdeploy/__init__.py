@@ -427,7 +427,8 @@ def parse_options():
     # available commands
     parser.add_argument("command", type=str,
                         choices=["packages", "vcluster", "cleanup",
-                                 "run", "test", "all", "keygen", "ganeti"],
+                                 "run", "test", "all", "keygen",
+                                 "ganeti", "ganeti-qa"],
                         help="Run on of the supported deployment commands")
 
     # available actions for the run command
@@ -455,6 +456,10 @@ def get_actions(*args):
             "setup_nfs_role",
             "setup_master_role",
             "setup_ganeti_role",
+        ],
+        "qa": [
+            "setup_ganeti",
+            "setup_qa",
         ],
         "all": [
             "setup_ns_role",
@@ -610,6 +615,10 @@ def main():
 
     if args.command == "ganeti":
         actions = get_actions("ganeti")
+        fabcommand(args, env, actions)
+
+    if args.command == "ganeti-qa":
+        actions = get_actions("qa")
         fabcommand(args, env, actions)
 
     if args.command == "all":

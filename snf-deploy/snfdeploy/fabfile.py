@@ -304,6 +304,11 @@ def setup_client_role():
     SetupSynnefoRole("client")
 
 
+def setup_qa():
+    env.ns.execute("add_qa_instances")
+    env.master.execute("add_qa_rapi_user")
+
+
 def setup():
     node_info = get_node_info(env.target_node)
     if not node_info:

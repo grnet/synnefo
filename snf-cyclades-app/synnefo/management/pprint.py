@@ -36,6 +36,7 @@ def pprint_network(network, display_mails=False, stdout=None, title=None):
     ucache = UserCache(ASTAKOS_AUTH_URL, ASTAKOS_TOKEN)
     userid = network.userid
 
+    total_ips, free_ips = network.ip_count()
     db_network = OrderedDict([
         ("name", network.name),
         ("backend-name", network.backend_id),
@@ -52,7 +53,10 @@ def pprint_network(network, display_mails=False, stdout=None, title=None):
         ("mode", network.mode),
         ("deleted", network.deleted),
         ("tags", "), ".join(network.backend_tag)),
-        ("action", network.action)])
+        ("action", network.action),
+        ("free IPs", free_ips),
+        ("total IPs", total_ips),
+    ])
 
     pprint_table(stdout, db_network.items(), None, separator=" | ",
                  title=title)

@@ -66,7 +66,7 @@ from pithos.api import settings
 
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
-    VersionNotExists, ContainerExists, InvalidHash)
+    VersionNotExists, ContainerExists, InvalidHash, IllegalOperationError)
 
 from pithos.backends.filter import parse_filters
 
@@ -957,6 +957,8 @@ def _object_read(request, v_account, v_container, v_object):
             raise faults.ItemNotFound('Object does not exist')
         except VersionNotExists:
             raise faults.ItemNotFound('Version does not exist')
+        except IllegalOperationError, e:
+            raise faults.Forbidden(str(e))
     else:
         try:
             s, h = request.backend.get_object_hashmap(
@@ -970,6 +972,8 @@ def _object_read(request, v_account, v_container, v_object):
             raise faults.ItemNotFound('Object does not exist')
         except VersionNotExists:
             raise faults.ItemNotFound('Version does not exist')
+        except IllegalOperationError, e:
+            raise faults.Forbidden(str(e))
 
     # Reply with the hashmap.
     if hashmap_reply:
@@ -1129,6 +1133,8 @@ def object_write(request, v_account, v_container, v_object):
             request.user_uniq, v_account, v_container, v_object, size,
             content_type, hashmap, checksum, 'pithos', meta, True, permissions
         )
+    except IllegalOperationError, e:
+        raise faults.Forbidden(e[0])
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except IndexError, e:
@@ -1190,6 +1196,8 @@ def object_write_form(request, v_account, v_container, v_object):
             request.user_uniq, v_account, v_container, v_object, file.size,
             file.content_type, file.hashmap, checksum, 'pithos', {}, True
         )
+    except IllegalOperationError, e:
+        faults.Forbidden(e[0])
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:
@@ -1382,6 +1390,8 @@ def object_update(request, v_account, v_container, v_object):
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:
         raise faults.ItemNotFound('Object does not exist')
+    except IllegalOperationError, e:
+        raise faults.Forbidden(str(e))
 
     offset, length, total = ranges
     if offset is None:
@@ -1407,6 +1417,8 @@ def object_update(request, v_account, v_container, v_object):
             raise faults.Forbidden('Not allowed')
         except ItemNotExists:
             raise faults.ItemNotFound('Source object does not exist')
+        except IllegalOperationError, e:
+            raise faults.Forbidden(str(e))
 
         if length is None:
             length = src_size
@@ -1452,8 +1464,11 @@ def object_update(request, v_account, v_container, v_object):
                         hashmap[bi] = src_hashmap[sbi]
                     else:
                         data = request.backend.get_block(src_hashmap[sbi])
-                        hashmap[bi] = request.backend.update_block(
-                            hashmap[bi], data[:bl], 0)
+                        try:
+                            hashmap[bi] = request.backend.update_block(
+                                hashmap[bi], data[:bl], 0)
+                        except IllegalOperationError, e:
+                            raise faults.Forbidden(e[0])
                 else:
                     hashmap.append(src_hashmap[sbi])
                 offset += bl
@@ -1500,6 +1515,8 @@ def object_update(request, v_account, v_container, v_object):
             prev_meta['type'], hashmap, checksum, 'pithos', meta, replace,
             permissions
         )
+    except IllegalOperationError, e:
+        raise faults.Forbidden(e[0])
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:

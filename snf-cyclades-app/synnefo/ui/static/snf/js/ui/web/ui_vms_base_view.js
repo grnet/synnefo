@@ -53,7 +53,124 @@
     var debug = _.bind(logger.debug, logger);
     
     var hasKey = Object.prototype.hasOwnProperty;
-    
+
+    views.CreateSnapshotView = views.Overlay.extend({
+        view_id: "snapshot_create_view",
+        content_selector: "#snapshot-create-content",
+        css_class: 'overlay-snapshot-create overlay-info',
+        overlay_id: "snapshot-create-overlay",
+
+        title: "Create new snapshot",
+        subtitle: "Machines",
+
+        initialize: function(options) {
+            views.CreateSnapshotView.__super__.initialize.apply(this);
+
+            this.create_button = this.$("form .form-action.create");
+            this.text = this.$(".snapshot-create-name");
+            this.description = this.$(".snapshot-create-desc");
+            this.form = this.$("form");
+            this.init_handlers();
+            this.creating = false;
+        },
+        
+        show: function(vm) {
+          this.vm = vm;
+          views.CreateSnapshotView.__super__.show.apply(this);
+        },
+
+        init_handlers: function() {
+
+            this.create_button.click(_.bind(function(e){
+                this.submit();
+            }, this));
+
+            this.form.submit(_.bind(function(e){
+                e.preventDefault();
+                this.submit();
+                return false;
+            }, this))
+
+            this.text.keypress(_.bind(function(e){
+                if (e.which == 13) {this.submit()};
+            },this))
+        },
+
+        submit: function() {
+            if (this.validate()) {
+                this.create();
+            };
+        },
+        
+        validate: function() {
+            // sanitazie
+            var t = this.text.val();
+            t = t.replace(/^\s+|\s+$/g,"");
+            this.text.val(t);
+
+            if (this.text.val() == "") {
+                this.text.closest(".form-field").addClass("error");
+                this.text.focus();
+                return false;
+            } else {
+                this.text.closest(".form-field").removeClass("error");
+            }
+            return true;
+        },
+        
+        create: function() {
+            if (this.creating) { return }
+            this.create_button.addClass("in-progress");
+
+            var name = this.text.val();
+            var desc = this.description.val();
+            
+            this.creating = true;
+            this.vm.create_snapshot({display_name:name, display_description:desc}, _.bind(function() {
+              this.creating = false;
+              this.hide();
+            }, this));
+        },
+        
+        _default_values: function() {
+          var d = new Date();
+          var vmname = this.vm.get('name');
+          var vmid = this.vm.id;
+          var index = this.volume_index;
+          var id = this.vm.id;
+          var date = '{0}-{1}-{2} {3}:{4}:{5}'.format(
+            d.getFullYear(), d.getMonth()+1, d.getDate(), d.getHours(), 
+            d.getMinutes(), d.getSeconds());
+          var name = "\"{0}\" snapshot [{1}]".format(synnefo.util.truncate(vmname, 40), date);
+          if (this.volume) { name += "[volume:" + this.volume + "]" }
+          var description = "Volume id: {0}".format(this.volume || 'primary');
+          description += "\n" + "Server id: {0}".format(vmid);
+          description += "\n" + "Server name: {0}".format(vmname);
+          description += "\n" + "Timestamp: {0}".format(d.toJSON());
+
+          return {
+            'name': name,
+            'description': description
+          }
+        },
+
+        beforeOpen: function() {
+            this.create_button.removeClass("in-progress")
+            this.text.closest(".form-field").removeClass("error");
+            var defaults = this._default_values();
+
+            this.text.val(defaults.name);
+            this.description.val(defaults.description);
+            this.text.show();
+            this.text.focus();
+            this.description.show();
+        },
+
+        onOpen: function() {
+            this.text.focus();
+        }
+    });
+
     // base class for views that contain/handle VMS
     views.VMListView = views.View.extend({
 
@@ -640,6 +757,11 @@
             // initial hide
             if (this.hide) { $(this.el).hide() };
             
+            if (this.$('.snapshot').length) {
+              this.$('.snapshot').click(_.bind(function() {
+                synnefo.ui.main.create_snapshot_view.show(this.vm);
+              }, this));
+            }
             // action links events
             _.each(models.VM.ACTIONS, function(action) {
                 var action = action;

@@ -2,3 +2,7 @@ deb http://ftp.de.debian.org/debian wheezy main non-free contrib
 
 deb http://apt.dev.grnet.gr wheezy/
 deb http://apt.dev.grnet.gr unstable/
+# This is for archipelago packages
+deb http://apt.dev.grnet.gr experimental/
+
+deb http://eu.ceph.com/debian-dumpling/ wheezy main

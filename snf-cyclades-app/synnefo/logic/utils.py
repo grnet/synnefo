@@ -88,6 +88,23 @@ def id_from_nic_name(name):
     return int(ns)
 
 
+def id_from_disk_name(name):
+    """Returns Disk Django id, given a Ganeti's Disk name.
+
+    """
+    if not str(name).startswith(settings.BACKEND_PREFIX_ID):
+        raise ValueError("Invalid Disk name: %s" % name)
+    ns = str(name).replace(settings.BACKEND_PREFIX_ID + 'vol-', "", 1)
+    if not ns.isdigit():
+        raise ValueError("Invalid Disk name: %s" % name)
+
+    return int(ns)
+
+
+def id_to_disk_name(id):
+    return "%svol-%s" % (settings.BACKEND_PREFIX_ID, str(id))
+
+
 def get_rsapi_state(vm):
     """Returns the API state for a virtual machine
 
@@ -162,6 +179,7 @@ OPCODE_TO_ACTION = {
 def get_action_from_opcode(opcode, job_fields):
     if opcode == "OP_INSTANCE_SET_PARAMS":
         nics = job_fields.get("nics")
+        disks = job_fields.get("disks")
         beparams = job_fields.get("beparams")
         if nics:
             try:
@@ -170,6 +188,17 @@ def get_action_from_opcode(opcode, job_fields):
                     return "CONNECT"
                 elif nic_action == "remove":
                     return "DISCONNECT"
+                else:
+                    return None
+            except:
+                return None
+        if disks:
+            try:
+                disk_action = disks[0][0]
+                if disk_action == "add":
+                    return "ATTACH_VOLUME"
+                elif disk_action == "remove":
+                    return "DETACH_VOLUME"
                 else:
                     return None
             except:

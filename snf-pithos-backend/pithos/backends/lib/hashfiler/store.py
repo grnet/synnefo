@@ -48,24 +48,19 @@ class Store(object):
         if umask is not None:
             os.umask(umask)
 
-        path = params['path']
-        if path and not os.path.exists(path):
-            os.makedirs(path)
-        if not os.path.isdir(path):
-            raise RuntimeError("Cannot open path '%s'" % (path,))
-
-        p = {'blocksize': params['block_size'],
-             'blockpath': os.path.join(path + '/blocks'),
-             'hashtype': params['hash_algorithm'],
-             'blockpool': params['blockpool']}
-        self.blocker = Blocker(**p)
-        p = {'mappath': os.path.join(path + '/maps'),
-             'namelen': self.blocker.hashlen,
-             'mappool': params['mappool']}
-        self.mapper = Mapper(**p)
+        pb = {'blocksize': params['block_size'],
+              'hashtype': params['hash_algorithm'],
+              }
+        self.blocker = Blocker(**pb)
+        pm = {'namelen': self.blocker.hashlen,
+              }
+        self.mapper = Mapper(**pm)
 
     def map_get(self, name):
         return self.mapper.map_retr(name)
+
+    def map_get_archipelago(self, name, size):
+        return self.mapper.map_retr_archipelago(name, size)
 
     def map_put(self, name, map):
         self.mapper.map_stor(name, map)
@@ -75,6 +70,12 @@ class Store(object):
 
     def block_get(self, hash):
         blocks = self.blocker.block_retr((hash,))
+        if not blocks:
+            return None
+        return blocks[0]
+
+    def block_get_archipelago(self, hash):
+        blocks = self.blocker.block_retr_archipelago((hash,))
         if not blocks:
             return None
         return blocks[0]

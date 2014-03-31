@@ -53,7 +53,10 @@ class PithosBackendPool(ObjectPool):
                  public_url_alphabet=None,
                  account_quota_policy=None,
                  container_quota_policy=None,
-                 container_versioning_policy=None):
+                 container_versioning_policy=None,
+                 archipelago_conf_file=None,
+                 xseg_pool_size=8,
+                 map_check_interval=None):
         super(PithosBackendPool, self).__init__(size=size)
         self.db_module = db_module
         self.db_connection = db_connection
@@ -75,6 +78,9 @@ class PithosBackendPool(ObjectPool):
         self.account_quota_policy = account_quota_policy
         self.container_quota_policy = container_quota_policy
         self.container_versioning_policy = container_versioning_policy
+        self.archipelago_conf_file = archipelago_conf_file
+        self.xseg_pool_size = xseg_pool_size
+        self.map_check_interval = map_check_interval
 
     def _pool_create(self):
         backend = connect_backend(
@@ -97,7 +103,10 @@ class PithosBackendPool(ObjectPool):
             public_url_alphabet=self.public_url_alphabet,
             account_quota_policy=self.account_quota_policy,
             container_quota_policy=self.container_quota_policy,
-            container_versioning_policy=self.container_versioning_policy)
+            container_versioning_policy=self.container_versioning_policy,
+            archipelago_conf_file=self.archipelago_conf_file,
+            xseg_pool_size=self.xseg_pool_size,
+            map_check_interval=self.map_check_interval)
 
         backend._real_close = backend.close
         backend.close = instancemethod(_pooled_backend_close, backend,

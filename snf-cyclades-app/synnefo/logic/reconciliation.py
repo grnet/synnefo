@@ -302,7 +302,7 @@ class BackendReconciler(object):
                                          created__lte=building_time) \
                                 .order_by("id")
         gnt_nics = gnt_server["nics"]
-        gnt_nics_parsed = backend_mod.process_ganeti_nics(gnt_nics)
+        gnt_nics_parsed = backend_mod.parse_instance_nics(gnt_nics)
         nics_changed = len(db_nics) != len(gnt_nics)
         for db_nic, gnt_nic in zip(db_nics, sorted(gnt_nics_parsed.items())):
             gnt_nic_id, gnt_nic = gnt_nic
@@ -321,12 +321,44 @@ class BackendReconciler(object):
             self.log.info(msg, server_id, db_nics_str, gnt_nics_str)
             if self.options["fix_unsynced_nics"]:
                 vm = get_locked_server(server_id)
-                backend_mod.process_net_status(vm=vm,
-                                               etime=self.event_time,
-                                               nics=gnt_nics)
+                backend_mod.process_op_status(
+                    vm=vm, etime=self.event_time, jobid=-0,
+                    opcode="OP_INSTANCE_SET_PARAMS", status='success',
+                    logmsg="Reconciliation: simulated Ganeti event",
+                    nics=gnt_nics)
 
     def reconcile_unsynced_disks(self, server_id, db_server, gnt_server):
-        pass
+        building_time = self.event_time - BUILDING_NIC_TIMEOUT
+        db_disks = db_server.volumes.exclude(status="CREATING",
+                                             created__lte=building_time) \
+                                    .filter(deleted=False)\
+                                    .order_by("id")
+        gnt_disks = gnt_server["disks"]
+        gnt_disks_parsed = backend_mod.parse_instance_disks(gnt_disks)
+        disks_changed = len(db_disks) != len(gnt_disks)
+        for db_disk, gnt_disk in zip(db_disks,
+                                     sorted(gnt_disks_parsed.items())):
+            gnt_disk_id, gnt_disk = gnt_disk
+            if (db_disk.id == gnt_disk_id) and\
+               backend_mod.disks_are_equal(db_disk, gnt_disk):
+                continue
+            else:
+                disks_changed = True
+                break
+        if disks_changed:
+            msg = "Found unsynced disks for server '%s'.\n"\
+                  "\tDB:\n\t\t%s\n\tGaneti:\n\t\t%s"
+            db_disks_str = "\n\t\t".join(map(format_db_disk, db_disks))
+            gnt_disks_str = "\n\t\t".join(map(format_gnt_disk,
+                                          sorted(gnt_disks_parsed.items())))
+            self.log.info(msg, server_id, db_disks_str, gnt_disks_str)
+            if self.options["fix_unsynced_disks"]:
+                vm = get_locked_server(server_id)
+                backend_mod.process_op_status(
+                    vm=vm, etime=self.event_time, jobid=-0,
+                    opcode="OP_INSTANCE_SET_PARAMS", status='success',
+                    logmsg="Reconciliation: simulated Ganeti event",
+                    disks=gnt_disks)
 
     def reconcile_pending_task(self, server_id, db_server):
         job_id = db_server.task_job_id
@@ -366,6 +398,17 @@ def format_gnt_nic(nic):
     return NIC_MSG % (nic_name, nic["state"], nic["ipv4_address"],
                       nic["network"].id, nic["mac"], nic["index"],
                       nic["firewall_profile"])
+
+DISK_MSG = ": %s\t".join(["ID", "State", "Size", "Index"]) + ": %s"
+
+
+def format_db_disk(disk):
+    return DISK_MSG % (disk.id, disk.status, disk.size, disk.index)
+
+
+def format_gnt_disk(disk):
+    disk_name, disk = disk
+    return DISK_MSG % (disk_name, disk["status"], disk["size"], disk["index"])
 
 
 #
@@ -459,10 +502,11 @@ def nics_from_instance(i):
     names = zip(itertools.repeat('name'), i['nic.names'])
     macs = zip(itertools.repeat('mac'), i['nic.macs'])
     networks = zip(itertools.repeat('network'), i['nic.networks.names'])
+    indexes = zip(itertools.repeat('index'), range(0, len(ips)))
     # modes = zip(itertools.repeat('mode'), i['nic.modes'])
     # links = zip(itertools.repeat('link'), i['nic.links'])
     # nics = zip(ips,macs,modes,networks,links)
-    nics = zip(ips, names, macs, networks)
+    nics = zip(ips, names, macs, networks, indexes)
     nics = map(lambda x: dict(x), nics)
     #nics = dict(enumerate(nics))
     tags = i["tags"]
@@ -479,14 +523,20 @@ def nics_from_instance(i):
     return nics
 
 
+def disks_from_instance(i):
+    sizes = zip(itertools.repeat('size'), i['disk.sizes'])
+    names = zip(itertools.repeat('name'), i['disk.names'])
+    uuids = zip(itertools.repeat('uuid'), i['disk.uuids'])
+    indexes = zip(itertools.repeat('index'), range(0, len(sizes)))
+    disks = zip(sizes, names, uuids, indexes)
+    disks = map(lambda x: dict(x), disks)
+    #disks = dict(enumerate(disks))
+    return disks
+
+
 def get_ganeti_jobs(backend):
     gnt_jobs = backend_mod.get_jobs(backend)
     return dict([(int(j["id"]), j) for j in gnt_jobs])
-
-
-def disks_from_instance(i):
-    return dict([(index, {"size": size})
-                 for index, size in enumerate(i["disk.sizes"])])
 
 
 class NetworkReconciler(object):

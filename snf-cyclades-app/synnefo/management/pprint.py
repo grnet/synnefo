@@ -41,7 +41,8 @@ from synnefo.db.models import Backend, pooled_rapi_client
 from synnefo.db.pools import bitarray_to_map
 
 from synnefo.logic.rapi import GanetiApiError
-from synnefo.logic.reconciliation import nics_from_instance
+from synnefo.logic.reconciliation import (nics_from_instance,
+                                          disks_from_instance)
 from synnefo.management.common import get_image
 
 
@@ -331,6 +332,23 @@ def pprint_server_nics(server, stdout=None, title=None):
                  title=title)
 
 
+def pprint_server_volumes(server, stdout=None, title=None):
+    if title is None:
+        title = "Volumes of Server %s" % server.id
+    if stdout is None:
+        stdout = sys.stdout
+
+    vols = []
+    for vol in server.volumes.filter(deleted=False):
+        vols.append((vol.id, vol.name, vol.index, vol.size, vol.template,
+                     vol.provider, vol.status, vol.source))
+
+    headers = ["ID", "Name", "Index", "Size", "Template", "Provider",
+               "Status", "Source"]
+    pprint_table(stdout, vols, headers, separator=" | ",
+                 title=title)
+
+
 def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
     if stdout is None:
         stdout = sys.stdout
@@ -365,6 +383,13 @@ def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
     pprint_table(stdout, nics_values, nics_keys, separator=" | ",
                  title="NICs of Server %s in Ganeti" % server.id)
 
+    stdout.write("\n")
+    disks = disks_from_instance(server_info)
+    disks_keys = ["name", "size"]
+    disks_values = [[disk[key] for key in disks_keys] for disk in disks]
+    pprint_table(stdout, disks_values, disks_keys, separator=" | ",
+                 title="Disks of Server %s in Ganeti" % server.id)
+
     if not print_jobs:
         return
 
@@ -382,3 +407,70 @@ def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
                      separator=" | ",
                      title="Ganeti Job %s" % server_job["id"])
     server.put_client(client)
+
+
+def pprint_volume(volume, display_mails=False, stdout=None, title=None):
+    if stdout is None:
+        stdout = sys.stdout
+    if title is None:
+        title = "State of volume %s in DB" % volume.id
+
+    ucache = UserCache(ASTAKOS_AUTH_URL, ASTAKOS_TOKEN)
+    userid = volume.userid
+
+    volume_dict = OrderedDict([
+        ("id", volume.id),
+        ("size", volume.size),
+        ("disk_template", volume.template),
+        ("disk_provider", volume.provider),
+        ("server_id", volume.machine_id),
+        ("userid", volume.userid),
+        ("username", ucache.get_name(userid) if display_mails else None),
+        ("index", volume.index),
+        ("name", volume.name),
+        ("state", volume.status),
+        ("delete_on_termination", volume.delete_on_termination),
+        ("deleted", volume.deleted),
+        ("backendjobid", volume.backendjobid),
+        ])
+
+    pprint_table(stdout, volume_dict.items(), None, separator=" | ",
+                 title=title)
+
+
+def pprint_volume_in_ganeti(volume, stdout=None, title=None):
+    if stdout is None:
+        stdout = sys.stdout
+    if title is None:
+        title = "State of volume %s in Ganeti" % volume.id
+
+    vm = volume.machine
+    if vm is None:
+        stdout.write("volume is not attached to any instance.\n")
+        return
+
+    client = vm.get_client()
+    try:
+        vm_info = client.GetInstance(vm.backend_vm_id)
+    except GanetiApiError as e:
+        if e.code == 404:
+            stdout.write("Volume seems attached to server %s, but"
+                         " server does not exist in backend.\n"
+                         % vm)
+            return
+        raise e
+
+    disks = disks_from_instance(vm_info)
+    try:
+        gnt_disk = filter(lambda disk:
+                          disk.get("name") == volume.backend_volume_uuid,
+                          disks)[0]
+        gnt_disk["instance"] = vm_info["name"]
+    except IndexError:
+        stdout.write("Volume %s is not attached to instance %s\n" % (volume.id,
+                                                                     vm.id))
+        return
+    pprint_table(stdout, gnt_disk.items(), None, separator=" | ",
+                 title=title)
+
+    vm.put_client(client)

@@ -113,7 +113,7 @@ def install_package(package):
     info = getattr(env.env, package)
     if info in \
             ["squeeze-backports", "squeeze", "stable",
-             "testing", "unstable", "wheezy"]:
+             "testing", "unstable", "wheezy", "experimental"]:
         apt_get += " -t %s %s " % (info, package)
     elif info:
         apt_get += " %s=%s " % (package, info)

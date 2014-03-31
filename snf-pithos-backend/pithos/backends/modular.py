@@ -40,17 +40,24 @@ import binascii
 from collections import defaultdict
 from functools import wraps, partial
 from traceback import format_exc
+from time import time
+
+from pithos.workers import glue
+from archipelago.common import Segment, Xseg_ctx
+from objpool import ObjectPool
+
 
 try:
     from astakosclient import AstakosClient
 except ImportError:
     AstakosClient = None
 
-from base import (DEFAULT_ACCOUNT_QUOTA, DEFAULT_CONTAINER_QUOTA,
-                  DEFAULT_CONTAINER_VERSIONING, NotAllowedError, QuotaError,
-                  BaseBackend, AccountExists, ContainerExists, AccountNotEmpty,
-                  ContainerNotEmpty, ItemNotExists, VersionNotExists,
-                  InvalidHash)
+from pithos.backends.base import (
+    DEFAULT_ACCOUNT_QUOTA, DEFAULT_CONTAINER_QUOTA,
+    DEFAULT_CONTAINER_VERSIONING, NotAllowedError, QuotaError,
+    BaseBackend, AccountExists, ContainerExists, AccountNotEmpty,
+    ContainerNotEmpty, ItemNotExists, VersionNotExists,
+    InvalidHash, IllegalOperationError)
 
 
 class DisabledAstakosClient(object):
@@ -109,6 +116,7 @@ DEFAULT_PUBLIC_URL_ALPHABET = ('0123456789'
                                'abcdefghijklmnopqrstuvwxyz'
                                'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
 DEFAULT_PUBLIC_URL_SECURITY = 16
+DEFAULT_ARCHIPELAGO_CONF_FILE = '/etc/archipelago/archipelago.conf'
 
 QUEUE_MESSAGE_KEY_PREFIX = 'pithos.%s'
 QUEUE_CLIENT_ID = 'pithos'
@@ -125,6 +133,8 @@ inf = float('inf')
 ULTIMATE_ANSWER = 42
 
 DEFAULT_DISKSPACE_RESOURCE = 'pithos.diskspace'
+
+DEFAULT_MAP_CHECK_INTERVAL = 5  # set to 5 secs
 
 logger = logging.getLogger(__name__)
 
@@ -232,7 +242,10 @@ class ModularBackend(BaseBackend):
                  public_url_alphabet=None,
                  account_quota_policy=None,
                  container_quota_policy=None,
-                 container_versioning_policy=None):
+                 container_versioning_policy=None,
+                 archipelago_conf_file=None,
+                 xseg_pool_size=8,
+                 map_check_interval=None):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
         block_module = block_module or DEFAULT_BLOCK_MODULE
@@ -247,6 +260,10 @@ class ModularBackend(BaseBackend):
             or DEFAULT_CONTAINER_QUOTA
         container_versioning_policy = container_versioning_policy \
             or DEFAULT_CONTAINER_VERSIONING
+        archipelago_conf_file = archipelago_conf_file \
+            or DEFAULT_ARCHIPELAGO_CONF_FILE
+        map_check_interval = map_check_interval \
+            or DEFAULT_MAP_CHECK_INTERVAL
 
         self.default_account_policy = {}
         self.default_container_policy = {
@@ -265,6 +282,7 @@ class ModularBackend(BaseBackend):
         self.hash_algorithm = hash_algorithm
         self.block_size = block_size
         self.free_versioning = free_versioning
+        self.map_check_interval = map_check_interval
 
         def load_module(m):
             __import__(m)
@@ -281,11 +299,15 @@ class ModularBackend(BaseBackend):
         self.node = self.db_module.Node(**params)
         for x in ['ROOTNODE', 'SERIAL', 'NODE', 'HASH', 'SIZE', 'TYPE',
                   'MTIME', 'MUSER', 'UUID', 'CHECKSUM', 'CLUSTER',
-                  'MATCH_PREFIX', 'MATCH_EXACT']:
+                  'MATCH_PREFIX', 'MATCH_EXACT',
+                  'AVAILABLE', 'MAP_CHECK_TIMESTAMP']:
             setattr(self, x, getattr(self.db_module, x))
 
         self.ALLOWED = ['read', 'write']
 
+        glue.WorkerGlue.setupXsegPool(ObjectPool, Segment, Xseg_ctx,
+                                      cfile=archipelago_conf_file,
+                                      pool_size=xseg_pool_size)
         self.block_module = load_module(block_module)
         self.block_params = block_params
         params = {'path': block_path,
@@ -912,7 +934,9 @@ class ModularBackend(BaseBackend):
                     'modified': p[self.MTIME + 1] if until is None else None,
                     'modified_by': p[self.MUSER + 1],
                     'uuid': p[self.UUID + 1],
-                    'checksum': p[self.CHECKSUM + 1]})
+                    'checksum': p[self.CHECKSUM + 1],
+                    'available': p[self.AVAILABLE + 1],
+                    'map_check_timestamp': p[self.MAP_CHECK_TIMESTAMP + 1]})
         return objects
 
     @debug_method
@@ -945,6 +969,14 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version)
         if version is None:
+            if not props[self.AVAILABLE]:
+                try:
+                    self._update_available(props)
+                except (NotAllowedError, IllegalOperationError):
+                    pass  # just update the database
+                finally:
+                    # get updated properties
+                    props = self._get_version(node, version)
             modified = props[self.MTIME]
         else:
             try:
@@ -974,7 +1006,9 @@ class ModularBackend(BaseBackend):
                      'modified': modified,
                      'modified_by': props[self.MUSER],
                      'uuid': props[self.UUID],
-                     'checksum': props[self.CHECKSUM]})
+                     'checksum': props[self.CHECKSUM],
+                     'available': props[self.AVAILABLE],
+                     'map_check_timestamp': props[self.MAP_CHECK_TIMESTAMP]})
         return meta
 
     @debug_method
@@ -1094,6 +1128,36 @@ class ModularBackend(BaseBackend):
             self.permissions.public_set(
                 path, self.public_url_security, self.public_url_alphabet)
 
+    def _update_available(self, props):
+        """Checks if the object map exists and updates the database"""
+
+        if not props[self.AVAILABLE]:
+            if props[self.MAP_CHECK_TIMESTAMP]:
+                elapsed_time = time() - float(props[self.MAP_CHECK_TIMESTAMP])
+                if elapsed_time < self.map_check_interval:
+                    raise NotAllowedError(
+                        'Consequent map checks are limited: retry later.')
+        try:
+            hashmap = self.store.map_get_archipelago(props[self.HASH],
+                                                     props[self.SIZE])
+        except:  # map does not exist
+            # Raising an exception results in db transaction rollback
+            # However we have to force the update of the database
+            self.wrapper.rollback()  # rollback existing transaction
+            self.wrapper.execute()  # start new transaction
+            self.node.version_put_property(props[self.SERIAL],
+                                           'map_check_timestamp', time())
+            self.wrapper.commit()  # commit transaction
+            self.wrapper.execute()  # start new transaction
+            raise IllegalOperationError(
+                'Unable to retrieve Archipelago Volume hashmap.')
+        else:  # map exists
+            self.node.version_put_property(props[self.SERIAL],
+                                           'available', True)
+            self.node.version_put_property(props[self.SERIAL],
+                                           'map_check_timestamp', time())
+            return hashmap
+
     @debug_method
     @backend_method
     def get_object_hashmap(self, user, account, container, name, version=None):
@@ -1104,13 +1168,19 @@ class ModularBackend(BaseBackend):
         props = self._get_version(node, version)
         if props[self.HASH] is None:
             return 0, ()
-        hashmap = self.store.map_get(self._unhexlify_hash(props[self.HASH]))
-        return props[self.SIZE], [binascii.hexlify(x) for x in hashmap]
+        if props[self.HASH].startswith('archip:'):
+            hashmap = self._update_available(props)
+            return props[self.SIZE], [x for x in hashmap]
+        else:
+            hashmap = self.store.map_get(self._unhexlify_hash(
+                props[self.HASH]))
+            return props[self.SIZE], [binascii.hexlify(x) for x in hashmap]
 
     def _update_object_hash(self, user, account, container, name, size, type,
                             hash, checksum, domain, meta, replace_meta,
                             permissions, src_node=None, src_version_id=None,
-                            is_copy=False, report_size_change=True):
+                            is_copy=False, report_size_change=True,
+                            available=True):
         if permissions is not None and user != account:
             raise NotAllowedError
         self._can_write_object(user, account, container, name)
@@ -1128,7 +1198,8 @@ class ModularBackend(BaseBackend):
         pre_version_id, dest_version_id = self._put_version_duplicate(
             user, node, src_node=src_node, size=size, type=type, hash=hash,
             checksum=checksum, is_copy=is_copy,
-            update_statistics_ancestors_depth=1)
+            update_statistics_ancestors_depth=1,
+            available=available, keep_available=False)
 
         # Handle meta.
         if src_version_id is None:
@@ -1181,11 +1252,69 @@ class ModularBackend(BaseBackend):
         return dest_version_id
 
     @debug_method
+    @backend_method
+    def register_object_map(self, user, account, container, name, size, type,
+                            mapfile, checksum='', domain='pithos', meta=None,
+                            replace_meta=False, permissions=None):
+        """Register an object mapfile without providing any data.
+
+        Lock the container path, create a node pointing to the object path,
+        create a version pointing to the mapfile
+        and issue the size change in the quotaholder.
+
+        :param user: the user account which performs the action
+
+        :param account: the account under which the object resides
+
+        :param container: the container under which the object resides
+
+        :param name: the object name
+
+        :param size: the object size
+
+        :param type: the object mimetype
+
+        :param mapfile: the mapfile pointing to the object data
+
+        :param checkcum: the md5 checksum (optional)
+
+        :param domain: the object domain
+
+        :param meta: a dict with custom object metadata
+
+        :param replace_meta: replace existing metadata or not
+
+        :param permissions: a dict with the read and write object permissions
+
+        :returns: the new object uuid
+
+        :raises: ItemNotExists, NotAllowedError, QuotaError
+        """
+
+        meta = meta or {}
+        try:
+            self.lock_container_path = True
+            self.put_container(user, account, container, policy=None)
+        except ContainerExists:
+            pass
+        finally:
+            self.lock_container_path = False
+        dest_version_id = self._update_object_hash(
+            user, account, container, name, size, type, mapfile, checksum,
+            domain, meta, replace_meta, permissions, available=False)
+        return self.node.version_get_properties(dest_version_id,
+                                                keys=('uuid',))[0]
+
+    @debug_method
     def update_object_hashmap(self, user, account, container, name, size, type,
                               hashmap, checksum, domain, meta=None,
                               replace_meta=False, permissions=None):
         """Create/update an object's hashmap and return the new version."""
 
+        for h in hashmap:
+            if h.startswith('archip_'):
+                raise IllegalOperationError(
+                    'Cannot update Archipelago Volume hashmap.')
         meta = meta or {}
         if size == 0:  # No such thing as an empty hashmap.
             hashmap = [self.put_block('')]
@@ -1499,7 +1628,10 @@ class ModularBackend(BaseBackend):
         """Return a block's data."""
 
         logger.debug("get_block: %s", hash)
-        block = self.store.block_get(self._unhexlify_hash(hash))
+        if hash.startswith('archip_'):
+            block = self.store.block_get_archipelago(hash)
+        else:
+            block = self.store.block_get(self._unhexlify_hash(hash))
         if not block:
             raise ItemNotExists('Block does not exist')
         return block
@@ -1514,6 +1646,9 @@ class ModularBackend(BaseBackend):
         """Update a known block and return the hash."""
 
         logger.debug("update_block: %s %s %s", hash, len(data), offset)
+        if hash.startswith('archip_'):
+            raise IllegalOperationError(
+                'Cannot update an Archipelago Volume block.')
         if offset == 0 and len(data) == self.block_size:
             return self.put_block(data)
         h = self.store.block_update(self._unhexlify_hash(hash), offset, data)
@@ -1615,7 +1750,8 @@ class ModularBackend(BaseBackend):
     def _put_version_duplicate(self, user, node, src_node=None, size=None,
                                type=None, hash=None, checksum=None,
                                cluster=CLUSTER_NORMAL, is_copy=False,
-                               update_statistics_ancestors_depth=None):
+                               update_statistics_ancestors_depth=None,
+                               available=True, keep_available=True):
         """Create a new version of the node."""
 
         props = self.node.version_lookup(
@@ -1626,12 +1762,20 @@ class ModularBackend(BaseBackend):
             src_size = props[self.SIZE]
             src_type = props[self.TYPE]
             src_checksum = props[self.CHECKSUM]
+            if keep_available:
+                src_available = props[self.AVAILABLE]
+                src_map_check_timestamp = props[self.MAP_CHECK_TIMESTAMP]
+            else:
+                src_available = available
+                src_map_check_timestamp = None
         else:
             src_version_id = None
             src_hash = None
             src_size = 0
             src_type = ''
             src_checksum = ''
+            src_available = available
+            src_map_check_timestamp = None
         if size is None:  # Set metadata.
             hash = src_hash  # This way hash can be set to None
                              # (account or container).
@@ -1656,7 +1800,9 @@ class ModularBackend(BaseBackend):
 
         dest_version_id, mtime = self.node.version_create(
             node, hash, size, type, src_version_id, user, uuid, checksum,
-            cluster, update_statistics_ancestors_depth)
+            cluster, update_statistics_ancestors_depth,
+            available=src_available,
+            map_check_timestamp=src_map_check_timestamp)
 
         self.node.attribute_unset_is_latest(node, dest_version_id)
 

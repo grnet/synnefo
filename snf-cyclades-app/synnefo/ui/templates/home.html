@@ -113,6 +113,7 @@
         
         //populate available image icons array
         var os_icons = {{image_icons|safe}};
+        os_icons.push('snapshot');
         
         // timeout value from settings.py
         var TIMEOUT = {{ timeout }};
@@ -632,6 +633,7 @@
                 'userdata': '{% url ui_userdata %}', 
                 'compute':  {{ compute_api_url|safe }}, 
                 'network':  {{ network_api_url|safe }}, 
+                'volume':  {{ volume_api_url|safe }}, 
                 'glance': {{ glance_api_url|safe }},
                 'accounts': {{ accounts_api_url|safe }},
             };

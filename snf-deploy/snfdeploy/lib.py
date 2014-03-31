@@ -238,7 +238,7 @@ class Conf(object):
         "deploy": ["dirs", "packages", "keys", "options"],
         "vcluster": ["cluster", "image", "network"],
         "synnefo": ["cred", "synnefo", "roles"],
-        "wheezy": ["debian", "ganeti", "synnefo", "other"],
+        "wheezy": ["debian", "ganeti", "synnefo", "other", "archip"],
     }
     confdir = "/etc/snf-deploy"
 

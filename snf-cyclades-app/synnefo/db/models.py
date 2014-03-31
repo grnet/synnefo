@@ -409,8 +409,10 @@ class VirtualMachine(models.Model):
 
 
 class VirtualMachineMetadata(models.Model):
-    meta_key = models.CharField(max_length=50)
-    meta_value = models.CharField(max_length=500)
+    KEY_LENGTH = 50
+    VALUE_LENGTH = 500
+    meta_key = models.CharField(max_length=KEY_LENGTH)
+    meta_value = models.CharField(max_length=VALUE_LENGTH)
     vm = models.ForeignKey(VirtualMachine, related_name='metadata',
                            on_delete=models.CASCADE)
 
@@ -825,8 +827,8 @@ class NetworkInterface(models.Model):
     device_owner = models.CharField('Device owner', max_length=128, null=True)
 
     def __unicode__(self):
-        return "<%s:vm:%s network:%s>" % (self.id, self.machine_id,
-                                          self.network_id)
+        return "<NIC %s:vm:%s network:%s>" % (self.id, self.machine_id,
+                                              self.network_id)
 
     @property
     def backend_uuid(self):
@@ -983,3 +985,140 @@ class VirtualMachineDiagnostic(models.Model):
 
     class Meta:
         ordering = ['-created']
+
+
+class Volume(models.Model):
+    """Model representing a detachable block storage device."""
+
+    STATUS_VALUES = (
+        ("CREATING", "The volume is being created"),
+        ("AVAILABLE", "The volume is ready to be attached to an instance"),
+        ("ATTACHING", "The volume is attaching to an instance"),
+        ("DETACHING", "The volume is detaching from an instance"),
+        ("IN_USE", "The volume is attached to an instance"),
+        ("DELETING", "The volume is being deleted"),
+        ("DELETED", "The volume has been deleted"),
+        ("ERROR", "An error has occured with the volume"),
+        ("ERROR_DELETING", "There was an error deleting this volume"),
+        ("BACKING_UP", "The volume is being backed up"),
+        ("RESTORING_BACKUP", "A backup is being restored to the volume"),
+        ("ERROR_RESTORING", "There was an error restoring a backup from the"
+                            " volume")
+    )
+
+    NAME_LENGTH = 255
+    DESCRIPTION_LENGTH = 255
+    SOURCE_IMAGE_PREFIX = "image:"
+    SOURCE_SNAPSHOT_PREFIX = "snapshot:"
+    SOURCE_VOLUME_PREFIX = "volume:"
+
+    name = models.CharField("Name", max_length=NAME_LENGTH, null=True)
+    description = models.CharField("Description",
+                                   max_length=DESCRIPTION_LENGTH, null=True)
+    userid = models.CharField("Owner's UUID", max_length=100, null=False,
+                              db_index=True)
+    size = models.IntegerField("Volume size in GB",  null=False)
+    disk_template = models.CharField('Disk template', max_length=32,
+                                     null=False)
+
+    delete_on_termination = models.BooleanField("Delete on Server Termination",
+                                                default=True, null=False)
+
+    source = models.CharField(max_length=128, null=True)
+    origin = models.CharField(max_length=128, null=True)
+
+    # TODO: volume_type should be foreign key to VolumeType model
+    volume_type = None
+    deleted = models.BooleanField("Deleted", default=False, null=False)
+    # Datetime fields
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    # Status
+    status = models.CharField("Status", max_length=64,
+                              choices=STATUS_VALUES,
+                              default="CREATING", null=False)
+    snapshot_counter = models.PositiveIntegerField(default=0, null=False)
+
+    machine = models.ForeignKey("VirtualMachine",
+                                related_name="volumes",
+                                null=True)
+    index = models.IntegerField("Index", null=True)
+    backendjobid = models.PositiveIntegerField(null=True)
+
+    @property
+    def backend_volume_uuid(self):
+        return u"%svol-%d" % (settings.BACKEND_PREFIX_ID, self.id)
+
+    @property
+    def backend_disk_uuid(self):
+        return u"%sdisk-%d" % (settings.BACKEND_PREFIX_ID, self.id)
+
+    @property
+    def source_image_id(self):
+        src = self.source
+        if src and src.startswith(self.SOURCE_IMAGE_PREFIX):
+            return src[len(self.SOURCE_IMAGE_PREFIX):]
+        else:
+            return None
+
+    @property
+    def source_snapshot_id(self):
+        src = self.source
+        if src and src.startswith(self.SOURCE_SNAPSHOT_PREFIX):
+            return src[len(self.SOURCE_SNAPSHOT_PREFIX):]
+        else:
+            return None
+
+    @property
+    def source_volume_id(self):
+        src = self.source
+        if src and src.startswith(self.SOURCE_VOLUME_PREFIX):
+            return src[len(self.SOURCE_VOLUME_PREFIX):]
+        else:
+            return None
+
+    @property
+    def template(self):
+        return self.disk_template.split("_")[0]
+
+    @property
+    def provider(self):
+        if "_" in self.disk_template:
+            return self.disk_template.split("_", 1)[1]
+        else:
+            return None
+
+    @staticmethod
+    def prefix_source(source_id, source_type):
+        if source_type == "volume":
+            return Volume.SOURCE_VOLUME_PREFIX + str(source_id)
+        if source_type == "snapshot":
+            return Volume.SOURCE_SNAPSHOT_PREFIX + str(source_id)
+        if source_type == "image":
+            return Volume.SOURCE_IMAGE_PREFIX + str(source_id)
+        elif source_type == "blank":
+            return None
+
+    def __unicode__(self):
+        return "<Volume %s:vm:%s>" % (self.id, self.machine_id)
+
+
+class Metadata(models.Model):
+    KEY_LENGTH = 64
+    VALUE_LENGTH = 255
+    key = models.CharField("Metadata Key", max_length=KEY_LENGTH)
+    value = models.CharField("Metadata Value", max_length=VALUE_LENGTH)
+
+    class Meta:
+        abstract = True
+
+    def __unicode__(self):
+        return u"<%s: %s>" % (self.key, self.value)
+
+
+class VolumeMetadata(Metadata):
+    volume = models.ForeignKey("Volume", related_name="metadata")
+
+    class Meta:
+        unique_together = (("volume", "key"),)
+        verbose_name = u"Key-Value pair of Volumes metadata"

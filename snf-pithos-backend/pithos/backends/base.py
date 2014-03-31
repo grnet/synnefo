@@ -41,6 +41,10 @@ class NotAllowedError(Exception):
     pass
 
 
+class IllegalOperationError(NotAllowedError):
+    pass
+
+
 class QuotaError(Exception):
     pass
 
@@ -68,8 +72,10 @@ class ItemNotExists(NameError):
 class VersionNotExists(IndexError):
     pass
 
+
 class InvalidHash(TypeError):
     pass
+
 
 class BaseBackend(object):
     """Abstract backend class.

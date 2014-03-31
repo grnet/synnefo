@@ -70,6 +70,8 @@ class Command(SynnefoCommand):
         self.stdout.write("\n")
         pprint.pprint_server_nics(vm, stdout=self.stdout)
         self.stdout.write("\n")
+        pprint.pprint_server_volumes(vm, stdout=self.stdout)
+        self.stdout.write("\n")
         pprint.pprint_server_in_ganeti(vm, print_jobs=options["jobs"],
                                        stdout=self.stdout)
         self.stdout.write("\n")

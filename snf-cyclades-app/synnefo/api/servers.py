@@ -44,7 +44,8 @@ from snf_django.lib.api import faults, utils
 
 from synnefo.api import util
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
-from synnefo.logic import servers, utils as logic_utils
+from synnefo.logic import servers, utils as logic_utils, server_attachments
+from synnefo.volume.util import get_volume
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -61,7 +62,16 @@ urlpatterns = patterns(
     (r'^/(\d+)/metadata/(.+?)(?:.json|.xml)?$', 'metadata_item_demux'),
     (r'^/(\d+)/stats(?:.json|.xml)?$', 'server_stats'),
     (r'^/(\d+)/diagnostics(?:.json)?$', 'get_server_diagnostics'),
+    (r'^/(\d+)/os-volume_attachments(?:.json)?$', 'demux_volumes'),
+    (r'^/(\d+)/os-volume_attachments/(\d+)(?:.json)?$', 'demux_volumes_item'),
 )
+
+VOLUME_SOURCE_TYPES = [
+    "snapshot",
+    "image",
+    "volume",
+    "blank"
+]
 
 
 def demux(request):
@@ -110,6 +120,26 @@ def metadata_item_demux(request, server_id, key):
                                           allowed_methods=['GET',
                                                            'PUT',
                                                            'DELETE'])
+
+
+def demux_volumes(request, server_id):
+    if request.method == 'GET':
+        return get_volumes(request, server_id)
+    elif request.method == 'POST':
+        return attach_volume(request, server_id)
+    else:
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET', 'POST'])
+
+
+def demux_volumes_item(request, server_id, volume_id):
+    if request.method == 'GET':
+        return get_volume_info(request, server_id, volume_id)
+    elif request.method == 'DELETE':
+        return detach_volume(request, server_id, volume_id)
+    else:
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['GET', 'DELETE'])
 
 
 def nic_to_attachments(nic):
@@ -193,6 +223,8 @@ def vm_to_dict(vm, detail=False):
         attachments = map(nic_to_attachments, active_nics)
         d['attachments'] = attachments
         d['addresses'] = attachments_to_addresses(attachments)
+
+        d['volumes'] = [v.id for v in vm.volumes.order_by('id')]
 
         # include the latest vm diagnostic, if set
         diagnostic = vm.get_last_diagnostic()
@@ -389,10 +421,13 @@ def create_server(request):
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
 
+    volumes = None
+    dev_map = server.get("block_device_mapping_v2")
+    if dev_map is not None:
+        volumes = parse_block_device_mapping(dev_map)
+
     # Verify that personalities are well-formed
     util.verify_personality(personality)
-    # Get image information
-    image = util.get_image_dict(image_id, user_id)
     # Get flavor (ensure it is active)
     flavor = util.get_flavor(flavor_id, include_deleted=False)
     if not flavor.allow_create:
@@ -402,9 +437,9 @@ def create_server(request):
     # Generate password
     password = util.random_password()
 
-    vm = servers.create(user_id, name, password, flavor, image,
+    vm = servers.create(user_id, name, password, flavor, image_id,
                         metadata=metadata, personality=personality,
-                        project=project, networks=networks)
+                        project=project, networks=networks, volumes=volumes)
 
     server = vm_to_dict(vm, detail=True)
     server['status'] = 'BUILD'
@@ -413,6 +448,65 @@ def create_server(request):
     response = render_server(request, server, status=202)
 
     return response
+
+
+def parse_block_device_mapping(dev_map):
+    """Parse 'block_device_mapping_v2' attribute"""
+    if not isinstance(dev_map, list):
+        raise faults.BadRequest("Block Device Mapping is Invalid")
+    return [_parse_block_device(device) for device in dev_map]
+
+
+def _parse_block_device(device):
+    """Parse and validate a block device mapping"""
+    if not isinstance(device, dict):
+        raise faults.BadRequest("Block Device Mapping is Invalid")
+
+    # Validate source type
+    source_type = device.get("source_type")
+    if source_type is None:
+        raise faults.BadRequest("Block Device Mapping is Invalid: Invalid"
+                                " source_type field")
+    elif source_type not in VOLUME_SOURCE_TYPES:
+        raise faults.BadRequest("Block Device Mapping is Invalid: source_type"
+                                " must be on of %s"
+                                % ", ".join(VOLUME_SOURCE_TYPES))
+
+    # Validate source UUID
+    uuid = device.get("uuid")
+    if uuid is None and source_type != "blank":
+        raise faults.BadRequest("Block Device Mapping is Invalid: uuid of"
+                                " %s is missing" % source_type)
+
+    # Validate volume size
+    size = device.get("volume_size")
+    if size is not None:
+        try:
+            size = int(size)
+        except (TypeError, ValueError):
+            raise faults.BadRequest("Block Device Mapping is Invalid: Invalid"
+                                    " size field")
+
+    # Validate 'delete_on_termination'
+    delete_on_termination = device.get("delete_on_termination")
+    if delete_on_termination is not None:
+        if not isinstance(delete_on_termination, bool):
+            raise faults.BadRequest("Block Device Mapping is Invalid: Invalid"
+                                    " delete_on_termination field")
+    else:
+        if source_type == "volume":
+            delete_on_termination = False
+        else:
+            delete_on_termination = True
+
+    # Unused API Attributes
+    # boot_index = device.get("boot_index")
+    # destination_type = device.get("destination_type")
+
+    return {"source_type": source_type,
+            "source_uuid": uuid,
+            "size": size,
+            "delete_on_termination": delete_on_termination}
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
@@ -962,4 +1056,70 @@ def remove_floating_ip(request, vm, args):
         raise faults.BadRequest("Floating IP %s not attached to instance"
                                 % address)
     servers.delete_port(floating_ip.nic)
+    return HttpResponse(status=202)
+
+
+def volume_to_attachment(volume):
+    return {"id": volume.id,
+            "volumeId": volume.id,
+            "serverId": volume.machine_id,
+            "device": ""}  # TODO: What device to return?
+
+
+@api.api_method(http_method='GET', user_required=True, logger=log)
+def get_volumes(request, server_id):
+    log.debug("get_volumes server_id %s", server_id)
+    vm = util.get_vm(server_id, request.user_uniq, for_update=False)
+
+    # TODO: Filter attachments!!
+    volumes = vm.volumes.filter(deleted=False).order_by("id")
+    attachments = [volume_to_attachment(v) for v in volumes]
+
+    data = json.dumps({'volumeAttachments': attachments})
+    return HttpResponse(data, status=200)
+    pass
+
+
+@api.api_method(http_method='GET', user_required=True, logger=log)
+def get_volume_info(request, server_id, volume_id):
+    log.debug("get_volume_info server_id %s volume_id", server_id, volume_id)
+    user_id = request.user_uniq
+    vm = util.get_vm(server_id, user_id)
+    volume = get_volume(user_id, volume_id, for_update=False,
+                        exception=faults.BadRequest)
+    servers._check_attachment(vm, volume)
+    attachment = volume_to_attachment(volume)
+    data = json.dumps({'volumeAttachment': attachment})
+    return HttpResponse(data, status=200)
+
+
+@api.api_method(http_method='POST', user_required=True, logger=log)
+def attach_volume(request, server_id):
+    req = utils.get_request_dict(request)
+    log.debug("attach_volume server_id %s request", server_id, req)
+    user_id = request.user_uniq
+    vm = util.get_vm(server_id, user_id, for_update=True)
+
+    attachment_dict = api.utils.get_attribute(req, "volumeAttachment",
+                                              required=True)
+    # Get volume
+    volume_id = api.utils.get_attribute(attachment_dict, "volumeId")
+    volume = get_volume(user_id, volume_id, for_update=True,
+                        exception=faults.BadRequest)
+    vm = server_attachments.attach_volume(vm, volume)
+    attachment = volume_to_attachment(volume)
+    data = json.dumps({'volumeAttachment': attachment})
+
+    return HttpResponse(data, status=202)
+
+
+@api.api_method(http_method='DELETE', user_required=True, logger=log)
+def detach_volume(request, server_id, volume_id):
+    log.debug("detach_volume server_id %s volume_id", server_id, volume_id)
+    user_id = request.user_uniq
+    vm = util.get_vm(server_id, user_id)
+    volume = get_volume(user_id, volume_id, for_update=True,
+                        exception=faults.BadRequest)
+    vm = server_attachments.detach_volume(vm, volume)
+    # TODO: Check volume state, send job to detach volume
     return HttpResponse(status=202)

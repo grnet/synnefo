@@ -38,7 +38,7 @@ from copy import deepcopy
 from snf_django.utils.testing import (BaseAPITest, mocked_quotaholder,
                                       override_settings)
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,
-                               IPAddress, NetworkInterface)
+                               IPAddress, NetworkInterface, Volume)
 from synnefo.db import models_factory as mfactory
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.cyclades_settings import cyclades_services
@@ -326,14 +326,17 @@ class ServerAPITest(ComputeAPITest):
 
 fixed_image = Mock()
 fixed_image.return_value = {'location': 'pithos://foo',
-                            'checksum': '1234',
+                            'mapfile': '1234',
                             "id": 1,
                             "name": "test_image",
-                            "size": "41242",
+                            "size": 1024,
+                            "is_snapshot": False,
+                            "status": "AVAILABLE",
                             'disk_format': 'diskdump'}
 
 
 @patch('synnefo.api.util.get_image', fixed_image)
+@patch('synnefo.volume.util.get_snapshot', fixed_image)
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
 class ServerCreateAPITest(ComputeAPITest):
     def setUp(self):
@@ -593,6 +596,89 @@ class ServerCreateAPITest(ComputeAPITest):
                 response = self.mypost("servers", "user2",
                                        json.dumps(request), 'json')
         self.assertEqual(response.status_code, 404)
+
+    def test_create_server_with_volumes(self, mrapi):
+        user = "test_user"
+        mrapi().CreateInstance.return_value = 42
+        # Test creation without any volumes. Server will use flavor+image
+        request = deepcopy(self.request)
+        request["server"]["block_device_mapping_v2"] = []
+        with mocked_quotaholder():
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202, msg=response.content)
+        vm_id = json.loads(response.content)["server"]["id"]
+        volume = Volume.objects.get(machine_id=vm_id)
+        self.assertEqual(volume.disk_template, self.flavor.disk_template)
+        self.assertEqual(volume.size, self.flavor.disk)
+        self.assertEqual(volume.source, "image:%s" % fixed_image()["id"])
+        self.assertEqual(volume.delete_on_termination, True)
+        self.assertEqual(volume.userid, user)
+
+        # Test using an image
+        request["server"]["block_device_mapping_v2"] = [
+            {"source_type": "image",
+             "uuid": fixed_image()["id"],
+             "volume_size": 10,
+             "delete_on_termination": False}
+        ]
+        with mocked_quotaholder():
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202, msg=response.content)
+        vm_id = json.loads(response.content)["server"]["id"]
+        volume = Volume.objects.get(machine_id=vm_id)
+        self.assertEqual(volume.disk_template, self.flavor.disk_template)
+        self.assertEqual(volume.size, 10)
+        self.assertEqual(volume.source, "image:%s" % fixed_image()["id"])
+        self.assertEqual(volume.delete_on_termination, False)
+        self.assertEqual(volume.userid, user)
+        self.assertEqual(volume.origin, "pithos:" + fixed_image()["mapfile"])
+
+        # Test using a snapshot
+        request["server"]["block_device_mapping_v2"] = [
+            {"source_type": "snapshot",
+             "uuid": fixed_image()["id"],
+             "volume_size": 10,
+             "delete_on_termination": False}
+        ]
+        with mocked_quotaholder():
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202, msg=response.content)
+        vm_id = json.loads(response.content)["server"]["id"]
+        volume = Volume.objects.get(machine_id=vm_id)
+        self.assertEqual(volume.disk_template, self.flavor.disk_template)
+        self.assertEqual(volume.size, 10)
+        self.assertEqual(volume.source, "snapshot:%s" % fixed_image()["id"])
+        self.assertEqual(volume.origin, fixed_image()["mapfile"])
+        self.assertEqual(volume.delete_on_termination, False)
+        self.assertEqual(volume.userid, user)
+
+        source_volume = volume
+        # Test using source volume
+        request["server"]["block_device_mapping_v2"] = [
+            {"source_type": "volume",
+             "uuid": source_volume.id,
+             "volume_size": source_volume.size,
+             "delete_on_termination": False}
+        ]
+        with mocked_quotaholder():
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        # This will fail because the volume is not AVAILABLE.
+        self.assertBadRequest(response)
+
+        # Test using a blank volume
+        request["server"]["block_device_mapping_v2"] = [
+            {"source_type": "blank",
+             "volume_size": 10,
+             "delete_on_termination": True}
+        ]
+        with mocked_quotaholder():
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertBadRequest(response)
 
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
@@ -881,3 +967,82 @@ class ServerVNCConsole(ComputeAPITest):
         response = self.mypost('servers/%d/action' % vm.id,
                                vm.userid, data, 'json')
         self.assertBadRequest(response)
+
+
+@patch('synnefo.logic.rapi_pool.GanetiRapiClient')
+class ServerAttachments(ComputeAPITest):
+    def test_list_attachments(self, mrapi):
+        # Test default volume
+        vol = mfactory.VolumeFactory()
+        vm = vol.machine
+
+        response = self.myget("servers/%d/os-volume_attachments" % vm.id,
+                              vm.userid)
+        self.assertSuccess(response)
+        attachments = json.loads(response.content)
+        self.assertEqual(len(attachments), 1)
+        self.assertEqual(attachments["volumeAttachments"][0],
+                         {"volumeId": vol.id,
+                          "serverId": vm.id,
+                          "id": vol.id,
+                          "device": ""})
+
+        # Test deleted Volume
+        dvol = mfactory.VolumeFactory(machine=vm, deleted=True)
+        response = self.myget("servers/%d/os-volume_attachments" % vm.id,
+                              vm.userid)
+        self.assertSuccess(response)
+        attachments = json.loads(response.content)["volumeAttachments"]
+        self.assertEqual(len([d for d in attachments if d["id"] == dvol.id]),
+                         0)
+
+    def test_attach_detach_volume(self, mrapi):
+        vol = mfactory.VolumeFactory(status="AVAILABLE")
+        vm = vol.machine
+        disk_template = vm.flavor.disk_template
+        # Test that we cannot detach the root volume
+        response = self.mydelete("servers/%d/os-volume_attachments/%d" %
+                                 (vm.id, vol.id), vm.userid)
+        self.assertBadRequest(response)
+
+        # Test that we cannot attach a used volume
+        vol1 = mfactory.VolumeFactory(status="IN_USE",
+                                      disk_template=disk_template,
+                                      userid=vm.userid)
+        request = json.dumps({"volumeAttachment": {"volumeId": vol1.id}})
+        response = self.mypost("servers/%d/os-volume_attachments" %
+                               vm.id, vm.userid,
+                               request, "json")
+        self.assertBadRequest(response)
+
+        # We cannot attach a volume of different disk template
+        vol1.status = "AVAILABLE"
+        vol1.disk_template = "lalalal"
+        vol1.save()
+        response = self.mypost("servers/%d/os-volume_attachments/" %
+                               vm.id, vm.userid,
+                               request, "json")
+        self.assertBadRequest(response)
+
+        vol1.disk_template = disk_template
+        vol1.save()
+        mrapi().ModifyInstance.return_value = 43
+        response = self.mypost("servers/%d/os-volume_attachments" %
+                               vm.id, vm.userid,
+                               request, "json")
+        self.assertEqual(response.status_code, 202, response.content)
+        attachment = json.loads(response.content)["volumeAttachment"]
+        self.assertEqual(attachment, {"volumeId": vol1.id,
+                                      "serverId": vm.id,
+                                      "id": vol1.id,
+                                      "device": ""})
+        # And we delete it...will fail because of status
+        response = self.mydelete("servers/%d/os-volume_attachments/%d" %
+                                 (vm.id, vol1.id), vm.userid)
+        self.assertBadRequest(response)
+        vm.task = None
+        vm.save()
+        vm.volumes.all().update(status="IN_USE")
+        response = self.mydelete("servers/%d/os-volume_attachments/%d" %
+                                 (vm.id, vol1.id), vm.userid)
+        self.assertEqual(response.status_code, 202, response.content)

@@ -203,3 +203,14 @@ OAUTH2_CLIENT_CREDENTIALS = getattr(settings,
 # Set domain to restrict requests of pithos object contents serve endpoint or
 # None for no domain restriction
 UNSAFE_DOMAIN = getattr(settings, 'PITHOS_UNSAFE_DOMAIN', None)
+
+# Archipelago Configuration File
+BACKEND_ARCHIPELAGO_CONF = getattr(settings, 'PITHOS_BACKEND_ARCHIPELAGO_CONF',
+                                   '/etc/archipelago/archipelago.conf')
+
+# Archipelagp xseg pool size
+BACKEND_XSEG_POOL_SIZE = getattr(settings, 'PITHOS_BACKEND_XSEG_POOL_SIZE', 8)
+
+# The maximum interval (in seconds) for consequent backend object map checks
+BACKEND_MAP_CHECK_INTERVAL = getattr(settings,
+                                     'PITHOS_BACKEND_MAP_CHECK_INTERVAL', 5)

@@ -159,13 +159,17 @@ class Permissions(XFeatures, Groups, Public, Node):
 
     def access_check_bulk(self, paths, member):
         rows = None
-        xfeatures_xfeaturevals = self.xfeaturevals.join(self.xfeatures,
-                onclause=and_(self.xfeatures.c.feature_id ==
-                    self.xfeaturevals.c.feature_id, self.xfeatures.c.path.in_(paths)))
+        xfeatures_xfeaturevals = \
+            self.xfeaturevals.join(self.xfeatures,
+                                   onclause=
+                                   and_(self.xfeatures.c.feature_id ==
+                                        self.xfeaturevals.c.feature_id,
+                                        self.xfeatures.c.path.in_(paths)))
         s = select([self.xfeatures.c.path,
-                    self.xfeaturevals.c.value,
-                    self.xfeaturevals.c.feature_id,
-                    self.xfeaturevals.c.key], from_obj=[xfeatures_xfeaturevals])
+                   self.xfeaturevals.c.value,
+                   self.xfeaturevals.c.feature_id,
+                   self.xfeaturevals.c.key],
+                   from_obj=[xfeatures_xfeaturevals])
         r = self.conn.execute(s)
         rows = r.fetchall()
         r.close()

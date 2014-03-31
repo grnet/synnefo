@@ -39,10 +39,13 @@ ROLES = {
     "mq": [HW, SSH, DNS, APT, MQ],
     "nfs": [HW, SSH, DNS, APT, NFS],
     "astakos": [HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB, Astakos],
-    "pithos": [HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB, Pithos],
+    "pithos": [
+        HW, SSH, DNS, APT, Apache,
+        Gunicorn, Common, WEB, PithosBackend, Archip, Pithos
+        ],
     "cyclades": [
         HW, SSH, DNS, APT,
-        Apache, Gunicorn, Common, WEB, Cyclades, VNC
+        Apache, Gunicorn, Common, WEB, Cyclades, VNC, PithosBackend, Archip
         ],
     "cms": [HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB, CMS],
     "stats": [
@@ -52,11 +55,13 @@ ROLES = {
     "client": [HW, SSH, DNS, APT, Kamaki, Burnin],
     "ganeti": [
         HW, SSH, DNS, DDNS, APT, Mount,
-        Ganeti, Image, Network, GTools, GanetiCollectd
+        Ganeti, ExtStorage, PithosBackend, Archip, ArchipGaneti,
+        Image, Network, GTools, GanetiCollectd,
         ],
     "master": [
         HW, SSH, DNS, DDNS, APT, Mount,
-        Ganeti, Master, Image, Network, GTools, GanetiCollectd
+        Ganeti, ExtStorage, Master, PithosBackend, Archip, ArchipGaneti,
+        Image, Network, GTools, GanetiCollectd,
         ],
     }
 

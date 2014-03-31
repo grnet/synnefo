@@ -64,6 +64,9 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_VERSIONING, BACKEND_FREE_VERSIONING,
                                  BACKEND_POOL_ENABLED, BACKEND_POOL_SIZE,
                                  BACKEND_BLOCK_SIZE, BACKEND_HASH_ALGORITHM,
+                                 BACKEND_ARCHIPELAGO_CONF,
+                                 BACKEND_XSEG_POOL_SIZE,
+                                 BACKEND_MAP_CHECK_INTERVAL,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
@@ -73,7 +76,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
 from pithos.api.resources import resources
 from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
-                                  VersionNotExists)
+                                  VersionNotExists, IllegalOperationError)
 
 from synnefo.lib import join_urls
 from synnefo.util import text
@@ -240,6 +243,7 @@ def put_object_headers(response, meta, restricted=False, token=None,
     response.override_serialization = True
     response['Content-Type'] = meta.get('type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
+    response['Available'] = meta['available']
     if not restricted:
         response['X-Object-Hash'] = meta['hash']
         response['X-Object-UUID'] = meta['uuid']
@@ -981,7 +985,11 @@ def put_object_block(request, hashmap, data, offset):
     bo = offset % request.backend.block_size
     bl = min(len(data), request.backend.block_size - bo)
     if bi < len(hashmap):
-        hashmap[bi] = request.backend.update_block(hashmap[bi], data[:bl], bo)
+        try:
+            hashmap[bi] = request.backend.update_block(hashmap[bi],
+                                                       data[:bl], bo)
+        except IllegalOperationError, e:
+            raise faults.Forbidden(e[0])
     else:
         hashmap.append(request.backend.put_block(('\x00' * bo) + data[:bl]))
     return bl  # Return ammount of data written.
@@ -1040,7 +1048,10 @@ BACKEND_KWARGS = dict(
     public_url_alphabet=PUBLIC_URL_ALPHABET,
     account_quota_policy=BACKEND_ACCOUNT_QUOTA,
     container_quota_policy=BACKEND_CONTAINER_QUOTA,
-    container_versioning_policy=BACKEND_VERSIONING)
+    container_versioning_policy=BACKEND_VERSIONING,
+    archipelago_conf_file=BACKEND_ARCHIPELAGO_CONF,
+    xseg_pool_size=BACKEND_XSEG_POOL_SIZE,
+    map_check_interval=BACKEND_MAP_CHECK_INTERVAL)
 
 _pithos_backend_pool = PithosBackendPool(size=BACKEND_POOL_SIZE,
                                          **BACKEND_KWARGS)

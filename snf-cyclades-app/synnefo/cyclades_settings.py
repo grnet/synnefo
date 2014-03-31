@@ -63,6 +63,7 @@ HELPDESK_PREFIX = cyclades_services['cyclades_helpdesk']['prefix']
 UI_PREFIX = cyclades_services['cyclades_ui']['prefix']
 USERDATA_PREFIX = cyclades_services['cyclades_userdata']['prefix']
 ADMIN_PREFIX = cyclades_services['cyclades_admin']['prefix']
+VOLUME_PREFIX = cyclades_services['cyclades_volume']['prefix']
 
 COMPUTE_ROOT_URL = join_urls(BASE_URL, COMPUTE_PREFIX)
 

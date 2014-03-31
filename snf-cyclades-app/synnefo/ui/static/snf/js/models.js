@@ -1514,6 +1514,23 @@
             skip_api_error: false
           });
         },
+        
+        create_snapshot: function(snapshot_params, callback) {
+          var volume = this.get('volumes') && this.get('volumes').length ? 
+                       this.get('volumes')[0] : undefined;
+          var params = _.extend({
+            'metadata': {},
+            'volume_id': volume
+          }, snapshot_params);
+
+          snf.api.sync('create', undefined, {
+              url: synnefo.config.api_urls.volume + '/snapshots/',
+              data: JSON.stringify({snapshot:params}),
+              success: callback, 
+              skip_api_error: false,
+	      contentType: 'application/json'
+          });
+        },
 
         // action helper
         call: function(action_name, success, error, params) {
@@ -1948,7 +1965,8 @@
         },
 
         comparator: function(img) {
-            return -img.get_sort_order("sortorder") || 0;
+            var date = new Date(img.get('created_at'));
+            return -img.get_sort_order("sortorder") || -date.getTime();
         },
 
         parse_meta: function(img) {
@@ -1960,7 +1978,8 @@
         },
 
         active: function() {
-            return this.filter(function(img){return img.get('status') != "DELETED"});
+            var active_states = ['available'];
+            return this.filter(function(img){return img.get('status') == "available"});
         },
 
         predefined: function() {
@@ -1975,10 +1994,11 @@
         },
         
         get_images_for_type: function(type) {
-            if (this['get_{0}_images'.format(type)]) {
-                return this['get_{0}_images'.format(type)]();
+            var method = 'get_{0}_images'.format(type.replace("-", "_"));
+            console.log("filtering using", method);
+            if (this[method]) {
+                return this[method]();
             }
-
             return this.active();
         },
 

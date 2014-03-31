@@ -176,12 +176,22 @@ def get_image_dict(image_id, user_id):
     image["id"] = img["id"]
     image["name"] = img["name"]
     image["format"] = img["disk_format"]
-    image["checksum"] = img["checksum"]
     image["location"] = img["location"]
-
-    checksum = image["checksum"] = img["checksum"]
+    image["is_snapshot"] = img["is_snapshot"]
+    image["status"] = img["status"]
     size = image["size"] = img["size"]
-    image["backend_id"] = PITHOSMAP_PREFIX + "/".join([checksum, str(size)])
+
+    mapfile = img["mapfile"]
+    if mapfile.startswith("archip:"):
+        _, unprefixed_mapfile, = mapfile.split("archip:")
+        mapfile = unprefixed_mapfile
+    else:
+        unprefixed_mapfile = mapfile
+        mapfile = "pithos:" + mapfile
+
+    image["backend_id"] = PITHOSMAP_PREFIX + "/".join([unprefixed_mapfile,
+                                                       str(size)])
+    image["mapfile"] = mapfile
 
     properties = img.get("properties", {})
     image["metadata"] = dict((key.upper(), val)
@@ -203,21 +213,6 @@ def get_flavor(flavor_id, include_deleted=False):
         raise faults.BadRequest("Invalid flavor ID '%s'" % flavor_id)
     except Flavor.DoesNotExist:
         raise faults.ItemNotFound('Flavor not found.')
-
-
-def get_flavor_provider(flavor):
-    """Extract provider from disk template.
-
-    Provider for `ext` disk_template is encoded in the disk template
-    name, which is formed `ext_<provider_name>`. Provider is None
-    for all other disk templates.
-
-    """
-    disk_template = flavor.disk_template
-    provider = None
-    if disk_template.startswith("ext"):
-        disk_template, provider = disk_template.split("_", 1)
-    return disk_template, provider
 
 
 def get_network(network_id, user_id, for_update=False, non_deleted=False):

@@ -31,14 +31,12 @@ import logging
 
 from datetime import datetime
 from socket import getfqdn
-from functools import wraps
 from django import dispatch
 from django.db import transaction
 from django.utils import simplejson as json
 
 from snf_django.lib.api import faults
 from django.conf import settings
-from synnefo import quotas
 from synnefo.api import util
 from synnefo.logic import backend, ips, utils
 from synnefo.logic.backend_allocator import BackendAllocator
@@ -47,6 +45,10 @@ from synnefo.db.models import (NetworkInterface, VirtualMachine,
                                pooled_rapi_client)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 from synnefo.logic import rapi
+from synnefo.volume.volumes import _create_volume
+from synnefo.volume.util import get_volume
+from synnefo.logic import commands
+from synnefo import quotas
 
 log = logging.getLogger(__name__)
 
@@ -54,120 +56,21 @@ log = logging.getLogger(__name__)
 server_created = dispatch.Signal(providing_args=["created_vm_params"])
 
 
-def validate_server_action(vm, action):
-    if vm.deleted:
-        raise faults.BadRequest("Server '%s' has been deleted." % vm.id)
-
-    # Destroyin a server should always be permitted
-    if action == "DESTROY":
-        return
-
-    # Check that there is no pending action
-    pending_action = vm.task
-    if pending_action:
-        if pending_action == "BUILD":
-            raise faults.BuildInProgress("Server '%s' is being build." % vm.id)
-        raise faults.BadRequest("Cannot perform '%s' action while there is a"
-                                " pending '%s'." % (action, pending_action))
-
-    # Check if action can be performed to VM's operstate
-    operstate = vm.operstate
-    if operstate == "ERROR":
-        raise faults.BadRequest("Cannot perform '%s' action while server is"
-                                " in 'ERROR' state." % action)
-    elif operstate == "BUILD" and action != "BUILD":
-        raise faults.BuildInProgress("Server '%s' is being build." % vm.id)
-    elif (action == "START" and operstate != "STOPPED") or\
-         (action == "STOP" and operstate != "STARTED") or\
-         (action == "RESIZE" and operstate != "STOPPED") or\
-         (action in ["CONNECT", "DISCONNECT"] and operstate != "STOPPED"
-          and not settings.GANETI_USE_HOTPLUG):
-        raise faults.BadRequest("Cannot perform '%s' action while server is"
-                                " in '%s' state." % (action, operstate))
-    return
-
-
-def server_command(action, action_fields=None):
-    """Handle execution of a server action.
-
-    Helper function to validate and execute a server action, handle quota
-    commission and update the 'task' of the VM in the DB.
-
-    1) Check if action can be performed. If it can, then there must be no
-       pending task (with the exception of DESTROY).
-    2) Handle previous commission if unresolved:
-       * If it is not pending and it to accept, then accept
-       * If it is not pending and to reject or is pending then reject it. Since
-       the action can be performed only if there is no pending task, then there
-       can be no pending commission. The exception is DESTROY, but in this case
-       the commission can safely be rejected, and the dispatcher will generate
-       the correct ones!
-    3) Issue new commission and associate it with the VM. Also clear the task.
-    4) Send job to ganeti
-    5) Update task and commit
-    """
-    def decorator(func):
-        @wraps(func)
-        @transaction.commit_on_success
-        def wrapper(vm, *args, **kwargs):
-            user_id = vm.userid
-            validate_server_action(vm, action)
-            vm.action = action
-
-            commission_name = "client: api, resource: %s" % vm
-            quotas.handle_resource_commission(vm, action=action,
-                                              action_fields=action_fields,
-                                              commission_name=commission_name)
-            vm.save()
-
-            # XXX: Special case for server creation!
-            if action == "BUILD":
-                # Perform a commit, because the VirtualMachine must be saved to
-                # DB before the OP_INSTANCE_CREATE job in enqueued in Ganeti.
-                # Otherwise, messages will arrive from snf-dispatcher about
-                # this instance, before the VM is stored in DB.
-                transaction.commit()
-                # After committing the locks are released. Refetch the instance
-                # to guarantee x-lock.
-                vm = VirtualMachine.objects.select_for_update().get(id=vm.id)
-
-            # Send the job to Ganeti and get the associated jobID
-            try:
-                job_id = func(vm, *args, **kwargs)
-            except Exception as e:
-                if vm.serial is not None:
-                    # Since the job never reached Ganeti, reject the commission
-                    log.debug("Rejecting commission: '%s', could not perform"
-                              " action '%s': %s" % (vm.serial,  action, e))
-                    transaction.rollback()
-                    quotas.reject_resource_serial(vm)
-                    transaction.commit()
-                raise
-
-            if action == "BUILD" and vm.serial is not None:
-                # XXX: Special case for server creation: we must accept the
-                # commission because the VM has been stored in DB. Also, if
-                # communication with Ganeti fails, the job will never reach
-                # Ganeti, and the commission will never be resolved.
-                quotas.accept_resource_serial(vm)
-
-            log.info("user: %s, vm: %s, action: %s, job_id: %s, serial: %s",
-                     user_id, vm.id, action, job_id, vm.serial)
-
-            # store the new task in the VM
-            if job_id is not None:
-                vm.task = action
-                vm.task_job_id = job_id
-            vm.save()
-
-            return vm
-        return wrapper
-    return decorator
-
-
 @transaction.commit_on_success
-def create(userid, name, password, flavor, image, metadata={},
-           personality=[], networks=None, use_backend=None, project=None):
+def create(userid, name, password, flavor, image_id, metadata={},
+           personality=[], networks=None, use_backend=None, project=None,
+           volumes=None):
+
+    # Get image information
+    # TODO: Image is not mandatory if disks are specified
+    image = util.get_image_dict(image_id, userid)
+
+    # Check that image fits into the disk
+    if int(image["size"]) > (flavor.disk << 30):
+        msg = ("Flavor's disk size '%s' is smaller than the image's"
+               "size '%s'" % (flavor.disk << 30, image["size"]))
+        raise faults.BadRequest(msg)
+
     if use_backend is None:
         # Allocate server to a Ganeti backend
         use_backend = allocate_new_server(userid, flavor)
@@ -177,18 +80,6 @@ def create(userid, name, password, flavor, image, metadata={},
 
     # Create the ports for the server
     ports = create_instance_ports(userid, networks)
-
-    # Fix flavor for archipelago
-    disk_template, provider = util.get_flavor_provider(flavor)
-    if provider:
-        flavor.disk_template = disk_template
-        flavor.disk_provider = provider
-        flavor.disk_origin = None
-        if provider in settings.GANETI_CLONE_PROVIDERS:
-            flavor.disk_origin = image['checksum']
-            image['backend_id'] = 'null'
-    else:
-        flavor.disk_provider = None
 
     if project is None:
         project = userid
@@ -210,14 +101,49 @@ def create(userid, name, password, flavor, image, metadata={},
         port.index = index
         port.save()
 
+    # If no volumes are specified, we automatically create a volume with the
+    # size of the flavor and filled with the specified image.
+    if not volumes:
+        volumes = [{"source_type": "image",
+                    "source_uuid": image["id"],
+                    "size": flavor.disk,
+                    "delete_on_termination": True}]
+
+    assert(len(volumes) > 0), "Cannot create server without volumes"
+
+    if volumes[0]["source_type"] == "blank":
+        raise faults.BadRequest("Root volume cannot be blank")
+
+    server_volumes = []
+    for index, vol_info in enumerate(volumes):
+        if vol_info["source_type"] == "volume":
+            uuid = vol_info["source_uuid"]
+            v = get_volume(userid, uuid, for_update=True,
+                           exception=faults.BadRequest)
+            if v.status != "AVAILABLE":
+                raise faults.BadRequest("Cannot use volume while it is in %s"
+                                        " status" % v.status)
+            v.delete_on_termination = vol_info["delete_on_termination"]
+            v.index = index
+            v.save()
+        else:
+            v = _create_volume(server=vm, user_id=userid,
+                               index=index, **vol_info)
+        server_volumes.append(v)
+
     for key, val in metadata.items():
+        utils.check_name_length(key, VirtualMachineMetadata.KEY_LENGTH,
+                                "Metadata key is too long")
+        utils.check_name_length(val, VirtualMachineMetadata.VALUE_LENGTH,
+                                "Metadata value is too long")
         VirtualMachineMetadata.objects.create(
             meta_key=key,
             meta_value=val,
             vm=vm)
 
     # Create the server in Ganeti.
-    vm = create_server(vm, ports, flavor, image, personality, password)
+    vm = create_server(vm, ports, server_volumes, flavor, image, personality,
+                       password)
 
     return vm
 
@@ -242,13 +168,21 @@ def allocate_new_server(userid, flavor):
     return use_backend
 
 
-@server_command("BUILD")
-def create_server(vm, nics, flavor, image, personality, password):
+@commands.server_command("BUILD")
+def create_server(vm, nics, volumes, flavor, image, personality, password):
     # dispatch server created signal needed to trigger the 'vmapi', which
     # enriches the vm object with the 'config_url' attribute which must be
     # passed to the Ganeti job.
+
+    # If the root volume has a provider, then inform snf-image to not fill
+    # the volume with data
+    image_id = image["backend_id"]
+    root_volume = volumes[0]
+    if root_volume.provider is not None:
+        image_id = "null"
+
     server_created.send(sender=vm, created_vm_params={
-        'img_id': image['backend_id'],
+        'img_id': image_id,
         'img_passwd': password,
         'img_format': str(image['format']),
         'img_personality': json.dumps(personality),
@@ -256,7 +190,7 @@ def create_server(vm, nics, flavor, image, personality, password):
     })
     # send job to Ganeti
     try:
-        jobID = backend.create_instance(vm, nics, flavor, image)
+        jobID = backend.create_instance(vm, nics, volumes, flavor, image)
     except:
         log.exception("Failed create instance '%s'", vm)
         jobID = None
@@ -275,7 +209,7 @@ def create_server(vm, nics, flavor, image, personality, password):
     return jobID
 
 
-@server_command("DESTROY")
+@commands.server_command("DESTROY")
 def destroy(vm, shutdown_timeout=None):
     # XXX: Workaround for race where OP_INSTANCE_REMOVE starts executing on
     # Ganeti before OP_INSTANCE_CREATE. This will be fixed when
@@ -289,19 +223,19 @@ def destroy(vm, shutdown_timeout=None):
     return backend.delete_instance(vm, shutdown_timeout=shutdown_timeout)
 
 
-@server_command("START")
+@commands.server_command("START")
 def start(vm):
     log.info("Starting VM %s", vm)
     return backend.startup_instance(vm)
 
 
-@server_command("STOP")
+@commands.server_command("STOP")
 def stop(vm, shutdown_timeout=None):
     log.info("Stopping VM %s", vm)
     return backend.shutdown_instance(vm, shutdown_timeout=shutdown_timeout)
 
 
-@server_command("REBOOT")
+@commands.server_command("REBOOT")
 def reboot(vm, reboot_type, shutdown_timeout=None):
     if reboot_type not in ("SOFT", "HARD"):
         raise faults.BadRequest("Malformed request. Invalid reboot"
@@ -315,7 +249,7 @@ def reboot(vm, reboot_type, shutdown_timeout=None):
 def resize(vm, flavor):
     action_fields = {"beparams": {"vcpus": flavor.cpu,
                                   "maxmem": flavor.ram}}
-    comm = server_command("RESIZE", action_fields=action_fields)
+    comm = commands.server_command("RESIZE", action_fields=action_fields)
     return comm(_resize)(vm, flavor)
 
 
@@ -346,7 +280,7 @@ def reassign(vm, project):
                                        action_fields=action_fields)
 
 
-@server_command("SET_FIREWALL_PROFILE")
+@commands.server_command("SET_FIREWALL_PROFILE")
 def set_firewall_profile(vm, profile, nic):
     log.info("Setting VM %s, NIC %s, firewall %s", vm, nic, profile)
 
@@ -356,7 +290,7 @@ def set_firewall_profile(vm, profile, nic):
     return None
 
 
-@server_command("CONNECT")
+@commands.server_command("CONNECT")
 def connect(vm, network, port=None):
     if port is None:
         port = _create_port(vm.userid, network)
@@ -367,7 +301,7 @@ def connect(vm, network, port=None):
     return backend.connect_to_network(vm, port)
 
 
-@server_command("DISCONNECT")
+@commands.server_command("DISCONNECT")
 def disconnect(vm, nic):
     log.info("Removing NIC %s from VM %s", nic, vm)
     return backend.disconnect_from_network(vm, nic)

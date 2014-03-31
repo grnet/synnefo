@@ -80,6 +80,7 @@ class ImageAPITest(BaseAPITest):
 
     @assert_backend_closed
     def test_list_images_detail(self, mimage):
+        self.maxDiff = None
         images = [{'id': 1,
                    'name': u'image-1 \u2601',
                    'status': 'available',
@@ -87,6 +88,8 @@ class ImageAPITest(BaseAPITest):
                    'updated_at': '2012-12-26 11:52:54',
                    'owner': 'user1',
                    'deleted_at': '',
+                   'is_snapshot': False,
+                   'is_public': True,
                    'properties': {u'foo\u2610': u'bar\u2611'}},
                   {'id': 2,
                    'name': 'image-2',
@@ -95,6 +98,8 @@ class ImageAPITest(BaseAPITest):
                    'updated_at': '2012-12-26 11:52:54',
                    'owner': 'user1',
                    'deleted_at': '2012-12-27 11:52:54',
+                   'is_snapshot': False,
+                   'is_public': True,
                    'properties': ''},
                   {'id': 3,
                    'name': 'image-3',
@@ -103,6 +108,8 @@ class ImageAPITest(BaseAPITest):
                    'deleted_at': '',
                    'updated_at': '2012-12-26 11:52:54',
                    'owner': 'user1',
+                   'is_snapshot': False,
+                   'is_public': False,
                    'properties': ''}]
         result_images = [
                   {'id': 1,
@@ -113,6 +120,8 @@ class ImageAPITest(BaseAPITest):
                    'updated': '2012-12-26T11:52:54+00:00',
                    'user_id': 'user1',
                    'tenant_id': 'user1',
+                   'is_snapshot': False,
+                   'public': True,
                    'metadata': {u'foo\u2610': u'bar\u2611'}},
                   {'id': 2,
                    'name': 'image-2',
@@ -122,6 +131,8 @@ class ImageAPITest(BaseAPITest):
                    'tenant_id': 'user1',
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
+                   'is_snapshot': False,
+                   'public': True,
                    'metadata': {}},
                   {'id': 3,
                    'name': 'image-3',
@@ -131,6 +142,8 @@ class ImageAPITest(BaseAPITest):
                    'tenant_id': 'user1',
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
+                   'is_snapshot': False,
+                   'public': False,
                    'metadata': {}}]
         mimage().__enter__().list_images.return_value = images
         response = self.get(join_urls(IMAGES_URL, "detail"), 'user')
@@ -150,12 +163,14 @@ class ImageAPITest(BaseAPITest):
         images = [
                   {'id': 1,
                    'name': 'image-1',
-                   'status':'available',
+                   'status': 'available',
                    'progress': 100,
                    'created_at': old_time.isoformat(),
                    'deleted_at': '',
                    'updated_at': old_time.isoformat(),
                    'owner': 'user1',
+                   'is_snapshot': False,
+                   'is_public': True,
                    'properties': ''},
                   {'id': 2,
                    'name': 'image-2',
@@ -165,6 +180,8 @@ class ImageAPITest(BaseAPITest):
                    'created_at': new_time.isoformat(),
                    'updated_at': new_time.isoformat(),
                    'deleted_at': new_time.isoformat(),
+                   'is_snapshot': False,
+                   'is_public': False,
                    'properties': ''}]
         mimage().__enter__().list_images.return_value = images
         response =\
@@ -176,6 +193,7 @@ class ImageAPITest(BaseAPITest):
 
     @assert_backend_closed
     def test_get_image_details(self, mimage):
+        self.maxDiff = None
         image = {'id': 42,
                  'name': 'image-1',
                  'status': 'available',
@@ -183,6 +201,8 @@ class ImageAPITest(BaseAPITest):
                  'updated_at': '2012-12-26 11:52:54',
                  'deleted_at': '',
                  'owner': 'user1',
+                 'is_snapshot': False,
+                 'is_public': True,
                  'properties': {'foo': 'bar'}}
         result_image = \
                   {'id': 42,
@@ -193,6 +213,8 @@ class ImageAPITest(BaseAPITest):
                    'updated': '2012-12-26T11:52:54+00:00',
                    'user_id': 'user1',
                    'tenant_id': 'user1',
+                   'is_snapshot': False,
+                   'public': True,
                    'metadata': {'foo': 'bar'}}
         mimage().__enter__().get_image.return_value = image
         response = self.get(join_urls(IMAGES_URL, "42"), 'user')
@@ -218,7 +240,7 @@ class ImageAPITest(BaseAPITest):
         response = self.get(join_urls(IMAGES_URL, 'nonexistent/lala/foo'))
         self.assertEqual(response.status_code, 400)
         try:
-            error = json.loads(response.content)
+            json.loads(response.content)
         except ValueError:
             self.assertTrue(False)
 
@@ -252,20 +274,20 @@ class ImageAPITest(BaseAPITest):
 class ImageMetadataAPITest(BaseAPITest):
     def setUp(self):
         self.image = {'id': 42,
-                 'name': 'image-1',
-                 'status': 'available',
-                 'created_at': '2012-11-26 11:52:54',
-                 'updated_at': '2012-12-26 11:52:54',
-                 'deleted_at': '',
-                 'properties': {'foo': 'bar', 'foo2': 'bar2'}}
+                      'name': 'image-1',
+                      'status': 'available',
+                      'created_at': '2012-11-26 11:52:54',
+                      'updated_at': '2012-12-26 11:52:54',
+                      'deleted_at': '',
+                      'properties': {'foo': 'bar', 'foo2': 'bar2'}}
         self.result_image = \
-                  {'id': 42,
-                   'name': 'image-1',
-                   'status': 'ACTIVE',
-                   'progress': 100,
-                   'created': '2012-11-26T11:52:54+00:00',
-                   'updated': '2012-12-26T11:52:54+00:00',
-                   'metadata': {'foo': 'bar'}}
+            {'id': 42,
+             'name': 'image-1',
+             'status': 'ACTIVE',
+             'progress': 100,
+             'created': '2012-11-26T11:52:54+00:00',
+             'updated': '2012-12-26T11:52:54+00:00',
+             'metadata': {'foo': 'bar'}}
         super(ImageMetadataAPITest, self).setUp()
 
     @assert_backend_closed

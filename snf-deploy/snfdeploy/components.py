@@ -427,7 +427,6 @@ EOF
 
 class Image(SynnefoComponent):
     REQUIRED_PACKAGES = [
-        "snf-pithos-backend",
         "snf-image",
         ]
 
@@ -785,7 +784,8 @@ class Mount(SynnefoComponent):
 
     def prepare(self):
         ret = []
-        for d in [self.env.env.pithos_dir, self.env.env.image_dir]:
+        dirs = [self.env.env.pithos_dir, self.env.env.image_dir, "/srv/archip"]
+        for d in dirs:
             ret.append("mkdir -p %s" % d)
             cmd = """
 cat >> /etc/fstab <<EOF
@@ -798,7 +798,8 @@ EOF
 
     def initialize(self):
         ret = []
-        for d in [self.env.env.pithos_dir, self.env.env.image_dir]:
+        dirs = [self.env.env.pithos_dir, self.env.env.image_dir, "/srv/archip"]
+        for d in dirs:
             ret.append("mount %s" % d)
         return ret
 
@@ -819,6 +820,8 @@ class NFS(SynnefoComponent):
         return [
             "mkdir -p %s" % self.env.env.image_dir,
             "mkdir -p %s/data" % p,
+            "mkdir -p /srv/archip/blocks",
+            "mkdir -p /srv/archip/maps",
             "chown www-data.www-data %s/data" % p,
             "chmod g+ws %s/data" % p,
             ] + self.prepare_image()
@@ -828,6 +831,7 @@ class NFS(SynnefoComponent):
 cat >> /etc/exports <<EOF
 {0} {2}(rw,async,no_subtree_check,no_root_squash)
 {1} {2}(rw,async,no_subtree_check,no_root_squash)
+/srv/archip {2}(rw,async,no_subtree_check,no_root_squash)
 EOF
 """.format(self.env.env.pithos_dir, self.env.env.image_dir, node_info.ip)
         return [cmd] + self.restart()
@@ -839,7 +843,7 @@ EOF
 class Pithos(SynnefoComponent):
     REQUIRED_PACKAGES = [
         "kamaki",
-        "snf-pithos-backend",
+        "python-svipc",
         "snf-pithos-app",
         "snf-pithos-webclient",
         ]
@@ -875,11 +879,28 @@ class Pithos(SynnefoComponent):
         return ["pithos-migrate stamp head"]
 
 
+class PithosBackend(SynnefoComponent):
+    REQUIRED_PACKAGES = [
+        "snf-pithos-backend",
+        ]
+
+    def configure(self):
+        r1 = {
+            "db_node": self.env.env.db.ip,
+            "synnefo_user": self.env.env.synnefo_user,
+            "synnefo_db_passwd": self.env.env.synnefo_db_passwd,
+            "pithos_dir": self.env.env.pithos_dir,
+            }
+
+        return [
+            ("/etc/synnefo/backend.conf", r1, {}),
+            ]
+
+
 class Cyclades(SynnefoComponent):
     REQUIRED_PACKAGES = [
         "memcached",
         "python-memcache",
-        "snf-pithos-backend",
         "kamaki",
         "snf-cyclades-app",
         "python-django-south",
@@ -1114,4 +1135,57 @@ class GanetiCollectd(SynnefoComponent):
         return [
             ("/etc/collectd/passwd", {}, {}),
             ("/etc/collectd/synnefo-ganeti.conf", r1, {}),
+            ]
+
+
+class Archip(SynnefoComponent):
+    REQUIRED_PACKAGES = [
+        "librados2",
+        "archipelago",
+        "archipelago-dbg",
+        "archipelago-modules-dkms",
+        "archipelago-modules-source",
+        "archipelago-rados",
+        "archipelago-rados-dbg",
+        "libxseg0",
+        "libxseg0-dbg",
+        "python-archipelago",
+        "python-xseg",
+        ]
+
+    def prepare(self):
+        return ["mkdir -p /etc/archipelago"]
+
+    def configure(self):
+        r1 = {"HOST": self.node_info.fqdn}
+        r2 = {"SEGMENT_SIZE": self.env.env.segment_size}
+        return [
+            ("/etc/gunicorn.d/synnefo-archip", r1,
+             {"remote": "/etc/gunicorn.d/synnefo"}),
+            ("/etc/archipelago/pithos.conf.py", {}, {}),
+            ("/etc/archipelago/archipelago.conf", r2, {})
+            ]
+
+    def restart(self):
+        return [
+            "/etc/init.d/gunicorn restart",
+            "archipelago restart"
+            ]
+
+
+class ArchipGaneti(SynnefoComponent):
+    REQUIRED_PACKAGES = [
+        "archipelago-ganeti",
+        ]
+
+
+class ExtStorage(SynnefoComponent):
+    def prepare(self):
+        return ["mkdir -p /usr/local/lib/ganeti/"]
+
+    def initialize(self):
+        url = "http://code.grnet.gr/git/extstorage"
+        extdir = "/usr/local/lib/ganeti/extstorage"
+        return [
+            "git clone %s %s" % (url, extdir)
             ]

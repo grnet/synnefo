@@ -69,6 +69,8 @@ from synnefo.logic import queues
 from synnefo.db.models import Backend, pooled_rapi_client
 
 import logging
+import select
+import errno
 
 log = logging.getLogger("dispatcher")
 log_amqp = logging.getLogger("amqp")
@@ -119,7 +121,12 @@ class Dispatcher:
                                 " to a different host. Verify that"
                                 " snf-ganeti-eventd is running!!", timeout)
                     self.client.reconnect()
-            except SystemExit:
+            except select.error as e:
+                if e[0] != errno.EINTR:
+                    log.exception("Caught unexpected exception: %s", e)
+                else:
+                    break
+            except (SystemExit, KeyboardInterrupt):
                 break
             except Exception as e:
                 log.exception("Caught unexpected exception: %s", e)

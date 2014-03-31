@@ -33,7 +33,7 @@
 
 from django.db.models import Sum, Count, Q
 
-from synnefo.db.models import VirtualMachine, Network, IPAddress
+from synnefo.db.models import VirtualMachine, Network, IPAddress, Volume
 from synnefo.quotas import Quotaholder
 from collections import defaultdict
 
@@ -50,11 +50,13 @@ def get_db_holdings(user=None, project=None):
     vms = VirtualMachine.objects.filter(deleted=False)
     networks = Network.objects.filter(deleted=False)
     floating_ips = IPAddress.objects.filter(deleted=False, floating_ip=True)
+    volumes = Volume.objects.filter(deleted=False)
 
     if user is not None:
         vms = vms.filter(userid=user)
         networks = networks.filter(userid=user)
         floating_ips = floating_ips.filter(userid=user)
+        volumes = volumes.filter(userid=user)
 
     if project is not None:
         vms = vms.filter(project=project)
@@ -65,15 +67,20 @@ def get_db_holdings(user=None, project=None):
     vm_resources = vms.values("userid", "project")\
         .annotate(num=Count("id"),
                   total_ram=Sum("flavor__ram"),
-                  total_cpu=Sum("flavor__cpu"),
-                  disk=Sum("flavor__disk"))
+                  total_cpu=Sum("flavor__cpu"))
+
+    vm_active_resources = \
+        vms.values("userid")\
+           .filter(Q(operstate="STARTED") | Q(operstate="BUILD") |
+                   Q(operstate="ERROR"))\
+           .annotate(ram=Sum("flavor__ram"),
+                     cpu=Sum("flavor__cpu"))
 
     for vm_res in vm_resources.iterator():
         user = vm_res['userid']
         project = vm_res['project']
         res = {"cyclades.vm": vm_res["num"],
                "cyclades.total_cpu": vm_res["total_cpu"],
-               "cyclades.disk": vm_res["disk"] * GiB,
                "cyclades.total_ram": vm_res["total_ram"] * MiB}
         holdings[user][project] = res
 
@@ -88,6 +95,13 @@ def get_db_holdings(user=None, project=None):
         project = vm_res['project']
         holdings[user][project]["cyclades.cpu"] = vm_res["cpu"]
         holdings[user][project]["cyclades.ram"] = vm_res["ram"] * MiB
+
+    # Get disk resource
+    disk_resources = volumes.values("userid").annotate(Sum("size"))
+    for disk_res in disk_resources.iterator():
+        user = disk_res["userid"]
+        project = vm_res['project']
+        holdings[user][project]["cyclades.disk"] = disk_res["size__sum"] * GiB
 
     # Get resources related with networks
     net_resources = networks.values("userid", "project")\

@@ -28,22 +28,34 @@
 # policies, either expressed or implied, of GRNET S.A.
 #
 
+from optparse import make_option
 from django.core.management.base import CommandError
 
 from snf_django.management.commands import SynnefoCommand
 from synnefo.plankton.backend import PlanktonBackend
+from synnefo.management import common
 from snf_django.management import utils
 
 
 class Command(SynnefoCommand):
     args = "<image_id>"
     help = "Display available information about an image"
+    option_list = SynnefoCommand.option_list + (
+        make_option(
+            '--user-id',
+            dest='userid',
+            default=None,
+            help="The UUID of the owner of the image. Required"
+                 " if image is not public"),
+    )
 
+    @common.convert_api_faults
     def handle(self, *args, **options):
 
         if len(args) != 1:
             raise CommandError("Please provide an image ID")
         image_id = args[0]
+        #user_id = options["userid"]
 
         with PlanktonBackend(None) as backend:
             image = backend.get_image(image_id)

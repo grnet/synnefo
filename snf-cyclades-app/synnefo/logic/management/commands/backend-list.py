@@ -37,7 +37,8 @@ class Command(ListCommand):
         for network in util.backend_public_networks(backend):
             total, free = network.ip_count()
             total_ips += total
-            free_ips += free
+            if not network.drained:
+                free_ips += free
         return "%s/%s" % (free_ips, total_ips)
 
     FIELDS = {

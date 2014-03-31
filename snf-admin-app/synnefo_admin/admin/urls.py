@@ -46,10 +46,9 @@ urlpatterns = patterns(
         name='admin-vm-shutdown'),
     url(r'^actions/vm-start/(?P<vm_id>[0-9]+)$', 'vm_start',
         name='admin-vm-start'),
-    url(r'^actions/accept/(?P<account>.*)$', 'account_accept',
-        name='account-accept'),
-    url(r'^actions/reject/(?P<account>.*)$', 'account_reject',
-        name='account-reject'),
+    url(r'^actions/account/(?P<op>.*)/(?P<account>.*)$', 'account_actions',
+        name='account-actions'),
+    url(r'^actions/$', 'admin_actions', name='admin-actions'),
     url(r'^(?P<search_query>.*)$', 'account',
         name='admin-details'),
 )

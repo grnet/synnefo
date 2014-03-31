@@ -28,6 +28,8 @@
 # policies, either expressed or implied, of GRNET S.A.
 
 from django import template
+from astakos.logic import users
+import logging
 
 register = template.Library()
 
@@ -125,3 +127,69 @@ def backend_info(vm):
         content += '<dt>Backend ' + field.name + '</dt><dd>' + \
                    str(getattr(backend, field.name)) + '</dd>'
     return content
+
+
+def check_state(user, state):
+    """Check if user is in the given state.
+
+    The return value is boolean
+    """
+    if state == 'activated':
+        return user.is_active
+    elif state == 'accepted':
+        return user.moderated and not user.is_rejected
+    elif state == 'rejected':
+        return user.is_rejected
+    elif state == 'verified':
+        return user.email_verified
+register.filter('check_state', check_state)
+
+
+@register.filter
+def get_state_list(user):
+    """Get a space separated list of states that the user is in.
+
+    The list is returned as a string, in order to be used in html tags
+    """
+    state_list = ','
+    for state in ['activated', 'accepted', 'rejected', 'verified']:
+        if check_state(user, state):
+            state_list += state + ','
+
+    return state_list
+
+
+def check_operation(user, op):
+    """Check if an opearation can apply to a user.
+
+    The return value is boolean.
+    """
+    if op == 'activate':
+        return users.check_activate(user)
+    elif op == 'deactivate':
+        return users.check_deactivate(user)
+    elif op == 'accept':
+        return users.check_accept(user)
+    elif op == 'reject':
+        return users.check_reject(user)
+    elif op == 'verify':
+        return users.check_verify(user)
+    elif op == 'contact':
+        return True
+    else:
+        return False
+register.filter('check_operation', check_operation)
+
+
+@register.filter
+def get_operation_list(user):
+    """Get a space separated list of operation that apply to a user.
+
+    The list is returned as a string, in order to be used in html tags
+    """
+    op_list = ','
+    for op in ['activate', 'deactivate', 'accept', 'reject', 'verify']:
+        if check_operation(user, op):
+            op_list += op + ','
+
+    return op_list

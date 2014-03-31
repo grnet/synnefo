@@ -1,0 +1,29 @@
+{% load admin_tags %}
+{% for user in all %}
+    <tr data-state-activated={{ user|check_state:"activated" }}
+        data-state-accepted={{ user|check_state:"accepted" }}
+        data-state-rejected={{ user|check_state:"rejected" }}
+        data-state-verified={{ user|check_state:"verified" }}
+        data-state-list={{ user|get_state_list }}
+        data-allow-activate={{ user|check_operation:'activate' }}
+        data-allow-deactivate={{ user|check_operation:'deactivate' }}
+        data-allow-accept={{ user|check_operation:'accept' }}
+        data-allow-reject={{ user|check_operation:'reject' }}
+        data-allow-verify={{ user|check_operation:'verify' }}
+        data-op-list={{ user|get_operation_list }}
+        id="{{ user.uuid }}">
+    <td class="checkbox-column">
+        <input type="checkbox">
+    </td>
+    <td>{{ user.realname }}</td>
+    <td>{{ user.email }}</td>
+    <td>{% if user.is_active %}
+            Active
+        {% else %}
+            Inactive
+        {% endif %}
+    </td>
+    <td>No</td>
+    <td><a href="{% url admin-details user.uuid %}">More...</a></td>
+    </tr>
+{% endfor %}

@@ -34,12 +34,12 @@
 .subnav .nav.filters a.current {
 	color: rgb(41, 86, 178);
 
-/*rgba(240,240,240,1) 73%, rgba(255,255,255,1) 97%, rgba(255,255,255,1) 100%);
+rgba(240,240,240,1) 73%, rgba(255,255,255,1) 97%, rgba(255,255,255,1) 100%);
 background: -o-linear-gradient(top, rgba(230,230,230,1) 0%, rgba(230,230,230,1) 26%, rgba(240,240,240,1) 73%, rgba(255,255,255,1) 97%, rgba(255,255,255,1) 100%);
 background: -ms-linear-gradient(top, rgba(230,230,230,1) 0%, rgba(230,230,230,1) 26%, rgba(240,240,240,1) 73%, rgba(255,255,255,1) 97%, rgba(255,255,255,1) 100%);
 background: linear-gradient(to bottom, rgba(230,230,230,1) 0%, rgba(230,230,230,1) 26%, rgba(240,240,240,1) 73%, rgba(255,255,255,1) 97%, rgba(255,255,255,1) 100%);
 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e6e6e6', endColorstr='#ffffff', GradientType=0 );
-*/
+/*
 background: rgba(212,226,237,1);
 background: -moz-linear-gradient(top, rgba(212,226,237,1) 0%, rgba(248,250,252,0.98) 88%, rgba(248,250,252,0.98) 100%);
 background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(212,226,237,1)), color-stop(88%, rgba(248,250,252,0.98)), color-stop(100%, rgba(248,250,252,0.98)));
@@ -48,7 +48,7 @@ background: -o-linear-gradient(top, rgba(212,226,237,1) 0%, rgba(248,250,252,0.9
 background: -ms-linear-gradient(top, rgba(212,226,237,1) 0%, rgba(248,250,252,0.98) 88%, rgba(248,250,252,0.98) 100%);
 background: linear-gradient(to bottom, rgba(212,226,237,1) 0%, rgba(248,250,252,0.98) 88%, rgba(248,250,252,0.98) 100%);
 filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#d4e2ed', endColorstr='#f8fafc', GradientType=0 );
-}
+*/}
 
 
 /* Area that includes all the info and a sidebar */
@@ -117,4 +117,37 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#d4e2ed', end
 
 body .modal.fade.in {
 	top:40%;
+}
+
+a[disabled] {
+    color: #999999;
+}
+
+a:not([disabled]):hover {
+	cursor: pointer;
+}
+
+.modal-footer form {
+	display: inline;
+}
+
+#contact textarea{
+	width: 100%;
+	min-height: 200px;
+}
+
+.account-action.form-btn {
+    display: inline-block;
+    float: left;
+    margin-left: 10px;
+}
+
+.buttons {
+    list-style: none;
+}
+
+.buttons li {
+    display: inline-block;
+    float: left;
+    margin-left: 10px;
 }

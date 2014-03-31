@@ -2,18 +2,34 @@
 
 {% block content %}
       <div class="subnav">
-          <ul class="nav nav-pills filters">
+         <ul class="nav nav-pills filters">
             <li>
-                <a href="" data-state="all" class="current">All<span class="badge badge-info">10.000</span></a>
+                <a href="" data-state="all" class="current">All<span
+                        class="badge badge-info">{{ all|length }}</span></a>
             </li>
             <li>
-                <a href="" data-state="inactive" class="current">Inactive<span class="badge badge-info">2.000</span></a>
+              <a href="" data-state-activated="True" class="current">Active<span
+                      class="badge badge-info">{{ active }}</span></a>
             </li>
             <li>
-              <a href="" data-state="verified" class="current">Verified<span class="badge badge-info">150</span></a>
+                <a href="" data-state-activated="False" class="current">Inactive<span
+                        class="badge badge-info">{{ inactive }}</span></a>
             </li>
             <li>
-              <a href="" data-state="active" class="current">Active<span class="badge badge-info">8.000</span></a>
+                <a href="" data-state-accepted="True" class="current">Accepted<span
+                        class="badge badge-info">{{ accepted }}</span></a>
+            </li>
+            <li>
+                <a href="" data-state-rejected="True" class="current">Rejected<span
+                        class="badge badge-info">{{ rejected }}</span></a>
+            </li>
+            <li>
+              <a href="" data-state-verified="True" class="current">Verified<span
+                      class="badge badge-info">{{ verified }}</span></a>
+            </li>
+            <li>
+              <a href="" data-state-verified="False" class="current">Unverified<span
+                      class="badge badge-info">{{ unverified }}</span></a>
             </li>
             <li>
               <a href="" data-state="selected" class="selected">Selected<span class="badge badge-info">0</span></a>
@@ -23,47 +39,48 @@
         <div class="sidebar subnav">
           <ul class="nav nav-pills">
             <li>
-             <a data-target="#activate-confirm" class="activate" data-toggle="modal">Activate</a>
+             <a data-target="#activate-confirm" class="activate" data-toggle="modal" disabled>Activate</a>
             </li>
             <li>
-              <a data-target="#reject-confirm" class="reject" data-toggle="modal">Reject</a>
+             <a data-target="#accept-confirm" class="accept" data-toggle="modal" disabled>Accept</a>
             </li>
             <li>
-              <a data-target="#verify-confirm" class="verify" data-toggle="modal">Verify</a>
+              <a data-target="#verify-confirm" class="verify" data-toggle="modal" disabled>Verify</a>
             </li>
             <li>
-              <a data-target="#email" class="email" data-toggle="modal">Contact</a>
+             <a data-target="#deactivate-confirm" class="deactivate" data-toggle="modal" disabled>Deactivate</a>
+            </li>
+            <li>
+              <a data-target="#reject-confirm" class="reject" data-toggle="modal" disabled>Reject</a>
+            </li>
+            <li>
+              <a data-target="#contact" class="contact" data-toggle="modal" disabled>Contact</a>
             </li>
           </ul>
         </div>
+
       <div class="info-block well info">
         <table class="table table-striped table-sorted table-users">
         <thead>
           <tr>
             <th class="checkbox-column" data-sorter="false">
-               <div class="checkbox">
-                  <label>
-                    <input type="checkbox">Select all?
-                  </label>
-                </div>
-            </th> 
+            <!--   <div class="checkbox">-->
+                  <!--<label>-->
+                    <!--<input type="checkbox">Select all-->
+                  <!--</label>-->
+                <!--</div>-->
+            </th>
             <th>Full Name<span class="caret"></span></th>
             <th>E-mail<span class="caret"></span></th>
             <th>Account State<span class="caret"></span></th>
             <th>Suspended VMs<span class="caret"></span></th>
+	    <th>Details</th>
+
           </tr>
         </thead>
-	<tbody>
-         <tr data-state="inactive">
-          <td class="checkbox-column">
-              <input type="checkbox">
-          </td>
-          <td>Alexoulinaki :P</td>
-          <td>yio@mail.com</td>
-          <td>Inactive</td>
-          <td>No</td>
-        </tr>
-	</tbody>
+        <tbody>
+            {% include "admin/_index_iterate_users.html" %}
+        </tbody>
         </table>
       </div>
 
@@ -81,8 +98,36 @@
     <p>Are you sure you want to complete the activation?</p>
   </div>
   <div class="modal-footer">
-    <a href="#" class="btn">Cancel</a>
-    <a href="#" class="btn">Activate</a>
+    <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+    <form method="post" action="{% url admin-actions %}">
+      <button type="submit" class="btn">Activate</button>
+      <input type="hidden" name="type" value="activate">
+      <input type="hidden" name="uuids" value="">
+      <input type="hidden" name="resource" value="account">
+    </form>
+  </div>
+</div>
+
+<div class="modal fade in hide" id="accept-confirm">
+  <div class="modal-header">
+    <a class="close" data-dismiss="modal">×</a>
+    <h3>Accept Accounts</h3>
+  </div>
+  <div class="modal-body">
+    <p>Hou have choosen to <em>accept</em> the accounts of the follwing users:</p>
+    <ul>
+      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
+    </ul>
+    <p>Are you sure you want to accept them?</p>
+  </div>
+  <div class="modal-footer">
+    <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+    <form method="post" action="{% url admin-actions %}">
+      <button type="submit" class="btn">Accept</button>
+      <input type="hidden" name="type" value="accept">
+      <input type="hidden" name="uuids" value="">
+      <input type="hidden" name="resource" value="account">
+    </form>
   </div>
 </div>
 
@@ -95,58 +140,41 @@
     <p>Hou have choosen to <em>reject</em> the following accounts:</p>
     <ul>
       <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
-
     </ul>
     <p>Are you sure you want to complete the rejection?</p>
   </div>
   <div class="modal-footer">
-    <a href="#" class="btn">Cancel</a>
-    <a href="#" class="btn">Reject</a>
+    <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+    <form method="post" action="{% url admin-actions %}">
+      <button type="submit" class="btn">Reject</button>
+      <input type="hidden" name="type" value="reject">
+      <input type="hidden" name="uuids" value="">
+      <input type="hidden" name="resource" value="account">
+    </form>
+  </div>
+</div>
+
+
+<div class="modal fade in hide" id="deactivate-confirm">
+  <div class="modal-header">
+    <a class="close" data-dismiss="modal">×</a>
+    <h3>Deactivate Accounts</h3>
+  </div>
+  <div class="modal-body">
+    <p>Hou have choosen to <em>reject</em> the following accounts:</p>
+    <ul>
+      <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
+    </ul>
+    <p>Are you sure you want to complete the deactivation?</p>
+  </div>
+  <div class="modal-footer">
+    <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+    <form method="post" action="{% url admin-actions %}">
+      <button type="submit" class="btn">Deactivate</button>
+      <input type="hidden" name="type" value="deactivate">
+      <input type="hidden" name="uuids" value="">
+      <input type="hidden" name="resource" value="account">
+    </form>
   </div>
 </div>
 
@@ -164,12 +192,17 @@
     <p>Are you sure you want to complete the verification?</p>
   </div>
   <div class="modal-footer">
-    <a href="#" class="btn">Cancel</a>
-    <a href="#" class="btn">Verify</a>
+    <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+    <form method="post" action="{% url admin-actions %}">
+      <button type="submit" class="btn">Verify</button>
+      <input type="hidden" name="type" value="verify">
+       <input type="hidden" name="uuids" value="">
+      <input type="hidden" name="resource" value="account">
+    </form>
   </div>
 </div>
 
-<div class="modal fade in hide" id="email">
+<div class="modal fade in hide" id="contact">
   <div class="modal-header">
     <a class="close" data-dismiss="modal">×</a>
     <h3>Contact by e-mail</h3>
@@ -179,11 +212,16 @@
     <ul>
        <li><span class="name">G.Papadakis</span><span class="email">giorgos@mail.com</span></li>
     </ul>
-    <p>Text...</p>
+      <textarea name="text" form="contactForm"></textarea>
   </div>
-  <div class="modal-footer">
-    <a href="#" class="btn">Cancel</a>
-    <a href="#" class="btn">Send</a>
+ <div class="modal-footer">
+<form method="post" action="{% url admin-actions %}" id="contactForm">
+    <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+    <button type="submit" class="btn">Send</button>
+    <input type="hidden" name="type" value="contact">
+    <input type="hidden" name="uuids" value="">
+    <input type="hidden" name="resource" value="account">
+</form>
   </div>
 </div>
 {% endblock %}

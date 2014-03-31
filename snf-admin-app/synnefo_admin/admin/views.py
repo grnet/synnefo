@@ -38,7 +38,7 @@ from django.shortcuts import redirect
 from django.views.generic.simple import direct_to_template
 from django.conf import settings
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
-from django.http import Http404, HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 from django.views.decorators.csrf import csrf_exempt
 
@@ -49,6 +49,8 @@ from snf_django.lib import astakos
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser
+from astakos.logic import users
+from astakos.im.functions import send_plain as send_email
 
 # Get an activation backend for account actions
 from astakos.im import activation_backends
@@ -58,6 +60,7 @@ abackend = activation_backends.get_backend()
 # server actions specific imports
 from synnefo.logic import servers as servers_backend
 from synnefo.ui.views import UI_MEDIA_URL
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -223,19 +226,36 @@ def admin_user_required(func, permitted_groups=PERMITTED_GROUPS):
 
 @admin_user_required
 def index(request):
-    """
-    Admin-Interface index view.
-    """
+    """Admin-Interface index view."""
     # if form submitted redirect to details
     account = request.GET.get('account', None)
     if account:
         return redirect('admin-details',
                         search_query=account)
 
+    all = users.get_all()
+    active = users.get_active().count()
+    inactive = users.get_inactive().count()
+    accepted = users.get_accepted().count()
+    rejected = users.get_rejected().count()
+    verified = users.get_verified().count()
+    unverified = users.get_unverified().count()
+
+    user_context = {
+        'all': all,
+        'active': active,
+        'inactive': inactive,
+        'accepted': accepted,
+        'rejected': rejected,
+        'verified': verified,
+        'unverified': unverified,
+        'ADMIN_MEDIA_URL': ADMIN_MEDIA_URL,
+        'UI_MEDIA_URL': UI_MEDIA_URL
+    }
+
     # show index template
     return direct_to_template(request, "admin/index.html",
-                              extra_context={'ADMIN_MEDIA_URL':
-                                             ADMIN_MEDIA_URL})
+                              extra_context=user_context)
 
 
 @admin_user_required
@@ -279,7 +299,6 @@ def account(request, search_query):
             account = user.uuid
             account_email = user.email
             account_name = user.realname
-            account_accepted = user.moderated
         else:
             account_exists = False
 
@@ -308,12 +327,14 @@ def account(request, search_query):
         'search_query': original_search_query,
         'vms': vms,
         'show_deleted': show_deleted,
-        'user': user,
+        'usermodel': user,
         'account_mail': account_email,
         'account_name': account_name,
         'account_accepted': user.is_active,
         'token': request.user['access']['token']['id'],
         'networks': networks,
+        'available_ops': [
+            'activate', 'deactivate', 'accept', 'reject', 'verify', 'contact'],
         'ADMIN_MEDIA_URL': ADMIN_MEDIA_URL,
         'UI_MEDIA_URL': UI_MEDIA_URL
     }
@@ -380,54 +401,116 @@ def vm_start(request, vm_id):
     return HttpResponseRedirect(redirect)
 
 
-# TODO: do not introduce logic of your own
+class AdminActionNotPermitted(Exception):
+
+    """Exception when an action is not permitted."""
+
+    pass
+
+
+class AdminActionUnknown(Exception):
+
+    """Exception when an action is unknown."""
+
+    pass
+
+
+def account_actions__(op, user, extra=None):
+    logging.info("Op: %s, user: %s", op, user.email)
+    if op == 'activate':
+        if users.check_activate(user):
+            users.activate(user)
+        else:
+            raise AdminActionNotPermitted
+    elif op == 'deactivate':
+        if users.check_deactivate(user):
+            users.deactivate(user)
+        else:
+            raise AdminActionNotPermitted
+    elif op == 'accept':
+        if users.check_accept(user):
+            users.accept(user)
+        else:
+            raise AdminActionNotPermitted
+    elif op == 'reject':
+        if users.check_reject(user):
+            users.reject(user)
+        else:
+            raise AdminActionNotPermitted
+    elif op == 'verify':
+        if users.check_verify(user):
+            users.verify(user)
+        else:
+            raise AdminActionNotPermitted
+    elif op == 'contact':
+        send_email(user, extra['mail'])
+    else:
+        raise AdminActionUnknown
+
+
 @csrf_exempt
 @admin_user_required
-def account_accept(request, account):
-    """Function to accept an account."""
-    logging.info("Account acceptance of  %s started by %s",
-                 account, request.user_uniq)
+def account_actions(request, op, account):
+    """Entry-point for operation on an account."""
+    logging.info("Account action \"%s\" on %s started by %s",
+                 op, account, request.user_uniq)
 
+    if request.method == "POST":
+        logging.info("POST body: %s", request.POST)
     redirect = reverse('admin-details', args=(account,))
     user = get_user(account)
+    logging.info("I'm here!")
 
-    if not user:
-        redirect = "%s?error=%s" % (redirect, "Account does not exist")
-        return HttpResponseRedirect(redirect)
+    # Try to get mail body, if any.
+    try:
+        mail = request.POST['text']
+    except:
+        mail = None
 
-    #abackend.handle_verification
-    if not user.email_verified:
-        user.email_verified = True
-        user.save()
-
-    #abackend.handle_moderation(user, accept=True)
-    if not user.moderated:
-        user.moderated = True
-        user.save()
-
-    if not user.is_active:
-        user.is_active = True
-        user.save()
+    try:
+        account_actions__(op, user, extra={'mail': mail})
+    except AdminActionNotPermitted:
+        logging.info("Account action \"%s\" on %s is not permitted",
+                     op, account)
+        redirect = "%s?error=%s" % (redirect, "Action is not permitted")
+    except AdminActionUnknown:
+        logging.info("Unknown account action \"%s\"", op)
+        redirect = "%s?error=%s" % (redirect, "Action is unknown")
+    except:
+        logger.exception("account_actions")
 
     return HttpResponseRedirect(redirect)
 
 
-# TODO: do not introduce logic of your own
 @csrf_exempt
-@admin_user_required
-def account_reject(request, account):
-    """Function to accept an account."""
-    logging.info("Account rejection of  %s started by %s",
-                 account, request.user_uniq)
+def admin_actions(request):
+    """Entry-point for all admin actions.
 
-    redirect = reverse('admin-details', args=(account,))
-    user = get_user(account)
+    Expects a JSON with the following fields: <TODO>
+    """
+    logging.info("Entered admin actions view")
 
-    if not user:
-        redirect = "%s?error=%s" % (redirect, "Account does not exist")
-        return HttpResponseRedirect(redirect)
+    if request.method == "POST":
+        logging.info("POST body: %s", request.POST)
+    redirect = reverse('admin-index')
 
-    user.moderated = False
-    abackend.deactivate_user(user)
-    abackend.handle_moderation(user, accept=False)
+    resource = request.POST['resource']
+    action = request.POST['type']
+    uuids = copy.deepcopy(request.POST['uuids'])
+    uuids = uuids.replace('[', '').replace(']', '').replace(' ', '').split(',')
+    try:
+        mail = request.POST['text']
+    except:
+        mail = None
+
+    try:
+        for uuid in uuids:
+            user = get_user(uuid)
+            if resource == 'account':
+                account_actions__(action, user, extra={'mail': mail})
+            else:
+                logging.warn("Not implemented yet.")
+    except:
+        logger.exception("admin_actions")
+
     return HttpResponseRedirect(redirect)

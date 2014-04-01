@@ -272,7 +272,7 @@ def put_object_headers(response, meta, restricted=False, token=None,
             return
         if not valid_disposition_type:
             disposition_type = 'attachment'
-        response['Content-Disposition'] = smart_str('%s; filename=%s' % (
+        response['Content-Disposition'] = smart_str('%s; filename="%s"' % (
             disposition_type, meta['name']), strings_only=True)
 
 
@@ -1087,7 +1087,7 @@ def update_response_headers(request, response):
         if (k.startswith('X-Account-') or k.startswith('X-Container-') or
                 k.startswith('X-Object-') or k.startswith('Content-')):
             del(response[k])
-            response[quote(k)] = quote(v, safe='/=,:@; ')
+            response[quote(k)] = quote(v, safe='/=,:@; "')
 
 
 def api_method(http_method=None, token_required=True, user_required=True,

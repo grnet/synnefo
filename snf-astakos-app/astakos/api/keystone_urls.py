@@ -15,8 +15,21 @@
 
 from django.conf.urls import patterns, url
 from snf_django.lib.api import api_endpoint_not_found
+from snf_django.lib.api.urls import api_patterns
+from astakos.im import settings
 
-urlpatterns = patterns(
+urlpatterns = patterns('')
+
+if settings.ADMIN_API_ENABLED:
+    urlpatterns += api_patterns(
+        'astakos.api.user',
+        (r'^v2.0/users(?:/|.json|.xml)?$', 'users_demux'),
+        (r'^v2.0/users/detail(?:.json|.xml)?$', 'users_list', {'detail': True}),
+        (r'^v2.0/users/([-\w]+)(?:/|.json|.xml)?$', 'user_demux'),
+        (r'^v2.0/users/([-\w]+)/action(?:/|.json|.xml)?$', 'user_action')
+    )
+
+urlpatterns += patterns(
     'astakos.api.tokens',
     url(r'^v2.0/tokens/(?P<token_id>.+?)/?$', 'validate_token',
         name='validate_token'),

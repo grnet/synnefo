@@ -235,3 +235,5 @@ ENDPOINT_CACHE_TIMEOUT = getattr(settings,
 RESOURCE_CACHE_TIMEOUT = getattr(settings,
                                  'ASTAKOS_RESOURCE_CACHE_TIMEOUT',
                                  60)
+
+ADMIN_API_ENABLED = getattr(settings, 'ASTAKOS_ADMIN_API_ENABLED', False)

@@ -1,4 +1,4 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -234,7 +234,8 @@ def get_object_headers(request):
 
 
 def put_object_headers(response, meta, restricted=False, token=None,
-                       disposition_type=None):
+                       disposition_type=None,
+                       include_content_disposition=False):
     response['ETag'] = meta['hash'] if not UPDATE_MD5 else meta['checksum']
     response['Content-Length'] = meta['bytes']
     response.override_serialization = True
@@ -264,9 +265,13 @@ def put_object_headers(response, meta, restricted=False, token=None,
         for k in ('Content-Encoding', 'Content-Disposition'):
             if k in meta:
                 response[k] = smart_str(meta[k], strings_only=True)
-    disposition_type = disposition_type if disposition_type in \
-        ('inline', 'attachment') else None
-    if disposition_type is not None:
+    if include_content_disposition:
+        user_defined = 'Content-Disposition' in response
+        valid_disposition_type = disposition_type in ('inline', 'attachment')
+        if user_defined and not valid_disposition_type:
+            return
+        if not valid_disposition_type:
+            disposition_type = 'attachment'
         response['Content-Disposition'] = smart_str('%s; filename=%s' % (
             disposition_type, meta['name']), strings_only=True)
 
@@ -961,7 +966,8 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
     put_object_headers(
         response, meta, restricted=public,
         token=getattr(request, 'token', None),
-        disposition_type=request.GET.get('disposition-type'))
+        disposition_type=request.GET.get('disposition-type'),
+        include_content_disposition=True)
     if ret == 206:
         if len(ranges) == 1:
             offset, length = ranges[0]

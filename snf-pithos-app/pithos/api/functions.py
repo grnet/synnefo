@@ -1,4 +1,4 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -30,8 +30,6 @@
 # documentation are those of the authors and should not be
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
-
-from xml.dom import minidom
 
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -984,7 +982,7 @@ def _object_read(request, v_account, v_container, v_object):
     return object_data_response(request, sizes, hashmaps, meta)
 
 
-@api_method('PUT', format_allowed=True, user_required=True, logger=logger,
+@api_method('PUT', format_allowed=False, user_required=True, logger=logger,
             lock_container_path=True)
 def object_write(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
@@ -1063,36 +1061,17 @@ def object_write(request, v_account, v_container, v_object):
         raise faults.LengthRequired('Missing Content-Type header')
 
     if 'hashmap' in request.GET:
-        if request.serialization not in ('json', 'xml'):
-            raise faults.BadRequest('Invalid hashmap format')
-
         data = ''
         for block in socket_read_iterator(request, content_length,
                                           request.backend.block_size):
-            data = '%s%s' % (data, block)
+            data = ''.join([data, block])
 
-        if request.serialization == 'json':
+        try:
             d = json.loads(data)
-            if not hasattr(d, '__getitem__'):
-                raise faults.BadRequest('Invalid data formating')
-            try:
-                hashmap = d['hashes']
-                size = int(d['bytes'])
-            except:
-                raise faults.BadRequest('Invalid data formatting')
-        elif request.serialization == 'xml':
-            try:
-                xml = minidom.parseString(data)
-                obj = xml.getElementsByTagName('object')[0]
-                size = int(obj.attributes['bytes'].value)
-
-                hashes = xml.getElementsByTagName('hash')
-                hashmap = []
-                for hash in hashes:
-                    hashmap.append(hash.firstChild.data)
-            except:
-                raise faults.BadRequest('Invalid data formatting')
-
+            hashmap = d['hashes']
+            size = int(d['bytes'])
+        except:
+            raise faults.BadRequest('Invalid data formatting')
         checksum = ''  # Do not set to None (will copy previous value).
     else:
         etag = request.META.get('HTTP_ETAG')

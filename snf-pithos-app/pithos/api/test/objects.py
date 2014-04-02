@@ -34,6 +34,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from binascii import hexlify
 from collections import defaultdict
 from urllib import quote, unquote
 from functools import partial
@@ -43,7 +44,7 @@ from pithos.api.test import (PithosAPITest, pithos_settings,
                              TEST_BLOCK_SIZE, TEST_HASH_ALGORITHM,
                              DATE_FORMATS, pithos_test_settings)
 from pithos.api.test.util import (md5_hash, merkle, strnextling,
-                                  get_random_data, get_random_name)
+                                  get_random_data, get_random_name, HashMap)
 
 from synnefo.lib import join_urls
 
@@ -827,12 +828,51 @@ class ObjectPut(PithosAPITest):
 
         oname = get_random_name()
         url = join_urls(self.pithos_path, self.user, cname, oname)
-        r = self.put('%s?hashmap=' % url, data=r.content)
+        hashmap = r.content
+        r = self.put('%s?hashmap=' % url, data=hashmap)
         self.assertEqual(r.status_code, 201)
-
         r = self.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.content, data)
+
+        r = self.put('%s?hashmap=' % url, data='not json')
+        self.assertEqual(r.status_code, 400)
+
+        d = {"block_hash": "sha1",
+             "block_size": TEST_BLOCK_SIZE}
+        hashmap = json.dumps(d)
+        r = self.put('%s?hashmap=' % url, data=hashmap)
+        self.assertEqual(r.status_code, 400)
+
+        d.update({"hashes": 'not a list', "bytes": 42})
+        r = self.put('%s?hashmap=' % url, data=hashmap)
+        self.assertEqual(r.status_code, 400)
+
+        d.update({"hashes": None, "bytes": 42})
+        r = self.put('%s?hashmap=' % url, data=hashmap)
+        self.assertEqual(r.status_code, 400)
+
+        length = random.randint(TEST_BLOCK_SIZE, 2 * TEST_BLOCK_SIZE)
+        data = get_random_data(length=length)
+        hashes = HashMap(TEST_BLOCK_SIZE, TEST_HASH_ALGORITHM)
+        hashes.load(data)
+        hexlified = [hexlify(h) for h in hashes]
+        d.update({"hashes": hexlified, "bytes": len(data)})
+        hashmap = json.dumps(d)
+        r = self.put('%s?hashmap=' % url, data=hashmap)
+        self.assertEqual(r.status_code, 409)
+        try:
+            missing = json.loads(r.content)
+        except:
+            self.fail("shouldn't happen")
+        else:
+            self.assertEqual(sorted(missing), sorted(hexlified))
+
+        r = self.get('%s?hashmap=&format=xml' % url)
+        oname = get_random_name()
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.put('%s?hashmap=&format=xml' % url, data=r.content)
+        self.assertEqual(r.status_code, 400)
 
     def test_create_object_by_invalid_hashmap(self):
         cname = self.container

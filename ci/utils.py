@@ -164,8 +164,8 @@ class SynnefoCI(object):
         if cloud is not None:
             self.kamaki_cloud = cloud
         elif self.config.has_option("Deployment", "kamaki_cloud"):
-            kamaki_cloud = self.config.get("Deployment", "kamaki_cloud")
-            if kamaki_cloud == "":
+            self.kamaki_cloud = self.config.get("Deployment", "kamaki_cloud")
+            if self.kamaki_cloud == "":
                 self.kamaki_cloud = None
         else:
             self.kamaki_cloud = None

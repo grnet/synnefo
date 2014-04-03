@@ -345,7 +345,10 @@ class SynnefoCI(object):
         server_id = server['id']
         self.write_temp_config('server_id', server_id)
         self.logger.debug("Server got id %s" % _green(server_id))
-        server_user = server['metadata']['users']
+
+        # An image may have more than one user. Choose the first one.
+        server_user = server['metadata']['users'].split(" ")[0]
+
         self.write_temp_config('server_user', server_user)
         self.logger.debug("Server's admin user is %s" % _green(server_user))
         server_passwd = server['adminPass']

@@ -146,14 +146,27 @@ class HelpdeskTests(TestCase):
                                                 userid=vm1u2.userid,
                                                 network__public=False,
                                                 network__userid=USER1)
+        nic2 = mfactory.NetworkInterfaceFactory(machine=vm1u2,
+                                                userid=vm1u2.userid,
+                                                network__public=False,
+                                                network__userid=USER1)
         ip2 = mfactory.IPv4AddressFactory(nic__machine=vm1u1,
                                           userid=vm1u1.userid,
                                           network__public=True,
                                           network__userid=None,
                                           address="195.251.222.211")
+        ipv6 = mfactory.IPv4AddressFactory(nic__machine=vm1u1,
+                                          userid=vm1u1.userid,
+                                          network__public=True,
+                                          network__userid=None,
+                                          address="2001:648:2ffc:200::184")
         mfactory.IPAddressLogFactory(address=ip2.address,
                                      server_id=vm1u1.id,
                                      network_id=ip2.network.id,
+                                     active=True)
+        mfactory.IPAddressLogFactory(address=ipv6.address,
+                                     server_id=vm1u1.id,
+                                     network_id=ipv6.network.id,
                                      active=True)
 
     def test_enabled_setting(self):
@@ -181,6 +194,22 @@ class HelpdeskTests(TestCase):
         ips = r.context["ips"]
         for ip in ips:
             self.assertEqual(ip.address, "195.251.222.211")
+
+        # ipv6 matched
+        r = self.client.get(reverse('helpdesk-details',
+                                    args=["2001:648:2ffc:200::184"]),
+                                    user_token='0001')
+        self.assertTrue(r.context["ip_exists"])
+        ips = r.context["ips"]
+        for ip in ips:
+            self.assertEqual(ip.address, "2001:648:2ffc:200::184")
+
+        # ipv6 does not exist
+        r = self.client.get(reverse('helpdesk-details',
+                            args=["2001:648:2ffc:1225:a800:6ff:fe79:5de3"]),
+                            user_token='0001')
+        self.assertTrue(r.context["is_ip"])
+        self.assertFalse(r.context["ip_exists"])
 
     def test_vm_lookup(self):
         # vm id does not exist
@@ -279,7 +308,7 @@ class HelpdeskTests(TestCase):
         self.assertEqual(account, USER1)
         self.assertEqual(vms[0].name, "user1 vm")
         self.assertEqual(vms.count(), 1)
-        self.assertEqual(len(nets), 2)
+        self.assertEqual(len(nets), 4)
         self.assertEqual(r.context['account_exists'], True)
 
         # 'testuser2@test.com' details, see helpdesk

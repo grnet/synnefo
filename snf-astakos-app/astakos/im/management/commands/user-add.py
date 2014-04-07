@@ -34,12 +34,11 @@
 from optparse import make_option
 
 from django.db import transaction
-from django.core.management.base import CommandError
+from snf_django.management.commands import SynnefoCommand, CommandError
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 
 from astakos.im.models import AstakosUser, get_latest_terms
-from snf_django.management.commands import SynnefoCommand
 from astakos.im.auth import make_local_user
 
 

@@ -59,12 +59,13 @@ from time import time, gmtime, strftime
 from functools import wraps
 from operator import itemgetter
 from collections import namedtuple
+from copy import deepcopy
 
+from urllib import quote, unquote
 from django.conf import settings
 from django.utils import importlib
+from django.utils.encoding import smart_unicode, smart_str
 from pithos.backends.base import NotAllowedError, VersionNotExists, QuotaError
-from synnefo.util.text import uenc
-from copy import deepcopy
 from snf_django.lib.api import faults
 
 Location = namedtuple("ObjectLocation", ["account", "container", "path"])
@@ -217,7 +218,7 @@ class PlanktonBackend(object):
         prefixed = {}
         for k, v in _prefixed_metadata.items():
             # Encode to UTF-8
-            k, v = uenc(k), uenc(v)
+            k, v = smart_unicode(k), smart_unicode(v)
             # Check the length of key/value
             if len(k) > 128:
                 raise faults.BadRequest('Metadata keys should be less than %s'
@@ -489,6 +490,9 @@ def create_url(account, container, name):
     """Create a Pithos URL from the object info"""
     assert "/" not in account, "Invalid account"
     assert "/" not in container, "Invalid container"
+    account = quote(smart_str(account, encoding="utf-8"))
+    container = quote(smart_str(container, encoding="utf-8"))
+    name = quote(smart_str(name, encoding="utf-8"))
     return "pithos://%s/%s/%s" % (account, container, name)
 
 
@@ -498,7 +502,9 @@ def split_url(url):
     t = url.split('/', 4)
     assert t[0] == "pithos:", "Invalid url"
     assert len(t) == 5, "Invalid url"
-    return t[2:5]
+    account, container, name = t[2:5]
+    parse = lambda x: smart_unicode(unquote(x), encoding="utf-8")
+    return parse(account), parse(container), parse(name)
 
 
 def image_to_dict(location, metadata, permissions):

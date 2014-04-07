@@ -31,15 +31,12 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import CommandError
 from optparse import make_option
-
-from django.db.models import Q
 from astakos.im.models import AstakosUser, get_latest_terms, Project
 from astakos.im.quotas import get_user_quotas
 
 from synnefo.lib.ordereddict import OrderedDict
-from snf_django.management.commands import SynnefoCommand
+from snf_django.management.commands import SynnefoCommand, CommandError
 from snf_django.management import utils
 
 from ._common import show_user_quotas, style_options, check_style

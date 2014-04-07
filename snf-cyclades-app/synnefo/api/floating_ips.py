@@ -93,7 +93,7 @@ def floating_ip_demux(request, floating_ip_id):
                 serializations=["json"])
 def floating_ip_action_demux(request, floating_ip_id):
     userid = request.user_uniq
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     log.debug('floating_ip_action %s %s', floating_ip_id, req)
     if len(req) != 1:
         raise faults.BadRequest('Malformed request.')
@@ -165,7 +165,7 @@ def get_floating_ip(request, floating_ip_id):
 @transaction.commit_on_success
 def allocate_floating_ip(request):
     """Allocate a floating IP."""
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     floating_ip_dict = api.utils.get_attribute(req, "floatingip",
                                                required=True, attr_type=dict)
     userid = request.user_uniq
@@ -225,7 +225,7 @@ def update_floating_ip(request, floating_ip_id):
     #userid = request.user_uniq
     #log.info("update_floating_ip '%s'. User '%s'.", floating_ip_id, userid)
 
-    #req = utils.get_request_dict(request)
+    #req = utils.get_json_body(request)
     #info = api.utils.get_attribute(req, "floatingip", required=True)
 
     #device_id = api.utils.get_attribute(info, "device_id", required=False)

@@ -34,12 +34,11 @@
 from optparse import make_option
 
 from django.db import transaction
-from django.core.management.base import CommandError
-
+from snf_django.management import utils
+from snf_django.management.commands import SynnefoCommand, CommandError
 from astakos.im.functions import (terminate, suspend, unsuspend,
                                   reinstate, check_expiration,
                                   approve_application, deny_application)
-from snf_django.management.commands import SynnefoCommand
 
 
 class Command(SynnefoCommand):
@@ -91,6 +90,7 @@ class Command(SynnefoCommand):
     @transaction.commit_on_success
     def handle(self, *args, **options):
 
+        self.output_format = options["output_format"]
         message = options['message']
 
         actions = {
@@ -122,28 +122,15 @@ class Command(SynnefoCommand):
         length = len(projects)
         if length == 0:
             s = 'No expired projects.\n'
-        elif length == 1:
-            s = '1 expired project:\n'
-        else:
-            s = '%d expired projects:\n' % (length,)
-        self.stderr.write(s)
+            self.stderr.write(s)
+            return
+        labels = ('Project', 'Name', 'Status', 'Expiration date')
+        utils.pprint_table(self.stdout, projects, labels,
+                           self.output_format, title="Expired projects")
 
-        if length > 0:
-            labels = ('Project', 'Name', 'Status', 'Expiration date')
-            columns = (10, 30, 14, 30)
-
-            line = ' '.join(l.rjust(w) for l, w in zip(labels, columns))
-            self.stderr.write(line + '\n')
-            sep = '-' * len(line)
-            self.stderr.write(sep + '\n')
-
-            for project in projects:
-                line = ' '.join(f.rjust(w) for f, w in zip(project, columns))
-                self.stderr.write(line + '\n')
-
-            if execute:
-                self.stderr.write('%d projects have been terminated.\n' % (
-                    length,))
+        if execute:
+            self.stderr.write('%d projects have been terminated.\n' %
+                              (length,))
 
     def expire(self, execute=False):
         projects = check_expiration(execute=execute)

@@ -1,4 +1,4 @@
-# Copyright 2012 - 2013 GRNET S.A. All rights reserved.
+# Copyright 2012 - 2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,14 +32,38 @@
 # or implied, of GRNET S.A.
 
 import json
-import csv
-import functools
 import operator
+import locale
+import unicodedata
+
 from datetime import datetime
 from django.utils.timesince import timesince, timeuntil
 from django.db.models.query import QuerySet
+from django.utils.encoding import smart_unicode, smart_str
+from snf_django.management.unicodecsv import UnicodeWriter
 
-from synnefo.util.text import uenc, udec
+
+def smart_locale_unicode(s, **kwargs):
+    """Wrapper around 'smart_unicode' using user's preferred encoding."""
+    encoding = locale.getpreferredencoding()
+    return smart_unicode(s, encoding=encoding, **kwargs)
+
+
+def smart_locale_str(s, errors='replace', **kwargs):
+    """Wrapper around 'smart_str' using user's preferred encoding."""
+    encoding = locale.getpreferredencoding()
+    return smart_str(s, encoding=encoding, errors=errors, **kwargs)
+
+
+def safe_string(s):
+    """Escape control characters from unicode and string objects."""
+    if not isinstance(s, basestring):
+        return s
+    if isinstance(s, unicode):
+        return "".join(ch.encode("unicode_escape")
+                       if unicodedata.category(ch)[0] == "C" else
+                       ch for ch in s)
+    return s.encode("string_escape")
 
 
 def parse_bool(value, strict=True):
@@ -179,15 +203,9 @@ def pprint_table(out, table, headers=None, output_format='pretty',
 
     sep = separator if separator else "  "
 
-    def stringnify(obj):
-        if isinstance(obj, (unicode, str)):
-            return udec(obj)
-        else:
-            return str(obj)
-
     if headers:
-        headers = map(stringnify, headers)
-    table = [map(stringnify, row) for row in table]
+        headers = map(smart_unicode, headers)
+    table = [map(smart_unicode, row) for row in table]
 
     if output_format == "json":
         assert(headers is not None), "json output format requires headers"
@@ -195,10 +213,10 @@ def pprint_table(out, table, headers=None, output_format='pretty',
         out.write(json.dumps(table, indent=4))
         out.write("\n")
     elif output_format == "csv":
-        cw = csv.writer(out)
+        enc = locale.getpreferredencoding()
+        cw = UnicodeWriter(out, encoding=enc)
         if headers:
             table.insert(0, headers)
-        table = map(functools.partial(map, uenc), table)
         cw.writerows(table)
     elif output_format == "pretty":
         if vertical:
@@ -207,8 +225,7 @@ def pprint_table(out, table, headers=None, output_format='pretty',
             max_key = max(map(len, headers))
             for row in table:
                 for (k, v) in zip(headers, row):
-                    k = uenc(k.ljust(max_key))
-                    v = uenc(v)
+                    k = k.ljust(max_key)
                     out.write("%s: %s\n" % (k, v))
         else:
             # Find out the max width of each column
@@ -223,14 +240,14 @@ def pprint_table(out, table, headers=None, output_format='pretty',
                 out.write("-" * t_length + "\n")
             if headers:
                 # pretty print the headers
-                line = sep.join(uenc(v.rjust(w))
+                line = sep.join(v.rjust(w)
                                 for v, w in zip(headers, widths))
                 out.write(line + "\n")
                 out.write("-" * t_length + "\n")
 
             # print the rest table
             for row in table:
-                line = sep.join(uenc(v.rjust(w)) for v, w in zip(row, widths))
+                line = sep.join(v.rjust(w) for v, w in zip(row, widths))
                 out.write(line + "\n")
     else:
         raise ValueError("Unknown output format '%s'" % output_format)

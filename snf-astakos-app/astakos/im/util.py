@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -229,22 +229,6 @@ def prepare_response(request, user, next='', renew=False):
     response['Location'] = next
     response.status_code = 302
     return response
-
-
-class lazy_string(object):
-    def __init__(self, function, *args, **kwargs):
-        self.function = function
-        self.args = args
-        self.kwargs = kwargs
-
-    def __str__(self):
-        if not hasattr(self, 'str'):
-            self.str = self.function(*self.args, **self.kwargs)
-        return self.str
-
-
-def reverse_lazy(*args, **kwargs):
-    return lazy_string(reverse, *args, **kwargs)
 
 
 def reserved_email(email):

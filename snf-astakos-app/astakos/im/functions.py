@@ -748,7 +748,7 @@ def modify_project(project_id, request):
         main_fields = modifies_main_fields(request)
         if main_fields:
             m = (_(astakos_messages.BASE_NO_MODIFY_FIELDS)
-                 % ", ".join(map(str, main_fields)))
+                 % ", ".join(map(unicode, main_fields)))
             raise ProjectBadRequest(m)
 
     new_name = request.get("realname")
@@ -765,7 +765,7 @@ def modify_projects_in_bulk(flt, request):
     main_fields = modifies_main_fields(request)
     if main_fields:
         raise ProjectBadRequest("Cannot modify field(s) '%s' in bulk" %
-                                ", ".join(map(str, main_fields)))
+                                ", ".join(map(unicode, main_fields)))
 
     projects = Project.objects.initialized(flt).select_for_update()
     _modify_projects(projects, request)

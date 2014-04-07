@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 
 from synnefo.util import units
-from django.core.management import CommandError
+from snf_django.management.commands import CommandError
 from django.db.models import Q
 
 

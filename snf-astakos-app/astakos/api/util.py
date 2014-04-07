@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -81,16 +81,9 @@ def xml_response(content, template, status_code=None):
     return response
 
 
-def read_json_body(request, default=None):
-    body = request.body
-    if not body and request.method == "GET":
-        body = request.GET.get("body")
-    if not body:
-        return default
-    try:
-        return json.loads(body)
-    except json.JSONDecodeError:
-        raise faults.BadRequest("Request body should be in json format.")
+def check_is_dict(obj):
+    if not isinstance(obj, dict):
+        raise faults.BadRequest("Request should be a JSON dict")
 
 
 def is_integer(x):

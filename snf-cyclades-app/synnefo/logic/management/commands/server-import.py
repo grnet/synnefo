@@ -140,7 +140,7 @@ def import_server(instance_name, backend_id, flavor_id, image_id, user_id,
             raise CommandError("Instance %s does not exist in backend %s"
                                % (instance_name, backend))
         else:
-            raise CommandError("Unexpected error" + str(e))
+            raise CommandError("Unexpected error: %s" % e)
 
     if not new_public_nic:
         check_instance_nics(instance, stream)

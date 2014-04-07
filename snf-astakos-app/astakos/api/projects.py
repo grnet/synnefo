@@ -42,7 +42,8 @@ from astakos.api.util import json_response
 
 from snf_django.lib import api
 from snf_django.lib.api import faults
-from .util import user_from_token, invert_dict, read_json_body
+from snf_django.lib.api import utils
+from .util import user_from_token, invert_dict, check_is_dict
 
 from astakos.im import functions
 from astakos.im.models import (
@@ -319,8 +320,7 @@ def _get_projects(query, mode="default", request_user=None):
 @transaction.commit_on_success
 def create_project(request):
     user = request.user
-    data = request.body
-    app_data = json.loads(data)
+    app_data = utils.get_json_body(request)
     return submit_new_project(app_data, user)
 
 
@@ -357,8 +357,7 @@ def _get_project(project_id, request_user=None):
 @transaction.commit_on_success
 def modify_project(request, project_id):
     user = request.user
-    data = request.body
-    app_data = json.loads(data)
+    app_data = utils.get_json_body(request)
     return submit_modification(app_data, user, project_id=project_id)
 
 
@@ -548,6 +547,7 @@ def submit_modification(app_data, user, project_id):
 def get_action(actions, input_data):
     action = None
     data = None
+    check_is_dict(input_data)
     for option in actions.keys():
         if option in input_data:
             if action:
@@ -586,8 +586,7 @@ APP_ACTION_FUNCS = APPLICATION_ACTION.values()
 @transaction.commit_on_success
 def project_action(request, project_id):
     user = request.user
-    data = request.body
-    input_data = json.loads(data)
+    input_data = utils.get_json_body(request)
 
     func, action_data = get_action(PROJECT_ACTION, input_data)
     with ExceptionHandler():
@@ -707,7 +706,7 @@ MEMBERSHIP_ACTION = {
 @transaction.commit_on_success
 def membership_action(request, memb_id):
     user = request.user
-    input_data = read_json_body(request, default={})
+    input_data = utils.get_json_body(request)
     func, action_data = get_action(MEMBERSHIP_ACTION, input_data)
     with ExceptionHandler():
         func(memb_id, user, reason=action_data)

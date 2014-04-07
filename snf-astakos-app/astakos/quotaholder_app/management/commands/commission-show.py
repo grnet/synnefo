@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -31,8 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from django.core.management.base import CommandError
-from snf_django.management.commands import SynnefoCommand
+from snf_django.management.commands import SynnefoCommand, CommandError
 from snf_django.management import utils
 
 from astakos.quotaholder_app.models import Commission, Provision

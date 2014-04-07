@@ -190,9 +190,9 @@ class SynnefoCommand(BaseCommand):
                 self.stdout.logger = logger
                 self.stderr.logger = logger
             except OSError as err:
-                msg = "Could not open file %s for write: %s\n" + \
-                    "Will not log this command's output\n" \
-                    % (filename, err)
+                msg = ("Could not open file %s for write: %s\n"
+                       "Will not log this command's output\n") % (
+                    filename, err)
                 sys.stderr.write(msg)
 
         argv = [utils.smart_locale_unicode(a) for a in argv]

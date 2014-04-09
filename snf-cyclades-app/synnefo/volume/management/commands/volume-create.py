@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -67,6 +67,14 @@ class Command(SynnefoCommand):
             default=None,
             help="Size of the new volume in GB"),
         make_option(
+            "--source",
+            dest="source",
+            default=None,
+            help="Initialize volume with data from the specified source. The"
+                 " source must be of the form <source_type>:<source_uuid>."
+                 " Available source types are 'image', 'snapshot' and"
+                 " 'volume'."),
+        make_option(
             "--server",
             dest="server_id",
             default=None,
@@ -106,6 +114,23 @@ class Command(SynnefoCommand):
             user_id = vm.userid
 
         source_image_id = source_volume_id = source_snapshot_id = None
+        source = options.get("source")
+        if source is not None:
+            try:
+                source_type, source_uuid = source.split(":", 1)
+            except (ValueError, TypeError):
+                raise CommandError("Invalid '--source' option. Value must be"
+                                   " of the form <source_type>:<source_uuid>")
+            if source_type == "image":
+                source_image_id = source_uuid
+            elif source_type == "snapshot":
+                source_snapshot_id = source_uuid
+            elif source_type == "volume":
+                source_volume_id = source_uuid
+            else:
+                raise CommandError("Unknown volume source type '%s'"
+                                   % source_type)
+
         volume = volumes.create(user_id, size, server_id,
                                 name=display_name,
                                 description=display_description,

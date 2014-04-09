@@ -1616,12 +1616,6 @@ are sure everything works till this point.
 If everything works, you have successfully connected Ganeti with Pithos. Let's
 move on to networking now.
 
-.. warning::
-
-    You can bypass the networking sections and go straight to
-    :ref:`Cyclades Ganeti tools <cyclades-gtools>`, if you do not want to setup
-    the Cyclades Network Service, but only the Cyclades Compute Service
-    (recommended for now).
 
 Networking Setup Overview
 -------------------------

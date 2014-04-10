@@ -1,39 +1,61 @@
 /*body { background: url(../img/roughcloth.png);}*/
+/* line 5, ../sass/extra.scss */
+.container-fluid {
+  margin-top: 20px;
+}
 
-.container-fluid { margin-top: 20px; }
-h1 { margin-bottom: 20px; }
+/* line 6, ../sass/extra.scss */
+h1 {
+  margin-bottom: 20px;
+}
 
 /* Subnav */
+/* line 9, ../sass/extra.scss */
 .subnav {
   width: 100%;
   height: 36px;
-  background-color: #eeeeee; /* Old browsers */
-  background-repeat: repeat-x; /* Repeat the gradient */
-  background-image: -moz-linear-gradient(top, #f5f5f5 0%, #eeeeee 100%); /* FF3.6+ */
-  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#f5f5f5), color-stop(100%,#eeeeee)); /* Chrome,Safari4+ */
-  background-image: -webkit-linear-gradient(top, #f5f5f5 0%,#eeeeee 100%); /* Chrome 10+,Safari 5.1+ */
-  background-image: -ms-linear-gradient(top, #f5f5f5 0%,#eeeeee 100%); /* IE10+ */
-  background-image: -o-linear-gradient(top, #f5f5f5 0%,#eeeeee 100%); /* Opera 11.10+ */
-  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#f5f5f5', endColorstr='#eeeeee',GradientType=0 ); /* IE6-9 */
-  background-image: linear-gradient(top, #f5f5f5 0%,#eeeeee 100%); /* W3C */
+  background-color: #eeeeee;
+  /* Old browsers */
+  background-repeat: repeat-x;
+  /* Repeat the gradient */
+  background-image: -moz-linear-gradient(top, whitesmoke 0%, #eeeeee 100%);
+  /* FF3.6+ */
+  background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, whitesmoke), color-stop(100%, #eeeeee));
+  /* Chrome,Safari4+ */
+  background-image: -webkit-linear-gradient(top, whitesmoke 0%, #eeeeee 100%);
+  /* Chrome 10+,Safari 5.1+ */
+  background-image: -ms-linear-gradient(top, whitesmoke 0%, #eeeeee 100%);
+  /* IE10+ */
+  background-image: -o-linear-gradient(top, whitesmoke 0%, #eeeeee 100%);
+  /* Opera 11.10+ */
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#f5f5f5', endColorstr='#eeeeee',GradientType=0 );
+  /* IE6-9 */
+  background-image: linear-gradient(top, #f5f5f5 0%, #eeeeee 100%);
+  /* W3C */
   border: 1px solid #e5e5e5;
   -webkit-border-radius: 4px;
-     -moz-border-radius: 4px;
-          border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px;
 }
+
+/* line 26, ../sass/extra.scss */
 .subnav .nav {
   margin-bottom: 0;
 }
+
+/* line 29, ../sass/extra.scss */
 .subnav .nav > li > a {
   margin: 0;
-  padding-top:    11px;
+  padding-top: 11px;
   padding-bottom: 11px;
   border-left: 1px solid #f5f5f5;
   border-right: 1px solid #e5e5e5;
   -webkit-border-radius: 0;
-     -moz-border-radius: 0;
-          border-radius: 0;
+  -moz-border-radius: 0;
+  border-radius: 0;
 }
+
+/* line 40, ../sass/extra.scss */
 .subnav .nav > .active > a,
 .subnav .nav > .active > a:hover {
   padding-left: 13px;
@@ -41,163 +63,715 @@ h1 { margin-bottom: 20px; }
   background-color: #e9e9e9;
   border-right-color: #ddd;
   border-left: 0;
-  -webkit-box-shadow: inset 0 3px 5px rgba(0,0,0,.05);
-     -moz-box-shadow: inset 0 3px 5px rgba(0,0,0,.05);
-          box-shadow: inset 0 3px 5px rgba(0,0,0,.05);
+  -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.05);
+  -moz-box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.05);
 }
+
+/* line 51, ../sass/extra.scss */
 .subnav .nav > .active > a .caret,
 .subnav .nav > .active > a:hover .caret {
   border-top-color: #777;
 }
+
+/* line 55, ../sass/extra.scss */
 .subnav .nav > li:first-child > a,
 .subnav .nav > li:first-child > a:hover {
   border-left: 0;
   padding-left: 12px;
   -webkit-border-radius: 4px 0 0 4px;
-     -moz-border-radius: 4px 0 0 4px;
-          border-radius: 4px 0 0 4px;
+  -moz-border-radius: 4px 0 0 4px;
+  border-radius: 4px 0 0 4px;
 }
+
+/* line 62, ../sass/extra.scss */
 .subnav .nav > li:last-child > a {
   border-right: 0;
 }
+
+/* line 65, ../sass/extra.scss */
 .subnav .dropdown-menu {
   -webkit-border-radius: 0 0 4px 4px;
-     -moz-border-radius: 0 0 4px 4px;
-          border-radius: 0 0 4px 4px;
+  -moz-border-radius: 0 0 4px 4px;
+  border-radius: 0 0 4px 4px;
 }
 
 /* Fixed subnav on scroll, but only for 980px and up (sorry IE!) */
 @media (min-width: 220px) {
+  /* line 73, ../sass/extra.scss */
   .subnav-fixed {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
-    z-index: 1020; /* 10 less than .navbar-fixed to prevent any overlap */
+    z-index: 1020;
+    /* 10 less than .navbar-fixed to prevent any overlap */
     border-color: #d5d5d5;
-    border-width: 0 0 1px; /* drop the border on the fixed edges */
+    border-width: 0 0 1px;
+    /* drop the border on the fixed edges */
     -webkit-border-radius: 0;
-       -moz-border-radius: 0;
-            border-radius: 0;
-    -webkit-box-shadow: inset 0 1px 0 #fff, 0 1px 5px rgba(0,0,0,.1);
-       -moz-box-shadow: inset 0 1px 0 #fff, 0 1px 5px rgba(0,0,0,.1);
-            box-shadow: inset 0 1px 0 #fff, 0 1px 5px rgba(0,0,0,.1);
-    filter: progid:DXImageTransform.Microsoft.gradient(enabled=false); /* IE6-9 */
+    -moz-border-radius: 0;
+    border-radius: 0;
+    -webkit-box-shadow: inset 0 1px 0 white, 0 1px 5px rgba(0, 0, 0, 0.1);
+    -moz-box-shadow: inset 0 1px 0 white, 0 1px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: inset 0 1px 0 white, 0 1px 5px rgba(0, 0, 0, 0.1);
+    filter: progid:DXImageTransform.Microsoft.gradient(enabled=false);
+    /* IE6-9 */
   }
+
+  /* line 89, ../sass/extra.scss */
   .subnav-fixed .nav {
-    /*width: 938px; εαν το  ξε-σχολιάσω θα κεντραριστεί*/
+    /* width: 938px; this shouldn't be uncomment */
+    /* It will be misplaced (will not be in the center) */
     margin: 0 auto;
-   padding: 0 20px; 
+    padding: 0 20px;
   }
+
+  /* line 96, ../sass/extra.scss */
   .subnav .nav > li:first-child > a,
   .subnav .nav > li:first-child > a:hover {
     -webkit-border-radius: 0;
-       -moz-border-radius: 0;
-            border-radius: 0;
+    -moz-border-radius: 0;
+    border-radius: 0;
   }
 }
+/* line 104, ../sass/extra.scss */
+.subnav h2 {
+  padding: 9px;
+  font-size: 1em;
+  line-height: 18px;
+  display: none;
+}
 
+/* line 105, ../sass/extra.scss */
+.subnav-fixed h2 {
+  display: block;
+}
 
-.subnav h2 { padding: 9px; font-size: 1em; line-height: 18px; display: none}
-.subnav-fixed h2 { display: block }
+/* line 107, ../sass/extra.scss */
+.account-form {
+  float: right;
+  margin-top: 2px;
+  margin-bottom: 0;
+}
 
-.account-form { float: right; margin-top: 2px; margin-bottom: 0}
-.info-block { margin-top: 30px; background-color: #fff; padding:0;}
+/* line 108, ../sass/extra.scss */
+.info-block {
+  margin-top: 30px;
+  background-color: #fff;
+  padding: 0;
+}
 
-.info-block h3 .badge {   font-size: 0.8em; padding: 5px 8px; background-color:#659CEF;}
-.info-block table { margin-bottom: 0 }
-.object-details h5 { float: right; margin-top: 10px; margin-right: 10px; font-size: 1em; color: #D9397E }
-.object-anchor { margin-bottom: 5px; height:15px; }
+/* line 110, ../sass/extra.scss */
+.info-block h3 .badge {
+  font-size: 0.8em;
+  padding: 5px 8px;
+  background-color: #659CEF;
+}
 
+/* line 111, ../sass/extra.scss */
+.info-block table {
+  margin-bottom: 0;
+}
 
-.subnav a.deleted { color: #F00 !important }
+/* line 112, ../sass/extra.scss */
+.object-details h5 {
+  float: right;
+  margin-top: 10px;
+  margin-right: 10px;
+  font-size: 1em;
+  color: #d9397e;
+}
 
+/* line 113, ../sass/extra.scss */
+.object-anchor {
+  margin-bottom: 5px;
+  height: 15px;
+}
+
+/* line 116, ../sass/extra.scss */
+.subnav a.deleted {
+  color: red !important;
+}
 
 /* new styles olga */
+/* line 121, ../sass/extra.scss */
+h1 a:hover {
+  text-decoration: none;
+}
 
-h1 a:hover						{ text-decoration:none; }
-.search-query 					{ border-radius:5px; -moz-border-radius:5px; -webkit-border-radius:5px; }
-a								{ color:#659CEF; }
-a:hover							{ color:#2956B2 }
+/* line 122, ../sass/extra.scss */
+.search-query {
+  border-radius: 5px;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
 
-h3								{ font-size:21px; cursor:pointer; margin:20px;}
-h4								{ font-size:18px; margin-bottom:1em; }
+/* line 123, ../sass/extra.scss */
+a {
+  color: #659CEF;
+}
+
+/* line 124, ../sass/extra.scss */
+a:hover {
+  color: #2956b2;
+}
+
+/* line 126, ../sass/extra.scss */
+h3 {
+  font-size: 21px;
+  cursor: pointer;
+  margin: 20px;
+}
+
+/* line 127, ../sass/extra.scss */
+h4 {
+  font-size: 18px;
+  margin-bottom: 1em;
+}
+
+/* line 129, ../sass/extra.scss */
 input:focus,
-textarea:focus 					{
+textarea:focus {
   border-color: #659CEF;
   outline: 0;
   outline: thin dotted \9;
   /* IE6-9 */
-
-  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px #659CEF;
-     -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px #659CEF;
-          box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px #659CEF;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px #659cef;
+  -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px #659cef;
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px #659cef;
 }
 
- 
-.dropdown-menu li > a:hover, 
-.dropdown-menu .active > a, 
-.dropdown-menu .active > a:hover { background-color: #d5d5d5; } 
+/* line 143, ../sass/extra.scss */
+.dropdown-menu li > a:hover,
+.dropdown-menu .active > a,
+.dropdown-menu .active > a:hover {
+  background-color: #d5d5d5;
+}
 
-.object-details-content 		{ margin:1em 0; display:none; }
-.account .object-details-content{ display:block; }
-.nav-tabs						{ margin:0; border:0 none; }
-.tab-content .dl-horizontal		{ margin:0; }
-.nav-tabs > .active > a, 
-.nav-tabs > .active > a:hover	{ background-color:#F5F5F5; color:#2956B2; font-weight:bold;}
-.nav-tabs > li					{ margin-bottom:-2px; }
-.badge							{ border-radius:4px; -moz-border-radius:4px;  -webkit-border-radius:4px; }
-.object-details .badge			{ margin-right:8px; }
-.label-success, 
-.badge-success					{ background-color:#8BBA00 }
-.badge-important				{ background-color: #F81A23; }
-.badge-info						{ background-color:#659CEF } 
-.show-hide-tabs					{ margin:2em 0; }		
-.show-hide-all					{ float:right; margin:20px; line-height:27px;}
-.toggle	.badge					{ font-size:14px; padding:5px 9px; }
-.toggle	.badge:hover			{ cursor:pointer;  }
-.show-hide-tabs .badge			{ background-color:#8BBA00; }
-.show-hide-tabs .badge:hover	{ background-color:#789B0F }
-.show-hide-all .badge			{ background-color:#8BBA00; }
-.show-hide-all .badge:hover		{ background-color:#789B0F } 
-.vms h3, 
-.vms h4							{ color:#444 }
+/* line 145, ../sass/extra.scss */
+.object-details-content {
+  margin: 1em 0;
+  display: none;
+}
+
+/* line 146, ../sass/extra.scss */
+.account .object-details-content {
+  display: block;
+}
+
+/* line 147, ../sass/extra.scss */
+.nav-tabs {
+  margin: 0;
+  border: 0 none;
+}
+
+/* line 148, ../sass/extra.scss */
+.tab-content .dl-horizontal {
+  margin: 0;
+}
+
+/* line 150, ../sass/extra.scss */
+.nav-tabs > .active > a,
+.nav-tabs > .active > a:hover {
+  background-color: #F5F5F5;
+  color: #2956B2;
+  font-weight: bold;
+}
+
+/* line 151, ../sass/extra.scss */
+.nav-tabs > li {
+  margin-bottom: -2px;
+}
+
+/* line 152, ../sass/extra.scss */
+.badge {
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;
+}
+
+/* line 153, ../sass/extra.scss */
+.object-details .badge {
+  margin-right: 8px;
+}
+
+/* line 155, ../sass/extra.scss */
+.label-success,
+.badge-success {
+  background-color: #8bba00;
+}
+
+/* line 156, ../sass/extra.scss */
+.badge-important {
+  background-color: #F81A23;
+}
+
+/* line 157, ../sass/extra.scss */
+.badge-info {
+  background-color: #659cef;
+}
+
+/* line 158, ../sass/extra.scss */
+.show-hide-tabs {
+  margin: 2em 0;
+}
+
+/* line 159, ../sass/extra.scss */
+.show-hide-all {
+  float: right;
+  margin: 20px;
+  line-height: 27px;
+}
+
+/* line 160, ../sass/extra.scss */
+.toggle .badge {
+  font-size: 14px;
+  padding: 5px 9px;
+}
+
+/* line 161, ../sass/extra.scss */
+.toggle .badge:hover {
+  cursor: pointer;
+}
+
+/* line 162, ../sass/extra.scss */
+.show-hide-tabs .badge {
+  background-color: #8BBA00;
+}
+
+/* line 163, ../sass/extra.scss */
+.show-hide-tabs .badge:hover {
+  background-color: #789b0f;
+}
+
+/* line 164, ../sass/extra.scss */
+.show-hide-all .badge {
+  background-color: #8BBA00;
+}
+
+/* line 165, ../sass/extra.scss */
+.show-hide-all .badge:hover {
+  background-color: #789b0f;
+}
+
+/* line 167, ../sass/extra.scss */
+.vms h3,
+.vms h4 {
+  color: #444444;
+}
+
+/* line 169, ../sass/extra.scss */
 .vms h3:hover,
-.vms h4:hover					{ color:#666 }
-.networks h3, 
-.networks h4					{ color:#444 }
+.vms h4:hover {
+  color: #666666;
+}
+
+/* line 171, ../sass/extra.scss */
+.networks h3,
+.networks h4 {
+  color: #444444;
+}
+
+/* line 173, ../sass/extra.scss */
 .networks h3:hover,
-.networks h4:hover				{ color:#666 }
-.account h3, 
-.account h4						{ color:#444 }
+.networks h4:hover {
+  color: #666666;
+}
+
+/* line 175, ../sass/extra.scss */
+.account h3,
+.account h4 {
+  color: #444444;
+}
+
+/* line 177, ../sass/extra.scss */
 .account h3:hover,
-.account h4:hover				{ color:#666 }
-.object-details					{ padding:20px;  }
-.object-details	h4				{ cursor:pointer; }
-.object-details h4 em			{ float:right; font-style:normal; font-size:0.833em;}
-.object-details h4 em img		{ margin:0 5px; }
-h4 .badge						{ padding:6px 9px 2px; background:url(../img/glyphicons-halflings.png) 160px 43px transparent;}
-h4.expanded .badge				{ background-position: 185px 43px}
-.row2							{ background-color:#EDEDED; }
+.account h4:hover {
+  color: #666666;
+}
 
-.row1:hover 					{ background-color:#DDD; }
-.row2:hover 					{ background-color:#DDD; }
+/* line 178, ../sass/extra.scss */
+.object-details {
+  padding: 20px;
+}
 
-h4 i 							{ margin-top: 4px; margin-right: 10px;}
-.container-fluid 				{ margin-left:auto; margin-right:auto; max-width:960px; }
-h3.info							{ cursor:default; color:#2956B2; text-align:center; font-size:16px; margin-bottom:0;}
+/* line 179, ../sass/extra.scss */
+.object-details h4 {
+  cursor: pointer;
+}
 
-.vm-actions { margin-top: 20px; text-align: right; }
-.vm-action { float: right; margin-left: 10px;}
-.vm-action form { margin-bottom: 0px; }
-.vm-action.inactive form input { background-color: #2956B2; color: #ffffff;}
-.vm-action form input { background-color: #F81A23; color: #ffffff;}
+/* line 180, ../sass/extra.scss */
+.object-details h4 em {
+  float: right;
+  font-style: normal;
+  font-size: 0.833em;
+}
 
-.table-sorted th:hover 				{ color:#2956B2; cursor:pointer; }
-.table-sorted th span				{ padding-right:20px; }
-.table-sorted th:hover span				{ background:url(../img/arrow-down.png) no-repeat right center; }
+/* line 181, ../sass/extra.scss */
+.object-details h4 em img {
+  margin: 0 5px;
+}
+
+/* line 182, ../sass/extra.scss */
+h4 .badge {
+  padding: 6px 9px 2px;
+  background: url(../img/glyphicons-halflings.png) 160px 43px transparent;
+}
+
+/* line 183, ../sass/extra.scss */
+h4.expanded .badge {
+  background-position: 185px 43px;
+}
+
+/* line 184, ../sass/extra.scss */
+.row2 {
+  background-color: #EDEDED;
+}
+
+/* line 186, ../sass/extra.scss */
+.row1:hover {
+  background-color: #DDD;
+}
+
+/* line 187, ../sass/extra.scss */
+.row2:hover {
+  background-color: #DDD;
+}
+
+/* line 189, ../sass/extra.scss */
+h4 i {
+  margin-top: 4px;
+  margin-right: 10px;
+}
+
+/* line 190, ../sass/extra.scss */
+.container-fluid {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 960px;
+}
+
+/* line 191, ../sass/extra.scss */
+h3.info {
+  cursor: default;
+  color: #2956B2;
+  text-align: center;
+  font-size: 16px;
+  margin-bottom: 0;
+}
+
+/* line 193, ../sass/extra.scss */
+.vm-actions {
+  margin-top: 20px;
+  text-align: right;
+}
+
+/* line 194, ../sass/extra.scss */
+.vm-action {
+  float: right;
+  margin-left: 10px;
+}
+
+/* line 195, ../sass/extra.scss */
+.vm-action form {
+  margin-bottom: 0px;
+}
+
+/* line 196, ../sass/extra.scss */
+.vm-action.inactive form input {
+  background-color: #2956B2;
+  color: #ffffff;
+}
+
+/* line 197, ../sass/extra.scss */
+.vm-action form input {
+  background-color: #F81A23;
+  color: #ffffff;
+}
+
+/* line 199, ../sass/extra.scss */
+.table-sorted th:hover {
+  color: #2956B2;
+  cursor: pointer;
+}
+
+/* line 200, ../sass/extra.scss */
+.table-sorted th span:not(.badge) {
+  padding-right: 20px;
+}
+
+/* line 201, ../sass/extra.scss */
+.table-sorted th:hover span {
+  background: url(../img/arrow-down.png) no-repeat right center;
+}
+
+/* line 203, ../sass/extra.scss */
 .table-sorted th.headerSortDown span,
-.table-sorted th.headerSortDown:hover span		{ background:url(../img/arrow-up.png) no-repeat right center; }
+.table-sorted th.headerSortDown:hover span {
+  background: url(../img/arrow-up.png) no-repeat right center;
+}
 
+/* line 206, ../sass/extra.scss */
 .table-sorted th.headerSortUp span,
-.table-sorted th.headerSortUp:hover span		{ background:url(../img/arrow-down.png) no-repeat right center; }
+.table-sorted th.headerSortUp:hover span {
+  background: url(../img/arrow-down.png) no-repeat right center;
+}
+
+/* All checkboxes */
+/* line 216, ../sass/extra.scss */
+.messages .checkbox {
+  margin: 0;
+}
+
+/* line 219, ../sass/extra.scss */
+.messages .checkbox label {
+  margin-bottom: 0;
+}
+
+/* Top subnavs ul */
+/* line 226, ../sass/extra.scss */
+.messages .subnav:not(.sidebar) .nav {
+  width: 960px;
+}
+
+/* Filters */
+/* line 233, ../sass/extra.scss */
+.btn-toolbar {
+  margin-bottom: 0px;
+  padding-bottom: 10px;
+  padding-top: 13px;
+  background: #E1EDF3;
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px;
+}
+
+/* line 246, ../sass/extra.scss */
+.btn-toolbar-fixed {
+  position: fixed;
+  top: 27px;
+  z-index: 10;
+  width: 960px;
+}
+
+/* line 254, ../sass/extra.scss */
+.filters {
+  margin-left: 200px;
+}
+
+/* line 258, ../sass/extra.scss */
+.filters .badge {
+  margin-left: 6px;
+  opacity: 0.9;
+  padding: 2px 9px;
+}
+
+/* line 264, ../sass/extra.scss */
+.filters ul.nav a {
+  padding-bottom: 10px;
+}
+
+/* line 268, ../sass/extra.scss */
+.subnav .nav li.active a {
+  color: #2956b2;
+  /* background: -o-linear-gradient(top, rgba(230,230,230,1) 0%, rgba(230,230,230,1) 26%, rgba(240,240,240,1) 73%, rgba(255,255,255,1) 97%, rgba(255,255,255,1) 100%);
+  background: -ms-linear-gradient(top, rgba(230,230,230,1) 0%, rgba(230,230,230,1) 26%, rgba(240,240,240,1) 73%, rgba(255,255,255,1) 97%, rgba(255,255,255,1) 100%);
+  background: linear-gradient(to bottom, rgba(230,230,230,1) 0%, rgba(230,230,230,1) 26%, rgba(240,240,240,1) 73%, rgba(255,255,255,1) 97%, rgba(255,255,255,1) 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e6e6e6', endColorstr='#ffffff', GradientType=0 ); */
+  /*
+  background: rgba(212,226,237,1);
+  background: -moz-linear-gradient(top, rgba(212,226,237,1) 0%, rgba(248,250,252,0.98) 88%, rgba(248,250,252,0.98) 100%);
+  background: -webkit-gradient(left top, left bottom, color-stop(0%, rgba(212,226,237,1)), color-stop(88%, rgba(248,250,252,0.98)), color-stop(100%, rgba(248,250,252,0.98)));
+  background: -webkit-linear-gradient(top, rgba(212,226,237,1) 0%, rgba(248,250,252,0.98) 88%, rgba(248,250,252,0.98) 100%);
+  background: -o-linear-gradient(top, rgba(212,226,237,1) 0%, rgba(248,250,252,0.98) 88%, rgba(248,250,252,0.98) 100%);
+  background: -ms-linear-gradient(top, rgba(212,226,237,1) 0%, rgba(248,250,252,0.98) 88%, rgba(248,250,252,0.98) 100%);
+  background: linear-gradient(to bottom, rgba(212,226,237,1) 0%, rgba(248,250,252,0.98) 88%, rgba(248,250,252,0.98) 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#d4e2ed', endColorstr='#f8fafc', GradientType=0 );
+  */
+}
+
+/* Area that includes all the info and a sidebar */
+/* line 290, ../sass/extra.scss */
+.info {
+  overflow: hidden;
+}
+
+/* line 294, ../sass/extra.scss */
+.info-fixed {
+  overflow: hidden;
+  margin-left: 200px;
+}
+
+/* Sidebar */
+/* line 302, ../sass/extra.scss */
+.sidebar.subnav {
+  margin: 30px 30px 0 0;
+  width: 170px;
+  height: auto;
+  float: left;
+}
+
+/* line 309, ../sass/extra.scss */
+.sidebar.subnav-fixed {
+  top: 66px;
+  left: auto;
+  right: auto;
+  border: 1px solid #e5e5e5;
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px;
+}
+
+/* line 319, ../sass/extra.scss */
+.messages .sidebar ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+/* line 324, ../sass/extra.scss */
+.sidebar ul li {
+  float: none;
+}
+
+/* line 328, ../sass/extra.scss */
+.messages .sidebar ul li a {
+  border: none;
+}
+
+/* Table of users */
+/* line 334, ../sass/extra.scss */
+.table-users span.caret {
+  padding-right: 0;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+/* line 340, ../sass/extra.scss */
+td.summary {
+  max-width: 80px;
+}
+
+/* line 344, ../sass/extra.scss */
+.table-users .headerSortUp span.caret {
+  border-top: 0;
+  border-bottom: 4px solid;
+}
+
+/* line 349, ../sass/extra.scss */
+.table-users tbody tr.selected td {
+  background-color: #ebe9e9;
+}
+
+/* Modals */
+/* line 355, ../sass/extra.scss */
+body .modal.fade.in {
+  top: 40%;
+}
+
+/* line 359, ../sass/extra.scss */
+a[disabled] {
+  color: #999999;
+}
+
+/* line 363, ../sass/extra.scss */
+a:not([disabled]):hover {
+  cursor: pointer;
+}
+
+/* line 367, ../sass/extra.scss */
+.modal-footer form {
+  display: inline;
+}
+
+/* line 371, ../sass/extra.scss */
+#contact textarea {
+  width: 100%;
+  min-height: 200px;
+}
+
+/* line 376, ../sass/extra.scss */
+.account-action.form-btn {
+  display: inline-block;
+  float: left;
+  margin-left: 10px;
+}
+
+/* line 382, ../sass/extra.scss */
+.buttons {
+  list-style: none;
+}
+
+/* line 386, ../sass/extra.scss */
+.buttons li {
+  display: inline-block;
+  float: left;
+  margin-left: 10px;
+}
+
+/* line 394, ../sass/extra.scss */
+.row-fluid .span7 {
+  margin-top: 36px;
+}
+/* line 397, ../sass/extra.scss */
+.row-fluid .nav {
+  width: 960px;
+}
+
+/* line 402, ../sass/extra.scss */
+.filters.subnav-fixed {
+  top: 36px;
+}
+
+/* line 406, ../sass/extra.scss */
+.summary dl {
+  background-color: pink;
+  position: relative;
+  padding: 8px;
+  display: none;
+}
+
+/* line 413, ../sass/extra.scss */
+.table-users .login-method {
+  padding: 2px 16px 2px 0px;
+  text-align: center;
+}
+
+/* line 418, ../sass/extra.scss */
+.dataTables_length select {
+  width: 55px;
+  display: inline-block;
+  margin-left: 8px;
+  margin-left: 8px;
+  vertical-align: baseline;
+}
+
+/* line 428, ../sass/extra.scss */
+#table-users-total_filter input {
+  display: inline-block;
+  margin-left: 8px;
+}
+
+/* line 433, ../sass/extra.scss */
+.table-users th .badge {
+  margin: 0 2px 0 4px;
+  display: inline;
+  padding-top: 2px;
+}
+
+/* line 439, ../sass/extra.scss */
+.checkbox-column {
+  position: relative;
+}
+
+/* line 442, ../sass/extra.scss */
+.neutral-checkbox {
+  height: 6px;
+  width: 6px;
+  background: #ada5a5;
+  display: none;
+  position: absolute;
+  z-index: 10000;
+  top: 14px;
+  left: 11px;
+}

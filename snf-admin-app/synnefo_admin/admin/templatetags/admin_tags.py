@@ -105,7 +105,6 @@ def network_vms(network, account, show_deleted=False):
 
 @register.filter(name="network_nics")
 def network_nics(network, account, show_deleted=False):
-    vms = []
     nics = network.nics.filter(machine__userid=account)
     if not show_deleted:
         nics = nics.filter(machine__deleted=False).distinct()
@@ -146,6 +145,23 @@ register.filter('check_state', check_state)
 
 
 @register.filter
+def get_state(user):
+    """Get the user state.
+
+    The user state can be Active/Inactive/Pending Moderation/Pending
+    Verification. The user can never be in two states in the same time.
+    """
+    if user.is_active:
+        return "Active"
+    elif user.moderated:
+        return "Inactive"
+    elif user.email_verified:
+        return "Pending Moderation"
+    else:
+        return "Pending Verification"
+
+
+@register.filter
 def get_state_list(user):
     """Get a space separated list of states that the user is in.
 
@@ -183,7 +199,7 @@ register.filter('check_operation', check_operation)
 
 @register.filter
 def get_operation_list(user):
-    """Get a space separated list of operation that apply to a user.
+    """Get a space separated list of operations that apply to a user.
 
     The list is returned as a string, in order to be used in html tags
     """

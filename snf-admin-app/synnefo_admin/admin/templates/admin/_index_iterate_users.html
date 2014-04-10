@@ -9,7 +9,6 @@
         data-state-rejected={{ user|check_state:"rejected" }}
         data-state-verified={{ user|check_state:"verified" }}
         data-state-list={{ user|get_state_list }}
-        data-state= {{ user|get_state }}
         data-allow-activate={{ user|check_operation:'activate' }}
         data-allow-deactivate={{ user|check_operation:'deactivate' }}
         data-allow-accept={{ user|check_operation:'accept' }}
@@ -22,7 +21,8 @@
     </td>
     <td>{{ user.realname }}</td>
     <td>{{ user.email }}</td>
-    <td>{{ user|get_state }}
+    <td class="state">
+        {{ user|get_state }}
     </td>
     <td>No</td>
     <td><a href="{% url admin-details user.uuid %}">More...</a></td>

@@ -576,6 +576,17 @@ class BurninTests(unittest.TestCase):
         @param changes: A dict of the changes that have been made in quotas
 
         """
+        def dicts_are_equal(d1, d2):
+            """Helper function to check dict equality"""
+            self.assertEqual(set(d1), set(d2))
+            for key, val in d1.items():
+                if isinstance(val, (list, tuple)):
+                    self.assertEqual(set(val), set(d2[key]))
+                elif isinstance(val, dict):
+                    dicts_are_equal(val, d2[key])
+                else:
+                    self.assertEqual(val, d2[key])
+
         if not changes:
             return
 
@@ -599,7 +610,7 @@ class BurninTests(unittest.TestCase):
                 old_quotas[prj][q_name]['usage'] += q_value
                 old_quotas[prj][q_name]['project_usage'] += q_value
 
-        self.assertEqual(old_quotas, new_quotas)
+        dicts_are_equal(old_quotas, new_quotas)
 
     # ----------------------------------
     # Projects

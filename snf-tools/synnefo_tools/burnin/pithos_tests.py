@@ -46,6 +46,7 @@ def sample_block(fid, block):
 
 # pylint: disable=too-many-public-methods
 class PithosTestSuite(BurninTests):
+
     """Test Pithos functionality"""
     containers = Proper(value=None)
     created_container = Proper(value=None)
@@ -409,6 +410,9 @@ class PithosTestSuite(BurninTests):
 
         # TODO: What is tranfer_encoding? What should I check about it?
 
+        size = os.fstat(self.large_file.fileno()).st_size
+        self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, size, None)]})
+
         obj = 'object_with_meta'
         pithos.container = self.temp_containers[-2]
         resp = pithos.object_post(
@@ -575,6 +579,10 @@ class PithosTestSuite(BurninTests):
         self.info('Now, upload the boring file as %s...' % trg_fname)
         pithos.upload_object(trg_fname, bor_f)
         self.info('Boring file %s is uploaded as %s' % (bor_f.name, trg_fname))
+
+        size = os.fstat(bor_f.fileno()).st_size
+        self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, size, None)]})
+
         dnl_f = NamedTemporaryFile()
         self.info('Download boring file as %s' % dnl_f.name)
         pithos.download_object(trg_fname, dnl_f)
@@ -583,7 +591,7 @@ class PithosTestSuite(BurninTests):
         for i in range(42):
             self.assertEqual(sample_block(bor_f, i), sample_block(dnl_f, i))
 
-    def test_055_object_put(self):
+    def test_053_object_put(self):
         """Test object PUT"""
         pithos = self.clients.pithos
         obj = 'sample.file'
@@ -636,6 +644,8 @@ class PithosTestSuite(BurninTests):
             public=True)
         self.info('If-etag-match is OK')
 
+        self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, 1, None)]})
+
         resp = pithos.object_get(obj)
         self.assertTrue('x-object-public' in resp.headers)
         self.info('Publishing works')
@@ -671,6 +681,8 @@ class PithosTestSuite(BurninTests):
         self.assertEqual(resp1['x-object-hash'], resp2['x-object-hash'])
         self.info('Object has being copied in same container, OK')
 
+        self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, 1, None)]})
+
         pithos.copy_object(
             src_container=pithos.container,
             src_object=obj,
@@ -682,6 +694,8 @@ class PithosTestSuite(BurninTests):
         resp2 = pithos.get_object_info(obj)
         self.assertEqual(resp1['x-object-hash'], resp2['x-object-hash'])
         self.info('Object has being copied in another container, OK')
+
+        self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, 1, None)]})
 
         fromstr = '/%s/%s_new' % (self.temp_containers[-2], obj)
         resp = pithos.object_put(
@@ -730,6 +744,9 @@ class PithosTestSuite(BurninTests):
         self.assertEqual(len(versions), 3)
         vers0 = versions[0][0]
 
+        size = len('third version')
+        self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, size, None)]})
+
         pithos.container = self.temp_containers[-2]
         pithos.object_put(
             obj,
@@ -764,12 +781,17 @@ class PithosTestSuite(BurninTests):
         resp = pithos.object_get(mobj)
         self.assertEqual(resp.text, txt)
         self.info('Manifest file creation works')
+        self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, 10, None)]})
 
-        named_file = self._create_large_file(1024 * 10)
-        pithos.upload_object('sample.file', named_file)
+        oldf = pithos.get_object_info('sample.file')
+        named_f = self._create_large_file(1024 * 10)
+        pithos.upload_object('sample.file', named_f)
         resp = pithos.get_object_info('sample.file')
         self.assertEqual(int(resp['content-length']), 10240)
         self.info('Overwrite is OK')
+
+        size = os.fstat(named_f.fileno()).st_size - int(oldf['content-length'])
+        self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, size, None)]})
 
         # TODO: MISSING: test transfer-encoding?
 
@@ -784,9 +806,8 @@ class PithosTestSuite(BurninTests):
             self.clients.pithos.upload_object("test.txt", fout)
             # Verify quotas
             size = os.fstat(fout.fileno()).st_size
-            changes = \
-                {self._get_uuid(): [(QPITHOS, QADD, size, None)]}
-            self._check_quotas(changes)
+            self._check_quotas(
+                {self._get_uuid(): [(QPITHOS, QADD, size, None)]})
 
     def test_055_download_file(self):
         """Test downloading the file from Pithos"""
@@ -799,33 +820,6 @@ class PithosTestSuite(BurninTests):
             # Compare results
             self.info("Comparing contents with the uploaded file")
             self.assertEqual(contents, "This is a temp file")
-
-    def test_056_remove(self):
-        """Test removing files and containers from Pithos"""
-        self.info("Removing the file %s from container %s",
-                  "test.txt", self.created_container)
-        # The container is the one choosen during the `create_container'
-        content_length = \
-            self.clients.pithos.get_object_info("test.txt")['content-length']
-        self.clients.pithos.del_object("test.txt")
-
-        # Verify quotas
-        changes = \
-            {self._get_uuid(): [(QPITHOS, QREMOVE, content_length, None)]}
-        self._check_quotas(changes)
-
-        self.info("Removing the container %s", self.created_container)
-        self.clients.pithos.purge_container()
-
-        # List containers
-        containers = self._get_list_of_containers()
-        self.info("Check that the container %s has been deleted",
-                  self.created_container)
-        names = [n['name'] for n in containers]
-        self.assertNotIn(self.created_container, names)
-        # We successfully deleted our container, no need to do it
-        # in our clean up phase
-        self.created_container = None
 
     def test_060_object_copy(self):
         """Test object COPY"""
@@ -844,6 +838,9 @@ class PithosTestSuite(BurninTests):
             content_disposition='attachment; filename="fname.ext"')
         self.info('Prepared a file /%s/%s' % (pithos.container, obj))
 
+        self._check_quotas(
+            {self._get_uuid(): [(QPITHOS, QADD, len(data), None)]})
+
         resp = pithos.object_copy(
             obj,
             destination='/%s/%s' % (pithos.container, trg),
@@ -852,6 +849,9 @@ class PithosTestSuite(BurninTests):
             permissions={'write': ['u5', 'accX:groupB']})
         self.assertEqual(resp.status_code, 201)
         self.info('Status code is OK')
+
+        self._check_quotas(
+            {self._get_uuid(): [(QPITHOS, QADD, len(data), None)]})
 
         resp = pithos.get_object_info(trg)
         self.assertTrue('content-disposition' in resp)
@@ -887,6 +887,9 @@ class PithosTestSuite(BurninTests):
             resp.headers['content-type'],
             'application/json; charset=UTF-8')
 
+        self._check_quotas(
+            {self._get_uuid(): [(QPITHOS, QADD, len(data), None)]})
+
         # Check ignore_content_type and content_type
         pithos.container = self.temp_containers[-1]
         resp = pithos.object_get(obj)
@@ -905,12 +908,18 @@ class PithosTestSuite(BurninTests):
         resp = pithos.object_get(obj + '0')
         self.assertNotEqual(resp.headers['content-type'], 'text/x-python')
 
+        self._check_quotas(
+            {self._get_uuid(): [(QPITHOS, QADD, len(data), None)]})
+
         resp = pithos.object_copy(
             obj,
             destination='/%s/%s1' % (pithos.container, obj),
             if_etag_match=etag)
         self.assertEqual(resp.status_code, 201)
         self.info('if-etag-match is OK')
+
+        self._check_quotas(
+            {self._get_uuid(): [(QPITHOS, QADD, len(data), None)]})
 
         resp = pithos.object_copy(
             obj,
@@ -919,6 +928,9 @@ class PithosTestSuite(BurninTests):
         self.assertEqual(resp.status_code, 201)
         self.info('if-etag-not-match is OK')
 
+        self._check_quotas(
+            {self._get_uuid(): [(QPITHOS, QADD, len(data), None)]})
+
         resp = pithos.object_copy(
             '%s2' % obj,
             destination='/%s/%s3' % (pithos.container, obj),
@@ -926,6 +938,9 @@ class PithosTestSuite(BurninTests):
             public=True)
         self.assertEqual(resp.status_code, 201)
         self.assertTrue('xml' in resp.headers['content-type'])
+
+        self._check_quotas(
+            {self._get_uuid(): [(QPITHOS, QADD, len(data), None)]})
 
         resp = pithos.get_object_info(obj + '3')
         self.assertTrue('x-object-public' in resp)
@@ -946,6 +961,9 @@ class PithosTestSuite(BurninTests):
                 read=['accX:groupA', 'u1', 'u2'],
                 write=['u2', 'u3']))
         self.info('Prepared a file /%s/%s' % (pithos.container, obj))
+
+        self._check_quotas(
+            {self._get_uuid(): [(QPITHOS, QADD, len(data), None)]})
 
         resp = pithos.object_move(
             obj,
@@ -1032,6 +1050,8 @@ class PithosTestSuite(BurninTests):
         self.assertEqual(resp.status_code, 201)
         self.assertTrue('xml' in resp.headers['content-type'])
 
+        self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, 0, None)]})
+
         resp = pithos.get_object_info(obj)
         self.assertTrue('x-object-public' in resp)
         self.info('Publish, format and source-version are OK')
@@ -1058,11 +1078,16 @@ class PithosTestSuite(BurninTests):
         self.info(
             'Prepared a local file %s & a remote object %s', newf.name, obj)
 
+        self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, 1, None)]})
+
         newf.seek(0)
         pithos.append_object(obj, newf)
         resp = pithos.object_get(obj)
         self.assertEqual(resp.text[:5], 'Hello')
         self.info('Append is OK')
+
+        size = os.fstat(newf.fileno()).st_size
+        self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, size, None)]})
 
         newf.seek(0)
         resp = pithos.overwrite_object(obj, 0, 10, newf)
@@ -1071,6 +1096,8 @@ class PithosTestSuite(BurninTests):
         self.assertEqual(resp.headers['content-type'], 'text/x-python')
         self.info('Overwrite (involves content-legth/range/type) is OK')
 
+        self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, 0, None)]})
+
         resp = pithos.truncate_object(obj, 5)
         resp = pithos.object_get(obj)
         self.assertEqual(resp.text, 'ello!')
@@ -1078,6 +1105,9 @@ class PithosTestSuite(BurninTests):
         self.info(
             'Truncate (involves content-range, object-bytes and source-object)'
             ' is OK')
+
+        self._check_quotas(
+            {self._get_uuid(): [(QPITHOS, QREMOVE, size - 4, None)]})
 
         pithos.set_object_meta(obj, {'mkey2': 'mval2a', 'mkey3': 'mval3'})
         resp = pithos.get_object_meta(obj)
@@ -1166,6 +1196,8 @@ class PithosTestSuite(BurninTests):
         self.assertEqual(resp.text, '1ell5')
         self.info('Cross container POST with source-version/account are OK')
 
+        self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, 5, None)]})
+
         self.assertTrue('content-disposition' in resp.headers)
         self.assertTrue('fname.ext' in resp.headers['content-disposition'])
         self.info('Content-disposition POST is OK')
@@ -1192,6 +1224,8 @@ class PithosTestSuite(BurninTests):
         self.assertEqual(resp.text, txt)
         self.info('Manifestation is OK')
 
+        self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, 10, None)]})
+
         # TODO: We need to check transfer_encoding
 
     def test_075_object_delete(self):
@@ -1203,14 +1237,48 @@ class PithosTestSuite(BurninTests):
         resp = pithos.object_get(obj, success=(200, 404))
         self.assertEqual(resp.status_code, 200)
         self.info('Successfully failed to delete with false "until"')
+        size = int(resp.headers['content-length'])
 
         resp = pithos.object_delete(obj)
         self.assertEqual(resp.status_code, 204)
         self.info('Status code is OK')
 
+        self._check_quotas(
+            {self._get_uuid(): [(QPITHOS, QREMOVE, size, None)]})
+
         resp = pithos.object_get(obj, success=(200, 404))
         self.assertEqual(resp.status_code, 404)
         self.info('Successfully failed to delete a deleted file')
+
+    def test_080_remove(self):
+        """Test removing files and containers from Pithos"""
+        self.created_container = self.clients.pithos.container
+        fname = 'sample.file_v2'
+        self.info("Removing the file %s from container %s",
+                  fname, self.created_container)
+        # The container is the one choosen during the `create_container'
+        obj_info = self.clients.pithos.get_object_info(fname)
+        content_length = obj_info['content-length']
+        self.clients.pithos.del_object(fname)
+
+        # Verify quotas
+        self._check_quotas(
+            {self._get_uuid(): [(QPITHOS, QREMOVE, content_length, None)]})
+
+        self.info("Removing the container %s", self.created_container)
+        self.clients.pithos.container_delete(
+            self.created_container, delimiter='/')
+        self.clients.pithos.purge_container()
+
+        # List containers
+        containers = self._get_list_of_containers()
+        self.info("Check that the container %s has been deleted",
+                  self.created_container)
+        names = [n['name'] for n in containers]
+        self.assertNotIn(self.created_container, names)
+        # We successfully deleted our container, no need to do it
+        # in our clean up phase
+        self.created_container = None
 
     @classmethod
     def tearDownClass(cls):  # noqa

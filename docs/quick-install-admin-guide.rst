@@ -1,9 +1,9 @@
-.. _quick-install-admin-guide:
+.. _install-guide-debian:
 
-Administrator's Installation Guide
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Administrator's Installation Guide On Debian Wheezy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is the Administrator's installation guide.
+This is the Administrator's installation guide on Debian Wheezy.
 
 It describes how to install the whole Synnefo stack on two (2) physical nodes,
 with minimum configuration. It installs synnefo from Debian packages, and

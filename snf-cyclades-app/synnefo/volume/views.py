@@ -178,7 +178,7 @@ def list_volumes(request, detail=False):
 def delete_volume(request, volume_id):
     log.debug("delete_volume volume_id: %s", volume_id)
 
-    volume = util.get.volume(request.user_uniq, volume_id, for_update=True)
+    volume = util.get_volume(request.user_uniq, volume_id, for_update=True)
     volumes.delete(volume)
 
     return HttpResponse(status=202)

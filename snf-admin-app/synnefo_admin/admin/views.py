@@ -48,7 +48,7 @@ import astakosclient
 from snf_django.lib import astakos
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, ProjectMembership
 from astakos.logic import users
 from astakos.im.functions import send_plain as send_email
 
@@ -341,6 +341,68 @@ def account(request, search_query):
 
     return direct_to_template(request, "admin/account.html",
                               extra_context=user_context)
+
+
+def user_details(query):
+    user = get_user(query)
+    projects = ProjectMembership.objects.filter(person=user)
+    vms = VirtualMachine.objects.filter(
+        userid=user.uuid).order_by('deleted')
+
+    context = {
+        'main_item': user,
+        'main_type': 'user',
+        'associations_list': [
+            (projects, 'project'),
+            (vms, 'vm'),
+        ]
+    }
+    return context
+
+
+def vm_details(query):
+    id = query.translate(None, 'vm-')
+    vm = VirtualMachine.objects.get(pk=int(id))
+    vms = VirtualMachine.objects.all
+    context = {
+        'main_item': vm,
+        'main_type': 'vm',
+        'associations_list': [(vms, 'vm')]
+    }
+
+    return context
+
+details_dict = {
+    'vm': {
+        'fun': vm_details,
+        'template': 'admin/vm_details.html',
+    },
+    'user': {
+        'fun': user_details,
+        'template': 'admin/user_details.html',
+    },
+}
+
+default_dict = {
+    'ADMIN_MEDIA_URL': ADMIN_MEDIA_URL,
+    'UI_MEDIA_URL': UI_MEDIA_URL,
+}
+
+
+@csrf_exempt
+@admin_user_required
+def details(request, type, id):
+    logging.info("Request for details. Type: %s, ID: %s", type, id)
+    try:
+        fun = details_dict[type]['fun']
+    except KeyError:
+        logger.exception("Error in details")
+        raise KeyError
+
+    context = fun(str(id))
+    context.update(default_dict)
+    return direct_to_template(request, details_dict[type]['template'],
+                              extra_context=context)
 
 
 @admin_user_required

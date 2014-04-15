@@ -209,3 +209,11 @@ def get_operation_list(user):
             op_list += op + ','
 
     return op_list
+
+
+@register.filter
+def get_details_template(type):
+    """Get the correct template for the provided item."""
+    template = 'admin/_' + type + '_details.html'
+    logging.info("Requested the %s", template)
+    return template

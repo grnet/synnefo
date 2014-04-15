@@ -110,6 +110,7 @@
       <tbody>
       </tbody>
     </table>
+  </div>
   <div class="modal-footer dangerous area">
     <a href="#" class="btn" data-dismiss="modal">Cancel</a>
     <form method="post" action="{% url admin-actions %}">
@@ -120,7 +121,6 @@
     </form>
   </div>
 </div>
-
 
 <div class="modal fade in hide" id="verify-confirm">
   <div class="modal-header positive area">
@@ -152,7 +152,7 @@
     <h3>Contact by e-mail</h3>
   </div>
   <div class="modal-body">
-    <label>Subject:</label><input type="text" class="subject" form="contactForm"></textarea><span class="error"></span>
+    <label>Subject:</label><input type="text" class="subject" form="contactForm"></input><span class="error"></span>
     <label>Content:</label><textarea name="text" form="contactForm" class="content"></textarea><span class="error"></span>
     <p>You have choosen to <em class="neutral elem">contact by e-mail</em> with <em class="num neutral elem"></em> users:</p>
     <table class="table-selected table table-bordered">

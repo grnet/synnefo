@@ -136,52 +136,6 @@ $(document).ready(function() {
 				$actionBar.find('a[data-action='+prop+']').attr('disabled', '');
 			}
 		}
-    		/*console.log('removeItem')
-    		$actionsBtns.each(function() {
-    			for(var i=0; i<itemActionsL; i++) {
-    				if(itemActions[i] === $(this).data('action')) {
-    					console.log(itemActions[i] + ' ' + $(this).data('action'))
-    					$(this).removeAttr('disabled');
-    				}
-    			}
-    		});*/
-			// for(var prop in availableActions) {
-			// 	if(actionsObj[prop])
-			// }
-    	// }
-/*    	else {
-    		$actionsBtns.each(function() {
-    			if($(this).attr('disabled') !==undefined) {
-    				nowActions.push($(this).data('action'));
-    			}
-    		});
-    		var nowActionsL = nowActions.length;
-    		for(var i=0; i<itemActionsL; i++) {
-    			for(var j=0; j<nowActionsL; j++) {
-    				if(itemActions[i] === nowActions[j]) {
-    					newActions.push(itemActions[i]);
-    				}
-    			}
-    		}
-    		$actionsBtns.each(function() {
-    			console.log($(this));
-    			$(this).attr('disabled', '');
-    		});
-    		var newActionsL = newActions.length;
-    		for(var i=0; i<newActionsL; i++) {
-    			$('.sidebar').find('a[data-action='+newActions[i]+']').removeAttr('disabled');
-    		}*/
-
-    		/*$actionsBtns.each(function() {
-    			for(var i=0; i<itemActionsL; i++) {
-    				if(itemActions[i] !== $(this).data('action'))
-    					$(this).prop('disabled', true);
-    				else {
-    					$(this).removeAttr('disabled');
-    				}
-    			}
-    		});*/
-    	// }
     };
 
 
@@ -206,6 +160,7 @@ $(document).ready(function() {
 		var maxVisible = 25;
 		var templateRow = '<tr data-uuid=""><td class="full-name"></td><td class="email"></td><td class="remove"><a>X</a></td>';
 		var currentRow;
+		$(tableBody).empty();
 		for(var i=0; i<rowsNum; i++) {
 			currentRow =templateRow.replace('data-uuid=""', 'data-uuid="'+selected.items[i].uuid+'"')
 			currentRow = currentRow.replace('<td class="full-name"></td>', '<td class="full-name">'+selected.items[i].name+'</td>');

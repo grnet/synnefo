@@ -4,7 +4,7 @@ $(document).ready(function(){
 
  // table sorting
 
- $('.table-sorted').tablesorter({
+ $('.table-sorted:not(.table-users)').tablesorter({
     sortList : [[2,0]],
 });
 
@@ -12,18 +12,22 @@ $(document).ready(function(){
 
  // fix sub nav on scroll
   var $win = $(window)
-    , $nav = $('.subnav')
-    , navTop = $('.subnav').length && $('.subnav').offset().top
-    , isFixed = 0
+    , $nav = $('.subnav:not(.nav-main)')
+    , navTop = $('.subnav:not(.nav-main)').length && $('.subnav:not(.nav-main)').offset().top
+    , isFixed = 0,
+      navMainTop = $('.nav-main').outerHeight();
 
   function processScroll() {
-    var i, scrollTop = $win.scrollTop()
-    if (scrollTop >= navTop && !isFixed) {
-      isFixed = 1
-      $nav.addClass('subnav-fixed')
-    } else if (scrollTop <= navTop && isFixed) {
-      isFixed = 0
-      $nav.removeClass('subnav-fixed')
+    var i, scrollTop = $win.scrollTop();
+    var navTemp = navTop - navMainTop*2;
+    if (scrollTop >= (navTop - navMainTop*2) && !isFixed) {
+      console.log('1 scrollTop: '+scrollTop+' navTop: '+navTemp);
+      isFixed = 1;
+      $nav.addClass('subnav-fixed');
+    } else if (scrollTop <= (navTop -navMainTop*2) && isFixed) {
+      console.log('2 scrollTop: '+scrollTop+' navTop: '+navTemp);
+      isFixed = 0;
+      $nav.removeClass('subnav-fixed');
     }
   }
 

@@ -1,0 +1,10 @@
+<div class="sidebar subnav">
+    <ul class="nav nav-pills">
+    {% for action in action_list %}
+    <li>
+    <a data-target="#{{ action.op }}" data-action="{{ action.op }}"
+        data-toggle="modal" disabled>{{ action.name }}</a>
+    </li>
+    {% endfor %}
+    </ul>
+</div>

@@ -142,7 +142,7 @@ $(document).ready(function() {
 	/* Modals */
 
 	function addData(modal) {
-		var $uuidsInput = 	$(modal).find('.modal-footer form input[name="uuids"]');
+		var $uuidsInput = 	$(modal).find('.modal-footer form input[name="ids"]');
 		var $table = $(modal).find('.table-selected');
 		var selectedNum = selected.items.length;
 		var $selectedNum = $(modal).find('.num');
@@ -178,7 +178,7 @@ $(document).ready(function() {
 		e.preventDefault();
 		
 		var $modal = $(this).closest('.modal')
-		var $uuidsInput =	$modal.find('.modal-footer form input[name="uuids"]');
+		var $uuidsInput =	$modal.find('.modal-footer form input[name="ids"]');
 		var $num = $modal.find('.num');
 		var $tr = $(this).closest('tr');
 		var itemUUID = $tr.data('uuid');

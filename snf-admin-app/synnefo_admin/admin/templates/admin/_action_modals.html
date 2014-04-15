@@ -1,0 +1,31 @@
+{% for action in action_list %}
+<div class="modal fade in hide" id="{{ action.op }}">
+  <div class="modal-header positive area">
+    <a class="close" data-dismiss="modal">×</a>
+    <h3>{{ action.name }}</h3>
+  </div>
+  <div class="modal-body">
+      {% if action.op == "contact" %}
+        <label>Subject:</label><input type="text" class="subject" form="{{ action.op }}Form"></input><span class="error"></span>
+        <label>Content:</label><textarea name="text" form="{{ action.op }}Form" class="content"></textarea><span class="error"></span>
+      {% endif %}
+      <p>You have choosen to <em class="positive elem">{{ action.op }}</em> the
+      following <em class="num elem positive"></em> items:</p>
+    <table class="table-selected table table-bordered">
+      <tbody>
+      </tbody>
+    </table>
+    <p>Are you sure you want to complete the operation?</p>
+  </div>
+  <div class="modal-footer positive area">
+    <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+    <form method="post" action="{% url admin-actions %}" id="{{ action.op}}Form">
+        <button type="submit" class="btn">OK</button>
+        <input type="hidden" name="type" value="{{ action.op }}">
+      <input type="hidden" name="ids" value="">
+      <input type="hidden" name="resource" value="{{ action.resource }}">
+    </form>
+  </div>
+</div>
+{% endfor %}
+

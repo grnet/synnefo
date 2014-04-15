@@ -204,7 +204,8 @@ def get_operation_list(user):
     The list is returned as a string, in order to be used in html tags
     """
     op_list = ','
-    for op in ['activate', 'deactivate', 'accept', 'reject', 'verify', 'contact']:
+    for op in ['activate', 'deactivate', 'accept', 'reject', 'verify',
+               'contact']:
         if check_operation(user, op):
             op_list += op + ','
 
@@ -212,8 +213,24 @@ def get_operation_list(user):
 
 
 @register.filter
+def admin_debug(var):
+    """Print in the log a value."""
+    logging.info("Template debugging: %s", var)
+    logging.info("Also: %s", var.uuid)
+    return var
+
+
+@register.filter
 def get_details_template(type):
     """Get the correct template for the provided item."""
     template = 'admin/_' + type + '_details.html'
+    logging.info("Requested the %s", template)
+    return template
+
+
+@register.filter
+def get_index_template(type):
+    """Get the correct template for the provided item."""
+    template = 'admin/_' + type + '_row.html'
     logging.info("Requested the %s", template)
     return template

@@ -224,38 +224,38 @@ def admin_user_required(func, permitted_groups=PERMITTED_GROUPS):
 
 ### View functions
 
-@admin_user_required
-def index(request):
-    """Admin-Interface index view."""
-    # if form submitted redirect to details
-    account = request.GET.get('account', None)
-    if account:
-        return redirect('admin-details',
-                        search_query=account)
+#@admin_user_required
+#def index(request):
+    #"""Admin-Interface index view."""
+    ## if form submitted redirect to details
+    #account = request.GET.get('account', None)
+    #if account:
+        #return redirect('admin-details',
+                        #search_query=account)
 
-    all = users.get_all()
-    active = users.get_active().count()
-    inactive = users.get_inactive().count()
-    accepted = users.get_accepted().count()
-    rejected = users.get_rejected().count()
-    verified = users.get_verified().count()
-    unverified = users.get_unverified().count()
+    #all = users.get_all()
+    #active = users.get_active().count()
+    #inactive = users.get_inactive().count()
+    #accepted = users.get_accepted().count()
+    #rejected = users.get_rejected().count()
+    #verified = users.get_verified().count()
+    #unverified = users.get_unverified().count()
 
-    user_context = {
-        'all': all,
-        'active': active,
-        'inactive': inactive,
-        'accepted': accepted,
-        'rejected': rejected,
-        'verified': verified,
-        'unverified': unverified,
-        'ADMIN_MEDIA_URL': ADMIN_MEDIA_URL,
-        'UI_MEDIA_URL': UI_MEDIA_URL
-    }
+    #user_context = {
+        #'all': all,
+        #'active': active,
+        #'inactive': inactive,
+        #'accepted': accepted,
+        #'rejected': rejected,
+        #'verified': verified,
+        #'unverified': unverified,
+        #'ADMIN_MEDIA_URL': ADMIN_MEDIA_URL,
+        #'UI_MEDIA_URL': UI_MEDIA_URL
+    #}
 
-    # show index template
-    return direct_to_template(request, "admin/index.html",
-                              extra_context=user_context)
+    ## show index template
+    #return direct_to_template(request, "admin/index.html",
+                              #extra_context=user_context)
 
 
 @admin_user_required
@@ -421,6 +421,26 @@ def vm_index(request):
     context['filters'] = create_vm_filters()
 
 
+def create_user_action_list():
+    action_list = []
+    action_list.append({
+        'op': 'activate',
+        'name': 'Activate a user',
+        'resource': 'account'
+    })
+    action_list.append({
+        'op': 'deactivate',
+        'name': 'Deactivate',
+        'resource': 'account'
+    })
+    action_list.append({
+        'op': 'contact',
+        'name': 'Send e-mail',
+        'resource': 'account'
+    })
+    return action_list
+
+
 def create_user_filters():
     filters = {}
     filters['state'] = {
@@ -438,7 +458,36 @@ def create_user_filters():
 def user_index(request):
     context = {}
     context['filters'] = create_user_filters()
+    context['action_list'] = create_user_action_list()
 
+    ## if form submitted redirect to details
+    #account = request.GET.get('account', None)
+    #if account:
+        #return redirect('admin-details',
+                        #search_query=account)
+
+    all = users.get_all()
+    logging.info("These are the users %s", all)
+    active = users.get_active().count()
+    inactive = users.get_inactive().count()
+    accepted = users.get_accepted().count()
+    rejected = users.get_rejected().count()
+    verified = users.get_verified().count()
+    unverified = users.get_unverified().count()
+
+    user_context = {
+        'item_list': all,
+        'item_type': 'user',
+        'active': active,
+        'inactive': inactive,
+        'accepted': accepted,
+        'rejected': rejected,
+        'verified': verified,
+        'unverified': unverified,
+    }
+
+    context.update(user_context)
+    return context
 
 index_dict = {
     'vm': {
@@ -451,7 +500,9 @@ index_dict = {
     },
 }
 
-def index_temp(request, type):
+
+def index(request, type):
+    """Admin-Interface index view."""
     logging.info("Request for index. Type: %s", type)
     try:
         fun = index_dict[type]['fun']
@@ -461,9 +512,9 @@ def index_temp(request, type):
 
     context = fun(request)
     context.update(default_dict)
-    return direct_to_template(request, details_dict[type]['template'],
+    logging.info("My item_list is %s", context['item_list'])
+    return direct_to_template(request, index_dict[type]['template'],
                               extra_context=context)
-
 
 
 @admin_user_required
@@ -619,16 +670,16 @@ def admin_actions(request):
 
     resource = request.POST['resource']
     action = request.POST['type']
-    uuids = copy.deepcopy(request.POST['uuids'])
-    uuids = uuids.replace('[', '').replace(']', '').replace(' ', '').split(',')
+    ids = copy.deepcopy(request.POST['ids'])
+    ids = ids.replace('[', '').replace(']', '').replace(' ', '').split(',')
     try:
         mail = request.POST['text']
     except:
         mail = None
 
     try:
-        for uuid in uuids:
-            user = get_user(uuid)
+        for id in ids:
+            user = get_user(id)
             if resource == 'account':
                 account_actions__(action, user, extra={'mail': mail})
             else:

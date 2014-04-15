@@ -37,7 +37,7 @@ from django.conf.urls import patterns, url
 
 urlpatterns = patterns(
     'synnefo_admin.admin.views',
-    url(r'^$', 'index', name='admin-index'),
+    #url(r'^$', 'index', name='admin-index'),
     url(r'^actions/vm-suspend/(?P<vm_id>[0-9]+)$', 'vm_suspend',
         name='admin-suspend-vm'),
     url(r'^actions/vm-suspend-release/(?P<vm_id>[0-9]+)$',
@@ -49,9 +49,8 @@ urlpatterns = patterns(
     url(r'^actions/account/(?P<op>.*)/(?P<account>.*)$', 'account_actions',
         name='account-actions'),
     url(r'^actions/$', 'admin_actions', name='admin-actions'),
-    url(r'^index/(?P<type>.*)(?P<filters>.*)$', 'index_temp',
-        name='admin-index-temp'),
-    url(r'^details/(?P<type>.*)/(?P<id>.*)$', 'details', name='admin-details'),
-    url(r'^(?P<search_query>.*)$', 'account',
-        name='admin-details'),
+    url(r'^(?P<type>.*)/(?P<id>.*)$', 'details', name='admin-details'),
+    url(r'^(?P<type>.*)$', 'index', name='admin-index'),
+    #url(r'^(?P<search_query>.*)$', 'account',
+        #name='admin-details'),
 )

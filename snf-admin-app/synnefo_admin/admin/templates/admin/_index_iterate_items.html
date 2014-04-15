@@ -1,0 +1,6 @@
+{% load admin_tags %}
+<tbody>
+{% for item in item_list %}
+    {% include item_type|get_index_template %}
+{% endfor %}
+</tbody>

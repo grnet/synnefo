@@ -1,0 +1,32 @@
+{% load admin_tags %}
+{% with user=item %}
+    <tr data-op-list={{ user|get_operation_list }}
+        id="{{ user.uuid }}">
+    <td class="checkbox-column">
+        <input type="checkbox">
+    </td>
+    <td class="name">{{ user.realname }}</td>
+    <td class="email">{{ user.email }}</td>
+    <td class="state">{{ user|get_state }}</td>
+    <td class="date">10/10/10</td>
+    {% comment %}
+    <td><a href="{% url admin-details user.uuid %}">Details</a></td>
+    {% endcomment %}
+    <td class="summary">
+        <a href="#" class="summary-expand badge">
+        <span class="caret"></span>
+        </a>
+        <dl class="info-summary">
+            <dt>UUID:</dt>
+                <dd>{{ user.uuid }}</dd>
+            <dt>Available Providers:</dt>
+                <dd>Shibboleth</dd>
+                <dd>Local</dd>
+                <dd>Google</dd>
+                <dd>Tweeter</dd>
+            <dt>Moderated by:</dt>
+                <dd>Me!</dd>
+        </dl>
+    </td>
+    </tr>
+{% endwith %}

@@ -45,5 +45,5 @@ networking functionality is exported all the way from the backend to the API and
 the UI.
 
 Please also see the :ref:`Admin Guide <admin-guide>` for more information and
-the :ref:`Installation Guide <quick-install-admin-guide>` for installation
-instructions.
+the Installation Guide for installation instructions on :ref:`Debian Wheezy
+<install-guide-debian>` or :ref:`CentOS 6.5 <install-guide-centos>`.

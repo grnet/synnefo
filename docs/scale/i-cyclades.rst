@@ -171,7 +171,7 @@ Here admin has to define two different resource pools in Synnefo:
    # snf-manage pool-create --type=mac-prefix --base=aa:00:0 --size=65536
    # snf-manage pool-create --type=bridge --base=prv --size=20
 
-Add the synnefo setting in :file:`/etc/synnefo/cyclades.conf`:
+Add the Synnefo setting in :file:`/etc/synnefo/cyclades.conf`:
 
 .. code-block:: console
 

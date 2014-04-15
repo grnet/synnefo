@@ -1,12 +1,12 @@
 .. _install-guide-debian:
 
-Administrator's Installation Guide On Debian Wheezy
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Administrator's Installation Guide (on Debian Wheezy)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This is the Administrator's installation guide on Debian Wheezy.
 
 It describes how to install the whole Synnefo stack on two (2) physical nodes,
-with minimum configuration. It installs synnefo from Debian packages, and
+with minimum configuration. It installs Synnefo from Debian packages, and
 assumes the nodes run Debian Wheezy. After successful installation, you will
 have the following services running:
 
@@ -43,10 +43,10 @@ more information on how to do so.
 General Prerequisites
 =====================
 
-These are the general synnefo prerequisites, that you need on node1 and node2
+These are the general Synnefo prerequisites, that you need on node1 and node2
 and are related to all the services (Astakos, Pithos, Cyclades).
 
-To be able to download all synnefo components you need to add the following
+To be able to download all Synnefo components you need to add the following
 lines in your ``/etc/apt/sources.list`` file:
 
 | ``deb http://apt.dev.grnet.gr wheezy/``
@@ -70,10 +70,10 @@ assume that node1 acts as an NFS server and serves the directory ``/srv/pithos``
 to node2 (be sure to set no_root_squash flag). Node2 has this directory
 mounted under ``/srv/pithos``, too.
 
-Before starting the synnefo installation, you will need basic third party
+Before starting the Synnefo installation, you will need basic third party
 software to be installed and configured on the physical nodes. We will describe
 each node's general prerequisites separately. Any additional configuration,
-specific to a synnefo service for each node, will be described at the service's
+specific to a Synnefo service for each node, will be described at the service's
 section.
 
 Finally, it is required for Cyclades and Ganeti nodes to have synchronized
@@ -934,7 +934,7 @@ You can change a resource's visibility with::
 Register pithos view as an OAuth 2.0 client
 -------------------------------------------
 
-Starting from synnefo version 0.15, the pithos view, in order to get access to
+Starting from Synnefo version 0.15, the pithos view, in order to get access to
 the data of a protected pithos resource, has to be granted authorization for
 the specific resource by astakos.
 
@@ -1111,6 +1111,11 @@ It can be retrieved by running on the Astakos node (node1 in our case):
 The token has been generated automatically during the :ref:`Pithos service
 registration <services-reg>`.
 
+The ``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting is used by the pithos view
+in order to authenticate itself with astakos during the authorization grant
+procedure and it should contain the credentials issued for the pithos view
+in `the pithos view registration step`__.
+
 The ``PITHOS_UPDATE_MD5`` option by default disables the computation of the
 object checksums. This results to improved performance during object uploading.
 However, if compatibility with the OpenStack Object Storage API is important
@@ -1131,11 +1136,6 @@ cloudbar.
 The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are used by the
 Pithos web client to get from Astakos all the information needed to fill its
 own cloudbar. So we put our Astakos deployment urls there.
-
-The ``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting is used by the pithos view
-in order to authenticate itself with astakos during the authorization grant
-procedure and it should container the credentials issued for the pithos view
-in `the pithos view registration step`__.
 
 __ pithos_view_registration_
 
@@ -1294,7 +1294,7 @@ Cyclades Prerequisites
 Before proceeding with the Cyclades installation, make sure you have
 successfully set up Astakos and Pithos first, because Cyclades depends on
 them. If you don't have a working Astakos and Pithos installation yet, please
-return to the :ref:`top <quick-install-admin-guide>` of this guide.
+return to the :ref:`top <install-guide-centos>` of this guide.
 
 Besides Astakos and Pithos, you will also need a number of additional working
 prerequisites, before you start the Cyclades installation.
@@ -1335,22 +1335,69 @@ Ganeti requires an extra available IP and its FQDN e.g., ``203.0.113.100`` and
 explained above.
 
 Also, Ganeti will need a volume group with the same name e.g., ``ganeti``
-across all nodes, of at least 20GiB. To create the volume group,
-see `this <http://www.tldp.org/HOWTO/LVM-HOWTO/createvgs.html>`_.
+across all nodes, of at least 20GiB. To create the volume group, run:
+
+.. code-block:: console
+
+   # pvcreate /dev/sdb1
+   # vgcreate ganeti /dev/sdb1
+
+Substitute ``sdb1`` with an available partition in your node. If you don't have an
+available partition you can create a file with ``dd`` and mount it as a loop
+device:
+
+.. code-block:: console
+
+   # dd if=/dev/zero of=gntvg bs=1 count=0 seek=25G
+   # losetup /dev/loop0 gntvg
+
+Then substitute `/dev/sdb1` with `/dev/loop0` on pvcreate and vgcreate commands.
+For more information, see
+`this <http://www.tldp.org/HOWTO/LVM-HOWTO/createvgs.html>`_.
 
 Moreover, node1 and node2 must have the same dsa, rsa keys and authorised_keys
 under ``/root/.ssh/`` for password-less root ssh between each other. To
-generate said keys, see `this <https://wiki.debian.org/SSH#Using_shared_keys>`_.
+generate said keys, run:
+
+.. code-block:: console
+
+   # ssh-keygen -t rsa
+
+Now copy the generated keys to both nodes under ``/root/.ssh`` and add the
+public key to the ``/root/.ssh/authorized_keys`` file:
+
+.. code-block:: console
+
+   # cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
+
+For more information on how to generate and use keys, see
+`this <https://wiki.debian.org/SSH#Using_shared_keys>`_.
 
 In the following sections, we assume that the public interface of all nodes is
 ``eth0`` and there are two extra interfaces ``eth1`` and ``eth2``, which can
 also be vlans on your primary interface e.g., ``eth0.1`` and ``eth0.2``  in
-case you don't have multiple physical interfaces. For information on how to
-create vlans, please see
+case you don't have multiple physical interfaces. To create such interfaces,
+run:
+
+.. code-block:: console
+
+   # vconfig add eth0 1
+   # vconfig add eth0 2
+
+For information on how to create vlans, please see
 `this <https://wiki.debian.org/NetworkConfiguration#Howto_use_vlan_.28dot1q.2C_802.1q.2C_trunk.29_.28Etch.2C_Lenny.29>`_.
 
 Finally, setup two bridges on the host machines (e.g: br1/br2 on eth1/eth2
-respectively), as described `here <https://wiki.debian.org/BridgeNetworkConnections>`_.
+respectively):
+
+.. code-block:: console
+
+   # brctl addbr 1
+   # brctl addbr 2
+   # brctl addif br1 eth1.1
+   # brctl addif br2 eth1.2
+
+For more information on bridges read `this <https://wiki.debian.org/BridgeNetworkConnections>`_.
 
 Ganeti Installation and Initialization
 --------------------------------------
@@ -1783,26 +1830,26 @@ Private Networks Setup
 
 In this section, we'll describe a basic network configuration, that will provide
 isolated private networks to the end-users. All private network traffic, will
-pass through ``br1`` and isolation will be guaranteed with a specific set of
+pass through ``br2`` and isolation will be guaranteed with a specific set of
 ``ebtables`` rules.
 
 Testing the Private Networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We'll create two instances and connect them to the same Private Network. This
-means that the instances will have a second NIC connected to the ``br1``.
+means that the instances will have a second NIC connected to the ``br2``.
 
 .. code-block:: console
 
    # gnt-network add --network=192.168.1.0/24 --mac-prefix=aa:00:55 --tags=nfdhcpd,private-filtered test-net-prv-mac
-   # gnt-network connect test-net-prv-mac bridged br1
+   # gnt-network connect test-net-prv-mac bridged br2
 
    # gnt-instance add -o snf-image+default --os-parameters \
                       img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-6.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
                       -t plain --disk 0:size=2G --no-name-check --no-ip-check \
                       --net 0:ip=pool,network=test-net-public \
                       --net 1:ip=pool,network=test-net-prv-mac \
-                      testvm3
+                      -n node1.example.com testvm3
 
    # gnt-instance add -o snf-image+default --os-parameters \
                       img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-6.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
@@ -2114,10 +2161,8 @@ learn more please see /*TODO*/.
 Add a Public Network
 ----------------------
 
-Cyclades supports different Public Networks on different Ganeti backends.
 After connecting Cyclades with our Ganeti cluster, we need to setup a Public
-Network for this Ganeti backend (`id = 1`). The basic setup is to bridge every
-created NIC on a bridge.
+Network. The basic setup is to bridge every created NIC on a bridge.
 
 .. code-block:: console
 
@@ -2126,7 +2171,7 @@ created NIC on a bridge.
                                --public --dhcp=True --flavor=CUSTOM \
                                --link=br1 --mode=bridged \
                                --name=public_network \
-                               --backend-id=1
+                               --floating-ip-pool=True
 
 This will create the Public Network on both Cyclades and the Ganeti backend. To
 make sure everything was setup correctly, also run:

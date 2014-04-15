@@ -121,7 +121,7 @@ h1 {
 
   /* line 89, ../sass/extra.scss */
   .subnav-fixed .nav {
-    /* width: 938px; this shouldn't be uncomment */
+    /*width: 938px; this shouldn't be uncomment*/
     /* It will be misplaced (will not be in the center) */
     margin: 0 auto;
     padding: 0 20px;
@@ -641,7 +641,7 @@ h3.info {
 
 /* Table of users */
 /* line 334, ../sass/extra.scss */
-.table-users span.caret {
+.table-items span.caret {
   padding-right: 0;
   margin-left: 4px;
   vertical-align: middle;
@@ -649,95 +649,139 @@ h3.info {
 
 /* line 340, ../sass/extra.scss */
 td.summary {
-  max-width: 80px;
+  max-width: 30px;
+  min-width: 30px;
+}
+/* line 344, ../sass/extra.scss */
+td.summary .summary-expand {
+  float: right;
+  padding-left: 8px;
+  background-color: #b9eeca;
+  padding-right: 8px;
+}
+/* line 349, ../sass/extra.scss */
+td.summary .summary-expand .caret {
+  opacity: 0.9;
+}
+/* line 353, ../sass/extra.scss */
+td.summary dl {
+  background-color: pink;
+  position: relative;
+  padding: 8px;
+  display: none;
+  margin-bottom: 0;
+  margin-top: 20px;
+}
+/* line 360, ../sass/extra.scss */
+td.summary dl dd {
+  display: inline-block;
 }
 
-/* line 344, ../sass/extra.scss */
-.table-users .headerSortUp span.caret {
+/* line 367, ../sass/extra.scss */
+.table-items .headerSortUp span.caret {
   border-top: 0;
   border-bottom: 4px solid;
 }
 
-/* line 349, ../sass/extra.scss */
-.table-users tbody tr.selected td {
+/* line 372, ../sass/extra.scss */
+.table-items tbody tr.selected td {
   background-color: #ebe9e9;
 }
 
 /* Modals */
-/* line 355, ../sass/extra.scss */
+/* line 378, ../sass/extra.scss */
 body .modal.fade.in {
   top: 40%;
 }
 
-/* line 359, ../sass/extra.scss */
+/* line 382, ../sass/extra.scss */
 a[disabled] {
   color: #999999;
 }
 
-/* line 363, ../sass/extra.scss */
+/* line 386, ../sass/extra.scss */
 a:not([disabled]):hover {
   cursor: pointer;
 }
 
-/* line 367, ../sass/extra.scss */
+/* line 390, ../sass/extra.scss */
 .modal-footer form {
   display: inline;
 }
 
-/* line 371, ../sass/extra.scss */
-#contact textarea {
-  width: 100%;
-  min-height: 200px;
+/* line 395, ../sass/extra.scss */
+.modal#contact p {
+  margin-top: 18px;
+}
+/* line 399, ../sass/extra.scss */
+.modal h4 {
+  font-size: 1.1em;
+}
+/* line 402, ../sass/extra.scss */
+.modal textarea, .modal input {
+  width: 430px;
+}
+/* line 407, ../sass/extra.scss */
+.modal textarea.content, .modal input.content {
+  min-height: 160px;
+}
+/* line 411, ../sass/extra.scss */
+.modal label {
+  float: left;
+  margin-right: 6px;
+  width: 56px;
 }
 
-/* line 376, ../sass/extra.scss */
+/* line 418, ../sass/extra.scss */
 .account-action.form-btn {
   display: inline-block;
   float: left;
   margin-left: 10px;
 }
 
-/* line 382, ../sass/extra.scss */
+/* line 424, ../sass/extra.scss */
 .buttons {
   list-style: none;
 }
 
-/* line 386, ../sass/extra.scss */
+/* line 428, ../sass/extra.scss */
 .buttons li {
   display: inline-block;
   float: left;
   margin-left: 10px;
 }
 
-/* line 394, ../sass/extra.scss */
+/* line 436, ../sass/extra.scss */
 .row-fluid .span7 {
   margin-top: 36px;
 }
-/* line 397, ../sass/extra.scss */
+/* line 439, ../sass/extra.scss */
 .row-fluid .nav {
   width: 960px;
 }
 
-/* line 402, ../sass/extra.scss */
+/* line 444, ../sass/extra.scss */
 .filters.subnav-fixed {
   top: 36px;
 }
 
-/* line 406, ../sass/extra.scss */
-.summary dl {
-  background-color: pink;
-  position: relative;
-  padding: 8px;
-  display: none;
-}
-
-/* line 413, ../sass/extra.scss */
-.table-users .login-method {
+/* line 450, ../sass/extra.scss */
+.table-items .login-method {
   padding: 2px 16px 2px 0px;
   text-align: center;
 }
+/* line 455, ../sass/extra.scss */
+.table-items th .badge {
+  margin: 0 2px 0 4px;
+  display: inline;
+  padding-top: 2px;
+}
+/* line 460, ../sass/extra.scss */
+.table-items td {
+  padding: 8px 6px 0 6px;
+}
 
-/* line 418, ../sass/extra.scss */
+/* line 465, ../sass/extra.scss */
 .dataTables_length select {
   width: 55px;
   display: inline-block;
@@ -746,32 +790,70 @@ a:not([disabled]):hover {
   vertical-align: baseline;
 }
 
-/* line 428, ../sass/extra.scss */
-#table-users-total_filter input {
+/* line 475, ../sass/extra.scss */
+#table-items-total_filter input {
   display: inline-block;
   margin-left: 8px;
 }
 
-/* line 433, ../sass/extra.scss */
-.table-users th .badge {
-  margin: 0 2px 0 4px;
-  display: inline;
-  padding-top: 2px;
-}
-
-/* line 439, ../sass/extra.scss */
+/* line 481, ../sass/extra.scss */
 .checkbox-column {
   position: relative;
 }
 
-/* line 442, ../sass/extra.scss */
-.neutral-checkbox {
-  height: 6px;
-  width: 6px;
-  background: #ada5a5;
-  display: none;
-  position: absolute;
-  z-index: 10000;
-  top: 14px;
-  left: 11px;
+/* line 486, ../sass/extra.scss */
+.table-selected tr:hover a {
+  color: red;
+}
+/* line 490, ../sass/extra.scss */
+.table-selected .remove {
+  border-left-color: transparent;
+  text-align: center;
+}
+/* line 493, ../sass/extra.scss */
+.table-selected .remove a {
+  text-decoration: none;
+  color: transparent;
+}
+
+/* line 501, ../sass/extra.scss */
+.positive.area {
+  background-color: green;
+}
+/* line 504, ../sass/extra.scss */
+.positive.elem {
+  color: green;
+}
+
+/* line 510, ../sass/extra.scss */
+.dangerous.area {
+  background-color: red;
+}
+/* line 513, ../sass/extra.scss */
+.dangerous.elem {
+  color: red;
+}
+
+/* line 519, ../sass/extra.scss */
+.neutral.area {
+  background-color: rgba(121, 176, 236, 0.78);
+}
+/* line 522, ../sass/extra.scss */
+.neutral.elem {
+  color: blue;
+}
+
+/* line 528, ../sass/extra.scss */
+.caution.area {
+  background-color: yellow;
+}
+/* line 531, ../sass/extra.scss */
+.caution.elem {
+  color: yellow;
+}
+
+/* line 537, ../sass/extra.scss */
+.modal em {
+  font-weight: bold;
+  font-style: normal;
 }

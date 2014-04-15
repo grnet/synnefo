@@ -204,7 +204,7 @@ def get_operation_list(user):
     The list is returned as a string, in order to be used in html tags
     """
     op_list = ','
-    for op in ['activate', 'deactivate', 'accept', 'reject', 'verify']:
+    for op in ['activate', 'deactivate', 'accept', 'reject', 'verify', 'contact']:
         if check_operation(user, op):
             op_list += op + ','
 

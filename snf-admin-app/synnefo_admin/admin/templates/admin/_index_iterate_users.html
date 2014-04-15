@@ -4,27 +4,32 @@
     The data-state-* variables are considered outdated and will be removed in
     future versions.
 {% endcomment %}
-    <tr data-state-activated={{ user|check_state:"activated" }}
-        data-state-accepted={{ user|check_state:"accepted" }}
-        data-state-rejected={{ user|check_state:"rejected" }}
-        data-state-verified={{ user|check_state:"verified" }}
-        data-state-list={{ user|get_state_list }}
-        data-allow-activate={{ user|check_operation:'activate' }}
-        data-allow-deactivate={{ user|check_operation:'deactivate' }}
-        data-allow-accept={{ user|check_operation:'accept' }}
-        data-allow-reject={{ user|check_operation:'reject' }}
-        data-allow-verify={{ user|check_operation:'verify' }}
+    <tr data-allow-verify={{ user|check_operation:'verify' }}
         data-op-list={{ user|get_operation_list }}
         id="{{ user.uuid }}">
     <td class="checkbox-column">
         <input type="checkbox">
     </td>
-    <td>{{ user.realname }}</td>
-    <td>{{ user.email }}</td>
-    <td class="state">
-        {{ user|get_state }}
+    <td class="name">{{ user.realname }}</td>
+    <td class="email">{{ user.email }}</td>
+    <td class="state">{{ user|get_state }}</td>
+    <td class="date">10/10/10</td>
+    <td><a href="{% url admin-details user.uuid %}">Details</a></td>
+    <td class="summary">
+        <a href="#" class="summary-expand badge">
+        <span class="caret"></span>
+        </a>
+        <dl class="info-summary">
+            <dt>UUID:</dt>
+                <dd>{{ user.uuid }}</dd>
+            <dt>Available Providers:</dt>
+                <dd>Shibboleth</dd>
+                <dd>Local</dd>
+                <dd>Google</dd>
+                <dd>Tweeter</dd>
+            <dt>Moderated by:</dt>
+                <dd>Me!</dd>
+        </dl>
     </td>
-    <td>No</td>
-    <td><a href="{% url admin-details user.uuid %}">More...</a></td>
     </tr>
 {% endfor %}

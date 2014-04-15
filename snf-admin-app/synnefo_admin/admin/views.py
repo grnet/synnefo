@@ -405,6 +405,67 @@ def details(request, type, id):
                               extra_context=context)
 
 
+def create_vm_filters():
+    state_values = [value for value, _ in VirtualMachine.OPER_STATES]
+
+    filters = {}
+    filters['state'] = {
+        'name': 'State',
+        'values': state_values,
+    }
+    return filters
+
+
+def vm_index(request):
+    context = {}
+    context['filters'] = create_vm_filters()
+
+
+def create_user_filters():
+    filters = {}
+    filters['state'] = {
+        'name': 'State',
+        'values': ['Active', 'Inactive', 'Pending Moderation',
+                   'Pending Verification']
+    }
+    filters['enabled_providers'] = {
+        'name': 'Providers',
+        'values': ['Local', 'Shibboleth']
+    }
+    return filters
+
+
+def user_index(request):
+    context = {}
+    context['filters'] = create_user_filters()
+
+
+index_dict = {
+    'vm': {
+        'fun': vm_index,
+        'template': 'admin/vm_index.html',
+    },
+    'user': {
+        'fun': user_index,
+        'template': 'admin/user_index.html',
+    },
+}
+
+def index_temp(request, type):
+    logging.info("Request for index. Type: %s", type)
+    try:
+        fun = index_dict[type]['fun']
+    except KeyError:
+        logger.exception("Error in details")
+        raise KeyError
+
+    context = fun(request)
+    context.update(default_dict)
+    return direct_to_template(request, details_dict[type]['template'],
+                              extra_context=context)
+
+
+
 @admin_user_required
 @token_check
 def vm_suspend(request, vm_id):

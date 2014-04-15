@@ -8,13 +8,13 @@ $(document).ready(function() {
 	};
 
 
-	selected = {
+	var selected = {
    		items: [],
 		actions: {}
 	};
 
-	availableActions = {};
-	allowedActions= {};
+	var availableActions = {};
+	var allowedActions= {};
 	$('.sidebar a').each(function() {
 		availableActions[$(this).data('action')] = true;
 	});
@@ -22,7 +22,7 @@ $(document).ready(function() {
 	for(var prop in availableActions) {
 		allowedActions[prop] = true;
 	}
-	// allowedActions = availableActions;
+
 	/* Functions */
 
 	/* General */

@@ -48,7 +48,7 @@ import astakosclient
 from snf_django.lib import astakos
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
-from astakos.im.models import AstakosUser, ProjectMembership
+from astakos.im.models import AstakosUser, ProjectMembership, Project
 from astakos.logic import users
 from astakos.im.functions import send_plain as send_email
 
@@ -441,6 +441,15 @@ def create_user_action_list():
     return action_list
 
 
+def create_project_action_list():
+    action_list = []
+    action_list.append({
+        'op': 'approve',
+        'name': 'Approve project',
+        'resource': 'project'
+    })
+    return action_list
+
 def create_user_filters():
     filters = {}
     filters['state'] = {
@@ -489,14 +498,40 @@ def user_index(request):
     context.update(user_context)
     return context
 
+def project_index(request):
+    context = {}
+    #context['filters'] = create_user_filters()
+    context['action_list'] = create_project_action_list()
+
+    ## if form submitted redirect to details
+    #account = request.GET.get('account', None)
+    #if account:
+        #return redirect('admin-details',
+                        #search_query=account)
+
+    all = Project.objects.all()
+    logging.info("These are the projects %s", all)
+
+    project_context = {
+        'item_list': all,
+        'item_type': 'project',
+    }
+
+    context.update(project_context)
+    return context
+
 index_dict = {
-    'vm': {
-        'fun': vm_index,
-        'template': 'admin/vm_index.html',
-    },
     'user': {
         'fun': user_index,
         'template': 'admin/user_index.html',
+    },
+    'project': {
+        'fun': project_index,
+        'template': 'admin/project_index.html',
+    },
+    'vm': {
+        'fun': vm_index,
+        'template': 'admin/vm_index.html',
     },
 }
 

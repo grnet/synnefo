@@ -17,14 +17,23 @@
             {% block extraheader %}{% endblock %}</h1>
           </div>
 
+          {% with user_index='user' vm_index='vm' project_index='project' %}
           <div class="subnav subnav-fixed nav-main">
             <ul class="nav nav-pills">
               <li class="active">
-                <a href="#">Home</a>
+              <a href="#">Home</a>
               </li>
               <li class="divider-vertical"></li>
               <li>
-                <a href="#">Users</a>
+              <a href="{% url admin-index user_index %}">Users</a>
+              </li>
+              <li class="divider-vertical"></li>
+              <li>
+              <a href="{% url admin-index vm_index %}">VMs</a>
+              </li>
+              <li class="divider-vertical"></li>
+              <li>
+              <a href="{% url admin-index project_index %}">Projects</a>
               </li>
               <li class="divider-vertical"></li>
               <li>
@@ -36,6 +45,7 @@
               </li>
             </ul>
           </div>
+          {% endwith %}
 
       </div>
           {% if messages %}

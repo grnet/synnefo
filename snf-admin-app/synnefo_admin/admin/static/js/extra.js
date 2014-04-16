@@ -344,5 +344,16 @@ $(document).ready(function() {
 			$(this).find('input[type=checkbox]').trigger('click');
 		});
 	};
+
+var curPath = window.location.pathname;
+	$('.nav-main li').each(function () {
+		if($(this).find('a').attr('href') === curPath) {
+			$(this).closest('li').addClass('active');
+		}
+		else {
+			$(this).closest('li').removeClass('active');
+		}
+	});
+
 });
 

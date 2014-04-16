@@ -16,12 +16,10 @@
     {% block item-associations-list %}
         {% for item_list, type in associations_list %}
 
-            {% comment %}
             {# Seperator for the start of the list #}
             {% block item-list-head %}
-                {% include "admin/_base_list_head" %}
+                {% include "admin/_base_list_head.html" %}
             {% endblock item-list-head %}
-            {% endcomment %}
 
             {# This is an item list for each association #}
             {% block item-list %}
@@ -37,13 +35,12 @@
             {% endblock item-list %}
 
             {# Seperator for the end of the list #}
-            {% comment %}
             {% block item-list-tail %}
-                {% include "_base_list_tail" %}
+                {% include "admin/_base_list_tail.html" %}
             {% endblock item-list-tail %}
-            {% endcomment %}
+
         {% empty %}
-            "No associations for this item"
+        <p>No associations for this item</p>
         {% endfor %}
     {% endblock item-associations-list %}
 

@@ -2,7 +2,7 @@
 
 {% with user=item %}
 <div class="object-anchor" id="user-{{user.uuid}}"></div>
-<div class="vm-details object-details {{ rowcls }}">
+  <div class="todo">
   <h4><em>{{ user.realname }}<span class="badge">&nbsp;</span></h4>
   <span class="badge badge-inverse">UUID: {{ user.uuid }}</span>
   <span class="badge badge-inverse">{{ user.mail }}</span>

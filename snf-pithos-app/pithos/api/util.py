@@ -76,7 +76,6 @@ from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
 
 from synnefo.lib import join_urls
-from synnefo.util import text
 
 from astakosclient import AstakosClient
 from astakosclient.errors import NoUserName, NoUUID, AstakosClientException
@@ -1185,8 +1184,9 @@ def view_method():
 
             try:
                 access_token = request.GET.get('access_token')
-                requested_resource = text.uenc(request.path.split(VIEW_PREFIX,
-                                                                  2)[-1])
+                requested_resource = request.path.split(VIEW_PREFIX, 2)[-1]
+                requested_resource = smart_str(requested_resource,
+                                               encoding="utf-8")
                 astakos = AstakosClient(SERVICE_TOKEN, ASTAKOS_AUTH_URL,
                                         retry=2, use_pool=True,
                                         logger=logger)

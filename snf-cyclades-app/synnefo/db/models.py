@@ -1071,6 +1071,7 @@ class Volume(models.Model):
                                    max_length=DESCRIPTION_LENGTH, null=True)
     userid = models.CharField("Owner's UUID", max_length=100, null=False,
                               db_index=True)
+    project = models.CharField(max_length=255, null=True)
     size = models.IntegerField("Volume size in GB",  null=False)
     volume_type = models.ForeignKey(VolumeType, related_name="volumes",
                                     on_delete=models.PROTECT, null=False)

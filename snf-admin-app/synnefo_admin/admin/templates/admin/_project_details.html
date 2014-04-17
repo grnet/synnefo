@@ -1,6 +1,32 @@
 {% load admin_tags %}
 
 {% with project=item %}
+<div class="object-anchor" id="user-{{project.id}}"></div>
+<div class="object-details {{ rowcls }}">
+    <h4><em>{{ project.name }}</em><span class="badge">&nbsp;</span></h4>
+    <span class="badge badge-inverse">ID: {{ project.id }}</span>
+    <div class="object-details-content">
+        <ul class="nav nav-tabs">
+            <li class="active"><a href="#details{{ project.id }}" data-toggle="tab">Details</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane active" id="details{{ project.id }}">
+                <dl class="dl-horizontal well">
+                    <dt>ID</dt><dd>{{ project.id|default:"-" }}</dd>
+                    <dt>Name</dt><dd>{{ project.name|default:"-" }}</dd>
+                    <dt>Owner</dt><dd>{{ project.owner.realname|default:"-" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="vm-actions clearfix">
+        {% include "admin/_project_actions.html" %}
+    </div>
+</div>
+{% endwith %}
+
+
+{% comment %}
 <div class="object-anchor" id="project-{{project.id}}"></div>
 <div class="vm-details object-details {{ rowcls }}">
   <h4><em>{{ project.realname }}<span class="badge">&nbsp;</span></h4>
@@ -22,4 +48,4 @@
     </div>
   </div>
 </div>
-{% endwith %}
+{% endcomment %}

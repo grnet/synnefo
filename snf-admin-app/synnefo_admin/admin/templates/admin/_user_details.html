@@ -2,26 +2,26 @@
 
 {% with user=item %}
 <div class="object-anchor" id="user-{{user.uuid}}"></div>
-  <div class="todo">
-  <h4><em>{{ user.realname }}<span class="badge">&nbsp;</span></h4>
-  <span class="badge badge-inverse">UUID: {{ user.uuid }}</span>
-  <span class="badge badge-inverse">{{ user.mail }}</span>
-  <div class="vm-details-content object-details-content">
-
-    <ul class="nav nav-tabs">
-      <li class="active"><a href="#details{{ user.uuid }}" data-toggle="tab">Details</a></li>
-    </ul>
-    <div class="tab-content">
-      <div class="tab-pane active" id="details{{ user.uuid }}">
-        <dl class="dl-horizontal well">
-          <dt>UUID</dt><dd>{{ user.uuid }}</dd>
-          <dt>Name</dt><dd>{{ user.realname }}</dd>
-        </dl>
-      </div>
+<div class="object-details {{ rowcls }}">
+    <h4><em>{{ user.realname }}</em><span class="badge">&nbsp;</span></h4>
+    <span class="badge badge-inverse">UUID: {{ user.uuid }}</span>
+    <span class="badge badge-inverse">{{ user.email }}</span>
+    <div class="object-details-content">
+        <ul class="nav nav-tabs">
+            <li class="active"><a href="#details{{ user.uuid }}" data-toggle="tab">Details</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane active" id="details{{ user.uuid }}">
+                <dl class="dl-horizontal well">
+                    <dt>UUID</dt><dd>{{ user.uuid }}</dd>
+                    <dt>Name</dt><dd>{{ user.realname }}</dd>
+                </dl>
+            </div>
+        </div>
     </div>
-  </div>
-  <div class="vm-actions clearfix">
-    {% include "admin/_user_actions.html" %}
-  </div>
+    <div class="todo vm-actions clearfix">
+        {% include "admin/_user_actions.html" %}
+    </div>
+</div>
 </div>
 {% endwith %}

@@ -5,39 +5,48 @@ runAstakosTests () {
     if [ -z "$astakos_tests" ]; then return; fi
 
     export SYNNEFO_EXCLUDE_PACKAGES="snf-cyclades-app"
-    runTest $astakos_tests
+    CURRENT_COMPONENT=astakos
+    createSnfManageTest $astakos_tests
+    runTest
 }
 
 runCycladesTests () {
     if [ -z "$cyclades_tests" ]; then return; fi
 
     export SYNNEFO_EXCLUDE_PACKAGES="snf-pithos-app snf-astakos-app"
-    runTest $cyclades_tests
+    CURRENT_COMPONENT=synnefo
+    createSnfManageTest $cyclades_tests
+    runTest
 }
 
 runPithosTests () {
     if [ -z "$pithos_tests" ]; then return; fi
 
     export SYNNEFO_EXCLUDE_PACKAGES="snf-cyclades-app"
-    runTest $pithos_tests
+    CURRENT_COMPONENT=pithos
+    createSnfManageTest $pithos_tests
+    runTest
 }
 
 runAstakosclientTests () {
     if [ -z "$astakosclient_tests" ]; then return; fi
 
-    if [ ! $COVERAGE_EXISTS ]; then
-        echo "Warning: Coverage not found. Astakosclient tests will not run."
-        return
-    fi
-
+    CURRENT_COMPONENT=astakosclient
     for test in $astakosclient_tests; do
-        runCoverage $test
+        createNoseTest $test
+        runTest
     done
 }
 
-runTest () {
+createSnfManageTest () {
     TEST="$SNF_MANAGE test $* --traceback --noinput --settings=synnefo.settings.test"
+}
 
+createNoseTest () {
+    TEST="$NOSE $*"
+}
+
+runTest () {
     if [ $COVERAGE_EXISTS ]; then
         runCoverage "$TEST"
     else
@@ -58,8 +67,9 @@ runCoverage () {
         return
     fi
 
+    coverage erase
     coverage run $1
-    coverage report --include=snf-*
+    coverage report --include="*${CURRENT_COMPONENT}*"
 }
 
 usage(){
@@ -122,7 +132,7 @@ export SYNNEFO_SETTINGS_DIR=/tmp/snf-test-settings
 astakos_all_tests="im quotaholder_app oa2"
 cyclades_all_tests="api db logic plankton quotas vmapi helpdesk userdata"
 pithos_all_tests="api"
-astakosclient_all_tests="nosetests astakosclient"
+astakosclient_all_tests="astakosclient"
 ALL_COMPONENTS="astakos cyclades pithos astakosclient"
 
 astakos_tests=""
@@ -146,6 +156,9 @@ if command -v coverage >/dev/null 2>&1; then
 fi
 SNF_MANAGE=$(which snf-manage) ||
     { echo "Cannot find snf-manage in $PATH" 1>&2; exit 1; }
+NOSE=$(which nosetests) ||
+    { echo "Cannot find nosetests in $PATH" 1>&2; exit 1; }
+
 
 # Extract tests from a component
 for component in $TEST_COMPONENTS; do
@@ -163,7 +176,7 @@ echo "|===============|============================"
 echo ""
 
 if [ ! $COVERAGE_EXISTS ]; then
-    echo "WARNING: Cannot find coverage in path, skipping coverage tests" >&2
+    echo "WARNING: Cannot find coverage in path." >&2
     echo ""
 fi
 

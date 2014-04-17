@@ -1011,9 +1011,7 @@ class SynnefoCI(object):
 
         self.logger.debug("Install needed packages")
         cmd = """
-        pip install -U mock
-        pip install -U factory_boy
-        pip install -U nose
+        pip install -U mock factory_boy nose coverage
         """
         _run(cmd, False)
 

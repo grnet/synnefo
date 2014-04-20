@@ -60,6 +60,7 @@ $(document).ready(function() {
 
 	/* Removes from an array an element */
 	function removeItem(item, array) {
+		console.log('removeItem');
 		var index;
 		if (typeof(item) === 'object') {
 			console.log('eimai ena object!')
@@ -167,8 +168,6 @@ $(document).ready(function() {
 			currentRow = currentRow.replace('<td class="email"></td>', '<td class="email">'+selected.items[i].email+'</td>');
 			if(i > maxVisible)
 				currentRow = currentRow.replace('<tr', '<tr class="hidden');
-			console.log(currentRow);
-			console.log($(tableBody));
 			$(tableBody).append(currentRow);
 		}
 	};
@@ -183,15 +182,20 @@ $(document).ready(function() {
 		var $tr = $(this).closest('tr');
 		var itemUUID = $tr.data('uuid');
 		var selectedNum = selected.items.length;
+		// uuidsArray has only the uuids of selected items, none of the other info
 		var uuidsArray = [];
+
 		for(var i=0; i<selectedNum; i++) {
 			if(selected.items[i].uuid === itemUUID) {
 				removeItem(selected.items[i], selected.items);
+				break;
 			}
 		}
-		for (var i=0; i< --selectedNum; i++)
+
+		selectedNum = selected.items.length;
+		for (var i=0; i< selectedNum; i++)
 			uuidsArray.push(selected.items[i].uuid);
-		$uuidsInput.val('['+uuidsArray+']');
+		$uuidsInput.val('[' + uuidsArray + ']');
 		$tr.slideUp('slow');
 		$num.html(selected.items.length);
 	});

@@ -49,13 +49,12 @@ from snf_django.lib import astakos
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser, ProjectMembership, Project
-from astakos.logic import users
 from astakos.im.functions import send_plain as send_email
 
-# Get an activation backend for account actions
-from astakos.im import activation_backends
-abackend = activation_backends.get_backend()
-
+# Import model-specific views
+from synnefo_admin.admin import users as user_views
+from synnefo_admin.admin import projects as project_views
+from synnefo_admin.admin import vms as vm_views
 
 # server actions specific imports
 from synnefo.logic import servers as servers_backend
@@ -68,7 +67,6 @@ ADMIN_MEDIA_URL = getattr(settings, 'ADMIN_MEDIA_URL',
                           settings.MEDIA_URL + 'admin/')
 
 IP_SEARCH_REGEX = re.compile('([0-9]+)(?:\.[0-9]+){3}')
-UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
 VM_SEARCH_REGEX = re.compile('vm(-){0,}(?P<vmid>[0-9]+)')
 
 AUTH_COOKIE_NAME = getattr(settings, 'ADMIN_AUTH_COOKIE_NAME',
@@ -95,25 +93,6 @@ def get_token_from_cookie(request, cookiename):
         pass
 
     return None
-
-
-def get_user(query):
-    """Get AstakosUser from query.
-
-    The query can either be a user email or a UUID.
-    """
-    is_uuid = UUID_SEARCH_REGEX.match(query)
-
-    try:
-        if is_uuid:
-            user = AstakosUser.objects.get(uuid=query)
-        else:
-            user = AstakosUser.objects.get(email=query)
-    except ObjectDoesNotExist:
-        logger.info("Failed to resolve '%s' into account" % query)
-        return None
-
-    return user
 
 
 def search_by_ip(request, search_query):
@@ -237,131 +216,6 @@ def home(request):
                               extra_context=default_dict)
 
 
-@admin_user_required
-def account(request, search_query):
-    """Account details view."""
-    logging.info("Admin search by %s: %s", request.user_uniq, search_query)
-    show_deleted = bool(int(request.GET.get('deleted', SHOW_DELETED_VMS)))
-    error = request.GET.get('error', None)
-
-    # By default we consider that the account exists
-    account_exists = True
-
-    # We may query the database for various stuff, so we will keep the original
-    # query here.
-    original_search_query = search_query
-
-    account_name = ""
-    account_email = ""
-    account = ""
-    vms = []
-    networks = []
-    is_ip = IP_SEARCH_REGEX.match(search_query)
-    is_vm = VM_SEARCH_REGEX.match(search_query)
-
-    if is_ip:
-        # Search the IPAddressLog for the full use history of this IP
-        return search_by_ip(request, search_query)
-    elif is_vm:
-        vmid = is_vm.groupdict().get('vmid')
-        try:
-            vm = VirtualMachine.objects.get(pk=int(vmid))
-            search_query = vm.userid
-        except ObjectDoesNotExist:
-            account_exists = False
-            account = None
-            search_query = vmid
-
-    if account_exists:
-        user = get_user(search_query)
-        if user:
-            account = user.uuid
-            account_email = user.email
-            account_name = user.realname
-        else:
-            account_exists = False
-
-    if account_exists:
-        filter_extra = {}
-        if not show_deleted:
-            filter_extra['deleted'] = False
-
-        # all user vms
-        vms = VirtualMachine.objects.filter(
-            userid=account, **filter_extra).order_by('deleted')
-        # return all user private and public networks
-        public_networks = Network.objects.filter(
-            public=True, nics__machine__userid=account,
-            **filter_extra).order_by('state').distinct()
-        private_networks = Network.objects.filter(
-            userid=account, **filter_extra).order_by('state')
-        networks = list(public_networks) + list(private_networks)
-
-    user_context = {
-        'account_exists': account_exists,
-        'error': error,
-        'is_ip': is_ip,
-        'is_vm': is_vm,
-        'account': account,
-        'search_query': original_search_query,
-        'vms': vms,
-        'show_deleted': show_deleted,
-        'usermodel': user,
-        'account_mail': account_email,
-        'account_name': account_name,
-        'account_accepted': user.is_active,
-        'token': request.user['access']['token']['id'],
-        'networks': networks,
-        'available_ops': [
-            'activate', 'deactivate', 'accept', 'reject', 'verify', 'contact'],
-        'ADMIN_MEDIA_URL': ADMIN_MEDIA_URL,
-        'UI_MEDIA_URL': UI_MEDIA_URL
-    }
-
-    return direct_to_template(request, "admin/account.html",
-                              extra_context=user_context)
-
-
-def user_details(query):
-    user = get_user(query)
-    projects = ProjectMembership.objects.filter(person=user)
-    vms = VirtualMachine.objects.filter(
-        userid=user.uuid).order_by('deleted')
-
-    context = {
-        'main_item': user,
-        'main_type': 'user',
-        'associations_list': [
-            (projects, 'project'),
-            (vms, 'vm'),
-        ]
-    }
-    return context
-
-
-def vm_details(query):
-    id = query.translate(None, 'vm-')
-    vm = VirtualMachine.objects.get(pk=int(id))
-    vms = VirtualMachine.objects.all
-    context = {
-        'main_item': vm,
-        'main_type': 'vm',
-        'associations_list': [(vms, 'vm')]
-    }
-
-    return context
-
-details_dict = {
-    'vm': {
-        'fun': vm_details,
-        'template': 'admin/vm_details.html',
-    },
-    'user': {
-        'fun': user_details,
-        'template': 'admin/user_details.html',
-    },
-}
-
 default_dict = {
     'ADMIN_MEDIA_URL': ADMIN_MEDIA_URL,
     'UI_MEDIA_URL': UI_MEDIA_URL,
@@ -372,163 +226,47 @@ default_dict = {
 @admin_user_required
 def details(request, type, id):
     logging.info("Request for details. Type: %s, ID: %s", type, id)
-    try:
-        fun = details_dict[type]['fun']
-    except KeyError:
-        logger.exception("Error in details")
-        raise KeyError
 
-    context = fun(str(id))
+    if type == 'user':
+        context = user_views.details(id)
+        template = user_views.templates['details']
+    elif type == 'project':
+        context = project_views.details(id)
+        template = project_views.templates['details']
+    elif type == 'vm':
+        context = vm_views.details(id)
+        template = vm_views.templates['details']
+    else:
+        logging.error("Wrong type: %s", type)
+        # TODO: Return an error here
+        return
+
     context.update(default_dict)
-    return direct_to_template(request, details_dict[type]['template'],
-                              extra_context=context)
-
-
-def create_vm_filters():
-    state_values = [value for value, _ in VirtualMachine.OPER_STATES]
-
-    filters = {}
-    filters['state'] = {
-        'name': 'State',
-        'values': state_values,
-    }
-    return filters
-
-
-def vm_index(request):
-    context = {}
-    context['filters'] = create_vm_filters()
-
-
-def create_user_action_list():
-    action_list = []
-    action_list.append({
-        'op': 'activate',
-        'name': 'Activate a user',
-        'resource': 'account'
-    })
-    action_list.append({
-        'op': 'deactivate',
-        'name': 'Deactivate',
-        'resource': 'account'
-    })
-    action_list.append({
-        'op': 'contact',
-        'name': 'Send e-mail',
-        'resource': 'account'
-    })
-    return action_list
-
-
-def create_project_action_list():
-    action_list = []
-    action_list.append({
-        'op': 'approve',
-        'name': 'Approve project',
-        'resource': 'project'
-    })
-    return action_list
-
-def create_user_filters():
-    filters = {}
-    filters['state'] = {
-        'name': 'State',
-        'values': ['Active', 'Inactive', 'Pending Moderation',
-                   'Pending Verification']
-    }
-    filters['enabled_providers'] = {
-        'name': 'Providers',
-        'values': ['Local', 'Shibboleth']
-    }
-    return filters
-
-
-def user_index(request):
-    context = {}
-    context['filters'] = create_user_filters()
-    context['action_list'] = create_user_action_list()
-
-    ## if form submitted redirect to details
-    #account = request.GET.get('account', None)
-    #if account:
-        #return redirect('admin-details',
-                        #search_query=account)
-
-    all = users.get_all()
-    logging.info("These are the users %s", all)
-    active = users.get_active().count()
-    inactive = users.get_inactive().count()
-    accepted = users.get_accepted().count()
-    rejected = users.get_rejected().count()
-    verified = users.get_verified().count()
-    unverified = users.get_unverified().count()
-
-    user_context = {
-        'item_list': all,
-        'item_type': 'user',
-        'active': active,
-        'inactive': inactive,
-        'accepted': accepted,
-        'rejected': rejected,
-        'verified': verified,
-        'unverified': unverified,
-    }
-
-    context.update(user_context)
-    return context
-
-def project_index(request):
-    context = {}
-    #context['filters'] = create_user_filters()
-    context['action_list'] = create_project_action_list()
-
-    ## if form submitted redirect to details
-    #account = request.GET.get('account', None)
-    #if account:
-        #return redirect('admin-details',
-                        #search_query=account)
-
-    all = Project.objects.all()
-    logging.info("These are the projects %s", all)
-
-    project_context = {
-        'item_list': all,
-        'item_type': 'project',
-    }
-
-    context.update(project_context)
-    return context
-
-index_dict = {
-    'user': {
-        'fun': user_index,
-        'template': 'admin/user_index.html',
-    },
-    'project': {
-        'fun': project_index,
-        'template': 'admin/project_index.html',
-    },
-    'vm': {
-        'fun': vm_index,
-        'template': 'admin/vm_index.html',
-    },
-}
+    return direct_to_template(request, template, extra_context=context)
 
 
 def index(request, type):
-    """Admin-Interface index view."""
+    """Admin-Interface main index view."""
     logging.info("Request for index. Type: %s", type)
-    try:
-        fun = index_dict[type]['fun']
-    except KeyError:
-        logger.exception("Error in details")
-        raise KeyError
 
-    context = fun(request)
+    if type == 'user':
+        context = user_views.index(request)
+        template = user_views.templates['index']
+    elif type == 'project':
+        context = project_views.index(request)
+        template = project_views.templates['index']
+    elif type == 'vm':
+        context = vm_views.index(request)
+        template = vm_views.templates['index']
+    else:
+        logging.error("Wrong type: %s", type)
+        # TODO: Return an error here
+        return
+
     context.update(default_dict)
     logging.info("My item_list is %s", context['item_list'])
-    return direct_to_template(request, index_dict[type]['template'],
-                              extra_context=context)
+
+    return direct_to_template(request, template, extra_context=context)
 
 
 @admin_user_required

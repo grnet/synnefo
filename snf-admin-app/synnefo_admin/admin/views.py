@@ -224,38 +224,17 @@ def admin_user_required(func, permitted_groups=PERMITTED_GROUPS):
 
 ### View functions
 
-#@admin_user_required
-#def index(request):
-    #"""Admin-Interface index view."""
-    ## if form submitted redirect to details
-    #account = request.GET.get('account', None)
-    #if account:
-        #return redirect('admin-details',
-                        #search_query=account)
+default_dict = {
+    'ADMIN_MEDIA_URL': ADMIN_MEDIA_URL,
+    'UI_MEDIA_URL': UI_MEDIA_URL,
+}
 
-    #all = users.get_all()
-    #active = users.get_active().count()
-    #inactive = users.get_inactive().count()
-    #accepted = users.get_accepted().count()
-    #rejected = users.get_rejected().count()
-    #verified = users.get_verified().count()
-    #unverified = users.get_unverified().count()
 
-    #user_context = {
-        #'all': all,
-        #'active': active,
-        #'inactive': inactive,
-        #'accepted': accepted,
-        #'rejected': rejected,
-        #'verified': verified,
-        #'unverified': unverified,
-        #'ADMIN_MEDIA_URL': ADMIN_MEDIA_URL,
-        #'UI_MEDIA_URL': UI_MEDIA_URL
-    #}
-
-    ## show index template
-    #return direct_to_template(request, "admin/index.html",
-                              #extra_context=user_context)
+@admin_user_required
+def home(request):
+    """Home view."""
+    return direct_to_template(request, "admin/home.html",
+                              extra_context=default_dict)
 
 
 @admin_user_required

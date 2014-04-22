@@ -49,6 +49,8 @@ urlpatterns = patterns(
     url(r'^actions/account/(?P<op>.*)/(?P<account>.*)$', 'account_actions',
         name='account-actions'),
     url(r'^actions/$', 'admin_actions', name='admin-actions'),
+    url(r'^charts$', 'charts', name='admin-charts'),
+    url(r'^stats$', 'stats', name='admin-stats'),
     url(r'^(?P<type>.*)/(?P<id>.*)$', 'details', name='admin-details'),
     url(r'^(?P<type>.*)$', 'index', name='admin-index'),
 )

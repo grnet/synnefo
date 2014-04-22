@@ -216,10 +216,18 @@ def home(request):
                               extra_context=default_dict)
 
 
-default_dict = {
-    'ADMIN_MEDIA_URL': ADMIN_MEDIA_URL,
-    'UI_MEDIA_URL': UI_MEDIA_URL,
-}
+@admin_user_required
+def charts(request):
+    """Dummy view for charts."""
+    return direct_to_template(request, "admin/charts.html",
+                              extra_context=default_dict)
+
+
+@admin_user_required
+def stats(request):
+    """Dummy view for stats."""
+    return direct_to_template(request, "admin/stats.html",
+                              extra_context=default_dict)
 
 
 @csrf_exempt

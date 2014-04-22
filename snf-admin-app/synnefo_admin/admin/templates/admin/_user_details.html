@@ -10,12 +10,54 @@
     <div class="object-details-content">
         <ul class="nav nav-tabs">
             <li class="active"><a href="#details{{ user.uuid }}" data-toggle="tab">Details</a></li>
+            <li><a href="#log{{ user.uuid }}" data-toggle="tab">Log</a></li>
+            <li><a href="#auth{{ user.uuid }}" data-toggle="tab">Auth Providers</a></li>
         </ul>
         <div class="tab-content">
             <div class="tab-pane active" id="details{{ user.uuid }}">
                 <dl class="dl-horizontal well">
                     <dt>UUID</dt><dd>{{ user.uuid }}</dd>
                     <dt>Name</dt><dd>{{ user.realname }}</dd>
+                    {% if user.is_project_admin %}
+                        <dt>PROJECT ADMIN</dt>
+                    {% endif %}
+                </dl>
+            </div>
+            <div class="tab-pane" id="log{{ user.uuid }}">
+                <dl class="dl-horizontal well">
+                    <dt>Signed terms at</dt>
+                        <dd>{{ user.date_signed_terms|default:"Never" }}</dd>
+                    {% if user|check_state:'verified' %}
+                        <dt>Verified at</dt><dd>{{ user.verified_at }}</dd>
+                    {% endif %}
+                    {% if user|check_state:'moderated' %}
+                        <dt>Moderated at</dt><dd>{{ user.moderated_at }}</dd>
+                        <dt>Moderation policy</dt><dd>{{ user.accepted_policy }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+            <div class="tab-pane" id="auth{{ user.uuid }}">
+                <dl class="dl-horizontal well">
+                    <dt>Unused</dt><dd>
+                        {% for ap in user.get_available_auth_providers %}
+                            {{ ap.module }},
+                        {% empty %}
+                            None
+                        {% endfor %}
+                    </dd>
+                    <dt>Enabled</dt><dd>
+                        {% for ap in user.get_enabled_auth_providers %}
+                            {{ ap.module }},
+                        {% empty %}
+                            None
+                        {% endfor %}
+                    <dt>Disabled</dt><dd>
+                        {% for ap in user.get_disabled_auth_providers %}
+                            {{ ap.module }},
+                        {% empty %}
+                            None
+                        {% endfor %}
+                    </dd>
                 </dl>
             </div>
         </div>

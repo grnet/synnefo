@@ -141,6 +141,8 @@ def check_state(user, state):
         return user.is_rejected
     elif state == 'verified':
         return user.email_verified
+    elif state == 'moderated':
+        return user.moderated
 register.filter('check_state', check_state)
 
 

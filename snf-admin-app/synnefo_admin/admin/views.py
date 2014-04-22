@@ -264,7 +264,6 @@ def index(request, type):
         return
 
     context.update(default_dict)
-    logging.info("My item_list is %s", context['item_list'])
 
     return direct_to_template(request, template, extra_context=context)
 

@@ -50,11 +50,13 @@ def generate_actions():
     The actions are: .
     """
     # TODO
+    return {}
 
 
 def index(request):
     """Index view for Cyclades VMs."""
     # TODO
+    return {}
 
 
 def details(query):

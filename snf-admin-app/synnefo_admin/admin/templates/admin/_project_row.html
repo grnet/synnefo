@@ -1,16 +1,12 @@
-{% debug %}
-{% comment %}
 {% with project=item page='project' %}
     <tr data-op-list='approve'
         id="{{ project.id }}">
     <td class="checkbox-column">
         <input type="checkbox">
     </td>
-    <td class="name">{{ project.name }}</td>
-    <td class="state">{{ project.state }}</td>
-    {% comment %}
-    <td class="owner">{{ project.owner.realname }}</td>
-    {% endcomment %}
+    <td class="name">{{ project.realname }}</td>
+    <td class="state">{{ project.state_display }}</td>
+    <td class="owner">{{ project.owner.realname|default:"None" }}</td>
     <td class="end_date">{{ project.end_date }}</td>
     <td><a href="{% url admin-details page project.id %}">Details</a></td>
     <td class="summary">
@@ -28,4 +24,3 @@
     </td>
     </tr>
 {% endwith %}
-{% endcomment %}

@@ -250,11 +250,17 @@ $(document).ready(function() {
 
 		// if space or enter is typed do nothing
 		if(e.which !== '32' && e.which !== '13') {
-			$(this).closest('.dataTables_wrapper').find('table thead .select-all input[type=checkbox]').attr('checked', false);
+			tableID = $(this).closest('.dataTables_wrapper').find('table').attr('id')
+			resetTable('#'+tableID);
+		}
+	});
+
+	function resetTable(tableDomID) {
+		$(tableDomID).find('thead .select-all input[type=checkbox]').attr('checked', false);
 			selected.items = [];
-			$(this).closest('.dataTables_wrapper').find('table thead .selected-num').html(selected.items.length);
-		
-			$(this).siblings('table').find('thead .selected-num');
+			$(tableDomID).find('thead .selected-num').html(selected.items.length);
+			$(tableDomID).find('thead .select-all input[type=checkbox]').prop('checked', false);
+			// $(this).siblings('table').find('thead .selected-num');
 			$('input:checked', oTable.fnGetNodes()).each(function(){
 	            this.checked=false;
             });
@@ -264,9 +270,8 @@ $(document).ready(function() {
             //  should use the code below
             // oTable.$('input').removeAttr('checked');
 			// oTable.$('tr').removeClass('selected');
-		}
-	});
-
+			enableActions(undefined, true);
+	}
 
 	/* Checkboxes */
 	function clickRowCheckbox() {
@@ -320,17 +325,23 @@ $(document).ready(function() {
 		});
 	};
 	function updateToggleAllCheck() {
+		console.log('updateToggleAllCheck');
 		var toggleAll = $('table .select-all input[type=checkbox]');
-		var allChecked = true
-		$('tbody input[type=checkbox]').each(function() {
-			allChecked = allChecked && $(this).prop('checked');
-		});
-		if(!toggleAll.prop('checked') && allChecked) {
-			console.log('*1*')
-			toggleAll.prop('checked', true)
+		if($('tbody tr').length > 1) {
+			var allChecked = true
+			$('tbody input[type=checkbox]').each(function() {
+				allChecked = allChecked && $(this).prop('checked');
+			});
+			if(!toggleAll.prop('checked') && allChecked) {
+				console.log('*1*')
+				toggleAll.prop('checked', true)
+			}
+			else if(toggleAll.prop('checked') && !allChecked) {
+				toggleAll.prop('checked', false)
+			}
 		}
-		else if(toggleAll.prop('checked') && !allChecked) {
-			toggleAll.prop('checked', false)
+		else {
+			toggleAll.prop('checked', false);
 		}
 	};
 	

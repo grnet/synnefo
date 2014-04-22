@@ -1,0 +1,27 @@
+{% load admin_tags %}
+{% with source=item project=item.project %}
+<div class="object-anchor" id="source-{{project.id}}"></div>
+<div class="object-details {{ rowcls }}">
+    <h4><em>{{ project.realname }}</em><span class="badge">&nbsp;</span></h4>
+    <span class="badge badge-inverse">PROJECT: {{ project.id }}</span>
+    <div class="object-details-content">
+        <ul class="nav nav-tabs">
+            <li class="active"><a href="#details{{ project.id }}" data-toggle="tab">Details</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane active" id="details{{ project.id }}">
+                <dl class="dl-horizontal well">
+                    <!--{{ source.resources|admin_debug }}-->
+                    {% for name, quota in source.resources %}
+                    <dt>{{ name }}</dt><dd>{{ quota.project_usage }}
+                    <b>from</b> {{ quota.project_limit }}</dd>
+                    {% endfor %}
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="todo vm-actions clearfix">
+        {% include "admin/_user_actions.html" %}
+    </div>
+</div>
+{% endwith %}

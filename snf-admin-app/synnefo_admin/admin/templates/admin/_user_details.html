@@ -4,6 +4,7 @@
 <div class="object-anchor" id="user-{{user.uuid}}"></div>
 <div class="object-details {{ rowcls }}">
     <h4><em>{{ user.realname }}</em><span class="badge">&nbsp;</span></h4>
+    <span class="badge badge-inverse">{{ user|get_state|upper }}</span>
     <span class="badge badge-inverse">UUID: {{ user.uuid }}</span>
     <span class="badge badge-inverse">{{ user.email }}</span>
     <div class="object-details-content">

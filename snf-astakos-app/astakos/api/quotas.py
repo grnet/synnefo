@@ -43,15 +43,21 @@ def get_visible_resources():
     return result
 
 
+# FIXME: This is not the most elegant solution, surely...
+def get_quota_usage(user):
+    visible_resources = get_visible_resources()
+    resource_names = [r.name for r in visible_resources]
+    memberships = user.projectmembership_set.actually_accepted()
+    sources = [project_ref(m.project.uuid) for m in memberships]
+    result = get_user_quotas(user, resources=resource_names,
+                             sources=sources)
+    return result
+
+
 @api.api_method(http_method='GET', token_required=True, user_required=False)
 @user_from_token
 def quotas(request):
-    visible_resources = get_visible_resources()
-    resource_names = [r.name for r in visible_resources]
-    memberships = request.user.projectmembership_set.actually_accepted()
-    sources = [project_ref(m.project.uuid) for m in memberships]
-    result = get_user_quotas(request.user, resources=resource_names,
-                             sources=sources)
+    result = get_quota_usage(request.user)
     return json_response(result)
 
 

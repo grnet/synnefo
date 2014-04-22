@@ -216,7 +216,6 @@ def get_operation_list(user):
 def admin_debug(var):
     """Print in the log a value."""
     logging.info("Template debugging: %s", var)
-    logging.info("Also: %s", var.uuid)
     return var
 
 

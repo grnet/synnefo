@@ -1,4 +1,6 @@
+{% load admin_tags %}
 <div class="vm-details object-details info-block well {{ rowcls }}">
     <div class="show-hide-all"><span class="badge">Collapse All</span></div>
-    <h3>... <span class="badge badge-info">Total: {{ item_list|length }}</span></h3>
+    <h3>{{ type|display_list_type }} <span class="badge badge-info">Total:
+            {{item_list|length }}</span></h3>
 

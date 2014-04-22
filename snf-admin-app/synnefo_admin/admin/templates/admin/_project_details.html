@@ -1,20 +1,72 @@
 {% load admin_tags %}
 
-{% with project=item %}
-<div class="object-anchor" id="user-{{project.id}}"></div>
+{% with project=item page='user' %}
+<!--{{ project|admin_debug }}-->
+<div class="object-anchor" id="user-{{project.uuid}}"></div>
 <div class="object-details {{ rowcls }}">
-    <h4><em>{{ project.name }}</em><span class="badge">&nbsp;</span></h4>
-    <span class="badge badge-inverse">ID: {{ project.id }}</span>
+    <h4><em>{{ project.realname }}</em><span class="badge">&nbsp;</span></h4>
+    <span class="badge badge-inverse">{{ project.state_display|upper }}</span>
+    <span class="badge badge-inverse">UUID: {{ project.uuid }}</span>
+    <span class="badge badge-inverse">
+        {% if project.is_base %}
+            BASE
+        {% else %}
+            Members: {{ project.members_count }}
+        {% endif %}
+        </span>
     <div class="object-details-content">
         <ul class="nav nav-tabs">
-            <li class="active"><a href="#details{{ project.id }}" data-toggle="tab">Details</a></li>
+            <li class="active"><a href="#prj-details{{ project.uuid }}" data-toggle="tab">Details</a></li>
+            <li><a href="#prj-members{{ project.uuid }}" data-toggle="tab">Members</a></li>
+            <li><a href="#prj-policies{{ project.uuid }}" data-toggle="tab">Member Policies</a></li>
         </ul>
         <div class="tab-content">
-            <div class="tab-pane active" id="details{{ project.id }}">
+            <div class="tab-pane active" id="prj-details{{ project.uuid }}">
                 <dl class="dl-horizontal well">
-                    <dt>ID</dt><dd>{{ project.id|default:"-" }}</dd>
-                    <dt>Name</dt><dd>{{ project.name|default:"-" }}</dd>
+                    <dt>ID</dt><dd>{{ project.id }}</dd>
+                    <dt>UUID</dt><dd>{{ project.uuid }}</dd>
+                    <dt>Name</dt><dd>{{ project.realname|default:"-" }}</dd>
                     <dt>Owner</dt><dd>{{ project.owner.realname|default:"-" }}</dd>
+                    {% if not project.is_base %}
+                        <dt>Homepage</dt><dd>{{ project.homepage }}</dd>
+                    {% endif %}
+                    <dt>Description</dt><dd>{{ project.description }}</dd>
+                    <dt>Creation date</dt><dd>{{ project.creation_date }}</dd>
+                    {% if not project.is_base %}
+                        <dt>End date</dt><dd>{{ project.end_date }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+            <div class="tab-pane" id="prj-members{{ project.uuid }}">
+		 		<table class="table well">
+		            <thead>
+		                <td>UUID</td>
+		                <td>Name</td>
+		                <td>Status</td>
+		                <td></td>
+		            </thead>
+		            <tbody>
+		                {% for member in project.members.all %}
+		                <tr>
+		                    <td>{{ member.uuid }}</td>
+		                    <td>{{ member.realname }}</td>
+		                    <td>{{ member|get_state }}</td>
+                            <td><a href="{% url admin-details page member.email %}">Details</a></td>
+		                </tr>
+		                {% empty %}
+		                <tr>
+		                    <td colspan=9>No members available</td>
+		                </tr>
+		                {% endfor %}
+		            </tbody>
+		        </table>
+            </div>
+            <div class="tab-pane" id="prj-policies{{ project.uuid }}">
+                <dl class="dl-horizontal well">
+                    <dt>Max members</dt><dd>{{ project.limit_on_members_number }}</dd>
+                    <dt>Current members</dt><dd>{{ project.members_count }}</dd>
+                    <dt>Join policy</dt><dd>{{ project.member_join_policy_display }}</dd>
+                    <dt>Leave policy</dt><dd>{{ project.member_leave_policy_display }}</dd>
                 </dl>
             </div>
         </div>

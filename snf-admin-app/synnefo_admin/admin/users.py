@@ -173,7 +173,10 @@ def details(request, query):
 
     user = get_user(query)
     quotas = get_quotas(user)
-    projects = ProjectMembership.objects.filter(person=user)
+
+    project_memberships = ProjectMembership.objects.filter(person=user)
+    projects = map(lambda p: p.project, project_memberships)
+
     vms = VirtualMachine.objects.filter(
         userid=user.uuid).order_by('deleted')
 

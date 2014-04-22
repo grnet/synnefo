@@ -36,6 +36,7 @@ import re
 from astakos.logic import users
 from actions import AdminAction
 from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser, ProjectMembership, Project
@@ -43,6 +44,7 @@ from astakos.im.models import AstakosUser, ProjectMembership, Project
 from astakos.api.quotas import get_quota_usage
 
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
+SHOW_DELETED_VMS = getattr(settings, 'ADMIN_SHOW_DELETED_VMS', False)
 
 templates = {
     'index': 'admin/user_index.html',
@@ -165,16 +167,28 @@ def get_quotas(user):
     return quotas
 
 
-def details(query):
+def details(request, query):
     """Details view for Astakos users."""
-    try:
-        user = get_user(query)
-        quotas = get_quotas(user)
-        projects = ProjectMembership.objects.filter(person=user)
-        vms = VirtualMachine.objects.filter(
-            userid=user.uuid).order_by('deleted')
-    except:
-        logging.exception("Gotcha!")
+    error = request.GET.get('error', None)
+
+    user = get_user(query)
+    quotas = get_quotas(user)
+    projects = ProjectMembership.objects.filter(person=user)
+    vms = VirtualMachine.objects.filter(
+        userid=user.uuid).order_by('deleted')
+
+    filter_extra = {}
+    show_deleted = bool(int(request.GET.get('deleted', SHOW_DELETED_VMS)))
+    if not show_deleted:
+        filter_extra['deleted'] = False
+
+    public_networks = Network.objects.filter(
+        public=True, nics__machine__userid=user.uuid,
+        **filter_extra).order_by('state').distinct()
+    private_networks = Network.objects.filter(
+        userid=user.uuid, **filter_extra).order_by('state')
+    networks = list(public_networks) + list(private_networks)
+    logging.info("Networks are: %s", networks)
 
     context = {
         'main_item': user,
@@ -183,6 +197,7 @@ def details(query):
             (quotas, 'quota'),
             (projects, 'project'),
             (vms, 'vm'),
+            (networks, 'network'),
         ]
     }
 

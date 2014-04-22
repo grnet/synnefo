@@ -75,7 +75,7 @@ def index(request):
     return context
 
 
-def details(query):
+def details(request, query):
     """Details view for Astakos projects."""
     # TODO
     return None

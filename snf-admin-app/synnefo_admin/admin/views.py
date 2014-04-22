@@ -236,13 +236,13 @@ def details(request, type, id):
     logging.info("Request for details. Type: %s, ID: %s", type, id)
 
     if type == 'user':
-        context = user_views.details(id)
+        context = user_views.details(request, id)
         template = user_views.templates['details']
     elif type == 'project':
-        context = project_views.details(id)
+        context = project_views.details(request, id)
         template = project_views.templates['details']
     elif type == 'vm':
-        context = vm_views.details(id)
+        context = vm_views.details(request, id)
         template = vm_views.templates['details']
     else:
         logging.error("Wrong type: %s", type)

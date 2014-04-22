@@ -59,7 +59,7 @@ def index(request):
     return {}
 
 
-def details(query):
+def details(request, query):
     """Details view for Astakos users."""
     id = query.translate(None, 'vm-')
     vm = VirtualMachine.objects.get(pk=int(id))

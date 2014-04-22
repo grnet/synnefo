@@ -37,50 +37,6 @@ $(document).ready(function() {
 	};
 
 
-	/* Head checkbox */
-
-	/* Toggles the checked property of all the checkboxes in the body of the table */
-	function toggleVisCheckboxes(checkboxState, tableDomID) {
-		var $checkboxesVis = $('#'+tableDomID).find('tbody tr:visible .checkbox-column input[type=checkbox]');
-		
-		if(checkboxState) {
-			$checkboxesVis.prop('checked', false).trigger('click');
-		}
-		else {
-			if($checkboxesVis.prop('checked')) {
-				console.log('yiou!')
-				$checkboxesVis.trigger('click');
-			}
-			else
-				$checkboxesVis.prop('checked', false).trigger('click');
-		}
-	};
-
-	/* Items select/remove */
-
-	/* Removes from an array an element */
-	function removeItem(item, array) {
-		console.log('removeItem');
-		var index;
-		if (typeof(item) === 'object') {
-			console.log('eimai ena object!')
-			index = array.map(function(item) {
-				console.log('item.id ', item.uuid)
-				return item.uuid;
-			}).indexOf(item.uuid);
-			console.log('index ', index);
-		}
-		else
-			index = array.indexOf(item);
-
-		if(index > -1) {
-			array.splice(index, 1);
-		}
-	};
-
-	function addItem(item, array) {
-		array.push(item);
-	};
 	
 	/* The parameter string has the following form: */
     /* ",str1,str2,...,strN," */
@@ -231,23 +187,34 @@ $(document).ready(function() {
 
 	/* Initial table */
 	
+	function initTable(tableID) {
 
-	var oTable = $('#table-items-total').dataTable({
-		"aaSorting": [[3, 'asc'], [1, 'asc']], // ascending
-		"aoColumnDefs": [
-			{ "bSortable": false, "aTargets": [5, 6] },
-			{  "sSortDataType": "dom-checkbox", "aTargets": [0] }
-		],
-		"bSortClasses": false,
-		// "sPaginationType": "full_numbers",
-		"bRetrieve": true, // acces to all items of the dataTable
-		"fnDrawCallback": function( oSettings ) {
-      	clickRow();
-      	clickRowCheckbox();
-      	clickSummary();
-    }
+		// The last two colums in every table should be "Details" and "Summary"
+		// These two shoudn't be sorted
+		var colLength = $(tableID).find('thead th').length;
+		var colsNotSort = [colLength-2, colLength-1];
 
-	});
+		return $(tableID).dataTable({
+			"aaSorting": [[3, 'asc'], [1, 'asc']], // ascending
+			"aoColumnDefs": [
+				{ "bSortable": false, "aTargets": colsNotSort },
+				{  "sSortDataType": "dom-checkbox", "aTargets": [0] }
+			],
+			"bSortClasses": false, // Disables the addition of the classes 'sorting_1', 'sorting_2' and 'sorting_3' to the columns which are currently being sorted on
+			// "sPaginationType": "full_numbers",
+			"bRetrieve": true, // Access to all items of the dataTable
+			"fnDrawCallback": function( oSettings ) {
+				clickRow();
+				clickRowCheckbox();
+				clickSummary();
+				updateToggleAllCheck('.select-all input[type=checkbox]');
+		    }
+		});
+	}
+
+	var oTable = initTable('#table-items-total');
+
+
 	function clickSummary() {
 		$('table tbody a.summary-expand').click(function(e) {
 			e.preventDefault();
@@ -280,6 +247,7 @@ $(document).ready(function() {
 	});
 
 	$('.dataTables_filter input[type=text]').keypress(function(e) {
+
 		// if space or enter is typed do nothing
 		if(e.which !== '32' && e.which !== '13') {
 			$(this).closest('.dataTables_wrapper').find('table thead .select-all input[type=checkbox]').attr('checked', false);
@@ -287,8 +255,15 @@ $(document).ready(function() {
 			$(this).closest('.dataTables_wrapper').find('table thead .selected-num').html(selected.items.length);
 		
 			$(this).siblings('table').find('thead .selected-num');
-			oTable.$('input').removeAttr('checked');
-			oTable.$('tr').removeClass('selected');
+			$('input:checked', oTable.fnGetNodes()).each(function(){
+	            this.checked=false;
+            });
+            $(oTable.fnGetNodes()).each(function(){
+	            this.className = this.className.replace('selected', '')
+            });
+            //  should use the code below
+            // oTable.$('input').removeAttr('checked');
+			// oTable.$('tr').removeClass('selected');
 		}
 	});
 
@@ -297,7 +272,8 @@ $(document).ready(function() {
 	function clickRowCheckbox() {
 		$('table tbody input[type=checkbox]').click(function(e) {
 			e.stopPropagation();
-
+			// console.log('good ', e)
+			// console.log('e.target', e)
 			var $tr = $(this).closest('tr');
 			var $allActionsBtns = $('.sidebar a');
 			var $selectedNum = $tr.closest('table').find('thead .selected-num');
@@ -340,16 +316,31 @@ $(document).ready(function() {
 				enableActions(newItem.actions, true);
 			}
 				$selectedNum.html(selected.items.length);
+			updateToggleAllCheck();
 		});
+	};
+	function updateToggleAllCheck() {
+		var toggleAll = $('table .select-all input[type=checkbox]');
+		var allChecked = true
+		$('tbody input[type=checkbox]').each(function() {
+			allChecked = allChecked && $(this).prop('checked');
+		});
+		if(!toggleAll.prop('checked') && allChecked) {
+			console.log('*1*')
+			toggleAll.prop('checked', true)
+		}
+		else if(toggleAll.prop('checked') && !allChecked) {
+			toggleAll.prop('checked', false)
+		}
 	};
 	
 	function clickRow() {
-		$('table tbody tr').click(function() {
+		$('table tbody tr').click(function(e) {
 			$(this).find('input[type=checkbox]').trigger('click');
 		});
 	};
 
-var curPath = window.location.pathname;
+	var curPath = window.location.pathname;
 	$('.nav-main li').each(function () {
 		if($(this).find('a').attr('href') === curPath) {
 			$(this).closest('li').addClass('active');
@@ -359,5 +350,47 @@ var curPath = window.location.pathname;
 		}
 	});
 
-});
+	/* Head checkbox */
+
+	/* Toggles the checked property of all the checkboxes in the body of the table */
+	function toggleVisCheckboxes(checkboxState, tableDomID) {
+		var $checkboxesVis = $('#'+tableDomID).find('tbody tr:visible .checkbox-column input[type=checkbox]');
+		if(checkboxState) {
+			$checkboxesVis.prop('checked', false).trigger('click');
+		}
+		else {
+			if($checkboxesVis.prop('checked')) {
+				$checkboxesVis.trigger('click');
+			}
+			else
+				$checkboxesVis.prop('checked', false).trigger('click');
+		}
+	};
+
+	/* Items select/remove */
+
+	/* Removes from an array an element */
+	function removeItem(item, array) {
+		console.log('removeItem');
+		var index;
+		if (typeof(item) === 'object') {
+			console.log('eimai ena object!')
+			index = array.map(function(item) {
+				console.log('item.id ', item.uuid)
+				return item.uuid;
+			}).indexOf(item.uuid);
+			console.log('index ', index);
+		}
+		else
+			index = array.indexOf(item);
+
+		if(index > -1) {
+			array.splice(index, 1);
+		}
+	};
+
+	function addItem(item, array) {
+		array.push(item);
+	};
+}); // end of document ready
 

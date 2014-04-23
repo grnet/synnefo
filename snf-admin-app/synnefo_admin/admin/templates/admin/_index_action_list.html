@@ -1,8 +1,8 @@
 <div class="sidebar subnav">
     <ul class="nav nav-pills">
-    {% for action in action_list %}
+    {% for op, action in action_dict.items %}
     <li>
-    <a data-target="#{{ action.op }}" data-action="{{ action.op }}"
+    <a data-target="#{{ op }}" data-action="{{ op }}"
         data-toggle="modal" disabled>{{ action.name }}</a>
     </li>
     {% endfor %}

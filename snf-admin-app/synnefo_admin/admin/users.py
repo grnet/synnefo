@@ -72,84 +72,64 @@ def get_user(query):
     return user
 
 
+class UserAction(AdminAction):
+
+    """Class for actions on users. Derived from AdminAction.
+
+    Pre-determined Attributes:
+        target:        user
+    """
+
+    def __init__(self, name, f, **kwargs):
+        """Initialize the class with provided values."""
+        AdminAction.__init__(self, name=name, target='user', f=f, **kwargs)
+
+
 def generate_actions():
     """Create a list of actions on users.
 
     The actions are: activate/deactivate, accept/reject, verify, contact.
     """
-    actions = []
+    actions = {}
 
-    action = AdminAction(op='activate', name='Activate',
-                         target='user', severity='trivial',
-                         allowed_groups='admin')
-    actions.append(action)
+    actions['activate'] = UserAction(name='Activate', f=users.activate,
+                                     severity='trivial')
 
-    action = AdminAction(op='deactivate', name='Deactivate',
-                         target='user', severity='trivial',
-                         allowed_groups='admin')
-    actions.append(action)
+    actions['deactivate'] = UserAction(name='Deactivate', f=users.deactivate,
+                                       severity='big')
 
-    action = AdminAction(op='accept', name='Accept',
-                         target='user', severity='trivial',
-                         allowed_groups='admin')
-    actions.append(action)
+    actions['accept'] = UserAction(name='Accept', f=users.accept,
+                                   severity='trivial')
 
-    action = AdminAction(op='reject', name='Reject',
-                         target='user', severity='irreversible',
-                         allowed_groups='admin')
-    actions.append(action)
+    actions['reject'] = UserAction(name='Reject', f=users.reject,
+                                   severity='irreversible')
 
-    action = AdminAction(op='verify', name='Verify',
-                         target='user', severity='trivial',
-                         allowed_groups='admin')
-    actions.append(action)
+    actions['verify'] = UserAction(name='Verify', f=users.verify,
+                                   severity='trivial')
 
-    action = AdminAction(op='contact', name='Send e-mail',
-                         target='user', severity='trivial',
-                         allowed_groups='admin')
-    actions.append(action)
+    actions['contact'] = UserAction(name='Send e-mail', f=send_email,
+                                    severity='trivial')
     return actions
 
 
 def do_action(request, op, id):
+    """Apply the requested action on the specified user."""
     user = get_user(id)
-    logging.info("Op: %s, user: %s", op, user.email)
-    if op == 'activate':
-        if users.check_activate(user):
-            users.activate(user)
-        else:
-            raise AdminActionNotPermitted
-    elif op == 'deactivate':
-        if users.check_deactivate(user):
-            users.deactivate(user)
-        else:
-            raise AdminActionNotPermitted
-    elif op == 'accept':
-        if users.check_accept(user):
-            users.accept(user)
-        else:
-            raise AdminActionNotPermitted
-    elif op == 'reject':
-        if users.check_reject(user):
-            users.reject(user)
-        else:
-            raise AdminActionNotPermitted
-    elif op == 'verify':
-        if users.check_verify(user):
-            users.verify(user)
-        else:
-            raise AdminActionNotPermitted
+    actions = generate_actions()
+    logging.info("Op: %s, user: %s, function", op, user.email, actions[op].f)
+
+    if op == 'reject':
+        actions[op].f(user, 'Rejected by the admin')
     elif op == 'contact':
-        mail = request.POST['text']
-        send_email(user, mail)
+        actions[op].f(user, request.POST['text'])
     else:
-        raise AdminActionUnknown
+        actions[op].f(user)
 
 
 def index(request):
     """Index view for Astakos users."""
     context = {}
-    context['action_list'] = generate_actions()
+    context['action_dict'] = generate_actions()
 
     all = users.get_all()
     logging.info("These are the users %s", all)

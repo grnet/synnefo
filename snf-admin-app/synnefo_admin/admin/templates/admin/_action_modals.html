@@ -1,15 +1,15 @@
-{% for action in action_list %}
-<div class="modal fade in hide" id="{{ action.op }}">
+{% for op, action in action_dict.items %}
+<div class="modal fade in hide" id="{{ op }}">
   <div class="modal-header positive area">
     <a class="close" data-dismiss="modal">×</a>
     <h3>{{ action.name }}</h3>
   </div>
   <div class="modal-body">
-      {% if action.op == "contact" %}
+      {% if op == "contact" %}
         <label>Subject:</label><input type="text" class="subject" form="contactForm"></input><span class="error"></span>
         <label>Content:</label><textarea name="text" form="contactForm" class="content"></textarea><span class="error"></span>
       {% endif %}
-      <p>You have choosen to <em class="positive elem">{{ action.op }}</em> the
+      <p>You have choosen to <em class="positive elem">{{ op }}</em> the
       following <em class="num elem positive"></em> items:</p>
     <table class="table-selected table table-bordered">
       <tbody>
@@ -19,9 +19,9 @@
   </div>
   <div class="modal-footer positive area">
     <a href="#" class="btn reset-selected" data-dismiss="modal">Cancel</a>
-    <form method="post" action="{% url admin-actions %}" id="{{ action.op}}Form">
+    <form method="post" action="{% url admin-actions %}" id="{{ op }}Form">
         <button type="submit" class="btn">OK</button>
-        <input type="hidden" name="op" value="{{ action.op }}">
+        <input type="hidden" name="op" value="{{ op }}">
       <input type="hidden" name="ids" value="">
       <input type="hidden" name="target" value="{{ action.target }}">
     </form>

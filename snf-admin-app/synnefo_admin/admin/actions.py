@@ -37,24 +37,25 @@ class AdminAction:
     """Generic class for actions on admin targets.
 
     Attributes:
-        op:             The action
         name:           The name of the action
-        description:    A short text that describes an action
         target:         The target of the action
+        f:              The function that will trigger once an action is
+                        requested.
+        allowed_groups: The groups that are allowed to author this action.
         severity:       The negative impact of the action.
                         Accepted values: trivial, big, irreversible
-        allowed_groups: The groups that are allowed to author this action.
+        description:    A short text that describes an action
     """
 
-    def __init__(self, op, name, target, allowed_groups,
+    def __init__(self, name, target, f, allowed_groups='admin',
                  severity='trivial', description=''):
         """Initialize the class with provided values."""
-        self.op = op
         self.name = name
         self.description = description
         self.target = target
         self.severity = severity
         self.allowed_groups = allowed_groups
+        self.f = f
 
 
 class AdminActionNotPermitted(Exception):

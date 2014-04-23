@@ -7,6 +7,7 @@
     <link href="{{ ADMIN_MEDIA_URL }}css/bootstrap-responsive.css" rel="stylesheet">
     <link href="{{ ADMIN_MEDIA_URL }}css/extra.css" rel="stylesheet">
     <link href="{{ ADMIN_MEDIA_URL }}DataTables/media/css/demo_table.css" rel="stylesheet">
+    <link href="{{ ADMIN_MEDIA_URL }}jqplot_1.0.0r1095/dist/jquery.jqplot.css" rel="stylesheet">
   </head>
   
   <body>
@@ -63,6 +64,8 @@
             {% endblock %}
         </div>
     </div>
+
+       <!-- <script type="text/javascript" src="https://www.google.com/jsapi"></script> -->
     <script src="{{ MEDIA_URL }}admin/js/jquery.js"></script>
     <script src="{{ MEDIA_URL }}admin/js/bootstrap.js"></script>
     <script src="{{ MEDIA_URL }}admin/js/jquery.tablesorter.js"></script>
@@ -70,5 +73,18 @@
     <script src="{{ MEDIA_URL }}admin/js/extra.js"></script>
     <script src="{{ MEDIA_URL }}admin/DataTables/media/js/jquery.dataTables.js"></script>
     <script src="{{ MEDIA_URL }}admin/js/stats.js"></script>
+    <script src="{{ MEDIA_URL }}admin/js/charts.js"></script>
+
+
+
+    <script src="{{ MEDIA_URL }}admin/jqplot_1.0.0r1095/dist/jquery_old.min.js"></script>
+    <script src="{{ MEDIA_URL }}admin/jqplot_1.0.0r1095/dist/jquery.jqplot.js"></script>
+    <script src="{{ MEDIA_URL }}admin/jqplot_1.0.0r1095/dist/plugins/jqplot.pieRenderer.js"></script>
+    <!--[if lt IE 9]><script language="javascript" type="text/javascript" src="{{ MEDIA_URL }}admin/jqplot_1.0.0r1095/dist/excanvas.js"></script><![endif]-->
+    <script type="text/javascript">
+      $.noConflict();
+    </script>
   </body>
 </html>
+
+

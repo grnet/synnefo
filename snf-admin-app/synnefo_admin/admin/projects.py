@@ -32,7 +32,9 @@
 # or implied, of GRNET S.A.
 
 import logging
-from actions import AdminAction
+from collections import OrderedDict
+
+from actions import AdminAction, nop
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser, ProjectMembership, Project
@@ -43,25 +45,71 @@ templates = {
 }
 
 
+class ProjectAction(AdminAction):
+
+    """Class for actions on projects. Derived from AdminAction.
+
+    Pre-determined Attributes:
+        target:        project
+    """
+
+    def __init__(self, name, f, **kwargs):
+        """Initialize the class with provided values."""
+        AdminAction.__init__(self, name=name, target='project', f=f, **kwargs)
+
+
 def generate_actions():
     """Create a list of actions on projects.
 
-    The actions are: approve.
+    The actions are: approve/deny, suspend/unsuspend, terminate/reinstate,
+                     contact
     """
-    actions = []
+    actions = OrderedDict()
 
-    action = AdminAction(op='approve', name='Approve',
-                         target='project', severity='trivial',
-                         allowed_groups='admin')
-    actions.append(action)
+    actions['approve'] = ProjectAction(name='Approve', f=nop,
+                                       severity='trivial')
+
+    actions['deny'] = ProjectAction(name='Deny', f=nop, severity='trivial')
+
+    actions['suspend'] = ProjectAction(name='Suspend', f=nop,
+                                       severity='trivial')
+
+    actions['unsuspend'] = ProjectAction(name='Release suspension', f=nop,
+                                         severity='trivial')
+
+    actions['terminate'] = ProjectAction(name='Terminate', f=nop,
+                                         severity='trivial')
+
+    actions['reinstate'] = ProjectAction(name='Reinstate', f=nop,
+                                         severity='trivial')
+
+    actions['contact'] = ProjectAction(name='Send e-mail', f=nop,
+                                       severity='trivial')
 
     return actions
+
+
+def do_action(request, op, id):
+    """Apply the requested action on the specified user."""
+    project = Project.objects.get(uuid=id)
+    actions = generate_actions()
+    logging.info("Op: %s, project: %s, function", op, project.uuid,
+                 actions[op].f)
+
+    if op == 'contact':
+        if project.is_base:
+            user = project.members.all()[0]
+        else:
+            user = project.owner
+        actions[op].f(user, request.POST['text'])
+    else:
+        actions[op].f(project)
 
 
 def index(request):
     """Index view for Astakos projects."""
     context = {}
-    context['action_list'] = generate_actions()
+    context['action_dict'] = generate_actions()
 
     all = Project.objects.all()
     logging.info("These are the projects %s", all)

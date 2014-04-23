@@ -109,7 +109,7 @@ def generate_actions():
 
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
-    vm = VirtualMachine.object.get(pk=id)
+    vm = VirtualMachine.objects.get(pk=id)
     actions = generate_actions()
     logging.info("Op: %s, vm: %s, function", op, vm.pk, actions[op].f)
 

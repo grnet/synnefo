@@ -30,10 +30,10 @@ $(document).ready(function() {
 	/* Sets sidebar's position fixed */	
 	/* subnav-fixed is added/removed from processScroll() */	
 	function fixedMimeSubnav() {
-		if($('.messages').find('.sidebar').hasClass('subnav-fixed'))
-			$('.messages').find('.info').addClass('info-fixed').removeClass('info');
+		if($('.sidebar').hasClass('subnav-fixed'))
+			$('.info').addClass('info-fixed').removeClass('info');
 		else
-			$('.messages').find('.info').removeClass('info-fixed').addClass('info');
+			$('.info').removeClass('info-fixed').addClass('info');
 	};
 
 

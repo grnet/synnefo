@@ -141,14 +141,24 @@ def index(request):
 
 def details(request, query):
     """Details view for Astakos users."""
-    id = query.translate(None, 'vm-')
+    try:
+        id = query.translate(None, 'vm-')
+    except Exception:
+        id = query
+
     vm = VirtualMachine.objects.get(pk=int(id))
-    vms = VirtualMachine.objects.all
+    users = [AstakosUser.objects.get(uuid=vm.userid)]
+    projects = [Project.objects.get(uuid=vm.project)]
+    networks = vm.nics.all()
 
     context = {
         'main_item': vm,
         'main_type': 'vm',
-        'associations_list': [(vms, 'vm')]
+        'associations_list': [
+            (users, 'user'),
+            (projects, 'project'),
+            (networks, 'network'),
+        ]
     }
 
     return context

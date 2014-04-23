@@ -98,7 +98,7 @@ $(document).ready(function() {
 
 	/* Modals */
 
-	function addData(modal) {
+	function addData(modal, dataType) {
 		var $uuidsInput = 	$(modal).find('.modal-footer form input[name="ids"]');
 		var $table = $(modal).find('.table-selected');
 		var selectedNum = selected.items.length;
@@ -110,28 +110,51 @@ $(document).ready(function() {
 
 		$selectedNum.html(selectedNum);
 		$uuidsInput.val('['+uuidsArray+']');
-		drawTableRows($table.find('tbody'), selectedNum)
+		drawTableRows($table.find('tbody'), selectedNum, dataType)
 	};
 
-	function drawTableRows(tableBody, rowsNum) {
+	function drawTableRows(tableBody, rowsNum, dataType) {
 		var maxVisible = 25;
-		var templateRow = '<tr data-uuid=""><td class="full-name"></td><td class="email"></td><td class="remove"><a>X</a></td>';
 		var currentRow;
 		$(tableBody).empty();
-		for(var i=0; i<rowsNum; i++) {
-			currentRow =templateRow.replace('data-uuid=""', 'data-uuid="'+selected.items[i].uuid+'"')
-			currentRow = currentRow.replace('<td class="full-name"></td>', '<td class="full-name">'+selected.items[i].name+'</td>');
-			currentRow = currentRow.replace('<td class="email"></td>', '<td class="email">'+selected.items[i].email+'</td>');
-			if(i > maxVisible)
-				currentRow = currentRow.replace('<tr', '<tr class="hidden');
-			$(tableBody).append(currentRow);
+		if(dataType === "user") {
+			var templateRow = '<tr data-uuid=""><td class="full-name"></td><td class="email"></td><td class="remove"><a>X</a></td>';
+			for(var i=0; i<rowsNum; i++) {
+				currentRow =templateRow.replace('data-uuid=""', 'data-uuid="'+selected.items[i].uuid+'"')
+				currentRow = currentRow.replace('<td class="full-name"></td>', '<td class="full-name">'+selected.items[i].name+'</td>');
+				currentRow = currentRow.replace('<td class="email"></td>', '<td class="email">'+selected.items[i].email+'</td>');
+				if(i > maxVisible)
+					currentRow = currentRow.replace('<tr', '<tr class="hidden');
+				$(tableBody).append(currentRow);
+			}
+		}
+		else if(dataType === 'project') {
+			var templateRow = '<tr data-uuid=""><td class="name"></td><td class="owner"></td><td class="remove"><a>X</a></td>';
+			for(var i=0; i<rowsNum; i++) {
+				currentRow =templateRow.replace('data-uuid=""', 'data-uuid="'+selected.items[i].uuid+'"')
+				currentRow = currentRow.replace('<td class="name"></td>', '<td class="name">'+selected.items[i].name+'</td>');
+				currentRow = currentRow.replace('<td class="owner"></td>', '<td class="owner">'+selected.items[i].owner+'</td>');
+				if(i > maxVisible)
+					currentRow = currentRow.replace('<tr', '<tr class="hidden');
+				$(tableBody).append(currentRow);
+			}
+		}
+		else if(dataType === 'vm') {
+			var templateRow = '<tr data-uuid=""><td class="name"></td><td class="uuid"></td><td class="remove"><a>X</a></td>';
+			for(var i=0; i<rowsNum; i++) {
+				currentRow =templateRow.replace('data-uuid=""', 'data-uuid="'+selected.items[i].uuid+'"')
+				currentRow = currentRow.replace('<td class="name"></td>', '<td class="name">'+selected.items[i].name+'</td>');
+				currentRow = currentRow.replace('<td class="uuid"></td>', '<td class="owner">'+selected.items[i].uuid+'</td>');
+				if(i > maxVisible)
+					currentRow = currentRow.replace('<tr', '<tr class="hidden');
+				$(tableBody).append(currentRow);
+			}
 		}
 	};
 
 	/* remove an item after the modal is visible */
 	$('.modal').on('click', 'td.remove a', function(e) {
 		e.preventDefault();
-		
 		var $modal = $(this).closest('.modal')
 		var $uuidsInput =	$modal.find('.modal-footer form input[name="ids"]');
 		var $num = $modal.find('.num');
@@ -139,10 +162,11 @@ $(document).ready(function() {
 		var itemUUID = $tr.data('uuid');
 		var selectedNum = selected.items.length;
 		// uuidsArray has only the uuids of selected items, none of the other info
-		var uuidsArray = [];
+		uuidsArray = [];
 
 		for(var i=0; i<selectedNum; i++) {
 			if(selected.items[i].uuid === itemUUID) {
+				console.log('a1');
 				removeItem(selected.items[i], selected.items);
 				break;
 			}
@@ -154,6 +178,7 @@ $(document).ready(function() {
 		$uuidsInput.val('[' + uuidsArray + ']');
 		$tr.slideUp('slow');
 		$num.html(selected.items.length);
+		ai = selected.items;
 	});
 
 	/* When the user scrolls check if sidebar needs to get fixed position */
@@ -171,7 +196,8 @@ $(document).ready(function() {
 		}
 		else {
 			var modal = $(this).data('target');
-			addData(modal);
+			var dataType = $('#table-items-total').data('content')
+			addData(modal, dataType);
 		}
 	});
 
@@ -296,17 +322,44 @@ $(document).ready(function() {
 			var $tr = $(this).closest('tr');
 			var $allActionsBtns = $('.sidebar a');
 			var $selectedNum = $tr.closest('table').find('thead .selected-num');
-
+			var type = $tr.closest('table').data('content');
+			var itemsL;
 			var uuid = $tr.attr('id');
 			var name = $tr.find('td.name').text();
-			var email = $tr.find('td.email').text();
-			var itemsL;
+			var state = $tr.find('td.state').text();
 
-			var newItem = {
-				uuid: uuid,
-				name: name,
-				email: email,
-				actions: {}
+			if(type === 'user') {
+				var email = $tr.find('td.email').text();
+
+				var newItem = {
+					uuid: uuid,
+					name: name,
+					email: email,
+					state: state,
+					actions: {}
+				}
+			}
+			else if(type === 'project') {
+				var owner = $tr.find('td.owner').text();
+
+				var newItem = {
+					uuid: uuid,
+					name: name,
+					owner: owner,
+					state: state,
+					actions: {}
+				}
+			}
+			else if(type === 'vm') {
+				var os = $tr.find('td.os').text();
+
+				var newItem = {
+					uuid: uuid,
+					name: name,
+					os: os,
+					state: state,
+					actions: {}
+				}
 			}
 			newItem.actions =  formDataListAttr($tr.data('op-list'));
 			for(var prop in availableActions) {

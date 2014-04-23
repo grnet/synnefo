@@ -866,6 +866,11 @@ a:not([disabled]):hover {
 }
 
 /* line 549, ../sass/extra.scss */
-body .object-details h4 em {
+body .object-details:not(.vm-details) h4 em {
   float: none;
+}
+
+/* line 552, ../sass/extra.scss */
+.sidebar.subnav-fixed ul {
+  padding: 0;
 }

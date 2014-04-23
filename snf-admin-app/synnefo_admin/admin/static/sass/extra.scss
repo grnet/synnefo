@@ -546,7 +546,7 @@ textarea, input {
   margin: auto;
 }
 
-body .object-details h4 em {
+body .object-details:not(.vm-details) h4 em {
   float: none;
 }
 .sidebar.subnav-fixed ul{

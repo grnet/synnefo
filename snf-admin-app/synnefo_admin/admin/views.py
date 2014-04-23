@@ -334,53 +334,6 @@ def vm_start(request, vm_id):
     return HttpResponseRedirect(redirect)
 
 
-class AdminActionNotPermitted(Exception):
-
-    """Exception when an action is not permitted."""
-
-    pass
-
-
-class AdminActionUnknown(Exception):
-
-    """Exception when an action is unknown."""
-
-    pass
-
-
-def account_actions__(op, user, extra=None):
-    logging.info("Op: %s, user: %s", op, user.email)
-    if op == 'activate':
-        if users.check_activate(user):
-            users.activate(user)
-        else:
-            raise AdminActionNotPermitted
-    elif op == 'deactivate':
-        if users.check_deactivate(user):
-            users.deactivate(user)
-        else:
-            raise AdminActionNotPermitted
-    elif op == 'accept':
-        if users.check_accept(user):
-            users.accept(user)
-        else:
-            raise AdminActionNotPermitted
-    elif op == 'reject':
-        if users.check_reject(user):
-            users.reject(user)
-        else:
-            raise AdminActionNotPermitted
-    elif op == 'verify':
-        if users.check_verify(user):
-            users.verify(user)
-        else:
-            raise AdminActionNotPermitted
-    elif op == 'contact':
-        send_email(user, extra['mail'])
-    else:
-        raise AdminActionUnknown
-
-
 @csrf_exempt
 @admin_user_required
 def account_actions(request, op, account):
@@ -415,6 +368,27 @@ def account_actions(request, op, account):
     return HttpResponseRedirect(redirect)
 
 
+def _admin_actions_id(request, target, op, id):
+    if target == 'user':
+        user_views.do_action(request, op, id)
+    elif target == 'vm':
+        vm_views.do_action(request, op, id)
+    elif target == 'project':
+        project_views.do_action(request, op, id)
+
+
+@csrf_exempt
+def admin_actions_id(request, target, op, id):
+    logging.info("Entered admin actions view for a specific ID")
+
+    if request.method == "POST":
+        logging.info("POST body: %s", request.POST)
+
+    _admin_actions_id(request, target, op, id)
+
+    return HttpResponseRedirect(redirect)
+
+
 @csrf_exempt
 def admin_actions(request):
     """Entry-point for all admin actions.
@@ -425,10 +399,9 @@ def admin_actions(request):
 
     if request.method == "POST":
         logging.info("POST body: %s", request.POST)
-    redirect = reverse('admin-index')
 
-    resource = request.POST['resource']
-    action = request.POST['type']
+    target = request.POST['target']
+    op = request.POST['op']
     ids = copy.deepcopy(request.POST['ids'])
     ids = ids.replace('[', '').replace(']', '').replace(' ', '').split(',')
     try:
@@ -438,12 +411,9 @@ def admin_actions(request):
 
     try:
         for id in ids:
-            user = get_user(id)
-            if resource == 'account':
-                account_actions__(action, user, extra={'mail': mail})
-            else:
-                logging.warn("Not implemented yet.")
+            _admin_actions_id(request, target, op, id)
     except:
         logger.exception("admin_actions")
 
+    redirect = reverse('admin-index', args=(target,))
     return HttpResponseRedirect(redirect)

@@ -34,7 +34,7 @@
 import logging
 import re
 from astakos.logic import users
-from actions import AdminAction
+from actions import AdminAction, AdminActionUnknown, AdminActionNotPermitted
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 
@@ -42,6 +42,7 @@ from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser, ProjectMembership, Project
 
 from astakos.api.quotas import get_quota_usage
+from astakos.im.functions import send_plain as send_email
 
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
 SHOW_DELETED_VMS = getattr(settings, 'ADMIN_SHOW_DELETED_VMS', False)
@@ -108,6 +109,41 @@ def generate_actions():
                          allowed_groups='admin')
     actions.append(action)
     return actions
+
+
+def do_action(request, op, id):
+    user = get_user(id)
+    logging.info("Op: %s, user: %s", op, user.email)
+    if op == 'activate':
+        if users.check_activate(user):
+            users.activate(user)
+        else:
+            raise AdminActionNotPermitted
+    elif op == 'deactivate':
+        if users.check_deactivate(user):
+            users.deactivate(user)
+        else:
+            raise AdminActionNotPermitted
+    elif op == 'accept':
+        if users.check_accept(user):
+            users.accept(user)
+        else:
+            raise AdminActionNotPermitted
+    elif op == 'reject':
+        if users.check_reject(user):
+            users.reject(user)
+        else:
+            raise AdminActionNotPermitted
+    elif op == 'verify':
+        if users.check_verify(user):
+            users.verify(user)
+        else:
+            raise AdminActionNotPermitted
+    elif op == 'contact':
+        mail = request.POST['text']
+        send_email(user, mail)
+    else:
+        raise AdminActionUnknown
 
 
 def index(request):

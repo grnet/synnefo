@@ -38,6 +38,8 @@ from django.conf.urls import patterns, url
 urlpatterns = patterns(
     'synnefo_admin.admin.views',
     url(r'^$', 'home', name='admin-home'),
+    url(r'^charts$', 'charts', name='admin-charts'),
+    url(r'^stats$', 'stats', name='admin-stats'),
     url(r'^actions/vm-suspend/(?P<vm_id>[0-9]+)$', 'vm_suspend',
         name='admin-suspend-vm'),
     url(r'^actions/vm-suspend-release/(?P<vm_id>[0-9]+)$',
@@ -46,11 +48,9 @@ urlpatterns = patterns(
         name='admin-vm-shutdown'),
     url(r'^actions/vm-start/(?P<vm_id>[0-9]+)$', 'vm_start',
         name='admin-vm-start'),
-    url(r'^actions/account/(?P<op>.*)/(?P<account>.*)$', 'account_actions',
-        name='account-actions'),
+    url(r'^actions/(?P<resource>.*)/(?P<op>.*)/(?P<id>.*)$',
+        'admin_actions_id', name='admin-actions-id'),
     url(r'^actions/$', 'admin_actions', name='admin-actions'),
-    url(r'^charts$', 'charts', name='admin-charts'),
-    url(r'^stats$', 'stats', name='admin-stats'),
     url(r'^(?P<type>.*)/(?P<id>.*)$', 'details', name='admin-details'),
     url(r'^(?P<type>.*)$', 'index', name='admin-index'),
 )

@@ -55,3 +55,17 @@ class AdminAction:
         self.target = target
         self.severity = severity
         self.allowed_groups = allowed_groups
+
+
+class AdminActionNotPermitted(Exception):
+
+    """Exception when an action is not permitted."""
+
+    pass
+
+
+class AdminActionUnknown(Exception):
+
+    """Exception when an action is unknown."""
+
+    pass

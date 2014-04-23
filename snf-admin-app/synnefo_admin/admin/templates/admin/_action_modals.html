@@ -6,8 +6,8 @@
   </div>
   <div class="modal-body">
       {% if action.op == "contact" %}
-        <label>Subject:</label><input type="text" class="subject" form="{{ action.op }}Form"></input><span class="error"></span>
-        <label>Content:</label><textarea name="text" form="{{ action.op }}Form" class="content"></textarea><span class="error"></span>
+        <label>Subject:</label><input type="text" class="subject" form="contactForm"></input><span class="error"></span>
+        <label>Content:</label><textarea name="text" form="contactForm" class="content"></textarea><span class="error"></span>
       {% endif %}
       <p>You have choosen to <em class="positive elem">{{ action.op }}</em> the
       following <em class="num elem positive"></em> items:</p>
@@ -21,9 +21,9 @@
     <a href="#" class="btn reset-selected" data-dismiss="modal">Cancel</a>
     <form method="post" action="{% url admin-actions %}" id="{{ action.op}}Form">
         <button type="submit" class="btn">OK</button>
-        <input type="hidden" name="type" value="{{ action.op }}">
+        <input type="hidden" name="op" value="{{ action.op }}">
       <input type="hidden" name="ids" value="">
-      <input type="hidden" name="resource" value="{{ action.resource }}">
+      <input type="hidden" name="target" value="{{ action.target }}">
     </form>
   </div>
 </div>

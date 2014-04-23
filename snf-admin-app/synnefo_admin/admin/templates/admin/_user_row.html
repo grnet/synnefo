@@ -20,8 +20,9 @@
                 <dd>{{ user.uuid }}</dd>
             <dt>Enabled Providers:</dt>
                 {% for prov in user.get_enabled_auth_providers %}
-                <dd>{{ prov.module }}</dd>
+                <dd>{{ prov.module }},</dd>
                 {% endfor%}
+            <dt>Moderation policy</dt><dd>{{ user.accepted_policy }}</dd>
         </dl>
     </td>
     </tr>

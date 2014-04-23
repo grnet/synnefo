@@ -1,3 +1,30 @@
 {% load admin_tags %}
 {% with vm=item page='vm' %}
+    <tr data-op-list=""
+        id="{{ vm.pk }}">
+    <td class="checkbox-column">
+        <input type="checkbox">
+    </td>
+    <td class="id">{{ vm.pk }}</td>
+    <td class="name">{{ vm.name }}</td>
+    <td class="state">{{ vm.operstate }}</td>
+    <td class="os">{{ vm|get_os }}</td>
+    <td><a href="{% url admin-details page vm.pk %}">Details</a></td>
+    <td class="summary">
+        <a href="#" class="summary-expand badge">
+        <span class="caret"></span>
+        </a>
+        <dl class="info-summary">
+          <dt>User ID:</dt><dd>{{ vm.userid }}</dd>
+          <dt>Image id</dt><dd>{{ vm.imageid }}</dd>
+          <dt>Flavor</dt><dd>CPU: {{ vm.flavor.cpu }}, RAΜ: {{ vm.flavor.ram }},
+          DISK: {{ vm.flavor.disk }}, DISK_TYPE: {{ vm.flavor.disk_template }}</dd>
+          <dt>Created</dt><dd>{{ vm.created }}
+          ({{ vm.created|timesince }} <strong>ago</strong>)</dd>
+          <dt>Updated</dt><dd>{{ vm.updated }}
+          ({{ vm.updated|timesince }} <strong>ago</strong>)</dd>
+          <dt>Suspended</dt><dd>{{ vm.suspended }}</dd>
+        </dl>
+    </td>
+    </tr>
 {% endwith %}

@@ -55,8 +55,19 @@ def generate_actions():
 
 def index(request):
     """Index view for Cyclades VMs."""
-    # TODO
-    return {}
+    context = {}
+    context['action_list'] = generate_actions()
+
+    all = VirtualMachine.objects.all()
+    logging.info("These are the VMs %s", all)
+
+    user_context = {
+        'item_list': all,
+        'item_type': 'vm',
+    }
+
+    context.update(user_context)
+    return context
 
 
 def details(request, query):

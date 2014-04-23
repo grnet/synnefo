@@ -1,5 +1,6 @@
+{% load admin_tags %}
 {% with project=item page='project' %}
-    <tr data-op-list='approve'
+<tr data-op-list='{{ project|get_project_operation_list }}'
         id="{{ project.id }}">
     <td class="checkbox-column">
         <input type="checkbox">

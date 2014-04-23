@@ -1,6 +1,6 @@
 {% load admin_tags %}
 {% with vm=item page='vm' %}
-    <tr data-op-list="vm|get_vm_operation_list"
+<tr data-op-list="{{ vm|get_vm_operation_list }}"
         id="{{ vm.pk }}">
     <td class="checkbox-column">
         <input type="checkbox">

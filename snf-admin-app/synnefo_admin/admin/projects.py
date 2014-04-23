@@ -38,12 +38,20 @@ from actions import AdminAction, nop
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser, ProjectMembership, Project
+from astakos.im.functions import approve_application
 
 templates = {
     'index': 'admin/project_index.html',
     'details': 'admin/project_details.html',
 }
 
+
+def get_project(query):
+    try:
+        project = Project.objects.get(id=query)
+    except Exception:
+        project = Project.objects.get(uuid=query)
+    return project
 
 class ProjectAction(AdminAction):
 
@@ -66,7 +74,7 @@ def generate_actions():
     """
     actions = OrderedDict()
 
-    actions['approve'] = ProjectAction(name='Approve', f=nop,
+    actions['approve'] = ProjectAction(name='Approve', f=approve_application,
                                        severity='trivial')
 
     actions['deny'] = ProjectAction(name='Deny', f=nop, severity='trivial')
@@ -91,7 +99,7 @@ def generate_actions():
 
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
-    project = Project.objects.get(uuid=id)
+    project = get_project(id)
     actions = generate_actions()
     logging.info("Op: %s, project: %s, function", op, project.uuid,
                  actions[op].f)
@@ -102,6 +110,8 @@ def do_action(request, op, id):
         else:
             user = project.owner
         actions[op].f(user, request.POST['text'])
+    elif op == 'approve':
+        actions[op].f(project.last_application.id)
     else:
         actions[op].f(project)
 
@@ -125,10 +135,7 @@ def index(request):
 
 def details(request, query):
     """Details view for Astakos projects."""
-    try:
-        project = Project.objects.get(id=query)
-    except Exception:
-        project = Project.objects.get(uuid=query)
+    project = get_project(query)
 
     users = project.members.all()
     vms = VirtualMachine.objects.filter(project=project.uuid)

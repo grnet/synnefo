@@ -220,8 +220,18 @@ def get_vm_operation_list(vm):
 
     The list is returned as a string, in order to be used in html tags
     """
-    op_list = ['start', 'shutdown', 'destroy', 'suspend', 'release',
-               'reassign', 'contact']
+    op_list = ',start,shutdown,destroy,suspend,release,reassign,contact,'
+
+    return op_list
+
+
+@register.filter
+def get_project_operation_list(project):
+    """Get a space separated list of operations that apply to a project.
+
+    The list is returned as a string, in order to be used in html tags
+    """
+    op_list = ',approve,contact,'
 
     return op_list
 

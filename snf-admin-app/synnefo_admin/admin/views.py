@@ -253,6 +253,8 @@ def details(request, type, id):
     return direct_to_template(request, template, extra_context=context)
 
 
+@csrf_exempt
+@admin_user_required
 def index(request, type):
     """Admin-Interface main index view."""
     logging.info("Request for index. Type: %s", type)
@@ -285,6 +287,7 @@ def _admin_actions_id(request, target, op, id):
         project_views.do_action(request, op, id)
 
 
+@csrf_exempt
 @admin_user_required
 def admin_actions_id(request, target, op, id):
     logging.info("Entered admin actions view for a specific ID")
@@ -297,6 +300,7 @@ def admin_actions_id(request, target, op, id):
     return HttpResponseRedirect(redirect)
 
 
+@csrf_exempt
 @admin_user_required
 def admin_actions(request):
     """Entry-point for all admin actions.

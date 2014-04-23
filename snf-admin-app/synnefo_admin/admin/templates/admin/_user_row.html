@@ -1,7 +1,6 @@
 {% load admin_tags %}
 {% with user=item page='user' %}
-
-    <tr data-op-list={{ user|get_operation_list }}
+    <tr data-op-list={{ user|get_user_operation_list }}
         id="{{ user.uuid }}">
     <td class="checkbox-column">
         <input type="checkbox">

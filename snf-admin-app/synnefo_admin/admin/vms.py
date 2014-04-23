@@ -33,10 +33,16 @@
 
 import logging
 import re
-from actions import AdminAction
+from django.views.decorators.csrf import csrf_exempt
+from collections import OrderedDict
+
+from actions import AdminAction, nop
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser, ProjectMembership, Project
+from astakos.im.functions import send_plain as send_email
+
+from synnefo.logic import servers as servers_backend
 
 templates = {
     'index': 'admin/vm_index.html',
@@ -44,19 +50,82 @@ templates = {
 }
 
 
-def generate_actions():
-    """Create a list of actions on VMs.
+class VMAction(AdminAction):
 
-    The actions are: .
+    """Class for actions on VMs. Derived from AdminAction.
+
+    Pre-determined Attributes:
+        target:        vm
     """
-    # TODO
-    return {}
+
+    def __init__(self, name, f, **kwargs):
+        """Initialize the class with provided values."""
+        AdminAction.__init__(self, name=name, target='vm', f=f, **kwargs)
+
+
+def vm_suspend(vm):
+    """Suspend a VM."""
+    vm.suspended = True
+    vm.save()
+
+
+def vm_suspend_release(vm):
+    """Release previous VM suspension."""
+    vm.suspended = False
+    vm.save()
+
+
+def generate_actions():
+    """Create a list of actions on users.
+
+    The actions are: start/shutdown, restart, destroy,
+                     suspend/release, reassign, contact
+    """
+    actions = OrderedDict()
+
+    actions['start'] = VMAction(name='Start', f=servers_backend.start,
+                                severity='trivial')
+
+    actions['shutdown'] = VMAction(name='Shutdown', f=servers_backend.stop,
+                                   severity='big')
+
+    actions['restart'] = VMAction(name='Restart', f=servers_backend.reboot,
+                                  severity='big')
+
+    actions['destroy'] = VMAction(name='Destroy', f=servers_backend.destroy,
+                                  severity='irreversible')
+
+    actions['suspend'] = VMAction(name='Suspend', f=vm_suspend, severity='big')
+
+    actions['release'] = VMAction(name='Release suspension',
+                                  f=vm_suspend_release, severity='trivial')
+
+    actions['reassign'] = VMAction(name='Reassign', f=nop, severity='big')
+
+    actions['contact'] = VMAction(name='Send e-mail', f=send_email,
+                                  severity='trivial')
+    return actions
+
+
+def do_action(request, op, id):
+    """Apply the requested action on the specified user."""
+    vm = VirtualMachine.object.get(pk=id)
+    actions = generate_actions()
+    logging.info("Op: %s, vm: %s, function", op, vm.pk, actions[op].f)
+
+    if op == 'restart':
+        actions[op].f(vm, "SOFT")
+    elif op == 'contact':
+        user = AstakosUser.objects.get(uuid=vm.userid)
+        actions[op].f(user, request.POST['text'])
+    else:
+        actions[op].f(vm)
 
 
 def index(request):
     """Index view for Cyclades VMs."""
     context = {}
-    context['action_list'] = generate_actions()
+    context['action_dict'] = generate_actions()
 
     all = VirtualMachine.objects.all()
     logging.info("These are the VMs %s", all)

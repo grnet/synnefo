@@ -37,6 +37,7 @@ from astakos.logic import users
 from actions import AdminAction, AdminActionUnknown, AdminActionNotPermitted
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
+from collections import OrderedDict
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser, ProjectMembership, Project
@@ -90,7 +91,7 @@ def generate_actions():
 
     The actions are: activate/deactivate, accept/reject, verify, contact.
     """
-    actions = {}
+    actions = OrderedDict()
 
     actions['activate'] = UserAction(name='Activate', f=users.activate,
                                      severity='trivial')
@@ -223,6 +224,40 @@ def details(request, query):
     return context
 
 # DEPRECATED
+#@csrf_exempt
+#@admin_user_required
+#def account_actions(request, op, account):
+    #"""Entry-point for operation on an account."""
+    #logging.info("Account action \"%s\" on %s started by %s",
+                 #op, account, request.user_uniq)
+
+    #if request.method == "POST":
+        #logging.info("POST body: %s", request.POST)
+    #redirect = reverse('admin-details', args=(account,))
+    #user = get_user(account)
+    #logging.info("I'm here!")
+
+    ## Try to get mail body, if any.
+    #try:
+        #mail = request.POST['text']
+    #except:
+        #mail = None
+
+    #try:
+        #account_actions__(op, user, extra={'mail': mail})
+    #except AdminActionNotPermitted:
+        #logging.info("Account action \"%s\" on %s is not permitted",
+                     #op, account)
+        #redirect = "%s?error=%s" % (redirect, "Action is not permitted")
+    #except AdminActionUnknown:
+        #logging.info("Unknown account action \"%s\"", op)
+        #redirect = "%s?error=%s" % (redirect, "Action is unknown")
+    #except:
+        #logger.exception("account_actions")
+
+    #return HttpResponseRedirect(redirect)
+
+
 #@admin_user_required
 #def account(request, search_query):
     #"""Account details view."""

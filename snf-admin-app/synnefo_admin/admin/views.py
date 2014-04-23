@@ -276,98 +276,6 @@ def index(request, type):
     return direct_to_template(request, template, extra_context=context)
 
 
-@admin_user_required
-@token_check
-def vm_suspend(request, vm_id):
-    vm = VirtualMachine.objects.get(pk=vm_id)
-    vm.suspended = True
-    vm.save()
-    logging.info("VM %s suspended by %s", vm_id, request.user_uniq)
-    account = vm.userid
-    return HttpResponseRedirect(reverse('admin-details', args=(account,)))
-
-
-@admin_user_required
-@token_check
-def vm_suspend_release(request, vm_id):
-    vm = VirtualMachine.objects.get(pk=vm_id)
-    vm.suspended = False
-    vm.save()
-    logging.info("VM %s unsuspended by %s", vm_id, request.user_uniq)
-    account = vm.userid
-    return HttpResponseRedirect(reverse('admin-details', args=(account,)))
-
-
-@admin_user_required
-@token_check
-def vm_shutdown(request, vm_id):
-    logging.info("VM %s shutdown by %s", vm_id, request.user_uniq)
-    vm = VirtualMachine.objects.get(pk=vm_id)
-    account = vm.userid
-    error = None
-    try:
-        jobId = servers_backend.stop(vm)
-    except Exception, e:
-        error = e.message
-
-    redirect = reverse('admin-details', args=(account,))
-    if error:
-        redirect = "%s?error=%s" % (redirect, error)
-    return HttpResponseRedirect(redirect)
-
-
-@admin_user_required
-@token_check
-def vm_start(request, vm_id):
-    logging.info("VM %s start by %s", vm_id, request.user_uniq)
-    vm = VirtualMachine.objects.get(pk=vm_id)
-    account = vm.userid
-    error = None
-    try:
-        jobId = servers_backend.start(vm)
-    except Exception, e:
-        error = e.message
-
-    redirect = reverse('admin-details', args=(account,))
-    if error:
-        redirect = "%s?error=%s" % (redirect, error)
-    return HttpResponseRedirect(redirect)
-
-
-@csrf_exempt
-@admin_user_required
-def account_actions(request, op, account):
-    """Entry-point for operation on an account."""
-    logging.info("Account action \"%s\" on %s started by %s",
-                 op, account, request.user_uniq)
-
-    if request.method == "POST":
-        logging.info("POST body: %s", request.POST)
-    redirect = reverse('admin-details', args=(account,))
-    user = get_user(account)
-    logging.info("I'm here!")
-
-    # Try to get mail body, if any.
-    try:
-        mail = request.POST['text']
-    except:
-        mail = None
-
-    try:
-        account_actions__(op, user, extra={'mail': mail})
-    except AdminActionNotPermitted:
-        logging.info("Account action \"%s\" on %s is not permitted",
-                     op, account)
-        redirect = "%s?error=%s" % (redirect, "Action is not permitted")
-    except AdminActionUnknown:
-        logging.info("Unknown account action \"%s\"", op)
-        redirect = "%s?error=%s" % (redirect, "Action is unknown")
-    except:
-        logger.exception("account_actions")
-
-    return HttpResponseRedirect(redirect)
-
-
 def _admin_actions_id(request, target, op, id):
     if target == 'user':
         user_views.do_action(request, op, id)
@@ -377,7 +285,7 @@ def _admin_actions_id(request, target, op, id):
         project_views.do_action(request, op, id)
 
 
-@csrf_exempt
+@admin_user_required
 def admin_actions_id(request, target, op, id):
     logging.info("Entered admin actions view for a specific ID")
 
@@ -389,7 +297,7 @@ def admin_actions_id(request, target, op, id):
     return HttpResponseRedirect(redirect)
 
 
-@csrf_exempt
+@admin_user_required
 def admin_actions(request):
     """Entry-point for all admin actions.
 

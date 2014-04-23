@@ -70,3 +70,15 @@ class AdminActionUnknown(Exception):
     """Exception when an action is unknown."""
 
     pass
+
+
+class AdminActionNotImplemented(Exception):
+
+    """Exception when an action is not implemented."""
+
+    pass
+
+
+def nop(**kwargs):
+    """Placeholder function."""
+    raise AdminActionNotImplemented

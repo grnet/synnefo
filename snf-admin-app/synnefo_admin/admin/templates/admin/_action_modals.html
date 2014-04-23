@@ -18,7 +18,7 @@
     <p>Are you sure you want to complete the operation?</p>
   </div>
   <div class="modal-footer positive area">
-    <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+    <a href="#" class="btn reset-selected" data-dismiss="modal">Cancel</a>
     <form method="post" action="{% url admin-actions %}" id="{{ action.op}}Form">
         <button type="submit" class="btn">OK</button>
         <input type="hidden" name="type" value="{{ action.op }}">

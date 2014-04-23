@@ -314,6 +314,8 @@ filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#d4e2ed', end
   -webkit-border-radius: 4px;
   -moz-border-radius: 4px;
   border-radius: 4px;
+  width: 170px;
+  float: left;
 }
 
 .messages .sidebar ul {
@@ -538,4 +540,12 @@ textarea, input {
     font-weight: bold;
     font-style: normal;
   }
+}
+
+#chartdiv {
+  margin: auto;
+}
+
+body .object-details h4 em {
+  float: none;
 }

@@ -212,7 +212,7 @@ $(document).ready(function() {
 		});
 	}
 
-	var oTable = initTable('#table-items-total');
+	 var oTable = initTable('#table-items-total');
 
 
 	function clickSummary() {
@@ -236,6 +236,18 @@ $(document).ready(function() {
 		})
 	}
 
+	$('.modal .reset-selected').click(function(e) {
+		console.log('RESET');
+		var table = '#'+ 'table-items-total_wrapper';
+		resetTable(table);
+	});
+	$('.modal button[type=submit]').click(function(e) {
+		if(selected.items.length === 0) {
+			e.preventDefault();
+			console.log('nothing to submit');
+		}
+	})
+
 	/* Select-all checkbox */
 
 	$('table thead th:first input[type=checkbox]').click(function(e) {
@@ -246,6 +258,7 @@ $(document).ready(function() {
 		toggleVisCheckboxes(checkboxState, tableDomID);
 	});
 
+/* *** Check fnRowCallback */
 	$('.dataTables_filter input[type=text]').keypress(function(e) {
 
 		// if space or enter is typed do nothing
@@ -256,6 +269,7 @@ $(document).ready(function() {
 	});
 
 	function resetTable(tableDomID) {
+		console.log('resetTable');
 		$(tableDomID).find('thead .select-all input[type=checkbox]').attr('checked', false);
 			selected.items = [];
 			$(tableDomID).find('thead .selected-num').html(selected.items.length);

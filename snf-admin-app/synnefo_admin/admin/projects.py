@@ -125,5 +125,24 @@ def index(request):
 
 def details(request, query):
     """Details view for Astakos projects."""
-    # TODO
-    return None
+    try:
+        project = Project.objects.get(id=query)
+    except Exception:
+        project = Project.objects.get(uuid=query)
+
+    users = project.members.all()
+    vms = VirtualMachine.objects.filter(project=project.uuid)
+    networks = Network.objects.filter(project=project.uuid)
+
+    context = {
+        'main_item': project,
+        'main_type': 'project',
+        'associations_list': [
+            (users, 'user'),
+            (vms, 'vm'),
+            (networks, 'network'),
+        ]
+    }
+
+    return context
+

@@ -156,7 +156,7 @@ def _create_volume(server, user_id, size, source_type, source_uuid,
             raise faults.BadRequest("Volume size is required")
         source = origin = None
     else:
-        raise faults.BadRequest("Unknwon source type")
+        raise faults.BadRequest("Unknown source type")
 
     volume = Volume.objects.create(userid=user_id,
                                    size=size,

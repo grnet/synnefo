@@ -416,7 +416,7 @@ def get_volumes_size_delta(volumes_changes):
         elif action == "modify":
             size_delta += info.get("size_delta", 0)
         else:
-            raise ValueError("Unknwon volume action '%s'" % action)
+            raise ValueError("Unknown volume action '%s'" % action)
     return size_delta
 
 

@@ -72,10 +72,10 @@ def get_db_holdings(user=None, project=None):
         holdings[user][project]["cyclades.ram"] = vm_res["ram"] * MiB
 
     # Get disk resource
-    disk_resources = volumes.values("userid").annotate(Sum("size"))
+    disk_resources = volumes.values("userid", "project").annotate(Sum("size"))
     for disk_res in disk_resources.iterator():
         user = disk_res["userid"]
-        project = vm_res['project']
+        project = disk_res['project']
         holdings[user][project]["cyclades.disk"] = disk_res["size__sum"] * GiB
 
     # Get resources related with networks
@@ -108,24 +108,25 @@ def get_db_project_holdings(project=None):
     vms = VirtualMachine.objects.filter(deleted=False)
     networks = Network.objects.filter(deleted=False)
     floating_ips = IPAddress.objects.filter(deleted=False, floating_ip=True)
+    volumes = Volume.objects.filter(deleted=False)
 
     if project is not None:
         vms = vms.filter(project=project)
         networks = networks.filter(project=project)
         floating_ips = floating_ips.filter(project=project)
+        volumes = volumes.filter(project=project)
 
     # Get resources related with VMs
     vm_resources = vms.values("project")\
         .annotate(num=Count("id"),
                   total_ram=Sum("flavor__ram"),
                   total_cpu=Sum("flavor__cpu"),
-                  disk=Sum("flavor__disk"))
+                  )
 
     for vm_res in vm_resources.iterator():
         project = vm_res['project']
         res = {"cyclades.vm": vm_res["num"],
                "cyclades.total_cpu": vm_res["total_cpu"],
-               "cyclades.disk": vm_res["disk"] * GiB,
                "cyclades.total_ram": vm_res["total_ram"] * MiB}
         holdings[project] = res
 
@@ -139,6 +140,12 @@ def get_db_project_holdings(project=None):
         project = vm_res['project']
         holdings[project]["cyclades.cpu"] = vm_res["cpu"]
         holdings[project]["cyclades.ram"] = vm_res["ram"] * MiB
+
+    # Get disk resource
+    disk_resources = volumes.values("project").annotate(Sum("size"))
+    for disk_res in disk_resources.iterator():
+        project = disk_res['project']
+        holdings[project]["cyclades.disk"] = disk_res["size__sum"] * GiB
 
     # Get resources related with networks
     net_resources = networks.values("project").annotate(num=Count("id"))

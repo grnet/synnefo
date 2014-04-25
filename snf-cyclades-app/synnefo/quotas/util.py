@@ -51,13 +51,6 @@ def get_db_holdings(user=None, project=None):
                   total_ram=Sum("flavor__ram"),
                   total_cpu=Sum("flavor__cpu"))
 
-    vm_active_resources = \
-        vms.values("userid")\
-           .filter(Q(operstate="STARTED") | Q(operstate="BUILD") |
-                   Q(operstate="ERROR"))\
-           .annotate(ram=Sum("flavor__ram"),
-                     cpu=Sum("flavor__cpu"))
-
     for vm_res in vm_resources.iterator():
         user = vm_res['userid']
         project = vm_res['project']

@@ -486,9 +486,12 @@ class VMC(base.Component):
 
     def extra_components(self):
         if self.cluster.synnefo:
-            return [Image, GTools, GanetiCollectd]
+            return [
+                Image, GTools, GanetiCollectd,
+                PithosBackend, Archip, ArchipGaneti
+                ]
         else:
-            return []
+            return [ExtStorage, Archip, ArchipGaneti]
 
     def required_components(self):
         return [
@@ -1160,8 +1163,8 @@ class NFS(base.Component):
         return [
             "mkdir -p %s" % config.image_dir,
             "mkdir -p %s/data" % p,
-            "mkdir -p /srv/archip/blocks",
-            "mkdir -p /srv/archip/maps",
+            "mkdir -p %s/blocks" % config.archip_dir,
+            "mkdir -p %s/maps" % config.archip_dir,
             "chown www-data.www-data %s/data" % p,
             "chmod g+ws %s/data" % p,
             ]
@@ -1170,12 +1173,12 @@ class NFS(base.Component):
     def update_exports(self):
         ip = self.ctx.admin_node.ip
         cmd = """
-grep {2} /etc/exports || cat >> /etc/exports <<EOF
-{0} {2}(rw,async,no_subtree_check,no_root_squash)
-{1} {2}(rw,async,no_subtree_check,no_root_squash)
-/srv/archip {2}(rw,async,no_subtree_check,no_root_squash)
+grep {3} /etc/exports || cat >> /etc/exports <<EOF
+{0} {3}(rw,async,no_subtree_check,no_root_squash)
+{1} {3}(rw,async,no_subtree_check,no_root_squash)
+{2} {3}(rw,async,no_subtree_check,no_root_squash)
 EOF
-""".format(config.pithos_dir, config.image_dir, ip)
+""".format(config.pithos_dir, config.image_dir, config.archip_dir, ip)
         return [cmd]
 
     @base.run_cmds
@@ -1195,7 +1198,10 @@ class Pithos(base.Component):
     service = constants.PITHOS
 
     def required_components(self):
-        return [HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB]
+        return [
+            HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB,
+            PithosBackend, Archip
+            ]
 
     @update_admin
     def admin_pre(self):
@@ -1285,7 +1291,7 @@ class Cyclades(base.Component):
     def required_components(self):
         return [
             HW, SSH, DNS, APT,
-            Apache, Gunicorn, Common, WEB, VNC
+            Apache, Gunicorn, Common, WEB, VNC, PithosBackend, Archip
             ]
 
     @update_admin

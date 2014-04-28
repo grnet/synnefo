@@ -1,76 +1,208 @@
-/*$(document).ready(function() {
+$(document).ready(function() {
+	Highcharts.setOptions({colors: ['#00BC8C', '#f45b5b', '#f7a35c', '#858585', '#64E572', '#FF9655', '#FFF263', '#6AF9C4']});
+	// with drilldown
+	$('#pie-drilldown').highcharts({
+	chart: {
+			plotBackgroundColor: null,
+			plotBorderWidth: null,
+			plotShadow: false,
+			type: 'pie'
+		},
+		title: {
+			text: 'Accounts State'
+		},
+		subtitle: {
+			text: "Click the slices to view the authentication methods of each category"
+		},
+		tooltip: {
+			headerFormat: '<span>{point.key} Accounts</span><br/>',
+			pointFormat: 'Population: {point.num}'
+		},
+		plotOptions: {
+			pie: {
+				allowPointSelect: true,
+				cursor: 'pointer',
+				dataLabels: {
+					enabled: true,
+					format: '<b>{point.name}: {point.percentage:.1f} %</b>',
+					style: {
+						colors: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+					}
+				}
+			}
+		},
+		series: [{
+			// type: 'pie',
+			name: 'Accounts' ,
+			data: 
+				[{
+					name: 'Active',
+					y: 63.2,
+					// sliced: true,
+					// selected: true,
+					num: 3000,
+					drilldown: 'providers-act'
+				},
+				{
+					name: 'Inactive',
+					y:   2.4,
+					drilldown: 'providers-inact',
+					num: 100,
+				},
+				{
+					name: 'Pending Moderation',
+					y: 27.1,
+					num: 700,
+					drilldown: 'providers-pMod'
+				},
+				{
+					name: 'Pending Verification',
+					y: 7.3,
+					num: 300,
+					drilldown: 'providers-pVer'
+				}]
+		}],
+		drilldown: {
+			series: 
+				[{
+					id: 'providers-act',
+					data: [
+						{
+							name: 'Shibboleth',
+							y: 60 // percentage is per parent-slice (60% of active accounts are shibboleth)
+						},
+						{
+							name: 'Local',
+							y: 40
+						}]
+				},
+				{
+					id: 'providers-inact',
+					data: [
+						{
+							name: 'Shibboleth',
+							y: 10
+						},
+						{
+						name: 'Local',
+						y: 90
+						}]
+				},
+				{
+					id: 'providers-pMod',
+					data: [
+						{
+							name: 'Shibboleth',
+							y: 0
+						},
+					{
+						name: 'Local',
+						y: 100
+					}]
+				},
+				{
+					id: 'providers-pVer',
+					data: [
+						{
+							name: 'Shibboleth',
+							y: 20
+						},
+						{
+							name: 'Local',
+							y: 80
+						}]
+				}]
+		}
+	});
 
-// 	function drawChart() {
-// 		google.load("visualization", "1", {packages:["corechart"]});
-// 		google.setOnLoadCallback(initialize);
-// 	    var data = google.visualization.arrayToDataTable([
-// 	        ['Account State', 'Number'],
-// 	        ['Active',     50],
-// 	        ['Other',      200]
-// 	    ]);
-
-//     var options = {
-//         title: 'Test',
-//         is3D: true
-//     };
-
-//     var chart = new google.visualization.PieChart(document.getElementById('pie-active-users'));
-//     chart.draw(data, options);
-// }
-
-	if($('#pie-active-users').length>0) {
-      function drawChart() {
-      	console.log('hi')
-        var data = google.visualization.arrayToDataTable([
-          ['Task', 'Hours per Day'],
-          ['Work',     11],
-          ['Eat',      2],
-          ['Commute',  2],
-          ['Watch TV', 2],
-          ['Sleep',    7]
-        ]);
-      google.load("visualization", "1", {packages:["corechart"], callback: 'drawChart'});
-      google.setOnLoadCallback(drawChart);
-
-        var options = {
-          title: 'My Daily Activities'
-        };
-
-        var chart = new google.visualization.PieChart($('#pie-active-users'));
-        chart.draw(data, options);
-      }
 
 
-}
-});*/
+
+$('#pie-simple').highcharts({
+	chart: {
+			plotBackgroundColor: null,
+			plotBorderWidth: null,
+			plotShadow: false,
+			type: 'pie'
+		},
+		title: {
+			text: 'Servers Status'
+		},
+		subtitle: {
+			text: "Data Last update: 12/12/2012 01.00"
+		},
+		tooltip: {
+			headerFormat: '<span>{point.key} Servers</span><br/>',
+			pointFormat: 'Population: {point.num}'
+		},
+		plotOptions: {
+			pie: {
+				allowPointSelect: true,
+				cursor: 'pointer',
+				dataLabels: {
+					enabled: true,
+					format: '<b>{point.name}: {point.percentage:.1f} %</b>',
+					style: {
+						colors: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+					}
+				}
+			}
+		},
+		series: [{
+			// type: 'pie',
+			name: 'Servers' ,
+			data: 
+				[{
+					name: 'Started',
+					y: 45,
+					// sliced: true,
+					// selected: true,
+					num: 2250
+				},
+				{
+					name: 'Error',
+					y:   5,
+					num: 250,
+				},
+				{
+					name: 'Stopped',
+					y: 50,
+					num: 2500,
+					color: '#858585'
+				}]
+		}]
+	});
 
 
-$(document).ready(function(){
-	if($('#chartdiv').length > 0) {
-		// var statsData;
-		$.getJSON( "/stats/", function( statsData ) {			
-			var usersActive = statsData.astakos.users.active;
-			var usersTotal = statsData.astakos.users.total;
-			var usersNotActive = usersTotal - usersActive; 
-		    var data = [
-			    ['Active', usersActive],['Other', usersNotActive]
-			];
-			var plot1 =jQuery.jqplot ('chartdiv', [data], 
-		    { 
-		      seriesDefaults: {
-		        // Make this a pie chart.
-		        renderer: jQuery.jqplot.PieRenderer, 
-		        rendererOptions: {
-		          // Put data labels on the pie slices.
-		          // By default, labels show the percentage of the slice.
-		          showDataLabels: true
-		        }
-			  }, 
-		      legend: { show:true, location: 'e' }
-		    }
-		  );
-				
-		});
+	/*
+	Notes:
+	- the series.data should be placed in this order so each pie-slice to have the right color (eg active <- green)
+	- I want the tooltip to have the raw number of population se I added "property"
+	- The plan is to create series.data form the accountsData func that will take as parameter an array of objs like accounts
+	*/
+	//     function accountsData() {
 
-	}
+	//     }
+	//     var accounts = [
+	//     {
+	//     	state: 'Active',
+	//     	population: 1000,
+	//     	percentage: 0
+	//     },
+	//     {
+	//     	state: 'Inactive',
+	//     	population: 10,
+	//     	percentage: 0
+	//     },
+	//     {
+	//     	state: 'Pending Verification',
+	//     	population: 300,
+	//     	percentage: 0
+	//     },
+	//     {
+	//     	state: 'Pending Moderation',
+	//     	population: 700,
+	//     	percentage: 0
+	//     }]
+
 });

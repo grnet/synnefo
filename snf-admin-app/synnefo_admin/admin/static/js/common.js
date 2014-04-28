@@ -4,9 +4,9 @@ $(document).ready(function(){
 
  // table sorting
 
-   $('.table-sorted:not(.table-users)').tablesorter({
-      sortList : [[2,0]],
-  });
+   //$('.table-sorted:not(.table-users)').tablesorter({
+      //sortList : [[2,0]],
+  //});
 
  // fix sub nav on scroll
   var $win = $(window)

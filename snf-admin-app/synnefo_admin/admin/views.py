@@ -61,6 +61,11 @@ from synnefo.logic import servers as servers_backend
 from synnefo.ui.views import UI_MEDIA_URL
 import copy
 
+# for django-eztables
+from django.template import add_to_builtins
+add_to_builtins('eztables.templatetags.eztables')
+from eztables.views import DatatablesView
+
 logger = logging.getLogger(__name__)
 
 ADMIN_MEDIA_URL = getattr(settings, 'ADMIN_MEDIA_URL',
@@ -104,7 +109,7 @@ def search_by_ip(request, search_query):
                                                  logger=logger)
 
     ips = IPAddressLog.objects.filter(address=search_query)\
-                              .order_by("allocated_at")
+        .order_by("allocated_at")
 
     for ip in ips:
         # Annotate IPs with the VM, Network and account attributes
@@ -230,6 +235,18 @@ def stats(request):
                               extra_context=default_dict)
 
 
+class GenericJSONView(DatatablesView):
+    model = AstakosUser
+    fields = ('realname',
+              'email',
+              'status_display')
+
+    def get_context_data(self, **kwargs):
+        # Call the base implementation first to get a context
+        context = super(DatatablesView, self).get_context_data(**kwargs)
+        return context
+
+
 @csrf_exempt
 @admin_user_required
 def details(request, type, id):
@@ -253,8 +270,8 @@ def details(request, type, id):
     return direct_to_template(request, template, extra_context=context)
 
 
-@csrf_exempt
-@admin_user_required
+#@csrf_exempt
+#@admin_user_required
 def index(request, type):
     """Admin-Interface main index view."""
     logging.info("Request for index. Type: %s", type)

@@ -348,8 +348,8 @@ td.summary {
     padding-left: 8px;
     background-color: rgb(185, 238, 202);
     padding-right: 8px;
-    .caret {
-      opacity: 0.9;
+    &:hover {
+      text-decoration: none;
     }
   }
    dl {

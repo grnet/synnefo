@@ -662,8 +662,8 @@ td.summary .summary-expand {
   padding-right: 8px;
 }
 /* line 351, ../sass/extra.scss */
-td.summary .summary-expand .caret {
-  opacity: 0.9;
+td.summary .summary-expand:hover {
+  text-decoration: none;
 }
 /* line 355, ../sass/extra.scss */
 td.summary dl {

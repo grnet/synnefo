@@ -999,7 +999,7 @@ class SynnefoCI(object):
 
         self.logger.debug("Run snf-deploy")
         cmd = """
-        snf-deploy --disable-colors --autoconf all
+        snf-deploy --disable-colors --autoconf synnefo
         """
         _run(cmd, True)
 

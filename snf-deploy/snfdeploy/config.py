@@ -63,7 +63,9 @@ def get_single_node_role_info(setup, role):
     assert setup and role
     nodes = get(setup, role)
     assert len(nodes) == 1
-    return get_node_info(nodes[0])
+    info = get_node_info(nodes[0])
+    info.alias = role
+    return info
 
 
 def get_package(package, os="debian"):

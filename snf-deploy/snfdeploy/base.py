@@ -273,7 +273,9 @@ class Component(ComponentRunner):
 
     @property
     def node(self):
-        return self.ctx.node_info
+        info = self.ctx.node_info
+        info.alias = self.alias
+        return info
 
     @property
     def cluster(self):

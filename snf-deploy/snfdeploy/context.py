@@ -87,7 +87,9 @@ class Context(object):
 
     @property
     def master(self):
-        return config.get_single_node_role_info(self.cluster, constants.MASTER)
+        info = config.get_single_node_role_info(self.cluster, constants.MASTER)
+        info.alias = None
+        return info
 
     @property
     def vmcs(self):

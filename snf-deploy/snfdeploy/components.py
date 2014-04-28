@@ -389,7 +389,7 @@ class MQ(base.Component):
 
     @base.run_cmds
     def check(self):
-        return ["ping -c 1 %s" % self.node.fqdn]
+        return ["ping -c 1 %s" % self.node.cname]
 
     @base.run_cmds
     def initialize(self):
@@ -417,7 +417,7 @@ class DB(base.Component):
 
     @base.run_cmds
     def check(self):
-        return ["ping -c 1 %s" % self.node.fqdn]
+        return ["ping -c 1 %s" % self.node.cname]
 
     @parse_user_info
     @base.run_cmds
@@ -687,7 +687,7 @@ class Image(base.Component):
             "synnefo_user": config.synnefo_user,
             "synnefo_db_passwd": config.synnefo_db_passwd,
             "pithos_dir": config.pithos_dir,
-            "db_node": self.ctx.db.ip,
+            "db_node": self.ctx.db.cname,
             "image_dir": config.image_dir,
             }
         return [(tmpl, replace, {})]
@@ -704,7 +704,7 @@ class GTools(base.Component):
 
     @base.run_cmds
     def check(self):
-        return ["ping -c1 %s" % self.ctx.mq.ip]
+        return ["ping -c1 %s" % self.ctx.mq.cname]
 
     @base.run_cmds
     def prepare(self):
@@ -717,7 +717,7 @@ class GTools(base.Component):
         replace = {
             "synnefo_user": config.synnefo_user,
             "synnefo_rabbitmq_passwd": config.synnefo_rabbitmq_passwd,
-            "mq_node": self.ctx.mq.ip,
+            "mq_node": self.ctx.mq.cname,
             }
         return [(tmpl, replace, {})]
 
@@ -865,13 +865,13 @@ class WEB(base.Component):
 
     @base.run_cmds
     def check(self):
-        return ["ping -c1 %s" % self.ctx.db.fqdn]
+        return ["ping -c1 %s" % self.ctx.db.cname]
 
     def _configure(self):
         r1 = {
             "synnefo_user": config.synnefo_user,
             "synnefo_db_passwd": config.synnefo_db_passwd,
-            "db_node": self.ctx.db.fqdn,
+            "db_node": self.ctx.db.cname,
             "domain": self.node.domain,
             }
         return [
@@ -990,10 +990,10 @@ class Astakos(base.Component):
 
     def _configure(self):
         r1 = {
-            "ACCOUNTS": self.ctx.astakos.fqdn,
+            "ACCOUNTS": self.ctx.astakos.cname,
             "domain": self.node.domain,
-            "CYCLADES": self.ctx.cyclades.fqdn,
-            "PITHOS": self.ctx.pithos.fqdn,
+            "CYCLADES": self.ctx.cyclades.cname,
+            "PITHOS": self.ctx.pithos.cname,
             }
         return [
             ("/etc/synnefo/astakos.conf", r1, {})
@@ -1011,17 +1011,17 @@ class Astakos(base.Component):
 
     def _astakos_oa2(self):
         secret = config.oa2_secret
-        view = "https://%s/pithos/ui/view" % self.ctx.pithos.fqdn
+        view = "https://%s/pithos/ui/view" % self.ctx.pithos.cname
         cmd = "snf-manage oauth2-client-add pithos-view \
                   --secret=%s --is-trusted --url %s || true" % (secret, view)
         return [cmd]
 
     def _astakos_register_components(self):
         # base urls
-        cbu = "https://%s/cyclades" % self.ctx.cyclades.fqdn
-        pbu = "https://%s/pithos" % self.ctx.pithos.fqdn
-        abu = "https://%s/astakos" % self.ctx.astakos.fqdn
-        cmsurl = "https://%s/home" % self.ctx.cms.fqdn
+        cbu = "https://%s/cyclades" % self.ctx.cyclades.cname
+        pbu = "https://%s/pithos" % self.ctx.pithos.cname
+        abu = "https://%s/astakos" % self.ctx.astakos.cname
+        cmsurl = "https://%s/home" % self.ctx.cms.cname
 
         cmd = "snf-manage component-add"
         h = "%s home --base-url %s --ui-url %s" % (cmd, cmsurl, cmsurl)
@@ -1080,7 +1080,7 @@ class CMS(base.Component):
 
     def _configure(self):
         r1 = {
-            "ACCOUNTS": self.ctx.astakos.fqdn
+            "ACCOUNTS": self.ctx.astakos.cname
             }
         r2 = {
             "DOMAIN": self.node.domain
@@ -1130,7 +1130,7 @@ class Mount(base.Component):
 cat >> /etc/fstab <<EOF
 {0}:{1} {1}  nfs defaults,rw,noatime,rsize=131072,wsize=131072 0 0
 EOF
-""".format(self.ctx.nfs.ip, d)
+""".format(self.ctx.nfs.cname, d)
             ret.append(cmd)
 
         return ret
@@ -1171,14 +1171,14 @@ class NFS(base.Component):
 
     @base.run_cmds
     def update_exports(self):
-        ip = self.ctx.admin_node.ip
+        fqdn = self.ctx.admin_node.fqdn
         cmd = """
 grep {3} /etc/exports || cat >> /etc/exports <<EOF
 {0} {3}(rw,async,no_subtree_check,no_root_squash)
 {1} {3}(rw,async,no_subtree_check,no_root_squash)
 {2} {3}(rw,async,no_subtree_check,no_root_squash)
 EOF
-""".format(config.pithos_dir, config.image_dir, config.archip_dir, ip)
+""".format(config.pithos_dir, config.image_dir, config.archip_dir, fqdn)
         return [cmd]
 
     @base.run_cmds
@@ -1223,9 +1223,9 @@ class Pithos(base.Component):
 
     def _configure(self):
         r1 = {
-            "ACCOUNTS": self.ctx.astakos.fqdn,
-            "PITHOS": self.ctx.pithos.fqdn,
-            "db_node": self.ctx.db.ip,
+            "ACCOUNTS": self.ctx.astakos.cname,
+            "PITHOS": self.ctx.pithos.cname,
+            "db_node": self.ctx.db.cname,
             "synnefo_user": config.synnefo_user,
             "synnefo_db_passwd": config.synnefo_db_passwd,
             "pithos_dir": config.pithos_dir,
@@ -1233,7 +1233,7 @@ class Pithos(base.Component):
             "oa2_secret": config.oa2_secret,
             }
         r2 = {
-            "ACCOUNTS": self.ctx.astakos.fqdn,
+            "ACCOUNTS": self.ctx.astakos.cname,
             "PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE": context.service_id,
             }
 
@@ -1265,7 +1265,7 @@ class PithosBackend(base.Component):
 
     def _configure(self):
         r1 = {
-            "db_node": self.ctx.db.ip,
+            "db_node": self.ctx.db.cname,
             "synnefo_user": config.synnefo_user,
             "synnefo_db_passwd": config.synnefo_db_passwd,
             "pithos_dir": config.pithos_dir,
@@ -1371,20 +1371,20 @@ snf-manage network-create --subnet6={0} \
 
     def _configure(self):
         r1 = {
-            "ACCOUNTS": self.ctx.astakos.fqdn,
-            "CYCLADES": self.ctx.cyclades.fqdn,
-            "mq_node": self.ctx.mq.ip,
-            "db_node": self.ctx.db.ip,
+            "ACCOUNTS": self.ctx.astakos.cname,
+            "CYCLADES": self.ctx.cyclades.cname,
+            "mq_node": self.ctx.mq.cname,
+            "db_node": self.ctx.db.cname,
             "synnefo_user": config.synnefo_user,
             "synnefo_db_passwd": config.synnefo_db_passwd,
             "synnefo_rabbitmq_passwd": config.synnefo_rabbitmq_passwd,
             "pithos_dir": config.pithos_dir,
             "common_bridge": config.common_bridge,
-            "HOST": self.ctx.cyclades.ip,
             "domain": self.node.domain,
             "CYCLADES_SERVICE_TOKEN": context.service_token,
-            "STATS": self.ctx.stats.fqdn,
+            "STATS": self.ctx.stats.cname,
             "SYNNEFO_VNC_PASSWD": config.synnefo_vnc_passwd,
+            # TODO: fix java issue with no signed jar
             "CYCLADES_NODE_IP": self.ctx.cyclades.ip
             }
         return [
@@ -1461,7 +1461,7 @@ class Kamaki(base.Component):
 
     @base.run_cmds
     def initialize(self):
-        url = "https://%s/astakos/identity/v2.0" % self.ctx.astakos.fqdn
+        url = "https://%s/astakos/identity/v2.0" % self.ctx.astakos.cname
         token = context.user_auth_token
         return [
             "kamaki config set cloud.default.url %s" % url,
@@ -1555,7 +1555,7 @@ class Stats(base.Component):
 
     def _configure(self):
         r1 = {
-            "STATS": self.ctx.stats.fqdn,
+            "STATS": self.ctx.stats.cname,
             }
         return [
             ("/etc/synnefo/stats.conf", r1, {}),
@@ -1573,7 +1573,7 @@ class Stats(base.Component):
 class GanetiCollectd(base.Component):
     def _configure(self):
         r1 = {
-            "STATS": self.ctx.stats.fqdn,
+            "STATS": self.ctx.stats.cname,
             }
         return [
             ("/etc/collectd/passwd", {}, {}),

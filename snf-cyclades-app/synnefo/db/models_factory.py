@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import factory
+from factory.fuzzy import FuzzyChoice
 from synnefo.db import models
 from random import choice
 from string import letters, digits
@@ -42,13 +43,23 @@ def random_string(x):
     return ''.join([choice(digits + letters) for i in range(x)])
 
 
+class VolumeTypeFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.VolumeType
+    FACTORY_DJANGO_GET_OR_CREATE = ("disk_template",)
+    name = factory.Sequence(prefix_seq("vtype"))
+    disk_template = FuzzyChoice(
+        choices=["file", "plain", "drbd", "ext_archipelago"]
+    )
+    deleted = False
+
+
 class FlavorFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.Flavor
 
     cpu = factory.Sequence(lambda n: n + 2, type=int)
     ram = factory.Sequence(lambda n: n * 512, type=int)
     disk = factory.Sequence(lambda n: n * 10, type=int)
-    disk_template = 'drbd'
+    volume_type = factory.SubFactory(VolumeTypeFactory)
     deleted = False
 
 
@@ -69,7 +80,7 @@ class BackendFactory(factory.DjangoModelFactory):
     pinst_cnt = 2
     ctotal = 80
 
-    disk_templates = ["file", "plain", "drbd"]
+    disk_templates = ["file", "plain", "drbd", "ext"]
 
 
 class DrainedBackend(BackendFactory):
@@ -101,9 +112,7 @@ class VolumeFactory(factory.DjangoModelFactory):
     name = factory.Sequence(lambda x: "volume-name-"+x, type=str)
     machine = factory.SubFactory(VirtualMachineFactory,
                                  userid=factory.SelfAttribute('..userid'))
-    disk_template = factory.LazyAttribute(lambda v:
-                                          v.machine.flavor.disk_template
-                                          if v.machine else "drbd")
+    volume_type = factory.SubFactory(VolumeTypeFactory)
 
 
 class DeletedVirtualMachine(VirtualMachineFactory):

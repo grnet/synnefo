@@ -6,10 +6,10 @@
     $(function(){
         $('#items-table').dataTable({
             "bPaginate": true,
-            // "sPaginationType": "bootstrap",
+            //"sPaginationType": "bootstrap",
             "bProcessing": true,
             "bServerSide": true,
-            "sAjaxSource": Django.url('admin-json'),
+            "sAjaxSource": "/admin/json/user",
         });
     });
 

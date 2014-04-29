@@ -237,14 +237,14 @@ def stats(request):
 
 class GenericJSONView(DatatablesView):
     model = AstakosUser
-    fields = ('realname',
+    fields = ('uuid',
               'email',
-              'status_display')
+              'is_active')
 
-    def get_context_data(self, **kwargs):
-        # Call the base implementation first to get a context
-        context = super(DatatablesView, self).get_context_data(**kwargs)
-        return context
+    #def get_context_data(self, **kwargs):
+    #    # Call the base implementation first to get a context
+    #    context = super(DatatablesView, self).get_context_data(**kwargs)
+    #    return context
 
 
 @csrf_exempt

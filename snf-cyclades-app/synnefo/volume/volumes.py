@@ -81,13 +81,13 @@ def _create_volume(server, user_id, size, source_type, source_uuid,
                             "Volume name is too long")
     # Only ext_ disk template supports cloning from another source. Otherwise
     # is must be the root volume so that 'snf-image' fill the volume
-    disk_template = server.flavor.disk_template
-    teplate, provider = util.get_disk_template_provider(disk_template)
+    volume_type = server.flavor.volume_type
     can_have_source = (index == 0 or
-                       provider in settings.GANETI_CLONE_PROVIDERS)
+                       volume_type.provider in settings.GANETI_CLONE_PROVIDERS)
     if not can_have_source and source_type != "blank":
-        msg = ("Volumes of '%s' disk template cannot have a source" %
-               disk_template)
+        msg = ("Cannot specify a 'source' attribute for volume type '%s' with"
+               " disk template '%s'" %
+               (volume_type.id, volume_type.disk_template))
         raise faults.BadRequest(msg)
 
     # TODO: Check Volume/Snapshot Status
@@ -147,14 +147,13 @@ def _create_volume(server, user_id, size, source_type, source_uuid,
 
     volume = Volume.objects.create(userid=user_id,
                                    size=size,
-                                   disk_template=disk_template,
+                                   volume_type=volume_type,
                                    name=name,
                                    machine=server,
                                    description=description,
                                    delete_on_termination=delete_on_termination,
                                    source=source,
                                    origin=origin,
-                                   #volume_type=volume_type,
                                    status="CREATING")
     return volume
 

@@ -80,8 +80,9 @@ class ServerCreationTest(TransactionTestCase):
 
         # test ext settings:
         req = deepcopy(kwargs)
-        ext_flavor = mfactory.FlavorFactory(disk_template="ext_archipelago",
-                                            disk=1)
+        ext_flavor = mfactory.FlavorFactory(
+            volume_type__disk_template="ext_archipelago",
+            disk=1)
         req["flavor"] = ext_flavor
         mrapi().CreateInstance.return_value = 42
         backend.disk_templates = ["ext"]

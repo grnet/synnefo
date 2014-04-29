@@ -29,7 +29,7 @@ class VolumesTest(BaseAPITest):
         self.size = 1
         self.vm = mf.VirtualMachineFactory(
             userid=self.userid,
-            flavor__disk_template="ext_archipelago")
+            flavor__volume_type__disk_template="ext_archipelago")
         self.kwargs = {"user_id": self.userid,
                        "size": self.size,
                        "server_id": self.vm.id}

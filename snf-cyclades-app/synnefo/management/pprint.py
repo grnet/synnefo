@@ -322,8 +322,10 @@ def pprint_server_volumes(server, stdout=None, title=None):
 
     vols = []
     for vol in server.volumes.filter(deleted=False):
-        vols.append((vol.id, vol.name, vol.index, vol.size, vol.template,
-                     vol.provider, vol.status, vol.source))
+        volume_type = vol.volume_type
+        vols.append((vol.id, vol.name, vol.index, vol.size,
+                     volume_type.template, volume_type.provider,
+                     vol.status, vol.source))
 
     headers = ["ID", "Name", "Index", "Size", "Template", "Provider",
                "Status", "Source"]
@@ -400,11 +402,12 @@ def pprint_volume(volume, display_mails=False, stdout=None, title=None):
     ucache = UserCache(ASTAKOS_AUTH_URL, ASTAKOS_TOKEN)
     userid = volume.userid
 
+    volume_type = volume.volume_type
     volume_dict = OrderedDict([
         ("id", volume.id),
         ("size", volume.size),
-        ("disk_template", volume.template),
-        ("disk_provider", volume.provider),
+        ("disk_template", volume_type.template),
+        ("disk_provider", volume_type.provider),
         ("server_id", volume.machine_id),
         ("userid", volume.userid),
         ("username", ucache.get_name(userid) if display_mails else None),

@@ -35,12 +35,12 @@
           <dt>Flavor</dt><dd>{{ vm.flavor.cpu }},
           {{ vm.flavor.disk }},
           {{ vm.flavor.ram }},
-          {{ vm.flavor.disk_template }}</dd>
+          {{ vm.flavor.volume_type.disk_template }}</dd>
         </dl>
       </div>
       <div class="tab-pane" id="metadata{{ vm.pk }}">
         <dl class="dl-horizontal well">
-          {% for meta in vm.metadata.all %}  
+          {% for meta in vm.metadata.all %}
           <dt>{{ meta.meta_key }}</dt><dd>{{ meta.meta_value }}</dd>
           {% empty %}
           <dt>No metadata</dt>

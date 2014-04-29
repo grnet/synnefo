@@ -164,7 +164,7 @@ def create_server(vm, nics, volumes, flavor, image, personality, password):
     # the volume with data
     image_id = image["backend_id"]
     root_volume = volumes[0]
-    if root_volume.provider is not None:
+    if root_volume.volume_type.provider is not None:
         image_id = "null"
 
     server_created.send(sender=vm, created_vm_params={
@@ -247,9 +247,9 @@ def _resize(vm, flavor):
                                 % (vm, flavor))
     # Check that resize can be performed
     if old_flavor.disk != flavor.disk:
-        raise faults.BadRequest("Cannot resize instance disk.")
-    if old_flavor.disk_template != flavor.disk_template:
-        raise faults.BadRequest("Cannot change instance disk template.")
+        raise faults.BadRequest("Cannot change instance's disk size.")
+    if old_flavor.volume_type_id != flavor.volume_type_id:
+        raise faults.BadRequest("Cannot change instance's volume type.")
 
     log.info("Resizing VM from flavor '%s' to '%s", old_flavor, flavor)
     return backend.resize_instance(vm, vcpus=flavor.cpu, memory=flavor.ram)

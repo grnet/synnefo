@@ -103,7 +103,7 @@ class Command(SynnefoCommand):
 
         volume = Volume.objects.create(
             userid=vm.userid,
-            disk_template=vm.flavor.disk_template,
+            volume_type=vm.flavor.volume_type,
             size=size,
             machine_id=vm.id,
             name=display_name,

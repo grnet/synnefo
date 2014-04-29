@@ -38,10 +38,10 @@ def attach_volume(vm, volume):
                                 " '%s' status." % volume.status)
 
     # Check that disk templates are the same
-    if volume.disk_template != vm.flavor.disk_template:
-        msg = ("Volume and server must have the same disk template. Volume has"
-               " disk template '%s' while server has '%s'"
-               % (volume.disk_template, vm.flavor.disk_template))
+    if volume.volume_type_id != vm.flavor.volume_type_id:
+        msg = ("Volume and server must have the same volume type. Volume has"
+               " volume type '%s' while server has '%s'"
+               % (volume.volume_type_id, vm.flavor.volume_type_id))
         raise faults.BadRequest(msg)
 
     # Check maximum disk per instance hard limit

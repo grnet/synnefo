@@ -231,14 +231,14 @@ def find_new_flavor(vm, cpu=None, ram=None):
         return None
 
     try:
-        new_flavor = Flavor.objects.get(cpu=cpu, ram=ram,
-                                        disk=old_flavor.disk,
-                                        disk_template=old_flavor.disk_template)
+        new_flavor = Flavor.objects.get(
+            cpu=cpu, ram=ram, disk=old_flavor.disk,
+            volume_type_id=old_flavor.volume_type_id)
     except Flavor.DoesNotExist:
         raise Exception("There is no flavor to match the instance specs!"
-                        " Instance: %s CPU: %s RAM %s: Disk: %s Template: %s"
+                        " Instance: %s CPU: %s RAM %s: Disk: %s VolumeType: %s"
                         % (vm.backend_vm_id, cpu, ram, old_flavor.disk,
-                           old_flavor.disk_template))
+                           old_flavor.volume_type_id))
     log.info("Flavor of VM '%s' changed from '%s' to '%s'", vm,
              old_flavor.name, new_flavor.name)
     return new_flavor
@@ -739,12 +739,12 @@ def create_instance(vm, nics, volumes, flavor, image):
     kw['name'] = vm.backend_vm_id
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
 
-    kw['disk_template'] = volumes[0].template
+    kw['disk_template'] = volumes[0].volume_type.template
     disks = []
     for volume in volumes:
         disk = {"name": volume.backend_volume_uuid,
                 "size": volume.size * 1024}
-        provider = volume.provider
+        provider = volume.volume_type.provider
         if provider is not None:
             disk["provider"] = provider
             disk["origin"] = volume.origin
@@ -1145,7 +1145,7 @@ def attach_volume(vm, volume, depends=[]):
     disk = {"size": int(volume.size) << 10,
             "name": volume.backend_volume_uuid}
 
-    disk_provider = volume.provider
+    disk_provider = volume.volume_type.provider
     if disk_provider is not None:
         disk["provider"] = disk_provider
 

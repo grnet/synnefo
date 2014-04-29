@@ -18,7 +18,7 @@ from optparse import make_option
 from django.core.management.base import CommandError
 from synnefo.management import common
 
-from synnefo.db.models import VirtualMachine, Network, Flavor
+from synnefo.db.models import VirtualMachine, Network, Flavor, VolumeType
 from synnefo.logic.utils import id_from_network_name, id_from_instance_name
 from synnefo.logic.backend import wait_for_job, connect_to_network
 from snf_django.management.commands import SynnefoCommand
@@ -172,7 +172,13 @@ def flavor_from_instance(instance, flavor, stream):
     cpu = beparams['vcpus']
     ram = beparams['memory']
 
-    return Flavor.objects.get_or_create(disk=disk, disk_template=disk_template,
+    try:
+        volume_type = VolumeType.objects.get(disk_template=disk_template)
+    except VolumeType.DoesNotExist:
+        raise CommandError("Cannot find volume type with '%s' disk template."
+                           % disk_template)
+    return Flavor.objects.get_or_create(disk=disk,
+                                        volume_type=volume_type,
                                         cpu=cpu, ram=ram)
 
 

@@ -271,11 +271,13 @@ class UpdateDBTest(TestCase):
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, "STOPPED")
         # Test success
-        f1 = mfactory.FlavorFactory(cpu=4, ram=1024, disk_template="drbd",
+        f1 = mfactory.FlavorFactory(cpu=4, ram=1024,
+                                    volume_type__disk_template="drbd",
                                     disk=1024)
         vm.flavor = f1
         vm.save()
-        f2 = mfactory.FlavorFactory(cpu=8, ram=2048, disk_template="drbd",
+        f2 = mfactory.FlavorFactory(cpu=8, ram=2048,
+                                    volume_type__disk_template="drbd",
                                     disk=1024)
         beparams = {"vcpus": 8, "minmem": 2048, "maxmem": 2048}
         msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',

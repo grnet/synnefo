@@ -33,6 +33,7 @@ class Command(ListCommand):
     user_uuid_field = "userid"
     astakos_auth_url = ASTAKOS_AUTH_URL
     astakos_token = ASTAKOS_TOKEN
+    select_related = ["volume_type"]
 
     FIELDS = {
         "id": ("id", "ID of the server"),
@@ -45,8 +46,10 @@ class Command(ListCommand):
         "status": ("status", "The status of the volume"),
         "created": ("created", "The date the server was created"),
         "deleted": ("deleted", "Whether the server is deleted or not"),
-        "disk_template": ("disk_template", "The disk template of the volume")
+        "volume_type": ("volume_type", "ID of volume's type"),
+        "disk_template": ("volume_type.disk_template",
+                          "The disk template of the volume")
     }
 
     fields = ["id", "user.uuid", "size", "status", "source", "disk_template",
-              "server_id"]
+              "volume_type", "server_id"]

@@ -48,6 +48,17 @@ class VolumeType(models.Model):
         return u"<VolumeType %s(disk_template:%s)>" % \
             (self.name, self.disk_template)
 
+    @property
+    def template(self):
+        return self.disk_template.split("_")[0]
+
+    @property
+    def provider(self):
+        if "_" in self.disk_template:
+            return self.disk_template.split("_", 1)[1]
+        else:
+            return None
+
 
 class Flavor(models.Model):
     cpu = models.IntegerField('Number of CPUs', default=0)
@@ -1115,17 +1126,6 @@ class Volume(models.Model):
         src = self.source
         if src and src.startswith(self.SOURCE_VOLUME_PREFIX):
             return src[len(self.SOURCE_VOLUME_PREFIX):]
-        else:
-            return None
-
-    @property
-    def template(self):
-        return self.disk_template.split("_")[0]
-
-    @property
-    def provider(self):
-        if "_" in self.disk_template:
-            return self.disk_template.split("_", 1)[1]
         else:
             return None
 

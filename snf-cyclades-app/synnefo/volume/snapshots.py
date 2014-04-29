@@ -57,10 +57,11 @@ def create(user_id, volume, name, description, metadata, force=False):
         raise faults.BadRequest("Cannot create snapshot while volume is in"
                                 " '%s' status" % volume.status)
 
-    flavor = volume.machine.flavor
-    if not flavor.disk_template.startswith("ext_"):
-        msg = ("Snapshots are supported only for volumes of ext_*"
-               " disk template")
+    volume_type = volume.volume_type
+    if not volume_type.disk_template.startswith("ext_"):
+        msg = ("Cannot take a snapshot from a volume with volume type '%s' and"
+               " '%s' disk template" %
+               (volume_type.id, volume_type.disk_template))
         raise faults.BadRequest(msg)
 
     # Increase the snapshot counter of the volume that is used in order to

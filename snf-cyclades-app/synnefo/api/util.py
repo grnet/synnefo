@@ -187,10 +187,10 @@ def get_flavor(flavor_id, include_deleted=False):
 
     try:
         flavor_id = int(flavor_id)
-        if include_deleted:
-            return Flavor.objects.get(id=flavor_id)
-        else:
-            return Flavor.objects.get(id=flavor_id, deleted=include_deleted)
+        flavors = Flavor.objects.select_related("volume_type")
+        if not include_deleted:
+            flavors = flavors.filter(deleted=False)
+        return flavors.get(id=flavor_id)
     except (ValueError, TypeError):
         raise faults.BadRequest("Invalid flavor ID '%s'" % flavor_id)
     except Flavor.DoesNotExist:

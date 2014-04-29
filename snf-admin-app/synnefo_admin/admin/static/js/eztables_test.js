@@ -1,12 +1,3 @@
-//$(document).ready(function(){
-    //$('#items-table').dataTable({
-        //"bPaginate": true,
-        //"sPaginationType": "bootstrap",
-        //"bScrollCollapse": true,
-        //"bServerSide": true,
-        //"sAjaxSource": "test"
-    //});
-//});
 (function($, Django){
 
     "use strict";
@@ -15,11 +6,11 @@
     $(function(){
         $('#items-table').dataTable({
             "bPaginate": true,
-            "sPaginationType": "bootstrap",
+            // "sPaginationType": "bootstrap",
             "bProcessing": true,
             "bServerSide": true,
-            "sAjaxSource": Django.url('admin-json', "user"),
+            "sAjaxSource": Django.url('admin-json'),
         });
     });
 
-}(window.jQuery, window.Django));
+    }(window.jQuery, window.Django));

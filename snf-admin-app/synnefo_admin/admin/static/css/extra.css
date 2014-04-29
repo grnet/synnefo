@@ -860,32 +860,27 @@ a:not([disabled]):hover {
   font-style: normal;
 }
 
-/* line 545, ../sass/extra.scss */
-#chartdiv {
-  margin: auto;
-}
-
-/* line 549, ../sass/extra.scss */
+/* line 547, ../sass/extra.scss */
 body .object-details:not(.vm-details) h4 em {
   float: none;
 }
 
-/* line 552, ../sass/extra.scss */
+/* line 550, ../sass/extra.scss */
 .sidebar.subnav-fixed ul {
   padding: 0;
 }
 
-/* line 556, ../sass/extra.scss */
+/* line 554, ../sass/extra.scss */
 .container-demo, .chart {
   height: 400px;
-  width: 700px;
+  width: 100%;
   margin: 20px auto;
   border: 1px solid cyan;
   padding-top: 20px;
 }
 
 /* Navigation Bar: next generation (spacelab)*/
-/* line 565, ../sass/extra.scss */
+/* line 563, ../sass/extra.scss */
 .navbar-inverse {
   background-image: -webkit-linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
   background-image: linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
@@ -898,7 +893,7 @@ body .object-details:not(.vm-details) h4 em {
   border-color: #345578;
 }
 
-/* line 577, ../sass/extra.scss */
+/* line 575, ../sass/extra.scss */
 svg > text:last-child {
   display: none;
 }

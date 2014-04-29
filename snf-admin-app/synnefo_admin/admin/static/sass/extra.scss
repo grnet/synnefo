@@ -542,9 +542,7 @@ textarea, input {
   }
 }
 
-#chartdiv {
-  margin: auto;
-}
+
 
 body .object-details:not(.vm-details) h4 em {
   float: none;
@@ -555,7 +553,7 @@ body .object-details:not(.vm-details) h4 em {
 
 .container-demo, .chart {
   height: 400px;
-  width: 700px;
+  width: 100%;
   margin: 20px auto;
   border: 1px solid cyan;
   padding-top: 20px;

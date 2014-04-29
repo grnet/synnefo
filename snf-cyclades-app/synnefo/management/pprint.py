@@ -412,6 +412,7 @@ def pprint_volume(volume, display_mails=False, stdout=None, title=None):
         ("disk_provider", volume_type.provider),
         ("server_id", volume.machine_id),
         ("userid", volume.userid),
+        ("project", volume.project),
         ("username", ucache.get_name(userid) if display_mails else None),
         ("index", volume.index),
         ("name", volume.name),

@@ -28,7 +28,8 @@ log = logging.getLogger(__name__)
 @transaction.commit_on_success
 def create(user_id, size, server_id, name=None, description=None,
            source_volume_id=None, source_snapshot_id=None,
-           source_image_id=None, volume_type_id=None, metadata=None):
+           source_image_id=None, volume_type_id=None, metadata=None,
+           project=None):
 
     # Currently we cannot create volumes without being attached to a server
     if server_id is None:
@@ -67,7 +68,11 @@ def create(user_id, size, server_id, name=None, description=None,
         source_type = "blank"
         source_uuid = None
 
-    volume = _create_volume(server, user_id, size, source_type, source_uuid,
+    if project is None:
+        project = user_id
+
+    volume = _create_volume(server, user_id, project, size,
+                            source_type, source_uuid,
                             volume_type=volume_type, name=name,
                             description=description, index=None)
 
@@ -84,7 +89,7 @@ def create(user_id, size, server_id, name=None, description=None,
     return volume
 
 
-def _create_volume(server, user_id, size, source_type, source_uuid,
+def _create_volume(server, user_id, project, size, source_type, source_uuid,
                    volume_type, name=None, description=None, index=None,
                    delete_on_termination=True):
 
@@ -159,6 +164,7 @@ def _create_volume(server, user_id, size, source_type, source_uuid,
         raise faults.BadRequest("Unknown source type")
 
     volume = Volume.objects.create(userid=user_id,
+                                   project=project,
                                    size=size,
                                    volume_type=volume_type,
                                    name=name,

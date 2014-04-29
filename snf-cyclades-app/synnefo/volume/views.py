@@ -103,6 +103,10 @@ def create_volume(request):
         raise faults.BadRequest("Volume 'size' needs to be a positive integer"
                                 " value. '%s' cannot be accepted." % size)
 
+    project = vol_dict.get("project")
+    if project is None:
+        project = user_id
+
     # Optional parameters
     volume_type_id = utils.get_attribute(vol_dict, "volume_type",
                                          attr_type=(basestring, int),
@@ -134,7 +138,7 @@ def create_volume(request):
                             volume_type_id=volume_type_id,
                             description=description,
                             metadata=metadata,
-                            server_id=server_id)
+                            server_id=server_id, project=project)
 
     # Render response
     data = json.dumps(dict(volume=volume_to_dict(volume, detail=False)))

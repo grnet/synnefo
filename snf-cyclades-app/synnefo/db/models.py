@@ -846,8 +846,8 @@ class NetworkInterface(models.Model):
         return self.__unicode__()
 
     def __unicode__(self):
-        return u"<NIC %s:vm:%s network:%s>" % (self.id, self.machine_id,
-                                              self.network_id)
+        return u"<NIC %s:vm:%s network:%s>" % \
+            (self.id, self.machine_id, self.network_id)
 
     @property
     def backend_uuid(self):

@@ -721,10 +721,10 @@ a:not([disabled]):hover {
 }
 /* line 404, ../sass/extra.scss */
 .modal textarea, .modal input {
-  width: 430px;
+  width: 410px;
 }
 /* line 409, ../sass/extra.scss */
-.modal textarea.content, .modal input.content {
+.modal textarea.body, .modal input.body {
   min-height: 160px;
 }
 /* line 413, ../sass/extra.scss */
@@ -896,4 +896,18 @@ body .object-details:not(.vm-details) h4 em {
 /* line 575, ../sass/extra.scss */
 svg > text:last-child {
   display: none;
+}
+
+/* line 578, ../sass/extra.scss */
+.error-sign {
+  color: red;
+  font-size: 20px;
+  margin-left: 10px;
+  float: right;
+  display: none;
+}
+/* line 584, ../sass/extra.scss */
+.error-sign:hover {
+  color: red;
+  text-decoration: none;
 }

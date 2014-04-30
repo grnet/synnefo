@@ -1,31 +1,37 @@
 {% for op, action in action_dict.items %}
-<div class="modal fade in hide" id="{{ op }}">
-  <div class="modal-header positive area">
-    <a class="close" data-dismiss="modal">×</a>
-    <h3>{{ action.name }}</h3>
-  </div>
-  <div class="modal-body">
-      {% if op == "contact" %}
-        <label>Subject:</label><input type="text" class="subject" form="contactForm"></input><span class="error"></span>
-        <label>Content:</label><textarea name="text" form="contactForm" class="content"></textarea><span class="error"></span>
-      {% endif %}
-      <p>You have choosen to <em class="positive elem">{{ op }}</em> the
-      following <em class="num elem positive"></em> items:</p>
-    <table class="table-selected table table-bordered">
-      <tbody>
-      </tbody>
-    </table>
-    <p>Are you sure you want to complete the operation?</p>
-  </div>
-  <div class="modal-footer positive area">
-    <a href="#" class="btn reset-selected" data-dismiss="modal">Cancel</a>
-    <form method="post" action="{% url admin-actions %}" id="{{ op }}Form">
-        <button type="submit" class="btn">OK</button>
-        <input type="hidden" name="op" value="{{ op }}">
-      <input type="hidden" name="ids" value="">
-      <input type="hidden" name="target" value="{{ action.target }}">
-    </form>
-  </div>
+<div class="modal fade in hide" id="{{ op }}" data-backdrop="static" data-keyboard="false">
+    <div class="modal-header positive area">
+        <a class="close reset-all" data-dismiss="modal">×</a>
+        <h3>{{ action.name }}</h3>
+    </div>
+    <div class="modal-body">
+        {% if op == "contact" %}
+        <label>Subject:</label>
+        <input type="text" class="subject" form="contactForm"></input>
+        <a data-error="empty-subject" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="Missing the subject of the e-mail."></a>
+
+        <label>Body:</label>
+        <textarea name="text" form="contactForm" class="content body"></textarea>
+        <a data-error="empty-body" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="Missing the body of the e-mail."></a>
+        {% endif %}
+        <p>You have choosen to <em class="positive elem">{{ op }}</em> the following <em class="num elem positive"></em> items:
+            <a data-error="no-selected" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="There are no selected items to complete this action."></a>
+        </p>
+        <table class="table-selected table table-bordered">
+            <tbody>
+            </tbody>
+        </table>
+        <p>Are you sure you want to complete the operation?</p>
+    </div>
+    <div class="modal-footer positive area">
+        <a href="#" class="btn reset-all" data-dismiss="modal">Cancel</a>
+        <form method="post" action="{% url admin-actions %}" id="{{ op }}Form">
+            <button type="submit" class="btn">OK</button>
+            <input type="hidden" name="op" value="{{ op }}">
+            <input type="hidden" name="ids" value="">
+            <input type="hidden" name="target" value="{{ action.target }}">
+        </form>
+    </div>
 </div>
 {% endfor %}
 

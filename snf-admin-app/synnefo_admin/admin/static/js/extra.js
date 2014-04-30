@@ -98,6 +98,68 @@ $(document).ready(function() {
 
 	/* Modals */
 
+
+		function showError(modal, errorSign) {
+		var $modal = $(modal);
+		var $errorMsg = $modal.find('*[data-error="'+errorSign+'"]');
+		$errorMsg.show();
+	};
+
+	function resetErrors(modal) {
+		var $modal = $(modal);
+		$modal.find('.error-sign').hide();
+	};
+
+	function checkInput(modal, inputArea, errorSign) {
+		var $inputArea = $(inputArea);
+		var $errorSign = $(modal).find('*[data-error="'+errorSign+'"]');
+
+		$inputArea.keypress(function() {
+			if($.trim($inputArea.val())) {
+				$errorSign.hide();
+			}
+		})
+
+	};
+	function resetInputs(modal) {
+		var $modal = $(modal);
+		$modal.find('textarea').val('');
+		$modal.find('input[type=text]').val('');
+
+	}
+
+	$('.modal .reset-all').click(function(e) {
+		var table = '#'+ 'table-items-total_wrapper';
+		var $modal = $(this).closest('.modal');
+		resetErrors($modal);
+		resetInputs($modal);
+		resetTable(table);
+	});
+	$('.modal button[type=submit]').click(function(e) {
+		var $modal = $(this).closest('.modal');
+
+		if(selected.items.length === 0) {
+			e.preventDefault();
+			showError($modal, 'no-selected');
+		}
+		if($modal.attr('id') === 'contact') {
+			var $emailSubj = $modal.find('.subject')
+			var $emailCont = $modal.find('.content')
+			if(!$.trim($emailSubj.val())) {
+				e.preventDefault();
+				showError($modal, 'empty-subject');
+				checkInput($modal, $emailSubj, 'empty-subject');
+			}
+			if(!$.trim($emailCont.val())) {
+				e.preventDefault();
+				showError($modal, 'empty-body')
+				checkInput($modal, $emailCont, 'empty-body');
+			}
+		}
+	});
+
+	$('.modal').modal('hide');
+
 	function addData(modal, dataType) {
 		var $uuidsInput = 	$(modal).find('.modal-footer form input[name="ids"]');
 		var $table = $(modal).find('.table-selected');
@@ -166,7 +228,6 @@ $(document).ready(function() {
 
 		for(var i=0; i<selectedNum; i++) {
 			if(selected.items[i].uuid === itemUUID) {
-				console.log('a1');
 				removeItem(selected.items[i], selected.items);
 				break;
 			}
@@ -268,23 +329,12 @@ $(document).ready(function() {
 		})
 	}
 
-	$('.modal .reset-selected').click(function(e) {
-		console.log('RESET');
-		var table = '#'+ 'table-items-total_wrapper';
-		resetTable(table);
-	});
-	$('.modal button[type=submit]').click(function(e) {
-		if(selected.items.length === 0) {
-			e.preventDefault();
-			console.log('nothing to submit');
-		}
-	})
+
 
 	/* Select-all checkbox */
 
 	$('table thead th:first input[type=checkbox]').click(function(e) {
 		e.stopPropagation();
-		console.log('ox');
 		var tableDomID = $(this).closest('table').attr('id');
 		var checkboxState = $(this).prop('checked');
 		toggleVisCheckboxes(checkboxState, tableDomID);
@@ -301,7 +351,6 @@ $(document).ready(function() {
 	});
 
 	function resetTable(tableDomID) {
-		console.log('resetTable');
 		$(tableDomID).find('thead .select-all input[type=checkbox]').attr('checked', false);
 			selected.items = [];
 			$(tableDomID).find('thead .selected-num').html(selected.items.length);
@@ -323,8 +372,6 @@ $(document).ready(function() {
 	function clickRowCheckbox() {
 		$('table tbody input[type=checkbox]').click(function(e) {
 			e.stopPropagation();
-			// console.log('good ', e)
-			// console.log('e.target', e)
 			var $tr = $(this).closest('tr');
 			var $allActionsBtns = $('.sidebar a');
 			var $selectedNum = $tr.closest('table').find('thead .selected-num');
@@ -398,7 +445,6 @@ $(document).ready(function() {
 		});
 	};
 	function updateToggleAllCheck() {
-		console.log('updateToggleAllCheck');
 		var toggleAll = $('table .select-all input[type=checkbox]');
 		if($('tbody tr').length > 1) {
 			var allChecked = true
@@ -406,7 +452,6 @@ $(document).ready(function() {
 				allChecked = allChecked && $(this).prop('checked');
 			});
 			if(!toggleAll.prop('checked') && allChecked) {
-				console.log('*1*')
 				toggleAll.prop('checked', true)
 			}
 			else if(toggleAll.prop('checked') && !allChecked) {
@@ -455,15 +500,11 @@ $(document).ready(function() {
 
 	/* Removes from an array an element */
 	function removeItem(item, array) {
-		console.log('removeItem');
 		var index;
 		if (typeof(item) === 'object') {
-			console.log('eimai ena object!')
 			index = array.map(function(item) {
-				console.log('item.id ', item.uuid)
 				return item.uuid;
 			}).indexOf(item.uuid);
-			console.log('index ', index);
 		}
 		else
 			index = array.indexOf(item);

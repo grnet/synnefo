@@ -9,7 +9,7 @@
 	font-style: normal;
 }
 
-.snf-icon {
+.snf-icon, .snf-envelope, .snf-ok, .snf-remove, .snf-exclamation-sign, .snf-envelope-alt, .snf-angle-up, .snf-angle-down {
 	font-family: 'font-icons';
 	speak: none;
 	font-style: normal;

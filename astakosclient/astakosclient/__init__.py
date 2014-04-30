@@ -642,14 +642,13 @@ class AstakosClient(object):
 
         return self._issue_commission(request)
 
-    def issue_one_commission(self, holder, source, provisions,
+    def issue_one_commission(self, holder, provisions,
                              name="", force=False, auto_accept=False):
         """Issue one commission (with specific holder and source)
 
         keyword arguments:
         holder      -- user's id (string)
-        source      -- commission's source (ex system) (string)
-        provisions  -- resources with their quantity (dict from string to int)
+        provisions  -- (source, resource) mapping to quantity
         name        -- description of the commission (string)
         force       -- force this commission (boolean)
         auto_accept -- auto accept this commission (boolean)
@@ -659,8 +658,7 @@ class AstakosClient(object):
 
         """
         check_input("issue_one_commission", self.logger,
-                    holder=holder, source=source,
-                    provisions=provisions)
+                    holder=holder, provisions=provisions)
 
         request = {}
         request["force"] = force
@@ -668,7 +666,7 @@ class AstakosClient(object):
         request["name"] = name
         try:
             request["provisions"] = []
-            for resource, quantity in provisions.iteritems():
+            for (source, resource), quantity in provisions.iteritems():
                 ps = self.mk_provisions(holder, source, resource, quantity)
                 request["provisions"].extend(ps)
         except Exception as err:
@@ -677,8 +675,7 @@ class AstakosClient(object):
 
         return self._issue_commission(request)
 
-    def issue_resource_reassignment(self, holder, from_source,
-                                    to_source, provisions, name="",
+    def issue_resource_reassignment(self, holder, provisions, name="",
                                     force=False, auto_accept=False):
         """Change resource assignment to another project
         """
@@ -690,7 +687,8 @@ class AstakosClient(object):
 
         try:
             request["provisions"] = []
-            for resource, quantity in provisions.iteritems():
+            for key, quantity in provisions.iteritems():
+                (from_source, to_source, resource) = key
                 ps = self.mk_provisions(
                     holder, from_source, resource, -quantity)
                 ps += self.mk_provisions(holder, to_source, resource, quantity)

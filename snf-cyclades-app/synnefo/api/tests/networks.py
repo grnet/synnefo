@@ -81,8 +81,9 @@ class NetworkTest(BaseAPITest):
         # TEST QUOTAS!!!
         name, args, kwargs =\
             self.mocked_quotaholder.issue_one_commission.mock_calls[0]
-        commission_resources = args[2]
-        self.assertEqual(commission_resources, {"cyclades.network.private": 1})
+        commission_resources = args[1]
+        self.assertEqual(commission_resources,
+                         {("user", "cyclades.network.private"): 1})
         name, args, kwargs =\
             self.mocked_quotaholder.resolve_commissions.mock_calls[0]
         serial = QuotaHolderSerial.objects.order_by("-serial")[0]

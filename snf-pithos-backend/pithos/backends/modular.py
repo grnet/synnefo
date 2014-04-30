@@ -665,15 +665,17 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_container(account, container)
 
         if PROJECT in policy:
-            project = self._get_project(node)
+            from_project = self._get_project(node)
+            to_project = policy[PROJECT]
+            provisions = {
+                (from_project, to_project, 'pithos.diskspace'):
+                self.get_container_meta(
+                    user, account, container,
+                    include_user_defined=False)['bytes']}
+
             try:
                 serial = self.astakosclient.issue_resource_reassignment(
-                    holder=account,
-                    from_source=project,
-                    to_source=policy[PROJECT],
-                    provisions={'pithos.diskspace': self.get_container_meta(
-                        user, account, container,
-                        include_user_defined=False)['bytes']})
+                    holder=account, provisions=provisions)
             except BaseException, e:
                 raise QuotaError(e)
             else:
@@ -1873,8 +1875,7 @@ class ModularBackend(BaseBackend):
             name = details['path'] if 'path' in details else ''
             serial = self.astakosclient.issue_one_commission(
                 holder=account,
-                source=source,
-                provisions={'pithos.diskspace': size},
+                provisions={(source, 'pithos.diskspace'): size},
                 name=name)
         except BaseException, e:
             raise QuotaError(e)

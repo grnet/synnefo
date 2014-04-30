@@ -132,45 +132,46 @@ class GetCommissionInfoTest(TestCase):
         #                  "cyclades.disk": 1073741824 * 20}, commission)
         vm.operstate = "STARTED"
         vm.save()
+        project = vm.project
         commission = quotas.get_commission_info(vm, "STOP")
-        self.assertEqual({"cyclades.cpu": -2,
-                          "cyclades.ram": 1048576 * -1024}, commission)
+        self.assertEqual({(project, "cyclades.cpu"): -2,
+                          (project, "cyclades.ram"): 1048576 * -1024}, commission)
         # Check None quotas if vm is already stopped
         vm.operstate = "STOPPED"
         vm.save()
         commission = quotas.get_commission_info(vm, "STOP")
         self.assertEqual(None, commission)
         commission = quotas.get_commission_info(vm, "START")
-        self.assertEqual({"cyclades.cpu": 2,
-                          "cyclades.ram": 1048576 * 1024}, commission)
+        self.assertEqual({(project, "cyclades.cpu"): 2,
+                          (project, "cyclades.ram"): 1048576 * 1024}, commission)
         vm.operstate = "STARTED"
         vm.save()
         commission = quotas.get_commission_info(vm, "DESTROY")
-        self.assertEqual({"cyclades.vm": -1,
-                          "cyclades.total_cpu": -2,
-                          "cyclades.cpu": -2,
-                          "cyclades.total_ram": 1048576 * -1024,
-                          "cyclades.ram": 1048576 * -1024,
-                          "cyclades.disk": 1073741824 * -20}, commission)
+        self.assertEqual({(project, "cyclades.vm"): -1,
+                          (project, "cyclades.total_cpu"): -2,
+                          (project, "cyclades.cpu"): -2,
+                          (project, "cyclades.total_ram"): 1048576 * -1024,
+                          (project, "cyclades.ram"): 1048576 * -1024,
+                          (project, "cyclades.disk"): 1073741824 * -20}, commission)
         vm.operstate = "STOPPED"
         vm.save()
         commission = quotas.get_commission_info(vm, "DESTROY")
-        self.assertEqual({"cyclades.vm": -1,
-                          "cyclades.total_cpu": -2,
-                          "cyclades.total_ram": -1024 << 20,
-                          "cyclades.disk": -20 << 30}, commission)
+        self.assertEqual({(project, "cyclades.vm"): -1,
+                          (project, "cyclades.total_cpu"): -2,
+                          (project, "cyclades.total_ram"): -1024 << 20,
+                          (project, "cyclades.disk"): -20 << 30}, commission)
         commission = quotas.get_commission_info(vm, "RESIZE")
         self.assertEqual(None, commission)
         commission = quotas.get_commission_info(vm, "RESIZE",
                                                 {"beparams": {"vcpus": 4,
                                                               "maxmem": 2048}})
-        self.assertEqual({"cyclades.total_cpu": 2,
-                          "cyclades.total_ram": 1048576 * 1024}, commission)
+        self.assertEqual({(project, "cyclades.total_cpu"): 2,
+                          (project, "cyclades.total_ram"): 1048576 * 1024}, commission)
         vm.operstate = "STOPPED"
         vm.save()
         commission = quotas.get_commission_info(vm, "REBOOT")
-        self.assertEqual({"cyclades.cpu": 2,
-                          "cyclades.ram": 1048576 * 1024}, commission)
+        self.assertEqual({(project, "cyclades.cpu"): 2,
+                          (project, "cyclades.ram"): 1048576 * 1024}, commission)
         vm.operstate = "STARTED"
         vm.save()
         commission = quotas.get_commission_info(vm, "REBOOT")

@@ -459,3 +459,18 @@ def pprint_volume_in_ganeti(volume, stdout=None, title=None):
                  title=title)
 
     vm.put_client(client)
+
+
+def pprint_volume_type(volume_type, stdout=None, title=None):
+    if stdout is None:
+        stdout = sys.stdout
+    if title is None:
+        title = "Volume Type %s" % volume_type.id
+
+    vtype_info = OrderedDict([
+        ("name", volume_type.name),
+        ("disk template", volume_type.disk_template),
+        ("deleted", volume_type.deleted),
+    ])
+
+    pprint_table(stdout, vtype_info.items(), separator=" | ", title=title)

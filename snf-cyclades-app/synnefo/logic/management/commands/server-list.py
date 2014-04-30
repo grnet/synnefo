@@ -59,6 +59,7 @@ class Command(ListCommand):
     user_uuid_field = "userid"
     astakos_auth_url = ASTAKOS_AUTH_URL
     astakos_token = ASTAKOS_TOKEN
+    select_related = ["flavor.volume_type"]
 
     def get_ips(version, vm):
         ips = []

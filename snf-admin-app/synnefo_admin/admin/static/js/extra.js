@@ -176,7 +176,7 @@ $(document).ready(function() {
 	};
 
 	function drawTableRows(tableBody, rowsNum, dataType) {
-		var maxVisible = 25;
+		var maxVisible = 20;
 		var currentRow;
 		$(tableBody).empty();
 		if(dataType === "user") {
@@ -186,7 +186,7 @@ $(document).ready(function() {
 				currentRow = currentRow.replace('<td class="full-name"></td>', '<td class="full-name">'+selected.items[i].name+'</td>');
 				currentRow = currentRow.replace('<td class="email"></td>', '<td class="email">'+selected.items[i].email+'</td>');
 				if(i > maxVisible)
-					currentRow = currentRow.replace('<tr', '<tr class="hidden');
+					currentRow = currentRow.replace('<tr', '<tr class="hidden-row"');
 				$(tableBody).append(currentRow);
 			}
 		}
@@ -197,7 +197,7 @@ $(document).ready(function() {
 				currentRow = currentRow.replace('<td class="name"></td>', '<td class="name">'+selected.items[i].name+'</td>');
 				currentRow = currentRow.replace('<td class="owner"></td>', '<td class="owner">'+selected.items[i].owner+'</td>');
 				if(i > maxVisible)
-					currentRow = currentRow.replace('<tr', '<tr class="hidden');
+					currentRow = currentRow.replace('<tr', '<tr class="hidden-row"');
 				$(tableBody).append(currentRow);
 			}
 		}
@@ -208,9 +208,30 @@ $(document).ready(function() {
 				currentRow = currentRow.replace('<td class="name"></td>', '<td class="name">'+selected.items[i].name+'</td>');
 				currentRow = currentRow.replace('<td class="uuid"></td>', '<td class="owner">'+selected.items[i].uuid+'</td>');
 				if(i > maxVisible)
-					currentRow = currentRow.replace('<tr', '<tr class="hidden');
+					currentRow = currentRow.replace('<tr', '<tr class="hidden-row"');
 				$(tableBody).append(currentRow);
 			}
+		}
+		if(rowsNum >maxVisible) {
+			var $btn = $(tableBody).closest('.modal').find('.toggle-more');
+			var rowsNum = selected.items.length;
+
+			$btn.css('display', 'block');
+
+			$btn.click( function(e) {
+				e.preventDefault();
+				if($(this).hasClass('closed')) {
+					$(this).text('Show Less');
+					$(this).toggleClass('closed open');
+					$(tableBody).find('tr').show();
+				}
+				else if($(this).hasClass('open')) {
+					$(this).text('Show All');
+					$(this).toggleClass('closed open');
+					$(tableBody).find('tr.hidden-row').hide();
+				}
+
+			})
 		}
 	};
 

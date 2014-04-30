@@ -587,3 +587,14 @@ svg>text:last-child {
     text-decoration: none;
   }
 }
+
+.toggle-more {
+  margin-top: -16px;
+  // position: relative;
+  // right: -429px;
+  display: none;
+
+.hidden-row {
+  display: none;
+  // background-color: yellow;
+}

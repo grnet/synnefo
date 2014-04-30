@@ -1584,6 +1584,8 @@ class GanetiCollectd(base.Component):
 class Archip(base.Component):
     REQUIRED_PACKAGES = [
         "librados2",
+        "blktap-dkms",
+        "blktap-utils",
         "archipelago",
         "archipelago-dbg",
         "archipelago-modules-dkms",

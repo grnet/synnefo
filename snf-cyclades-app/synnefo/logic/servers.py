@@ -100,6 +100,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
     if volumes[0]["source_type"] == "blank":
         raise faults.BadRequest("Root volume cannot be blank")
 
+    server_vtype = flavor.volume_type
     server_volumes = []
     for index, vol_info in enumerate(volumes):
         if vol_info["source_type"] == "volume":
@@ -114,6 +115,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
             v.save()
         else:
             v = _create_volume(server=vm, user_id=userid,
+                               volume_type=server_vtype,
                                index=index, **vol_info)
         server_volumes.append(v)
 

@@ -64,6 +64,7 @@ class VolumesTest(BaseAPITest):
         self.assertEqual(vol.source_volume_id, None)
         self.assertEqual(vol.source_image_id, None)
         self.assertEqual(vol.machine, self.vm)
+        self.assertEqual(vol.volume_type, self.vm.flavor.volume_type)
 
         name, args, kwargs = mrapi().ModifyInstance.mock_calls[0]
         self.assertEqual(kwargs["instance"], self.vm.backend_vm_id)
@@ -74,18 +75,21 @@ class VolumesTest(BaseAPITest):
 
     def test_create_from_volume(self, mrapi):
         # Check permissions
-        svol = mf.VolumeFactory(userid="other_user")
+        svol = mf.VolumeFactory(userid="other_user",
+                                volume_type=self.vm.flavor.volume_type)
         self.assertRaises(faults.BadRequest,
                           volumes.create,
                           source_volume_id=svol.id,
                           **self.kwargs)
         # Invalid volume status
-        svol = mf.VolumeFactory(userid=self.userid, status="CREATING")
+        svol = mf.VolumeFactory(userid=self.userid, status="CREATING",
+                                volume_type=self.vm.flavor.volume_type)
         self.assertRaises(faults.BadRequest,
                           volumes.create,
                           source_volume_id=svol.id,
                           **self.kwargs)
-        svol = mf.VolumeFactory(userid=self.userid, status="AVAILABLE")
+        svol = mf.VolumeFactory(userid=self.userid, status="AVAILABLE",
+                                volume_type=self.vm.flavor.volume_type)
         self.assertRaises(faults.BadRequest,
                           volumes.create,
                           source_volume_id=svol.id,
@@ -105,6 +109,7 @@ class VolumesTest(BaseAPITest):
         self.assertEqual(vol.description, None)
         self.assertEqual(vol.source, "volume:%s" % svol.id)
         self.assertEqual(vol.origin, svol.backend_volume_uuid)
+        self.assertEqual(vol.volume_type, svol.volume_type)
 
         name, args, kwargs = mrapi().ModifyInstance.mock_calls[0]
         self.assertEqual(kwargs["instance"], self.vm.backend_vm_id)

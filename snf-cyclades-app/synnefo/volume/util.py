@@ -37,6 +37,23 @@ def get_volume(user_id, volume_id, for_update=False,
         raise exception("Volume %s not found" % volume_id)
 
 
+def get_volume_type(volume_type_id, for_update=False, include_deleted=False,
+                    exception=faults.ItemNotFound):
+    vtypes = models.VolumeType.objects
+    if not include_deleted:
+        vtypes = vtypes.filter(deleted=False)
+    if for_update:
+        vtypes = vtypes.select_for_update()
+    try:
+        vtype_id = int(volume_type_id)
+    except (TypeError, ValueError):
+        raise faults.BadRequest("Invalid volume id: %s" % volume_type_id)
+    try:
+        return vtypes.get(id=vtype_id)
+    except models.VolumeType.DoesNotExist:
+        raise exception("Volume type %s not found" % vtype_id)
+
+
 def get_snapshot(user_id, snapshot_id, exception=faults.ItemNotFound):
     try:
         with backend.PlanktonBackend(user_id) as b:

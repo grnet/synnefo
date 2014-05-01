@@ -18,14 +18,13 @@ from logging import getLogger
 from django.http import HttpResponse
 from django.utils import simplejson as json
 
-import datetime
 from dateutil.parser import parse as date_parse
 
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 
 from synnefo.volume import volumes, snapshots, util
-from synnefo.db.models import Volume
+from synnefo.db.models import Volume, VolumeType
 from synnefo.plankton.backend import PlanktonBackend
 
 log = getLogger('synnefo.volume')
@@ -55,8 +54,7 @@ def volume_to_dict(volume, detail=True):
             "source_volid": display_null_field(volume.source_volume_id),
             "image_id": display_null_field(volume.source_image_id),
             "attachments": get_volume_attachments(volume),
-            # TODO:
-            "volume_type": None,
+            "volume_type": volume.volume_type_id,
             "delete_on_termination": volume.delete_on_termination,
             #"availabilit_zone": None,
             #"bootable": None,
@@ -107,8 +105,7 @@ def create_volume(request):
         raise faults.BadRequest("Volume 'size' needs to be a positive integer"
                                 " value. '%s' cannot be accepted." % size)
 
-    # TODO: Fix volume type, validate, etc..
-    volume_type = new_volume.get("volume_type", None)
+    volume_type_id = new_volume.get("volume_type", None)
 
     # Optional parameters
     description = new_volume.get("display_description", "")
@@ -135,7 +132,8 @@ def create_volume(request):
                             source_volume_id=source_volume_id,
                             source_snapshot_id=source_snapshot_id,
                             source_image_id=source_image_id,
-                            volume_type=volume_type, description=description,
+                            volume_type_id=volume_type_id,
+                            description=description,
                             metadata=metadata, server_id=server_id)
 
     # Render response
@@ -146,7 +144,9 @@ def create_volume(request):
 @api.api_method(http_method="GET", user_required=True, logger=log)
 def list_volumes(request, detail=False):
     log.debug('list_volumes detail=%s', detail)
-    volumes = Volume.objects.filter(userid=request.user_uniq).order_by("id")
+    volumes = Volume.objects.filter(userid=request.user_uniq)\
+                            .prefetch_related("metadata")\
+                            .order_by("id")
 
     volumes = utils.filter_modified_since(request, objects=volumes)
 
@@ -322,4 +322,30 @@ def update_snapshot(request, snapshot_id):
                                 description=new_description)
 
     data = json.dumps({'snapshot': snapshot_to_dict(snapshot, detail=True)})
+    return HttpResponse(data, content_type="application/json", status=200)
+
+
+def volume_type_to_dict(volume_type):
+    vtype_info = {
+        "id": volume_type.id,
+        "name": volume_type.name,
+        "deleted": volume_type.deleted,
+        "SNF:disk_template": volume_type.disk_template}
+    return vtype_info
+
+
+@api.api_method(http_method="GET", user_required=True, logger=log)
+def list_volume_types(request):
+    log.debug('list_volumes')
+    vtypes = VolumeType.objects.filter(deleted=False).order_by("id")
+    vtypes = [volume_type_to_dict(vtype) for vtype in vtypes]
+    data = json.dumps({'volume_types': vtypes})
+    return HttpResponse(data, content_type="application/json", status=200)
+
+
+@api.api_method(http_method="GET", user_required=True, logger=log)
+def get_volume_type(request, volume_type_id):
+    log.debug('get_volume_type volume_type_id: %s', volume_type_id)
+    volume_type = util.get_volume_type(volume_type_id, include_deleted=True)
+    data = json.dumps({'volume_type': volume_type_to_dict(volume_type)})
     return HttpResponse(data, content_type="application/json", status=200)

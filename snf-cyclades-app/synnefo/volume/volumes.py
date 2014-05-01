@@ -28,13 +28,25 @@ log = logging.getLogger(__name__)
 @transaction.commit_on_success
 def create(user_id, size, server_id, name=None, description=None,
            source_volume_id=None, source_snapshot_id=None,
-           source_image_id=None, volume_type=None, metadata=None):
+           source_image_id=None, volume_type_id=None, metadata=None):
 
     # Currently we cannot create volumes without being attached to a server
     if server_id is None:
         raise faults.BadRequest("Volume must be attached to server")
     server = util.get_server(user_id, server_id, for_update=True,
                              exception=faults.BadRequest)
+
+    server_vtype = server.flavor.volume_type
+    if volume_type_id is not None:
+        volume_type = util.get_volume_type(volume_type_id,
+                                           include_deleted=False,
+                                           exception=faults.BadRequest)
+        if volume_type != server_vtype:
+            raise faults.BadRequest("Cannot create a volume with type '%s' to"
+                                    " a server with volume type '%s'."
+                                    % (volume_type.id, server_vtype.id))
+    else:
+        volume_type = server_vtype
 
     # Assert that not more than one source are used
     sources = filter(lambda x: x is not None,
@@ -56,7 +68,8 @@ def create(user_id, size, server_id, name=None, description=None,
         source_uuid = None
 
     volume = _create_volume(server, user_id, size, source_type, source_uuid,
-                            name, description, index=None)
+                            volume_type=volume_type, name=name,
+                            description=description, index=None)
 
     if metadata is not None:
         for meta_key, meta_val in metadata.items():
@@ -72,16 +85,16 @@ def create(user_id, size, server_id, name=None, description=None,
 
 
 def _create_volume(server, user_id, size, source_type, source_uuid,
-                   name=None, description=None, index=None,
+                   volume_type, name=None, description=None, index=None,
                    delete_on_termination=True):
 
     utils.check_name_length(name, Volume.NAME_LENGTH,
                             "Volume name is too long")
     utils.check_name_length(description, Volume.DESCRIPTION_LENGTH,
                             "Volume name is too long")
+
     # Only ext_ disk template supports cloning from another source. Otherwise
     # is must be the root volume so that 'snf-image' fill the volume
-    volume_type = server.flavor.volume_type
     can_have_source = (index == 0 or
                        volume_type.provider in settings.GANETI_CLONE_PROVIDERS)
     if not can_have_source and source_type != "blank":

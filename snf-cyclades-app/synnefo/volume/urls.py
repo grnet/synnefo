@@ -66,6 +66,8 @@ volume_v2_patterns = patterns(
     (r'^snapshots/$', snapshot_demux),
     (r'^snapshots/detail$', views.list_snapshots, {'detail': True}),
     (r'^snapshots/(\d+)(?:.json)?$', snapshot_item_demux),
+    (r'^types/$', views.list_volume_types),
+    (r'^types/(\d+)(?:.json)?$', views.get_volume_type),
 )
 
 urlpatterns = patterns(

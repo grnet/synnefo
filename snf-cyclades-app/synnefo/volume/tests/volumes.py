@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from snf_django.utils.testing import BaseAPITest
+from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
 #from synnefo.db.models import Volume
 from synnefo.db import models_factory as mf
 from synnefo.volume import volumes
@@ -51,7 +51,8 @@ class VolumesTest(BaseAPITest):
 
         # Create server without source!
         mrapi().ModifyInstance.return_value = 42
-        vol = volumes.create(**self.kwargs)
+        with mocked_quotaholder():
+            vol = volumes.create(**self.kwargs)
 
         self.assertEqual(vol.size, self.size)
         self.assertEqual(vol.userid, self.userid)
@@ -69,7 +70,6 @@ class VolumesTest(BaseAPITest):
         disk_info = kwargs["disks"][0][2]
         self.assertEqual(disk_info["size"], self.size << 10)
         self.assertEqual(disk_info["name"], vol.backend_volume_uuid)
-        self.assertEqual(disk_info["volume_name"], vol.backend_volume_uuid)
         self.assertFalse("origin" in disk_info)
 
     def test_create_from_volume(self, mrapi):
@@ -85,13 +85,21 @@ class VolumesTest(BaseAPITest):
                           volumes.create,
                           source_volume_id=svol.id,
                           **self.kwargs)
+        svol = mf.VolumeFactory(userid=self.userid, status="AVAILABLE")
+        self.assertRaises(faults.BadRequest,
+                          volumes.create,
+                          source_volume_id=svol.id,
+                          **self.kwargs)
 
-        svol.status = "AVAILABLE"
+        svol.status = "IN_USE"
         svol.save()
         mrapi().ModifyInstance.return_value = 42
-        vol = volumes.create(source_volume_id=svol.id, **self.kwargs)
+        kwargs = deepcopy(self.kwargs)
+        kwargs["size"] = svol.size
+        with mocked_quotaholder():
+            vol = volumes.create(source_volume_id=svol.id, **kwargs)
 
-        self.assertEqual(vol.size, self.size)
+        self.assertEqual(vol.size, svol.size)
         self.assertEqual(vol.userid, self.userid)
         self.assertEqual(vol.name, None)
         self.assertEqual(vol.description, None)
@@ -101,32 +109,33 @@ class VolumesTest(BaseAPITest):
         name, args, kwargs = mrapi().ModifyInstance.mock_calls[0]
         self.assertEqual(kwargs["instance"], self.vm.backend_vm_id)
         disk_info = kwargs["disks"][0][2]
-        self.assertEqual(disk_info["size"], self.size << 10)
+        self.assertEqual(disk_info["size"], svol.size << 10)
         self.assertEqual(disk_info["name"], vol.backend_volume_uuid)
-        self.assertEqual(disk_info["volume_name"], vol.backend_volume_uuid)
         self.assertEqual(disk_info["origin"], svol.backend_volume_uuid)
 
-    @patch("synnefo.plankton.backend.ImageBackend")
+    @patch("synnefo.plankton.backend.PlanktonBackend")
     def test_create_from_snapshot(self, mimage, mrapi):
         # Wrong source
-        mimage().get_snapshot.side_effect = faults.ItemNotFound
+        mimage().__enter__().get_snapshot.side_effect = faults.ItemNotFound
         self.assertRaises(faults.BadRequest,
                           volumes.create,
                           source_snapshot_id=421,
                           **self.kwargs)
 
-        mimage().get_snapshot.side_effect = None
-        mimage().get_snapshot.return_value = {
+        mimage().__enter__().get_snapshot.side_effect = None
+        mimage().__enter__().get_snapshot.return_value = {
             'location': 'pithos://foo',
             'mapfile': 'snf-snapshot-43',
             'id': 12,
             'name': "test_image",
             'size': 1242,
             'disk_format': 'diskdump',
+            'status': 'AVAILABLE',
             'properties': {'source_volume': 42}}
 
         mrapi().ModifyInstance.return_value = 42
-        vol = volumes.create(source_snapshot_id=12, **self.kwargs)
+        with mocked_quotaholder():
+            vol = volumes.create(source_snapshot_id=12, **self.kwargs)
 
         self.assertEqual(vol.size, self.size)
         self.assertEqual(vol.userid, self.userid)
@@ -142,7 +151,6 @@ class VolumesTest(BaseAPITest):
         disk_info = kwargs["disks"][0][2]
         self.assertEqual(disk_info["size"], self.size << 10)
         self.assertEqual(disk_info["name"], vol.backend_volume_uuid)
-        self.assertEqual(disk_info["volume_name"], vol.backend_volume_uuid)
         self.assertEqual(disk_info["origin"], "snf-snapshot-43")
 
     def test_delete(self, mrapi):
@@ -165,7 +173,8 @@ class VolumesTest(BaseAPITest):
         # We can delete everything else
         vol.index = 1
         mrapi().ModifyInstance.return_value = 42
-        volumes.delete(vol)
+        with mocked_quotaholder():
+            volumes.delete(vol)
         self.assertEqual(vol.backendjobid, 42)
         args, kwargs = mrapi().ModifyInstance.call_args
         self.assertEqual(kwargs["instance"], vm.backend_vm_id)

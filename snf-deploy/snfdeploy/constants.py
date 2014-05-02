@@ -36,3 +36,6 @@ STATUS_FILE = "snf_deploy_status"
 DEFAULT_NODE = "node1"
 DEFAULT_CLUSTER = "ganeti1"
 DEFAULT_SETUP = "synnefo"
+
+CERT_OVERRIDE = "cert_override.txt"
+CERT_PATH = "/etc/ssl/certs/ssl-cert-snakeoil.pem"

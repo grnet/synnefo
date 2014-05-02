@@ -122,6 +122,7 @@ def update_admin(fn):
         cl.DB = DB(node=ctx.db.node, ctx=ctx)
         cl.ASTAKOS = Astakos(node=ctx.astakos.node, ctx=ctx)
         cl.CYCLADES = Cyclades(node=ctx.cyclades.node, ctx=ctx)
+        cl.CLIENT = Client(node=ctx.client.node, ctx=ctx)
         return fn(*args, **kwargs)
     return wrapper
 
@@ -155,6 +156,26 @@ def export_and_import_service(fn):
         cl.get(f, f + ".local")
         cl.ASTAKOS.put(f + ".local", f)
         cl.ASTAKOS.import_service()
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+def cert_override(fn):
+    """ Create all needed entries for cert_override.txt file
+
+    Append them in a tmp file and upload them to client node
+
+    """
+    def wrapper(*args, **kwargs):
+        cl = args[0]
+        f = "/tmp/" + constants.CERT_OVERRIDE + "_" + cl.service
+        for domain in [cl.node.domain, cl.node.cname, cl.node.ip]:
+            cmd = """
+python /root/firefox_cert_override.py {0} {1}:443 >> {2}
+""".format(constants.CERT_PATH, domain, f)
+            cl.run(cmd)
+        cl.get(f, f + ".local")
+        cl.CLIENT.put(f + ".local", f)
         return fn(*args, **kwargs)
     return wrapper
 
@@ -890,9 +911,11 @@ class Astakos(base.Component):
         "python-django-south",
         "snf-astakos-app",
         "kamaki",
+        "python-openssl",
         ]
 
     alias = constants.ASTAKOS
+    service = constants.ASTAKOS
 
     def required_components(self):
         return [HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB]
@@ -996,7 +1019,8 @@ class Astakos(base.Component):
             "PITHOS": self.ctx.pithos.cname,
             }
         return [
-            ("/etc/synnefo/astakos.conf", r1, {})
+            ("/etc/synnefo/astakos.conf", r1, {}),
+            ("/root/firefox_cert_override.py", {}, {})
             ]
 
     @base.run_cmds
@@ -1054,6 +1078,7 @@ class Astakos(base.Component):
 
     @update_admin
     @export_and_import_service
+    @cert_override
     def admin_post(self):
         self.set_astakos_default_quota()
 
@@ -1061,9 +1086,11 @@ class Astakos(base.Component):
 class CMS(base.Component):
     REQUIRED_PACKAGES = [
         "snf-cloudcms"
+        "python-openssl",
         ]
 
     alias = constants.CMS
+    service = constants.CMS
 
     def required_components(self):
         return [HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB]
@@ -1105,6 +1132,11 @@ class CMS(base.Component):
     @base.run_cmds
     def restart(self):
         return ["/etc/init.d/gunicorn restart"]
+
+    @update_admin
+    @cert_override
+    def admin_post(self):
+        pass
 
 
 class Mount(base.Component):
@@ -1192,6 +1224,7 @@ class Pithos(base.Component):
         "python-svipc",
         "snf-pithos-app",
         "snf-pithos-webclient",
+        "python-openssl",
         ]
 
     alias = constants.PITHOS
@@ -1240,6 +1273,7 @@ class Pithos(base.Component):
         return [
             ("/etc/synnefo/pithos.conf", r1, {}),
             ("/etc/synnefo/webclient.conf", r2, {}),
+            ("/root/firefox_cert_override.py", {}, {})
             ]
 
     @base.run_cmds
@@ -1254,6 +1288,7 @@ class Pithos(base.Component):
 
     @update_admin
     @export_and_import_service
+    @cert_override
     def admin_post(self):
         self.ASTAKOS.set_pithos_default_quota()
 
@@ -1283,6 +1318,7 @@ class Cyclades(base.Component):
         "kamaki",
         "snf-cyclades-app",
         "python-django-south",
+        "python-openssl",
         ]
 
     alias = constants.CYCLADES
@@ -1388,7 +1424,8 @@ snf-manage network-create --subnet6={0} \
             "CYCLADES_NODE_IP": self.ctx.cyclades.ip
             }
         return [
-            ("/etc/synnefo/cyclades.conf", r1, {})
+            ("/etc/synnefo/cyclades.conf", r1, {}),
+            ("/root/firefox_cert_override.py", {}, {})
             ]
 
     @base.run_cmds
@@ -1415,6 +1452,7 @@ snf-manage network-create --subnet6={0} \
 
     @update_admin
     @export_and_import_service
+    @cert_override
     def admin_post(self):
         self.ASTAKOS.set_cyclades_default_quota()
 
@@ -1646,7 +1684,7 @@ class Client(base.Component):
     alias = constants.CLIENT
 
     def required_components(self):
-        return [HW, SSH, DNS, APT, Kamaki, Burnin]
+        return [HW, SSH, DNS, APT, Kamaki, Burnin, Firefox]
 
 
 class GanetiDev(base.Component):
@@ -1779,3 +1817,16 @@ class Router(base.Component):
     REQUIRED_PACKAGES = [
         "iptables"
         ]
+
+
+class Firefox(base.Component):
+    REQUIRED_PACKAGES = [
+        "iceweasel",
+        ]
+
+    @base.run_cmds
+    def initialize(self):
+        f = constants.CERT_OVERRIDE
+        return [
+            "cat /tmp/%s_* >> /etc/iceweasel/profile/%s" % (f, f)
+            ]

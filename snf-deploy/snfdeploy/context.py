@@ -65,6 +65,7 @@ class Context(object):
         self.stats = self.get(constants.STATS)
         self.cms = self.get(constants.CMS)
         self.router = self.get(constants.ROUTER)
+        self.client = self.get(constants.CLIENT)
 
     def get(self, role):
         return config.get_single_node_role_info(self.setup, role)

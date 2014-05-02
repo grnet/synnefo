@@ -62,7 +62,7 @@ To install the whole Synnefo stack run:
 
 .. code-block:: console
 
-   # snf-deploy all --autoconf
+   # snf-deploy synnefo --autoconf
 
 This might take a while depending on the physical host you are running on, since
 it will download everything that is necessary, install and configure the whole
@@ -89,7 +89,7 @@ to access.
 
 Then open a browser and point to:
 
-`https://accounts.synnefo.live/astakos/ui/login`
+`https://astakos.synnefo.live/astakos/ui/login`
 
 Local access
 ------------
@@ -97,7 +97,7 @@ Local access
 If you want to access the installation from the same machine it runs on, just
 open a browser and point to:
 
-`https://accounts.synnefo.live/astakos/ui/login`
+`https://astakos.synnefo.live/astakos/ui/login`
 
 The default <domain> is set to ``synnefo.live``. A local BIND is already
 set up by `snf-deploy` to serve all FQDNs.

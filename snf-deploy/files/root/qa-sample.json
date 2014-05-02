@@ -1,0 +1,242 @@
+{
+  "# Note:": null,
+  "# This file is stored in the JSON format and does not support": null,
+  "# comments. As a work-around, comments are keys starting with a hash": null,
+  "# sign (#).": null,
+
+  "name": "%CLUSTER_NAME%",
+
+  "# Name used for renaming cluster": null,
+  "rename": "ganeti1-rename",
+
+  "# Virtual cluster": null,
+  "#vcluster-master": "xen-vcluster",
+  "#vcluster-basedir": "/srv/ganeti/vcluster",
+
+  "enabled-hypervisors": "kvm",
+  "# Dict of hypervisor name and parameters (like on the cmd line)": null,
+  "hypervisor-parameters": {"kvm": "kernel_path=,vnc_bind_address=0.0.0.0", "xen-pvm": "kernel_path=/boot/vmlinuz-3.2.0-4-amd64", "xen-hvm": "kernel_path=/boot/vmlinuz-3.2.0-4-amd64"},
+  "# Backend parameters (like on the cmd line)": null,
+  "backend-parameters": "",
+  "# Dict of OS name and parameters (like on the cmd line)": null,
+  "os-parameters": {},
+  "# Dict of OS name and value dict of hypervisor  parameters": null,
+  "os-hvp": {},
+  "primary_ip_version": 4,
+  "# Name of the LVM group for the cluster": null,
+  "vg-name": "%VG%",
+  "# Cluster-level value of the exclusive-storage flag": null,
+  "exclusive-storage": null,
+
+  "# Only enable disk templates that the QA machines can actually use.": null,
+  "enabled-disk-templates": [
+    "plain",
+    "drbd",
+    "diskless"
+  ],
+
+  "# Additional arguments for initializing cluster": null,
+  "cluster-init-args": [],
+
+  "# Network interface for master role": null,
+  "master-netdev": "%CLUSTER_NETDEV",
+
+  "# Default network interface parameters": null,
+  "default-nicparams": {
+    "mode": "bridged",
+    "link": "br0"
+  },
+
+  "os": "debootstrap+default",
+  "maxmem": "1024M",
+  "minmem": "512M",
+
+  "# Instance policy specs": null,
+  "#ispec_cpu_count_max": null,
+  "#ispec_cpu_count_min": null,
+  "#ispec_cpu_count_std": null,
+  "#ispec_disk_count_max": null,
+  "#ispec_disk_count_min": null,
+  "#ispec_disk_count_std": null,
+  "#ispec_disk_size_max": null,
+  "ispec_disk_size_min": 512,
+  "#ispec_disk_size_std": null,
+  "ispec_mem_size_max": 1024,
+  "#ispec_mem_size_min": null,
+  "#ispec_mem_size_std": null,
+  "#ispec_nic_count_max": null,
+  "#ispec_nic_count_min": null,
+  "#ispec_nic_count_std": null,
+
+  "# Lists of disks": null,
+  "disks": [
+    {
+      "size": "1G",
+      "name": "disk0",
+      "growth": "2G"
+    },
+    {
+      "size": "512M",
+      "name": "disk1",
+      "growth": "768M"
+    }
+  ],
+
+  "# Script to check instance status": null,
+  "instance-check": null,
+
+  "# Regular expression to ignore existing tags": null,
+  "ignore-tags-re": null,
+
+  %NODES",
+
+  "instances": [
+    {
+      "name": "xen-test-inst1.vm.%DOMAIN%",
+
+      "# Static MAC address": null,
+      "#nic.mac/0": "AA:00:00:11:11:11"
+    },
+    {
+      "name": "xen-test-inst2.vm.%DOMAIN%",
+
+      "# Static MAC address": null,
+      "#nic.mac/0": "AA:00:00:22:22:22"
+    },
+    {
+      "name": "xen-test-inst3.vm.%DOMAIN%",
+
+      "# Static MAC address": null,
+      "#nic.mac/0": "AA:00:00:22:22:22"
+    }
+  ],
+
+  "groups": {
+    "group-with-nodes": "default",
+    "inexistent-groups": [
+      "group1",
+      "group2",
+      "group3"
+    ]
+  },
+
+  "networks": {
+    "inexistent-networks": [
+      "network1",
+      "network2",
+      "network3"
+    ]
+  },
+
+  "tests": {
+    "# Whether tests are enabled or disabled by default": null,
+    "default": true,
+
+    "env": true,
+    "os": true,
+    "tags": true,
+    "rapi": true,
+    "test-jobqueue": true,
+    "delay": true,
+
+    "create-cluster": false,
+    "cluster-verify": true,
+    "cluster-info": true,
+    "cluster-burnin": true,
+    "cluster-command": true,
+    "cluster-copyfile": true,
+    "cluster-master-failover": true,
+    "cluster-renew-crypto": true,
+    "cluster-destroy": true,
+    "cluster-rename": false,
+    "cluster-reserved-lvs": true,
+    "cluster-modify": true,
+    "cluster-oob": true,
+    "cluster-epo": true,
+    "cluster-redist-conf": true,
+    "cluster-repair-disk-sizes": true,
+    "cluster-exclusive-storage": true,
+    "cluster-instance-policy": true,
+
+    "haskell-confd": true,
+    "htools": true,
+
+    "group-list": true,
+    "group-rwops": true,
+
+    "network": false,
+
+    "node-list": true,
+    "node-info": true,
+    "node-volumes": true,
+    "node-readd": true,
+    "node-storage": true,
+    "node-modify": true,
+    "node-oob": true,
+
+    "# This test needs at least three nodes": null,
+    "node-evacuate": false,
+
+    "# This test needs at least two nodes": null,
+    "node-failover": false,
+
+    "instance-add-plain-disk": true,
+    "instance-add-file": true,
+    "instance-add-drbd-disk": true,
+    "instance-add-diskless": true,
+    "instance-add-restricted-by-disktemplates": true,
+    "instance-convert-disk": true,
+    "instance-plain-rapi-common-tests": true,
+    "instance-remove-drbd-offline": true,
+
+    "instance-export": true,
+    "instance-failover": true,
+    "instance-grow-disk": true,
+    "instance-import": true,
+    "instance-info": true,
+    "instance-list": true,
+    "instance-migrate": true,
+    "instance-modify": true,
+    "instance-modify-primary": true,
+    "instance-modify-disks": false,
+    "instance-reboot": true,
+    "instance-reinstall": true,
+    "instance-rename": false,
+    "instance-shutdown": true,
+    "instance-device-names": true,
+
+    "job-list": true,
+
+    "# cron/ganeti-watcher should be disabled for these tests": null,
+    "instance-automatic-restart": false,
+    "instance-consecutive-failures": false,
+
+    "# This test might fail with certain hypervisor types, depending": null,
+    "# on whether they support the `gnt-instance console' command.": null,
+    "instance-console": false,
+
+    "# Disabled by default because they take rather long": null,
+    "instance-replace-disks": false,
+    "instance-recreate-disks": false,
+
+    "# Whether to test the tools/move-instance utility": null,
+    "inter-cluster-instance-move": false,
+
+    "# Run instance tests with different cluster configurations": null,
+    "default-instance-tests": true,
+    "exclusive-storage-instance-tests": false
+  },
+
+  "options": {
+    "burnin-instances": 2,
+    "burnin-disk-template": "drbd",
+    "burnin-in-parallel": false,
+    "burnin-check-instances": false,
+    "burnin-rename": "ganeti1-rename",
+    "burnin-reboot": true,
+    "reboot-types": ["soft", "hard", "full"],
+    "use-iallocators": false
+  },
+
+  "# vim: set syntax=javascript :": null
+}

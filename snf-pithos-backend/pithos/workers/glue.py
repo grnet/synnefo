@@ -39,8 +39,8 @@ class WorkerGlue(object):
         bcfg.readfp(open(cfile))
         worker_id = WorkerGlue.worker_id
         WorkerGlue.ArchipelagoConfFile = cfile
-        archipelago_segment_type = 'segdev'
-        archipelago_segment_name = 'xsegbd'
+        archipelago_segment_type = 'posix'
+        archipelago_segment_name = 'archipelago'
         archipelago_dynports = bcfg.getint('XSEG', 'SEGMENT_DYNPORTS')
         archipelago_ports = bcfg.getint('XSEG', 'SEGMENT_PORTS')
         archipelago_segment_size = bcfg.getint('XSEG', 'SEGMENT_SIZE')

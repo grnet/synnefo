@@ -13,41 +13,37 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from snfdeploy.components import *
+from snfdeploy import constants
+from snfdeploy import components
 
-ROLES = {
-    "ns": [HW, SSH, DDNS, NS, DNS, APT],
-    "db": [HW, SSH, DNS, APT, DB],
-    "mq": [HW, SSH, DNS, APT, MQ],
-    "nfs": [HW, SSH, DNS, APT, NFS],
-    "astakos": [HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB, Astakos],
-    "pithos": [
-        HW, SSH, DNS, APT, Apache,
-        Gunicorn, Common, WEB, PithosBackend, Archip, Pithos
-        ],
-    "cyclades": [
-        HW, SSH, DNS, APT,
-        Apache, Gunicorn, Common, WEB, Cyclades, VNC, PithosBackend, Archip
-        ],
-    "cms": [HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB, CMS],
-    "stats": [
-        HW, SSH, DNS, APT,
-        Apache, Gunicorn, Common, WEB, Collectd, Stats
-        ],
-    "client": [HW, SSH, DNS, APT, Kamaki, Burnin],
-    "ganeti": [
-        HW, SSH, DNS, DDNS, APT, Mount,
-        Ganeti, ExtStorage, PithosBackend, Archip, ArchipGaneti,
-        Image, Network, GTools, GanetiCollectd,
-        ],
-    "master": [
-        HW, SSH, DNS, DDNS, APT, Mount,
-        Ganeti, ExtStorage, Master, PithosBackend, Archip, ArchipGaneti,
-        Image, Network, GTools, GanetiCollectd,
-        ],
+
+_ROLE_MAP = {
+    constants.NS: components.NS,
+    constants.NFS: components.NFS,
+    constants.DB: components.DB,
+    constants.MQ: components.MQ,
+    constants.ASTAKOS: components.Astakos,
+    constants.CYCLADES: components.Cyclades,
+    constants.PITHOS: components.Pithos,
+    constants.CMS: components.CMS,
+    constants.STATS: components.Stats,
+    constants.MASTER: components.Master,
+    constants.VMC: components.VMC,
+    constants.CLIENT: components.Client,
+    constants.DEV: components.GanetiDev,
+    constants.ROUTER: components.Router,
     }
 
-CONFLICTS = {
-    Mount: [NFS],
-    CMS: [Astakos, Pithos, Cyclades]
-    }
+
+def _get_role_map(role):
+    if role in _ROLE_MAP:
+        return _ROLE_MAP[role]
+    else:
+        return getattr(components, role)
+
+
+def get(role, ctx):
+    assert role and ctx
+    c = _get_role_map(role)
+    ctx.role = role
+    return c(ctx=ctx)

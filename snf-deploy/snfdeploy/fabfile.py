@@ -22,296 +22,90 @@ Fabric file for snf-deploy
 """
 
 from __future__ import with_statement
-from fabric.api import hide, env, settings, local, roles, execute
-from fabric.operations import run, put, get
-import fabric
-import re
-import os
-import shutil
-import tempfile
-import ast
-from snfdeploy.lib import debug, Conf, Env, disable_color
-from snfdeploy.utils import *
-from snfdeploy import massedit
-# Allow referring to components with their name, e.g. Cyclades, Pithos, etc.
-from snfdeploy.components import *
-# Use only in setup() so that we getattr(components, XX) to get
-# the actual class from the user provided name
-# (snf-deploy run setup --component XX)
-from snfdeploy import components
+from fabric.api import env, execute, parallel
+from snfdeploy import context
+from snfdeploy import constants
+from snfdeploy import roles
 
 
-def setup_env(args, localenv):
-    """Setup environment"""
-    print("Loading configuration for synnefo...")
-
-    env.env = localenv
-
-    env.target_node = args.node
-    env.target_component = args.component
-    env.target_method = args.method
-    env.target_role = args.role
-    env.dry_run = args.dry_run
-    env.local = args.autoconf
-    env.key_inject = args.key_inject
-    env.password = env.env.password
-    env.user = env.env.user
-    env.shell = "/bin/bash -c"
-    env.key_filename = args.ssh_key
-    env.jsonfile = "/tmp/service.json"
-    env.force = args.force
-
-    if args.disable_colors:
-        disable_color()
-
-    env.roledefs = {
-        "accounts": [env.env.accounts.ip],
-        "cyclades": [env.env.cyclades.ip],
-        "pithos": [env.env.pithos.ip],
-        "cms": [env.env.cms.ip],
-        "mq": [env.env.mq.ip],
-        "db": [env.env.db.ip],
-        "ns": [env.env.ns.ip],
-        "client": [env.env.client.ip],
-        "stats": [env.env.stats.ip],
-        "nfs": [env.env.nfs.ip],
-    }
-
-    env.enable_lvm = False
-    env.enable_drbd = False
-    if ast.literal_eval(env.env.create_extra_disk) and env.env.extra_disk:
-        env.enable_lvm = True
-        env.enable_drbd = True
-
-    env.roledefs.update({
-        "ganeti": env.env.cluster_ips,
-        "master": [env.env.master.ip],
-    })
+def setup_env(args):
+    env.component = args.component
+    env.method = args.method
+    env.ctx = context.Context()
 
 
-#
-#
-# Those methods retrieve info from existing installation and update env
-#
-#
-@roles("db")
-def update_env_with_user_info():
-    user_email = env.env.user_email
-    result = RunComponentMethod(DB, "get_user_info_from_db")
-    r = re.compile(r"(\d+)[ |]*(\S+)[ |]*(\S+)[ |]*" + user_email, re.M)
-    match = r.search(result)
-    if env.dry_run:
-        env.user_id, env.user_auth_token, env.user_uuid = \
-            ("dummy_uid", "dummy_user_auth_token", "dummy_user_uuid")
-    else:
-        env.user_id, env.user_auth_token, env.user_uuid = match.groups()
+@parallel
+def setup_vmc():
+    env.ctx.update(node=env.host)
+    VMC = roles.get(constants.VMC, env.ctx)
+    VMC.setup()
 
 
-@roles("accounts")
-def update_env_with_service_info(service="pithos"):
-    result = RunComponentMethod(Astakos, "get_services")
-    r = re.compile(r"(\d+)[ ]*%s[ ]*(\S+)" % service, re.M)
-    match = r.search(result)
-    if env.dry_run:
-        env.service_id, env.service_token = \
-            ("dummy_service_id", "dummy_service_token")
-    else:
-        env.service_id, env.service_token = match.groups()
+def setup_master():
+    env.ctx.update(node=env.host)
+    _setup_role(constants.MASTER)
 
 
-@roles("cyclades")
-def update_env_with_backend_info():
-    cluster_name = env.env.cluster.fqdn
-    result = RunComponentMethod(Cyclades, "list_backends")
-    r = re.compile(r"(\d+)[ ]*%s.*" % cluster_name, re.M)
-    match = r.search(result)
-    if env.dry_run:
-        env.backend_id = "dummy_backend_id"
-    else:
-        env.backend_id, = match.groups()
+@parallel
+def setup_cluster():
+    env.ctx.update(cluster=env.host)
+    execute(setup_master, hosts=env.ctx.masters)
+    execute(setup_vmc, hosts=env.ctx.vmcs)
 
 
-#
-#
-# Those methods act on components after their basic setup
-#
-#
-@roles("cyclades")
-def add_ganeti_backend():
-    RunComponentMethod(Cyclades, "add_backend")
-    execute(update_env_with_backend_info)
-    RunComponentMethod(Cyclades, "undrain_backend")
+def _setup_role(role):
+    env.ctx.update(node=env.host)
+    ROLE = roles.get(role, env.ctx)
+    ROLE.setup()
 
 
-@roles("accounts")
-def add_synnefo_user():
-    RunComponentMethod(Astakos, "add_user")
+def setup_role(role):
+    execute(_setup_role, role, hosts=context.get(role))
 
 
-@roles("accounts")
-def activate_user():
-    execute(update_env_with_user_info)
-    RunComponentMethod(Astakos, "activate_user")
+def setup_synnefo():
+    setup_role(constants.NS)
+    setup_role(constants.NFS)
+    setup_role(constants.DB)
+    setup_role(constants.MQ)
+
+    setup_role(constants.ASTAKOS)
+    setup_role(constants.PITHOS)
+    setup_role(constants.CYCLADES)
+    setup_role(constants.CMS)
+
+    execute(setup_cluster, hosts=env.ctx.clusters)
+
+    setup_role(constants.STATS)
+    setup_role(constants.CLIENT)
 
 
-@roles("accounts")
-def import_service():
-    f = env.jsonfile
-    PutToComponent(Astakos, f + ".local", f)
-    RunComponentMethod(Astakos, "import_service")
+def setup_ganeti():
+    setup_role(constants.NS)
+    setup_role(constants.NFS)
+    execute(setup_cluster, hosts=env.ctx.clusters)
 
 
-@roles("ns")
-def update_ns_for_node(node_info):
-    RunComponentMethod(NS, "update_ns_for_node", node_info)
+def _setup_qa():
+    env.ctx.update(cluster=env.host)
+    setup_role(constants.NS)
+    setup_role(constants.NFS)
+    setup_cluster()
+    setup_role(constants.DEV)
 
 
-@roles("nfs")
-def update_exports_for_node(node_info):
-    RunComponentMethod(NFS, "update_exports", node_info)
-
-
-@roles("master")
-def add_ganeti_node(node_info):
-    RunComponentMethod(Master, "add_node", node_info)
-
-
-@roles("db")
-def allow_db_access(node_info):
-    RunComponentMethod(DB, "allow_access_in_db", node_info, "all", "trust")
-
-
-@roles("accounts")
-def set_default_quota():
-    RunComponentMethod(Astakos, "set_default_quota")
-
-
-@roles("cyclades")
-def add_public_networks():
-    RunComponentMethod(Cyclades, "add_network")
-    if ast.literal_eval(env.env.testing_vm):
-        RunComponentMethod(Cyclades, "add_network6")
-
-
-@roles("client")
-def add_image():
-    RunComponentMethod(Kamaki, "fetch_image")
-    RunComponentMethod(Kamaki, "upload_image")
-    RunComponentMethod(Kamaki, "register_image")
-
-
-#
-#
-# Those methods do the basic setup of a synnefo role
-#
-#
-@roles("ns")
-def setup_ns_role():
-    SetupSynnefoRole("ns")
-
-
-@roles("nfs")
-def setup_nfs_role():
-    SetupSynnefoRole("nfs")
-
-
-@roles("db")
-def setup_db_role():
-    SetupSynnefoRole("db")
-    if ast.literal_eval(env.env.testing_vm):
-        RunComponentMethod(DB, "make_db_fast")
-
-
-@roles("mq")
-def setup_mq_role():
-    SetupSynnefoRole("mq")
-
-
-@roles("accounts")
-def setup_astakos_role():
-    node_info = get_node_info(env.host)
-    execute(allow_db_access, node_info)
-    SetupSynnefoRole("astakos")
-    RunComponentMethod(Astakos, "export_service")
-    f = env.jsonfile
-    GetFromComponent(Astakos, f, f + ".local")
-    execute(import_service)
-
-
-@roles("pithos")
-def setup_pithos_role():
-    node_info = get_node_info(env.host)
-    execute(allow_db_access, node_info)
-    execute(update_env_with_service_info, "pithos")
-    SetupSynnefoRole("pithos")
-    RunComponentMethod(Pithos, "export_service")
-    f = env.jsonfile
-    GetFromComponent(Pithos, f, f + ".local")
-    execute(import_service)
-
-
-@roles("cyclades")
-def setup_cyclades_role():
-    node_info = get_node_info(env.host)
-    execute(allow_db_access, node_info)
-    execute(update_env_with_service_info, "cyclades")
-    SetupSynnefoRole("cyclades")
-    RunComponentMethod(Cyclades, "export_service")
-    f = env.jsonfile
-    GetFromComponent(Cyclades, f, f + ".local")
-    execute(import_service)
-
-
-@roles("cms")
-def setup_cms_role():
-    SetupSynnefoRole("cms")
-
-
-@roles("ganeti")
-def setup_ganeti_role():
-    if not env.host:
-        return
-    node_info = get_node_info(env.host)
-    execute(update_exports_for_node, node_info)
-    SetupSynnefoRole("ganeti")
-    execute(add_ganeti_node, node_info)
-    #FIXME: prepare_lvm ????
-
-
-@roles("master")
-def setup_master_role():
-    node_info = get_node_info(env.host)
-    execute(update_exports_for_node, node_info)
-    execute(update_ns_for_node, env.env.cluster)
-    SetupSynnefoRole("master")
-
-
-@roles("stats")
-def setup_stats_role():
-    SetupSynnefoRole("stats")
-
-
-@roles("client")
-def setup_client_role():
-    execute(update_env_with_user_info)
-    SetupSynnefoRole("client")
+def setup_qa():
+    execute(_setup_qa, hosts=env.ctx.clusters)
 
 
 def setup():
-    node_info = get_node_info(env.target_node)
-    if not node_info:
-        debug("setup", "Please give a valid node identifier")
-        return
-    execute(update_ns_for_node, node_info)
-    env.host = env.host_string = node_info.ip
-    if env.target_role:
-        SetupSynnefoRole(env.target_role)
-        return
-    if not env.target_component:
-        debug("setup", "Please give a valid Component")
-        return
-    component_class = getattr(components, env.target_component)
-    if not env.target_method:
-        debug("setup", "Please give a valid Component method")
-        return
-    RunComponentMethod(component_class, env.target_method)
+    if env.component:
+        target = env.component
+    else:
+        target = env.ctx.role
+    C = roles.get(target, env.ctx)
+    if env.method:
+        fn = getattr(C, env.method)
+        fn()
+    else:
+        C.setup()

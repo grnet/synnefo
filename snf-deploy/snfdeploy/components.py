@@ -13,64 +13,214 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 import datetime
-from snfdeploy.utils import debug
+import simplejson
+import copy
+from snfdeploy import base
+from snfdeploy import config
+from snfdeploy import constants
+from snfdeploy import context
+from snfdeploy.lib import FQDN
 
 
-class SynnefoComponent(object):
+#
+# Helper decorators that wrap methods of Component
+# class and update its execution context (self, self.ctx, context):
+#
+def parse_user_info(fn):
+    """ Parse the output of DB.get_user_info_from_db()
 
-    REQUIRED_PACKAGES = []
+    For the given user email found in config,
+    update user_id, user_auth_token and user_uuid attributes of context.
 
-    def debug(self, msg, info=""):
-        debug(self.__class__.__name__, msg, info)
-
-    def __init__(self, node_info, env, *args, **kwargs):
-        """ Take a node_info and env as argument and initialize local vars """
-        self.node_info = node_info
-        self.env = env
-
-    def check(self):
-        """ Returns a list of bash commands that check prerequisites """
-        return []
-
-    def install(self):
-        """ Returns a list of debian packages to install """
-        return self.REQUIRED_PACKAGES
-
-    def prepare(self):
-        """ Returs a list of bash commands that prepares the component """
-        return []
-
-    def configure(self):
-        """ Must return a list of tuples (tmpl_path, replace_dict, mode) """
-        return []
-
-    def initialize(self):
-        """ Returs a list of bash commands that initialize the component """
-        return []
-
-    def test(self):
-        """ Returs a list of bash commands that test existing installation """
-        return []
-
-    def restart(self):
-        return []
-
-    #TODO: add cleanup method for each component
-    def clean(self):
-        return []
+    """
+    def wrapper(*args, **kwargs):
+        user_email = config.user_email
+        result = fn(*args, **kwargs)
+        r = re.compile(r"(\d+)[ |]*(\S+)[ |]*(\S+)[ |]*" + user_email, re.M)
+        match = r.search(result)
+        if config.dry_run:
+            context.user_id, context.user_auth_token, context.user_uuid = \
+                ("dummy_uid", "dummy_user_auth_token", "dummy_user_uuid")
+        elif match:
+            context.user_id, context.user_auth_token, context.user_uuid = \
+                match.groups()
+        else:
+            raise BaseException("Cannot parse info for user %s" % user_email)
+        return result
+    return wrapper
 
 
-class HW(SynnefoComponent):
+def parse_service_info(fn):
+    """ Parse the output of Astakos.get_services()
+
+    For the given service (found in ctx.admin_service)
+    updates service_id and service_token attributes of context.
+
+    """
+    def wrapper(*args, **kwargs):
+        cl = args[0]
+        service = cl.ctx.admin_service
+        result = fn(*args, **kwargs)
+        r = re.compile(r"(\d+)[ ]*%s[ ]*(\S+)" % service, re.M)
+        match = r.search(result)
+        if config.dry_run:
+            context.service_id, context.service_token = \
+                ("dummy_service_id", "dummy_service_token")
+        elif match:
+            context.service_id, context.service_token = \
+                match.groups()
+        else:
+            raise BaseException("Cannot parse info for service %s" % service)
+        return result
+    return wrapper
+
+
+def parse_backend_info(fn):
+    """ Parse the output of Cyclades.list_backends()
+
+    For the given cluster (found in ctx.admin_cluster)
+    updates the backend_id attributes of context.
+
+    """
+    def wrapper(*args, **kwargs):
+        cl = args[0]
+        fqdn = cl.ctx.admin_cluster.fqdn
+        result = fn(*args, **kwargs)
+        r = re.compile(r"(\d+)[ ]*%s.*" % fqdn, re.M)
+        match = r.search(result)
+        if config.dry_run:
+            context.backend_id = "dummy_backend_id"
+        elif match:
+            context.backend_id, = match.groups()
+        else:
+            raise BaseException("Cannot parse info for backend %s" % fqdn)
+        return result
+    return wrapper
+
+
+def update_admin(fn):
+    """ Initializes the admin roles for each component
+
+    Initialize the admin roles (NS, Astakos, Cyclades, etc.) and make them
+    available under self.NS, self.ASTAKOS, etc. These have the same execution
+    context of the current components besides the target node which gets
+    derived from the corresponding config.
+
+    """
+    def wrapper(*args, **kwargs):
+        """If used as decorator of a class method first argument is self."""
+        cl = args[0]
+        ctx = copy.deepcopy(cl.ctx)
+        ctx.admin_service = cl.service
+        ctx.admin_cluster = cl.cluster
+        ctx.admin_node = cl.node
+        ctx.admin_fqdn = cl.fqdn
+        cl.NS = NS(node=ctx.ns.node, ctx=ctx)
+        cl.NFS = NFS(node=ctx.nfs.node, ctx=ctx)
+        cl.DB = DB(node=ctx.db.node, ctx=ctx)
+        cl.ASTAKOS = Astakos(node=ctx.astakos.node, ctx=ctx)
+        cl.CYCLADES = Cyclades(node=ctx.cyclades.node, ctx=ctx)
+        cl.CLIENT = Client(node=ctx.client.node, ctx=ctx)
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+def update_cluster_admin(fn):
+    """ Initializes the cluster admin roles for each component
+
+    Finds the master role for the corresponding cluster
+
+    """
+    def wrapper(*args, **kwargs):
+        """If used as decorator of a class method first argument is self."""
+        cl = args[0]
+        ctx = copy.deepcopy(cl.ctx)
+        ctx.admin_cluster = cl.cluster
+        cl.MASTER = Master(node=ctx.master.node, ctx=ctx)
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+def export_and_import_service(fn):
+    """ Export and import synnefo service
+
+    Used in Astakos, Pithos, and Cyclades service admin_post method
+
+    """
+    def wrapper(*args, **kwargs):
+        cl = args[0]
+        f = config.jsonfile
+        cl.export_service()
+        cl.get(f, f + ".local")
+        cl.ASTAKOS.put(f + ".local", f)
+        cl.ASTAKOS.import_service()
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+def cert_override(fn):
+    """ Create all needed entries for cert_override.txt file
+
+    Append them in a tmp file and upload them to client node
+
+    """
+    def wrapper(*args, **kwargs):
+        cl = args[0]
+        f = "/tmp/" + constants.CERT_OVERRIDE + "_" + cl.service
+        for domain in [cl.node.domain, cl.node.cname, cl.node.ip]:
+            cmd = """
+python /root/firefox_cert_override.py {0} {1}:443 >> {2}
+""".format(constants.CERT_PATH, domain, f)
+            cl.run(cmd)
+        cl.get(f, f + ".local")
+        cl.CLIENT.put(f + ".local", f)
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+# ########################## Components ############################
+
+# A Component() gets initialized with an execution context that is a
+# configuration snapshot of the target setup, cluster and node. A
+# component implements the following helper methods: check, install,
+# prepare, configure, restart, initialize, and test. All those methods
+# will be executed on the target node with this order during setup.
+#
+# Additionally each Component class implements admin_pre, and
+# admin_post methods which invoke actions on different components on
+# the same execution context before and after installation. For
+# example before a backend gets installed, its FQDN must resolve to
+# the master floating IP, so we have to run some actions on the ns
+# node and after installation we must add it to cyclades (snf-manage
+# backend-add on the cyclades node).
+#
+# Component() inherits ComponentRunner() which practically exports the
+# setup() method. This will first check if the required components are
+# installed, will install them if not and update the status of target
+# node.
+#
+# ComponentRunner() inherits FabricRunner() which practically wraps
+# basic fabric commands (put, get, run) with the correct execution
+# environment.
+#
+# Each component gets initialized with an execution context and uses
+# the config module for accessing global wide options. The context
+# provides node, cluster, and setup related info.
+
+class HW(base.Component):
+    @base.run_cmds
     def test(self):
         return [
-            "ping -c 1 %s" % self.node_info.ip,
+            "ping -c 1 %s" % self.node.ip,
             "ping -c 1 www.google.com",
             "apt-get update",
             ]
 
 
-class SSH(SynnefoComponent):
+class SSH(base.Component):
+    @base.run_cmds
     def prepare(self):
         return [
             "mkdir -p /root/.ssh",
@@ -78,76 +228,119 @@ class SSH(SynnefoComponent):
             "echo StrictHostKeyChecking no >> /etc/ssh/ssh_config",
             ]
 
-    def configure(self):
+    def _configure(self):
         files = [
             "authorized_keys", "id_dsa", "id_dsa.pub", "id_rsa", "id_rsa.pub"
             ]
         ssh = [("/root/.ssh/%s" % f, {}, {"mode": 0600}) for f in files]
         return ssh
 
+    @base.run_cmds
     def initialize(self):
         f = "/root/.ssh/authorized_keys"
         return [
             "test -e {0}.bak && cat {0}.bak >> {0} || true".format(f)
             ]
 
+    @base.run_cmds
     def test(self):
-        return ["ssh %s date" % self.node_info.ip]
+        return ["ssh %s date" % self.node.ip]
 
 
-class DNS(SynnefoComponent):
+class DNS(base.Component):
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+
+    @base.run_cmds
     def prepare(self):
         return [
             "chattr -i /etc/resolv.conf",
             "sed -i 's/^127.*$/127.0.0.1 localhost/g' /etc/hosts",
+            "echo %s > /etc/hostname" % self.node.hostname,
+            "hostname %s" % self.node.hostname
             ]
 
-    def configure(self):
+    def _configure(self):
         r1 = {
             "date": str(datetime.datetime.today()),
-            "domain": self.env.env.domain,
-            "ns_node_ip": self.env.env.ns.ip,
+            "domain": self.node.domain,
+            "ns_node_ip": self.ctx.ns.ip,
             }
         resolv = [
             ("/etc/resolv.conf", r1, {})
             ]
         return resolv
 
+    @base.run_cmds
     def initialize(self):
         return ["chattr +i /etc/resolv.conf"]
 
 
-class DDNS(SynnefoComponent):
+class DDNS(base.Component):
     REQUIRED_PACKAGES = [
         "dnsutils",
         ]
 
+    @base.run_cmds
     def prepare(self):
         return [
             "mkdir -p /root/ddns/"
             ]
 
-    def configure(self):
+    def _configure(self):
         return [
-            ("/root/ddns/" + k, {}, {}) for k in self.env.env.ddns_keys
+            ("/root/ddns/" + k, {}, {}) for k in config.ddns_keys
             ]
 
 
-class NS(SynnefoComponent):
+class NS(base.Component):
     REQUIRED_PACKAGES = [
         "bind9",
         ]
 
-    def nsupdate(self, cmd):
+    alias = constants.NS
+
+    def required_components(self):
+        return [HW, SSH, DDNS]
+
+    def _nsupdate(self, cmd):
         ret = """
 nsupdate -k {0} > /dev/null <<EOF || true
 server {1}
 {2}
 send
 EOF
-""".format(self.env.env.ddns_private_key, self.node_info.ip, cmd)
+""".format(config.ddns_private_key, self.ctx.ns.ip, cmd)
         return ret
 
+    @base.run_cmds
+    def update_ns(self, info=None):
+        if not info:
+            info = self.ctx.admin_fqdn
+        return [
+            self._nsupdate("update add %s" % info.arecord),
+            self._nsupdate("update add %s" % info.ptrrecord),
+            self._nsupdate("update add %s" % info.cnamerecord),
+            ]
+
+    def add_qa_instances(self):
+        instances = [
+            ("xen-test-inst1", "1.2.3.4"),
+            ("xen-test-inst2", "1.2.3.5"),
+            ("xen-test-inst3", "1.2.3.6"),
+            ("xen-test-inst4", "1.2.3.7"),
+            ]
+        for name, ip in instances:
+            info = {
+                "name": name,
+                "ip": ip,
+                "domain": self.node.domain
+                }
+            node_info = FQDN(**info)
+            self.update_ns(node_info)
+
+    @base.run_cmds
     def prepare(self):
         return [
             "mkdir -p /etc/bind/zones",
@@ -156,9 +349,9 @@ EOF
             "chmod g+w /etc/bind/rev",
             ]
 
-    def configure(self):
-        d = self.env.env.domain
-        ip = self.node_info.ip
+    def _configure(self):
+        d = self.node.domain
+        ip = self.node.ip
         return [
             ("/etc/bind/named.conf.local", {"domain": d}, {}),
             ("/etc/bind/zones/example.com",
@@ -170,51 +363,20 @@ EOF
             ("/etc/bind/rev/synnefo.in-addr.arpa.zone", {"domain": d}, {}),
             ("/etc/bind/rev/synnefo.ip6.arpa.zone", {"domain": d}, {}),
             ("/etc/bind/named.conf.options",
-             {"node_ips": ";".join(self.env.env.ips)}, {}),
+             {"node_ips": ";".join(config.all_ips)}, {}),
             ("/root/ddns/ddns.key", {}, {"remote": "/etc/bind/ddns.key"}),
             ]
 
-    def update_cnamerecord(self, node_info):
-        return self.nsupdate("update add %s" % node_info.cnamerecord)
-
-    def update_arecord(self, node_info):
-        return self.nsupdate("update add %s" % node_info.arecord)
-
-    def update_ptrrecord(self, node_info):
-        return self.nsupdate("update add %s" % node_info.ptrrecord)
-
-    def update_ns_for_node(self, node_info):
-        return [
-            self.update_arecord(node_info),
-            self.update_cnamerecord(node_info),
-            self.update_ptrrecord(node_info)
-            ]
-
-    def initialize(self):
-        a = [self.update_arecord(n)
-             for n in self.env.env.nodes_info.values()]
-        ptr = [self.update_ptrrecord(n)
-               for n in self.env.env.nodes_info.values()]
-        cnames = [self.update_cnamerecord(n)
-                  for n in self.env.env.roles_info.values()]
-
-        return a + ptr + cnames
-
+    @base.run_cmds
     def restart(self):
         return ["/etc/init.d/bind9 restart"]
 
-    def test(self):
-        n = ["host %s localhost" % i.fqdn
-             for i in self.env.env.nodes_info.values()]
-        a = ["host %s localhost" % i.fqdn
-             for i in self.env.env.roles_info.values()]
-        return n + a
 
-
-class APT(SynnefoComponent):
+class APT(base.Component):
     """ Setup apt repos and check fqdns """
     REQUIRED_PACKAGES = ["curl"]
 
+    @base.run_cmds
     def prepare(self):
         return [
             "echo 'APT::Install-Suggests \"false\";' >> /etc/apt/apt.conf",
@@ -222,26 +384,38 @@ class APT(SynnefoComponent):
                 apt-key add -",
             ]
 
-    def configure(self):
+    def _configure(self):
         return [
             ("/etc/apt/sources.list.d/synnefo.wheezy.list", {}, {})
             ]
 
+    @base.run_cmds
     def initialize(self):
         return [
             "apt-get update",
             ]
 
 
-class MQ(SynnefoComponent):
+class MQ(base.Component):
     REQUIRED_PACKAGES = ["rabbitmq-server"]
 
-    def check(self):
-        return ["ping -c 1 mq.%s" % self.env.env.domain]
+    alias = constants.MQ
 
+    def required_components(self):
+        return [HW, SSH, DNS, APT]
+
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+
+    @base.run_cmds
+    def check(self):
+        return ["ping -c 1 %s" % self.node.cname]
+
+    @base.run_cmds
     def initialize(self):
-        u = self.env.env.synnefo_user
-        p = self.env.env.synnefo_rabbitmq_passwd
+        u = config.synnefo_user
+        p = config.synnefo_rabbitmq_passwd
         return [
             "rabbitmqctl add_user %s %s" % (u, p),
             "rabbitmqctl set_permissions %s \".*\" \".*\" \".*\"" % u,
@@ -250,12 +424,24 @@ class MQ(SynnefoComponent):
             ]
 
 
-class DB(SynnefoComponent):
+class DB(base.Component):
     REQUIRED_PACKAGES = ["postgresql"]
 
-    def check(self):
-        return ["ping -c 1 db.%s" % self.env.env.domain]
+    alias = constants.DB
 
+    def required_components(self):
+        return [HW, SSH, DNS, APT]
+
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+
+    @base.run_cmds
+    def check(self):
+        return ["ping -c 1 %s" % self.node.cname]
+
+    @parse_user_info
+    @base.run_cmds
     def get_user_info_from_db(self):
         cmd = """
 cat > /tmp/psqlcmd <<EOF
@@ -264,44 +450,52 @@ where auth_user.id = im_astakosuser.user_ptr_id and auth_user.email = '{0}';
 EOF
 
 su - postgres -c  "psql -w -d snf_apps -f /tmp/psqlcmd"
-""".format(self.env.env.user_email)
+""".format(config.user_email)
 
         return [cmd]
 
-    def allow_access_in_db(self, node_info, user="all", method="md5"):
+    @base.run_cmds
+    def allow_db_access(self):
+        user = "all"
+        method = "md5"
+        ip = self.ctx.admin_node.ip
         f = "/etc/postgresql/*/main/pg_hba.conf"
         cmd1 = "echo host all %s %s/32 %s >> %s" % \
-            (user, node_info.ip, method, f)
+            (user, ip, method, f)
         cmd2 = "sed -i 's/\(host.*127.0.0.1.*\)md5/\\1trust/' %s" % f
-        return [cmd1, cmd2] + self.restart()
+        return [cmd1, cmd2]
 
-    def configure(self):
-        u = self.env.env.synnefo_user
-        p = self.env.env.synnefo_db_passwd
+    def _configure(self):
+        u = config.synnefo_user
+        p = config.synnefo_db_passwd
         replace = {"synnefo_user": u, "synnefo_db_passwd": p}
         return [
             ("/tmp/db-init.psql", replace, {}),
             ]
 
+    @base.check_if_testing
     def make_db_fast(self):
         f = "/etc/postgresql/*/main/postgresql.conf"
         opts = "fsync=off\nsynchronous_commit=off\nfull_page_writes=off\n"
         return ["""echo -e "%s" >> %s""" % (opts, f)]
 
+    @base.run_cmds
     def prepare(self):
         f = "/etc/postgresql/*/main/postgresql.conf"
-        return [
-            """echo "listen_addresses = '*'" >> %s""" % f,
-            ]
+        ret = ["""echo "listen_addresses = '*'" >> %s""" % f]
+        return ret + self.make_db_fast()
 
+    @base.run_cmds
     def initialize(self):
         script = "/tmp/db-init.psql"
         cmd = "su - postgres -c \"psql -w -f %s\" " % script
         return [cmd]
 
+    @base.run_cmds
     def restart(self):
         return ["/etc/init.d/postgresql restart"]
 
+    @base.run_cmds
     def destroy_db(self):
         return [
             """su - postgres -c ' psql -w -c "drop database snf_apps" '""",
@@ -309,8 +503,28 @@ su - postgres -c  "psql -w -d snf_apps -f /tmp/psqlcmd"
             ]
 
 
-class Ganeti(SynnefoComponent):
+class VMC(base.Component):
 
+    def extra_components(self):
+        if self.cluster.synnefo:
+            return [
+                Image, GTools, GanetiCollectd,
+                PithosBackend, Archip, ArchipGaneti
+                ]
+        else:
+            return [ExtStorage, Archip, ArchipGaneti]
+
+    def required_components(self):
+        return [
+            HW, SSH, DNS, DDNS, APT, Mount, Ganeti, Network,
+            ] + self.extra_components()
+
+    @update_cluster_admin
+    def admin_post(self):
+        self.MASTER.add_node(self.node)
+
+
+class Ganeti(base.Component):
     REQUIRED_PACKAGES = [
         "qemu-kvm",
         "python-bitarray",
@@ -321,164 +535,241 @@ class Ganeti(SynnefoComponent):
         "bridge-utils",
         "lvm2",
         "drbd8-utils",
+        "ganeti-instance-debootstrap",
         ]
 
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+
+    @base.run_cmds
     def check(self):
         commands = [
-            "getent hosts %s | grep -v ^127" % self.node_info.hostname,
-            "hostname -f | grep %s" % self.node_info.fqdn,
+            "getent hosts %s | grep -v ^127" % self.node.hostname,
+            "hostname -f | grep %s" % self.node.fqdn,
             ]
         return commands
 
-    def configure(self):
+    def _configure(self):
         return [
             ("/etc/ganeti/file-storage-paths", {}, {}),
             ]
 
-    def prepare_lvm(self):
-        return [
-            "pvcreate %s" % self.env.env.extra_disk,
-            "vgcreate %s %s" % (self.env.env.extra_disk, self.env.env.vg)
-            ]
+    def _prepare_lvm(self):
+        ret = []
+        disk = self.node.extra_disk
+        if disk:
+            ret = [
+                "test -e %s" % disk,
+                "pvcreate %s" % disk,
+                "vgcreate %s %s" % (self.cluster.vg, disk)
+                ]
+        return ret
 
-    def prepare_net_infra(self):
-        br = self.env.env.common_bridge
+    def _prepare_net_infra(self):
+        br = config.common_bridge
         return [
             "brctl addbr {0}; ip link set {0} up".format(br)
             ]
 
+    @base.run_cmds
     def prepare(self):
         return [
             "mkdir -p /srv/ganeti/file-storage/",
             "sed -i 's/^127.*$/127.0.0.1 localhost/g' /etc/hosts"
-            ] + self.prepare_net_infra()
+            ] + self._prepare_net_infra() + self._prepare_lvm()
 
+    @base.run_cmds
     def restart(self):
         return ["/etc/init.d/ganeti restart"]
 
 
-class Master(SynnefoComponent):
-    def add_rapi_user(self):
-        user = self.env.env.synnefo_user
-        passwd = self.env.env.synnefo_rapi_passwd
+class Master(base.Component):
+
+    @property
+    def fqdn(self):
+        return self.cluster
+
+    def required_components(self):
+        return [
+            HW, SSH, DNS, DDNS, APT, Mount, Ganeti
+            ]
+
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+
+    @base.run_cmds
+    def check(self):
+        commands = [
+            "host %s" % self.cluster.fqdn,
+            ]
+        return commands
+
+    @base.run_cmds
+    def add_qa_rapi_user(self):
+        cmd = """
+echo ganeti-qa qa_example_passwd write >> /var/lib/ganeti/rapi/users
+"""
+        return [cmd]
+
+    def _add_rapi_user(self):
+        user = config.synnefo_user
+        passwd = config.synnefo_rapi_passwd
         x = "%s:Ganeti Remote API:%s" % (user, passwd)
 
         cmd = """
 cat >> /var/lib/ganeti/rapi/users <<EOF
 %s {HA1}$(echo -n %s | openssl md5 | sed 's/^.* //') write
 EOF
-""" % (self.env.env.synnefo_user, x)
+""" % (user, x)
 
-        return [cmd] + self.restart()
+        return [cmd]
 
-    def add_node(self, node_info):
+    @base.run_cmds
+    def add_node(self, info):
         commands = [
+            "gnt-node list " + info.fqdn + " || " +
             "gnt-node add --no-ssh-key-check --master-capable=yes " +
-            "--vm-capable=yes " + node_info.fqdn,
+            "--vm-capable=yes " + info.fqdn,
             ]
         return commands
 
-    def try_use_vg(self):
-        vg = self.env.env.vg
+    def _try_use_vg(self):
+        vg = self.cluster.vg
         return [
             "gnt-cluster modify --vg-name=%s || true" % vg,
             "gnt-cluster modify --disk-parameters=drbd:metavg=%s" % vg,
             "gnt-group modify --disk-parameters=drbd:metavg=%s default" % vg,
             ]
 
+    @base.run_cmds
     def initialize(self):
+        std = "cpu-count=1,disk-count=1,disk-size=1024"
+        std += ",memory-size=128,nic-count=1,spindle-use=1"
+
+        bound_min = "cpu-count=1,disk-count=1,disk-size=512"
+        bound_min += ",memory-size=128,nic-count=0,spindle-use=1"
+
+        bound_max = "cpu-count=8,disk-count=16,disk-size=1048576"
+        bound_max += ",memory-size=32768,nic-count=8,spindle-use=12"
         cmd = """
-        gnt-cluster init --enabled-hypervisors=kvm \
-            --no-lvm-storage --no-drbd-storage \
-            --nic-parameters link={0},mode=bridged \
-            --master-netdev {1} \
-            --specs-nic-count min=0,max=8 \
-            --default-iallocator hail \
-            --hypervisor-parameters kvm:kernel_path=,vnc_bind_address=0.0.0.0 \
-            --no-ssh-init --no-etc-hosts \
-            --enabled-disk-templates file,plain,ext,drbd \
-            {2}
-        """.format(self.env.env.common_bridge,
-                   self.env.env.cluster_netdev, self.env.env.cluster.fqdn)
+gnt-cluster init --enabled-hypervisors=kvm \
+    --no-lvm-storage --no-drbd-storage \
+    --nic-parameters link={0},mode=bridged \
+    --master-netdev {1} \
+    --default-iallocator hail \
+    --hypervisor-parameters kvm:kernel_path=,vnc_bind_address=0.0.0.0 \
+    --no-ssh-init --no-etc-hosts \
+    --enabled-disk-templates file,plain,ext,drbd \
+    --ipolicy-std-specs {2} \
+    --ipolicy-bounds-specs min:{3}/max:{4} \
+    {5}
+        """.format(config.common_bridge, self.cluster.netdev,
+                   std, bound_min, bound_max, self.cluster.fqdn)
 
-        return [cmd] + self.try_use_vg() + self.add_rapi_user()
+        return [cmd] + self._try_use_vg() + self._add_rapi_user()
 
+    @base.run_cmds
     def restart(self):
         return ["/etc/init.d/ganeti restart"]
 
+    @update_admin
+    @update_cluster_admin
+    def admin_post(self):
+        if self.cluster.synnefo:
+            self.CYCLADES._debug("Adding backend: %s" % self.cluster.fqdn)
+            self.CYCLADES.add_backend()
+            self.CYCLADES.list_backends()
+            self.CYCLADES.undrain_backend()
 
-class Image(SynnefoComponent):
+
+class Image(base.Component):
     REQUIRED_PACKAGES = [
         "snf-image",
         ]
 
+    @base.run_cmds
     def check(self):
-        return ["mkdir -p %s" % self.env.env.image_dir]
+        return ["mkdir -p %s" % config.image_dir]
 
-    def configure(self):
+    @base.run_cmds
+    def prepare(self):
+        url = config.debian_base_url
+        d = config.image_dir
+        image = "debian_base.diskdump"
+        return [
+            "test -e %s/%s || wget %s -O %s/%s" % (d, image, url, d, image)
+            ]
+
+    def _configure(self):
         tmpl = "/etc/default/snf-image"
         replace = {
-            "synnefo_user": self.env.env.synnefo_user,
-            "synnefo_db_passwd": self.env.env.synnefo_db_passwd,
-            "pithos_dir": self.env.env.pithos_dir,
-            "db_node": self.env.env.db.ip,
-            "image_dir": self.env.env.image_dir,
+            "synnefo_user": config.synnefo_user,
+            "synnefo_db_passwd": config.synnefo_db_passwd,
+            "pithos_dir": config.pithos_dir,
+            "db_node": self.ctx.db.cname,
+            "image_dir": config.image_dir,
             }
         return [(tmpl, replace, {})]
 
+    @base.run_cmds
     def initialize(self):
         return ["snf-image-update-helper -y"]
 
 
-class GTools(SynnefoComponent):
+class GTools(base.Component):
     REQUIRED_PACKAGES = [
         "snf-cyclades-gtools",
         ]
 
+    @base.run_cmds
     def check(self):
-        return ["ping -c1 %s" % self.env.env.mq.ip]
+        return ["ping -c1 %s" % self.ctx.mq.cname]
 
+    @base.run_cmds
     def prepare(self):
         return [
             "sed -i 's/false/true/' /etc/default/snf-ganeti-eventd",
             ]
 
-    def configure(self):
+    def _configure(self):
         tmpl = "/etc/synnefo/gtools.conf"
         replace = {
-            "synnefo_user": self.env.env.synnefo_user,
-            "synnefo_rabbitmq_passwd": self.env.env.synnefo_rabbitmq_passwd,
-            "mq_node": self.env.env.mq.ip,
+            "synnefo_user": config.synnefo_user,
+            "synnefo_rabbitmq_passwd": config.synnefo_rabbitmq_passwd,
+            "mq_node": self.ctx.mq.cname,
             }
         return [(tmpl, replace, {})]
 
+    @base.run_cmds
     def restart(self):
         return ["/etc/init.d/snf-ganeti-eventd restart"]
 
 
-class Network(SynnefoComponent):
+class Network(base.Component):
     REQUIRED_PACKAGES = [
         "python-nfqueue",
         "snf-network",
         "nfdhcpd",
         ]
 
-    def configure(self):
+    def _configure(self):
         r1 = {
-            "ns_node_ip": self.env.env.ns.ip
+            "ns_node_ip": self.ctx.ns.ip
             }
         r2 = {
-            "common_bridge": self.env.env.common_bridge,
-            "public_iface": self.env.env.public_iface,
-            "subnet": self.env.env.synnefo_public_network_subnet,
-            "gateway": self.env.env.synnefo_public_network_gateway,
-            "router_ip": self.env.env.router.ip,
-            "node_ip": self.node_info.ip,
+            "common_bridge": config.common_bridge,
+            "public_iface": self.node.public_iface,
+            "subnet": config.synnefo_public_network_subnet,
+            "gateway": config.synnefo_public_network_gateway,
+            "router_ip": self.ctx.router.ip,
+            "node_ip": self.node.ip,
             }
         r3 = {
-            "domain": self.env.env.domain,
-            "server": self.env.env.ns.ip,
-            "keyfile": self.env.env.ddns_private_key,
+            "domain": self.node.domain,
+            "server": self.ctx.ns.ip,
+            "keyfile": config.ddns_private_key,
             }
 
         return [
@@ -487,18 +778,21 @@ class Network(SynnefoComponent):
             ("/etc/default/snf-network", r3, {}),
             ]
 
+    @base.run_cmds
     def initialize(self):
         return ["/etc/init.d/rc.local start"]
 
+    @base.run_cmds
     def restart(self):
         return ["/etc/init.d/nfdhcpd restart"]
 
 
-class Apache(SynnefoComponent):
+class Apache(base.Component):
     REQUIRED_PACKAGES = [
         "apache2",
         ]
 
+    @base.run_cmds
     def prepare(self):
         return [
             "a2enmod ssl", "a2enmod rewrite", "a2dissite default",
@@ -506,47 +800,51 @@ class Apache(SynnefoComponent):
             "a2enmod proxy_http", "a2dismod autoindex",
             ]
 
-    def configure(self):
-        r1 = {"HOST": self.node_info.fqdn}
+    def _configure(self):
+        r1 = {"HOST": self.node.fqdn}
         return [
             ("/etc/apache2/sites-available/synnefo", r1, {}),
             ("/etc/apache2/sites-available/synnefo-ssl", r1, {}),
             ]
 
+    @base.run_cmds
     def initialize(self):
         return [
             "a2ensite synnefo", "a2ensite synnefo-ssl",
             ]
 
+    @base.run_cmds
     def restart(self):
         return [
             "/etc/init.d/apache2 restart",
             ]
 
 
-class Gunicorn(SynnefoComponent):
+class Gunicorn(base.Component):
     REQUIRED_PACKAGES = [
         "gunicorn",
         ]
 
+    @base.run_cmds
     def prepare(self):
         return [
             "chown root.www-data /var/log/gunicorn",
             ]
 
-    def configure(self):
-        r1 = {"HOST": self.node_info.fqdn}
+    def _configure(self):
+        r1 = {"HOST": self.node.fqdn}
         return [
             ("/etc/gunicorn.d/synnefo", r1, {}),
             ]
 
+    @base.run_cmds
     def restart(self):
         return [
             "/etc/init.d/gunicorn restart",
             ]
 
 
-class Common(SynnefoComponent):
+class Common(base.Component):
     REQUIRED_PACKAGES = [
         # snf-common
         "python-objpool",
@@ -556,27 +854,29 @@ class Common(SynnefoComponent):
         "snf-branding",
         ]
 
-    def configure(self):
+    def _configure(self):
         r1 = {
-            "EMAIL_SUBJECT_PREFIX": self.node_info.hostname,
-            "domain": self.env.env.domain,
-            "HOST": self.node_info.fqdn,
-            "MAIL_DIR": self.env.env.mail_dir,
+            "EMAIL_SUBJECT_PREFIX": self.node.hostname,
+            "domain": self.node.domain,
+            "HOST": self.node.fqdn,
+            "MAIL_DIR": config.mail_dir,
             }
         return [
             ("/etc/synnefo/common.conf", r1, {}),
             ]
 
+    @base.run_cmds
     def initialize(self):
-        return ["mkdir -p {0}; chmod 777 {0}".format(self.env.env.mail_dir)]
+        return ["mkdir -p {0}; chmod 777 {0}".format(config.mail_dir)]
 
+    @base.run_cmds
     def restart(self):
         return [
             "/etc/init.d/gunicorn restart",
             ]
 
 
-class WEB(SynnefoComponent):
+class WEB(base.Component):
     REQUIRED_PACKAGES = [
         "snf-webproject",
         "python-psycopg2",
@@ -584,50 +884,84 @@ class WEB(SynnefoComponent):
         "python-django",
         ]
 
+    @base.run_cmds
     def check(self):
-        return ["ping -c1 %s" % self.env.env.db.fqdn]
+        return ["ping -c1 %s" % self.ctx.db.cname]
 
-    def configure(self):
+    def _configure(self):
         r1 = {
-            "synnefo_user": self.env.env.synnefo_user,
-            "synnefo_db_passwd": self.env.env.synnefo_db_passwd,
-            "db_node": self.env.env.db.fqdn,
-            "domain": self.env.env.domain,
+            "synnefo_user": config.synnefo_user,
+            "synnefo_db_passwd": config.synnefo_db_passwd,
+            "db_node": self.ctx.db.cname,
+            "domain": self.node.domain,
             }
         return [
             ("/etc/synnefo/webproject.conf", r1, {}),
             ]
 
+    @base.run_cmds
     def restart(self):
         return [
             "/etc/init.d/gunicorn restart",
             ]
 
 
-class Astakos(SynnefoComponent):
+class Astakos(base.Component):
     REQUIRED_PACKAGES = [
         "python-django-south",
         "snf-astakos-app",
         "kamaki",
+        "python-openssl",
         ]
 
+    alias = constants.ASTAKOS
+    service = constants.ASTAKOS
+
+    def required_components(self):
+        return [HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB]
+
+    @base.run_cmds
+    def setup_user(self):
+        self._debug("Setting up user")
+        return self._set_default_quota() + \
+            self._add_user() + self._activate_user()
+
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+        self.DB.allow_db_access()
+        self.DB.restart()
+
+    @property
+    def conflicts(self):
+        return [CMS]
+
+    @base.run_cmds
     def export_service(self):
-        f = self.env.jsonfile
+        f = config.jsonfile
         return [
             "snf-manage service-export-astakos > %s" % f
             ]
 
+    @base.run_cmds
     def import_service(self):
-        f = self.env.jsonfile
+        f = config.jsonfile
         return [
             "snf-manage service-import --json=%s" % f
             ]
 
-    def set_default_quota(self):
+    @base.run_cmds
+    def set_astakos_default_quota(self):
         cmd = "snf-manage resource-modify"
         return [
-            "%s --base-default 40G pithos.diskspace" % cmd,
             "%s --base-default 2 astakos.pending_app" % cmd,
+            "%s --project-default 0 astakos.pending_app" % cmd,
+            ]
+
+    @base.run_cmds
+    def set_cyclades_default_quota(self):
+        cmd = "snf-manage resource-modify"
+        return [
             "%s --base-default 4 cyclades.vm" % cmd,
             "%s --base-default 40G cyclades.disk" % cmd,
             "%s --base-default 16G cyclades.total_ram" % cmd,
@@ -636,8 +970,6 @@ class Astakos(SynnefoComponent):
             "%s --base-default 16 cyclades.cpu" % cmd,
             "%s --base-default 4 cyclades.network.private" % cmd,
             "%s --base-default 4 cyclades.floating_ip" % cmd,
-            "%s --project-default 0 pithos.diskspace" % cmd,
-            "%s --project-default 0 astakos.pending_app" % cmd,
             "%s --project-default 0 cyclades.vm" % cmd,
             "%s --project-default 0 cyclades.disk" % cmd,
             "%s --project-default inf cyclades.total_ram" % cmd,
@@ -648,6 +980,15 @@ class Astakos(SynnefoComponent):
             "%s --project-default 0 cyclades.floating_ip" % cmd,
             ]
 
+    @base.run_cmds
+    def set_pithos_default_quota(self):
+        cmd = "snf-manage resource-modify"
+        return [
+            "%s --base-default 40G pithos.diskspace" % cmd,
+            "%s --project-default 0 pithos.diskspace" % cmd,
+            ]
+
+    @base.run_cmds
     def modify_all_quota(self):
         cmd = "snf-manage project-modify --all-base-projects --limit"
         return [
@@ -663,43 +1004,48 @@ class Astakos(SynnefoComponent):
             "%s cyclades.floating_ip 4 4" % cmd,
             ]
 
+    @parse_service_info
+    @base.run_cmds
     def get_services(self):
         return [
             "snf-manage component-list -o id,name,token"
             ]
 
-    def configure(self):
+    def _configure(self):
         r1 = {
-            "ACCOUNTS": self.env.env.accounts.fqdn,
-            "domain": self.env.env.domain,
-            "CYCLADES": self.env.env.cyclades.fqdn,
-            "PITHOS": self.env.env.pithos.fqdn,
+            "ACCOUNTS": self.ctx.astakos.cname,
+            "domain": self.node.domain,
+            "CYCLADES": self.ctx.cyclades.cname,
+            "PITHOS": self.ctx.pithos.cname,
             }
         return [
-            ("/etc/synnefo/astakos.conf", r1, {})
+            ("/etc/synnefo/astakos.conf", r1, {}),
+            ("/root/firefox_cert_override.py", {}, {})
             ]
 
+    @base.run_cmds
     def initialize(self):
-        secret = self.env.env.oa2_secret
-        view = "https://%s/pithos/ui/view" % self.env.env.pithos.fqdn
-        oa2 = "snf-manage oauth2-client-add pithos-view \
-                  --secret=%s --is-trusted --url %s" % (secret, view)
-
         return [
             "snf-manage syncdb --noinput",
             "snf-manage migrate im --delete-ghost-migrations",
             "snf-manage migrate quotaholder_app",
             "snf-manage migrate oa2",
             "snf-manage loaddata groups",
-            oa2
-            ] + self.astakos_register_components()
+            ] + self._astakos_oa2() + self._astakos_register_components()
 
-    def astakos_register_components(self):
+    def _astakos_oa2(self):
+        secret = config.oa2_secret
+        view = "https://%s/pithos/ui/view" % self.ctx.pithos.cname
+        cmd = "snf-manage oauth2-client-add pithos-view \
+                  --secret=%s --is-trusted --url %s || true" % (secret, view)
+        return [cmd]
+
+    def _astakos_register_components(self):
         # base urls
-        cbu = "https://%s/cyclades" % self.env.env.cyclades.fqdn
-        pbu = "https://%s/pithos" % self.env.env.pithos.fqdn
-        abu = "https://%s/astakos" % self.env.env.accounts.fqdn
-        cmsurl = "https://%s/home" % self.env.env.cms.fqdn
+        cbu = "https://%s/cyclades" % self.ctx.cyclades.cname
+        pbu = "https://%s/pithos" % self.ctx.pithos.cname
+        abu = "https://%s/astakos" % self.ctx.astakos.cname
+        cmsurl = "https://%s/home" % self.ctx.cms.cname
 
         cmd = "snf-manage component-add"
         h = "%s home --base-url %s --ui-url %s" % (cmd, cmsurl, cmsurl)
@@ -709,35 +1055,62 @@ class Astakos(SynnefoComponent):
 
         return [h, c, p, a]
 
+    @base.run_cmds
     def add_user(self):
         info = (
-            self.env.env.user_passwd,
-            self.env.env.user_email,
-            self.env.env.user_name,
-            self.env.env.user_lastname,
+            config.user_passwd,
+            config.user_email,
+            config.user_name,
+            config.user_lastname,
             )
         cmd = "snf-manage user-add --password %s %s %s %s" % info
         return [cmd]
 
+    @update_admin
+    @base.run_cmds
     def activate_user(self):
-        user_id = self.env.user_id
+        self.DB.get_user_info_from_db()
+        user_id = context.user_id
         return [
             "snf-manage user-modify --verify %s" % user_id,
             "snf-manage user-modify --accept %s" % user_id,
             ]
 
+    @update_admin
+    @export_and_import_service
+    @cert_override
+    def admin_post(self):
+        self.set_astakos_default_quota()
 
-class CMS(SynnefoComponent):
+
+class CMS(base.Component):
     REQUIRED_PACKAGES = [
         "snf-cloudcms"
+        "python-openssl",
         ]
 
-    def configure(self):
+    alias = constants.CMS
+    service = constants.CMS
+
+    def required_components(self):
+        return [HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB]
+
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+        self.DB.allow_db_access()
+        self.DB.restart()
+
+    @property
+    def conflicts(self):
+        return [Astakos, Pithos, Cyclades]
+
+    def _configure(self):
         r1 = {
-            "ACCOUNTS": self.env.env.accounts.fqdn
+            "ACCOUNTS": self.ctx.astakos.cname
             }
         r2 = {
-            "DOMAIN": self.env.env.domain
+            "DOMAIN": self.node.domain
             }
         return [
             ("/etc/synnefo/cms.conf", r1, {}),
@@ -745,6 +1118,7 @@ class CMS(SynnefoComponent):
             ("/tmp/page.json", {}, {}),
             ]
 
+    @base.run_cmds
     def initialize(self):
         return [
             "snf-manage syncdb",
@@ -752,126 +1126,184 @@ class CMS(SynnefoComponent):
             "snf-manage loaddata /tmp/sites.json",
             "snf-manage loaddata /tmp/page.json",
             "snf-manage createsuperuser --username=admin \
-                  --email=admin@%s --noinput" % self.env.env.domain,
+                  --email=admin@%s --noinput" % self.node.domain,
             ]
 
+    @base.run_cmds
     def restart(self):
         return ["/etc/init.d/gunicorn restart"]
 
+    @update_admin
+    @cert_override
+    def admin_post(self):
+        pass
 
-class Mount(SynnefoComponent):
+
+class Mount(base.Component):
     REQUIRED_PACKAGES = [
         "nfs-common"
         ]
 
+    @update_admin
+    def admin_pre(self):
+        self.NFS.update_exports()
+        self.NFS.restart()
+
+    @property
+    def conflicts(self):
+        return [NFS]
+
+    @base.run_cmds
     def prepare(self):
         ret = []
-        dirs = [self.env.env.pithos_dir, self.env.env.image_dir, "/srv/archip"]
-        for d in dirs:
+        for d in [config.pithos_dir, config.image_dir, config.archip_dir]:
             ret.append("mkdir -p %s" % d)
             cmd = """
 cat >> /etc/fstab <<EOF
 {0}:{1} {1}  nfs defaults,rw,noatime,rsize=131072,wsize=131072 0 0
 EOF
-""".format(self.env.env.pithos.ip, d)
+""".format(self.ctx.nfs.cname, d)
             ret.append(cmd)
 
         return ret
 
+    @base.run_cmds
     def initialize(self):
         ret = []
-        dirs = [self.env.env.pithos_dir, self.env.env.image_dir, "/srv/archip"]
-        for d in dirs:
+        for d in [config.pithos_dir, config.image_dir, config.archip_dir]:
             ret.append("mount %s" % d)
         return ret
 
 
-class NFS(SynnefoComponent):
+class NFS(base.Component):
     REQUIRED_PACKAGES = [
         "nfs-kernel-server"
         ]
 
-    def prepare_image(self):
-        url = self.env.env.debian_base_url
-        d = self.env.env.image_dir
-        image = "debian_base.diskdump"
-        return ["wget %s -O %s/%s" % (url, d, image)]
+    alias = constants.NFS
 
+    def required_components(self):
+        return [HW, SSH, DNS, APT]
+
+    @property
+    def conflicts(self):
+        return [Mount]
+
+    @base.run_cmds
     def prepare(self):
-        p = self.env.env.pithos_dir
+        p = config.pithos_dir
         return [
-            "mkdir -p %s" % self.env.env.image_dir,
+            "mkdir -p %s" % config.image_dir,
             "mkdir -p %s/data" % p,
-            "mkdir -p /srv/archip/blocks",
-            "mkdir -p /srv/archip/maps",
+            "mkdir -p %s/blocks" % config.archip_dir,
+            "mkdir -p %s/maps" % config.archip_dir,
             "chown www-data.www-data %s/data" % p,
             "chmod g+ws %s/data" % p,
-            ] + self.prepare_image()
+            ]
 
-    def update_exports(self, node_info):
+    @base.run_cmds
+    def update_exports(self):
+        fqdn = self.ctx.admin_node.fqdn
         cmd = """
-cat >> /etc/exports <<EOF
-{0} {2}(rw,async,no_subtree_check,no_root_squash)
-{1} {2}(rw,async,no_subtree_check,no_root_squash)
-/srv/archip {2}(rw,async,no_subtree_check,no_root_squash)
+grep {3} /etc/exports || cat >> /etc/exports <<EOF
+{0} {3}(rw,async,no_subtree_check,no_root_squash)
+{1} {3}(rw,async,no_subtree_check,no_root_squash)
+{2} {3}(rw,async,no_subtree_check,no_root_squash)
 EOF
-""".format(self.env.env.pithos_dir, self.env.env.image_dir, node_info.ip)
-        return [cmd] + self.restart()
+""".format(config.pithos_dir, config.image_dir, config.archip_dir, fqdn)
+        return [cmd]
 
+    @base.run_cmds
     def restart(self):
         return ["exportfs -a"]
 
 
-class Pithos(SynnefoComponent):
+class Pithos(base.Component):
     REQUIRED_PACKAGES = [
         "kamaki",
         "python-svipc",
         "snf-pithos-app",
         "snf-pithos-webclient",
+        "python-openssl",
         ]
 
+    alias = constants.PITHOS
+    service = constants.PITHOS
+
+    def required_components(self):
+        return [
+            HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB,
+            PithosBackend, Archip
+            ]
+
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+        self.ASTAKOS.get_services()
+        self.DB.allow_db_access()
+        self.DB.restart()
+
+    @property
+    def conflicts(self):
+        return [CMS]
+
+    @base.run_cmds
     def export_service(self):
-        f = self.env.jsonfile
+        f = config.jsonfile
         return [
             "snf-manage service-export-pithos > %s" % f
             ]
 
-    def configure(self):
+    def _configure(self):
         r1 = {
-            "ACCOUNTS": self.env.env.accounts.fqdn,
-            "PITHOS": self.env.env.pithos.fqdn,
-            "db_node": self.env.env.db.ip,
-            "synnefo_user": self.env.env.synnefo_user,
-            "synnefo_db_passwd": self.env.env.synnefo_db_passwd,
-            "pithos_dir": self.env.env.pithos_dir,
-            "PITHOS_SERVICE_TOKEN": self.env.service_token,
-            "oa2_secret": self.env.env.oa2_secret,
+            "ACCOUNTS": self.ctx.astakos.cname,
+            "PITHOS": self.ctx.pithos.cname,
+            "db_node": self.ctx.db.cname,
+            "synnefo_user": config.synnefo_user,
+            "synnefo_db_passwd": config.synnefo_db_passwd,
+            "pithos_dir": config.pithos_dir,
+            "PITHOS_SERVICE_TOKEN": context.service_token,
+            "oa2_secret": config.oa2_secret,
             }
         r2 = {
-            "ACCOUNTS": self.env.env.accounts.fqdn,
-            "PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE": self.env.service_id,
+            "ACCOUNTS": self.ctx.astakos.cname,
+            "PITHOS_UI_CLOUDBAR_ACTIVE_SERVICE": context.service_id,
             }
 
         return [
             ("/etc/synnefo/pithos.conf", r1, {}),
             ("/etc/synnefo/webclient.conf", r2, {}),
+            ("/root/firefox_cert_override.py", {}, {})
             ]
 
+    @base.run_cmds
     def initialize(self):
         return ["pithos-migrate stamp head"]
 
+    @base.run_cmds
+    def restart(self):
+        return [
+            "/etc/init.d/gunicorn restart",
+            ]
 
-class PithosBackend(SynnefoComponent):
+    @update_admin
+    @export_and_import_service
+    @cert_override
+    def admin_post(self):
+        self.ASTAKOS.set_pithos_default_quota()
+
+
+class PithosBackend(base.Component):
     REQUIRED_PACKAGES = [
         "snf-pithos-backend",
         ]
 
-    def configure(self):
+    def _configure(self):
         r1 = {
-            "db_node": self.env.env.db.ip,
-            "synnefo_user": self.env.env.synnefo_user,
-            "synnefo_db_passwd": self.env.env.synnefo_db_passwd,
-            "pithos_dir": self.env.env.pithos_dir,
+            "db_node": self.ctx.db.cname,
+            "synnefo_user": config.synnefo_user,
+            "synnefo_db_passwd": config.synnefo_db_passwd,
+            "pithos_dir": config.pithos_dir,
             }
 
         return [
@@ -879,20 +1311,41 @@ class PithosBackend(SynnefoComponent):
             ]
 
 
-class Cyclades(SynnefoComponent):
+class Cyclades(base.Component):
     REQUIRED_PACKAGES = [
         "memcached",
         "python-memcache",
         "kamaki",
         "snf-cyclades-app",
         "python-django-south",
+        "python-openssl",
         ]
 
-    def add_network(self):
-        subnet = self.env.env.synnefo_public_network_subnet
-        gw = self.env.env.synnefo_public_network_gateway
-        ntype = self.env.env.synnefo_public_network_type
-        link = self.env.env.common_bridge
+    alias = constants.CYCLADES
+    service = constants.CYCLADES
+
+    def required_components(self):
+        return [
+            HW, SSH, DNS, APT,
+            Apache, Gunicorn, Common, WEB, VNC, PithosBackend, Archip
+            ]
+
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+        self.ASTAKOS.get_services()
+        self.DB.allow_db_access()
+        self.DB.restart()
+
+    @property
+    def conflicts(self):
+        return [CMS]
+
+    def _add_network(self):
+        subnet = config.synnefo_public_network_subnet
+        gw = config.synnefo_public_network_gateway
+        ntype = config.synnefo_public_network_type
+        link = config.common_bridge
 
         cmd = """
 snf-manage network-create --subnet={0} --gateway={1} --public \
@@ -902,11 +1355,12 @@ snf-manage network-create --subnet={0} --gateway={1} --public \
 
         return [cmd]
 
-    def add_network6(self):
+    @base.check_if_testing
+    def _add_network6(self):
         subnet = "babe::/64"
         gw = "babe::1"
-        ntype = self.env.env.synnefo_public_network_type
-        link = self.env.env.common_bridge
+        ntype = config.synnefo_public_network_type
+        link = config.common_bridge
 
         cmd = """
 snf-manage network-create --subnet6={0} \
@@ -916,62 +1370,70 @@ snf-manage network-create --subnet6={0} \
 
         return [cmd]
 
+    @base.run_cmds
     def export_service(self):
-        f = self.env.jsonfile
+        f = config.jsonfile
         return [
             "snf-manage service-export-cyclades > %s" % f
             ]
 
+    @parse_backend_info
+    @base.run_cmds
     def list_backends(self):
         return [
             "snf-manage backend-list"
             ]
 
+    @base.run_cmds
     def add_backend(self):
-        cluster = self.env.env.cluster
-        user = self.env.env.synnefo_user
-        passwd = self.env.env.synnefo_rapi_passwd
+        cluster = self.ctx.admin_cluster.fqdn
+        user = config.synnefo_user
+        passwd = config.synnefo_rapi_passwd
         return [
             "snf-manage backend-add --clustername=%s --user=%s --pass=%s" %
-            (cluster.fqdn, user, passwd)
+            (cluster, user, passwd)
             ]
 
+    @base.run_cmds
     def undrain_backend(self):
-        backend_id = self.env.backend_id
+        backend_id = context.backend_id
         return [
             "snf-manage backend-modify --drained=False %s" % str(backend_id)
             ]
 
+    @base.run_cmds
     def prepare(self):
         return ["sed -i 's/false/true/' /etc/default/snf-dispatcher"]
 
-    def configure(self):
+    def _configure(self):
         r1 = {
-            "ACCOUNTS": self.env.env.accounts.fqdn,
-            "CYCLADES": self.env.env.cyclades.fqdn,
-            "mq_node": self.env.env.mq.ip,
-            "db_node": self.env.env.db.ip,
-            "synnefo_user": self.env.env.synnefo_user,
-            "synnefo_db_passwd": self.env.env.synnefo_db_passwd,
-            "synnefo_rabbitmq_passwd": self.env.env.synnefo_rabbitmq_passwd,
-            "pithos_dir": self.env.env.pithos_dir,
-            "common_bridge": self.env.env.common_bridge,
-            "HOST": self.env.env.cyclades.ip,
-            "domain": self.env.env.domain,
-            "CYCLADES_SERVICE_TOKEN": self.env.service_token,
-            "STATS": self.env.env.stats.fqdn,
-            "SYNNEFO_VNC_PASSWD": self.env.env.synnefo_vnc_passwd,
-            "CYCLADES_NODE_IP": self.env.env.cyclades.ip
+            "ACCOUNTS": self.ctx.astakos.cname,
+            "CYCLADES": self.ctx.cyclades.cname,
+            "mq_node": self.ctx.mq.cname,
+            "db_node": self.ctx.db.cname,
+            "synnefo_user": config.synnefo_user,
+            "synnefo_db_passwd": config.synnefo_db_passwd,
+            "synnefo_rabbitmq_passwd": config.synnefo_rabbitmq_passwd,
+            "pithos_dir": config.pithos_dir,
+            "common_bridge": config.common_bridge,
+            "domain": self.node.domain,
+            "CYCLADES_SERVICE_TOKEN": context.service_token,
+            "STATS": self.ctx.stats.cname,
+            "SYNNEFO_VNC_PASSWD": config.synnefo_vnc_passwd,
+            # TODO: fix java issue with no signed jar
+            "CYCLADES_NODE_IP": self.ctx.cyclades.ip
             }
         return [
-            ("/etc/synnefo/cyclades.conf", r1, {})
+            ("/etc/synnefo/cyclades.conf", r1, {}),
+            ("/root/firefox_cert_override.py", {}, {})
             ]
 
+    @base.run_cmds
     def initialize(self):
-        cpu = self.env.env.flavor_cpu
-        ram = self.env.env.flavor_ram
-        disk = self.env.env.flavor_disk
-        storage = self.env.env.flavor_storage
+        cpu = config.flavor_cpu
+        ram = config.flavor_ram
+        disk = config.flavor_disk
+        storage = config.flavor_storage
         return [
             "snf-manage syncdb",
             "snf-manage migrate --delete-ghost-migrations",
@@ -979,69 +1441,86 @@ snf-manage network-create --subnet6={0} \
               --base=aa:00:0 --size=65536",
             "snf-manage pool-create --type=bridge --base=prv --size=20",
             "snf-manage flavor-create %s %s %s %s" % (cpu, ram, disk, storage),
-            ]
+            ] + self._add_network() + self._add_network6()
 
+    @base.run_cmds
     def restart(self):
         return [
             "/etc/init.d/gunicorn restart",
             "/etc/init.d/snf-dispatcher restart",
             ]
 
+    @update_admin
+    @export_and_import_service
+    @cert_override
+    def admin_post(self):
+        self.ASTAKOS.set_cyclades_default_quota()
 
-class VNC(SynnefoComponent):
+
+class VNC(base.Component):
     REQUIRED_PACKAGES = [
         "snf-vncauthproxy"
         ]
 
+    @base.run_cmds
     def prepare(self):
         return ["mkdir -p /var/lib/vncauthproxy"]
 
-    def configure(self):
+    def _configure(self):
         return [
             ("/var/lib/vncauthproxy/users", {}, {})
             ]
 
+    @base.run_cmds
     def initialize(self):
-        user = self.env.env.synnefo_user
-        passwd = self.env.env.synnefo_vnc_passwd
-        #TODO: run vncauthproxy-passwd
+        # user = config.synnefo_user
+        # passwd = config.synnefo_vnc_passwd
+        # TODO: run vncauthproxy-passwd
         return []
 
+    @base.run_cmds
     def restart(self):
         return [
             "/etc/init.d/vncauthproxy restart"
             ]
 
 
-class Kamaki(SynnefoComponent):
+class Kamaki(base.Component):
     REQUIRED_PACKAGES = [
         "python-progress",
         "kamaki",
         ]
 
+    @update_admin
+    def admin_pre(self):
+        self.ASTAKOS.add_user()
+        self.ASTAKOS.activate_user()
+        self.DB.get_user_info_from_db()
+
+    @base.run_cmds
     def initialize(self):
-        url = "https://%s/astakos/identity/v2.0" % self.env.env.accounts.fqdn
-        token = self.env.user_auth_token
+        url = "https://%s/astakos/identity/v2.0" % self.ctx.astakos.cname
+        token = context.user_auth_token
         return [
             "kamaki config set cloud.default.url %s" % url,
             "kamaki config set cloud.default.token %s" % token,
             "kamaki container create images",
             ]
 
-    def fetch_image(self):
-        url = self.env.env.debian_base_url
+    def _fetch_image(self):
+        url = config.debian_base_url
         image = "debian_base.diskdump"
         return [
-            "wget %s -O /tmp/%s" % (url, image)
+            "test -e /tmp/%s || wget %s -O /tmp/%s" % (image, url, image)
             ]
 
-    def upload_image(self):
+    def _upload_image(self):
         image = "debian_base.diskdump"
         return [
             "kamaki file upload --container images /tmp/%s %s" % (image, image)
             ]
 
-    def register_image(self):
+    def _register_image(self):
         image = "debian_base.diskdump"
         image_location = "/images/%s" % image
         cmd = """
@@ -1058,50 +1537,70 @@ class Kamaki(SynnefoComponent):
             cmd
             ]
 
+    @base.run_cmds
+    def test(self):
+        return self._fetch_image() + self._upload_image() + \
+            self._register_image()
 
-class Burnin(SynnefoComponent):
+
+class Burnin(base.Component):
     REQUIRED_PACKAGES = [
         "kamaki",
         "snf-tools",
         ]
 
 
-class Collectd(SynnefoComponent):
+class Collectd(base.Component):
     REQUIRED_PACKAGES = [
         "collectd",
         ]
 
-    def configure(self):
+    def _configure(self):
         return [
             ("/etc/collectd/collectd.conf", {}, {}),
             ]
 
+    @base.run_cmds
     def restart(self):
         return [
             "/etc/init.d/collectd restart",
             ]
 
 
-class Stats(SynnefoComponent):
+class Stats(base.Component):
     REQUIRED_PACKAGES = [
         "snf-stats-app",
         ]
 
+    alias = constants.STATS
+
+    def required_components(self):
+        return [
+            HW, SSH, DNS, APT,
+            Apache, Gunicorn, Common, WEB, Collectd
+            ]
+
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+
+    @base.run_cmds
     def prepare(self):
         return [
             "mkdir -p /var/cache/snf-stats-app/",
             "chown www-data:www-data /var/cache/snf-stats-app/",
             ]
 
-    def configure(self):
+    def _configure(self):
         r1 = {
-            "STATS": self.env.env.stats.fqdn,
+            "STATS": self.ctx.stats.cname,
             }
         return [
             ("/etc/synnefo/stats.conf", r1, {}),
             ("/etc/collectd/synnefo-stats.conf", r1, {}),
             ]
 
+    @base.run_cmds
     def restart(self):
         return [
             "/etc/init.d/gunicorn restart",
@@ -1109,10 +1608,10 @@ class Stats(SynnefoComponent):
             ]
 
 
-class GanetiCollectd(SynnefoComponent):
-    def configure(self):
+class GanetiCollectd(base.Component):
+    def _configure(self):
         r1 = {
-            "STATS": self.env.env.stats.fqdn,
+            "STATS": self.ctx.stats.cname,
             }
         return [
             ("/etc/collectd/passwd", {}, {}),
@@ -1120,9 +1619,11 @@ class GanetiCollectd(SynnefoComponent):
             ]
 
 
-class Archip(SynnefoComponent):
+class Archip(base.Component):
     REQUIRED_PACKAGES = [
         "librados2",
+        "blktap-dkms",
+        "blktap-utils",
         "archipelago",
         "archipelago-dbg",
         "archipelago-modules-dkms",
@@ -1135,12 +1636,13 @@ class Archip(SynnefoComponent):
         "python-xseg",
         ]
 
+    @base.run_cmds
     def prepare(self):
         return ["mkdir -p /etc/archipelago"]
 
-    def configure(self):
-        r1 = {"HOST": self.node_info.fqdn}
-        r2 = {"SEGMENT_SIZE": self.env.env.segment_size}
+    def _configure(self):
+        r1 = {"HOST": self.node.fqdn}
+        r2 = {"SEGMENT_SIZE": config.segment_size}
         return [
             ("/etc/gunicorn.d/synnefo-archip", r1,
              {"remote": "/etc/gunicorn.d/synnefo"}),
@@ -1148,6 +1650,7 @@ class Archip(SynnefoComponent):
             ("/etc/archipelago/archipelago.conf", r2, {})
             ]
 
+    @base.run_cmds
     def restart(self):
         return [
             "/etc/init.d/gunicorn restart",
@@ -1155,13 +1658,13 @@ class Archip(SynnefoComponent):
             ]
 
 
-class ArchipGaneti(SynnefoComponent):
+class ArchipGaneti(base.Component):
     REQUIRED_PACKAGES = [
         "archipelago-ganeti",
         ]
 
 
-class ExtStorage(SynnefoComponent):
+class ExtStorage(base.Component):
     def prepare(self):
         return ["mkdir -p /usr/local/lib/ganeti/"]
 
@@ -1170,4 +1673,160 @@ class ExtStorage(SynnefoComponent):
         extdir = "/usr/local/lib/ganeti/extstorage"
         return [
             "git clone %s %s" % (url, extdir)
+            ]
+
+
+class Client(base.Component):
+    REQUIRED_PACKAGES = [
+        "iceweasel"
+        ]
+
+    alias = constants.CLIENT
+
+    def required_components(self):
+        return [HW, SSH, DNS, APT, Kamaki, Burnin, Firefox]
+
+
+class GanetiDev(base.Component):
+    REQUIRED_PACKAGES = [
+        "automake",
+        "bridge-utils",
+        "cabal-install",
+        "fakeroot",
+        "fping",
+        "ghc",
+        "ghc-haddock",
+        "git",
+        "graphviz",
+        "hlint",
+        "hscolour",
+        "iproute",
+        "iputils-arping",
+        "libcurl4-openssl-dev",
+        "libghc-attoparsec-dev",
+        "libghc-crypto-dev",
+        "libghc-curl-dev",
+        "libghc-haddock-dev",
+        "libghc-hinotify-dev",
+        "libghc-hslogger-dev",
+        "libghc-hunit-dev",
+        "libghc-json-dev",
+        "libghc-network-dev",
+        "libghc-parallel-dev",
+        "libghc-quickcheck2-dev",
+        "libghc-regex-pcre-dev",
+        "libghc-snap-server-dev",
+        "libghc-temporary-dev",
+        "libghc-test-framework-dev",
+        "libghc-test-framework-hunit-dev",
+        "libghc-test-framework-quickcheck2-dev",
+        "libghc-text-dev",
+        "libghc-utf8-string-dev",
+        "libghc-vector-dev",
+        "lvm2",
+        "make",
+        "ndisc6",
+        "openssl",
+        "pandoc",
+        "pep8",
+        "pylint",
+        "python",
+        "python-bitarray",
+        "python-coverage",
+        "python-epydoc",
+        "python-ipaddr",
+        "python-openssl",
+        "python-pip",
+        "python-pycurl",
+        "python-pyinotify",
+        "python-pyparsing",
+        "python-setuptools",
+        "python-simplejson",
+        "python-sphinx",
+        "python-yaml",
+        "qemu-kvm",
+        "socat",
+        "ssh",
+        "vim"
+        ]
+
+    CABAL = [
+        "hinotify==0.3.2",
+        "base64-bytestring",
+        "lifted-base==0.2.0.3",
+        "lens==3.10",
+        ]
+
+    def _cabal(self):
+        ret = ["cabal update"]
+        for p in self.CABAL:
+            ret.append("cabal install %s" % p)
+        return ret
+
+    @base.run_cmds
+    def prepare(self):
+        return self._cabal() + [
+            "git clone git://git.ganeti.org/ganeti.git"
+            ]
+
+    def _configure(self):
+        sample_nodes = []
+        for node in self.ctx.nodes:
+            n = config.get_info(node=node)
+            sample_nodes.append({
+                "primary": n.fqdn,
+                "secondary": n.ip,
+                })
+
+        repl = {
+            "CLUSTER_NAME": self.cluster.name,
+            "VG": self.cluster.vg,
+            "CLUSTER_NETDEV": self.cluster.netdev,
+            "NODES": simplejson.dumps({"nodes": sample_nodes}),
+            "DOMAIN": self.cluster.domain
+            }
+        return [
+            ("/root/qa-sample.json", repl, {}),
+            ]
+
+    @base.run_cmds
+    def initialize(self):
+        return [
+            "cd ganeti; ./autogen.sh",
+            "cd ganeti; ./configure --localstatedir=/var --sysconfdir=/etc",
+            ]
+
+    @base.run_cmds
+    def test(self):
+        ret = []
+        for n in self.ctx.nodes:
+            info = config.get_info(node=n)
+            ret.append("ssh %s date" % info.name)
+            ret.append("ssh %s date" % info.ip)
+            ret.append("ssh %s date" % info.fqdn)
+        return ret
+
+    @update_admin
+    @update_cluster_admin
+    def admin_post(self):
+        self.MASTER.add_qa_rapi_user()
+        self.NS.add_qa_instances()
+
+
+class Router(base.Component):
+    REQUIRED_PACKAGES = [
+        "iptables"
+        ]
+
+
+class Firefox(base.Component):
+    REQUIRED_PACKAGES = [
+        "iceweasel",
+        ]
+
+    @base.run_cmds
+    def initialize(self):
+        f = constants.CERT_OVERRIDE
+        return [
+            "cat /tmp/%s_* >> /etc/iceweasel/profile/%s" % (f, f)
             ]

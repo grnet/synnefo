@@ -53,6 +53,7 @@ class PithosTestSuite(BurninTests):
     now_unformated = Proper(value=datetime.utcnow())
     obj_metakey = Proper(value=None)
     large_file = Proper(value=None)
+    uvalue = u'\u03c3\u03cd\u03bd\u03bd\u03b5\u03c6\u03bf'
 
     def test_005_account_head(self):
         """Test account HEAD"""
@@ -161,11 +162,23 @@ class PithosTestSuite(BurninTests):
         pithos.set_account_group(grp_name, [uuid1])
         resp = pithos.get_account_group()
         self.assertEqual(resp['x-account-group-' + grp_name], '%s' % uuid1)
-        self.info('Account group is OK')
+        self.info('Account group is OK (ascii group name)')
+
+        grp_name_u = '%s%s' % (grp_name, self.uvalue)
+        pithos.set_account_group(grp_name_u, [uuid1])
+        resp = pithos.get_account_group()
+        self.assertEqual(resp['x-account-group-' + grp_name_u], '%s' % uuid1)
+        self.info('Account group is OK (unicode group name)')
+
         pithos.del_account_group(grp_name)
         resp = pithos.get_account_group()
         self.assertTrue('x-account-group-' + grp_name not in resp)
-        self.info('Removed account group')
+        self.info('Removed account group (ascii)')
+
+        pithos.del_account_group(grp_name_u)
+        resp = pithos.get_account_group()
+        self.assertTrue('x-account-group-' + grp_name_u not in resp)
+        self.info('Removed account group (unicode)')
 
         mprefix = 'meta%s' % rand_num
         pithos.set_account_meta({
@@ -173,18 +186,27 @@ class PithosTestSuite(BurninTests):
         resp = pithos.get_account_meta()
         self.assertEqual(resp['x-account-meta-' + mprefix + '1'], 'v1')
         self.assertEqual(resp['x-account-meta-' + mprefix + '2'], 'v2')
-        self.info('Account meta is OK')
+        self.info('Account meta is OK (ascii meta key)')
+
+        mprefix_u, vu = '%s%s' % (mprefix, self.uvalue), 'v%s' % self.uvalue
+        pithos.set_account_meta({mprefix_u: vu})
+        resp = pithos.get_account_meta()
+        self.assertEqual(resp['x-account-meta-' + mprefix_u], vu)
+        self.info('Account meta is OK (unicode meta key)')
 
         pithos.del_account_meta(mprefix + '1')
         resp = pithos.get_account_meta()
         self.assertTrue('x-account-meta-' + mprefix + '1' not in resp)
         self.assertTrue('x-account-meta-' + mprefix + '2' in resp)
-        self.info('Selective removal of account meta is OK')
+        self.info('Selective removal of account meta is OK (ascii)')
+
+        pithos.del_account_meta(mprefix_u)
+        resp = pithos.get_account_meta()
+        self.assertTrue('x-account-meta-' + mprefix_u not in resp)
+        self.info('Account meta removal is OK (unicode)')
 
         pithos.del_account_meta(mprefix + '2')
-        resp = pithos.get_account_meta()
-        self.assertTrue('x-account-meta-' + mprefix + '2' not in resp)
-        self.info('Temporary account meta are removed')
+        self.info('Metadata cleaned up')
 
     def test_020_container_head(self):
         """Test container HEAD"""
@@ -331,14 +353,15 @@ class PithosTestSuite(BurninTests):
         self.info('Versioning=none is OK')
         pithos.del_container()
 
-        resp = pithos.create_container(metadata={'m1': 'v1', 'm2': 'v2'})
+        mu, vu = 'm%s' % self.uvalue, 'v%s' % self.uvalue
+        resp = pithos.create_container(metadata={'m1': 'v1', mu: vu})
         self.assertTrue(isinstance(resp, dict))
 
         resp = pithos.get_container_meta(pithos.container)
         self.assertTrue('x-container-meta-m1' in resp)
         self.assertEqual(resp['x-container-meta-m1'], 'v1')
-        self.assertTrue('x-container-meta-m2' in resp)
-        self.assertEqual(resp['x-container-meta-m2'], 'v2')
+        self.assertTrue('x-container-meta-' + mu in resp)
+        self.assertEqual(resp['x-container-meta-' + mu], vu)
 
         resp = pithos.container_put(metadata={'m1': '', 'm2': 'v2a'})
         self.assertEqual(resp.status_code, 202)
@@ -347,7 +370,7 @@ class PithosTestSuite(BurninTests):
         self.assertTrue('x-container-meta-m1' not in resp)
         self.assertTrue('x-container-meta-m2' in resp)
         self.assertEqual(resp['x-container-meta-m2'], 'v2a')
-        self.info('Container meta is OK')
+        self.info('Container meta is OK (ascii and unicode)')
 
         pithos.del_container_meta(pithos.container)
 
@@ -360,21 +383,22 @@ class PithosTestSuite(BurninTests):
         self.assertEqual(resp.status_code, 202)
         self.info('Status is OK')
 
-        pithos.set_container_meta({'m1': 'v1', 'm2': 'v2'})
+        mu, vu = 'm%s' % self.uvalue, 'v%s' % self.uvalue
+        pithos.set_container_meta({'m1': 'v1', mu: vu})
         resp = pithos.get_container_meta(pithos.container)
         self.assertTrue('x-container-meta-m1' in resp)
         self.assertEqual(resp['x-container-meta-m1'], 'v1')
-        self.assertTrue('x-container-meta-m2' in resp)
-        self.assertEqual(resp['x-container-meta-m2'], 'v2')
-        self.info('Set metadata works')
+        self.assertTrue('x-container-meta-' + mu in resp)
+        self.assertEqual(resp['x-container-meta-' + mu], vu)
+        self.info('Set metadata works (ascii and unicode)')
 
         resp = pithos.del_container_meta('m1')
-        resp = pithos.set_container_meta({'m2': 'v2a'})
+        resp = pithos.set_container_meta({mu: 'v2a'})
         resp = pithos.get_container_meta(pithos.container)
         self.assertTrue('x-container-meta-m1' not in resp)
-        self.assertTrue('x-container-meta-m2' in resp)
-        self.assertEqual(resp['x-container-meta-m2'], 'v2a')
-        self.info('Delete metadata works')
+        self.assertTrue('x-container-meta-' + mu in resp)
+        self.assertEqual(resp['x-container-meta-' + mu], 'v2a')
+        self.info('Modify metadata works (ascii and unicode)')
 
         resp = pithos.get_container_limit(pithos.container)
         cquota = resp.values()[0]
@@ -601,6 +625,7 @@ class PithosTestSuite(BurninTests):
         self.assertEqual(
             set(resp['content-type']), set('application/octer-stream'))
         self.info('Simple call creates a new object correctly')
+        ku, vu = 'key%s' % self.uvalue, 'v%s' % self.uvalue
 
         resp = pithos.object_put(
             obj,
@@ -609,11 +634,11 @@ class PithosTestSuite(BurninTests):
             permissions=dict(
                 read=['accX:groupA', 'u1', 'u2'],
                 write=['u2', 'u3']),
-            metadata=dict(key1='val1', key2='val2'),
+            metadata={'key1': 'val1', ku: vu},
             content_encoding='UTF-8',
             content_disposition='attachment; filename="fname.ext"')
         self.assertEqual(resp.status_code, 201)
-        self.info('Status code is OK')
+        self.info('Status code is OK (includes ascii and unicode metas)')
         etag = resp.headers['etag']
 
         resp = pithos.get_object_info(obj)
@@ -633,8 +658,8 @@ class PithosTestSuite(BurninTests):
 
         resp = pithos.get_object_meta(obj)
         self.assertEqual(resp['x-object-meta-key1'], 'val1')
-        self.assertEqual(resp['x-object-meta-key2'], 'val2')
-        self.info('Meta are OK')
+        self.assertEqual(resp['x-object-meta-' + ku], vu)
+        self.info('Meta are OK (ascii and unicode)')
 
         pithos.object_put(
             obj,
@@ -845,7 +870,7 @@ class PithosTestSuite(BurninTests):
             obj,
             destination='/%s/%s' % (pithos.container, trg),
             ignore_content_type=False, content_type='application/json',
-            metadata={'mkey2': 'mval2a', 'mkey3': 'mval3'},
+            metadata={'mkey2': 'mval2a', },
             permissions={'write': ['u5', 'accX:groupB']})
         self.assertEqual(resp.status_code, 201)
         self.info('Status code is OK')
@@ -859,7 +884,6 @@ class PithosTestSuite(BurninTests):
 
         self.assertEqual(resp['x-object-meta-mkey1'], 'mval1')
         self.assertEqual(resp['x-object-meta-mkey2'], 'mval2a')
-        self.assertEqual(resp['x-object-meta-mkey3'], 'mval3')
         self.info('Metadata are OK')
 
         resp = pithos.get_object_sharing(trg)
@@ -969,7 +993,7 @@ class PithosTestSuite(BurninTests):
             obj,
             destination='/%s/%s0' % (pithos.container, obj),
             ignore_content_type=False, content_type='application/json',
-            metadata={'mkey2': 'mval2a', 'mkey3': 'mval3'},
+            metadata={'mkey2': 'mval2a'},
             permissions={'write': ['u5', 'accX:groupB']})
         self.assertEqual(resp.status_code, 201)
         self.info('Status code is OK')
@@ -977,7 +1001,6 @@ class PithosTestSuite(BurninTests):
         resp = pithos.get_object_meta(obj + '0')
         self.assertEqual(resp['x-object-meta-mkey1'], 'mval1')
         self.assertEqual(resp['x-object-meta-mkey2'], 'mval2a')
-        self.assertEqual(resp['x-object-meta-mkey3'], 'mval3')
         self.info('Metadata are OK')
 
         resp = pithos.get_object_sharing(obj + '0')
@@ -1109,15 +1132,17 @@ class PithosTestSuite(BurninTests):
         self._check_quotas(
             {self._get_uuid(): [(QPITHOS, QREMOVE, size - 4, None)]})
 
-        pithos.set_object_meta(obj, {'mkey2': 'mval2a', 'mkey3': 'mval3'})
+        mu, vu = 'mk%s' % self.uvalue, 'mv%s' % self.uvalue
+        pithos.set_object_meta(obj, {'mkey2': 'mval2a', mu: vu})
+
         resp = pithos.get_object_meta(obj)
         self.assertEqual(resp['x-object-meta-mkey1'], 'mval1')
         self.assertEqual(resp['x-object-meta-mkey2'], 'mval2a')
-        self.assertEqual(resp['x-object-meta-mkey3'], 'mval3')
+        self.assertEqual(resp['x-object-meta-' + mu], vu)
         pithos.del_object_meta(obj, 'mkey1')
         resp = pithos.get_object_meta(obj)
         self.assertFalse('x-object-meta-mkey1' in resp)
-        self.info('Metadata are OK')
+        self.info('Metadata are OK (ascii and unicode)')
 
         pithos.set_object_sharing(
             obj, read_permission=['u4', 'u5'], write_permission=['u4'])

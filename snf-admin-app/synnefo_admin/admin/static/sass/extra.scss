@@ -375,11 +375,7 @@ td.summary {
   background-color: rgb(235, 233, 233);
 }
 
-/* Modals */
 
-body .modal.fade.in {
-  top:40%;
-}
 
 a[disabled] {
     color: #999999;
@@ -389,32 +385,49 @@ a:not([disabled]):hover {
   cursor: pointer;
 }
 
-.modal-footer form {
-  display: inline;
-}
 .modal {
+  p {
+    position: relative;
+  }
   &#contact {
     p {
       margin-top: 18px;
     }
   }
+
   h4 {
     font-size: 1.1em;
   }
-textarea, input {
-  width: 410px;
-  &.subject {
+
+  textarea, input {
+    width: 496px;
+    &.body {
+      min-height: 160px;
+    }
+  }
+
+  label {
+    float: left;
+    margin-right: 6px;
+    width: 56px;
+  }
+
+  .modal-header {
+    padding: 0 15px;
+  }
+
+  .modal-body {
+    background-color: white;
 
   }
-  &.body {
-    min-height: 160px;
+
+  .modal-footer {
+    margin-top: 0;
+    form {
+      display: inline;
+    }
   }
-}
- label {
-  float: left;
-  margin-right: 6px;
-  width: 56px;
-  }
+
 }
 
 .account-action.form-btn {
@@ -495,16 +508,19 @@ textarea, input {
     a {
       text-decoration: none;
       color: transparent;
+      display: block;
+      width: 100%;
+      height: 100%
     }
   }
 }
 
 .positive {
   &.area {
-    background-color: green;
+    background-color: #dff0d8;
   }
   &.elem {
-    color: green;
+    color: #3c763d;
   }
 }
 
@@ -579,7 +595,9 @@ svg>text:last-child {
   color: red;
   font-size: 20px;
   margin-left: 10px;
-  float: right;
+  position: absolute;
+  right: 8px;
+  top: 2px;
   display: none;
   &:hover {
     color: red;
@@ -593,8 +611,16 @@ svg>text:last-child {
   // position: relative;
   // right: -429px;
   display: none;
+}
 
 .hidden-row {
   display: none;
   // background-color: yellow;
+}
+
+.form-area {
+  position: relative;
+}
+.form-subject {
+  margin-bottom: 15px;
 }

@@ -95,7 +95,7 @@ $(document).ready(function(){
   	$(this).prev('.show-hide-all').toggle();
   });  
   
-  $('.search-query').typeahead({
+  /*$('.search-query').typeahead({
     source: function(typeahead, query) {
       if (query.indexOf("@") > -1) {
         $.ajax({
@@ -108,6 +108,6 @@ $(document).ready(function(){
       } else {
       }
     }
-  })
+  })*/
 })
 

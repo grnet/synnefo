@@ -114,7 +114,10 @@ $(document).ready(function() {
 		var $inputArea = $(inputArea);
 		var $errorSign = $(modal).find('*[data-error="'+errorSign+'"]');
 
-		$inputArea.keypress(function() {
+		$inputArea.keyup(function() {
+			console.log('keypressed')
+			we = $inputArea;
+			console.log($.trim($inputArea.val()));
 			if($.trim($inputArea.val())) {
 				$errorSign.hide();
 			}
@@ -158,7 +161,6 @@ $(document).ready(function() {
 		}
 	});
 
-	$('.modal').modal('hide');
 
 	function addData(modal, dataType) {
 		var $uuidsInput = 	$(modal).find('.modal-footer form input[name="ids"]');

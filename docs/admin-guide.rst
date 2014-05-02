@@ -682,8 +682,8 @@ to Cyclades.
 Working with Cyclades
 ---------------------
 
-Flavors
-~~~~~~~
+Flavors and Volume Types
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 When creating a VM, the user must specify the `flavor` of the virtual server.
 Flavors are the virtual hardware templates, and provide a description about
@@ -695,8 +695,9 @@ Flavors are created by the administrator and the user can select one of the
 available flavors. After VM creation, the user can resize his VM, by
 adding/removing CPU and RAM.
 
-Cyclades support different storage backends that are described by the disk
-template of the flavor, which is mapped to Ganeti's instance `disk template`.
+Cyclades support different storage backends that are described by the `volume
+type` of the flavor. Each volume type contains a `disk template` attribute
+which is mapped to Ganeti's instance `disk template`.
 Currently the available disk templates are the following:
 
 * `file`: regulars file
@@ -709,16 +710,24 @@ Currently the available disk templates are the following:
   - `ext_archipelago`: External shared storage provided by
     `Archipelago <http://www.synnefo.org/docs/archipelago/latest/index.html>`_.
 
+Volume types are created by the administrator using the `snf-manage
+volume-type-create` command and providing the `disk template` and a
+human-friendly name:
+
+.. code-block:: console
+
+ $ snf-manage volume-type-create --disk-template=drbd --name=DRBD
+
 Flavors are created by the administrator using `snf-manage flavor-create`
 command. The command takes as argument number of CPUs, amount of RAM, the size
-of the disks and the disk templates and create the flavors that belong to the
+of the disks and the volume type IDs and creates the flavors that belong to the
 cartesian product of the specified arguments. For example, the following
-command will create two flavors of `40G` disk size with `drbd` disk template,
+command will create two flavors of `40G` disk size of volume type with ID `1`,
 `4G` RAM and `2` or `4` CPUs.
 
 .. code-block:: console
 
-  $ snf-manage flavor-create 2,4 4096 40 drbd
+  $ snf-manage flavor-create 2,4 4096 40 1
 
 To see the available flavors, run `snf-manage flavor-list` command. The
 administrator can delete a flavor by using `flavor-modify` command:
@@ -1767,6 +1776,10 @@ network-remove                 Delete a network
 flavor-create                  Create a new flavor
 flavor-list                    List flavors
 flavor-modify                  Modify a flavor
+volume-type-create             Create a new volume type
+volume-type-list               List volume types
+volume-type-show               Show volume type details
+volume-type-modify             Modify a volume type
 image-list                     List images
 image-show                     Show image details
 pool-create                    Create a bridge or mac-prefix pool

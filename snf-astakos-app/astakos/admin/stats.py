@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -32,7 +32,7 @@
 # or implied, of GRNET S.A.
 import datetime
 from django.conf import settings
-from django.db.models import Sum
+from django.db.models import Sum, Count
 
 from astakos.im.models import AstakosUser, Resource
 from astakos.quotaholder_app.models import Holding
@@ -55,6 +55,21 @@ def get_astakos_stats():
     verified = users.filter(email_verified=True)
     active = users.filter(is_active=True)
 
+    stats["users"]["all"] = {"total": users.count(),
+                             "verified": verified.count(),
+                             "active": active.count()}
+    resources_stats = {}
+    for resource in Resource.objects.all():
+        info = Holding.objects\
+                      .filter(resource=resource.name)\
+                      .aggregate(usage_sum=Sum("usage_max"),
+                                 limit_sum=Sum("limit"))
+        resources_stats[resource.name] = {"used": info["usage_sum"] or 0,
+                                          "allocated": info["limit_sum"] or 0,
+                                          "unit": resource.unit,
+                                          "description": resource.desc}
+    stats["resources"]["all"] = resources_stats
+
     for provider in settings.ASTAKOS_IM_MODULES:
         # Add provider
         stats["providers"].append(provider)
@@ -63,13 +78,19 @@ def get_astakos_stats():
         users = AstakosUser.objects.filter(auth_providers__module=provider)
         verified = users.filter(email_verified=True)
         active = users.filter(is_active=True)
+        exclusive = AstakosUser.objects.filter(email_verified=True,
+                                               is_active=True)\
+                               .annotate(num_providers=Count("auth_providers"))\
+                               .filter(auth_providers__module=provider)\
+                               .filter(num_providers=1)
 
         stats["users"][provider] = {"total": users.count(),
                                     "verified": verified.count(),
-                                    "active": active.count()}
+                                    "active": active.count(),
+                                    "exclusive": exclusive.count()}
 
         # Add stats about resources
-        users_uuids = users.values_list("uuid", flat=True)
+        users_uuids = exclusive.values_list("uuid", flat=True)
         resources_stats = {}
         for resource in Resource.objects.all():
             info = Holding.objects\
@@ -77,10 +98,16 @@ def get_astakos_stats():
                                   resource=resource.name)\
                           .aggregate(usage_sum=Sum("usage_max"),
                                      limit_sum=Sum("limit"))
-            resources_stats[resource.name] = {"used": info["usage_sum"],
-                                              "limit": info["limit_sum"],
-                                              "unit": resource.unit,
-                                              "description": resource.desc}
+            resources_stats[resource.name] = {
+                "used": info["usage_sum"] or 0,
+                "allocated": info["limit_sum"] or 0,
+                "unit": resource.unit,
+                "description": resource.desc}
         stats["resources"][provider] = resources_stats
 
     return stats
+
+
+if __name__ == "__main__":
+    import json
+    print json.dumps(get_astakos_stats())

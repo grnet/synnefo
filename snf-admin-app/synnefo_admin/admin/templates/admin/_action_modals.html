@@ -31,9 +31,9 @@
                 <p>Are you sure you want to complete the operation?</p>
             </div>
             <div class="modal-footer">
-                <a href="#" class="btn btn-default reset-all" data-dismiss="modal">Cancel</a>
+                <a href="#" class="btn btn-primary reset-all" data-dismiss="modal">Cancel</a>
                 <form method="post" action="{% url admin-actions %}" id="{{ op }}Form">
-                    <button type="submit" class="btn btn-default">OK</button>
+                    <button type="submit" class="btn btn-primary">OK</button>
                     <input type="hidden" name="op" value="{{ op }}">
                     <input type="hidden" name="ids" value="">
                     <input type="hidden" name="target" value="{{ action.target }}">

@@ -29,13 +29,13 @@ $(document).ready(function() {
 
 	/* Sets sidebar's position fixed */	
 	/* subnav-fixed is added/removed from processScroll() */	
-	function fixedMimeSubnav() {
+/*	function fixedMimeSubnav() {
 		if($('.sidebar').hasClass('subnav-fixed'))
 			$('.info').addClass('info-fixed').removeClass('info');
 		else
 			$('.info').removeClass('info-fixed').addClass('info');
 	};
-
+*/
 
 	
 	/* The parameter string has the following form: */
@@ -266,10 +266,10 @@ $(document).ready(function() {
 	});
 
 	/* When the user scrolls check if sidebar needs to get fixed position */
-	$(window).scroll(function() {
+/*	$(window).scroll(function() {
 		fixedMimeSubnav();
 	});
-	
+*/
 	/* Sidebar */
 
 	/* If the sidebar link is not disabled show the corresponding modal */

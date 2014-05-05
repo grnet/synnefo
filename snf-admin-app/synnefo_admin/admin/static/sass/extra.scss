@@ -187,7 +187,7 @@ h4.expanded .badge        { background-position: 185px 43px}
 .row2:hover           { background-color:#DDD; }
 
 h4 i              { margin-top: 4px; margin-right: 10px;}
-.container-fluid        { margin-left:auto; margin-right:auto; max-width:960px; }
+.container-fluid        { margin-left:auto; margin-right:auto; /*max-width:960px;*/ }
 h3.info             { cursor:default; color:#2956B2; text-align:center; font-size:16px; margin-bottom:0;}
 
 .vm-actions { margin-top: 20px; text-align: right; }
@@ -447,14 +447,14 @@ a:not([disabled]):hover {
 }
 
 
-.row-fluid {
+/* .row-fluid {
   .span7 {
     margin-top: $nav-height;
   }
   .nav {
     width: $total-width;
   }
-}
+} */
 
 .filters.subnav-fixed {
   top: $nav-height;
@@ -623,4 +623,38 @@ svg>text:last-child {
 }
 .form-subject {
   margin-bottom: 15px;
+}
+
+.navbar-header {
+  background-color: #7493B9;
+  border-radius: 5px;
+  margin-right: 6px;
+  float: left;
+}
+
+.navbar * {
+  letter-spacing: -0.5px;
+}
+
+.service-nav {
+  margin: auto;
+  float: none;
+  max-width: 960px;
+}
+
+.main-content {
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto  ;
+}
+
+.navbar-center {
+  position: absolute;
+  width: 100%;
+  left: 0;
+  top: 0;
+  text-align: center;
+  margin: auto;
+  height: 100%;
+  float: none;
 }

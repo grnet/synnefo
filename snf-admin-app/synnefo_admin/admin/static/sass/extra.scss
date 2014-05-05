@@ -575,22 +575,57 @@ body .object-details:not(.vm-details) h4 em {
   padding-top: 20px;
 }
 
-/* Navigation Bar: next generation (spacelab)*/
-.navbar-inverse {
-  background-image: -webkit-linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
-  background-image: linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
-  background-repeat: no-repeat;
-  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff6d94bf', endColorstr='#ff3e648d', GradientType=0);
-  filter: none;
-  border: 1px solid #345578;
-  text-shadow: 0 -1px 0 rgba(0,0,0,0.3);
-  background-color: #446e9b;
-  border-color: #345578
-}
-
 svg>text:last-child {
   display: none;
 }
+
+.navbar-center {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 960px;
+  float: none;
+  text-align: center;
+  &>li {
+    display: inline-block;
+    float: none;
+  }
+}
+
+.navbar-sides {
+  position: fixed;
+  width: 100%;
+  top: 0;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+.dropdown .arrow {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.nav-main .dropdown-menu {
+  min-width: 200px;
+  a {
+    text-align: left;
+  }
+}
+
+ul.nav li.dropdown:hover > ul.dropdown-menu {
+    display: block;
+}
+
+.navbar-header {
+  background-color: #7493B9;
+  // border-radius: 5px;
+  margin-right: 6px;
+  float: left;
+}
+
+.navbar * {
+  letter-spacing: -0.5px;
+}
+
 .error-sign {
   color: red;
   font-size: 20px;
@@ -606,6 +641,13 @@ svg>text:last-child {
   }
 }
 
+.form-area {
+  position: relative;
+}
+.form-subject {
+  margin-bottom: 15px;
+}
+
 .toggle-more {
   margin-top: -16px;
   // position: relative;
@@ -615,31 +657,6 @@ svg>text:last-child {
 
 .hidden-row {
   display: none;
-  // background-color: yellow;
-}
-
-.form-area {
-  position: relative;
-}
-.form-subject {
-  margin-bottom: 15px;
-}
-
-.navbar-header {
-  background-color: #7493B9;
-  border-radius: 5px;
-  margin-right: 6px;
-  float: left;
-}
-
-.navbar * {
-  letter-spacing: -0.5px;
-}
-
-.service-nav {
-  margin: auto;
-  float: none;
-  max-width: 960px;
 }
 
 .main-content {
@@ -648,13 +665,3 @@ svg>text:last-child {
   margin-right: auto  ;
 }
 
-.navbar-center {
-  position: absolute;
-  width: 100%;
-  left: 0;
-  top: 0;
-  text-align: center;
-  margin: auto;
-  height: 100%;
-  float: none;
-}

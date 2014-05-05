@@ -890,26 +890,67 @@ body .object-details:not(.vm-details) h4 em {
   padding-top: 20px;
 }
 
-/* Navigation Bar: next generation (spacelab)*/
-/* line 579, ../sass/extra.scss */
-.navbar-inverse {
-  background-image: -webkit-linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
-  background-image: linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
-  background-repeat: no-repeat;
-  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff6d94bf', endColorstr='#ff3e648d', GradientType=0);
-  filter: none;
-  border: 1px solid #345578;
-  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.3);
-  background-color: #446e9b;
-  border-color: #345578;
-}
-
-/* line 591, ../sass/extra.scss */
+/* line 578, ../sass/extra.scss */
 svg > text:last-child {
   display: none;
 }
 
+/* line 582, ../sass/extra.scss */
+.navbar-center {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 960px;
+  float: none;
+  text-align: center;
+}
+/* line 588, ../sass/extra.scss */
+.navbar-center > li {
+  display: inline-block;
+  float: none;
+}
+
 /* line 594, ../sass/extra.scss */
+.navbar-sides {
+  position: fixed;
+  width: 100%;
+  top: 0;
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+/* line 602, ../sass/extra.scss */
+.dropdown .arrow {
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* line 607, ../sass/extra.scss */
+.nav-main .dropdown-menu {
+  min-width: 200px;
+}
+/* line 609, ../sass/extra.scss */
+.nav-main .dropdown-menu a {
+  text-align: left;
+}
+
+/* line 614, ../sass/extra.scss */
+ul.nav li.dropdown:hover > ul.dropdown-menu {
+  display: block;
+}
+
+/* line 618, ../sass/extra.scss */
+.navbar-header {
+  background-color: #7493B9;
+  margin-right: 6px;
+  float: left;
+}
+
+/* line 625, ../sass/extra.scss */
+.navbar * {
+  letter-spacing: -0.5px;
+}
+
+/* line 629, ../sass/extra.scss */
 .error-sign {
   color: red;
   font-size: 20px;
@@ -919,68 +960,36 @@ svg > text:last-child {
   top: 2px;
   display: none;
 }
-/* line 602, ../sass/extra.scss */
+/* line 637, ../sass/extra.scss */
 .error-sign:hover {
   color: red;
   text-decoration: none;
 }
 
-/* line 609, ../sass/extra.scss */
+/* line 644, ../sass/extra.scss */
+.form-area {
+  position: relative;
+}
+
+/* line 647, ../sass/extra.scss */
+.form-subject {
+  margin-bottom: 15px;
+}
+
+/* line 651, ../sass/extra.scss */
 .toggle-more {
   margin-top: -16px;
   display: none;
 }
 
-/* line 616, ../sass/extra.scss */
+/* line 658, ../sass/extra.scss */
 .hidden-row {
   display: none;
 }
 
-/* line 621, ../sass/extra.scss */
-.form-area {
-  position: relative;
-}
-
-/* line 624, ../sass/extra.scss */
-.form-subject {
-  margin-bottom: 15px;
-}
-
-/* line 628, ../sass/extra.scss */
-.navbar-header {
-  background-color: #7493B9;
-  border-radius: 5px;
-  margin-right: 6px;
-  float: left;
-}
-
-/* line 635, ../sass/extra.scss */
-.navbar * {
-  letter-spacing: -0.5px;
-}
-
-/* line 639, ../sass/extra.scss */
-.service-nav {
-  margin: auto;
-  float: none;
-  max-width: 960px;
-}
-
-/* line 645, ../sass/extra.scss */
+/* line 662, ../sass/extra.scss */
 .main-content {
   max-width: 960px;
   margin-left: auto;
   margin-right: auto;
-}
-
-/* line 651, ../sass/extra.scss */
-.navbar-center {
-  position: absolute;
-  width: 100%;
-  left: 0;
-  top: 0;
-  text-align: center;
-  margin: auto;
-  height: 100%;
-  float: none;
 }

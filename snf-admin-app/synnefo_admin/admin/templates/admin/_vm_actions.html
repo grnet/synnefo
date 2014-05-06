@@ -2,12 +2,14 @@
 {% if vm.suspended %}
 <form method="post" action="{% url admin-suspend-vm-release vm_id=vm.pk %}">
   <input type="hidden" name="token" value="{{ token }}" />
-  <input type="submit" value="RELEASE SUSPENSION" />
+  <!-- <input type="submit" value="RELEASE SUSPENSION" /> -->
+  <button type="submit" class="btn btn-warning">Release Suspension</button>
 </form>
 {% else %}
 <form method="post" action="{% url admin-suspend-vm vm_id=vm.pk %}">
   <input type="hidden" name="token" value="{{ token }}" />
-  <input type="submit" value="SUSPEND" />
+  <!-- <input type="submit" value="SUSPEND" /> -->
+  <button type="submit" class="btn btn-warning">Suspend</button>
 </form>
 {% endif %}
 </div>
@@ -15,13 +17,15 @@
 {% if vm.operstate == 'STARTED' %}
 <form method="post" action="{% url admin-vm-shutdown vm_id=vm.pk %}">
   <input type="hidden" name="token" value="{{ token }}" />
-  <input type="submit" value="SHUTDOWN" />
+  <!-- <input type="submit" value="SHUTDOWN" /> -->
+  <button type="submit" class="btn btn-danger">Shutdown</button>
 </form>
 {% endif %}
 {% if vm.operstate == 'STOPPED' %}
 <form method="post" action="{% url admin-vm-start vm_id=vm.pk %}">
   <input type="hidden" name="token" value="{{ token }}" />
-  <input type="submit" value="START" />
+  <!-- <input type="submit" value="START" /> -->
+  <button type="submit" class="btn btn-success">Start</button>
 </form>
 {% endif %}
 </div>

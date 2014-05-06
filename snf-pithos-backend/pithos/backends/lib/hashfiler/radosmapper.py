@@ -85,7 +85,7 @@ class RadosMapper(object):
         namelen = self.namelen
         hashes = ()
 
-        with self._get_rear_map(maphash, 0) as rmap:
+        with self._get_rear_map(maphash) as rmap:
             if rmap:
                 hashes = list(rmap.sync_read_chunks(namelen, nr, blkoff))
         return hashes

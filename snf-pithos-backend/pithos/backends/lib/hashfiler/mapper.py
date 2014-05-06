@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from filemapper import FileMapper
+from store_helpers import get_mapper
 
 
 class Mapper(object):
@@ -41,25 +42,23 @@ class Mapper(object):
     """
 
     def __init__(self, **params):
-        self.rmap = None
-        try:
-            if params['mappool']:
-                from radosmapper import RadosMapper
-                self.rmap = RadosMapper(**params)
-        except KeyError:
-            pass
-
-        self.fmap = FileMapper(**params)
+        fmap, rmap = get_mapper(params['backend_storage'], **params)
+        self.rmap = rmap
+        self.fmap = fmap
 
     def map_retr(self, maphash, blkoff=0, nr=100000000000000):
         """Return as a list, part of the hashes map of an object
            at the given block offset.
            By default, return the whole hashes map.
         """
-        return self.fmap.map_retr(maphash, blkoff, nr)
+        if self.fmap:
+            return self.fmap.map_retr(maphash, blkoff, nr)
+        elif self.rmap:
+            return self.rmap.map_retr(maphash, blkoff, nr)
 
     def map_stor(self, maphash, hashes=(), blkoff=0):
         """Store hashes in the given hashes map."""
         if self.rmap:
-            self.rmap.map_stor(maphash, hashes, blkoff)
-        self.fmap.map_stor(maphash, hashes, blkoff)
+            return self.rmap.map_stor(maphash, hashes, blkoff)
+        elif self.fmap:
+            return self.fmap.map_stor(maphash, hashes, blkoff)

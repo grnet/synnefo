@@ -39,7 +39,6 @@ from synnefo.lib import join_urls
 
 from .utils import fix_header, forward_header
 
-import urllib
 import urlparse
 
 # We use proxy to delegate requests to another domain. Sending host specific
@@ -85,7 +84,7 @@ def proxy(request, proxy_base=None, target_base=None, redirect=False):
         headers.pop(k, None)
 
     kwargs['headers'] = headers
-    kwargs['body'] = request.body
+    kwargs['body'] = request.POST.urlencode()
 
     path = request.path.lstrip('/')
     if not path.startswith(proxy_base):
@@ -97,14 +96,14 @@ def proxy(request, proxy_base=None, target_base=None, redirect=False):
     # redirect to target instead of proxing
     if redirect:
         redirect_url = join_urls(target_base, path)
-        qs = urllib.urlencode(request.GET)
+        qs = request.GET.urlencode()
         return HttpResponseRedirect('?'.join([redirect_url, qs]))
 
     path = join_urls(target_path, path)
     with PooledHTTPConnection(parsed.netloc, parsed.scheme) as conn:
         conn.request(
             request.method,
-            '?'.join([path, urllib.urlencode(request.GET)]), **kwargs)
+            '?'.join([path, request.GET.urlencode()]), **kwargs)
         response = conn.getresponse()
 
         # turn httplib.HttpResponse to django.http.Response

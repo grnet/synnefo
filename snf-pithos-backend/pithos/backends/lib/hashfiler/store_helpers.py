@@ -35,9 +35,10 @@ import os
 from hashlib import new as newhasher
 
 
-def bootstrap_backend_storage(storageType, **params):
+def bootstrap_backend_storage(**params):
     umask = params['umask']
     path = params['path']
+    storageType = params['backend_storage']
     if umask is not None:
         os.umask(umask)
     if storageType.lower() == 'nfs':
@@ -51,7 +52,7 @@ def bootstrap_backend_storage(storageType, **params):
         cluster.connect()
         if not cluster.pool_exists(params['blockpool']):
             try:
-                cluster.create_pool(paramas['blockpool'])
+                cluster.create_pool(params['blockpool'])
             except Exception as err:
                 err_msg = "Cannot create %s RADOS Pool"
                 raise RuntimeError(err_msg % params['blockpool'])
@@ -89,11 +90,12 @@ def bootstrap_backend_storage(storageType, **params):
     return (pb, pm)
 
 
-def get_blocker(storageType, **params):
+def get_blocker(**params):
     rblocker = None
     fblocker = None
     hashlen = None
     blocksize = None
+    storageType = params['backend_storage']
     if storageType.lower() == 'rados':
         if params['blockpool']:
             from radosblocker import RadosBlocker
@@ -112,9 +114,10 @@ def get_blocker(storageType, **params):
     return (fblocker, rblocker, hashlen, blocksize)
 
 
-def get_mapper(storageType, **params):
+def get_mapper(**params):
     rmap = None
     fmap = None
+    storageType = params['backend_storage']
     if storageType.lower() == 'rados':
         if params['mappool']:
             from radosmapper import RadosMapper

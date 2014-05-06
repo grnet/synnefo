@@ -41,8 +41,7 @@ class Blocker(object):
     """
 
     def __init__(self, **params):
-        fblocker, rblocker, hashlen, blocksize = \
-            get_blocker(params['backend_storage'], **params)
+        fblocker, rblocker, hashlen, blocksize = get_blocker(**params)
         self.fblocker = fblocker
         self.rblocker = rblocker
         self.hashlen = hashlen

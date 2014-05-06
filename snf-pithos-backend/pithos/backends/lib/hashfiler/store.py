@@ -45,8 +45,7 @@ class Store(object):
     """
 
     def __init__(self, **params):
-        (pb, pm) = bootstrap_backend_storage(params['backend_storage'],
-                                             **params)
+        (pb, pm) = bootstrap_backend_storage(**params)
         self.blocker = Blocker(**pb)
         self.mapper = Mapper(**pm)
 

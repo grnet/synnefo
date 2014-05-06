@@ -42,7 +42,7 @@ class Mapper(object):
     """
 
     def __init__(self, **params):
-        fmap, rmap = get_mapper(params['backend_storage'], **params)
+        fmap, rmap = get_mapper(**params)
         self.rmap = rmap
         self.fmap = fmap
 

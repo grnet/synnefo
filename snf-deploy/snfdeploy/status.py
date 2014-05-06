@@ -18,6 +18,7 @@ import os
 import sys
 from snfdeploy import constants
 from snfdeploy import config
+from snfdeploy import filelocker
 
 status = sys.modules[__name__]
 
@@ -36,8 +37,9 @@ def update(ip, component_class, stat):
 
 
 def write():
-    with open(status.statusfile, 'wb') as configfile:
-        status.cfg.write(configfile)
+    with filelocker.lock("%s.lock" % status.statusfile, filelocker.LOCK_EX):
+        with open(status.statusfile, 'wb') as configfile:
+            status.cfg.write(configfile)
 
 
 def init():

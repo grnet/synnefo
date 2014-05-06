@@ -3,10 +3,15 @@
 {% with user=item %}
 <div class="object-anchor" id="user-{{user.uuid}}"></div>
 <div class="object-details {{ rowcls }}">
-    <h4><em>{{ user.realname }}</em><span class="badge">&nbsp;</span></h4>
-    <span class="badge badge-inverse">{{ user|get_state|upper }}</span>
-    <span class="badge badge-inverse">UUID: {{ user.uuid }}</span>
-    <span class="badge badge-inverse">{{ user.email }}</span>
+    <h4>
+        <em>{{ user.realname }}</em>
+        <span class="badge">&nbsp;</span>
+        <span class="label label-primary">{{ user|get_state|upper }}</span>
+        <span class="label label-primary">UUID: {{ user.uuid }}</span>
+        <span class="label label-primary">{{ user.email }}</span>
+    </h4>
+        <div class="tags">
+        </div>
     <div class="object-details-content">
         <ul class="nav nav-tabs">
             <li class="active"><a href="#details{{ user.uuid }}" data-toggle="tab">Details</a></li>
@@ -60,11 +65,10 @@
                     </dd>
                 </dl>
             </div>
-        </div>
-    </div>
+        </div> <!-- <div class="tab-content"> -->
+    </div> <!-- <div class="object-details-content"> -->
     <div class="todo vm-actions clearfix">
         {% include "admin/_user_actions.html" %}
     </div>
-</div>
-</div>
+</div> <!-- <div class="object-details {{ rowcls }}"> -->
 {% endwith %}

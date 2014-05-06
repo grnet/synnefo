@@ -2,8 +2,11 @@
 {% with source=item project=item.project %}
 <div class="object-anchor" id="source-{{project.id}}"></div>
 <div class="object-details {{ rowcls }}">
-    <h4><em>{{ project.realname }}</em><span class="badge">&nbsp;</span></h4>
-    <span class="badge badge-inverse">PROJECT: {{ project.id }}</span>
+    <h4>
+        <em>{{ project.realname }}</em>
+        <span class="badge">&nbsp;</span>
+        <span class="label label-primary">ID: {{ project.id }}</span>
+    </h4>
     <div class="object-details-content">
         <ul class="nav nav-tabs">
             <li class="active"><a href="#details{{ project.id }}" data-toggle="tab">Details</a></li>

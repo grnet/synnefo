@@ -1,9 +1,6 @@
 {% extends "admin/base.html" %}
 {% load admin_tags %}
 
-{% block extraheader %}
-<small>/ {{ search_query }}</small>
-{% endblock %}
 
 {% block content %}
 
@@ -45,7 +42,7 @@
                         {% include type|get_details_template %}
                     {% endblock item-details %}
                 {% empty %}
-                    "No items in the list"
+                    <p>No items in the list</p>
                 {% endfor %}
             {% endblock item-list %}
 

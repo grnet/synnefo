@@ -15,7 +15,7 @@ $(document).ready(function() {
 
 	var availableActions = {};
 	var allowedActions= {};
-	$('.sidebar a').each(function() {
+	$('.actionbar button').each(function() {
 		availableActions[$(this).data('action')] = true;
 	});
 
@@ -30,7 +30,7 @@ $(document).ready(function() {
 	/* Sets sidebar's position fixed */	
 	/* subnav-fixed is added/removed from processScroll() */	
 /*	function fixedMimeSubnav() {
-		if($('.sidebar').hasClass('subnav-fixed'))
+		if($('.actionbar').hasClass('subnav-fixed'))
 			$('.info').addClass('info-fixed').removeClass('info');
 		else
 			$('.info').removeClass('info-fixed').addClass('info');
@@ -58,7 +58,7 @@ $(document).ready(function() {
     function enableActions(actionsObj, removeItem) {
     	
     	var itemActionsL =selected.items.length;
-    	var $actionBar = $('.sidebar');
+		var $actionBar = $('.actionbar');
     	if (removeItem) {
     		if(!selected.items.length) {
 	    		for(var prop in allowedActions) {
@@ -86,11 +86,11 @@ $(document).ready(function() {
     	}
 	    for(var prop in allowedActions) {
 			if(allowedActions[prop]) {
-    			$actionBar.find('a[data-action='+prop+']').removeAttr('disabled');
+				$actionBar.find('button[data-action='+prop+']').removeClass('disabled');
 				
 			}
 			else {
-				$actionBar.find('a[data-action='+prop+']').attr('disabled', '');
+				$actionBar.find('button[data-action='+prop+']').addClass('disabled');
 			}
 		}
     };
@@ -99,7 +99,7 @@ $(document).ready(function() {
 	/* Modals */
 
 
-		function showError(modal, errorSign) {
+	function showError(modal, errorSign) {
 		var $modal = $(modal);
 		var $errorMsg = $modal.find('*[data-error="'+errorSign+'"]');
 		$errorMsg.show();
@@ -273,8 +273,8 @@ $(document).ready(function() {
 	/* Sidebar */
 
 	/* If the sidebar link is not disabled show the corresponding modal */
-	$('.sidebar a').click(function(e) {
-		if($(this).attr('disabled') !== undefined) {
+	$('.actionbar button').click(function(e) {
+		if($(this).hasClass('disabled')) {
 			e.preventDefault();
 			e.stopPropagation();
 		}
@@ -396,7 +396,7 @@ $(document).ready(function() {
 		$('table tbody input[type=checkbox]').click(function(e) {
 			e.stopPropagation();
 			var $tr = $(this).closest('tr');
-			var $allActionsBtns = $('.sidebar a');
+			var $allActionsBtns = $('.actionbar button');
 			var $selectedNum = $tr.closest('table').find('thead .selected-num');
 			var type = $tr.closest('table').data('content');
 			var itemsL;

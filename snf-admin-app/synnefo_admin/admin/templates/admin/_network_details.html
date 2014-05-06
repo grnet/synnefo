@@ -3,10 +3,14 @@
 {% with network=item %}
 <div class="object-anchor" id="network-{{network.pk}}"></div>
 <div class="network-details object-details {{ rowcls }}">
-    <h4><i class="icon-random"></i>{{ network.name }} <span class="badge">&nbsp;</span></h4>
-    {{ network|network_deleted_badge|safe }}
+    <h4>
+		<i class="icon-random"></i>
+		{{ network.name }}
+		<span class="badge">&nbsp;</span>
+		{{ network|network_deleted_badge|safe }}
+		<span class="label label-primary">ID: {{ network.pk }}</span>
+    </h4>
      
-    <span class="badge badge-info">ID: {{ network.pk }}</span>
     {{ network|object_status_badge|safe }}
     
     <div class="network-details-content object-details-content">

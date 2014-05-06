@@ -4,16 +4,19 @@
 <!--{{ project|admin_debug }}-->
 <div class="object-anchor" id="user-{{project.uuid}}"></div>
 <div class="object-details {{ rowcls }}">
-    <h4><em>{{ project.realname }}</em><span class="badge">&nbsp;</span></h4>
-    <span class="badge badge-inverse">{{ project.state_display|upper }}</span>
-    <span class="badge badge-inverse">UUID: {{ project.uuid }}</span>
-    <span class="badge badge-inverse">
+    <h4>
+        <em>{{ project.realname }}</em>
+        <span class="badge">&nbsp;</span>
+        <span class="label label-primary">{{ project.state_display|upper }}</span>
+        <span class="label label-primary">UUID: {{ project.uuid }}</span>
+        <span class="label label-primary">
         {% if project.is_base %}
             BASE
         {% else %}
             Members: {{ project.members_count }}
         {% endif %}
         </span>
+    </h4>
     <div class="object-details-content">
         <ul class="nav nav-tabs">
             <li class="active"><a href="#prj-details{{ project.uuid }}" data-toggle="tab">Details</a></li>
@@ -82,8 +85,8 @@
 <div class="object-anchor" id="project-{{project.id}}"></div>
 <div class="vm-details object-details {{ rowcls }}">
   <h4><em>{{ project.realname }}<span class="badge">&nbsp;</span></h4>
-  <span class="badge badge-inverse">ID: {{ project.id }}</span>
-  <span class="badge badge-inverse">{{ project.owner }}</span>
+  <span class="label label-primary">ID: {{ project.id }}</span>
+  <span class="label label-primary">{{ project.owner }}</span>
   <div class="vm-details-content object-details-content">
 
     <ul class="nav nav-tabs">

@@ -1,4 +1,4 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -35,6 +35,7 @@ import os
 
 from blocker import Blocker
 from mapper import Mapper
+from store_helpers import bootstrap_backend_storage
 
 
 class Store(object):
@@ -44,25 +45,10 @@ class Store(object):
     """
 
     def __init__(self, **params):
-        umask = params['umask']
-        if umask is not None:
-            os.umask(umask)
-
-        path = params['path']
-        if path and not os.path.exists(path):
-            os.makedirs(path)
-        if not os.path.isdir(path):
-            raise RuntimeError("Cannot open path '%s'" % (path,))
-
-        p = {'blocksize': params['block_size'],
-             'blockpath': os.path.join(path + '/blocks'),
-             'hashtype': params['hash_algorithm'],
-             'blockpool': params['blockpool']}
-        self.blocker = Blocker(**p)
-        p = {'mappath': os.path.join(path + '/maps'),
-             'namelen': self.blocker.hashlen,
-             'mappool': params['mappool']}
-        self.mapper = Mapper(**p)
+        (pb, pm) = bootstrap_backend_storage(params['backend_storage'],
+                                             **params)
+        self.blocker = Blocker(**pb)
+        self.mapper = Mapper(**pm)
 
     def map_get(self, name):
         return self.mapper.map_retr(name)

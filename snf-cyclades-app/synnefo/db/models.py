@@ -1097,6 +1097,8 @@ class Volume(models.Model):
                                 null=True)
     index = models.IntegerField("Index", null=True)
     backendjobid = models.PositiveIntegerField(null=True)
+    serial = models.ForeignKey(QuotaHolderSerial, related_name='volume',
+                               null=True, on_delete=models.SET_NULL)
 
     @property
     def backend_volume_uuid(self):

@@ -107,6 +107,10 @@ def create(userid, name, password, flavor, image_id, metadata={},
             uuid = vol_info["source_uuid"]
             v = get_volume(userid, uuid, for_update=True,
                            exception=faults.BadRequest)
+            if v.volume_type_id != server_vtype.id:
+                msg = ("Volume '%s' has type '%s' while flavor's volume type"
+                       " is '%s'" % (v.volume_type_id, server_vtype.id))
+                raise faults.BadRequest(msg)
             if v.status != "AVAILABLE":
                 raise faults.BadRequest("Cannot use volume while it is in %s"
                                         " status" % v.status)

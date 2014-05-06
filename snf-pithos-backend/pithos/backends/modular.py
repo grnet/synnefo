@@ -109,6 +109,8 @@ DEFAULT_PUBLIC_URL_ALPHABET = ('0123456789'
                                'abcdefghijklmnopqrstuvwxyz'
                                'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
 DEFAULT_PUBLIC_URL_SECURITY = 16
+DEFAULT_BACKEND_STORAGE = 'nfs'
+DEFAULT_RADOS_CEPH_CONF = '/etc/ceph/ceph.conf'
 
 QUEUE_MESSAGE_KEY_PREFIX = 'pithos.%s'
 QUEUE_CLIENT_ID = 'pithos'
@@ -229,7 +231,9 @@ class ModularBackend(BaseBackend):
                  public_url_alphabet=None,
                  account_quota_policy=None,
                  container_quota_policy=None,
-                 container_versioning_policy=None):
+                 container_versioning_policy=None,
+                 backend_storage=None,
+                 rados_ceph_conf=None):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
         block_module = block_module or DEFAULT_BLOCK_MODULE
@@ -244,6 +248,8 @@ class ModularBackend(BaseBackend):
             or DEFAULT_CONTAINER_QUOTA
         container_versioning_policy = container_versioning_policy \
             or DEFAULT_CONTAINER_VERSIONING
+        backend_storage = backend_storage or DEFAULT_BACKEND_STORAGE
+        rados_ceph_conf = rados_ceph_conf or DEFAULT_RADOS_CEPH_CONF
 
         self.default_account_policy = {'quota': account_quota_policy}
         self.default_container_policy = {
@@ -289,6 +295,8 @@ class ModularBackend(BaseBackend):
                   'hash_algorithm': self.hash_algorithm,
                   'umask': block_umask}
         params.update(self.block_params)
+        params.update({"backend_storage": backend_storage})
+        params.update({"rados_ceph_conf": rados_ceph_conf})
         self.store = self.block_module.Store(**params)
 
         if queue_module and queue_hosts:

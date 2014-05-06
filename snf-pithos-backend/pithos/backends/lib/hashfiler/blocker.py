@@ -31,17 +31,7 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-from fileblocker import FileBlocker
-
-
-def intersect(a, b):
-    """ return the intersection of two lists """
-    return list(set(a) & set(b))
-
-
-def union(a, b):
-    """ return the union of two lists """
-    return list(set(a) | set(b))
+from store_helpers import get_blocker
 
 
 class Blocker(object):
@@ -51,47 +41,49 @@ class Blocker(object):
     """
 
     def __init__(self, **params):
-        self.rblocker = None
-        try:
-            if params['blockpool']:
-                from radosblocker import RadosBlocker
-                self.rblocker = RadosBlocker(**params)
-        except KeyError:
-            pass
-
-        self.fblocker = FileBlocker(**params)
-        self.hashlen = self.fblocker.hashlen
-        self.blocksize = params['blocksize']
+        fblocker, rblocker, hashlen, blocksize = \
+            get_blocker(params['backend_storage'], **params)
+        self.fblocker = fblocker
+        self.rblocker = rblocker
+        self.hashlen = hashlen
+        self.blocksize = blocksize
 
     def block_hash(self, data):
-        """Hash a block of data"""
-        return self.fblocker.block_hash(data)
+        """Hash a block of data."""
+        if self.fblocker:
+            return self.fblocker.block_hash(data)
+        elif self.rblocker:
+            return self.rblocker.block_hash(data)
 
     def block_ping(self, hashes):
         """Check hashes for existence and
            return those missing from block storage.
+
         """
-        r = []
         if self.rblocker:
-            r = self.rblocker.block_ping(hashes)
-        f = self.fblocker.block_ping(hashes)
-        return union(r, f)
+            return self.rblocker.block_ping(hashes)
+        elif self.fblocker:
+            return self.fblocker.block_ping(hashes)
 
     def block_retr(self, hashes):
         """Retrieve blocks from storage by their hashes."""
-        return self.fblocker.block_retr(hashes)
+        if self.rblocker:
+            return self.rblocker.block_retr(hashes)
+        elif self.fblocker:
+            return self.fblocker.block_retr(hashes)
 
     def block_stor(self, blocklist):
         """Store a bunch of blocks and return (hashes, missing).
            Hashes is a list of the hashes of the blocks,
            missing is a list of indices in that list indicating
            which blocks were missing from the store.
+
         """
-        r_missing = []
-        (hashes, f_missing) = self.fblocker.block_stor(blocklist)
-        if self.rblocker:
-            (_, r_missing) = self.rblocker.block_stor(blocklist)
-        return (hashes, union(r_missing, f_missing))
+        if self.fblocker:
+            (hashes, missing) = self.fblocker.block_stor(blocklist)
+        elif self.rblocker:
+            (hashes, missing) = self.rblocker.block_stor(blocklist)
+        return (hashes, missing)
 
     def block_delta(self, blkhash, offset, data):
         """Construct and store a new block from a given block
@@ -99,15 +91,25 @@ class Blocker(object):
            (the hash of the new block, if the block already existed)
         """
         blocksize = self.blocksize
-        r_hash = None
-        r_existed = True
-        (f_hash, f_existed) = self.fblocker.block_delta(blkhash, offset, data)
-        if self.rblocker:
-            (r_hash, r_existed) = self.rblocker.block_delta(blkhash, offset,
-                                                            data)
-        if not r_hash and not f_hash:
+        if self.fblocker:
+            (bhash, existed) = self.fblocker.block_delta(blkhash, offset, data)
+        elif self.rblocker:
+            (bhash, existed) = self.rblocker.block_delta(blkhash, offset,
+                                                         data)
+        if not bhash:
             return None, None
-        if self.rblocker and not r_hash:
+        if self.rblocker and not bhash:
+            block = self.rblocker.block_retr((blkhash,))
+            if not block:
+                return None, None
+            block = block[0]
+            newblock = block[:offset] + data
+            if len(newblock) > blocksize:
+                newblock = newblock[:blocksize]
+            elif len(newblock) < blocksize:
+                newblock += block[len(newblock):]
+            bhash, existed = self.rblocker.block_stor((newblock,))
+        elif self.fblocker and not bhash:
             block = self.fblocker.block_retr((blkhash,))
             if not block:
                 return None, None
@@ -117,6 +119,6 @@ class Blocker(object):
                 newblock = newblock[:blocksize]
             elif len(newblock) < blocksize:
                 newblock += block[len(newblock):]
-            r_hash, r_existed = self.rblocker.block_stor((newblock,))
+            bhash, existed = self.fblocker.block_stor((newblock,))
 
-        return f_hash, 1 if r_existed and f_existed else 0
+        return bhash, 1 if existed else 0

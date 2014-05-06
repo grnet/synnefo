@@ -18,31 +18,17 @@
         {% include "admin/_index_action_list.html" %}
     {% endblock action-list %}
 
-<div class="row">
-    <table id="items-table" class="table table-striped">
-        <thead>
-            <tr>
-                <th>Column 1</th>
-                <th>Column 2</th>
-                <th>Column 3</th>
-               <!--  <th>Column 4</th>
-                <th>Column 5</th>
-                <th>Column 6</th> -->
-            </tr>
-        </thead>
-        <tbody>
-            <!-- <tr>
-                <td>1</td>
-                <td>1</td>
-                <td>1</td>
-            </tr> -->
-        </tbody>
-    </table>
-</div>
 
-<!-- Modals -->
-{% block action-modals %}
-    {% include "admin/_action_modals.html" %}
-{% endblock action-modals %}
+    
+      <div class="info-block well info">
+        {% block table-area %}
+        {% endblock %}
+      </div>
+
+    <!-- Modals -->
+    {% block action-modals %}
+        {% include "admin/_action_modals.html" %}
+    {% endblock action-modals %}
+
 {% endblock %}
 

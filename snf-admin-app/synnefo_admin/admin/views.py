@@ -239,7 +239,13 @@ class GenericJSONView(DatatablesView):
     model = AstakosUser
     fields = ('uuid',
               'email',
-              'is_active')
+              'is_active',
+              'first_name',
+              'last_name',
+              #'status_display',
+              )
+
+    extra = ('realname', 'status_display')
 
     #def get_context_data(self, **kwargs):
     #    # Call the base implementation first to get a context

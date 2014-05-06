@@ -918,6 +918,7 @@ class WEB(base.Component):
             "synnefo_db_passwd": config.synnefo_db_passwd,
             "db_node": self.ctx.db.cname,
             "domain": self.node.domain,
+            "webproject_secret": config.webproject_secret,
             }
         return [
             ("/etc/synnefo/webproject.conf", r1, {}),
@@ -1443,9 +1444,11 @@ snf-manage network-create --subnet6={0} \
             "domain": self.node.domain,
             "CYCLADES_SERVICE_TOKEN": context.service_token,
             "STATS": self.ctx.stats.cname,
+            "STATS_SECRET": config.stats_secret,
             "SYNNEFO_VNC_PASSWD": config.synnefo_vnc_passwd,
             # TODO: fix java issue with no signed jar
-            "CYCLADES_NODE_IP": self.ctx.cyclades.ip
+            "CYCLADES_NODE_IP": self.ctx.cyclades.ip,
+            "CYCLADES_SECRET": config.cyclades_secret,
             }
         return [
             ("/etc/synnefo/cyclades.conf", r1, {}),
@@ -1646,6 +1649,7 @@ class Stats(base.Component):
     def _configure(self):
         r1 = {
             "STATS": self.ctx.stats.cname,
+            "STATS_SECRET": config.stats_secret,
             }
         return [
             ("/etc/synnefo/stats.conf", r1, {}),
@@ -1664,6 +1668,7 @@ class GanetiCollectd(base.Component):
     def _configure(self):
         r1 = {
             "STATS": self.ctx.stats.cname,
+            "COLLECTD_SECRET": config.collectd_secret,
             }
         return [
             ("/etc/collectd/passwd", {}, {}),

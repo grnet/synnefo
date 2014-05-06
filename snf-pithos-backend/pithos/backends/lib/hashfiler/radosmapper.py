@@ -36,8 +36,6 @@ from binascii import hexlify
 from context_object import RadosObject
 from rados import *
 
-CEPH_CONF_FILE = "/etc/ceph/ceph.conf"
-
 
 class RadosMapper(object):
     """Mapper.
@@ -50,9 +48,9 @@ class RadosMapper(object):
     rados_ctx = None
 
     @classmethod
-    def get_rados_ctx(cls, pool):
+    def get_rados_ctx(cls, pool, conf):
         if cls.rados_ctx is None:
-            cls.rados = Rados(conffile=CEPH_CONF_FILE)
+            cls.rados = Rados(conffile=conf)
             cls.rados.connect()
             cls.rados_ctx = cls.rados.open_ioctx(pool)
         return cls.rados_ctx
@@ -61,9 +59,10 @@ class RadosMapper(object):
         self.params = params
         self.namelen = params['namelen']
         mappool = params['mappool']
+        self.ceph_conf = params['rados_ceph_conf']
 
         self.mappool = mappool
-        self.ioctx = RadosMapper.get_rados_ctx(mappool)
+        self.ioctx = RadosMapper.get_rados_ctx(mappool, self.ceph_conf)
 
     def _get_rear_map(self, maphash):
         name = hexlify(maphash)

@@ -37,8 +37,6 @@ from rados import *
 
 from context_object import RadosObject, file_sync_read_chunks
 
-CEPH_CONF_FILE = "/etc/ceph/ceph.conf"
-
 
 class RadosBlocker(object):
     """Blocker.
@@ -52,9 +50,9 @@ class RadosBlocker(object):
     rados_ctx = None
 
     @classmethod
-    def get_rados_ctx(cls, pool):
+    def get_rados_ctx(cls, pool, conf):
         if cls.rados_ctx is None:
-            cls.rados = Rados(conffile=CEPH_CONF_FILE)
+            cls.rados = Rados(conffile=conf)
             cls.rados.connect()
             cls.rados_ctx = cls.rados.open_ioctx(pool)
         return cls.rados_ctx
@@ -62,6 +60,7 @@ class RadosBlocker(object):
     def __init__(self, **params):
         blocksize = params['blocksize']
         blockpool = params['blockpool']
+        rados_ceph_conf = params['rados_ceph_conf']
 
         hashtype = params['hashtype']
         try:
@@ -75,7 +74,8 @@ class RadosBlocker(object):
 
         self.blocksize = blocksize
         self.blockpool = blockpool
-        self.ioctx = RadosBlocker.get_rados_ctx(self.blockpool)
+        self.ceph_conf = rados_ceph_conf
+        self.ioctx = RadosBlocker.get_rados_ctx(self.blockpool, self.ceph_conf)
         self.hashtype = hashtype
         self.hashlen = len(emptyhash)
         self.emptyhash = emptyhash

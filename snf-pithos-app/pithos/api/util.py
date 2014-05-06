@@ -64,11 +64,12 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_VERSIONING, BACKEND_FREE_VERSIONING,
                                  BACKEND_POOL_ENABLED, BACKEND_POOL_SIZE,
                                  BACKEND_BLOCK_SIZE, BACKEND_HASH_ALGORITHM,
-                                 RADOS_STORAGE, RADOS_POOL_BLOCKS,
+                                 RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
                                  BASE_HOST, UPDATE_MD5, VIEW_PREFIX,
-                                 OAUTH2_CLIENT_CREDENTIALS, UNSAFE_DOMAIN)
+                                 OAUTH2_CLIENT_CREDENTIALS, UNSAFE_DOMAIN,
+                                 BACKEND_STORAGE, RADOS_CEPH_CONF)
 
 from pithos.api.resources import resources
 from pithos.backends import connect_backend
@@ -1020,7 +1021,7 @@ def simple_list_response(request, l):
 
 from pithos.backends.util import PithosBackendPool
 
-if RADOS_STORAGE:
+if BACKEND_STORAGE == 'rados':
     BLOCK_PARAMS = {'mappool': RADOS_POOL_MAPS,
                     'blockpool': RADOS_POOL_BLOCKS, }
 else:
@@ -1047,7 +1048,9 @@ BACKEND_KWARGS = dict(
     public_url_alphabet=PUBLIC_URL_ALPHABET,
     account_quota_policy=BACKEND_ACCOUNT_QUOTA,
     container_quota_policy=BACKEND_CONTAINER_QUOTA,
-    container_versioning_policy=BACKEND_VERSIONING)
+    container_versioning_policy=BACKEND_VERSIONING,
+    backend_storage=BACKEND_STORAGE,
+    rados_ceph_conf=RADOS_CEPH_CONF)
 
 _pithos_backend_pool = PithosBackendPool(size=BACKEND_POOL_SIZE,
                                          **BACKEND_KWARGS)

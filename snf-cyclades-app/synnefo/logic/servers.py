@@ -1,4 +1,4 @@
-# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -729,7 +729,7 @@ def _port_for_request(user_id, network_dict):
                     return create_public_ipv4_port(user_id, network, address)
             else:
                 raise faults.Forbidden("Cannot connect to IPv6 only public"
-                                       " network %" % network.id)
+                                       " network '%s'" % network.id)
         else:
             return _create_port(user_id, network, address=address)
     else:

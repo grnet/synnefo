@@ -23,11 +23,24 @@ from snfdeploy import filelocker
 status = sys.modules[__name__]
 
 
+def _lock_read_write(fn):
+    def wrapper(*args, **kwargs):
+        with filelocker.lock(status.lockfile, filelocker.LOCK_EX):
+            status.cfg.read(status.statusfile)
+            ret = fn(*args, **kwargs)
+            if config.force or not config.dry_run:
+                with open(status.statusfile, 'wb') as configfile:
+                    status.cfg.write(configfile)
+        return ret
+    return wrapper
+
+
 def _create_section(section):
     if not status.cfg.has_section(section):
         status.cfg.add_section(section)
 
 
+@_lock_read_write
 def _check(section, option):
     try:
         return status.cfg.get(section, option, True)
@@ -35,17 +48,12 @@ def _check(section, option):
         return None
 
 
+@_lock_read_write
 def _update(section, option, value):
     _create_section(section)
     status.cfg.set(section, option, value)
-    if config.force or not config.dry_run:
-        _write()
 
 
-def _write():
-    with filelocker.lock("%s.lock" % status.statusfile, filelocker.LOCK_EX):
-        with open(status.statusfile, 'wb') as configfile:
-            status.cfg.write(configfile)
 
 
 def update(component):
@@ -65,4 +73,4 @@ def init():
     status.cfg = ConfigParser.ConfigParser()
     status.cfg.optionxform = str
     status.statusfile = os.path.join(config.state_dir, constants.STATUS_FILE)
-    status.cfg.read(status.statusfile)
+    status.lockfile = "%s.lock" % status.statusfile

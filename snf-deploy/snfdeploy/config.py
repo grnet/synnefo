@@ -127,6 +127,7 @@ def init(args):
     config.mem = args.mem
     config.vnc = args.vnc
     config.smp = args.smp
+    config.passgen = args.passgen
 
     config.jsonfile = "/tmp/service.json"
 

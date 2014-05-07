@@ -16,6 +16,7 @@
 import sys
 from snfdeploy import constants
 from snfdeploy import config
+from snfdeploy import status
 
 context = sys.modules[__name__]
 
@@ -104,7 +105,6 @@ class Context(object):
 def get(role):
     return config.get(context.setup, role)
 
-
 def backup():
     context.node_backup = context.node
     context.role_backup = context.role
@@ -119,8 +119,24 @@ def restore():
     context.setup = context.setup_backup
 
 
+def get_passwd(target):
+    if not config.passgen:
+        return getattr(config, target)
+    return status.get_passwd(context.setup, target)
+
+
+def update_passwords():
+    if config.passgen:
+        for p in constants.ALL_PASSWRD_AND_SECRETS:
+            passwd = status.get_passwd(context.setup, p)
+            setattr(config, p, passwd)
+    else:
+        print "Using passwords found in configuration files"
+
+
 def init(args):
     context.node = args.node
     context.role = args.role
     context.cluster = args.cluster
     context.setup = args.setup
+    update_passwords()

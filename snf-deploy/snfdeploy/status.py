@@ -19,6 +19,7 @@ import sys
 from snfdeploy import constants
 from snfdeploy import config
 from snfdeploy import filelocker
+from snfdeploy.lib import create_passwd
 
 status = sys.modules[__name__]
 
@@ -54,6 +55,12 @@ def _update(section, option, value):
     status.cfg.set(section, option, value)
 
 
+def get_passwd(setup, target):
+    passwd = _check(setup, target)
+    if not passwd:
+        passwd = create_passwd(constants.DEFAULT_PASSWD_LENGTH)
+        _update(setup, target, passwd)
+    return passwd
 
 
 def update(component):

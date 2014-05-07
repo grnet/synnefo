@@ -23,23 +23,41 @@ from snfdeploy import filelocker
 status = sys.modules[__name__]
 
 
-def check(ip, component_class):
+def _create_section(section):
+    if not status.cfg.has_section(section):
+        status.cfg.add_section(section)
+
+
+def _check(section, option):
     try:
-        return status.cfg.get(ip, component_class.__name__, True)
+        return status.cfg.get(section, option, True)
     except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
         return None
 
 
-def update(ip, component_class, stat):
-    if not status.cfg.has_section(ip):
-        status.cfg.add_section(ip)
-    status.cfg.set(ip, component_class.__name__, stat)
+def _update(section, option, value):
+    _create_section(section)
+    status.cfg.set(section, option, value)
+    if config.force or not config.dry_run:
+        _write()
 
 
-def write():
+def _write():
     with filelocker.lock("%s.lock" % status.statusfile, filelocker.LOCK_EX):
         with open(status.statusfile, 'wb') as configfile:
             status.cfg.write(configfile)
+
+
+def update(component):
+    section = component.node.ip
+    option = component.__class__.__name__
+    _update(section, option, constants.VALUE_OK)
+
+
+def check(component):
+    section = component.node.ip
+    option = component.__class__.__name__
+    return _check(section,  option)
 
 
 def init():

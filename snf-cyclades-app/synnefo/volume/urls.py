@@ -60,13 +60,13 @@ def snapshot_item_demux(request, snapshot_id):
 
 volume_v2_patterns = patterns(
     '',
-    (r'^volumes/$', volume_demux),
-    (r'^volumes/detail$', views.list_volumes, {'detail': True}),
+    (r'^volumes/?(?:.json)?$', volume_demux),
+    (r'^volumes/detail(?:.json)?$', views.list_volumes, {'detail': True}),
     (r'^volumes/(\d+)(?:.json)?$', volume_item_demux),
-    (r'^snapshots/$', snapshot_demux),
+    (r'^snapshots/?(?:.json)?$', snapshot_demux),
     (r'^snapshots/detail$', views.list_snapshots, {'detail': True}),
     (r'^snapshots/(\d+)(?:.json)?$', snapshot_item_demux),
-    (r'^types/$', views.list_volume_types),
+    (r'^types/?(?:.json)?$', views.list_volume_types),
     (r'^types/(\d+)(?:.json)?$', views.get_volume_type),
 )
 

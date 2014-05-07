@@ -120,7 +120,8 @@ def filter_modified_since(request, objects):
         return objects.filter(deleted=False)
 
 
-def get_attribute(request, attribute, attr_type=None, required=True):
+def get_attribute(request, attribute, attr_type=None, required=True,
+                  default=None):
     value = request.get(attribute, None)
     if required and value is None:
         raise faults.BadRequest("Malformed request. Missing attribute '%s'." %
@@ -129,4 +130,7 @@ def get_attribute(request, attribute, attr_type=None, required=True):
        and not isinstance(value, attr_type):
         raise faults.BadRequest("Malformed request. Invalid '%s' field"
                                 % attribute)
-    return value
+    if value is not None:
+        return value
+    else:
+        return default

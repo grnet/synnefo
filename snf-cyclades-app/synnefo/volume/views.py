@@ -15,6 +15,7 @@
 
 from itertools import ifilter
 from logging import getLogger
+from django.db import transaction
 from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.utils.encoding import smart_unicode
@@ -25,8 +26,9 @@ from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 
 from synnefo.volume import volumes, snapshots, util
-from synnefo.db.models import Volume, VolumeType
-from synnefo.plankton.backend import PlanktonBackend
+from synnefo.db.models import Volume, VolumeType, VolumeMetadata
+from synnefo.plankton import backend
+from synnefo.logic.utils import check_name_length
 
 log = getLogger('synnefo.volume')
 
@@ -202,6 +204,61 @@ def update_volume(request, volume_id):
     return HttpResponse(data, content_type="application/json", status=200)
 
 
+@api.api_method(http_method="GET", user_required=True, logger=log)
+def list_volume_metadata(request, volume_id):
+    log.debug('list_volume_meta volume_id: %s', volume_id)
+    volume = util.get_volume(request.user_uniq, volume_id, for_update=False)
+    metadata = volume.metadata.values_list('key', 'value')
+    data = json.dumps({"metadata": dict(metadata)})
+    return HttpResponse(data, content_type="application/json", status=200)
+
+
+@api.api_method(user_required=True, logger=log)
+@transaction.commit_on_success
+def update_volume_metadata(request, volume_id, reset=False):
+    req = utils.get_json_body(request)
+    log.debug('update_volume_meta volume_id: %s, reset: %s request: %s',
+              volume_id, reset, req)
+    volume = util.get_volume(request.user_uniq, volume_id, for_update=True)
+    meta_dict = utils.get_attribute(req, "metadata", required=True,
+                                    attr_type=dict)
+    for key, value in meta_dict.items():
+        check_name_length(key, VolumeMetadata.KEY_LENGTH,
+                          "Metadata key is too long.")
+        check_name_length(value, VolumeMetadata.VALUE_LENGTH,
+                          "Metadata value is too long.")
+    if reset:
+        volume.metadata.all().delete()
+        for key, value in meta_dict.items():
+            volume.metadata.create(key=key, value=value)
+    else:
+        for key, value in meta_dict.items():
+            try:
+                # Update existing metadata
+                meta = volume.metadata.get(key=key)
+                meta.value = value
+                meta.save()
+            except VolumeMetadata.DoesNotExist:
+                # Or create a new one
+                volume.metadata.create(key=key, value=value)
+    metadata = volume.metadata.values_list('key', 'value')
+    data = json.dumps({"metadata": dict(metadata)})
+    return HttpResponse(data, content_type="application/json", status=200)
+
+
+@api.api_method(http_method="DELETE", user_required=True, logger=log)
+@transaction.commit_on_success
+def delete_volume_metadata_item(request, volume_id, key):
+    log.debug('delete_volume_meta_item volume_id: %s, key: %s',
+              volume_id, key)
+    volume = util.get_volume(request.user_uniq, volume_id, for_update=False)
+    try:
+        volume.metadata.get(key=key).delete()
+    except VolumeMetadata.DoesNotExist:
+        raise faults.BadRequest("Metadata key not found")
+    return HttpResponse(status=200)
+
+
 def snapshot_to_dict(snapshot, detail=True):
     owner = snapshot['owner']
     status = snapshot['status']
@@ -265,8 +322,8 @@ def create_snapshot(request):
 def list_snapshots(request, detail=False):
     log.debug('list_snapshots detail=%s', detail)
     since = utils.isoparse(request.GET.get('changes-since'))
-    with PlanktonBackend(request.user_uniq) as backend:
-        snapshots = backend.list_snapshots()
+    with backend.PlanktonBackend(request.user_uniq) as b:
+        snapshots = b.list_snapshots()
         if since:
             updated_since = lambda snap:\
                 date_parse(snap["updated_at"]) >= since
@@ -323,6 +380,44 @@ def update_snapshot(request, snapshot_id):
 
     data = json.dumps({'snapshot': snapshot_to_dict(snapshot, detail=True)})
     return HttpResponse(data, content_type="application/json", status=200)
+
+
+@api.api_method(http_method="GET", user_required=True, logger=log)
+def list_snapshot_metadata(request, snapshot_id):
+    log.debug('list_snapshot_meta snapshot_id: %s', snapshot_id)
+    snapshot = util.get_snapshot(request.user_uniq, snapshot_id)
+    metadata = snapshot["properties"]
+    data = json.dumps({"metadata": dict(metadata)})
+    return HttpResponse(data, content_type="application/json", status=200)
+
+
+@api.api_method(user_required=True, logger=log)
+@transaction.commit_on_success
+def update_snapshot_metadata(request, snapshot_id, reset=False):
+    req = utils.get_json_body(request)
+    log.debug('update_snapshot_meta snapshot_id: %s, reset: %s request: %s',
+              snapshot_id, reset, req)
+    snapshot = util.get_snapshot(request.user_uniq, snapshot_id)
+    meta_dict = utils.get_attribute(req, "metadata", required=True,
+                                    attr_type=dict)
+    with backend.PlanktonBackend(request.user_uniq) as b:
+        b.update_properties(snapshot_id, meta_dict, replace=reset)
+    snapshot = util.get_snapshot(request.user_uniq, snapshot_id)
+    metadata = snapshot["properties"]
+    data = json.dumps({"metadata": dict(metadata)})
+    return HttpResponse(data, content_type="application/json", status=200)
+
+
+@api.api_method(http_method="DELETE", user_required=True, logger=log)
+@transaction.commit_on_success
+def delete_snapshot_metadata_item(request, snapshot_id, key):
+    log.debug('delete_snapshot_meta_item snapshot_id: %s, key: %s',
+              snapshot_id, key)
+    snapshot = util.get_snapshot(request.user_uniq, snapshot_id)
+    if key in snapshot["properties"]:
+        with backend.PlanktonBackend(request.user_uniq) as b:
+            b.remove_property(snapshot_id, key)
+    return HttpResponse(status=200)
 
 
 def volume_type_to_dict(volume_type):

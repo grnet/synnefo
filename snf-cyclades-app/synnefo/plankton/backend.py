@@ -150,10 +150,10 @@ class PlanktonBackend(object):
         self._update_metadata(uuid, location, properties, replace=False)
 
     @handle_pithos_backend
-    def update_properties(self, uuid, properties):
+    def update_properties(self, uuid, properties, replace=False):
         location, _ = self._get_raw_metadata(uuid)
         properties = self._prefix_properties(properties)
-        self._update_metadata(uuid, location, properties, replace=False)
+        self._update_metadata(uuid, location, properties, replace=replace)
 
     @staticmethod
     def _prefix_properties(properties):

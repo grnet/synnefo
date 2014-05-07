@@ -101,10 +101,10 @@ DEFAULT_BLOCK_PATH = 'data/'
 DEFAULT_BLOCK_UMASK = 0o022
 DEFAULT_BLOCK_SIZE = 4 * 1024 * 1024  # 4MB
 DEFAULT_HASH_ALGORITHM = 'sha256'
-#DEFAULT_QUEUE_MODULE = 'pithos.backends.lib.rabbitmq'
+# DEFAULT_QUEUE_MODULE = 'pithos.backends.lib.rabbitmq'
 DEFAULT_BLOCK_PARAMS = {'mappool': None, 'blockpool': None}
-#DEFAULT_QUEUE_HOSTS = '[amqp://guest:guest@localhost:5672]'
-#DEFAULT_QUEUE_EXCHANGE = 'pithos'
+# DEFAULT_QUEUE_HOSTS = '[amqp://guest:guest@localhost:5672]'
+# DEFAULT_QUEUE_EXCHANGE = 'pithos'
 DEFAULT_PUBLIC_URL_ALPHABET = ('0123456789'
                                'abcdefghijklmnopqrstuvwxyz'
                                'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
@@ -242,7 +242,7 @@ class ModularBackend(BaseBackend):
         block_params = block_params or DEFAULT_BLOCK_PARAMS
         block_size = block_size or DEFAULT_BLOCK_SIZE
         hash_algorithm = hash_algorithm or DEFAULT_HASH_ALGORITHM
-        #queue_module = queue_module or DEFAULT_QUEUE_MODULE
+        # queue_module = queue_module or DEFAULT_QUEUE_MODULE
         account_quota_policy = account_quota_policy or DEFAULT_ACCOUNT_QUOTA
         container_quota_policy = container_quota_policy \
             or DEFAULT_CONTAINER_QUOTA
@@ -256,8 +256,8 @@ class ModularBackend(BaseBackend):
             'quota': container_quota_policy,
             'versioning': container_versioning_policy
         }
-        #queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
-        #queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
+        # queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
+        # queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
 
         self.public_url_security = (public_url_security or
                                     DEFAULT_PUBLIC_URL_SECURITY)
@@ -993,7 +993,7 @@ class ModularBackend(BaseBackend):
                                                            names)
         access_objects = self.permissions.access_check_bulk(permissions_path,
                                                             user)
-        #group_parents = access_objects['group_parents']
+        # group_parents = access_objects['group_parents']
         nobject_permissions = {}
         cpath = '/'.join((account, container, ''))
         cpath_idx = len(cpath)
@@ -1606,7 +1606,7 @@ class ModularBackend(BaseBackend):
             src_checksum = ''
         if size is None:  # Set metadata.
             hash = src_hash  # This way hash can be set to None
-                             # (account or container).
+            # (account or container).
             size = src_size
         if type is None:
             type = src_type
@@ -1654,8 +1654,8 @@ class ModularBackend(BaseBackend):
 
         src_version_id, dest_version_id = self._put_version_duplicate(
             user, node,
-            update_statistics_ancestors_depth=
-            update_statistics_ancestors_depth)
+            update_statistics_ancestors_depth=update_statistics_ancestors_depth
+            )
         self._put_metadata_duplicate(
             src_version_id, dest_version_id, domain, node, meta, replace)
         return src_version_id, dest_version_id

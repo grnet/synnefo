@@ -68,8 +68,10 @@ class ItemNotExists(NameError):
 class VersionNotExists(IndexError):
     pass
 
+
 class InvalidHash(TypeError):
     pass
+
 
 class BaseBackend(object):
     """Abstract backend class.

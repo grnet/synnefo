@@ -365,7 +365,7 @@ Then edit your ``/etc/hosts/`` file as follows:
 		203.0.113.1     node1.example.com
 		203.0.113.2     node2.example.com
 
-dnsmasq will serve any IPs/domains found in ``/etc/resolv.conf``.
+dnsmasq will serve any IPs/domains found in ``/etc/hosts``.
 
 There is a `"bug" in libevent 2.0.5 <http://sourceforge.net/p/levent/bugs/193/>`_
 , where if you have multiple nameservers in your ``/etc/resolv.conf``, libevent
@@ -1412,20 +1412,22 @@ Ganeti nodes:
 It's time to install Ganeti. To be able to use hotplug (which will be part of
 the official Ganeti 2.10), we recommend using our Ganeti package version:
 
-``2.8.3+snap1+b64v1+kvm1+ext1+lockfix1+ipfix1+backports1-1~wheezy``
+``2.8.4+snap1+b64v1+kvm2+ext1+lockfix1+ipfix1+ifdown1+backports5-1~wheezy``
 
 Let's briefly explain each patch set:
 
     * snap adds snapshot support for ext disk template
     * b64 saves networks' bitarrays in a more compact representation
-    * kvm exports disk geometry to kvm command and adds migration capabilities
+    * kvm adds migration_caps hypervisor param
     * ext
 
       * exports logical id in hooks
-      * allows cache, heads, cyls arbitrary params to reach kvm command
+      * allows arbitrary params to reach kvm command (i.e. cache overrides
+        disk_cache hvparam, heads and secs define the disk's geometry)
 
     * lockfix is a workaround for Issue #621
     * ipfix does not require IP if mode is routed (needed for IPv6 only NICs)
+    * ifdown cleans up node's configuration upon instance migration/shutdown
     * backports is a set of patches backported from stable-2.10
 
       * Hotplug support

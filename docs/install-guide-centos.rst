@@ -53,6 +53,19 @@ to your installation. To do so, run:
 
   # yum localinstall https://dev.grnet.gr/files/grnet-repo.rpm
 
+To verify the authenticity of the package you can use our public key found
+`here <https://dev.grnet.gr/files/apt-grnetdev.pub>`_.
+
+You'll also need to add the `EPEL repo <https://fedoraproject.org/wiki/EPEL>`_.
+To install it, run:
+
+.. code-block:: console
+
+   # yum localinstall http://ftp.ntua.gr/pub/linux/fedora-epel/6/i386/epel-release-6-8.noarch.rpm
+
+You can verify the above package and its key from the `Fedora project's keys
+page <https://fedoraproject.org/keys>`_.
+
 Update your list of packages and continue with the installation:
 
 .. code-block:: console
@@ -109,10 +122,10 @@ Now run:
 
 .. code-block:: console
 
-   # yum localinstall http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rp
+   # yum localinstall http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rpm
    # yum install postgresql93-server
    # service postgresql-9.3 initdb
-   #chkconfig postgresql-9.3 on
+   # chkconfig postgresql-9.3 on
 
 For more information on install postgresql on CentOS, please see `this
 https://wiki.postgresql.org/wiki/YUM_Installation`_.
@@ -199,7 +212,7 @@ and sign your keys with this. To do so run:
    # cp ca.key /etc/pki/tls/private/ca.key
    # cp ca.csr /etc/pki/tls/private/ca.csr
 
-For more information take a loot at `this
+For more information take a look at `this
 guide <http://wiki.centos.org/HowTos/Https>`_.
 
 Apache2 setup
@@ -337,7 +350,7 @@ Then edit your ``/etc/hosts/`` file as follows:
 		203.0.113.1     node1.example.com
 		203.0.113.2     node2.example.com
 
-dnsmasq will serve any IPs/domains found in ``/etc/resolv.conf``.
+dnsmasq will serve any IPs/domains found in ``/etc/hosts``.
 
 There is a `"bug" in libevent 2.0.5 <http://sourceforge.net/p/levent/bugs/193/>`_
 , where if you have multiple nameservers in your ``/etc/resolv.conf``, libevent
@@ -423,8 +436,7 @@ of the purpose of this guide.
 Apache2 setup
 ~~~~~~~~~~~~~
 
-Create the file ``/etc/apache2/sites-available/synnefo`` containing the
-following:
+Edit the file ``/etc/httpd/conf/httpd.conf`` and add the following:
 
 .. code-block:: console
 
@@ -437,8 +449,8 @@ following:
         RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
     </VirtualHost>
 
-Create the file ``synnefo-ssl`` under ``/etc/apache2/sites-available/``
-containing the following:
+As before, edit the file ``/etc/httpd/conf.d/ssl.conf``, delete the default
+``VirtualHost`` on the file and add the following at the end of the file:
 
 .. code-block:: console
 
@@ -1345,20 +1357,22 @@ Ganeti nodes:
 It's time to install Ganeti. To be able to use hotplug (which will be part of
 the official Ganeti 2.10), we recommend using our Ganeti package version:
 
-``2.8.3+snap1+b64v1+kvm1+ext1+lockfix1+ipfix1+backports1-1~wheezy``
+``2.8.4+snap1+b64v1+kvm2+ext1+lockfix1+ipfix1+ifdown1+backports5-1``
 
 Let's briefly explain each patch set:
 
     * snap adds snapshot support for ext disk template
     * b64 saves networks' bitarrays in a more compact representation
-    * kvm exports disk geometry to kvm command and adds migration capabilities
+    * kvm adds migration_caps hypervisor param
     * ext
 
       * exports logical id in hooks
-      * allows cache, heads, cyls arbitrary params to reach kvm command
+      * allows arbitrary params to reach kvm command (i.e. cache overrides
+        disk_cache hvparam, heads and secs define the disk's geometry)
 
     * lockfix is a workaround for Issue #621
     * ipfix does not require IP if mode is routed (needed for IPv6 only NICs)
+    * ifdown cleans up node's configuration upon instance migration/shutdown
     * backports is a set of patches backported from stable-2.10
 
       * Hotplug support
@@ -1372,13 +1386,32 @@ To install Ganeti run:
 
    # yum install snf-ganeti
 
-Ganeti will make use of drbd. To enable this and make the configuration
-permanent you have to do the following :
+Ganeti will make use of drbd. To install drbd, you're gonna need to use packages
+from the `ELRepo <http://elrepo.org/tiki/tiki-index.php>`_. To install ELRepo,
+run:
+
+.. code-block:: consolse
+
+   # rpm -Uvh http://www.elrepo.org/elrepo-release-6-6.el6.elrepo.noarch.rpm
+
+To install drbd8.3, run:
+
+.. code-block:: console
+
+   # yum install drbd83-utils kmod-drbd83
+
+To enable this and make the configuration permanent you have to do the
+following:
 
 .. code-block:: console
 
    # modprobe drbd minor_count=255 usermode_helper=/bin/true
-   # echo 'drbd minor_count=255 usermode_helper=/bin/true' >> /etc/modules
+
+Edit ``/etc/default/drbd`` and add the following line:
+
+.. code-block:: console
+
+   ADD_MOD_PARAM="usermode_helper=/bin/true"
 
 Then run on node1:
 

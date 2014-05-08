@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from django.http import HttpResponse, HttpResponseRedirect
+from django.utils.encoding import smart_str
 
 from objpool.http import PooledHTTPConnection
 
@@ -84,9 +85,9 @@ def proxy(request, proxy_base=None, target_base=None, redirect=False):
         headers.pop(k, None)
 
     kwargs['headers'] = headers
-    kwargs['body'] = request.POST.urlencode()
+    kwargs['body'] = request.body
 
-    path = request.path.lstrip('/')
+    path = smart_str(request.path, encoding='utf-8').lstrip('/')
     if not path.startswith(proxy_base):
         m = "request path '{0}' does not start with proxy_base '{1}'"
         m = m.format(path, proxy_base)

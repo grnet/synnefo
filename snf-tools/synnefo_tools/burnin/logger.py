@@ -134,7 +134,7 @@ def _locate_input(contents, section):
         # We will add our message in this location
         for (index, obj) in enumerate(sect_locs):
             if section in contents[obj]:
-                return sect_locs[index+1] - 3
+                return sect_locs[index + 1] - 3
 
     # We didn't find our section??
     sys.stderr.write("Section %s could not be found in logging file\n"

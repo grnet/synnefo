@@ -149,6 +149,7 @@ class ImagesTestSuite(BurninTests):
         """Upload the image to Pithos"""
         self._set_pithos_account(self._get_uuid())
         self._create_pithos_container("burnin-images")
+        self._set_pithos_container("burnin-images")
         file_size = os.path.getsize(self.temp_image_file)
         with open(self.temp_image_file, "r+b") as fin:
             self.clients.pithos.upload_object(self.temp_image_name, fin)
@@ -176,10 +177,22 @@ class ImagesTestSuite(BurninTests):
         self.assertEqual(len(images), 1)
         self.info("Image registered with id %s", images[0]['id'])
 
+        self.info("Registering with unicode name")
+        uni_str = u'\u03b5\u03b9\u03ba\u03cc\u03bd\u03b1'
+        uni_name = u'%s, or %s in Greek' % (self.temp_image_name, uni_str)
+        img = self.clients.image.register(
+            uni_name, location, params, properties)
+
+        self.info('Checking if image with unicode name exists')
+        found_img = self.clients.image.get_meta(img['id'])
+        self.assertEqual(found_img['name'], uni_name)
+        self.info("Image registered with id %s", found_img['id'])
+
     def test_010_cleanup_image(self):
         """Remove uploaded image from Pithos"""
         # Remove uploaded image
         self.info("Deleting uploaded image %s", self.temp_image_name)
+        self._set_pithos_container("burnin-images")
         self.clients.pithos.del_object(self.temp_image_name)
         # Verify quotas
         file_size = os.path.getsize(self.temp_image_file)
@@ -197,6 +210,7 @@ class ImagesTestSuite(BurninTests):
         """Clean up"""
         if cls.temp_image_name is not None:
             try:
+                cls.clients.pithos.container = "burnin-images"
                 cls.clients.pithos.del_object(cls.temp_image_name)
             except ClientError:
                 pass

@@ -24,6 +24,9 @@ import unittest
 import datetime
 import tempfile
 import traceback
+from tempfile import NamedTemporaryFile
+from os import urandom
+from string import ascii_letters
 
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
 from kamaki.clients.astakos import AstakosClient, parse_endpoints
@@ -70,7 +73,9 @@ class BurninTestResult(unittest.TestResult):
     def startTest(self, test):  # noqa
         """Called when the test case test is about to be run"""
         super(BurninTestResult, self).startTest(test)
-        logger.log(test.__class__.__name__, test.shortDescription())
+        logger.log(
+            test.__class__.__name__,
+            test.shortDescription() or 'Test %s' % test.__class__.__name__)
 
     # pylint: disable=no-self-use
     def _test_failed(self, test, err):
@@ -208,6 +213,7 @@ class BurninTests(unittest.TestCase):
     delete_stale = False
     temp_directory = None
     failfast = None
+    temp_containers = []
 
     quotas = Proper(value=None)
     uuid = Proper(value=None)
@@ -313,6 +319,42 @@ class BurninTests(unittest.TestCase):
             self.info("Temp directory %s deleted", tmp_dir)
         except OSError:
             pass
+
+    def _create_large_file(self, size):
+        """Create a large file at fs"""
+        named_file = NamedTemporaryFile()
+        seg = size / 8
+        self.debug('Create file %s  ', named_file.name)
+        for sbytes in [b * seg for b in range(size / seg)]:
+            named_file.seek(sbytes)
+            named_file.write(urandom(seg))
+            named_file.flush()
+        named_file.seek(0)
+        return named_file
+
+    def _create_boring_file(self, num_of_blocks):
+        """Create a file with some blocks being the same"""
+
+        def chargen():
+            """10 + 2 * 26 + 26 = 88"""
+            while True:
+                for char in xrange(10):
+                    yield '%s' % char
+                for char in ascii_letters:
+                    yield char
+                for char in '~!@#$%^&*()_+`-=:";|<>?,./':
+                    yield char
+
+        tmp_file = NamedTemporaryFile()
+        self.debug('\tCreate file %s  ' % tmp_file.name)
+        block_size = 4 * 1024 * 1024
+        chars = chargen()
+        while num_of_blocks:
+            fslice = 3 if num_of_blocks > 3 else num_of_blocks
+            tmp_file.write(fslice * block_size * chars.next())
+            num_of_blocks -= fslice
+        tmp_file.seek(0)
+        return tmp_file
 
     def _get_uuid_of_system_user(self):
         """Get the uuid of the system user
@@ -516,8 +558,8 @@ class BurninTests(unittest.TestCase):
         assert container, "No pithos container was given"
 
         self.info("Creating pithos container %s", container)
-        self.clients.pithos.container = container
-        self.clients.pithos.container_put()
+        self.clients.pithos.create_container(container)
+        self.temp_containers.append(container)
 
     # ----------------------------------
     # Quotas
@@ -534,6 +576,17 @@ class BurninTests(unittest.TestCase):
         @param changes: A dict of the changes that have been made in quotas
 
         """
+        def dicts_are_equal(d1, d2):
+            """Helper function to check dict equality"""
+            self.assertEqual(set(d1), set(d2))
+            for key, val in d1.items():
+                if isinstance(val, (list, tuple)):
+                    self.assertEqual(set(val), set(d2[key]))
+                elif isinstance(val, dict):
+                    dicts_are_equal(val, d2[key])
+                else:
+                    self.assertEqual(val, d2[key])
+
         if not changes:
             return
 
@@ -557,7 +610,7 @@ class BurninTests(unittest.TestCase):
                 old_quotas[prj][q_name]['usage'] += q_value
                 old_quotas[prj][q_name]['project_usage'] += q_value
 
-        self.assertEqual(old_quotas, new_quotas)
+        dicts_are_equal(old_quotas, new_quotas)
 
     # ----------------------------------
     # Projects

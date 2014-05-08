@@ -63,6 +63,17 @@ class Command(SynnefoCommand):
                           "remove a vm")),
         make_option("--shutdown-timeout",
                     help="Force vm shutdown after given seconds."),
+        make_option("--remove-system-volumes",
+                    default=False,
+                    action="store_true",
+                    help=("Allow removal of system volumes. This will also "
+                          "remove the VM.")),
+        make_option("--cascade-remove",
+                    default=False,
+                    action="store_true",
+                    help=("Allow removal of a VM which has additional "
+                          "(non system) volumes attached. This will also "
+                          "remove these volumes")),
     )
 
     def confirm(self):
@@ -116,6 +127,9 @@ class Command(SynnefoCommand):
                 m = "Expected integer shutdown timeout."
                 raise CommandError(m)
 
+        remove_system_volumes = options["remove_system_volumes"]
+        cascade_remove = options["cascade_remove"]
+
         excluded_users = options['exclude_users']
         excluded_users = set(excluded_users.split(',')
                              if excluded_users is not None else [])
@@ -150,6 +164,9 @@ class Command(SynnefoCommand):
         resources = set(h[0] for h in handlers)
         dangerous = bool(resources.difference(DEFAULT_RESOURCES))
 
+        hopts = {"cascade_remove": cascade_remove,
+                 "remove_system_volumes": remove_system_volumes,
+                 }
         opts = {"shutdown_timeout": shutdown_timeout}
         actions = {}
         overlimit = []
@@ -187,7 +204,7 @@ class Command(SynnefoCommand):
                             actual_resources[project], users=users_to_check,
                             excluded_users=excluded_users)
                         handle_resource(viol_id, resource, relevant_resources,
-                                        diff, actions)
+                                        diff, actions, options=hopts)
 
         for resource, handle_resource, resource_type in handlers:
             if resource_type not in actions:
@@ -221,7 +238,7 @@ class Command(SynnefoCommand):
                                           resource, qh_limit, qh_value))
                         relevant_resources = actual_resources[source][user]
                         handle_resource(viol_id, resource, relevant_resources,
-                                        diff, actions)
+                                        diff, actions, options=hopts)
 
         if not overlimit:
             write("No violations.\n")
@@ -237,7 +254,7 @@ class Command(SynnefoCommand):
             if fix:
                 if dangerous and not force:
                     write("You are enforcing resources that may permanently "
-                          "remove a vm.\n")
+                          "remove a vm or volume.\n")
                     self.confirm()
                 write("Applying actions. Please wait...\n")
             title = "Applied Actions" if fix else "Suggested Actions"

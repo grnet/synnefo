@@ -46,29 +46,29 @@ class Context(object):
 
     def update(self, node=None, role=None, cluster=None, setup=None):
         if node:
-            self.node = node
+            context.node = self.node = node
         if role:
-            self.role = role
+            context.role = self.role = role
         if cluster:
-            self.cluster = cluster
+            context.cluster = self.cluster = cluster
         if setup:
-            self.setup = setup
+            context.setup = self.setup = setup
         self.update_info()
 
     def update_info(self):
-        self.ns = self.get(constants.NS)
-        self.nfs = self.get(constants.NFS)
-        self.mq = self.get(constants.MQ)
-        self.db = self.get(constants.DB)
-        self.astakos = self.get(constants.ASTAKOS)
-        self.cyclades = self.get(constants.CYCLADES)
-        self.pithos = self.get(constants.PITHOS)
-        self.stats = self.get(constants.STATS)
-        self.cms = self.get(constants.CMS)
-        self.router = self.get(constants.ROUTER)
-        self.client = self.get(constants.CLIENT)
+        self.ns = self._get(constants.NS)
+        self.nfs = self._get(constants.NFS)
+        self.mq = self._get(constants.MQ)
+        self.db = self._get(constants.DB)
+        self.astakos = self._get(constants.ASTAKOS)
+        self.cyclades = self._get(constants.CYCLADES)
+        self.pithos = self._get(constants.PITHOS)
+        self.stats = self._get(constants.STATS)
+        self.cms = self._get(constants.CMS)
+        self.router = self._get(constants.ROUTER)
+        self.client = self._get(constants.CLIENT)
 
-    def get(self, role):
+    def _get(self, role):
         return config.get_single_node_role_info(self.setup, role)
 
     @property
@@ -101,9 +101,12 @@ class Context(object):
     def nodes(self):
         return list(set(self.masters + self.vmcs))
 
+    def get(self, role):
+        try:
+            return config.get(self.setup, role)
+        except:
+            return config.get(self.cluster, role)
 
-def get(role):
-    return config.get(context.setup, role)
 
 def backup():
     context.node_backup = context.node

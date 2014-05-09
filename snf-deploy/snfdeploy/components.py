@@ -17,6 +17,7 @@ import re
 import datetime
 import simplejson
 import copy
+import os
 from snfdeploy import base
 from snfdeploy import config
 from snfdeploy import constants
@@ -1796,6 +1797,12 @@ class GanetiDev(base.Component):
         "libghc-text-dev",
         "libghc-utf8-string-dev",
         "libghc-vector-dev",
+        "libghc-comonad-transformers-dev",
+        "libpcre3-dev",
+        "libghc6-zlib-dev",
+        "libghc-lifted-base-dev",
+        "libcurl4-openssl-dev",
+        "shelltestrunner",
         "lvm2",
         "make",
         "ndisc6",
@@ -1824,7 +1831,18 @@ class GanetiDev(base.Component):
         ]
 
     CABAL = [
+        "json",
+        "network",
+        "parallel",
+        "utf8-string",
+        "curl",
+        "hslogger",
+        "Crypto",
+        # "text",
         "hinotify==0.3.2",
+        "regex-pcre",
+        "attoparsec",
+        "vector",
         "base64-bytestring",
         "lifted-base==0.2.0.3",
         "lens==3.10",
@@ -1838,8 +1856,12 @@ class GanetiDev(base.Component):
 
     @base.run_cmds
     def prepare(self):
+        src = config.src_dir
+        url1 = "git://git.ganeti.org/ganeti.git"
+        url2 = "https://code.grnet.gr/git/ganeti-local"
         return self._cabal() + [
-            "git clone git://git.ganeti.org/ganeti.git"
+            "git clone %s %s/ganeti" % (url1, src),
+            "git clone %s %s/snf-ganeti" % (url2, src)
             ]
 
     def _configure(self):
@@ -1864,9 +1886,10 @@ class GanetiDev(base.Component):
 
     @base.run_cmds
     def initialize(self):
+        d = os.path.join(config.src_dir, "ganeti")
         return [
-            "cd ganeti; ./autogen.sh",
-            "cd ganeti; ./configure --localstatedir=/var --sysconfdir=/etc",
+            "cd %s; ./autogen.sh" % d,
+            "cd %s; ./configure --localstatedir=/var --sysconfdir=/etc" % d,
             ]
 
     @base.run_cmds

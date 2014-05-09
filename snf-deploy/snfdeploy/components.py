@@ -1226,8 +1226,8 @@ class NFS(base.Component):
             "mkdir -p %s/data" % p,
             "mkdir -p %s/blocks" % config.archip_dir,
             "mkdir -p %s/maps" % config.archip_dir,
-            "chown www-data.www-data %s/data" % p,
-            "chmod g+ws %s/data" % p,
+            "chown www-data.www-data %s/data" % config.pithos_dir,
+            "chmod g+ws %s/data" % config.pithos_dir,
             ]
 
     @base.run_cmds

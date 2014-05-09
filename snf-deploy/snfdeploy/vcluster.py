@@ -155,8 +155,10 @@ def image():
     else:
         url = config.squeeze_image_url
 
-    disk0 = "{0}/{1}.disk0".format(config.image_dir, config.os)
-    disk1 = "{0}/{1}.disk1".format(config.image_dir, config.os)
+    disk0 = "{0}/{1}.disk0".format(config.vcluster_dir, config.os)
+    disk1 = "{0}/{1}.disk1".format(config.vcluster_dir, config.os)
+
+    create_dir(config.vcluster_dir, False)
 
     if url and not os.path.exists(disk0):
         cmd = "wget {0} -O {1}".format(url, disk0)
@@ -200,13 +202,13 @@ def _launch_vm(name, mac):
     disks = """ \
 -drive file={0}/{1}.disk0,format=raw,if=none,id=drive0,snapshot=on \
 -device virtio-blk-pci,drive=drive0,id=virtio-blk-pci.0 \
-""".format(config.image_dir, config.os)
+""".format(config.vcluster_dir, config.os)
 
     if config.create_extra_disk:
         disks += """ \
 -drive file={0}/{1}.disk1,format=raw,if=none,id=drive1,snapshot=on \
 -device virtio-blk-pci,drive=drive1,id=virtio-blk-pci.1 \
-""".format(config.image_dir, config.os)
+""".format(config.vcluster_dir, config.os)
 
     ifup = config.lib_dir + "/ifup"
     nics = """ \

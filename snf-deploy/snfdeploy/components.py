@@ -1240,7 +1240,9 @@ EOF
 
     @base.run_cmds
     def restart(self):
-        return ["exportfs -a"]
+        return [
+            "/etc/init.d/nfs-kernel-server restart",
+            ]
 
 
 class Pithos(base.Component):

@@ -1214,6 +1214,10 @@ class NFS(base.Component):
     def conflicts(self):
         return [Mount]
 
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+
     @base.run_cmds
     def prepare(self):
         p = config.pithos_dir

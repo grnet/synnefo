@@ -715,12 +715,12 @@ class Image(base.Component):
 
     @base.run_cmds
     def check(self):
-        return ["mkdir -p %s" % config.image_dir]
+        return ["mkdir -p %s" % config.images_dir]
 
     @base.run_cmds
     def prepare(self):
         url = config.debian_base_url
-        d = config.image_dir
+        d = config.images_dir
         image = "debian_base.diskdump"
         return [
             "test -e %s/%s || wget %s -O %s/%s" % (d, image, url, d, image)
@@ -733,7 +733,7 @@ class Image(base.Component):
             "synnefo_db_passwd": config.synnefo_db_passwd,
             "pithos_dir": config.pithos_dir,
             "db_node": self.ctx.db.cname,
-            "image_dir": config.image_dir,
+            "image_dir": config.images_dir,
             }
         return [(tmpl, replace, {})]
 
@@ -1180,24 +1180,22 @@ class Mount(base.Component):
 
     @base.run_cmds
     def prepare(self):
-        ret = []
-        for d in [config.pithos_dir, config.image_dir, config.archip_dir]:
-            ret.append("mkdir -p %s" % d)
-            cmd = """
+        fstab = """
 cat >> /etc/fstab <<EOF
 {0}:{1} {1}  nfs defaults,rw,noatime,rsize=131072,wsize=131072 0 0
 EOF
-""".format(self.ctx.nfs.cname, d)
-            ret.append(cmd)
+""".format(self.ctx.nfs.cname, config.shared_dir)
 
-        return ret
+        return [
+            "mkdir -p %s" % config.shared_dir,
+            fstab,
+            ]
 
     @base.run_cmds
     def initialize(self):
-        ret = []
-        for d in [config.pithos_dir, config.image_dir, config.archip_dir]:
-            ret.append("mount %s" % d)
-        return ret
+        return [
+            "mount %s" % config.shared_dir
+            ]
 
 
 class NFS(base.Component):
@@ -1220,10 +1218,11 @@ class NFS(base.Component):
 
     @base.run_cmds
     def prepare(self):
-        p = config.pithos_dir
         return [
-            "mkdir -p %s" % config.image_dir,
-            "mkdir -p %s/data" % p,
+            "mkdir -p %s" % config.shared_dir,
+            "mkdir -p %s" % config.images_dir,
+            "mkdir -p %s" % config.ganeti_dir,
+            "mkdir -p %s/data" % config.pithos_dir,
             "mkdir -p %s/blocks" % config.archip_dir,
             "mkdir -p %s/maps" % config.archip_dir,
             "chown www-data.www-data %s/data" % config.pithos_dir,
@@ -1234,12 +1233,10 @@ class NFS(base.Component):
     def update_exports(self):
         fqdn = self.ctx.admin_node.fqdn
         cmd = """
-grep {3} /etc/exports || cat >> /etc/exports <<EOF
-{0} {3}(rw,async,no_subtree_check,no_root_squash)
-{1} {3}(rw,async,no_subtree_check,no_root_squash)
-{2} {3}(rw,async,no_subtree_check,no_root_squash)
+grep {1} /etc/exports || cat >> /etc/exports <<EOF
+{0} {1}(rw,async,no_subtree_check,no_root_squash)
 EOF
-""".format(config.pithos_dir, config.image_dir, config.archip_dir, fqdn)
+""".format(config.shared_dir, fqdn)
         return [cmd]
 
     @base.run_cmds

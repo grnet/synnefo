@@ -130,6 +130,11 @@ def init(args):
     config.passgen = args.passgen
 
     config.jsonfile = "/tmp/service.json"
+    config.ganeti_dir = os.path.join(config.shared_dir, "ganeti")
+    config.images_dir = os.path.join(config.shared_dir, "images")
+    config.pithos_dir = os.path.join(config.shared_dir, "pithos")
+    config.archip_dir = os.path.join(config.shared_dir, "archip")
+    config.src_dir = os.path.join(config.shared_dir, "src")
 
     if args.disable_colors:
         disable_color()

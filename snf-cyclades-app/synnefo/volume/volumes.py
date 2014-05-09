@@ -98,6 +98,7 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
                             "Volume name is too long")
     utils.check_name_length(description, Volume.DESCRIPTION_LENGTH,
                             "Volume name is too long")
+    validate_volume_termination(volume_type, delete_on_termination)
 
     # Only ext_ disk template supports cloning from another source. Otherwise
     # is must be the root volume so that 'snf-image' fill the volume
@@ -200,6 +201,7 @@ def update(volume, name=None, description=None, delete_on_termination=None):
     if description is not None:
         volume.description = description
     if delete_on_termination is not None:
+        validate_volume_termination(volume.volume_type, delete_on_termination)
         volume.delete_on_termination = delete_on_termination
 
     volume.save()
@@ -218,3 +220,22 @@ def reassign_volume(volume, project):
     volume.save()
     quotas.issue_and_accept_commission(volume, action="REASSIGN",
                                        action_fields=action_fields)
+
+
+def validate_volume_termination(volume_type, delete_on_termination):
+    """Validate volume's termination mode based on volume's type.
+
+    NOTE: Currently, detached volumes are not supported, so all volumes
+    must be terminated upon instance deletion.
+
+    """
+    if delete_on_termination is False:
+        # Only ext_* volumes can be preserved
+        if volume_type.template != "ext":
+            raise faults.BadRequest("Volumes of '%s' disk template cannot have"
+                                    " 'delete_on_termination' attribute set"
+                                    " to 'False'" % volume_type.disk_template)
+        # But currently all volumes must be terminated
+        raise faults.NotImplemented("Volumes with the 'delete_on_termination'"
+                                    " attribute set to False are not"
+                                    " supported")

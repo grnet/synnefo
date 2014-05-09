@@ -602,7 +602,7 @@ class ServerCreateAPITest(ComputeAPITest):
             {"source_type": "image",
              "uuid": fixed_image()["id"],
              "volume_size": 10,
-             "delete_on_termination": False}
+             "delete_on_termination": True}
         ]
         with mocked_quotaholder():
             response = self.mypost("servers", user,
@@ -613,7 +613,7 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(volume.volume_type, self.flavor.volume_type)
         self.assertEqual(volume.size, 10)
         self.assertEqual(volume.source, "image:%s" % fixed_image()["id"])
-        self.assertEqual(volume.delete_on_termination, False)
+        self.assertEqual(volume.delete_on_termination, True)
         self.assertEqual(volume.userid, user)
         self.assertEqual(volume.origin, "pithos:" + fixed_image()["mapfile"])
 
@@ -622,7 +622,7 @@ class ServerCreateAPITest(ComputeAPITest):
             {"source_type": "snapshot",
              "uuid": fixed_image()["id"],
              "volume_size": 10,
-             "delete_on_termination": False}
+             "delete_on_termination": True}
         ]
         with mocked_quotaholder():
             response = self.mypost("servers", user,
@@ -634,7 +634,7 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(volume.size, 10)
         self.assertEqual(volume.source, "snapshot:%s" % fixed_image()["id"])
         self.assertEqual(volume.origin, fixed_image()["mapfile"])
-        self.assertEqual(volume.delete_on_termination, False)
+        self.assertEqual(volume.delete_on_termination, True)
         self.assertEqual(volume.userid, user)
 
         source_volume = volume
@@ -643,7 +643,7 @@ class ServerCreateAPITest(ComputeAPITest):
             {"source_type": "volume",
              "uuid": source_volume.id,
              "volume_size": source_volume.size,
-             "delete_on_termination": False}
+             "delete_on_termination": True}
         ]
         with mocked_quotaholder():
             response = self.mypost("servers", user,

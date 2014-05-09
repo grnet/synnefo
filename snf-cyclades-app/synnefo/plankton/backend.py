@@ -456,7 +456,9 @@ class PlanktonBackend(object):
 
     @handle_pithos_backend
     def delete_snapshot(self, snapshot_uuid):
-        self.backend.delete_object_for_uuid(self.user, snapshot_uuid)
+        account, container, path = self.backend.get_uuid(self.user,
+                                                         snapshot_uuid)
+        self.backend.delete_object(self.user, account, container, path)
 
     @handle_pithos_backend
     def update_status(self, image_uuid, status):

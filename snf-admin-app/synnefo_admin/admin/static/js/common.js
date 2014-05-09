@@ -4,9 +4,9 @@ $(document).ready(function(){
 
  // table sorting
 
-   $('.table-sorted:not(.table-users)').tablesorter({
+   /*$('.table-sorted:not(.table-users)').tablesorter({
       sortList : [[2,0]],
-  });
+  });*/
 
  // fix sub nav on scroll
   var $win = $(window)
@@ -37,17 +37,13 @@ $(document).ready(function(){
   })
 
   $win.on('scroll', processScroll)
-	
-	  
-  
+
   // hide/show expand/collapse 
   
   $('.subnav .dropdown-menu a').click(function(){
-  	$('.info-block-content, .show-hide-all').show();
-  })
-  
-  	
-  
+    $('.info-block-content, .show-hide-all').show();
+  });
+
   var txt_all = ['+ Expand all','- Collapse all'];
   
 
@@ -56,27 +52,24 @@ $(document).ready(function(){
   
   $('.show-hide-all').click(function(){
     $(this).toggleClass('open');
-  	var tabs = $(this).parent('.info-block').find('.object-details-content') 
-  	
-  	console.info(tabs);
+    var tabs = $(this).parent('.info-block').find('.object-details-content');
+
+
     if ($(this).hasClass('open')){
       $(this).text( txt_all[1]);
-  		tabs.each(function() {
+      tabs.each(function() {
         $(this).slideDown('slow');
-	  		$(this).siblings('h4').addClass('expanded');
-	    });
-  		
-  		
-  	} else {
+        $(this).siblings('h4').addClass('expanded');
+      });
+
+
+    } else {
       $(this).text( txt_all[0]);
-  		tabs.each(function() {
+      tabs.each(function() {
         $(this).slideUp('slow');
-	  		$(this).siblings('h4').removeClass('expanded');
- 
-	    });
-  	}
-	
-  	 
+        $(this).siblings('h4').removeClass('expanded');
+      });
+    }
   });   
 
  
@@ -84,17 +77,17 @@ $(document).ready(function(){
   $('.object-details h4').click(function(){
 
     $(this).siblings('.object-details-content').toggle('slow');
-  	$(this).toggleClass('expanded');
-  	 
-  }); 
-  
-  
+    $(this).toggleClass('expanded');
+  });
+
+
   $('.info-block h3').click(function(){
     $(this).next('.info-block-content').toggle('slow');
     $(this).prev('.show-hide-all').toggle('slow');
   });  
   
-  /*$('.search-query').typeahead({
+/*  $('.search-query').typeahead({
+>>>>>>> admin: Basic initialization of table
     source: function(typeahead, query) {
       if (query.indexOf("@") > -1) {
         $.ajax({

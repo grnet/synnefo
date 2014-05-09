@@ -297,200 +297,217 @@ $(document).ready(function() {
 
 	/* Initial table */
 	
-	function initTable(tableID) {
+// 	function initTable(tableID) {
 
-		// The last two colums in every table should be "Details" and "Summary"
-		// These two shoudn't be sorted
-		var colLength = $(tableID).find('thead th').length;
-		var colsNotSort = [colLength-2, colLength-1];
+// 		// The last two colums in every table should be "Details" and "Summary"
+// 		// These two shoudn't be sorted
+// 		var colLength = $(tableID).find('thead th').length;
+// 		var colsNotSort = [colLength-2, colLength-1];
 
-		return $(tableID).dataTable({
-			"aaSorting": [[3, 'asc'], [1, 'asc']], // ascending
-			"aoColumnDefs": [
-				{ "bSortable": false, "aTargets": colsNotSort },
-				{  "sSortDataType": "dom-checkbox", "aTargets": [0] }
-			],
-			"bSortClasses": false, // Disables the addition of the classes 'sorting_1', 'sorting_2' and 'sorting_3' to the columns which are currently being sorted on
-			// "sPaginationType": "full_numbers",
-			"bRetrieve": true, // Access to all items of the dataTable
-			"fnDrawCallback": function( oSettings ) {
-				clickRow();
-				clickRowCheckbox();
-				clickSummary();
-				updateToggleAllCheck('.select-all input[type=checkbox]');
-		    }
-		});
-	}
+// 		return $(tableID).dataTable({
+// 			"aaSorting": [[3, 'asc'], [1, 'asc']], // ascending
+// 			"aoColumnDefs": [
+// 				{ "bSortable": false, "aTargets": colsNotSort },
+// 				{  "sSortDataType": "dom-checkbox", "aTargets": [0] }
+// 			],
+// 			"bSortClasses": false, // Disables the addition of the classes 'sorting_1', 'sorting_2' and 'sorting_3' to the columns which are currently being sorted on
+// 			// "sPaginationType": "full_numbers",
+// 			"bRetrieve": true, // Access to all items of the dataTable
+// 			"fnDrawCallback": function( oSettings ) {
+// 				clickRow();
+// 				clickRowCheckbox();
+// 				clickSummary();
+// 				updateToggleAllCheck('.select-all input[type=checkbox]');
+// 		    }
+// 		});
+// 	}
 
-	 var oTable = initTable('#table-items-total');
+// 	 var oTable = initTable('#table-items-total');
 
-	function clickSummary() {
-		$('table tbody a.expand-area').click(function(e) {
-			e.preventDefault();
-			e.stopPropagation();
-			var $summaryTd = $(this).closest('td');
-			var $btn = $summaryTd.find('.expand-area span');
-			var $summaryContent = $summaryTd.find('.info-summary');
+// 	function clickSummary() {
+// 		$('table tbody a.expand-area').click(function(e) {
+// 			e.preventDefault();
+// 			e.stopPropagation();
+// 			var $summaryTd = $(this).closest('td');
+// 			var $btn = $summaryTd.find('.expand-area span');
+// 			var $summaryContent = $summaryTd.find('.info-summary');
 			
-			var summaryContentWidth = $summaryTd.closest('tr').width() - parseInt($summaryContent.css('padding-right').replace("px", "")) - parseInt($summaryContent.css('padding-left').replace("px", ""));
-			var summaryContPos = summaryContentWidth - $summaryTd.width() + parseInt($summaryContent.css('padding-left').replace("px", ""));
+// 			var summaryContentWidth = $summaryTd.closest('tr').width() - parseInt($summaryContent.css('padding-right').replace("px", "")) - parseInt($summaryContent.css('padding-left').replace("px", ""));
+// 			var summaryContPos = summaryContentWidth - $summaryTd.width() + parseInt($summaryContent.css('padding-left').replace("px", ""));
+
+// 			$summaryContent.css({
+// 				width: summaryContentWidth +'px',
+// 				right: summaryContPos +'px'
+// 			});
+// 			$btn.toggleClass('snf-angle-up snf-angle-down');
+// 			$summaryContent.stop().slideToggle(600, function() {
+// 				if ($summaryContent.is(':visible')) {
+// 					$btn.removeClass('snf-angle-down').addClass('snf-angle-up');	
+// 				}
+// 				else {
+// 					$btn.removeClass('snf-angle-up').addClass('snf-angle-down');
+// 				}
+// 			});
+
+// 		})
+// 	}
+
+// 	$('.modal .reset-selected').click(function(e) {
+// 		console.log('RESET');
+// 		var table = '#'+ 'table-items-total_wrapper';
+// 		resetTable(table);
+// 	});
+// 	$('.modal button[type=submit]').click(function(e) {
+// 		if(selected.items.length === 0) {
+// 			e.preventDefault();
+// 			console.log('nothing to submit');
+// 		}
+// 	})
+
+// 	/* Select-all checkbox */
+
+// 	$('table thead th:first input[type=checkbox]').click(function(e) {
+// 		e.stopPropagation();
+// 		console.log('ox');
+// 		var tableDomID = $(this).closest('table').attr('id');
+// 		var checkboxState = $(this).prop('checked');
+// 		toggleVisCheckboxes(checkboxState, tableDomID);
+// 	});
+
+// /* *** Check fnRowCallback */
+// 	$('.dataTables_filter input[type=text]').keypress(function(e) {
+
+// 		// if space or enter is typed do nothing
+// 		if(e.which !== '32' && e.which !== '13') {
+// 			tableID = $(this).closest('.dataTables_wrapper').find('table').attr('id')
+// 			resetTable('#'+tableID);
+// 		}
+// 	});
+
+// 	function resetTable(tableDomID) {
+// 		console.log('resetTable');
+// 		$(tableDomID).find('thead .select-all input[type=checkbox]').attr('checked', false);
+// 			selected.items = [];
+// 			$(tableDomID).find('thead .selected-num').html(selected.items.length);
+// 			$(tableDomID).find('thead .select-all input[type=checkbox]').prop('checked', false);
+// 			// $(this).siblings('table').find('thead .selected-num');
+// 			$('input:checked', oTable.fnGetNodes()).each(function(){
+// 	            this.checked=false;
+//             });
+//             $(oTable.fnGetNodes()).each(function(){
+// 	            this.className = this.className.replace('selected', '')
+//             });
+//             //  should use the code below
+//             // oTable.$('input').removeAttr('checked');
+// 			// oTable.$('tr').removeClass('selected');
+// 			enableActions(undefined, true);
+// 	}
+
+// 	/* Checkboxes */
+// 	function clickRowCheckbox() {
+// 		$('table tbody input[type=checkbox]').click(function(e) {
+// 			e.stopPropagation();
+// 			// console.log('good ', e)
+// 			// console.log('e.target', e)
+// 			var $tr = $(this).closest('tr');
+// 			var $allActionsBtns = $('.sidebar a');
+// 			var $selectedNum = $tr.closest('table').find('thead .selected-num');
+// 			var type = $tr.closest('table').data('content');
+// 			var itemsL;
+// 			var uuid = $tr.attr('id');
+// 			var name = $tr.find('td.name').text();
+// 			var state = $tr.find('td.state').text();
+
+// 			if(type === 'user') {
+// 				var email = $tr.find('td.email').text();
+
+// 				var newItem = {
+// 					uuid: uuid,
+// 					name: name,
+// 					email: email,
+// 					state: state,
+// 					actions: {}
+// 				}
+// 			}
+// 			else if(type === 'project') {
+// 				var owner = $tr.find('td.owner').text();
+
+// 				var newItem = {
+// 					uuid: uuid,
+// 					name: name,
+// 					owner: owner,
+// 					state: state,
+// 					actions: {}
+// 				}
+// 			}
+// 			else if(type === 'vm') {
+// 				var os = $tr.find('td.os').text();
+
+// 				var newItem = {
+// 					uuid: uuid,
+// 					name: name,
+// 					os: os,
+// 					state: state,
+// 					actions: {}
+// 				}
+// 			}
+// 			newItem.actions =  formDataListAttr($tr.data('op-list'));
+// 			for(var prop in availableActions) {
+// 				if(!(prop in newItem.actions)) {
+// 					newItem.actions[prop] =false
+// 				}
+// 			}
 			
-			$summaryContent.css({
-				width: summaryContentWidth +'px',
-				right: summaryContPos +'px'
-			});
-			$btn.toggleClass('snf-angle-up snf-angle-down');
-			$summaryContent.stop().slideToggle(600, function() {
-				if ($summaryContent.is(':visible')) {
-					$btn.removeClass('snf-angle-down').addClass('snf-angle-up');	
-				}
-				else {
-					$btn.removeClass('snf-angle-up').addClass('snf-angle-down');
-				}
-			});
+// 			if (this.checked) {
+// 				itemsL = selected.items.length;
+// 				var isNew = true;
+// 				for(var i=0; i<itemsL; i++) {
+// 					if(selected.items[i].uuid === uuid) {
+// 						isNew = false;
+// 					}
+// 				}
+// 				if(isNew) {
+// 					$tr.addClass('selected');
+// 					enableActions(newItem.actions)
+// 					addItem(newItem, selected.items);
+// 				}
+// 			}
+// 			else {
+// 				$tr.removeClass('selected');
+// 				removeItem(newItem, selected.items);
+// 				enableActions(newItem.actions, true);
+// 			}
+// 				$selectedNum.html(selected.items.length);
+// 			updateToggleAllCheck();
+// 		});
+// 	};
+// 	function updateToggleAllCheck() {
+// 		console.log('updateToggleAllCheck');
+// 		var toggleAll = $('table .select-all input[type=checkbox]');
+// 		if($('tbody tr').length > 1) {
+// 			var allChecked = true
+// 			$('tbody input[type=checkbox]').each(function() {
+// 				allChecked = allChecked && $(this).prop('checked');
+// 			});
+// 			if(!toggleAll.prop('checked') && allChecked) {
+// 				console.log('*1*')
+// 				toggleAll.prop('checked', true)
+// 			}
+// 			else if(toggleAll.prop('checked') && !allChecked) {
+// 				toggleAll.prop('checked', false)
+// 			}
+// 		}
+// 		else {
+// 			toggleAll.prop('checked', false);
+// 		}
+// 	};
 
-		})
-	}
 
-
-
-	/* Select-all checkbox */
-
-	$('table thead th:first input[type=checkbox]').click(function(e) {
-		e.stopPropagation();
-		var tableDomID = $(this).closest('table').attr('id');
-		var checkboxState = $(this).prop('checked');
-		toggleVisCheckboxes(checkboxState, tableDomID);
-	});
-
-/* *** Check fnRowCallback */
-	$('.dataTables_filter input[type=text]').keypress(function(e) {
-
-		// if space or enter is typed do nothing
-		if(e.which !== '32' && e.which !== '13') {
-			tableID = $(this).closest('.dataTables_wrapper').find('table').attr('id')
-			resetTable('#'+tableID);
-		}
-	});
-
-	function resetTable(tableDomID) {
-		$(tableDomID).find('thead .select-all input[type=checkbox]').attr('checked', false);
-			selected.items = [];
-			$(tableDomID).find('thead .selected-num').html(selected.items.length);
-			$(tableDomID).find('thead .select-all input[type=checkbox]').prop('checked', false);
-			// $(this).siblings('table').find('thead .selected-num');
-			$('input:checked', oTable.fnGetNodes()).each(function(){
-	            this.checked=false;
-            });
-            $(oTable.fnGetNodes()).each(function(){
-	            this.className = this.className.replace('selected', '')
-            });
-            //  should use the code below
-            // oTable.$('input').removeAttr('checked');
-			// oTable.$('tr').removeClass('selected');
-			enableActions(undefined, true);
-	}
-
-	/* Checkboxes */
-	function clickRowCheckbox() {
-		$('table tbody input[type=checkbox]').click(function(e) {
-			e.stopPropagation();
-			var $tr = $(this).closest('tr');
-			var $allActionsBtns = $('.actionbar button');
-			var $selectedNum = $tr.closest('table').find('thead .selected-num');
-			var type = $tr.closest('table').data('content');
-			var itemsL;
-			var uuid = $tr.attr('id');
-			var name = $tr.find('td.name').text();
-			var state = $tr.find('td.state').text();
-
-			if(type === 'user') {
-				var email = $tr.find('td.email').text();
-
-				var newItem = {
-					uuid: uuid,
-					name: name,
-					email: email,
-					state: state,
-					actions: {}
-				}
-			}
-			else if(type === 'project') {
-				var owner = $tr.find('td.owner').text();
-
-				var newItem = {
-					uuid: uuid,
-					name: name,
-					owner: owner,
-					state: state,
-					actions: {}
-				}
-			}
-			else if(type === 'vm') {
-				var os = $tr.find('td.os').text();
-
-				var newItem = {
-					uuid: uuid,
-					name: name,
-					os: os,
-					state: state,
-					actions: {}
-				}
-			}
-			newItem.actions =  formDataListAttr($tr.data('op-list'));
-			for(var prop in availableActions) {
-				if(!(prop in newItem.actions)) {
-					newItem.actions[prop] =false
-				} 
-			}
-			
-			if (this.checked) {
-				itemsL = selected.items.length;
-				var isNew = true;
-				for(var i=0; i<itemsL; i++) {
-					if(selected.items[i].uuid === uuid) {
-						isNew = false;
-					}
-				}
-				if(isNew) {
-					$tr.addClass('selected');
-					enableActions(newItem.actions)
-					addItem(newItem, selected.items);
-				}
-			}
-			else {
-				$tr.removeClass('selected');
-				removeItem(newItem, selected.items);
-				enableActions(newItem.actions, true);
-			}
-				$selectedNum.html(selected.items.length);
-			updateToggleAllCheck();
-		});
-	};
-	function updateToggleAllCheck() {
-		var toggleAll = $('table .select-all input[type=checkbox]');
-		if($('tbody tr').length > 1) {
-			var allChecked = true
-			$('tbody input[type=checkbox]').each(function() {
-				allChecked = allChecked && $(this).prop('checked');
-			});
-			if(!toggleAll.prop('checked') && allChecked) {
-				toggleAll.prop('checked', true)
-			}
-			else if(toggleAll.prop('checked') && !allChecked) {
-				toggleAll.prop('checked', false)
-			}
-		}
-		else {
-			toggleAll.prop('checked', false);
-		}
-	};
-	
-	function clickRow() {
-		$('table tbody tr').click(function(e) {
-			$(this).find('input[type=checkbox]').trigger('click');
-		});
-	};
+// 	function clickRow() {
+// 		$('table tbody tr').click(function(e) {
+// 			$(this).find('input[type=checkbox]').trigger('click');
+// 		});
+// 	};
 
 	var curPath = window.location.pathname;
 	$('.nav-main li').each(function () {

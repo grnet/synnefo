@@ -18,12 +18,10 @@
         {% include "admin/_index_action_list.html" %}
     {% endblock action-list %}
 
-
-    
-      <div class="info-block well info">
-        {% block table-area %}
-        {% endblock %}
-      </div>
+    <div class="info-block well info">
+      {% block table-area %}
+      {% endblock %}
+    </div>
 
     <!-- Modals -->
     {% block action-modals %}
@@ -31,4 +29,3 @@
     {% endblock action-modals %}
 
 {% endblock %}
-

@@ -1258,7 +1258,7 @@ class Pithos(base.Component):
     def required_components(self):
         return [
             HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB,
-            PithosBackend, Archip
+            PithosBackend, Archip, ArchipSynnefo
             ]
 
     @update_admin
@@ -1352,7 +1352,8 @@ class Cyclades(base.Component):
     def required_components(self):
         return [
             HW, SSH, DNS, APT,
-            Apache, Gunicorn, Common, WEB, VNC, PithosBackend, Archip
+            Apache, Gunicorn, Common, WEB, VNC, PithosBackend,
+            Archip, ArchipSynnefo
             ]
 
     @update_admin
@@ -1698,20 +1699,32 @@ class Archip(base.Component):
         return ["mkdir -p /etc/archipelago"]
 
     def _configure(self):
+        r1 = {"SEGMENT_SIZE": config.segment_size}
+        return [
+            ("/etc/archipelago/archipelago.conf", r1, {})
+            ]
+
+    @base.run_cmds
+    def restart(self):
+        return [
+            "archipelago restart"
+            ]
+
+
+class ArchipSynnefo(base.Component):
+
+    def _configure(self):
         r1 = {"HOST": self.node.fqdn}
-        r2 = {"SEGMENT_SIZE": config.segment_size}
         return [
             ("/etc/gunicorn.d/synnefo-archip", r1,
              {"remote": "/etc/gunicorn.d/synnefo"}),
             ("/etc/archipelago/pithos.conf.py", {}, {}),
-            ("/etc/archipelago/archipelago.conf", r2, {})
             ]
 
     @base.run_cmds
     def restart(self):
         return [
             "/etc/init.d/gunicorn restart",
-            "archipelago restart"
             ]
 
 

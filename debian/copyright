@@ -1,10 +1,10 @@
 Format: http://anonscm.debian.org/viewvc/dep/web/deps/dep5.mdwn?revision=174&view=co
 Upstream-Name: Synnefo
 Upstream-Contact: GRNET development team <synnefo-devel@googlegroups.com>
-Source: https://code.grnet.gr/projects/synnefo
+Source: https://github.com/grnet/synnefo
 
 Files: *
-Copyright: Copyright (C) 2011, 2012 GRNET S.A.
+Copyright: Copyright (C) 2011-2014 GRNET S.A.
 Licence: BSD-2-clause
 
 Licence: BSD-2-clause

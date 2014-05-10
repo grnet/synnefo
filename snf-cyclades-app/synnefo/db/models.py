@@ -1082,7 +1082,8 @@ class Volume(models.Model):
     source = models.CharField(max_length=128, null=True)
     origin = models.CharField(max_length=128, null=True)
 
-    deleted = models.BooleanField("Deleted", default=False, null=False)
+    deleted = models.BooleanField("Deleted", default=False, null=False,
+                                  db_index=True)
     # Datetime fields
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)

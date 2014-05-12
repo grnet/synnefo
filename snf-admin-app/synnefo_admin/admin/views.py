@@ -245,12 +245,14 @@ class GenericJSONView(DatatablesView):
               #'status_display',
               )
 
-    extra = ('realname', 'status_display')
+    extra = True
 
-    #def get_context_data(self, **kwargs):
-    #    # Call the base implementation first to get a context
-    #    context = super(DatatablesView, self).get_context_data(**kwargs)
-    #    return context
+    def get_extra_data_row(self, inst):
+        return {
+            'id': inst.uuid,
+            'realname': inst.realname,
+            'status': inst.status_display,
+        }
 
 
 @csrf_exempt

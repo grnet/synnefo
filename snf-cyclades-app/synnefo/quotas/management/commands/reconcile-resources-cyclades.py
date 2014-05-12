@@ -53,8 +53,9 @@ class Command(SynnefoCommand):
         project = options["project"]
 
         # Get holdings from Cyclades DB
-        db_holdings = util.get_db_holdings(userid, project)
-        db_project_holdings = util.get_db_project_holdings(project)
+        db_holdings = util.get_db_holdings(user=userid, project=project)
+        db_project_holdings = util.get_db_holdings(project=project,
+                                                   for_users=False)
 
         # Get holdings from QuotaHolder
         qh_holdings = util.get_qh_users_holdings(

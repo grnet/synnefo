@@ -529,7 +529,7 @@ def update_server_name(request, server_id):
                                required=True)
 
     vm = util.get_vm(server_id, request.user_uniq, for_update=True,
-                     non_suspended=True)
+                     non_suspended=True, non_deleted=True)
 
     servers.rename(vm, new_name=name)
 
@@ -549,7 +549,7 @@ def delete_server(request, server_id):
 
     log.info('delete_server %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq, for_update=True,
-                     non_suspended=True)
+                     non_suspended=True, non_deleted=True)
     vm = servers.destroy(vm)
     return HttpResponse(status=204)
 
@@ -674,7 +674,8 @@ def update_metadata(request, server_id):
 
     req = utils.get_json_body(request)
     log.info('update_server_metadata %s %s', server_id, req)
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
+                     non_deleted=True)
     metadata = utils.get_attribute(req, "metadata", required=True,
                                    attr_type=dict)
 
@@ -723,7 +724,8 @@ def create_metadata_item(request, server_id, key):
 
     req = utils.get_json_body(request)
     log.info('create_server_metadata_item %s %s %s', server_id, key, req)
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
+                     non_deleted=True)
     try:
         metadict = req['meta']
         assert isinstance(metadict, dict)
@@ -757,7 +759,8 @@ def delete_metadata_item(request, server_id, key):
     #                       overLimit (413),
 
     log.info('delete_server_metadata_item %s %s', server_id, key)
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
+                     non_deleted=True)
     meta = util.get_vm_meta(vm, key)
     meta.delete()
     vm.save()
@@ -895,10 +898,10 @@ def resize(request, vm, args):
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413),
     #                       resizeNotAllowed (403)
-    flavorRef = args.get("flavorRef")
-    if flavorRef is None:
+    flavor_id = args.get("flavorRef")
+    if flavor_id is None:
         raise faults.BadRequest("Missing 'flavorRef' attribute.")
-    flavor = util.get_flavor(flavor_id=flavorRef, include_deleted=False)
+    flavor = util.get_flavor(flavor_id=flavor_id, include_deleted=False)
     servers.resize(vm, flavor=flavor)
     return HttpResponse(status=202)
 
@@ -979,7 +982,8 @@ def add(request, net, args):
     if not server_id:
         raise faults.BadRequest('Malformed Request.')
 
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
+                     non_deleted=True)
     servers.connect(vm, network=net)
     return HttpResponse(status=202)
 
@@ -1006,7 +1010,8 @@ def remove(request, net, args):
 
     nic = util.get_nic(nic_id=nic_id)
     server_id = nic.machine_id
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
+                     non_deleted=True)
 
     servers.disconnect(vm, nic)
 
@@ -1067,7 +1072,7 @@ def get_volume_info(request, server_id, volume_id):
     log.debug("get_volume_info server_id %s volume_id", server_id, volume_id)
     user_id = request.user_uniq
     vm = util.get_vm(server_id, user_id)
-    volume = get_volume(user_id, volume_id, for_update=False,
+    volume = get_volume(user_id, volume_id, for_update=False, non_deleted=True,
                         exception=faults.BadRequest)
     servers._check_attachment(vm, volume)
     attachment = volume_to_attachment(volume)
@@ -1080,13 +1085,13 @@ def attach_volume(request, server_id):
     req = utils.get_json_body(request)
     log.debug("attach_volume server_id %s request", server_id, req)
     user_id = request.user_uniq
-    vm = util.get_vm(server_id, user_id, for_update=True)
+    vm = util.get_vm(server_id, user_id, for_update=True, non_deleted=True)
 
     attachment_dict = api.utils.get_attribute(req, "volumeAttachment",
                                               required=True)
     # Get volume
     volume_id = api.utils.get_attribute(attachment_dict, "volumeId")
-    volume = get_volume(user_id, volume_id, for_update=True,
+    volume = get_volume(user_id, volume_id, for_update=True, non_deleted=True,
                         exception=faults.BadRequest)
     vm = server_attachments.attach_volume(vm, volume)
     attachment = volume_to_attachment(volume)
@@ -1099,8 +1104,8 @@ def attach_volume(request, server_id):
 def detach_volume(request, server_id, volume_id):
     log.debug("detach_volume server_id %s volume_id", server_id, volume_id)
     user_id = request.user_uniq
-    vm = util.get_vm(server_id, user_id)
-    volume = get_volume(user_id, volume_id, for_update=True,
+    vm = util.get_vm(server_id, user_id, non_deleted=True)
+    volume = get_volume(user_id, volume_id, for_update=True, non_deleted=True,
                         exception=faults.BadRequest)
     vm = server_attachments.detach_volume(vm, volume)
     # TODO: Check volume state, send job to detach volume

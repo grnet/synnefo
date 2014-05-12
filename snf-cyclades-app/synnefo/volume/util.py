@@ -23,6 +23,7 @@ from synnefo.lib.services import get_service_path
 
 
 def get_volume(user_id, volume_id, for_update=False,
+               non_deleted=False,
                exception=faults.ItemNotFound):
     volumes = models.Volume.objects
     if for_update:
@@ -32,7 +33,11 @@ def get_volume(user_id, volume_id, for_update=False,
     except (TypeError, ValueError):
         raise faults.BadRequest("Invalid volume id: %s" % volume_id)
     try:
-        return volumes.get(id=volume_id, userid=user_id)
+        volume = volumes.get(id=volume_id, userid=user_id)
+        if non_deleted and volume.deleted:
+            raise faults.BadRequest("Volume '%s' has been deleted."
+                                    % volume_id)
+        return volume
     except models.Volume.DoesNotExist:
         raise exception("Volume %s not found" % volume_id)
 
@@ -69,7 +74,7 @@ def get_image(user_id, image_id, exception=faults.ItemNotFound):
         raise exception("Image %s not found" % image_id)
 
 
-def get_server(user_id, server_id, for_update=False,
+def get_server(user_id, server_id, for_update=False, non_deleted=False,
                exception=faults.ItemNotFound):
     try:
         server_id = int(server_id)
@@ -77,7 +82,7 @@ def get_server(user_id, server_id, for_update=False,
         raise faults.BadRequest("Invalid server id: %s" % server_id)
     try:
         return get_vm(server_id, user_id, for_update=for_update,
-                      non_deleted=True, non_suspended=True)
+                      non_deleted=non_deleted, non_suspended=True)
     except faults.ItemNotFound:
         raise exception("Server %s not found" % server_id)
 

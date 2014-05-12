@@ -36,6 +36,7 @@ def create(user_id, size, server_id, name=None, description=None,
     if server_id is None:
         raise faults.BadRequest("Volume must be attached to server")
     server = util.get_server(user_id, server_id, for_update=True,
+                             non_deleted=True,
                              exception=faults.BadRequest)
 
     server_vtype = server.flavor.volume_type
@@ -113,7 +114,7 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
     # TODO: Check Volume/Snapshot Status
     if source_type == "volume":
         source_volume = util.get_volume(user_id, source_uuid,
-                                        for_update=True,
+                                        for_update=True, non_deleted=True,
                                         exception=faults.BadRequest)
         if source_volume.status != "IN_USE":
             raise faults.BadRequest("Cannot clone volume while it is in '%s'"

@@ -105,7 +105,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
     for index, vol_info in enumerate(volumes):
         if vol_info["source_type"] == "volume":
             uuid = vol_info["source_uuid"]
-            v = get_volume(userid, uuid, for_update=True,
+            v = get_volume(userid, uuid, for_update=True, non_deleted=True,
                            exception=faults.BadRequest)
             if v.volume_type_id != server_vtype.id:
                 msg = ("Volume '%s' has type '%s' while flavor's volume type"

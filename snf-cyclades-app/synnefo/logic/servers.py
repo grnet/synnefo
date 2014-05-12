@@ -190,6 +190,7 @@ def create_server(vm, nics, volumes, flavor, image, personality, password):
         vm.backendlogmsg = "Failed to send job to Ganeti."
         vm.save()
         vm.nics.all().update(state="ERROR")
+        vm.volumes.all().update(status="ERROR")
 
     # At this point the job is enqueued in the Ganeti backend
     vm.backendopcode = "OP_INSTANCE_CREATE"

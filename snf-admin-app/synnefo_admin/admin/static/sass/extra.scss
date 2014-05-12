@@ -309,7 +309,7 @@ $nav-height: 36px;
   margin-left: 4px;
   vertical-align: middle;
 }
-td.summary {
+td:last-child { // this is meant for summary td
   max-width: 30px;
   min-width: 30px;
 
@@ -628,10 +628,16 @@ ul.nav li.dropdown:hover > ul.dropdown-menu {
 }
 
 .main-content {
-  max-width: 960px;
+  max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
   margin-top: 60px;
+
+  outline: 0;
+  outline: thin dotted \9;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px #659cef;
+  -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px #659cef;
+box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px #659cef;
 }
 
 
@@ -664,7 +670,7 @@ body {
 }
 
 .object-details h4 .label {
-font-size: 0.65em;
+// font-size: 0.65em;
 font-style: normal;
 font-weight: normal;
 float: right;

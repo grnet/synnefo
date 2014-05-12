@@ -323,34 +323,34 @@ $(document).ready(function() {
 // 	}
 
 // 	 var oTable = initTable('#table-items-total');
-
-// 	function clickSummary() {
-// 		$('table tbody a.expand-area').click(function(e) {
-// 			e.preventDefault();
-// 			e.stopPropagation();
-// 			var $summaryTd = $(this).closest('td');
-// 			var $btn = $summaryTd.find('.expand-area span');
-// 			var $summaryContent = $summaryTd.find('.info-summary');
+	//  to remove
+	// function clickSummary() {
+	// 	$('table tbody a.expand-area').click(function(e) {
+	// 		e.preventDefault();
+	// 		e.stopPropagation();
+	// 		var $summaryTd = $(this).closest('td');
+	// 		var $btn = $summaryTd.find('.expand-area span');
+	// 		var $summaryContent = $summaryTd.find('.info-summary');
 			
-// 			var summaryContentWidth = $summaryTd.closest('tr').width() - parseInt($summaryContent.css('padding-right').replace("px", "")) - parseInt($summaryContent.css('padding-left').replace("px", ""));
-// 			var summaryContPos = summaryContentWidth - $summaryTd.width() + parseInt($summaryContent.css('padding-left').replace("px", ""));
+	// 		var summaryContentWidth = $summaryTd.closest('tr').width() - parseInt($summaryContent.css('padding-right').replace("px", "")) - parseInt($summaryContent.css('padding-left').replace("px", ""));
+	// 		var summaryContPos = summaryContentWidth - $summaryTd.width() + parseInt($summaryContent.css('padding-left').replace("px", ""));
 
-// 			$summaryContent.css({
-// 				width: summaryContentWidth +'px',
-// 				right: summaryContPos +'px'
-// 			});
-// 			$btn.toggleClass('snf-angle-up snf-angle-down');
-// 			$summaryContent.stop().slideToggle(600, function() {
-// 				if ($summaryContent.is(':visible')) {
-// 					$btn.removeClass('snf-angle-down').addClass('snf-angle-up');	
-// 				}
-// 				else {
-// 					$btn.removeClass('snf-angle-up').addClass('snf-angle-down');
-// 				}
-// 			});
+	// 		$summaryContent.css({
+	// 			width: summaryContentWidth +'px',
+	// 			right: summaryContPos +'px'
+	// 		});
+	// 		$btn.toggleClass('snf-angle-up snf-angle-down');
+	// 		$summaryContent.stop().slideToggle(600, function() {
+	// 			if ($summaryContent.is(':visible')) {
+	// 				$btn.removeClass('snf-angle-down').addClass('snf-angle-up');	
+	// 			}
+	// 			else {
+	// 				$btn.removeClass('snf-angle-up').addClass('snf-angle-down');
+	// 			}
+	// 		});
 
-// 		})
-// 	}
+	// 	})
+	// }
 
 // 	$('.modal .reset-selected').click(function(e) {
 // 		console.log('RESET');

@@ -101,6 +101,11 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
                             "Volume name is too long")
     validate_volume_termination(volume_type, delete_on_termination)
 
+    if index is None:
+        # Counting a server's volumes is safe, because we have an
+        # X-lock on the server.
+        index = server.volumes.filter(deleted=False).count()
+
     # Only ext_ disk template supports cloning from another source. Otherwise
     # is must be the root volume so that 'snf-image' fill the volume
     can_have_source = (index == 0 or
@@ -176,6 +181,7 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
                                    delete_on_termination=delete_on_termination,
                                    source=source,
                                    origin=origin,
+                                   index=index,
                                    status="CREATING")
     return volume
 

@@ -18,8 +18,9 @@ from optparse import make_option
 
 from synnefo import quotas
 from synnefo.quotas import util
+from synnefo.quotas import errors
 from snf_django.management.utils import pprint_table
-from snf_django.management.commands import SynnefoCommand
+from snf_django.management.commands import SynnefoCommand, CommandError
 from snf_django.utils import reconcile
 
 
@@ -58,10 +59,14 @@ class Command(SynnefoCommand):
                                                    for_users=False)
 
         # Get holdings from QuotaHolder
-        qh_holdings = util.get_qh_users_holdings(
-            [userid] if userid is not None else None)
-        qh_project_holdings = util.get_qh_project_holdings(
-            [project] if project is not None else None)
+        try:
+            qh_holdings = util.get_qh_users_holdings(
+                [userid] if userid is not None else None,
+                [project] if project is not None else None)
+            qh_project_holdings = util.get_qh_project_holdings(
+                [project] if project is not None else None)
+        except errors.AstakosClientException as e:
+            raise CommandError(e)
 
         unsynced_users, users_pending, users_unknown =\
             reconcile.check_users(self.stderr, quotas.RESOURCES,

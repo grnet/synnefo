@@ -119,44 +119,14 @@ def get_quotaholder_holdings(user=None):
     return qh.service_get_quotas(user)
 
 
-def get_qh_users_holdings(users=None):
+def get_qh_users_holdings(users=None, projects=None):
     qh = Quotaholder.get()
-    if users is None or len(users) != 1:
-        req = None
-    else:
-        req = users[0]
-    quotas = qh.service_get_quotas(req)
-
-    if users is None:
-        return quotas
-
-    qs = {}
-    for user in users:
-        try:
-            qs[user] = quotas[user]
-        except KeyError:
-            pass
-    return qs
+    return qh.service_get_quotas(user=users, project=projects)
 
 
 def get_qh_project_holdings(projects=None):
     qh = Quotaholder.get()
-    if projects is None or len(projects) != 1:
-        req = None
-    else:
-        req = projects[0]
-    quotas = qh.service_get_project_quotas(req)
-
-    if projects is None:
-        return quotas
-
-    qs = {}
-    for project in projects:
-        try:
-            qs[project] = quotas[project]
-        except KeyError:
-            pass
-    return qs
+    return qh.service_get_project_quotas(project=projects)
 
 
 def transform_quotas(quotas):

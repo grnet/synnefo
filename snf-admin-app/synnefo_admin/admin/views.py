@@ -272,18 +272,18 @@ def details(request, type, id):
 
 
 @admin_user_required
-def list(request, type):
+def catalog(request, type):
     """Admin-Interface generic list view."""
     logging.info("Request for list. Type: %s", type)
 
     if type == 'user':
-        context = user_views.list(request)
+        context = user_views.catalog(request)
         template = user_views.templates['list']
     elif type == 'project':
-        context = project_views.list(request)
+        context = project_views.catalog(request)
         template = project_views.templates['list']
     elif type == 'vm':
-        context = vm_views.list(request)
+        context = vm_views.catalog(request)
         template = vm_views.templates['list']
     else:
         logging.error("Wrong type: %s", type)

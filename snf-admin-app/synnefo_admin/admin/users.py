@@ -193,7 +193,7 @@ def do_action(request, op, id):
         actions[op].f(user)
 
 
-def list(request):
+def catalog(request):
     """List view for Astakos users."""
     context = {}
     context['action_dict'] = generate_actions()
@@ -255,6 +255,7 @@ def get_quotas(user):
 def details(request, query):
     """Details view for Astakos users."""
     error = request.GET.get('error', None)
+    logging.info("Here")
 
     user = get_user(query)
     quotas = get_quotas(user)

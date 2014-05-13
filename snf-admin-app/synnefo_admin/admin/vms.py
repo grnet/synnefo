@@ -122,7 +122,7 @@ def do_action(request, op, id):
         actions[op].f(vm)
 
 
-def list(request):
+def catalog(request):
     """List view for Cyclades VMs."""
     context = {}
     context['action_dict'] = generate_actions()

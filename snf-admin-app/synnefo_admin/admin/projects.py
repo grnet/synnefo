@@ -116,7 +116,7 @@ def do_action(request, op, id):
         actions[op].f(project)
 
 
-def list(request):
+def catalog(request):
     """List view for Astakos projects."""
     context = {}
     context['action_dict'] = generate_actions()

@@ -45,5 +45,5 @@ urlpatterns = patterns(
         'admin_actions_id', name='admin-actions-id'),
     url(r'^actions/$', 'admin_actions', name='admin-actions'),
     url(r'^(?P<type>.*)/(?P<id>.*)$', 'details', name='admin-details'),
-    url(r'^(?P<type>.*)$', 'list', name='admin-list'),
+    url(r'^(?P<type>.*)$', 'catalog', name='admin-list'),
 )

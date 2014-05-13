@@ -1877,7 +1877,7 @@ class GanetiDev(base.Component):
             "CLUSTER_NAME": self.cluster.name,
             "VG": self.cluster.vg,
             "CLUSTER_NETDEV": self.cluster.netdev,
-            "NODES": simplejson.dumps({"nodes": sample_nodes}),
+            "NODES": simplejson.dumps(sample_nodes),
             "DOMAIN": self.cluster.domain
             }
         return [

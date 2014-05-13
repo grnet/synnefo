@@ -2553,12 +2553,14 @@ Upgrade Notes
    v0.14.7 -> v0.14.8 <upgrade/upgrade-0.14.8>
    v0.14.9 -> v0.14.10 <upgrade/upgrade-0.14.10>
    v0.14 -> v0.15 <upgrade/upgrade-0.15>
+   v0.15 -> v0.15.1 <upgrade/upgrade-0.15.1>
 
 
 Changelog, NEWS
 ===============
 
 
+* v0.15.1 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.1>`
 * v0.15 :ref:`Changelog <Changelog-0.15>`, :ref:`NEWS <NEWS-0.15>`
 * v0.14.10 :ref:`Changelog <Changelog-0.14.10>`, :ref:`NEWS <NEWS-0.14.10>`
 * v0.14.9 :ref:`Changelog <Changelog-0.14.9>`, :ref:`NEWS <NEWS-0.14.9>`

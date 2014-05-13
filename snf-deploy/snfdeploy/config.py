@@ -101,6 +101,18 @@ def get_node_info(node):
     return FQDN(**info)
 
 
+def find_all_nodes(setup):
+    ret = []
+    for op in config.setups.options(setup):
+        for tgt in get(setup, op):
+            if config.nodes.has_section(tgt):
+                ret.append(tgt)
+            elif config.ganeti.has_section(tgt):
+                ret += find_all_nodes(tgt)
+
+    return list(set(ret))
+
+
 def init(args):
     config.confdir = args.confdir
     config.autoconf = args.autoconf

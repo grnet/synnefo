@@ -50,7 +50,7 @@ def create_dnsmasq_files(ctx):
     optsfile = open(out + "/dhcp-optsfile", "w")
     conffile = open(out + "/conf-file", "w")
 
-    for node in ctx.nodes:
+    for node in ctx.all_nodes:
         info = config.get_info(node=node)
         # serve ip and name to nodes
         hostsfile.write("%s,%s,%s,2m\n" % (info.mac, info.ip, info.name))
@@ -180,7 +180,7 @@ ln -s /dev/{0}/{1}.disk1 {2}
 
 
 def cluster(ctx):
-    for node in ctx.nodes:
+    for node in ctx.all_nodes:
         node_info = config.get_info(node=node)
         _launch_vm(node_info.name, node_info.mac)
 
@@ -242,7 +242,7 @@ def launch():
     ctx = context.Context()
     assert len(ctx.clusters) == 1
     assert ctx.cluster
-    assert ctx.nodes
+    assert ctx.all_nodes
     image()
     network()
     create_dnsmasq_files(ctx)

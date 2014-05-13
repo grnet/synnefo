@@ -388,7 +388,7 @@ EOF
             ("/etc/bind/rev/synnefo.in-addr.arpa.zone", {"domain": d}, {}),
             ("/etc/bind/rev/synnefo.ip6.arpa.zone", {"domain": d}, {}),
             ("/etc/bind/named.conf.options",
-             {"node_ips": ";".join(config.all_ips)}, {}),
+             {"node_ips": ";".join(self.ctx.all_ips)}, {}),
             ("/root/ddns/ddns.key", {}, {"remote": "/etc/bind/ddns.key"}),
             ]
 
@@ -1866,7 +1866,7 @@ class GanetiDev(base.Component):
 
     def _configure(self):
         sample_nodes = []
-        for node in self.ctx.nodes:
+        for node in self.ctx.cluster_nodes:
             n = config.get_info(node=node)
             sample_nodes.append({
                 "primary": n.fqdn,
@@ -1895,7 +1895,7 @@ class GanetiDev(base.Component):
     @base.run_cmds
     def test(self):
         ret = []
-        for n in self.ctx.nodes:
+        for n in self.ctx.cluster_nodes:
             info = config.get_info(node=n)
             ret.append("ssh %s date" % info.name)
             ret.append("ssh %s date" % info.ip)

@@ -98,8 +98,17 @@ class Context(object):
         return config.get(self.cluster, constants.VMC)
 
     @property
-    def nodes(self):
+    def cluster_nodes(self):
         return list(set(self.masters + self.vmcs))
+
+    @property
+    def all_nodes(self):
+        return config.find_all_nodes(self.setup)
+
+    @property
+    def all_ips(self):
+        l = lambda x: config.get_node_info(x).ip
+        return [l(n) for n in self.all_nodes]
 
     def get(self, role):
         try:

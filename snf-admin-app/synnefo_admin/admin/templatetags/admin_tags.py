@@ -266,11 +266,3 @@ def get_details_template(type):
     template = 'admin/_' + type + '_details.html'
     logging.info("Requested the %s", template)
     return template
-
-
-@register.filter
-def get_index_template(type):
-    """Get the correct template for the provided item."""
-    template = 'admin/_' + type + '_row.html'
-    logging.info("Requested the %s", template)
-    return template

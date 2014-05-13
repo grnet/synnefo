@@ -1,13 +1,53 @@
-<div class="account-accept-form account-action {% if account_accepted %}inactive{% endif %}">
-{% if account_accepted %}
-<form method="post" action="{% url account-reject account %}">
-  <input type="hidden" name="token" value="{{ token }}" />
-  <input type="submit" value="REJECT" />
-</form>
-{% else %}
-<form method="post" action="{% url account-accept account %}">
-  <input type="hidden" name="token" value="{{ token }}" />
-  <input type="submit" value="ACCEPT" />
-</form>
+{% load admin_tags %}
+
+
+
+<ul class="buttons">
+{% for op in available_ops %}
+{% if usermodel|check_operation:op %}
+    <li>
+    <a data-target="#{{ op }}" class="{{ op }} btn" data-toggle="modal">
+        {{ op }}</a>
+    </li>
 {% endif %}
+{% endfor %}
+</ul>
+
+{% comment %}
+{% for op in available_ops %}
+{% if usermodel|check_operation:op %}
+<div class="account-{{ op }}-form account-action">
+    <form method="post" action="{% url account-actions op account %}">
+  <input type="hidden" name="token" value="{{ token }}" />
+  <input type="submit" value="{{ op }}" />
+</form>
 </div>
+{% endif %}
+{% endfor %}
+{% endcomment %}
+
+{% for op in available_ops %}
+<div class="modal fade in hide" id={{ op }}>
+  <div class="modal-header">
+    <a class="close" data-dismiss="modal">×</a>
+    <h3>You have chosen to {{ op }} <em>"{{ usermodel.realname }}"</em></h3>
+</div>
+  <div class="modal-body">
+    <ul>
+        <li><span class="name">{{ usermodel.realname }} </span><span class="email">
+            {{ usermodel.email }}</span></li>
+    </ul>
+{% if op == 'contact' %}
+      <textarea name="text" form="contactForm"></textarea>
+{% endif %}
+  </div>
+ <div class="modal-footer">
+<form method="post" action="{% url account-actions op account %}" id="contactForm">
+    <a href="#" class="btn" data-dismiss="modal">Cancel</a>
+    <button type="submit" class="btn">OK!</button>
+    <input type="hidden" name="token" value="{{ token }}" />
+</form>
+  </div>
+</div>
+{% endfor %}
+

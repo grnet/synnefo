@@ -1,6 +1,7 @@
 {% extends "admin/base.html" %}
 
 {% block content %}
+    {% block filter-list %}
         <div class="well well-lg">
           <div class="btn-group filters">
             <a href="" class="btn">Active<span class="badge badge-info">{{ active }}</span></a>
@@ -9,19 +10,15 @@
             <a href="" class="btn">Not Verified<span class="badge badge-info">{{ unverified }}</span></a>
           </div>
         </div>
-    {% block filter-list %}
-        {% comment %}
-        {% endcomment %}
     {% endblock filter-list %}
 
     {% block action-list %}
-        {% include "admin/_index_action_list.html" %}
+        {% include "admin/action_list_vertical.html" %}
     {% endblock action-list %}
 
-    <div class="info-block well info">
-      {% block table-area %}
-      {% endblock %}
-    </div>
+    {% block table-area %}
+        {% include "admin/table.html" %}
+    {% endblock %}
 
     <!-- Modals -->
     {% block action-modals %}

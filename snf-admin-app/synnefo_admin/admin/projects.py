@@ -41,7 +41,7 @@ from astakos.im.models import AstakosUser, ProjectMembership, Project
 from astakos.im.functions import approve_application
 
 templates = {
-    'index': 'admin/project_index.html',
+    'list': 'admin/project_list.html',
     'details': 'admin/project_details.html',
 }
 
@@ -116,8 +116,8 @@ def do_action(request, op, id):
         actions[op].f(project)
 
 
-def index(request):
-    """Index view for Astakos projects."""
+def list(request):
+    """List view for Astakos projects."""
     context = {}
     context['action_dict'] = generate_actions()
 

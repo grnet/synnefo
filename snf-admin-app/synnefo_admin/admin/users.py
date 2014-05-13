@@ -45,11 +45,13 @@ from astakos.im.models import AstakosUser, ProjectMembership, Project
 from astakos.api.quotas import get_quota_usage
 from astakos.im.functions import send_plain as send_email
 
+from eztables.views import DatatablesView
+
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
 SHOW_DELETED_VMS = getattr(settings, 'ADMIN_SHOW_DELETED_VMS', False)
 
 templates = {
-    'index': 'admin/user_index.html',
+    'list': 'admin/user_list.html',
     'details': 'admin/user_details.html',
 }
 
@@ -71,6 +73,25 @@ def get_user(query):
         return None
 
     return user
+
+
+class UserJSONView(DatatablesView):
+    model = AstakosUser
+    fields = ('uuid',
+              'email',
+              'first_name',
+              'last_name',
+              'is_active',
+              )
+
+    extra = True
+
+    def get_extra_data_row(self, inst):
+        return {
+            'id': inst.uuid,
+            'realname': inst.realname,
+            'status': inst.status_display,
+        }
 
 
 class UserAction(AdminAction):
@@ -127,10 +148,12 @@ def do_action(request, op, id):
         actions[op].f(user)
 
 
-def index(request):
-    """Index view for Astakos users."""
+def list(request):
+    """List view for Astakos users."""
     context = {}
     context['action_dict'] = generate_actions()
+    context['columns'] = ["Column 1", "E-mail", "First Name", "Last Name",
+                          "Active", "Details", "Summary"]
 
     all = users.get_all()
     logging.info("These are the users %s", all)
@@ -162,8 +185,8 @@ def get_quotas(user):
 
         pending, project_pending, project_limit, project_usage, usage.
 
-    Note, the get_quota_usage function returns many
-    dicts, but we only keep the ones that have project_limit > 0
+    Note, the get_quota_usage function returns many dicts, but we only keep the
+    ones that have project_limit > 0
     """
     usage = get_quota_usage(user)
 

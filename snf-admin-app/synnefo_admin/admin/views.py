@@ -64,7 +64,6 @@ import copy
 # for django-eztables
 from django.template import add_to_builtins
 add_to_builtins('eztables.templatetags.eztables')
-from eztables.views import DatatablesView
 
 logger = logging.getLogger(__name__)
 
@@ -235,29 +234,23 @@ def stats(request):
                               extra_context=default_dict)
 
 
-class GenericJSONView(DatatablesView):
-    model = AstakosUser
-    fields = ('uuid',
-              'email',
-              'is_active',
-              'first_name',
-              'last_name',
-              #'status_display',
-              )
+@admin_user_required
+def json_list(request, type):
+    """Return a class-based view based on the given type."""
+    logging.info("Request for json. Type: %s", type)
 
-    extra = True
-
-    def get_extra_data_row(self, inst):
-        return {
-            'id': inst.uuid,
-            'realname': inst.realname,
-            'status': inst.status_display,
-        }
+    if type == 'user':
+        return user_views.UserJSONView.as_view()(request)
+    if type == 'project':
+        return project_views.ProjectJSONView.as_view()(request)
+    if type == 'vm':
+        return vm_views.VMJSONView.as_view()(request)
 
 
 @csrf_exempt
 @admin_user_required
 def details(request, type, id):
+    """Admin-Interface generic details view."""
     logging.info("Request for details. Type: %s, ID: %s", type, id)
 
     if type == 'user':
@@ -278,21 +271,20 @@ def details(request, type, id):
     return direct_to_template(request, template, extra_context=context)
 
 
-#@csrf_exempt
-#@admin_user_required
-def index(request, type):
-    """Admin-Interface main index view."""
-    logging.info("Request for index. Type: %s", type)
+@admin_user_required
+def list(request, type):
+    """Admin-Interface generic list view."""
+    logging.info("Request for list. Type: %s", type)
 
     if type == 'user':
-        context = user_views.index(request)
-        template = user_views.templates['index']
+        context = user_views.list(request)
+        template = user_views.templates['list']
     elif type == 'project':
-        context = project_views.index(request)
-        template = project_views.templates['index']
+        context = project_views.list(request)
+        template = project_views.templates['list']
     elif type == 'vm':
-        context = vm_views.index(request)
-        template = vm_views.templates['index']
+        context = vm_views.list(request)
+        template = vm_views.templates['list']
     else:
         logging.error("Wrong type: %s", type)
         # TODO: Return an error here
@@ -352,5 +344,5 @@ def admin_actions(request):
     except:
         logger.exception("admin_actions")
 
-    redirect = reverse('admin-index', args=(target,))
+    redirect = reverse('admin-list', args=(target,))
     return HttpResponseRedirect(redirect)

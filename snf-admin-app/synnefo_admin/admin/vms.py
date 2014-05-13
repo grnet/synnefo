@@ -45,7 +45,7 @@ from astakos.im.functions import send_plain as send_email
 from synnefo.logic import servers as servers_backend
 
 templates = {
-    'index': 'admin/vm_index.html',
+    'list': 'admin/vm_list.html',
     'details': 'admin/vm_details.html',
 }
 
@@ -122,8 +122,8 @@ def do_action(request, op, id):
         actions[op].f(vm)
 
 
-def index(request):
-    """Index view for Cyclades VMs."""
+def list(request):
+    """List view for Cyclades VMs."""
     context = {}
     context['action_dict'] = generate_actions()
 

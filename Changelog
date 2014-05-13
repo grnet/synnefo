@@ -17,12 +17,17 @@ Synnefo-wide
 ------------
 
 * Documentation: New CentOS installation guide.
+* Handle Unicode issue in proxy requests.
 
 Astakos
 -------
 
 * Change statistics API to expose statistics for all users and for users
   per authentication provider (users that are exclusively using a provider).
+* Fix minor problem in weblogin, which could lead to unexpected exception
+* Fix Authenticate Identity API call with trailing slash, which used to fail
+  with 405 (Method not allowed)
+
 
 Cyclades
 --------
@@ -33,18 +38,28 @@ Cyclades
 * Extend statistics API with detailed information about Ganeti clusters,
   virtual servers and networks, public IPv4 pools and images.
 
+Cyclades UI
+-----------
+
+* Include icons for Oracle Linux OS (oraclelinux)
+* Include a null gateway IP when creating subnets for private networks to
+  override the default gateway IP of Neutron API.
+
 Pithos
 ------
 
 * Support selectable storage backend
 
   * new settings:
-   - PITHOS_BACKEND_STORAGE. Possible values are 'nfs' and 'rados'.
-   - PITHOS_RADOS_CEPH_CONF. The Ceph configuration file.
+   - PITHOS_BACKEND_STORAGE: Possible values are 'nfs' and 'rados'.
+   - PITHOS_RADOS_CEPH_CONF: The Ceph configuration file.
 
 * Remove unused variable PITHOS_RADOS_STORAGE
-* Add 'pithos-sync-rados.sh' shell script in 'contrib' directory,
-  a Pithos+ object synchronization tool between NFS and RADOS.
+* Add 'pithos-sync-rados.sh' shell script in Pithos tools,
+  a Pithos object synchronization tool from NFS to Rados.
+* Fix missing Content-Disposition header in object response, which caused
+  publicly shared objects to be saved with a meaningless name
+  (without extension)
 
 
 .. _Changelog-0.15:

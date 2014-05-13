@@ -234,8 +234,8 @@ class ComponentRunner(FabricRunner):
             c(ctx=ctx).setup()
 
     def setup(self):
+        self._check_and_install_required()
         try:
-            self._check_and_install_required()
             self._check_status()
             self._check_conflicts()
         except BaseException as e:

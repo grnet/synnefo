@@ -1163,8 +1163,8 @@ After configuration is done, we initialize the servers on node2:
 
 .. code-block:: console
 
-    root@node2:~ # /etc/init.d/gunicorn restart
-    root@node2:~ # service apache2 restart
+    root@node2:~ # service gunicorn restart
+    root@node2:~ # service httpd restart
 
 You have now finished the Pithos setup. Let's test it now.
 
@@ -1266,11 +1266,11 @@ not familiar with Ganeti.
 
 Ganeti Prerequisites
 --------------------
-You're gonna need the ``lvm2`` and ``vlan`` packages, so run:
+You're gonna need the ``lvm2``, ``vlan`` and ``bridge-utils`` packages, so run:
 
 .. code-block:: console
 
-   # yum install lvm2 vconfig
+   # yum install lvm2 vconfig bridge-utils
 
 Ganeti requires FQDN. To properly configure your nodes please
 see `this <http://docs.ganeti.org/ganeti/2.6/html/install.html#hostname-issues>`_.
@@ -1337,10 +1337,10 @@ respectively):
 
 .. code-block:: console
 
-   # brctl addbr 1
-   # brctl addbr 2
-   # brctl addif br1 eth1.1
-   # brctl addif br2 eth1.2
+   # brctl addbr br1
+   # brctl addbr br2
+   # brctl addif br1 eth0.1
+   # brctl addif br2 eth0.2
 
 For more information on bridges read `this <https://wiki.debian.org/BridgeNetworkConnections>`_.
 
@@ -1661,7 +1661,7 @@ Install snf-network on all Ganeti nodes:
 
 .. code-block:: console
 
-   # apt-get install snf-network
+   # yum install snf-network
 
 Then, in :file:`/etc/default/snf-network` set:
 
@@ -1680,8 +1680,8 @@ snf-network and information provided by Ganeti.
 
 .. code-block:: console
 
-   # apt-get install python-nfqueue=0.4+physindev-1~wheezy
-   # apt-get install nfdhcpd
+   # yum install python-nfqueue
+   # yum install nfdhcpd
 
 Edit ``/etc/nfdhcpd/nfdhcpd.conf`` to reflect your network configuration. At
 least, set the ``dhcp_queue`` variable to ``42`` and the ``nameservers``

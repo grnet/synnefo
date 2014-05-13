@@ -1321,11 +1321,11 @@ not familiar with Ganeti.
 
 Ganeti Prerequisites
 --------------------
-You're gonna need the ``lvm2`` and ``vlan`` packages, so run:
+You're gonna need the ``lvm2``, ``vlan`` and ``bridge-utils`` packages, so run:
 
 .. code-block:: console
 
-   # apt-get install lvm2 vlan
+   # apt-get install lvm2 vlan bridge-utils
 
 Ganeti requires FQDN. To properly configure your nodes please
 see `this <http://docs.ganeti.org/ganeti/2.6/html/install.html#hostname-issues>`_.
@@ -1392,10 +1392,10 @@ respectively):
 
 .. code-block:: console
 
-   # brctl addbr 1
-   # brctl addbr 2
-   # brctl addif br1 eth1.1
-   # brctl addif br2 eth1.2
+   # brctl addbr br1
+   # brctl addbr br2
+   # brctl addif br1 eth0.1
+   # brctl addif br2 eth0.2
 
 For more information on bridges read `this <https://wiki.debian.org/BridgeNetworkConnections>`_.
 

@@ -632,8 +632,11 @@ Enabling this feature consists of the following steps:
 
         pithos-host$ /etc/init.d/gunicorn restart
 
+
+.. _select_pithos_storage:
+
 Select Pithos storage backend
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Starting from Synnefo 0.15.1 we introduce the ability to select or change the
 storage backend. If you have already enabled and configured RADOS as your
@@ -643,9 +646,10 @@ backend being only RADOS.
 A new variable has been introduced called PITHOS_BACKEND_STORAGE with
 possible values 'nfs' and 'rados', default value is 'nfs'.
 For those users that need to migrate from NFS to RADOS and have not enabled the
-dual mode of operation from the beginning of their installation a
-synchronization script is provided in the 'contrib' directory called
-'pithos-sync-rados.sh'
+dual mode of operation from the beginning of their installation, you can
+use a synchronization script that is provided in order to synchronize the data
+from NFS to Rados. The script can be found at
+`/usr/lib/pithos/tools/pithos-sync-rados.sh`.
 
 Since this version the dual mode of operation is not supported any more,
 meaning you will not be able to keep double Pithos objects anymore in NFS and

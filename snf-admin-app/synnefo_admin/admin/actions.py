@@ -32,30 +32,69 @@
 # or implied, of GRNET S.A.
 
 
+def always_apply(**kwargs):
+    """Function that can be used for checking if an action can apply to a user.
+
+    This function will answer always "True".
+    """
+    return True
+
+
 class AdminAction:
 
     """Generic class for actions on admin targets.
 
     Attributes:
         name:           The name of the action
-        target:         The target of the action
-        f:              The function that will trigger once an action is
+        target:         The target group of the action
+        check:          The function that will trigger once an action is
                         requested.
         allowed_groups: The groups that are allowed to author this action.
         severity:       The negative impact of the action.
                         Accepted values: trivial, big, irreversible
         description:    A short text that describes an action
+
+    Methods:
+        f:              The function that will trigger once an action is
+                        requested.
+        can_apply:      The function that checks if an action can be applied to
+                        a user.
     """
 
-    def __init__(self, name, target, f, allowed_groups='admin',
+    def __init__(self, name, target, f, c=None, allowed_groups='admin',
                  severity='trivial', description=''):
-        """Initialize the class with provided values."""
+        """Initialize the AdminAction class.
+
+        Requirements:
+            name:           The name of the action
+            target:         The target group of the action
+            f:              The function that will trigger once an action is
+                            requested.
+
+        Optional:
+            c:              The function that checks if an action can be
+                            applied to a user. By default no check is done.
+            allowed_groups: The groups that are allowed to author this action.
+            severity:       The negative impact of the action.
+                            Accepted values: trivial, big, irreversible
+                            Default: trivial
+            description:    A short text that describes an action: Default: ''
+        """
         self.name = name
         self.description = description
         self.target = target
         self.severity = severity
         self.allowed_groups = allowed_groups
         self.f = f
+        if c:
+            self.can_apply = c
+
+    def can_apply(self, _):
+        """Check if an action can apply to a user.
+
+        This method will answer always "True".
+        """
+        return True
 
 
 class AdminActionNotPermitted(Exception):

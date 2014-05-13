@@ -75,6 +75,24 @@ def get_user(query):
     return user
 
 
+def get_allowed_actions(user):
+    """Get a list of actions that can apply to a user."""
+    allowed_actions = []
+    actions = generate_actions()
+
+    for key, action in actions.iteritems():
+        if action.can_apply(user):
+            allowed_actions.append(key)
+
+    return allowed_actions
+
+
+def get_enabled_providers(user):
+    """Get a comma-seperated string with the user's enabled providers."""
+    ep = [prov.module for prov in user.get_enabled_auth_providers()]
+    return ", ".join(ep)
+
+
 class UserJSONView(DatatablesView):
     model = AstakosUser
     fields = ('uuid',
@@ -88,9 +106,31 @@ class UserJSONView(DatatablesView):
 
     def get_extra_data_row(self, inst):
         return {
-            'id': inst.uuid,
-            'realname': inst.realname,
-            'status': inst.status_display,
+            'allowed_actions': {
+                'diplay_name': "",
+                'value': get_allowed_actions(inst),
+                'visible': False,
+            }, 'id': {
+                'diplay_name': "UUID",
+                'value': inst.uuid,
+                'visible': True,
+            }, 'contact_mail': {
+                'diplay_name': "Contact mail",
+                'value': inst.email,
+                'visible': False,
+            }, 'contact_name': {
+                'diplay_name': "Contact name",
+                'value': inst.realname,
+                'visible': False,
+            }, 'enabled_providers': {
+                'diplay_name': "Enabled providers",
+                'value': get_enabled_providers(inst),
+                'visible': True,
+            }, 'moderation_policy': {
+                'diplay_name': "Moderation policy",
+                'value': inst.accepted_policy,
+                'visible': True,
+            }
         }
 
 
@@ -115,18 +155,23 @@ def generate_actions():
     actions = OrderedDict()
 
     actions['activate'] = UserAction(name='Activate', f=users.activate,
+                                     c=users.check_activate,
                                      severity='trivial')
 
     actions['deactivate'] = UserAction(name='Deactivate', f=users.deactivate,
+                                       c=users.check_deactivate,
                                        severity='big')
 
     actions['accept'] = UserAction(name='Accept', f=users.accept,
+                                   c=users.check_accept,
                                    severity='trivial')
 
     actions['reject'] = UserAction(name='Reject', f=users.reject,
+                                   c=users.check_reject,
                                    severity='irreversible')
 
     actions['verify'] = UserAction(name='Verify', f=users.verify,
+                                   c=users.check_verify,
                                    severity='trivial')
 
     actions['contact'] = UserAction(name='Send e-mail', f=send_email,

@@ -200,21 +200,6 @@ register.filter('check_operation', check_operation)
 
 
 @register.filter
-def get_user_operation_list(user):
-    """Get a space separated list of operations that apply to a user.
-
-    The list is returned as a string, in order to be used in html tags
-    """
-    op_list = ','
-    for op in ['activate', 'deactivate', 'accept', 'reject', 'verify',
-               'contact']:
-        if check_operation(user, op):
-            op_list += op + ','
-
-    return op_list
-
-
-@register.filter
 def get_vm_operation_list(vm):
     """Get a space separated list of operations that apply to a vm.
 

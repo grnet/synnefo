@@ -909,8 +909,8 @@ class AstakosClient(object):
         path = join_urls(path, "action")
         req_headers = {'content-type': 'application/json'}
         req_body = parse_request({action: {
-                    "reasons": reason,
-                    "app_id": app_id}}, self.logger)
+            "reasons": reason,
+            "app_id": app_id}}, self.logger)
         return self._call_astakos(path, headers=req_headers,
                                   body=req_body, method="POST")
 

@@ -27,8 +27,9 @@ QuotaDict = lambda: defaultdict(lambda: defaultdict(dict))
 PROJECT_TAG = "project:"
 USER_TAG = "user:"
 
+
 def project_ref(value):
-    return  PROJECT_TAG + value
+    return PROJECT_TAG + value
 
 
 def get_project_ref(project):

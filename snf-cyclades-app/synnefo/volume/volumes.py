@@ -21,6 +21,7 @@ from snf_django.lib.api import faults
 from synnefo.db.models import Volume, VolumeMetadata
 from synnefo.volume import util
 from synnefo.logic import server_attachments, utils
+from synnefo import quotas
 
 log = logging.getLogger(__name__)
 
@@ -203,3 +204,17 @@ def update(volume, name=None, description=None, delete_on_termination=None):
 
     volume.save()
     return volume
+
+
+@transaction.commit_on_success
+def reassign_volume(volume, project):
+    if volume.index == 0:
+        raise faults.Conflict("Cannot reassign: %s is a system volume" %
+                              volume)
+    action_fields = {"from_project": volume.project, "to_project": project}
+    log.info("Reassigning volume %s from project %s to %s",
+             volume, volume.project, project)
+    volume.project = project
+    volume.save()
+    quotas.issue_and_accept_commission(volume, action="REASSIGN",
+                                       action_fields=action_fields)

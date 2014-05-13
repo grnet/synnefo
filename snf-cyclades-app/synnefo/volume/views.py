@@ -263,6 +263,19 @@ def delete_volume_metadata_item(request, volume_id, key):
     return HttpResponse(status=200)
 
 
+@api.api_method(http_method="POST", user_required=True, logger=log)
+@transaction.commit_on_success
+def reassign_volume(request, volume_id, args):
+    req = utils.get_json_body(request)
+    log.debug('reassign_volume volume_id: %s, request: %s', volume_id, req)
+    project = args.get("project")
+    if project is None:
+        raise faults.BadRequest("Missing 'project' attribute.")
+    volume = util.get_volume(request.user_uniq, volume_id, for_update=True)
+    volumes.reassign_volume(volume, project)
+    return HttpResponse(status=200)
+
+
 def snapshot_to_dict(snapshot, detail=True):
     owner = snapshot['owner']
     status = snapshot['status']

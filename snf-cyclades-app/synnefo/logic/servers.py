@@ -268,6 +268,7 @@ def reassign(vm, project):
              vm, vm.project, project)
     vm.project = project
     vm.save()
+    vm.volumes.filter(index=0, deleted=False).update(project=project)
     quotas.issue_and_accept_commission(vm, action="REASSIGN",
                                        action_fields=action_fields)
 

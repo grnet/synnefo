@@ -371,6 +371,8 @@ def get_commission_info(resource, action, action_fields=None):
                     (project, "cyclades.total_ram"): (ram - flavor.ram) << 20}
         elif action == "REASSIGN":
             resources.update(offline_resources)
+            system_volumes = resource.volumes.filter(index=0, deleted=False)
+            resources.update(get_volume_resources(system_volumes))
             if resource.operstate in ["STARTED", "BUILD", "ERROR"]:
                 resources.update(online_resources)
             return resources
@@ -412,6 +414,8 @@ def get_commission_info(resource, action, action_fields=None):
             return resources
         elif action == "DESTROY":
             return reverse_quantities(resources)
+        elif action == "REASSIGN":
+            return resources
         else:
             return None
 

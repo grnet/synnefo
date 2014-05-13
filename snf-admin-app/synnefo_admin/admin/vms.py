@@ -89,7 +89,7 @@ def generate_actions():
     actions['shutdown'] = VMAction(name='Shutdown', f=servers_backend.stop,
                                    severity='big')
 
-    actions['restart'] = VMAction(name='Restart', f=servers_backend.reboot,
+    actions['restart'] = VMAction(name='Reboot', f=servers_backend.reboot,
                                   severity='big')
 
     actions['destroy'] = VMAction(name='Destroy', f=servers_backend.destroy,

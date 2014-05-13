@@ -50,8 +50,10 @@ class AdminAction:
         check:          The function that will trigger once an action is
                         requested.
         allowed_groups: The groups that are allowed to author this action.
-        severity:       The negative impact of the action.
-                        Accepted values: trivial, big, irreversible
+        karma:          The impact of the action.
+                        Accepted values: good, neutral, bad.
+        reversible:     Whether the action is reversible or not.
+                        Accepted values: True, False.
         description:    A short text that describes an action
 
     Methods:
@@ -62,7 +64,7 @@ class AdminAction:
     """
 
     def __init__(self, name, target, f, c=None, allowed_groups='admin',
-                 severity='trivial', description=''):
+                 karma='neutral', reversible=True, description=''):
         """Initialize the AdminAction class.
 
         Requirements:
@@ -83,7 +85,8 @@ class AdminAction:
         self.name = name
         self.description = description
         self.target = target
-        self.severity = severity
+        self.karma = karma
+        self.reversible = reversible
         self.allowed_groups = allowed_groups
         self.f = f
         if c:

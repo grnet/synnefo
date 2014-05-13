@@ -156,26 +156,25 @@ def generate_actions():
 
     actions['activate'] = UserAction(name='Activate', f=users.activate,
                                      c=users.check_activate,
-                                     severity='trivial')
+                                     karma='good', reversible=True)
 
     actions['deactivate'] = UserAction(name='Deactivate', f=users.deactivate,
                                        c=users.check_deactivate,
-                                       severity='big')
+                                       karma='bad', reversible=True)
 
     actions['accept'] = UserAction(name='Accept', f=users.accept,
                                    c=users.check_accept,
-                                   severity='trivial')
+                                   karma='good', reversible=False)
 
     actions['reject'] = UserAction(name='Reject', f=users.reject,
                                    c=users.check_reject,
-                                   severity='irreversible')
+                                   karma='bad', reversible=False)
 
     actions['verify'] = UserAction(name='Verify', f=users.verify,
                                    c=users.check_verify,
-                                   severity='trivial')
+                                   karma='good', reversible=False)
 
-    actions['contact'] = UserAction(name='Send e-mail', f=send_email,
-                                    severity='trivial')
+    actions['contact'] = UserAction(name='Send e-mail', f=send_email)
     return actions
 
 

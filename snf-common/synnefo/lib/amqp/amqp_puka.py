@@ -414,7 +414,7 @@ class AMQPPukaClient(object):
             # Try to get confirmations
             if self.confirms and self.unacked:
                 self.log.debug("Getting pending publisher confirmations..")
-                self.get_confirms(timeout=timeout)
+                self.get_confirms()
             # And close the connection
             close_promise = self.client.close()
             self.log.debug("Waiting for connection to close..")

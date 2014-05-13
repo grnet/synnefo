@@ -578,6 +578,7 @@ class Ganeti(base.Component):
     def _configure(self):
         return [
             ("/etc/ganeti/file-storage-paths", {}, {}),
+            ("/etc/default/ganeti-instance-debootstrap", {}, {}),
             ]
 
     def _prepare_lvm(self):

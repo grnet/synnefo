@@ -39,12 +39,12 @@ class GetDBHoldingsTestCase(TestCase):
         mfactory.VirtualMachineFactory(flavor=flavor, userid="user1",
                                        operstate="BUILD")
         mfactory.VolumeFactory(userid="user1", size=20, machine=None)
-        user_holdings = {"user1": {None: {"cyclades.vm": 1,
-                                          "cyclades.total_cpu": 24,
-                                          "cyclades.cpu": 24,
-                                          "cyclades.disk": 20 << 30,
-                                          "cyclades.total_ram": 8192 << 20,
-                                          "cyclades.ram": 8192 << 20}}}
+        user_holdings = {"user1": {"user1": {"cyclades.vm": 1,
+                                             "cyclades.total_cpu": 24,
+                                             "cyclades.cpu": 24,
+                                             "cyclades.disk": 20 << 30,
+                                             "cyclades.total_ram": 8192 << 20,
+                                             "cyclades.ram": 8192 << 20}}}
         holdings = util.get_db_holdings(user="user1")
         self.assertEqual(holdings, user_holdings)
         holdings = util.get_db_holdings()
@@ -54,26 +54,27 @@ class GetDBHoldingsTestCase(TestCase):
         mfactory.VirtualMachineFactory(flavor=flavor, userid="user2",
                                        operstate="STARTED")
         mfactory.VolumeFactory(userid="user2", size=30, machine=None)
-        user_holdings = {"user2": {None: {"cyclades.vm": 1,
-                                          "cyclades.total_cpu": 24,
-                                          "cyclades.cpu": 24,
-                                          "cyclades.disk": 30 << 30,
-                                          "cyclades.total_ram": 8192 << 20,
-                                          "cyclades.ram": 8192 << 20}}}
+        user_holdings = {"user2": {"user2": {"cyclades.vm": 1,
+                                             "cyclades.total_cpu": 24,
+                                             "cyclades.cpu": 24,
+                                             "cyclades.disk": 30 << 30,
+                                             "cyclades.total_ram": 8192 << 20,
+                                             "cyclades.ram": 8192 << 20}}}
         holdings = util.get_db_holdings(user="user2")
         self.assertEqual(holdings, user_holdings)
         mfactory.VirtualMachineFactory(flavor=flavor, userid="user3",
                                        operstate="STOPPED")
-        user_holdings = {"user3": {None: {"cyclades.vm": 1,
-                                   "cyclades.total_cpu": 24,
-                                   "cyclades.total_ram": 8589934592}}}
+        user_holdings = {"user3": {"user3": {"cyclades.vm": 1,
+                                             "cyclades.total_cpu": 24,
+                                             "cyclades.total_ram": 8589934592}}
+                         }
         holdings = util.get_db_holdings(user="user3")
         self.assertEqual(holdings, user_holdings)
 
     def test_network_holdings(self):
         mfactory.NetworkFactory(userid="user1")
         mfactory.NetworkFactory(userid="user2")
-        user_holdings = {"user2": {None: {"cyclades.network.private": 1}}}
+        user_holdings = {"user2": {"user2": {"cyclades.network.private": 1}}}
         holdings = util.get_db_holdings(user="user2")
         self.assertEqual(holdings, user_holdings)
         holdings = util.get_db_holdings()
@@ -85,9 +86,9 @@ class GetDBHoldingsTestCase(TestCase):
         mfactory.IPv4AddressFactory(userid="user2", floating_ip=True)
         mfactory.IPv4AddressFactory(userid="user3", floating_ip=True)
         holdings = util.get_db_holdings()
-        self.assertEqual(holdings["user1"][None]["cyclades.floating_ip"], 2)
-        self.assertEqual(holdings["user2"][None]["cyclades.floating_ip"], 1)
-        self.assertEqual(holdings["user3"][None]["cyclades.floating_ip"], 1)
+        self.assertEqual(holdings["user1"]["user1"]["cyclades.floating_ip"], 2)
+        self.assertEqual(holdings["user2"]["user2"]["cyclades.floating_ip"], 1)
+        self.assertEqual(holdings["user3"]["user3"]["cyclades.floating_ip"], 1)
 
 
 @patch("synnefo.quotas.get_quotaholder_pending")
@@ -123,6 +124,7 @@ class GetCommissionInfoTest(TestCase):
         vm = mfactory.VirtualMachineFactory(flavor=flavor)
         mfactory.VolumeFactory(size=20, machine=vm, deleted=False,
                                delete_on_termination=True)
+        vm.volumes.update(project=vm.project)
         #commission = quotas.get_commission_info(vm, "BUILD")
         #self.assertEqual({"cyclades.vm": 1,
         #                  "cyclades.cpu": 2,

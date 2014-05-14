@@ -177,50 +177,6 @@ def get_state_list(user):
     return state_list
 
 
-def check_operation(user, op):
-    """Check if an opearation can apply to a user.
-
-    The return value is boolean.
-    """
-    if op == 'activate':
-        return users.check_activate(user)
-    elif op == 'deactivate':
-        return users.check_deactivate(user)
-    elif op == 'accept':
-        return users.check_accept(user)
-    elif op == 'reject':
-        return users.check_reject(user)
-    elif op == 'verify':
-        return users.check_verify(user)
-    elif op == 'contact':
-        return True
-    else:
-        return False
-register.filter('check_operation', check_operation)
-
-
-@register.filter
-def get_vm_operation_list(vm):
-    """Get a space separated list of operations that apply to a vm.
-
-    The list is returned as a string, in order to be used in html tags
-    """
-    op_list = ',start,shutdown,destroy,suspend,release,reassign,contact,'
-
-    return op_list
-
-
-@register.filter
-def get_project_operation_list(project):
-    """Get a space separated list of operations that apply to a project.
-
-    The list is returned as a string, in order to be used in html tags
-    """
-    op_list = ',approve,contact,'
-
-    return op_list
-
-
 @register.filter
 def display_list_type(type):
     """Display the type of an item list in a human readable way."""

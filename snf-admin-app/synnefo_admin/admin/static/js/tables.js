@@ -1,9 +1,23 @@
 var mydata;
-var cols = [];
-var myflag = true;
+
 (function($, Django){
 
 $(function(){
+    var selected = {
+        items: [],
+        actions: {}
+    };
+
+    var availableActions = {};
+    var allowedActions= {};
+    $('.actionbar button').each(function() {
+        availableActions[$(this).data('action')] = true;
+    });
+
+    for(var prop in availableActions) {
+        allowedActions[prop] = true;
+    }
+
 
     var url = $('#table-items-total').data("url");
     var serverside = Boolean($('#table-items-total').data("server-side"));
@@ -63,25 +77,25 @@ $(function(){
         "order": [1, "asc"],
         "createdRow": function(row, data, dataIndex) {
           
-            var dataL = data.length;
-            var extraIndex = dataL -1;
-            row.id = data[extraIndex].id.value;
-            clickSummary(row);
+            var extraIndex = data.length - 1;
+            row.id = data[extraIndex].id.value; //sets the dom id
 
+            clickSummary(row);
         } 
     });
 
     $(tableDomID).on('click', 'tbody tr', function() {
-        
+        var info = $(tableDomID).dataTable().api().cell($(this).find('td:last-child')).data();
         if($(this).hasClass('selected')) {
             $(this).removeClass('selected');
+            removeItem(info.id.value);
         }
         else {
             $(this).addClass('selected');
-            
+            addItem(info)
         }
     });
-});
+
 
 
 function summaryTemplate(data) {
@@ -101,7 +115,7 @@ function summaryTemplate(data) {
 
     var html = '<a href="#" class="summary-expand expand-area"><span class="snf-icon snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+list.join(',').replace(/,/g, '')+'</dl>';
     return html;
-}
+};
 
     function clickSummary(row) {
         $(row).find('a.expand-area').click(function(e) {
@@ -129,6 +143,100 @@ function summaryTemplate(data) {
             });
 
         })
+    };
+
+
+    function addItem(infoObj) {
+        var $selectedNum = $('.sidebar button').find('.selected-num');
+        var itemsL;
+        var newItem = {}
+        var isNew = true;
+        var actionsArray = infoObj.allowed_actions.value;
+        var actionsL = actionsArray.length;
+        console.log('addItem')
+        var newItem = {
+           "id": infoObj.id.value,
+           "item_name": infoObj.item_name.value,
+           "contact_name": infoObj.contact_name.value,
+           "contact_email": infoObj.contact_mail.value,
+           "actions": {}
+        }
+
+        for (var i = 0; i<actionsL; i++) {
+            newItem.actions[actionsArray[i]] = true;
+        }
+        for(var prop in availableActions) {
+            if(!(prop in newItem.actions)) {
+                newItem.actions[prop] = false;
+            }
+        }
+
+        itemsL = selected.items.length;
+            for(var i=0; i<itemsL; i++) {
+                if(selected.items[i].id === newItem.id) {
+                    isNew = false;
+                }
+            }
+        if(isNew) {
+            selected.items.push(newItem);
+            enableActions(newItem.actions)
+        }
+    };
+
+    function removeItem(itemID) {
+        var items = selected.items;
+        var itemsL = items.length;
+        for (var i = 0; i<itemsL; i++) {
+            if(items[i].id === itemID) {
+                items.splice(i, 1);
+                enableActions(undefined, true);
+                break;
+            }
+        }
     }
 
+
+    /* It enables the btn (link) of the corresponding allowed action */
+    function enableActions(actionsObj, removeItemFlag) {
+
+        var itemActionsL =selected.items.length;
+        var $actionBar = $('.actionbar');
+        var itemActions = {};
+        if (removeItemFlag) {
+            if(!selected.items.length) {
+                for(var prop in allowedActions) {
+                    allowedActions[prop] = false;
+                }
+            }
+            else {
+                for(var prop in allowedActions) {
+                    allowedActions[prop] =true;
+                    for(var i=0; i<itemActionsL; i++) {
+                        allowedActions[prop] = allowedActions[prop] && selected.items[i].actions[prop];
+                    }
+                }
+            }
+        }
+        else {
+            if(selected.items.length === 1) {
+                for(var prop in allowedActions) {
+                    allowedActions[prop] = availableActions[prop] && actionsObj[prop];
+                }
+            }
+            else {
+                for(var prop in allowedActions) {
+                    allowedActions[prop] = allowedActions[prop] && actionsObj[prop];
+                }
+            }
+        }
+        for(var prop in allowedActions) {
+            if(allowedActions[prop]) {
+                $actionBar.find('button[data-action='+prop+']').removeClass('disabled');
+            }
+            else {
+                $actionBar.find('button[data-action='+prop+']').addClass('disabled');
+            }
+        }
+    };
+});
 }(window.jQuery, window.Django));

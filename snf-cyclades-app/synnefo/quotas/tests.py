@@ -34,8 +34,7 @@ class GetDBHoldingsTestCase(TestCase):
         self.assertEqual(holdings, {})
 
     def test_vm_holdings(self):
-        flavor = mfactory.FlavorFactory(cpu=24, ram=8192, disk=20,
-                                        disk_template='drbd')
+        flavor = mfactory.FlavorFactory(cpu=24, ram=8192, disk=20)
         mfactory.VirtualMachineFactory(userid="user1", deleted=True)
         mfactory.VirtualMachineFactory(flavor=flavor, userid="user1",
                                        operstate="BUILD")

@@ -81,7 +81,10 @@ def get_resources_stats(backend=None):
     for res in ["cpu", "ram", "disk", "disk_template"]:
         server_count[res] = {}
         allocated[res] = 0
-        val = "flavor__%s" % res
+        if res == "disk_template":
+            val = "flavor__volume_type__%s" % res
+        else:
+            val = "flavor__%s" % res
         results = active_servers.values(val).annotate(count=Count(val))
         for result in results:
             server_count[res][result[val]] = result["count"]

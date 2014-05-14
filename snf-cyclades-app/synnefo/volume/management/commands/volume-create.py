@@ -62,6 +62,13 @@ class Command(SynnefoCommand):
             default=None,
             help="The ID of the server that the volume will be connected to."),
         make_option(
+            "--volume-type",
+            dest="volume_type_id",
+            default=None,
+            help="The ID of the volume's type. If the volume will be attached"
+                 " to a server, the volume's and the server's volume type"
+                 " must match."),
+        make_option(
             "--wait",
             dest="wait",
             default="True",
@@ -78,6 +85,7 @@ class Command(SynnefoCommand):
         size = options.get("size")
         user_id = options.get("user_id")
         server_id = options.get("server_id")
+        volume_type_id = options.get("volume_type_id")
         wait = parse_bool(options["wait"])
 
         display_name = options.get("name", "")
@@ -94,6 +102,8 @@ class Command(SynnefoCommand):
 
         if user_id is None:
             user_id = vm.userid
+
+        vtype = common.get_resource("volume-type", volume_type_id)
 
         source_image_id = source_volume_id = source_snapshot_id = None
         source = options.get("source")
@@ -119,6 +129,7 @@ class Command(SynnefoCommand):
                                 source_image_id=source_image_id,
                                 source_snapshot_id=source_snapshot_id,
                                 source_volume_id=source_volume_id,
+                                volume_type_id=vtype.id,
                                 metadata={})
 
         self.stdout.write("Created volume '%s' in DB:\n" % volume.id)

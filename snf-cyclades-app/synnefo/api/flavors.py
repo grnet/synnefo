@@ -43,7 +43,8 @@ def flavor_to_dict(flavor, detail=True):
         d['ram'] = flavor.ram
         d['disk'] = flavor.disk
         d['vcpus'] = flavor.cpu
-        d['SNF:disk_template'] = flavor.disk_template
+        d['SNF:disk_template'] = flavor.volume_type.disk_template
+        d['SNF:volume_type'] = flavor.volume_type_id
         d['SNF:allow_create'] = flavor.allow_create
     return d
 
@@ -58,7 +59,8 @@ def list_flavors(request, detail=False):
     #                       overLimit (413)
 
     log.debug('list_flavors detail=%s', detail)
-    active_flavors = Flavor.objects.exclude(deleted=True)
+    active_flavors = Flavor.objects.select_related("volume_type")\
+                                   .exclude(deleted=True)
     flavors = [flavor_to_dict(flavor, detail)
                for flavor in active_flavors.order_by('id')]
 

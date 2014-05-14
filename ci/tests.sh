@@ -130,7 +130,7 @@ extract_tests () {
 export SYNNEFO_SETTINGS_DIR=/tmp/snf-test-settings
 
 astakos_all_tests="im quotaholder_app oa2"
-cyclades_all_tests="api db logic plankton quotas vmapi helpdesk userdata"
+cyclades_all_tests="api db logic plankton quotas vmapi helpdesk userdata volume"
 pithos_all_tests="api"
 astakosclient_all_tests="astakosclient"
 ALL_COMPONENTS="astakos cyclades pithos astakosclient"

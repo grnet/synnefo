@@ -35,24 +35,50 @@ import logging
 log = logging.getLogger(__name__)
 
 
+class VolumeType(models.Model):
+    NAME_LENGTH = 255
+    name = models.CharField("Name", max_length=NAME_LENGTH)
+    disk_template = models.CharField('Disk Template', max_length=32)
+    deleted = models.BooleanField('Deleted', default=False)
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u"<VolumeType %s(disk_template:%s)>" % \
+            (self.name, self.disk_template)
+
+    @property
+    def template(self):
+        return self.disk_template.split("_")[0]
+
+    @property
+    def provider(self):
+        if "_" in self.disk_template:
+            return self.disk_template.split("_", 1)[1]
+        else:
+            return None
+
+
 class Flavor(models.Model):
     cpu = models.IntegerField('Number of CPUs', default=0)
     ram = models.IntegerField('RAM size in MiB', default=0)
     disk = models.IntegerField('Disk size in GiB', default=0)
-    disk_template = models.CharField('Disk template', max_length=32)
+    volume_type = models.ForeignKey(VolumeType, related_name="flavors",
+                                    on_delete=models.PROTECT, null=False)
     deleted = models.BooleanField('Deleted', default=False)
     # Whether the flavor can be used to create new servers
     allow_create = models.BooleanField(default=True, null=False)
 
     class Meta:
         verbose_name = u'Virtual machine flavor'
-        unique_together = ('cpu', 'ram', 'disk', 'disk_template')
+        unique_together = ('cpu', 'ram', 'disk', 'volume_type')
 
     @property
     def name(self):
         """Returns flavor name (generated)"""
         return u'C%sR%sD%s%s' % (self.cpu, self.ram, self.disk,
-                                 self.disk_template)
+                                 self.volume_type.disk_template)
 
     def __str__(self):
         return self.__unicode__()
@@ -846,8 +872,8 @@ class NetworkInterface(models.Model):
         return self.__unicode__()
 
     def __unicode__(self):
-        return u"<NIC %s:vm:%s network:%s>" % (self.id, self.machine_id,
-                                              self.network_id)
+        return u"<NIC %s:vm:%s network:%s>" % \
+            (self.id, self.machine_id, self.network_id)
 
     @property
     def backend_uuid(self):
@@ -1046,8 +1072,8 @@ class Volume(models.Model):
     userid = models.CharField("Owner's UUID", max_length=100, null=False,
                               db_index=True)
     size = models.IntegerField("Volume size in GB",  null=False)
-    disk_template = models.CharField('Disk template', max_length=32,
-                                     null=False)
+    volume_type = models.ForeignKey(VolumeType, related_name="volumes",
+                                    on_delete=models.PROTECT, null=False)
 
     delete_on_termination = models.BooleanField("Delete on Server Termination",
                                                 default=True, null=False)
@@ -1055,8 +1081,6 @@ class Volume(models.Model):
     source = models.CharField(max_length=128, null=True)
     origin = models.CharField(max_length=128, null=True)
 
-    # TODO: volume_type should be foreign key to VolumeType model
-    volume_type = None
     deleted = models.BooleanField("Deleted", default=False, null=False)
     # Datetime fields
     created = models.DateTimeField(auto_now_add=True)
@@ -1102,17 +1126,6 @@ class Volume(models.Model):
         src = self.source
         if src and src.startswith(self.SOURCE_VOLUME_PREFIX):
             return src[len(self.SOURCE_VOLUME_PREFIX):]
-        else:
-            return None
-
-    @property
-    def template(self):
-        return self.disk_template.split("_")[0]
-
-    @property
-    def provider(self):
-        if "_" in self.disk_template:
-            return self.disk_template.split("_", 1)[1]
         else:
             return None
 

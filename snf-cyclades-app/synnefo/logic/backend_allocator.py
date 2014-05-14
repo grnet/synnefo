@@ -84,7 +84,7 @@ def get_available_backends(flavor):
     excluded.
 
     """
-    disk_template = flavor.disk_template
+    disk_template = flavor.volume_type.disk_template
     # Ganeti knows only the 'ext' disk template, but the flavors disk template
     # includes the provider.
     if disk_template.startswith("ext_"):
@@ -108,7 +108,7 @@ def flavor_disk(flavor):
     """ Get flavor's 'real' disk size
 
     """
-    if flavor.disk_template == 'drbd':
+    if flavor.volume_type.disk_template == 'drbd':
         return flavor.disk * 1024 * 2
     else:
         return flavor.disk * 1024

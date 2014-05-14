@@ -19,11 +19,27 @@ from optparse import make_option
 from django.core.management.base import CommandError
 
 from snf_django.management.commands import SynnefoCommand
-from synnefo.db.models import Flavor
+from synnefo.db.models import Flavor, VolumeType
+
+
+HELP_MSG = """Create one or more flavors.
+
+Create one or more flavors (virtual hardware templates) that define the
+compute, memory and storage capacity of virtual servers. The flavors that will
+be created are those belonging to the cartesian product of the arguments.
+
+To create a flavor you must specify the following arguments:
+    * cpu: Number of virtual CPUs.
+    * ram: Size of virtual RAM (MB).
+    * disk: Size of virtual disk (GB).
+    * volume_type_id: ID of the volyme type defining the volume's disk
+                      template.
+"""
 
 
 class Command(SynnefoCommand):
     output_transaction = True
+    help = HELP_MSG
 
     option_list = SynnefoCommand.option_list + (
         make_option("-n", "--dry-run", dest="dry_run", action="store_true"),
@@ -31,9 +47,7 @@ class Command(SynnefoCommand):
     args = "<cpu>[,<cpu>,...] " \
            "<ram>[,<ram>,...] " \
            "<disk>[,<disk>,...] " \
-           "<disk template>[,<disk template>,...]"
-    help = "Create one or more flavors.\n\nThe flavors that will be created"\
-           " are those belonging to the cartesian product of the arguments"
+           "<volume_type_id>[,<volume_type_id>,...]"
 
     def handle(self, *args, **options):
         if len(args) != 4:
@@ -42,24 +56,35 @@ class Command(SynnefoCommand):
         cpus = args[0].split(',')
         rams = args[1].split(',')
         disks = args[2].split(',')
-        templates = args[3].split(',')
+
+        volume_types = []
+        volume_type_ids = args[3].split(',')
+        for vol_t_id in volume_type_ids:
+            try:
+                volume_types.append(VolumeType.objects.get(id=vol_t_id,
+                                                           deleted=False))
+            except VolumeType.DoesNotExist:
+                raise CommandError("Volume type with ID '%s' does not exist."
+                                   " Use 'snf-manage volume-type-list' to find"
+                                   " out available volume types." % vol_t_id)
 
         flavors = []
-        for cpu, ram, disk, template in product(cpus, rams, disks, templates):
+        for cpu, ram, disk, volume_type in product(cpus, rams, disks,
+                                                   volume_types):
             try:
-                flavors.append((int(cpu), int(ram), int(disk), template))
+                flavors.append((int(cpu), int(ram), int(disk), volume_type))
             except ValueError:
                 raise CommandError("Invalid values")
 
-        for cpu, ram, disk, template in flavors:
+        for cpu, ram, disk, volume_type in flavors:
             if options["dry_run"]:
                 flavor = Flavor(cpu=cpu, ram=ram, disk=disk,
-                                disk_template=template)
+                                volume_type=volume_type)
                 self.stdout.write("Creating flavor '%s'\n" % (flavor.name,))
             else:
                 flavor, created = \
                     Flavor.objects.get_or_create(cpu=cpu, ram=ram, disk=disk,
-                                                 disk_template=template)
+                                                 volume_type=volume_type)
                 if created:
                     self.stdout.write("Created flavor '%s'\n" % (flavor.name,))
                 else:

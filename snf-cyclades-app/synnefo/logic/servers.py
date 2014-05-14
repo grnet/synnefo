@@ -100,12 +100,17 @@ def create(userid, name, password, flavor, image_id, metadata={},
     if volumes[0]["source_type"] == "blank":
         raise faults.BadRequest("Root volume cannot be blank")
 
+    server_vtype = flavor.volume_type
     server_volumes = []
     for index, vol_info in enumerate(volumes):
         if vol_info["source_type"] == "volume":
             uuid = vol_info["source_uuid"]
             v = get_volume(userid, uuid, for_update=True,
                            exception=faults.BadRequest)
+            if v.volume_type_id != server_vtype.id:
+                msg = ("Volume '%s' has type '%s' while flavor's volume type"
+                       " is '%s'" % (v.volume_type_id, server_vtype.id))
+                raise faults.BadRequest(msg)
             if v.status != "AVAILABLE":
                 raise faults.BadRequest("Cannot use volume while it is in %s"
                                         " status" % v.status)
@@ -114,6 +119,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
             v.save()
         else:
             v = _create_volume(server=vm, user_id=userid,
+                               volume_type=server_vtype,
                                index=index, **vol_info)
         server_volumes.append(v)
 
@@ -164,7 +170,7 @@ def create_server(vm, nics, volumes, flavor, image, personality, password):
     # the volume with data
     image_id = image["backend_id"]
     root_volume = volumes[0]
-    if root_volume.provider is not None:
+    if root_volume.volume_type.provider is not None:
         image_id = "null"
 
     server_created.send(sender=vm, created_vm_params={
@@ -247,9 +253,9 @@ def _resize(vm, flavor):
                                 % (vm, flavor))
     # Check that resize can be performed
     if old_flavor.disk != flavor.disk:
-        raise faults.BadRequest("Cannot resize instance disk.")
-    if old_flavor.disk_template != flavor.disk_template:
-        raise faults.BadRequest("Cannot change instance disk template.")
+        raise faults.BadRequest("Cannot change instance's disk size.")
+    if old_flavor.volume_type_id != flavor.volume_type_id:
+        raise faults.BadRequest("Cannot change instance's volume type.")
 
     log.info("Resizing VM from flavor '%s' to '%s", old_flavor, flavor)
     return backend.resize_instance(vm, vcpus=flavor.cpu, memory=flavor.ram)

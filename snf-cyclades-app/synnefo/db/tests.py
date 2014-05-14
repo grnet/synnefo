@@ -19,11 +19,10 @@
 
 from django.test import TestCase
 
-from django.conf import settings
 # Import pool tests
 from synnefo.db.pools.tests import *
-
 from synnefo.db.models import *
+
 from synnefo.db import models_factory as mfact
 from synnefo.db.pools import IPPool, EmptyPool
 
@@ -37,7 +36,7 @@ class FlavorTest(TestCase):
     def test_flavor_name(self):
         """Test a flavor object name method."""
         flavor = mfact.FlavorFactory(cpu=1, ram=1024, disk=40,
-                                     disk_template="temp")
+                                     volume_type__disk_template="temp")
         self.assertEqual(
             flavor.name, "C1R1024D40temp", "flavor.name is not"
             " generated correctly. Name is %s instead of C1R1024D40temp" %

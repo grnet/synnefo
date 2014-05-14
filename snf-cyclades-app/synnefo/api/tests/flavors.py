@@ -68,7 +68,7 @@ class FlavorAPITest(BaseAPITest):
             self.assertEqual(api_flavor['name'], db_flavor.name)
             self.assertEqual(api_flavor['ram'], db_flavor.ram)
             self.assertEqual(api_flavor['SNF:disk_template'],
-                             db_flavor.disk_template)
+                             db_flavor.volume_type.disk_template)
 
     def test_flavor_details(self):
         """Test if the expected flavor is returned."""
@@ -85,7 +85,7 @@ class FlavorAPITest(BaseAPITest):
         self.assertEqual(api_flavor['name'], db_flavor.name)
         self.assertEqual(api_flavor['ram'], db_flavor.ram)
         self.assertEqual(api_flavor['SNF:disk_template'],
-                         db_flavor.disk_template)
+                         db_flavor.volume_type.disk_template)
 
     def test_deleted_flavor_details(self):
         """Test that API returns details for deleted flavors"""

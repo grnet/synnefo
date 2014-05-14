@@ -39,6 +39,24 @@ def volume_item_demux(request, volume_id):
         return HttpResponseNotAllowed(["GET", "PUT", "DELETE"])
 
 
+def volume_metadata_demux(request, volume_id):
+    if request.method == 'GET':
+        return views.list_volume_metadata(request, volume_id)
+    elif request.method == 'POST':
+        return views.update_volume_metadata(request, volume_id, reset=False)
+    elif request.method == 'PUT':
+        return views.update_volume_metadata(request, volume_id, reset=True)
+    else:
+        return HttpResponseNotAllowed(['GET', 'POST', 'PUT'])
+
+
+def volume_metadata_item_demux(request, volume_id, key):
+    if request.method == 'DELETE':
+        return views.delete_volume_metadata_item(request, volume_id, key)
+    else:
+        return HttpResponseNotAllowed(['DELETE'])
+
+
 def snapshot_demux(request):
     if request.method == 'GET':
         return views.list_snapshots(request)
@@ -58,14 +76,41 @@ def snapshot_item_demux(request, snapshot_id):
     else:
         return HttpResponseNotAllowed(["GET", "PUT", "DELETE"])
 
+
+def snapshot_metadata_demux(request, snapshot_id):
+    if request.method == 'GET':
+        return views.list_snapshot_metadata(request, snapshot_id)
+    elif request.method == 'POST':
+        return views.update_snapshot_metadata(request, snapshot_id,
+                                              reset=False)
+    elif request.method == 'PUT':
+        return views.update_snapshot_metadata(request, snapshot_id, reset=True)
+    else:
+        return HttpResponseNotAllowed(['GET', 'POST', 'PUT'])
+
+
+def snapshot_metadata_item_demux(request, snapshot_id, key):
+    if request.method == 'DELETE':
+        return views.delete_snapshot_metadata_item(request, snapshot_id, key)
+    else:
+        return HttpResponseNotAllowed(['DELETE'])
+
+
 volume_v2_patterns = patterns(
     '',
-    (r'^volumes/$', volume_demux),
-    (r'^volumes/detail$', views.list_volumes, {'detail': True}),
+    (r'^volumes/?(?:.json)?$', volume_demux),
+    (r'^volumes/detail(?:.json)?$', views.list_volumes, {'detail': True}),
     (r'^volumes/(\d+)(?:.json)?$', volume_item_demux),
-    (r'^snapshots/$', snapshot_demux),
+    (r'^volumes/(\d+)/metadata/?(?:.json)?$', volume_metadata_demux),
+    (r'^volumes/(\d+)/metadata/(.+)(?:.json)?$', volume_metadata_item_demux),
+    (r'^snapshots/?(?:.json)?$', snapshot_demux),
     (r'^snapshots/detail$', views.list_snapshots, {'detail': True}),
-    (r'^snapshots/(\d+)(?:.json)?$', snapshot_item_demux),
+    (r'^snapshots/([\w-]+)(?:.json)?$', snapshot_item_demux),
+    (r'^snapshots/([\w-]+)/metadata/?(?:.json)?$', snapshot_metadata_demux),
+    (r'^snapshots/([\w-]+)/metadata/(.+)(?:.json)?$',
+        snapshot_metadata_item_demux),
+    (r'^types/?(?:.json)?$', views.list_volume_types),
+    (r'^types/(\d+)(?:.json)?$', views.get_volume_type),
 )
 
 urlpatterns = patterns(

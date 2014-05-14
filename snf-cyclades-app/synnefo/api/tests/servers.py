@@ -591,7 +591,7 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(response.status_code, 202, msg=response.content)
         vm_id = json.loads(response.content)["server"]["id"]
         volume = Volume.objects.get(machine_id=vm_id)
-        self.assertEqual(volume.disk_template, self.flavor.disk_template)
+        self.assertEqual(volume.volume_type, self.flavor.volume_type)
         self.assertEqual(volume.size, self.flavor.disk)
         self.assertEqual(volume.source, "image:%s" % fixed_image()["id"])
         self.assertEqual(volume.delete_on_termination, True)
@@ -610,7 +610,7 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(response.status_code, 202, msg=response.content)
         vm_id = json.loads(response.content)["server"]["id"]
         volume = Volume.objects.get(machine_id=vm_id)
-        self.assertEqual(volume.disk_template, self.flavor.disk_template)
+        self.assertEqual(volume.volume_type, self.flavor.volume_type)
         self.assertEqual(volume.size, 10)
         self.assertEqual(volume.source, "image:%s" % fixed_image()["id"])
         self.assertEqual(volume.delete_on_termination, False)
@@ -630,7 +630,7 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(response.status_code, 202, msg=response.content)
         vm_id = json.loads(response.content)["server"]["id"]
         volume = Volume.objects.get(machine_id=vm_id)
-        self.assertEqual(volume.disk_template, self.flavor.disk_template)
+        self.assertEqual(volume.volume_type, self.flavor.volume_type)
         self.assertEqual(volume.size, 10)
         self.assertEqual(volume.source, "snapshot:%s" % fixed_image()["id"])
         self.assertEqual(volume.origin, fixed_image()["mapfile"])
@@ -855,8 +855,10 @@ class ServerActionAPITest(ComputeAPITest):
         response = self.mypost('servers/%d/action' % vm.id,
                                vm.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
-        flavor2 = mfactory.FlavorFactory(disk_template="foo")
-        flavor3 = mfactory.FlavorFactory(disk_template="baz")
+
+        # Check flavor with different volume type
+        flavor2 = mfactory.FlavorFactory(volume_type__disk_template="foo")
+        flavor3 = mfactory.FlavorFactory(volume_type__disk_template="baz")
         vm = self.get_vm(flavor=flavor2, operstate="STOPPED")
         request = {'resize': {'flavorRef': flavor3.id}}
         response = self.mypost('servers/%d/action' % vm.id,
@@ -864,7 +866,7 @@ class ServerActionAPITest(ComputeAPITest):
         self.assertBadRequest(response)
         # Check success
         vm = self.get_vm(flavor=flavor, operstate="STOPPED")
-        flavor4 = mfactory.FlavorFactory(disk_template=flavor.disk_template,
+        flavor4 = mfactory.FlavorFactory(volume_type=vm.flavor.volume_type,
                                          disk=flavor.disk,
                                          cpu=4, ram=2048)
         request = {'resize': {'flavorRef': flavor4.id}}
@@ -981,7 +983,7 @@ class ServerAttachments(ComputeAPITest):
     def test_attach_detach_volume(self, mrapi):
         vol = mfactory.VolumeFactory(status="AVAILABLE")
         vm = vol.machine
-        disk_template = vm.flavor.disk_template
+        volume_type = vm.flavor.volume_type
         # Test that we cannot detach the root volume
         response = self.mydelete("servers/%d/os-volume_attachments/%d" %
                                  (vm.id, vol.id), vm.userid)
@@ -989,7 +991,7 @@ class ServerAttachments(ComputeAPITest):
 
         # Test that we cannot attach a used volume
         vol1 = mfactory.VolumeFactory(status="IN_USE",
-                                      disk_template=disk_template,
+                                      volume_type=volume_type,
                                       userid=vm.userid)
         request = json.dumps({"volumeAttachment": {"volumeId": vol1.id}})
         response = self.mypost("servers/%d/os-volume_attachments" %
@@ -997,16 +999,17 @@ class ServerAttachments(ComputeAPITest):
                                request, "json")
         self.assertBadRequest(response)
 
-        # We cannot attach a volume of different disk template
         vol1.status = "AVAILABLE"
-        vol1.disk_template = "lalalal"
+        # We cannot attach a volume of different disk template
+        volume_type_2 = mfactory.VolumeTypeFactory(disk_template="lalalal")
+        vol1.volume_type = volume_type_2
         vol1.save()
         response = self.mypost("servers/%d/os-volume_attachments/" %
                                vm.id, vm.userid,
                                request, "json")
         self.assertBadRequest(response)
 
-        vol1.disk_template = disk_template
+        vol1.volume_type = volume_type
         vol1.save()
         mrapi().ModifyInstance.return_value = 43
         response = self.mypost("servers/%d/os-volume_attachments" %

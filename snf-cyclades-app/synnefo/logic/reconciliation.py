@@ -251,7 +251,7 @@ class BackendReconciler(object):
                     ram=gnt_flavor["ram"],
                     cpu=gnt_flavor["vcpus"],
                     disk=db_flavor.disk,
-                    disk_template=db_flavor.disk_template)
+                    volume_type_id=db_flavor.volume_type_id)
             except Flavor.DoesNotExist:
                 self.log.warning("Server '%s' has unknown flavor.", server_id)
                 return

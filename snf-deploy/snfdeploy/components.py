@@ -100,6 +100,30 @@ def parse_backend_info(fn):
     return wrapper
 
 
+def parse_volume_type_info(fn):
+    """ Parse the output of Cyclades.list_volume_types()
+
+    For the given volume_type (found in ctx.admin_volume_type)
+    updates the volume_type_id attributes of context.
+
+    """
+    def wrapper(*args, **kwargs):
+        cl = args[0]
+        volume_type = cl.ctx.admin_template
+        result = fn(*args, **kwargs)
+        r = re.compile(r"(\d+)[ ]*%s.*" % volume_type, re.M)
+        match = r.search(result)
+        if config.dry_run:
+            context.volume_type_id = "dummy_volume_type_id"
+        elif match:
+            context.volume_type_id, = match.groups()
+        else:
+            raise BaseException("Cannot parse info for volume type %s" %
+                                volume_type)
+        return result
+    return wrapper
+
+
 def update_admin(fn):
     """ Initializes the admin roles for each component
 
@@ -1430,18 +1454,37 @@ snf-manage network-create --subnet6={0} \
 
     @base.run_cmds
     def initialize(self):
-        cpu = config.flavor_cpu
-        ram = config.flavor_ram
-        disk = config.flavor_disk
-        storage = config.flavor_storage
         return [
             "snf-manage syncdb",
             "snf-manage migrate --delete-ghost-migrations",
             "snf-manage pool-create --type=mac-prefix \
               --base=aa:00:0 --size=65536",
             "snf-manage pool-create --type=bridge --base=prv --size=20",
-            "snf-manage flavor-create %s %s %s %s" % (cpu, ram, disk, storage),
             ] + self._add_network() + self._add_network6()
+
+    @base.run_cmds
+    def _create_flavor(self):
+        cpu = config.flavor_cpu
+        ram = config.flavor_ram
+        disk = config.flavor_disk
+        volume = context.volume_type_id
+        return [
+            "snf-manage flavor-create %s %s %s %s" % (cpu, ram, disk, volume),
+            ]
+
+    @base.run_cmds
+    def _create_volume_type(self, template):
+        cmd = """
+snf-manage volume-type-create --name {0} --disk-template {0}
+""".format(template)
+        return [cmd]
+
+    @parse_volume_type_info
+    @base.run_cmds
+    def list_volume_types(self):
+        return [
+            "snf-manage volume-type-list -o id,disk_template --no-headers"
+            ]
 
     @base.run_cmds
     def restart(self):
@@ -1450,10 +1493,19 @@ snf-manage network-create --subnet6={0} \
             "/etc/init.d/snf-dispatcher restart",
             ]
 
+    def create_flavors(self):
+        templates = config.flavor_storage.split(",")
+        for t in templates:
+            self._create_volume_type(t)
+            self.ctx.admin_template = t
+            self.list_volume_types()
+            self._create_flavor()
+
     @update_admin
     @export_and_import_service
     @cert_override
     def admin_post(self):
+        self.create_flavors()
         self.ASTAKOS.set_cyclades_default_quota()
 
 

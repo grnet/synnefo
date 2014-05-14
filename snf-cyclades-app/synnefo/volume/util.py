@@ -16,7 +16,7 @@
 from synnefo.db import models
 from snf_django.lib.api import faults
 from synnefo.api.util import get_image_dict, get_vm
-from synnefo.plankton.backend import PlanktonBackend
+from synnefo.plankton import backend
 from synnefo.cyclades_settings import cyclades_services, BASE_HOST
 from synnefo.lib import join_urls
 from synnefo.lib.services import get_service_path
@@ -37,9 +37,26 @@ def get_volume(user_id, volume_id, for_update=False,
         raise exception("Volume %s not found" % volume_id)
 
 
+def get_volume_type(volume_type_id, for_update=False, include_deleted=False,
+                    exception=faults.ItemNotFound):
+    vtypes = models.VolumeType.objects
+    if not include_deleted:
+        vtypes = vtypes.filter(deleted=False)
+    if for_update:
+        vtypes = vtypes.select_for_update()
+    try:
+        vtype_id = int(volume_type_id)
+    except (TypeError, ValueError):
+        raise faults.BadRequest("Invalid volume id: %s" % volume_type_id)
+    try:
+        return vtypes.get(id=vtype_id)
+    except models.VolumeType.DoesNotExist:
+        raise exception("Volume type %s not found" % vtype_id)
+
+
 def get_snapshot(user_id, snapshot_id, exception=faults.ItemNotFound):
     try:
-        with PlanktonBackend(user_id) as b:
+        with backend.PlanktonBackend(user_id) as b:
             return b.get_snapshot(user_id, snapshot_id)
     except faults.ItemNotFound:
         raise exception("Snapshot %s not found" % snapshot_id)
@@ -83,20 +100,6 @@ def snapshot_to_links(snapshot_id):
     return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
 
 
-def get_disk_template_provider(disk_template):
-    """Extract provider from disk template.
-
-    Provider for `ext` disk_template is encoded in the disk template
-    name, which is formed `ext_<provider_name>`. Provider is None
-    for all other disk templates.
-
-    """
-    provider = None
-    if disk_template.startswith("ext") and "_" in disk_template:
-        disk_template, provider = disk_template.split("_", 1)
-    return disk_template, provider
-
-
 def update_snapshot_status(snapshot_id, user_id, status):
-    with PlanktonBackend(user_id) as b:
+    with backend.PlanktonBackend(user_id) as b:
         return b.update_status(snapshot_id, status=status)

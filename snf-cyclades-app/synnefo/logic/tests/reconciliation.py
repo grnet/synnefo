@@ -147,9 +147,9 @@ class ServerReconciliationTest(TestCase):
 
     def test_unsynced_flavor(self, mrapi):
         flavor1 = mfactory.FlavorFactory(cpu=2, ram=1024, disk=1,
-                                         disk_template="drbd")
+                                         volume_type__disk_template="drbd")
         flavor2 = mfactory.FlavorFactory(cpu=4, ram=2048, disk=1,
-                                         disk_template="drbd")
+                                         volume_type__disk_template="drbd")
         vm1 = mfactory.VirtualMachineFactory(backend=self.backend,
                                              deleted=False,
                                              flavor=flavor1,

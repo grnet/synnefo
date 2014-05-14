@@ -33,19 +33,21 @@
 
 import logging
 import re
-from astakos.logic import users
-from actions import AdminAction, AdminActionUnknown, AdminActionNotPermitted
+from collections import OrderedDict
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
-from collections import OrderedDict
+from django.core.urlresolvers import reverse
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser, ProjectMembership, Project
+from astakos.logic import users
 
 from astakos.api.quotas import get_quota_usage
 from astakos.im.functions import send_plain as send_email
 
 from eztables.views import DatatablesView
+from actions import AdminAction, AdminActionUnknown, AdminActionNotPermitted
 
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
 SHOW_DELETED_VMS = getattr(settings, 'ADMIN_SHOW_DELETED_VMS', False)
@@ -107,27 +109,31 @@ class UserJSONView(DatatablesView):
     def get_extra_data_row(self, inst):
         return {
             'allowed_actions': {
-                'diplay_name': "",
+                'display_name': "",
                 'value': get_allowed_actions(inst),
                 'visible': False,
             }, 'id': {
-                'diplay_name': "UUID",
+                'display_name': "UUID",
                 'value': inst.uuid,
                 'visible': True,
+            }, 'details_url': {
+                'display_name': "Details",
+                'value': reverse('admin-details', args=['user', inst.uuid]),
+                'visible': True,
             }, 'contact_mail': {
-                'diplay_name': "Contact mail",
+                'display_name': "Contact mail",
                 'value': inst.email,
                 'visible': False,
             }, 'contact_name': {
-                'diplay_name': "Contact name",
+                'display_name': "Contact name",
                 'value': inst.realname,
                 'visible': False,
             }, 'enabled_providers': {
-                'diplay_name': "Enabled providers",
+                'display_name': "Enabled providers",
                 'value': get_enabled_providers(inst),
                 'visible': True,
             }, 'moderation_policy': {
-                'diplay_name': "Moderation policy",
+                'display_name': "Moderation policy",
                 'value': inst.accepted_policy,
                 'visible': True,
             }

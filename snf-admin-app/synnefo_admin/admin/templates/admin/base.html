@@ -9,11 +9,11 @@
     <link href="{{ ADMIN_MEDIA_URL }}DataTables/media/css/jquery.dataTables.css" rel="stylesheet">
     <!--
     <link href="{{ ADMIN_MEDIA_URL }}css/ie7.css" rel="stylesheet"> -->
-  
+
   <body>
     <div class="container-fluid">
         <div class="row-fluid">
-          {% with user_type='user' vm_type='vm' project_type='project' volume_type='volume' %}
+          {% with user_type='user' vm_type='vm' project_type='project' volume_type='volume' network_type='network' ip_type='ip' %}
           <div class="navbar navbar-inverse nav-main navbar-fixed-top">
 
             <div class="navbar-sides">
@@ -46,7 +46,7 @@
               </li>
               <li class="divider-vertical"></li>
               <li>
-              <a href="#">Networks</a>
+              <a href="{% url admin-list network_type %}">Networks</a>
               </li>
               <li class="divider-vertical"></li>
               <li>

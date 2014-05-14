@@ -95,6 +95,13 @@ def get_enabled_providers(user):
     return ", ".join(ep)
 
 
+def get_user_groups(user):
+    groups = ', '.join([g.name for g in user.groups.all()])
+    if groups == '':
+        return 'None'
+    return groups
+
+
 class UserJSONView(DatatablesView):
     model = AstakosUser
     fields = ('uuid',
@@ -107,7 +114,7 @@ class UserJSONView(DatatablesView):
     extra = True
 
     def get_extra_data_row(self, inst):
-        return {
+        extra_dict = {
             'allowed_actions': {
                 'display_name': "",
                 'value': get_allowed_actions(inst),
@@ -132,16 +139,25 @@ class UserJSONView(DatatablesView):
                 'display_name': "Contact name",
                 'value': inst.realname,
                 'visible': False,
+            }, 'groups': {
+                'display_name': "Groups",
+                'value': get_user_groups(inst),
+                'visible': True,
             }, 'enabled_providers': {
                 'display_name': "Enabled providers",
                 'value': get_enabled_providers(inst),
                 'visible': True,
-            }, 'moderation_policy': {
+            }
+        }
+
+        if inst.accepted_policy:
+            extra_dict['moderation_policy'] = {
                 'display_name': "Moderation policy",
                 'value': inst.accepted_policy,
                 'visible': True,
             }
-        }
+
+        return extra_dict
 
 
 class UserAction(AdminAction):

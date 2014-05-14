@@ -105,7 +105,7 @@ h1 { margin-bottom: 20px; }
 .subnav-fixed h2 { display: block }
 
 .account-form { float: right; margin-top: 2px; margin-bottom: 0}
-.info-block { margin-top: 30px; background-color: #fff; padding:0;}
+.info-block { /*margin-top: 30px;*/ background-color: #fff; padding:0;}
 
 .info-block h3 .badge {   font-size: 0.8em; padding: 5px 8px; background-color:#659CEF;}
 .info-block table { margin-bottom: 0 }
@@ -310,8 +310,8 @@ $nav-height: 36px;
   vertical-align: middle;
 }
 td:last-child { // this is meant for summary td
-  max-width: 30px;
-  min-width: 30px;
+  max-width: 10px;
+  min-width: 10px;
 
   .summary-expand {
     float: right;
@@ -323,7 +323,7 @@ td:last-child { // this is meant for summary td
     }
   }
    dl {
-   background-color: pink;
+   // background-color: pink;
    position: relative;
    padding: 8px;
    display: none;
@@ -341,9 +341,6 @@ td:last-child { // this is meant for summary td
   border-bottom: 4px solid;
 }
 
-.table-items tbody tr.selected td{
-  background-color: rgb(235, 233, 233);
-}
 
 
 
@@ -539,6 +536,7 @@ svg>text:last-child {
 .navbar-center {
   margin-left: auto;
   margin-right: auto;
+  margin-top: 0;
   max-width: 900px;
   float: none;
   text-align: center;
@@ -628,6 +626,7 @@ ul.nav li.dropdown:hover > ul.dropdown-menu {
 }
 
 .main-content {
+  min-height: 100%;
   max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
@@ -701,4 +700,44 @@ margin-left: 6px;
   // border: 1px solid #ADD4EE;
   border-color: #AFC6D6;
   border-bottom-color: transparent;
+}
+
+/* Landscape phone to portrait tablet */
+@media (max-width: 1300px) { // temp
+  .navbar-fixed-top .navbar-center{
+    margin-top: 50px;
+  }
+}
+
+html, body {
+  height: 100%;
+}
+
+html body .dataTables_wrapper {
+  padding: 10px;
+  label {
+  font-weight: normal;
+}
+table {
+  &>thead>tr>th.sorting,  &>thead>tr>th.sorting_asc, &>thead>tr>th.sorting_desc{
+    background-position: center left;
+    padding-left: 22px;
+  }
+}
+}
+
+// if we replace bootwatch with the corresponding sass file this should be @import .btn-primary
+.main-content .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+  background-image: -webkit-linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
+  background-image: linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
+  background-repeat: no-repeat;
+  filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff6d94bf', endColorstr='#ff3e648d', GradientType=0);
+  filter: none;
+  border: 1px solid #345578;
+}
+tr.selected {
+  td {
+    background-color: #D2DFDB;
+    color: rgb(97, 68, 172);
+  }
 }

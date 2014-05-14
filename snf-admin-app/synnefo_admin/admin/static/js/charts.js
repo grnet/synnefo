@@ -32,7 +32,7 @@ $(document).ready(function() {
 			}
 		},
 		series: [{
-			// type: 'pie',
+			// type: 'column',
 			name: 'Accounts' ,
 			data: 
 				[{
@@ -67,6 +67,7 @@ $(document).ready(function() {
 			series: 
 				[{
 					id: 'providers-act',
+					type: 'column',
 					data: [
 						{
 							name: 'Shibboleth',

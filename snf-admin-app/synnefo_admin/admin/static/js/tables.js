@@ -4,54 +4,56 @@ var myflag = true;
 (function($, Django){
 
 $(function(){
+
     var url = $('#table-items-total').data("url");
     var serverside = Boolean($('#table-items-total').data("server-side"));
     var table;
     $.fn.dataTable.ext.legacy.ajax = true;
+    var extraData;
+    // sets the classes of the btns that are used for navigation throw the pages (next, prev, 1, 2, 3...)
+    // $.fn.dataTableExt.oStdClasses.sPageButton = "btn btn-primary";
     var tableDomID = '#table-items-total';
-    table = $(tableDomID).dataTable({
+    table = $(tableDomID).DataTable({
         "bPaginate": true,
         //"sPaginationType": "bootstrap",
         "bProcessing": true,
-        "serverSide": true,
+        "serverSide": serverside,
         "ajax": {
             "url": url,
             "data": function(data) {
                 // here must be placed the additional data that needs to be send with the ajax call
-                // data.testme = "testme!!!"
+                // data.extraKey = "extraValue";
             },
             "dataSrc" : function(response) {
                 console.log(response);
                 mydata = response;
+                extraData = response.extra;
                 if(response.aaData.length != 0) {
                     var cols = response.aaData;
                     var rowL = cols.length;
                     var detailsCol = cols[0].length;
                     var summaryCol = ++cols[0].length;
-                    
                     for (var i=0; i<rowL; i++) {
-                        response.extra[i]["url"] = "user/"+response.aaData[i][0]; // temp
-                        response.extra[i]["actions"] ='action-'.concat('contact'); // temp
-                        cols[i][detailsCol] = response.extra[i].url;
+                        cols[i][detailsCol] = response.extra[i].details_url;
                         cols[i][summaryCol] = response.extra[i]
                     }
                 }
                 return response.aaData;
-
             }
         },
         "columnDefs": [{
             "targets": -2, // the second column counting from the right is "Details"
+            "orderable": false,
             "render": function(data, type, rowData)  {
-                return '<a href="'+data+'" class="">Details</a>';
+                return '<a href="'+ data.value +'" class="">'+ data.display_name+'</a>';
             }
         },
         {
             "targets": -1, // the first column counting from the right is "Summary"
-            // data: "test",
+            "orderable": false,
             "render": function(data, type, rowData) {
                 return summaryTemplate(data);
-            }
+            },
         },
         {
             targets: 0,
@@ -63,25 +65,41 @@ $(function(){
           
             var dataL = data.length;
             var extraIndex = dataL -1;
-            row.id = data[extraIndex].id;
-            var actions = data[extraIndex].actions;
-            $(row).addClass(actions);
+            row.id = data[extraIndex].id.value;
             clickSummary(row);
 
         } 
+    });
+
+    $(tableDomID).on('click', 'tbody tr', function() {
+        
+        if($(this).hasClass('selected')) {
+            $(this).removeClass('selected');
+        }
+        else {
+            $(this).addClass('selected');
+            
+        }
     });
 });
 
 
 function summaryTemplate(data) {
-    var listStructure = '<dt>{key}:</dt><dd>{value}</dd>';
+    var listTemplate = '<dt>{key}:</dt><dd>{value}</dd>';
     var list = [];
-    // var listItem = 
-    list[0] = listStructure.replace('{key}', 'UUID').replace('{value}',data.id);
-    list[1] = listStructure.replace('{key}', 'Account State').replace('{value}',data.status);
+    var listItem = listTemplate.replace('{key}', prop).replace('{value}',data[prop]);
+    var i = 0;
+    for(var prop in data) {
+        if(prop !== "details_url") {
+            if(data[prop].visible) {
+                list[i] = listTemplate.replace('{key}', data[prop].display_name).replace('{value}',data[prop].value);
+                i++;
+                
+            }
+        }
+    }
 
-
-    var html = '<a href="#" class="summary-expand expand-area"><span class="snf-icon snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+list.join(',').replace(',', '')+'</dl>';
+    var html = '<a href="#" class="summary-expand expand-area"><span class="snf-icon snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+list.join(',').replace(/,/g, '')+'</dl>';
     return html;
 }
 
@@ -112,8 +130,5 @@ function summaryTemplate(data) {
 
         })
     }
-    $(tableDomID).on('click', 'tbody tr', function() {
-        $(this).toggleClass('selected');
-    })
-}(window.jQuery, window.Django));
 
+}(window.jQuery, window.Django));

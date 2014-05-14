@@ -55,6 +55,7 @@ from astakos.im.functions import send_plain as send_email
 from synnefo_admin.admin import users as user_views
 from synnefo_admin.admin import projects as project_views
 from synnefo_admin.admin import vms as vm_views
+from synnefo_admin.admin import volumes as volume_views
 
 # server actions specific imports
 from synnefo.logic import servers as servers_backend
@@ -245,6 +246,10 @@ def json_list(request, type):
         return project_views.ProjectJSONView.as_view()(request)
     if type == 'vm':
         return vm_views.VMJSONView.as_view()(request)
+    if type == 'volume':
+        return volume_views.VolumeJSONView.as_view()(request)
+    else:
+        logging.error("JSON view does not exist")
 
 
 @csrf_exempt
@@ -285,6 +290,9 @@ def catalog(request, type):
     elif type == 'vm':
         context = vm_views.catalog(request)
         template = vm_views.templates['list']
+    elif type == 'volume':
+        context = volume_views.catalog(request)
+        template = volume_views.templates['list']
     else:
         logging.error("Wrong type: %s", type)
         # TODO: Return an error here

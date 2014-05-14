@@ -13,7 +13,7 @@
   <body>
     <div class="container-fluid">
         <div class="row-fluid">
-          {% with user_list='user' vm_list='vm' project_list='project' %}
+          {% with user_type='user' vm_type='vm' project_type='project' volume_type='volume' %}
           <div class="navbar navbar-inverse nav-main navbar-fixed-top">
 
             <div class="navbar-sides">
@@ -34,15 +34,15 @@
 
             <ul class="nav navbar-nav navbar-center">
               <li>
-              <a href="{% url admin-list user_list %}">Users</a>
+              <a href="{% url admin-list user_type %}">Users</a>
               </li>
               <li class="divider-vertical"></li>
               <li>
-              <a href="{% url admin-list vm_list %}">VMs</a>
+              <a href="{% url admin-list vm_type %}">VMs</a>
               </li>
               <li class="divider-vertical"></li>
               <li>
-              <a href="#">Volumes</a>
+              <a href="{% url admin-list volume_type %}">Volumes</a>
               </li>
               <li class="divider-vertical"></li>
               <li>
@@ -54,7 +54,7 @@
               </li>
               <li class="divider-vertical"></li>
               <li>
-              <a href="{% url admin-list project_list %}">Projects</a>
+              <a href="{% url admin-list project_type %}">Projects</a>
               </li>
               <li class="divider-vertical"></li>
               <li>

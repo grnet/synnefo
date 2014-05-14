@@ -116,6 +116,10 @@ class UserJSONView(DatatablesView):
                 'display_name': "UUID",
                 'value': inst.uuid,
                 'visible': True,
+            }, 'item_name': {
+                'display_name': "Name",
+                'value': inst.realname,
+                'visible': False,
             }, 'details_url': {
                 'display_name': "Details",
                 'value': reverse('admin-details', args=['user', inst.uuid]),
@@ -204,16 +208,8 @@ def catalog(request):
     context['action_dict'] = generate_actions()
     context['columns'] = ["Column 1", "E-mail", "First Name", "Last Name",
                           "Active", "Details", "Summary"]
+    context['item_type'] = 'user'
 
-    all = users.get_all()
-    logging.info("These are the users %s", all)
-
-    user_context = {
-        'item_list': all,
-        'item_type': 'user',
-    }
-
-    context.update(user_context)
     return context
 
 

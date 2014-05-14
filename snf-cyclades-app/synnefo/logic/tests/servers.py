@@ -245,9 +245,14 @@ class ServerCommandTest(TransactionTestCase):
         with mocked_quotaholder() as m:
             try:
                 servers.start(vm)
-            except:
-                m.resolve_commissions\
-                 .assert_called_once_with([], [vm.serial.serial])
+            except Exception:
+                (accept, reject), kwargs = m.resolve_commissions.call_args
+                self.assertEqual(accept, [])
+                self.assertEqual(len(reject), 1)
+                self.assertEqual(kwargs, {})
+            else:
+                raise AssertionError("Starting a server should raise an"
+                                     " exception.")
 
     def test_task_after(self, mrapi):
         return

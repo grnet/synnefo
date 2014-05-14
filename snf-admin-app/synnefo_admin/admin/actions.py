@@ -32,14 +32,6 @@
 # or implied, of GRNET S.A.
 
 
-def always_apply(**kwargs):
-    """Function that can be used for checking if an action can apply to a user.
-
-    This function will answer always "True".
-    """
-    return True
-
-
 class AdminAction:
 
     """Generic class for actions on admin targets.

@@ -13,7 +13,7 @@
   <body>
     <div class="container-fluid">
         <div class="row-fluid">
-          {% with user_type='user' vm_type='vm' project_type='project' volume_type='volume' network_type='network' ip_type='ip' %}
+          {% with user_type='user' vm_type='vm' project_type='project' volume_type='volume' network_type='network' ip_type='ip' group_type='group' %}
 
           <div class="navbar navbar-inverse nav-main navbar-fixed-top">
 
@@ -59,7 +59,7 @@
               </li>
               <li class="divider-vertical"></li>
               <li>
-              <a href="#">Users' Groups</a>
+              <a href="{% url admin-list group_type %}">User Groups</a>
               </li>
               <li class="divider-vertical"></li>
               <li>

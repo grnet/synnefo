@@ -20,7 +20,7 @@ synnefo ||
 
 
 The above sections are the software components/roles that you should setup in
-order to have full synnefo funtionality.  After successful installation, you
+order to have full Synnefo funtionality.  After successful installation, you
 will have the following services running:
 
  * Identity Management (Astakos)
@@ -52,7 +52,7 @@ end here we define the following roles:
 
 Please note that all these roles can be "played" by the same node, but for the
 sake of scalability is highly recommended to deploy Synnefo on more than 6 nodes,
-each with different role(s). In setup synnefo and backend nodes are the same
+each with different role(s). In setup Synnefo and backend nodes are the same
 ones.
 
 

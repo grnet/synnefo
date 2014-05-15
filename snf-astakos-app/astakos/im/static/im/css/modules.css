@@ -676,7 +676,7 @@ h2 span.subtitle { font-size: 0.9em; color: #55B577;}
 .content a:visited       { outline: 0 none; }
 .content a:visited 		{ border:0 none; }
 
-#hand											{ position:absolute; height:79px; width:61px; background:url(../images/xeraki_hover.png) no-repeat; overflow:hidden; display:none;  top:40px;}
+#hand											{ position:absolute; height:79px; width:61px; background:url(../images/hand_hover.png) no-repeat; overflow:hidden; display:none;  top:40px;}
 
 table.cols-3 									{ width:100%; color:#222;}
 table.cols-3 td 								{ width:30%;}

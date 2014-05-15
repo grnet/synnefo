@@ -44,6 +44,7 @@ from django.contrib.auth import authenticate
 from django.core.urlresolvers import reverse
 from django.shortcuts import redirect
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
+from django.utils.encoding import iri_to_uri
 from django.utils.translation import ugettext as _
 
 from astakos.im.models import AstakosUser, Invitation
@@ -217,7 +218,7 @@ def prepare_response(request, user, next='', renew=False):
     if not next:
         next = settings.LOGIN_SUCCESS_URL
 
-    response['Location'] = next
+    response['Location'] = iri_to_uri(next)
     response.status_code = 302
     return response
 

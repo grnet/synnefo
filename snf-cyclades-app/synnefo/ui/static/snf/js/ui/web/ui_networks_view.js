@@ -206,6 +206,7 @@
             var dhcp = this.dhcp_select.is(":checked");
             var subnet = null;
             var type = this.type_select.val();
+            var gateway = undefined;
 
             if (dhcp) {
                 if (this.subnet_select.val() == "custom") {
@@ -218,11 +219,12 @@
                 
             }
 
-            snf.storage.networks.create(name, type, subnet, dhcp, _.bind(function(){
-                this.hide();
-                // trigger parent view create handler
-                this.parent_view.post_create();
-            }, this));
+            snf.storage.networks.create(name, type, subnet, dhcp, gateway,
+              _.bind(function(){
+                  this.hide();
+                  // trigger parent view create handler
+                  this.parent_view.post_create();
+              }, this));
         },
 
         beforeOpen: function() {

@@ -53,7 +53,9 @@ class PithosBackendPool(ObjectPool):
                  public_url_alphabet=None,
                  account_quota_policy=None,
                  container_quota_policy=None,
-                 container_versioning_policy=None):
+                 container_versioning_policy=None,
+                 backend_storage=None,
+                 rados_ceph_conf=None):
         super(PithosBackendPool, self).__init__(size=size)
         self.db_module = db_module
         self.db_connection = db_connection
@@ -75,6 +77,8 @@ class PithosBackendPool(ObjectPool):
         self.account_quota_policy = account_quota_policy
         self.container_quota_policy = container_quota_policy
         self.container_versioning_policy = container_versioning_policy
+        self.backend_storage = backend_storage
+        self.rados_ceph_conf = rados_ceph_conf
 
     def _pool_create(self):
         backend = connect_backend(
@@ -97,7 +101,9 @@ class PithosBackendPool(ObjectPool):
             public_url_alphabet=self.public_url_alphabet,
             account_quota_policy=self.account_quota_policy,
             container_quota_policy=self.container_quota_policy,
-            container_versioning_policy=self.container_versioning_policy)
+            container_versioning_policy=self.container_versioning_policy,
+            backend_storage=self.backend_storage,
+            rados_ceph_conf=self.rados_ceph_conf)
 
         backend._real_close = backend.close
         backend.close = instancemethod(_pooled_backend_close, backend,

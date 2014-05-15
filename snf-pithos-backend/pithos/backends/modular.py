@@ -101,14 +101,16 @@ DEFAULT_BLOCK_PATH = 'data/'
 DEFAULT_BLOCK_UMASK = 0o022
 DEFAULT_BLOCK_SIZE = 4 * 1024 * 1024  # 4MB
 DEFAULT_HASH_ALGORITHM = 'sha256'
-#DEFAULT_QUEUE_MODULE = 'pithos.backends.lib.rabbitmq'
+# DEFAULT_QUEUE_MODULE = 'pithos.backends.lib.rabbitmq'
 DEFAULT_BLOCK_PARAMS = {'mappool': None, 'blockpool': None}
-#DEFAULT_QUEUE_HOSTS = '[amqp://guest:guest@localhost:5672]'
-#DEFAULT_QUEUE_EXCHANGE = 'pithos'
+# DEFAULT_QUEUE_HOSTS = '[amqp://guest:guest@localhost:5672]'
+# DEFAULT_QUEUE_EXCHANGE = 'pithos'
 DEFAULT_PUBLIC_URL_ALPHABET = ('0123456789'
                                'abcdefghijklmnopqrstuvwxyz'
                                'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
 DEFAULT_PUBLIC_URL_SECURITY = 16
+DEFAULT_BACKEND_STORAGE = 'nfs'
+DEFAULT_RADOS_CEPH_CONF = '/etc/ceph/ceph.conf'
 
 QUEUE_MESSAGE_KEY_PREFIX = 'pithos.%s'
 QUEUE_CLIENT_ID = 'pithos'
@@ -229,7 +231,9 @@ class ModularBackend(BaseBackend):
                  public_url_alphabet=None,
                  account_quota_policy=None,
                  container_quota_policy=None,
-                 container_versioning_policy=None):
+                 container_versioning_policy=None,
+                 backend_storage=None,
+                 rados_ceph_conf=None):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
         block_module = block_module or DEFAULT_BLOCK_MODULE
@@ -238,20 +242,22 @@ class ModularBackend(BaseBackend):
         block_params = block_params or DEFAULT_BLOCK_PARAMS
         block_size = block_size or DEFAULT_BLOCK_SIZE
         hash_algorithm = hash_algorithm or DEFAULT_HASH_ALGORITHM
-        #queue_module = queue_module or DEFAULT_QUEUE_MODULE
+        # queue_module = queue_module or DEFAULT_QUEUE_MODULE
         account_quota_policy = account_quota_policy or DEFAULT_ACCOUNT_QUOTA
         container_quota_policy = container_quota_policy \
             or DEFAULT_CONTAINER_QUOTA
         container_versioning_policy = container_versioning_policy \
             or DEFAULT_CONTAINER_VERSIONING
+        backend_storage = backend_storage or DEFAULT_BACKEND_STORAGE
+        rados_ceph_conf = rados_ceph_conf or DEFAULT_RADOS_CEPH_CONF
 
         self.default_account_policy = {'quota': account_quota_policy}
         self.default_container_policy = {
             'quota': container_quota_policy,
             'versioning': container_versioning_policy
         }
-        #queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
-        #queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
+        # queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
+        # queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
 
         self.public_url_security = (public_url_security or
                                     DEFAULT_PUBLIC_URL_SECURITY)
@@ -289,6 +295,8 @@ class ModularBackend(BaseBackend):
                   'hash_algorithm': self.hash_algorithm,
                   'umask': block_umask}
         params.update(self.block_params)
+        params.update({"backend_storage": backend_storage})
+        params.update({"rados_ceph_conf": rados_ceph_conf})
         self.store = self.block_module.Store(**params)
 
         if queue_module and queue_hosts:
@@ -985,7 +993,7 @@ class ModularBackend(BaseBackend):
                                                            names)
         access_objects = self.permissions.access_check_bulk(permissions_path,
                                                             user)
-        #group_parents = access_objects['group_parents']
+        # group_parents = access_objects['group_parents']
         nobject_permissions = {}
         cpath = '/'.join((account, container, ''))
         cpath_idx = len(cpath)
@@ -1598,7 +1606,7 @@ class ModularBackend(BaseBackend):
             src_checksum = ''
         if size is None:  # Set metadata.
             hash = src_hash  # This way hash can be set to None
-                             # (account or container).
+            # (account or container).
             size = src_size
         if type is None:
             type = src_type
@@ -1646,8 +1654,8 @@ class ModularBackend(BaseBackend):
 
         src_version_id, dest_version_id = self._put_version_duplicate(
             user, node,
-            update_statistics_ancestors_depth=
-            update_statistics_ancestors_depth)
+            update_statistics_ancestors_depth=update_statistics_ancestors_depth
+            )
         self._put_metadata_duplicate(
             src_version_id, dest_version_id, domain, node, meta, replace)
         return src_version_id, dest_version_id

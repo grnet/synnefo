@@ -55,6 +55,9 @@ BASE_URL = getattr(settings, 'PITHOS_BASE_URL',
 # Service Token acquired by identity provider.
 SERVICE_TOKEN = getattr(settings, 'PITHOS_SERVICE_TOKEN', '')
 
+# Select Pithos backend storage.
+BACKEND_STORAGE = getattr(settings, 'PITHOS_BACKEND_STORAGE', 'nfs')
+
 BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
 
 pithos_services = deepcopy(vanilla_pithos_services)
@@ -166,7 +169,8 @@ BACKEND_POOL_SIZE = getattr(settings, 'PITHOS_BACKEND_POOL_SIZE', 5)
 # Update object checksums.
 UPDATE_MD5 = getattr(settings, 'PITHOS_UPDATE_MD5', False)
 
-RADOS_STORAGE = getattr(settings, 'PITHOS_RADOS_STORAGE', False)
+RADOS_CEPH_CONF = getattr(settings, 'PITHOS_RADOS_CEPH_CONF', \
+                          '/etc/ceph/ceph.conf')
 RADOS_POOL_BLOCKS = getattr(settings, 'PITHOS_RADOS_POOL_BLOCKS', 'blocks')
 RADOS_POOL_MAPS = getattr(settings, 'PITHOS_RADOS_POOL_MAPS', 'maps')
 

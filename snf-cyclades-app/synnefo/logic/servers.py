@@ -1,4 +1,4 @@
-# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -456,9 +456,6 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
     elif network.action == "DESTROY":
         msg = "Cannot create port. Network %s is being deleted."
         raise faults.Conflict(msg % network.id)
-    elif network.drained:
-        raise faults.Conflict("Cannot create port while network %s is in"
-                              " 'SNF:DRAINED' status" % network.id)
 
     utils.check_name_length(name, NetworkInterface.NETWORK_IFACE_NAME_LENGTH,
                             "Port name is too long")
@@ -471,6 +468,10 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
             msg = "IP Address %s does not belong to network %s"
             raise faults.Conflict(msg % (ipaddress.address, network.id))
     else:
+        # Do not allow allocation of new IPs if the network is drained
+        if network.drained:
+            raise faults.Conflict("Cannot create port while network %s is in"
+                                  " 'SNF:DRAINED' status" % network.id)
         # If network has IPv4 subnets, try to allocate the address that the
         # the user specified or a random one.
         if network.subnets.filter(ipversion=4).exists():
@@ -728,7 +729,7 @@ def _port_for_request(user_id, network_dict):
                     return create_public_ipv4_port(user_id, network, address)
             else:
                 raise faults.Forbidden("Cannot connect to IPv6 only public"
-                                       " network %" % network.id)
+                                       " network '%s'" % network.id)
         else:
             return _create_port(user_id, network, address=address)
     else:

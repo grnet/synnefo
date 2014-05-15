@@ -20,10 +20,6 @@ all the interactions between them.
    :width: 100%
    :target: _images/synnefo-arch2.png
 
-Synnefo also supports RADOS as an alternative storage backend for
-Files/Images/VM disks. You will find the :ref:`corresponding figure
-<syn+archip+rados>` later in this guide.
-
 
 Identity Service (Astakos)
 ==========================
@@ -92,7 +88,7 @@ available at the destination::
 Astakos keeps a map of shibboleth users using the value of the ``REMOTE_USER``
 header, passed by the ``mod_shib2`` module. This happens in order to be able to
 identify the astakos account the shibboleth user is associated to, every time
-the user logs in from an affiliate shibboleth IdP. 
+the user logs in from an affiliate shibboleth IdP.
 
 The shibboleth attribute which gets mapped to the ``REMOTE_USER`` header can be
 changed in ``/etc/shibboleth/shibboleth2.xml`` configuration file.
@@ -100,7 +96,7 @@ changed in ``/etc/shibboleth/shibboleth2.xml`` configuration file.
 .. code-block:: xml
 
     <!-- The ApplicationDefaults element is where most of Shibboleth's SAML bits are defined. -->
-        <ApplicationDefaults entityID="https://sp.example.org/shibboleth" 
+        <ApplicationDefaults entityID="https://sp.example.org/shibboleth"
          REMOTE_USER="eppn persistent-id targeted-id">
 
 .. warning::
@@ -591,7 +587,7 @@ Enabling this feature consists of the following steps:
 
 #. **Register Pithos+ as an OAuth2 client in Astakos**
 
-   Starting from synnefo version 0.15, in order to view the content of a
+   Starting from Synnefo version 0.15, in order to view the content of a
    protected resource, Pithos+ (on behalf of the user) has to be granted
    authorization for the specific resource by Astakos.
 
@@ -635,6 +631,31 @@ Enabling this feature consists of the following steps:
    Finally, restart the gunicorn server::
 
         pithos-host$ /etc/init.d/gunicorn restart
+
+
+.. _select_pithos_storage:
+
+Select Pithos storage backend
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Starting from Synnefo 0.15.1 we introduce the ability to select or change the
+storage backend. If you have already enabled and configured RADOS as your
+secondary storage solution you can now explicitly select your storage
+backend being only RADOS.
+
+A new variable has been introduced called PITHOS_BACKEND_STORAGE with
+possible values 'nfs' and 'rados', default value is 'nfs'.
+For those users that need to migrate from NFS to RADOS and have not enabled the
+dual mode of operation from the beginning of their installation, you can
+use a synchronization script that is provided in order to synchronize the data
+from NFS to Rados. The script can be found at
+`/usr/lib/pithos/tools/pithos-sync-rados.sh`.
+
+Since this version the dual mode of operation is not supported any more,
+meaning you will not be able to keep double Pithos objects anymore in NFS and
+RADOS.
+After installing v0.15.1 you will have to choose between the storage backend
+you want to use.
 
 
 Compute/Network/Image Service (Cyclades)
@@ -2329,9 +2350,9 @@ Scaling up to multiple nodes
 Here we will describe how should a large scale Synnefo deployment look like. Make
 sure you are familiar with Synnefo and Ganeti before proceeding with this section.
 This means you should at least have already set up successfully a working Synnefo
-deployment as described in the :ref:`Admin's Installation Guide
-<quick-install-admin-guide>` and also read the Administrator's Guide until this
-section.
+deployment as described in the Admin's Installation Guide (:ref:`Debian
+<install-guide-debian>`/:ref:`CentOS <install-guide-centos>`) and also read the
+Administrator's Guide until this section.
 
 Graph of a scale-out Synnefo deployment
 ---------------------------------------
@@ -2342,10 +2363,8 @@ Each box in the following graph corresponds to a distinct physical node:
    :width: 100%
    :target: _images/synnefo-arch2-roles.png
 
-The above graph is actually the same with the one at the beginning of this
-:ref:`guide <admin-guide>`, with the only difference that here we show the
-Synnefo roles of each physical node. These roles are described in the
-following section.
+The above graph shows the Synnefo roles of each physical node. These roles are
+described in the following section.
 
 .. _physical-node-roles:
 
@@ -2534,12 +2553,14 @@ Upgrade Notes
    v0.14.7 -> v0.14.8 <upgrade/upgrade-0.14.8>
    v0.14.9 -> v0.14.10 <upgrade/upgrade-0.14.10>
    v0.14 -> v0.15 <upgrade/upgrade-0.15>
+   v0.15 -> v0.15.1 <upgrade/upgrade-0.15.1>
 
 
 Changelog, NEWS
 ===============
 
 
+* v0.15.1 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.1>`
 * v0.15 :ref:`Changelog <Changelog-0.15>`, :ref:`NEWS <NEWS-0.15>`
 * v0.14.10 :ref:`Changelog <Changelog-0.14.10>`, :ref:`NEWS <NEWS-0.14.10>`
 * v0.14.9 :ref:`Changelog <Changelog-0.14.9>`, :ref:`NEWS <NEWS-0.14.9>`

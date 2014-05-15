@@ -1,4 +1,4 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -64,11 +64,12 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_VERSIONING, BACKEND_FREE_VERSIONING,
                                  BACKEND_POOL_ENABLED, BACKEND_POOL_SIZE,
                                  BACKEND_BLOCK_SIZE, BACKEND_HASH_ALGORITHM,
-                                 RADOS_STORAGE, RADOS_POOL_BLOCKS,
+                                 RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
                                  BASE_HOST, UPDATE_MD5, VIEW_PREFIX,
-                                 OAUTH2_CLIENT_CREDENTIALS, UNSAFE_DOMAIN)
+                                 OAUTH2_CLIENT_CREDENTIALS, UNSAFE_DOMAIN,
+                                 BACKEND_STORAGE, RADOS_CEPH_CONF)
 
 from pithos.api.resources import resources
 from pithos.backends import connect_backend
@@ -76,7 +77,6 @@ from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists)
 
 from synnefo.lib import join_urls
-from synnefo.util import text
 
 from astakosclient import AstakosClient
 from astakosclient.errors import NoUserName, NoUUID, AstakosClientException
@@ -234,7 +234,8 @@ def get_object_headers(request):
 
 
 def put_object_headers(response, meta, restricted=False, token=None,
-                       disposition_type=None):
+                       disposition_type=None,
+                       include_content_disposition=False):
     response['ETag'] = meta['hash'] if not UPDATE_MD5 else meta['checksum']
     response['Content-Length'] = meta['bytes']
     response.override_serialization = True
@@ -264,10 +265,14 @@ def put_object_headers(response, meta, restricted=False, token=None,
         for k in ('Content-Encoding', 'Content-Disposition'):
             if k in meta:
                 response[k] = smart_str(meta[k], strings_only=True)
-    disposition_type = disposition_type if disposition_type in \
-        ('inline', 'attachment') else None
-    if disposition_type is not None:
-        response['Content-Disposition'] = smart_str('%s; filename=%s' % (
+    if include_content_disposition:
+        user_defined = 'Content-Disposition' in response
+        valid_disposition_type = disposition_type in ('inline', 'attachment')
+        if user_defined and not valid_disposition_type:
+            return
+        if not valid_disposition_type:
+            disposition_type = 'attachment'
+        response['Content-Disposition'] = smart_str('%s; filename="%s"' % (
             disposition_type, meta['name']), strings_only=True)
 
 
@@ -961,7 +966,8 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
     put_object_headers(
         response, meta, restricted=public,
         token=getattr(request, 'token', None),
-        disposition_type=request.GET.get('disposition-type'))
+        disposition_type=request.GET.get('disposition-type'),
+        include_content_disposition=True)
     if ret == 206:
         if len(ranges) == 1:
             offset, length = ranges[0]
@@ -1015,7 +1021,7 @@ def simple_list_response(request, l):
 
 from pithos.backends.util import PithosBackendPool
 
-if RADOS_STORAGE:
+if BACKEND_STORAGE == 'rados':
     BLOCK_PARAMS = {'mappool': RADOS_POOL_MAPS,
                     'blockpool': RADOS_POOL_BLOCKS, }
 else:
@@ -1042,7 +1048,9 @@ BACKEND_KWARGS = dict(
     public_url_alphabet=PUBLIC_URL_ALPHABET,
     account_quota_policy=BACKEND_ACCOUNT_QUOTA,
     container_quota_policy=BACKEND_CONTAINER_QUOTA,
-    container_versioning_policy=BACKEND_VERSIONING)
+    container_versioning_policy=BACKEND_VERSIONING,
+    backend_storage=BACKEND_STORAGE,
+    rados_ceph_conf=RADOS_CEPH_CONF)
 
 _pithos_backend_pool = PithosBackendPool(size=BACKEND_POOL_SIZE,
                                          **BACKEND_KWARGS)
@@ -1081,7 +1089,7 @@ def update_response_headers(request, response):
         if (k.startswith('X-Account-') or k.startswith('X-Container-') or
                 k.startswith('X-Object-') or k.startswith('Content-')):
             del(response[k])
-            response[quote(k)] = quote(v, safe='/=,:@; ')
+            response[quote(k)] = quote(v, safe='/=,:@; "')
 
 
 def api_method(http_method=None, token_required=True, user_required=True,
@@ -1179,8 +1187,9 @@ def view_method():
 
             try:
                 access_token = request.GET.get('access_token')
-                requested_resource = text.uenc(request.path.split(VIEW_PREFIX,
-                                                                  2)[-1])
+                requested_resource = request.path.split(VIEW_PREFIX, 2)[-1]
+                requested_resource = smart_str(requested_resource,
+                                               encoding="utf-8")
                 astakos = AstakosClient(SERVICE_TOKEN, ASTAKOS_AUTH_URL,
                                         retry=2, use_pool=True,
                                         logger=logger)

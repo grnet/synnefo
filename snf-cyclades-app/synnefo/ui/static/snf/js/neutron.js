@@ -314,7 +314,7 @@
         });
       },
 
-      create: function (name, type, cidr, dhcp, callback) {
+      create: function (name, type, cidr, dhcp, gateway, callback) {
         var quota = synnefo.storage.quotas;
         var params = {network:{name:name}};
         var subnet_params = {subnet:{network_id:undefined}};
@@ -324,6 +324,8 @@
         if (cidr) { subnet_params.subnet.cidr = cidr; }
         if (dhcp) { subnet_params.subnet.dhcp_enabled = dhcp; }
         if (dhcp === false) { subnet_params.subnet.dhcp_enabled = false; }
+
+        subnet_params.subnet.gateway_ip = gateway || null;
         
         var cb = function() {
           callback && callback();

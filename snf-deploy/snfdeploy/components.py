@@ -582,15 +582,23 @@ class Ganeti(base.Component):
             ]
 
     def _prepare_lvm(self):
-        ret = []
-        disk = self.node.extra_disk
-        if disk:
-            ret = [
-                "test -e %s" % disk,
-                "pvcreate %s" % disk,
-                "vgcreate %s %s" % (self.cluster.vg, disk)
-                ]
-        return ret
+        extra_disk_dev = self.node.extra_disk
+        extra_disk_file = "/disk"
+        # If extra disk found use it
+        # else create a raw file and losetup it
+        cmd = """
+if [ -b "{0}" ]; then
+  pvcreate {0} && vgcreate {0} {2}
+else
+  truncate -s {3} {1}
+  loop_dev=$(losetup -f --show {1})
+  pvcreate $loop_dev
+  vgcreate {2} $loop_dev
+fi
+""".format(extra_disk_dev, extra_disk_file,
+           self.cluster.vg, self.cluster.vg_size)
+
+        return [cmd]
 
     def _prepare_net_infra(self):
         br = config.common_bridge

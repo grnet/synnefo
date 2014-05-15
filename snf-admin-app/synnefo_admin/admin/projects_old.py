@@ -32,21 +32,13 @@
 # or implied, of GRNET S.A.
 
 import logging
-import re
 from collections import OrderedDict
 
-from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
-from django.core.urlresolvers import reverse
+from actions import AdminAction, nop
 
-from synnefo.db.models import VirtualMachine, Network
-from astakos.im.functions import send_plain as send_email
-from astakos.im.models import AstakosUser, Project
+from synnefo.db.models import VirtualMachine, Network, IPAddressLog
+from astakos.im.models import AstakosUser, ProjectMembership, Project
 from astakos.im.functions import approve_application
-
-from eztables.views import DatatablesView
-from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
-                     nop)
 
 templates = {
     'list': 'admin/project_list.html',
@@ -60,89 +52,6 @@ def get_project(query):
     except Exception:
         project = Project.objects.get(uuid=query)
     return project
-
-
-def get_allowed_actions(project):
-    """Get a list of actions that can apply to a project."""
-    allowed_actions = []
-    actions = generate_actions()
-
-    for key, action in actions.iteritems():
-        if action.can_apply(project):
-            allowed_actions.append(key)
-
-    return allowed_actions
-
-
-def get_contact_mail(inst):
-    if inst.owner:
-        return inst.owner.email,
-
-
-def get_contact_name(inst):
-    if inst.owner:
-        return inst.owner.realname,
-
-
-class ProjectJSONView(DatatablesView):
-    model = Project
-    fields = ('id', 'id', 'name', 'state', 'end_date')
-
-    extra = True
-
-    def format_data_row(self, row):
-        row[3] = (str(row[3]) + ' (' +
-                  Project.objects.get(id=row[0]).state_display() + ')')
-        return row
-
-    def get_extra_data_row(self, inst):
-        extra_dict = {
-            'allowed_actions': {
-                'display_name': "",
-                'value': get_allowed_actions(inst),
-                'visible': False,
-            }, 'id': {
-                'display_name': "ID",
-                'value': inst.id,
-                'visible': False,
-            }, 'item_name': {
-                'display_name': "Name",
-                'value': inst.name,
-                'visible': False,
-            }, 'details_url': {
-                'display_name': "Details",
-                'value': reverse('admin-details', args=['project', inst.id]),
-                'visible': True,
-            }, 'contact_mail': {
-                'display_name': "Contact mail",
-                'value': get_contact_mail(inst),
-                'visible': True,
-            }, 'contact_name': {
-                'display_name': "Contact name",
-                'value': get_contact_name(inst),
-                'visible': True,
-            }, 'uuid': {
-                'display_name': "UUID",
-                'value': inst.uuid,
-                'visible': True,
-            }, 'description': {
-                'display_name': "Description",
-                'value': inst.description,
-                'visible': True,
-            }, 'creation_date': {
-                'display_name': "Creation date",
-                'value': inst.creation_date,
-                'visible': True,
-            }, 'members': {
-                'display_name': "Members",
-                'value': (str(inst.members_count) + ' / ' +
-                          str(inst.limit_on_members_number)),
-                'visible': True,
-            }
-        }
-
-        return extra_dict
-
 
 class ProjectAction(AdminAction):
 
@@ -165,19 +74,25 @@ def generate_actions():
     """
     actions = OrderedDict()
 
-    actions['approve'] = ProjectAction(name='Approve', f=approve_application)
+    actions['approve'] = ProjectAction(name='Approve', f=approve_application,
+                                       severity='trivial')
 
-    actions['deny'] = ProjectAction(name='Deny', f=nop)
+    actions['deny'] = ProjectAction(name='Deny', f=nop, severity='trivial')
 
-    actions['suspend'] = ProjectAction(name='Suspend', f=nop,)
+    actions['suspend'] = ProjectAction(name='Suspend', f=nop,
+                                       severity='trivial')
 
-    actions['unsuspend'] = ProjectAction(name='Release suspension', f=nop)
+    actions['unsuspend'] = ProjectAction(name='Release suspension', f=nop,
+                                         severity='trivial')
 
-    actions['terminate'] = ProjectAction(name='Terminate', f=nop)
+    actions['terminate'] = ProjectAction(name='Terminate', f=nop,
+                                         severity='trivial')
 
-    actions['reinstate'] = ProjectAction(name='Reinstate', f=nop)
+    actions['reinstate'] = ProjectAction(name='Reinstate', f=nop,
+                                         severity='trivial')
 
-    actions['contact'] = ProjectAction(name='Send e-mail', f=nop)
+    actions['contact'] = ProjectAction(name='Send e-mail', f=nop,
+                                       severity='trivial')
 
     return actions
 
@@ -202,13 +117,19 @@ def do_action(request, op, id):
 
 
 def catalog(request):
-    """List view for Cyclades projects."""
+    """List view for Astakos projects."""
     context = {}
     context['action_dict'] = generate_actions()
-    context['columns'] = ["Column 1", "ID", "Name", "Status",
-                          "Expiration date", "Details", "Summary"]
-    context['item_type'] = 'project'
 
+    all = Project.objects.all()
+    logging.info("These are the projects %s", all)
+
+    project_context = {
+        'item_list': all,
+        'item_type': 'project',
+    }
+
+    context.update(project_context)
     return context
 
 
@@ -231,3 +152,4 @@ def details(request, query):
     }
 
     return context
+

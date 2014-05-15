@@ -26,14 +26,13 @@ from django.test import Client as TestClient
 
 from django.core.urlresolvers import reverse
 from django.utils import simplejson as json
+from django.utils.encoding import smart_str, iri_to_uri
 
 from astakos.oa2 import settings
 from astakos.oa2.models import Client, AuthorizationCode, Token
 from astakos.im.tests import common
 
-from synnefo.util.text import uenc
 from synnefo.util.urltools import normalize
-
 
 ParsedURL = namedtuple('ParsedURL', ['host', 'scheme', 'path', 'params',
                                      'url'])
@@ -87,7 +86,7 @@ class URLAssertionsMixin(object):
 
     @parsed_url_wrapper
     def assertPath(self, url, path):
-        self.assertEqual(normalize(url.path), normalize(path))
+        self.assertEqual(iri_to_uri(url.path), iri_to_uri(path))
 
     @parsed_url_wrapper
     def assertSecure(self, url, key):
@@ -201,10 +200,10 @@ class TestOA2(TestCase, URLAssertionsMixin):
             self.assertEqual(token.token_type, token_type)
             self.assertEqual(token.grant_type, 'authorization_code')
             #self.assertEqual(token.user, expected.get('user'))
-            self.assertEqual(normalize(uenc(token.redirect_uri)),
-                             normalize(uenc(expected.get('redirect_uri'))))
-            self.assertEqual(normalize(uenc(token.scope)),
-                             normalize(uenc(expected.get('scope'))))
+            self.assertEqual(smart_str(token.redirect_uri),
+                             smart_str(expected.get('redirect_uri')))
+            self.assertEqual(smart_str(token.scope),
+                             smart_str(expected.get('scope')))
             self.assertEqual(token.state, expected.get('state'))
         except Token.DoesNotExist:
             self.fail("Invalid access_token")
@@ -213,7 +212,7 @@ class TestOA2(TestCase, URLAssertionsMixin):
         baseurl = reverse('oauth2_authenticate').replace('/auth', '/')
         self.client = OA2Client(baseurl)
         client1 = Client.objects.create(identifier="client1", secret="secret")
-        self.client1_redirect_uri = "https://server.com/handle_code"
+        self.client1_redirect_uri = "https://server.com/handle_code?α=β&a=b"
         client1.redirecturl_set.create(url=self.client1_redirect_uri)
 
         client2 = Client.objects.create(identifier="client2", type='public')
@@ -313,7 +312,8 @@ class TestOA2(TestCase, URLAssertionsMixin):
         code = AuthorizationCode.objects.get(code=redirect.params['code'][0])
         #self.assertEqual(code.state, '')
         self.assertEqual(code.state, None)
-        self.assertEqual(code.redirect_uri, self.client1_redirect_uri)
+        self.assertEqual(normalize(iri_to_uri(code.redirect_uri)),
+                         normalize(iri_to_uri(self.client1_redirect_uri)))
 
         params['state'] = 'csrfstate'
         params['scope'] = 'resource1'
@@ -324,7 +324,8 @@ class TestOA2(TestCase, URLAssertionsMixin):
 
         code = AuthorizationCode.objects.get(code=redirect.params['code'][0])
         self.assertEqual(code.state, 'csrfstate')
-        self.assertEqual(code.redirect_uri, self.client1_redirect_uri)
+        self.assertEqual(normalize(iri_to_uri(code.redirect_uri)),
+                         normalize(iri_to_uri(self.client1_redirect_uri)))
 
         # valid request: trusted client
         params = {'redirect_uri': self.client3_redirect_uri,
@@ -401,7 +402,8 @@ class TestOA2(TestCase, URLAssertionsMixin):
         self.assertEqual(r.status_code, 400)
 
         # redirect uri descendant
-        redirect_uri = '%s/φωτογραφία.JPG?α=γιουνικοντ' % self.client3_redirect_uri
+        redirect_uri = '%s/φωτογραφία.JPG?α=γιουνικοντ' % \
+            self.client3_redirect_uri
         params['redirect_uri'] = redirect_uri
         self.client.set_credentials('client3', 'secret')
         r = self.client.authorize_code('client3', urlparams=params)
@@ -418,8 +420,8 @@ class TestOA2(TestCase, URLAssertionsMixin):
 
         code = AuthorizationCode.objects.get(code=redirect.params['code'][0])
         self.assertEqual(code.state, 'csrfstate')
-        self.assertEqual(normalize(uenc(code.redirect_uri)),
-                         normalize(uenc(redirect_uri)))
+        self.assertEqual(smart_str(code.redirect_uri),
+                         smart_str(redirect_uri))
 
     def test_get_token(self):
         # invalid method
@@ -535,7 +537,8 @@ class TestOA2(TestCase, URLAssertionsMixin):
                     'state': None}
         self.assert_access_token_response(r, expected)
 
-        redirect_uri = '%s/φωτογραφία.JPG?α=γιουνικοντ' % self.client3_redirect_uri
+        redirect_uri = '%s/φωτογραφία.JPG?α=γιουνικοντ' % \
+            self.client3_redirect_uri
         params = {'redirect_uri': redirect_uri}
         r = self.client.authorize_code('client3', urlparams=params)
         self.assertCount(AuthorizationCode, 1)

@@ -15,8 +15,6 @@
 
 from hashlib import new as newhasher
 from binascii import hexlify
-import os
-import re
 import ConfigParser
 
 from context_archipelago import ArchipelagoObject, file_sync_read_chunks
@@ -47,7 +45,7 @@ class ArchipelagoBlocker(object):
         cfg = {}
         bcfg = ConfigParser.ConfigParser()
         bcfg.readfp(open(glue.WorkerGlue.ArchipelagoConfFile))
-        cfg['blockerb'] = bcfg.getint('mapperd','blockerb_port')
+        cfg['blockerb'] = bcfg.getint('mapperd', 'blockerb_port')
         blocksize = params['blocksize']
         hashtype = params['hashtype']
         try:
@@ -132,7 +130,6 @@ class ArchipelagoBlocker(object):
         """Retrieve blocks from storage by their hashes"""
         blocks = []
         append = blocks.append
-        block = None
 
         ioctx = self.ioctx_pool.pool_get()
         archip_emptyhash = hexlify(self.emptyhash)

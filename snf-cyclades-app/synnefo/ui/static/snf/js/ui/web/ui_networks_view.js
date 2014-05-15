@@ -201,6 +201,7 @@
             var project_id = this.project_select.val();
             var project = synnefo.storage.projects.get(project_id);
 
+            var gateway = undefined;
 
             if (dhcp) {
                 if (this.subnet_select.val() == "custom") {
@@ -211,10 +212,10 @@
                     subnet = this.subnet_select.val();
                 }
                 
-            }
+            }t
 
             snf.storage.networks.create(
-              project, name, type, subnet, dhcp, _.bind(function(){
+              project, name, type, subnet, dhcp, gateway, _.bind(function(){
                 this.hide();
             }, this));
         },

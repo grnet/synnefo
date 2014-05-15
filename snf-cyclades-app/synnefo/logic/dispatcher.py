@@ -64,6 +64,10 @@ log_logic = logging.getLogger("synnefo.logic")
 
 LOGGERS = [log, log_amqp, log_logic]
 
+# Seconds for which snf-dispatcher will wait on a queue with no messages.
+# After this timeout the snf-dispatcher will reconnect to the AMQP broker.
+DISPATCHER_RECONNECT_TIMEOUT = 600
+
 
 # Time out after S Seconds while waiting messages from Ganeti clusters to
 # arrive. Warning: During this period snf-dispatcher will not consume any other
@@ -92,7 +96,7 @@ class Dispatcher:
 
     def wait(self):
         log.info("Waiting for messages..")
-        timeout = 600
+        timeout = DISPATCHER_RECONNECT_TIMEOUT
         while True:
             try:
                 # Close the Django DB connection before processing
@@ -106,7 +110,7 @@ class Dispatcher:
                     log.warning("Idle connection for %d seconds. Will connect"
                                 " to a different host. Verify that"
                                 " snf-ganeti-eventd is running!!", timeout)
-                    self.client.reconnect()
+                    self.client.reconnect(timeout=1)
             except select.error as e:
                 if e[0] != errno.EINTR:
                     log.exception("Caught unexpected exception: %s", e)
@@ -117,8 +121,9 @@ class Dispatcher:
             except Exception as e:
                 log.exception("Caught unexpected exception: %s", e)
 
-        self.client.basic_cancel()
-        self.client.close()
+        log.info("Clean up AMQP connection before exit")
+        self.client.basic_cancel(timeout=1)
+        self.client.close(timeout=1)
 
     def _init(self):
         log.info("Initializing")

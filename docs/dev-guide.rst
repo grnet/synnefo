@@ -70,7 +70,7 @@ have problems with file permissions when deploying.
    # python setup.py develop -N
 
 This does not automatically install dependencies, in order to avoid
-confusion with synnefo packages installed by ``snf-deploy``. External
+confusion with Synnefo packages installed by ``snf-deploy``. External
 dependencies have already been installed by ``snf-deploy``; if you introduce
 a new dependency, you will have to explicitly install it.
 

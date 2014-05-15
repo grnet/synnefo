@@ -29,7 +29,7 @@ Backends
 The sections above, guide you though the actions needed to create a synnefo
 backend. Once you have at least one backend up and running you can go back to
 the :ref:`cyclades  <i-cyclades>` section, add the backend, create a public
-network and have full synnefo functionality.
+network and have full Synnefo functionality.
 
 In the following sections we will refer to the following roles:
 

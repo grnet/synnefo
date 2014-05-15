@@ -70,7 +70,7 @@ div.form-stacked 							{ margin-bottom: 2em; padding-bottom:1em; }
 .checkbox-widget.checked 					{ background-color: #FF0000; background-image: url("../images/checkbox.png"); background-position: 50% 50%; }
 .content a.checkbox-widget 					{ border: 1px solid #808080; cursor: pointer; display: block; float: left; height: 25px; margin:5px 20px 0 0 ; width: 25px; }
 form.withlabels .checkbox-widget			{ margin-top:12px; }
-form.innerlabels .checkbox-widget +  label	{ position:static; line-height:36px; color:#808080; }
+form.innerlabels .checkbox-widget +  label	{ position:static; line-height:36px; color:#808080; display:block;}
 form.innerlabels .checkbox-widget +  label + a	{ border-bottom:1px solid #F89A1C; font-size: 1.1em; }
 form span.info								{ position:absolute;z-index:7; bottom:32px;  }
 form.innerlabels span.info					{ left: 290px; }

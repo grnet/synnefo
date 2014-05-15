@@ -50,7 +50,7 @@ def login(request):
     """
     next = request.GET.get('next')
     if not next:
-        raise HttpResponseBadRequest('Missing next parameter')
+        return HttpResponseBadRequest('Missing next parameter')
 
     if not restrict_next(next, allowed_schemes=REDIRECT_ALLOWED_SCHEMES):
         return HttpResponseForbidden(_(

@@ -61,7 +61,6 @@ from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists, IllegalOperationError)
 
 from synnefo.lib import join_urls
-from synnefo.util import text
 
 from astakosclient import AstakosClient
 from astakosclient.errors import NoUserName, NoUUID, AstakosClientException
@@ -219,7 +218,8 @@ def get_object_headers(request):
 
 
 def put_object_headers(response, meta, restricted=False, token=None,
-                       disposition_type=None):
+                       disposition_type=None,
+                       include_content_disposition=False):
     response['ETag'] = meta['hash'] if not UPDATE_MD5 else meta['checksum']
     response['Content-Length'] = meta['bytes']
     response.override_serialization = True
@@ -250,10 +250,14 @@ def put_object_headers(response, meta, restricted=False, token=None,
         for k in ('Content-Encoding', 'Content-Disposition'):
             if k in meta:
                 response[k] = smart_str(meta[k], strings_only=True)
-    disposition_type = disposition_type if disposition_type in \
-        ('inline', 'attachment') else None
-    if disposition_type is not None:
-        response['Content-Disposition'] = smart_str('%s; filename=%s' % (
+    if include_content_disposition:
+        user_defined = 'Content-Disposition' in response
+        valid_disposition_type = disposition_type in ('inline', 'attachment')
+        if user_defined and not valid_disposition_type:
+            return
+        if not valid_disposition_type:
+            disposition_type = 'attachment'
+        response['Content-Disposition'] = smart_str('%s; filename="%s"' % (
             disposition_type, meta['name']), strings_only=True)
 
 
@@ -945,7 +949,8 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
     put_object_headers(
         response, meta, restricted=public,
         token=getattr(request, 'token', None),
-        disposition_type=request.GET.get('disposition-type'))
+        disposition_type=request.GET.get('disposition-type'),
+        include_content_disposition=True)
     if ret == 206:
         if len(ranges) == 1:
             offset, length = ranges[0]
@@ -1072,7 +1077,7 @@ def update_response_headers(request, response):
         if (k.startswith('X-Account-') or k.startswith('X-Container-') or
                 k.startswith('X-Object-') or k.startswith('Content-')):
             del(response[k])
-            response[quote(k)] = quote(v, safe='/=,:@; ')
+            response[quote(k)] = quote(v, safe='/=,:@; "')
 
 
 def api_method(http_method=None, token_required=True, user_required=True,
@@ -1170,8 +1175,9 @@ def view_method():
 
             try:
                 access_token = request.GET.get('access_token')
-                requested_resource = text.uenc(request.path.split(VIEW_PREFIX,
-                                                                  2)[-1])
+                requested_resource = request.path.split(VIEW_PREFIX, 2)[-1]
+                requested_resource = smart_str(requested_resource,
+                                               encoding="utf-8")
                 astakos = AstakosClient(SERVICE_TOKEN, ASTAKOS_AUTH_URL,
                                         retry=2, use_pool=True,
                                         logger=logger)

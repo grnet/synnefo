@@ -34,6 +34,7 @@ class Blocker(object):
     def block_ping(self, hashes):
         """Check hashes for existence and
            return those missing from block storage.
+
         """
         return self.archip_blocker.block_ping(hashes)
 
@@ -50,7 +51,9 @@ class Blocker(object):
            Hashes is a list of the hashes of the blocks,
            missing is a list of indices in that list indicating
            which blocks were missing from the store.
+
         """
+
         (hashes, missing) = self.archip_blocker.block_stor(blocklist)
         return (hashes, missing)
 

@@ -25,10 +25,13 @@ from django.core.validators import URLValidator
 from django.core.urlresolvers import reverse
 from django.conf.urls.defaults import patterns, url
 from django.http import HttpResponseNotAllowed
+from django.utils.encoding import smart_str, iri_to_uri
 from django.views.decorators.csrf import csrf_exempt
 
 from synnefo.lib import join_urls
-from synnefo.util.text import uenc
+from synnefo.util import urltools
+
+import urllib
 
 import logging
 logger = logging.getLogger(__name__)
@@ -103,7 +106,7 @@ class DjangoBackend(DjangoBackendORMMixin, oa2base.SimpleBackend,
         response.status_code = oa2response.status
         response.content = oa2response.body
         for key, value in oa2response.headers.iteritems():
-            response[uenc(key)] = uenc(value)
+            response[smart_str(key)] = smart_str(value)
         return response
 
     def build_request(self, django_request):
@@ -146,6 +149,19 @@ class DjangoBackend(DjangoBackendORMMixin, oa2base.SimpleBackend,
 
     def get_login_uri(self):
         return reverse('login')
+
+    @staticmethod
+    def urlencode(params):
+        if hasattr(params, 'urlencode') and \
+                callable(getattr(params, 'urlencode')):
+            return params.urlencode()
+        for k in params:
+            params[smart_str(k)] = smart_str(params.pop(k))
+        return urllib.urlencode(params)
+
+    @staticmethod
+    def normalize(url):
+        return urltools.normalize(iri_to_uri(url))
 
 
 class AstakosBackend(DjangoBackend):

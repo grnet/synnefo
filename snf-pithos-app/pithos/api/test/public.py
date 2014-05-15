@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+#coding=utf8
 # Copyright (C) 2010-2014 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -19,6 +21,7 @@ import time as _time
 import re
 
 from functools import partial
+from urllib import unquote
 
 from synnefo.lib import join_urls
 
@@ -50,14 +53,103 @@ class TestPublic(PithosAPITest):
         (self.assertTrue(l in pithos_settings.PUBLIC_URL_ALPHABET) for
          l in public)
 
+        p = re.compile('(attachment|inline); filename="(.+)"')
+
         r = self.get(public, user='user2', token=None)
         self.assertEqual(r.status_code, 200)
         self.assertTrue('X-Object-Public' not in r)
-
         self.assertEqual(r.content, odata)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+        self.assertEqual(oname, filename)
+
+        r = self.get('%s?disposition-type=inline' % public, user='user2',
+                     token=None)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Public' not in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'inline')
+        filename = m.group(2)
+        self.assertEqual(oname, filename)
+
+        r = self.get('%s?disposition-type=attachment' % public, user='user2',
+                     token=None)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Public' not in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+        self.assertEqual(oname, filename)
+
+        r = self.get('%s?disposition-type=jsdljladj' % public, user='user2',
+                     token=None)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Public' not in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+        self.assertEqual(oname, filename)
+
+        # override Content-Disposition
+        user_defined_disposition = content_disposition.replace(
+            'attachment', 'extension-token')
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='',
+                      HTTP_CONTENT_DISPOSITION=user_defined_disposition)
+        self.assertEqual(r.status_code, 202)
+
+        r = self.get(public, user='user2', token=None)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Public' not in r)
+        self.assertEqual(r.content, odata)
+        content_disposition = unquote(r['Content-Disposition'])
+        self.assertEqual(content_disposition, user_defined_disposition)
+
+        r = self.get('%s?disposition-type=inline' % public, user='user2',
+                     token=None)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Public' not in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'inline')
+        filename = m.group(2)
+        self.assertEqual(oname, filename)
+
+        r = self.get('%s?disposition-type=attachment' % public, user='user2',
+                     token=None)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Public' not in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+        self.assertEqual(oname, filename)
+
+        r = self.get('%s?disposition-type=jsdljladj' % public, user='user2',
+                     token=None)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Public' not in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        self.assertEqual(content_disposition, user_defined_disposition)
 
         # assert other users cannot access the object using the priavate path
-        url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.head(url, user='user2')
         self.assertEqual(r.status_code, 403)
 

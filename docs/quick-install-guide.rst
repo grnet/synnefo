@@ -1,7 +1,7 @@
 .. _quick-install-guide:
 
-Quick Installation Guide
-^^^^^^^^^^^^^^^^^^^^^^^^
+Quick Installation Guide on Debian Wheezy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 This is the Synnefo Quick Installation guide.
 

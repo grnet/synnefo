@@ -119,6 +119,13 @@ This is the Pithos Object Storage API:
    Storage API (Object Storage) <object-api-guide>
 
 
+Statistics API (Cyclades and Astakos)
+=====================================
+
+Synnefo administrator API for exposing basic statistics about Cyclades and
+Astakos Services: :ref:`Statistics API<stats-api-guide>`.
+
+
 Implementing new clients
 ========================
 

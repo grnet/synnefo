@@ -1,13 +1,13 @@
-.. _quick-install-admin-guide:
+.. _install-guide-centos:
 
-Administrator's Installation Guide
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Administrator's Installation Guide (on CentOS 6.5)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This is the Administrator's installation guide.
+This is the Administrator's installation guide on CentOS 6.5.
 
 It describes how to install the whole Synnefo stack on two (2) physical nodes,
-with minimum configuration. It installs synnefo from Debian packages, and
-assumes the nodes run Debian Wheezy. After successful installation, you will
+with minimum configuration. It installs Synnefo from CentOS packages, and
+assumes the nodes run CentOS 6.5. After successful installation, you will
 have the following services running:
 
     * Identity Management (Astakos)
@@ -43,24 +43,34 @@ more information on how to do so.
 General Prerequisites
 =====================
 
-These are the general synnefo prerequisites, that you need on node1 and node2
+These are the general Synnefo prerequisites, that you need on node1 and node2
 and are related to all the services (Astakos, Pithos, Cyclades).
 
-To be able to download all synnefo components you need to add the following
-lines in your ``/etc/apt/sources.list`` file:
+To be able to download all Synnefo components you need to add the GRNET repos
+to your installation. To do so, run:
 
-| ``deb http://apt.dev.grnet.gr wheezy/``
-| ``deb-src http://apt.dev.grnet.gr wheezy/``
+.. code-block:: console
 
-and import the repo's GPG key:
+  # yum localinstall https://dev.grnet.gr/files/grnet-repo.rpm
 
-| ``curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -``
+To verify the authenticity of the package you can use our public key found
+`here <https://dev.grnet.gr/files/apt-grnetdev.pub>`_.
+
+You'll also need to add the `EPEL repo <https://fedoraproject.org/wiki/EPEL>`_.
+To install it, run:
+
+.. code-block:: console
+
+   # yum localinstall http://ftp.ntua.gr/pub/linux/fedora-epel/6/i386/epel-release-6-8.noarch.rpm
+
+You can verify the above package and its key from the `Fedora project's keys
+page <https://fedoraproject.org/keys>`_.
 
 Update your list of packages and continue with the installation:
 
 .. code-block:: console
 
-   # apt-get update
+   # yum update
 
 You also need a shared directory visible by both nodes. Pithos will save all
 data inside this directory. By 'all data', we mean files, images, and Pithos
@@ -70,10 +80,10 @@ assume that node1 acts as an NFS server and serves the directory ``/srv/pithos``
 to node2 (be sure to set no_root_squash flag). Node2 has this directory
 mounted under ``/srv/pithos``, too.
 
-Before starting the synnefo installation, you will need basic third party
+Before starting the Synnefo installation, you will need basic third party
 software to be installed and configured on the physical nodes. We will describe
 each node's general prerequisites separately. Any additional configuration,
-specific to a synnefo service for each node, will be described at the service's
+specific to a Synnefo service for each node, will be described at the service's
 section.
 
 Finally, it is required for Cyclades and Ganeti nodes to have synchronized
@@ -95,27 +105,70 @@ General Synnefo dependencies
 		* gevent
 		* dnsmasq (DNS server)
 
-You can install apache2, postgresql, ntp and rabbitmq by running:
+You can install apache, ntp and rabbitmq by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 postgresql ntp rabbitmq-server
+   # yum install httpd ntp rabbitmq-server
+
+To install postgresql, edit the file ``/etc/yum.repos.d/CentOS-Base.repo`` and
+in the ``base`` and ``updates`` sections append:
+
+.. code-block:: console
+
+   exclude=postgresql*
+
+Now run:
+
+.. code-block:: console
+
+   # yum localinstall http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-centos93-9.3-1.noarch.rpm
+   # yum install postgresql93-server
+   # service postgresql-9.3 initdb
+   # chkconfig postgresql-9.3 on
+
+For more information on install postgresql on CentOS, please see `this
+https://wiki.postgresql.org/wiki/YUM_Installation`_.
 
 To install gunicorn and gevent, run:
 
 .. code-block:: console
 
-   # apt-get install gunicorn python-gevent
+   # yum install python-gunicorn python-gevent
 
 On node1, we will create our databases, so you will also need the
 python-psycopg2 package:
 
 .. code-block:: console
 
-   # apt-get install python-psycopg2
+   # yum install python-psycopg2
 
 Database setup
 ~~~~~~~~~~~~~~
+
+Configure the database to listen to all network interfaces. You can do this by
+editing the file ``/var/lib/pgsql/9.3/data/postgresql.conf`` and change
+``listen_addresses`` to ``'*'`` :
+
+.. code-block:: console
+
+    listen_addresses = '*'
+
+Furthermore, edit ``/var/lib/pgsql/9.3/data/pg_hba.conf`` to allow node1 and
+node2 to connect to the database. Add the following lines under ``#IPv4 local
+connections:`` :
+
+.. code-block:: console
+
+    host		all	all	203.0.113.1/32	md5
+    host		all	all	203.0.113.2/32	md5
+
+Make sure to substitute "203.0.113.1" and "203.0.113.2" with node1's and node2's
+actual IPs. Now, restart the server to apply the changes:
+
+.. code-block:: console
+
+   # /etc/init.d/postgresql-9.3 restart
 
 On node1, we create a database called ``snf_apps``, that will host all django
 apps related tables. We also create the user ``synnefo`` and grant him all
@@ -139,30 +192,6 @@ create all needed databases on node1 and then node2 will connect to them.
     postgres=# CREATE DATABASE snf_pithos WITH ENCODING 'UTF8' LC_COLLATE='C' LC_CTYPE='C' TEMPLATE=template0;
     postgres=# GRANT ALL PRIVILEGES ON DATABASE snf_pithos TO synnefo;
 
-Configure the database to listen to all network interfaces. You can do this by
-editing the file ``/etc/postgresql/9.1/main/postgresql.conf`` and change
-``listen_addresses`` to ``'*'`` :
-
-.. code-block:: console
-
-    listen_addresses = '*'
-
-Furthermore, edit ``/etc/postgresql/9.1/main/pg_hba.conf`` to allow node1 and
-node2 to connect to the database. Add the following lines under ``#IPv4 local
-connections:`` :
-
-.. code-block:: console
-
-    host		all	all	203.0.113.1/32	md5
-    host		all	all	203.0.113.2/32	md5
-
-Make sure to substitute "203.0.113.1" and "203.0.113.2" with node1's and node2's
-actual IPs. Now, restart the server to apply the changes:
-
-.. code-block:: console
-
-   # /etc/init.d/postgresql restart
-
 
 Certificate Creation
 ~~~~~~~~~~~~~~~~~~~~~
@@ -171,54 +200,25 @@ Node1 will host Cyclades. Cyclades should communicate with the other Synnefo
 Services and users over a secure channel. In order for the connection to be
 trusted, the keys provided to Apache below should be signed with a certificate.
 This certificate should be added to all nodes. In case you don't have signed keys you can create a self-signed certificate
-and sign your keys with this. To do so on node1 run:
+and sign your keys with this. To do so run:
 
 .. code-block:: console
 
-		# apt-get install openvpn
-		# mkdir /etc/openvpn/easy-rsa
-		# cp -ai /usr/share/doc/openvpn/examples/easy-rsa/2.0/ /etc/openvpn/easy-rsa
-		# cd /etc/openvpn/easy-rsa/2.0
-		# vim vars
+   # yum install mod_ssl openssl
+   # openssl genrsa -out ca.key 2048
+   # openssl req -new -key ca.key -out ca.csr
+   # openssl x509 -req -days 365 -in ca.csr -signkey ca.key -out ca.crt
+   # cp ca.crt /etc/pki/tls/certs
+   # cp ca.key /etc/pki/tls/private/ca.key
+   # cp ca.csr /etc/pki/tls/private/ca.csr
 
-In vars you can set your own parameters such as KEY_COUNTRY
-
-.. code-block:: console
-
-	# . ./vars
-	# ./clean-all
-
-Now you can create the certificate
-
-.. code-block:: console
-
-		# ./build-ca
-
-The previous will create a ``ca.crt`` file in the directory ``/etc/openvpn/easy-rsa/2.0/keys``.
-Copy this file under ``/usr/local/share/ca-certificates/`` directory and run :
-
-.. code-block:: console
-
-		# update-ca-certificates
-
-to update the records. You will have to do the following on node2 as well.
-
-Now you can create the keys and sign them with the certificate
-
-.. code-block:: console
-
-		# ./build-key-server node1.example.com
-
-This will create a ``01.pem`` and a ``node1.example.com.key`` files in the
-``/etc/openvpn/easy-rsa/2.0/keys`` directory. Copy these in ``/etc/ssl/certs/``
-and ``/etc/ssl/private/`` respectively and use them in the apache2
-configuration file below instead of the defaults.
+For more information take a look at `this
+guide <http://wiki.centos.org/HowTos/Https>`_.
 
 Apache2 setup
 ~~~~~~~~~~~~~
 
-Create the file ``/etc/apache2/sites-available/synnefo`` containing the
-following:
+Edit the file ``/etc/httpd/conf/httpd.conf`` and add the following:
 
 .. code-block:: console
 
@@ -232,8 +232,8 @@ following:
     </VirtualHost>
 
 
-Create the file ``/etc/apache2/sites-available/synnefo-ssl`` containing the
-following:
+Now edit the file ``/etc/httpd/conf.d/ssl.conf``, delete the default
+``VirtualHost`` on the file and add the following at the end of the file:
 
 .. code-block:: console
 
@@ -268,32 +268,15 @@ following:
         RewriteRule ^(.*)$ - [F,L]
 
         SSLEngine on
-        SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
-        SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+        SSLCertificateFile    /etc/pki/tls/certs/ca.crt
+        SSLCertificateKeyFile /etc/pki/tls/private/ca.key
     </VirtualHost>
     </IfModule>
-
-Now enable sites and modules by running:
-
-.. code-block:: console
-
-   # a2enmod ssl
-   # a2enmod rewrite
-   # a2dissite default
-   # a2ensite synnefo
-   # a2ensite synnefo-ssl
-   # a2enmod headers
-   # a2enmod proxy_http
-
-.. note:: This isn't really needed, but it's a good security practice to disable
-    directory listing in apache::
-
-        # a2dismod autoindex
 
 
 .. warning:: Do NOT start/restart the server yet. If the server is running::
 
-       # /etc/init.d/apache2 stop
+       # service httpd stop
 
 
 .. _rabbitmq-setup:
@@ -307,6 +290,7 @@ exchanges:
 
 .. code-block:: console
 
+   # service rabbitmq-server start
    # rabbitmqctl add_user synnefo "example_rabbitmq_passw0rd"
    # rabbitmqctl set_permissions synnefo ".*" ".*" ".*"
 
@@ -325,7 +309,7 @@ directory inside it:
    # mkdir /srv/pithos
    # cd /srv/pithos
    # mkdir data
-   # chown www-data:www-data data
+   # chown apache:apache data
    # chmod g+ws data
 
 This directory must be shared via `NFS <https://en.wikipedia.org/wiki/Network_File_System>`_.
@@ -333,7 +317,7 @@ In order to do this, run:
 
 .. code-block:: console
 
-   # apt-get install rpcbind nfs-kernel-server
+   # yum install rpcbind nfs-utils
 
 Now edit ``/etc/exports`` and add the following line:
 
@@ -345,7 +329,8 @@ Once done, run:
 
 .. code-block:: console
 
-   # /etc/init.d/nfs-kernel-server restart
+   # service rpcbind restart
+   # service nfs restart
 
 
 DNS server setup
@@ -356,7 +341,7 @@ In order to set up a dns server using dnsmasq do the following:
 
 .. code-block:: console
 
-   # apt-get install dnsmasq
+   # yum install dnsmasq
 
 Then edit your ``/etc/hosts/`` file as follows:
 
@@ -365,7 +350,7 @@ Then edit your ``/etc/hosts/`` file as follows:
 		203.0.113.1     node1.example.com
 		203.0.113.2     node2.example.com
 
-dnsmasq will serve any IPs/domains found in ``/etc/resolv.conf``.
+dnsmasq will serve any IPs/domains found in ``/etc/hosts``.
 
 There is a `"bug" in libevent 2.0.5 <http://sourceforge.net/p/levent/bugs/193/>`_
 , where if you have multiple nameservers in your ``/etc/resolv.conf``, libevent
@@ -399,7 +384,7 @@ Finally, restart dnsmasq:
 
 .. code-block:: console
 
-   # /etc/init.d/dnsmasq restart
+   # service dnsmasq restart
 
 You are now ready with all general prerequisites concerning node1. Let's go to
 node2.
@@ -422,20 +407,22 @@ You can install the above by running:
 
 .. code-block:: console
 
-   # apt-get install apache2 postgresql ntp
+   # yum install httpd ntp mod_ssl
 
 To install gunicorn and gevent, run:
 
 .. code-block:: console
 
-   # apt-get install gunicorn python-gevent
+   # yum install python-gunicorn python-gevent
 
 Node2 will connect to the databases on node1, so you will also need the
 python-psycopg2 package:
 
 .. code-block:: console
 
-   # apt-get install python-psycopg2
+   # yum install python-psycopg2
+
+Finally, install postgresql as already done on node1.
 
 Database setup
 ~~~~~~~~~~~~~~
@@ -449,8 +436,7 @@ of the purpose of this guide.
 Apache2 setup
 ~~~~~~~~~~~~~
 
-Create the file ``/etc/apache2/sites-available/synnefo`` containing the
-following:
+Edit the file ``/etc/httpd/conf/httpd.conf`` and add the following:
 
 .. code-block:: console
 
@@ -463,8 +449,8 @@ following:
         RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI}
     </VirtualHost>
 
-Create the file ``synnefo-ssl`` under ``/etc/apache2/sites-available/``
-containing the following:
+As before, edit the file ``/etc/httpd/conf.d/ssl.conf``, delete the default
+``VirtualHost`` on the file and add the following at the end of the file:
 
 .. code-block:: console
 
@@ -494,44 +480,29 @@ containing the following:
         ProxyPassReverse / http://localhost:8080/
 
         SSLEngine on
-        SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
-        SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+        SSLCertificateFile    /etc/pki/tls/certs/ca.crt
+        SSLCertificateKeyFile /etc/pki/tls/private/ca.key
     </VirtualHost>
     </IfModule>
 
-As in node1, enable sites and modules by running:
-
-.. code-block:: console
-
-   # a2enmod ssl
-   # a2enmod rewrite
-   # a2dissite default
-   # a2ensite synnefo
-   # a2ensite synnefo-ssl
-   # a2enmod headers
-   # a2enmod proxy_http
-
-.. note:: This isn't really needed, but it's a good security practice to disable
-    directory listing in apache::
-
-        # a2dismod autoindex
-
 .. warning:: Do NOT start/restart the server yet. If the server is running::
 
-       # /etc/init.d/apache2 stop
+       # service httpd stop
 
 
 Acquire certificate
 ~~~~~~~~~~~~~~~~~~~
 
 Copy the certificate you created before on node1 (`ca.crt`) under the directory
-``/usr/local/share/ca-certificate`` and run:
+``/etc/pki/ca-trust/extracted`` and run:
 
 .. code-block:: console
 
-   # update-ca-certificates
+   # update-ca-trust
 
-to update the records.
+to update the records. Moreover copy ``ca.key`` to
+``/etc/pki/tls/private/ca.key`` and ``ca.crt`` to ``/etc/pki/tls/certs``.
+
 
 
 DNS Setup
@@ -555,13 +526,12 @@ the services. First, let's install Astakos on node1.
 Installation of Astakos on node1
 ================================
 
-To install Astakos, grab the package from our repository (make sure  you made
-the additions needed in your ``/etc/apt/sources.list`` file and updated, as
-described previously), by running:
+To install Astakos, grab the package from our repository (make sure you added
+our repo, as described previously), by running:
 
 .. code-block:: console
 
-   # apt-get install snf-astakos-app snf-pithos-backend
+   # yum install snf-astakos-app snf-pithos-backend
 
 .. _conf-astakos:
 
@@ -585,7 +555,7 @@ Copy the file ``/etc/gunicorn.d/synnefo.example`` to
     ``--worker-class=sync``. We will start the server after successful
     installation of Astakos. If the server is running::
 
-       # /etc/init.d/gunicorn stop
+       # service gunicorn stop
 
 Conf Files
 ----------
@@ -743,7 +713,7 @@ for additional information on available email settings.
 As refered in the previous section, based on the operation that triggers
 an email notification, the recipients list differs. Specifically, for
 emails whose recipients include contacts from your service team
-(administrators, managers, helpdesk etc) synnefo provides the following
+(administrators, managers, helpdesk etc) Synnefo provides the following
 settings located in ``00-snf-common-admins.conf``:
 
 .. code-block:: python
@@ -912,7 +882,7 @@ resource.
 
 .. code-block:: console
 
-    # snf-manage resource-modify cyclades.vm --base-default 2
+    # snf-manage resource-modify --default-quota-interactive
 
 Setting Resource Visibility
 ---------------------------
@@ -934,7 +904,7 @@ You can change a resource's visibility with::
 Register pithos view as an OAuth 2.0 client
 -------------------------------------------
 
-Starting from synnefo version 0.15, the pithos view, in order to get access to
+Starting from Synnefo version 0.15, the pithos view, in order to get access to
 the data of a protected pithos resource, has to be granted authorization for
 the specific resource by astakos.
 
@@ -963,8 +933,8 @@ Finally, we initialize the servers on node1:
 
 .. code-block:: console
 
-    root@node1:~ # /etc/init.d/gunicorn restart
-    root@node1:~ # /etc/init.d/apache2 restart
+    root@node1:~ # service gunicorn restart
+    root@node1:~ # service httpd restart
 
 We have now finished the Astakos setup. Let's test it now.
 
@@ -992,8 +962,8 @@ Now we need to activate that user. Return to a command prompt at node1 and run:
     root@node1:~ # snf-manage user-list
 
 This command should show you a list with only one user; the one we just created.
-This user should have an id with a value of ``1`` and flag "active"
-set to False. Now run:
+This user should have an id with a value of ``1`` and flag "active" and
+"verified" set to False. Now run:
 
 .. code-block:: console
 
@@ -1018,19 +988,18 @@ Let's continue to install Pithos now.
 Installation of Pithos on node2
 ===============================
 
-To install Pithos, grab the packages from our repository (make sure  you made
-the additions needed in your ``/etc/apt/sources.list`` file, as described
-previously), by running:
+To install Pithos, grab the packages from our repository (make sure you added
+our repo, as described previously), by running:
 
 .. code-block:: console
 
-   # apt-get install snf-pithos-app snf-pithos-backend
+   # yum install snf-pithos-app snf-pithos-backend
 
 Now, install the pithos web interface:
 
 .. code-block:: console
 
-   # apt-get install snf-pithos-webclient
+   # yum install snf-pithos-webclient
 
 This package provides the standalone Pithos web client. The web client is the
 web UI for Pithos and will be accessible by clicking "Pithos" on the Astakos
@@ -1060,7 +1029,7 @@ Copy the file ``/etc/gunicorn.d/synnefo.example`` to
     ``--worker-class=sync``. We will start the server after successful
     installation of Astakos. If the server is running::
 
-       # /etc/init.d/gunicorn stop
+       # service gunicorn stop
 
 Conf Files
 ----------
@@ -1111,6 +1080,11 @@ It can be retrieved by running on the Astakos node (node1 in our case):
 The token has been generated automatically during the :ref:`Pithos service
 registration <services-reg>`.
 
+The ``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting is used by the pithos view
+in order to authenticate itself with astakos during the authorization grant
+procedure and it should container the credentials issued for the pithos view
+in `the pithos view registration step`__.
+
 The ``PITHOS_UPDATE_MD5`` option by default disables the computation of the
 object checksums. This results to improved performance during object uploading.
 However, if compatibility with the OpenStack Object Storage API is important
@@ -1132,11 +1106,6 @@ The ``CLOUDBAR_SERVICES_URL`` and ``CLOUDBAR_MENU_URL`` options are used by the
 Pithos web client to get from Astakos all the information needed to fill its
 own cloudbar. So we put our Astakos deployment urls there.
 
-The ``PITHOS_OAUTH2_CLIENT_CREDENTIALS`` setting is used by the pithos view
-in order to authenticate itself with astakos during the authorization grant
-procedure and it should container the credentials issued for the pithos view
-in `the pithos view registration step`__.
-
 __ pithos_view_registration_
 
 Pooling and Greenlets
@@ -1155,30 +1124,6 @@ context. This means adding the following lines at the top of your
 
     from synnefo.lib.db.psyco_gevent import make_psycopg_green
     make_psycopg_green()
-
-Furthermore, add the ``--worker-class=gevent`` (or ``--worker-class=sync`` as
-mentioned above, depending on your setup) argument on your
-``/etc/gunicorn.d/synnefo`` configuration file. The file should look something
-like this:
-
-.. code-block:: console
-
-    CONFIG = {
-     'mode': 'django',
-     'environment': {
-       'DJANGO_SETTINGS_MODULE': 'synnefo.settings',
-     },
-     'working_dir': '/etc/synnefo',
-     'user': 'www-data',
-     'group': 'www-data',
-     'args': (
-       '--bind=127.0.0.1:8080',
-       '--workers=4',
-       '--worker-class=gevent',
-       '--log-level=debug',
-       '--timeout=43200'
-     ),
-    }
 
 Stamp Database Revision
 -----------------------
@@ -1202,7 +1147,7 @@ First install the package nfs-common by running:
 
 .. code-block:: console
 
-   root@node2:~ # apt-get install nfs-common
+   root@node2:~ # yum install nfs-utils
 
 now create the directory /srv/pithos/ and mount the remote directory to it:
 
@@ -1218,8 +1163,8 @@ After configuration is done, we initialize the servers on node2:
 
 .. code-block:: console
 
-    root@node2:~ # /etc/init.d/gunicorn restart
-    root@node2:~ # /etc/init.d/apache2 restart
+    root@node2:~ # service gunicorn restart
+    root@node2:~ # service httpd restart
 
 You have now finished the Pithos setup. Let's test it now.
 
@@ -1275,7 +1220,7 @@ To install kamaki run:
 
 .. code-block:: console
 
-   # apt-get install kamaki
+   # yum install kamaki
 
 Now, visit
 
@@ -1294,7 +1239,7 @@ Cyclades Prerequisites
 Before proceeding with the Cyclades installation, make sure you have
 successfully set up Astakos and Pithos first, because Cyclades depends on
 them. If you don't have a working Astakos and Pithos installation yet, please
-return to the :ref:`top <quick-install-admin-guide>` of this guide.
+return to the :ref:`top <install-guide-centos>` of this guide.
 
 Besides Astakos and Pithos, you will also need a number of additional working
 prerequisites, before you start the Cyclades installation.
@@ -1321,11 +1266,11 @@ not familiar with Ganeti.
 
 Ganeti Prerequisites
 --------------------
-You're gonna need the ``lvm2`` and ``vlan`` packages, so run:
+You're gonna need the ``lvm2``, ``vlan`` and ``bridge-utils`` packages, so run:
 
 .. code-block:: console
 
-   # apt-get install lvm2 vlan
+   # yum install lvm2 vconfig bridge-utils
 
 Ganeti requires FQDN. To properly configure your nodes please
 see `this <http://docs.ganeti.org/ganeti/2.6/html/install.html#hostname-issues>`_.
@@ -1335,22 +1280,69 @@ Ganeti requires an extra available IP and its FQDN e.g., ``203.0.113.100`` and
 explained above.
 
 Also, Ganeti will need a volume group with the same name e.g., ``ganeti``
-across all nodes, of at least 20GiB. To create the volume group,
-see `this <http://www.tldp.org/HOWTO/LVM-HOWTO/createvgs.html>`_.
+across all nodes, of at least 20GiB. To create the volume group, run:
+
+.. code-block:: console
+
+   # pvcreate /dev/sdb1
+   # vgcreate ganeti /dev/sdb1
+
+Substitute ``sdb1`` with an available partition in your node. If you don't have an
+available partition you can create a file with ``dd`` and mount it as a loop
+device:
+
+.. code-block:: console
+
+   # dd if=/dev/zero of=gntvg bs=1 count=0 seek=25G
+   # losetup /dev/loop0 gntvg
+
+Then substitute `/dev/sdb1` with `/dev/loop0` on pvcreate and vgcreate commands.
+For more information, see
+`this <http://www.tldp.org/HOWTO/LVM-HOWTO/createvgs.html>`_.
 
 Moreover, node1 and node2 must have the same dsa, rsa keys and authorised_keys
 under ``/root/.ssh/`` for password-less root ssh between each other. To
-generate said keys, see `this <https://wiki.debian.org/SSH#Using_shared_keys>`_.
+generate said keys, run:
+
+.. code-block:: console
+
+   # ssh-keygen -t rsa
+
+Now copy the generated keys to both nodes under ``/root/.ssh`` and add the
+public key to the ``/root/.ssh/authorized_keys`` file:
+
+.. code-block:: console
+
+   # cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
+
+For more information on how to generate and use keys, see
+`this <http://wiki.centos.org/HowTos/Network/SecuringSSH#head-9c5717fe7f9bb26332c9d67571200f8c1e4324bc>`_.
 
 In the following sections, we assume that the public interface of all nodes is
 ``eth0`` and there are two extra interfaces ``eth1`` and ``eth2``, which can
 also be vlans on your primary interface e.g., ``eth0.1`` and ``eth0.2``  in
-case you don't have multiple physical interfaces. For information on how to
-create vlans, please see
+case you don't have multiple physical interfaces. To create such interfaces,
+run:
+
+.. code-block:: console
+
+   # vconfig add eth0 1
+   # vconfig add eth0 2
+
+For information on how to create vlans, please see
 `this <https://wiki.debian.org/NetworkConfiguration#Howto_use_vlan_.28dot1q.2C_802.1q.2C_trunk.29_.28Etch.2C_Lenny.29>`_.
 
 Finally, setup two bridges on the host machines (e.g: br1/br2 on eth1/eth2
-respectively), as described `here <https://wiki.debian.org/BridgeNetworkConnections>`_.
+respectively):
+
+.. code-block:: console
+
+   # brctl addbr br1
+   # brctl addbr br2
+   # brctl addif br1 eth0.1
+   # brctl addif br2 eth0.2
+
+For more information on bridges read `this <https://wiki.debian.org/BridgeNetworkConnections>`_.
 
 Ganeti Installation and Initialization
 --------------------------------------
@@ -1360,25 +1352,27 @@ Ganeti nodes:
 
 .. code-block:: console
 
-   # apt-get install qemu-kvm
+   # yum install qemu-kvm
 
 It's time to install Ganeti. To be able to use hotplug (which will be part of
 the official Ganeti 2.10), we recommend using our Ganeti package version:
 
-``2.8.3+snap1+b64v1+kvm1+ext1+lockfix1+ipfix1+backports1-1~wheezy``
+``2.8.4+snap1+b64v1+kvm2+ext1+lockfix1+ipfix1+ifdown1+backports5-1``
 
 Let's briefly explain each patch set:
 
     * snap adds snapshot support for ext disk template
     * b64 saves networks' bitarrays in a more compact representation
-    * kvm exports disk geometry to kvm command and adds migration capabilities
+    * kvm adds migration_caps hypervisor param
     * ext
 
       * exports logical id in hooks
-      * allows cache, heads, cyls arbitrary params to reach kvm command
+      * allows arbitrary params to reach kvm command (i.e. cache overrides
+        disk_cache hvparam, heads and secs define the disk's geometry)
 
     * lockfix is a workaround for Issue #621
     * ipfix does not require IP if mode is routed (needed for IPv6 only NICs)
+    * ifdown cleans up node's configuration upon instance migration/shutdown
     * backports is a set of patches backported from stable-2.10
 
       * Hotplug support
@@ -1390,15 +1384,34 @@ To install Ganeti run:
 
 .. code-block:: console
 
-   # apt-get install snf-ganeti ganeti-htools ganeti-haskell ganeti2
+   # yum install snf-ganeti
 
-Ganeti will make use of drbd. To enable this and make the configuration
-permanent you have to do the following :
+Ganeti will make use of drbd. To install drbd, you're gonna need to use packages
+from the `ELRepo <http://elrepo.org/tiki/tiki-index.php>`_. To install ELRepo,
+run:
+
+.. code-block:: consolse
+
+   # rpm -Uvh http://www.elrepo.org/elrepo-release-6-6.el6.elrepo.noarch.rpm
+
+To install drbd8.3, run:
+
+.. code-block:: console
+
+   # yum install drbd83-utils kmod-drbd83
+
+To enable this and make the configuration permanent you have to do the
+following:
 
 .. code-block:: console
 
    # modprobe drbd minor_count=255 usermode_helper=/bin/true
-   # echo 'drbd minor_count=255 usermode_helper=/bin/true' >> /etc/modules
+
+Edit ``/etc/default/drbd`` and add the following line:
+
+.. code-block:: console
+
+   ADD_MOD_PARAM="usermode_helper=/bin/true"
 
 Then run on node1:
 
@@ -1440,7 +1453,7 @@ node1 and node2. You can do this by running on *both* nodes:
 
 .. code-block:: console
 
-   # apt-get install snf-image snf-pithos-backend python-psycopg2
+   # yum install snf-image snf-pithos-backend python-psycopg2
 
 snf-image also needs the `snf-pithos-backend <snf-pithos-backend>`, to be able
 to handle image files stored on Pithos. It also needs `python-psycopg2` to be
@@ -1616,12 +1629,6 @@ are sure everything works till this point.
 If everything works, you have successfully connected Ganeti with Pithos. Let's
 move on to networking now.
 
-.. warning::
-
-    You can bypass the networking sections and go straight to
-    :ref:`Cyclades Ganeti tools <cyclades-gtools>`, if you do not want to setup
-    the Cyclades Network Service, but only the Cyclades Compute Service
-    (recommended for now).
 
 Networking Setup Overview
 -------------------------
@@ -1654,7 +1661,7 @@ Install snf-network on all Ganeti nodes:
 
 .. code-block:: console
 
-   # apt-get install snf-network
+   # yum install snf-network
 
 Then, in :file:`/etc/default/snf-network` set:
 
@@ -1673,8 +1680,8 @@ snf-network and information provided by Ganeti.
 
 .. code-block:: console
 
-   # apt-get install python-nfqueue=0.4+physindev-1~wheezy
-   # apt-get install nfdhcpd
+   # yum install python-nfqueue
+   # yum install nfdhcpd
 
 Edit ``/etc/nfdhcpd/nfdhcpd.conf`` to reflect your network configuration. At
 least, set the ``dhcp_queue`` variable to ``42`` and the ``nameservers``
@@ -1789,26 +1796,26 @@ Private Networks Setup
 
 In this section, we'll describe a basic network configuration, that will provide
 isolated private networks to the end-users. All private network traffic, will
-pass through ``br1`` and isolation will be guaranteed with a specific set of
+pass through ``br2`` and isolation will be guaranteed with a specific set of
 ``ebtables`` rules.
 
 Testing the Private Networks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We'll create two instances and connect them to the same Private Network. This
-means that the instances will have a second NIC connected to the ``br1``.
+means that the instances will have a second NIC connected to the ``br2``.
 
 .. code-block:: console
 
    # gnt-network add --network=192.168.1.0/24 --mac-prefix=aa:00:55 --tags=nfdhcpd,private-filtered test-net-prv-mac
-   # gnt-network connect test-net-prv-mac bridged br1
+   # gnt-network connect test-net-prv-mac bridged br2
 
    # gnt-instance add -o snf-image+default --os-parameters \
                       img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-6.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
                       -t plain --disk 0:size=2G --no-name-check --no-ip-check \
                       --net 0:ip=pool,network=test-net-public \
                       --net 1:ip=pool,network=test-net-prv-mac \
-                      testvm3
+                      -n node1.example.com testvm3
 
    # gnt-instance add -o snf-image+default --os-parameters \
                       img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-6.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
@@ -1842,7 +1849,7 @@ case). You can install them by running in both nodes:
 
 .. code-block:: console
 
-   # apt-get install snf-cyclades-gtools
+   # yum install snf-cyclades-gtools
 
 This will install the following:
 
@@ -1915,7 +1922,7 @@ package by running on node1:
 
 .. code-block:: console
 
-   # apt-get install snf-cyclades-app memcached python-memcache
+   # yum install snf-cyclades-app memcached python-memcached
 
 If all packages install successfully, then Cyclades are installed and we
 proceed with their configuration.
@@ -2120,10 +2127,8 @@ learn more please see /*TODO*/.
 Add a Public Network
 ----------------------
 
-Cyclades supports different Public Networks on different Ganeti backends.
 After connecting Cyclades with our Ganeti cluster, we need to setup a Public
-Network for this Ganeti backend (`id = 1`). The basic setup is to bridge every
-created NIC on a bridge.
+Network. The basic setup is to bridge every created NIC on a bridge.
 
 .. code-block:: console
 
@@ -2132,7 +2137,7 @@ created NIC on a bridge.
                                --public --dhcp=True --flavor=CUSTOM \
                                --link=br1 --mode=bridged \
                                --name=public_network \
-                               --backend-id=1
+                               --floating-ip-pool=True
 
 This will create the Public Network on both Cyclades and the Ganeti backend. To
 make sure everything was setup correctly, also run:
@@ -2194,7 +2199,7 @@ Restart gunicorn on node1:
 
 .. code-block:: console
 
-   # /etc/init.d/gunicorn restart
+   # service gunicorn restart
 
 Now let's do the final connections of Cyclades with Ganeti.
 
@@ -2214,7 +2219,7 @@ and start the daemon:
 
 .. code-block:: console
 
-   # /etc/init.d/snf-dispatcher start
+   # service snf-dispatcher start
 
 You can see that everything works correctly by tailing its log file
 ``/var/log/synnefo/dispatcher.log``.
@@ -2237,7 +2242,7 @@ and start the daemon:
 
 .. code-block:: console
 
-   # /etc/init.d/snf-ganeti-eventd start
+   # service snf-ganeti-eventd start
 
 .. warning:: Make sure you start ``snf-ganeti-eventd`` *ONLY* on GANETI MASTER
 
@@ -2317,7 +2322,7 @@ too. We do this by running:
 
 .. code-block:: console
 
-   # apt-get install kamaki
+   # yum install kamaki
 
 Configuration of kamaki
 ~~~~~~~~~~~~~~~~~~~~~~~

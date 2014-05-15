@@ -40,6 +40,11 @@ HELPDESK_MEDIA_URL = getattr(settings, 'HELPDESK_MEDIA_URL',
                              settings.MEDIA_URL + 'helpdesk/')
 
 IP_SEARCH_REGEX = re.compile('([0-9]+)(?:\.[0-9]+){3}')
+IP_V6_SEARCH_REGEX = re.compile('^([0-9A-Fa-f]{0,4}:){2,7}'
+                                '([0-9A-Fa-f]{1,4}$|'
+                                '((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)'
+                                '(\.|$)){4})$')
+
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
 VM_SEARCH_REGEX = re.compile('vm(-){0,}(?P<vmid>[0-9]+)')
 
@@ -165,7 +170,8 @@ def account(request, search_query):
     account_resolved = False
     vms = []
     networks = []
-    is_ip = IP_SEARCH_REGEX.match(search_query)
+    is_ip = IP_SEARCH_REGEX.match(search_query) or \
+            IP_V6_SEARCH_REGEX.match(search_query)
     is_uuid = UUID_SEARCH_REGEX.match(search_query)
     is_vm = VM_SEARCH_REGEX.match(search_query)
     account_name = search_query
@@ -276,6 +282,7 @@ def search_by_ip(request, search_query):
 
     user_context = {
         'ip_exists': bool(ips),
+        'is_ip': True,
         'ips': ips,
         'search_query': search_query,
         'token': auth_token,

@@ -27,6 +27,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.15 (Apr 03, 2014)        Allow only JSON format in uploads using hashmaps.
 0.15 (Feb 01, 2014)        Optionally enforce a specific content disposition type.
 0.14 (Jun 18, 2013)        Forbidden response for public listing by non path owners.
 0.14 (Apr 23, 2013)        Reply with Merkle hash in the ETag if MD5 is not computed.
@@ -940,14 +941,15 @@ X-Object-Meta-*       Optional user defined metadata
 ======================  ===================================
 Request Parameter Name  Value
 ======================  ===================================
-format                  Optional extended request/conflict response type (can be ``json`` or ``xml``)
+format                  Optional extended request/conflict response type (obsolete: always ``json`` is assumed)
 hashmap                 Optional hashmap provided instead of data (no value parameter)
 delimiter               Optional copy/move objects starting with object's path and delimiter (to be used with X-Copy-From/X-Move-From)
 ======================  ===================================
 
-The request is the object's data (or part of it), except if a hashmap is provided (using ``hashmap`` and ``format`` parameters). If using a hashmap and all different parts are stored in the server, the object is created. Otherwise the server returns Conflict (409) with the list of the missing parts (in simple text format, with one hash per line, or in JSON/XML - depending on the ``format`` parameter).
+The request is the object's data (or part of it), except if a hashmap is provided (using the ``hashmap`` parameter). If using a hashmap and all different parts are already stored in the server, the object is created. Otherwise the server returns Conflict (409) with the list of the missing parts in JSON.
 
-Hashmaps should be formatted as outlined in ``GET``.
+Hashmaps should be formatted in JSON as outlined in ``GET``.
+
 
 ==========================  ===============================
 Reply Header Name           Value

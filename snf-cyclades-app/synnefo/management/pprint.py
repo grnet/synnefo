@@ -96,7 +96,7 @@ def pprint_network_in_ganeti(network, stdout=None):
         with pooled_rapi_client(backend) as client:
             try:
                 g_net = client.GetNetwork(network.backend_id)
-                ip_map = g_net.pop("map")
+                ip_map = g_net.pop("map", {})
                 pprint_table(stdout, g_net.items(), None,
                              title="State of network in backend: %s" %
                                    backend.clustername)

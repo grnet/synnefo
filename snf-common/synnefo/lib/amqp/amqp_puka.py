@@ -43,6 +43,8 @@ def reconnect_decorator(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         try:
+            if self.client.sd is None:
+                self.connect()
             return func(self, *args, **kwargs)
         except (socket_error, spec_exceptions.ConnectionForced) as e:
             self.log.error('Connection Closed while in %s: %s', func.__name__,
@@ -131,14 +133,14 @@ class AMQPPukaClient(object):
         self.consume_promises = []
 
         if self.unacked:
+            self.log.debug("Resending unacked messages from previous"
+                           " connection")
             self._resend_unacked_messages()
 
         if self.unsend:
+            self.log.debug("Resending unsent messages from previous"
+                           " connection")
             self._resend_unsend_messages()
-
-        if self.consumers:
-            for queue, callback in self.consumers.items():
-                self.basic_consume(queue, callback)
 
         if self.exchanges:
             exchanges = self.exchanges
@@ -146,9 +148,17 @@ class AMQPPukaClient(object):
             for exchange, type in exchanges:
                 self.exchange_declare(exchange, type)
 
+        if self.consumers:
+            for queue, callback in self.consumers.items():
+                self.basic_consume(queue, callback)
+
     @reconnect_decorator
-    def reconnect(self):
-        self.close()
+    def reconnect(self, timeout=None):
+        try:
+            self.close(timeout=timeout)
+        except:
+            self.log.exception("Ignoring unhandled exception while closing"
+                               " old connection.")
         self.connect()
 
     def exchange_declare(self, exchange, type='direct'):
@@ -248,14 +258,33 @@ class AMQPPukaClient(object):
     def _publish(self, exchange, routing_key, body, headers={}):
         # Persisent messages by default!
         headers['delivery_mode'] = 2
+
+        if self.confirms:
+            callback = self.handle_publisher_confirm
+        else:
+            callback = None
+
         promise = self.client.basic_publish(exchange=exchange,
                                             routing_key=routing_key,
-                                            body=body, headers=headers)
+                                            body=body, headers=headers,
+                                            callback=callback)
 
         if self.confirms:
             self.unacked[promise] = (exchange, routing_key, body)
 
         return promise
+
+    def handle_publisher_confirm(self, promise, result):
+        """Handle publisher confirmation message.
+
+        Callback function which handles publisher confirmation by removing
+        the promise (and message) from 'unacked' messages.
+
+        """
+        msg = self.unacked.pop(promise, None)
+        if msg is None:
+            self.log.warning("Received publisher confirmation for"
+                             " unknown promise '%s'", promise)
 
     @reconnect_decorator
     def flush_buffer(self):
@@ -264,9 +293,9 @@ class AMQPPukaClient(object):
 
     @reconnect_decorator
     def get_confirms(self):
-        for promise in self.unacked.keys():
-            self.client.wait(promise)
-            self.unacked.pop(promise)
+        """Wait for all publisher confirmations."""
+        while self.unacked:
+            self.client.wait(self.unacked.keys())
 
     @reconnect_decorator
     def _resend_unacked_messages(self):
@@ -295,6 +324,7 @@ class AMQPPukaClient(object):
         @param callback: the callback function to run when a message arrives
 
         """
+        self.log.debug("Consume from queue '%s'", queue)
         # Store the queues and the callback
         self.consumers[queue] = callback
 
@@ -325,7 +355,7 @@ class AMQPPukaClient(object):
 
         """
         if promise is not None:
-            return self.client.wait(promise, timeout)
+            return self.client.loop(timeout)
         else:
             return self.client.wait(self.consume_promises, timeout)
 
@@ -363,14 +393,20 @@ class AMQPPukaClient(object):
         """
         self.client.basic_reject(message, requeue=requeue)
 
-    def close(self):
+    def close(self, timeout=None):
         """Check that messages have been send and close the connection."""
-        self.log.debug("Closing connection to %s", self.client.host)
+        self.log.info("Closing connection to %s", self.client.host)
         try:
-            if self.confirms:
+            # Flush buffer before closing connection
+            self.flush_buffer()
+            # Try to get confirmations
+            if self.confirms and self.unacked:
+                self.log.debug("Getting pending publisher confirmations..")
                 self.get_confirms()
+            # And close the connection
             close_promise = self.client.close()
-            self.client.wait(close_promise)
+            self.log.debug("Waiting for connection to close..")
+            self.client.wait(close_promise, timeout=timeout)
         except (socket_error, spec_exceptions.ConnectionForced) as e:
             self.log.error('Connection closed while closing connection:%s', e)
 
@@ -402,13 +438,14 @@ class AMQPPukaClient(object):
             return False
 
     @reconnect_decorator
-    def basic_cancel(self, promise=None):
+    def basic_cancel(self, promise=None, timeout=None):
         """Cancel consuming from a queue. """
         if promise is not None:
-            self.client.basic_cancel(promise)
+            promises = [self.client.basic_cancel(promise)]
         else:
-            for promise in self.consume_promises:
-                self.client.basic_cancel(promise)
+            promises = [self.client.basic_cancel(p)
+                        for p in self.consume_promises]
+        self.client.wait(promises, timeout=timeout)
 
 
 class AMQPConnectionError(Exception):

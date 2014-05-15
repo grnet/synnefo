@@ -25,7 +25,7 @@ from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
 
 #from mock import patch
-from urllib import quote
+from urllib import quote, unquote
 
 import django.utils.simplejson as json
 
@@ -120,23 +120,101 @@ class ObjectGetView(PithosAPITest):
         params = urlparse.parse_qs(p.query)
         self.assertTrue('access_token' in params)
 
+        p = re.compile('(attachment|inline); filename="(.+)"')
+
         r = self.get(add_url_params(self.view_url, access_token='valid_token'))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.content, self.odata)
+        self.assertTrue('Content-Disposition' in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+        self.assertEqual(self.oname, filename)
 
         r = self.get('%s&disposition-type=inline' %
                      add_url_params(self.view_url, access_token='valid_token'))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.content, self.odata)
         self.assertTrue('Content-Disposition' in r)
-        self.assertTrue('inline' in r['Content-Disposition'])
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'inline')
+        filename = m.group(2)
+        self.assertEqual(self.oname, filename)
 
         r = self.get('%s&disposition-type=attachment' %
                      add_url_params(self.view_url, access_token='valid_token'))
         self.assertEqual(r.status_code, 200)
         self.assertTrue(r.content, self.odata)
         self.assertTrue('Content-Disposition' in r)
-        self.assertTrue('attachment' in r['Content-Disposition'])
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+        self.assertEqual(self.oname, filename)
+
+        r = self.get('%s&disposition-type=ajdladjla' %
+                     add_url_params(self.view_url, access_token='valid_token'))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue(r.content, self.odata)
+        self.assertTrue('Content-Disposition' in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+        self.assertEqual(self.oname, filename)
+
+        user_defined_disposition = content_disposition.replace(
+            'attachment', 'extension-token')
+        r = self.post(self.api_url, content_type='',
+                      HTTP_CONTENT_DISPOSITION=user_defined_disposition)
+        self.assertEqual(r.status_code, 202)
+
+        r = self.get(add_url_params(self.view_url, access_token='valid_token'))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('Content-Disposition' in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        self.assertEqual(content_disposition, user_defined_disposition)
+
+        r = self.get('%s&disposition-type=inline' %
+                     add_url_params(self.view_url, access_token='valid_token'))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('Content-Disposition' in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'inline')
+        filename = m.group(2)
+        self.assertEqual(self.oname, filename)
+
+        r = self.get('%s&disposition-type=attachment' %
+                     add_url_params(self.view_url, access_token='valid_token'))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('Content-Disposition' in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+        self.assertEqual(self.oname, filename)
+
+        r = self.get('%s&disposition-type=ljsllada' %
+                     add_url_params(self.view_url, access_token='valid_token'))
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('Content-Disposition' in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        self.assertEqual(content_disposition, user_defined_disposition)
 
     def test_forbidden(self):
         container = self.create_container(user='alice')[0]

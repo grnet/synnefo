@@ -1,36 +1,17 @@
-# Copyright 2011-2014 GRNET S.A. All rights reserved.
-
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 The Plankton attributes are the following:
@@ -59,12 +40,13 @@ from time import time, gmtime, strftime
 from functools import wraps
 from operator import itemgetter
 from collections import namedtuple
+from copy import deepcopy
 
+from urllib import quote, unquote
 from django.conf import settings
 from django.utils import importlib
+from django.utils.encoding import smart_unicode, smart_str
 from pithos.backends.base import NotAllowedError, VersionNotExists, QuotaError
-from synnefo.util.text import uenc
-from copy import deepcopy
 from snf_django.lib.api import faults
 
 Location = namedtuple("ObjectLocation", ["account", "container", "path"])
@@ -77,10 +59,11 @@ PLANKTON_PREFIX = 'plankton:'
 PROPERTY_PREFIX = 'property:'
 
 PLANKTON_META = ('container_format', 'disk_format', 'name',
-                 'status', 'created_at')
+                 'status', 'created_at', 'volume_id', 'description')
 
 MAX_META_KEY_LENGTH = 128 - len(PLANKTON_DOMAIN) - len(PROPERTY_PREFIX)
 MAX_META_VALUE_LENGTH = 256
+
 
 from pithos.backends.util import PithosBackendPool
 _pithos_backend_pool = \
@@ -167,10 +150,10 @@ class PlanktonBackend(object):
         self._update_metadata(uuid, location, properties, replace=False)
 
     @handle_pithos_backend
-    def update_properties(self, uuid, properties):
+    def update_properties(self, uuid, properties, replace=False):
         location, _ = self._get_raw_metadata(uuid)
         properties = self._prefix_properties(properties)
-        self._update_metadata(uuid, location, properties, replace=False)
+        self._update_metadata(uuid, location, properties, replace=replace)
 
     @staticmethod
     def _prefix_properties(properties):
@@ -216,7 +199,7 @@ class PlanktonBackend(object):
         prefixed = {}
         for k, v in _prefixed_metadata.items():
             # Encode to UTF-8
-            k, v = uenc(k), uenc(v)
+            k, v = smart_unicode(k), smart_unicode(v)
             # Check the length of key/value
             if len(k) > 128:
                 raise faults.BadRequest('Metadata keys should be less than %s'
@@ -458,37 +441,41 @@ class PlanktonBackend(object):
         images = self._list_images(user=None, filters=filters, params=params)
         return filter(lambda img: img["is_public"], images)
 
-    # # Snapshots
-    # def list_snapshots(self, user=None):
-    #     _snapshots = self.list_images()
-    #     return [s for s in _snapshots if s["is_snapshot"]]
+    # Snapshots
+    def list_snapshots(self, user=None):
+        _snapshots = self.list_images()
+        return [s for s in _snapshots if s["is_snapshot"]]
 
-    # @handle_pithos_backend
-    # def get_snapshot(self, user, snapshot_uuid):
-    #     snap = self._get_image(snapshot_uuid)
-    #     if snap.get("is_snapshot", False) is False:
-    #         raise faults.ItemNotFound("Snapshots '%s' does not exist" %
-    #                                   snapshot_uuid)
-    #     return snap
+    @handle_pithos_backend
+    def get_snapshot(self, user, snapshot_uuid):
+        snap = self._get_image(snapshot_uuid)
+        if snap.get("is_snapshot", False) is False:
+            raise faults.ItemNotFound("Snapshots '%s' does not exist" %
+                                      snapshot_uuid)
+        return snap
 
-    # @handle_pithos_backend
-    # def delete_snapshot(self, snapshot_uuid):
-    #     self.backend.delete_object_for_uuid(self.user, snapshot_uuid)
+    @handle_pithos_backend
+    def delete_snapshot(self, snapshot_uuid):
+        account, container, path = self.backend.get_uuid(self.user,
+                                                         snapshot_uuid)
+        self.backend.delete_object(self.user, account, container, path)
 
-    # @handle_pithos_backend
-    # def update_status(self, image_uuid, status):
-    #     """Update status of snapshot"""
-    #     location, _ = self._get_raw_metadata(image_uuid)
-    #     properties = {"status": status.upper()}
-    #     self._update_metadata(image_uuid, location, properties,
-    #     replace=False)
-    #     return self._get_image(image_uuid)
+    @handle_pithos_backend
+    def update_status(self, image_uuid, status):
+        """Update status of snapshot"""
+        location, _ = self._get_raw_metadata(image_uuid)
+        properties = {"status": status.upper()}
+        self._update_metadata(image_uuid, location, properties, replace=False)
+        return self._get_image(image_uuid)
 
 
 def create_url(account, container, name):
     """Create a Pithos URL from the object info"""
     assert "/" not in account, "Invalid account"
     assert "/" not in container, "Invalid container"
+    account = quote(smart_str(account, encoding="utf-8"))
+    container = quote(smart_str(container, encoding="utf-8"))
+    name = quote(smart_str(name, encoding="utf-8"))
     return "pithos://%s/%s/%s" % (account, container, name)
 
 
@@ -498,7 +485,9 @@ def split_url(url):
     t = url.split('/', 4)
     assert t[0] == "pithos:", "Invalid url"
     assert len(t) == 5, "Invalid url"
-    return t[2:5]
+    account, container, name = t[2:5]
+    parse = lambda x: smart_unicode(unquote(x), encoding="utf-8")
+    return parse(account), parse(container), parse(name)
 
 
 def image_to_dict(location, metadata, permissions):
@@ -513,8 +502,7 @@ def image_to_dict(location, metadata, permissions):
     image["size"] = metadata["bytes"]
     image['owner'] = account
     image["store"] = u"pithos"
-    #image["is_snapshot"] = metadata.pop(PLANKTON_PREFIX + "is_snapshot",
-    #False)
+    image["is_snapshot"] = metadata.pop(PLANKTON_PREFIX + "is_snapshot", False)
     # Permissions
     users = list(permissions.get("read", []))
     image["is_public"] = "*" in users
@@ -537,6 +525,8 @@ def image_to_dict(location, metadata, permissions):
             key = key.replace(PLANKTON_PREFIX, "")
             # Keep only those in plankton metadata
             if key in PLANKTON_META:
+                if key == "status":
+                    image["status"] = val.upper()
                 if key != "created_at":
                     # created timestamp is return in 'created_at' field
                     image[key] = val

@@ -1,38 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
 """Ganeti notification daemon with AMQP support
@@ -99,41 +81,55 @@ def get_time_from_status(op, job):
     raise InvalidBackendStatus(status, job)
 
 
-def get_instance_nics(instance, logger):
-    """Query Ganeti to a get the instance's NICs.
+def get_instance_attachments(instance, logger):
+    """Query Ganeti to a get the instance's attachments (NICs and Disks)
 
-    Get instance's NICs from Ganeti configuration data. If running on master,
-    query Ganeti via Ganeti CLI client. Otherwise, get the nics from Ganeti
-    configuration file.
+    Get instance's attachments from Ganeti configuration data. If running on
+    master, query Ganeti via Ganeti CLI client. Otherwise, get attachments
+    straight from Ganeti's configuration file.
 
     @type instance: string
     @param instance: the name of the instance
-    @rtype: List of dicts
-    @return: Dictionary containing the instance's NICs. Each dictionary
-             contains the following keys: 'network', 'ip', 'mac', 'mode',
-             'link' and 'firewall'
+    @rtype: instance's NICs and Disks
+    @return: Dictionary containing the 'nics' and 'disks' of the instance.
 
     """
     try:
         client = cli.GetClient()
-        fields = ["nic.names", "nic.networks.names", "nic.ips", "nic.macs",
-                  "nic.modes", "nic.links", "tags"]
-        info = client.QueryInstances([instance], fields, use_locking=False)
-        names, networks, ips, macs, modes, links, tags = info[0]
-        nic_keys = ["name", "network", "ip", "mac", "mode", "link"]
-        nics = zip(names, networks, ips, macs, modes, links)
+        q_fields = ["nic.names", "nic.networks.names", "nic.ips", "nic.macs",
+                    "nic.modes", "nic.links", "nic.uuids", "tags",
+                    "disk.names", "disk.sizes", "disk.uuids"]
+        info = client.QueryInstances([instance], q_fields, use_locking=False)
+        # Parse NICs
+        names, networks, ips, macs, modes, links, uuids, tags = info[0][:-3]
+        nic_keys = ["name", "network", "ip", "mac", "mode", "link", "uuid"]
+        nics = zip(names, networks, ips, macs, modes, links, uuids)
         nics = map(lambda x: dict(zip(nic_keys, x)), nics)
+        # Parse Disks
+        names, sizes, uuids = info[0][-3:]
+        disk_keys = ["name", "size", "uuid"]
+        disks = zip(names, sizes, uuids)
+        disks = map(lambda x: dict(zip(disk_keys, x)), disks)
     except ganeti_errors.OpPrereqError:
         # Not running on master! Load the conf file
         raw_data = utils.ReadFile(pathutils.CLUSTER_CONF_FILE)
         config = serializer.LoadJson(raw_data)
         i = config["instances"][instance]
+        # Parse NICs
         nics = []
-        for nic in i["nics"]:
+        for index, nic in enumerate(i["nics"]):
             params = nic.pop("nicparams")
             nic["mode"] = params["mode"]
             nic["link"] = params["link"]
+            nic["index"] = index
             nics.append(nic)
+        # Parse Disks
+        disks = []
+        for index, disk in enumerate(i["disks"]):
+            disks.append({"name": disk.pop("name"),
+                          "size": disk["size"],
+                          "uuid": disk["uuid"],
+                          "index": index})
         tags = i.get("tags", [])
     # Get firewall from instance Tags
     # Tags are of the form synnefo:network:N:firewall_mode
@@ -147,7 +143,9 @@ def get_instance_nics(instance, logger):
             firewall = t[3]
             [nic.setdefault("firewall", firewall)
              for nic in nics if nic["name"] == nic_name]
-    return nics
+    attachments = {"nics": nics,
+                   "disks": disks}
+    return attachments
 
 
 class InvalidBackendStatus(Exception):
@@ -190,7 +188,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
 
         self.op_handlers = {"INSTANCE": self.process_instance_op,
                             "NETWORK": self.process_network_op,
-                            "CLUSTER": self.process_cluster_op}
+                            "CLUSTER": self.process_cluster_op,
+                            "TAGS": self.process_tag_op}
                             # "GROUP": self.process_group_op}
 
     def process_IN_CLOSE_WRITE(self, event):
@@ -288,6 +287,16 @@ class JobFileHandler(pyinotify.ProcessEvent):
             job_fields = {"nics": get_field(input, "nics"),
                           "disks": get_field(input, "disks"),
                           "beparams": get_field(input, "beparams")}
+        elif op_id == "OP_INSTANCE_SNAPSHOT":
+            job_fields = {"disks": get_field(input, "disks")}
+            reason = get_field(input, "reason")
+            snapshot_info = None
+            if isinstance(reason, list) and len(reason) > 0:
+                reason = reason[0]
+                if reason[0] == "gnt:user":
+                    snapshot_info = reason[1]
+            self.logger.critical("LALALL %s", job_fields["disks"][0])
+            job_fields["disks"][0][1]["snapshot_info"] = snapshot_info
 
         msg = {"type": "ganeti-op-status",
                "instance": instances,
@@ -298,8 +307,10 @@ class JobFileHandler(pyinotify.ProcessEvent):
              op.status == "success") or
             (op_id == "OP_INSTANCE_SET_PARAMS" and
              op.status in ["success", "error", "cancelled"])):
-                nics = get_instance_nics(msg["instance"], self.logger)
-                msg["instance_nics"] = nics
+                attachments = get_instance_attachments(msg["instance"],
+                                                       self.logger)
+                msg["instance_nics"] = attachments["nics"]
+                msg["instance_disks"] = attachments["disks"]
 
         routekey = "ganeti.%s.event.op" % prefix_from_name(instances)
 
@@ -358,6 +369,28 @@ class JobFileHandler(pyinotify.ProcessEvent):
         routekey = "ganeti.event.cluster"
 
         return msg, routekey
+
+    def process_tag_op(self, op, job_id):
+        """ Process OP_TAGS_* opcodes.
+
+        """
+        input = op.input
+        op_id = input.OP_ID
+        if op_id == "OP_TAGS_SET":
+            if op.status == "waiting" and input.tags and input.dry_run and\
+               input.kind == "cluster":
+                # Special where a prefixed cluster tag operation in dry-run
+                # mode is used in order to trigger eventd to send a
+                # heartbeat message.
+                tag = input.tags[0]
+                if tag.startswith("snf:eventd:heartbeat"):
+                    self.logger.debug("Received heartbeat tag '%s'."
+                                      " Sending response.", tag)
+                    msg = {"type": "eventd-heartbeat",
+                           "cluster": self.cluster_name}
+                    return msg, "eventd.heartbeat"
+
+        return None, None
 
 
 def find_cluster_name():

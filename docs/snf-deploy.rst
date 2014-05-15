@@ -11,9 +11,9 @@ You can use `snf-deploy` to deploy Synnefo, in two ways:
 
 Currently, `snf-deploy` is mostly useful for testing/demo installations and is
 not recommended for production environment Synnefo deployments. If you want to
-deploy Synnefo in production, please read first the :ref:`Admin's installation
-guide <quick-install-admin-guide>` and then the :ref:`Admin's guide
-<admin-guide>`.
+deploy Synnefo in production, please read first the Admin's installation
+guide (:ref:`Debian <install-guide-debian>`/:ref:`CentOS
+<install-guide-centos>`) and then the :ref:`Admin's guide <admin-guide>`.
 
 If you use `snf-deploy` you will setup an up-and-running Synnefo installation,
 but the end-to-end functionality will depend on your underlying infrastracture
@@ -44,7 +44,7 @@ to. The Synnefo roles are described in detail :ref:`here
 Note that multiple roles can co-exist in the same node
 (virtual or physical).
 
-Currently, `snf-deploy` defines the following roles:
+Currently, `snf-deploy` defines the following roles under each setup:
 
 * ns: bind server (DNS)
 * db: postgresql server (database)
@@ -55,7 +55,11 @@ Currently, `snf-deploy` defines the following roles:
 * cyclades: compute service
 * cms: cms service
 * stats: stats service
-* ganeti: ganeti node
+* clusters: the ganeti clusters
+
+For each cluster we have
+
+* vmc: VM container node
 * master: master node
 
 
@@ -90,9 +94,13 @@ The previous roles are combinations of the following software components:
 * Network: synnefo networking scripts
 * GTools: synnefo tools for ganeti
 * GanetiCollectd: collectd config for ganeti nodes
+* PithosBackend: the pithos backend
+* Archip: The archipelago core
+* ArchipGaneti: The tools needed by ganeti for archipelago
 
 Each component defines the following things:
 
+* commands to execute on other components before setup
 * commands to check prereqs
 * commands to prepare installation
 * list of packages to install
@@ -100,17 +108,32 @@ Each component defines the following things:
 * restart/reload commands
 * initialization commands
 * test commands
+* commands to execute on other components after setup
 
-All a components needs is the node info that it gets installed to and the
+All a components needs is the context that it gets installed to and the
 snf-deploy configuration environment (available after parsing conf files).
+The context is basically the target node, role, cluster (if any) and
+setup.
 
 .. _conf:
 
 Configuration (a)
 =================
 
-All configuration of `snf-deploy` happens by editting the following files under
-``/etc/snf-deploy``:
+All configuration of `snf-deploy` happens by editting the following simple
+ConfigParser files under ``/etc/snf-deploy``.
+
+``setups.conf``
+---------------
+
+This file includes all coarse grain info for our available setups. Each
+section refers to a generic setup (synnefo, qa, etc) or a specific
+ganeti cluster (ganeti1, ganeti2, etc.) Each section includes the
+corresponding role mappings. For example if the nameserver should be
+installed in node1, the NFS on node2, etc. Each generic setup has also
+the cluster meta-role. For example synnefo section can have clusters
+ganeti1, ganeti2. Each of them has its own vmcs and master roles (which
+map to nodes found in nodes.conf).
 
 ``nodes.conf``
 --------------
@@ -293,7 +316,7 @@ To install the Synnefo stack on the existing cluster run:
 
 .. code-block:: console
 
-   snf-deploy all -vvv
+   snf-deploy synnefo -vvv
 
 This might take a while.
 
@@ -301,7 +324,7 @@ If this finishes without errors, check for successful installation by visiting
 from your local machine (make sure you have already setup your local
 ``resolv.conf`` to point at the cluster's DNS):
 
-| https://accounts.synnefo.live/astakos/ui/
+| https://astakos.synnefo.live/astakos/ui/
 
 and login with:
 
@@ -326,11 +349,12 @@ Adding another Ganeti Backend
 From version 0.12, Synnefo supports multiple Ganeti backends.
 `snf-deploy` defines them in ``ganeti.conf``.
 
-After adding another section in ``ganeti.conf``, run:
+After adding another section in ``ganeti.conf`` with synnefo setting
+set True, run:
 
 .. code-block:: console
 
-   snf-deploy backend --cluster-name ganeti2 -vvv
+   snf-deploy ganeti --cluster ganeti2 -vvv
 
 
 snf-deploy for Ganeti
@@ -341,7 +365,7 @@ by issuing:
 
 .. code-block:: console
 
-   snf-deploy ganeti --cluster-name ganeti3 -vvv
+   snf-deploy ganeti --cluster ganeti3 -vvv
 
 
 snf-deploy as a DevTool
@@ -355,26 +379,19 @@ option to ``True``. Then run:
 
 .. code-block:: console
 
-   snf-deploy run <action1> [<action2>..]
+   snf-deploy run setup --setup SETUP --node nodeX \
+        --role ROLE --cluster CLUSTER
 
-
-to execute predefined actions or:
-
-.. code-block:: console
-
-   snf-deploy run setup --node nodeX \
-        --role ROLE | --component COMPONENT --method METHOD
-
-to setup a synnefo role on a target node or run a specific component's method.
+to setup a specific role on a target node of a specific cluster and setup.
 
 For instance, to add another node to an existing ganeti backend run:
 
 .. code-block:: console
 
-   snf-deploy run setup --node5 --role ganeti --cluster-name ganeti3
+   snf-deploy run setup --node node5 --role vmc --cluster ganeti3
 
 `snf-deploy` keeps track of installed components per node in
-``/etc/snf-deploy/status.conf``. If a deployment command fails, the developer
-can make the required fix and then re-run the same command; `snf-deploy` will
-not re-install components that have been already setup and their status
-is ``ok``.
+``/var/lib/snf-deploy/snf_deploy_status``. If a deployment command
+fails, the developer can make the required fix and then re-run the same
+command; `snf-deploy` will not re-install components that have been
+already setup and their status is ``ok``.

@@ -1,31 +1,17 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above copyright
-#      notice, this list of conditions and the following disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#  2. Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in the
-#     documentation and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are
-# those of the authors and should not be interpreted as representing official
-# policies, either expressed or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Utility functions
 
@@ -33,7 +19,7 @@ from synnefo.db.models import VirtualMachine, Network
 from snf_django.lib.api import faults
 from django.conf import settings
 from copy import deepcopy
-from synnefo.util.text import uenc
+from django.utils.encoding import smart_unicode
 
 
 def id_from_instance_name(name):
@@ -42,7 +28,7 @@ def id_from_instance_name(name):
     Strips the ganeti prefix atm. Needs a better name!
 
     """
-    sname = str(name)
+    sname = smart_unicode(name)
     if not sname.startswith(settings.BACKEND_PREFIX_ID):
         raise VirtualMachine.InvalidBackendIdError(sname)
     ns = sname.replace(settings.BACKEND_PREFIX_ID, "", 1)
@@ -53,7 +39,7 @@ def id_from_instance_name(name):
 
 
 def id_to_instance_name(id):
-    return "%s%s" % (settings.BACKEND_PREFIX_ID, str(id))
+    return "%s%s" % (settings.BACKEND_PREFIX_ID, smart_unicode(id))
 
 
 def id_from_network_name(name):
@@ -62,30 +48,49 @@ def id_from_network_name(name):
     Strips the ganeti prefix atm. Needs a better name!
 
     """
-    if not str(name).startswith(settings.BACKEND_PREFIX_ID):
-        raise Network.InvalidBackendIdError(str(name))
-    ns = str(name).replace(settings.BACKEND_PREFIX_ID + 'net-', "", 1)
+    name = smart_unicode(name)
+    if not name.startswith(settings.BACKEND_PREFIX_ID):
+        raise Network.InvalidBackendIdError(name)
+    ns = name.replace(settings.BACKEND_PREFIX_ID + 'net-', "", 1)
     if not ns.isdigit():
-        raise Network.InvalidBackendIdError(str(name))
+        raise Network.InvalidBackendIdError(smart_unicode(name))
 
     return int(ns)
 
 
 def id_to_network_name(id):
-    return "%snet-%s" % (settings.BACKEND_PREFIX_ID, str(id))
+    return "%snet-%s" % (settings.BACKEND_PREFIX_ID, smart_unicode(id))
 
 
 def id_from_nic_name(name):
     """Returns NIC's Django id, given a Ganeti's NIC name.
 
     """
-    if not str(name).startswith(settings.BACKEND_PREFIX_ID):
+    name = smart_unicode(name)
+    if not name.startswith(settings.BACKEND_PREFIX_ID):
         raise ValueError("Invalid NIC name: %s" % name)
-    ns = str(name).replace(settings.BACKEND_PREFIX_ID + 'nic-', "", 1)
+    ns = name.replace(settings.BACKEND_PREFIX_ID + 'nic-', "", 1)
     if not ns.isdigit():
         raise ValueError("Invalid NIC name: %s" % name)
 
     return int(ns)
+
+
+def id_from_disk_name(name):
+    """Returns Disk Django id, given a Ganeti's Disk name.
+
+    """
+    if not str(name).startswith(settings.BACKEND_PREFIX_ID):
+        raise ValueError("Invalid Disk name: %s" % name)
+    ns = str(name).replace(settings.BACKEND_PREFIX_ID + 'vol-', "", 1)
+    if not ns.isdigit():
+        raise ValueError("Invalid Disk name: %s" % name)
+
+    return int(ns)
+
+
+def id_to_disk_name(id):
+    return "%svol-%s" % (settings.BACKEND_PREFIX_ID, str(id))
 
 
 def get_rsapi_state(vm):
@@ -162,6 +167,7 @@ OPCODE_TO_ACTION = {
 def get_action_from_opcode(opcode, job_fields):
     if opcode == "OP_INSTANCE_SET_PARAMS":
         nics = job_fields.get("nics")
+        disks = job_fields.get("disks")
         beparams = job_fields.get("beparams")
         if nics:
             try:
@@ -170,6 +176,17 @@ def get_action_from_opcode(opcode, job_fields):
                     return "CONNECT"
                 elif nic_action == "remove":
                     return "DISCONNECT"
+                else:
+                    return None
+            except:
+                return None
+        if disks:
+            try:
+                disk_action = disks[0][0]
+                if disk_action == "add":
+                    return "ATTACH_VOLUME"
+                elif disk_action == "remove":
+                    return "DETACH_VOLUME"
                 else:
                     return None
             except:
@@ -193,5 +210,6 @@ def hide_pass(kw):
 
 def check_name_length(name, max_length, message):
     """Check if a string is within acceptable value length"""
-    if len(uenc(name)) > max_length:
+    name = smart_unicode(name, encoding="utf-8")
+    if len(name) > max_length:
         raise faults.BadRequest(message)

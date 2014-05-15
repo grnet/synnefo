@@ -1,3 +1,7 @@
+STATE_DIR=/var/lib/snf-network
+LOGFILE=/var/log/ganeti/snf-network.log
+IFUP_EXTRA_SCRIPT=/etc/ganeti/ifup-extra
+
 MAC_MASK=ff:ff:f0:00:00:00
 
 TAP_CONSTANT_MAC=cc:47:52:4e:45:54 # GRNET in hex :-)

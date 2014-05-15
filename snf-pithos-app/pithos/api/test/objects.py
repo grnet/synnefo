@@ -1,39 +1,22 @@
 #!/usr/bin/env python
 #coding=utf8
 
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from binascii import hexlify
 from collections import defaultdict
 from urllib import quote, unquote
 from functools import partial
@@ -43,7 +26,7 @@ from pithos.api.test import (PithosAPITest, pithos_settings,
                              TEST_BLOCK_SIZE, TEST_HASH_ALGORITHM,
                              DATE_FORMATS, pithos_test_settings)
 from pithos.api.test.util import (md5_hash, merkle, strnextling,
-                                  get_random_data, get_random_name)
+                                  get_random_data, get_random_name, HashMap)
 
 from synnefo.lib import join_urls
 
@@ -125,6 +108,96 @@ class ObjectGet(PithosAPITest):
         # upload files
         self.objects = defaultdict(list)
         self.objects['c1'].append(self.upload_object('c1')[0])
+
+    def test_content_disposition(self):
+        c = 'c1'
+        o = 'γεια σου κόσμε'
+        self.upload_object('c1', o)
+        url = join_urls(self.pithos_path, self.user, c, o)
+
+        p = re.compile('(attachment|inline); filename="(.+)"')
+
+        r = self.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('Content-Disposition' in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+        self.assertEqual(o, filename)
+
+        r = self.get('%s?disposition-type=inline' % url)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('Content-Disposition' in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'inline')
+        filename = m.group(2)
+        self.assertEqual(o, filename)
+
+        r = self.get('%s?disposition-type=attachment' % url)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('Content-Disposition' in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+
+        r = self.get('%s?disposition-type=djladjlaj' % url)   # invalid type
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('Content-Disposition' in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+
+        user_defined_disposition = content_disposition.replace(
+            'attachment', 'extension-token')
+        r = self.post(url, content_type='',
+                      HTTP_CONTENT_DISPOSITION=user_defined_disposition)
+        self.assertEqual(r.status_code, 202)
+
+        r = self.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('Content-Disposition' in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        self.assertEqual(content_disposition, user_defined_disposition)
+
+        r = self.get('%s?disposition-type=inline' % url)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('Content-Disposition' in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'inline')
+        filename = m.group(2)
+        self.assertEqual(o, filename)
+
+        r = self.get('%s?disposition-type=attachment' % url)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('Content-Disposition' in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+        self.assertEqual(o, filename)
+
+        r = self.get('%s?disposition-type=djaldjaldjla' % url)  # invalid type
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('Content-Disposition' in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        self.assertEqual(content_disposition, user_defined_disposition)
 
     def test_versions(self):
         c = 'c1'
@@ -755,12 +828,51 @@ class ObjectPut(PithosAPITest):
 
         oname = get_random_name()
         url = join_urls(self.pithos_path, self.user, cname, oname)
-        r = self.put('%s?hashmap=' % url, data=r.content)
+        hashmap = r.content
+        r = self.put('%s?hashmap=' % url, data=hashmap)
         self.assertEqual(r.status_code, 201)
-
         r = self.get(url)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.content, data)
+
+        r = self.put('%s?hashmap=' % url, data='not json')
+        self.assertEqual(r.status_code, 400)
+
+        d = {"block_hash": "sha1",
+             "block_size": TEST_BLOCK_SIZE}
+        hashmap = json.dumps(d)
+        r = self.put('%s?hashmap=' % url, data=hashmap)
+        self.assertEqual(r.status_code, 400)
+
+        d.update({"hashes": 'not a list', "bytes": 42})
+        r = self.put('%s?hashmap=' % url, data=hashmap)
+        self.assertEqual(r.status_code, 400)
+
+        d.update({"hashes": None, "bytes": 42})
+        r = self.put('%s?hashmap=' % url, data=hashmap)
+        self.assertEqual(r.status_code, 400)
+
+        length = random.randint(TEST_BLOCK_SIZE, 2 * TEST_BLOCK_SIZE)
+        data = get_random_data(length=length)
+        hashes = HashMap(TEST_BLOCK_SIZE, TEST_HASH_ALGORITHM)
+        hashes.load(data)
+        hexlified = [hexlify(h) for h in hashes]
+        d.update({"hashes": hexlified, "bytes": len(data)})
+        hashmap = json.dumps(d)
+        r = self.put('%s?hashmap=' % url, data=hashmap)
+        self.assertEqual(r.status_code, 409)
+        try:
+            missing = json.loads(r.content)
+        except:
+            self.fail("shouldn't happen")
+        else:
+            self.assertEqual(sorted(missing), sorted(hexlified))
+
+        r = self.get('%s?hashmap=&format=xml' % url)
+        oname = get_random_name()
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.put('%s?hashmap=&format=xml' % url, data=r.content)
+        self.assertEqual(r.status_code, 400)
 
     def test_create_object_by_invalid_hashmap(self):
         cname = self.container

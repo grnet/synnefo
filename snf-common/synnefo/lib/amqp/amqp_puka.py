@@ -1,35 +1,17 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """ Module implementing connection and communication with an AMQP broker.
 
@@ -61,6 +43,8 @@ def reconnect_decorator(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         try:
+            if self.client.sd is None:
+                self.connect()
             return func(self, *args, **kwargs)
         except (socket_error, spec_exceptions.ConnectionForced) as e:
             self.log.error('Connection Closed while in %s: %s', func.__name__,
@@ -149,14 +133,14 @@ class AMQPPukaClient(object):
         self.consume_promises = []
 
         if self.unacked:
+            self.log.debug("Resending unacked messages from previous"
+                           " connection")
             self._resend_unacked_messages()
 
         if self.unsend:
+            self.log.debug("Resending unsent messages from previous"
+                           " connection")
             self._resend_unsend_messages()
-
-        if self.consumers:
-            for queue, callback in self.consumers.items():
-                self.basic_consume(queue, callback)
 
         if self.exchanges:
             exchanges = self.exchanges
@@ -164,9 +148,17 @@ class AMQPPukaClient(object):
             for exchange, type in exchanges:
                 self.exchange_declare(exchange, type)
 
+        if self.consumers:
+            for queue, callback in self.consumers.items():
+                self.basic_consume(queue, callback)
+
     @reconnect_decorator
-    def reconnect(self):
-        self.close()
+    def reconnect(self, timeout=None):
+        try:
+            self.close(timeout=timeout)
+        except:
+            self.log.exception("Ignoring unhandled exception while closing"
+                               " old connection.")
         self.connect()
 
     def exchange_declare(self, exchange, type='direct'):
@@ -188,7 +180,7 @@ class AMQPPukaClient(object):
     @reconnect_decorator
     def queue_declare(self, queue, exclusive=False,
                       mirrored=True, mirrored_nodes='all',
-                      dead_letter_exchange=None):
+                      dead_letter_exchange=None, ttl=None):
         """Declare a queue
 
         @type queue: string
@@ -203,6 +195,8 @@ class AMQPPukaClient(object):
                   the specified nodes, and the master will be the
                   first node in the list. Node names must be provided
                   and not host IP. example: [node1@rabbit,node2@rabbit]
+        @type ttl: int
+        @param ttl: Queue TTL in seconds
 
         """
         self.log.info('Declaring queue: %s', queue)
@@ -217,6 +211,9 @@ class AMQPPukaClient(object):
                 raise AttributeError
         else:
             arguments = {}
+
+        if ttl is not None:
+            arguments['x-expires'] = ttl * 1000
 
         if dead_letter_exchange:
             arguments['x-dead-letter-exchange'] = dead_letter_exchange
@@ -261,14 +258,33 @@ class AMQPPukaClient(object):
     def _publish(self, exchange, routing_key, body, headers={}):
         # Persisent messages by default!
         headers['delivery_mode'] = 2
+
+        if self.confirms:
+            callback = self.handle_publisher_confirm
+        else:
+            callback = None
+
         promise = self.client.basic_publish(exchange=exchange,
                                             routing_key=routing_key,
-                                            body=body, headers=headers)
+                                            body=body, headers=headers,
+                                            callback=callback)
 
         if self.confirms:
             self.unacked[promise] = (exchange, routing_key, body)
 
         return promise
+
+    def handle_publisher_confirm(self, promise, result):
+        """Handle publisher confirmation message.
+
+        Callback function which handles publisher confirmation by removing
+        the promise (and message) from 'unacked' messages.
+
+        """
+        msg = self.unacked.pop(promise, None)
+        if msg is None:
+            self.log.warning("Received publisher confirmation for"
+                             " unknown promise '%s'", promise)
 
     @reconnect_decorator
     def flush_buffer(self):
@@ -277,9 +293,9 @@ class AMQPPukaClient(object):
 
     @reconnect_decorator
     def get_confirms(self):
-        for promise in self.unacked.keys():
-            self.client.wait(promise)
-            self.unacked.pop(promise)
+        """Wait for all publisher confirmations."""
+        while self.unacked:
+            self.client.wait(self.unacked.keys())
 
     @reconnect_decorator
     def _resend_unacked_messages(self):
@@ -299,7 +315,7 @@ class AMQPPukaClient(object):
             self.unsend.pop(body)
 
     @reconnect_decorator
-    def basic_consume(self, queue, callback, prefetch_count=0):
+    def basic_consume(self, queue, callback, no_ack=False, prefetch_count=0):
         """Consume from a queue.
 
         @type queue: string or list of strings
@@ -308,6 +324,7 @@ class AMQPPukaClient(object):
         @param callback: the callback function to run when a message arrives
 
         """
+        self.log.debug("Consume from queue '%s'", queue)
         # Store the queues and the callback
         self.consumers[queue] = callback
 
@@ -322,7 +339,8 @@ class AMQPPukaClient(object):
         consume_promise = \
             self.client.basic_consume(queue=queue,
                                       prefetch_count=prefetch_count,
-                                      callback=handle_delivery)
+                                      callback=handle_delivery,
+                                      no_ack=no_ack)
 
         self.consume_promises.append(consume_promise)
         return consume_promise
@@ -337,19 +355,19 @@ class AMQPPukaClient(object):
 
         """
         if promise is not None:
-            return self.client.wait(promise, timeout)
+            return self.client.loop(timeout)
         else:
             return self.client.wait(self.consume_promises, timeout)
 
     @reconnect_decorator
-    def basic_get(self, queue):
+    def basic_get(self, queue, no_ack=False):
         """Get a single message from a queue.
 
         This is a non-blocking method for getting messages from a queue.
         It will return None if the queue is empty.
 
         """
-        get_promise = self.client.basic_get(queue=queue)
+        get_promise = self.client.basic_get(queue=queue, no_ack=no_ack)
         result = self.client.wait(get_promise)
         if 'empty' in result:
             # The queue is empty
@@ -375,14 +393,20 @@ class AMQPPukaClient(object):
         """
         self.client.basic_reject(message, requeue=requeue)
 
-    def close(self):
+    def close(self, timeout=None):
         """Check that messages have been send and close the connection."""
-        self.log.debug("Closing connection to %s", self.client.host)
+        self.log.info("Closing connection to %s", self.client.host)
         try:
-            if self.confirms:
+            # Flush buffer before closing connection
+            self.flush_buffer()
+            # Try to get confirmations
+            if self.confirms and self.unacked:
+                self.log.debug("Getting pending publisher confirmations..")
                 self.get_confirms()
+            # And close the connection
             close_promise = self.client.close()
-            self.client.wait(close_promise)
+            self.log.debug("Waiting for connection to close..")
+            self.client.wait(close_promise, timeout=timeout)
         except (socket_error, spec_exceptions.ConnectionForced) as e:
             self.log.error('Connection closed while closing connection:%s', e)
 
@@ -414,13 +438,14 @@ class AMQPPukaClient(object):
             return False
 
     @reconnect_decorator
-    def basic_cancel(self, promise=None):
+    def basic_cancel(self, promise=None, timeout=None):
         """Cancel consuming from a queue. """
         if promise is not None:
-            self.client.basic_cancel(promise)
+            promises = [self.client.basic_cancel(promise)]
         else:
-            for promise in self.consume_promises:
-                self.client.basic_cancel(promise)
+            promises = [self.client.basic_cancel(p)
+                        for p in self.consume_promises]
+        self.client.wait(promises, timeout=timeout)
 
 
 class AMQPConnectionError(Exception):

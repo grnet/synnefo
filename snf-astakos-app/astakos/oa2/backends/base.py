@@ -1,37 +1,18 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import urllib
 import urlparse
 import uuid
 import datetime
@@ -40,23 +21,9 @@ import json
 from base64 import b64encode, b64decode
 from hashlib import sha512
 
-from synnefo.util.text import uenc
-from synnefo.util import urltools
 
 import logging
 logger = logging.getLogger(__name__)
-
-
-def urlencode(params):
-    if hasattr(params, 'urlencode') and callable(getattr(params, 'urlencode')):
-        return params.urlencode()
-    for k in params:
-        params[uenc(k)] = uenc(params.pop(k))
-    return urllib.urlencode(params)
-
-
-def normalize(url):
-    return urltools.normalize(uenc(url))
 
 
 def handles_oa2_requests(func):
@@ -356,7 +323,7 @@ class SimpleBackend(object):
         return bool(self.get_client_by_id(client_id))
 
     def build_site_url(self, prefix='', **params):
-        params = urlencode(params)
+        params = self.urlencode(params)
         return "%s%s%s%s" % (self.base_url, self.endpoints_prefix, prefix,
                              params)
 
@@ -367,7 +334,7 @@ class SimpleBackend(object):
     def build_client_redirect_uri(self, client, uri, **params):
         if not client.redirect_uri_is_valid(uri):
             raise OA2Error("Invalid redirect uri")
-        params = urlencode(params)
+        params = self.urlencode(params)
         uri = self._get_uri_base(uri)
         return "%s?%s" % (uri, params)
 
@@ -411,12 +378,12 @@ class SimpleBackend(object):
 
     def redirect_to_login_response(self, request, params):
         parts = list(urlparse.urlsplit(request.path))
-        parts[3] = urlencode(params)
+        parts[3] = self.urlencode(params)
         query = {'next': urlparse.urlunsplit(parts)}
-        return Response(302,
-                        headers={'Location': '%s?%s' %
-                                 (self.get_login_uri(),
-                                  urlencode(query))})
+
+        parts[2] = self.get_login_uri()
+        parts[3] = self.urlencode(query)
+        return Response(302, headers={'Location':  urlparse.urlunsplit(parts)})
 
     def redirect_to_uri(self, redirect_uri, code, state=None):
         parts = list(urlparse.urlsplit(redirect_uri))
@@ -424,10 +391,8 @@ class SimpleBackend(object):
         params['code'] = code
         if state is not None:
             params['state'] = state
-        parts[3] = urlencode(params)
-        return Response(302,
-                        headers={'Location': '%s' %
-                                 urlparse.urlunsplit(parts)})
+        parts[3] = self.urlencode(params)
+        return Response(302, headers={'Location': urlparse.urlunsplit(parts)})
 
     def build_response_from_error(self, exception):
         response = Response(400)
@@ -459,7 +424,8 @@ class SimpleBackend(object):
                                  scope=None, token_type="Bearer"):
         if scope and code_instance.scope != scope:
             raise OA2Error("Invalid scope")
-        if normalize(redirect_uri) != normalize(code_instance.redirect_uri):
+        if self.normalize(redirect_uri) != \
+                self.normalize(code_instance.redirect_uri):
             raise OA2Error("The redirect uri does not match "
                            "the one used during authorization")
         token = self.add_token_for_client(token_type, code_instance)
@@ -572,7 +538,8 @@ class SimpleBackend(object):
             if not client.redirect_uri_is_valid(redirect_uri):
                 raise OA2Error("Mismatching redirect uri")
             if expected_value is not None and \
-                    normalize(redirect_uri) != normalize(expected_value):
+                    self.normalize(redirect_uri) != \
+                    self.normalize(expected_value):
                 raise OA2Error("Invalid redirect uri")
         else:
             try:
@@ -707,3 +674,11 @@ class SimpleBackend(object):
         else:
             #TODO: handle custom type
             raise OA2Error("Invalid grant type")
+
+    @staticmethod
+    def urlencode(params):
+        raise NotImplementedError
+
+    @staticmethod
+    def normalize(url):
+        raise NotImplementedError

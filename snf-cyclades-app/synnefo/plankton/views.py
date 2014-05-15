@@ -1,48 +1,31 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
 
 from logging import getLogger
 from string import punctuation
-from urllib import unquote
+from urllib import unquote, quote
 
 from django.conf import settings
 from django.http import HttpResponse
+from django.utils.encoding import (smart_unicode, smart_str,
+                                   DjangoUnicodeDecodeError)
 
 from snf_django.lib import api
 from snf_django.lib.api import faults
-from synnefo.util.text import uenc
 from synnefo.plankton.backend import PlanktonBackend
 from synnefo.plankton.backend import split_url
 
@@ -62,7 +45,10 @@ LIST_FIELDS = ('status', 'name', 'disk_format', 'container_format', 'size',
 
 DETAIL_FIELDS = ('name', 'disk_format', 'container_format', 'size', 'checksum',
                  'location', 'created_at', 'updated_at', 'deleted_at',
-                 'status', 'is_public', 'owner', 'properties', 'id')
+                 'status', 'is_public', 'owner', 'properties', 'id',
+                 'is_snapshot', 'description')
+
+PLANKTON_FIELDS = DETAIL_FIELDS + ('store',)
 
 ADD_FIELDS = ('name', 'id', 'store', 'disk_format', 'container_format', 'size',
               'checksum', 'is_public', 'owner', 'properties', 'location')
@@ -77,51 +63,91 @@ CONTAINER_FORMATS = ('aki', 'ari', 'ami', 'bare', 'ovf')
 STORE_TYPES = ('pithos')
 
 
+META_PREFIX = 'HTTP_X_IMAGE_META_'
+META_PREFIX_LEN = len(META_PREFIX)
+META_PROPERTY_PREFIX = 'HTTP_X_IMAGE_META_PROPERTY_'
+META_PROPERTY_PREFIX_LEN = len(META_PROPERTY_PREFIX)
+
+
 log = getLogger('synnefo.plankton')
 
 
+API_STATUS_FROM_IMAGE_STATUS = {
+    "CREATING": "SAVING",
+    "AVAILABLE": "AVAILABLE",
+    "DELETED": "DELETED"}
+
+
 def _create_image_response(image):
+    """Encode the image parameters to HTTP Response Headers.
+
+    This function converts all image parameters to HTTP response headers.
+    All parameters are 'utf-8' encoded. User provided values like the
+    image name and image properties are also properly quoted.
+
+    """
     response = HttpResponse()
 
     for key in DETAIL_FIELDS:
         if key == 'properties':
-            for k, v in image.get('properties', {}).items():
-                name = 'x-image-meta-property-' + k.replace('_', '-')
-                response[name] = uenc(v)
+            for pkey, pval in image.get('properties', {}).items():
+                pkey = 'x-image-meta-property-' + pkey.replace('_', '-')
+                pkey = quote(smart_str(pkey, encoding='utf-8'))
+                pval = quote(smart_str(pval, encoding='utf-8'))
+                response[pkey] = pval
         else:
-            name = 'x-image-meta-' + key.replace('_', '-')
-            response[name] = uenc(image.get(key, ''))
+            val = image.get(key, '')
+            if key == 'status':
+                val = API_STATUS_FROM_IMAGE_STATUS.get(val.upper(), "UNKNOWN")
+            if key == 'name' or key == 'description':
+                val = quote(smart_str(val, encoding='utf-8'))
+            key = 'x-image-meta-' + key.replace('_', '-')
+            response[key] = val
 
     return response
 
 
-def _get_image_headers(request):
+def headers_to_image_params(request):
+    """Decode the HTTP request headers to the acceptable image parameters.
+
+    Get the image parameters from the headers of the HTTP request. All
+    parameters must be encoded using 'utf-8' encoding. User provided parameters
+    like the image name or the image properties must be quoted, so we need to
+    unquote them.
+    Finally, all image parameters name (HTTP header keys) are lowered
+    and all punctuation characters are replaced with underscore.
+
+    """
+
     def normalize(s):
         return ''.join('_' if c in punctuation else c.lower() for c in s)
 
-    META_PREFIX = 'HTTP_X_IMAGE_META_'
-    META_PREFIX_LEN = len(META_PREFIX)
-    META_PROPERTY_PREFIX = 'HTTP_X_IMAGE_META_PROPERTY_'
-    META_PROPERTY_PREFIX_LEN = len(META_PROPERTY_PREFIX)
+    params = {}
+    properties = {}
+    try:
+        for key, val in request.META.items():
+            if key.startswith(META_PREFIX):
+                if key.startswith(META_PROPERTY_PREFIX):
+                    key = key[META_PROPERTY_PREFIX_LEN:]
+                    key = smart_unicode(unquote(key), encoding='utf-8')
+                    val = smart_unicode(unquote(val), encoding='utf-8')
+                    properties[normalize(key)] = val
+                else:
+                    key = smart_unicode(key[META_PREFIX_LEN:],
+                                        encoding='utf-8')
+                    key = normalize(key)
+                    if key in PLANKTON_FIELDS:
+                        if key == "name":
+                            val = smart_unicode(unquote(val), encoding='utf-8')
+                        elif key == "is_public" and not isinstance(val, bool):
+                            val = True if val.lower() == 'true' else False
+                        params[key] = val
+    except DjangoUnicodeDecodeError:
+        raise faults.BadRequest("Could not decode request as UTF-8 string")
 
-    headers = {'properties': {}}
+    params['properties'] = properties
 
-    for key, val in request.META.items():
-        if key.startswith(META_PROPERTY_PREFIX):
-            name = normalize(key[META_PROPERTY_PREFIX_LEN:])
-            headers['properties'][unquote(name)] = unquote(uenc(val))
-        elif key.startswith(META_PREFIX):
-            name = normalize(key[META_PREFIX_LEN:])
-            headers[unquote(name)] = unquote(uenc(val))
-
-    is_public = headers.get('is_public', None)
-    if is_public is not None:
-        headers['is_public'] = True if is_public.lower() == 'true' else False
-
-    if not headers['properties']:
-        del headers['properties']
-
-    return headers
+    return params
 
 
 @api.api_method(http_method="POST", user_required=True, logger=log)
@@ -143,7 +169,7 @@ def add_image(request):
         instead of uploading the data.
     """
 
-    params = _get_image_headers(request)
+    params = headers_to_image_params(request)
     log.debug('add_image %s', params)
 
     if not set(params.keys()).issubset(set(ADD_FIELDS)):
@@ -152,7 +178,7 @@ def add_image(request):
     name = params.pop('name', None)
     if name is None:
         raise faults.BadRequest("Image 'name' parameter is required")
-    elif len(uenc(name)) == 0:
+    elif len(smart_unicode(name, encoding="utf-8")) == 0:
         raise faults.BadRequest("Invalid image name")
     location = params.pop('location', None)
     if location is None:
@@ -377,7 +403,7 @@ def update_image(request, image_id):
         and status.
     """
 
-    meta = _get_image_headers(request)
+    meta = headers_to_image_params(request)
     log.debug('update_image %s', meta)
 
     if not set(meta.keys()).issubset(set(UPDATE_FIELDS)):
@@ -402,13 +428,15 @@ def update_image_members(request, image_id):
     """
 
     log.debug('update_image_members %s', image_id)
+    data = api.utils.get_json_body(request)
     members = []
-    try:
-        data = json.loads(request.body)
-        for member in data['memberships']:
-            members.append(member['member_id'])
-    except (ValueError, KeyError, TypeError):
-        return HttpResponse(status=400)
+
+    memberships = api.utils.get_attribute(data, "memberships", attr_type=list)
+    for member in memberships:
+        if not isinstance(member, dict):
+            raise faults.BadRequest("Invalid 'memberships' field")
+        member = api.utils.get_attribute(member, "member_id")
+        members.append(member)
 
     with PlanktonBackend(request.user_uniq) as backend:
         backend.replace_users(image_id, members)

@@ -1,35 +1,17 @@
-# Copyright 2011-2014 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import uuid
 import logging
@@ -64,7 +46,6 @@ from astakos.im import auth_providers as auth
 import astakos.im.messages as astakos_messages
 from synnefo.lib.ordereddict import OrderedDict
 
-from synnefo.util.text import uenc, udec
 from synnefo.util import units
 from astakos.im import presentation
 
@@ -149,7 +130,7 @@ class Component(models.Model):
         msg = 'Token renewed for component %s'
         logger.log(astakos_settings.LOGGING_LEVEL, msg, self.name)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
     @classmethod
@@ -237,11 +218,11 @@ class Resource(models.Model):
     ui_visible = models.BooleanField(default=True)
     api_visible = models.BooleanField(default=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
     def full_name(self):
-        return str(self)
+        return unicode(self)
 
     def get_info(self):
         return {'service': self.service_origin,
@@ -254,34 +235,35 @@ class Resource(models.Model):
     @property
     def group(self):
         default = self.name
-        return get_presentation(str(self)).get('group', default)
+        return get_presentation(unicode(self)).get('group', default)
 
     @property
     def help_text(self):
         default = "%s resource" % self.name
-        return get_presentation(str(self)).get('help_text', default)
+        return get_presentation(unicode(self)).get('help_text', default)
 
     @property
     def help_text_input_each(self):
         default = "%s resource" % self.name
-        return get_presentation(str(self)).get('help_text_input_each', default)
+        return get_presentation(unicode(self)).get(
+            'help_text_input_each', default)
 
     @property
     def is_abbreviation(self):
-        return get_presentation(str(self)).get('is_abbreviation', False)
+        return get_presentation(unicode(self)).get('is_abbreviation', False)
 
     @property
     def report_desc(self):
         default = "%s resource" % self.name
-        return get_presentation(str(self)).get('report_desc', default)
+        return get_presentation(unicode(self)).get('report_desc', default)
 
     @property
     def placeholder(self):
-        return get_presentation(str(self)).get('placeholder', self.unit)
+        return get_presentation(unicode(self)).get('placeholder', self.unit)
 
     @property
     def verbose_name(self):
-        return get_presentation(str(self)).get('verbose_name', self.name)
+        return get_presentation(unicode(self)).get('verbose_name', self.name)
 
     @property
     def display_name(self):
@@ -1262,7 +1244,7 @@ class UserSetting(models.Model):
 class Chain(models.Model):
     chain = models.AutoField(primary_key=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return "%s" % (self.chain,)
 
 
@@ -1372,7 +1354,7 @@ class ProjectApplication(models.Model):
 
     @property
     def resource_policies(self):
-        return [str(rp) for rp in self.projectresourcegrant_set.all()]
+        return [unicode(rp) for rp in self.projectresourcegrant_set.all()]
 
     def is_modification(self):
         # if self.state != self.PENDING:
@@ -1505,7 +1487,7 @@ class ProjectResourceGrant(models.Model):
             return [self.project_capacity, self.member_capacity]
 
         project_diff = \
-                self.project_capacity - project_resource.project_capacity
+            self.project_capacity - project_resource.project_capacity
         member_diff = self.member_capacity - project_resource.member_capacity
         return [project_diff, member_diff]
 
@@ -1519,7 +1501,7 @@ class ProjectResourceGrant(models.Model):
             return sign + unicode(units.show(v, unit))
         return map(disp, [proj_abs, member_abs])
 
-    def __str__(self):
+    def __unicode__(self):
         return 'Max %s per user: %s' % (self.resource.pluralized_display_name,
                                         self.display_member_capacity())
 
@@ -1627,12 +1609,6 @@ class Project(models.Model):
 
     objects = ProjectManager()
 
-    def __str__(self):
-        return uenc(_("<project %s '%s'>") %
-                    (self.id, udec(self.realname)))
-
-    __repr__ = __str__
-
     def __unicode__(self):
         return _("<project %s '%s'>") % (self.id, self.realname)
 
@@ -1708,8 +1684,8 @@ class Project(models.Model):
         return self.O_STATE_DISPLAY.get(self.overall_state(), _('Unknown'))
 
     def expiration_info(self):
-        return (str(self.id), self.name, self.state_display(),
-                str(self.end_date))
+        return (unicode(self.id), self.name, self.state_display(),
+                unicode(self.end_date))
 
     def last_deactivation(self):
         objs = self.log.filter(to_state__in=self.DEACTIVATED_STATES)
@@ -1997,11 +1973,9 @@ class ProjectMembership(models.Model):
         unique_together = ("person", "project")
         #index_together = [["project", "state"]]
 
-    def __str__(self):
-        return uenc(_("<'%s' membership in '%s'>") %
-                    (self.person.username, self.project))
-
-    __repr__ = __str__
+    def __unicode__(self):
+        return (_("<'%s' membership in '%s'>") %
+                (self.person.username, self.project))
 
     def latest_log(self):
         logs = self.log.all()

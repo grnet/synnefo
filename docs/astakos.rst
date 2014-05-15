@@ -29,4 +29,5 @@ authentication, along with the Synnefo Account API for quota, user group and
 project management.
 
 Please also see the :ref:`Admin Guide <admin-guide>` for more information and the
-:ref:`Installation Guide <quick-install-admin-guide>` for installation instructions.
+Installation Guide (:ref: `Debian <install-guide-debian>`/:ref: `CentOS
+<install-guide-centos>`) for installation instructions.

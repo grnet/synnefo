@@ -1,37 +1,20 @@
-# Copyright 2012-2014 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+import urllib
 
 from mock import patch
 from functools import wraps
@@ -62,7 +45,7 @@ class PlanktonTest(BaseAPITest):
     def test_register_image(self, backend):
         required = {
             "HTTP_X_IMAGE_META_NAME": u"TestImage\u2602",
-            "HTTP_X_IMAGE_META_LOCATION": "pithos://4321-4321/images/foo"}
+            "HTTP_X_IMAGE_META_LOCATION": "pithos://4321-4321/%E2%98%82/foo"}
         # Check valid name
         headers = deepcopy(required)
         headers.pop("HTTP_X_IMAGE_META_NAME")
@@ -131,13 +114,19 @@ class PlanktonTest(BaseAPITest):
         self.assertBadRequest(response)
         self.assertTrue("size" in response.content)
 
+        # Unicode Error:
+        headers["HTTP_X_IMAGE_META_NAME"] = "\xc2"
+        response = self.post(IMAGES_URL, **headers)
+        self.assertBadRequest(response)
+        headers["HTTP_X_IMAGE_META_NAME"] = u"TestImage\u2602"
+
         headers["HTTP_X_IMAGE_META_SIZE"] = 42
         headers["HTTP_X_IMAGE_META_CHECKSUM"] = "wrong_checksum"
         response = self.post(IMAGES_URL, **headers)
         self.assertBadRequest(response)
 
         backend().get_uuid.return_value =\
-            ("4321-4321", "images", "foo")
+            ("4321-4321", u"\u2602", "foo")
         backend().get_object_permissions.return_value = \
             ("foo", "foo", {"read": []})
         backend().get_object_meta.side_effect = \
@@ -156,7 +145,7 @@ class PlanktonTest(BaseAPITest):
         response = self.post(IMAGES_URL, **headers)
         self.assertSuccess(response)
         self.assertEqual(response["x-image-meta-location"],
-                         "pithos://4321-4321/images/foo")
+                         "pithos://4321-4321/%E2%98%82/foo")
         self.assertEqual(response["x-image-meta-id"], "1234-1234-1234")
         self.assertEqual(response["x-image-meta-status"], "AVAILABLE")
         self.assertEqual(response["x-image-meta-deleted-at"], "")
@@ -164,7 +153,7 @@ class PlanktonTest(BaseAPITest):
         self.assertEqual(response["x-image-meta-owner"], "4321-4321")
         self.assertEqual(response["x-image-meta-size"], "42")
         self.assertEqual(response["x-image-meta-checksum"], "unique_hash")
-        self.assertEqual(response["x-image-meta-name"],
+        self.assertEqual(urllib.unquote(response["x-image-meta-name"]),
                          u"TestImage\u2602".encode("utf-8"))
         self.assertEqual(response["x-image-meta-container-format"], "bare")
         self.assertEqual(response["x-image-meta-disk-format"], "diskdump")
@@ -194,8 +183,7 @@ class PlanktonTest(BaseAPITest):
         name, args, kwargs = backend().update_object_meta.mock_calls[-1]
         metadata = args[5]
         self.assertEqual(metadata["plankton:property:key1"], "val1")
-        self.assertEqual(metadata["plankton:property:key2"],
-                         u"\u2601".encode("utf-8"))
+        self.assertEqual(metadata["plankton:property:key2"], u"\u2601")
         self.assertSuccess(response)
 
     def test_unregister_image(self, backend):
@@ -281,7 +269,7 @@ class PlanktonTest(BaseAPITest):
         self.assertEqual(response["x-image-meta-owner"], "img_owner")
         self.assertEqual(response["x-image-meta-size"], "42")
         self.assertEqual(response["x-image-meta-checksum"], "unique_hash")
-        self.assertEqual(response["x-image-meta-name"],
+        self.assertEqual(urllib.unquote(response["x-image-meta-name"]),
                          u"TestImage\u2602".encode("utf-8"))
         self.assertEqual(response["x-image-meta-container-format"], "bare")
         self.assertEqual(response["x-image-meta-disk-format"], "diskdump")

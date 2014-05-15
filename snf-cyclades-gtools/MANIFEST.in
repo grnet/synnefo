@@ -1,2 +1,1 @@
-include kvm-vif-bridge 
-include distribute_setup.py
+include distribute_setup.py README.md

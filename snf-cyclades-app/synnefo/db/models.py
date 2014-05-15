@@ -1,31 +1,17 @@
-# Copyright 2011-2014 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above copyright
-#      notice, this list of conditions and the following disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#  2. Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in the
-#     documentation and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are
-# those of the authors and should not be interpreted as representing official
-# policies, either expressed or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
 
@@ -49,27 +35,56 @@ import logging
 log = logging.getLogger(__name__)
 
 
+class VolumeType(models.Model):
+    NAME_LENGTH = 255
+    name = models.CharField("Name", max_length=NAME_LENGTH)
+    disk_template = models.CharField('Disk Template', max_length=32)
+    deleted = models.BooleanField('Deleted', default=False)
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u"<VolumeType %s(disk_template:%s)>" % \
+            (self.name, self.disk_template)
+
+    @property
+    def template(self):
+        return self.disk_template.split("_")[0]
+
+    @property
+    def provider(self):
+        if "_" in self.disk_template:
+            return self.disk_template.split("_", 1)[1]
+        else:
+            return None
+
+
 class Flavor(models.Model):
     cpu = models.IntegerField('Number of CPUs', default=0)
     ram = models.IntegerField('RAM size in MiB', default=0)
     disk = models.IntegerField('Disk size in GiB', default=0)
-    disk_template = models.CharField('Disk template', max_length=32)
+    volume_type = models.ForeignKey(VolumeType, related_name="flavors",
+                                    on_delete=models.PROTECT, null=False)
     deleted = models.BooleanField('Deleted', default=False)
     # Whether the flavor can be used to create new servers
     allow_create = models.BooleanField(default=True, null=False)
 
     class Meta:
         verbose_name = u'Virtual machine flavor'
-        unique_together = ('cpu', 'ram', 'disk', 'disk_template')
+        unique_together = ('cpu', 'ram', 'disk', 'volume_type')
 
     @property
     def name(self):
         """Returns flavor name (generated)"""
-        return u'C%dR%dD%d%s' % (self.cpu, self.ram, self.disk,
-                                 self.disk_template)
+        return u'C%sR%sD%s%s' % (self.cpu, self.ram, self.disk,
+                                 self.volume_type.disk_template)
+
+    def __str__(self):
+        return self.__unicode__()
 
     def __unicode__(self):
-        return "<%s:%s>" % (str(self.id), self.name)
+        return u"<%s:%s>" % (self.id, self.name)
 
 
 class Backend(models.Model):
@@ -113,8 +128,11 @@ class Backend(models.Model):
         verbose_name = u'Backend'
         ordering = ["clustername"]
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
-        return self.clustername + "(id=" + str(self.id) + ")"
+        return u"%s(id:%s)" % (self.clustername, self.id)
 
     @property
     def backend_id(self):
@@ -212,6 +230,9 @@ class QuotaHolderSerial(models.Model):
     class Meta:
         verbose_name = u'Quota Serial'
         ordering = ["serial"]
+
+    def __str__(self):
+        return self.__unicode__()
 
     def __unicode__(self):
         return u"<serial: %s>" % self.serial
@@ -380,6 +401,9 @@ class VirtualMachine(models.Model):
         verbose_name = u'Virtual machine instance'
         get_latest_by = 'created'
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
         return u"<vm:%s@backend:%s>" % (self.id, self.backend_id)
 
@@ -409,8 +433,10 @@ class VirtualMachine(models.Model):
 
 
 class VirtualMachineMetadata(models.Model):
-    meta_key = models.CharField(max_length=50)
-    meta_value = models.CharField(max_length=500)
+    KEY_LENGTH = 50
+    VALUE_LENGTH = 500
+    meta_key = models.CharField(max_length=KEY_LENGTH)
+    meta_value = models.CharField(max_length=VALUE_LENGTH)
     vm = models.ForeignKey(VirtualMachine, related_name='metadata',
                            on_delete=models.CASCADE)
 
@@ -418,8 +444,11 @@ class VirtualMachineMetadata(models.Model):
         unique_together = (('meta_key', 'vm'),)
         verbose_name = u'Key-value pair of metadata for a VM.'
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
-        return u'%s: %s' % (self.meta_key, self.meta_value)
+        return u'<Metadata %s: %s>' % (self.meta_key, self.meta_value)
 
 
 class Network(models.Model):
@@ -508,8 +537,11 @@ class Network(models.Model):
                                null=True, on_delete=models.SET_NULL)
     subnet_ids = fields.SeparatedValuesField("Subnet IDs", null=True)
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
-        return "<Network: %s>" % str(self.id)
+        return u"<Network: %s>" % self.id
 
     @property
     def backend_id(self):
@@ -634,6 +666,9 @@ class Subnet(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
         msg = u"<Subnet %s, Network: %s, CIDR: %s>"
         return msg % (self.id, self.network_id, self.cidr)
@@ -717,8 +752,11 @@ class BackendNetwork(models.Model):
                                               mac_prefix)
             self.mac_prefix = mac_prefix
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
-        return '<%s@%s>' % (self.network, self.backend)
+        return u'<BackendNetwork %s@%s>' % (self.network, self.backend)
 
 
 class IPAddress(models.Model):
@@ -741,6 +779,9 @@ class IPAddress(models.Model):
     serial = models.ForeignKey(QuotaHolderSerial,
                                related_name="ips", null=True,
                                on_delete=models.SET_NULL)
+
+    def __str__(self):
+        return self.__unicode__()
 
     def __unicode__(self):
         ip_type = "floating" if self.floating_ip else "static"
@@ -781,6 +822,9 @@ class IPAddressLog(models.Model):
                                        null=True)
     active = models.BooleanField("Whether IP still allocated to server",
                                  default=True)
+
+    def __str__(self):
+        return self.__unicode__()
 
     def __unicode__(self):
         return u"<Address: %s, Server: %s, Network: %s, Allocated at: %s>"\
@@ -824,14 +868,17 @@ class NetworkInterface(models.Model):
     public = models.BooleanField(default=False)
     device_owner = models.CharField('Device owner', max_length=128, null=True)
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
-        return "<%s:vm:%s network:%s>" % (self.id, self.machine_id,
-                                          self.network_id)
+        return u"<NIC %s:vm:%s network:%s>" % \
+            (self.id, self.machine_id, self.network_id)
 
     @property
     def backend_uuid(self):
         """Return the backend id by prepending backend-prefix."""
-        return "%snic-%s" % (settings.BACKEND_PREFIX_ID, str(self.id))
+        return u"%snic-%s" % (settings.BACKEND_PREFIX_ID, str(self.id))
 
     @property
     def ipv4_address(self):
@@ -890,12 +937,18 @@ class PoolTable(models.Model):
 class BridgePoolTable(PoolTable):
     manager = pools.BridgePool
 
+    def __str__(self):
+        return self.__unicode__()
+
     def __unicode__(self):
         return u"<BridgePool id:%s>" % self.id
 
 
 class MacPrefixPoolTable(PoolTable):
     manager = pools.MacPrefixPool
+
+    def __str__(self):
+        return self.__unicode__()
 
     def __unicode__(self):
         return u"<MACPrefixPool id:%s>" % self.id
@@ -907,6 +960,9 @@ class IPPoolTable(PoolTable):
     subnet = models.ForeignKey('Subnet', related_name="ip_pools",
                                on_delete=models.PROTECT,
                                db_index=True, null=True)
+
+    def __str__(self):
+        return self.__unicode__()
 
     def __unicode__(self):
         return u"<IPv4AdressPool, Subnet: %s>" % self.subnet_id
@@ -983,3 +1039,133 @@ class VirtualMachineDiagnostic(models.Model):
 
     class Meta:
         ordering = ['-created']
+
+
+class Volume(models.Model):
+    """Model representing a detachable block storage device."""
+
+    STATUS_VALUES = (
+        ("CREATING", "The volume is being created"),
+        ("AVAILABLE", "The volume is ready to be attached to an instance"),
+        ("ATTACHING", "The volume is attaching to an instance"),
+        ("DETACHING", "The volume is detaching from an instance"),
+        ("IN_USE", "The volume is attached to an instance"),
+        ("DELETING", "The volume is being deleted"),
+        ("DELETED", "The volume has been deleted"),
+        ("ERROR", "An error has occured with the volume"),
+        ("ERROR_DELETING", "There was an error deleting this volume"),
+        ("BACKING_UP", "The volume is being backed up"),
+        ("RESTORING_BACKUP", "A backup is being restored to the volume"),
+        ("ERROR_RESTORING", "There was an error restoring a backup from the"
+                            " volume")
+    )
+
+    NAME_LENGTH = 255
+    DESCRIPTION_LENGTH = 255
+    SOURCE_IMAGE_PREFIX = "image:"
+    SOURCE_SNAPSHOT_PREFIX = "snapshot:"
+    SOURCE_VOLUME_PREFIX = "volume:"
+
+    name = models.CharField("Name", max_length=NAME_LENGTH, null=True)
+    description = models.CharField("Description",
+                                   max_length=DESCRIPTION_LENGTH, null=True)
+    userid = models.CharField("Owner's UUID", max_length=100, null=False,
+                              db_index=True)
+    size = models.IntegerField("Volume size in GB",  null=False)
+    volume_type = models.ForeignKey(VolumeType, related_name="volumes",
+                                    on_delete=models.PROTECT, null=False)
+
+    delete_on_termination = models.BooleanField("Delete on Server Termination",
+                                                default=True, null=False)
+
+    source = models.CharField(max_length=128, null=True)
+    origin = models.CharField(max_length=128, null=True)
+
+    deleted = models.BooleanField("Deleted", default=False, null=False)
+    # Datetime fields
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    # Status
+    status = models.CharField("Status", max_length=64,
+                              choices=STATUS_VALUES,
+                              default="CREATING", null=False)
+    snapshot_counter = models.PositiveIntegerField(default=0, null=False)
+
+    machine = models.ForeignKey("VirtualMachine",
+                                related_name="volumes",
+                                null=True)
+    index = models.IntegerField("Index", null=True)
+    backendjobid = models.PositiveIntegerField(null=True)
+
+    @property
+    def backend_volume_uuid(self):
+        return u"%svol-%d" % (settings.BACKEND_PREFIX_ID, self.id)
+
+    @property
+    def backend_disk_uuid(self):
+        return u"%sdisk-%d" % (settings.BACKEND_PREFIX_ID, self.id)
+
+    @property
+    def source_image_id(self):
+        src = self.source
+        if src and src.startswith(self.SOURCE_IMAGE_PREFIX):
+            return src[len(self.SOURCE_IMAGE_PREFIX):]
+        else:
+            return None
+
+    @property
+    def source_snapshot_id(self):
+        src = self.source
+        if src and src.startswith(self.SOURCE_SNAPSHOT_PREFIX):
+            return src[len(self.SOURCE_SNAPSHOT_PREFIX):]
+        else:
+            return None
+
+    @property
+    def source_volume_id(self):
+        src = self.source
+        if src and src.startswith(self.SOURCE_VOLUME_PREFIX):
+            return src[len(self.SOURCE_VOLUME_PREFIX):]
+        else:
+            return None
+
+    @staticmethod
+    def prefix_source(source_id, source_type):
+        if source_type == "volume":
+            return Volume.SOURCE_VOLUME_PREFIX + str(source_id)
+        if source_type == "snapshot":
+            return Volume.SOURCE_SNAPSHOT_PREFIX + str(source_id)
+        if source_type == "image":
+            return Volume.SOURCE_IMAGE_PREFIX + str(source_id)
+        elif source_type == "blank":
+            return None
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u"<Volume %s:vm:%s>" % (self.id, self.machine_id)
+
+
+class Metadata(models.Model):
+    KEY_LENGTH = 64
+    VALUE_LENGTH = 255
+    key = models.CharField("Metadata Key", max_length=KEY_LENGTH)
+    value = models.CharField("Metadata Value", max_length=VALUE_LENGTH)
+
+    class Meta:
+        abstract = True
+
+    def __str__(self):
+        return self.__unicode__()
+
+    def __unicode__(self):
+        return u"<%s: %s>" % (self.key, self.value)
+
+
+class VolumeMetadata(Metadata):
+    volume = models.ForeignKey("Volume", related_name="metadata")
+
+    class Meta:
+        unique_together = (("volume", "key"),)
+        verbose_name = u"Key-Value pair of Volumes metadata"

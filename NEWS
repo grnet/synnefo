@@ -5,6 +5,26 @@ Unified NEWS file for Synnefo versions >= 0.13
 
 Since v0.13 all Synnefo components have been merged into a single repository.
 
+
+.. _NEWS-0.15.1:
+
+v0.15.1
+=======
+
+Released: Thu May 15 13:31:37 EEST 2014
+
+Since this version, Synnefo officially supports CentOS, alongside Debian.
+The most notable changes are:
+
+* Support for selectable storage backends for Pithos.
+  Two options available: NFS or Ceph's RADOS.
+* Refactoring and extension of the statistics API, to export detailed
+  information about Ganeti clusters, virtual servers, networks, IPv4 pools,
+  images, users, auth providers.
+* New CentOS installation guide.
+* Smaller bug and security fixes. See Changelog file for complete list.
+
+
 .. _NEWS-0.15:
 
 v0.15
@@ -123,6 +143,7 @@ Released: Tue Nov 26 11:03:37 EET 2013
 
 * Support for Ganeti 2.8
 
+
 .. _NEWS-0.14.9:
 
 v0.14.9
@@ -131,6 +152,7 @@ v0.14.9
 Released: Mon Nov 11 12:13:31 EET 2013
 
 * Minor bug-fix release
+
 
 .. _NEWS-0.14.8:
 
@@ -142,6 +164,7 @@ Released: Fri Nov  8 17:25:08 EET 2013
 * Support for Debian Wheezy
 * Bug fix version
 
+
 .. _NEWS-0.14.7:
 
 v0.14.7
@@ -151,6 +174,7 @@ Released: Wed Sep 18 17:50:12 EEST 2013
 
 * Bug fix version
 
+
 .. _NEWS-0.14.6:
 
 v0.14.6
@@ -159,6 +183,7 @@ v0.14.6
 Released: Wed Sep 18 16:18:58 EEST 2013
 
 * Bug fix version
+
 
 .. _NEWS-0.14.5:
 
@@ -171,12 +196,14 @@ Pithos
 ------
 * Bug fix version
 
+
 .. _NEWS-0.14.4:
 
 v0.14.4
 =======
 
 Released: Mon Jul 29 12:24:22 EEST 2013
+
 
 .. _NEWS-0.14.3:
 
@@ -185,12 +212,14 @@ v0.14.3
 
 Released: Thu Jul 25 12:22:47 EEST 2013
 
+
 .. _NEWS-0.14.2:
 
 v0.14.2
 =======
 
 Released: Fri Jul 12 13:13:32 EEST 2013
+
 
 .. _NEWS-0.14:
 

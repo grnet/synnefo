@@ -1,4 +1,19 @@
 #!/usr/bin/env python
+#
+# Copyright (C) 2010-2014 GRNET S.A.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Invalid name for type module. pylint: disable-msg=C0103
 
@@ -7,6 +22,7 @@ Continuous Integration script for Synnefo.
 """
 
 import os
+import sys
 import utils
 from optparse import OptionParser
 
@@ -73,6 +89,12 @@ def main():  # pylint: disable=too-many-statements, too-many-branches
                            " script (Default: %s)" % DEFAULT_CONFIG_FILE)
     parser.add_option("--cloud", dest="kamaki_cloud", default=None,
                       help="Use specified cloud, as is in .kamakirc")
+    parser.add_option("--synnefo-repo", dest="synnefo_repo", default=None,
+                      help="Specify the synnefo repo to use")
+    parser.add_option("--synnefo-branch", dest="synnefo_branch", default=None,
+                      help="Specify the synnefo branch to use")
+    parser.add_option("--pull-request", dest="pull_request", default=None,
+                      help="Test a Github pull request.")
     parser.add_option("-f", "--flavor", dest="flavor", default=None,
                       help="Flavor to use for the server."
                            " Supports both search by name (reg expression)"
@@ -141,9 +163,16 @@ def main():  # pylint: disable=too-many-statements, too-many-branches
                 parser.print_help()
                 print
                 print msg
-                return
+                sys.exit(1)
             else:
                 setattr(options, command, True)
+
+    if options.pull_request is not None:
+        if (options.synnefo_repo is not None or
+                options.synnefo_branch is not None):
+            print "ERROR: Options 'synnefo_repo' and/or 'synnefo_branch'" \
+                " cannot be given with 'pull_request'"
+            sys.exit(1)
 
     # ----------------------------------
     # Initialize SynnefoCi
@@ -165,7 +194,11 @@ def main():  # pylint: disable=too-many-statements, too-many-branches
                                  image=options.image,
                                  ssh_keys=options.ssh_keys,
                                  server_name=options.server_name)
-        synnefo_ci.clone_repo(local_repo=options.local_repo)
+        synnefo_ci.clone_repo(
+            synnefo_repo=options.synnefo_repo,
+            synnefo_branch=options.synnefo_branch,
+            local_repo=options.local_repo,
+            pull_request=options.pull_request)
     if getattr(options, BUILD_SYNNEFO_CMD, False):
         synnefo_ci.build_packages()
         if options.fetch_packages:

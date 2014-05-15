@@ -1,49 +1,30 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from optparse import make_option
 
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import CommandError
 from synnefo.management import common
 
-from synnefo.db.models import VirtualMachine, Network, Flavor
+from synnefo.db.models import VirtualMachine, Network, Flavor, VolumeType
 from synnefo.logic.utils import id_from_network_name, id_from_instance_name
 from synnefo.logic.backend import wait_for_job, connect_to_network
+from snf_django.management.commands import SynnefoCommand
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic import servers
 from synnefo import quotas
-
-import sys
 
 
 HELP_MSG = """
@@ -60,12 +41,12 @@ connected to a public network of Synnefo.
 """
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = "Import an existing Ganeti VM into Synnefo." + HELP_MSG
     args = "<ganeti_instance_name>"
     output_transaction = True
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             "--backend-id",
             dest="backend_id",
@@ -124,11 +105,11 @@ class Command(BaseCommand):
                 raise CommandError(field + " is mandatory")
 
         import_server(instance_name, backend_id, flavor_id, image_id, user_id,
-                      new_public_nic, self.stdout)
+                      new_public_nic, self.stderr)
 
 
 def import_server(instance_name, backend_id, flavor_id, image_id, user_id,
-                  new_public_nic, stream=sys.stdout):
+                  new_public_nic, stream):
     flavor = common.get_resource("flavor", flavor_id)
     backend = common.get_resource("backend", backend_id)
 
@@ -141,10 +122,10 @@ def import_server(instance_name, backend_id, flavor_id, image_id, user_id,
             raise CommandError("Instance %s does not exist in backend %s"
                                % (instance_name, backend))
         else:
-            raise CommandError("Unexpected error" + str(e))
+            raise CommandError("Unexpected error: %s" % e)
 
     if not new_public_nic:
-        check_instance_nics(instance)
+        check_instance_nics(instance, stream)
 
     shutdown_instance(instance, backend_client, stream=stream)
 
@@ -180,7 +161,7 @@ def import_server(instance_name, backend_id, flavor_id, image_id, user_id,
     return
 
 
-def flavor_from_instance(instance, flavor, stream=sys.stdout):
+def flavor_from_instance(instance, flavor, stream):
     beparams = instance['beparams']
     disk_sizes = instance['disk.sizes']
     if len(disk_sizes) != 1:
@@ -191,14 +172,20 @@ def flavor_from_instance(instance, flavor, stream=sys.stdout):
     cpu = beparams['vcpus']
     ram = beparams['memory']
 
-    return Flavor.objects.get_or_create(disk=disk, disk_template=disk_template,
+    try:
+        volume_type = VolumeType.objects.get(disk_template=disk_template)
+    except VolumeType.DoesNotExist:
+        raise CommandError("Cannot find volume type with '%s' disk template."
+                           % disk_template)
+    return Flavor.objects.get_or_create(disk=disk,
+                                        volume_type=volume_type,
                                         cpu=cpu, ram=ram)
 
 
-def check_instance_nics(instance):
+def check_instance_nics(instance, stream):
     instance_name = instance['name']
     networks = instance['nic.networks.names']
-    print networks
+    stream.write(str(networks) + "\n")
     try:
         networks = map(id_from_network_name, networks)
     except Network.InvalidBackendIdError:
@@ -209,7 +196,7 @@ def check_instance_nics(instance):
                            " a public network of synnefo." % instance_name)
 
 
-def remove_instance_nics(instance, backend_client, stream=sys.stdout):
+def remove_instance_nics(instance, backend_client, stream):
     instance_name = instance['name']
     ips = instance['nic.ips']
     nic_indexes = xrange(0, len(ips))
@@ -222,7 +209,7 @@ def remove_instance_nics(instance, backend_client, stream=sys.stdout):
         raise CommandError("Cannot remove instance NICs: %s" % error)
 
 
-def add_public_nic(instance_name, nic, backend_client, stream=sys.stdout):
+def add_public_nic(instance_name, nic, backend_client, stream):
     stream.write("Adding public NIC %s\n" % nic)
     jobid = backend_client.ModifyInstance(instance_name, nics=[('add', nic)])
     (status, error) = wait_for_job(backend_client, jobid)
@@ -230,7 +217,7 @@ def add_public_nic(instance_name, nic, backend_client, stream=sys.stdout):
         raise CommandError("Cannot rename instance: %s" % error)
 
 
-def shutdown_instance(instance, backend_client, stream=sys.stdout):
+def shutdown_instance(instance, backend_client, stream):
     instance_name = instance['name']
     if instance['status'] != 'ADMIN_down':
         stream.write("Instance is not down. Shutting down instance...\n")
@@ -240,7 +227,7 @@ def shutdown_instance(instance, backend_client, stream=sys.stdout):
             raise CommandError("Cannot shutdown instance: %s" % error)
 
 
-def rename_instance(old_name, new_name, backend_client, stream=sys.stdout):
+def rename_instance(old_name, new_name, backend_client, stream):
     stream.write("Renaming instance to %s\n" % new_name)
 
     jobid = backend_client.RenameInstance(old_name, new_name,
@@ -250,7 +237,7 @@ def rename_instance(old_name, new_name, backend_client, stream=sys.stdout):
         raise CommandError("Cannot rename instance: %s" % error)
 
 
-def startup_instance(name, backend_client, stream=sys.stdout):
+def startup_instance(name, backend_client, stream):
     stream.write("Starting instance %s\n" % name)
     jobid = backend_client.StartupInstance(name)
     (status, error) = wait_for_job(backend_client, jobid)

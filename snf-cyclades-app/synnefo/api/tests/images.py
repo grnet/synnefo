@@ -1,35 +1,17 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
 
@@ -80,6 +62,7 @@ class ImageAPITest(BaseAPITest):
 
     @assert_backend_closed
     def test_list_images_detail(self, mimage):
+        self.maxDiff = None
         images = [{'id': 1,
                    'name': u'image-1 \u2601',
                    'status': 'available',
@@ -87,6 +70,8 @@ class ImageAPITest(BaseAPITest):
                    'updated_at': '2012-12-26 11:52:54',
                    'owner': 'user1',
                    'deleted_at': '',
+                   'is_snapshot': False,
+                   'is_public': True,
                    'properties': {u'foo\u2610': u'bar\u2611'}},
                   {'id': 2,
                    'name': 'image-2',
@@ -95,6 +80,8 @@ class ImageAPITest(BaseAPITest):
                    'updated_at': '2012-12-26 11:52:54',
                    'owner': 'user1',
                    'deleted_at': '2012-12-27 11:52:54',
+                   'is_snapshot': False,
+                   'is_public': True,
                    'properties': ''},
                   {'id': 3,
                    'name': 'image-3',
@@ -103,6 +90,8 @@ class ImageAPITest(BaseAPITest):
                    'deleted_at': '',
                    'updated_at': '2012-12-26 11:52:54',
                    'owner': 'user1',
+                   'is_snapshot': False,
+                   'is_public': False,
                    'properties': ''}]
         result_images = [
                   {'id': 1,
@@ -113,6 +102,8 @@ class ImageAPITest(BaseAPITest):
                    'updated': '2012-12-26T11:52:54+00:00',
                    'user_id': 'user1',
                    'tenant_id': 'user1',
+                   'is_snapshot': False,
+                   'public': True,
                    'metadata': {u'foo\u2610': u'bar\u2611'}},
                   {'id': 2,
                    'name': 'image-2',
@@ -122,6 +113,8 @@ class ImageAPITest(BaseAPITest):
                    'tenant_id': 'user1',
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
+                   'is_snapshot': False,
+                   'public': True,
                    'metadata': {}},
                   {'id': 3,
                    'name': 'image-3',
@@ -131,6 +124,8 @@ class ImageAPITest(BaseAPITest):
                    'tenant_id': 'user1',
                    'created': '2012-11-26T11:52:54+00:00',
                    'updated': '2012-12-26T11:52:54+00:00',
+                   'is_snapshot': False,
+                   'public': False,
                    'metadata': {}}]
         mimage().__enter__().list_images.return_value = images
         response = self.get(join_urls(IMAGES_URL, "detail"), 'user')
@@ -150,12 +145,14 @@ class ImageAPITest(BaseAPITest):
         images = [
                   {'id': 1,
                    'name': 'image-1',
-                   'status':'available',
+                   'status': 'available',
                    'progress': 100,
                    'created_at': old_time.isoformat(),
                    'deleted_at': '',
                    'updated_at': old_time.isoformat(),
                    'owner': 'user1',
+                   'is_snapshot': False,
+                   'is_public': True,
                    'properties': ''},
                   {'id': 2,
                    'name': 'image-2',
@@ -165,6 +162,8 @@ class ImageAPITest(BaseAPITest):
                    'created_at': new_time.isoformat(),
                    'updated_at': new_time.isoformat(),
                    'deleted_at': new_time.isoformat(),
+                   'is_snapshot': False,
+                   'is_public': False,
                    'properties': ''}]
         mimage().__enter__().list_images.return_value = images
         response =\
@@ -176,6 +175,7 @@ class ImageAPITest(BaseAPITest):
 
     @assert_backend_closed
     def test_get_image_details(self, mimage):
+        self.maxDiff = None
         image = {'id': 42,
                  'name': 'image-1',
                  'status': 'available',
@@ -183,6 +183,8 @@ class ImageAPITest(BaseAPITest):
                  'updated_at': '2012-12-26 11:52:54',
                  'deleted_at': '',
                  'owner': 'user1',
+                 'is_snapshot': False,
+                 'is_public': True,
                  'properties': {'foo': 'bar'}}
         result_image = \
                   {'id': 42,
@@ -193,6 +195,8 @@ class ImageAPITest(BaseAPITest):
                    'updated': '2012-12-26T11:52:54+00:00',
                    'user_id': 'user1',
                    'tenant_id': 'user1',
+                   'is_snapshot': False,
+                   'public': True,
                    'metadata': {'foo': 'bar'}}
         mimage().__enter__().get_image.return_value = image
         response = self.get(join_urls(IMAGES_URL, "42"), 'user')
@@ -218,7 +222,7 @@ class ImageAPITest(BaseAPITest):
         response = self.get(join_urls(IMAGES_URL, 'nonexistent/lala/foo'))
         self.assertEqual(response.status_code, 400)
         try:
-            error = json.loads(response.content)
+            json.loads(response.content)
         except ValueError:
             self.assertTrue(False)
 
@@ -252,20 +256,20 @@ class ImageAPITest(BaseAPITest):
 class ImageMetadataAPITest(BaseAPITest):
     def setUp(self):
         self.image = {'id': 42,
-                 'name': 'image-1',
-                 'status': 'available',
-                 'created_at': '2012-11-26 11:52:54',
-                 'updated_at': '2012-12-26 11:52:54',
-                 'deleted_at': '',
-                 'properties': {'foo': 'bar', 'foo2': 'bar2'}}
+                      'name': 'image-1',
+                      'status': 'available',
+                      'created_at': '2012-11-26 11:52:54',
+                      'updated_at': '2012-12-26 11:52:54',
+                      'deleted_at': '',
+                      'properties': {'foo': 'bar', 'foo2': 'bar2'}}
         self.result_image = \
-                  {'id': 42,
-                   'name': 'image-1',
-                   'status': 'ACTIVE',
-                   'progress': 100,
-                   'created': '2012-11-26T11:52:54+00:00',
-                   'updated': '2012-12-26T11:52:54+00:00',
-                   'metadata': {'foo': 'bar'}}
+            {'id': 42,
+             'name': 'image-1',
+             'status': 'ACTIVE',
+             'progress': 100,
+             'created': '2012-11-26T11:52:54+00:00',
+             'updated': '2012-12-26T11:52:54+00:00',
+             'metadata': {'foo': 'bar'}}
         super(ImageMetadataAPITest, self).setUp()
 
     @assert_backend_closed

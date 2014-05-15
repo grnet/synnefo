@@ -1,35 +1,17 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from haigha.connections import RabbitConnection
 from haigha.message import Message
@@ -142,7 +124,7 @@ class AMQPHaighaClient():
                                       auto_delete=False, durable=True)
 
     def queue_declare(self, queue, exclusive=False, mirrored=True,
-                      mirrored_nodes='all'):
+                      mirrored_nodes='all', ttl=None):
         """Declare a queue
 
         @type queue: string
@@ -157,6 +139,8 @@ class AMQPHaighaClient():
                   the specified nodes, and the master will be the
                   first node in the list. Node names must be provided
                   and not host IP. example: [node1@rabbit,node2@rabbit]
+        @type ttl: int
+        @param tll: Queue TTL in seconds
 
         """
 
@@ -171,6 +155,9 @@ class AMQPHaighaClient():
                 raise AttributeError
         else:
             arguments = {}
+
+        if ttl is not None:
+            arguments['x-expires'] = ttl * 1000
 
         self.channel.queue.declare(queue, durable=True, exclusive=exclusive,
                                    auto_delete=False, arguments=arguments)
@@ -222,7 +209,7 @@ class AMQPHaighaClient():
         (exchange, routing_key, body) = self.unacked[mid]
         self.basic_publish(exchange, routing_key, body)
 
-    def basic_consume(self, queue, callback):
+    def basic_consume(self, queue, callback, no_ack=False, exclusive=False):
         """Consume from a queue.
 
         @type queue: string or list of strings
@@ -233,7 +220,8 @@ class AMQPHaighaClient():
         """
 
         self.consumers[queue] = callback
-        self.channel.basic.consume(queue, consumer=callback, no_ack=False)
+        self.channel.basic.consume(queue, consumer=callback, no_ack=no_ack,
+                                   exclusive=exclusive)
 
     @reconnect_decorator
     def basic_wait(self):
@@ -249,8 +237,8 @@ class AMQPHaighaClient():
         gevent.sleep(0)
 
     @reconnect_decorator
-    def basic_get(self, queue):
-        self.channel.basic.get(queue, no_ack=False)
+    def basic_get(self, queue, no_ack=False):
+        self.channel.basic.get(queue, no_ack=no_ack)
 
     @reconnect_decorator
     def basic_ack(self, message):

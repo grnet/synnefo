@@ -1,39 +1,20 @@
-# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import mock
-
+from mock import patch
 from django.test import TestCase, Client
 from django.conf import settings
 from django.core.urlresolvers import reverse
@@ -122,8 +103,8 @@ def get_user_mock(request, *args, **kwargs):
                         }
 
 
-@mock.patch("astakosclient.AstakosClient", new=AstakosClientMock)
-@mock.patch("snf_django.lib.astakos.get_user", new=get_user_mock)
+@patch("astakosclient.AstakosClient", new=AstakosClientMock)
+@patch("snf_django.lib.astakos.get_user", new=get_user_mock)
 class HelpdeskTests(TestCase):
     """
     Helpdesk tests. Test correctness of permissions and returned data.
@@ -146,14 +127,27 @@ class HelpdeskTests(TestCase):
                                                 userid=vm1u2.userid,
                                                 network__public=False,
                                                 network__userid=USER1)
+        nic2 = mfactory.NetworkInterfaceFactory(machine=vm1u2,
+                                                userid=vm1u2.userid,
+                                                network__public=False,
+                                                network__userid=USER1)
         ip2 = mfactory.IPv4AddressFactory(nic__machine=vm1u1,
                                           userid=vm1u1.userid,
                                           network__public=True,
                                           network__userid=None,
                                           address="195.251.222.211")
+        ipv6 = mfactory.IPv4AddressFactory(nic__machine=vm1u1,
+                                          userid=vm1u1.userid,
+                                          network__public=True,
+                                          network__userid=None,
+                                          address="2001:648:2ffc:200::184")
         mfactory.IPAddressLogFactory(address=ip2.address,
                                      server_id=vm1u1.id,
                                      network_id=ip2.network.id,
+                                     active=True)
+        mfactory.IPAddressLogFactory(address=ipv6.address,
+                                     server_id=vm1u1.id,
+                                     network_id=ipv6.network.id,
                                      active=True)
 
     def test_enabled_setting(self):
@@ -181,6 +175,22 @@ class HelpdeskTests(TestCase):
         ips = r.context["ips"]
         for ip in ips:
             self.assertEqual(ip.address, "195.251.222.211")
+
+        # ipv6 matched
+        r = self.client.get(reverse('helpdesk-details',
+                                    args=["2001:648:2ffc:200::184"]),
+                                    user_token='0001')
+        self.assertTrue(r.context["ip_exists"])
+        ips = r.context["ips"]
+        for ip in ips:
+            self.assertEqual(ip.address, "2001:648:2ffc:200::184")
+
+        # ipv6 does not exist
+        r = self.client.get(reverse('helpdesk-details',
+                            args=["2001:648:2ffc:1225:a800:6ff:fe79:5de3"]),
+                            user_token='0001')
+        self.assertTrue(r.context["is_ip"])
+        self.assertFalse(r.context["ip_exists"])
 
     def test_vm_lookup(self):
         # vm id does not exist
@@ -279,7 +289,7 @@ class HelpdeskTests(TestCase):
         self.assertEqual(account, USER1)
         self.assertEqual(vms[0].name, "user1 vm")
         self.assertEqual(vms.count(), 1)
-        self.assertEqual(len(nets), 2)
+        self.assertEqual(len(nets), 4)
         self.assertEqual(r.context['account_exists'], True)
 
         # 'testuser2@test.com' details, see helpdesk
@@ -307,8 +317,6 @@ class HelpdeskTests(TestCase):
         self.assertEqual(vms.count(), 0)
 
     def test_start_shutdown(self):
-        from synnefo.logic import backend
-
         self.vm1 = mfactory.VirtualMachineFactory(userid=USER1)
         pk = self.vm1.pk
 
@@ -319,24 +327,25 @@ class HelpdeskTests(TestCase):
                              data={'token': '0001'})
         self.assertEqual(r.status_code, 403)
 
-        backend.shutdown_instance = shutdown = mock.Mock()
-        shutdown.return_value = 1
         self.vm1.operstate = 'STARTED'
         self.vm1.save()
-        with mocked_quotaholder():
-            r = self.client.post(reverse('helpdesk-vm-shutdown', args=(pk,)),
-                                 data={'token': '0001'}, user_token='0001')
-        self.assertEqual(r.status_code, 302)
-        self.assertTrue(shutdown.called)
-        self.assertEqual(len(shutdown.mock_calls), 1)
+        with patch("synnefo.logic.backend.shutdown_instance") as shutdown:
+            shutdown.return_value = 1
+            with mocked_quotaholder():
+                r = self.client.post(
+                    reverse('helpdesk-vm-shutdown', args=(pk,)),
+                    data={'token': '0001'}, user_token='0001')
+                self.assertEqual(r.status_code, 302)
+                self.assertTrue(shutdown.called)
+                self.assertEqual(len(shutdown.mock_calls), 1)
 
-        backend.startup_instance = startup = mock.Mock()
-        startup.return_value = 2
         self.vm1.operstate = 'STOPPED'
         self.vm1.save()
-        with mocked_quotaholder():
-            r = self.client.post(reverse('helpdesk-vm-start', args=(pk,)),
-                                 data={'token': '0001'}, user_token='0001')
-        self.assertEqual(r.status_code, 302)
-        self.assertTrue(startup.called)
-        self.assertEqual(len(startup.mock_calls), 1)
+        with patch("synnefo.logic.backend.startup_instance") as startup:
+            startup.return_value = 2
+            with mocked_quotaholder():
+                r = self.client.post(reverse('helpdesk-vm-start', args=(pk,)),
+                                     data={'token': '0001'}, user_token='0001')
+                self.assertEqual(r.status_code, 302)
+                self.assertTrue(startup.called)
+                self.assertEqual(len(startup.mock_calls), 1)

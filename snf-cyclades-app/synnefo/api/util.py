@@ -1,35 +1,17 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from base64 import urlsafe_b64encode, b64decode
 from urllib import quote
@@ -176,12 +158,22 @@ def get_image_dict(image_id, user_id):
     image["id"] = img["id"]
     image["name"] = img["name"]
     image["format"] = img["disk_format"]
-    image["checksum"] = img["checksum"]
     image["location"] = img["location"]
-
-    checksum = image["checksum"] = img["checksum"]
+    image["is_snapshot"] = img["is_snapshot"]
+    image["status"] = img["status"]
     size = image["size"] = img["size"]
-    image["backend_id"] = PITHOSMAP_PREFIX + "/".join([checksum, str(size)])
+
+    mapfile = img["mapfile"]
+    if mapfile.startswith("archip:"):
+        _, unprefixed_mapfile, = mapfile.split("archip:")
+        mapfile = unprefixed_mapfile
+    else:
+        unprefixed_mapfile = mapfile
+        mapfile = "pithos:" + mapfile
+
+    image["backend_id"] = PITHOSMAP_PREFIX + "/".join([unprefixed_mapfile,
+                                                       str(size)])
+    image["mapfile"] = mapfile
 
     properties = img.get("properties", {})
     image["metadata"] = dict((key.upper(), val)
@@ -195,29 +187,14 @@ def get_flavor(flavor_id, include_deleted=False):
 
     try:
         flavor_id = int(flavor_id)
-        if include_deleted:
-            return Flavor.objects.get(id=flavor_id)
-        else:
-            return Flavor.objects.get(id=flavor_id, deleted=include_deleted)
+        flavors = Flavor.objects.select_related("volume_type")
+        if not include_deleted:
+            flavors = flavors.filter(deleted=False)
+        return flavors.get(id=flavor_id)
     except (ValueError, TypeError):
         raise faults.BadRequest("Invalid flavor ID '%s'" % flavor_id)
     except Flavor.DoesNotExist:
         raise faults.ItemNotFound('Flavor not found.')
-
-
-def get_flavor_provider(flavor):
-    """Extract provider from disk template.
-
-    Provider for `ext` disk_template is encoded in the disk template
-    name, which is formed `ext_<provider_name>`. Provider is None
-    for all other disk templates.
-
-    """
-    disk_template = flavor.disk_template
-    provider = None
-    if disk_template.startswith("ext"):
-        disk_template, provider = disk_template.split("_", 1)
-    return disk_template, provider
 
 
 def get_network(network_id, user_id, for_update=False, non_deleted=False):

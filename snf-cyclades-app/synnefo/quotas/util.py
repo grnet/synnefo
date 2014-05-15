@@ -1,39 +1,21 @@
-# Copyright 2012-2014 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.db.models import Sum, Count, Q
 
-from synnefo.db.models import VirtualMachine, Network, IPAddress
+from synnefo.db.models import VirtualMachine, Network, IPAddress, Volume
 from synnefo.quotas import Quotaholder
 from collections import defaultdict
 
@@ -50,11 +32,13 @@ def get_db_holdings(user=None, project=None):
     vms = VirtualMachine.objects.filter(deleted=False)
     networks = Network.objects.filter(deleted=False)
     floating_ips = IPAddress.objects.filter(deleted=False, floating_ip=True)
+    volumes = Volume.objects.filter(deleted=False)
 
     if user is not None:
         vms = vms.filter(userid=user)
         networks = networks.filter(userid=user)
         floating_ips = floating_ips.filter(userid=user)
+        volumes = volumes.filter(userid=user)
 
     if project is not None:
         vms = vms.filter(project=project)
@@ -65,15 +49,20 @@ def get_db_holdings(user=None, project=None):
     vm_resources = vms.values("userid", "project")\
         .annotate(num=Count("id"),
                   total_ram=Sum("flavor__ram"),
-                  total_cpu=Sum("flavor__cpu"),
-                  disk=Sum("flavor__disk"))
+                  total_cpu=Sum("flavor__cpu"))
+
+    vm_active_resources = \
+        vms.values("userid")\
+           .filter(Q(operstate="STARTED") | Q(operstate="BUILD") |
+                   Q(operstate="ERROR"))\
+           .annotate(ram=Sum("flavor__ram"),
+                     cpu=Sum("flavor__cpu"))
 
     for vm_res in vm_resources.iterator():
         user = vm_res['userid']
         project = vm_res['project']
         res = {"cyclades.vm": vm_res["num"],
                "cyclades.total_cpu": vm_res["total_cpu"],
-               "cyclades.disk": vm_res["disk"] * GiB,
                "cyclades.total_ram": vm_res["total_ram"] * MiB}
         holdings[user][project] = res
 
@@ -88,6 +77,13 @@ def get_db_holdings(user=None, project=None):
         project = vm_res['project']
         holdings[user][project]["cyclades.cpu"] = vm_res["cpu"]
         holdings[user][project]["cyclades.ram"] = vm_res["ram"] * MiB
+
+    # Get disk resource
+    disk_resources = volumes.values("userid").annotate(Sum("size"))
+    for disk_res in disk_resources.iterator():
+        user = disk_res["userid"]
+        project = vm_res['project']
+        holdings[user][project]["cyclades.disk"] = disk_res["size__sum"] * GiB
 
     # Get resources related with networks
     net_resources = networks.values("userid", "project")\

@@ -1,35 +1,17 @@
-#Copyright (C) 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-#Redistribution and use in source and binary forms, with or
-#without modification, are permitted provided that the following
-#conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#  1. Redistributions of source code must retain the above
-#     copyright notice, this list of conditions and the following
-#     disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#  2. Redistributions in binary form must reproduce the above
-#     copyright notice, this list of conditions and the following
-#     disclaimer in the documentation and/or other materials
-#     provided with the distribution.
-#
-#THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-#OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-#WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-#PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A. OR
-#CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-#SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-#LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-#USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-#AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-#LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-#ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#POSSIBILITY OF SUCH DAMAGE.
-#
-#The views and conclusions contained in the software and
-#documentation are those of the authors and should not be
-#interpreted as representing official policies, either expressed
-#or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
 from snf_django.management.utils import pprint_table
@@ -41,7 +23,8 @@ from synnefo.db.models import Backend, pooled_rapi_client
 from synnefo.db.pools import bitarray_to_map
 
 from synnefo.logic.rapi import GanetiApiError
-from synnefo.logic.reconciliation import nics_from_instance
+from synnefo.logic.reconciliation import (nics_from_instance,
+                                          disks_from_instance)
 from synnefo.management.common import get_image
 
 
@@ -113,7 +96,7 @@ def pprint_network_in_ganeti(network, stdout=None):
         with pooled_rapi_client(backend) as client:
             try:
                 g_net = client.GetNetwork(network.backend_id)
-                ip_map = g_net.pop("map")
+                ip_map = g_net.pop("map", {})
                 pprint_table(stdout, g_net.items(), None,
                              title="State of network in backend: %s" %
                                    backend.clustername)
@@ -331,6 +314,25 @@ def pprint_server_nics(server, stdout=None, title=None):
                  title=title)
 
 
+def pprint_server_volumes(server, stdout=None, title=None):
+    if title is None:
+        title = "Volumes of Server %s" % server.id
+    if stdout is None:
+        stdout = sys.stdout
+
+    vols = []
+    for vol in server.volumes.filter(deleted=False):
+        volume_type = vol.volume_type
+        vols.append((vol.id, vol.name, vol.index, vol.size,
+                     volume_type.template, volume_type.provider,
+                     vol.status, vol.source))
+
+    headers = ["ID", "Name", "Index", "Size", "Template", "Provider",
+               "Status", "Source"]
+    pprint_table(stdout, vols, headers, separator=" | ",
+                 title=title)
+
+
 def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
     if stdout is None:
         stdout = sys.stdout
@@ -365,6 +367,13 @@ def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
     pprint_table(stdout, nics_values, nics_keys, separator=" | ",
                  title="NICs of Server %s in Ganeti" % server.id)
 
+    stdout.write("\n")
+    disks = disks_from_instance(server_info)
+    disks_keys = ["name", "size"]
+    disks_values = [[disk[key] for key in disks_keys] for disk in disks]
+    pprint_table(stdout, disks_values, disks_keys, separator=" | ",
+                 title="Disks of Server %s in Ganeti" % server.id)
+
     if not print_jobs:
         return
 
@@ -382,3 +391,86 @@ def pprint_server_in_ganeti(server, print_jobs=False, stdout=None, title=None):
                      separator=" | ",
                      title="Ganeti Job %s" % server_job["id"])
     server.put_client(client)
+
+
+def pprint_volume(volume, display_mails=False, stdout=None, title=None):
+    if stdout is None:
+        stdout = sys.stdout
+    if title is None:
+        title = "State of volume %s in DB" % volume.id
+
+    ucache = UserCache(ASTAKOS_AUTH_URL, ASTAKOS_TOKEN)
+    userid = volume.userid
+
+    volume_type = volume.volume_type
+    volume_dict = OrderedDict([
+        ("id", volume.id),
+        ("size", volume.size),
+        ("disk_template", volume_type.template),
+        ("disk_provider", volume_type.provider),
+        ("server_id", volume.machine_id),
+        ("userid", volume.userid),
+        ("username", ucache.get_name(userid) if display_mails else None),
+        ("index", volume.index),
+        ("name", volume.name),
+        ("state", volume.status),
+        ("delete_on_termination", volume.delete_on_termination),
+        ("deleted", volume.deleted),
+        ("backendjobid", volume.backendjobid),
+        ])
+
+    pprint_table(stdout, volume_dict.items(), None, separator=" | ",
+                 title=title)
+
+
+def pprint_volume_in_ganeti(volume, stdout=None, title=None):
+    if stdout is None:
+        stdout = sys.stdout
+    if title is None:
+        title = "State of volume %s in Ganeti" % volume.id
+
+    vm = volume.machine
+    if vm is None:
+        stdout.write("volume is not attached to any instance.\n")
+        return
+
+    client = vm.get_client()
+    try:
+        vm_info = client.GetInstance(vm.backend_vm_id)
+    except GanetiApiError as e:
+        if e.code == 404:
+            stdout.write("Volume seems attached to server %s, but"
+                         " server does not exist in backend.\n"
+                         % vm)
+            return
+        raise e
+
+    disks = disks_from_instance(vm_info)
+    try:
+        gnt_disk = filter(lambda disk:
+                          disk.get("name") == volume.backend_volume_uuid,
+                          disks)[0]
+        gnt_disk["instance"] = vm_info["name"]
+    except IndexError:
+        stdout.write("Volume %s is not attached to instance %s\n" % (volume.id,
+                                                                     vm.id))
+        return
+    pprint_table(stdout, gnt_disk.items(), None, separator=" | ",
+                 title=title)
+
+    vm.put_client(client)
+
+
+def pprint_volume_type(volume_type, stdout=None, title=None):
+    if stdout is None:
+        stdout = sys.stdout
+    if title is None:
+        title = "Volume Type %s" % volume_type.id
+
+    vtype_info = OrderedDict([
+        ("name", volume_type.name),
+        ("disk template", volume_type.disk_template),
+        ("deleted", volume_type.deleted),
+    ])
+
+    pprint_table(stdout, vtype_info.items(), separator=" | ", title=title)

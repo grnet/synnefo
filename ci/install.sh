@@ -1,17 +1,12 @@
 #!/bin/sh
 
-if [ -n "$VIRTUAL_ENV" ]; then
-  OPTIONS=--script-dir=$VIRTUAL_ENV/bin/
-  echo $OPTIONS
-else
-  OPTIONS=
-fi
-
+# `cd` to the top dir of synnefo repository
 set -e
 cwd=`dirname $0`
 cd "$cwd"/..
 
-. ./ci/config
+# Do common tasks for install/uninstall purposes
+. ./ci/develop-common.sh
 
 # Update version
 devflow-update-version

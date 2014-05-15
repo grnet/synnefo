@@ -21,16 +21,17 @@ API Operations
 ==============
 
 .. rubric:: Networks
-===================================== ========================== ====== ======== ======= ==========
-Description                           URI                        Method Cyclades/Network OS/Neutron
-===================================== ========================== ====== ================ ==========
-`List <#list-networks>`_              ``/networks``              GET    ✔                ✔
-`Get details <#get-network-details>`_ ``/networks/<network-id>`` GET    ✔                ✔
-`Create <#create-network>`_           ``/networks``              POST   ✔                ✔
-Bulk creation                         ``/networks``              POST   **✘**            ✔
-`Update <#update-network>`_           ``/networks/<network-id>`` PUT    ✔                ✔
-`Delete <#delete-network>`_           ``/networks/<network id>`` DELETE ✔                ✔
-===================================== ========================== ====== ================ ==========
+===================================== ================================= ====== ======== ======= ==========
+Description                           URI                               Method Cyclades/Network OS/Neutron
+===================================== ================================= ====== ================ ==========
+`List <#list-networks>`_              ``/networks``                     GET    ✔                ✔
+`Get details <#get-network-details>`_ ``/networks/<network-id>``        GET    ✔                ✔
+`Create <#create-network>`_           ``/networks``                     POST   ✔                ✔
+Bulk creation                         ``/networks``                     POST   **✘**            ✔
+`Update <#update-network>`_           ``/networks/<network-id>``        PUT    ✔                ✔
+`Delete <#delete-network>`_           ``/networks/<network id>``        DELETE ✔                ✔
+`Reassign <#reassign-network>`_       ``/networks/<network-id>/action`` POST   ✔                **✘**
+===================================== ================================= ====== ================ ==========
 
 .. rubric:: Subnets
 ==================================== ======================== ====== ======== ======= ==========
@@ -57,15 +58,16 @@ Bulk creation                      ``/ports``           POST   **✘**          
 ================================== ==================== ====== ================ ==========
 
 .. rubric:: Floating IPs
-========================================= ================================ ====== ================ ==========
-Description                               URI                              Method Cyclades/Network OS/Neutron Extensions
-========================================= ================================ ====== ================ ==========
-`List <#list-floating-ips>`_              ``/floatingips``                 GET    ✔                ✔
-`Get details <#get-floating-ip-details>`_ ``/floatingips/<floatingip-id>`` GET    ✔                ✔
-`Create <#create-floating-ip>`_           ``/floatingips``                 POST   ✔                ✔
-Update                                    ``/floatingips/<floatingip-id>`` PUT    **✘**            ✔
-`Delete <#delete-floating-ip>`_           ``/floatingips/<floatingip id>`` DELETE ✔                ✔
-========================================= ================================ ====== ================ ==========
+========================================= ======================================= ====== ================ ==========
+Description                               URI                                     Method Cyclades/Network OS/Neutron Extensions
+========================================= ======================================= ====== ================ ==========
+`List <#list-floating-ips>`_              ``/floatingips``                        GET    ✔                ✔
+`Get details <#get-floating-ip-details>`_ ``/floatingips/<floatingip-id>``        GET    ✔                ✔
+`Create <#create-floating-ip>`_           ``/floatingips``                        POST   ✔                ✔
+Update                                    ``/floatingips/<floatingip-id>``        PUT    **✘**            ✔
+`Delete <#delete-floating-ip>`_           ``/floatingips/<floatingip id>``        DELETE ✔                ✔
+`Reassign <#reassign-floating-ip>`_       ``/floatingips/<floatingip-id>/action`` POST   ✔                **✘**
+========================================= ======================================= ====== ================ ==========
 
 List networks
 -------------
@@ -391,6 +393,48 @@ Return Code                 Description
 .. note:: *409 (Confict)* is raised when there are ports connected to the
   network or floating IPs reserved from its pool. The subnets that are
   connected to it, though, are automatically deleted upon network deletion.
+
+Reassign Network
+----------------
+
+Assign a network to a different project.
+
+.. rubric:: Request
+
+================================= ====== ================ ==========
+URI                               Method Cyclades/Network OS/Neutron
+================================= ====== ================ ==========
+``/networks/<network-id>/action`` POST   ✔                **✘**
+================================= ====== ================ ==========
+
+|
+
+==============  =========================
+Request Header  Value
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
+
+Request body contents::
+
+  reassign: {
+      project: <project-id>
+   }
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Not allowed to modify this network (e.g. public)
+404 (Not Found)             Network not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The service is not currently available
+=========================== =====================
 
 List subnets
 ------------
@@ -1247,6 +1291,49 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired user token
 404 (itemNoFound)           Floating IP not found
 =========================== =====================
+
+Reassign floating ip
+--------------------
+
+Assign a floating IP to a different project.
+
+.. rubric:: Request
+
+======================================= ====== ================ ==========
+URI                                     Method Cyclades/Network OS/Neutron
+======================================= ====== ================ ==========
+``/floatingips/<floatingip-id>/action`` POST   ✔                **✘**
+======================================= ====== ================ ==========
+
+|
+
+==============  =========================
+Request Header  Value
+==============  =========================
+X-Auth-Token    User authentication token
+==============  =========================
+
+Request body contents::
+
+  reassign: {
+      project: <project-id>
+   }
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             Not allowed to modify this network (e.g. public)
+404 (Not Found)             Network not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   The service is not currently available
+=========================== =====================
+
 
 Index of Attributes
 -------------------

@@ -1,35 +1,18 @@
-# Copyright 2011-2014 GRNET S.A. All rights reserved.
+# -*- coding: utf-8 -*-
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from astakos.im.tests.common import *
 from astakos.im.settings import astakos_services, BASE_HOST
@@ -60,15 +43,15 @@ class QuotaAPITest(TestCase):
         component1 = Component.objects.create(name="comp1")
         register.add_service(component1, "service1", "type1", [])
         # custom service resources
-        resource11 = {"name": "service1.resource11",
-                      "desc": "resource11 desc",
+        resource11 = {"name": u"service1.ρίσορς11",
+                      "desc": "ρίσορς11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
                       "ui_visible": True}
         r, _ = register.add_resource(resource11)
         register.update_base_default(r, 100)
         resource12 = {"name": "service1.resource12",
-                      "desc": "resource11 desc",
+                      "desc": "ρίσορς11 desc",
                       "service_type": "type1",
                       "service_origin": "service1",
                       "unit": "bytes"}
@@ -88,14 +71,14 @@ class QuotaAPITest(TestCase):
         register.add_service(component2, "service2", "type2", [])
         # create another service
         resource21 = {"name": "service2.resource21",
-                      "desc": "resource11 desc",
+                      "desc": "ρίσορς11 desc",
                       "service_type": "type2",
                       "service_origin": "service2",
                       "ui_visible": False}
         r, _ = register.add_resource(resource21)
         register.update_base_default(r, 3)
 
-        resource_names = [r['name'] for r in
+        resource_names = [res['name'] for res in
                           [resource11, resource12, resource21]]
 
         # get resources
@@ -169,7 +152,7 @@ class QuotaAPITest(TestCase):
         commission_request = {
             "force": False,
             "auto_accept": False,
-            "name": "my commission",
+            "name": u"ναμε",
             "provisions": [
                 {
                     "holder": "user:" + user.uuid,
@@ -218,8 +201,11 @@ class QuotaAPITest(TestCase):
         body = json.loads(r.content)
         self.assertEqual(body['serial'], serial1)
         assertIn('issue_time', body)
+        self.assertEqual(body["name"], u"ναμε")
         provisions = sorted(body['provisions'], key=lambda p: p['resource'])
-        self.assertEqual(provisions, commission_request['provisions'])
+        crp = sorted(commission_request['provisions'],
+                     key=lambda p: p['resource'])
+        self.assertEqual(provisions, crp)
         self.assertEqual(body['name'], commission_request['name'])
 
         r = client.get(u('service_quotas?user=' + user.uuid), **s1_headers)
@@ -303,7 +289,7 @@ class QuotaAPITest(TestCase):
 
         commission_request = {
             "auto_accept": True,
-            "name": "my commission",
+            "name": "κομίσσιον",
             "provisions": "dummy"}
 
         post_data = json.dumps(commission_request)
@@ -362,7 +348,6 @@ class QuotaAPITest(TestCase):
                         content_type='application/json', **s1_headers)
         self.assertEqual(r.status_code, 200)
 
-        reject_data = {'reject': ""}
         post_data = json.dumps(accept_data)
         r = client.post(u('commissions/' + str(serial) + '/action'), post_data,
                         content_type='application/json', **s1_headers)
@@ -411,6 +396,22 @@ class QuotaAPITest(TestCase):
         r = client.head(u('commissions'))
         self.assertEqual(r.status_code, 405)
         self.assertTrue('Allow' in r)
+
+        r = client.post(u('commissions'), "\"\xff\"",
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 400)
+
+        r = client.post(u('commissions'), "\"nodict\"",
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 400)
+
+        r = client.post(u('commissions/' + "123" + '/action'), "\"\xff\"",
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 400)
+
+        r = client.post(u('commissions/' + "123" + '/action'), "\"nodict\"",
+                        content_type='application/json', **s1_headers)
+        self.assertEqual(r.status_code, 400)
 
 
 class TokensApiTest(TestCase):
@@ -545,7 +546,8 @@ class TokensApiTest(TestCase):
         r = client.post(url, "not json", content_type='application/json')
         self.assertEqual(r.status_code, 400)
         body = json.loads(r.content)
-        self.assertEqual(body['badRequest']['message'], 'Invalid JSON data')
+        self.assertEqual(body['badRequest']['message'],
+                         'Could not decode request body as JSON')
 
         # Check auth with token
         post_data = """{"auth":{"token": {"id":"%s"},
@@ -740,7 +742,7 @@ class WrongPathAPITest(TestCase):
         response = self.client.get(path)
         self.assertEqual(response.status_code, 400)
         try:
-            error = json.loads(response.content)
+            json.loads(response.content)
         except ValueError:
             self.assertTrue(False)
 

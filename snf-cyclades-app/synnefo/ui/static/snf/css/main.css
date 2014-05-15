@@ -876,7 +876,7 @@ div.image-container {
 }
 
 .icon .machine-info {
-    padding: 20px 0;
+    padding: 28px 0;
 }
 
 .icon .machine-details .name {
@@ -913,7 +913,7 @@ div.image-container {
 
 .icon .vm-actions, .network .vm-actions {
     width: 180px;
-    height: 96px;
+    height: 111px;
     float: left;
 }
 
@@ -3602,7 +3602,7 @@ div.machine a.manage-metadata:hover {
 
 .single .single-actions {
     width: 150px;
-    height: 77px;
+    height: 80px;
     margin-bottom: 45px;
     margin-left: -10px;
 }
@@ -5954,8 +5954,11 @@ table.list-machines .wave {
 
 .create-vm .select-image.wide .image-details .size {
     color: #5CA1C0;
-    position: absolute;
+    position: relative;
     top: 5px;
+    display: block;
+    left: 17px;
+    top: -3px;
 }
 
 .create-vm .select-image.wide .images-info-cont h3 {
@@ -7812,4 +7815,36 @@ option.project.select-item.selected {
 
 .project.select-item.current {
   background-color: #C7DEE9;
+
+/* snapshots */
+.snapshot-create-form .form-field {
+  margin-bottom: 10px;
+}
+
+.snapshot-create-form .form-field input {
+  width: 100%;
+}
+
+.snapshot-create-desc {
+  width: 99.5%;
+  height: 90px;
+  border: 1px solid #aaa;
+  margin-top: 3px;
+}
+
+
+/* snapshots */
+.snapshot-create-form .form-field {
+  margin-bottom: 10px;
+}
+
+.snapshot-create-form .form-field input {
+  width: 100%;
+}
+
+.snapshot-create-desc {
+  width: 99.5%;
+  height: 90px;
+  border: 1px solid #aaa;
+  margin-top: 3px;
 }

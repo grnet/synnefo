@@ -1,32 +1,18 @@
 # vim: set fileencoding=utf-8 :
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above copyright
-#      notice, this list of conditions and the following disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#  2. Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in the
-#     documentation and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are
-# those of the authors and should not be interpreted as representing official
-# policies, either expressed or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Provides automated tests for logic module
 from django.test import TransactionTestCase
@@ -34,14 +20,25 @@ from django.test import TransactionTestCase
 from synnefo.logic import servers
 from synnefo import quotas
 from synnefo.db import models_factory as mfactory, models
-from mock import patch
+from mock import patch, Mock
 
 from snf_django.lib.api import faults
 from snf_django.utils.testing import mocked_quotaholder, override_settings
 from django.conf import settings
 from copy import deepcopy
 
+fixed_image = Mock()
+fixed_image.return_value = {'location': 'pithos://foo',
+                            'mapfile': 'test_mapfile',
+                            "id": 1,
+                            "name": "test_image",
+                            "status": "AVAILABLE",
+                            "size": 1024,
+                            "is_snapshot": False,
+                            'disk_format': 'diskdump'}
 
+
+@patch('synnefo.api.util.get_image', fixed_image)
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
 class ServerCreationTest(TransactionTestCase):
     def test_create(self, mrapi):
@@ -51,9 +48,7 @@ class ServerCreationTest(TransactionTestCase):
             "name": "test_vm",
             "password": "1234",
             "flavor": flavor,
-            "image": {"id": "foo", "backend_id": "foo", "format": "diskdump",
-                      "checksum": "test_checksum",
-                      "metadata": "{}"},
+            "image_id": "safs",
             "networks": [],
             "metadata": {"foo": "bar"},
             "personality": [],
@@ -85,8 +80,9 @@ class ServerCreationTest(TransactionTestCase):
 
         # test ext settings:
         req = deepcopy(kwargs)
-        ext_flavor = mfactory.FlavorFactory(disk_template="ext_archipelago",
-                                            disk=1)
+        ext_flavor = mfactory.FlavorFactory(
+            volume_type__disk_template="ext_archipelago",
+            disk=1)
         req["flavor"] = ext_flavor
         mrapi().CreateInstance.return_value = 42
         backend.disk_templates = ["ext"]
@@ -103,11 +99,13 @@ class ServerCreationTest(TransactionTestCase):
             with override_settings(settings, **osettings):
                 vm = servers.create(**req)
         name, args, kwargs = mrapi().CreateInstance.mock_calls[-1]
-        self.assertEqual(kwargs["disks"][0], {"provider": "archipelago",
-                                              "origin": "test_checksum",
-                                              "foo": "mpaz",
-                                              "lala": "lolo",
-                                              "size": 1024})
+        self.assertEqual(kwargs["disks"][0],
+                         {"provider": "archipelago",
+                          "origin": "pithos:test_mapfile",
+                          "name": vm.volumes.all()[0].backend_volume_uuid,
+                          "foo": "mpaz",
+                          "lala": "lolo",
+                          "size": 1024})
 
 
 @patch("synnefo.logic.rapi_pool.GanetiRapiClient")
@@ -247,9 +245,14 @@ class ServerCommandTest(TransactionTestCase):
         with mocked_quotaholder() as m:
             try:
                 servers.start(vm)
-            except:
-                m.resolve_commissions\
-                 .assert_called_once_with([], [vm.serial.serial])
+            except Exception:
+                (accept, reject), kwargs = m.resolve_commissions.call_args
+                self.assertEqual(accept, [])
+                self.assertEqual(len(reject), 1)
+                self.assertEqual(kwargs, {})
+            else:
+                raise AssertionError("Starting a server should raise an"
+                                     " exception.")
 
     def test_task_after(self, mrapi):
         return

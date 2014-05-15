@@ -1,40 +1,23 @@
-# Copyright 2011-2014 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from django.conf import settings
 from django.db import transaction
+from django.utils import simplejson as json
 from datetime import datetime, timedelta
 
-from synnefo.db.models import (Backend, VirtualMachine, Network,
+from synnefo.db.models import (VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
                                Flavor, IPAddress, IPAddressLog)
@@ -43,6 +26,7 @@ from synnefo import quotas
 from synnefo.api.util import release_resource
 from synnefo.util.mac2eui64 import mac2eui64
 from synnefo.logic import rapi
+from synnefo import volume
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -58,7 +42,9 @@ _reverse_tags = dict((v.split(':')[3], k) for k, v in _firewall_tags.items())
 SIMPLE_NIC_FIELDS = ["state", "mac", "network", "firewall_profile", "index"]
 COMPLEX_NIC_FIELDS = ["ipv4_address", "ipv6_address"]
 NIC_FIELDS = SIMPLE_NIC_FIELDS + COMPLEX_NIC_FIELDS
-UNKNOWN_NIC_PREFIX = "unknown-"
+DISK_FIELDS = ["status", "size", "index"]
+UNKNOWN_NIC_PREFIX = "unknown-nic-"
+UNKNOWN_DISK_PREFIX = "unknown-disk-"
 
 
 def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
@@ -107,19 +93,23 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
                       vm.task_job_id, job_id, vm.serial)
             reason = ("client: dispatcher, resource: %s, ganeti_job: %s"
                       % (vm, job_id))
-            serial = quotas.handle_resource_commission(
-                vm, action,
-                action_fields=job_fields,
-                commission_name=reason,
-                force=True,
-                auto_accept=True)
+            try:
+                serial = quotas.handle_resource_commission(
+                    vm, action,
+                    action_fields=job_fields,
+                    commission_name=reason,
+                    force=True,
+                    auto_accept=True)
+            except:
+                log.exception("Error while handling new commission")
+                raise
             log.debug("Issued new commission: %s", serial)
     return vm
 
 
 @transaction.commit_on_success
 def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
-                      job_fields=None):
+                      disks=None, job_fields=None):
     """Process a job progress notification from the backend
 
     Process an incoming message from the backend (currently Ganeti).
@@ -131,6 +121,14 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
     #if (opcode not in [x[0] for x in VirtualMachine.BACKEND_OPCODES] or
     if status not in [x[0] for x in BACKEND_STATUSES]:
         raise VirtualMachine.InvalidBackendMsgError(opcode, status)
+
+    if opcode == "OP_INSTANCE_SNAPSHOT":
+        for disk_id, disk_info in job_fields.get("disks", []):
+            snap_info = json.loads(disk_info["snapshot_info"])
+            snap_id = snap_info["snapshot_id"]
+            update_snapshot(snap_id, user_id=vm.userid, job_id=jobid,
+                            job_status=status, etime=etime)
+        return
 
     vm.backendjobid = jobid
     vm.backendjobstatus = status
@@ -149,44 +147,53 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
     state_for_success = VirtualMachine.OPER_STATE_FROM_OPCODE.get(opcode)
 
     if status == rapi.JOB_STATUS_SUCCESS:
-        # If job succeeds, change operating state if needed
         if state_for_success is not None:
             new_operstate = state_for_success
 
-        beparams = job_fields.get("beparams", None)
+        beparams = job_fields.get("beparams")
         if beparams:
-            # Change the flavor of the VM
-            new_flavor = _process_resize(vm, beparams)
+            cpu = beparams.get("vcpus")
+            ram = beparams.get("maxmem")
+            new_flavor = find_new_flavor(vm, cpu=cpu, ram=ram)
 
-        # Update backendtime only for jobs that have been successfully
+        # XXX: Update backendtime only for jobs that have been successfully
         # completed, since only these jobs update the state of the VM. Else a
         # "race condition" may occur when a successful job (e.g.
         # OP_INSTANCE_REMOVE) completes before an error job and messages arrive
         # in reversed order.
         vm.backendtime = etime
 
-    if status in rapi.JOB_STATUS_FINALIZED and nics is not None:
-        # Update the NICs of the VM
-        _process_net_status(vm, etime, nics)
+    if status in rapi.JOB_STATUS_FINALIZED:
+        if nics is not None:
+            update_vm_nics(vm, nics, etime)
+        if disks is not None:
+            # XXX: Replace the job fields with mocked changes as produced by
+            # the diff between the DB and Ganeti disks. This is required in
+            # order to update quotas for disks that changed, but not from this
+            # job!
+            disk_changes = update_vm_disks(vm, disks, etime)
+            job_fields["disks"] = disk_changes
 
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if opcode == 'OP_INSTANCE_CREATE' and status in (rapi.JOB_STATUS_CANCELED,
                                                      rapi.JOB_STATUS_ERROR):
         new_operstate = "ERROR"
         vm.backendtime = etime
-        # Update state of associated NICs
+        # Update state of associated attachments
         vm.nics.all().update(state="ERROR")
+        vm.volumes.all().update(status="ERROR")
     elif opcode == 'OP_INSTANCE_REMOVE':
         # Special case: OP_INSTANCE_REMOVE fails for machines in ERROR,
         # when no instance exists at the Ganeti backend.
         # See ticket #799 for all the details.
         if (status == rapi.JOB_STATUS_SUCCESS or
            (status == rapi.JOB_STATUS_ERROR and not vm_exists_in_backend(vm))):
-            # VM has been deleted
+            # server has been deleted, so delete the server's attachments
+            vm.volumes.all().update(deleted=True, status="DELETED",
+                                    machine=None)
             for nic in vm.nics.all():
-                # Release the IP
+                # but first release the IP
                 remove_nic_ips(nic)
-                # And delete the NIC.
                 nic.delete()
             vm.deleted = True
             new_operstate = state_for_success
@@ -202,6 +209,8 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
             vm.task = None
             vm.task_job_id = None
 
+    # Update VM's state and flavor after handling of quotas, since computation
+    # of quotas depends on these attributes
     if new_operstate is not None:
         vm.operstate = new_operstate
     if new_flavor is not None:
@@ -210,41 +219,98 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
     vm.save()
 
 
-def _process_resize(vm, beparams):
-    """Change flavor of a VirtualMachine based on new beparams."""
+def find_new_flavor(vm, cpu=None, ram=None):
+    """Find VM's new flavor based on the new CPU and RAM"""
+    if cpu is None and ram is None:
+        return None
+
     old_flavor = vm.flavor
-    vcpus = beparams.get("vcpus", old_flavor.cpu)
-    ram = beparams.get("maxmem", old_flavor.ram)
-    if vcpus == old_flavor.cpu and ram == old_flavor.ram:
-        return
+    ram = ram if ram is not None else old_flavor.ram
+    cpu = cpu if cpu is not None else old_flavor.cpu
+    if cpu == old_flavor.cpu and ram == old_flavor.ram:
+        return None
+
     try:
-        new_flavor = Flavor.objects.get(cpu=vcpus, ram=ram,
-                                        disk=old_flavor.disk,
-                                        disk_template=old_flavor.disk_template)
+        new_flavor = Flavor.objects.get(
+            cpu=cpu, ram=ram, disk=old_flavor.disk,
+            volume_type_id=old_flavor.volume_type_id)
     except Flavor.DoesNotExist:
-        raise Exception("Cannot find flavor for VM")
+        raise Exception("There is no flavor to match the instance specs!"
+                        " Instance: %s CPU: %s RAM %s: Disk: %s VolumeType: %s"
+                        % (vm.backend_vm_id, cpu, ram, old_flavor.disk,
+                           old_flavor.volume_type_id))
+    log.info("Flavor of VM '%s' changed from '%s' to '%s'", vm,
+             old_flavor.name, new_flavor.name)
     return new_flavor
 
 
-@transaction.commit_on_success
-def process_net_status(vm, etime, nics):
-    """Wrap _process_net_status inside transaction."""
-    _process_net_status(vm, etime, nics)
+def nics_are_equal(db_nic, gnt_nic):
+    """Check if DB and Ganeti NICs are equal."""
+    for field in NIC_FIELDS:
+        if getattr(db_nic, field) != gnt_nic[field]:
+            return False
+    return True
 
 
-def _process_net_status(vm, etime, nics):
-    """Process a net status notification from the backend
+def parse_instance_nics(gnt_nics):
+    """Parse NICs of a Ganeti instance"""
+    nics = []
+    for index, gnic in enumerate(gnt_nics):
+        nic_name = gnic.get("name", None)
+        if nic_name is not None:
+            nic_id = utils.id_from_nic_name(nic_name)
+        else:
+            # Unknown NIC
+            nic_id = UNKNOWN_NIC_PREFIX + str(index)
 
-    Process an incoming message from the Ganeti backend,
-    detailing the NIC configuration of a VM instance.
+        network_name = gnic.get('network', '')
+        network_id = utils.id_from_network_name(network_name)
+        network = Network.objects.get(id=network_id)
+        subnet6 = network.subnet6
 
-    Update the state of the VM in the DB accordingly.
+        # Get the new nic info
+        mac = gnic.get('mac')
+        ipv4 = gnic.get('ip')
+        ipv6 = mac2eui64(mac, subnet6.cidr) if subnet6 else None
+
+        firewall = gnic.get('firewall')
+        firewall_profile = _reverse_tags.get(firewall)
+        if not firewall_profile and network.public:
+            firewall_profile = settings.DEFAULT_FIREWALL_PROFILE
+
+        nic_info = {
+            'index': index,
+            'network': network,
+            'mac': mac,
+            'ipv4_address': ipv4,
+            'ipv6_address': ipv6,
+            'firewall_profile': firewall_profile,
+            'state': 'ACTIVE'}
+
+        nics.append((nic_id, nic_info))
+    return dict(nics)
+
+
+def update_vm_nics(vm, nics, etime=None):
+    """Update VM's NICs to match with the NICs of the Ganeti instance
+
+    This function will update the VM's NICs(update, delete or create) and
+    return a list of quotable changes.
+
+    @param vm: The VirtualMachine the NICs belong to
+    @type vm: VirtualMachine object
+    @param nics: The NICs of the Ganeti instance
+    @type nics: List of dictionaries with NIC information
+    @param etime: The datetime the Ganeti instance had these NICs
+    @type etime: datetime
+
+    @return: List of quotable changes (add/remove NIC) (currently empty list)
+    @rtype: List of dictionaries
 
     """
-    ganeti_nics = process_ganeti_nics(nics)
-    db_nics = dict([(nic.id, nic)
-                    for nic in vm.nics.select_related("network")
-                                      .prefetch_related("ips")])
+    ganeti_nics = parse_instance_nics(nics)
+    db_nics = dict([(nic.id, nic) for nic in vm.nics.select_related("network")
+                                                    .prefetch_related("ips")])
 
     for nic_name in set(db_nics.keys()) | set(ganeti_nics.keys()):
         db_nic = db_nics.get(nic_name)
@@ -285,90 +351,7 @@ def _process_net_status(vm, etime, nics):
                                        new_address=gnt_ipv6_address,
                                        version=6)
 
-    vm.backendtime = etime
-    vm.save()
-
-
-def change_address_of_port(port, userid, old_address, new_address, version):
-    """Change."""
-    if old_address is not None:
-        msg = ("IPv%s Address of server '%s' changed from '%s' to '%s'"
-               % (version, port.machine_id, old_address, new_address))
-        log.error(msg)
-
-    # Remove the old IP address
-    remove_nic_ips(port, version=version)
-
-    if version == 4:
-        ipaddress = ips.allocate_ip(port.network, userid, address=new_address)
-        ipaddress.nic = port
-        ipaddress.save()
-    elif version == 6:
-        subnet6 = port.network.subnet6
-        ipaddress = IPAddress.objects.create(userid=userid,
-                                             network=port.network,
-                                             subnet=subnet6,
-                                             nic=port,
-                                             address=new_address,
-                                             ipversion=6)
-    else:
-        raise ValueError("Unknown version: %s" % version)
-
-    # New address log
-    ip_log = IPAddressLog.objects.create(server_id=port.machine_id,
-                                         network_id=port.network_id,
-                                         address=new_address,
-                                         active=True)
-    log.info("Created IP log entry '%s' for address '%s' to server '%s'",
-             ip_log.id, new_address, port.machine_id)
-
-    return ipaddress
-
-
-def nics_are_equal(db_nic, gnt_nic):
-    for field in NIC_FIELDS:
-        if getattr(db_nic, field) != gnt_nic[field]:
-            return False
-    return True
-
-
-def process_ganeti_nics(ganeti_nics):
-    """Process NIC dict from ganeti"""
-    new_nics = []
-    for index, gnic in enumerate(ganeti_nics):
-        nic_name = gnic.get("name", None)
-        if nic_name is not None:
-            nic_id = utils.id_from_nic_name(nic_name)
-        else:
-            # Put as default value the index. If it is an unknown NIC to
-            # synnefo it will be created automaticaly.
-            nic_id = UNKNOWN_NIC_PREFIX + str(index)
-        network_name = gnic.get('network', '')
-        network_id = utils.id_from_network_name(network_name)
-        network = Network.objects.get(id=network_id)
-
-        # Get the new nic info
-        mac = gnic.get('mac')
-        ipv4 = gnic.get('ip')
-        subnet6 = network.subnet6
-        ipv6 = mac2eui64(mac, subnet6.cidr) if subnet6 else None
-
-        firewall = gnic.get('firewall')
-        firewall_profile = _reverse_tags.get(firewall)
-        if not firewall_profile and network.public:
-            firewall_profile = settings.DEFAULT_FIREWALL_PROFILE
-
-        nic_info = {
-            'index': index,
-            'network': network,
-            'mac': mac,
-            'ipv4_address': ipv4,
-            'ipv6_address': ipv6,
-            'firewall_profile': firewall_profile,
-            'state': 'ACTIVE'}
-
-        new_nics.append((nic_id, nic_info))
-    return dict(new_nics)
+    return []
 
 
 def remove_nic_ips(nic, version=None):
@@ -422,6 +405,135 @@ def terminate_active_ipaddress_log(nic, ip):
     ip_log.released_at = datetime.now()
     ip_log.active = False
     ip_log.save()
+
+
+def change_address_of_port(port, userid, old_address, new_address, version):
+    """Change."""
+    if old_address is not None:
+        msg = ("IPv%s Address of server '%s' changed from '%s' to '%s'"
+               % (version, port.machine_id, old_address, new_address))
+        log.error(msg)
+
+    # Remove the old IP address
+    remove_nic_ips(port, version=version)
+
+    if version == 4:
+        ipaddress = ips.allocate_ip(port.network, userid, address=new_address)
+        ipaddress.nic = port
+        ipaddress.save()
+    elif version == 6:
+        subnet6 = port.network.subnet6
+        ipaddress = IPAddress.objects.create(userid=userid,
+                                             network=port.network,
+                                             subnet=subnet6,
+                                             nic=port,
+                                             address=new_address,
+                                             ipversion=6)
+    else:
+        raise ValueError("Unknown version: %s" % version)
+
+    # New address log
+    ip_log = IPAddressLog.objects.create(server_id=port.machine_id,
+                                         network_id=port.network_id,
+                                         address=new_address,
+                                         active=True)
+    log.info("Created IP log entry '%s' for address '%s' to server '%s'",
+             ip_log.id, new_address, port.machine_id)
+
+    return ipaddress
+
+
+def update_vm_disks(vm, disks, etime=None):
+    """Update VM's disks to match with the disks of the Ganeti instance
+
+    This function will update the VM's disks(update, delete or create) and
+    return a list of quotable changes.
+
+    @param vm: The VirtualMachine the disks belong to
+    @type vm: VirtualMachine object
+    @param disks: The disks of the Ganeti instance
+    @type disks: List of dictionaries with disk information
+    @param etime: The datetime the Ganeti instance had these disks
+    @type etime: datetime
+
+    @return: List of quotable changes (add/remove disk)
+    @rtype: List of dictionaries
+
+    """
+    gnt_disks = parse_instance_disks(disks)
+    db_disks = dict([(disk.id, disk)
+                     for disk in vm.volumes.filter(deleted=False)])
+
+    changes = []
+    for disk_name in set(db_disks.keys()) | set(gnt_disks.keys()):
+        db_disk = db_disks.get(disk_name)
+        gnt_disk = gnt_disks.get(disk_name)
+        if gnt_disk is None:
+            # Disk exists in DB but not in Ganeti
+            if disk_is_stale(vm, disk):
+                log.debug("Removing stale disk '%s'" % db_disk)
+                db_disk.status = "DELETED"
+                db_disk.deleted = True
+                db_disk.save()
+                changes.append(("remove", db_disk, {}))
+            else:
+                log.info("disk '%s' is still being created" % db_disk)
+        elif db_disk is None:
+            # Disk exists in Ganeti but not in DB
+            # TODO: Automatically import disk!
+            msg = ("disk/%s of VM %s does not exist in DB! Cannot"
+                   " automatically fix this issue!" % (disk_name, vm))
+            log.error(msg)
+            continue
+        elif not disks_are_equal(db_disk, gnt_disk):
+            # Disk has changed
+            if gnt_disk["size"] != db_disk.size:
+                # Size of the disk has changed! TODO: Fix flavor!
+                size_delta = gnt_disk["size"] - db_disk.size
+                changes.append(("modify", db_disk, {"size_delta": size_delta}))
+            if db_disk.status == "CREATING":
+                # Disk has been created
+                changes.append(("add", db_disk, {}))
+            # Update the disk in DB with the values from Ganeti disk
+            [setattr(db_disk, f, gnt_disk[f]) for f in DISK_FIELDS]
+            db_disk.save()
+
+    return changes
+
+
+def disks_are_equal(db_disk, gnt_disk):
+    """Check if DB and Ganeti disks are equal"""
+    for field in DISK_FIELDS:
+        if getattr(db_disk, field) != gnt_disk[field]:
+            return False
+    return True
+
+
+def parse_instance_disks(gnt_disks):
+    """Parse disks of a Ganeti instance"""
+    disks = []
+    for index, gnt_disk in enumerate(gnt_disks):
+        disk_name = gnt_disk.get("name", None)
+        if disk_name is not None:
+            disk_id = utils.id_from_disk_name(disk_name)
+        else:  # Unknown disk
+            disk_id = UNKNOWN_DISK_PREFIX + str(index)
+
+        disk_info = {
+            'index': index,
+            'size': gnt_disk["size"] >> 10,  # Size in GB
+            'status': "IN_USE"}
+
+        disks.append((disk_id, disk_info))
+    return dict(disks)
+
+
+def update_snapshot(snap_id, user_id, job_id, job_status, etime):
+    """Update a snapshot based on result of a Ganeti job."""
+    if job_status in rapi.JOB_STATUS_FINALIZED:
+        status = rapi.JOB_STATUS_SUCCESS and "AVAILABLE" or "ERROR"
+        log.debug("Updating status of snapshot '%s' to '%s'", snap_id, status)
+        volume.util.update_snapshot_status(snap_id, user_id, status=status)
 
 
 @transaction.commit_on_success
@@ -609,7 +721,7 @@ def create_instance_diagnostic(vm, message, source, level="DEBUG", etime=None,
                                                    details=details)
 
 
-def create_instance(vm, nics, flavor, image):
+def create_instance(vm, nics, volumes, flavor, image):
     """`image` is a dictionary which should contain the keys:
             'backend_id', 'format' and 'metadata'
 
@@ -627,15 +739,22 @@ def create_instance(vm, nics, flavor, image):
     kw['name'] = vm.backend_vm_id
     # Defined in settings.GANETI_CREATEINSTANCE_KWARGS
 
-    kw['disk_template'] = flavor.disk_template
-    kw['disks'] = [{"size": flavor.disk * 1024}]
-    provider = flavor.disk_provider
-    if provider:
-        kw['disks'][0]['provider'] = provider
-        kw['disks'][0]['origin'] = flavor.disk_origin
-        extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS.get(provider)
-        if extra_disk_params is not None:
-            kw["disks"][0].update(extra_disk_params)
+    kw['disk_template'] = volumes[0].volume_type.template
+    disks = []
+    for volume in volumes:
+        disk = {"name": volume.backend_volume_uuid,
+                "size": volume.size * 1024}
+        provider = volume.volume_type.provider
+        if provider is not None:
+            disk["provider"] = provider
+            disk["origin"] = volume.origin
+            extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
+                                        .get(provider)
+            if extra_disk_params is not None:
+                disk.update(extra_disk_params)
+        disks.append(disk)
+
+    kw["disks"] = disks
 
     kw['nics'] = [{"name": nic.backend_uuid,
                    "network": nic.network.backend_id,
@@ -757,6 +876,7 @@ def network_exists_in_backend(backend_network):
     except rapi.GanetiApiError as e:
         if e.code == 404:
             return False
+        raise e
 
 
 def job_is_still_running(vm, job_id=None):
@@ -766,25 +886,45 @@ def job_is_still_running(vm, job_id=None):
                 job_id = vm.backendjobid
             job_info = c.GetJobStatus(job_id)
             return not (job_info["status"] in rapi.JOB_STATUS_FINALIZED)
-        except rapi.GanetiApiError:
+        except rapi.GanetiApiError as e:
+            if e.code == 404:
+                return False
+            raise e
+
+
+def disk_is_stale(vm, disk, timeout=60):
+    """Check if a disk is stale or exists in the Ganeti backend."""
+    # First check the state of the disk
+    if disk.status == "CREATING":
+        if datetime.now() < disk.created + timedelta(seconds=timeout):
+            # Do not check for too recent disks to avoid the time overhead
             return False
+        if job_is_still_running(vm, job_id=disk.backendjobid):
+            return False
+        else:
+            # If job has finished, check that the disk exists, because the
+            # message may have been lost or stuck in the queue.
+            vm_info = get_instance_info(vm)
+            if disk.backend_volume_uuid in vm_info["disk.names"]:
+                return False
+    return True
 
 
 def nic_is_stale(vm, nic, timeout=60):
     """Check if a NIC is stale or exists in the Ganeti backend."""
     # First check the state of the NIC and if there is a pending CONNECT
-    if nic.state == "BUILD" and vm.task == "CONNECT":
+    if nic.state in ["BUILD", "DOWN"]:
         if datetime.now() < nic.created + timedelta(seconds=timeout):
             # Do not check for too recent NICs to avoid the time overhead
             return False
-        if job_is_still_running(vm, job_id=vm.task_job_id):
+        if vm.task == "CONNECT" and\
+           job_is_still_running(vm, job_id=vm.task_job_id):
             return False
-        else:
-            # If job has finished, check that the NIC exists, because the
-            # message may have been lost or stuck in the queue.
-            vm_info = get_instance_info(vm)
-            if nic.backend_uuid in vm_info["nic.names"]:
-                return False
+        # If the NIC is old or the job has finished, check Ganeti to see if the
+        # NIC exists
+        vm_info = get_instance_info(vm)
+        if nic.backend_uuid in vm_info["nic.names"]:
+            return False
     return True
 
 
@@ -962,14 +1102,14 @@ def disconnect_from_network(vm, nic):
         kwargs["dry_run"] = True
 
     with pooled_rapi_client(vm) as client:
-        jobID = client.ModifyInstance(**kwargs)
+        job_id = client.ModifyInstance(**kwargs)
         firewall_profile = nic.firewall_profile
         if firewall_profile and firewall_profile != "DISABLED":
             tag = _firewall_tags[firewall_profile] % nic.backend_uuid
             client.DeleteInstanceTags(vm.backend_vm_id, [tag],
                                       dry_run=settings.TEST)
 
-        return jobID
+        return job_id
 
 
 def set_firewall_profile(vm, profile, nic):
@@ -1000,6 +1140,58 @@ def set_firewall_profile(vm, profile, nic):
         client.ModifyInstance(vm.backend_vm_id,
                               os_name=os_name)
     return None
+
+
+def attach_volume(vm, volume, depends=[]):
+    log.debug("Attaching volume %s to vm %s", volume, vm)
+
+    disk = {"size": int(volume.size) << 10,
+            "name": volume.backend_volume_uuid}
+
+    disk_provider = volume.volume_type.provider
+    if disk_provider is not None:
+        disk["provider"] = disk_provider
+
+    if volume.origin is not None:
+        disk["origin"] = volume.origin
+
+    kwargs = {
+        "instance": vm.backend_vm_id,
+        "disks": [("add", "-1", disk)],
+        "depends": depends,
+    }
+    if vm.backend.use_hotplug():
+        kwargs["hotplug_if_possible"] = True
+    if settings.TEST:
+        kwargs["dry_run"] = True
+
+    with pooled_rapi_client(vm) as client:
+        return client.ModifyInstance(**kwargs)
+
+
+def detach_volume(vm, volume, depends=[]):
+    log.debug("Removing volume %s from vm %s", volume, vm)
+    kwargs = {
+        "instance": vm.backend_vm_id,
+        "disks": [("remove", volume.backend_volume_uuid, {})],
+        "depends": depends,
+    }
+    if vm.backend.use_hotplug():
+        kwargs["hotplug_if_possible"] = True
+    if settings.TEST:
+        kwargs["dry_run"] = True
+
+    with pooled_rapi_client(vm) as client:
+        return client.ModifyInstance(**kwargs)
+
+
+def snapshot_instance(vm, snapshot_name, snapshot_id):
+    #volume = instance.volumes.all()[0]
+    reason = json.dumps({"snapshot_id": snapshot_id})
+    with pooled_rapi_client(vm) as client:
+        return client.SnapshotInstance(instance=vm.backend_vm_id,
+                                       snapshot_name=snapshot_name,
+                                       reason=reason)
 
 
 def get_instances(backend, bulk=True):

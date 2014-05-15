@@ -1,35 +1,19 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+#!/usr/bin/env python
+#coding=utf8
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import random
 import datetime
@@ -37,6 +21,7 @@ import time as _time
 import re
 
 from functools import partial
+from urllib import unquote
 
 from synnefo.lib import join_urls
 
@@ -68,14 +53,103 @@ class TestPublic(PithosAPITest):
         (self.assertTrue(l in pithos_settings.PUBLIC_URL_ALPHABET) for
          l in public)
 
+        p = re.compile('(attachment|inline); filename="(.+)"')
+
         r = self.get(public, user='user2', token=None)
         self.assertEqual(r.status_code, 200)
         self.assertTrue('X-Object-Public' not in r)
-
         self.assertEqual(r.content, odata)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+        self.assertEqual(oname, filename)
+
+        r = self.get('%s?disposition-type=inline' % public, user='user2',
+                     token=None)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Public' not in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'inline')
+        filename = m.group(2)
+        self.assertEqual(oname, filename)
+
+        r = self.get('%s?disposition-type=attachment' % public, user='user2',
+                     token=None)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Public' not in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+        self.assertEqual(oname, filename)
+
+        r = self.get('%s?disposition-type=jsdljladj' % public, user='user2',
+                     token=None)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Public' not in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+        self.assertEqual(oname, filename)
+
+        # override Content-Disposition
+        user_defined_disposition = content_disposition.replace(
+            'attachment', 'extension-token')
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.post(url, content_type='',
+                      HTTP_CONTENT_DISPOSITION=user_defined_disposition)
+        self.assertEqual(r.status_code, 202)
+
+        r = self.get(public, user='user2', token=None)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Public' not in r)
+        self.assertEqual(r.content, odata)
+        content_disposition = unquote(r['Content-Disposition'])
+        self.assertEqual(content_disposition, user_defined_disposition)
+
+        r = self.get('%s?disposition-type=inline' % public, user='user2',
+                     token=None)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Public' not in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'inline')
+        filename = m.group(2)
+        self.assertEqual(oname, filename)
+
+        r = self.get('%s?disposition-type=attachment' % public, user='user2',
+                     token=None)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Public' not in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        m = p.match(content_disposition)
+        self.assertTrue(m is not None)
+        disposition_type = m.group(1)
+        self.assertEqual(disposition_type, 'attachment')
+        filename = m.group(2)
+        self.assertEqual(oname, filename)
+
+        r = self.get('%s?disposition-type=jsdljladj' % public, user='user2',
+                     token=None)
+        self.assertEqual(r.status_code, 200)
+        self.assertTrue('X-Object-Public' not in r)
+        content_disposition = unquote(r['Content-Disposition'])
+        self.assertEqual(content_disposition, user_defined_disposition)
 
         # assert other users cannot access the object using the priavate path
-        url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.head(url, user='user2')
         self.assertEqual(r.status_code, 403)
 

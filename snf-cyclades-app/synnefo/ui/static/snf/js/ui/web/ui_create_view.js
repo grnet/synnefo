@@ -1,35 +1,17 @@
-// Copyright 2014 GRNET S.A. All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or
-// without modification, are permitted provided that the following
-// conditions are met:
-// 
-//   1. Redistributions of source code must retain the above
-//      copyright notice, this list of conditions and the following
-//      disclaimer.
-// 
-//   2. Redistributions in binary form must reproduce the above
-//      copyright notice, this list of conditions and the following
-//      disclaimer in the documentation and/or other materials
-//      provided with the distribution.
-// 
-// THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-// USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-// AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
-// 
-// The views and conclusions contained in the software and
-// documentation are those of the authors and should not be
-// interpreted as representing official policies, either expressed
-// or implied, of GRNET S.A.
+// Copyright (C) 2010-2014 GRNET S.A.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
 ;(function(root){
@@ -257,6 +239,7 @@
 
             // handlers initialization
             this.create_types_selection_options();
+            this.create_snapshot_types_selection_options();
             this.init_handlers();
             this.init_position();
         },
@@ -300,9 +283,20 @@
         },
 
         create_types_selection_options: function() {
-            var list = this.$("ul.type-filter");
+            var list = this.$(".image-types-cont ul.type-filter");
             _.each(this.type_selections_order, _.bind(function(key) {
                 list.append('<li id="type-select-{0}">{1}</li>'.format(key, this.type_selections[key]));
+            }, this));
+            this.types = this.$(".type-filter li");
+        },
+
+        create_snapshot_types_selection_options: function() {
+            var exclude = [];
+            var list = this.$(".snapshot-types-cont ul.type-filter");
+            _.each(this.type_selections_order, _.bind(function(key) {
+                if (_.includes(exclude, key)) { return }
+                var label = this.type_selections[key].replace("images", "snapshots");
+                list.append('<li id="type-select-snapshot-{0}">{1}</li>'.format(key, label));
             }, this));
             this.types = this.$(".type-filter li");
         },
@@ -367,6 +361,7 @@
         select_type: function(type) {
             this.selected_type = type;
             this.types.removeClass("selected");
+            var selection = "#type-select-" + this.selected_type;
             this.types.filter("#type-select-" + this.selected_type).addClass("selected");
             this.images_storage.update_images_for_type(
                 this.selected_type, 
@@ -541,7 +536,7 @@
                            '<span class="prepend"></span>' +
                            '{3}</span>' + 
                            '<p>{4}</p>' +
-                           '</li>').format(img.escape("name"), 
+                           '</li>').format(_.escape(util.truncate(img.get("name"), 50)), 
                                                   img.id, 
                                                   snf.ui.helpers.os_icon_tag(img.escape("OS")),
                                                   _.escape(img.get_readable_size()),
@@ -1759,6 +1754,15 @@
 
             this.history = this.$(".steps-history");
             this.history_steps = this.$(".steps-history .steps-history-step");
+
+            this.loading_view = $("<div>Loading images...</div>");
+            this.$(".container").after(this.loading_view);
+            this.loading_view.css({
+              backgroundColor: "#97C3D6", 
+              padding: '15px',
+              fontSize: '0.7em',
+              color: '#333'
+            });
             
             this.init_handlers();
         },
@@ -1926,9 +1930,18 @@
                 this.$(".steps-container").css({"margin-left":0 + "px"});
                 this.show_step(1);
             }
-            
+
+            this.loading_view.show();
+            this.$(".container").hide();
+            var complete = _.bind(function() {
+              this.loading_view.hide();
+              this.$(".container").slideDown();
+              this.update_layout();
+            }, this);
+
+            synnefo.storage.images.fetch({complete: complete});
+
             this.skip_reset_on_next_open = false;
-            this.update_layout();
         },
         
         set_step: function(step) {

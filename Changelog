@@ -11,7 +11,7 @@ repository and have aligned versions.
 v0.15.1
 =======
 
-Released: UNRELEASED
+Released: Thu May 15 13:31:37 EEST 2014
 
 Synnefo-wide
 ------------
@@ -37,7 +37,8 @@ Cyclades
 * Support queries by IPv6 address in helpdesk app.
 * Extend statistics API with detailed information about Ganeti clusters,
   virtual servers and networks, public IPv4 pools and images.
-* Allow creation of floating IPs from networks that are marked as drained.
+* Allow creation of ports with existing floating IPs from networks that are
+  marked as drained.
 
 Cyclades UI
 -----------

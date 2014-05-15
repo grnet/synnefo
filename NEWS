@@ -11,7 +11,7 @@ Since v0.13 all Synnefo components have been merged into a single repository.
 v0.15.1
 =======
 
-Released: UNRELEASED
+Released: Thu May 15 13:31:37 EEST 2014
 
 Since this version, Synnefo officially supports CentOS, alongside Debian.
 The most notable changes are:

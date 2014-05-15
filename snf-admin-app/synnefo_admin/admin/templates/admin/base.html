@@ -13,7 +13,7 @@
   <body>
     <div class="container-fluid">
         <div class="row-fluid">
-          {% with user_type='user' vm_type='vm' project_type='project' volume_type='volume' network_type='network' ip_type='ip' group_type='group' %}
+          {% with user_type='user' vm_type='vm' project_type='project' volume_type='volume' network_type='network' ip_type='ip' group_type='group' auth_provider_type='auth_provider' %}
 
           <div class="navbar navbar-inverse nav-main navbar-fixed-top">
 
@@ -63,7 +63,7 @@
               </li>
               <li class="divider-vertical"></li>
               <li>
-              <a href="#">Authentication Methods</a>
+              <a href="{% url admin-list auth_provider_type %}">User Auth Providers</a>
               </li>
               <li class="divider-vertical"></li>
               <li class="dropdown">

@@ -59,6 +59,7 @@ from synnefo_admin.admin import volumes as volume_views
 from synnefo_admin.admin import networks as network_views
 from synnefo_admin.admin import ips as ip_views
 from synnefo_admin.admin import groups as group_views
+from synnefo_admin.admin import auth_providers as auth_provider_views
 
 # server actions specific imports
 from synnefo.logic import servers as servers_backend
@@ -257,6 +258,8 @@ def json_list(request, type):
         return ip_views.IPJSONView.as_view()(request)
     if type == 'group':
         return group_views.GroupJSONView.as_view()(request)
+    if type == 'auth_provider':
+        return auth_provider_views.AstakosUserAuthProviderJSONView.as_view()(request)
     else:
         logging.error("JSON view does not exist")
 
@@ -311,6 +314,9 @@ def catalog(request, type):
     elif type == 'group':
         context = group_views.catalog(request)
         template = group_views.templates['list']
+    elif type == 'auth_provider':
+        context = auth_provider_views.catalog(request)
+        template = auth_provider_views.templates['list']
     else:
         logging.error("Wrong type: %s", type)
         # TODO: Return an error here

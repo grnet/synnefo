@@ -57,6 +57,7 @@ from synnefo_admin.admin import projects as project_views
 from synnefo_admin.admin import vms as vm_views
 from synnefo_admin.admin import volumes as volume_views
 from synnefo_admin.admin import networks as network_views
+from synnefo_admin.admin import ips as ip_views
 
 # server actions specific imports
 from synnefo.logic import servers as servers_backend
@@ -251,6 +252,8 @@ def json_list(request, type):
         return volume_views.VolumeJSONView.as_view()(request)
     if type == 'network':
         return network_views.NetworkJSONView.as_view()(request)
+    if type == 'ip':
+        return ip_views.IPJSONView.as_view()(request)
     else:
         logging.error("JSON view does not exist")
 
@@ -299,6 +302,9 @@ def catalog(request, type):
     elif type == 'network':
         context = network_views.catalog(request)
         template = network_views.templates['list']
+    elif type == 'ip':
+        context = ip_views.catalog(request)
+        template = ip_views.templates['list']
     else:
         logging.error("Wrong type: %s", type)
         # TODO: Return an error here

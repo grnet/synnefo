@@ -735,9 +735,9 @@ table {
   filter: none;
   border: 1px solid #345578;
 }
-tr.selected {
-  td {
-    background-color: #D2DFDB;
+body table>tbody>tr.selected {
+  &>td {
+    background-color: #D2DFDB !important;
     color: rgb(97, 68, 172);
   }
 }

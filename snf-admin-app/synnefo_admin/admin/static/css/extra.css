@@ -1059,7 +1059,7 @@ html body .dataTables_wrapper table > thead > tr > th.sorting, html body .dataTa
 }
 
 /* line 739, ../sass/extra.scss */
-tr.selected td {
-  background-color: #D2DFDB;
+body table > tbody > tr.selected > td {
+  background-color: #D2DFDB !important;
   color: #6144ac;
 }

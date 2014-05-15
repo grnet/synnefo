@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -131,10 +131,10 @@ def allocate_public_ip(userid, floating_ip=False, backend=None, networks=None):
     except pools.EmptyPool:
         ip_type = "floating" if floating_ip else "public"
         log_msg = "Failed to allocate a %s IP. Reason:" % ip_type
-        if ip_pool_rows:
-            log_msg += " No network exists."
+        if not ip_pool_rows:
+            log_msg += " No networks exist."
         else:
-            log_msg += " All network are full."
+            log_msg += " All networks are full."
         if backend is not None:
             log_msg += " Backend: %s" % backend
         log.error(log_msg)

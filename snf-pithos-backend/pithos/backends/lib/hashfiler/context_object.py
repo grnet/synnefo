@@ -110,7 +110,7 @@ class RadosObject(object):
         self.name = name
         self.ioctx = ioctx
         self.offset = 0
-        #self.dirty = 0
+        # self.dirty = 0
 
     def __enter__(self):
         return self
@@ -131,12 +131,12 @@ class RadosObject(object):
         self.ioctx.trunc(self.name, size)
 
     def sync_write(self, data):
-        #self.dirty = 1
+        # self.dirty = 1
         self.ioctx.write(self.name, data, self.offset)
         self.offset += len(data)
 
     def sync_write_chunks(self, chunksize, offset, chunks, size=None):
-        #self.dirty = 1
+        # self.dirty = 1
         return file_sync_write_chunks(self, chunksize, offset, chunks, size)
 
     def sync_read(self, size):

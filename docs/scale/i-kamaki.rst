@@ -24,7 +24,7 @@ kamaki Setup
 
 The following apply to ``client`` node. Here we install a command line tool
 that the end-user can use instead of web UI. Prerequisites are that the client
-node can connect to synnefo nodes by using their FQDN and that the user has
+node can connect to Synnefo nodes by using their FQDN and that the user has
 already aquired an AUTH_TOKEN and UUID from his/her profile page after signing
 in.
 

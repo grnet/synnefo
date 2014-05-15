@@ -141,7 +141,7 @@ class ContextFile(object):
         self.name = name
         self.fdesc = None
         self.oflag = oflag
-        #self.dirty = 0
+        # self.dirty = 0
 
     def __enter__(self):
         name = self.name
@@ -160,7 +160,7 @@ class ContextFile(object):
     def __exit__(self, exc, arg, trace):
         fdesc = self.fdesc
         if fdesc is not None:
-            #if self.dirty:
+            # if self.dirty:
             #    fsync(fdesc.fileno())
             fdesc.close()
         return False  # propagate exceptions
@@ -175,11 +175,11 @@ class ContextFile(object):
         self.fdesc.truncate(size)
 
     def sync_write(self, data):
-        #self.dirty = 1
+        # self.dirty = 1
         self.fdesc.write(data)
 
     def sync_write_chunks(self, chunksize, offset, chunks, size=None):
-        #self.dirty = 1
+        # self.dirty = 1
         return file_sync_write_chunks(self.fdesc, chunksize, offset, chunks,
                                       size)
 

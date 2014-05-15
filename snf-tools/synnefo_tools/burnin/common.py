@@ -1,4 +1,4 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright 2013-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -361,6 +361,16 @@ class BurninTests(unittest.TestCase):
         matching this patterns will be returned.
 
         """
+        def _is_true(value):
+            """Boolean or string value that represents a bool"""
+            if isinstance(value, bool):
+                return value
+            elif isinstance(value, str):
+                return value in ["True", "true"]
+            else:
+                self.warning("Unrecognized boolean value %s", value)
+                return False
+
         if flavors is None:
             flavors = self._get_list_of_flavors(detail=True)
 
@@ -389,6 +399,10 @@ class BurninTests(unittest.TestCase):
             else:
                 self.error("Unrecognized flavor type %s", flv_type)
                 self.fail("Unrecognized flavor type")
+
+            # Get only flavors that are allowed to create a machine
+            filtered_flvs = [f for f in filtered_flvs
+                             if _is_true(f['SNF:allow_create'])]
 
             # Append and continue
             ret_flavors.extend(filtered_flvs)

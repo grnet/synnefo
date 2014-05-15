@@ -31,7 +31,6 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
-import urllib
 import urlparse
 import uuid
 import datetime
@@ -40,23 +39,9 @@ import json
 from base64 import b64encode, b64decode
 from hashlib import sha512
 
-from synnefo.util.text import uenc
-from synnefo.util import urltools
 
 import logging
 logger = logging.getLogger(__name__)
-
-
-def urlencode(params):
-    if hasattr(params, 'urlencode') and callable(getattr(params, 'urlencode')):
-        return params.urlencode()
-    for k in params:
-        params[uenc(k)] = uenc(params.pop(k))
-    return urllib.urlencode(params)
-
-
-def normalize(url):
-    return urltools.normalize(uenc(url))
 
 
 def handles_oa2_requests(func):
@@ -356,7 +341,7 @@ class SimpleBackend(object):
         return bool(self.get_client_by_id(client_id))
 
     def build_site_url(self, prefix='', **params):
-        params = urlencode(params)
+        params = self.urlencode(params)
         return "%s%s%s%s" % (self.base_url, self.endpoints_prefix, prefix,
                              params)
 
@@ -367,7 +352,7 @@ class SimpleBackend(object):
     def build_client_redirect_uri(self, client, uri, **params):
         if not client.redirect_uri_is_valid(uri):
             raise OA2Error("Invalid redirect uri")
-        params = urlencode(params)
+        params = self.urlencode(params)
         uri = self._get_uri_base(uri)
         return "%s?%s" % (uri, params)
 
@@ -411,12 +396,12 @@ class SimpleBackend(object):
 
     def redirect_to_login_response(self, request, params):
         parts = list(urlparse.urlsplit(request.path))
-        parts[3] = urlencode(params)
+        parts[3] = self.urlencode(params)
         query = {'next': urlparse.urlunsplit(parts)}
-        return Response(302,
-                        headers={'Location': '%s?%s' %
-                                 (self.get_login_uri(),
-                                  urlencode(query))})
+
+        parts[2] = self.get_login_uri()
+        parts[3] = self.urlencode(query)
+        return Response(302, headers={'Location':  urlparse.urlunsplit(parts)})
 
     def redirect_to_uri(self, redirect_uri, code, state=None):
         parts = list(urlparse.urlsplit(redirect_uri))
@@ -424,10 +409,8 @@ class SimpleBackend(object):
         params['code'] = code
         if state is not None:
             params['state'] = state
-        parts[3] = urlencode(params)
-        return Response(302,
-                        headers={'Location': '%s' %
-                                 urlparse.urlunsplit(parts)})
+        parts[3] = self.urlencode(params)
+        return Response(302, headers={'Location': urlparse.urlunsplit(parts)})
 
     def build_response_from_error(self, exception):
         response = Response(400)
@@ -459,7 +442,8 @@ class SimpleBackend(object):
                                  scope=None, token_type="Bearer"):
         if scope and code_instance.scope != scope:
             raise OA2Error("Invalid scope")
-        if normalize(redirect_uri) != normalize(code_instance.redirect_uri):
+        if self.normalize(redirect_uri) != \
+                self.normalize(code_instance.redirect_uri):
             raise OA2Error("The redirect uri does not match "
                            "the one used during authorization")
         token = self.add_token_for_client(token_type, code_instance)
@@ -572,7 +556,8 @@ class SimpleBackend(object):
             if not client.redirect_uri_is_valid(redirect_uri):
                 raise OA2Error("Mismatching redirect uri")
             if expected_value is not None and \
-                    normalize(redirect_uri) != normalize(expected_value):
+                    self.normalize(redirect_uri) != \
+                    self.normalize(expected_value):
                 raise OA2Error("Invalid redirect uri")
         else:
             try:
@@ -707,3 +692,11 @@ class SimpleBackend(object):
         else:
             #TODO: handle custom type
             raise OA2Error("Invalid grant type")
+
+    @staticmethod
+    def urlencode(params):
+        raise NotImplementedError
+
+    @staticmethod
+    def normalize(url):
+        raise NotImplementedError

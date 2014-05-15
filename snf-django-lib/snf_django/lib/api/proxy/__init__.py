@@ -32,6 +32,7 @@
 # or implied, of GRNET S.A.
 
 from django.http import HttpResponse, HttpResponseRedirect
+from django.utils.encoding import smart_str
 
 from objpool.http import PooledHTTPConnection
 
@@ -39,7 +40,6 @@ from synnefo.lib import join_urls
 
 from .utils import fix_header, forward_header
 
-import urllib
 import urlparse
 
 # We use proxy to delegate requests to another domain. Sending host specific
@@ -87,7 +87,7 @@ def proxy(request, proxy_base=None, target_base=None, redirect=False):
     kwargs['headers'] = headers
     kwargs['body'] = request.body
 
-    path = request.path.lstrip('/')
+    path = smart_str(request.path, encoding='utf-8').lstrip('/')
     if not path.startswith(proxy_base):
         m = "request path '{0}' does not start with proxy_base '{1}'"
         m = m.format(path, proxy_base)
@@ -97,14 +97,14 @@ def proxy(request, proxy_base=None, target_base=None, redirect=False):
     # redirect to target instead of proxing
     if redirect:
         redirect_url = join_urls(target_base, path)
-        qs = urllib.urlencode(request.GET)
+        qs = request.GET.urlencode()
         return HttpResponseRedirect('?'.join([redirect_url, qs]))
 
     path = join_urls(target_path, path)
     with PooledHTTPConnection(parsed.netloc, parsed.scheme) as conn:
         conn.request(
             request.method,
-            '?'.join([path, urllib.urlencode(request.GET)]), **kwargs)
+            '?'.join([path, request.GET.urlencode()]), **kwargs)
         response = conn.getresponse()
 
         # turn httplib.HttpResponse to django.http.Response

@@ -361,7 +361,7 @@ and the create the network:
    id    name     flavor       owner mac_prefix   dhcp    state         link  vms public IPv4 Subnet    IPv4 Gateway
    3     mac      MAC_FILTERED       aa:00:01     True    ACTIVE        prv0      False  192.168.1.0/24 192.168.1.1
 
-Edit the synnefo setting `DEFAULT_MAC_FILTERED_BRIDGE` to `prv0`.
+Edit the Synnefo setting `DEFAULT_MAC_FILTERED_BRIDGE` to `prv0`.
 
 This will add a network in Synnefo DB and create a network in Ganeti backend by
 issuing:

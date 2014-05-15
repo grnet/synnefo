@@ -23,7 +23,7 @@ APT Setup
 
 The following apply to ``synnefo`` nodes.
 
-To be able to download all synnefo components, you need to add the following
+To be able to download all Synnefo components, you need to add the following
 lines in `/etc/apt/sources.list.d/synnefo.list` file:
 
 .. code-block:: console

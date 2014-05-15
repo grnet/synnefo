@@ -1,4 +1,4 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright 2011-2014 GRNET S.A. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or
 # without modification, are permitted provided that the following
@@ -34,7 +34,7 @@ from django.conf import settings
 from django.db import transaction
 from datetime import datetime, timedelta
 
-from synnefo.db.models import (Backend, VirtualMachine, Network,
+from synnefo.db.models import (VirtualMachine, Network,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
                                Flavor, IPAddress, IPAddressLog)
@@ -787,6 +787,7 @@ def network_exists_in_backend(backend_network):
     except rapi.GanetiApiError as e:
         if e.code == 404:
             return False
+        raise e
 
 
 def job_is_still_running(vm, job_id=None):
@@ -796,25 +797,27 @@ def job_is_still_running(vm, job_id=None):
                 job_id = vm.backendjobid
             job_info = c.GetJobStatus(job_id)
             return not (job_info["status"] in rapi.JOB_STATUS_FINALIZED)
-        except rapi.GanetiApiError:
-            return False
+        except rapi.GanetiApiError as e:
+            if e.code == 404:
+                return False
+            raise e
 
 
 def nic_is_stale(vm, nic, timeout=60):
     """Check if a NIC is stale or exists in the Ganeti backend."""
     # First check the state of the NIC and if there is a pending CONNECT
-    if nic.state == "BUILD" and vm.task == "CONNECT":
+    if nic.state in ["BUILD", "DOWN"]:
         if datetime.now() < nic.created + timedelta(seconds=timeout):
             # Do not check for too recent NICs to avoid the time overhead
             return False
-        if job_is_still_running(vm, job_id=vm.task_job_id):
+        if vm.task == "CONNECT" and\
+           job_is_still_running(vm, job_id=vm.task_job_id):
             return False
-        else:
-            # If job has finished, check that the NIC exists, because the
-            # message may have been lost or stuck in the queue.
-            vm_info = get_instance_info(vm)
-            if nic.backend_uuid in vm_info["nic.names"]:
-                return False
+        # If the NIC is old or the job has finished, check Ganeti to see if the
+        # NIC exists
+        vm_info = get_instance_info(vm)
+        if nic.backend_uuid in vm_info["nic.names"]:
+            return False
     return True
 
 
@@ -992,14 +995,14 @@ def disconnect_from_network(vm, nic):
         kwargs["dry_run"] = True
 
     with pooled_rapi_client(vm) as client:
-        jobID = client.ModifyInstance(**kwargs)
+        job_id = client.ModifyInstance(**kwargs)
         firewall_profile = nic.firewall_profile
         if firewall_profile and firewall_profile != "DISABLED":
             tag = _firewall_tags[firewall_profile] % nic.backend_uuid
             client.DeleteInstanceTags(vm.backend_vm_id, [tag],
                                       dry_run=settings.TEST)
 
-        return jobID
+        return job_id
 
 
 def set_firewall_profile(vm, profile, nic):

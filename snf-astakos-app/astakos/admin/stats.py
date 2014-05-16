@@ -40,16 +40,23 @@ def get_astakos_stats():
     stats["users"]["all"] = {"total": users.count(),
                              "verified": verified.count(),
                              "active": active.count()}
+    # Get all holdings from DB. Filter with 'source=None' in order to get
+    # only the (base and user) projects, and not the user per project holdings
+    holdings = Holding.objects.filter(source=None)\
+                              .values("resource")\
+                              .annotate(usage_sum=Sum("usage_max"),
+                                        limit_sum=Sum("limit"))
+    holdings = dict([(h["resource"], h) for h in holdings])
+
     resources_stats = {}
     for resource in Resource.objects.all():
-        info = Holding.objects\
-                      .filter(resource=resource.name)\
-                      .aggregate(usage_sum=Sum("usage_max"),
-                                 limit_sum=Sum("limit"))
-        resources_stats[resource.name] = {"used": info["usage_sum"] or 0,
-                                          "allocated": info["limit_sum"] or 0,
-                                          "unit": resource.unit,
-                                          "description": resource.desc}
+        res_holdings = holdings.get(resource.name, {})
+        resources_stats[resource.name] = {
+            "used": res_holdings.get("usage_sum") or 0,
+            "allocated": res_holdings.get("limit_sum") or 0,
+            "unit": resource.unit,
+            "description": resource.desc
+        }
     stats["resources"]["all"] = resources_stats
 
     for provider in settings.ASTAKOS_IM_MODULES:
@@ -73,6 +80,8 @@ def get_astakos_stats():
 
         # Add stats about resources
         users_uuids = exclusive.values_list("uuid", flat=True)
+        # The 'holder' attribute contains user UUIDs prefixed with 'user:'
+        users_uuids = ["user:" + uuid for uuid in users_uuids]
         resources_stats = {}
         for resource in Resource.objects.all():
             info = Holding.objects\
@@ -81,8 +90,8 @@ def get_astakos_stats():
                           .aggregate(usage_sum=Sum("usage_max"),
                                      limit_sum=Sum("limit"))
             resources_stats[resource.name] = {
-                "used": info["usage_sum"] or 0,
-                "allocated": info["limit_sum"] or 0,
+                "used": info.get("usage_sum") or 0,
+                "allocated": info.get("limit_sum") or 0,
                 "unit": resource.unit,
                 "description": resource.desc}
         stats["resources"][provider] = resources_stats

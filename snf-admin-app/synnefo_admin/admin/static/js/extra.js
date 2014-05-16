@@ -132,20 +132,19 @@ function updateCounter(counterDOM) {
 
 function summaryTemplate(data) {
     var listTemplate = '<dt>{key}:</dt><dd>{value}</dd>';
-    var list = [];
+    var list = '';
     var listItem = listTemplate.replace('{key}', prop).replace('{value}',data[prop]);
-    var i = 0;
+    var html;
+
     for(var prop in data) {
         if(prop !== "details_url") {
             if(data[prop].visible) {
-                list[i] = listTemplate.replace('{key}', data[prop].display_name).replace('{value}',data[prop].value);
-                i++;
-                
+                list += listTemplate.replace('{key}', data[prop].display_name).replace('{value}',data[prop].value);
             }
         }
     }
 
-    var html = '<a href="#" class="summary-expand expand-area"><span class="snf-icon snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+list.join(',').replace(/,/g, '')+'</dl>';
+    html = '<a href="#" class="summary-expand expand-area"><span class="snf-icon snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
     return html;
 };
 

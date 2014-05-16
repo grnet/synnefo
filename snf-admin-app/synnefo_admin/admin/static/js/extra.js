@@ -91,14 +91,23 @@ $(function(){
         ],
         "order": [1, "asc"],
         "createdRow": function(row, data, dataIndex) {
-          
             var extraIndex = data.length - 1;
             row.id = data[extraIndex].id.value; //sets the dom id
+            var selectedL = selected.items.length;
+            if(selectedL !== 0) {
+				for(var i = 0; i<selectedL; i++){
+					if (selected.items[i].id === row.id) {
+						$(row).addClass('selected')
+					}
+				}
+			}
 
             clickSummary(row);
             clickDetails(row);
-        } 
+        },
+        "dom": '<"custom-buttons">lfrtip'
     });
+	$("div.custom-buttons").html('<button class="select-all select">Select All</button>');
 
     $(tableDomID).on('click', 'tbody tr', function() {
         var info = $(tableDomID).dataTable().api().cell($(this).find('td:last-child')).data();
@@ -112,6 +121,7 @@ $(function(){
                 enableActions(newItem.actions)
         }
         updateCounter('.selected-num');
+        updateToggleAllSelect()
     });
 
 function updateCounter(counterDOM) {
@@ -217,6 +227,7 @@ function summaryTemplate(data) {
         for (var i = 0; i<itemsL; i++) {
             if(items[i].id === itemID) {
                 items.splice(i, 1);
+                break;
             }
         }
     };
@@ -513,58 +524,31 @@ function summaryTemplate(data) {
         } );
     }
 
-    /* Initial table */
-    
-//  function initTable(tableID) {
-
-//      // The last two colums in every table should be "Details" and "Summary"
-//      // These two shoudn't be sorted
-//      var colLength = $(tableID).find('thead th').length;
-//      var colsNotSort = [colLength-2, colLength-1];
-
-//      return $(tableID).dataTable({
-//          "aaSorting": [[3, 'asc'], [1, 'asc']], // ascending
-//          "aoColumnDefs": [
-//              { "bSortable": false, "aTargets": colsNotSort },
-//              {  "sSortDataType": "dom-checkbox", "aTargets": [0] }
-//          ],
-//          "bSortClasses": false, // Disables the addition of the classes 'sorting_1', 'sorting_2' and 'sorting_3' to the columns which are currently being sorted on
-//          // "sPaginationType": "full_numbers",
-//          "bRetrieve": true, // Access to all items of the dataTable
-//          "fnDrawCallback": function( oSettings ) {
-//              clickRow();
-//              clickRowCheckbox();
-//              clickSummary();
-//              updateToggleAllCheck('.select-all input[type=checkbox]');
-//          }
-//      });
-//  }
 
 //  /* Select-all button */
 
     $('.select-all').click(function() {
-        console.log('ox');
-        toggleVisSelected(checkboxState, tableDomID);
+        toggleVisSelected(tableDomID, $(this).hasClass('select'));
     });
 
 
 // remember to call it when a row is clicked
     function updateToggleAllSelect() {
-        console.log('updateToggleAllSelect');
-        var $toggleAll = $('.select-all .action-label'); // ***
-        $tr = $(tableDomID).find('tr');
-        if($tr.length > 1) {
+
+        var $toggleAll = $('.select-all'); // ***
+        $tr = $(tableDomID).find('tbody tr');
+
+		if($tr.length > 1) {
             var allSelected = true
             $tr.each(function() {
                 allSelected = allSelected && $(this).hasClass('selected');
             });
             if($toggleAll.hasClass('select') && allSelected) {
-                console.log('*1*')
-                $toggleAll.addClass('deselect').removeClass('select');
+				$toggleAll.addClass('deselect').removeClass('select');
                 $toggleAll.text('Deselect All')
             }
             else if(!($toggleAll.hasClass('select')) && !allSelected) {
-                $toggleAll.addClass('select').removeClass('deselect');
+				$toggleAll.addClass('select').removeClass('deselect');
                 $toggleAll.text('Select All')
             }
         }
@@ -588,21 +572,14 @@ function summaryTemplate(data) {
     /* Head checkbox */
 
     /* Toggles the checked property of all the checkboxes in the body of the table */
-    function toggleVisSelected(checkboxState, tableDomID) {
-        // var $checkboxesVis = $('#'+tableDomID).find('tbody tr:visible .checkbox-column input[type=checkbox]');
-        // if(checkboxState) {
-        //  $checkboxesVis.prop('checked', false).trigger('click');
-        // }
-        // else {
-        //  if($checkboxesVis.prop('checked')) {
-        //      $checkboxesVis.trigger('click');
-        //  }
-        //  else
-        //      $checkboxesVis.prop('checked', false).trigger('click');
-        // }
-    };
-
-
+    function toggleVisSelected(tableDomID, selectFlag) {
+		if(selectFlag) {
+			$(tableDomID).find('tr:not(.selected)').trigger('click');
+		}
+		else {
+			$(tableDomID).find('tr.selected').trigger('click');
+		}
+	};
 
 });
 //  ***********************************************************************************************

@@ -1063,3 +1063,9 @@ body table > tbody > tr.selected > td {
   background-color: #D2DFDB !important;
   color: #6144ac;
 }
+
+/* line 745, ../sass/extra.scss */
+.custom-buttons {
+  float: left;
+  margin-right: 10px;
+}

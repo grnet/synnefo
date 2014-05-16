@@ -682,7 +682,9 @@ class Image(base.Component):
 
     @base.run_cmds
     def initialize(self):
-        return ["snf-image-update-helper -y"]
+        # This is done during postinstall phase
+        # snf-image-update-helper -y
+        return []
 
 
 class GTools(base.Component):

@@ -113,7 +113,8 @@ $(function(){
         var info = $(tableDomID).dataTable().api().cell($(this).find('td:last-child')).data();
         if($(this).hasClass('selected')) {
             $(this).removeClass('selected');
-            removeItem(info.id.value, true);
+            removeItem(info.id.value);
+            enableActions(undefined, true)
         }
         else {
             $(this).addClass('selected');

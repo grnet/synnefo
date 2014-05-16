@@ -415,12 +415,30 @@ function summaryTemplate(data) {
         var selectedNum = selected.items.length;
         var $counter = $(modalID).find('.num');
         var idsArray = [];
+        var unique = true;
+        var queryProp = 'id'; // temp
+        // var queryProp;
+        var modalType = $(modalID).data('type');
 
-        for (var i=0; i<selectedNum; i++)
-            idsArray.push(selected.items[i].id);
+        // if(modalType === "contact")
+        // 	queryProp = 'id';
+        // else
+        // 	queryProp = 'user_id';
+
+        // for (var i=0; i<selectedNum; i++) {
+        // 	for (var j=0; j<i; j++) {
+        // 		if(selected.items[i][queryProp] === selected.items[j][queryProp]) {
+        // 			unique = false;
+        // 			break;
+        //     	}
+        // 	}
+        // 	if(unique) {
+	       //      idsArray.push(selected.items[i][queryProp]);
+        // 	}
+        // 	unique = true;
+        // }
         updateCounter($counter);
         $idsInput.val('['+idsArray+']');
-        var modalType = modalID.substring(1); // should change, removes the # that there's at the beginning of the str
         drawTableRows($table.find('tbody'), selectedNum,  modalType);
     };
 
@@ -431,15 +449,26 @@ function summaryTemplate(data) {
         var currentRow;
         $(tableBody).empty();
         var htmlRows = '';
+        var unique = true;
+        var uniqueProp = 'id'; // temp
+        var count = 0;
         if(modalType === "contact") {
             var templateRow = '<tr data-uuid=""><td class="full-name"></td><td class="email"></td><td class="remove"><a>X</a></td></tr>';
             for(var i=0; i<rowsNum; i++) {
-                currentRow =templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].id+'"')
-                currentRow = currentRow.replace('<td class="full-name"></td>', '<td class="full-name">'+selected.items[i].contact_name+'</td>');
-                currentRow = currentRow.replace('<td class="email"></td>', '<td class="email">'+selected.items[i].contact_email+'</td>');
-                if(i >= maxVisible)
-                    currentRow = currentRow.replace('<tr', '<tr class="hidden-row"');
-                htmlRows += currentRow;
+				for(var j = 0; j<i; j++) {
+					if(selected.items[i][uniqueProp] === selected.items[j][uniqueProp]) {
+						unique = false;
+						break;
+					}
+				}
+				if(unique === true) {
+	                currentRow =templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].id+'"')
+	                currentRow = currentRow.replace('<td class="full-name"></td>', '<td class="full-name">'+selected.items[i].contact_name+'</td>');
+	                currentRow = currentRow.replace('<td class="email"></td>', '<td class="email">'+selected.items[i].contact_email+'</td>');
+	                if(i >= maxVisible)
+	                    currentRow = currentRow.replace('<tr', '<tr class="hidden-row"');
+	                htmlRows += currentRow;
+	            }
             }
         }
         else {

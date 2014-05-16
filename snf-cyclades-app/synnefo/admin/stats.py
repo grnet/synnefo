@@ -23,7 +23,7 @@ from django.db.models import Count, Sum
 
 from snf_django.lib.astakos import UserCache
 from synnefo.plankton.backend import PlanktonBackend
-from synnefo.db.models import (VirtualMachine, Network, Backend,
+from synnefo.db.models import (VirtualMachine, Network, Backend, VolumeType,
                                pooled_rapi_client, Flavor)
 
 
@@ -101,12 +101,12 @@ def _get_total_servers(backend=None):
 
 
 def get_server_stats(backend=None):
-    servers = VirtualMachine.objects.select_related("flavor")\
+    servers = VirtualMachine.objects.select_related("flavor__volume_type")\
                                     .filter(deleted=False)
     if backend is not None:
         servers = servers.filter(backend=backend)
-    disk_templates = Flavor.objects.values_list("disk_template", flat=True)\
-                                   .distinct()
+    disk_templates = \
+        VolumeType.objects.values_list("disk_template", flat=True).distinct()
 
     # Initialize stats
     server_stats = defaultdict(dict)
@@ -126,7 +126,7 @@ def get_server_stats(backend=None):
             state = "stopped"
 
         flavor = s.flavor
-        disk_template = flavor.disk_template
+        disk_template = flavor.volume_type.disk_template
         server_stats[state]["count"] += 1
         server_stats[state]["cpu"][flavor.cpu] += 1
         server_stats[state]["ram"][flavor.ram << 20] += 1

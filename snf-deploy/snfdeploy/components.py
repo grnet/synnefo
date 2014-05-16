@@ -22,107 +22,40 @@ from snfdeploy import base
 from snfdeploy import config
 from snfdeploy import constants
 from snfdeploy import context
-from snfdeploy.lib import FQDN
+from snfdeploy.lib import FQDN, evaluate
 
 
-#
-# Helper decorators that wrap methods of Component
-# class and update its execution context (self, self.ctx, context):
-#
-def parse_user_info(fn):
-    """ Parse the output of DB.get_user_info_from_db()
+_USER_INFO_RE = lambda x: \
+    re.compile(r"(\d+)[ |]*(\S+)[ |]*(\S+)[ |]*%s.*" % x, re.M)
+_USER_INFO = ["user_id", "user_auth_token", "user_uuid"]
 
-    For the given user email found in config,
-    update user_id, user_auth_token and user_uuid attributes of context.
+_SERVICE_INFO_RE = lambda x: re.compile(r"(\d+)[ ]*%s[ ]*(\S+)" % x, re.M)
+_SERVICE_INFO = ["service_id", "service_token"]
 
-    """
-    def wrapper(*args, **kwargs):
-        user_email = config.user_email
-        result = fn(*args, **kwargs)
-        r = re.compile(r"(\d+)[ |]*(\S+)[ |]*(\S+)[ |]*" + user_email, re.M)
-        match = r.search(result)
-        if config.dry_run:
-            context.user_id, context.user_auth_token, context.user_uuid = \
-                ("dummy_uid", "dummy_user_auth_token", "dummy_user_uuid")
-        elif match:
-            context.user_id, context.user_auth_token, context.user_uuid = \
-                match.groups()
-        else:
-            raise BaseException("Cannot parse info for user %s" % user_email)
-        return result
-    return wrapper
+_BACKEND_INFO_RE = lambda x: re.compile(r"(\d+)[ ]*%s.*" % x, re.M)
+_BACKEND_INFO = ["backend_id"]
+
+_VOLUME_INFO_RE = lambda x: re.compile(r"(\d+)[ ]*%s.*" % x, re.M)
+_VOLUME_INFO = ["volume_type_id"]
 
 
-def parse_service_info(fn):
-    """ Parse the output of Astakos.get_services()
-
-    For the given service (found in ctx.admin_service)
-    updates service_id and service_token attributes of context.
-
-    """
-    def wrapper(*args, **kwargs):
-        cl = args[0]
-        service = cl.ctx.admin_service
-        result = fn(*args, **kwargs)
-        r = re.compile(r"(\d+)[ ]*%s[ ]*(\S+)" % service, re.M)
-        match = r.search(result)
-        if config.dry_run:
-            context.service_id, context.service_token = \
-                ("dummy_service_id", "dummy_service_token")
-        elif match:
-            context.service_id, context.service_token = \
-                match.groups()
-        else:
-            raise BaseException("Cannot parse info for service %s" % service)
-        return result
-    return wrapper
-
-
-def parse_backend_info(fn):
-    """ Parse the output of Cyclades.list_backends()
-
-    For the given cluster (found in ctx.admin_cluster)
-    updates the backend_id attributes of context.
-
-    """
-    def wrapper(*args, **kwargs):
-        cl = args[0]
-        fqdn = cl.ctx.admin_cluster.fqdn
-        result = fn(*args, **kwargs)
-        r = re.compile(r"(\d+)[ ]*%s.*" % fqdn, re.M)
-        match = r.search(result)
-        if config.dry_run:
-            context.backend_id = "dummy_backend_id"
-        elif match:
-            context.backend_id, = match.groups()
-        else:
-            raise BaseException("Cannot parse info for backend %s" % fqdn)
-        return result
-    return wrapper
-
-
-def parse_volume_type_info(fn):
-    """ Parse the output of Cyclades.list_volume_types()
-
-    For the given volume_type (found in ctx.admin_volume_type)
-    updates the volume_type_id attributes of context.
-
-    """
-    def wrapper(*args, **kwargs):
-        cl = args[0]
-        volume_type = cl.ctx.admin_template
-        result = fn(*args, **kwargs)
-        r = re.compile(r"(\d+)[ ]*%s.*" % volume_type, re.M)
-        match = r.search(result)
-        if config.dry_run:
-            context.volume_type_id = "dummy_volume_type_id"
-        elif match:
-            context.volume_type_id, = match.groups()
-        else:
-            raise BaseException("Cannot parse info for volume type %s" %
-                                volume_type)
-        return result
-    return wrapper
+# Helper decorator that wraps get_* methods of certain Components
+# Those methods take one argument; the identity (mail, service, backend)
+# to look for. It parses the output of those methods and updates the
+# context's keys with the matched groups.
+def parse(regex, keys):
+    def wrap(f):
+        def wrapped_f(cl, what):
+            result = f(cl, what)
+            match = regex(what).search(result)
+            if config.dry_run:
+                evaluate(context, **dict(zip(keys, ["dummy"] * len(keys))))
+            elif match:
+                evaluate(context, **dict(zip(keys, match.groups())))
+            else:
+                raise BaseException("Cannot parse info for %s" % what)
+        return wrapped_f
+    return wrap
 
 
 def update_admin(fn):
@@ -465,9 +398,9 @@ class DB(base.Component):
     def check(self):
         return ["ping -c 1 %s" % self.node.cname]
 
-    @parse_user_info
+    @parse(_USER_INFO_RE, _USER_INFO)
     @base.run_cmds
-    def get_user_info_from_db(self):
+    def get_user_info_from_db(self, user_email):
         cmd = """
 cat > /tmp/psqlcmd <<EOF
 select id, auth_token, uuid, email from auth_user, im_astakosuser \
@@ -475,7 +408,7 @@ where auth_user.id = im_astakosuser.user_ptr_id and auth_user.email = '{0}';
 EOF
 
 su - postgres -c  "psql -w -d snf_apps -f /tmp/psqlcmd"
-""".format(config.user_email)
+""".format(user_email)
 
         return [cmd]
 
@@ -714,7 +647,7 @@ gnt-cluster init --enabled-hypervisors=kvm \
         if self.cluster.synnefo:
             self.CYCLADES._debug("Adding backend: %s" % self.cluster.fqdn)
             self.CYCLADES.add_backend()
-            self.CYCLADES.list_backends()
+            self.CYCLADES.list_backends(self.cluster.fqdn)
             self.CYCLADES.undrain_backend()
 
 
@@ -1031,9 +964,9 @@ class Astakos(base.Component):
             "%s cyclades.floating_ip 4 4" % cmd,
             ]
 
-    @parse_service_info
+    @parse(_SERVICE_INFO_RE, _SERVICE_INFO)
     @base.run_cmds
-    def get_services(self):
+    def get_services(self, service):
         return [
             "snf-manage component-list -o id,name,token"
             ]
@@ -1096,7 +1029,7 @@ class Astakos(base.Component):
     @update_admin
     @base.run_cmds
     def activate_user(self):
-        self.DB.get_user_info_from_db()
+        self.DB.get_user_info_from_db(config.user_email)
         user_id = context.user_id
         return [
             "snf-manage user-modify --verify %s" % user_id,
@@ -1265,7 +1198,7 @@ class Pithos(base.Component):
     @update_admin
     def admin_pre(self):
         self.NS.update_ns()
-        self.ASTAKOS.get_services()
+        self.ASTAKOS.get_services(self.service)
         self.DB.allow_db_access()
         self.DB.restart()
 
@@ -1357,7 +1290,7 @@ class Cyclades(base.Component):
     @update_admin
     def admin_pre(self):
         self.NS.update_ns()
-        self.ASTAKOS.get_services()
+        self.ASTAKOS.get_services(self.service)
         self.DB.allow_db_access()
         self.DB.restart()
 
@@ -1401,9 +1334,9 @@ snf-manage network-create --subnet6={0} \
             "snf-manage service-export-cyclades > %s" % f
             ]
 
-    @parse_backend_info
+    @parse(_BACKEND_INFO_RE, _BACKEND_INFO)
     @base.run_cmds
-    def list_backends(self):
+    def list_backends(self, cluster):
         return [
             "snf-manage backend-list"
             ]
@@ -1481,9 +1414,9 @@ snf-manage volume-type-create --name {0} --disk-template {0}
 """.format(template)
         return [cmd]
 
-    @parse_volume_type_info
+    @parse(_VOLUME_INFO_RE, _VOLUME_INFO)
     @base.run_cmds
-    def list_volume_types(self):
+    def list_volume_types(self, template):
         return [
             "snf-manage volume-type-list -o id,disk_template --no-headers"
             ]
@@ -1499,8 +1432,7 @@ snf-manage volume-type-create --name {0} --disk-template {0}
         templates = config.flavor_storage.split(",")
         for t in templates:
             self._create_volume_type(t)
-            self.ctx.admin_template = t
-            self.list_volume_types()
+            self.list_volume_types(t)
             self._create_flavor()
 
     @update_admin
@@ -1549,7 +1481,7 @@ class Kamaki(base.Component):
     def admin_pre(self):
         self.ASTAKOS.add_user()
         self.ASTAKOS.activate_user()
-        self.DB.get_user_info_from_db()
+        self.DB.get_user_info_from_db(config.user_email)
 
     @base.run_cmds
     def initialize(self):

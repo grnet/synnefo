@@ -880,11 +880,7 @@ class Gunicorn(base.Component):
 
 class Common(base.Component):
     REQUIRED_PACKAGES = [
-        # snf-common
-        "python-objpool",
         "snf-common",
-        "python-astakosclient",
-        "snf-django-lib",
         "snf-branding",
         ]
 
@@ -910,12 +906,11 @@ class Common(base.Component):
             ]
 
 
-class WEB(base.Component):
+class Webproject(base.Component):
     REQUIRED_PACKAGES = [
+        "python-astakosclient",
+        "snf-django-lib",
         "snf-webproject",
-        "python-psycopg2",
-        "python-gevent",
-        "python-django",
         ]
 
     @base.run_cmds
@@ -943,17 +938,14 @@ class WEB(base.Component):
 
 class Astakos(base.Component):
     REQUIRED_PACKAGES = [
-        "python-django-south",
         "snf-astakos-app",
-        "kamaki",
-        "python-openssl",
         ]
 
     alias = constants.ASTAKOS
     service = constants.ASTAKOS
 
     def required_components(self):
-        return [HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB]
+        return [HW, SSH, DNS, APT, Apache, Gunicorn, Common, Webproject]
 
     @base.run_cmds
     def setup_user(self):
@@ -1121,14 +1113,13 @@ class Astakos(base.Component):
 class CMS(base.Component):
     REQUIRED_PACKAGES = [
         "snf-cloudcms"
-        "python-openssl",
         ]
 
     alias = constants.CMS
     service = constants.CMS
 
     def required_components(self):
-        return [HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB]
+        return [HW, SSH, DNS, APT, Apache, Gunicorn, Common, Webproject]
 
     @update_admin
     def admin_pre(self):
@@ -1258,11 +1249,8 @@ EOF
 
 class Pithos(base.Component):
     REQUIRED_PACKAGES = [
-        "kamaki",
-        "python-svipc",
         "snf-pithos-app",
         "snf-pithos-webclient",
-        "python-openssl",
         ]
 
     alias = constants.PITHOS
@@ -1270,7 +1258,7 @@ class Pithos(base.Component):
 
     def required_components(self):
         return [
-            HW, SSH, DNS, APT, Apache, Gunicorn, Common, WEB,
+            HW, SSH, DNS, APT, Apache, Gunicorn, Common, Webproject,
             PithosBackend, Archip, ArchipSynnefo
             ]
 
@@ -1353,10 +1341,7 @@ class Cyclades(base.Component):
     REQUIRED_PACKAGES = [
         "memcached",
         "python-memcache",
-        "kamaki",
         "snf-cyclades-app",
-        "python-django-south",
-        "python-openssl",
         ]
 
     alias = constants.CYCLADES
@@ -1365,7 +1350,7 @@ class Cyclades(base.Component):
     def required_components(self):
         return [
             HW, SSH, DNS, APT,
-            Apache, Gunicorn, Common, WEB, VNC, PithosBackend,
+            Apache, Gunicorn, Common, Webproject, VNC, PithosBackend,
             Archip, ArchipSynnefo
             ]
 
@@ -1614,7 +1599,6 @@ class Kamaki(base.Component):
 
 class Burnin(base.Component):
     REQUIRED_PACKAGES = [
-        "kamaki",
         "snf-tools",
         ]
 
@@ -1646,7 +1630,7 @@ class Stats(base.Component):
     def required_components(self):
         return [
             HW, SSH, DNS, APT,
-            Apache, Gunicorn, Common, WEB, Collectd
+            Apache, Gunicorn, Common, Webproject, Collectd
             ]
 
     @update_admin
@@ -1725,6 +1709,9 @@ class Archip(base.Component):
 
 
 class ArchipSynnefo(base.Component):
+    REQUIRED_PACKAGES = [
+        "python-svipc",
+        ]
 
     def _configure(self):
         r1 = {"HOST": self.node.fqdn}

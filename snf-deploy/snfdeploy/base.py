@@ -186,7 +186,12 @@ class ComponentRunner(FabricRunner):
                     self._debug(" * Package %s found in %s..."
                                 % (package, config.package_dir))
                     self.put(deb, "/tmp/%s" % f)
-                    self.run("dpkg -i /tmp/%s || " % f + apt_get + "-f")
+                    cmd = """
+dpkg -i /tmp/{0}
+{2} -f
+apt-mark hold {1}
+""".format(f, package, apt_get)
+                    self.run(cmd)
                     self.run("rm /tmp/%s" % f)
                     return
 

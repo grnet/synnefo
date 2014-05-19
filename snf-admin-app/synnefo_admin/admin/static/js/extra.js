@@ -58,6 +58,7 @@ $(function(){
                 mydata = response;
                 extraData = response.extra;
                 if(response.aaData.length != 0) {
+                    // console.log(typeof response.aaData[0][4]);
                     var cols = response.aaData;
                     var rowL = cols.length;
                     var detailsCol = cols[0].length;
@@ -109,21 +110,34 @@ $(function(){
     });
 	$("div.custom-buttons").html('<button class="select-all select">Select All</button>');
 
-    $(tableDomID).on('click', 'tbody tr', function() {
-        var info = $(tableDomID).dataTable().api().cell($(this).find('td:last-child')).data();
-        if($(this).hasClass('selected')) {
-            $(this).removeClass('selected');
+
+    $(tableDomID).on('click', 'tbody tr', selectRow);
+
+
+    function selectRow(row) {
+		var $row;
+		if(row.type === "click") {
+			$row = $(this);
+		}
+		else {
+			$row = $(row);
+		}
+		var info = $(tableDomID).dataTable().api().cell($row.find('td:last-child')).data();
+        if($row.hasClass('selected')) {
+            $row.removeClass('selected');
             removeItem(info.id.value);
             enableActions(undefined, true)
         }
         else {
-            $(this).addClass('selected');
+            $row.addClass('selected');
             var newItem = addItem(info);
                 enableActions(newItem.actions)
         }
         updateCounter('.selected-num');
         updateToggleAllSelect()
-    });
+
+
+    }
 
 function updateCounter(counterDOM) {
     var $counter = $(counterDOM);
@@ -190,7 +204,6 @@ function summaryTemplate(data) {
         var isNew = true;
         var actionsArray = infoObj.allowed_actions.value;
         var actionsL = actionsArray.length;
-        console.log('addItem')
         var newItem = {
            "id": infoObj.id.value,
            "item_name": infoObj.item_name.value,
@@ -284,12 +297,11 @@ function summaryTemplate(data) {
         // $(this).siblings('table').find('thead .selected-num');
         updateCounter('.selected-num');
         enableActions(undefined, true);
-        console.log(tableDomID)
-        $(tableDomID).dataTable().api().rows('.selected').nodes().to$().removeClass('selected')
+        $(tableDomID).dataTable().api().rows('.selected').nodes().to$().removeClass('selected');
+        updateToggleAllSelect();
     };
 
      $('.dataTables_filter input[type=search]').keypress(function(e) {
-     	console.log('stop writing')
      // if space or enter is typed do nothing
      if(e.which !== '32' && e.which !== '13') {
          // $(tableDomID) = $(this).closest('.dataTables_wrapper').find('table').attr('id')
@@ -420,6 +432,8 @@ function summaryTemplate(data) {
         // var queryProp;
         var modalType = $(modalID).data('type');
 
+        /* *** shouldn't do this check twice! *** */
+
         // if(modalType === "contact")
         // 	queryProp = 'id';
         // else
@@ -450,10 +464,10 @@ function summaryTemplate(data) {
         $(tableBody).empty();
         var htmlRows = '';
         var unique = true;
-        var uniqueProp = 'id'; // temp
+        var uniqueProp = 'contact_email'; // temp
         var count = 0;
         if(modalType === "contact") {
-            var templateRow = '<tr data-uuid=""><td class="full-name"></td><td class="email"></td><td class="remove"><a>X</a></td></tr>';
+            var templateRow = '<tr data-itemid=""><td class="full-name"></td><td class="email"></td><td class="remove"><a>X</a></td></tr>';
             for(var i=0; i<rowsNum; i++) {
 				for(var j = 0; j<i; j++) {
 					if(selected.items[i][uniqueProp] === selected.items[j][uniqueProp]) {
@@ -472,7 +486,7 @@ function summaryTemplate(data) {
             }
         }
         else {
-            var templateRow = '<tr data-itemid=""><td class="item-name"></td><td class="item-id"></td><td class="owner-name"><td class="owner-email"></td><td class="remove"><a>X</a></td></tr>';
+            var templateRow = '<tr data-itemid=""><td class="item-name"></td><td class="item-id"></td><td class="owner-name"></td><td class="owner-email"></td><td class="remove"><a>X</a></td></tr>';
             for(var i=0; i<rowsNum; i++) {
                 currentRow =templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].id+'"')
                 currentRow = currentRow.replace('<td class="item-name"></td>', '<td class="item-name">'+selected.items[i].item_name+'</td>');
@@ -505,8 +519,6 @@ function summaryTemplate(data) {
                 else if($(this).hasClass('open')) {
                     $(this).toggleClass('closed open');
                     $(tableBody).find('tr.hidden-row').slideUp('slow', function() {
-                    	console.log('that')
-                    	console.log(that)
                     $(that).text('Show All');
 
                     });
@@ -532,7 +544,12 @@ function summaryTemplate(data) {
         for (var i=0; i< selectedNum; i++)
             idsArray.push(selected.items[i].id);
         $idsInput.val('[' + idsArray + ']');
-        $tr.slideUp('slow');
+        $tr.slideUp('slow', function() {
+	        $(this).siblings('.hidden-row').first().removeClass('hidden-row');
+	        if($(this).siblings('.hidden-row').length === 0) {
+				$modal.find('.toggle-more').hide(); // it would be better to be visible and disabled? ***
+	        }
+        });
         $num.html(selectedNum);
     });
 
@@ -603,10 +620,14 @@ function summaryTemplate(data) {
     /* Toggles the checked property of all the checkboxes in the body of the table */
     function toggleVisSelected(tableDomID, selectFlag) {
 		if(selectFlag) {
-			$(tableDomID).find('tr:not(.selected)').trigger('click');
+			$(tableDomID).find('tbody tr:not(.selected)').each(function() { // temp : shouldn't have a func that calls a named func
+				selectRow(this);
+			});
 		}
 		else {
-			$(tableDomID).find('tr.selected').trigger('click');
+			$(tableDomID).find('tbody tr.selected').each(function() { // temp : shouldn't have a func that calls a named func
+				selectRow(this);
+			});
 		}
 	};
 

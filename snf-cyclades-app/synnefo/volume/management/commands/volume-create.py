@@ -109,7 +109,10 @@ class Command(SynnefoCommand):
         if user_id is None:
             user_id = vm.userid
 
-        vtype = common.get_resource("volume-type", volume_type_id)
+        if volume_type_id is not None:
+            vtype = common.get_resource("volume-type", volume_type_id)
+        else:
+            vtype = vm.flavor.volume_type
 
         if project_id is None:
             project_id = vm.project

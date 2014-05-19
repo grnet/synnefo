@@ -512,6 +512,7 @@ class Ganeti(base.Component):
         return [
             ("/etc/ganeti/file-storage-paths", {}, {}),
             ("/etc/default/ganeti-instance-debootstrap", {}, {}),
+            ("/etc/modprobe.d/drbd.conf", {}, {}),
             ]
 
     def _prepare_lvm(self):
@@ -543,8 +544,16 @@ fi
     def prepare(self):
         return [
             "mkdir -p /srv/ganeti/file-storage/",
-            "sed -i 's/^127.*$/127.0.0.1 localhost/g' /etc/hosts"
+            "sed -i 's/^127.*$/127.0.0.1 localhost/g' /etc/hosts",
+            "echo drbd >> /etc/modules",
             ] + self._prepare_net_infra() + self._prepare_lvm()
+
+    @base.run_cmds
+    def initialize(self):
+        return [
+            "modprobe -rv drbd || true",
+            "modprobe -v drbd",
+            ]
 
     @base.run_cmds
     def restart(self):

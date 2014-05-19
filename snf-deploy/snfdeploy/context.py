@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import datetime
 from snfdeploy import constants
 from snfdeploy import config
 from snfdeploy import status
@@ -24,8 +25,9 @@ context = sys.modules[__name__]
 class Context(object):
 
     def __repr__(self):
-        ret = "[%s %s] " % (self.node_info.ip, self.node_info.name)
-        ret += "[%s %s %s %s]" % \
+        ret = "[%s]" %  datetime.datetime.now().strftime("%H:%M:%S")
+        ret += " [%s %s]" % (self.node_info.ip, self.node_info.name)
+        ret += " [%s %s %s %s]" % \
             (self.node, self.role, self.setup, self.cluster)
         return ret
 

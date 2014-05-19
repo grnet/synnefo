@@ -298,12 +298,6 @@
                     
                     <div class="confirm-conts clearfix">
                         <div class="list-cont confirm-cont image">
-                            <h4>{% trans "Project" %}</h4>
-                            <ul class="confirm-params">
-                              <li class="param image-name clearfix">
-                                <h4 class="project-title"></h4>
-                              </li>
-                            </ul>
                             <h4>{% trans "Image" %}</h4>
                             <ul class="confirm-params">
                                 <li class="param image-name clearfix">
@@ -333,7 +327,11 @@
                         </div>
                         <div class="list-cont confirm-cont flavor">
                             <h4>{% trans "Flavor" %}</h4>
+
                             <ul class="confirm-params">
+                                <li class="param flavor-project clearfix">
+                                    <span class="project-name value"></span>
+                                </li>
                                 <li class="param flavor-cpu clearfix">
                                     <span class="title">{% trans "CPUs" %}</span>
                                     <span class="value"></span>

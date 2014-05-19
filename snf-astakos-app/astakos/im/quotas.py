@@ -198,14 +198,20 @@ def mk_project_provision(project, resource, quantity):
     return (holder, None, resource), quantity
 
 
-def _mk_provisions(holder, source, resource, quantity):
-    return [((holder, source, resource), quantity),
-            ((source, None, resource), quantity)]
+def _mk_provisions(values):
+    provisions = []
+    for (holder, source, resource, quantity) in values:
+        provisions += [((holder, source, resource), quantity),
+                       ((source, None, resource), quantity)]
+    return provisions
 
 
-def register_pending_apps(user, project, quantity, force=False):
-    provisions = _mk_provisions(get_user_ref(user), get_project_ref(project),
-                                PENDING_APP_RESOURCE, quantity)
+def register_pending_apps(triples, force=False):
+    values = [(get_user_ref(user), get_project_ref(project),
+               PENDING_APP_RESOURCE, quantity)
+              for (user, project, quantity) in triples]
+
+    provisions = _mk_provisions(values)
     try:
         s = qh.issue_commission(clientkey='astakos',
                                 force=force,

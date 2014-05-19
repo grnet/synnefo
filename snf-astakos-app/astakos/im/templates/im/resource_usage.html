@@ -12,21 +12,28 @@
 {% block page.body %}
 <script id="projectQuotaTpl" type="text/template">
   {% verbatim %}
-  <div class="resource-bar project clearfix project-{{id}} {{ usage.cls }}"
-      data-project="{{ id }}">
+  <div class="resource-bar project clearfix project-{{id}} {{ usage.cls }}
+      {{^base_project}}no-base-project{{/base_project}} 
+      {{#base_project}}base-project{{/base_project}}" data-project="{{ id }}">
       <div class="info" data-currvalue="" data-maxvalue="">
-        <h3>{{ name }}</h3>
+        <h3><a href="{{ details_url }}">{{ display_name }}</a></h3>
         <p>
           <span class="currValue">{{ usage.curr }}</span> out of 
           <span class="maxValue">{{ usage.max }}</span> {{ report_desc }}
         </p>
       </div>
       <div class="bar">
+        <i class="warn {{#usage.project_warn}}visible{{/usage.project_warn}}"></i>
+        <i class="warn-msg">
+          {{ usage.project_warn_msg }}
+        </i>
         <div>
-            <span style="width:{{ usage.perc }}%"></span>
+          <span style="width:{{ usage.ratio }}%" class="member"></span>
+          <span style="width:{{ usage.project_warn_ratio}}%"
+            class="project"></span>
             <em class="value" 
                 style="left: {{ usage.label_left }}; color: {{ usage.label_color }}">
-                {{ usage.perc }}%
+                {{ usage.ratio }}%
             </em>
         </div>
       </div>
@@ -38,28 +45,10 @@
   {% verbatim %}
   {{#resources}}
   <li class="clearfix {{ resource_name }} {{ usage.cls }}" 
-      data-resource="{{ name }}">
+  data-resource="{{ name }}">
   <div class="img-wrap">&nbsp;</div>
-  <div class="summary resource-bar clearfix {{ usage.cls }}">
-      <div class="info" data-currvalue="" data-maxvalue="">
-        <h3>{{ report_desc }}</h3>
-        <p>
-          <span class="currValue">{{ usage.curr }}</span> out of 
-          <span class="maxValue">{{ usage.max }}</span> {{ report_desc }}
-        </p>
-          <!--<span class="resource-extend">details</span>-->
-      </div>
-      <div class="bar">
-        <div>
-            <span style="width:{{ usage.perc }}%"></span>
-            <em class="value" 
-                style="left: {{ usage.label_left }}; color: {{ usage.label_color }}">
-                {{ usage.perc }}%
-            </em>
-        </div>
-      </div>
-  </div>
-  <div class="projects">
+  <h2>{{ display_name }}</h2>
+  <div class="resource-projects clearfix">
   </div>
   </li>
   {{/resources}}
@@ -67,8 +56,10 @@
 </script>
 
 <div class="maincol {% block innerpage.class %}{% endblock %}"> 
-    <h2>RESOURCE USAGE</h2>
-    <div id="quota-container">
+    <h2>RESOURCE USAGE 
+        (<a href="#base" class="filter-base">SHOW SYSTEM PROJECT</a><a href="#all" class="filter-all">SHOW ALL PROJECTS</a>)
+    </h2>
+    <div id="quota-container" class='filter-base'>
     </div>
 </div>
 <script>
@@ -80,6 +71,7 @@ $(document).ready(function(){
     'dataType': 'json',
     'container': '#quota-container',
     'quotas': {{ user_quotas|safe }},
+    'project_url_tpl': '{% url project_detail project_uuid="UUID" %}',
     'meta': {
       'resources': {{ resource_catalog|safe }},
       'groups': {{ resource_groups|safe }},

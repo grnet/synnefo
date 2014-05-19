@@ -264,6 +264,13 @@
         },
 
         post_update_vm: function(vm) {
+          if (vm.in_error_state()) {
+            var view = this.ports_views[vm.id];
+            view.toggler.find(".toggler").removeClass("open");
+            view.toggler_content.hide();
+            view.hide(true);
+            view.open = false;
+          }
         },
         
         // vm specific event handlers
@@ -336,7 +343,6 @@
         // called once after each vm has been updated
         update_layout: function() {
             this.update_current_vm();
-            fix_v6_addresses();
         },
 
         update_status_message: function(vm) {

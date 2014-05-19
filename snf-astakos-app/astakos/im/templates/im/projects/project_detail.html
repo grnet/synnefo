@@ -7,13 +7,17 @@
   <h2>
       <em>
       {% block object.status %}
-         PROJECT {{ object.state_display|upper}}
+      PROJECT {{ object.state_display|upper}}
       {% endblock %}
 
       {% if owner_mode or admin_mode %}
       {% block object.modification_status %}
       {% if last_app|is_pending_app %}
+      {% if applicant_mode or admin_mode %}
           - <a href="{% url project_app project.uuid last_app.pk %}">PENDING MODIFICATION</a>
+      {% else %}
+          - PENDING MODIFICATION
+      {% endif %}
       {% endif %}
       {% if last_app|is_denied_app %}
           - <a href="{% url project_app project.uuid last_app.pk %}">DENIED MODIFICATION</a>
@@ -24,7 +28,7 @@
 
     <span>
         {% block project.title %}
-        {{ object.realname|upper }}
+        {{ object|project_name_for_user:request.user }}
         {% endblock %}
     </span>
 
@@ -33,6 +37,7 @@
     {% endblock %}
   </h2>
   {% block inner_project %}
+  {% if not project.is_base %}
   <div class="full-dotted">
     <h3>PROJECT DETAILS</h3>
     <dl class="alt-style">
@@ -42,7 +47,9 @@
       <dt>Homepage url</dt>
       <dd>
         {% if object.homepage %}
-            <a href="{{ object.homepage }}">{{ object.homepage }}</a>
+        <a target="_blank" href="{{ object.homepage }}">
+            {{ object.homepage }}
+        </a>
         {% else %}
             Not set yet
         {% endif %}
@@ -50,7 +57,7 @@
       <dt>Description</dt>
       <dd>{{ object.description }}&nbsp;</dd>
 
-      {% if owner_mode %}
+      {% if owner_mode or admin_mode %}
       <dt>Creation date</dt>
         {% block object.created_at %}
         <dd>{{object.creation_date|date:"d/m/Y"}}&nbsp;</dd>
@@ -75,26 +82,53 @@
       {% endblock page.project_details %}
     </dl>
   </div>
- 
+  {% endif %}
 
-  <div class="full-dotted">
-      <h3>{% block page.resources_heading %}RESOURCES (per user / total){% endblock %}</h3>
+  <div class="full-dotted {% if display_usage %}with-usage{% endif %}">
+
+     <div class="resources-heading clearfix">
+         <h3>{% block page.resources_heading %}RESOURCES{% endblock %}</h3>
+     </div>
+     <div class="resources-heading clearfix">
+         <h3></h3>
+         {% if resources_set.count %}
+         <div class="resource-label">
+            <em>Max per member</em>
+         </div>
+         <div class="resource-label">
+            <em>Total</em>
+         </div>
+         {% if display_usage %}
+         <div class="resource-label">
+            <em>Usage</em>
+         </div>
+         {% endif %}
+         {% endif %}
+     </div>
     {% if resources_set.all %}
-    <dl class="alt-style">
+    <dl class="alt-style resources">
         {% for rp in resources_set.all|sorted_resources %}
           {% if rp.resource.ui_visible %}
           <dt>{{rp.resource.pluralized_display_name}}</dt>
-            <dd>
-                {{ rp.display_member_capacity|default:"(not set)" }}
-                {% if is_modification %}
-                {{ rp|resource_diff:"member" }}
-                {% endif %}
-                /
+          <dd>
+            <div class="resource">
                 {{ rp.display_project_capacity|default:"(not set)" }}
                 {% if is_modification %}
                 {{ rp|resource_diff:"project" }}
                 {% endif %}
-            </dd>
+            </div>
+            <div class="resource fix-col">
+                {{ rp.display_member_capacity|default:"(not set)" }}
+                {% if is_modification %}
+                {{ rp|resource_diff:"member" }}
+                {% endif %}
+            </div>
+            {% if display_usage %}
+            <div class="resource usage fix-col">
+                {{ rp.resource|display_resource_usage_for_project:project }}
+            </div>
+            {% endif %}
+          </dd>
         {% endif %}
       {% empty %}
       <p>No resources</p>
@@ -106,6 +140,7 @@
   </div>
 
   {% block page.members %} 
+  {% if not project.is_base %}
   <div class="full-dotted">
 
     <h3>
@@ -161,6 +196,7 @@
        {% endif %}
 
    </div>
+   {% endif %}
   {% endblock page.members %} 
 
 {% endblock inner_project %}  

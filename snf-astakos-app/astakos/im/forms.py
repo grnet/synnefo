@@ -55,6 +55,9 @@ import re
 
 logger = logging.getLogger(__name__)
 
+BASE_PROJECT_NAME_REGEX = re.compile(
+    r'^base:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-'
+     '[a-f0-9]{12}$')
 DOMAIN_VALUE_REGEX = re.compile(
     r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$',
     re.IGNORECASE)
@@ -588,6 +591,10 @@ app_name_validator = validators.RegexValidator(
     DOMAIN_VALUE_REGEX,
     _(astakos_messages.DOMAIN_VALUE_ERR),
     'invalid')
+base_app_name_validator = validators.RegexValidator(
+    BASE_PROJECT_NAME_REGEX,
+    _(astakos_messages.BASE_PROJECT_NAME_ERR),
+    'invalid')
 app_name_help = _("""
         The project's name should be in a domain format.
         The domain shouldn't neccessarily exist in the real
@@ -641,7 +648,7 @@ leave_policy_label = _("Leaving policy")
 app_member_leave_policy_help = _("""
         Select how new members can leave the project.""")
 
-max_members_label = _("Maximum member count")
+max_members_label = _("Max members")
 max_members_help = _("""
         Specify the maximum number of members this project may have,
         including the owner. Beyond this number, no new members
@@ -705,7 +712,7 @@ class ProjectApplicationForm(forms.ModelForm):
         label=max_members_label,
         help_text=max_members_help,
         min_value=0,
-        required=True)
+        required=False)
 
     class Meta:
         model = ProjectApplication
@@ -723,6 +730,17 @@ class ProjectApplicationForm(forms.ModelForm):
             policies = presentation.PROJECT_MEMBER_JOIN_POLICIES.copy()
             policies.pop(3)
             self.fields['member_join_policy'].choices = policies.iteritems()
+        else:
+            if instance.is_base:
+                name_field = self.fields['name']
+                name_field.validators = [base_app_name_validator]
+
+
+    def clean_limit_on_members_number(self):
+        value = self.cleaned_data.get('limit_on_members_number')
+        if value is None:
+            return units.PRACTICALLY_INFINITE
+        return value
 
     def clean_start_date(self):
         start_date = self.cleaned_data.get('start_date')
@@ -767,13 +785,44 @@ class ProjectApplicationForm(forms.ModelForm):
         append = policies.append
         resource_indexes = {}
         include_diffs = False
+        is_new = self.instance and self.instance.id is None
 
         existing_policies = []
-        if self.instance and self.instance.pk:
+        existing_data = {}
+
+        # normalize to single values dict
+        data = dict()
+        for key, value in self.data.iteritems():
+            data[key] = value
+
+        if not is_new:
+            # User may have emptied some fields. Empty values are not handled
+            # below. Fill data as if user typed "0" in field, but only
+            # for resources which exist in application project and have
+            # non-zero capacity (either for member or project).
             include_diffs = True
             existing_policies = self.instance.resource_set
+            append_groups = set()
+            for policy in existing_policies:
+                cap_set = max(policy.project_capacity, policy.member_capacity)
 
-        for name, value in self.data.iteritems():
+                if not policy.resource.ui_visible:
+                    continue
+
+                rname = policy.resource.name
+                group = policy.resource.group
+                existing_data["%s_p_uplimit" % rname] = "0"
+                existing_data["%s_m_uplimit" % rname] = "0"
+                append_groups.add(group)
+
+            for key, value in existing_data.iteritems():
+                if not key in data or data.get(key, '') == '':
+                    data[key] = value
+            for group in append_groups:
+                data["is_selected_%s" % group] = "1"
+
+        for name, value in data.iteritems():
+
             if not value:
                 continue
 
@@ -790,7 +839,7 @@ class ProjectApplicationForm(forms.ModelForm):
                                                 resource.name)
 
                 # keep only resource limits for selected resource groups
-                if self.data.get('is_selected_%s' % \
+                if data.get('is_selected_%s' % \
                                      resource.group, "0") == "1":
                     if not resource.ui_visible:
                         raise forms.ValidationError("Invalid resource %s" %
@@ -803,7 +852,7 @@ class ProjectApplicationForm(forms.ModelForm):
                         raise forms.ValidationError(m)
 
                     display = units.show(uplimit, resource.unit)
-                    existing = resource_indexes.get(prefix)
+                    handled = resource_indexes.get(prefix)
 
                     diff_data = None
                     if include_diffs:
@@ -838,7 +887,7 @@ class ProjectApplicationForm(forms.ModelForm):
                         if diff_data:
                             d.update(dict(resource=prefix, p_diff=diff_data))
 
-                        if not existing:
+                        if not handled:
                             d.update(dict(resource=prefix, m_uplimit=0,
                                       display_m_uplimit=units.show(0,
                                            resource.unit)))
@@ -849,14 +898,14 @@ class ProjectApplicationForm(forms.ModelForm):
                         if diff_data:
                             d.update(dict(resource=prefix, m_diff=diff_data))
 
-                        if not existing:
+                        if not handled:
                             d.update(dict(resource=prefix, p_uplimit=0,
                                       display_p_uplimit=units.show(0,
                                            resource.unit)))
 
                     if resource_indexes.get(prefix, None) is not None:
                         # already included in policies
-                        existing.update(d)
+                        handled.update(d)
                     else:
                         # keep track of resource dicts
                         append(d)
@@ -898,8 +947,16 @@ class ProjectApplicationForm(forms.ModelForm):
         else:
             data['project_id'] = self.instance.chain.id if not is_new else None
 
-        user_uuid = self.user.uuid if is_new else self.instance.owner.uuid
-        data['owner'] = AstakosUser.objects.get(uuid=user_uuid)
+        owner_uuid = None
+        if self.instance.owner:
+            owner_uuid = self.instance.owner.uuid
+
+        user_uuid = self.user.uuid if is_new else owner_uuid
+        try:
+            object_owner = AstakosUser.objects.get(uuid=user_uuid)
+            data['owner'] = object_owner
+        except AstakosUser.DoesNotExist:
+            pass
 
         exclude_keys = ['owner', 'comments', 'project_id', 'start_date']
 
@@ -925,8 +982,11 @@ class ProjectApplicationForm(forms.ModelForm):
         if data.get('end_date', None):
             data['end_date'] = date_util.isoformat(data.get('end_date'))
 
-        if 'limit_on_members_number' in data:
+        limit = data.get('limit_on_members_number', None)
+        if limit:
             data['max_members'] = data.get('limit_on_members_number')
+        else:
+            data['max_members'] = units.PRACTICALLY_INFINITE
 
         data['request_user'] = self.user
         if 'owner' in data:

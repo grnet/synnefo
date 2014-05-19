@@ -54,6 +54,9 @@ logger = logging.getLogger(__name__)
 DEFAULT_CONTENT_TYPE = None
 _content_type = None
 
+SYSTEM_PROJECT_NAME_TPL = getattr(astakos_settings, "SYSTEM_PROJECT_NAME_TPL",
+                                u"[system] %s")
+
 
 def get_content_type():
     global _content_type
@@ -247,6 +250,12 @@ class Resource(models.Model):
         default = "%s resource" % self.name
         return get_presentation(unicode(self)).get(
             'help_text_input_each', default)
+
+    @property
+    def help_text_input_total(self):
+        default = "%s resource" % self.name
+        key = 'help_text_input_total'
+        return get_presentation(str(self)).get(key, default)
 
     @property
     def is_abbreviation(self):
@@ -460,6 +469,10 @@ class AstakosUser(User):
     @property
     def realname(self):
         return '%s %s' % (self.first_name, self.last_name)
+
+    @property
+    def realname_with_email(self):
+        return '%s (%s)' % (self.realname, self.email)
 
     @property
     def log_display(self):
@@ -1357,11 +1370,7 @@ class ProjectApplication(models.Model):
         return [unicode(rp) for rp in self.projectresourcegrant_set.all()]
 
     def is_modification(self):
-        # if self.state != self.PENDING:
-        #     return False
-        parents = self.chained_applications().filter(id__lt=self.id)
-        parents = parents.filter(state__in=[self.APPROVED])
-        return parents.count() > 0
+        return self.chain.is_initialized()
 
     def chained_applications(self):
         return ProjectApplication.objects.filter(chain=self.chain)
@@ -1493,12 +1502,12 @@ class ProjectResourceGrant(models.Model):
 
     def display_project_diff(self):
         proj, member = self.project_diffs()
-        proj_abs, member_abs = abs(proj), abs(member)
+        proj_abs, member_abs = proj, member
         unit = self.resource.unit
 
         def disp(v):
             sign = u'+' if v >= 0 else u'-'
-            return sign + unicode(units.show(v, unit))
+            return sign + unicode(units.show(abs(v), unit))
         return map(disp, [proj_abs, member_abs])
 
     def __unicode__(self):
@@ -1655,6 +1664,33 @@ class Project(models.Model):
         SUSPENDED: lambda app_state: Project.O_SUSPENDED,
         TERMINATED: lambda app_state: Project.O_TERMINATED,
         }
+
+    def display_name_for_user(self, user):
+        if not self.is_base:
+            return self.realname
+
+        if user.uuid == self.realname.replace("base:", ""):
+            return "System project"
+
+        if user.is_project_admin():
+            return "[system] %s" % (self.display_name(email=True), )
+
+        return self.display_name
+
+    def display_name(self, email=False):
+        if self.is_base:
+            uuid = self.realname.replace("base:", "")
+            try:
+                user = AstakosUser.objects.get(uuid=uuid)
+                if email:
+                    username = "%s %s" % (user.email, user.realname)
+                else:
+                    username = user.realname
+            except AstakosUser.DoesNotExist:
+                username = uuid
+
+            return username
+        return self.realname
 
     @classmethod
     def _overall_state(cls, project_state, app_state):
@@ -1958,8 +1994,8 @@ class ProjectMembership(models.Model):
         ACCEPTED:        _('Accepted member'),
         LEAVE_REQUESTED: _('Requested to leave'),
         USER_SUSPENDED:  _('Suspended member'),
-        REJECTED:        _('Request rejected'),
-        CANCELLED:       _('Request cancelled'),
+        REJECTED:        _('Join request rejected'),
+        CANCELLED:       _('Join request cancelled'),
         REMOVED:         _('Removed member'),
     }
 

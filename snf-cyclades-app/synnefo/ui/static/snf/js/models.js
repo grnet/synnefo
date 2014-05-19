@@ -1142,10 +1142,12 @@
         },
         
         can_start: function(flv, count_current) {
+          if (!this.can_resize()) { return false; }
           var self = this;
           var get_quota = function(key) {
-            if (!self.get('project')) { return false }
-            return self.get('project').quotas.get(key).get('available');
+            if (!self.get('project')) { return false; }
+            var quota = self.get('project').quotas.get(key);
+            return quota && quota.get('available');
           }
           var flavor = flv || this.get_flavor();
           var vm_ram_current = 0, vm_cpu_current = 0;
@@ -1173,7 +1175,7 @@
         },
 
         can_resize: function() {
-          return this.get('status') == 'STOPPED';
+          return this.get('status') == 'STOPPED' && !this.get('project').get('missing');
         },
 
         can_reassign: function() {
@@ -1278,6 +1280,14 @@
             return this.get("pending_action") ? this.get("pending_action") : false;
         },
         
+        active_resources: function() {
+          if (this.get("status") == "STOPPED") {
+            return ["cyclades.vm", "cyclades.disk"]
+          }
+          return ["cyclades.vm", "cyclades.disk", "cyclades.cpu", 
+                  "cyclades.ram"]
+        },
+
         // machine is active
         is_active: function() {
             return models.VM.ACTIVE_STATES.indexOf(this.state()) > -1;
@@ -2546,8 +2556,7 @@
             return value
         },
 
-        get_readable: function(key, active) {
-            var value;
+        get_readable: function(key, active, over_value) {
             if (key == 'available') {
                 value = this.get_available(active);
             } else {
@@ -2555,14 +2564,16 @@
             }
             if (value <= 0) { value = 0 }
             // greater than max js int (assume infinite quota)
-            if (value > Math.pow(2, 53)) { 
+            if (value > Math.pow(2, 53) && over_value !== undefined) { 
               return "Infinite"
             }
 
             if (!this.is_bytes()) {
+              if (over_value !== undefined) { return over_value + "" }
               return value + "";
             }
             
+            value = over_value !== undefined ? over_value : value;
             return snf.util.readablizeBytes(value);
         }
     });
@@ -2692,7 +2703,7 @@
             if (!q) { issues.push(key); return }
             var quota = q.get('available_active');
             if (total) {
-              quota = q.get('available');
+              quota = q.get('total_available');
             }
             if (quota < value) {
               issues.push(key);
@@ -2736,8 +2747,9 @@
         }
     });
     
-    models.ProjectQuotas = models.Quotas.extend({})
-    _.extend(models.ProjectQuotas.prototype, Backbone.FilteredCollection.prototype);
+    models.ProjectQuotas = models.Quotas.extend({});
+    _.extend(models.ProjectQuotas.prototype, 
+             Backbone.FilteredCollection.prototype);
     models.ProjectQuotas.prototype.get = function(key) {
       key = this.project_id + ":" + key;
       return models.ProjectQuotas.__super__.get.call(this, key);
@@ -2768,7 +2780,41 @@
         model: models.Project,
         supportIncUpdates: false,
         user_project_uuid: null,
+        _resolving_missing: [],
+
+        get: function(id) {
+          var project = models.Projects.__super__.get.call(this, id);
+          if (!project) {
+            if (_.contains(this._resolving_missing, id)) { return }
+            this._resolving_missing.push(id);
+            var missing_project = {
+              id: id, 
+              name: '[missing project]',
+              missing: true
+            };
+            this.add(missing_project);
+            this.update_unknown_id(id);
+            return this.get(id);
+          }
+          return project;
+        },
         
+        update_unknown_id: function(id) {
+          this.api_call([this.path, id].join("/") , this.read_method, {
+            _options:{
+              async:false, 
+              skip_api_error:true
+            }}, undefined, 
+          _.bind(function() {}, this), 
+          _.bind(function(project, msg, xhr) {
+            if (!project) { return }
+            var existing = this.get(id);
+            existing.set(project);
+            existing.set({'missing': true});
+            existing.set({'resolved': true});
+          }, this));
+        },
+
         url: function() {
           var args = Array.prototype.splice.call(arguments, 0);
           var url = models.Projects.__super__.url.apply(this, args);
@@ -2781,7 +2827,7 @@
               this.user_project_uuid = project.id;
             }
             if (project.id == synnefo.user.get_username()) {
-              project.name = "User project"
+              project.name = "System project"
             }
           }, this);
           return resp;

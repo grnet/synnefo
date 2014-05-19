@@ -14,6 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
+import operator
+
 from django.utils import simplejson as json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
@@ -277,23 +279,30 @@ def get_projects(request):
 def _get_projects(query, mode="default", request_user=None):
     projects = Project.objects.filter(query)
 
+    filters = [Q()]
     if mode == "member":
         membs = request_user.projectmembership_set.\
             actually_accepted_and_active()
         memb_projects = membs.values_list("project", flat=True)
         is_memb = Q(id__in=memb_projects)
-        projects = projects.filter(is_memb)
-    elif mode == "default":
+        filters.append(is_memb)
+    elif mode in ["related", "default"]:
+        membs = request_user.projectmembership_set.any_accepted()
+        memb_projects = membs.values_list("project", flat=True)
+        is_memb = Q(id__in=memb_projects)
+        owned = Q(owner=request_user)
         if not request_user.is_project_admin():
-            membs = request_user.projectmembership_set.any_accepted()
-            memb_projects = membs.values_list("project", flat=True)
-            is_memb = Q(id__in=memb_projects)
-            owned = Q(owner=request_user)
-            active = (Q(state=Project.NORMAL) &
-                      Q(private=False))
-            projects = projects.filter(is_memb | owned | active)
+            filters.append(is_memb)
+            filters.append(owned)
+    elif mode in ["active", "default"]:
+        active = (Q(state=Project.NORMAL) & Q(private=False))
+        if not request_user.is_project_admin():
+            filters.append(active)
     else:
         raise faults.BadRequest("Unrecognized mode '%s'." % mode)
+
+    q = reduce(operator.or_, filters)
+    projects = projects.filter(q)
     return projects.select_related("last_application")
 
 

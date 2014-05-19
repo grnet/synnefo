@@ -346,6 +346,14 @@
             var self = this;
             var el = this.vm(vm);
 
+            var project = vm.get('project');
+            if (project) {
+              project.bind('change', function() {
+                el.find(".project-name").text(
+                  _.truncate(project.get('name'), 20));
+              }, this);
+            };
+
             // hidden feature, double click on indicators to display 
             // vm diagnostics.
             el.find(".indicators").bind("dblclick", function(){
@@ -413,6 +421,10 @@
         update_toggles_visibility: function(vm) {
           if (vm.is_building() || vm.in_error_state() || vm.get("status") == "DESTROY") {
             this.vm(vm).find(".cont-toggler-wrapper.ips").addClass("disabled");
+            var info_view = this.info_views && this.info_views[vm.id];
+            if (info_view && info_view.ips_el) {
+              info_view.ips_el.hide();
+            }
           } else {
             this.vm(vm).find(".cont-toggler-wrapper.ips").removeClass("disabled");
           }
@@ -610,6 +622,16 @@
           el.addClass("disabled-visible")
         },
 
+        set_can_resize: function() {
+          var el = $(this.el).find("a.action-resize").parent();
+          el.removeClass("disabled-visible");
+        },
+
+        set_cannot_resize: function() {
+          var el = $(this.el).find("a.action-resize").parent();
+          el.addClass("disabled-visible");
+        },
+
         // update the actions layout, depending on the selected actions
         update_layout: function() {
             
@@ -618,6 +640,11 @@
                 this.set_can_start();
               } else {
                 this.set_cannot_start();
+              }
+              if (this.vm.can_resize()) {
+                this.set_can_resize();
+              } else {
+                this.set_cannot_resize();
               }
             }
 
@@ -677,6 +704,8 @@
                 this.view.hide_indicator(this.vm);
             }
                 
+            var vm_view = this.view.vm(this.vm);
+            vm_view.removeClass("action-pending");
             // update action link styles and shit
             _.each(models.VM.ACTIONS, function(action, index) {
                 if (actions.indexOf(action) > -1) {
@@ -694,6 +723,7 @@
                         this.action_confirm(action).show();
                         this.action(action).removeClass("disabled");
                         this.action_link(action).addClass("selected");
+                        vm_view.addClass("action-pending");
                     } else {
                         this.action_confirm_cont(action).hide();
                         this.action_confirm(action).hide();
@@ -766,11 +796,13 @@
                       action == "start" && 
                       !self.vm.can_start() && 
                       !vm.in_error_state()) {
+                        if (!vm.can_resize()) { return }
                         ui.main.vm_resize_view.show_with_warning(self.vm);
                         return;
                     }
 
                     if (action == "resize") {
+                      if (!vm.can_resize()) { return }
                       ui.main.vm_resize_view.show(self.vm);
                       return;
                     } else if (action == "reassign") {

@@ -450,7 +450,8 @@
       bind_custom_view_handlers: function(view, model) {},
       unbind_custom_view_handlers: function(view, model) {},
       post_remove_model_view: function() {},
-
+    
+      post_update_models: function() {},
       update_models: function(m) {
         this.check_empty();
         this.collection.each(function(model, index) {
@@ -472,6 +473,7 @@
             this.remove_model(model);
           }
         })
+        this.post_update_models();
       }
     });
 
@@ -479,8 +481,10 @@
       allow_multiple: false,
       initialize: function(options) {
         views.ext.CollectionSelectView.__super__.initialize.apply(this, [options]);
-        this.allow_multiple = options.allow_multiple != undefined ? options.allow_multiple : this.allow_multiple;
-        this.current = options.current != undefined ? options.current : undefined;
+        this.allow_multiple = options.allow_multiple != undefined ? 
+                                options.allow_multiple : this.allow_multiple;
+        this.current = options.current != undefined ? 
+                          options.current : undefined;
       },
 
       select: function(model) {

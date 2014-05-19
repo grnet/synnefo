@@ -17,7 +17,7 @@
       
     {% csrf_token %}
 
-    <fieldset class="with-info" id="top">
+    <fieldset class="with-info {% if form.instance.is_base %}hidden{% endif %}" id="top">
         <legend>
             {% block form_details_title %}1. PROJECT DETAILS{% endblock %}
             {% block form_details_description %}
@@ -46,7 +46,7 @@
 
     </fieldset>
 
-    <fieldset class="with-info">
+    <fieldset class="with-info {% if object.is_base %}hidden{% endif %}">
     	<legend>
     		2. MEMBERSHIP OPTIONS
 			<span class="info"> 

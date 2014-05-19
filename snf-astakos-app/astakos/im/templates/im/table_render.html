@@ -4,10 +4,22 @@
 {% if table.page %}
 <div class="table-container">
 {% endif %}
+
 {% block table %}
+
 <table{% if table.attrs %} {{ table.attrs.as_html }}{% endif %}>
     {% if table.caption %}
-    <caption>{{ table.caption }}</caption>
+    <caption>{{ table.caption }}
+    
+{% if table.links %}(
+{% for link in table.links %}
+<a href="{{ link.url }}#{{ table.attrs.id }}">
+    {{ link.label }}
+</a>{% if not forloop.last %} / {% endif %}
+{% endfor %}
+)
+{% endif %}
+    </caption>
     {% endif %}
     {% nospaceless %}
     {% block table.thead %}

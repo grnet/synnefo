@@ -29,7 +29,7 @@ for review. Please make sure the following reflect exactly your request.
 	            <input type="hidden" name="{{k}}"  id="{{'id_'|add:k}}" value="{{v}}">
 	        {% endif %}
 	    {% endfor %}
-		<div class="full-dotted">
+        <div class="full-dotted {% if project.is_base %}hidden{% endif %}">
             <h3>{% block page.project_details.heading %}PROJECT DETAILS{% endblock %}</h3>
 			<p class="restricted">{{ form_data.desc }}</p>
             <dl class="alt-style">
@@ -51,7 +51,7 @@ for review. Please make sure the following reflect exactly your request.
                 {% endblock %}
 			</dl>
 		</div>
-		<div class="full-dotted">
+        <div class="full-dotted {% if form.instance.is_base %}hidden{% endif %}">
 			 <h3>MEMBERSHIP OPTIONS</h3>
 			 <dl class="alt-style">			    
                 {% block page.project_membership_details %}
@@ -60,36 +60,52 @@ for review. Please make sure the following reflect exactly your request.
 			 	<dt>Member leave policy</dt>
 			 	<dd>{{ leave_policies|lookup:form_data.member_leave_policy|title }}</dd>
 			 	<dt>Total number of members</dt>
-			 	<dd>{{ form_data.limit_on_members_number }}</dd>
+			 	<dd>{{ form_data.limit_on_members_number|inf_display }}</dd>
                 {% endblock %}
 			 </dl>
 		 </div>
 		 <div class="full-dotted">
-            <h3>RESOURCES (per user / total)</h3>
-            <dl class="alt-style">
+             <div class="resources-heading clearfix">
+                 <h3>{% block page.resources_heading %}RESOURCES{% endblock %}</h3>
+             </div>
+             <div class="resources-heading clearfix">
+               <h3></h3>
+                 {% if form.resource_policies %}
+                 <div class="resource-label">
+                    <em>Max per member</em>
+                 </div>
+                 <div class="resource-label">
+                    <em>Total</em>
+                 </div>
+                 {% endif %}
+             </div>
+            <dl class="alt-style resources">
                 {% for rp in form.resource_policies %}
                     <dt>
-                        {{rp.pluralized_display_name}}
+                        {{ rp.pluralized_display_name }}
                     </dt>
-                    <dd>
+                    <dd class="clearfix">
+                    <div class="resource total">
                     {{ rp.display_m_uplimit|default:"(not set)" }} 
                     {% if rp.m_diff %}
                     {% with rp.m_diff as diff %}
                         <span class="policy-diff 
                             {% if diff.increased %}green{% else %}red{% endif %}"
-                            >({{diff.operator}}{{ diff.diff_display }})</span>
+                            >({{ diff.operator }}{{ diff.diff_display }})</span>
                     {% endwith %}
                     {% endif %}
-                    / 
+                    </div>
+                    <div class="per-user resource">
                     {{ rp.display_p_uplimit|default:"(not set)" }}
                     {% if rp.p_diff %}
                     {% with rp.p_diff as diff %}
                         <span class="policy-diff 
                             {% if diff.increased %}green{% else %}red{% endif %}">
-                            ({{diff.operator}}{{ diff.diff_display }})
+                            ({{ diff.operator }}{{ diff.diff_display }})
                         </span>
                     {% endwith %}
                     {% endif %}
+                    </div>
                     </dd>
                 {% empty %}
                     No resources
@@ -103,10 +119,9 @@ for review. Please make sure the following reflect exactly your request.
 		 
 		<input type="hidden" name="user"  id="id_user" value="{{user.id}}">
 		<div class="form-row submit">
-            <input type="submit" value="BACK" class="submit lt" 
+            <input type="submit" value="BACK" class="submit lt"
                 onclick='this.form.action="?edit=1&verify=0";'>
-            <input type="submit" value="SUBMIT" class="submit" >
-            <a href="{% url project_list %}" class="rt-link">CANCEL</a>
+                <input type="submit" value="SUBMIT" class="submit">
         </div>
 	</form>
     

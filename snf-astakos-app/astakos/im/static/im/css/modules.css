@@ -51,6 +51,7 @@ img.right						                { margin:0 0 1em 1em; float:right;}
 .container .navigation ul li.active a           { color:#F89A1C; }					
 
 .dotted                                         { background:url(../images/double-dots.jpg) no-repeat bottom center; padding:0 0 30px; margin-bottom:30px;}
+.full-dotted.hidden								{ display: none; }
 .full-dotted									{ background:url(../images/dots.jpg) repeat-x top; margin-top:20px; padding-top:20px; }
 .full-dotted:first-child						{ background:none; padding-top:0; margin-top:0; }
 .two-cols .rt                                   { float:right; width:400px;}
@@ -264,10 +265,18 @@ table.my-projects tr th:hover 					{ cursor: pointer; text-decoration: underline
 .content a.submit								{ margin:0; display:inline-block; margin:10px 0 ;  height:auto; min-width:100px; text-align:center;}
 table.alt-style tr:nth-child(2n) td				{ background:#F2F2F2 } 
 dl.alt-style dt									{ width:30%; float:left; color:#3582AC; font-weight:normal;}
-dl.alt-style dt:nth-child(2n)					{ background:black; }
-dl.alt-style dd									{ overflow:hidden; position:relative;}
+dl.alt-style dd .resource 					    { width:50%; float: left; }
+dl.alt-style dd									{ overflow:hidden; position:relative; margin-left: 0; }
+.policy-diff                                    { font-weight: bold; }
+.policy-diff.green                              { color: green; }
+.policy-diff.gray                               { color: #444; }
+.policy-diff.red                                { color: red; }
+.policy-diff.details span                       { color: #aaa; }
+.policy-diff.details                            { display: block; padding: 0; margin: 0; font-size: 0.8em; font-style: italic; }
+dl.resources dd                                 { width: 60%; }
 .projects										{ padding-bottom:30px; position:relative; }
 .projects h2 span								{ color:#3582AC;}
+.projects h2 span.prefix						{}
 .projects h2 em									{ float:right; }
 .projects h3									{ font-size:1.154em; }
 .projects h3 .rt-action 						{ float:right;}
@@ -284,6 +293,14 @@ dl.alt-style dd									{ overflow:hidden; position:relative;}
 .projects form.members 							{ margin-top:20px;}
 .projects form.members label 					{ padding-top:0; text-transform: uppercase;}
 .my-projects .owner                             { display: none;}
+.resources-heading h3, .resources-heading .resource-label { width: 30%; float: left;}
+/* usage */
+.with-usage .resources-heading h3, 
+.with-usage .resources-heading .resource-label  { width: 25%; float: left;}
+.with-usage dl.alt-style dt					    { width: 25%; float:left; color:#3582AC; font-weight:normal;}
+.with-usage dl.resources dd                     { width: 75%; }
+.with-usage dl.alt-style dd .resource 			{ width: 33%; float: left; }
+.with-usage dl.alt-style dd .resource.fix-col   { width: 32%; padding-left: 4px; }
 
 /* new faq-userguide styles */
 
@@ -414,6 +431,7 @@ table.alt-style tr td.info-td div				{ padding:15px; border:1px dashed #000 }
 
 /* quotas-form  */
 
+.quotas-form fieldset.hidden    				{ display: none; }
 .quotas-form fieldset							{ background:url(../images/dots.jpg) repeat-x scroll center bottom transparent; margin-bottom:3em; padding-bottom:5em; position:relative; }
 .quotas-form fieldset#icons						{ padding-bottom:3em; }
 .quotas-form legend								{ color:#55B577; font-size:1.308em;   position:relative; }
@@ -504,28 +522,31 @@ form input[type="text"]:-ms-input-placeholder,
 /* stats */
 .stats ul										{ margin:0; padding:0; list-style:none outside none; }
 .stats ul li 									{ margin:0 0 1em 0; padding:0 0 1em 0; list-style:none outside none; background:url(../images/stats-line.jpg) repeat-x left bottom}
+.stats h2                                       { margin-left: 124px; margin-bottom: 1em; padding-top: 8px;}
 .stats .bar										{ padding: 0;   float:left; }
 .stats .bar div									{ width:340px; height:30px; border:1px solid #000; margin-top:20px; overflow:hidden;}
-.stats .bar span								{ text-align:right; display:block; float:left; height:100%; position: relative; overflow: visible; }
+.stats .bar span.project						{ background-color: #999999 !important; border-left: 1px solid #777777; margin-right: -1px;}
+.stats .bar { overflow: visible; }
+.stats .bar i.warn-msg.visible,
+.stats .bar i.warn.visible                      { display: block; }
+.stats .bar i.warn-msg                          { left: 381px !important; top: 8px !important; z-index: 101}
+.stats .bar i.warn-msg.hovered                  { display: block; }
+.stats .bar i.warn { display: none; top: 7px; right: -30px; background:url(../images/symbols.png) no-repeat -58px -3px; z-index:101; width:21px; height:21px; overflow:hidden; position:absolute; }
+.stats .bar span.member,
+.stats .bar span.project                        { text-align:right; display:block; float:left; height:100%; position: relative; overflow: visible; }
 .stats .bar span.hovered						{  }
 .stats .bar span.value							{ background-color: transparent !important; }
 .stats .bar span em								{ color:#000; }
 .stats .bar span.hovered em 					{ color:#fff; }
-.stats .bar em { 
-    font-style:normal; 
-    color:#222;  
-    line-height:30px; 
-    font-size:1.231em; 
-    padding-left:10px; 
-     
-}
-
+.stats .bar em                                  { font-style:normal; color:#222; line-height: 27px; font-size: 1.231em; padding-left: 10px; }
+.stats .resource-projects                       { float: left; }
 .stats .bar span + em							{ position: absolute; }
 .stats .bar 									{ position: relative; }
 .stats .resource-bar.red .bar span				{ background:#ef4f54; }
 .stats .resource-bar.yellow .bar span			{ background:#f6921e; }
 .stats .resource-bar.green .bar span		    { background:#55b577; }
-.stats .img-wrap								{ float:left; width:100px; background:url(../images/statistics_icons.png) no-repeat center center; padding:30px 0; }
+.stats .img-wrap								{ height: 100px; }
+.stats .img-wrap								{ float:left; width:100px; background:url(../images/statistics_icons.png) no-repeat center center; padding: 0 0; }
 .stats .info									{ margin:0 25px ; width:320px; float:left;  }
 .stats .info p									{ color:#999; margin:0; }
 .stats .info h3									{ font-size:1.231em; color:#222222 }
@@ -546,8 +567,10 @@ form input[type="text"]:-ms-input-placeholder,
 .stats .red .img-wrap							{ background-position: 15px 7px; }
 .stats .yellow .img-wrap						{ background-position: -124px 7px; }
 .stats .green .img-wrap							{ background-position: -263px 7px; }
+.stats.filter-base 
+    div.resource-bar.no-base-project            { display: none}
 .stats .resource-bar.project                    { margin-top: 1em; }
-.stats .resource-bar.project                    { margin-left: 100px; font-size: 0.8em;}
+.stats .resource-bar.project                    { font-size: 0.8em;}
 .stats .resource-bar.project h3                 { margin-bottom: 0.5em; }
 .stats .resource-bar.project .bar div			{ width:340px; height:25px; border:1px solid #000; margin-top:5px; overflow:hidden; font-size: 0.8em}
 .projects .editable form textarea				{ width:70%; height:50px; max-width:70%; width:270px; height:120px;}

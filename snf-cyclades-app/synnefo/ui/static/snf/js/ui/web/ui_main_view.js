@@ -839,13 +839,6 @@
             
             // display loading message
             this.show_loading_view();
-            // sync load initial data
-            this.update_status("images", 0);
-            storage.images.fetch({refresh:true, update:false, success: function(){
-                self.update_status("images", 1);
-                self.check_status();
-                self.load_nets_and_vms();
-            }});
             this.update_status("flavors", 0);
             storage.flavors.fetch({refresh:true, update:false, success:function(){
                 self.update_status("flavors", 1);
@@ -855,16 +848,23 @@
             this.update_status("resources", 0);
             storage.resources.fetch({refresh:true, update:false, success: function(){
                 self.update_status("resources", 1);
-                self.update_status("quotas", 0);
+                self.update_status("projects", 0);
                 self.check_status();
-                storage.quotas.fetch({refresh:true, update:true, success: function() {
-                  self.update_status("quotas", 1);
-                  self.update_status("projects", 0);
+                storage.projects.fetch({refresh:true, update:true, success: function() {
+                  self.update_status("projects", 1);
+                  self.update_status("quotas", 0);
                   self.check_status();
-                  storage.projects.fetch({refresh:true, update:true, success: function() {
-                    self.update_status("projects", 1);
-                    self.update_status("layout", 0);
+                  storage.quotas.fetch({refresh:true, update:true, success: function() {
+                    self.update_status("quotas", 1);
                     self.check_status();
+                    // sync load initial data
+                    self.update_status("images", 0);
+                    storage.images.fetch({refresh:true, update:false, success: function(){
+                        self.update_status("images", 1);
+                        self.check_status();
+                        self.load_nets_and_vms();
+                        self.update_status("layout", 0);
+                    }});
                   }});
                 }})
             }})

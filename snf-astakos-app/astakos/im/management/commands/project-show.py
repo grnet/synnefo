@@ -29,12 +29,12 @@ class Command(SynnefoCommand):
     help = "Show details for project <id>"
 
     option_list = SynnefoCommand.option_list + (
-        make_option('--pending',
+        make_option('--pending-app',
                     action='store_true',
                     dest='pending',
                     default=False,
                     help=("For a given project, show also pending "
-                          "modification, if any")
+                          "application, if any")
                     ),
         make_option('--members',
                     action='store_true',
@@ -79,9 +79,9 @@ class Command(SynnefoCommand):
                     self.stdout.write("\n")
                     self.print_app(app)
 
-    def pprint_dict(self, d, vertical=True):
+    def pprint_dict(self, d, vertical=True, title=None):
         utils.pprint_table(self.stdout, [d.values()], d.keys(),
-                           self.output_format, vertical=vertical)
+                           self.output_format, vertical=vertical, title=title)
 
     def pprint_table(self, tbl, labels, title=None):
         utils.pprint_table(self.stdout, tbl, labels,
@@ -89,7 +89,7 @@ class Command(SynnefoCommand):
 
     def print_app(self, app):
         app_info = app_fields(app)
-        self.pprint_dict(app_info)
+        self.pprint_dict(app_info, title="Pending Application")
         self.print_app_resources(app)
 
     def print_project(self, project, show_quota=False):
@@ -172,10 +172,15 @@ def app_fields(app):
 
 
 def project_fields(project):
+    app = project.last_application
+    pending_app = (app.id if app and app.state == app.PENDING
+                   else None)
+
     d = OrderedDict([
         ('project id', project.uuid),
         ('name', project.realname),
         ('status', project.state_display()),
+        ('pending_app', pending_app),
         ('owner', project.owner),
         ('homepage', project.homepage),
         ('description', project.description),

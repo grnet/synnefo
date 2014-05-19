@@ -312,7 +312,9 @@ class Command(SynnefoCommand):
             if not force:
                 self.stdout.write("About to delete user %s. " % user.uuid)
                 self.confirm()
-            user.delete()
+
+            # user gets deleted too
+            user.base_project.delete()
 
         # Change users email address
         newemail = options.get('set-email', None)

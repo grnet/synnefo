@@ -75,7 +75,8 @@ def sort_vms():
     return f
 
 
-def handle_stop_active(viol_id, resource, vms, diff, actions, options=None):
+def handle_stop_active(viol_id, resource, vms, diff, actions, remains,
+                       options=None):
     vm_actions = actions["vm"]
     vms = [vm for vm in vms if vm.operstate in ["STARTED", "BUILD", "ERROR"]]
     vms = sorted(vms, key=sort_vms(), reverse=True)
@@ -92,7 +93,8 @@ def has_extra_disks(volumes):
     return bool([vol for vol in volumes if vol.index != 0])
 
 
-def handle_destroy(viol_id, resource, vms, diff, actions, options=None):
+def handle_destroy(viol_id, resource, vms, diff, actions, remains,
+                   options=None):
     cascade_remove = options.get("cascade_remove", False)
     vm_actions = actions["vm"]
     if "volume" not in actions:
@@ -112,6 +114,8 @@ def handle_destroy(viol_id, resource, vms, diff, actions, options=None):
         for volume in volumes:
             volume_actions[volume.id] = volume_remove_action(
                 viol_id, volume, machine=vm)
+    if diff > 0:
+        remains[resource].append(viol_id)
 
 
 def volume_remove_action(viol_id, volume, machine=None):
@@ -151,7 +155,8 @@ def _is_system_volume(volume):
     return volume.index == 0
 
 
-def handle_volume(viol_id, resource, volumes, diff, actions, options=None):
+def handle_volume(viol_id, resource, volumes, diff, actions, remains,
+                  options=None):
     if "vm" not in actions:
         actions["vm"] = OrderedDict()
     vm_actions = actions["vm"]
@@ -196,6 +201,8 @@ def handle_volume(viol_id, resource, volumes, diff, actions, options=None):
             if vol.id in volume_ids and vol.id not in counted:
                 diff -= CHANGE[resource](vol)
                 counted.add(vol.id)
+    if diff > 0:
+        remains[resource].append(viol_id)
 
 
 def _state_after_action(vm, action):
@@ -224,7 +231,8 @@ def sort_ips(vm_actions):
     return f
 
 
-def handle_floating_ip(viol_id, resource, ips, diff, actions, options=None):
+def handle_floating_ip(viol_id, resource, ips, diff, actions, remains,
+                       options=None):
     vm_actions = actions.get("vm", {})
     ip_actions = actions["floating_ip"]
     ips = sorted(ips, key=sort_ips(vm_actions), reverse=True)

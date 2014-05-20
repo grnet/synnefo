@@ -19,18 +19,18 @@ Synnefo-wide
   * Projects are now viewed as a source of finite resources. A member can
     reserve a part of these resources up to a specified limit.
 
-  * Base quota are now offered through a special purpose user-specific base
+  * Base quota are now offered through a special purpose user-specific system
     project, identified with the same UUID as the user.
 
   * Each actual resource (Cyclades VM, network, floating IP and Pithos
     container) is now also associated with a project besides the owner.
 
-  * In resource creation, project defaults to the user-specific base
+  * In resource creation, project defaults to the user-specific system
     project, if not specified otherwise. It is also possible to change the
     project assignment of an existing resource.
 
   * All existing resources have been assigned to the respective
-    user-specific base projects.
+    user-specific system projects.
 
 * Logging mechanism for Synnefo management commands
 
@@ -65,8 +65,8 @@ Astakos
     activation, resources missing are automatically completed using a
     skeleton.
 
-  * Field `uplimit' of registed resources is exposed as `base_default' and
-    provide the skeleton for user-specific base projects. A new field
+  * Field `uplimit' of registed resources is exposed as `system_default' and
+    provide the skeleton for user-specific system projects. A new field
     `project_default' is introduce to act as a skeleton for conventional
     projects.
 

@@ -326,17 +326,17 @@ Default quota
 `````````````
 
 Upon user creation, a special purpose user-specific project is automatically
-created in order to hold the base quota provided by the system. These *base*
+created in order to hold the quota provided by the system. These *system*
 projects are identified with the same UUID as the user.
 
 To inspect the quota that future users will receive by default through their
-base projects, check column ``base_default`` in::
+base projects, check column ``system_default`` in::
 
    # snf-manage resource-list
 
-You can modify the default base quota limit for all future users with::
+You can modify the default system quota limit for all future users with::
 
-   # snf-manage resource-modify <resource_name> --base-default <value>
+   # snf-manage resource-modify <resource_name> --system-default <value>
 
 Grant extra quota through projects
 ``````````````````````````````````
@@ -392,10 +392,10 @@ One can change the quota limits of an initialized project with::
 
    # snf-manage project-modify <project-uuid> --limit <resource_name> <member_limit> <project_limit>
 
-One can set base quota for all accepted users (that is, set limits for base
-project), with possible exceptions, with::
+One can set system quota for all accepted users (that is, set limits for system
+projects), with possible exceptions, with::
 
-   # snf-manage project-modify --all-base-projects --exclude <uuid1>,<uuid2> --limit ...
+   # snf-manage project-modify --all-system-projects --exclude <uuid1>,<uuid2> --limit ...
 
 Quota for a given resource are reported for all projects that the user is
 member in with::

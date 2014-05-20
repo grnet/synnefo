@@ -912,7 +912,7 @@ resource.
 
 .. code-block:: console
 
-    # snf-manage resource-modify cyclades.vm --base-default 2
+    # snf-manage resource-modify cyclades.vm --system-default 2
 
 Setting Resource Visibility
 ---------------------------

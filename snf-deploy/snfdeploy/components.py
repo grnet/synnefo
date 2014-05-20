@@ -930,7 +930,7 @@ class Astakos(base.Component):
     def set_astakos_default_quota(self):
         cmd = "snf-manage resource-modify"
         return [
-            "%s --base-default 2 astakos.pending_app" % cmd,
+            "%s --system-default 2 astakos.pending_app" % cmd,
             "%s --project-default 0 astakos.pending_app" % cmd,
             ]
 
@@ -938,14 +938,14 @@ class Astakos(base.Component):
     def set_cyclades_default_quota(self):
         cmd = "snf-manage resource-modify"
         return [
-            "%s --base-default 4 cyclades.vm" % cmd,
-            "%s --base-default 40G cyclades.disk" % cmd,
-            "%s --base-default 16G cyclades.total_ram" % cmd,
-            "%s --base-default 8G cyclades.ram" % cmd,
-            "%s --base-default 32 cyclades.total_cpu" % cmd,
-            "%s --base-default 16 cyclades.cpu" % cmd,
-            "%s --base-default 4 cyclades.network.private" % cmd,
-            "%s --base-default 4 cyclades.floating_ip" % cmd,
+            "%s --system-default 4 cyclades.vm" % cmd,
+            "%s --system-default 40G cyclades.disk" % cmd,
+            "%s --system-default 16G cyclades.total_ram" % cmd,
+            "%s --system-default 8G cyclades.ram" % cmd,
+            "%s --system-default 32 cyclades.total_cpu" % cmd,
+            "%s --system-default 16 cyclades.cpu" % cmd,
+            "%s --system-default 4 cyclades.network.private" % cmd,
+            "%s --system-default 4 cyclades.floating_ip" % cmd,
             "%s --project-default 0 cyclades.vm" % cmd,
             "%s --project-default 0 cyclades.disk" % cmd,
             "%s --project-default inf cyclades.total_ram" % cmd,
@@ -960,13 +960,13 @@ class Astakos(base.Component):
     def set_pithos_default_quota(self):
         cmd = "snf-manage resource-modify"
         return [
-            "%s --base-default 40G pithos.diskspace" % cmd,
+            "%s --system-default 40G pithos.diskspace" % cmd,
             "%s --project-default 0 pithos.diskspace" % cmd,
             ]
 
     @base.run_cmds
     def modify_all_quota(self):
-        cmd = "snf-manage project-modify --all-base-projects --limit"
+        cmd = "snf-manage project-modify --all-system-projects --limit"
         return [
             "%s pithos.diskspace 40G 40G" % cmd,
             "%s astakos.pending_app 2 2" % cmd,

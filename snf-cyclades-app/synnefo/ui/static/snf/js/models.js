@@ -2823,7 +2823,7 @@
 
         parse: function(resp) {
           _.each(resp, function(project){
-            if (project.base_project) {
+            if (project.system_project) {
               this.user_project_uuid = project.id;
             }
             if (project.id == synnefo.user.get_username()) {
@@ -2838,7 +2838,7 @@
         },
 
         comparator: function(project) {
-            if (project.get('base_project')) { return -100 }
+            if (project.get('system_project')) { return -100 }
             return project.get('name');
         }
     });

@@ -140,7 +140,7 @@ def get_projects_details(projects, request_user=None):
             "leave_policy": leave_policy,
             "max_members": project.limit_on_members_number,
             "private": project.private,
-            "base_project": project.is_base,
+            "system_project": project.is_base,
             "resources": resources,
             }
 

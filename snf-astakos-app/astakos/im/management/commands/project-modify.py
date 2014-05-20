@@ -95,25 +95,25 @@ def make_options():
 
 
 class Command(SynnefoCommand):
-    args = "<project id> (or --all-base-projects)"
+    args = "<project id> (or --all-system-projects)"
     help = "Modify an already initialized project"
     option_list = SynnefoCommand.option_list + make_options() + (
-        make_option('--all-base-projects',
+        make_option('--all-system-projects',
                     action='store_true',
                     default=False,
-                    help="Modify in bulk all initialized base projects"),
+                    help="Modify in bulk all initialized system projects"),
         make_option('--exclude',
-                    help=("If `--all-base-projects' is given, exclude projects"
+                    help=("If `--all-system-projects' is given, exclude projects"
                           " given as a list of uuids: uuid1,uuid2,uuid3")),
         )
 
     def check_args(self, args, all_base, exclude):
         if all_base and args or not all_base and len(args) != 1:
-            m = "Please provide a project ID or --all-base-projects"
+            m = "Please provide a project ID or --all-system-projects"
             raise CommandError(m)
         if not all_base and exclude:
             m = ("Option --exclude is meaningful only combined with "
-                 " --all-base-projects.")
+                 " --all-system-projects.")
             raise CommandError(m)
 
     def mk_all_base_filter(self, all_base, exclude):
@@ -125,7 +125,7 @@ class Command(SynnefoCommand):
 
     @transaction.commit_on_success
     def handle(self, *args, **options):
-        all_base = options["all_base_projects"]
+        all_base = options["all_system_projects"]
         exclude = options["exclude"]
         self.check_args(args, all_base, exclude)
 

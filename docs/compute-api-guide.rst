@@ -528,7 +528,7 @@ project     Project assignment   ✔        **✘**
   should rather be defined
 
 * **project** (optional) is the project where the VM is to be assigned. If not
-  given, user's base project is assumed (identified with the same uuid as the
+  given, user's system project is assumed (identified with the same uuid as the
   user).
 
 * **personality** (optional) is a list of personality injections. A personality

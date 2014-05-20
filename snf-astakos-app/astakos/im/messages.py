@@ -203,7 +203,7 @@ NOT_ALLOWED_NEXT_PARAM = 'Not allowed next parameter.'
 MISSING_KEY_PARAMETER = 'Missing key parameter.'
 INVALID_KEY_PARAMETER = 'Invalid key.'
 DOMAIN_VALUE_ERR = 'Enter a valid domain.'
-BASE_PROJECT_NAME_ERR = 'Enter a valid base project name.'
+BASE_PROJECT_NAME_ERR = 'Enter a valid system project name.'
 QH_SYNC_ERROR = 'Failed to get synchronized with quotaholder.'
 UNIQUE_PROJECT_NAME_CONSTRAIN_ERR = (
     'The project name (as specified in its application\'s definition) must '
@@ -211,7 +211,7 @@ UNIQUE_PROJECT_NAME_CONSTRAIN_ERR = (
 NOT_ALIVE_PROJECT = 'Project %s is not alive.'
 NOT_SUSPENDED_PROJECT = 'Project %s is not suspended.'
 NOT_TERMINATED_PROJECT = 'Project %s is not terminated.'
-BASE_NO_TERMINATE = "Cannot terminate: %s is a base project."
+BASE_NO_TERMINATE = "Cannot terminate: %s is a system project."
 NOT_ALLOWED = 'You do not have the permissions to perform this action.'
 MEMBER_NUMBER_LIMIT_REACHED = (
     'You have reached the maximum number of members for this Project.')
@@ -261,7 +261,7 @@ APPLICATION_DISMISSED = "Project application has been dismissed."
 REACHED_PENDING_APPLICATION_LIMIT = ("You have reached the maximum number "
                                      "of pending project applications: %s.")
 UNINITIALIZED_NO_MODIFY = "Cannot modify: project %s is not initialized."
-BASE_NO_MODIFY_FIELDS = "Cannot modify field(s) '%s' of base projects."
+BASE_NO_MODIFY_FIELDS = "Cannot modify field(s) '%s' of system projects."
 
 PENDING_APPLICATION_LIMIT_ADD = \
     ("You are not allowed to create a new project "

@@ -116,24 +116,24 @@ are now viewed as a source of finite resources, instead of a means to
 accumulate quota. They are the single source of resources, and quota are now
 managed at a project/member level.
 
-System-provided base quota are now handled through special purpose
-user-specific *base projects*, identified with the same UUID as the user.
+System-provided quota are now handled through special purpose
+user-specific *system projects*, identified with the same UUID as the user.
 These have been created during the database migration process. They are
 included in the project listing with::
 
-  snf-manage project-list --base-projects
+  snf-manage project-list --system-projects
 
 All projects must specify quota limits for all registered resources. Default
 values have been set for all resources, listed with::
 
   astakos-host$ snf-manage resource-list
 
-Column `base_default` (previously known as `default_quota`) provides the
-skeleton for the quota limits of user-specific base projects. Column
-`project_default` is new and acts as skeleton for `applied` (non-base)
+Column `system_default` (previously known as `default_quota`) provides the
+skeleton for the quota limits of user-specific system projects. Column
+`project_default` is new and acts as skeleton for `applied` (non-system)
 projects (i.e., for resources not specified in a project application).
-Project defaults have been initialized during migration based on the base
-default values: they have been set to `inf` if `base_default` is also `inf`,
+Project defaults have been initialized during migration based on the system
+default values: they have been set to `inf` if `system_default` is also `inf`,
 otherwise set to zero.
 
 This default, affecting all future projects, can be modified with::
@@ -154,8 +154,8 @@ order to change a project's resource limits, run::
 With the new mechanism, when a new resource is allocated (e.g., a VM or a
 Pithos container is created), it is also associated with a project besides
 its owner. The migration process has associated existing resources with
-their owner's base project. Note that users who had made use of projects to
-increase their quota may end up overlimit on some resources of their base
+their owner's system project. Note that users who had made use of projects to
+increase their quota may end up overlimit on some resources of their system
 projects and will need to *reassign* some of their reserved resources to
 another project in order to overcome this restriction.
 

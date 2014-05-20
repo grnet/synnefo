@@ -689,7 +689,7 @@ def make_base_project(username):
         owner=None,
         realname="tmp",
         homepage="",
-        description=("base project for user " + username),
+        description=("system project for user " + username),
         end_date=(datetime.now() + relativedelta(years=100)),
         member_join_policy=CLOSED_POLICY,
         member_leave_policy=CLOSED_POLICY,
@@ -829,7 +829,7 @@ def submit_application(owner=None,
         if [x for x in [owner, name, homepage, description] if x is not None]:
             raise ProjectConflict(
                 "Cannot modify fields 'owner', 'name', 'homepage', and "
-                "'description' of a base project.")
+                "'description' of a system project.")
 
     application = ProjectApplication.objects.create(
         applicant=request_user,

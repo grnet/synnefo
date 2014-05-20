@@ -45,7 +45,7 @@ class Migration(DataMigration):
             owner=None,
             realname=("base:" + user.uuid),
             homepage="",
-            description=("base project for user " + user.username),
+            description=("system project for user " + user.username),
             end_date=(datetime.datetime.now() + relativedelta(years=100)),
             member_join_policy=CLOSED_POLICY,
             member_leave_policy=CLOSED_POLICY,

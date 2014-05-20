@@ -2263,7 +2263,7 @@ skipped.
 
 .. code-block:: console
 
-   node1 # snf-manage quota --sync
+   node1 # snf-manage quota-verify --sync
    node1 # snf-manage reconcile-resources-astakos --fix
    node2 # snf-manage reconcile-resources-pithos --fix
    node1 # snf-manage reconcile-resources-cyclades --fix

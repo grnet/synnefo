@@ -33,19 +33,10 @@ activation_backend = activation_backends.get_backend()
 
 
 class Command(SynnefoCommand):
-    args = "<user ID> (or --all)"
+    args = "<user ID>"
     help = "Modify a user's attributes"
 
     option_list = SynnefoCommand.option_list + (
-        make_option('--all',
-                    action='store_true',
-                    default=False,
-                    help=("Operate on all users. Currently only setting "
-                          "base quota is supported in this mode. Can be "
-                          "combined with `--exclude'.")),
-        make_option('--exclude',
-                    help=("If `--all' is given, exclude users given as a "
-                          "list of uuids: uuid1,uuid2,uuid3")),
         make_option('--invitations',
                     dest='invitations',
                     metavar='NUM',
@@ -138,18 +129,8 @@ class Command(SynnefoCommand):
 
     @transaction.commit_on_success
     def handle(self, *args, **options):
-        if options['all']:
-            if not args:
-                return self.handle_all_users(*args, **options)
-            else:
-                raise CommandError("Please provide a user ID or --all")
-
         if len(args) != 1:
-            raise CommandError("Please provide a user ID or --all")
-
-        if options["exclude"] is not None:
-            m = "Option --exclude is meaningful only combined with --all."
-            raise CommandError(m)
+            raise CommandError("Please provide a user ID")
 
         if args[0].isdigit():
             try:
@@ -342,6 +323,3 @@ class Command(SynnefoCommand):
         if string.lower(response) not in ['y', 'yes']:
             self.stderr.write("Aborted.\n")
             exit()
-
-    def handle_all_users(self, *args, **options):
-        pass

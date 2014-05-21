@@ -1,4 +1,4 @@
-var mydata;
+var mydata; // temp
 
 (function($, Django){
 
@@ -12,6 +12,8 @@ $(function(){
 
 	var availableActions = {};
 	var allowedActions= {};
+
+	/* Actionbar */
 	$('.actionbar button').each(function() {
 		availableActions[$(this).data('action')] = true;
 	});
@@ -19,9 +21,6 @@ $(function(){
 	for(var prop in availableActions) {
 		allowedActions[prop] = true;
 	}
-
-
-	/* Actionbar */
 
 	/* If the sidebar link is not disabled show the corresponding modal */
 	$('.actionbar button').click(function(e) {
@@ -35,6 +34,17 @@ $(function(){
 		}
 	});
 
+
+	/* Table */
+
+	/* Currently not in use */
+	/* Sort a colum with checkboxes */
+	/* Create an array with the values of all the checkboxes in a column */
+	$.fn.dataTableExt.afnSortData['dom-checkbox'] = function  (oSettings, iColumn) {
+		return $.map( oSettings.oApi._fnGetTrNodes(oSettings), function (tr, i) {
+			return $('td:eq('+iColumn+') input', tr).prop('checked') ? '0' : '1';
+		} );
+	};
 
 	var url = $('#table-items-total').data("url");
 	var serverside = Boolean($('#table-items-total').data("server-side"));
@@ -177,33 +187,31 @@ $(function(){
 				enableActions(newItem.actions)
 		}
 		updateCounter('.selected-num');
-		updateToggleAllSelect()
+		updateToggleAllSelect();
+	};
 
+	function updateCounter(counterDOM) {
+		var $counter = $(counterDOM);
+		$counter.text(selected.items.length);
+	};
 
-	}
+	function summaryTemplate(data) {
+		var listTemplate = '<dt>{key}:</dt><dd>{value}</dd>';
+		var list = '';
+		var listItem = listTemplate.replace('{key}', prop).replace('{value}',data[prop]);
+		var html;
 
-function updateCounter(counterDOM) {
-	var $counter = $(counterDOM);
-	$counter.text(selected.items.length);
-}
-
-function summaryTemplate(data) {
-	var listTemplate = '<dt>{key}:</dt><dd>{value}</dd>';
-	var list = '';
-	var listItem = listTemplate.replace('{key}', prop).replace('{value}',data[prop]);
-	var html;
-
-	for(var prop in data) {
-		if(prop !== "details_url") {
-			if(data[prop].visible) {
-				list += listTemplate.replace('{key}', data[prop].display_name).replace('{value}',data[prop].value);
+		for(var prop in data) {
+			if(prop !== "details_url") {
+				if(data[prop].visible) {
+					list += listTemplate.replace('{key}', data[prop].display_name).replace('{value}',data[prop].value);
+				}
 			}
 		}
-	}
 
-	html = '<a href="#" class="summary-expand expand-area"><span class="snf-icon snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
-	return html;
-};
+		html = '<a href="#" class="summary-expand expand-area"><span class="snf-icon snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
+		return html;
+	};
 
 	function clickDetails(row) {
 		$(row).find('a.details-link').click(function(e) {
@@ -291,7 +299,6 @@ function summaryTemplate(data) {
 
 	/* It enables the btn (link) of the corresponding allowed action */
 	function enableActions(actionsObj, removeItemFlag) {
-
 		var itemActionsL =selected.items.length;
 		var $actionBar = $('.actionbar');
 		var itemActions = {};
@@ -343,61 +350,65 @@ function summaryTemplate(data) {
 		updateToggleAllSelect();
 	};
 
-	 $('.dataTables_filter input[type=search]').keypress(function(e) {
-	 // if space or enter is typed do nothing
-	 if(e.which !== '32' && e.which !== '13') {
-		 // $(tableDomID) = $(this).closest('.dataTables_wrapper').find('table').attr('id')
-		 resetTable(tableDomID);
-	 }
- });
-
-//  ***********************************************************************************************
-
-	/* Currently not in use */
-	/* Extend String Prototype */
-	String.prototype.toDash = function(){
-		return this.replace(/([A-Z])/g, function($1){
-			return "-"+$1.toLowerCase();
-		});
-	};
-
-
-	/* Functions */
-
-	/* General */
-
-	/* Sets sidebar's position fixed */ 
-	/* subnav-fixed is added/removed from processScroll() */    
-/*  function fixedMimeSubnav() {
-		if($('.actionbar').hasClass('subnav-fixed'))
-			$('.info').addClass('info-fixed').removeClass('info');
-		else
-			$('.info').removeClass('info-fixed').addClass('info');
-	};
-
-*/
-	
-	/* Currently not in use */
-	/* The parameter string has the following form: */
-	/* ",str1,str2,...,strN," */
-	/* The formDataListAttr function returns an array: [str1, str2, ..., strN]   */
-	function formDataListAttr(strList) {
-
-		var array = strList.substring(1, strList.length-1).split(',');
-		var arrayL = array.length;
-		var obj = {};
-		for(var i=0; i<arrayL; i++) {
-			obj[array[i]] =true;
+	$('.dataTables_filter input[type=search]').keypress(function(e) {
+		// if space or enter is typed do nothing
+		if(e.which !== '32' && e.which !== '13') {
+			// $(tableDomID) = $(this).closest('.dataTables_wrapper').find('table').attr('id')
+			resetTable(tableDomID);
 		}
-		return obj;
+	});
+
+	 /* Select-all button */
+
+	$('.select-all').click(function() {
+		toggleVisSelected(tableDomID, $(this).hasClass('select'));
+	});
+
+	/* select-all / deselect-all */
+	function toggleVisSelected(tableDomID, selectFlag) {
+		lastClicked = null;
+		prevClicked = null;
+		if(selectFlag) {
+			$(tableDomID).find('tbody tr:not(.selected)').each(function() { // temp : shouldn't have a func that calls a named func
+				selectRow(this);
+			});
+		}
+		else {
+			$(tableDomID).find('tbody tr.selected').each(function() { // temp : shouldn't have a func that calls a named func
+				selectRow(this);
+			});
+		}
 	};
 
+	/* Checks how many rows are selected and adjusts the classes and
+	the text of the select-qll btn */
+	function updateToggleAllSelect() {
 
+		var $toggleAll = $('.select-all');
+		$tr = $(tableDomID).find('tbody tr');
 
+		if($tr.length > 1) {
+			var allSelected = true
+			$tr.each(function() {
+				allSelected = allSelected && $(this).hasClass('selected');
+			});
+			if($toggleAll.hasClass('select') && allSelected) {
+				$toggleAll.addClass('deselect').removeClass('select');
+				$toggleAll.text('Deselect All')
+			}
+			else if(!($toggleAll.hasClass('select')) && !allSelected) {
+				$toggleAll.addClass('select').removeClass('deselect');
+				$toggleAll.text('Select All')
+			}
+		}
+		else {
+			$toggleAll.addClass('select').removeClass('deselect')
+			$toggleAll.text('Select All')
+		}
+	};
 
 
 	/* Modals */
-
 
 	function showError(modal, errorSign) {
 		var $modal = $(modal);
@@ -588,57 +599,8 @@ function summaryTemplate(data) {
 		$num.html(selectedNum);
 	});
 
-	/* When the user scrolls check if sidebar needs to get fixed position */
-	/*$(window).scroll(function() {
-		fixedMimeSubnav();
-	});*/
 
-
-	/* Table */
-
-	/* Currently not in use */  
-	/* Sort a colum with checkboxes */
-	/* Create an array with the values of all the checkboxes in a column */
-	$.fn.dataTableExt.afnSortData['dom-checkbox'] = function  (oSettings, iColumn) {
-		return $.map( oSettings.oApi._fnGetTrNodes(oSettings), function (tr, i) {
-			return $('td:eq('+iColumn+') input', tr).prop('checked') ? '0' : '1';
-		} );
-	}
-
-
-//  /* Select-all button */
-
-	$('.select-all').click(function() {
-		toggleVisSelected(tableDomID, $(this).hasClass('select'));
-	});
-
-
-// remember to call it when a row is clicked
-	function updateToggleAllSelect() {
-
-		var $toggleAll = $('.select-all'); // ***
-		$tr = $(tableDomID).find('tbody tr');
-
-		if($tr.length > 1) {
-			var allSelected = true
-			$tr.each(function() {
-				allSelected = allSelected && $(this).hasClass('selected');
-			});
-			if($toggleAll.hasClass('select') && allSelected) {
-				$toggleAll.addClass('deselect').removeClass('select');
-				$toggleAll.text('Deselect All')
-			}
-			else if(!($toggleAll.hasClass('select')) && !allSelected) {
-				$toggleAll.addClass('select').removeClass('deselect');
-				$toggleAll.text('Select All')
-			}
-		}
-		else {
-			$toggleAll.addClass('select').removeClass('deselect')
-			$toggleAll.text('Select All')
-		}
-	};
-
+	/* General */
 
 	var curPath = window.location.pathname;
 	$('.nav-main li').each(function () {
@@ -650,24 +612,48 @@ function summaryTemplate(data) {
 		}
 	});
 
-	/* Head checkbox */
 
-	/* Toggles the checked property of all the checkboxes in the body of the table */
-	function toggleVisSelected(tableDomID, selectFlag) {
-		lastClicked = null;
-		prevClicked = null;
-		if(selectFlag) {
-			$(tableDomID).find('tbody tr:not(.selected)').each(function() { // temp : shouldn't have a func that calls a named func
-				selectRow(this);
-			});
-		}
-		else {
-			$(tableDomID).find('tbody tr.selected').each(function() { // temp : shouldn't have a func that calls a named func
-				selectRow(this);
-			});
-		}
+	/* When the user scrolls check if sidebar needs to get fixed position */
+	/*$(window).scroll(function() {
+		fixedMimeSubnav();
+	});*/
+
+
+	/* Sets sidebar's position fixed */
+	/* subnav-fixed is added/removed from processScroll() */
+/*  function fixedMimeSubnav() {
+		if($('.actionbar').hasClass('subnav-fixed'))
+			$('.info').addClass('info-fixed').removeClass('info');
+		else
+			$('.info').removeClass('info-fixed').addClass('info');
 	};
 
+*/
+
+	/* Currently not in use */
+	/* The parameter string has the following form: */
+	/* ",str1,str2,...,strN," */
+	/* The formDataListAttr function returns an array: [str1, str2, ..., strN]   */
+	function formDataListAttr(strList) {
+
+		var array = strList.substring(1, strList.length-1).split(',');
+		var arrayL = array.length;
+		var obj = {};
+		for(var i=0; i<arrayL; i++) {
+			obj[array[i]] =true;
+		}
+		return obj;
+	};
+
+	/* Currently not in use */
+	/* Extend String Prototype */
+	String.prototype.toDash = function(){
+		return this.replace(/([A-Z])/g, function($1){
+			return "-"+$1.toLowerCase();
+		});
+	};
+
+
+
 });
-//  ***********************************************************************************************
 }(window.jQuery, window.Django));

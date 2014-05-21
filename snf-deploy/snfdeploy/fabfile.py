@@ -26,41 +26,77 @@ from fabric.api import env, execute, parallel
 from snfdeploy import context
 from snfdeploy import constants
 from snfdeploy import roles
+import copy
+
+
+def with_ctx(fn):
+    def wrapper(*args):
+        ctx = context.Context()
+        return fn(*args, ctx=ctx)
+    return wrapper
+
+
+def with_cluster(fn):
+    def wrapper(old_ctx, *args):
+        ctx = copy.deepcopy(old_ctx)
+        ctx.update(cluster=env.host)
+        return fn(ctx, *args)
+    return wrapper
+
+
+def with_node(fn):
+    def wrapper(old_ctx, *args):
+        ctx = copy.deepcopy(old_ctx)
+        ctx.update(node=env.host)
+        return fn(ctx, *args)
+    return wrapper
 
 
 def setup_env(args):
     env.component = args.component
     env.method = args.method
-    env.ctx = context.Context()
+    env.role = args.role
 
+
+# Helper methods that are invoked via fabric's execute
 
 @parallel
-def setup_vmc():
-    env.ctx.update(node=env.host)
-    VMC = roles.get(constants.VMC, env.ctx)
+@with_node
+def _setup_vmc(ctx):
+    VMC = roles.get(constants.VMC, ctx)
     VMC.setup()
 
 
-def setup_master():
-    env.ctx.update(node=env.host)
-    _setup_role(constants.MASTER)
+@with_node
+def _setup_master(ctx):
+    MASTER = roles.get(constants.MASTER, ctx)
+    MASTER.setup()
 
 
-@parallel
-def setup_cluster():
-    env.ctx.update(cluster=env.host)
-    execute(setup_master, hosts=env.ctx.masters)
-    execute(setup_vmc, hosts=env.ctx.vmcs)
-
-
-def _setup_role(role):
-    env.ctx.update(node=env.host)
-    ROLE = roles.get(role, env.ctx)
+@with_node
+def _setup_role(ctx, role):
+    ROLE = roles.get(role, ctx)
     ROLE.setup()
 
 
-def setup_role(role):
-    execute(_setup_role, role, hosts=context.get(role))
+@parallel
+@with_cluster
+def _setup_cluster(ctx):
+    execute(_setup_master, ctx, hosts=ctx.masters)
+    execute(_setup_vmc, ctx, hosts=ctx.vmcs)
+
+
+# Helper method that get a context snapshot and
+# invoke fabric's execute with proper host argument
+
+@with_ctx
+def setup_role(role, ctx=None):
+    execute(_setup_role, ctx, role, hosts=ctx.get(role))
+
+
+@with_ctx
+def setup_cluster(ctx=None):
+    execute(_setup_cluster, ctx, hosts=ctx.clusters)
 
 
 def setup_synnefo():
@@ -74,7 +110,7 @@ def setup_synnefo():
     setup_role(constants.CYCLADES)
     setup_role(constants.CMS)
 
-    execute(setup_cluster, hosts=env.ctx.clusters)
+    setup_cluster()
 
     setup_role(constants.STATS)
     setup_role(constants.CLIENT)
@@ -83,27 +119,29 @@ def setup_synnefo():
 def setup_ganeti():
     setup_role(constants.NS)
     setup_role(constants.NFS)
-    execute(setup_cluster, hosts=env.ctx.clusters)
+    setup_cluster()
 
 
-def _setup_qa():
-    env.ctx.update(cluster=env.host)
+@with_cluster
+def _setup_qa(ctx):
     setup_role(constants.NS)
     setup_role(constants.NFS)
     setup_cluster()
     setup_role(constants.DEV)
 
 
-def setup_qa():
-    execute(_setup_qa, hosts=env.ctx.clusters)
+@with_ctx
+def setup_qa(ctx=None):
+    execute(_setup_qa, ctx, hosts=ctx.clusters)
 
 
-def setup():
+@with_ctx
+def setup(ctx=None):
     if env.component:
         target = env.component
     else:
-        target = env.ctx.role
-    C = roles.get(target, env.ctx)
+        target = env.role
+    C = roles.get(target, ctx)
     if env.method:
         fn = getattr(C, env.method)
         fn()

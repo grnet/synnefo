@@ -1,0 +1,78 @@
+# ganeti-instance-debootstrap defaults file
+
+# if you want to change from the default of installing debian stable
+# on the next instance, customize this file before the instance
+# installation
+
+# PROXY: if non-null, use this as an http(s)-proxy in order to speed
+# up non-cached installs or provide internet access if not directly
+# possible; not that if not set, debootstrap might still use a
+# system-wide proxy setting if it is exported in the ganeti-noded
+# daemon environment (but the node daemon environment is cleaned up
+# and not exported starting with Ganeti 2.5)
+# PROXY="http://proxy.example.com:3128/"
+
+# MIRROR: do not customize MIRROR if you want to be able to install
+# both debian and ubuntu, since they have different defaults; or
+# customize it before each install
+# MIRROR="http://ftp.debian.org/debian"
+MIRROR="http://ftp.gr.debian.org/debian"
+
+# ARCH: define ARCH only if you want a different architecture than the
+# current one; the known use case is to install a 32-bit instance on a
+# 64-bit node; choose either "i386" or "amd64":
+# ARCH="i386"
+ARCH="amd64"
+
+# SUITE: change suite to any of the ones supported by deboostrap; this
+# could be unstable, etch, etc.:
+# SUITE="wheezy"
+SUITE="wheezy"
+
+# EXTRA_PKGS: depending on the suite and architecture you are using, different
+# extra packages are needed for different hypervisors. For example:
+#
+# Xen, for squeeze i386:
+# EXTRA_PKGS="linux-image-xen-686,libc6-xen"
+# Xen, for wheezy i386:
+# EXTRA_PKGS="libc6-xen"
+# Xen, for squeeze amd64:
+# EXTRA_PKGS="linux-image-xen-amd64"
+# KVM, for squeeze/wheezy i386:
+# EXTRA_PKGS="acpi-support-base,console-tools,udev,linux-image-686"
+# KVM, for squeeze/wheezy amd64:
+# EXTRA_PKGS="acpi-support-base,console-tools,udev,linux-image-amd64"
+#
+EXTRA_PKGS="acpi-support-base,console-tools,udev,linux-image-amd64"
+
+# CUSTOMIZE_DIR: a directory containing scripts to customize the installation.
+# The scripts are executed using run-parts
+# By default /etc/ganeti/instance-debootstrap/hooks
+# CUSTOMIZE_DIR="/etc/ganeti/instance-debootstrap/hooks"
+
+# GENERATE_CACHE: if set to yes (the default), create new cache files;
+# any other value will disable the generation of cache files (but they
+# will still be used if they exist)
+GENERATE_CACHE="yes"
+
+# CLEAN_CACHE: should be set to the number of days after which to
+# clean the cache; the default is 14 (two weeks); to disable cache
+# cleaning, set it to an empty value ("")
+CLEAN_CACHE=""
+
+# PARTITION_STYLE: whether and how the target device should be partitioned.
+# Allowed values:
+# 'none': just format the device, but don't partition it
+# 'msdos': install an msdos partition table on the device, with a single
+#          partition on it
+# (more styles may be added in the future)
+# The default is "msdos" from ganeti 2.0 onwards, but none if installing under
+# Ganeti 1.2 (os api version 5)
+# PARTITION_STYLE="none"
+
+# PARTITION_ALIGNMENT: the alignment of the partitions in sectors
+# (512B); this defaults to 1MiB to give grub enough space for
+# embedding and for better alignment with modern media (HDDs and
+# SSDs), feel free to increase it if your media has even bigger
+# allocation blocks
+# PARTITION_ALIGNMENT=2048

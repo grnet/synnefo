@@ -23,6 +23,9 @@ A daemon to monitor the Ganeti job queue and publish job progress
 and Ganeti VM state notifications to the ganeti exchange
 """
 
+OLD_GANETI_PATH = "/usr/share/ganeti"
+NEW_GANETI_PATH = "/etc/ganeti/share"
+
 import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
@@ -31,7 +34,22 @@ sys.path.append(path)
 # a private module under '/usr/share/ganeti'. Add this directory to path
 # in order to be able to import ganeti. Also, add it to the start of path
 # to allow conflicts with Ganeti RAPI client.
-sys.path.insert(0, "/usr/share/ganeti")
+# Since Ganeti 2.10 the python module is installed (linked) under
+# /etc/ganeti/share
+# Favor latest ganeti if found
+if os.path.exists(NEW_GANETI_PATH):
+  GANETI_PATH = NEW_GANETI_PATH
+else:
+  GANETI_PATH = OLD_GANETI_PATH
+
+sys.path.insert(0, GANETI_PATH)
+
+try:
+    import ganeti
+except ImportError:
+    raise Exception("Cannot import ganeti module. Please check if installed"
+                    " under %s for 2.8 or under %s for 2.10 or later." %
+                    (OLD_GANETI_PATH, NEW_GANETI_PATH))
 
 import json
 import logging

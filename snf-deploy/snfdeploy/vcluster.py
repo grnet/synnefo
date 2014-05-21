@@ -50,7 +50,7 @@ def create_dnsmasq_files(ctx):
     optsfile = open(out + "/dhcp-optsfile", "w")
     conffile = open(out + "/conf-file", "w")
 
-    for node in ctx.nodes:
+    for node in ctx.all_nodes:
         info = config.get_info(node=node)
         # serve ip and name to nodes
         hostsfile.write("%s,%s,%s,2m\n" % (info.mac, info.ip, info.name))
@@ -149,36 +149,36 @@ def network():
 
 
 def image():
-    # FIXME: Create a clean wheezy image and use it for vcluster
-    if config.os == "ubuntu":
-        url = config.ubuntu_image_url
-    else:
-        url = config.squeeze_image_url
+    # FIXME: Create a wheezy image with debootstrap and use it for vcluster
+    url = config.image_url
 
-    disk0 = "{0}/{1}.disk0".format(config.image_dir, config.os)
-    disk1 = "{0}/{1}.disk1".format(config.image_dir, config.os)
+    disk0 = "{0}/vcluster.disk0".format(config.vcluster_dir)
+    disk1 = "{0}/vcluster.disk1".format(config.vcluster_dir)
+
+    create_dir(config.vcluster_dir, False)
 
     if url and not os.path.exists(disk0):
         cmd = "wget {0} -O {1}".format(url, disk0)
         os.system(cmd)
 
     if config.create_extra_disk and not os.path.exists(disk1):
+        disk1_base = os.path.basename(disk1)
         if config.lvg:
             cmd = """
-lvcreate -L30G -n{0}.disk1 {1}
-""".format(config.os, config.lvg)
+lvcreate -L30G -n{0} {1}
+""".format(disk1_base, config.lvg)
             os.system(cmd)
             cmd = """
-ln -s /dev/{0}/{1}.disk1 {2}
-""".format(config.lvg, config.os, disk1)
+ln -s /dev/{0}/{1} {2}
+""".format(config.lvg, disk1_base, disk1)
             os.system(cmd)
         else:
-            cmd = "dd if=/dev/zero of={0} bs=10M count=3000".format(disk1)
+            cmd = "truncate -s 30G {0}".format(disk1)
             os.system(cmd)
 
 
 def cluster(ctx):
-    for node in ctx.nodes:
+    for node in ctx.all_nodes:
         node_info = config.get_info(node=node)
         _launch_vm(node_info.name, node_info.mac)
 
@@ -198,15 +198,15 @@ def _launch_vm(name, mac):
         graphics = "-nographic"
 
     disks = """ \
--drive file={0}/{1}.disk0,format=raw,if=none,id=drive0,snapshot=on \
+-drive file={0}/vcluster.disk0,format=raw,if=none,id=drive0,snapshot=on \
 -device virtio-blk-pci,drive=drive0,id=virtio-blk-pci.0 \
-""".format(config.image_dir, config.os)
+""".format(config.vcluster_dir)
 
     if config.create_extra_disk:
         disks += """ \
--drive file={0}/{1}.disk1,format=raw,if=none,id=drive1,snapshot=on \
+-drive file={0}/vcluster.disk1,format=raw,if=none,id=drive1,snapshot=on \
 -device virtio-blk-pci,drive=drive1,id=virtio-blk-pci.1 \
-""".format(config.image_dir, config.os)
+""".format(config.vcluster_dir)
 
     ifup = config.lib_dir + "/ifup"
     nics = """ \
@@ -240,7 +240,7 @@ def launch():
     ctx = context.Context()
     assert len(ctx.clusters) == 1
     assert ctx.cluster
-    assert ctx.nodes
+    assert ctx.all_nodes
     image()
     network()
     create_dnsmasq_files(ctx)

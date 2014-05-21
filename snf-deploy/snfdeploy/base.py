@@ -156,20 +156,18 @@ class ComponentRunner(FabricRunner):
 
     def _check_conflicts(self):
         for c in self.conflicts:
-            if status.check(self.node.ip, c):
+            if status.check(c(self.ctx)):
                 raise BaseException("Conflicting Component: %s " %
-                                    self.__class__.__name__)
+                                    c.__name__)
 
     def _check_status(self):
-        if status.check(self.node.ip, self.__class__):
+        if status.check(self):
             raise BaseException("Component already istalled: %s " %
                                 self.__class__.__name__)
 
     def _update_status(self):
-        status.update(self.node.ip, self.__class__, constants.VALUE_OK)
+        status.update(self)
         self._debug(constants.VALUE_OK)
-        if not config.dry_run:
-            status.write()
 
     def _debug(self, msg):
         debug(str(self.ctx), "[%s]" % self.__class__.__name__, msg)
@@ -188,7 +186,12 @@ class ComponentRunner(FabricRunner):
                     self._debug(" * Package %s found in %s..."
                                 % (package, config.package_dir))
                     self.put(deb, "/tmp/%s" % f)
-                    self.run("dpkg -i /tmp/%s || " % f + apt_get + "-f")
+                    cmd = """
+dpkg -i /tmp/{0}
+{2} -f
+apt-mark hold {1}
+""".format(f, package, apt_get)
+                    self.run(cmd)
                     self.run("rm /tmp/%s" % f)
                     return
 
@@ -236,8 +239,8 @@ class ComponentRunner(FabricRunner):
             c(ctx=ctx).setup()
 
     def setup(self):
+        self._check_and_install_required()
         try:
-            self._check_and_install_required()
             self._check_status()
             self._check_conflicts()
         except BaseException as e:

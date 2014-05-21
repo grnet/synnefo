@@ -70,6 +70,12 @@ stack.
 
 If the following ends without errors, you have successfully installed Synnefo.
 
+NOTE: All the passwords and secrets used during installation are
+hardcoded in `/etc/snf-deploy/synnefo.conf`. You can change them before
+starting the installation process. If you want snf-deploy create random
+passwords use the ``--pass-gen`` option. The generated passwords will be
+kept in the `/var/lib/snf-deploy/snf_deploy_status` file.
+
 .. _access-synnefo:
 
 Accessing the Synnefo installation

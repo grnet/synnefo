@@ -14,8 +14,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
+import datetime
 from snfdeploy import constants
 from snfdeploy import config
+from snfdeploy import status
 
 context = sys.modules[__name__]
 
@@ -23,8 +25,9 @@ context = sys.modules[__name__]
 class Context(object):
 
     def __repr__(self):
-        ret = "[%s %s] " % (self.node_info.ip, self.node_info.name)
-        ret += "[%s %s %s %s]" % \
+        ret = "[%s]" %  datetime.datetime.now().strftime("%H:%M:%S")
+        ret += " [%s %s]" % (self.node_info.ip, self.node_info.name)
+        ret += " [%s %s %s %s]" % \
             (self.node, self.role, self.setup, self.cluster)
         return ret
 
@@ -45,29 +48,29 @@ class Context(object):
 
     def update(self, node=None, role=None, cluster=None, setup=None):
         if node:
-            self.node = node
+            context.node = self.node = node
         if role:
-            self.role = role
+            context.role = self.role = role
         if cluster:
-            self.cluster = cluster
+            context.cluster = self.cluster = cluster
         if setup:
-            self.setup = setup
+            context.setup = self.setup = setup
         self.update_info()
 
     def update_info(self):
-        self.ns = self.get(constants.NS)
-        self.nfs = self.get(constants.NFS)
-        self.mq = self.get(constants.MQ)
-        self.db = self.get(constants.DB)
-        self.astakos = self.get(constants.ASTAKOS)
-        self.cyclades = self.get(constants.CYCLADES)
-        self.pithos = self.get(constants.PITHOS)
-        self.stats = self.get(constants.STATS)
-        self.cms = self.get(constants.CMS)
-        self.router = self.get(constants.ROUTER)
-        self.client = self.get(constants.CLIENT)
+        self.ns = self._get(constants.NS)
+        self.nfs = self._get(constants.NFS)
+        self.mq = self._get(constants.MQ)
+        self.db = self._get(constants.DB)
+        self.astakos = self._get(constants.ASTAKOS)
+        self.cyclades = self._get(constants.CYCLADES)
+        self.pithos = self._get(constants.PITHOS)
+        self.stats = self._get(constants.STATS)
+        self.cms = self._get(constants.CMS)
+        self.router = self._get(constants.ROUTER)
+        self.client = self._get(constants.CLIENT)
 
-    def get(self, role):
+    def _get(self, role):
         return config.get_single_node_role_info(self.setup, role)
 
     @property
@@ -97,12 +100,23 @@ class Context(object):
         return config.get(self.cluster, constants.VMC)
 
     @property
-    def nodes(self):
+    def cluster_nodes(self):
         return list(set(self.masters + self.vmcs))
 
+    @property
+    def all_nodes(self):
+        return config.find_all_nodes(self.setup)
 
-def get(role):
-    return config.get(context.setup, role)
+    @property
+    def all_ips(self):
+        l = lambda x: config.get_node_info(x).ip
+        return [l(n) for n in self.all_nodes]
+
+    def get(self, role):
+        try:
+            return config.get(self.setup, role)
+        except:
+            return config.get(self.cluster, role)
 
 
 def backup():
@@ -119,8 +133,24 @@ def restore():
     context.setup = context.setup_backup
 
 
+def get_passwd(target):
+    if not config.passgen:
+        return getattr(config, target)
+    return status.get_passwd(context.setup, target)
+
+
+def update_passwords():
+    if config.passgen:
+        for p in constants.ALL_PASSWRD_AND_SECRETS:
+            passwd = status.get_passwd(context.setup, p)
+            setattr(config, p, passwd)
+    else:
+        print "Using passwords found in configuration files"
+
+
 def init(args):
     context.node = args.node
     context.role = args.role
     context.cluster = args.cluster
     context.setup = args.setup
+    update_passwords()

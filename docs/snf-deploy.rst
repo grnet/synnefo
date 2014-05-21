@@ -126,8 +126,14 @@ ConfigParser files under ``/etc/snf-deploy``.
 ``setups.conf``
 ---------------
 
-This file includes all coarse grain info for our available setups. Each
-section refers to a generic setup (synnefo, qa, etc) or a specific
+This file includes all coarse grain info for our available setups.
+
+We assing each of the roles described in the :ref:`introduction
+<snf-deploy>` to specific targets. The targets can be either nodes
+defined at ``nodes.conf`` or clusters defined at ``ganeti.conf``. Note
+that we refer to targets with their ID (node1, node2, ganeti1, etc).
+
+Each section refers to a generic setup (synnefo, qa, etc) or a specific
 ganeti cluster (ganeti1, ganeti2, etc.) Each section includes the
 corresponding role mappings. For example if the nameserver should be
 installed in node1, the NFS on node2, etc. Each generic setup has also
@@ -175,11 +181,6 @@ FIXME: example file here
 
 This file reflects the way Synnefo will be deployed on the nodes defined at
 ``nodes.conf``.
-
-The important section here is the roles. In this file we assing each of the
-roles described in the :ref:`introduction <snf-deploy>` to a specific node. The
-node is one of the nodes defined at ``nodes.conf``. Note that we refer to nodes
-with their ID (node1, node2, etc).
 
 Here we also define all credentials related to users needed by the various
 Synnefo services (database, RAPI, RabbitMQ) and the credentials of a test

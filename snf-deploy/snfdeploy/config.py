@@ -101,6 +101,18 @@ def get_node_info(node):
     return FQDN(**info)
 
 
+def find_all_nodes(setup):
+    ret = []
+    for op in config.setups.options(setup):
+        for tgt in get(setup, op):
+            if config.nodes.has_section(tgt):
+                ret.append(tgt)
+            elif config.ganeti.has_section(tgt):
+                ret += find_all_nodes(tgt)
+
+    return list(set(ret))
+
+
 def init(args):
     config.confdir = args.confdir
     config.autoconf = args.autoconf
@@ -127,8 +139,14 @@ def init(args):
     config.mem = args.mem
     config.vnc = args.vnc
     config.smp = args.smp
+    config.passgen = args.passgen
 
     config.jsonfile = "/tmp/service.json"
+    config.ganeti_dir = os.path.join(config.shared_dir, "ganeti")
+    config.images_dir = os.path.join(config.shared_dir, "images")
+    config.pithos_dir = os.path.join(config.shared_dir, "pithos")
+    config.archip_dir = os.path.join(config.shared_dir, "archip")
+    config.src_dir = os.path.join(config.shared_dir, "src")
 
     if args.disable_colors:
         disable_color()

@@ -640,9 +640,9 @@ td:last-child dl {
   display: none;
   margin-bottom: 0;
   margin-top: 20px;
-  /* dd {
-   display: inline-block;
-   } */
+ /* dd {
+	display: inline-block;
+	} */
 }
 
 /* line 339, ../sass/extra.scss */
@@ -652,7 +652,7 @@ td:last-child dl {
 }
 
 /* a[disabled] {
-    color: #999999;
+		color: #999999;
 } */
 /* line 351, ../sass/extra.scss */
 a:not([disabled]):hover {

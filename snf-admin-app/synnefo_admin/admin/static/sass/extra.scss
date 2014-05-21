@@ -771,3 +771,16 @@ background: #fff2a8;
 .with-shift *::-moz-selection {
 	background: transparent;
 }
+
+// .table-selected-main tr{
+// 	display: none;
+// }
+
+#table-items-selected_wrapper {
+	// &.height-value {
+	// 	// min-height: 400px;
+	// }
+	border: 1px solid gray;
+	margin-bottom: 20px;
+	display: none;
+}

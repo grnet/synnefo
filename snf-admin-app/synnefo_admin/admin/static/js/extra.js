@@ -29,8 +29,25 @@ $(function(){
 			e.stopPropagation();
 		}
 		else {
-			var modal = $(this).data('target');
-			addData(modal);
+			if($(this).hasClass('toggle-selected')) {
+				if($(this).hasClass('open')) {
+					$(this).removeClass('open');
+					$('#table-items-selected_wrapper').animate({'min-height': 0}, 'slow',
+						function() {
+							$(this).slideUp('slow');
+						})
+				}
+				else {
+					$(this).addClass('open');
+					$('#table-items-selected_wrapper').slideDown('slow', function() {
+						$(this).animate({'min-height': '400px'})
+					})
+				}
+			}
+			else {
+				var modal = $(this).data('target');
+				addData(modal);
+			}
 		}
 	});
 
@@ -49,11 +66,14 @@ $(function(){
 	var url = $('#table-items-total').data("url");
 	var serverside = Boolean($('#table-items-total').data("server-side"));
 	var table;
+	var tableSelected;
 	$.fn.dataTable.ext.legacy.ajax = true;
 	var extraData;
 	// sets the classes of the btns that are used for navigation throw the pages (next, prev, 1, 2, 3...)
 	// $.fn.dataTableExt.oStdClasses.sPageButton = "btn btn-primary";
+
 	var tableDomID = '#table-items-total';
+	var tableSelectedDomID = '#table-items-selected'
 	table = $(tableDomID).DataTable({
 		"bPaginate": true,
 		//"sPaginationType": "bootstrap",
@@ -86,7 +106,7 @@ $(function(){
 			"targets": -2, // the second column counting from the right is "Details"
 			"orderable": false,
 			"render": function(data, type, rowData)  {
-				return '<a href="'+ data.value +'" class="details-link">'+ data.display_name+'</a>';
+				return detailsTemplate(data);
 			}
 		},
 		{
@@ -121,6 +141,53 @@ $(function(){
 	});
 	$("div.custom-buttons").html('<button class="select-all select">Select All</button>');
 
+	tableSelected = $(tableSelectedDomID).DataTable({
+		"columnDefs": [{
+			"targets": -2, // the second column counting from the right is "Details"
+			"orderable": false,
+			"render": function(data, type, rowData)  {
+				return detailsTemplate(data);
+			}
+		},
+		{
+			"targets": -1, // the first column counting from the right is "Summary"
+			"orderable": false,
+			"render": function(data, type, rowData) {
+				return summaryTemplate(data);
+			},
+		},
+		{
+			targets: 0,
+			visible: false
+		}
+		],
+		"order": [1, "asc"],
+		"createdRow": function(row, data, dataIndex) {
+			clickSummary(row);
+			clickDetails(row);
+		},
+		"lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]]
+	});
+
+	function keepSelected(data) {
+		var itemID = data[data.length - 1].id.value;
+		var row = tableSelected.row.add(data).draw().node();
+		$(row).addClass('selected-'+itemID);
+	};
+
+	function removeSelected(rowID) {
+		var $row = $(tableSelectedDomID).find('.selected-'+rowID);
+		var row = tableSelected.row($row).remove().draw();
+	};
+
+	function updateDisplaySelected() {
+		if(selected.items.length > 0) {
+			$('.actionbar').find('button.toggle-selected').removeClass('disabled');
+		}
+		else {
+			$('.actionbar').find('button.toggle-selected').addClass('disabled');	
+		}
+	}
 
 	$(tableDomID).on('click', 'tbody tr', function(e) {
 		selectRow(this, e.type);
@@ -176,15 +243,19 @@ $(function(){
 			lastClicked = $row
 		}
 		var info = $(tableDomID).dataTable().api().cell($row.find('td:last-child')).data();
+		arow = $(tableDomID).dataTable().api();
 		if($row.hasClass('selected')) {
 			$row.removeClass('selected');
 			removeItem(info.id.value);
-			enableActions(undefined, true)
+			enableActions(undefined, true);
+			removeSelected($row.attr('id'));
 		}
 		else {
 			$row.addClass('selected');
 			var newItem = addItem(info);
-				enableActions(newItem.actions)
+			enableActions(newItem.actions)
+			selData = $(tableDomID).dataTable().api().row($row).data();
+			keepSelected(selData)
 		}
 		updateCounter('.selected-num');
 		updateToggleAllSelect();
@@ -193,6 +264,11 @@ $(function(){
 	function updateCounter(counterDOM) {
 		var $counter = $(counterDOM);
 		$counter.text(selected.items.length);
+	};
+
+	function detailsTemplate(data) {
+		var html = '<a href="'+ data.value +'" class="details-link">'+ data.display_name+'</a>';
+		return html;
 	};
 
 	function summaryTemplate(data) {
@@ -299,6 +375,7 @@ $(function(){
 
 	/* It enables the btn (link) of the corresponding allowed action */
 	function enableActions(actionsObj, removeItemFlag) {
+		updateDisplaySelected();
 		var itemActionsL =selected.items.length;
 		var $actionBar = $('.actionbar');
 		var itemActions = {};

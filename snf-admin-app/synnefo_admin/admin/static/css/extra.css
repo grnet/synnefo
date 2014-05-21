@@ -1097,3 +1097,10 @@ body table > tbody > tr.selected > td {
 .with-shift *::-moz-selection {
   background: transparent;
 }
+
+/* line 779, ../sass/extra.scss */
+#table-items-selected_wrapper {
+  border: 1px solid gray;
+  margin-bottom: 20px;
+  display: none;
+}

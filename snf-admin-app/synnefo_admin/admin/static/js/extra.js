@@ -3,6 +3,8 @@ var mydata;
 (function($, Django){
 
 $(function(){
+	var lastClicked = null;
+	var prevClicked = null;
     var selected = {
         items: [],
         actions: {}
@@ -111,16 +113,56 @@ $(function(){
 	$("div.custom-buttons").html('<button class="select-all select">Select All</button>');
 
 
-    $(tableDomID).on('click', 'tbody tr', selectRow);
-
-
-    function selectRow(row) {
-		var $row;
-		if(row.type === "click") {
-			$row = $(this);
+    $(tableDomID).on('click', 'tbody tr', function(e) {
+		selectRow(this, e.type);
+		var select;
+		if($(this).hasClass('selected')) {
+			select = true;
 		}
 		else {
-			$row = $(row);
+			select = false;
+		}
+		if(e.shiftKey && prevClicked !== null && lastClicked !== null) {
+			console.log('SHIFT');
+			console.log(prevClicked); // correct
+			console.log(lastClicked); //correct
+			var startRow;
+			var start = prevClicked.index() + 1;
+			var end = lastClicked.index();
+			if(start < end) {
+				startRow = prevClicked.next();
+				for (var i = start; i<end; i++) {
+					console.log(i, select);
+					if((select && !($(startRow).hasClass('selected'))) || (!select && $(startRow).hasClass('selected'))) {
+						selectRow(startRow);
+	    			}
+	    			startRow = startRow.next();
+	    		}
+    		}
+    		else if(end < start) {
+    			startRow = prevClicked.prev();
+    			end = end+2;
+				for (var i = start; i>end; i--) {
+					console.log(i, select)
+	    			if((select && !($(startRow).hasClass('selected'))) || (!select && $(startRow).hasClass('selected'))) {
+		    			selectRow(startRow);
+	    			}
+	    			startRow = startRow.prev();
+	    		}
+	    	}
+	    	}
+    });
+
+    function selectRow(row, event) {
+    	// console.log(row);
+    	// console.log(event);
+    	// pf = rowOrEvent;
+		var $row = $(row);
+		if(event === "click") { // the param is event from a tr
+			// $row.removeClass('with-shift');
+			console.log($row.currentTarget)
+			prevClicked = lastClicked;
+			lastClicked = $row
 		}
 		var info = $(tableDomID).dataTable().api().cell($row.find('td:last-child')).data();
         if($row.hasClass('selected')) {
@@ -129,6 +171,8 @@ $(function(){
             enableActions(undefined, true)
         }
         else {
+        	// console.log('not selected')
+        	console.log($row)
             $row.addClass('selected');
             var newItem = addItem(info);
                 enableActions(newItem.actions)
@@ -198,6 +242,7 @@ function summaryTemplate(data) {
 
 
     function addItem(infoObj) {
+    	console.log(infoObj)
         var $selectedNum = $('.actionbar button').find('.selected-num');
         var itemsL;
         var newItem = {}
@@ -619,6 +664,8 @@ function summaryTemplate(data) {
 
     /* Toggles the checked property of all the checkboxes in the body of the table */
     function toggleVisSelected(tableDomID, selectFlag) {
+    	lastClicked = null;
+    	prevClicked = null;
 		if(selectFlag) {
 			$(tableDomID).find('tbody tr:not(.selected)').each(function() { // temp : shouldn't have a func that calls a named func
 				selectRow(this);

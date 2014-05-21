@@ -117,22 +117,7 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
         raise faults.BadRequest(msg)
 
     # TODO: Check Volume/Snapshot Status
-    if source_type == "volume":
-        source_volume = util.get_volume(user_id, source_uuid,
-                                        for_update=True, non_deleted=True,
-                                        exception=faults.BadRequest)
-        if source_volume.status != "IN_USE":
-            raise faults.BadRequest("Cannot clone volume while it is in '%s'"
-                                    " status" % source_volume.status)
-        # If no size is specified, use the size of the volume
-        if size is None:
-            size = source_volume.size
-        elif size < source_volume.size:
-            raise faults.BadRequest("Volume size cannot be smaller than the"
-                                    " source volume")
-        source = Volume.prefix_source(source_uuid, source_type="volume")
-        origin = source_volume.backend_volume_uuid
-    elif source_type == "snapshot":
+    if source_type == "snapshot":
         source_snapshot = util.get_snapshot(user_id, source_uuid,
                                             exception=faults.BadRequest)
         snap_status = source_snapshot.get("status", "").upper()
@@ -168,6 +153,23 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
         if size is None:
             raise faults.BadRequest("Volume size is required")
         source = origin = None
+    elif source_type == "volume":
+        # Currently, Archipelago does not support cloning a volume
+        raise faults.BadRequest("Cloning a volume is not supported")
+        # source_volume = util.get_volume(user_id, source_uuid,
+        #                                 for_update=True, non_deleted=True,
+        #                                 exception=faults.BadRequest)
+        # if source_volume.status != "IN_USE":
+        #     raise faults.BadRequest("Cannot clone volume while it is in '%s'"
+        #                             " status" % source_volume.status)
+        # # If no size is specified, use the size of the volume
+        # if size is None:
+        #     size = source_volume.size
+        # elif size < source_volume.size:
+        #     raise faults.BadRequest("Volume size cannot be smaller than the"
+        #                             " source volume")
+        # source = Volume.prefix_source(source_uuid, source_type="volume")
+        # origin = source_volume.backend_volume_uuid
     else:
         raise faults.BadRequest("Unknown source type")
 

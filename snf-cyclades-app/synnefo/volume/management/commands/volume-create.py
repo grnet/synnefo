@@ -59,8 +59,7 @@ class Command(SynnefoCommand):
             default=None,
             help="Initialize volume with data from the specified source. The"
                  " source must be of the form <source_type>:<source_uuid>."
-                 " Available source types are 'image', 'snapshot' and"
-                 " 'volume'."),
+                 " Available source types are 'image' and 'snapshot'."),
         make_option(
             "--server",
             dest="server_id",
@@ -129,8 +128,6 @@ class Command(SynnefoCommand):
                 source_image_id = source_uuid
             elif source_type == "snapshot":
                 source_snapshot_id = source_uuid
-            elif source_type == "volume":
-                source_volume_id = source_uuid
             else:
                 raise CommandError("Unknown volume source type '%s'"
                                    % source_type)

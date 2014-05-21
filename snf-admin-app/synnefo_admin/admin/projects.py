@@ -41,7 +41,7 @@ from django.core.urlresolvers import reverse
 
 from synnefo.db.models import VirtualMachine, Network
 from astakos.im.functions import send_plain as send_email
-from astakos.im.models import AstakosUser, Project
+from astakos.im.models import AstakosUser, Project, ProjectResourceGrant
 from astakos.im.functions import approve_application
 
 from eztables.views import DatatablesView
@@ -84,9 +84,31 @@ def get_contact_name(inst):
         return inst.owner.realname,
 
 
+def get_total_resources(inst):
+    total = []
+    app = inst.last_application
+    for r in app.resource_grants.all():
+        pr = ProjectResourceGrant.objects.get(resource=r,
+                                              project_application=app)
+        total.append(pr.resource.display_name + ': ' +
+                     pr.display_project_capacity())
+    return ', '.join(total)
+
+
+def get_member_resources(inst):
+    total = []
+    app = inst.last_application
+    for r in app.resource_grants.all():
+        pr = ProjectResourceGrant.objects.get(resource=r,
+                                              project_application=app)
+        total.append(pr.resource.display_name + ': ' +
+                     pr.display_member_capacity())
+    return ', '.join(total)
+
+
 class ProjectJSONView(DatatablesView):
     model = Project
-    fields = ('id', 'id', 'name', 'state', 'creation_date', 'end_date')
+    fields = ('id', 'id', 'realname', 'state', 'creation_date', 'end_date')
 
     extra = True
 
@@ -97,53 +119,80 @@ class ProjectJSONView(DatatablesView):
     def format_data_row(self, row):
         row[3] = (str(row[3]) + ' (' +
                   Project.objects.get(id=row[0]).state_display() + ')')
+        row[4] = str(row[4].date())
+        row[5] = str(row[5].date())
         return row
 
     def get_extra_data_row(self, inst):
-        extra_dict = {
-            'allowed_actions': {
-                'display_name': "",
-                'value': get_allowed_actions(inst),
-                'visible': False,
-            }, 'id': {
-                'display_name': "ID",
-                'value': inst.id,
-                'visible': False,
-            }, 'item_name': {
-                'display_name': "Name",
-                'value': inst.name,
-                'visible': False,
-            }, 'details_url': {
-                'display_name': "Details",
-                'value': reverse('admin-details', args=['project', inst.id]),
-                'visible': True,
-            }, 'contact_mail': {
-                'display_name': "Contact mail",
-                'value': get_contact_mail(inst),
-                'visible': True,
-            }, 'contact_name': {
-                'display_name': "Contact name",
-                'value': get_contact_name(inst),
-                'visible': True,
-            }, 'uuid': {
-                'display_name': "UUID",
-                'value': inst.uuid,
-                'visible': True,
-            }, 'description': {
-                'display_name': "Description",
-                'value': inst.description,
-                'visible': True,
-            }, 'creation_date': {
-                'display_name': "Creation date",
-                'value': inst.creation_date,
-                'visible': True,
-            }, 'members': {
-                'display_name': "Members",
-                'value': (str(inst.members_count()) + ' / ' +
-                          str(inst.limit_on_members_number)),
+        extra_dict = OrderedDict()
+        extra_dict['allowed_actions'] = {
+            'display_name': "",
+            'value': get_allowed_actions(inst),
+            'visible': False,
+        }
+        extra_dict['id'] = {
+            'display_name': "ID",
+            'value': inst.id,
+            'visible': False,
+        }
+        extra_dict['item_name'] = {
+            'display_name': "Name",
+            'value': inst.name,
+            'visible': False,
+        }
+        extra_dict['details_url'] = {
+            'display_name': "Details",
+            'value': reverse('admin-details', args=['project', inst.id]),
+            'visible': True,
+        }
+        extra_dict['contact_mail'] = {
+            'display_name': "Contact mail",
+            'value': get_contact_mail(inst),
+            'visible': True,
+        }
+        extra_dict['contact_name'] = {
+            'display_name': "Contact name",
+            'value': get_contact_name(inst),
+            'visible': True,
+        }
+        extra_dict['uuid'] = {
+            'display_name': "UUID",
+            'value': inst.uuid,
+            'visible': True,
+        }
+        extra_dict['homepage'] = {
+            'display_name': "Homepage",
+            'value': inst.homepage,
+            'visible': True,
+        }
+        extra_dict['description'] = {
+            'display_name': "Description",
+            'value': inst.description,
+            'visible': True,
+        }
+        extra_dict['members'] = {
+            'display_name': "Members",
+            'value': (str(inst.members_count()) + ' / ' +
+                      str(inst.limit_on_members_number)),
+            'visible': True,
+        }
+        extra_dict['total_resources'] = {
+            'display_name': "Total resources",
+            'value': get_total_resources(inst),
+            'visible': True
+        }
+        extra_dict['member_resources'] = {
+            'display_name': "Member resources",
+            'value': get_member_resources(inst),
+            'visible': True
+        }
+
+        if inst.last_application.comments:
+            extra_dict['comments'] = {
+                'display_name': "Comments for review",
+                'value': inst.last_application.comments,
                 'visible': True,
             }
-        }
 
         return extra_dict
 
@@ -153,7 +202,7 @@ class ProjectAction(AdminAction):
     """Class for actions on projects. Derived from AdminAction.
 
     Pre-determined Attributes:
-        target:        project
+    target:        project
     """
 
     def __init__(self, name, f, **kwargs):
@@ -165,7 +214,7 @@ def generate_actions():
     """Create a list of actions on projects.
 
     The actions are: approve/deny, suspend/unsuspend, terminate/reinstate,
-                     contact
+    contact
     """
     actions = OrderedDict()
 

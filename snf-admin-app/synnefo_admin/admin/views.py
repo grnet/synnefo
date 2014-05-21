@@ -56,6 +56,7 @@ from synnefo_admin.admin import users as user_views
 from synnefo_admin.admin import projects as project_views
 from synnefo_admin.admin import vms as vm_views
 from synnefo_admin.admin import volumes as volume_views
+from synnefo_admin.admin import quotas as quota_views
 from synnefo_admin.admin import networks as network_views
 from synnefo_admin.admin import ips as ip_views
 from synnefo_admin.admin import groups as group_views
@@ -248,6 +249,8 @@ def json_list(request, type):
         return user_views.UserJSONView.as_view()(request)
     if type == 'project':
         return project_views.ProjectJSONView.as_view()(request)
+    if type == 'quota':
+        return quota_views.ProjectJSONView.as_view()(request)
     if type == 'vm':
         return vm_views.VMJSONView.as_view()(request)
     if type == 'volume':
@@ -305,6 +308,9 @@ def catalog(request, type):
     elif type == 'volume':
         context = volume_views.catalog(request)
         template = volume_views.templates['list']
+    elif type == 'quota':
+        context = quota_views.catalog(request)
+        template = quota_views.templates['list']
     elif type == 'network':
         context = network_views.catalog(request)
         template = network_views.templates['list']

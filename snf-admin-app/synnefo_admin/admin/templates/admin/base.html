@@ -13,7 +13,7 @@
   <body>
     <div class="container-fluid">
         <div class="row-fluid">
-          {% with user_type='user' vm_type='vm' project_type='project' volume_type='volume' network_type='network' ip_type='ip' group_type='group' auth_provider_type='auth_provider' %}
+          {% with user_type='user' vm_type='vm' project_type='project' volume_type='volume' network_type='network' ip_type='ip' group_type='group' auth_provider_type='auth_provider' quota_type='quota'%}
 
           <div class="navbar navbar-inverse nav-main navbar-fixed-top">
 
@@ -54,6 +54,9 @@
               <a href="{% url admin-list ip_type %}">IPs</a>
               </li>
               <li class="divider-vertical"></li>
+              <li>
+              <a href="{% url admin-list quota_type %}">Base Quotas</a>
+              </li>
               <li>
               <a href="{% url admin-list project_type %}">Projects</a>
               </li>

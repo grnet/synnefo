@@ -86,9 +86,13 @@ def get_contact_name(inst):
 
 class ProjectJSONView(DatatablesView):
     model = Project
-    fields = ('id', 'id', 'name', 'state', 'end_date')
+    fields = ('id', 'id', 'name', 'state', 'creation_date', 'end_date')
 
     extra = True
+
+    def get_queryset(self):
+        qs = super(ProjectJSONView, self).get_queryset()
+        return qs.filter(is_base=False)
 
     def format_data_row(self, row):
         row[3] = (str(row[3]) + ' (' +
@@ -135,7 +139,7 @@ class ProjectJSONView(DatatablesView):
                 'visible': True,
             }, 'members': {
                 'display_name': "Members",
-                'value': (str(inst.members_count) + ' / ' +
+                'value': (str(inst.members_count()) + ' / ' +
                           str(inst.limit_on_members_number)),
                 'visible': True,
             }
@@ -205,7 +209,7 @@ def catalog(request):
     """List view for Cyclades projects."""
     context = {}
     context['action_dict'] = generate_actions()
-    context['columns'] = ["Column 1", "ID", "Name", "Status",
+    context['columns'] = ["Column 1", "ID", "Name", "Status", "Creation date",
                           "Expiration date", "Details", "Summary"]
     context['item_type'] = 'project'
 

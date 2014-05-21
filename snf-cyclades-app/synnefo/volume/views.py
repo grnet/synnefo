@@ -103,6 +103,10 @@ def create_volume(request):
         raise faults.BadRequest("Volume 'size' needs to be a positive integer"
                                 " value. '%s' cannot be accepted." % size)
 
+    project = vol_dict.get("project")
+    if project is None:
+        project = user_id
+
     # Optional parameters
     volume_type_id = utils.get_attribute(vol_dict, "volume_type",
                                          attr_type=(basestring, int),
@@ -134,7 +138,7 @@ def create_volume(request):
                             volume_type_id=volume_type_id,
                             description=description,
                             metadata=metadata,
-                            server_id=server_id)
+                            server_id=server_id, project=project)
 
     # Render response
     data = json.dumps(dict(volume=volume_to_dict(volume, detail=False)))
@@ -256,6 +260,19 @@ def delete_volume_metadata_item(request, volume_id, key):
         volume.metadata.get(key=key).delete()
     except VolumeMetadata.DoesNotExist:
         raise faults.BadRequest("Metadata key not found")
+    return HttpResponse(status=200)
+
+
+@api.api_method(http_method="POST", user_required=True, logger=log)
+@transaction.commit_on_success
+def reassign_volume(request, volume_id, args):
+    req = utils.get_json_body(request)
+    log.debug('reassign_volume volume_id: %s, request: %s', volume_id, req)
+    project = args.get("project")
+    if project is None:
+        raise faults.BadRequest("Missing 'project' attribute.")
+    volume = util.get_volume(request.user_uniq, volume_id, for_update=True)
+    volumes.reassign_volume(volume, project)
     return HttpResponse(status=200)
 
 

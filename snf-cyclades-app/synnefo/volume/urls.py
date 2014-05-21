@@ -17,6 +17,7 @@ from django.conf.urls.defaults import patterns, include
 from django.http import HttpResponseNotAllowed
 from snf_django.lib import api
 from synnefo.volume import views
+from snf_django.lib.api import faults, utils
 
 
 def volume_demux(request):
@@ -55,6 +56,31 @@ def volume_metadata_item_demux(request, volume_id, key):
         return views.delete_volume_metadata_item(request, volume_id, key)
     else:
         return HttpResponseNotAllowed(['DELETE'])
+
+
+VOLUME_ACTIONS = {
+    "reassign": views.reassign_volume,
+    }
+
+
+def volume_action_demux(request, volume_id):
+    req = utils.get_json_body(request)
+
+    if not isinstance(req, dict) and len(req) != 1:
+        raise faults.BadRequest("Malformed request")
+
+    action = req.keys()[0]
+    if not isinstance(action, basestring):
+        raise faults.BadRequest("Malformed Request. Invalid action.")
+
+    try:
+        action_func = VOLUME_ACTIONS[action]
+    except KeyError:
+        raise faults.BadRequest("Action %s not supported" % action)
+    action_args = utils.get_attribute(req, action, required=True,
+                                      attr_type=dict)
+
+    return action_func(request, volume_id, action_args)
 
 
 def snapshot_demux(request):
@@ -103,6 +129,7 @@ volume_v2_patterns = patterns(
     (r'^volumes/(\d+)(?:.json)?$', volume_item_demux),
     (r'^volumes/(\d+)/metadata/?(?:.json)?$', volume_metadata_demux),
     (r'^volumes/(\d+)/metadata/(.+)(?:.json)?$', volume_metadata_item_demux),
+    (r'^volumes/(\d+)/action(?:.json|.xml)?$', volume_action_demux),
     (r'^snapshots/?(?:.json)?$', snapshot_demux),
     (r'^snapshots/detail$', views.list_snapshots, {'detail': True}),
     (r'^snapshots/([\w-]+)(?:.json)?$', snapshot_item_demux),

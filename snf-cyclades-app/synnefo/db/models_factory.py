@@ -103,6 +103,7 @@ class VirtualMachineFactory(factory.DjangoModelFactory):
     suspended = False
     #operstate = factory.Sequence(round_seq_first(FACTORY_FOR.OPER_STATES))
     operstate = "STARTED"
+    project = factory.LazyAttribute(lambda a: a.userid)
 
 
 class VolumeFactory(factory.DjangoModelFactory):
@@ -113,6 +114,7 @@ class VolumeFactory(factory.DjangoModelFactory):
     machine = factory.SubFactory(VirtualMachineFactory,
                                  userid=factory.SelfAttribute('..userid'))
     volume_type = factory.SubFactory(VolumeTypeFactory)
+    project = factory.LazyAttribute(lambda a: a.userid)
 
 
 class DeletedVirtualMachine(VirtualMachineFactory):
@@ -162,6 +164,7 @@ class NetworkFactory(factory.DjangoModelFactory):
     public = False
     deleted = False
     state = "ACTIVE"
+    project = factory.LazyAttribute(lambda a: a.userid)
 
 
 class DeletedNetwork(NetworkFactory):
@@ -241,6 +244,7 @@ class IPv4AddressFactory(factory.DjangoModelFactory):
     nic = factory.SubFactory(NetworkInterfaceFactory,
                              userid=factory.SelfAttribute('..userid'),
                              network=factory.SelfAttribute('..network'))
+    project = factory.LazyAttribute(lambda a: a.userid)
 
 
 class IPv6AddressFactory(IPv4AddressFactory):

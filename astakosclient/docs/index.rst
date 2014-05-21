@@ -133,17 +133,18 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         It returns user's current quotas (as dict of dicts). In case of error
         it raises an AstakosClientException exception.
 
-    **service_get_quotas(**\ user=None\ **)**
+    **service_get_quotas(**\ user=None, project=None\ **)**
         It returns all users' current quotas for the resources associated with
         the service (as dict of dicts of dicts). Optionally, one can query the
-        quotas of a specific user with argument user=UUID. In case of error it
-        raises an AstakosClientException exception.
+        quotas of a specific user with argument user=UUID (or a list of UUID).
+        Likewise one can specify a project (or a list of projects). In case of
+        error it raises an AstakosClientException exception.
 
     **service_get_project_quotas(**\ project=None\ **)**
         It returns all projects' current quotas for the resources
         associated with the service (as dict of dicts).
         Optionally, one can query the quotas of a specific project with
-        argument project=UUID. In case of error it raises an
+        argument project=UUID (or a list of UUID). In case of error it raises an
         AstakosClientException exception.
 
     **issue_commission_generic(**\ user_provisions, project_provisions, name="", force=False, auto_accept=False\ **)**
@@ -160,7 +161,7 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         commission's id (int). Otherwise it raises an AstakosClientException
         exception.
 
-    **issue_resource_reassignment(**\ holder, from_source, to_source, provisions, name="", force=False, auto_accept=False\ **)**
+    **issue_resource_reassignment(**\ holder, provisions, name="", force=False, auto_accept=False\ **)**
         Change resource assignment to another project
 
     **get_pending_commissions()**

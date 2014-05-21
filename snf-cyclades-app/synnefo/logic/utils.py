@@ -187,6 +187,8 @@ def get_action_from_opcode(opcode, job_fields):
                     return "ATTACH_VOLUME"
                 elif disk_action == "remove":
                     return "DETACH_VOLUME"
+                elif disk_action == "modify":
+                    return "MODIFY_VOLUME"
                 else:
                     return None
             except:

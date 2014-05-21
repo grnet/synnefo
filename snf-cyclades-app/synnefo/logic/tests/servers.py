@@ -277,3 +277,24 @@ class ServerCommandTest(TransactionTestCase):
             servers.reboot(vm)
             self.assertEqual(vm.task, "REBOOT")
             self.assertEqual(vm.task_job_id, 3)
+
+    def test_reassign_vm(self, mrapi):
+        volume = mfactory.VolumeFactory()
+        vm = volume.machine
+        another_project = "another_project"
+        with mocked_quotaholder():
+            servers.reassign(vm, another_project)
+            self.assertEqual(vm.project, another_project)
+            vol = vm.volumes.get(id=volume.id)
+            self.assertNotEqual(vol.project, another_project)
+
+        volume = mfactory.VolumeFactory()
+        volume.index = 0
+        volume.save()
+        vm = volume.machine
+        another_project = "another_project"
+        with mocked_quotaholder():
+            servers.reassign(vm, another_project)
+            self.assertEqual(vm.project, another_project)
+            vol = vm.volumes.get(id=volume.id)
+            self.assertEqual(vol.project, another_project)

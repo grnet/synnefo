@@ -119,7 +119,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
             v.save()
         else:
             v = _create_volume(server=vm, user_id=userid,
-                               volume_type=server_vtype,
+                               volume_type=server_vtype, project=project,
                                index=index, **vol_info)
         server_volumes.append(v)
 
@@ -268,6 +268,7 @@ def reassign(vm, project):
              vm, vm.project, project)
     vm.project = project
     vm.save()
+    vm.volumes.filter(index=0, deleted=False).update(project=project)
     quotas.issue_and_accept_commission(vm, action="REASSIGN",
                                        action_fields=action_fields)
 

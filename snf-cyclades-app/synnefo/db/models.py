@@ -324,7 +324,7 @@ class VirtualMachine(models.Model):
                             max_length=VIRTUAL_MACHINE_NAME_LENGTH)
     userid = models.CharField('User ID of the owner', max_length=100,
                               db_index=True, null=False)
-    project = models.CharField(max_length=255, null=True)
+    project = models.CharField(max_length=255, null=True, db_index=True)
     backend = models.ForeignKey(Backend, null=True,
                                 related_name="virtual_machines",
                                 on_delete=models.PROTECT)
@@ -513,7 +513,7 @@ class Network(models.Model):
     name = models.CharField('Network Name', max_length=NETWORK_NAME_LENGTH)
     userid = models.CharField('User ID of the owner', max_length=128,
                               null=True, db_index=True)
-    project = models.CharField(max_length=255, null=True)
+    project = models.CharField(max_length=255, null=True, db_index=True)
     flavor = models.CharField('Flavor', max_length=32, null=False)
     mode = models.CharField('Network Mode', max_length=16, null=True)
     link = models.CharField('Network Link', max_length=32, null=True)
@@ -768,7 +768,7 @@ class IPAddress(models.Model):
                             on_delete=models.SET_NULL)
     userid = models.CharField("UUID of the owner", max_length=128, null=False,
                               db_index=True)
-    project = models.CharField(max_length=255, null=True)
+    project = models.CharField(max_length=255, null=True, db_index=True)
     address = models.CharField("IP Address", max_length=64, null=False)
     floating_ip = models.BooleanField("Floating IP", null=False, default=False)
     ipversion = models.IntegerField("IP Version", null=False)
@@ -1071,6 +1071,7 @@ class Volume(models.Model):
                                    max_length=DESCRIPTION_LENGTH, null=True)
     userid = models.CharField("Owner's UUID", max_length=100, null=False,
                               db_index=True)
+    project = models.CharField(max_length=255, null=True, db_index=True)
     size = models.IntegerField("Volume size in GB",  null=False)
     volume_type = models.ForeignKey(VolumeType, related_name="volumes",
                                     on_delete=models.PROTECT, null=False)
@@ -1096,6 +1097,8 @@ class Volume(models.Model):
                                 null=True)
     index = models.IntegerField("Index", null=True)
     backendjobid = models.PositiveIntegerField(null=True)
+    serial = models.ForeignKey(QuotaHolderSerial, related_name='volume',
+                               null=True, on_delete=models.SET_NULL)
 
     @property
     def backend_volume_uuid(self):

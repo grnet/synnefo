@@ -23,11 +23,17 @@ from synnefo.quotas import enforce
 from synnefo.quotas import errors
 from snf_django.management.commands import SynnefoCommand, CommandError
 from snf_django.management.utils import pprint_table
+from collections import defaultdict
 
 
 DEFAULT_RESOURCES = ["cyclades.cpu",
                      "cyclades.ram",
                      "cyclades.floating_ip",
+                     ]
+
+DESTROY_RESOURCES = ["cyclades.vm",
+                     "cyclades.total_cpu",
+                     "cyclades.total_ram",
                      ]
 
 
@@ -63,6 +69,17 @@ class Command(SynnefoCommand):
                           "remove a vm")),
         make_option("--shutdown-timeout",
                     help="Force vm shutdown after given seconds."),
+        make_option("--remove-system-volumes",
+                    default=False,
+                    action="store_true",
+                    help=("Allow removal of system volumes. This will also "
+                          "remove the VM.")),
+        make_option("--cascade-remove",
+                    default=False,
+                    action="store_true",
+                    help=("Allow removal of a VM which has additional "
+                          "(non system) volumes attached. This will also "
+                          "remove these volumes")),
     )
 
     def confirm(self):
@@ -116,6 +133,9 @@ class Command(SynnefoCommand):
                 m = "Expected integer shutdown timeout."
                 raise CommandError(m)
 
+        remove_system_volumes = options["remove_system_volumes"]
+        cascade_remove = options["cascade_remove"]
+
         excluded_users = options['exclude_users']
         excluded_users = set(excluded_users.split(',')
                              if excluded_users is not None else [])
@@ -150,10 +170,17 @@ class Command(SynnefoCommand):
         resources = set(h[0] for h in handlers)
         dangerous = bool(resources.difference(DEFAULT_RESOURCES))
 
+        self.stderr.write("Checking resources %s...\n" %
+                          ",".join(list(resources)))
+
+        hopts = {"cascade_remove": cascade_remove,
+                 "remove_system_volumes": remove_system_volumes,
+                 }
         opts = {"shutdown_timeout": shutdown_timeout}
         actions = {}
         overlimit = []
         viol_id = 0
+        remains = defaultdict(list)
 
         if users_to_check is None:
             for resource, handle_resource, resource_type in handlers:
@@ -187,7 +214,7 @@ class Command(SynnefoCommand):
                             actual_resources[project], users=users_to_check,
                             excluded_users=excluded_users)
                         handle_resource(viol_id, resource, relevant_resources,
-                                        diff, actions)
+                                        diff, actions, remains, options=hopts)
 
         for resource, handle_resource, resource_type in handlers:
             if resource_type not in actions:
@@ -221,7 +248,7 @@ class Command(SynnefoCommand):
                                           resource, qh_limit, qh_value))
                         relevant_resources = actual_resources[source][user]
                         handle_resource(viol_id, resource, relevant_resources,
-                                        diff, actions)
+                                        diff, actions, remains, options=hopts)
 
         if not overlimit:
             write("No violations.\n")
@@ -237,7 +264,7 @@ class Command(SynnefoCommand):
             if fix:
                 if dangerous and not force:
                     write("You are enforcing resources that may permanently "
-                          "remove a vm.\n")
+                          "remove a vm or volume.\n")
                     self.confirm()
                 write("Applying actions. Please wait...\n")
             title = "Applied Actions" if fix else "Suggested Actions"
@@ -248,3 +275,29 @@ class Command(SynnefoCommand):
                 headers += ("Result",)
             pprint_table(self.stdout, log, headers,
                          options["output_format"], title=title)
+
+        def explain(resource):
+            if resource == "cyclades.disk":
+                if not remove_system_volumes:
+                    return (", because this would need to remove system "
+                            "volumes; if you want to do so, use the "
+                            "--remove-system-volumes option:")
+                if not cascade_remove:
+                    return (", because this would trigger the removal of "
+                            "attached volumes, too; if you want to do "
+                            "so, use the --cascade-remove option:")
+            elif resource in DESTROY_RESOURCES:
+                if not cascade_remove:
+                    return (", because this would trigger the removal of "
+                            "attached volumes, too; if you want to do "
+                            "so, use the --cascade-remove option:")
+            return ":"
+
+        if remains:
+            self.stderr.write("\n")
+            for resource, viols in remains.iteritems():
+                self.stderr.write(
+                    "The following violations for resource '%s' "
+                    "could not be resolved%s\n"
+                    % (resource, explain(resource)))
+                self.stderr.write("  %s\n" % ",".join(map(str, viols)))

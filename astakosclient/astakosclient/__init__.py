@@ -522,13 +522,18 @@ class AstakosClient(object):
         """
         return self._call_astakos(self.api_quotas)
 
+    def _join_if_list(self, val):
+        return ','.join(map(str, val)) if isinstance(val, list) else val
+
     # ----------------------------------
     # do a GET to ``API_SERVICE_QUOTAS``
-    def service_get_quotas(self, user=None):
+    def service_get_quotas(self, user=None, project=None):
         """Get all quotas for resources associated with the service
 
         Keyword arguments:
-        user    -- optionally, the uuid of a specific user
+        user    -- optionally, the uuid of a specific user, or a list thereof
+        project -- optionally, the uuid of a specific project, or a list
+                   thereof
 
         In case of success return a dict of dicts of dicts with current quotas
         for all users, or of a specified user, if user argument is set.
@@ -536,8 +541,13 @@ class AstakosClient(object):
 
         """
         query = self.api_service_quotas
+        filters = {}
         if user is not None:
-            query += "?user=" + user
+            filters['user'] = self._join_if_list(user)
+        if project is not None:
+            filters['project'] = self._join_if_list(project)
+        if filters:
+            query += "?" + urllib.urlencode(filters)
         return self._call_astakos(query)
 
     # ----------------------------------
@@ -546,16 +556,20 @@ class AstakosClient(object):
         """Get all project quotas for resources associated with the service
 
         Keyword arguments:
-        project    -- optionally, the uuid of a specific project
+        project    -- optionally, the uuid of a specific project, or a list
+                      thereof
 
         In case of success return a dict of dicts with current quotas
-        for all projects, or of a specified project, if project argument is set.
-        Otherwise raise an AstakosClientException
+        for all projects, or of a specified project, if project argument is
+        set. Otherwise raise an AstakosClientException
 
         """
         query = self.api_service_project_quotas
+        filters = {}
         if project is not None:
-            query += "?project=" + project
+            filters['project'] = self._join_if_list(project)
+        if filters:
+            query += "?" + urllib.urlencode(filters)
         return self._call_astakos(query)
 
     # ----------------------------------
@@ -642,14 +656,13 @@ class AstakosClient(object):
 
         return self._issue_commission(request)
 
-    def issue_one_commission(self, holder, source, provisions,
+    def issue_one_commission(self, holder, provisions,
                              name="", force=False, auto_accept=False):
         """Issue one commission (with specific holder and source)
 
         keyword arguments:
         holder      -- user's id (string)
-        source      -- commission's source (ex system) (string)
-        provisions  -- resources with their quantity (dict from string to int)
+        provisions  -- (source, resource) mapping to quantity
         name        -- description of the commission (string)
         force       -- force this commission (boolean)
         auto_accept -- auto accept this commission (boolean)
@@ -659,8 +672,7 @@ class AstakosClient(object):
 
         """
         check_input("issue_one_commission", self.logger,
-                    holder=holder, source=source,
-                    provisions=provisions)
+                    holder=holder, provisions=provisions)
 
         request = {}
         request["force"] = force
@@ -668,7 +680,7 @@ class AstakosClient(object):
         request["name"] = name
         try:
             request["provisions"] = []
-            for resource, quantity in provisions.iteritems():
+            for (source, resource), quantity in provisions.iteritems():
                 ps = self.mk_provisions(holder, source, resource, quantity)
                 request["provisions"].extend(ps)
         except Exception as err:
@@ -677,8 +689,7 @@ class AstakosClient(object):
 
         return self._issue_commission(request)
 
-    def issue_resource_reassignment(self, holder, from_source,
-                                    to_source, provisions, name="",
+    def issue_resource_reassignment(self, holder, provisions, name="",
                                     force=False, auto_accept=False):
         """Change resource assignment to another project
         """
@@ -690,7 +701,8 @@ class AstakosClient(object):
 
         try:
             request["provisions"] = []
-            for resource, quantity in provisions.iteritems():
+            for key, quantity in provisions.iteritems():
+                (from_source, to_source, resource) = key
                 ps = self.mk_provisions(
                     holder, from_source, resource, -quantity)
                 ps += self.mk_provisions(holder, to_source, resource, quantity)
@@ -897,8 +909,8 @@ class AstakosClient(object):
         path = join_urls(path, "action")
         req_headers = {'content-type': 'application/json'}
         req_body = parse_request({action: {
-                    "reasons": reason,
-                    "app_id": app_id}}, self.logger)
+            "reasons": reason,
+            "app_id": app_id}}, self.logger)
         return self._call_astakos(path, headers=req_headers,
                                   body=req_body, method="POST")
 

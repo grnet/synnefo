@@ -27,8 +27,9 @@ QuotaDict = lambda: defaultdict(lambda: defaultdict(dict))
 PROJECT_TAG = "project:"
 USER_TAG = "user:"
 
+
 def project_ref(value):
-    return  PROJECT_TAG + value
+    return PROJECT_TAG + value
 
 
 def get_project_ref(project):
@@ -114,7 +115,7 @@ def get_user_quotas(user, resources=None, sources=None):
     return quotas.get(user.uuid, {})
 
 
-def service_get_quotas(component, users=None):
+def service_get_quotas(component, users=None, sources=None):
     name_values = Service.objects.filter(
         component=component).values_list('name')
     service_names = [t for (t,) in name_values]
@@ -123,7 +124,10 @@ def service_get_quotas(component, users=None):
     astakosusers = AstakosUser.objects.verified()
     if users is not None:
         astakosusers = astakosusers.filter(uuid__in=users)
-    return get_users_quotas(astakosusers, resources=resource_names)
+    if sources is not None:
+        sources = [project_ref(s) for s in sources]
+    return get_users_quotas(astakosusers, resources=resource_names,
+                            sources=sources)
 
 
 def mk_limits_dict(counters):

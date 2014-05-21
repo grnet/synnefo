@@ -60,7 +60,6 @@ $(function(){
 				mydata = response;
 				extraData = response.extra;
 				if(response.aaData.length != 0) {
-					// console.log(typeof response.aaData[0][4]);
 					var cols = response.aaData;
 					var rowL = cols.length;
 					var detailsCol = cols[0].length;
@@ -123,16 +122,12 @@ $(function(){
 			select = false;
 		}
 		if(e.shiftKey && prevClicked !== null && lastClicked !== null) {
-			console.log('SHIFT');
-			console.log(prevClicked); // correct
-			console.log(lastClicked); //correct
 			var startRow;
 			var start = prevClicked.index() + 1;
 			var end = lastClicked.index();
 			if(start < end) {
 				startRow = prevClicked.next();
 				for (var i = start; i<end; i++) {
-					console.log(i, select);
 					if((select && !($(startRow).hasClass('selected'))) || (!select && $(startRow).hasClass('selected'))) {
 						selectRow(startRow);
 					}
@@ -143,7 +138,6 @@ $(function(){
 				startRow = prevClicked.prev();
 				end = end+2;
 				for (var i = start; i>end; i--) {
-					console.log(i, select)
 					if((select && !($(startRow).hasClass('selected'))) || (!select && $(startRow).hasClass('selected'))) {
 						selectRow(startRow);
 					}
@@ -153,14 +147,21 @@ $(function(){
 			}
 	});
 
+	$(document).bind('keydown', function(e){
+		if(e.shiftKey) {
+			$(tableDomID).addClass('with-shift')
+		}
+	});
+
+	$(document).bind('keyup', function(e){
+		if(e.which === 16) {
+			$(tableDomID).removeClass('with-shift')
+		}
+	});
+
 	function selectRow(row, event) {
-		// console.log(row);
-		// console.log(event);
-		// pf = rowOrEvent;
 		var $row = $(row);
 		if(event === "click") { // the param is event from a tr
-			// $row.removeClass('with-shift');
-			console.log($row.currentTarget)
 			prevClicked = lastClicked;
 			lastClicked = $row
 		}
@@ -171,8 +172,6 @@ $(function(){
 			enableActions(undefined, true)
 		}
 		else {
-			// console.log('not selected')
-			console.log($row)
 			$row.addClass('selected');
 			var newItem = addItem(info);
 				enableActions(newItem.actions)
@@ -242,7 +241,6 @@ function summaryTemplate(data) {
 
 
 	function addItem(infoObj) {
-		console.log(infoObj)
 		var $selectedNum = $('.actionbar button').find('.selected-num');
 		var itemsL;
 		var newItem = {}
@@ -335,7 +333,6 @@ function summaryTemplate(data) {
 	};
 
 	function resetTable(tableDomID) {
-		console.log('resetTable');
 		// $(tableDomID).find('thead .select-all input[type=checkbox]').attr('checked', false);
 		selected.items = [];
 		// $(tableDomID).find('thead .selected-num').html(selected.items.length);
@@ -418,8 +415,6 @@ function summaryTemplate(data) {
 		var $errorSign = $(modal).find('*[data-error="'+errorSign+'"]');
 
 		$inputArea.keyup(function() {
-			console.log('keypressed')
-			console.log($.trim($inputArea.val()));
 			if($.trim($inputArea.val())) {
 				$errorSign.hide();
 			}
@@ -465,10 +460,7 @@ function summaryTemplate(data) {
 
 	function addData(modalID) {
 		var $idsInput = $(modalID).find('.modal-footer form input[name="ids"]');
-		console.log('modal')
-		console.log(modalID)
 		var $table = $(modalID).find('.table-selected');
-		console.log($table)
 		var selectedNum = selected.items.length;
 		var $counter = $(modalID).find('.num');
 		var idsArray = [];
@@ -502,8 +494,6 @@ function summaryTemplate(data) {
 	};
 
 	function drawTableRows(tableBody, rowsNum, modalType) {
-		console.log('drawing dear');
-		console.log(modalType);
 		var maxVisible = 2;
 		var currentRow;
 		$(tableBody).empty();

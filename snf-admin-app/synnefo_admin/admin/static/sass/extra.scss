@@ -735,7 +735,7 @@ table {
 	filter: none;
 	border: 1px solid #345578;
 }
-body table>tbody>tr.selected:not(.with-shift) {
+body table>tbody>tr.selected {
 	&>td {
 		background-color: #D2DFDB !important;
 		color: rgb(97, 68, 172);
@@ -747,11 +747,27 @@ body table>tbody>tr.selected:not(.with-shift) {
 	margin-right: 10px;
 }
 
-tr, button { // doesn't show selected highlight
--webkit-touch-callout: none;
--webkit-user-select: none;
--khtml-user-select: none;
--moz-user-select: none;
--ms-user-select: none;
-user-select: none;
+/* .with-shift tbody tr, button { // doesn't show selected highlight -> switch to color
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+} */
+
+*::selection {
+background: #fff2a8;
+}
+
+*::-moz-selection {
+	background: #fff2a8;
+}
+
+.with-shift *::selection {
+	background-color: transparent;
+}
+
+.with-shift *::-moz-selection {
+	background: transparent;
 }

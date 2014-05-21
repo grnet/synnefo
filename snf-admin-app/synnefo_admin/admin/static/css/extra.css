@@ -1059,7 +1059,7 @@ html body .dataTables_wrapper table > thead > tr > th.sorting, html body .dataTa
 }
 
 /* line 739, ../sass/extra.scss */
-body table > tbody > tr.selected:not(.with-shift) > td {
+body table > tbody > tr.selected > td {
   background-color: #D2DFDB !important;
   color: #6144ac;
 }
@@ -1070,12 +1070,30 @@ body table > tbody > tr.selected:not(.with-shift) > td {
   margin-right: 10px;
 }
 
-/* line 750, ../sass/extra.scss */
-tr, button {
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
+/* .with-shift tbody tr, button { // doesn't show selected highlight -> switch to color
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+} */
+/* line 759, ../sass/extra.scss */
+*::selection {
+  background: #fff2a8;
+}
+
+/* line 763, ../sass/extra.scss */
+*::-moz-selection {
+  background: #fff2a8;
+}
+
+/* line 767, ../sass/extra.scss */
+.with-shift *::selection {
+  background-color: transparent;
+}
+
+/* line 771, ../sass/extra.scss */
+.with-shift *::-moz-selection {
+  background: transparent;
 }

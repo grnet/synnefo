@@ -19,6 +19,7 @@ import sys
 import re
 import random
 import subprocess
+import ipaddr
 from snfdeploy import config
 from snfdeploy import context
 from snfdeploy import constants
@@ -61,6 +62,8 @@ def create_dnsmasq_files(ctx):
 
     for node in ctx.all_nodes:
         info = config.get_info(node=node)
+        if ipaddr.IPAddress(info.ip) not in config.net:
+            raise Exception("%s's IP outside vcluster's network." % node)
         # serve ip and name to nodes
         hosts += "%s,%s,%s,2m\n" % (info.mac, info.ip, info.name)
 

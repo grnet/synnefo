@@ -96,6 +96,10 @@ class VMJSONView(DatatablesView):
                 'display_name': "Details",
                 'value': reverse('admin-details', args=['vm', inst.pk]),
                 'visible': True,
+            }, 'contact_id': {
+                'display_name': "Contact ID",
+                'value': inst.userid,
+                'visible': False,
             }, 'contact_mail': {
                 'display_name': "Contact mail",
                 'value': AstakosUser.objects.get(uuid=inst.userid).email,

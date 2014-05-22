@@ -98,6 +98,10 @@ class NetworkJSONView(DatatablesView):
                 'display_name': "Details",
                 'value': reverse('admin-details', args=['network', inst.id]),
                 'visible': True,
+            }, 'contact_id': {
+                'display_name': "Contact ID",
+                'value': inst.userid,
+                'visible': False,
             }, 'contact_mail': {
                 'display_name': "Contact mail",
                 'value': get_contact_mail(inst),

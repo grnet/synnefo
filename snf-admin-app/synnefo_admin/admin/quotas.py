@@ -75,18 +75,26 @@ def get_allowed_actions(project):
 
 
 def get_contact_mail(inst):
-    if inst.owner:
-        return inst.owner.email,
+    members = inst.members.all()
+    if members:
+        return members[0].email
 
 
 def get_contact_name(inst):
-    if inst.owner:
-        return inst.owner.realname,
+    members = inst.members.all()
+    if members:
+        return members[0].realname
+
+
+def get_contact_id(inst):
+    members = inst.members.all()
+    if members:
+        return members[0].uuid
 
 
 class ProjectJSONView(DatatablesView):
     model = Project
-    fields = ('id', 'id', 'name',)
+    fields = ('id', 'id', 'realname',)
 
     extra = True
 
@@ -112,6 +120,10 @@ class ProjectJSONView(DatatablesView):
                 'display_name': "Details",
                 'value': reverse('admin-details', args=['project', inst.id]),
                 'visible': True,
+            }, 'contact_id': {
+                'display_name': "Contact ID",
+                'value': get_contact_id(inst),
+                'visible': False,
             }, 'contact_mail': {
                 'display_name': "Contact mail",
                 'value': get_contact_mail(inst),

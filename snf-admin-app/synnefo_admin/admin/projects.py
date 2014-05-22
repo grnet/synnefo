@@ -84,6 +84,11 @@ def get_contact_name(inst):
         return inst.owner.realname,
 
 
+def get_contact_id(inst):
+    if inst.owner:
+        return inst.owner.uuid
+
+
 def get_total_resources(inst):
     total = []
     app = inst.last_application
@@ -143,6 +148,11 @@ class ProjectJSONView(DatatablesView):
         extra_dict['details_url'] = {
             'display_name': "Details",
             'value': reverse('admin-details', args=['project', inst.id]),
+            'visible': True,
+        }
+        extra_dict['contact_id'] = {
+            'display_name': "Contact ID",
+            'value': get_contact_id(inst),
             'visible': True,
         }
         extra_dict['contact_mail'] = {

@@ -98,6 +98,10 @@ class IPJSONView(DatatablesView):
                 'display_name': "Details",
                 'value': reverse('admin-details', args=['ip', inst.pk]),
                 'visible': True,
+            }, 'contact_id': {
+                'display_name': "Contact ID",
+                'value': inst.userid,
+                'visible': False,
             }, 'contact_mail': {
                 'display_name': "Contact mail",
                 'value': get_contact_mail(inst),

@@ -95,6 +95,10 @@ class VolumeJSONView(DatatablesView):
                 'display_name': "Details",
                 'value': reverse('admin-details', args=['volume', inst.id]),
                 'visible': True,
+            }, 'contact_id': {
+                'display_name': "Contact ID",
+                'value': inst.userid,
+                'visible': False,
             }, 'contact_mail': {
                 'display_name': "Contact mail",
                 'value': AstakosUser.objects.get(uuid=inst.userid).email,

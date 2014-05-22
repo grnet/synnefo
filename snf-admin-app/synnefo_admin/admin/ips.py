@@ -44,7 +44,8 @@ from astakos.im.functions import send_plain as send_email
 from astakos.im.models import AstakosUser
 
 from eztables.views import DatatablesView
-from actions import AdminAction, AdminActionUnknown, AdminActionNotPermitted
+from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
+                     noop)
 
 templates = {
     'list': 'admin/ip_list.html',
@@ -148,6 +149,18 @@ def generate_actions():
     The actions are: activate/deactivate, accept/reject, verify, contact.
     """
     actions = OrderedDict()
+
+    actions['attach'] = IPAction(name='Attach', f=noop, karma='good',
+                                 reversible=True)
+
+    actions['detach'] = IPAction(name='Detach', f=noop, karma='bad',
+                                 reversible=True)
+
+    actions['delete'] = IPAction(name='Delete', f=noop, karma='bad',
+                                 reversible=False)
+
+    actions['reassign'] = IPAction(name='Reassign to project', f=noop,
+                                   karma='neutral', reversible=True)
 
     actions['contact'] = IPAction(name='Send e-mail', f=send_email)
     return actions

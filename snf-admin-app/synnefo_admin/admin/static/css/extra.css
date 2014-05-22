@@ -1104,3 +1104,9 @@ body table > tbody > tr.selected > td {
   margin-bottom: 20px;
   display: none;
 }
+
+/* line 788, ../sass/extra.scss */
+.warning-duplicate {
+  font-size: 0.95em;
+  font-style: italic;
+}

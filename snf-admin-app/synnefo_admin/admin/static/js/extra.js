@@ -48,7 +48,7 @@ $(function(){
 			}
 			else {
 				var modal = $(this).data('target');
-				addData(modal);
+				drawModal(modal);
 			}
 		}
 	});
@@ -268,9 +268,14 @@ $(function(){
 		updateToggleAllSelect();
 	};
 
-	function updateCounter(counterDOM) {
+	function updateCounter(counterDOM, num) {
 		var $counter = $(counterDOM);
-		$counter.text(selected.items.length);
+		if(num) {
+			$counter.text(num);			
+		}
+		else {
+			$counter.text(selected.items.length);
+		}
 	};
 
 	function detailsTemplate(data) {
@@ -341,6 +346,7 @@ $(function(){
 		var newItem = {
 		   "id": infoObj.id.value,
 		   "item_name": infoObj.item_name.value,
+		   "contact_id": infoObj.contact_id.value,
 		   "contact_name": infoObj.contact_name.value,
 		   "contact_email": infoObj.contact_mail.value,
 		   "actions": {}
@@ -479,7 +485,7 @@ $(function(){
 			});
 			if($toggleAll.hasClass('select') && allSelected) {
 				$toggleAll.addClass('deselect').removeClass('select');
-				$toggleAll.text('Deselect All')
+				$toggleAll.text('Clear All')
 			}
 			else if(!($toggleAll.hasClass('select')) && !allSelected) {
 				$toggleAll.addClass('select').removeClass('deselect');
@@ -523,12 +529,17 @@ $(function(){
 		$modal.find('input[type=text]').val('');
 
 	};
+	function removeWarnings(modal) {
+		var $modal = $(modal);
+		modal.find('.warning-duplicate').remove();
+	}
 
 	$('.modal .reset-all').click(function(e) {
 		// var table = '#'+ 'table-items-total_wrapper';
 		var $modal = $(this).closest('.modal');
 		resetErrors($modal);
 		resetInputs($modal);
+		removeWarnings($modal);
 		resetTable(tableDomID);
 	});
 	$('.modal button[type=submit]').click(function(e) {
@@ -554,51 +565,25 @@ $(function(){
 		}
 	});
 
-	function addData(modalID) {
-		var $idsInput = $(modalID).find('.modal-footer form input[name="ids"]');
-		var $table = $(modalID).find('.table-selected');
-		var selectedNum = selected.items.length;
-		var $counter = $(modalID).find('.num');
-		var idsArray = [];
-		var unique = true;
-		var queryProp = 'id'; // temp
-		// var queryProp;
+
+	function drawModal(modalID) {
+		var $tableBody = $(modalID).find('.table-selected tbody');
 		var modalType = $(modalID).data('type');
-
-		/* *** shouldn't do this check twice! *** */
-
-		// if(modalType === "contact")
-		// 	queryProp = 'id';
-		// else
-		// 	queryProp = 'user_id';
-
-		// for (var i=0; i<selectedNum; i++) {
-		// 	for (var j=0; j<i; j++) {
-		// 		if(selected.items[i][queryProp] === selected.items[j][queryProp]) {
-		// 			unique = false;
-		// 			break;
-		//     	}
-		// 	}
-		// 	if(unique) {
-		   //      idsArray.push(selected.items[i][queryProp]);
-		// 	}
-		// 	unique = true;
-		// }
-		updateCounter($counter);
-		$idsInput.val('['+idsArray+']');
-		drawTableRows($table.find('tbody'), selectedNum,  modalType);
-	};
-
-	function drawTableRows(tableBody, rowsNum, modalType) {
-		var maxVisible = 2;
+		var $counter = $(modalID).find('.num');
+		var rowsNum = selected.items.length;
+		var maxVisible = 5;
 		var currentRow;
-		$(tableBody).empty();
 		var htmlRows = '';
 		var unique = true;
-		var uniqueProp = 'contact_email'; // temp
+		var uniqueProp = '';
 		var count = 0;
+		var $idsInput = $(modalID).find('.modal-footer form input[name="ids"]');
+		var idsArray = [];
+		var warningMsg = '<p class="warning-duplicate">Duplicate accounts have been detected</p>';
+		$tableBody.empty();
 		if(modalType === "contact") {
-			var templateRow = '<tr data-itemid=""><td class="full-name"></td><td class="email"></td><td class="remove"><a>X</a></td></tr>';
+			uniqueProp = 'contact_id'
+			var templateRow = '<tr data-toggle="tooltip" data-placement="bottom" title="" data-itemid=""><td class="full-name"></td><td class="email"></td><td class="remove"><a>X</a></td></tr>';
 			for(var i=0; i<rowsNum; i++) {
 				for(var j = 0; j<i; j++) {
 					if(selected.items[i][uniqueProp] === selected.items[j][uniqueProp]) {
@@ -607,18 +592,31 @@ $(function(){
 					}
 				}
 				if(unique === true) {
-					currentRow =templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].id+'"')
+					idsArray.push(selected.items[i][uniqueProp]);
+					currentRow = templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].contact_id+'"');
+					currentRow = currentRow.replace('title=""', 'title="'+selected.items[i].item_name+'"')
 					currentRow = currentRow.replace('<td class="full-name"></td>', '<td class="full-name">'+selected.items[i].contact_name+'</td>');
 					currentRow = currentRow.replace('<td class="email"></td>', '<td class="email">'+selected.items[i].contact_email+'</td>');
 					if(i >= maxVisible)
 						currentRow = currentRow.replace('<tr', '<tr class="hidden-row"');
 					htmlRows += currentRow;
 				}
+				else {
+					console.log('unique is false')
+					htmlRows = htmlRows.replace('" data-itemid="' + selected.items[i].contact_id + '"', ', '+selected.items[i].item_name+'" data-itemid="' + selected.items[i].contact_id+'"');
+					console.log(htmlRows)
+					$tableBody.closest('table').before(warningMsg);
+				}
 			}
 		}
+
+
 		else {
+			uniqueProp = 'id';
+
 			var templateRow = '<tr data-itemid=""><td class="item-name"></td><td class="item-id"></td><td class="owner-name"></td><td class="owner-email"></td><td class="remove"><a>X</a></td></tr>';
 			for(var i=0; i<rowsNum; i++) {
+				idsArray.push(selected.items[i][uniqueProp]);
 				currentRow =templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].id+'"')
 				currentRow = currentRow.replace('<td class="item-name"></td>', '<td class="item-name">'+selected.items[i].item_name+'</td>');
 				currentRow = currentRow.replace('<td class="item-id"></td>', '<td class="item-id">'+selected.items[i].id+'</td>');
@@ -629,27 +627,29 @@ $(function(){
 				htmlRows += currentRow;
 			}
 		}
-		$(tableBody).append(htmlRows); // should change
+		$tableBody.append(htmlRows); // should change
+		$tableBody.find('tr').tooltip();
+		$idsInput.val('['+idsArray+']');
+		updateCounter($counter, idsArray.length); // ***
 		
-		if(rowsNum >= maxVisible) {
-			var $btn = $(tableBody).closest('.modal').find('.toggle-more');
-			var rowsNum = selected.items.length;
+		if(idsArray.length >= maxVisible) {
+			var $btn = $(modalID).find('.toggle-more');
+			// rowsNum = idsArray.length;
 
 			$btn.css('display', 'block');
 
 			$btn.click( function(e) {
-				// e.preventDefault();
-					var that = this;
+				var that = this;
 				if($(this).hasClass('closed')) {
-					// $(this).text('Show Less');
 					$(this).toggleClass('closed open');
-					$(tableBody).find('tr').slideDown('slow', function() {
+					$tableBody.find('tr').slideDown('slow', function() {
 						$(that).text('Show Less');
+						// $(this).removeClass('hidden-row')
 					});
 				}
 				else if($(this).hasClass('open')) {
 					$(this).toggleClass('closed open');
-					$(tableBody).find('tr.hidden-row').slideUp('slow', function() {
+					$tableBody.find('tr.hidden-row').slideUp('slow', function() {
 					$(that).text('Show All');
 
 					});
@@ -676,6 +676,7 @@ $(function(){
 			idsArray.push(selected.items[i].id);
 		$idsInput.val('[' + idsArray + ']');
 		$tr.slideUp('slow', function() {
+			$(this).siblings('.hidden-row').first().css('display', 'table-row');
 			$(this).siblings('.hidden-row').first().removeClass('hidden-row');
 			if($(this).siblings('.hidden-row').length === 0) {
 				$modal.find('.toggle-more').hide(); // it would be better to be visible and disabled? ***

@@ -236,7 +236,6 @@ def launch():
     assert len(ctx.clusters) == 1
     assert ctx.cluster
     assert ctx.all_nodes
-    image()
     network()
     create_dnsmasq_files(ctx)
     dnsmasq()

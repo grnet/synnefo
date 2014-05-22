@@ -768,6 +768,7 @@ class Network(base.Component):
 class Apache(base.Component):
     REQUIRED_PACKAGES = [
         "apache2",
+        "python-openssl",
         ]
 
     @base.run_cmds
@@ -783,6 +784,7 @@ class Apache(base.Component):
         return [
             ("/etc/apache2/sites-available/synnefo", r1, {}),
             ("/etc/apache2/sites-available/synnefo-ssl", r1, {}),
+            ("/root/firefox_cert_override.py", {}, {})
             ]
 
     @base.run_cmds
@@ -994,7 +996,6 @@ class Astakos(base.Component):
             }
         return [
             ("/etc/synnefo/astakos.conf", r1, {}),
-            ("/root/firefox_cert_override.py", {}, {})
             ]
 
     @base.run_cmds
@@ -1247,7 +1248,6 @@ class Pithos(base.Component):
         return [
             ("/etc/synnefo/pithos.conf", r1, {}),
             ("/etc/synnefo/webclient.conf", r2, {}),
-            ("/root/firefox_cert_override.py", {}, {})
             ]
 
     @base.run_cmds
@@ -1400,7 +1400,6 @@ snf-manage network-create --subnet6={0} \
             }
         return [
             ("/etc/synnefo/cyclades.conf", r1, {}),
-            ("/root/firefox_cert_override.py", {}, {})
             ]
 
     @base.run_cmds

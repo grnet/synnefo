@@ -76,7 +76,7 @@ def get_contact_name(inst):
 
 class NetworkJSONView(DatatablesView):
     model = Network
-    fields = ('pk', 'pk', 'name', 'state', 'created', 'userid',)
+    fields = ('pk', 'pk', 'name', 'state', 'public',)
 
     extra = True
 
@@ -159,8 +159,8 @@ def catalog(request):
     """List view for Cyclades networks."""
     context = {}
     context['action_dict'] = generate_actions()
-    context['columns'] = ["Column 1", "ID", "Name", "Status", "Creation date",
-                          "User ID", "Details", "Summary"]
+    context['columns'] = ["Column 1", "ID", "Name", "Status", "Public",
+                          "Details", "Summary"]
     context['item_type'] = 'network'
 
     return context

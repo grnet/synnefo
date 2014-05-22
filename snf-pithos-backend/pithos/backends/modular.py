@@ -247,7 +247,7 @@ class ModularBackend(BaseBackend):
         map_check_interval = map_check_interval \
             or DEFAULT_MAP_CHECK_INTERVAL
 
-        self.default_account_policy = {}
+        self.default_account_policy = {QUOTA_POLICY: account_quota_policy}
         self.default_container_policy = {
             QUOTA_POLICY: container_quota_policy,
             VERSIONING_POLICY: container_versioning_policy,

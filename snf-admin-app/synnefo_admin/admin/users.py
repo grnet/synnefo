@@ -47,7 +47,8 @@ from astakos.api.quotas import get_quota_usage
 from astakos.im.functions import send_plain as send_email
 
 from eztables.views import DatatablesView
-from actions import AdminAction, AdminActionUnknown, AdminActionNotPermitted
+from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
+                     noop)
 
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
 SHOW_DELETED_VMS = getattr(settings, 'ADMIN_SHOW_DELETED_VMS', False)
@@ -162,6 +163,13 @@ class UserJSONView(DatatablesView):
             'visible': True,
         }
 
+        if users.check_accept(inst):
+            extra_dict['activation_url'] = {
+                'display_name': "Activation URL",
+                'value': inst.get_activation_url(),
+                'visible': True,
+            }
+
         if inst.accepted_policy:
             extra_dict['moderation_policy'] = {
                 'display_name': "Moderation policy",
@@ -219,6 +227,11 @@ def generate_actions():
     actions['verify'] = UserAction(name='Verify', f=users.verify,
                                    c=users.check_verify,
                                    karma='good', reversible=False)
+
+    actions['resend_verification'] = UserAction(name='Resend verification',
+                                                f=noop, karma='good',
+                                                c=users.check_verify,
+                                                reversible=False)
 
     actions['contact'] = UserAction(name='Send e-mail', f=send_email)
     return actions

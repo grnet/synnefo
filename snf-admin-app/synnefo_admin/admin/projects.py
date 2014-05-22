@@ -46,7 +46,7 @@ from astakos.im.functions import approve_application
 
 from eztables.views import DatatablesView
 from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
-                     nop)
+                     noop)
 
 templates = {
     'list': 'admin/project_list.html',
@@ -142,7 +142,7 @@ class ProjectJSONView(DatatablesView):
         }
         extra_dict['item_name'] = {
             'display_name': "Name",
-            'value': inst.name,
+            'value': inst.realname,
             'visible': False,
         }
         extra_dict['details_url'] = {
@@ -230,17 +230,17 @@ def generate_actions():
 
     actions['approve'] = ProjectAction(name='Approve', f=approve_application)
 
-    actions['deny'] = ProjectAction(name='Deny', f=nop)
+    actions['deny'] = ProjectAction(name='Deny', f=noop)
 
-    actions['suspend'] = ProjectAction(name='Suspend', f=nop,)
+    actions['suspend'] = ProjectAction(name='Suspend', f=noop,)
 
-    actions['unsuspend'] = ProjectAction(name='Release suspension', f=nop)
+    actions['unsuspend'] = ProjectAction(name='Release suspension', f=noop)
 
-    actions['terminate'] = ProjectAction(name='Terminate', f=nop)
+    actions['terminate'] = ProjectAction(name='Terminate', f=noop)
 
-    actions['reinstate'] = ProjectAction(name='Reinstate', f=nop)
+    actions['reinstate'] = ProjectAction(name='Reinstate', f=noop)
 
-    actions['contact'] = ProjectAction(name='Send e-mail', f=nop)
+    actions['contact'] = ProjectAction(name='Send e-mail', f=noop)
 
     return actions
 

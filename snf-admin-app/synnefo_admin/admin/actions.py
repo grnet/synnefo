@@ -113,6 +113,6 @@ class AdminActionNotImplemented(Exception):
     pass
 
 
-def nop(**kwargs):
+def noop(**kwargs):
     """Placeholder function."""
     raise AdminActionNotImplemented

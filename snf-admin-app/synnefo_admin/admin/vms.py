@@ -38,7 +38,7 @@ from collections import OrderedDict
 from django.views.decorators.csrf import csrf_exempt
 from django.core.urlresolvers import reverse
 
-from actions import AdminAction, nop
+from actions import AdminAction, noop
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser, ProjectMembership, Project
@@ -236,7 +236,7 @@ def generate_actions():
                                  c=check_reboot,
                                  karma='bad', reversible=True)
 
-    actions['resize'] = VMAction(name='Resize', f=nop,
+    actions['resize'] = VMAction(name='Resize', f=noop,
                                  karma='neutral', reversible=False)
 
     actions['destroy'] = VMAction(name='Destroy', f=servers_backend.destroy,
@@ -252,10 +252,10 @@ def generate_actions():
                                   f=vm_suspend_release,
                                   karma='good', reversible=True)
 
-    actions['reassign'] = VMAction(name='Reassign to project', f=nop,
+    actions['reassign'] = VMAction(name='Reassign to project', f=noop,
                                    karma='neutral', reversible=True)
 
-    actions['change_owner'] = VMAction(name='Change owner', f=nop,
+    actions['change_owner'] = VMAction(name='Change owner', f=noop,
                                        karma='neutral', reversible=True)
 
     actions['contact'] = VMAction(name='Send e-mail', f=send_email)

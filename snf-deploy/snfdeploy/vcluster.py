@@ -21,8 +21,16 @@ import random
 import subprocess
 from snfdeploy import config
 from snfdeploy import context
+from snfdeploy import constants
 from snfdeploy.lib import check_pidfile, create_dir, get_default_route, \
     random_mac
+
+
+def runcmd(cmd):
+    if config.dry_run:
+        print cmd
+    else:
+        os.system(cmd)
 
 
 def help():
@@ -45,27 +53,29 @@ Usage: snf-deploy vcluster
 def create_dnsmasq_files(ctx):
 
     print("Customize dnsmasq..")
-    out = config.dns_dir
 
-    hostsfile = open(out + "/dhcp-hostsfile", "w")
-    optsfile = open(out + "/dhcp-optsfile", "w")
-    conffile = open(out + "/conf-file", "w")
+    hosts = opts = conf = ""
+    hostsf = os.path.join(config.dns_dir, "dhcp-hostsfile")
+    optsf = os.path.join(config.dns_dir, "dhcp-optsfile")
+    conff = os.path.join(config.dns_dir, "conf-file")
 
     for node in ctx.all_nodes:
         info = config.get_info(node=node)
         # serve ip and name to nodes
-        hostsfile.write("%s,%s,%s,2m\n" % (info.mac, info.ip, info.name))
+        hosts += "%s,%s,%s,2m\n" % (info.mac, info.ip, info.name)
 
-    hostsfile.write("52:54:56:*:*:*,ignore\n")
+    hosts += "52:54:56:*:*:*,ignore\n"
 
-    # Netmask
-    optsfile.write("1,%s\n" % config.net.netmask)
-    # Gateway
-    optsfile.write("3,%s\n" % config.gateway)
-    # Namesevers
-    optsfile.write("6,%s\n" % "8.8.8.8")
+    opts = """
+# Netmask
+1,{0}
+# Gateway
+3,{1}
+# Nameservers
+6,{2}
+""".format(config.net.netmask, config.gateway, constants.EXTERNAL_PUBLIC_DNS)
 
-    dnsconf = """
+    conf = """
 user=dnsmasq
 bogus-priv
 no-poll
@@ -79,21 +89,32 @@ no-resolv
 port=0
 """.format(ctx.ns.ip)
 
-    dnsconf += """
+    conf += """
 # serve domain and search domain for resolv.conf
 domain={5}
 interface={0}
 dhcp-hostsfile={1}
 dhcp-optsfile={2}
 dhcp-range={0},{4},static,2m
-""".format(config.bridge, hostsfile.name, optsfile.name,
+""".format(config.bridge, hostsf, optsf,
            info.domain, config.net.network, info.domain)
 
-    conffile.write(dnsconf)
+    if config.dry_run:
+        print hostsf, hosts
+        print optsf, opts
+        print conff, conf
+    else:
+        hostsfile = open(hostsf, "w")
+        optsfile = open(optsf, "w")
+        conffile = open(conff, "w")
 
-    hostsfile.close()
-    optsfile.close()
-    conffile.close()
+        hostsfile.write(hosts)
+        optsfile.write(opts)
+        conffile.write(conf)
+
+        hostsfile.close()
+        optsfile.close()
+        conffile.close()
 
 
 def cleanup():
@@ -113,7 +134,7 @@ def cleanup():
     iptables -D FORWARD -i {2} -j ACCEPT
     iptables -D OUTPUT -o {2} -j ACCEPT
     """.format(config.subnet, get_default_route()[1], config.bridge)
-    os.system(cmd)
+    runcmd(cmd)
 
     print("Deleting bridge %s.." % config.bridge)
     cmd = """
@@ -123,7 +144,7 @@ def cleanup():
     sleep 1
     brctl delbr {0}
     """.format(config.bridge, config.gateway, config.net.prefixlen)
-    os.system(cmd)
+    runcmd(cmd)
 
 
 def network():
@@ -136,7 +157,7 @@ def network():
     ip link set promisc on dev {0}
     ip addr add {1}/{2} dev {0}
     """.format(config.bridge, config.gateway, config.net.prefixlen)
-    os.system(cmd)
+    runcmd(cmd)
 
     print("Activate NAT..")
     cmd = """
@@ -146,7 +167,7 @@ def network():
     iptables -I FORWARD 1 -i {2} -j ACCEPT
     iptables -I OUTPUT 1 -o {2} -j ACCEPT
     """.format(config.subnet, get_default_route()[1], config.bridge)
-    os.system(cmd)
+    runcmd(cmd)
 
 
 def image():
@@ -173,7 +194,7 @@ def cluster(ctx):
 
     # TODO: check if the cluster is up and running instead of sleeping 30 secs
     time.sleep(30)
-    os.system("reset")
+    runcmd("reset")
 
 
 def _launch_vm(name, mac):
@@ -221,14 +242,14 @@ def _launch_vm(name, mac):
 """.format(name, config.run_dir, disks, nics,
            config.mem, config.smp, graphics, kernel)
     print cmd
-    os.system(cmd)
+    runcmd(cmd)
 
 
 def dnsmasq():
     check_pidfile(config.run_dir + "/dnsmasq.pid")
     cmd = "dnsmasq --pid-file={0}/dnsmasq.pid --conf-file={1}/conf-file"\
         .format(config.run_dir, config.dns_dir)
-    os.system(cmd)
+    runcmd(cmd)
 
 
 def launch():

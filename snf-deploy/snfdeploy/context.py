@@ -25,7 +25,7 @@ context = sys.modules[__name__]
 class Context(object):
 
     def __repr__(self):
-        ret = "[%s]" %  datetime.datetime.now().strftime("%H:%M:%S")
+        ret = "[%s]" % datetime.datetime.now().strftime("%H:%M:%S")
         ret += " [%s %s]" % (self.node_info.ip, self.node_info.name)
         ret += " [%s %s %s %s]" % \
             (self.node, self.role, self.setup, self.cluster)

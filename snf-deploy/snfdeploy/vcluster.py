@@ -18,6 +18,7 @@ import os
 import sys
 import re
 import random
+import subprocess
 from snfdeploy import config
 from snfdeploy import context
 from snfdeploy.lib import check_pidfile, create_dir, get_default_route, \
@@ -149,32 +150,20 @@ def network():
 
 
 def image():
-    # FIXME: Create a wheezy image with debootstrap and use it for vcluster
-    url = config.image_url
-
-    disk0 = "{0}/vcluster.disk0".format(config.vcluster_dir)
-    disk1 = "{0}/vcluster.disk1".format(config.vcluster_dir)
+    disk0 = os.path.join(config.vcluster_dir, "disk0")
+    disk1 = os.path.join(config.vcluster_dir, "disk1")
 
     create_dir(config.vcluster_dir, False)
 
-    if url and not os.path.exists(disk0):
-        cmd = "wget {0} -O {1}".format(url, disk0)
-        os.system(cmd)
+    env = os.environ.copy()
+    env.update({
+        "SIZE": config.disk_size,
+        "DISK0": disk0,
+        "DISK1": disk1,
+        })
+    cmd = os.path.join(config.lib_dir, "mkimage.sh")
 
-    if config.create_extra_disk and not os.path.exists(disk1):
-        disk1_base = os.path.basename(disk1)
-        if config.lvg:
-            cmd = """
-lvcreate -L30G -n{0} {1}
-""".format(disk1_base, config.lvg)
-            os.system(cmd)
-            cmd = """
-ln -s /dev/{0}/{1} {2}
-""".format(config.lvg, disk1_base, disk1)
-            os.system(cmd)
-        else:
-            cmd = "truncate -s 30G {0}".format(disk1)
-            os.system(cmd)
+    subprocess.Popen([cmd], env=env)
 
 
 def cluster(ctx):
@@ -190,6 +179,9 @@ def cluster(ctx):
 def _launch_vm(name, mac):
     check_pidfile("%s/%s.pid" % (config.run_dir, name))
 
+    disk0 = os.path.join(config.vcluster_dir, "disk0")
+    disk1 = os.path.join(config.vcluster_dir, "disk1")
+
     print("Launching cluster node {0}..".format(name))
     os.environ["BRIDGE"] = config.bridge
     if config.vnc:
@@ -198,17 +190,13 @@ def _launch_vm(name, mac):
         graphics = "-nographic"
 
     disks = """ \
--drive file={0}/vcluster.disk0,format=raw,if=none,id=drive0,snapshot=on \
+-drive file={0},format=raw,if=none,id=drive0,snapshot=on \
 -device virtio-blk-pci,drive=drive0,id=virtio-blk-pci.0 \
-""".format(config.vcluster_dir)
-
-    if config.create_extra_disk:
-        disks += """ \
--drive file={0}/vcluster.disk1,format=raw,if=none,id=drive1,snapshot=on \
+-drive file={1},format=raw,if=none,id=drive1,snapshot=on \
 -device virtio-blk-pci,drive=drive1,id=virtio-blk-pci.1 \
-""".format(config.vcluster_dir)
+""".format(disk0, disk1)
 
-    ifup = config.lib_dir + "/ifup"
+    ifup = os.path.join(config.lib_dir, "ifup")
     nics = """ \
 -netdev tap,id=netdev0,script={0},downscript=no \
 -device virtio-net-pci,mac={1},netdev=netdev0,id=virtio-net-pci.0 \
@@ -218,13 +206,20 @@ def _launch_vm(name, mac):
 -device virtio-net-pci,mac={3},netdev=netdev2,id=virtio-net-pci.2 \
 """.format(ifup, mac, random_mac(), random_mac())
 
+    kernel = """ \
+--kernel /boot/vmlinuz-3.2.0-4-amd64 \
+--initrd /boot/initrd.img-3.2.0-4-amd64 \
+--append "root=/dev/vda1 ro console=ttyS0,38400" \
+"""
+
     cmd = """
 /usr/bin/kvm -name {0} -pidfile {1}/{0}.pid -balloon virtio -daemonize \
 -monitor unix:{1}/{0}.monitor,server,nowait -usbdevice tablet -boot c \
 {2} \
 {3} \
--m {4} -smp {5} {6} \
-""".format(name, config.run_dir, disks, nics, config.mem, config.smp, graphics)
+-m {4} -smp {5} {6} {7} \
+""".format(name, config.run_dir, disks, nics,
+           config.mem, config.smp, graphics, kernel)
     print cmd
     os.system(cmd)
 

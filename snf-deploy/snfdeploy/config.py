@@ -153,7 +153,6 @@ def init(args):
 
     config.testing_vm = getbool(config.testing_vm)
     config.use_local_packages = getbool(config.use_local_packages)
-    config.create_extra_disk = getbool(config.create_extra_disk)
 
     config.net = ipaddr.IPNetwork(config.subnet)
     config.all_nodes = config.nodes.sections()

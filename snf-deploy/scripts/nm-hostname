@@ -1,0 +1,6 @@
+#!/bin/bash
+
+if [ -n "$DHCP4_HOST_NAME" ]; then
+        echo $DHCP4_HOST_NAME > /etc/hostname
+        hostname $DHCP4_HOST_NAME
+fi

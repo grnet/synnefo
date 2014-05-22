@@ -69,7 +69,7 @@ def get_allowed_actions(vm):
 def get_flavor_info(vm):
     return ('CPU: ' + str(vm.flavor.cpu) + ', RAM: ' + str(vm.flavor.ram) +
             ', Disk size: ' + str(vm.flavor.disk) + ', Disk template:' +
-            str(vm.flavor.disk_template))
+            str(vm.flavor.volume_type.disk_template))
 
 
 class VMJSONView(DatatablesView):

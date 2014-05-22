@@ -47,22 +47,44 @@ def create(userid, name, password, flavor, image_id, metadata={},
            personality=[], networks=None, use_backend=None, project=None,
            volumes=None):
 
-    # Get image information
-    # TODO: Image is not mandatory if disks are specified
+    utils.check_name_length(name, VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
+                            "Server name is too long")
+
+    # Get the image, if any, that is used for the first volume
+    vol_image_id = None
+    if volumes:
+        vol = volumes[0]
+        if vol["source_type"] in ["image", "snapshot"]:
+            vol_image_id = vol["source_uuid"]
+
+    # Check conflict between server's and volume's image
+    if image_id and vol_image_id and image_id != vol_image_id:
+        raise faults.BadRequest("The specified server's image is different"
+                                " from the the source of the first volume.")
+    elif vol_image_id and not image_id:
+        image_id = vol_image_id
+    elif not image_id:
+        raise faults.BadRequest("You need to specify either an image or a"
+                                " block device mapping.")
+
+    # Get image info
     image = util.get_image_dict(image_id, userid)
 
-    # Check that image fits into the disk
-    if int(image["size"]) > (flavor.disk << 30):
-        msg = ("Flavor's disk size '%s' is smaller than the image's"
-               "size '%s'" % (flavor.disk << 30, image["size"]))
-        raise faults.BadRequest(msg)
+    if not volumes:
+        # If no volumes are specified, we automatically create a volume with
+        # the size of the flavor and filled with the specified image.
+        volumes = [{"source_type": "image",
+                    "source_uuid": image_id,
+                    "size": flavor.disk,
+                    "delete_on_termination": True}]
+    assert(len(volumes) > 0), "Cannot create server without volumes"
+
+    if volumes[0]["source_type"] == "blank":
+        raise faults.BadRequest("Root volume cannot be blank")
 
     if use_backend is None:
         # Allocate server to a Ganeti backend
         use_backend = allocate_new_server(userid, flavor)
-
-    utils.check_name_length(name, VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
-                            "Server name is too long")
 
     # Create the ports for the server
     ports = create_instance_ports(userid, networks)
@@ -76,7 +98,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
                                        backend=use_backend,
                                        userid=userid,
                                        project=project,
-                                       imageid=image["id"],
+                                       imageid=image_id,
                                        flavor=flavor,
                                        operstate="BUILD")
     log.info("Created entry in DB for VM '%s'", vm)
@@ -87,19 +109,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
         port.index = index
         port.save()
 
-    # If no volumes are specified, we automatically create a volume with the
-    # size of the flavor and filled with the specified image.
-    if not volumes:
-        volumes = [{"source_type": "image",
-                    "source_uuid": image["id"],
-                    "size": flavor.disk,
-                    "delete_on_termination": True}]
-
-    assert(len(volumes) > 0), "Cannot create server without volumes"
-
-    if volumes[0]["source_type"] == "blank":
-        raise faults.BadRequest("Root volume cannot be blank")
-
+    # Create instance volumes
     server_vtype = flavor.volume_type
     server_volumes = []
     for index, vol_info in enumerate(volumes):
@@ -115,6 +125,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
                 raise faults.BadRequest("Cannot use volume while it is in %s"
                                         " status" % v.status)
             v.delete_on_termination = vol_info["delete_on_termination"]
+            v.machine = vm
             v.index = index
             v.save()
         else:
@@ -123,6 +134,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
                                index=index, **vol_info)
         server_volumes.append(v)
 
+    # Create instance metadata
     for key, val in metadata.items():
         utils.check_name_length(key, VirtualMachineMetadata.KEY_LENGTH,
                                 "Metadata key is too long")
@@ -180,6 +192,7 @@ def create_server(vm, nics, volumes, flavor, image, personality, password):
         'img_personality': json.dumps(personality),
         'img_properties': json.dumps(image['metadata']),
     })
+
     # send job to Ganeti
     try:
         jobID = backend.create_instance(vm, nics, volumes, flavor, image)

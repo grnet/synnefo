@@ -149,7 +149,10 @@ def get_image(image_id, user_id):
     """Return an Image instance or raise ItemNotFound."""
 
     with PlanktonBackend(user_id) as backend:
-        return backend.get_image(image_id)
+        try:
+            return backend.get_image(image_id)
+        except faults.ItemNotFound:
+            raise faults.ItemNotFound("Image '%s' not found" % image_id)
 
 
 def get_image_dict(image_id, user_id):

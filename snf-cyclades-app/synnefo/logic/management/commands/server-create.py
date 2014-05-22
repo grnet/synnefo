@@ -43,7 +43,7 @@ class Command(SynnefoCommand):
                     help="An arbitrary string for naming the server"),
         make_option("--user-id", dest="user_id",
                     help="Unique identifier of the owner of the server"),
-        make_option("--image-id", dest="image_id",
+        make_option("--image-id", dest="image_id", default=None,
                     help="Unique identifier of the image."
                          " Use snf-manage image-list to find out"
                          " available images."),
@@ -85,6 +85,7 @@ class Command(SynnefoCommand):
         image_id = options['image_id']
         flavor_id = options['flavor_id']
         password = options['password']
+        volumes = options['volumes']
 
         if not name:
             raise CommandError("name is mandatory")
@@ -94,19 +95,21 @@ class Command(SynnefoCommand):
             raise CommandError("password is mandatory")
         if not flavor_id:
             raise CommandError("flavor-id is mandatory")
-        if not image_id:
+        if not image_id and not volumes:
             raise CommandError("image-id is mandatory")
 
         flavor = common.get_resource("flavor", flavor_id)
-        image = common.get_image(image_id, user_id)
+        if image_id is not None:
+            common.get_image(image_id, user_id)
+
         if backend_id:
             backend = common.get_resource("backend", backend_id)
         else:
             backend = None
 
         connection_list = parse_connections(options["connections"])
-        volumes_list = parse_volumes(options["volumes"])
-        server = servers.create(user_id, name, password, flavor, image["id"],
+        volumes_list = parse_volumes(volumes)
+        server = servers.create(user_id, name, password, flavor, image_id,
                                 networks=connection_list,
                                 volumes=volumes_list,
                                 use_backend=backend)

@@ -59,6 +59,8 @@ def volume_to_dict(volume, detail=True):
             "attachments": get_volume_attachments(volume),
             "volume_type": volume.volume_type_id,
             "delete_on_termination": volume.delete_on_termination,
+            "user_id": volume.userid,
+            "tenant_id": volume.project,
             #"availabilit_zone": None,
             #"bootable": None,
             #"os-vol-tenant-attr:tenant_id": None,

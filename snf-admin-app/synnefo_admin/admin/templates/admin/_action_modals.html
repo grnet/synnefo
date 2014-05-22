@@ -19,8 +19,10 @@
                     <textarea name="text" form="contactForm" class="content body"></textarea>
                     <a data-error="empty-body" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="Missing the body of the e-mail."></a>
                 </div>
-                {% endif %}
+                <p>You have choosen to <em class="positive elem">{{ op }}</em> the following <em class="num elem positive"></em> users:
+                {% else %}
                 <p>You have choosen to <em class="positive elem">{{ op }}</em> the following <em class="num elem positive"></em> items:
+                {% endif %}
                     <a data-error="no-selected" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="There are no selected items to complete this action."></a>
                 </p>
                 <table class="table-selected table table-bordered">

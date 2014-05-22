@@ -15,7 +15,8 @@
 
 from dbwrapper import DBWrapper
 from node import (Node, ROOTNODE, SERIAL, NODE, HASH, SIZE, TYPE, MTIME, MUSER,
-                  UUID, CHECKSUM, CLUSTER, MATCH_PREFIX, MATCH_EXACT)
+                  UUID, CHECKSUM, CLUSTER, MATCH_PREFIX, MATCH_EXACT,
+                  AVAILABLE, MAP_CHECK_TIMESTAMP)
 from permissions import Permissions, READ, WRITE
 from config import Config
 from quotaholder_serials import QuotaholderSerial
@@ -23,5 +24,6 @@ from quotaholder_serials import QuotaholderSerial
 __all__ = ["DBWrapper",
            "Node", "ROOTNODE", "SERIAL", "NODE", "HASH", "SIZE", "TYPE",
            "MTIME", "MUSER", "UUID", "CHECKSUM", "CLUSTER", "MATCH_PREFIX",
-           "MATCH_EXACT", "Permissions", "READ", "WRITE", "Config",
+           "MATCH_EXACT", "AVAILABLE", "MAP_CHECK_TIMESTAMP",
+           "Permissions", "READ", "WRITE", "Config",
            "QuotaholderSerial"]

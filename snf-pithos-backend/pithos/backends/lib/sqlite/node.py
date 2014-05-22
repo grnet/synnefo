@@ -25,7 +25,7 @@ from pithos.backends.filter import parse_filters
 ROOTNODE = 0
 
 (SERIAL, NODE, HASH, SIZE, TYPE, SOURCE, MTIME, MUSER, UUID, CHECKSUM,
- CLUSTER) = range(11)
+ CLUSTER, AVAILABLE, MAP_CHECK_TIMESTAMP) = range(13)
 
 (MATCH_PREFIX, MATCH_EXACT) = range(2)
 
@@ -79,7 +79,9 @@ _propnames = {
     'muser': 7,
     'uuid': 8,
     'checksum': 9,
-    'cluster': 10
+    'cluster': 10,
+    'avalaible': 11,
+    'map_check_timestamp': 12
 }
 
 
@@ -147,6 +149,8 @@ class Node(DBWorker):
                             uuid       text    not null default '',
                             checksum   text    not null default '',
                             cluster    integer not null default 0,
+                            available   boolean not null default true,
+                            map_check_timestamp integer,
                             foreign key (node)
                             references nodes(node)
                             on update cascade
@@ -232,7 +236,7 @@ class Node(DBWorker):
            Return None if the node is not found.
         """
 
-        q = ("select path from nodes as n1, nodes as n2 "
+        q = ("select n2.path from nodes as n1, nodes as n2 "
              "where n2.node = n1.parent and n1.node = ?")
         self.execute(q, (node,))
         l = self.fetchone()
@@ -242,7 +246,7 @@ class Node(DBWorker):
         """Return the properties of all versions at node.
            If keys is empty, return all properties in the order
            (serial, node, hash, size, type, source, mtime, muser, uuid,
-            checksum, cluster).
+            checksum, cluster, available, map_check_timestamp).
         """
 
         q = ("select serial, node, hash, size, type, source, mtime, muser, "
@@ -514,7 +518,7 @@ class Node(DBWorker):
 
         # The latest version.
         q = ("select serial, node, hash, size, type, source, mtime, muser, "
-             "uuid, checksum, cluster "
+             "uuid, checksum, cluster, available, map_check_timestamp "
              "from versions v "
              "where serial = %s "
              "and cluster != ?")
@@ -572,17 +576,18 @@ class Node(DBWorker):
 
     def version_create(self, node, hash, size, type, source, muser, uuid,
                        checksum, cluster=0,
-                       update_statistics_ancestors_depth=None):
+                       update_statistics_ancestors_depth=None,
+                       available=True, map_check_timestamp=None):
         """Create a new version from the given properties.
            Return the (serial, mtime) of the new version.
         """
 
         q = ("insert into versions (node, hash, size, type, source, mtime, "
-             "muser, uuid, checksum, cluster) "
-             "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+             "muser, uuid, checksum, cluster, available, map_check_timestamp) "
+             "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         mtime = time()
         props = (node, hash, size, type, source, mtime, muser,
-                 uuid, checksum, cluster)
+                 uuid, checksum, cluster, available, map_check_timestamp)
         serial = self.execute(q, props).lastrowid
         self.statistics_update_ancestors(node, 1, size, mtime, cluster,
                                          update_statistics_ancestors_depth)
@@ -595,7 +600,7 @@ class Node(DBWorker):
         """Lookup the current version of the given node.
            Return a list with its properties:
            (serial, node, hash, size, type, source, mtime,
-            muser, uuid, checksum, cluster)
+            muser, uuid, checksum, cluster, available, map_check_timestamp)
            or None if the current version is not found in the given cluster.
         """
 
@@ -609,7 +614,8 @@ class Node(DBWorker):
             q = q % ("serial", subq)
         else:
             q = q % (("serial, node, hash, size, type, source, mtime, muser, "
-                      "uuid, checksum, cluster"),
+                      "uuid, checksum, cluster, "
+                      "available, map_check_timestamp"),
                      subq)
 
         self.execute(q, args + [cluster])
@@ -639,7 +645,8 @@ class Node(DBWorker):
             q = q % ("serial", subq, '')
         else:
             q = q % (("serial, v.node, hash, size, type, source, mtime, "
-                      "muser, uuid, checksum, cluster"),
+                      "muser, uuid, checksum, cluster, "
+                      "available, map_check_timestamp"),
                      subq,
                      "order by path" if order_by_path else "")
 
@@ -653,11 +660,11 @@ class Node(DBWorker):
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
            (serial, node, hash, size, type, source, mtime, muser, uuid,
-            checksum, cluster).
+            checksum, cluster, available, map_check_timestamp).
         """
 
         q = ("select serial, node, hash, size, type, source, mtime, muser, "
-             "uuid, checksum, cluster "
+             "uuid, checksum, cluster, available, map_check_timestamp "
              "from versions "
              "where serial = ? ")
         args = [serial]
@@ -1013,7 +1020,8 @@ class Node(DBWorker):
             q = q % ("v.serial", subq)
         else:
             q = q % (("v.serial, v.node, v.hash, v.size, v.type, v.source, "
-                      "v.mtime, v.muser, v.uuid, v.checksum, v.cluster"),
+                      "v.mtime, v.muser, v.uuid, v.checksum, v.cluster, "
+                      "v.available, v.map_check_timestamp"),
                      subq)
         args += [except_cluster, parent, start, nextling]
         start_index = len(args) - 2
@@ -1036,8 +1044,9 @@ class Node(DBWorker):
         q += " order by n.path"
 
         if not delimiter:
-            q += " limit ?"
-            args.append(limit)
+            if limit:
+                q += " limit ?"
+                args.append(limit)
             execute(q, args)
             return self.fetchall(), ()
 

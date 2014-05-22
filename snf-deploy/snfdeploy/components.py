@@ -800,6 +800,7 @@ class Apache(base.Component):
 
 class Gunicorn(base.Component):
     REQUIRED_PACKAGES = [
+        "python-gevent",
         "gunicorn",
         ]
 
@@ -824,6 +825,7 @@ class Gunicorn(base.Component):
 
 class Common(base.Component):
     REQUIRED_PACKAGES = [
+        "ntp",
         "snf-common",
         "snf-branding",
         ]
@@ -852,6 +854,7 @@ class Common(base.Component):
 
 class Webproject(base.Component):
     REQUIRED_PACKAGES = [
+        "python-psycopg2",
         "python-astakosclient",
         "snf-django-lib",
         "snf-webproject",
@@ -1145,6 +1148,7 @@ EOF
 
 class NFS(base.Component):
     REQUIRED_PACKAGES = [
+        "rpcbind",
         "nfs-kernel-server"
         ]
 
@@ -1266,6 +1270,7 @@ class Pithos(base.Component):
 class PithosBackend(base.Component):
     REQUIRED_PACKAGES = [
         "snf-pithos-backend",
+        "python-psycopg2",
         ]
 
     def _configure(self):

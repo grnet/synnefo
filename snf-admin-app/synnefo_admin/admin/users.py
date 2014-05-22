@@ -102,58 +102,78 @@ def get_user_groups(user):
     return groups
 
 
+def get_suspended_vms(user):
+    vms = VirtualMachine.objects.filter(userid=user.uuid, suspended=True)
+    return map(lambda x: x.name, list(vms))
+
+
 class UserJSONView(DatatablesView):
     model = AstakosUser
-    fields = ('uuid',
-              'email',
-              'first_name',
-              'last_name',
-              'is_active',
-              )
+    fields = ('uuid', 'email', 'first_name', 'last_name', 'is_active',
+              'is_rejected', 'moderated', 'email_verified')
 
     extra = True
 
     def get_extra_data_row(self, inst):
-        extra_dict = {
-            'allowed_actions': {
-                'display_name': "",
-                'value': get_allowed_actions(inst),
-                'visible': False,
-            }, 'id': {
-                'display_name': "UUID",
-                'value': inst.uuid,
-                'visible': True,
-            }, 'item_name': {
-                'display_name': "Name",
-                'value': inst.realname,
-                'visible': False,
-            }, 'details_url': {
-                'display_name': "Details",
-                'value': reverse('admin-details', args=['user', inst.uuid]),
-                'visible': True,
-            }, 'contact_mail': {
-                'display_name': "Contact mail",
-                'value': inst.email,
-                'visible': False,
-            }, 'contact_name': {
-                'display_name': "Contact name",
-                'value': inst.realname,
-                'visible': False,
-            }, 'groups': {
-                'display_name': "Groups",
-                'value': get_user_groups(inst),
-                'visible': True,
-            }, 'enabled_providers': {
-                'display_name': "Enabled providers",
-                'value': get_enabled_providers(inst),
-                'visible': True,
-            }
+        extra_dict = OrderedDict()
+        extra_dict['allowed_actions'] = {
+            'display_name': "",
+            'value': get_allowed_actions(inst),
+            'visible': False,
+        }
+        extra_dict['id'] = {
+            'display_name': "UUID",
+            'value': inst.uuid,
+            'visible': True,
+        }
+        extra_dict['item_name'] = {
+            'display_name': "Name",
+            'value': inst.realname,
+            'visible': False,
+        }
+        extra_dict['details_url'] = {
+            'display_name': "Details",
+            'value': reverse('admin-details', args=['user', inst.uuid]),
+            'visible': True,
+        }
+        extra_dict['contact_id'] = {
+            'display_name': "Contact ID",
+            'value': inst.uuid,
+            'visible': False,
+        }
+        extra_dict['contact_mail'] = {
+            'display_name': "Contact mail",
+            'value': inst.email,
+            'visible': False,
+        }
+        extra_dict['contact_name'] = {
+            'display_name': "Contact name",
+            'value': inst.realname,
+            'visible': False,
+        }
+        extra_dict['groups'] = {
+            'display_name': "Groups",
+            'value': get_user_groups(inst),
+            'visible': True,
+        }
+        extra_dict['enabled_providers'] = {
+            'display_name': "Enabled providers",
+            'value': get_enabled_providers(inst),
+            'visible': True,
         }
 
         if inst.accepted_policy:
             extra_dict['moderation_policy'] = {
                 'display_name': "Moderation policy",
                 'value': inst.accepted_policy,
+                'visible': True,
+            }
+
+        vms = get_suspended_vms(inst)
+        if vms:
+            extra_dict['suspended_vms'] = {
+                'display_name': "Suspended VMs",
+                'value': ', '.join(vms),
                 'visible': True,
             }
 
@@ -223,7 +243,8 @@ def catalog(request):
     context = {}
     context['action_dict'] = generate_actions()
     context['columns'] = ["Column 1", "E-mail", "First Name", "Last Name",
-                          "Active", "Details", "Summary"]
+                          "Active", "Rejected", "Moderated", "Verified",
+                          "Details", "Summary"]
     context['item_type'] = 'user'
 
     return context

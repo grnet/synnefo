@@ -32,16 +32,18 @@ $(function(){
 			if($(this).hasClass('toggle-selected')) {
 				if($(this).hasClass('open')) {
 					$(this).removeClass('open');
-					$('#table-items-selected_wrapper').animate({'min-height': 0}, 'slow',
-						function() {
-							$(this).slideUp('slow');
-						})
+					$('#table-items-selected_wrapper').slideUp('slow');
+					// $('#table-items-selected_wrapper').animate({'min-height': 0}, 'slow',
+					// 	function() {
+					// 		$(this).slideUp('slow');
+					// 	})
 				}
 				else {
 					$(this).addClass('open');
-					$('#table-items-selected_wrapper').slideDown('slow', function() {
-						$(this).animate({'min-height': '400px'})
-					})
+					// $('#table-items-selected_wrapper').slideDown('slow', function() {
+					// 	$(this).animate({'min-height': '400px'})
+					// })
+	$('#table-items-selected_wrapper').slideDown('slow');
 				}
 			}
 			else {
@@ -66,7 +68,7 @@ $(function(){
 	var url = $('#table-items-total').data("url");
 	var serverside = Boolean($('#table-items-total').data("server-side"));
 	var table;
-	var tableSelected;
+	// var tableSelected;
 	$.fn.dataTable.ext.legacy.ajax = true;
 	var extraData;
 	// sets the classes of the btns that are used for navigation throw the pages (next, prev, 1, 2, 3...)
@@ -176,8 +178,13 @@ $(function(){
 	};
 
 	function removeSelected(rowID) {
-		var $row = $(tableSelectedDomID).find('.selected-'+rowID);
+		if(rowID === true) {
+			tableSelected.clear().draw()
+		}
+		else {
+		var	$row = $(tableSelectedDomID).find('.selected-'+rowID);
 		var row = tableSelected.row($row).remove().draw();
+		}
 	};
 
 	function updateDisplaySelected() {
@@ -419,6 +426,7 @@ $(function(){
 	function resetTable(tableDomID) {
 		// $(tableDomID).find('thead .select-all input[type=checkbox]').attr('checked', false);
 		selected.items = [];
+		removeSelected(true); //removes all selected items from the table of selected items
 		// $(tableDomID).find('thead .selected-num').html(selected.items.length);
 		// $(this).siblings('table').find('thead .selected-num');
 		updateCounter('.selected-num');
@@ -427,7 +435,7 @@ $(function(){
 		updateToggleAllSelect();
 	};
 
-	$('.dataTables_filter input[type=search]').keypress(function(e) {
+	$('#table-items-total_filter input[type=search]').keypress(function(e) {
 		// if space or enter is typed do nothing
 		if(e.which !== '32' && e.which !== '13') {
 			// $(tableDomID) = $(this).closest('.dataTables_wrapper').find('table').attr('id')

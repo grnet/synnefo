@@ -44,7 +44,8 @@ from astakos.im.functions import send_plain as send_email
 from astakos.im.models import AstakosUser
 
 from eztables.views import DatatablesView
-from actions import AdminAction, AdminActionUnknown, AdminActionNotPermitted
+from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
+                     noop)
 
 templates = {
     'list': 'admin/network_list.html',
@@ -143,6 +144,27 @@ def generate_actions():
     The actions are: activate/deactivate, accept/reject, verify, contact.
     """
     actions = OrderedDict()
+
+    actions['connect'] = NetworkAction(name='Connect', f=noop,
+                                       karma='good', reversible=True)
+
+    actions['disconnect'] = NetworkAction(name='Disconnect', f=noop,
+                                          karma='bad', reversible=True)
+
+    actions['drain'] = NetworkAction(name='Drain', f=noop, karma='neutral',
+                                     reversible=True)
+
+    actions['undrain'] = NetworkAction(name='Undrain', f=noop, karma='neutral',
+                                       reversible=True)
+
+    actions['delete'] = NetworkAction(name='Delete', f=noop, karma='bad',
+                                      reversible=False)
+
+    actions['reassign'] = NetworkAction(name='Reassign to project', f=noop,
+                                        karma='neutral', reversible=True)
+
+    actions['change_owner'] = NetworkAction(name='Change owner', f=noop,
+                                            karma='neutral', reversible=True)
 
     actions['contact'] = NetworkAction(name='Send e-mail', f=send_email)
     return actions

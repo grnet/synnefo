@@ -163,6 +163,59 @@ def vm_suspend_release(vm):
     vm.save()
 
 
+# Check functions
+def check_start(vm):
+    """Check if VM can be started."""
+    if vm.operstate not in ('BUILD', 'ERROR', 'STARTED', 'DESTROYED',
+                            'RESIZE'):
+        return True
+    else:
+        return False
+
+
+def check_shutdown(vm):
+    """Check if VM can be stopped."""
+    if vm.operstate not in ('BUILD', 'ERROR', 'STOPPED', 'DESTROYED',
+                            'RESIZE'):
+        return True
+    else:
+        return False
+
+
+def check_reboot(vm):
+    """Check if VM can be rebooted."""
+    if vm.operstate not in ('BUILD', 'ERROR', 'DESTROYED', 'RESIZE'):
+        return True
+    else:
+        return False
+
+
+def check_destroy(vm):
+    """Check if VM can be destroyed."""
+    if vm.operstate not in ('ERROR', 'DESTROYED'):
+        return True
+    else:
+        return False
+
+
+def check_suspend(vm):
+    """Check if VM can be suspended."""
+    if ((vm.operstate not in ('ERROR', 'DESTROYED')) and
+            vm.suspended is False):
+        return True
+    else:
+        return False
+
+
+def check_release(vm):
+    """Check if VM can be released from suspension."""
+    if ((vm.operstate not in ('ERROR', 'DESTROYED')) and
+            vm.suspended is True):
+        return True
+    else:
+        return False
+
+
 def generate_actions():
     """Create a list of actions on users.
 
@@ -172,26 +225,38 @@ def generate_actions():
     actions = OrderedDict()
 
     actions['start'] = VMAction(name='Start', f=servers_backend.start,
+                                c=check_start,
                                 karma='good', reversible=True)
 
     actions['shutdown'] = VMAction(name='Shutdown', f=servers_backend.stop,
+                                   c=check_shutdown,
                                    karma='bad', reversible=True)
 
-    actions['restart'] = VMAction(name='Reboot', f=servers_backend.reboot,
-                                  karma='bad', reversible=True)
+    actions['reboot'] = VMAction(name='Reboot', f=servers_backend.reboot,
+                                 c=check_reboot,
+                                 karma='bad', reversible=True)
+
+    actions['resize'] = VMAction(name='Resize', f=nop,
+                                 karma='neutral', reversible=False)
 
     actions['destroy'] = VMAction(name='Destroy', f=servers_backend.destroy,
+                                  c=check_destroy,
                                   karma='bad', reversible=False)
 
     actions['suspend'] = VMAction(name='Suspend', f=vm_suspend,
+                                  c=check_suspend,
                                   karma='bad', reversible=True)
 
     actions['release'] = VMAction(name='Release suspension',
+                                  c=check_release,
                                   f=vm_suspend_release,
                                   karma='good', reversible=True)
 
-    actions['reassign'] = VMAction(name='Reassign', f=nop,
+    actions['reassign'] = VMAction(name='Reassign to project', f=nop,
                                    karma='neutral', reversible=True)
+
+    actions['change_owner'] = VMAction(name='Change owner', f=nop,
+                                       karma='neutral', reversible=True)
 
     actions['contact'] = VMAction(name='Send e-mail', f=send_email)
 

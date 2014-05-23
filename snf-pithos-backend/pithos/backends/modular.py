@@ -247,7 +247,7 @@ class ModularBackend(BaseBackend):
         map_check_interval = map_check_interval \
             or DEFAULT_MAP_CHECK_INTERVAL
 
-        self.default_account_policy = {}
+        self.default_account_policy = {QUOTA_POLICY: account_quota_policy}
         self.default_container_policy = {
             QUOTA_POLICY: container_quota_policy,
             VERSIONING_POLICY: container_versioning_policy,
@@ -1598,6 +1598,30 @@ class ModularBackend(BaseBackend):
 
     @debug_method
     @backend_method
+    def delete_by_uuid(self, user, uuid):
+        """Delete the object having the specific UUID.
+
+        Args:
+            user: the user performing the action
+            uuid: the object's UUID (a string accepted by the uuid.UUID()
+                  constructor)
+        Raises:
+            ValueError: the provided UUID is invalid.
+            NameError: no object is identified by the specific UUID.
+            NotAllowedError: the user has no write permission for the
+                             specific object.
+        """
+
+        uuid_ = self._validate_uuid(uuid)
+        info = self.node.latest_uuid(uuid_, CLUSTER_NORMAL)
+        if info is None:
+            raise NameError('No object found for this UUID.')
+        path, serial = info
+        account, container, name = path.split('/', 2)
+        self._delete_object(user, account, container, name)
+
+    @debug_method
+    @backend_method
     def get_public(self, user, public):
         """Return the (account, container, name) for the public id given."""
 
@@ -1642,6 +1666,16 @@ class ModularBackend(BaseBackend):
 
     def _generate_uuid(self):
         return str(uuidlib.uuid4())
+
+    def _validate_uuid(self, uuid):
+        if not isinstance(uuid, basestring):
+            raise ValueError('A string value is expected for UUID.')
+        try:
+            uuid = uuidlib.UUID(uuid)
+        except:
+            raise ValueError('Invalid UUID value.')
+        prefix = 'urn:uuid:'
+        return uuid.urn[len(prefix):]
 
     def _put_object_node(self, path, parent, name):
         path = '/'.join((path, name))

@@ -26,7 +26,10 @@ def netstats(data=None):
         hostname = os.path.basename(dir)
 
         for nic in glob(os.path.join(dir, "*")):
-            idx = int(os.path.basename(nic))
+            try:
+                idx = int(os.path.basename(nic))
+            except ValueError:
+                continue
             with open(nic) as nicfile:
                 try:
                     iface = nicfile.readline().strip()

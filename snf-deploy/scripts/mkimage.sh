@@ -2,7 +2,7 @@
 
 DISTRO=wheezy
 MIRROR=http://ftp.gr.debian.org/debian
-EXTRA_PACKAGES=acpi-support-base,console-tools,udev,linux-image-amd64,network-manager
+EXTRA_PACKAGES=acpi-support-base,console-tools,udev,linux-image-amd64,network-manager,openssh-server
 
 : ${DISK0:=/var/lib/snf-deploy/vcluster/disk0}
 : ${DISK1:=/var/lib/snf-deploy/vcluster/disk1}
@@ -67,6 +67,18 @@ EOF
 chmod +x $TEMP/$NMHOOK
 
 chroot $TEMP passwd -d root
+
+cat >> $TEMP/etc/ssh/sshd_config <<EOF
+PermitEmptyPasswords yes
+EOF
+
+cat >> $TEMP/etc/pam.d/sshd <<EOF
+auth      required  pam_unix.so shadow nullok
+EOF
+
+cat >> $TEMP/etc/securetty <<EOF
+ssh
+EOF
 
 umount $TEMP
 

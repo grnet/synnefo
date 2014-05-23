@@ -25,9 +25,7 @@ def _finalize_astakosuser_object(user, has_signed_terms=False):
         user.date_signed_terms = datetime.datetime.now()
 
     user.renew_verification_code()
-    project = functions.make_base_project(user.username)
-    user.base_project = project
-    user.uuid = project.uuid
+    user.uuid = functions.new_uuid()
     user.renew_token()
     user.save()
 

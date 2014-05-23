@@ -462,7 +462,8 @@ class AstakosUser(User):
 
     # This could have been OneToOneField, but fails due to
     # https://code.djangoproject.com/ticket/13781 (fixed in v1.6)
-    base_project = models.ForeignKey('Project', related_name="base_user")
+    base_project = models.ForeignKey('Project', related_name="base_user",
+                                     null=True)
 
     objects = AstakosUserManager()
 
@@ -487,6 +488,11 @@ class AstakosUser(User):
         first, last = split_realname(value)
         self.first_name = first
         self.last_name = last
+
+    def get_base_project(self):
+        assert self.base_project is not None, \
+            "User %s has no system project" % self
+        return self.base_project
 
     def add_permission(self, pname):
         if self.has_perm(pname):

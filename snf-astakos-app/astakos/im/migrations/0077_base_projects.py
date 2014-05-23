@@ -72,13 +72,10 @@ class Migration(DataMigration):
         self.new_membership(orm, project, user)
 
     def forwards(self, orm):
-        users = orm.AstakosUser.objects.all()
-        for user in users:
-            self.make_base_project(orm, user)
-
         acc_users = orm.AstakosUser.objects.filter(moderated=True,
                                                    is_rejected=False)
         for user in acc_users:
+            self.make_base_project(orm, user)
             self.enable_base_project(orm, user)
 
     def backwards(self, orm):

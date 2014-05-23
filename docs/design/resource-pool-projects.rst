@@ -97,20 +97,19 @@ For reasons of uniformity, we replace the base quota mechanism with projects.
 In a similar vein to OpenStack tenants, we define new user-specific *system*
 projects to account for the base quota for each user. These projects should
 be clearly associated with a single user, restrict join/leave actions and
-specify the quota granted by the system. When a new user is created,
-their system project will be automatically created and linked back to the user.
-User activation will trigger project activation, granting the default resource
-quota. These projects will have no owner, marked thusly as `system' projects.
-The administrator can, following the usual project logic, alter quota by
-modifying the project. Users cannot apply for modification of their system
-projects.
+specify the quota granted by the system. When a user is accepted, their system
+project will be automatically created, activated, and linked back to the user,
+granting the default resource quota. These projects will have no owner, marked
+thusly as `system' projects. The administrator can, following the usual
+project logic, alter quota by modifying the project. Users cannot apply for
+modification of their system projects.
 
 Projects will, from now on, be identified by a UUID. System projects will
 receive the same UUID as the user itself. ProjectID, which appears above in
-the Quotaholder entries, refers to the project UUID. In order to ensure that
-UUIDs remain unique across users and projects, we will first create the
-system project and then copy its UUID to the new user (in a single
-transaction).
+the Quotaholder entries, refers to the project UUID. When a system project is
+created for a user, there is a slight probability the user's UUID is already
+in use by another project; in this case one can only delete the user and
+create a new one in its place.
 
 Base quota will be expressed both in terms of a project-level and a
 member-level limit. This will result in two operationally equivalent

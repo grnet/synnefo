@@ -256,7 +256,7 @@ def put_object_headers(response, meta, restricted=False, token=None,
         if user_defined and not valid_disposition_type:
             return
         if not valid_disposition_type:
-            disposition_type = 'attachment'
+            disposition_type = 'inline'
         response['Content-Disposition'] = smart_str('%s; filename="%s"' % (
             disposition_type, meta['name']), strings_only=True)
 

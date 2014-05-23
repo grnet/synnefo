@@ -83,7 +83,7 @@ class TestPublic(PithosAPITest):
         m = p.match(content_disposition)
         self.assertTrue(m is not None)
         disposition_type = m.group(1)
-        self.assertEqual(disposition_type, 'attachment')
+        self.assertEqual(disposition_type, 'inline')
         filename = m.group(2)
         self.assertEqual(oname, filename)
 
@@ -119,7 +119,7 @@ class TestPublic(PithosAPITest):
         m = p.match(content_disposition)
         self.assertTrue(m is not None)
         disposition_type = m.group(1)
-        self.assertEqual(disposition_type, 'attachment')
+        self.assertEqual(disposition_type, 'inline')
         filename = m.group(2)
         self.assertEqual(oname, filename)
 

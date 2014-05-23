@@ -75,66 +75,77 @@ def get_flavor_info(vm):
 
 class VMJSONView(DatatablesView):
     model = VirtualMachine
-    fields = ('pk', 'pk', 'name', 'operstate',)
+    fields = ('pk', 'pk', 'name', 'operstate', 'suspended',)
 
     extra = True
 
     def get_extra_data_row(self, inst):
-        extra_dict = {
-            'allowed_actions': {
-                'display_name': "",
-                'value': get_allowed_actions(inst),
-                'visible': False,
-            }, 'id': {
-                'display_name': "ID",
-                'value': inst.pk,
-                'visible': False,
-            }, 'item_name': {
-                'display_name': "Name",
-                'value': inst.name,
-                'visible': False,
-            }, 'details_url': {
-                'display_name': "Details",
-                'value': reverse('admin-details', args=['vm', inst.pk]),
-                'visible': True,
-            }, 'contact_id': {
-                'display_name': "Contact ID",
-                'value': inst.userid,
-                'visible': False,
-            }, 'contact_mail': {
-                'display_name': "Contact mail",
-                'value': AstakosUser.objects.get(uuid=inst.userid).email,
-                'visible': True,
-            }, 'contact_name': {
-                'display_name': "Contact name",
-                'value': AstakosUser.objects.get(uuid=inst.userid).realname,
-                'visible': True,
-            }, 'user_id': {
-                'display_name': "User ID",
-                'value': inst.userid,
-                'visible': True,
-            }, 'image_id': {
-                'display_name': "Image ID",
-                'value': inst.imageid,
-                'visible': True,
-            }, 'flavor_info': {
-                'display_name': "Flavor info",
-                'value': get_flavor_info(inst),
-                'visible': True,
-            }, 'created': {
-                'display_name': "Created",
-                'value': inst.created,
-                'visible': True,
-            }, 'updated': {
-                'display_name': "Updated",
-                'value': inst.updated,
-                'visible': True,
-            }, 'suspended': {
-                'display_name': "Suspended",
-                'value': inst.suspended,
-                'visible': True,
-            }
+        extra_dict = OrderedDict()
+        extra_dict['allowed_actions'] = {
+            'display_name': "",
+            'value': get_allowed_actions(inst),
+            'visible': False,
         }
+        extra_dict['id'] = {
+            'display_name': "ID",
+            'value': inst.pk,
+            'visible': False,
+        }
+        extra_dict['item_name'] = {
+            'display_name': "Name",
+            'value': inst.name,
+            'visible': False,
+        }
+        extra_dict['details_url'] = {
+            'display_name': "Details",
+            'value': reverse('admin-details', args=['vm', inst.pk]),
+            'visible': True,
+        }
+        extra_dict['contact_id'] = {
+            'display_name': "Contact ID",
+            'value': inst.userid,
+            'visible': False,
+        }
+        extra_dict['contact_mail'] = {
+            'display_name': "Contact mail",
+            'value': AstakosUser.objects.get(uuid=inst.userid).email,
+            'visible': True,
+        }
+        extra_dict['contact_name'] = {
+            'display_name': "Contact name",
+            'value': AstakosUser.objects.get(uuid=inst.userid).realname,
+            'visible': True,
+        }
+        extra_dict['user_id'] = {
+            'display_name': "User ID",
+            'value': inst.userid,
+            'visible': True,
+        }
+        extra_dict['image_id'] = {
+            'display_name': "Image ID",
+            'value': inst.imageid,
+            'visible': True,
+        }
+        extra_dict['flavor_info'] = {
+            'display_name': "Flavor info",
+            'value': get_flavor_info(inst),
+            'visible': True,
+        }
+        extra_dict['created'] = {
+            'display_name': "Created",
+            'value': inst.created,
+            'visible': True,
+        }
+        extra_dict['updated'] = {
+            'display_name': "Updated",
+            'value': inst.updated,
+            'visible': True,
+        }
+        #extra_dict['suspended'] = {
+            #'display_name': "Suspended",
+            #'value': inst.suspended,
+            #'visible': True,
+        #}
 
         return extra_dict
 
@@ -254,8 +265,8 @@ def catalog(request):
     """List view for Cyclades VMs."""
     context = {}
     context['action_dict'] = generate_actions()
-    context['columns'] = ["Column 1", "ID", "Name", "State", "Details",
-                          "Summary"]
+    context['columns'] = ["Column 1", "ID", "Name", "State", "Suspended",
+                          "Details", "Summary"]
     context['item_type'] = 'vm'
 
     return context

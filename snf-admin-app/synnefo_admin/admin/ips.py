@@ -40,6 +40,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from synnefo.db.models import IPAddress
+from synnefo.logic import ips
 from astakos.im.functions import send_plain as send_email
 from astakos.im.models import AstakosUser
 
@@ -150,14 +151,8 @@ def generate_actions():
     """
     actions = OrderedDict()
 
-    actions['attach'] = IPAction(name='Attach', f=noop, karma='good',
-                                 reversible=True)
-
-    actions['detach'] = IPAction(name='Detach', f=noop, karma='bad',
-                                 reversible=True)
-
-    actions['delete'] = IPAction(name='Delete', f=noop, karma='bad',
-                                 reversible=False)
+    actions['delete'] = IPAction(name='Delete', f=ips.delete_floating_ip,
+                                 karma='bad', reversible=False)
 
     actions['reassign'] = IPAction(name='Reassign to project', f=noop,
                                    karma='neutral', reversible=True)
@@ -168,7 +163,7 @@ def generate_actions():
 
 def do_action(request, op, id):
     """Apply the requested action on the specified ip."""
-    ip = IP.objects.get(id=id)
+    ip = IPAddress.objects.get(id=id)
     actions = generate_actions()
 
     if op == 'contact':

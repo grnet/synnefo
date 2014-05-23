@@ -45,6 +45,7 @@ from astakos.im.models import AstakosUser, ProjectMembership, Project
 from astakos.im.functions import send_plain as send_email
 
 from synnefo.logic import servers as servers_backend
+from synnefo.logic.commands import validate_server_action
 
 from eztables.views import DatatablesView
 
@@ -68,7 +69,7 @@ def get_allowed_actions(vm):
 
 def get_flavor_info(vm):
     return ('CPU: ' + str(vm.flavor.cpu) + ', RAM: ' + str(vm.flavor.ram) +
-            ', Disk size: ' + str(vm.flavor.disk) + ', Disk template:' +
+            ', Disk size: ' + str(vm.flavor.disk) + ', Disk template: ' +
             str(vm.flavor.volume_type.disk_template))
 
 
@@ -163,57 +164,13 @@ def vm_suspend_release(vm):
     vm.save()
 
 
-# Check functions
-def check_start(vm):
-    """Check if VM can be started."""
-    if vm.operstate not in ('BUILD', 'ERROR', 'STARTED', 'DESTROYED',
-                            'RESIZE'):
-        return True
+def check_vm_action(action):
+    if action == 'SUSPEND':
+        return lambda vm: not vm.suspended
+    elif action == 'RELEASE':
+        return lambda vm: vm.suspended
     else:
-        return False
-
-
-def check_shutdown(vm):
-    """Check if VM can be stopped."""
-    if vm.operstate not in ('BUILD', 'ERROR', 'STOPPED', 'DESTROYED',
-                            'RESIZE'):
-        return True
-    else:
-        return False
-
-
-def check_reboot(vm):
-    """Check if VM can be rebooted."""
-    if vm.operstate not in ('BUILD', 'ERROR', 'DESTROYED', 'RESIZE'):
-        return True
-    else:
-        return False
-
-
-def check_destroy(vm):
-    """Check if VM can be destroyed."""
-    if vm.operstate not in ('ERROR', 'DESTROYED'):
-        return True
-    else:
-        return False
-
-
-def check_suspend(vm):
-    """Check if VM can be suspended."""
-    if ((vm.operstate not in ('ERROR', 'DESTROYED')) and
-            vm.suspended is False):
-        return True
-    else:
-        return False
-
-
-def check_release(vm):
-    """Check if VM can be released from suspension."""
-    if ((vm.operstate not in ('ERROR', 'DESTROYED')) and
-            vm.suspended is True):
-        return True
-    else:
-        return False
+        return lambda vm: validate_server_action(vm, action)
 
 
 def generate_actions():
@@ -225,32 +182,47 @@ def generate_actions():
     actions = OrderedDict()
 
     actions['start'] = VMAction(name='Start', f=servers_backend.start,
-                                c=check_start,
+                                c=check_vm_action('START'),
                                 karma='good', reversible=True)
 
     actions['shutdown'] = VMAction(name='Shutdown', f=servers_backend.stop,
-                                   c=check_shutdown,
-                                   karma='bad', reversible=True)
+                                   c=check_vm_action('STOP'), karma='bad',
+                                   reversible=True)
 
     actions['reboot'] = VMAction(name='Reboot', f=servers_backend.reboot,
-                                 c=check_reboot,
-                                 karma='bad', reversible=True)
+                                 c=check_vm_action('REBOOT'), karma='bad',
+                                 reversible=True)
 
     actions['resize'] = VMAction(name='Resize', f=noop,
-                                 karma='neutral', reversible=False)
+                                 c=check_vm_action('RESIZE'), karma='neutral',
+                                 reversible=False)
 
     actions['destroy'] = VMAction(name='Destroy', f=servers_backend.destroy,
-                                  c=check_destroy,
-                                  karma='bad', reversible=False)
+                                  c=check_vm_action('DESTROY'), karma='bad',
+                                  reversible=False)
+
+    actions['connect'] = VMAction(name='Connect to network', f=noop,
+                                  karma='good', reversible=True)
+
+    actions['disconnect'] = VMAction(name='Disconnect from network', f=noop,
+                                     karma='bad', reversible=True)
+
+    actions['attach'] = VMAction(name='Attach IP', f=noop,
+                                 c=check_vm_action('ADDFLOATINGIP'),
+                                 karma='good', reversible=True)
+
+    actions['detach'] = VMAction(name='Detach IP', f=noop,
+                                 c=check_vm_action('REMOVEFLOATINGIP'),
+                                 karma='bad', reversible=True)
 
     actions['suspend'] = VMAction(name='Suspend', f=vm_suspend,
-                                  c=check_suspend,
+                                  c=check_vm_action('SUSPEND'),
                                   karma='bad', reversible=True)
 
     actions['release'] = VMAction(name='Release suspension',
-                                  c=check_release,
                                   f=vm_suspend_release,
-                                  karma='good', reversible=True)
+                                  c=check_vm_action('RELEASE'), karma='good',
+                                  reversible=True)
 
     actions['reassign'] = VMAction(name='Reassign to project', f=noop,
                                    karma='neutral', reversible=True)
@@ -267,9 +239,9 @@ def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     vm = VirtualMachine.objects.get(pk=id)
     actions = generate_actions()
-    logging.info("Op: %s, vm: %s, function", op, vm.pk, actions[op].f)
+    logging.info("Op: %s, vm: %s, fun: %s", op, vm.pk, actions[op].f)
 
-    if op == 'restart':
+    if op == 'reboot':
         actions[op].f(vm, "SOFT")
     elif op == 'contact':
         user = AstakosUser.objects.get(uuid=vm.userid)

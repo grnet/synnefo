@@ -249,7 +249,7 @@ def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     project = get_project(id)
     actions = generate_actions()
-    logging.info("Op: %s, project: %s, function", op, project.uuid,
+    logging.info("Op: %s, project: %s, fun: %s", op, project.uuid,
                  actions[op].f)
 
     if op == 'contact':

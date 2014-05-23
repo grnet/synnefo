@@ -338,8 +338,18 @@ def _admin_actions_id(request, target, op, id):
         user_views.do_action(request, op, id)
     elif target == 'vm':
         vm_views.do_action(request, op, id)
+    elif target == 'volume':
+        volume_views.do_action(request, op, id)
+    elif target == 'network':
+        network_views.do_action(request, op, id)
+    elif target == 'ip':
+        ip_views.do_action(request, op, id)
+    elif target == 'quota':
+        quota_views.do_action(request, op, id)
     elif target == 'project':
         project_views.do_action(request, op, id)
+    else:
+        raise Exception("Wrong target: %s", target)
 
 
 @csrf_exempt

@@ -151,7 +151,7 @@ class ProjectJSONView(DatatablesView):
         return extra_dict
 
 
-class ProjectAction(AdminAction):
+class QuotaAction(AdminAction):
 
     """Class for actions on projects. Derived from AdminAction.
 
@@ -172,19 +172,11 @@ def generate_actions():
     """
     actions = OrderedDict()
 
-    actions['approve'] = ProjectAction(name='Approve', f=approve_application)
+    actions['suspend'] = QuotaAction(name='Suspend', f=noop,)
 
-    actions['deny'] = ProjectAction(name='Deny', f=noop)
+    actions['unsuspend'] = QuotaAction(name='Release suspension', f=noop)
 
-    actions['suspend'] = ProjectAction(name='Suspend', f=noop,)
-
-    actions['unsuspend'] = ProjectAction(name='Release suspension', f=noop)
-
-    actions['terminate'] = ProjectAction(name='Terminate', f=noop)
-
-    actions['reinstate'] = ProjectAction(name='Reinstate', f=noop)
-
-    actions['contact'] = ProjectAction(name='Send e-mail', f=noop)
+    actions['contact'] = QuotaAction(name='Send e-mail', f=noop)
 
     return actions
 
@@ -193,7 +185,7 @@ def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     project = get_project(id)
     actions = generate_actions()
-    logging.info("Op: %s, project: %s, function", op, project.uuid,
+    logging.info("Op: %s, project: %s, function %s", op, project.uuid,
                  actions[op].f)
 
     if op == 'contact':

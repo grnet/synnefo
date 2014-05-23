@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+from snf_django.lib.api import faults
+
 
 class AdminAction:
 
@@ -82,14 +84,24 @@ class AdminAction:
         self.allowed_groups = allowed_groups
         self.f = f
         if c:
-            self.can_apply = c
+            self.check = c
 
-    def can_apply(self, _):
-        """Check if an action can apply to a user.
+    def can_apply(self, t):
+        """Check if an action can apply to a target.
 
-        This method will answer always "True".
+        If no check function has been registered for this action, this method
+        will answer always "True".
         """
-        return True
+        try:
+            res = self.check(t)
+        except AttributeError:
+            return True
+        except faults.BadRequest:
+            return False
+
+        if res is None:
+            res = True
+        return res
 
 
 class AdminActionNotPermitted(Exception):

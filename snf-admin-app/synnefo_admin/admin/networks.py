@@ -40,6 +40,8 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from synnefo.db.models import Network
+from synnefo.logic.networks import validate_network_action
+from synnefo.logic import networks
 from astakos.im.functions import send_plain as send_email
 from astakos.im.models import AstakosUser
 
@@ -77,7 +79,7 @@ def get_contact_name(inst):
 
 class NetworkJSONView(DatatablesView):
     model = Network
-    fields = ('pk', 'pk', 'name', 'state', 'public',)
+    fields = ('pk', 'pk', 'name', 'state', 'public', 'drained',)
 
     extra = True
 
@@ -138,6 +140,21 @@ class NetworkAction(AdminAction):
         AdminAction.__init__(self, name=name, target='network', f=f, **kwargs)
 
 
+def drain_network(network):
+    logging.info("Draining network")
+    network.drained = True
+    network.save()
+
+
+def undrain_network(network):
+    network.drained = False
+    network.save()
+
+
+def check_network_action(action):
+    return lambda n: validate_network_action(n, action)
+
+
 def generate_actions():
     """Create a list of actions on networks.
 
@@ -145,20 +162,17 @@ def generate_actions():
     """
     actions = OrderedDict()
 
-    actions['connect'] = NetworkAction(name='Connect', f=noop,
-                                       karma='good', reversible=True)
-
-    actions['disconnect'] = NetworkAction(name='Disconnect', f=noop,
-                                          karma='bad', reversible=True)
-
-    actions['drain'] = NetworkAction(name='Drain', f=noop, karma='neutral',
+    actions['drain'] = NetworkAction(name='Drain', f=drain_network,
+                                     #c=check_network_action('DRAIN'),
                                      reversible=True)
 
-    actions['undrain'] = NetworkAction(name='Undrain', f=noop, karma='neutral',
-                                       reversible=True)
+    actions['undrain'] = NetworkAction(name='Undrain', f=undrain_network,
+                                       #c=check_network_action('UNDRAIN'),
+                                       karma='neutral', reversible=True)
 
-    actions['delete'] = NetworkAction(name='Delete', f=noop, karma='bad',
-                                      reversible=False)
+    actions['delete'] = NetworkAction(name='Delete', f=networks.delete,
+                                      c=check_network_action('DESTROY'),
+                                      karma='bad', reversible=False)
 
     actions['reassign'] = NetworkAction(name='Reassign to project', f=noop,
                                         karma='neutral', reversible=True)
@@ -172,7 +186,7 @@ def generate_actions():
 
 def do_action(request, op, id):
     """Apply the requested action on the specified network."""
-    network = Network.objects.get(id=id)
+    network = Network.objects.get(pk=id)
     actions = generate_actions()
 
     if op == 'contact':
@@ -186,7 +200,7 @@ def catalog(request):
     context = {}
     context['action_dict'] = generate_actions()
     context['columns'] = ["Column 1", "ID", "Name", "Status", "Public",
-                          "Details", "Summary"]
+                          "Drained", "Details", "Summary"]
     context['item_type'] = 'network'
 
     return context

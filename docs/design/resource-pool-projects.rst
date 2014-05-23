@@ -107,7 +107,10 @@ projects.
 
 Projects will, from now on, be identified by a UUID. System projects will
 receive the same UUID as the user itself. ProjectID, which appears above in
-the Quotaholder entries, refers to the project UUID.
+the Quotaholder entries, refers to the project UUID. In order to ensure that
+UUIDs remain unique across users and projects, we will first create the
+system project and then copy its UUID to the new user (in a single
+transaction).
 
 Base quota will be expressed both in terms of a project-level and a
 member-level limit. This will result in two operationally equivalent

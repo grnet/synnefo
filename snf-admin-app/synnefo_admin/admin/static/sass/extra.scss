@@ -267,7 +267,7 @@ $nav-height: 36px;
 /* Area that includes all the info and a sidebar */
 
 .info {
-	overflow: hidden;
+	overflow: auto;
 }
 
 .info-fixed {
@@ -437,8 +437,7 @@ a:not([disabled]):hover {
 	select {
 		width: 55px;
 		display: inline-block;
-		margin-left: 8px;
-		margin-left: 8px;
+		margin-left: 4px;
 		vertical-align: baseline;
 	}
 }
@@ -788,4 +787,12 @@ background: #fff2a8;
 .warning-duplicate {
 	font-size: 0.95em;
 	font-style: italic;
+}
+div.dataTables_length {
+	padding-left: 2em;
+	padding-top: 0.55em;
+}
+
+table thead th {
+	white-space: nowrap;
 }

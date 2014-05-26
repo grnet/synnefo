@@ -139,7 +139,10 @@ $(function(){
 			clickSummary(row);
 			clickDetails(row);
 		},
-		"dom": '<"custom-buttons">lfrtip'
+		"dom": '<"custom-buttons">frtilp',
+		"language" : {
+			"sLengthMenu": 'Pagination _MENU_'
+		}
 	});
 	$("div.custom-buttons").html('<button class="select-all select">Select All</button>');
 
@@ -168,7 +171,11 @@ $(function(){
 			clickSummary(row);
 			clickDetails(row);
 		},
-		"lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]]
+		"lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
+		"dom": 'frtilp',
+		"language" : {
+			"sLengthMenu": 'Pagination _MENU_'
+		}
 	});
 
 	function keepSelected(data) {

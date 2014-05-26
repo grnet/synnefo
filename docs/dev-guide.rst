@@ -130,7 +130,7 @@ the **develop** branch from the official Synnefo repo, build the Synnefo
 packages from source and install them using ``snf-deploy``. Of course, all the
 previous actions can be tweaked with command-line arguments or configuration
 files. To see a list of possible command-line arguments, you can use ``snf-ci
--h``. Also, you can edit the ``ci-wheezy.conf`` configuration file for more
+-h``. Also, you can edit the ``ci_wheezy.conf`` configuration file for more
 permanent changes.
 
 .. tip::
@@ -208,8 +208,8 @@ around:
 
   .. code-block:: console
 
-        # service snf-dispatcher restart
-        # service snf-ganeti-eventd restart
+      # service snf-dispatcher restart
+      # service snf-ganeti-eventd restart
 
 * If you have edited a static file of a Synnefo component, you will need to
   copy it to the respective folder under ``/usr/share/synnefo/static/``.

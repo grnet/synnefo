@@ -152,6 +152,11 @@ class UserJSONView(DatatablesView):
             'value': inst.realname,
             'visible': False,
         }
+        extra_dict['status'] = {
+            'display_name': "Status",
+            'value': inst.status_display,
+            'visible': True,
+        }
         extra_dict['groups'] = {
             'display_name': "Groups",
             'value': get_user_groups(inst),

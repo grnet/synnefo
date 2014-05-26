@@ -140,11 +140,6 @@ class ProjectJSONView(DatatablesView):
                 'display_name': "Description",
                 'value': inst.description,
                 'visible': True,
-            }, 'members': {
-                'display_name': "Members",
-                'value': (str(inst.members_count()) + ' / ' +
-                          str(inst.limit_on_members_number)),
-                'visible': True,
             }
         }
 

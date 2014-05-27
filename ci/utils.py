@@ -1005,7 +1005,6 @@ class SynnefoCI(object):
         self.logger.debug("Change password in nodes.conf file")
         cmd = """
         sed -i 's/^password =.*/password = {0}/' /etc/snf-deploy/nodes.conf
-        sed -i 's/12345/{0}/' /etc/snf-deploy/nodes.conf
         """.format(fabric.env.password)
         _run(cmd, False)
 

@@ -68,9 +68,8 @@ chmod +x $TEMP/$NMHOOK
 
 chroot $TEMP passwd -d root
 
-cat >> $TEMP/etc/ssh/sshd_config <<EOF
-PermitEmptyPasswords yes
-EOF
+sed -i 's/^PermitEmptyPasswords.*/PermitEmptyPasswords yes/' $TEMP/etc/ssh/sshd_config
+sed -i 's/^UsePAM.*/UsePAM no/' $TEMP/etc/ssh/sshd_config
 
 cat >> $TEMP/etc/pam.d/sshd <<EOF
 auth      required  pam_unix.so shadow nullok

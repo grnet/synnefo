@@ -82,6 +82,12 @@ Astakos
 * Projects can be set `private', making it accessible only to its owner and
   members.
 
+Pithos
+------
+
+* Change default disposition type: If no disposition-type is
+  specifically requested or an invalid value is passed, the disposition type
+  is set to 'inline'.
 
 .. _Changelog-0.15.2:
 

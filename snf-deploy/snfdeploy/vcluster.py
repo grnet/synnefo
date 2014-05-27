@@ -258,7 +258,6 @@ def dnsmasq():
 def launch():
     ctx = context.Context()
     assert len(ctx.clusters) == 1
-    assert ctx.cluster
     assert ctx.all_nodes
     network()
     create_dnsmasq_files(ctx)

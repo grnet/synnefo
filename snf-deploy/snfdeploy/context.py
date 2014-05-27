@@ -15,6 +15,7 @@
 
 import sys
 import datetime
+import ConfigParser
 from snfdeploy import constants
 from snfdeploy import config
 from snfdeploy import status
@@ -28,7 +29,7 @@ class Context(object):
         ret = "[%s]" % datetime.datetime.now().strftime("%H:%M:%S")
         ret += " [%s %s]" % (self.node_info.ip, self.node_info.name)
         ret += " [%s %s %s %s]" % \
-            (self.node, self.role, self.setup, self.cluster)
+            (self.node, self.role, self.cluster, self.setup)
         return ret
 
     def __init__(self, node=None, role=None, cluster=None, setup=None):
@@ -71,7 +72,10 @@ class Context(object):
         self.client = self._get(constants.CLIENT)
 
     def _get(self, role):
-        return config.get_single_node_role_info(self.setup, role)
+        try:
+            return config.get_single_node_role_info(self.setup, role)
+        except ConfigParser.NoOptionError:
+            return config.get_node_info(constants.DUMMY_NODE)
 
     @property
     def node_info(self):

@@ -16,8 +16,16 @@ Released: UNRELEASED
 Cyclades
 --------
 
+* Fix minor problem in network stats plugin of collectd
 * Fix small issue in the 'stats-cyclades' command arising when Ganeti cannot
   communicate with a node.
+* Check max size of server metadata
+* Add support for Ganeti 2.10
+
+Cyclades UI
+-----------
+
+* Fix oraclelinux icon name
 
 .. _Changelog-0.15.1:
 

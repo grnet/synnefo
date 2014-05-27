@@ -6,27 +6,27 @@ import collectd
 from glob import glob
 
 
-def read_int(file):
-    f = open(file, "r")
-    try:
-        val = int(f.read())
-    except ValueError:
-        val = None
-    finally:
-        f.close()
-
+def read_int(filename):
+    with open(filename, "r") as f:
+        try:
+            val = int(f.read())
+        except ValueError:
+            val = None
     return val
 
 
 def netstats(data=None):
-    for dir in glob("/var/run/ganeti/kvm-hypervisor/nic/*"):
-        if not os.path.isdir(dir):
+    for dirname in glob("/var/run/ganeti/kvm-hypervisor/nic/*"):
+        if not os.path.isdir(dirname):
             continue
 
-        hostname = os.path.basename(dir)
+        hostname = os.path.basename(dirname)
 
-        for nic in glob(os.path.join(dir, "*")):
-            idx = int(os.path.basename(nic))
+        for nic in glob(os.path.join(dirname, "*")):
+            try:
+                idx = int(os.path.basename(nic))
+            except ValueError:
+                continue
             with open(nic) as nicfile:
                 try:
                     iface = nicfile.readline().strip()

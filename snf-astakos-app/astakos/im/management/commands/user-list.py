@@ -64,7 +64,9 @@ class Command(ListCommand):
                     action='append',
                     dest='groups',
                     default=None,
-                    help="Only show users that belong to the specified goups"),
+                    metavar="GROUP",
+                    help="Only show users that belong to the specified"
+                         " group. Can be used multiple times."),
         make_option('--active',
                     action='store_true',
                     dest='active',
@@ -97,6 +99,9 @@ class Command(ListCommand):
 
         if options['pending_verification']:
             self.filters['email_verified'] = False
+
+        if options['groups']:
+            self.filters['groups__name__in'] = options['groups']
 
         if options['auth_providers']:
             self.fields.extend(['providers'])

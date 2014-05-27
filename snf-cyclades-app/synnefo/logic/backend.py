@@ -60,6 +60,8 @@ def handle_vm_quotas(vm, job_id, job_opcode, job_status, job_fields):
     """
     if job_status not in rapi.JOB_STATUS_FINALIZED:
         return vm
+    print vm
+    print vm
 
     # Check successful completion of a job will trigger any quotable change in
     # the VM state.

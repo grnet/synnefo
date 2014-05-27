@@ -38,7 +38,9 @@ def public_demux(request, v_public):
     elif request.method == 'GET':
         return public_read(request, v_public)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['HEAD',
+                                                           'GET'])
 
 
 @api_method(http_method="HEAD", token_required=False, user_required=False,

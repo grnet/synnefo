@@ -70,7 +70,7 @@ def _get_cluster_stats(bend):
             "offline": node["offline"],
             "vm_capable": node["vm_capable"],
             "instances": node["pinst_cnt"],
-            "cpu": node["ctotal"],
+            "cpu": (node["ctotal"] or 0),
             "ram": {
                 "total": (node["mtotal"] or 0) << 20,
                 "free": (node["mfree"] or 0) << 20

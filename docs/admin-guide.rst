@@ -2560,6 +2560,7 @@ Changelog, NEWS
 ===============
 
 
+* v0.15.2 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.2>`
 * v0.15.1 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.1>`
 * v0.15 :ref:`Changelog <Changelog-0.15>`, :ref:`NEWS <NEWS-0.15>`
 * v0.14.10 :ref:`Changelog <Changelog-0.14.10>`, :ref:`NEWS <NEWS-0.14.10>`

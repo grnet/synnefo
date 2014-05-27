@@ -33,8 +33,8 @@ BACKEND = "backend"
 VALUE_OK = "ok"
 STATUS_FILE = "snf_deploy_status"
 
-DEFAULT_NODE = "node1"
-DEFAULT_CLUSTER = "ganeti1"
+DEFAULT_NODE = "node"
+DEFAULT_CLUSTER = "ganeti"
 DEFAULT_SETUP = "synnefo"
 
 CERT_OVERRIDE = "cert_override.txt"

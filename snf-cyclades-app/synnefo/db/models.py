@@ -408,8 +408,10 @@ class VirtualMachine(models.Model):
 
 
 class VirtualMachineMetadata(models.Model):
-    meta_key = models.CharField(max_length=50)
-    meta_value = models.CharField(max_length=500)
+    KEY_LENGTH = 50
+    VALUE_LENGTH = 500
+    meta_key = models.CharField(max_length=KEY_LENGTH)
+    meta_value = models.CharField(max_length=VALUE_LENGTH)
     vm = models.ForeignKey(VirtualMachine, related_name='metadata',
                            on_delete=models.CASCADE)
 

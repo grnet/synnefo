@@ -40,6 +40,9 @@ In case you choose to follow a private installation you will need to
 set up a private dns server, using dnsmasq for example. See node1 below for
 more information on how to do so.
 
+You should also disable ``SELinux``, until you get familiar with the Synnefo
+stack and its dependencies.
+
 General Prerequisites
 =====================
 
@@ -127,8 +130,8 @@ Now run:
    # service postgresql-9.3 initdb
    # chkconfig postgresql-9.3 on
 
-For more information on install postgresql on CentOS, please see `this
-https://wiki.postgresql.org/wiki/YUM_Installation`_.
+For more information on how to install postgresql on CentOS, please see `this
+<https://wiki.postgresql.org/wiki/YUM_Installation>`_.
 
 To install gunicorn and gevent, run:
 
@@ -1380,6 +1383,11 @@ Let's briefly explain each patch set:
       * Change IP pool to support NAT instances
       * Change RAPI to accept depends body argument and shutdown_timeout
 
+.. note::
+
+    At the moment of writing this, the qemu package provided by CentOS
+    is ``0.12.1.2``. To use hotplug capabilities, qemu >= 1.0 is required.
+
 To install Ganeti run:
 
 .. code-block:: console
@@ -2255,7 +2263,7 @@ skipped.
 
 .. code-block:: console
 
-   node1 # snf-manage quota --sync
+   node1 # snf-manage quota-verify --sync
    node1 # snf-manage reconcile-resources-astakos --fix
    node2 # snf-manage reconcile-resources-pithos --fix
    node1 # snf-manage reconcile-resources-cyclades --fix

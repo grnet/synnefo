@@ -56,6 +56,8 @@ def setup_env(args):
     env.component = args.component
     env.method = args.method
     env.role = args.role
+    env.cluster = args.cluster
+    env.node = args.node
 
 
 # Helper methods that are invoked via fabric's execute
@@ -137,13 +139,17 @@ def setup_qa(ctx=None):
 
 @with_ctx
 def setup(ctx=None):
-    if env.component:
-        target = env.component
-    else:
-        target = env.role
-    C = roles.get(target, ctx)
-    if env.method:
-        fn = getattr(C, env.method)
-        fn()
-    else:
-        C.setup()
+
+    if env.node:
+        if env.component:
+            C = roles.get(env.component, ctx)
+        elif env.role:
+            C = roles.get(env.role, ctx)
+        if env.method:
+            fn = getattr(C, env.method)
+            fn()
+        else:
+            C.setup()
+
+    elif env.cluster:
+        _setup_cluster(ctx)

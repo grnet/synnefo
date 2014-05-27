@@ -13,8 +13,9 @@
 <script id="projectQuotaTpl" type="text/template">
   {% verbatim %}
   <div class="resource-bar project clearfix project-{{id}} {{ usage.cls }}
-      {{^base_project}}no-base-project{{/base_project}} 
-      {{#base_project}}base-project{{/base_project}}" data-project="{{ id }}">
+      {{^system_project}}no-base-project{{/system_project}} 
+      {{#system_project}}base-project{{/system_project}}" 
+      data-project="{{ id }}">
       <div class="info" data-currvalue="" data-maxvalue="">
         <h3><a href="{{ details_url }}">{{ display_name }}</a></h3>
         <p>

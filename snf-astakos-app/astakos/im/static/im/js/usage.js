@@ -413,7 +413,7 @@ _.extend(UsageView.prototype, {
         
         if (!resource.projects[uuid]) {
           resource.projects[uuid] = _.clone(self.projects[uuid]);
-          if (self.projects[uuid].base_project) {
+          if (self.projects[uuid].system_project) {
             resource.projects[uuid].display_name = 'System project';
           }
         }
@@ -436,8 +436,8 @@ _.extend(UsageView.prototype, {
         });
         
         resource.projects_list = resource.projects_list.sort(function(p1, p2) {
-          if (p1.base_project && !p2.base_project) { return -1; }
-          if (!p1.base_project && p2.base_project) { return 1;  }
+          if (p1.system_project && !p2.system_project) { return -1; }
+          if (!p1.system_project && p2.system_project) { return 1;  }
           return p1.name > p2.name;
         });
       });

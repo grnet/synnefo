@@ -13,10 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import time
+import re
 import os
 import sys
-import re
 import random
 import subprocess
 import ipaddr
@@ -24,7 +23,7 @@ from snfdeploy import config
 from snfdeploy import context
 from snfdeploy import constants
 from snfdeploy.lib import check_pidfile, create_dir, get_default_route, \
-    random_mac
+    random_mac, get_netinfo
 
 
 def runcmd(cmd):
@@ -55,7 +54,7 @@ def create_dnsmasq_files(ctx):
 
     print("Customize dnsmasq..")
 
-    hosts = opts = conf = ""
+    hosts = opts = conf = "\n"
     hostsf = os.path.join(config.dns_dir, "dhcp-hostsfile")
     optsf = os.path.join(config.dns_dir, "dhcp-optsfile")
     conff = os.path.join(config.dns_dir, "conf-file")
@@ -191,13 +190,19 @@ def image():
 
 
 def cluster(ctx):
+    vms = []
     for node in ctx.all_nodes:
         node_info = config.get_info(node=node)
-        _launch_vm(node_info.name, node_info.mac)
+        vnc = _launch_vm(node_info.name, node_info.mac)
+        vms.append((node_info, vnc))
 
-    # TODO: check if the cluster is up and running instead of sleeping 30 secs
-    time.sleep(30)
     runcmd("reset")
+    for vm, port in vms:
+        if port:
+            vnc = "vncviewer %s:%s" % (get_netinfo()[0],  5900 + port)
+        else:
+            vnc = "no vnc"
+        print "%s: ssh root@%s or %s" % (vm.name, vm.ip, vnc)
 
 
 def _launch_vm(name, mac):
@@ -209,8 +214,10 @@ def _launch_vm(name, mac):
     print("Launching cluster node {0}..".format(name))
     os.environ["BRIDGE"] = config.bridge
     if config.vnc:
-        graphics = "-vnc :{0}".format(random.randint(1, 1000))
+        random_vnc_port = random.randint(1, 1000)
+        graphics = "-vnc :{0}".format(random_vnc_port)
     else:
+        random_vnc_port = None
         graphics = "-nographic"
 
     disks = """ \
@@ -244,8 +251,10 @@ def _launch_vm(name, mac):
 -m {4} -smp {5} {6} {7} \
 """.format(name, config.run_dir, disks, nics,
            config.mem, config.smp, graphics, kernel)
-    print cmd
+
     runcmd(cmd)
+
+    return random_vnc_port
 
 
 def dnsmasq():

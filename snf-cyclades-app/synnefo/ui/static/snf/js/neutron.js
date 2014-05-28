@@ -75,7 +75,7 @@
     // Network 
     models.Network = models.NetworkModel.extend({
       path: 'networks',
-
+      
       url: function(options, method) {
         var url = models.Network.__super__.url.call(this, method, options);
         if (options.data && options.data.reassign) {
@@ -670,6 +670,9 @@
       path: 'floatingips',
       parse: function(resp) {
         return resp.floatingips;
+      },
+      comparator: function(m) {
+        return parseInt(m.id);
       }
     });
 

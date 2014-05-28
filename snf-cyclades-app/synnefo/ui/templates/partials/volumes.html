@@ -1,0 +1,119 @@
+{% load i18n %}
+
+{% include "partials/create_volume.html" %}
+
+<div id="volumes-create-content" class="overlay-content hidden">
+    <div class="ajax-submit"></div>
+</div>
+
+<div id="volumes-list-view" class="collection-list-view hidden">
+  <div class="collection">
+
+    <div id="create-volume" class="create-button">
+      <a href="#">{% trans "New Disk +" %}</a>
+    </div>
+
+    <div class="empty-list hidden">
+      <p>{% trans "No disks available" %}</p>
+    </div>
+
+    <div class="items-list clearfix">
+        <div class="custom items-sublist"></div>
+        <div class="system items-sublist"></div>
+    </div>
+  </div>
+</div>
+
+<div id="volume-vm-view-tpl" class="hidden">
+  <div class="vm">
+    <img data-rv-show="model.in_progress" 
+            src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
+            class="progress-indicator" />
+    <span data-rv-hide="model.in_progress" data-rv-html="model.os|os_icon"></span>
+    <span data-rv-text="model.name|truncate 30"></span>
+  </div>
+</div>
+
+<div id="volume-view-tpl" data-rv-class-actionpending="model.actions.pending"
+  data-rv-class-clearfix="model.id" class="hidden volume-item model-item model-view with-actions">
+  <div class="clearfix">
+    <div class="main-content clearfix" style="position: relative">
+      <div class="main-content-inner clearfix">
+        <div class="project-name-cont" 
+          data-rv-on-click="view.show_reassign_view"
+          data-rv-show="model.tenant_id">
+            <span class="project-name" data-rv-text="model.project.name|truncate 20"></span>
+        </div>
+        <img class="logo" data-rv-src="model.status|model_icon" />
+        <div class="volume-size">
+            <span data-rv-text="model.size|size_display"></span>
+        </div>
+        <div class="entry inline" data-rv-class-connected="model.device_id">
+            <div data-rv-show="model" 
+                data-rv-model-view="model|VolumeItemRenameView">
+            </div>
+            <div data-rv-if="model.vm" class="vms nested-model-list proxy inline">
+                <div class="vm-view-cont">
+                    <div data-rv-show="model.vm" data-rv-model-view="model.vm|VolumeVmView"></div>
+                </div>
+            </div>
+
+            <div class="toggler-wrap clearfix">
+                <div class="cont-toggler desc">
+                    <span class="label">description</span>
+                </div>
+            </div>
+            <div class="content-cont">
+                <div class="model-rename-view">
+                <textarea data-rv-value="model.display_description|msg_if_empty No description"></textarea>
+                <span class="rename-desc-btn edit-btn"></span>
+                    <div class="rename-actions">
+                        <div class="btn confirm"></div>
+                        <div class="btn cancel"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="entry-right">
+          <div data-rv-class="model.status|status_cls" class="status">
+            <div class="status-title">
+              <span data-rv-text="model.status|status_display">Active</span>
+              <span data-rv-show="model.in_progress">...</span>
+            </div>
+            <div class="status-indicator clearfix">
+              <div class="indicator indicator1"></div>
+              <div class="indicator indicator2"></div>
+              <div class="indicator indicator3"></div>
+              <div class="indicator indicator4"></div>
+            </div>
+            <div class="state state-indicator">
+              <div class="action-indicator"></div>
+            </div>
+            <div data-show="model.status|in_progress" class="status-progress"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+      <div class="actions-content">
+        <div class="action-container snapshot warn" 
+           data-rv-class-isactive="model.can_snapshot"
+           data-rv-class-selected="model.actions.snapshot|intEq 1"
+           data-rv-on-click="view.show_snapshot_create_overlay">
+          <a>Snapshot</a>
+        </div>
+        <div class="action-container remove warn" 
+           data-rv-class-isactive="model.can_remove"
+           data-rv-class-selected="model.actions.remove|intEq 1"
+           data-rv-on-click="view.set_remove_confirm">
+          <a>Destroy</a>
+          <div class="confirm-single clearfix">
+            <span class="yes" data-rv-on-click="view.remove">
+              {% trans "Confirm" %}
+            </span>
+            <span class="no" data-rv-on-click="view.unset_remove_confirm">X</span>
+          </div>
+        </div>
+      </div>
+  </div>
+</div>

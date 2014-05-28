@@ -36,123 +36,6 @@
     
     var hasKey = Object.prototype.hasOwnProperty;
 
-    views.CreateSnapshotView = views.Overlay.extend({
-        view_id: "snapshot_create_view",
-        content_selector: "#snapshot-create-content",
-        css_class: 'overlay-snapshot-create overlay-info',
-        overlay_id: "snapshot-create-overlay",
-
-        title: "Create new snapshot",
-        subtitle: "Machines",
-
-        initialize: function(options) {
-            views.CreateSnapshotView.__super__.initialize.apply(this);
-
-            this.create_button = this.$("form .form-action.create");
-            this.text = this.$(".snapshot-create-name");
-            this.description = this.$(".snapshot-create-desc");
-            this.form = this.$("form");
-            this.init_handlers();
-            this.creating = false;
-        },
-        
-        show: function(vm) {
-          this.vm = vm;
-          views.CreateSnapshotView.__super__.show.apply(this);
-        },
-
-        init_handlers: function() {
-
-            this.create_button.click(_.bind(function(e){
-                this.submit();
-            }, this));
-
-            this.form.submit(_.bind(function(e){
-                e.preventDefault();
-                this.submit();
-                return false;
-            }, this))
-
-            this.text.keypress(_.bind(function(e){
-                if (e.which == 13) {this.submit()};
-            },this))
-        },
-
-        submit: function() {
-            if (this.validate()) {
-                this.create();
-            };
-        },
-        
-        validate: function() {
-            // sanitazie
-            var t = this.text.val();
-            t = t.replace(/^\s+|\s+$/g,"");
-            this.text.val(t);
-
-            if (this.text.val() == "") {
-                this.text.closest(".form-field").addClass("error");
-                this.text.focus();
-                return false;
-            } else {
-                this.text.closest(".form-field").removeClass("error");
-            }
-            return true;
-        },
-        
-        create: function() {
-            if (this.creating) { return }
-            this.create_button.addClass("in-progress");
-
-            var name = this.text.val();
-            var desc = this.description.val();
-            
-            this.creating = true;
-            this.vm.create_snapshot({display_name:name, display_description:desc}, _.bind(function() {
-              this.creating = false;
-              this.hide();
-            }, this));
-        },
-        
-        _default_values: function() {
-          var d = new Date();
-          var vmname = this.vm.get('name');
-          var vmid = this.vm.id;
-          var index = this.volume_index;
-          var id = this.vm.id;
-          var date = '{0}-{1}-{2} {3}:{4}:{5}'.format(
-            d.getFullYear(), d.getMonth()+1, d.getDate(), d.getHours(), 
-            d.getMinutes(), d.getSeconds());
-          var name = "\"{0}\" snapshot [{1}]".format(synnefo.util.truncate(vmname, 40), date);
-          if (this.volume) { name += "[volume:" + this.volume + "]" }
-          var description = "Volume id: {0}".format(this.volume || 'primary');
-          description += "\n" + "Server id: {0}".format(vmid);
-          description += "\n" + "Server name: {0}".format(vmname);
-          description += "\n" + "Timestamp: {0}".format(d.toJSON());
-
-          return {
-            'name': name,
-            'description': description
-          }
-        },
-
-        beforeOpen: function() {
-            this.create_button.removeClass("in-progress")
-            this.text.closest(".form-field").removeClass("error");
-            var defaults = this._default_values();
-
-            this.text.val(defaults.name);
-            this.description.val(defaults.description);
-            this.text.show();
-            this.text.focus();
-            this.description.show();
-        },
-
-        onOpen: function() {
-            this.text.focus();
-        }
-    });
-
     // base class for views that contain/handle VMS
     views.VMListView = views.View.extend({
 
@@ -405,28 +288,39 @@
             _.each(vms, _.bind(function(vm){
                 // vm will be removed
                 // no need to update
-                if (vm.get("status") == "DELETED") {
-                    return;
-                }
-
-                // this won't add it additional times
+                if (vm.get("status") == "DELETED") { return; }
                 this.add(vm);
                 this.update_vm(vm);
-            }, this))
+            }, this));
             
             // update view stuff
             this.__update_layout();
         },
         
+        disable_toggler: function(vm, t) {
+            this.vm(vm).find(".cont-toggler-wrapper."+t).addClass("disabled");
+            var info_view = this.info_views && this.info_views[vm.id];
+            var el = info_view && info_view[t+'_el'];
+            if (el) {
+              el.hide();
+            }
+        },
+
+        enable_toggler: function(vm, t) {
+            this.vm(vm).find(".cont-toggler-wrapper." + t).removeClass("disabled");
+        },
+
         update_toggles_visibility: function(vm) {
           if (vm.is_building() || vm.in_error_state() || vm.get("status") == "DESTROY") {
-            this.vm(vm).find(".cont-toggler-wrapper.ips").addClass("disabled");
-            var info_view = this.info_views && this.info_views[vm.id];
-            if (info_view && info_view.ips_el) {
-              info_view.ips_el.hide();
-            }
+              this.disable_toggler(vm, 'ips');
+              this.disable_toggler(vm, 'volumes');
           } else {
-            this.vm(vm).find(".cont-toggler-wrapper.ips").removeClass("disabled");
+              this.enable_toggler(vm, 'ips');
+              if (vm.volumes.length) {
+                  this.enable_toggler(vm, 'volumes');
+              } else {
+                  this.disable_toggler(vm, 'volumes');
+              }
           }
         },
 
@@ -641,10 +535,11 @@
               } else {
                 this.set_cannot_start();
               }
+
               if (this.vm.can_resize()) {
-                this.set_can_resize();
+                  this.set_can_resize();
               } else {
-                this.set_cannot_resize();
+                  this.set_cannot_resize();
               }
             }
 
@@ -741,7 +636,7 @@
             try {
                 this.vm.unbind("action:fail", this.update_layout)
                 this.vm.unbind("action:fail:reset", this.update_layout)
-            } catch (err) { console.log("Error")};
+            } catch (err) { console.error(err)};
             
             this.vm.bind("action:fail", this.update_layout)
             this.vm.bind("action:fail:reset", this.update_layout)
@@ -802,7 +697,7 @@
                     }
 
                     if (action == "resize") {
-                      if (!vm.can_resize()) { return }
+                      //if (!vm.can_resize()) { return }
                       ui.main.vm_resize_view.show(self.vm);
                       return;
                     } else if (action == "reassign") {
@@ -931,7 +826,7 @@
     
     views.VMPortView = views.ext.ModelView.extend({
       tpl: '#vm-port-view-tpl',
-      classes: 'port-item clearfix',
+      classes: 'inner-item port-item clearfix',
       
       update_in_progress: function() {
         if (this.model.get("in_progress_no_vm")) {
@@ -1002,5 +897,20 @@
       tpl: '#vm-port-ips-tpl',
       model_view_cls: views.VMPortIpView
     });
+
+    views.VMVolumeView = views.ext.ModelView.extend({
+      tpl: '#vm-volume-view-tpl',
+      classes: 'volume-item clearfix inner-item',
+      show_snapshot_create_overlay: function() {
+        var vm = this.model.get('vm');
+        if (!vm) { return }
+        synnefo.ui.main.create_snapshot_view.show(vm, this.model);
+      }
+
+    });
+
+    views.VMVolumeListView = views.ext.CollectionView.extend({
+      tpl: '#vm-volume-list-view-tpl',
+      model_view_cls: views.VMVolumeView    });      
 
 })(this);

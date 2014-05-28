@@ -198,7 +198,8 @@
             this.details = details ? (details.toString ? details.toString() : details) : undefined;
             this.message = message;
             this.api_message = api_message;
-            this.title = _.escape(error_options.title) || undefined;
+            this.title = error_options.title ? 
+              _.escape(error_options.title) : undefined;
 
             this.update_details();
             
@@ -230,15 +231,26 @@
             this.$(".error-code").text(this.code || "");
             this.$(".error-type").text(this.type || "");
             this.$(".error-module").text(this.ns || "");
-            if (this.api_message) {
+            
+            var extra_message = this.api_message || this.details;
+
+            if (extra_message) {
+              var msg_html = "<span>{0}</span><br />" +
+                             "<span class='api-message'>" +
+                             "{1}</span>";
+
               this.$(".message p").html($(
-                "<span>{0}</span><br /><span class='api-message'>{1}</span>".format(
+                msg_html.format(
                 _.escape(this.message), 
-                _.escape(this.api_message))));
+                _.escape(extra_message))
+              ));
             } else {
               this.$(".message p").text(this.message || "");
             }
-            this.$(".error-more-details p").html($("<pre />", {text:this.details}) || "no info");
+
+            this.$(".error-more-details p").html(
+              $("<pre />", {text:this.details}) || "no info"
+            );
 
             this.$(".extra-details").remove();
             _.each(this.error_options.extra_details, function(value, key){

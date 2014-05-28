@@ -1,0 +1,49 @@
+{% load i18n %}
+<div class="images-filter-cont content-cont">
+    <div class="images-filters">
+        <div class="image-types-cont">
+            <h4>Images</h4>
+            <ul class="type-filter">
+            </ul>
+        </div>
+        <br />
+        <div class="snapshot-types-cont">
+            <h4>Snapshots</h4>
+            <ul class="type-filter">
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="images-list-cont content-cont">
+    <h4>{% trans "Available images" %}
+        <span class="loading-indicator"></span>
+        <span class="custom-action">
+        <a href="#" class="register-custom-image">{% trans "create image" %}</a>
+        </span>
+    </h4>
+    <ul class="images-list">
+    </ul>
+    <span class="empty">
+        {% trans "No images available" %}.
+    </span>
+    {% if custom_image_help_url %}
+    <span class="custom-image-help" style="display:none">
+        <br /><br />
+        {% blocktrans with custom_image_help_url as url %}
+        Consult <a href="{{ url }}">this guide</a> if you want to create a custom OS image
+        {% endblocktrans %}
+    </span>
+    {% endif %}
+    <span class="loading hidden">{% trans "loading..." %}</span>
+</div>
+<div class="images-info-cont content-cont">
+    <h4>Image title</h4>
+    <span class="hide">close details</span>
+    <div class="image-detail description clearfix">
+        <span class="title">{% trans "Description" %}</span>
+        <p></p>
+    </div>
+    <h3>Image metadata</h3>
+    <div class="extra-details clearfix">
+    </div>
+</div>

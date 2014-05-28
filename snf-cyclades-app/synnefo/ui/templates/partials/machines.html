@@ -47,7 +47,7 @@
     </div>
     <div class="ico"><img data-rv-src="model.status|get_vm_icon" /></div>
     <div class="name">
-      <span class="" data-rv-text="model.name|truncate 40"></span>
+      <span class="" data-rv-text="model.name|truncate_title"></span>
       <div data-rv-class="model.state|status_cls">
         <span data-rv-text="model.state|status_display"></span>
         <div class="indicators">
@@ -68,16 +68,16 @@
   </div>
 </div>
 
-<div id="vm-port-ip-tpl" class="hidden port-ip-item">
+<div id="vm-port-ip-tpl" class="hidden port-ip-item nested-item">
   <img src="{{ SYNNEFO_IMAGES_URL }}/icons/indicators/medium/progress.gif"
   class="in-progress hidden" />
-  <div class="type" data-rv-text="model.type|prefix IP"></div>
-  <div class="ip" data-rv-text="model.ip_address"></div>
+  <div class="type-display" data-rv-text="model.type|prefix IP"></div>
+  <div class="ip title-display" data-rv-text="model.ip_address"></div>
 </div>
 
 <div id="vm-port-view-tpl" class="hidden">
-  <div class="ips" data-rv-collection-view="model.ips|VMPortIpsView"></div>
-  <div class="clearfix network-header">
+  <div class="ips nested" data-rv-collection-view="model.ips|VMPortIpsView"></div>
+  <div class="clearfix network-header nested">
     <span data-rv-show="model.in_progress_no_vm|update_in_progress"></span>
     <img data-rv-src="model.network.is_public|get_network_icon" />
     <div class="port" data-rv-text="model.network.name|get_network_name"></div>
@@ -99,7 +99,7 @@
   </div>
 </div>
 
-<div id="vm-port-list-view-tpl" class="collection-list-view hidden info-content ips">
+<div id="vm-port-list-view-tpl" class="collection-list-view hidden inner-collection info-content ips">
   <div class="collection">
     <div class="empty-list hidden">
       <p>{% trans "No IP addresses" %}</p>
@@ -126,8 +126,8 @@
 </div>
 
 <div id="project-select-collection-tpl" class="hidden">
-  <div class="collection fixed-ips-list">
-    <div class="empty-list hidden">No machines available.</div>
+  <div class="collection">
+    <div class="empty-list hidden">No projects available.</div>
     <div class="items-list clearfix"></div>
   </div>
 </div>
@@ -147,3 +147,31 @@
     </div>
   </div>
 </div>
+
+<div id="vm-volume-list-view-tpl" class="collection-list-view hidden inner-collection info-content volumes">
+  <div class="collection">
+    <div class="empty-list hidden">
+      <p>{% trans "No volumes attached" %}</p>
+    </div>
+    <div class="items-list volumes-list clearfix">
+    </div>
+  </div>
+</div>
+
+<div id="vm-volume-view-tpl" class="hidden nested-item">
+  <div class="clearfix volume-header">
+    <img src="{{ SYNNEFO_IMAGES_URL }}/icons/indicators/medium/progress.gif"
+    class="in-progress hidden" />
+    <div class="type-display" data-rv-text="model.size|disk_size_display"></div>
+    <div class="volume title-display" data-rv-text="model.display_name"></div>
+    <div class="actions-content inline">
+      <div class="action-container snapshot warn" 
+         data-rv-class-isactive="model.can_snapshot"
+         data-rv-class-selected="model.actions.snapshot|intEq 1"
+         data-rv-on-click="view.show_snapshot_create_overlay">
+        <a>Snapshot</a>
+      </div>
+    </div>
+  </div>
+</div>
+

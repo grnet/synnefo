@@ -181,11 +181,6 @@
     synnefo.util.equalHeights = function() {
         var max_height = 0;
         var selectors = _.toArray(arguments);
-            
-        _.each(selectors, function(s){
-            console.log($(s).height());
-        })
-        // TODO: implement me
     }
 
     synnefo.util.ClipHelper = function(wrapper, text, settings) {
@@ -656,5 +651,16 @@
         return -1;
       };
     }
+
+    $.fn.insertAt = function(elements, index){
+        var children = this.children();
+        if(index >= children.size()){
+            this.append(elements);
+            return this;
+        }
+        var before = children.eq(index);
+        $(elements).insertBefore(before);
+        return this;
+    };
 
 })(this);

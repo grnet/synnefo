@@ -41,9 +41,10 @@
     views.CreateVMSelectProjectItemView = views.ext.SelectModelView.extend({
       tpl: '#create-view-select-project-item-tpl',
       can_deselect: false,
+      display_quota: min_vm_quota,
       quotas_option_html: function() {
         var data = "(";
-        _.each(min_vm_quota, function(val, key) {
+        _.each(this.display_quota, function(val, key) {
           var q = this.model.quotas.get(key);
           if (!q) { return }
           var content = '{0}: {1},  ';
@@ -51,7 +52,9 @@
                                  q.get_readable('available'));
         }, this);
         data = data.substring(0, data.length-3);
-        data += ")";
+        if (data) {
+            data += ")";
+        }
         return data;
       }
     });
@@ -59,7 +62,9 @@
     views.CreateVMSelectProjectView = views.ext.CollectionSelectView.extend({
       tpl: '#create-view-projects-select-tpl',
       model_view_cls: views.CreateVMSelectProjectItemView,
-
+      required_quota: function() {
+          return min_vm_quota
+      },
       init: function() {
         this.handle_quota_changed = _.bind(this.handle_quota_changed, this);
         views.CreateVMSelectProjectView.__super__.init.apply(this, arguments);
@@ -67,7 +72,7 @@
 
       handle_quota_changed: function() {
         _.each(this._model_views, function(view) {
-          if (!view.model.quotas.can_fit(min_vm_quota)) {
+          if (!view.model.quotas.can_fit(this.required_quota())) {
             view.set_disabled();
           } else {
             view.set_enabled();
@@ -166,7 +171,7 @@
 
 
     
-    views.CreateVMStepView = views.View.extend({
+    views.CreateWizardStepView = views.View.extend({
         step: "1",
         title: "Image",
         submit: false,
@@ -177,7 +182,7 @@
             this.header = this.$(".step-header .step-" + this.step);
             this.view_id = "create_step_" + this.step;
 
-            views.CreateVMStepView.__super__.initialize.apply(this);
+            views.CreateWizardStepView.__super__.initialize.apply(this);
         },
       
         get_project: function() {
@@ -194,9 +199,13 @@
 
         reset: function() {
         }
-    })
+    });
+
+    views.CreateVMStepView = views.CreateWizardStepView;
 
     views.CreateImageSelectView = views.CreateVMStepView.extend({
+        
+        default_type: 'system',
 
         initialize: function() {
             views.CreateImageSelectView.__super__.initialize.apply(this, arguments);
@@ -268,8 +277,8 @@
             })
 
             $(".image-warning .confirm").bind('click', function(){
-                $(".image-warning").hide();
-                $(".create-controls").show();
+                self.parent.el.find(".image-warning").hide();
+                self.parent.el.find(".create-controls").show();
                 if (!self.parent.project) {
                   self.parent.set_no_project();
                 }
@@ -278,14 +287,20 @@
 
         update_images: function(images) {
             this.images = images;
-            this.images_ids = _.map(this.images, function(img){return img.id});
+            var filtered_images = _.filter(images, function(img) { 
+              return img.is_available()
+            });
+            this.images_ids = _.map(filtered_images, function(img) { 
+              return img.id
+            });
             return this.images;
         },
 
         create_types_selection_options: function() {
             var list = this.$(".image-types-cont ul.type-filter");
             _.each(this.type_selections_order, _.bind(function(key) {
-                list.append('<li id="type-select-{0}">{1}</li>'.format(key, this.type_selections[key]));
+                list.append('<li id="type-select-{0}">{1}</li>'.format(
+                    key, this.type_selections[key]));
             }, this));
             this.types = this.$(".type-filter li");
         },
@@ -363,6 +378,7 @@
             this.types.removeClass("selected");
             var selection = "#type-select-" + this.selected_type;
             this.types.filter("#type-select-" + this.selected_type).addClass("selected");
+            if (!type) { return }
             this.images_storage.update_images_for_type(
                 this.selected_type, 
                 _.bind(this.show_loading_view, this), 
@@ -390,16 +406,20 @@
         },
         
         display_warning_for_image: function(image) {
-          if (image && !image.is_system_image() && !image.owned_by(synnefo.user)) {
-            $(".create-vm .image-warning").show();
-            $(".create-controls").hide();
+          if (image && !image.is_system_image() && 
+              !image.owned_by(synnefo.user)) {
+            this.parent.el.find(".image-warning").show();
+            this.parent.el.find(".create-controls").hide();
           } else {
-            $(".create-vm .image-warning").hide();
-            $(".create-controls").show();
+            this.parent.el.find(".image-warning").hide();
+            this.parent.el.find(".create-controls").show();
           }
         },
 
         select_image: function(image) {
+            if (image && !image.is_available()) {
+              image = undefined;
+            }
             if (image && image.get('id') && !_.include(this.images_ids, image.get('id'))) {
                 image = undefined;
             }
@@ -421,8 +441,11 @@
             this.selected_image = image;
                 
             if (image) {
-                this.images_list.find(".image-details").removeClass("selected");
-                this.images_list.find(".image-details#create-vm-image-" + this.selected_image.id).addClass("selected");
+                this.images_list.find(
+                    ".image-details").removeClass("selected");
+                this.images_list.find(
+                    ".image-details#create-vm-image-" + 
+                    this.selected_image.id).addClass("selected");
                 this.update_image_details(image);
 
             } else {
@@ -523,27 +546,39 @@
         show: function() {
             this.image_details.hide();
             this.parent.$(".create-controls").show();
-
             views.CreateImageSelectView.__super__.show.apply(this, arguments);
         },
 
         add_image: function(img) {
-            var image = $(('<li id="create-vm-image-{1}"' +
-                           'class="image-details clearfix">{2}{0}'+
-                           '<span class="show-details">details</span>'+
-                           '<span class="size"><span class="prepend">by </span>{5}</span>' + 
-                           '<span class="owner">' +
-                           '<span class="prepend"></span>' +
-                           '{3}</span>' + 
-                           '<p>{4}</p>' +
-                           '</li>').format(_.escape(util.truncate(img.get("name"), 50)), 
-                                                  img.id, 
-                                                  snf.ui.helpers.os_icon_tag(img.escape("OS")),
-                                                  _.escape(img.get_readable_size()),
-                                                  util.truncate(img.get_description(false), 35),
-                                                  _.escape(img.display_owner())));
+            var description = util.truncate(img.get_description(false), 35);
+            if (!img.is_available()) {
+              description = "Image not available."
+            }
+            var image_html = '<li id="create-vm-image-{1}"' +
+                             'class="image-details clearfix">{2}{0}'+
+                             '<span class="show-details">details</span>'+
+                             '<span class="size"><span class="prepend">by ' +
+                             '</span>{5}</span>' + 
+                             '<span class="owner">' +
+                             '<span class="prepend"></span>' +
+                             '{3}</span>' + 
+                             '<p>{4}</p>' +
+                             '</li>';
+
+            var image = $(image_html.format(
+              _.escape(util.truncate(img.get("name"), 50)), 
+              img.id, 
+              snf.ui.helpers.os_icon_tag(img.escape("OS")),
+              _.escape(img.get_readable_size()),
+              description,
+              _.escape(img.display_owner())
+            ));
+
             image.data("image", img);
             image.data("image_id", img.id);
+
+            if (!img.is_available()) { image.addClass("disabled"); }
+
             this.images_list.append(image);
             image.find(".show-details").click(_.bind(function(e){
                 e.preventDefault();
@@ -565,7 +600,7 @@
 
         reset: function() {
             this.selected_image = false;
-            this.select_type("system");
+            this.select_type(this.default_type);
         },
 
         get: function() {
@@ -609,7 +644,7 @@
           if (!this.project_select_view) {
             this.project_select_view = new views.CreateVMSelectProjectView({
               container: this.projects_list,
-              collection: synnefo.storage.projects,
+              collection: synnefo.storage.joined_projects,
               parent_view: this
             });
             this.project_select_view.show(true);
@@ -1600,8 +1635,8 @@
                 var el = this.make("li", {'class':'selected-ip-address'}, 
                                   ip_address);
                 var project_name = ip.get('project').get('name');
-                project_name = util.truncate(project_name, 30)
-                var name = $('<span class="project"></span>')
+                project_name = util.truncate(project_name, 30);
+                var name = $('<span class="project"></span>');
                 $(name).text(project_name);
                 $(el).append(name);
                 this.ip_addresses.append(el);
@@ -1728,32 +1763,23 @@
         }
     });
 
-    views.CreateVMView = views.Overlay.extend({
+    views.VMCreateView = views.Overlay.extend({
         
         view_id: "create_vm_view",
         content_selector: "#createvm-overlay-content",
-        css_class: 'overlay-createvm overlay-info',
+        css_class: 'overlay-wizard overlay-info',
         overlay_id: "metadata-overlay",
 
         subtitle: false,
         title: "Create new machine",
 
         initialize: function(options) {
-            views.CreateVMView.__super__.initialize.apply(this);
+            views.VMCreateView.__super__.initialize.apply(this);
             this.current_step = 1;
-
-            this.password_view = new views.VMCreationPasswordView();
-
-
+            
             this.steps = [];
-            this.steps[1] = new views.CreateImageSelectView(this);
-            this.steps[1].bind("change", _.bind(function(data) {this.trigger("image:change", data)}, this));
 
-            this.steps[2] = new views.CreateFlavorSelectView(this);
-            this.steps[3] = new views.CreateNetworkingView(this);
-            this.steps[4] = new views.CreatePersonalizeView(this);
-            this.steps[5] = new views.CreateSubmitView(this);
-
+            this.setup_step_views();
             this.cancel_btn = this.$(".create-controls .cancel");
             this.next_btn = this.$(".create-controls .next");
             this.prev_btn = this.$(".create-controls .prev");
@@ -1773,6 +1799,20 @@
             });
             
             this.init_handlers();
+        },
+        
+        setup_step_views: function() {
+            this.password_view = new views.VMCreationPasswordView();
+            this.steps[1] = new views.CreateImageSelectView(this);
+            this.steps[1].bind("change", _.bind(function(data) {
+                this.trigger("image:change", data)
+            }, this));
+
+            this.steps[2] = new views.CreateFlavorSelectView(this);
+            this.steps[3] = new views.CreateNetworkingView(this);
+            this.steps[4] = new views.CreatePersonalizeView(this);
+            this.steps[5] = new views.CreateSubmitView(this);
+
         },
 
         get_available_project: function() {
@@ -1897,11 +1937,10 @@
 
         reset: function() {
           this.current_step = 1;
-
-          this.steps[1].reset();
-          this.steps[2].reset();
-          this.steps[3].reset();
-          this.steps[4].reset();
+          
+          _.each(this.steps, function(s) {
+              s.reset();
+          });
 
           this.submit_btn.removeClass("in-progress");
         },
@@ -1963,8 +2002,6 @@
         },
 
         show_step: function(step) {
-            // FIXME: this shouldn't be here
-            // but since we are not calling step.hide this should work
             this.steps[1].image_details.hide();
             
             this.current_view && this.current_view.hide_step && this.current_view.hide_step();
@@ -2018,7 +2055,11 @@
         },
 
         get_params: function() {
-            return _.extend({}, this.steps[1].get(), this.steps[2].get(), this.steps[3].get(), this.steps[4].get());
+            var params = {};
+            _.each(this.steps, function(s) {
+                _.extend(params, s.get());
+            });
+            return params;
         }
     });
     

@@ -343,4 +343,15 @@
       }
     });
 
+    views.VolumeReassignView = views.ModelReassignView.extend({
+      title: 'Set disk project',
+      resources: ['cyclades.disk'],
+      description: 'Select project to assign disk to',
+      model_usage: function(model) { 
+          return {'cyclades.disk': model.get('size') * Math.pow(1024, 3)}
+      },
+      assign_to_project: function(model, project, complete, fail) {
+        this.model.reassign_to_project(project, complete, complete);
+      }
+    });
 })(this);

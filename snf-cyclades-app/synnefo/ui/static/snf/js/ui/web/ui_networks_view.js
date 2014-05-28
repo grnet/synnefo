@@ -223,7 +223,7 @@
         update_projects: function() {
           this.project_select.find("option").remove();
           var min_network_quota = {'cyclades.network.private': 1}
-          synnefo.storage.projects.each(function(project){
+          synnefo.storage.joined_projects.each(function(project){
             var el = $("<option></option>");
             el.attr("value", project.id);
             var name = '{0} ({1} available)'.format(project.get('name'), 
@@ -666,8 +666,9 @@
       collection_view_selector: '#networks-list-view'
     });
     
-    views.VMSelectView = views.ext.SelectModelView.extend({
+    views.VMSelectItemView = views.ext.SelectModelView.extend({
       tpl: '#vm-select-model-tpl',
+      max_title_length: 20,
       get_vm_icon: function() {
         return $(snf.ui.helpers.vm_icon_tag(this.model, "small")).attr("src")
       },
@@ -675,44 +676,24 @@
         return (views.IconView.STATE_CLASSES[this.model.get("state")] || []).join(" ") + " status clearfix"
       },
       status_display: function() {
-        return STATE_TEXTS[this.model.get("state")]
+        return STATE_TEXTS[this.model.get("state")];
+      },
+      truncate_title: function() {
+        return snf.util.truncate(this.model.get("name"), this.max_title_length);
       }
     });
 
-    views.VMSelectView = views.ext.CollectionView.extend({
-      init: function() {
-        views.VMSelectView.__super__.init.apply(this);
-      },
+    views.VMSelectView = views.ext.CollectionSelectView.extend({
       tpl: '#vm-select-collection-tpl',
-      model_view_cls: views.VMSelectView,
-      
-      trigger_select: function(view, select) {
-        this.trigger("change:select", view, select);
-      },
+      model_view_cls: views.VMSelectItemView,
+      max_title_length: 20,
 
       post_add_model_view: function(view) {
-        view.bind("change:select", this.trigger_select, this);
+        views.VMSelectView.__super__.post_add_model_view.call(this, view);
+        view.max_title_length = this.max_title_length;
         if (!this.options.allow_multiple) {
-          view.input.prop("type", "radio");
+            view.input.prop("type", "radio");
         }
-      },
-
-      post_remove_model_view: function(view) {
-        view.unbind("change:select", this.trigger_select, this);
-      },
-
-      deselect_all: function(except) {
-        _.each(this._subviews, function(view) {
-          if (view != except) { view.deselect() }
-        });
-      },
-
-      get_selected: function() {
-        return _.filter(_.map(this._subviews, function(view) {
-          if (view.selected) {
-            return view.model;
-          }
-        }), function(m) { return m });
       }
     });
 
@@ -722,6 +703,7 @@
         content_selector: "#network-vms-select-content",
         css_class: "overlay-info",
         allow_multiple: true,
+        allow_empty: true,
 
         initialize: function() {
             views.NetworkConnectVMsOverlay.__super__.initialize.apply(this);
@@ -737,17 +719,11 @@
             this.collection_view = new views.VMSelectView({
               collection: collection,
               el: this.list,
-              allow_multiple: this.allow_multiple
+              allow_multiple: this.allow_multiple,
+              allow_empty: this.allow_empty
             });
             this.collection_view.show(true);
             this.list.append($(this.collection_view.el));
-            if (!this.allow_multiple) {
-              this.collection_view.bind("change:select", 
-                                        function(view, selected) {
-                if (!selected) { return }
-                this.collection_view.deselect_all(view);
-              }, this);
-            }
         },
 
         handle_vm_click: function(el) {

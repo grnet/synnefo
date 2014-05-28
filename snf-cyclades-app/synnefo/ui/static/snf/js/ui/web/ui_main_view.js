@@ -455,36 +455,63 @@
                 self.title.text(self.parent.get_title());
             });
 
-            this.pane_view_selector.find("a#machines_view_link").click(_.bind(function(ev){
+            this.pane_view_selector.find("a#machines_view_link").click(
+              _.bind(function(ev){
                 ev.preventDefault();
                 this.router.vms_index();
-            }, this))
-            this.pane_view_selector.find("a#networks_view_link").click(_.bind(function(ev){
+              }, this)
+            );
+
+            this.pane_view_selector.find("a#networks_view_link").click(
+              _.bind(function(ev){
                 ev.preventDefault();
                 this.router.networks_view();
-            }, this))
-            this.pane_view_selector.find("a#ips_view_link").click(_.bind(function(ev){
+              }, this)
+            );
+
+            this.pane_view_selector.find("a#ips_view_link").click(
+              _.bind(function(ev){
                 ev.preventDefault();
                 this.router.ips_view();
-            }, this))
-            this.pane_view_selector.find("a#public_keys_view_link").click(_.bind(function(ev){
+              }, this)
+            );
+
+            this.machine_view_selector.find("a#volumes_view_list_link").click(
+              _.bind(function(ev){
+                ev.preventDefault();
+                this.router.volumes_view();
+              }, this)
+            );
+
+            this.pane_view_selector.find("a#public_keys_view_link").click(
+              _.bind(function(ev){
                 ev.preventDefault();
                 this.router.public_keys_view();
-            }, this))
+              }, this)
+            );
             
-            this.machine_view_selector.find("a#machines_view_icon_link").click(_.bind(function(ev){
+            this.machine_view_selector.find("a#machines_view_icon_link").click(
+              _.bind(function(ev){
                 ev.preventDefault();
                 var d = $.now();
                 this.router.vms_icon_view();
-            }, this))
-            this.machine_view_selector.find("a#machines_view_list_link").click(_.bind(function(ev){
+              }, this)
+            );
+
+            this.machine_view_selector.find("a#machines_view_list_link").click(
+              _.bind(function(ev){
                 ev.preventDefault();
                 this.router.vms_list_view();
-            }, this))
-            this.machine_view_selector.find("a#machines_view_single_link").click(_.bind(function(ev){
+              }, this)
+            );
+            
+            var selector = "a#machines_view_single_link"
+            this.machine_view_selector.find(selector).click(
+              _.bind(function(ev){
                 ev.preventDefault();
                 this.router.vms_single_view();
-            }, this))
+              }, this)
+            );
         },
 
         update_layout: function() {
@@ -519,6 +546,7 @@
             'icon': 'machines', 'single': 'machines', 
             'list': 'machines', 'networks': 'networks',
             'ips': 'IP addresses',
+            'volumes': 'disks',
             'public-keys': 'public keys'
         },
 
@@ -529,14 +557,16 @@
           1: 'list', 
           3: 'networks', 
           4: 'ips',
-          5: 'public-keys'
+          5: 'volumes',
+          6: 'public-keys'
         },
 
         views_pane_indexes: {
           0: 'single', 
           1: 'networks', 
           2: 'ips', 
-          3: 'public-keys'
+          3: 'volumes',
+          4: 'public-keys'
         },
 
         // views classes registry
@@ -546,15 +576,32 @@
             'list': views.ListView, 
             'networks': views.NetworksPaneView, 
             'ips': views.IpsPaneView,
+            'volumes': views.VolumesPaneView,
             'public-keys': views.PublicKeysPaneView
         },
 
         // view ids
-        views_ids: {'icon':0, 'single':2, 'list':1, 'networks':3, 'ips':4, 'public-keys': 5},
+        views_ids: {
+          'icon': 0, 
+          'single': 2, 
+          'list': 1, 
+          'networks': 3, 
+          'ips': 4, 
+          'volumes': 5,
+          'public-keys': 6
+        },
 
         // on which pane id each view exists
         // machine views (icon,single,list) are all on first pane
-        pane_ids: {'icon':0, 'single':0, 'list':0, 'networks':1, 'ips':2, 'public-keys': 3},
+        pane_ids: {
+          'icon': 0, 
+          'single': 0, 
+          'list': 0, 
+          'volumes': 1, 
+          'networks': 2, 
+          'ips': 3, 
+          'public-keys': 4
+        },
     
         initialize: function(show_view) {
             if (!show_view) { show_view = 'icon' };
@@ -677,8 +724,8 @@
         },
 
         init_overlays: function() {
-            this.create_vm_view = new views.CreateVMView();
-            this.create_snapshot_view = new views.CreateSnapshotView();
+            this.create_vm_view = new views.VMCreateView();
+            this.create_snapshot_view = new views.SnapshotCreateView();
             this.api_info_view = new views.ApiInfoView();
             this.details_view = new views.DetailsView();
             this.suspended_view = new views.SuspendedVMView();
@@ -696,7 +743,7 @@
             $(".css-panes").show();
         },
         
-        items_to_load: 6,
+        items_to_load: 8,
         completed_items: 0,
         check_status: function(loaded) {
             this.completed_items++;
@@ -763,6 +810,7 @@
               'ips': storage.floating_ips,
               'subnets': storage.subnets,
               'ports': storage.ports,
+              'volumes': storage.volumes,
               'keys': storage.keys
             }, function(col, name) {
               this.init_interval(name, col)
@@ -822,6 +870,7 @@
             this.vm_reassign_view = new views.VmReassignView();
             this.ip_reassign_view = new views.IPReassignView();
             this.network_reassign_view = new views.NetworkReassignView();
+            this.volume_reassign_view = new views.VolumeReassignView();
 
             // api request error handling
             synnefo.api.bind("error", _.bind(this.handle_api_error, this));
@@ -857,13 +906,18 @@
                   storage.quotas.fetch({refresh:true, update:true, success: function() {
                     self.update_status("quotas", 1);
                     self.check_status();
+                    self.update_status("volumes", 0);
+                    storage.volumes.fetch({refresh:true, update:false, success: function(){
+                          self.update_status("volumes", 1);
+                          self.check_status();
+                    }});  
+
                     // sync load initial data
                     self.update_status("images", 0);
                     storage.images.fetch({refresh:true, update:false, success: function(){
                         self.update_status("images", 1);
                         self.check_status();
                         self.load_nets_and_vms();
-                        self.update_status("layout", 0);
                     }});
                   }});
                 }})
@@ -946,11 +1000,7 @@
             $("#createcontainer #create").click(function(e){
                 e.preventDefault();
                 if ($(this).hasClass("disabled")) { return }
-                synnefo.storage.images.fetch({
-                  complete: function() {
-                    self.router.vm_create_view();
-                  }
-                });
+                self.router.vm_create_view();
             });
         },
 

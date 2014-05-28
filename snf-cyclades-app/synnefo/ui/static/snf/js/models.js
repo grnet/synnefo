@@ -777,10 +777,18 @@
 
         initialize: function(params) {
             var self = this;
+
             this.ports = new Backbone.FilteredCollection(undefined, {
               collection: synnefo.storage.ports,
               collectionFilter: function(m) {
                 return self.id == m.get('device_id')
+            }});
+
+            this.volumes = new Backbone.FilteredCollection(undefined, {
+              collection: synnefo.storage.volumes,
+              collectionFilter: function(m) {
+                var volumes = _.map(self.get('volumes'), function(id) { return ''+id });
+                return _.contains(volumes, m.id+'');
             }});
 
             this.pending_firewalls = {};
@@ -869,6 +877,11 @@
             })
           }, this)
           return found;
+        },
+        
+        is_ext: function() {
+            var tpl = this.get_flavor().get('disk_template');
+            return tpl.indexOf('ext_') == 0;
         },
 
         status: function(st) {
@@ -1164,6 +1177,11 @@
           return true
         },
 
+        can_attach_volume: function() {
+          return _.contains(["ACTIVE", "STOPPED"], this.get("status")) && 
+                 !this.get('suspended')
+        },
+
         can_connect: function() {
           if (!synnefo.config.hotplug_enabled && this.is_active()) { return false }
           return _.contains(["ACTIVE", "STOPPED"], this.get("status")) && 
@@ -1175,7 +1193,8 @@
         },
 
         can_resize: function() {
-          return this.get('status') == 'STOPPED' && !this.get('project').get('missing');
+          return this.get('status') == 'STOPPED' && 
+                                    !this.get('project').get('missing');
         },
 
         can_reassign: function() {
@@ -1507,7 +1526,7 @@
           });
         },
         
-        create_snapshot: function(snapshot_params, callback) {
+        create_snapshot: function(snapshot_params, callback, error_cb) {
           var volume = this.get('volumes') && this.get('volumes').length ? 
                        this.get('volumes')[0] : undefined;
           var params = _.extend({
@@ -1519,6 +1538,7 @@
               url: synnefo.config.api_urls.volume + '/snapshots/',
               data: JSON.stringify({snapshot:params}),
               success: callback, 
+              error: error_cb,
               skip_api_error: false,
 	      contentType: 'application/json'
           });
@@ -1758,6 +1778,9 @@
       'REASSIGNING': 'REASSIGN',
       'CONNECTING': 'CONNECT',
       'DISCONNECTING': 'DISCONNECT',
+      'UNKNOWN': 'UNKNOWN',
+      'ATTACHING_VOLUME': 'ATTACH_VOLUME',
+      'DETACHING_VOLUME': 'DETACH_VOLUME',
       'DESTROYING': 'DESTROY'
     }
 
@@ -1833,7 +1856,9 @@
         'RESIZE',
         'REASSIGN',
         'DISCONNECT',
-        'CONNECT'
+        'CONNECT',
+        'ATTACH_VOLUME',
+        'DETACH_VOLUME'
     ]
 
     models.VM.ACTIVE_STATES = [
@@ -1987,7 +2012,6 @@
         
         get_images_for_type: function(type) {
             var method = 'get_{0}_images'.format(type.replace("-", "_"));
-            console.log("filtering using", method);
             if (this[method]) {
                 return this[method]();
             }
@@ -2168,7 +2192,7 @@
                 // Do not apply task_state logic when machine is in ERROR state.
                 // In that case only update from task_state only if equals to
                 // DESTROY
-                if (data['task_state']) {
+                if (data['task_state'] !== undefined) {
                     if (data['status'] != 'ERROR' && data['task_state'] != 'DESTROY') {
                       status = models.VM.TASK_STATE_STATUS_MAP[data['task_state']];
                       if (status) { data['status'] = status }
@@ -2784,7 +2808,7 @@
 
         get: function(id) {
           var project = models.Projects.__super__.get.call(this, id);
-          if (!project) {
+          if (!project && id) {
             if (_.contains(this._resolving_missing, id)) { return }
             this._resolving_missing.push(id);
             var missing_project = {
@@ -2852,5 +2876,11 @@
     snf.storage.quotas = new models.Quotas();
     snf.storage.projects = new models.Projects();
     snf.storage.public_pools = new models.PublicPools();
-
+    
+    snf.storage.joined_projects = new Backbone.FilteredCollection(undefined, {
+        collection: synnefo.storage.projects,
+        collectionFilter: function(m) {
+            return !m.get("missing");
+        }
+    });
 })(this);

@@ -292,6 +292,7 @@
         css_class: "overlay-info connect-ip",
         title: "Attach IP to machine",
         allow_multiple: false,
+        allow_empty: false,
 
         show_vms: function(ip, vms, selected, callback, subtitle) {
             views.IPConnectVmOverlay.__super__.show_vms.call(this, 

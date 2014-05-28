@@ -623,12 +623,19 @@ EOF
 
     @base.run_cmds
     def add_node(self, info):
-        commands = [
-            "gnt-node list " + info.fqdn + " || " +
-            "gnt-node add --no-ssh-key-check --master-capable=yes " +
-            "--vm-capable=yes " + info.fqdn,
-            ]
-        return commands
+        add = """
+gnt-node list {0} || gnt-node add --no-ssh-key-check {0}
+""".format(info.fqdn)
+
+        mod_vm = """
+gnt-node modify --vm-capable=yes {0}
+""".format(info.fqdn)
+
+        mod_master = """
+gnt-node modify --master-capable=yes {0}
+""".format(info.fqdn)
+
+        return [add, mod_vm, mod_master]
 
     def _try_use_vg(self):
         vg = self.cluster.vg

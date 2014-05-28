@@ -1766,6 +1766,7 @@ class GanetiDev(base.Component):
         "libghc-test-framework-dev",
         "libghc-test-framework-hunit-dev",
         "libghc-test-framework-quickcheck2-dev",
+        "libghc-base64-bytestring-dev",
         "libghc-text-dev",
         "libghc-utf8-string-dev",
         "libghc-vector-dev",
@@ -1810,14 +1811,12 @@ class GanetiDev(base.Component):
         "curl",
         "hslogger",
         "Crypto",
-        # "text",
         "hinotify==0.3.2",
         "regex-pcre",
-        "attoparsec",
         "vector",
-        "base64-bytestring",
         "lifted-base==0.2.0.3",
         "lens==3.10",
+        "base64-bytestring==1.0.0.1",
         ]
 
     def _cabal(self):

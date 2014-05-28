@@ -41,6 +41,13 @@ register = template.Library()
 DELIM = ','
 
 
+def _is_inf(value):
+    try:
+        return value == units.PRACTICALLY_INFINITE
+    except:
+        return False
+
+
 @register.filter
 def monthssince(joined_date):
     now = datetime.datetime.now()
@@ -224,7 +231,9 @@ def resource_diff(r, member_or_project):
     project, member = r.display_project_diff()
     diff = dict(zip(['project', 'member'],
                      r.display_project_diff())).get(member_or_project)
-    tpl = '<span class="policy-diff %s">(%s)</span>'
+    if diff != '':
+        diff = "(%s)" % diff
+    tpl = '<span class="policy-diff %s">%s</span>'
     cls = 'red' if diff.startswith("-") else 'green'
     return mark_safe(tpl % (cls, diff))
 
@@ -387,7 +396,12 @@ def display_modification_param(form_or_app, param, formatter=None):
 def display_modification_param_diff(form_or_app, param):
     def formatter(form_or_app, value, changed):
         if changed in [None, False]:
+            if _is_inf(value):
+                value = "Infinite"
             return value, changed, None, " "
+
+        to_inf = _is_inf(value)
+        from_inf = _is_inf(changed)
 
         diff = value - changed
         sign = "+"
@@ -398,10 +412,14 @@ def display_modification_param_diff(form_or_app, param):
             cls = "red"
 
         if diff != 0:
+            if from_inf or to_inf:
+                diff = "Infinite"
             changed = "(%s)" % (sign + str(diff))
         else:
             changed = None
 
+        if to_inf:
+            value = "Infinite"
         return value, changed, cls, " "
 
     return display_modification_param(form_or_app, param, formatter)
@@ -424,6 +442,13 @@ def display_date_modification_param(form_or_app, params):
 def inf_display(value):
     if value == units.PRACTICALLY_INFINITE:
         return 'Infinite'
+    return value
+
+
+@register.filter
+def inf_value_display(value):
+    if value == units.PRACTICALLY_INFINITE:
+        return 'infinite'
     return value
 
 

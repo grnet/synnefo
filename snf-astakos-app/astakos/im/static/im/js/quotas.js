@@ -144,8 +144,12 @@ $(document).ready(function() {
 	 	hidden_name = $(this).attr('name').replace("_proxy","");
 	 	var hidden_input = $("input[name='"+hidden_name+"']");
 	 	
+        if (value.match(/^inf/i)) { 
+            $(this).parents('.form-row').removeClass('with-errors');
+            hidden_input.val("inf");
+            return;
+        }
 	 	if (value) {
-	 		 
 		 	// actions for humanize fields
 		 	if ($(this).hasClass('dehumanize')){
 		 		
@@ -277,7 +281,11 @@ $(document).ready(function() {
 			if ( (field.hasClass('dehumanize')) && !($(this).parents('.form-row').hasClass('with-errors'))) {
 				// for dehumanize fields transform bytes to KB, MB, etc
 				// unless there is an error
-				field.val(bytesToSize2(value) || 0)
+                if (value.match(/^inf/i)) { 
+                    field.val("infinite");
+                } else {
+                    field.val(bytesToSize2(value) || 0);
+                }
 			} else {
 				// else just return the value
 				field.val(value);	
@@ -318,8 +326,6 @@ $(document).ready(function() {
 				flag = 1;
 			}
 		});
-		
-		console.info(flag);
 		
 		if (flag =='0') {
 			$('#icons').focus();

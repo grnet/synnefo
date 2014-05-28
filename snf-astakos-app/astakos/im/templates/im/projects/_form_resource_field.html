@@ -32,7 +32,7 @@
             {% else %}
               {% with value=object|get_member_resource_grant_value:resource %}
                 {% if value %}
-                  value = "{{ value }}"
+                  value = "{{ value|inf_value_display }}"
                 {% endif %}
               {% endwith %}
             {% endif %}
@@ -63,7 +63,7 @@
             {% else %}
               {% with value=object|get_project_resource_grant_value:resource %}
                 {% if value %}
-                value = "{{ value }}"
+                value = "{{ value|inf_value_display }}"
                 {% else %}
                 value = ""
                 {% endif %}

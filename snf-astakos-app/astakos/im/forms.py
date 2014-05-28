@@ -735,7 +735,9 @@ class ProjectApplicationForm(forms.ModelForm):
             if instance.is_base:
                 name_field = self.fields['name']
                 name_field.validators = [base_app_name_validator]
-
+            if self.initial['limit_on_members_number'] == \
+                                                    units.PRACTICALLY_INFINITE:
+                self.initial['limit_on_members_number'] = ''
 
     def clean_limit_on_members_number(self):
         value = self.cleaned_data.get('limit_on_members_number')
@@ -830,6 +832,8 @@ class ProjectApplicationForm(forms.ModelForm):
             if name.endswith('_uplimit'):
                 is_project_limit = name.endswith('_p_uplimit')
                 suffix = '_p_uplimit' if is_project_limit else '_m_uplimit'
+                if value == 'inf':
+                    value = units.PRACTICALLY_INFINITE
                 uplimit = value
                 prefix, _suffix = name.split(suffix)
 
@@ -853,6 +857,9 @@ class ProjectApplicationForm(forms.ModelForm):
                         raise forms.ValidationError(m)
 
                     display = units.show(uplimit, resource.unit)
+                    if display == "inf":
+                        display = "Infinite"
+
                     handled = resource_indexes.get(prefix)
 
                     diff_data = None
@@ -866,13 +873,24 @@ class ProjectApplicationForm(forms.ModelForm):
 
                             if pval != uplimit:
                                 diff = pval - uplimit
+
+                                diff_display = units.show(abs(diff),
+                                                          resource.unit,
+                                                          inf="Infinite")
+
+                                if uplimit == units.PRACTICALLY_INFINITE:
+                                    diff_display = "Infinite"
+                                if pval == units.PRACTICALLY_INFINITE:
+                                    diff_display = "Infinite"
+
+                                prev_display = units.show(pval, resource.unit,
+                                                          inf="Infinite")
+
                                 diff_data = {
                                     'prev': pval,
-                                    'prev_display': units.show(pval,
-                                                               resource.unit),
+                                    'prev_display': prev_display,
                                     'diff': diff,
-                                    'diff_display': units.show(abs(diff),
-                                                               resource.unit),
+                                    'diff_display': diff_display,
                                     'increased': diff < 0,
                                     'operator': '+' if diff < 0 else '-'
                                 }

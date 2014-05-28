@@ -1514,10 +1514,12 @@ class ProjectResourceGrant(models.Model):
         unique_together = ("resource", "project_application")
 
     def display_member_capacity(self):
-        return units.show(self.member_capacity, self.resource.unit)
+        return units.show(self.member_capacity, self.resource.unit,
+                          inf="Infinite")
 
     def display_project_capacity(self):
-        return units.show(self.project_capacity, self.resource.unit)
+        return units.show(self.project_capacity, self.resource.unit,
+                          inf="Infinite")
 
     def project_diffs(self):
         project = self.project_application.chain
@@ -1528,7 +1530,11 @@ class ProjectResourceGrant(models.Model):
 
         project_diff = \
             self.project_capacity - project_resource.project_capacity
+        if self.project_capacity == units.PRACTICALLY_INFINITE:
+            project_diff = units.PRACTICALLY_INFINITE
         member_diff = self.member_capacity - project_resource.member_capacity
+        if self.member_capacity == units.PRACTICALLY_INFINITE:
+            member_diff = units.PRACTICALLY_INFINITE
         return [project_diff, member_diff]
 
     def display_project_diff(self):
@@ -1537,8 +1543,10 @@ class ProjectResourceGrant(models.Model):
         unit = self.resource.unit
 
         def disp(v):
+            if v == 0:
+                return ''
             sign = u'+' if v >= 0 else u'-'
-            return sign + unicode(units.show(abs(v), unit))
+            return sign + unicode(units.show(abs(v), unit, inf="Infinite"))
         return map(disp, [proj_abs, member_abs])
 
     def __unicode__(self):
@@ -1582,6 +1590,11 @@ class ProjectManager(models.Manager):
         if flt is not None:
             q &= flt
         return self.filter(q)
+
+    @property
+    def has_infinite_members_limit(self):
+        return self.limit_on_members_number == units.PRACTICALLY_INFINITE
+
 
 
 class Project(models.Model):
@@ -1861,6 +1874,10 @@ class Project(models.Model):
         return presentation.PROJECT_MEMBER_LEAVE_POLICIES.get(policy)
 
     @property
+    def has_infinite_members_limit(self):
+        return self.limit_on_members_number == units.PRACTICALLY_INFINITE
+
+    @property
     def resource_set(self):
         return self.projectresourcequota_set.order_by('resource__name')
 
@@ -1892,10 +1909,12 @@ class ProjectResourceQuota(models.Model):
         unique_together = ("resource", "project")
 
     def display_member_capacity(self):
-        return units.show(self.member_capacity, self.resource.unit)
+        return units.show(self.member_capacity, self.resource.unit,
+                          inf="Infinite")
 
     def display_project_capacity(self):
-        return units.show(self.project_capacity, self.resource.unit)
+        return units.show(self.project_capacity, self.resource.unit,
+                          inf="Infinite")
 
 
 class ProjectLogManager(models.Manager):

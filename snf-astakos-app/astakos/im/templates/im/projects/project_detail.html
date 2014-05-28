@@ -112,13 +112,13 @@
           <dt>{{rp.resource.pluralized_display_name}}</dt>
           <dd>
             <div class="resource">
-                {{ rp.display_project_capacity|default:"(not set)" }}
+                {{ rp.display_project_capacity|inf_display|default:"(not set)" }}
                 {% if is_modification %}
                 {{ rp|resource_diff:"project" }}
                 {% endif %}
             </div>
             <div class="resource fix-col">
-                {{ rp.display_member_capacity|default:"(not set)" }}
+                {{ rp.display_member_capacity|inf_display|default:"(not set)" }}
                 {% if is_modification %}
                 {{ rp|resource_diff:"member" }}
                 {% endif %}
@@ -161,7 +161,7 @@
       <dt>Max participants</dt>
       <dd>
         {% if object.limit_on_members_number != None %}
-        {{object.limit_on_members_number}}
+        {{object.limit_on_members_number|inf_display}}
         {% else %}Not set{% endif %}
       </dd>
       <dt>Member join policy</dt>
@@ -176,11 +176,13 @@
           {% if object.is_alive %}
       <dt><a href="{% url project_approved_members project.uuid %}" title="view approved members">Approved members</a></dt>
       <dd>{{ approved_members_count }}
-        <span class="faint"> 
+        <span class="faint">
           {% if remaining_memberships_count != None %}
+          {% if not object.has_infinite_members_limit %}
           ({{ remaining_memberships_count }}
           membership{{ remaining_memberships_count|pluralize }}
           remain{{ remaining_memberships_count|pluralize:"s," }})
+          {% else %}(Infinite memberships remain){% endif %}
           {% else %}&nbsp;{% endif %} 
         </span>
       </dd>

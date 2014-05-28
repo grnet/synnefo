@@ -1638,6 +1638,9 @@ class Archip(base.Component):
         "python-xseg",
         ]
 
+    def required_components(self):
+        return [Mount]
+
     @base.run_cmds
     def prepare(self):
         return ["mkdir -p /etc/archipelago"]

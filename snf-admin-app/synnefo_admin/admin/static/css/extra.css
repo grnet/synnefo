@@ -948,7 +948,7 @@ ul.nav li.dropdown:hover > ul.dropdown-menu {
   max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
-  margin-top: 60px;
+  padding-top: 84px;
   outline: 0;
   outline: thin dotted \9;
   -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px #659cef;
@@ -1119,4 +1119,40 @@ div.dataTables_length {
 /* line 796, ../sass/extra.scss */
 table thead th {
   white-space: nowrap;
+}
+
+/* Home */
+/* line 802, ../sass/extra.scss */
+.app-list {
+  text-align: center;
+  margin: auto;
+  position: relative;
+  top: 30%;
+}
+/* line 807, ../sass/extra.scss */
+.app-list a {
+  display: inline-block;
+  border: 1px solid white;
+  color: white;
+  width: 210px;
+  font-size: 24px;
+}
+/* line 813, ../sass/extra.scss */
+.app-list a span {
+  border: 1px solid transparent;
+  display: block;
+  height: 100%;
+  line-height: 40px;
+}
+/* line 819, ../sass/extra.scss */
+.app-list a:first-child {
+  margin-right: 40px;
+}
+/* line 822, ../sass/extra.scss */
+.app-list a:hover {
+  text-decoration: none;
+}
+/* line 824, ../sass/extra.scss */
+.app-list a:hover span {
+  border-color: white;
 }

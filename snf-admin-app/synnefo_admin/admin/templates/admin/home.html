@@ -1,5 +1,12 @@
 {% extends "admin/base.html" %}
 
-{% block content %}
-<h7>Home is where the <em>~</em> is</h7>
+{% block nav-bar %}
 {% endblock %}
+
+{% block main-area %}
+<div class="container app-list">
+	<a href=""><span>Infrastructure</span></a>
+	<a href="/admin/user"><span>Service</span></a>
+</div>
+
+{% endblock main-area%}

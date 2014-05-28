@@ -11,9 +11,9 @@
     <link href="{{ ADMIN_MEDIA_URL }}css/ie7.css" rel="stylesheet"> -->
 
   <body>
+    {% block nav-bar %}
     <div class="container-fluid">
         <div class="row-fluid">
-          {% with user_type='user' vm_type='vm' project_type='project' volume_type='volume' network_type='network' ip_type='ip' group_type='group' auth_provider_type='auth_provider' quota_type='quota'%}
 
           <div class="navbar navbar-inverse nav-main navbar-fixed-top">
 
@@ -31,44 +31,19 @@
                     </li>
                   </ul>
               </ul>
-            </div>
+            </div> <!-- /navbar-sides -->
 
+            {% with user_type='user' vm_type='vm' project_type='project' volume_type='volume' network_type='network' ip_type='ip' group_type='group' auth_provider_type='auth_provider' quota_type='quota'%}
             <ul class="nav navbar-nav navbar-center">
-              <li>
-              <a href="{% url admin-list user_type %}">Users</a>
-              </li>
-              <li class="divider-vertical"></li>
-              <li>
-              <a href="{% url admin-list vm_type %}">VMs</a>
-              </li>
-              <li class="divider-vertical"></li>
-              <li>
-              <a href="{% url admin-list volume_type %}">Volumes</a>
-              </li>
-              <li class="divider-vertical"></li>
-              <li>
-              <a href="{% url admin-list network_type %}">Networks</a>
-              </li>
-              <li class="divider-vertical"></li>
-              <li>
-              <a href="{% url admin-list ip_type %}">IPs</a>
-              </li>
-              <li class="divider-vertical"></li>
-              <li>
-              <a href="{% url admin-list quota_type %}">Base Quotas</a>
-              </li>
-              <li>
-              <a href="{% url admin-list project_type %}">Projects</a>
-              </li>
-              <li class="divider-vertical"></li>
-              <li>
-              <a href="{% url admin-list group_type %}">User Groups</a>
-              </li>
-              <li class="divider-vertical"></li>
-              <li>
-              <a href="{% url admin-list auth_provider_type %}">User Auth Providers</a>
-              </li>
-              <li class="divider-vertical"></li>
+              <li><a href="{% url admin-list user_type %}">Users</a></li>
+              <li><a href="{% url admin-list vm_type %}">VMs</a></li>
+              <li><a href="{% url admin-list volume_type %}">Volumes</a></li>
+              <li><a href="{% url admin-list network_type %}">Networks</a></li>
+              <li><a href="{% url admin-list ip_type %}">IPs</a></li>
+              <li><a href="{% url admin-list quota_type %}">Base Quotas</a></li>
+              <li><a href="{% url admin-list project_type %}">Projects</a></li>
+              <li><a href="{% url admin-list group_type %}">User Groups</a></li>
+              <li><a href="{% url admin-list auth_provider_type %}">User Auth Providers</a></li>
               <li class="dropdown">
                 <a href="#" class="dropdown" data-toggle="dropdown">Reports
                 <span class="snf-angle-down arrow"></span></a>
@@ -79,11 +54,11 @@
                 </ul>
               </li>
             </ul>
-            </div>
-          </div>
-          {% endwith %}
-
+            {% endwith %}
+          </div> <!-- /navbar-fixed -->
+        </div> <!-- /row-fluid -->
       </div>
+      {% endblock nav-bar %}
           {% if messages %}
           <div class="messages">
             {% for message in messages %}
@@ -94,10 +69,13 @@
                 {% endfor %}
             </div>
         {% endif %}
+
+        {% block main-area %}
         <div class="main-content well well-lg">
-            {% block content %}
-            {% endblock %}
+          {% block content %}
+          {% endblock %}
         </div>
+        {% endblock main-area %}
     </div>
 
     <script src="{{ MEDIA_URL }}admin/js/jquery.js"></script>

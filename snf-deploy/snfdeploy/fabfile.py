@@ -27,6 +27,13 @@ from snfdeploy import context
 from snfdeploy import constants
 from snfdeploy import roles
 import copy
+import logging
+
+
+FORMAT = "%(name)s %(funcName)s:%(lineno)d %(message)s"
+# Needed to avoid:
+# No handlers could be found for logger "paramiko.transport"
+logging.basicConfig(format=FORMAT, level=logging.INFO)
 
 
 def with_ctx(fn):

@@ -474,12 +474,61 @@ class VMC(base.Component):
 
     def required_components(self):
         return [
-            HW, SSH, DNS, DDNS, APT, Mount, Ganeti, Network,
+            HW, SSH, DNS, DDNS, APT, Mount, LVM, DRBD, Ganeti, Network,
             ] + self.extra_components()
 
     @update_cluster_admin
     def admin_post(self):
         self.MASTER.add_node(self.node)
+
+
+class LVM(base.Component):
+    REQUIRED_PACKAGES = [
+        "lvm2",
+        ]
+
+    @base.run_cmds
+    def initialize(self):
+        extra_disk_dev = self.node.extra_disk
+        extra_disk_file = "/disk"
+        # If extra disk found use it
+        # else create a raw file and losetup it
+        cmd = """
+if [ -b "{0}" ]; then
+  pvcreate {0} && vgcreate {2} {0}
+else
+  truncate -s {3} {1}
+  loop_dev=$(losetup -f --show {1})
+  pvcreate $loop_dev
+  vgcreate {2} $loop_dev
+fi
+""".format(extra_disk_dev, extra_disk_file,
+           self.cluster.vg, self.cluster.vg_size)
+
+        return [cmd]
+
+
+class DRBD(base.Component):
+    REQUIRED_PACKAGES = [
+        "drbd8-utils",
+        ]
+
+    def _configure(self):
+        return [
+            ("/etc/modprobe.d/drbd.conf", {}, {}),
+            ]
+
+    def prepare(self):
+        return [
+            "echo drbd >> /etc/modules",
+            ]
+
+    @base.run_cmds
+    def initialize(self):
+        return [
+            "modprobe -rv drbd || true",
+            "modprobe -v drbd",
+            ]
 
 
 class Ganeti(base.Component):
@@ -491,8 +540,6 @@ class Ganeti(base.Component):
         "snf-ganeti",
         "ganeti2",
         "bridge-utils",
-        "lvm2",
-        "drbd8-utils",
         "ganeti-instance-debootstrap",
         ]
 
@@ -512,27 +559,7 @@ class Ganeti(base.Component):
         return [
             ("/etc/ganeti/file-storage-paths", {}, {}),
             ("/etc/default/ganeti-instance-debootstrap", {}, {}),
-            ("/etc/modprobe.d/drbd.conf", {}, {}),
             ]
-
-    def _prepare_lvm(self):
-        extra_disk_dev = self.node.extra_disk
-        extra_disk_file = "/disk"
-        # If extra disk found use it
-        # else create a raw file and losetup it
-        cmd = """
-if [ -b "{0}" ]; then
-  pvcreate {0} && vgcreate {0} {2}
-else
-  truncate -s {3} {1}
-  loop_dev=$(losetup -f --show {1})
-  pvcreate $loop_dev
-  vgcreate {2} $loop_dev
-fi
-""".format(extra_disk_dev, extra_disk_file,
-           self.cluster.vg, self.cluster.vg_size)
-
-        return [cmd]
 
     def _prepare_net_infra(self):
         br = config.common_bridge
@@ -545,15 +572,7 @@ fi
         return [
             "mkdir -p /srv/ganeti/file-storage/",
             "sed -i 's/^127.*$/127.0.0.1 localhost/g' /etc/hosts",
-            "echo drbd >> /etc/modules",
-            ] + self._prepare_net_infra() + self._prepare_lvm()
-
-    @base.run_cmds
-    def initialize(self):
-        return [
-            "modprobe -rv drbd || true",
-            "modprobe -v drbd",
-            ]
+            ] + self._prepare_net_infra()
 
     @base.run_cmds
     def restart(self):

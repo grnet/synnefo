@@ -16,6 +16,8 @@
 import copy
 import json
 
+from datetime import datetime
+
 from synnefo.lib.ordereddict import OrderedDict
 
 from django.core.urlresolvers import reverse, NoReverseMatch
@@ -185,6 +187,14 @@ class AuthProvider(object):
     def get_provider_model(self):
         from astakos.im.models import AstakosUserAuthProvider as AuthProvider
         return AuthProvider
+
+    def update_last_login_at(self):
+        instance = self._instance
+        user = instance.user
+        date = datetime.now()
+        instance.last_login_at = user.last_login = date
+        instance.save()
+        user.save()
 
     def remove_from_user(self):
         if not self.get_remove_policy:

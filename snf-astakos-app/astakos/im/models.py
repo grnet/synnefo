@@ -827,6 +827,29 @@ class AstakosUser(User):
                     offline_tokens)
         offline_tokens.delete()
 
+    def get_last_logins(self):
+        providers = self.auth_providers.filter().order_by('-last_login_at')
+        providers = providers.filter(last_login_at__isnull=False)
+        logins = []
+        for provider in providers:
+            logins.append((provider.module, provider.last_login_at))
+
+        return logins
+
+    @property
+    def last_login_info_display(self):
+        logins = self.get_last_logins()
+        display = []
+
+        if len(logins) == 0:
+            return "No login info available"
+
+        for module, date in logins:
+            display.append("[%s] %s" % (module, date))
+
+        return ", ".join(display)
+
+
 
 class AstakosUserAuthProviderManager(models.Manager):
 
@@ -961,6 +984,8 @@ class AstakosUserAuthProvider(models.Model):
                                     default='astakos')
     info_data = models.TextField(default="", null=True, blank=True)
     created = models.DateTimeField('Creation date', auto_now_add=True)
+    last_login_at = models.DateTimeField('Last login date', null=True,
+                                         default=None)
 
     objects = AstakosUserAuthProviderManager()
 

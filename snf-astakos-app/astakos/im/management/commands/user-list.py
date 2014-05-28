@@ -49,7 +49,10 @@ class Command(ListCommand):
         'activation_sent': ('activation_sent',
                             'The date activation sent to the user'),
         'displayname': ('username', 'The display name of the user'),
-        'groups': (get_groups, 'The groups of the user')
+        'groups': (get_groups, 'The groups of the user'),
+        'last_login_details': ('last_login_info_display',
+                             'User last login dates for each login method'),
+        'last_login': ('last_login', 'User last login date')
     }
 
     fields = ['id', 'displayname', 'realname', 'uuid', 'active', 'admin']

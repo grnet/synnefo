@@ -14,7 +14,7 @@ $(function(){
 	var allowedActions= {};
 
 	/* Actionbar */
-	$('.actionbar button').each(function() {
+	$('.actionbar a').each(function() {
 		availableActions[$(this).data('action')] = true;
 	});
 
@@ -23,7 +23,7 @@ $(function(){
 	}
 
 	/* If the sidebar link is not disabled show the corresponding modal */
-	$('.actionbar button').click(function(e) {
+	$('.actionbar a').click(function(e) {
 		if($(this).hasClass('disabled')) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -196,10 +196,10 @@ $(function(){
 
 	function updateDisplaySelected() {
 		if(selected.items.length > 0) {
-			$('.actionbar').find('button.toggle-selected').removeClass('disabled');
+			$('.actionbar').find('a.toggle-selected').removeClass('disabled');
 		}
 		else {
-			$('.actionbar').find('button.toggle-selected').addClass('disabled');	
+			$('.actionbar').find('a.toggle-selected').addClass('disabled');	
 		}
 	}
 
@@ -344,7 +344,7 @@ $(function(){
 
 
 	function addItem(infoObj) {
-		var $selectedNum = $('.actionbar button').find('.selected-num');
+		var $selectedNum = $('.actionbar a').find('.selected-num');
 		var itemsL;
 		var newItem = {}
 		var isNew = true;
@@ -428,10 +428,10 @@ $(function(){
 		}
 		for(var prop in allowedActions) {
 			if(allowedActions[prop]) {
-				$actionBar.find('button[data-action='+prop+']').removeClass('disabled');
+				$actionBar.find('a[data-action='+prop+']').removeClass('disabled');
 			}
 			else {
-				$actionBar.find('button[data-action='+prop+']').addClass('disabled');
+				$actionBar.find('a[data-action='+prop+']').addClass('disabled');
 			}
 		}
 	};
@@ -746,6 +746,9 @@ $(function(){
 		});
 	};
 
+$('.actionbar').click(function (e) {
+	e.preventDefault();
+})
 
 
 });

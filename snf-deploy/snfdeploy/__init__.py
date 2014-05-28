@@ -381,6 +381,8 @@ def main():
         return 0
 
     if args.command == "vcluster":
+        status.reset()
+        vcluster.cleanup()
         vcluster.launch()
         return 0
 

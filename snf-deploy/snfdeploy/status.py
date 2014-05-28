@@ -75,6 +75,13 @@ def check(component):
     return _check(section,  option)
 
 
+def reset():
+    try:
+        os.remove(status.statusfile)
+    except OSError:
+        pass
+
+
 def init():
     status.state_dir = config.state_dir
     status.cfg = ConfigParser.ConfigParser()

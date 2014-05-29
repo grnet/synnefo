@@ -332,6 +332,7 @@ class VirtualMachine(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     imageid = models.CharField(max_length=100, null=False)
+    image_version = models.IntegerField(null=True)
     hostid = models.CharField(max_length=100)
     flavor = models.ForeignKey(Flavor, on_delete=models.PROTECT)
     deleted = models.BooleanField('Deleted', default=False, db_index=True)
@@ -1080,6 +1081,7 @@ class Volume(models.Model):
                                                 default=True, null=False)
 
     source = models.CharField(max_length=128, null=True)
+    source_version = models.IntegerField(null=True)
     origin = models.CharField(max_length=128, null=True)
 
     deleted = models.BooleanField("Deleted", default=False, null=False,

@@ -98,7 +98,8 @@ def create(userid, name, password, flavor, image_id, metadata={},
                                        backend=use_backend,
                                        userid=userid,
                                        project=project,
-                                       imageid=image_id,
+                                       imageid=image["id"],
+                                       image_version=image["version"],
                                        flavor=flavor,
                                        operstate="BUILD")
     log.info("Created entry in DB for VM '%s'", vm)

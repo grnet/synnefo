@@ -1729,9 +1729,11 @@ class ArchipGaneti(base.Component):
 
 
 class ExtStorage(base.Component):
+    @base.run_cmds
     def prepare(self):
         return ["mkdir -p /usr/local/lib/ganeti/"]
 
+    @base.run_cmds
     def initialize(self):
         url = "http://code.grnet.gr/git/extstorage"
         extdir = "/usr/local/lib/ganeti/extstorage"

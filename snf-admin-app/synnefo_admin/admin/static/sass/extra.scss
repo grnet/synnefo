@@ -124,7 +124,7 @@ a               { color:#659CEF; }
 a:hover             { color:#2956B2 }
 
 h3                { font-size:21px; cursor:pointer; margin:0 20px;}
-h4                { font-size:18px; margin-bottom:1em; }
+h4                { font-size:18px; /* margin-bottom:1em; */ margin-bottom: 0; margin-top: 0; padding-top: 0; }
 input:focus,
 textarea:focus          {
 	border-color: #659CEF;
@@ -142,7 +142,7 @@ textarea:focus          {
 .dropdown-menu .active > a, 
 .dropdown-menu .active > a:hover { background-color: #d5d5d5; } 
 
-.object-details-content     { margin:1em 0; display:none; }
+.object-details-content     { /*margin:1em 0;*/ margin: 1em 0 0 0; display:none; }
 .account .object-details-content{ display:block; }
 .nav-tabs           { margin:0; border:0 none; }
 .tab-content .dl-horizontal   { margin:0; }
@@ -156,7 +156,7 @@ textarea:focus          {
 .badge-important        { background-color: #F81A23; }
 .badge-info           { background-color:#659CEF }
 .show-hide-tabs         { margin:2em 0; }
-.show-hide-all          { float:right; /*margin:20px 0;*/ line-height:27px;}
+.show-hide-all          { float:right; /*margin:20px 0;*/ line-height:27px; margin-right: 20px;}
 .toggle .badge          { font-size:14px; padding:5px 9px; }
 .toggle .badge:hover      { cursor:pointer;  }
 .show-hide-tabs .badge      { background-color:#8BBA00; }
@@ -175,11 +175,11 @@ textarea:focus          {
 .account h4           { color:#444 }
 .account h3:hover,
 .account h4:hover       { color:#666 }
-.object-details         { padding:20px;  }
-.object-details h4        { cursor:pointer; }
+.object-details         { /* padding: 10px 20px; */  padding: 10px 20px 0 20px;}
+.object-details h4        { cursor:pointer; margin-left: 20px; margin-right: 20px; }
 .object-details h4 em     { float:right; font-style:normal; font-size:0.833em;}
 .object-details h4 em img   { margin:0 5px; }
-h4 .badge           { padding:6px 9px 2px; background:url(../img/glyphicons-halflings.png) 160px 43px transparent;}
+h4 .badge.arrow           { padding:6px 9px 2px; background:url(../img/glyphicons-halflings.png) 160px 43px transparent;}
 h4.expanded .badge        { background-position: 185px 43px}
 .row2             { background-color:#EDEDED; }
 
@@ -190,7 +190,7 @@ h4 i              { margin-top: 4px; margin-right: 10px;}
 .container-fluid        { margin-left:auto; margin-right:auto; /*max-width:960px;*/ }
 h3.info             { cursor:default; color:#2956B2; text-align:center; font-size:16px; margin-bottom:0;}
 
-.vm-actions { margin-top: 20px; text-align: right; }
+.vm-actions {/*  margin-top: 20px; text-align: right; */ }
 .vm-action { float: right; margin-left: 10px;}
 .vm-action form { margin-bottom: 0px; }
 .vm-action.inactive form input { background-color: #2956B2; color: #ffffff;}
@@ -303,11 +303,9 @@ $nav-height: 36px;
 /* new *** */
 .sidebar {
 	a {
-		display: inline-block;
-		border: 1px solid #A29999;
+		border-color: #A29999;
 		width: 100%;
 		font-size: 14px;
-		text-align: center;
 		color: white;
 		background-color: #6666C5;
 		&.disabled {
@@ -321,16 +319,12 @@ $nav-height: 36px;
 			}
 		}
 		&:hover {
-			text-decoration: none;
 			border-color: #A3A3A8;
 			&>span {
 				border-color: #A3A3A8;
 			}
 		}
 		&>span {
-			border: 1px solid transparent;
-			display: block;
-			height: 100%;
 			line-height: 36px;
 		}
 		.badge {
@@ -553,10 +547,31 @@ a:not([disabled]):hover {
 
 
 
-body .object-details:not(.vm-details) h4 em {
-	float: none;
+body .object-details:not(.vm-details) h4 {
+	em {
+		float: none;
+		&.os-info {
+			float: right;
+			position: relative;
+			bottom: 3px;
+			margin-right: 6px;
+			img {
+				height: 26px; // *** i think that is the size of all images temp use for preview
+			}
+		}
+	}
 }
-
+// .icon-tasks { // from prev bootstrap version
+// 	background-position: -384px -144px;
+// 	display: inline-block;
+// 	width: 14px;
+// 	height: 14px;
+// 	line-height: 14px;
+// 	vertical-align: text-top;
+// 	background-image: url("../img/glyphicons-halflings.png");
+// 	background-position: 14px 14px;
+// 	background-repeat: no-repeat;
+// }
 .container-demo, .chart {
 	height: 400px;
 	width: 100%;
@@ -707,10 +722,12 @@ float: right;
 margin-left: 6px;
 }
 
-.main h4 em{
-	font-size: 21px;
-	cursor: pointer;
-	margin-left: 20px;
+.main {
+	h4 .title{
+		font-size: 21px;
+		cursor: pointer;
+		margin-left: 20px;
+	}
 }
 
 .object-details {
@@ -724,6 +741,18 @@ margin-left: 6px;
 	&>.object-details {
 		margin-left: -20px;
 		margin-right: -20px;
+		padding: 10px 20px;
+	}
+	.expand-btn {
+		width: 110px;
+		line-height: 30px;
+		border-color: #3c763d;
+		color: #266327;
+		&:hover {
+			&>span {
+				border-color: #3c763d;
+			}
+		}
 	}
 }
 
@@ -732,6 +761,7 @@ margin-left: 6px;
 	border-color: #AFC6D6;
 	border-bottom-color: transparent;
 }
+
 
 /* Landscape phone to portrait tablet */
 @media (max-width: 1300px) { // temp
@@ -829,30 +859,42 @@ table thead th {
 	white-space: nowrap;
 }
 
+/* buttons */
+
+.custom-btn {
+	display: inline-block;
+	border: 1px solid;
+	text-align: center;
+	&>span {
+		border: 1px solid transparent;
+		display: block;
+		height: 100%;
+	}
+	&:hover {
+		text-decoration: none;
+	}
+	
+}
+
 /* Home */
 
 .app-list {
-	text-align: center;
 	margin: auto;
 	position: relative;
+	text-align: center;
 	top: 30%;
-	a {
-		display: inline-block;
-		border: 1px solid white;
+	.custom-btn {
+		border-color: white;
 		color: white;
 		width: 210px;
 		font-size: 24px;
 		span {
-			border: 1px solid transparent;
-			display: block;
-			height: 100%;
 			line-height: 40px;
 		}
 		&:first-child {
 			margin-right: 40px;
 		}
 		&:hover {
-			text-decoration: none;
 			span {
 				border-color: white;
 			}

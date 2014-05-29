@@ -47,10 +47,11 @@ $(document).ready(function(){
   var txt_all = ['+ Expand all','- Collapse all'];
   
 
-  $('.show-hide-all').text(txt_all[0]);
+  $('.show-hide-all span').text(txt_all[0]);
   
   
-  $('.show-hide-all').click(function(){
+  $('.show-hide-all').click(function(e){
+    e.preventDefault();
     $(this).toggleClass('open');
     var tabs = $(this).parent('.info-block').find('.object-details-content');
 

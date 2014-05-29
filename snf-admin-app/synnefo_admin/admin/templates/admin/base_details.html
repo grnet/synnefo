@@ -16,6 +16,39 @@
             {% include main_type|get_details_template with item=main_item %}
         {% endblock %}
 
+        {# This is a list of associations for this item #}
+        {% block item-associations-list %}
+            {% for item_list, type in associations_list %}
+
+                {# Seperator for the start of the list #}
+                {% block item-list-head %}
+                    {% include "admin/_base_list_head.html" %}
+                {% endblock item-list-head %}
+
+                {# This is an item list for each association #}
+                {% block item-list %}
+                    {% for item in item_list %}
+
+    	                <!-- {% cycle 'row1' 'row2' as rowcls %}  -->
+                        {# Details for an item in the list #}
+                        {% block item-details %}
+                            {% include type|get_details_template %}
+                        {% endblock item-details %}
+                    {% empty %}
+                        <p>No items in the list</p>
+                    {% endfor %}
+                {% endblock item-list %}
+
+                {# Seperator for the end of the list #}
+                {% block item-list-tail %}
+                    {% include "admin/_base_list_tail.html" %}
+                {% endblock item-list-tail %}
+
+            {% empty %}
+            <p>No associations for this item</p>
+            {% endfor %}
+        {% endblock item-associations-list %}
+    
         {# End of the decoration of main item #}
         {% block main-item-tail %}
             {% include "admin/_base_main_item_tail.html" %}
@@ -23,37 +56,5 @@
 
     {% endblock %}
 
-    {# This is a list of associations for this item #}
-    {% block item-associations-list %}
-        {% for item_list, type in associations_list %}
-
-            {# Seperator for the start of the list #}
-            {% block item-list-head %}
-                {% include "admin/_base_list_head.html" %}
-            {% endblock item-list-head %}
-
-            {# This is an item list for each association #}
-            {% block item-list %}
-                {% for item in item_list %}
-
-	                <!-- {% cycle 'row1' 'row2' as rowcls %}  -->
-                    {# Details for an item in the list #}
-                    {% block item-details %}
-                        {% include type|get_details_template %}
-                    {% endblock item-details %}
-                {% empty %}
-                    <p>No items in the list</p>
-                {% endfor %}
-            {% endblock item-list %}
-
-            {# Seperator for the end of the list #}
-            {% block item-list-tail %}
-                {% include "admin/_base_list_tail.html" %}
-            {% endblock item-list-tail %}
-
-        {% empty %}
-        <p>No associations for this item</p>
-        {% endfor %}
-    {% endblock item-associations-list %}
 
 {% endblock content %}

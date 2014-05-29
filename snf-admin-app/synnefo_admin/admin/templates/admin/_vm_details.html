@@ -3,18 +3,21 @@
 {% with vm=item %}
 <div class="object-anchor" id="vm-{{vm.pk}}"></div>
 <div class="vm-details object-details {{ rowcls }}">
-  <h4><em><img src="{{ UI_MEDIA_URL }}images/icons/os/{{ vm|get_os }}.png" />{{ vm|get_os }}</em><i class="icon-tasks"></i>{{ vm.name }}<span class="badge">&nbsp;</span></h4>
-  {% if vm.suspended %}
-  <span class="label label-warning">SUSPENDED</span>
-  {% endif %}
-  {{ vm|object_status_badge|safe }}
-  <span class="label label-info">ID: {{ vm.pk }}</span>
-  <span class="label label-info">{{ vm|vm_public_ip }}</span>
-  <span class="label label-info flavor">
-    <span class="cpu">{{ vm.flavor.cpu }}x</span>
-    <span class="ram">{{ vm.flavor.ram}}MB</span>
-    <span class="disk">{{ vm.flavor.disk }}GB</span>
-  </span>
+  <h4>
+    {{ vm.name }}<span class="badge arrow">&nbsp;</span>
+    {% if vm.suspended %}
+    <span class="label label-warning">SUSPENDED</span>
+    {% endif %}
+    {{ vm|object_status_label|safe }}
+    <span class="label label-primary">ID: {{ vm.pk }}</span>
+    <span class="label label-primary">{{ vm|vm_public_ip }}</span>
+    <span class="label label-primary flavor">
+      <span class="cpu">{{ vm.flavor.cpu }}x</span>
+      <span class="ram">{{ vm.flavor.ram}}MB</span>
+      <span class="disk">{{ vm.flavor.disk }}GB</span>
+    </span>
+    <em class="os-info"><img src="{{ UI_MEDIA_URL }}images/icons/os/{{ vm|get_os }}.png" />{{ vm|get_os }}</em>
+  </h4>
   <div class="vm-details-content object-details-content">
 
     <ul class="nav nav-tabs">

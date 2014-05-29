@@ -4,14 +4,13 @@
 <div class="object-anchor" id="network-{{network.pk}}"></div>
 <div class="network-details object-details {{ rowcls }}">
     <h4>
-		<i class="icon-random"></i>
-		{{ network.name }}
-		<span class="badge">&nbsp;</span>
-		{{ network|network_deleted_badge|safe }}
+		<span class="title">{{ network.name }}</span>
+		<span class="badge arrow">&nbsp;</span>
+		{{ network|network_deleted_label|safe }}
+	    {{ network|object_status_label|safe }}
 		<span class="label label-primary">ID: {{ network.pk }}</span>
     </h4>
      
-    {{ network|object_status_badge|safe }}
     
     <div class="network-details-content object-details-content">
         <ul class="nav nav-tabs">

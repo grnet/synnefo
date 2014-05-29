@@ -57,31 +57,31 @@ VM_STATE_CSS_MAP = {
 }
 
 
-@register.filter(name="object_status_badge", is_safe=True)
-def object_status_badge(vm_or_net):
+@register.filter(name="object_status_label", is_safe=True)
+def object_status_label(vm_or_net):
     """
-    Return a span badge styled based on the vm current status
+    Return a span label styled based on the vm current status
     """
     state = vm_or_net.operstate if hasattr(vm_or_net, 'operstate') else \
         vm_or_net.state
     state_cls = VM_STATE_CSS_MAP.get(state, 'notice')
-    badge_cls = "badge badge-%s" % state_cls
+    label_cls = "label label-%s" % state_cls
 
-    deleted_badge = ""
+    deleted_label = ""
     if vm_or_net.deleted:
-        deleted_badge = '<span class="badge badge-important">Deleted</span>'
-    return '%s\n<span class="%s">%s</span>' % (deleted_badge, badge_cls, state)
+        deleted_label = '<span class="label label-important">Deleted</span>'
+    return '%s\n<span class="%s">%s</span>' % (deleted_label, label_cls, state)
 
 
-@register.filter(name="network_deleted_badge", is_safe=True)
-def network_deleted_badge(network):
+@register.filter(name="network_deleted_label", is_safe=True)
+def network_deleted_label(network):
     """
-    Return a span badge styled based on the vm current status
+    Return a span label styled based on the vm current status
     """
-    deleted_badge = ""
+    deleted_label = ""
     if network.deleted:
-        deleted_badge = '<span class="badge badge-important">Deleted</span>'
-    return deleted_badge
+        deleted_label = '<span class="label label-important">Deleted</span>'
+    return deleted_label
 
 
 @register.filter(name="get_os", is_safe=True)

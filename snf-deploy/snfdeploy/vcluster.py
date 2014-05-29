@@ -180,9 +180,10 @@ def image():
 
     env = os.environ.copy()
     env.update({
-        "SIZE": config.disk_size,
         "DISK0": disk0,
+        "DISK0_SIZE": config.disk0_size,
         "DISK1": disk1,
+        "DISK1_SIZE": config.disk1_size,
         })
     cmd = os.path.join(config.lib_dir, "mkimage.sh")
 

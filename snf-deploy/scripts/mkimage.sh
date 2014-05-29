@@ -7,7 +7,8 @@ EXTRA_PACKAGES=acpi-support-base,console-tools,udev,linux-image-amd64,network-ma
 : ${DISK0:=/var/lib/snf-deploy/vcluster/disk0}
 : ${DISK1:=/var/lib/snf-deploy/vcluster/disk1}
 : ${HOSTNAME:=vc}
-: ${SIZE:=2G}
+: ${DISK0_SIZE:=10G}
+: ${DISK1_SIZE:=30G}
 : ${DISTRO:=wheezy}
 : ${MIRROR:=http://ftp.gr.debian.org/debian}
 : ${EXTRA_PACKAGES:=acpi-support-base,console-tools,udev,linux-image-amd64,network-manager}
@@ -15,8 +16,8 @@ EXTRA_PACKAGES=acpi-support-base,console-tools,udev,linux-image-amd64,network-ma
 
 set -e
 
-truncate -s $SIZE $DISK0
-truncate -s $SIZE $DISK1
+truncate -s $DISK0_SIZE $DISK0
+truncate -s $DISK1_SIZE $DISK1
 
 # sfdisk -H 255 -S 63 -u S --quiet --Linux $DISK0 <<EOF
 # 2048,,L,*

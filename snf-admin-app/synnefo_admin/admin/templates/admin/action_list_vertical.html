@@ -1,6 +1,6 @@
 <div class="sidebar actionbar">
 	<div class="btn-group-vertical">
-	<a href="" class="disabled toggle-selected extra-btn">
+	<a href="" class="disabled toggle-selected extra-btn custom-btn">
 		<span>
 			Show selected <span class="badge selected-num">0</span>
 		</span>
@@ -9,7 +9,7 @@
 	</div>
 	<div class="btn-group-vertical">
 	{% for op, action in action_dict.items %}
-		<a href=""data-target="#{{ op }}" data-action="{{ op }}" data-toggle="modal" class="disabled {{ op.karma }} {{ op.reversable }}">
+		<a href=""data-target="#{{ op }}" data-action="{{ op }}" data-toggle="modal" class="disabled {{ op.karma }} {{ op.reversable }} custom-btn">
 	        <span>{{ action.name }}</span>
         </a>
     {% endfor %}

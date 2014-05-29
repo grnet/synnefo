@@ -452,6 +452,30 @@ class VirtualMachineMetadata(models.Model):
         return u'<Metadata %s: %s>' % (self.meta_key, self.meta_value)
 
 
+class Image(models.Model):
+    """Model representing Images of created VirtualMachines.
+
+    This model stores basic information about Images which have been used to
+    create VirtualMachines or Volumes.
+
+    """
+
+    uuid = models.CharField(max_length=128)
+    version = models.IntegerField(null=False)
+    owner = models.CharField(max_length=128, null=False)
+    name = models.CharField(max_length=256, null=False)
+    location = models.TextField()
+    mapfile = models.CharField(max_length=256, null=False)
+    is_public = models.BooleanField(default=False, null=False)
+    is_snapshot = models.BooleanField(default=False, null=False)
+    is_system = models.BooleanField(default=False, null=False)
+    os = models.CharField(max_length=256)
+    osfamily = models.CharField(max_length=256)
+
+    class Meta:
+        unique_together = (('uuid', 'version'),)
+
+
 class Network(models.Model):
     OPER_STATES = (
         ('PENDING', 'Pending'),  # Unused because of lazy networks

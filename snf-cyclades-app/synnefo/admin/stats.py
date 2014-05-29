@@ -19,6 +19,7 @@ import datetime
 from collections import defaultdict  # , OrderedDict
 from copy import copy
 from django.conf import settings
+from django.db import connection
 from django.db.models import Count, Sum
 
 from snf_django.lib.astakos import UserCache
@@ -170,19 +171,25 @@ def get_ip_pool_stats():
     return ip_stats
 
 
+IMAGES_QUERY = """
+SELECT is_system, osfamily, os, count(vm.id)
+FROM db_virtualmachine as vm LEFT OUTER JOIN db_image as img
+ON img.uuid = vm.imageid AND img.version = vm.image_version
+WHERE vm.deleted=false
+GROUP BY is_system, osfamily, os
+"""
+
 def get_image_stats(backend=None):
-    total_servers = _get_total_servers(backend=backend)
-    active_servers = total_servers.filter(deleted=False)
-
-    active_servers_images = active_servers.values("imageid", "userid")\
-                                          .annotate(number=Count("imageid"))
-
-    image_cache = ImageCache()
-    image_stats = defaultdict(int)
-    for result in active_servers_images:
-        imageid = image_cache.get_image(result["imageid"], result["userid"])
-        image_stats[imageid] += result["number"]
-    return dict(image_stats)
+    cursor = connection.cursor()
+    cursor.execute(IMAGES_QUERY)
+    images = cursor.fetchall()
+    images_stats = {}
+    for image in images:
+        owner = "system" if image[0] else "user"
+        osfamily = image[1] or "unknown"
+        os = image[2] or "unknown"
+        images_stats["%s:%s:%s" % (owner, osfamily, os)] = image[3]
+    return images_stats
 
 
 class ImageCache(object):

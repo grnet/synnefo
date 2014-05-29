@@ -69,7 +69,6 @@ def setup_env(args):
 
 # Helper methods that are invoked via fabric's execute
 
-@parallel
 @with_node
 def _setup_vmc(ctx):
     VMC = roles.get(constants.VMC, ctx)
@@ -88,7 +87,6 @@ def _setup_role(ctx, role):
     ROLE.setup()
 
 
-@parallel
 @with_cluster
 def _setup_cluster(ctx):
     execute(_setup_master, ctx, hosts=ctx.masters)

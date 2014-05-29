@@ -56,7 +56,7 @@ import re
 logger = logging.getLogger(__name__)
 
 BASE_PROJECT_NAME_REGEX = re.compile(
-    r'^base:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-'
+    r'^system:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-'
      '[a-f0-9]{12}$')
 DOMAIN_VALUE_REGEX = re.compile(
     r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$',

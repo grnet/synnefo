@@ -43,7 +43,7 @@ class Migration(DataMigration):
             uuid=user.uuid,
             last_application=None,
             owner=None,
-            realname=("base:" + user.uuid),
+            realname=("system:" + user.uuid),
             homepage="",
             description=("system project for user " + user.username),
             end_date=(datetime.datetime.now() + relativedelta(years=100)),

@@ -113,7 +113,7 @@ def project_list(request, template_name="im/projects/project_list.html"):
     # exclude base projects by default for admin users
     if not show_base and request.user.is_project_admin():
         query = query & ~Q(Q(is_base=True) & \
-                          ~Q(realname="base:%s" % request.user.uuid))
+                          ~Q(realname="system:%s" % request.user.uuid))
 
     query = query & ~Q(state=Project.DELETED)
     mode = "default"
@@ -277,7 +277,7 @@ def project_or_app_detail(request, project_uuid, app_id=None):
     user = request.user
     owns_base = False
     if project and project.is_base and \
-                           project.realname == "base:%s" % request.user.uuid:
+                           project.realname == "system:%s" % request.user.uuid:
         owns_base = True
     is_project_admin = user.is_project_admin()
     is_owner = user.owns_project(project)

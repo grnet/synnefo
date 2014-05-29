@@ -1675,7 +1675,7 @@ class Project(models.Model):
         if not self.is_base:
             return self.realname
 
-        if user.uuid == self.realname.replace("base:", ""):
+        if user.uuid == self.realname.replace("system:", ""):
             return "System project"
 
         if user.is_project_admin():
@@ -1685,7 +1685,7 @@ class Project(models.Model):
 
     def display_name(self, email=False):
         if self.is_base:
-            uuid = self.realname.replace("base:", "")
+            uuid = self.realname.replace("system:", "")
             try:
                 user = AstakosUser.objects.get(uuid=uuid)
                 if email:

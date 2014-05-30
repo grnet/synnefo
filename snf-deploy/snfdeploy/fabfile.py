@@ -59,14 +59,6 @@ def with_node(fn):
     return wrapper
 
 
-def setup_env(args):
-    env.component = args.component
-    env.method = args.method
-    env.role = args.role
-    env.cluster = args.cluster
-    env.node = args.node
-
-
 # Helper methods that are invoked via fabric's execute
 
 @with_node
@@ -145,16 +137,29 @@ def setup_qa(ctx=None):
 @with_ctx
 def setup(ctx=None):
 
-    if env.node:
-        if env.component:
-            C = roles.get(env.component, ctx)
-        elif env.role:
-            C = roles.get(env.role, ctx)
-        if env.method:
-            fn = getattr(C, env.method)
+    if context.node:
+        if context.component:
+            C = roles.get(context.component, ctx)
+        elif context.role:
+            C = roles.get(context.role, ctx)
+        if context.method:
+            fn = getattr(C, context.method)
             fn()
         else:
             C.setup()
 
-    elif env.cluster:
+    elif context.cluster:
         _setup_cluster(ctx)
+
+
+@with_ctx
+def run(ctx=None):
+    if context.target_nodes:
+        nodes = context.target_nodes.split(",")
+    else:
+        nodes = ctx.all_nodes
+
+    for node in nodes:
+        ctx.update(node=node)
+        c = roles.get("HW", ctx)
+        c.run(context.cmd)

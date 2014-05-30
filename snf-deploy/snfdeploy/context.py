@@ -74,7 +74,7 @@ class Context(object):
     def _get(self, role):
         try:
             return config.get_single_node_role_info(self.setup, role)
-        except ConfigParser.NoOptionError:
+        except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
             return config.get_node_info(constants.DUMMY_NODE)
 
     @property
@@ -157,4 +157,8 @@ def init(args):
     context.role = args.role
     context.cluster = args.cluster
     context.setup = args.setup
+    context.method = args.method
+    context.component = args.component
+    context.target_nodes = args.target_nodes
+    context.cmd = args.cmd
     update_passwords()

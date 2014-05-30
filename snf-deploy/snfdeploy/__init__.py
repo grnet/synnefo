@@ -66,6 +66,18 @@ Usage: setup --node NODE [--role ROLE | --method METHOD --component COMPONENT]
       --component COMPONENT (one of the subcomponents)
 
   """
+
+    elif "run" in cmds:
+        print """
+Usage: setup --setup SETUP | --target-nodes NODE1,NODE2... --cmd "some cmd"
+
+    Run a specific bash command on the requested nodes
+
+      --target-nodes NODES  Comma separated nodes definded in nodes.conf
+      --setup SETUP         Target all nodes in SETUP defined in setups.conf
+      --cmd CMD             The bash command to be executed
+  """
+
     else:
         print """
 Usage: snf-deploy [-h] [-c CONFDIR] [-t TEMPLATE_DIR] [-s STATE_DIR]
@@ -87,6 +99,7 @@ Usage: snf-deploy [-h] [-c CONFDIR] [-t TEMPLATE_DIR] [-s STATE_DIR]
       keygen      Create ssh and ddns keys
       ganeti      Deploy a Ganeti cluster on the requested setup
       ganeti-qa   Deploy a Ganeti QA cluster on the requested cluster
+      run         Run a specific bash command on the target nodes
       help        Display a help message for the following command
 
   """
@@ -122,7 +135,6 @@ def fabcommand(args, actions):
 # ".format(args.confdir, env.packages, env.templates, args.cluster_name,
 #          env.lib, args.autoconf, args.disable_colors, args.key_inject)
 
-    fabfile.setup_env(args)
     with settings(hide(*lhide), show(*lshow)):
         for a in actions:
             fn = getattr(fabfile, a)
@@ -218,11 +230,19 @@ def parse_options():
                         default=constants.DEFAULT_SETUP,
                         help="The target setup")
 
+    parser.add_argument("--cmd", dest="cmd",
+                        default="date",
+                        help="The command to run on target nodes")
+
+    parser.add_argument("--target-nodes", dest="target_nodes",
+                        default=None,
+                        help="The target nodes to run cmd")
+
     # available commands
     parser.add_argument("command", type=str,
                         choices=["packages", "vcluster", "cleanup", "image",
                                  "setup", "test", "synnefo", "keygen",
-                                 "ganeti", "ganeti-qa", "help"],
+                                 "ganeti", "ganeti-qa", "help", "run"],
                         help="Run on of the supported deployment commands")
 
     # available actions for the run command
@@ -250,6 +270,9 @@ def get_actions(*args):
         ],
         "setup": [
             "setup",
+        ],
+        "run": [
+            "run",
         ],
 
     }

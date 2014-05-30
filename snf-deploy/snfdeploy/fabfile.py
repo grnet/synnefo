@@ -27,6 +27,13 @@ from snfdeploy import context
 from snfdeploy import constants
 from snfdeploy import roles
 import copy
+import logging
+
+
+FORMAT = "%(name)s %(funcName)s:%(lineno)d %(message)s"
+# Needed to avoid:
+# No handlers could be found for logger "paramiko.transport"
+logging.basicConfig(format=FORMAT, level=logging.INFO)
 
 
 def with_ctx(fn):
@@ -56,11 +63,12 @@ def setup_env(args):
     env.component = args.component
     env.method = args.method
     env.role = args.role
+    env.cluster = args.cluster
+    env.node = args.node
 
 
 # Helper methods that are invoked via fabric's execute
 
-@parallel
 @with_node
 def _setup_vmc(ctx):
     VMC = roles.get(constants.VMC, ctx)
@@ -79,7 +87,6 @@ def _setup_role(ctx, role):
     ROLE.setup()
 
 
-@parallel
 @with_cluster
 def _setup_cluster(ctx):
     execute(_setup_master, ctx, hosts=ctx.masters)
@@ -137,13 +144,17 @@ def setup_qa(ctx=None):
 
 @with_ctx
 def setup(ctx=None):
-    if env.component:
-        target = env.component
-    else:
-        target = env.role
-    C = roles.get(target, ctx)
-    if env.method:
-        fn = getattr(C, env.method)
-        fn()
-    else:
-        C.setup()
+
+    if env.node:
+        if env.component:
+            C = roles.get(env.component, ctx)
+        elif env.role:
+            C = roles.get(env.role, ctx)
+        if env.method:
+            fn = getattr(C, env.method)
+            fn()
+        else:
+            C.setup()
+
+    elif env.cluster:
+        _setup_cluster(ctx)

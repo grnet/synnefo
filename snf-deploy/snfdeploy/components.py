@@ -474,26 +474,73 @@ class VMC(base.Component):
 
     def required_components(self):
         return [
-            HW, SSH, DNS, DDNS, APT, Mount, Ganeti, Network,
+            HW, SSH, DNS, DDNS, APT, Mount, LVM, DRBD, Ganeti, Network,
             ] + self.extra_components()
 
     @update_cluster_admin
     def admin_post(self):
         self.MASTER.add_node(self.node)
+        self.MASTER.enable_lvm()
+        self.MASTER.enable_drbd()
+
+
+class LVM(base.Component):
+    REQUIRED_PACKAGES = [
+        "lvm2",
+        ]
+
+    @base.run_cmds
+    def initialize(self):
+        extra_disk_dev = self.node.extra_disk
+        extra_disk_file = "/disk"
+        # If extra disk found use it
+        # else create a raw file and losetup it
+        cmd = """
+if [ -b "{0}" ]; then
+  pvcreate {0} && vgcreate {2} {0}
+else
+  truncate -s {3} {1}
+  loop_dev=$(losetup -f --show {1})
+  pvcreate $loop_dev
+  vgcreate {2} $loop_dev
+fi
+""".format(extra_disk_dev, extra_disk_file,
+           self.cluster.vg, self.cluster.vg_size)
+
+        return [cmd]
+
+
+class DRBD(base.Component):
+    REQUIRED_PACKAGES = [
+        "drbd8-utils",
+        ]
+
+    def _configure(self):
+        return [
+            ("/etc/modprobe.d/drbd.conf", {}, {}),
+            ]
+
+    def prepare(self):
+        return [
+            "echo drbd >> /etc/modules",
+            ]
+
+    @base.run_cmds
+    def initialize(self):
+        return [
+            "modprobe -rv drbd || true",
+            "modprobe -v drbd",
+            ]
 
 
 class Ganeti(base.Component):
     REQUIRED_PACKAGES = [
         "qemu-kvm",
         "python-bitarray",
-        "ganeti-htools",
-        "ganeti-haskell",
+        "bridge-utils",
         "snf-ganeti",
         "ganeti2",
-        "bridge-utils",
-        "lvm2",
-        "drbd8-utils",
-        "ganeti-instance-debootstrap",
+        "ganeti-instance-debootstrap"
         ]
 
     @update_admin
@@ -512,27 +559,7 @@ class Ganeti(base.Component):
         return [
             ("/etc/ganeti/file-storage-paths", {}, {}),
             ("/etc/default/ganeti-instance-debootstrap", {}, {}),
-            ("/etc/modprobe.d/drbd.conf", {}, {}),
             ]
-
-    def _prepare_lvm(self):
-        extra_disk_dev = self.node.extra_disk
-        extra_disk_file = "/disk"
-        # If extra disk found use it
-        # else create a raw file and losetup it
-        cmd = """
-if [ -b "{0}" ]; then
-  pvcreate {0} && vgcreate {0} {2}
-else
-  truncate -s {3} {1}
-  loop_dev=$(losetup -f --show {1})
-  pvcreate $loop_dev
-  vgcreate {2} $loop_dev
-fi
-""".format(extra_disk_dev, extra_disk_file,
-           self.cluster.vg, self.cluster.vg_size)
-
-        return [cmd]
 
     def _prepare_net_infra(self):
         br = config.common_bridge
@@ -545,15 +572,7 @@ fi
         return [
             "mkdir -p /srv/ganeti/file-storage/",
             "sed -i 's/^127.*$/127.0.0.1 localhost/g' /etc/hosts",
-            "echo drbd >> /etc/modules",
-            ] + self._prepare_net_infra() + self._prepare_lvm()
-
-    @base.run_cmds
-    def initialize(self):
-        return [
-            "modprobe -rv drbd || true",
-            "modprobe -v drbd",
-            ]
+            ] + self._prepare_net_infra()
 
     @base.run_cmds
     def restart(self):
@@ -604,17 +623,40 @@ EOF
 
     @base.run_cmds
     def add_node(self, info):
-        commands = [
-            "gnt-node list " + info.fqdn + " || " +
-            "gnt-node add --no-ssh-key-check --master-capable=yes " +
-            "--vm-capable=yes " + info.fqdn,
-            ]
-        return commands
+        add = """
+gnt-node list {0} || gnt-node add --no-ssh-key-check {0}
+""".format(info.fqdn)
 
-    def _try_use_vg(self):
+        mod_vm = """
+gnt-node modify --vm-capable=yes {0}
+""".format(info.fqdn)
+
+        mod_master = """
+gnt-node modify --master-capable=yes {0}
+""".format(info.fqdn)
+
+        return [add, mod_vm, mod_master]
+
+    @base.run_cmds
+    def enable_lvm(self):
         vg = self.cluster.vg
         return [
-            "gnt-cluster modify --vg-name=%s || true" % vg,
+            # This is needed because MIN_VG_SIZE is constant and set to 20G
+            # and cluster modify --vg-name may result to:
+            # volume group 'ganeti' too small
+            # But this check is made only ff a vm-capable node is found
+            "gnt-cluster modify --enabled-disk-templates file,ext,plain \
+                                --vg-name=%s" % vg,
+            "gnt-cluster modify --ipolicy-disk-template file,ext,plain",
+            ]
+
+    @base.run_cmds
+    def enable_drbd(self):
+        vg = self.cluster.vg
+        return [
+            "gnt-cluster modify --enabled-disk-templates file,ext,plain,drbd \
+                                --drbd-usermode-helper=/bin/true",
+            "gnt-cluster modify --ipolicy-disk-template file,ext,plain,drbd",
             "gnt-cluster modify --disk-parameters=drbd:metavg=%s" % vg,
             "gnt-group modify --disk-parameters=drbd:metavg=%s default" % vg,
             ]
@@ -629,22 +671,24 @@ EOF
 
         bound_max = "cpu-count=8,disk-count=16,disk-size=1048576"
         bound_max += ",memory-size=32768,nic-count=8,spindle-use=12"
-        cmd = """
+
+        init = """
 gnt-cluster init --enabled-hypervisors=kvm \
-    --no-lvm-storage --no-drbd-storage \
     --nic-parameters link={0},mode=bridged \
     --master-netdev {1} \
     --default-iallocator hail \
     --hypervisor-parameters kvm:kernel_path=,vnc_bind_address=0.0.0.0 \
     --no-ssh-init --no-etc-hosts \
-    --enabled-disk-templates file,plain,ext,drbd \
     --ipolicy-std-specs {2} \
     --ipolicy-bounds-specs min:{3}/max:{4} \
+    --enabled-disk-templates file,ext \
     {5}
         """.format(config.common_bridge, self.cluster.netdev,
                    std, bound_min, bound_max, self.cluster.fqdn)
 
-        return [cmd] + self._try_use_vg() + self._add_rapi_user()
+        modify = "gnt-node modify --vm-capable=no %s" % self.node.fqdn
+
+        return [init, modify] + self._add_rapi_user()
 
     @base.run_cmds
     def restart(self):
@@ -1638,6 +1682,9 @@ class Archip(base.Component):
         "python-xseg",
         ]
 
+    def required_components(self):
+        return [Mount]
+
     @base.run_cmds
     def prepare(self):
         return ["mkdir -p /etc/archipelago"]
@@ -1682,9 +1729,11 @@ class ArchipGaneti(base.Component):
 
 
 class ExtStorage(base.Component):
+    @base.run_cmds
     def prepare(self):
         return ["mkdir -p /usr/local/lib/ganeti/"]
 
+    @base.run_cmds
     def initialize(self):
         url = "http://code.grnet.gr/git/extstorage"
         extdir = "/usr/local/lib/ganeti/extstorage"
@@ -1737,6 +1786,7 @@ class GanetiDev(base.Component):
         "libghc-test-framework-dev",
         "libghc-test-framework-hunit-dev",
         "libghc-test-framework-quickcheck2-dev",
+        "libghc-base64-bytestring-dev",
         "libghc-text-dev",
         "libghc-utf8-string-dev",
         "libghc-vector-dev",
@@ -1781,14 +1831,12 @@ class GanetiDev(base.Component):
         "curl",
         "hslogger",
         "Crypto",
-        # "text",
         "hinotify==0.3.2",
         "regex-pcre",
-        "attoparsec",
         "vector",
-        "base64-bytestring",
         "lifted-base==0.2.0.3",
         "lens==3.10",
+        "base64-bytestring==1.0.0.1",
         ]
 
     def _cabal(self):
@@ -1823,8 +1871,12 @@ class GanetiDev(base.Component):
             "NODES": simplejson.dumps(sample_nodes),
             "DOMAIN": self.cluster.domain
             }
+        c8 = os.path.join(config.src_dir, "ganeti", "configure-2.8")
+        c10 = os.path.join(config.src_dir, "ganeti", "configure-2.10")
         return [
             ("/root/qa-sample.json", repl, {}),
+            ("/tmp/configure-2.8", {}, {"remote": c8, "mode": 0755}),
+            ("/tmp/configure-2.10", {}, {"remote": c10, "mode": 0755}),
             ]
 
     @base.run_cmds
@@ -1832,7 +1884,7 @@ class GanetiDev(base.Component):
         d = os.path.join(config.src_dir, "ganeti")
         return [
             "cd %s; ./autogen.sh" % d,
-            "cd %s; ./configure --localstatedir=/var --sysconfdir=/etc" % d,
+            "cd %s; ./configure" % d,
             ]
 
     @base.run_cmds

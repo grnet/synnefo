@@ -33,9 +33,10 @@ BACKEND = "backend"
 VALUE_OK = "ok"
 STATUS_FILE = "snf_deploy_status"
 
-DEFAULT_NODE = "node1"
-DEFAULT_CLUSTER = "ganeti1"
-DEFAULT_SETUP = "synnefo"
+DEFAULT_NODE = None
+DEFAULT_CLUSTER = None
+DEFAULT_SETUP = "auto"
+DUMMY_NODE = "dummy"
 
 CERT_OVERRIDE = "cert_override.txt"
 CERT_PATH = "/etc/ssl/certs/ssl-cert-snakeoil.pem"
@@ -60,3 +61,5 @@ ALL_PASSWDS_AND_SECRETS = frozenset([
     CYCLADES_SECRET, OA2_SECRET, WEBPROJECT_SECRET, STATS_SECRET,
     COLLECTD_SECRET
     ])
+
+EXTERNAL_PUBLIC_DNS = "8.8.8.8"

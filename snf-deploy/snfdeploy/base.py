@@ -22,6 +22,7 @@ import shutil
 import tempfile
 import glob
 import time
+import copy
 from snfdeploy.lib import debug
 from snfdeploy import massedit
 from snfdeploy import config
@@ -261,10 +262,11 @@ class Component(ComponentRunner):
 
     def __init__(self, ctx=None, node=None):
         if not ctx:
-            ctx = context.Context()
+            self.ctx = context.Context()
+        else:
+            self.ctx = copy.deepcopy(ctx)
         if node:
-            ctx.node = node
-        self.ctx = ctx
+            self.ctx.node = node
         self.abort = True
 
     def required_components(self):

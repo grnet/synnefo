@@ -480,6 +480,8 @@ class VMC(base.Component):
     @update_cluster_admin
     def admin_post(self):
         self.MASTER.add_node(self.node)
+        self.MASTER.enable_lvm()
+        self.MASTER.enable_drbd()
 
 
 class LVM(base.Component):
@@ -637,10 +639,26 @@ gnt-node modify --master-capable=yes {0}
 
         return [add, mod_vm, mod_master]
 
-    def _try_use_vg(self):
+    @base.run_cmds
+    def enable_lvm(self):
         vg = self.cluster.vg
         return [
-            "gnt-cluster modify --vg-name=%s || true" % vg,
+            # This is needed because MIN_VG_SIZE is constant and set to 20G
+            # and cluster modify --vg-name may result to:
+            # volume group 'ganeti' too small
+            # But this check is made only ff a vm-capable node is found
+            "gnt-cluster modify --enabled-disk-templates file,ext,plain \
+                                --vg-name=%s" % vg,
+            "gnt-cluster modify --ipolicy-disk-template file,ext,plain",
+            ]
+
+    @base.run_cmds
+    def enable_drbd(self):
+        vg = self.cluster.vg
+        return [
+            "gnt-cluster modify --enabled-disk-templates file,ext,plain,drbd \
+                                --drbd-usermode-helper=/bin/true",
+            "gnt-cluster modify --ipolicy-disk-template file,ext,plain,drbd",
             "gnt-cluster modify --disk-parameters=drbd:metavg=%s" % vg,
             "gnt-group modify --disk-parameters=drbd:metavg=%s default" % vg,
             ]
@@ -655,7 +673,8 @@ gnt-node modify --master-capable=yes {0}
 
         bound_max = "cpu-count=8,disk-count=16,disk-size=1048576"
         bound_max += ",memory-size=32768,nic-count=8,spindle-use=12"
-        cmd = """
+
+        init = """
 gnt-cluster init --enabled-hypervisors=kvm \
     --no-lvm-storage --no-drbd-storage \
     --nic-parameters link={0},mode=bridged \
@@ -663,14 +682,16 @@ gnt-cluster init --enabled-hypervisors=kvm \
     --default-iallocator hail \
     --hypervisor-parameters kvm:kernel_path=,vnc_bind_address=0.0.0.0 \
     --no-ssh-init --no-etc-hosts \
-    --enabled-disk-templates file,plain,ext,drbd \
     --ipolicy-std-specs {2} \
     --ipolicy-bounds-specs min:{3}/max:{4} \
+    --enabled-disk-templates file,ext \
     {5}
         """.format(config.common_bridge, self.cluster.netdev,
                    std, bound_min, bound_max, self.cluster.fqdn)
 
-        return [cmd] + self._try_use_vg() + self._add_rapi_user()
+        modify = "gnt-node modify --vm-capable=no %s" % self.node.fqdn
+
+        return [init, modify] + self._add_rapi_user()
 
     @base.run_cmds
     def restart(self):

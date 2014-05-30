@@ -54,7 +54,7 @@ class Command(SynnefoCommand):
                          "the Pithos quota, independently of their value.")
     )
 
-    def handle_noargs(self, **options):
+    def handle(self, **options):
         write = self.stdout.write
         try:
             backend.pre_exec()

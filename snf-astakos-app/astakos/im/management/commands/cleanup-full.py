@@ -25,7 +25,7 @@ from snf_django.management.commands import SynnefoCommand
 class Command(SynnefoCommand):
     help = "Cleanup sessions and session catalog"
 
-    def handle_noargs(self, **options):
+    def handle(self, **options):
         self.stderr.write('Cleanup sessions ...\n')
         call_command('cleanup')
 

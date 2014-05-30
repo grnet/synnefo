@@ -1,0 +1,163 @@
+@import "settings";
+
+.navbar a{
+	color: $gray-dark;
+}
+
+.main-nav {
+	&>ul>li>a {
+		padding-top: 16px;
+		&:hover {
+			padding-top: 16px;
+		}
+	}
+	padding-left: $nav-side-padding;
+	padding-right: $nav-side-padding;
+	background: $blue-light;
+	height: $nav-top-height;
+	z-index: 2000;
+}
+
+
+.arrow-pointer {
+	position: relative;
+	bottom: 9px;
+	width: 20px;
+	margin: auto;
+	.arrow-up-inner {
+		width: 0;
+		height: 0;
+		border-left: 8px solid transparent;
+		border-right: 8px solid transparent;
+		border-bottom: 8px solid white;
+		position: absolute;
+		top: 2px;
+		left: 2px;
+	}
+
+	.arrow-up-outer {
+		width: 0;
+		height: 0;
+		border-left: 10px solid transparent;
+		border-right: 10px solid transparent;
+		border-bottom: 10px solid $gray-dark;
+	}
+	
+}
+
+.main-nav .dropdown-menu {
+	min-width: 200px;
+	a {
+		text-align: left;
+	}
+	.align-1, .align-2 {
+		padding-left: 11px;
+	}
+}
+
+ul.nav li.dropdown:hover > ul.dropdown-menu {
+		display: block;
+}
+
+.navbar-header {
+	// background-color: #7493B9;
+	// border-radius: 5px;
+	margin-right: 6px;
+	float: left;
+	padding: 12px 15px;
+	height: 46px;
+	position: relative;
+	top: 2px;
+	border: 1px solid white;
+	border-radius: 10px;
+}
+
+
+.nav > li > a {
+	padding-right: 12px;
+	padding-left: 12px;
+}
+
+
+/* Submenu with bradcrumb */
+
+.sub-nav {
+	border-top-color: $gray-dark;
+	top: $nav-top-height;
+	padding-left: $nav-side-padding;
+	padding-right: $nav-side-padding;
+	.nav.path {
+		li a{
+			padding-right: 2px;
+			padding-left: 2px;
+		}
+		.seperator {
+			padding-top: 17px;
+			padding-bottom: 13px;
+			margin-right: 4px;
+			margin-left: 4px;
+			color: blueviolet;
+		}
+	}
+}
+
+
+
+/* Sidebar */
+
+.sidebar {
+	margin: 0 30px 0 0;
+	width: 150px;
+	height: auto;
+	float: left;
+	.btn-group-vertical {
+		width: 100%;
+	}
+}
+
+.sidebar.sidebar-fixed {
+	top: $nav-top-height + 30px;
+	left: auto;
+	right: auto;
+	border: 1px solid #e5e5e5;
+	-webkit-border-radius: 4px;
+	-moz-border-radius: 4px;
+	border-radius: 4px;
+	width: 170px;
+	float: left;
+}
+
+/* new *** */
+.sidebar {
+	a {
+		border-color: #A29999;
+		width: 100%;
+		font-size: 14px;
+		color: white;
+		background-color: #6666C5;
+		&.disabled {
+			background-color: #bebebe;
+			color: #EBEEDD;
+			&:hover {
+				border-color: #A29999;
+				&>span {
+					border-color: transparent;
+				}
+			}
+		}
+		&:hover {
+			border-color: #A3A3A8;
+			&>span {
+				border-color: #A3A3A8;
+			}
+		}
+		&>span {
+			line-height: 36px;
+		}
+		.badge {
+			position: relative;
+			bottom: 1px;
+			left: 6px;
+		}
+	}
+}

@@ -207,9 +207,9 @@ h3.info             { cursor:default; color:#2956B2; text-align:center; font-siz
 
 
 // Part B
+@import "settings";
+@import "navbars-sidebar";
 
-$total-width: 960px;
-$nav-height: 36px;
 
 /* All checkboxes */
 
@@ -259,10 +259,6 @@ $nav-height: 36px;
 	padding-bottom: 10px;
 }
 
-.subnav .nav li.active a{
-	color: rgb(41, 86, 178);
-}
-
 
 /* Area that includes all the info and a sidebar */
 
@@ -273,66 +269,6 @@ $nav-height: 36px;
 .info-fixed {
 	overflow: hidden;
 	margin-left: 200px;
-}
-
-
-/* Sidebar */
-
-.sidebar {
-	margin: 0 30px 0 0;
-	width: 150px;
-	height: auto;
-	float: left;
-	.btn-group-vertical {
-		width: 100%;
-	}
-}
-
-.sidebar.sidebar-fixed {
-	top: $nav-height + 30px;
-	left: auto;
-	right: auto;
-	border: 1px solid #e5e5e5;
-	-webkit-border-radius: 4px;
-	-moz-border-radius: 4px;
-	border-radius: 4px;
-	width: 170px;
-	float: left;
-}
-
-/* new *** */
-.sidebar {
-	a {
-		border-color: #A29999;
-		width: 100%;
-		font-size: 14px;
-		color: white;
-		background-color: #6666C5;
-		&.disabled {
-			background-color: #bebebe;
-			color: #EBEEDD;
-			&:hover {
-				border-color: #A29999;
-				&>span {
-					border-color: transparent;
-				}
-			}
-		}
-		&:hover {
-			border-color: #A3A3A8;
-			&>span {
-				border-color: #A3A3A8;
-			}
-		}
-		&>span {
-			line-height: 36px;
-		}
-		.badge {
-			position: relative;
-			bottom: 1px;
-			left: 6px;
-		}
-	}
 }
 
 
@@ -445,7 +381,7 @@ a:not([disabled]):hover {
 }
 
 .filters.subnav-fixed {
-	top: $nav-height;
+	top: $nav-top-height;
 }
 
 
@@ -561,17 +497,7 @@ body .object-details:not(.vm-details) h4 {
 		}
 	}
 }
-// .icon-tasks { // from prev bootstrap version
-// 	background-position: -384px -144px;
-// 	display: inline-block;
-// 	width: 14px;
-// 	height: 14px;
-// 	line-height: 14px;
-// 	vertical-align: text-top;
-// 	background-image: url("../img/glyphicons-halflings.png");
-// 	background-position: 14px 14px;
-// 	background-repeat: no-repeat;
-// }
+
 .container-demo, .chart {
 	height: 400px;
 	width: 100%;
@@ -584,64 +510,12 @@ svg>text:last-child {
 	display: none;
 }
 
-.navbar-center {
-	margin-left: auto;
-	margin-right: auto;
-	margin-top: 0;
-	max-width: 900px;
-	float: none;
-	text-align: center;
-	&>li {
-		display: inline-block;
-		float: none;
-	}
-}
-
-.navbar-sides {
-	position: fixed;
-	width: 100%;
-	top: 0;
-	padding-left: 20px;
-	padding-right: 20px;
-}
 
 .dropdown .arrow {
 	margin-left: 6px;
 	vertical-align: middle;
 }
 
-.nav-main .dropdown-menu {
-	min-width: 200px;
-	a {
-		text-align: left;
-	}
-	.align-1, .align-2 {
-		padding-left: 11px;
-	}
-}
-
-ul.nav li.dropdown:hover > ul.dropdown-menu {
-		display: block;
-}
-
-.navbar-header {
-	// background-color: #7493B9;
-	// border-radius: 5px;
-	margin-right: 6px;
-	float: left;
-	padding: 12px 15px;
-	height: 46px;
-	position: relative;
-	top: 2px;
-	border: 1px solid white;
-	border-radius: 10px;
-}
-
-
-
-.navbar * {
-	letter-spacing: -0.5px;
-}
 
 .error-sign {
 	color: red;
@@ -709,10 +583,7 @@ body {
 	}
 }
 
-.nav > li > a {
-	padding-right: 12px;
-	padding-left: 12px;
-}
+
 
 .object-details h4 .label {
 // font-size: 0.65em;

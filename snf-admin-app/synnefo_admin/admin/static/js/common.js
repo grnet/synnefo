@@ -10,10 +10,10 @@ $(document).ready(function(){
 
  // fix sub nav on scroll
   var $win = $(window)
-    , $nav = $('.subnav:not(.nav-main)')
-    , navTop = $('.subnav:not(.nav-main)').length && $('.subnav:not(.nav-main)').offset().top
+    , $nav = $('.subnav:not(.main-nav)')
+    , navTop = $('.subnav:not(.main-nav)').length && $('.subnav:not(.main-nav)').offset().top
     , isFixed = 0,
-      navMainTop = $('.nav-main').outerHeight();
+      navMainTop = $('.main-nav').outerHeight();
 
   function processScroll() {
     var i, scrollTop = $win.scrollTop();

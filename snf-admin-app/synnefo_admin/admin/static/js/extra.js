@@ -695,17 +695,6 @@ $(function(){
 
 	/* General */
 
-	var curPath = window.location.pathname;
-	$('.nav-main li').each(function () {
-		if($(this).find('a').attr('href') === curPath) {
-			$(this).closest('li').addClass('active');
-		}
-		else {
-			$(this).closest('li').removeClass('active');
-		}
-	});
-
-
 	/* When the user scrolls check if sidebar needs to get fixed position */
 	/*$(window).scroll(function() {
 		fixedMimeSubnav();

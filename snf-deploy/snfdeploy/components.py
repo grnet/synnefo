@@ -1871,8 +1871,12 @@ class GanetiDev(base.Component):
             "NODES": simplejson.dumps(sample_nodes),
             "DOMAIN": self.cluster.domain
             }
+        c8 = os.path.join(config.src_dir, "ganeti", "configure-2.8")
+        c10 = os.path.join(config.src_dir, "ganeti", "configure-2.10")
         return [
             ("/root/qa-sample.json", repl, {}),
+            ("/tmp/configure-2.8", {}, {"remote": c8, "mode": 0755}),
+            ("/tmp/configure-2.10", {}, {"remote": c10, "mode": 0755}),
             ]
 
     @base.run_cmds
@@ -1880,7 +1884,7 @@ class GanetiDev(base.Component):
         d = os.path.join(config.src_dir, "ganeti")
         return [
             "cd %s; ./autogen.sh" % d,
-            "cd %s; ./configure --localstatedir=/var --sysconfdir=/etc" % d,
+            "cd %s; ./configure" % d,
             ]
 
     @base.run_cmds

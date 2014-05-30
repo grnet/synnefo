@@ -5,10 +5,16 @@
 }
 
 .main-nav {
-	&>ul>li>a {
-		padding-top: 16px;
-		&:hover {
+	&>ul>li {
+		&>a {
 			padding-top: 16px;
+			&:hover {
+				padding-top: 16px;
+			}
+
+		}
+		&.active a{
+			background-color: #eeeeee;
 		}
 	}
 	padding-left: $nav-side-padding;
@@ -19,31 +25,6 @@
 }
 
 
-.arrow-pointer {
-	position: relative;
-	bottom: 9px;
-	width: 20px;
-	margin: auto;
-	.arrow-up-inner {
-		width: 0;
-		height: 0;
-		border-left: 8px solid transparent;
-		border-right: 8px solid transparent;
-		border-bottom: 8px solid white;
-		position: absolute;
-		top: 2px;
-		left: 2px;
-	}
-
-	.arrow-up-outer {
-		width: 0;
-		height: 0;
-		border-left: 10px solid transparent;
-		border-right: 10px solid transparent;
-		border-bottom: 10px solid $gray-dark;
-	}
-	
-}
 
 .main-nav .dropdown-menu {
 	min-width: 200px;
@@ -82,21 +63,42 @@ ul.nav li.dropdown:hover > ul.dropdown-menu {
 /* Submenu with bradcrumb */
 
 .sub-nav {
-	border-top-color: $gray-dark;
+	// border-top-color: $gray-dark;
 	top: $nav-top-height;
 	padding-left: $nav-side-padding;
 	padding-right: $nav-side-padding;
-	.nav.path {
-		li a{
-			padding-right: 2px;
-			padding-left: 2px;
+	.nav.custom-breadcrumb {
+		li {
+			a {
+				padding-right: 2px;
+				padding-left: 2px;
+				&:hover {
+					background-color: initial;
+					color: $blue-intense;
+				}
+			}
+			&:last-child {
+				a:hover {
+					color: $gray-dark;
+					cursor: default;
+				}
+			}
+			&:first-child {
+				a {
+					color: lighten($gray-dark, 10%);
+					font-weight: bold;
+					&:hover {
+						color: $blue-intense;
+					}
+				}
+			}
 		}
 		.seperator {
 			padding-top: 17px;
 			padding-bottom: 13px;
 			margin-right: 4px;
 			margin-left: 4px;
-			color: blueviolet;
+			color: $blue-light;
 		}
 	}
 }

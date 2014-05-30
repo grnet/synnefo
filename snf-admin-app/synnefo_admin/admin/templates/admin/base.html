@@ -19,7 +19,7 @@
 
             {% with user_type='user' vm_type='vm' project_type='project' volume_type='volume' network_type='network' ip_type='ip' group_type='group' auth_provider_type='auth_provider' quota_type='quota'%}
             <ul class="nav navbar-nav navbar-left">
-              <li><a href="{% url admin-list user_type %}">Users</a></li>
+              <li class="active"><a href="{% url admin-list user_type %}">Users</a></li>
               <li><a href="{% url admin-list vm_type %}">VMs</a></li>
               <li><a href="{% url admin-list volume_type %}">Volumes</a></li>
               <li><a href="{% url admin-list network_type %}">Networks</a></li>
@@ -54,12 +54,12 @@
               </ul>
           </div> <!-- /nav-main -->
           <div class="navbar sub-nav navbar-fixed-top">
-            <ul class="nav navbar-nav navbar-left path">
+            <ul class="nav navbar-nav navbar-left custom-breadcrumb">
               <li><a class="" href="{% url admin-home %}">Synnefo Admin Panel</a></li>
-              <li class="seperator"><span>></span></li>
+              <li class="seperator"><span>/</span></li>
               <li><a href="">Users</a></li>
-              <li class="seperator"><span>></span></li>
-              <li><a href="">Details of John Doe</a></li>
+              <li class="seperator"><span>/</span></li>
+              <li><a href="" disabled>Details of John Doe</a></li>
             </ul>
             <ul class="nav navbar-nav navbar-right">
               <li><a href="">Account: John Doe</a></li>

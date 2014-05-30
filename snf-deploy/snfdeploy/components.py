@@ -537,12 +537,10 @@ class Ganeti(base.Component):
     REQUIRED_PACKAGES = [
         "qemu-kvm",
         "python-bitarray",
-        "ganeti-htools",
-        "ganeti-haskell",
+        "bridge-utils",
         "snf-ganeti",
         "ganeti2",
-        "bridge-utils",
-        "ganeti-instance-debootstrap",
+        "ganeti-instance-debootstrap"
         ]
 
     @update_admin
@@ -676,7 +674,6 @@ gnt-node modify --master-capable=yes {0}
 
         init = """
 gnt-cluster init --enabled-hypervisors=kvm \
-    --no-lvm-storage --no-drbd-storage \
     --nic-parameters link={0},mode=bridged \
     --master-netdev {1} \
     --default-iallocator hail \

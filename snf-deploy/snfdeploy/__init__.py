@@ -124,8 +124,6 @@ def fabcommand(args, actions):
 
     fabfile.setup_env(args)
     with settings(hide(*lhide), show(*lshow)):
-        print " ".join(actions)
-        print settings
         for a in actions:
             fn = getattr(fabfile, a)
             execute(fn)

@@ -467,7 +467,7 @@ class VMC(base.Component):
         if self.cluster.synnefo:
             return [
                 Image, GTools, GanetiCollectd,
-                PithosBackend, Archip, ArchipGaneti
+                PithosBackend, ExtStorage, Archip, ArchipGaneti
                 ]
         else:
             return [ExtStorage, Archip, ArchipGaneti]
@@ -556,8 +556,11 @@ class Ganeti(base.Component):
         return commands
 
     def _configure(self):
+        r = {
+            "SHARED_GANETI_DIR": config.ganeti_dir,
+            }
         return [
-            ("/etc/ganeti/file-storage-paths", {}, {}),
+            ("/etc/ganeti/file-storage-paths", r, {}),
             ("/etc/default/ganeti-instance-debootstrap", {}, {}),
             ]
 
@@ -570,7 +573,8 @@ class Ganeti(base.Component):
     @base.run_cmds
     def prepare(self):
         return [
-            "mkdir -p /srv/ganeti/file-storage/",
+            "mkdir -p %s/file-storage/" % config.ganeti_dir,
+            "mkdir -p %s/shared-file-storage/" % config.ganeti_dir,
             "sed -i 's/^127.*$/127.0.0.1 localhost/g' /etc/hosts",
             ] + self._prepare_net_infra()
 
@@ -1441,6 +1445,7 @@ snf-manage network-create --subnet6={0} \
             # TODO: fix java issue with no signed jar
             "CYCLADES_NODE_IP": self.ctx.cyclades.ip,
             "CYCLADES_SECRET": config.cyclades_secret,
+            "SHARED_GANETI_DIR": config.ganeti_dir,
             }
         return [
             ("/etc/synnefo/cyclades.conf", r1, {}),

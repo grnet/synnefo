@@ -1,2 +1,2 @@
-/srv/ganeti/file-storage
-/srv/ganeti/shared-file-storage
+%SHARED_GANETI_DIR%/file-storage
+%SHARED_GANETI_DIR%/shared-file-storage

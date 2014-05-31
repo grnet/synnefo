@@ -557,74 +557,117 @@ h3.info {
   background-color: #eeeeee;
 }
 
-/* line 29, ../sass/_navbars-sidebar.scss */
-.main-nav .dropdown-menu {
-  min-width: 200px;
+/* line 27, ../sass/_navbars-sidebar.scss */
+.nav-simple {
+  color: white;
+  position: relative;
+  top: 0;
+  width: 100%;
+  padding: 20px;
+  height: 75px;
+  border-bottom: 1px solid white;
 }
-/* line 31, ../sass/_navbars-sidebar.scss */
-.main-nav .dropdown-menu a {
-  text-align: left;
+/* line 35, ../sass/_navbars-sidebar.scss */
+.nav-simple a {
+  color: white;
 }
-/* line 34, ../sass/_navbars-sidebar.scss */
-.main-nav .dropdown-menu .align-1, .main-nav .dropdown-menu .align-2 {
-  padding-left: 11px;
+/* line 38, ../sass/_navbars-sidebar.scss */
+.nav-simple .header {
+  float: left;
+  line-height: 40px;
+  font-size: 26px;
+}
+/* line 43, ../sass/_navbars-sidebar.scss */
+.nav-simple .login-info {
+  float: right;
+  position: relative;
+  line-height: 40px;
+  font-size: 16px;
 }
 
-/* line 39, ../sass/_navbars-sidebar.scss */
-ul.nav li.dropdown:hover > ul.dropdown-menu {
+/* line 53, ../sass/_navbars-sidebar.scss */
+.dropdown .dropdown-menu {
+  width: 100%;
+}
+/* line 55, ../sass/_navbars-sidebar.scss */
+.dropdown .dropdown-menu.align-left a {
+  text-align: left;
+  padding-left: 11px;
+}
+/* line 59, ../sass/_navbars-sidebar.scss */
+.dropdown .dropdown-menu.align-right a {
+  text-align: right;
+}
+/* line 63, ../sass/_navbars-sidebar.scss */
+.dropdown a:hover {
+  text-decoration: none;
+}
+
+/* line 69, ../sass/_navbars-sidebar.scss */
+.login-info .dropdown > a {
+  padding-left: 10px;
+  padding-bottom: 8px;
+}
+/* line 73, ../sass/_navbars-sidebar.scss */
+.login-info .dropdown-menu {
+  right: 0;
+  left: auto;
+  background: #485057;
+  border-color: white;
+  border-radius: 0;
+}
+/* line 79, ../sass/_navbars-sidebar.scss */
+.login-info .dropdown-menu a {
+  color: white;
+}
+/* line 81, ../sass/_navbars-sidebar.scss */
+.login-info .dropdown-menu a:hover {
+  color: #485057;
+}
+
+/* line 88, ../sass/_navbars-sidebar.scss */
+.nav .dropdown:hover > ul.dropdown-menu, .nav-simple .dropdown:hover > ul.dropdown-menu {
   display: block;
 }
 
-/* line 43, ../sass/_navbars-sidebar.scss */
-.navbar-header {
-  margin-right: 6px;
-  float: left;
-  padding: 12px 15px;
-  height: 46px;
-  position: relative;
-  top: 2px;
-  border: 1px solid white;
-  border-radius: 10px;
-}
-
-/* line 57, ../sass/_navbars-sidebar.scss */
+/* line 92, ../sass/_navbars-sidebar.scss */
 .nav > li > a {
   padding-right: 12px;
   padding-left: 12px;
 }
 
 /* Submenu with bradcrumb */
-/* line 65, ../sass/_navbars-sidebar.scss */
+/* line 100, ../sass/_navbars-sidebar.scss */
 .sub-nav {
   top: 50px;
   padding-left: 20px;
   padding-right: 20px;
 }
-/* line 72, ../sass/_navbars-sidebar.scss */
+/* line 107, ../sass/_navbars-sidebar.scss */
 .sub-nav .nav.custom-breadcrumb li a {
   padding-right: 2px;
   padding-left: 2px;
 }
-/* line 75, ../sass/_navbars-sidebar.scss */
+/* line 110, ../sass/_navbars-sidebar.scss */
 .sub-nav .nav.custom-breadcrumb li a:hover {
   background-color: initial;
   color: #3074ac;
 }
-/* line 81, ../sass/_navbars-sidebar.scss */
+/* line 116, ../sass/_navbars-sidebar.scss */
 .sub-nav .nav.custom-breadcrumb li:last-child a:hover {
   color: #485057;
   cursor: default;
 }
-/* line 87, ../sass/_navbars-sidebar.scss */
+/* line 122, ../sass/_navbars-sidebar.scss */
 .sub-nav .nav.custom-breadcrumb li:first-child a {
   color: #5f6a73;
   font-weight: bold;
 }
-/* line 90, ../sass/_navbars-sidebar.scss */
+/* line 125, ../sass/_navbars-sidebar.scss */
 .sub-nav .nav.custom-breadcrumb li:first-child a:hover {
   color: #3074ac;
 }
-/* line 96, ../sass/_navbars-sidebar.scss */
+/* line 131, ../sass/_navbars-sidebar.scss */
 .sub-nav .nav.custom-breadcrumb .seperator {
   padding-top: 17px;
   padding-bottom: 13px;
@@ -634,19 +677,19 @@ ul.nav li.dropdown:hover > ul.dropdown-menu {
 }
 
 /* Sidebar */
-/* line 110, ../sass/_navbars-sidebar.scss */
+/* line 145, ../sass/_navbars-sidebar.scss */
 .sidebar {
   margin: 0 30px 0 0;
   width: 150px;
   height: auto;
   float: left;
 }
-/* line 115, ../sass/_navbars-sidebar.scss */
+/* line 150, ../sass/_navbars-sidebar.scss */
 .sidebar .btn-group-vertical {
   width: 100%;
 }
 
-/* line 120, ../sass/_navbars-sidebar.scss */
+/* line 155, ../sass/_navbars-sidebar.scss */
 .sidebar.sidebar-fixed {
   top: 80px;
   left: auto;
@@ -660,7 +703,7 @@ ul.nav li.dropdown:hover > ul.dropdown-menu {
 }
 
 /* new *** */
-/* line 134, ../sass/_navbars-sidebar.scss */
+/* line 169, ../sass/_navbars-sidebar.scss */
 .sidebar a {
   border-color: #A29999;
   width: 100%;
@@ -668,32 +711,32 @@ ul.nav li.dropdown:hover > ul.dropdown-menu {
   color: white;
   background-color: #6666C5;
 }
-/* line 140, ../sass/_navbars-sidebar.scss */
+/* line 175, ../sass/_navbars-sidebar.scss */
 .sidebar a.disabled {
   background-color: #bebebe;
   color: #EBEEDD;
 }
-/* line 143, ../sass/_navbars-sidebar.scss */
+/* line 178, ../sass/_navbars-sidebar.scss */
 .sidebar a.disabled:hover {
   border-color: #A29999;
 }
-/* line 145, ../sass/_navbars-sidebar.scss */
+/* line 180, ../sass/_navbars-sidebar.scss */
 .sidebar a.disabled:hover > span {
   border-color: transparent;
 }
-/* line 150, ../sass/_navbars-sidebar.scss */
+/* line 185, ../sass/_navbars-sidebar.scss */
 .sidebar a:hover {
   border-color: #A3A3A8;
 }
-/* line 152, ../sass/_navbars-sidebar.scss */
+/* line 187, ../sass/_navbars-sidebar.scss */
 .sidebar a:hover > span {
   border-color: #A3A3A8;
 }
-/* line 156, ../sass/_navbars-sidebar.scss */
+/* line 191, ../sass/_navbars-sidebar.scss */
 .sidebar a > span {
   line-height: 36px;
 }
-/* line 159, ../sass/_navbars-sidebar.scss */
+/* line 194, ../sass/_navbars-sidebar.scss */
 .sidebar a .badge {
   position: relative;
   bottom: 1px;

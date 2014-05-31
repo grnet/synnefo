@@ -1,6 +1,19 @@
 {% extends "admin/base.html" %}
 
 {% block nav-bar %}
+<div class="nav-simple fixed-top">
+	<span class="header">Synnefo Admin Panel</span>
+	<div class="login-info">Welcome,
+		<span class="dropdown" data-toggle="dropdown">
+			<a href="">John Doe
+			<span class="snf-angle-down arrow"></span>
+			</a>
+			<ul class="dropdown-menu align-right">
+				<li><a href="">[i] Sign Out</a></li>
+			</ul>
+		</span>
+	</div>
+</div>
 {% endblock %}
 
 {% block main-area %}

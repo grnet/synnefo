@@ -28,27 +28,27 @@
               <li><a href="{% url admin-list project_type %}">Projects</a></li>
               <li><a href="{% url admin-list group_type %}">User Groups</a></li>
               <li><a href="{% url admin-list auth_provider_type %}">User Auth Providers</a></li>
-              <li class="dropdown">
-                <a href="#" class="dropdown" data-toggle="dropdown">Reports
+              <li class="dropdown" data-toggle="dropdown">
+                <a href="#">Reports
                 <span class="snf-angle-down arrow"></span></a>
-                <ul class="dropdown-menu">
-                  <li><a href="{% url admin-stats %}" class="align-1">Statistics</a></li>
-                  <li><a href="{% url admin-charts %}" class="align-1">Demo Charts</a></li>
-                  <li><a href="" class="align-1">Another Category</a></li>
+                <ul class="dropdown-menu align-left">
+                  <li><a href="{% url admin-stats %}">Statistics</a></li>
+                  <li><a href="{% url admin-charts %}">Demo Charts</a></li>
+                  <li><a href="">Another Category</a></li>
                 </ul>
               </li>
             </ul>
             {% endwith %}
 
             <ul class="nav navbar-nav navbar-right">
-                <li class="dropdown">
-                  <a href="" class="dropdown" data-toggle="dropdown">
+                <li class="dropdown" data-toggle="dropdown">
+                  <a href="">
                     adminuser@synnefo.org
                     <span class="snf-angle-down arrow"></span>
                   </a>
-                  <ul class="dropdown-menu">
+                  <ul class="dropdown-menu align-right">
                     <li>
-                      <a href="" class="align-2"><span>[i]</span>Sign Out</a>
+                      <a href=""><span>[i]</span>Sign Out</a>
                     </li>
                   </ul>
               </ul>
@@ -68,7 +68,7 @@
                   VMs
                   <span class="snf-angle-down arrow"></span>
                 </a>
-                <ul class="dropdown-menu">
+                <ul class="dropdown-menu align-right">
                   <li><a href="">cute pc</a></li>
                   <li><a href="">Windows</a></li>
                   <li><a href="">Debian</a></li>
@@ -79,7 +79,7 @@
                   Networks
                   <span class="snf-angle-down arrow"></span>
                 </a>
-                <ul class="dropdown-menu">
+                <ul class="dropdown-menu align-right">
                   <li><a href="">Public</a></li>
                   <li><a href="">Private-1</a></li>
                   <li><a href="">grnet</a></li>

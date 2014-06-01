@@ -735,7 +735,7 @@ $(function(){
 		});
 	};
 
-$('.actionbar').click(function (e) {
+$('.actionbar .toggle-selected').click(function (e) {
 	e.preventDefault();
 })
 

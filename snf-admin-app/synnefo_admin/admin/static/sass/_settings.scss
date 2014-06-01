@@ -10,5 +10,24 @@ $nav-side-padding: 20px;
 
 $blue-light: #B2CAE9;
 $blue-intense: #3074AC;
+
 $gray-dark: #485057;
-$green-intense: #2FA685;
+$gray-light: #857B7B;
+$gray-light-extra: lighten($gray-light, 20%);
+
+$green-intense: #5DC519;
+$green-intense-extra: darken($green-intense, 10%);
+
+$red-intense: red;
+
+$orange-intense: #D2881F;
+
+// should I use something like that?
+// $warning
+// $warning-area
+
+// $error
+// $error-area
+
+// $positive
+// $positive-area

@@ -144,7 +144,7 @@ $(function(){
 			"sLengthMenu": 'Pagination _MENU_'
 		}
 	});
-	$("div.custom-buttons").html('<button class="select-all select">Select All</button>');
+	$("div.custom-buttons").html('<a href="" class="select-all select custom-btn" data-karma="neutral"><span>Select All</span></a>');
 
 	tableSelected = $(tableSelectedDomID).DataTable({
 		"columnDefs": [{
@@ -458,7 +458,8 @@ $(function(){
 
 	 /* Select-all button */
 
-	$('.select-all').click(function() {
+	$('.select-all').click(function(e) {
+		e.preventDefault();
 		toggleVisSelected(tableDomID, $(this).hasClass('select'));
 	});
 
@@ -483,7 +484,8 @@ $(function(){
 	function updateToggleAllSelect() {
 
 		var $toggleAll = $('.select-all');
-		$tr = $(tableDomID).find('tbody tr');
+		var $label = $toggleAll.find('span')
+		var $tr = $(tableDomID).find('tbody tr');
 
 		if($tr.length > 1) {
 			var allSelected = true
@@ -492,16 +494,16 @@ $(function(){
 			});
 			if($toggleAll.hasClass('select') && allSelected) {
 				$toggleAll.addClass('deselect').removeClass('select');
-				$toggleAll.text('Clear All')
+				$label.text('Clear All')
 			}
 			else if(!($toggleAll.hasClass('select')) && !allSelected) {
 				$toggleAll.addClass('select').removeClass('deselect');
-				$toggleAll.text('Select All')
+				$label.text('Select All')
 			}
 		}
 		else {
 			$toggleAll.addClass('select').removeClass('deselect')
-			$toggleAll.text('Select All')
+			$label.text('Select All')
 		}
 	};
 

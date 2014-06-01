@@ -169,6 +169,7 @@
 }
 
 /* new *** */
+
 .sidebar {
 	a {
 		&:first-child {
@@ -178,6 +179,14 @@
 			margin-top: 32px; //32+6=38
 		}
 		margin-bottom: 6px;
+	}
+}
+.custom-buttons .custom-btn {
+	min-width: 80px;
+}
+
+.sidebar, .custom-buttons {
+	a {
 		border: 1px solid;
 
 		width: 100%;

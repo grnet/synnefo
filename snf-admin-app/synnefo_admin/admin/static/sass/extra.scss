@@ -156,7 +156,7 @@ textarea:focus          {
 .badge-important        { background-color: #F81A23; }
 .badge-info           { background-color:#659CEF }
 .show-hide-tabs         { margin:2em 0; }
-.show-hide-all          { float:right; /*margin:20px 0;*/ line-height:27px; margin-right: 20px;}
+.show-hide-all          { float:right; /*margin:20px 0;*/ line-height:27px; /* margin-right: 20px; */}
 .toggle .badge          { font-size:14px; padding:5px 9px; }
 .toggle .badge:hover      { cursor:pointer;  }
 .show-hide-tabs .badge      { background-color:#8BBA00; }
@@ -209,6 +209,7 @@ h3.info             { cursor:default; color:#2956B2; text-align:center; font-siz
 // Part B
 @import "settings";
 @import "bars-btns";
+@import "details";
 
 
 /* All checkboxes */
@@ -260,10 +261,11 @@ h3.info             { cursor:default; color:#2956B2; text-align:center; font-siz
 }
 
 
-/* Area that includes all the info and a sidebar */
+/* Area that includes all the info and */
 
 .info {
 	overflow: auto;
+	border-color: $blue-light-extra;
 }
 
 .info-fixed {
@@ -570,68 +572,6 @@ box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px #659cef;
 	margin-bottom: 40px;
 }
 
-body {
-
-	background-color: #485057;
-	color: #3D3D3D;
-	.well {
-		border-color: #AFC6D6;
-		background-color: white;
-	}
-	a {
-		color: #13499B
-	}
-}
-
-
-
-.object-details h4 .label {
-// font-size: 0.65em;
-font-style: normal;
-font-weight: normal;
-float: right;
-margin-left: 6px;
-}
-
-.main {
-	h4 .title{
-		font-size: 21px;
-		cursor: pointer;
-		margin-left: 20px;
-	}
-}
-
-.object-details {
-	p {
-		margin: 10px 20px;
-		font-style: italic;
-	}
-	.length {
-		margin-left: 6px;
-	}
-	&>.object-details {
-		margin-left: -20px;
-		margin-right: -20px;
-		padding: 10px 20px;
-	}
-	.expand-btn {
-		width: 110px;
-		line-height: 30px;
-		border-color: #3c763d;
-		color: #266327;
-		&:hover {
-			&>span {
-				border-color: #3c763d;
-			}
-		}
-	}
-}
-
-.object-details-content .nav-tabs>li.active>a {
-	// border: 1px solid #ADD4EE;
-	border-color: #AFC6D6;
-	border-bottom-color: transparent;
-}
 
 
 /* Landscape phone to portrait tablet */
@@ -643,6 +583,7 @@ margin-left: 6px;
 
 html, body {
 	height: 100%;
+	background: $gray-dark;
 }
 
 html body .dataTables_wrapper {
@@ -657,7 +598,10 @@ table {
 	}
 }
 }
-
+.main-content {
+	background: white;
+	border-color: $blue-light-extra;
+}
 // if we replace bootwatch with the corresponding sass file this should be @import .btn-primary
 .main-content .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
 	background-image: -webkit-linear-gradient(#6d94bf, #446e9b 50%, #3e648d);

@@ -1,0 +1,74 @@
+@import "settings";
+
+body {
+	color: #3D3D3D;
+	a {
+		color: #13499B
+	}
+}
+
+
+
+.object-details h4 .label {
+// font-size: 0.65em;
+font-style: normal;
+font-weight: normal;
+float: right;
+margin-left: 6px;
+}
+
+.main {
+	padding: 5px 0 20px 0;
+	background: rgba(lighten($blue-light, 10%), 0.5);
+	// border-color: #AFC6D6;
+
+	h4 .title{
+		font-size: 21px;
+		cursor: pointer;
+		// margin-left: 20px;
+	}
+}
+
+body .well {
+	border-color: $blue-light;
+
+}
+.tab-content dl {
+	background: white;
+}
+body .object-details {
+	h4 {
+		margin-left: 0;
+		margin-right: 0;
+		span {
+			margin-top: 1px;
+		}
+	}
+	h3 {
+		margin-left: 0;
+	}
+	p {
+		margin: 10px 20px;
+		font-style: italic;
+	}
+
+	.length {
+		margin-left: 6px;
+	}
+	&>.object-details {
+		margin-left: -20px;
+		margin-right: -20px;
+		padding: 10px 20px;
+	}
+}
+
+.object-details-content .nav-tabs>li {
+	&.active>a {
+		border-color: $blue-light;
+		border-bottom-color: transparent;
+	}
+	&:not(.active)>a:hover {
+		border-color: transparent;
+		background: transparent;
+	}
+}

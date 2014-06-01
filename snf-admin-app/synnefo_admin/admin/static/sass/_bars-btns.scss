@@ -255,3 +255,14 @@
 		}
 	}
 }
+.custom-btn.expand-btn {
+	width: 110px;
+	line-height: 30px;
+	border-color: $green-intense;
+	color:$green-intense-extra;
+	&:hover {
+		&>span {
+			border-color: $green-intense;
+		}
+	}
+}

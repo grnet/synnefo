@@ -741,6 +741,8 @@ $('.actionbar .toggle-selected').click(function (e) {
 	e.preventDefault();
 })
 
+$('.main .object-details').first().find('h4').addClass('expanded');
+$('.main .object-details').first().find('.object-details-content').slideDown('slow');
 
 });
 }(window.jQuery, window.Django));

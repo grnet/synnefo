@@ -182,7 +182,7 @@ def create_server(vm, nics, volumes, flavor, image, personality, password):
     # the volume with data
     image_id = image["backend_id"]
     root_volume = volumes[0]
-    if root_volume.volume_type.provider is not None:
+    if root_volume.volume_type.provider in settings.GANETI_CLONE_PROVIDERS:
         image_id = "null"
 
     server_created.send(sender=vm, created_vm_params={

@@ -749,7 +749,8 @@ def create_instance(vm, nics, volumes, flavor, image):
         provider = volume.volume_type.provider
         if provider is not None:
             disk["provider"] = provider
-            disk["origin"] = volume.origin
+            if provider in settings.GANETI_CLONE_PROVIDERS:
+                disk["origin"] = volume.origin
             extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
                                         .get(provider)
             if extra_disk_params is not None:

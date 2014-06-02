@@ -56,14 +56,11 @@ from synnefo_admin.admin import users as user_views
 from synnefo_admin.admin import projects as project_views
 from synnefo_admin.admin import vms as vm_views
 from synnefo_admin.admin import volumes as volume_views
-from synnefo_admin.admin import quotas as quota_views
 from synnefo_admin.admin import networks as network_views
 from synnefo_admin.admin import ips as ip_views
 from synnefo_admin.admin import groups as group_views
 from synnefo_admin.admin import auth_providers as auth_provider_views
 
-# server actions specific imports
-from synnefo.logic import servers as servers_backend
 from synnefo.ui.views import UI_MEDIA_URL
 import copy
 
@@ -219,10 +216,18 @@ default_dict = {
     'mail': {
         'subject': sample_subject,
         'body': render_to_string('im/plain_email.txt', {
-                                 'baseurl': astakos_settings.BASE_URL,
-                                 'site_name': astakos_settings.SITENAME,
-                                 'support': astakos_settings.CONTACT_EMAIL})
-    }
+            'baseurl': astakos_settings.BASE_URL,
+            'site_name': astakos_settings.SITENAME,
+            'support': astakos_settings.CONTACT_EMAIL})
+    },
+    'item_lists': (('Users', 'user'),
+                   ('VMs', 'vm'),
+                   ('Volumes', 'volume'),
+                   ('Networks', 'network'),
+                   ('IPs', 'ip'),
+                   ('Projects', 'project'),
+                   ('User Groups', 'group'),
+                   ('User Auth Providers', 'auth_provider'))
 }
 
 
@@ -256,8 +261,6 @@ def json_list(request, type):
         return user_views.UserJSONView.as_view()(request)
     if type == 'project':
         return project_views.ProjectJSONView.as_view()(request)
-    if type == 'quota':
-        return quota_views.ProjectJSONView.as_view()(request)
     if type == 'vm':
         return vm_views.VMJSONView.as_view()(request)
     if type == 'volume':
@@ -315,9 +318,6 @@ def catalog(request, type):
     elif type == 'volume':
         context = volume_views.catalog(request)
         template = volume_views.templates['list']
-    elif type == 'quota':
-        context = quota_views.catalog(request)
-        template = quota_views.templates['list']
     elif type == 'network':
         context = network_views.catalog(request)
         template = network_views.templates['list']
@@ -351,8 +351,6 @@ def _admin_actions_id(request, target, op, id):
         network_views.do_action(request, op, id)
     elif target == 'ip':
         ip_views.do_action(request, op, id)
-    elif target == 'quota':
-        quota_views.do_action(request, op, id)
     elif target == 'project':
         project_views.do_action(request, op, id)
     else:
@@ -388,16 +386,9 @@ def admin_actions(request):
     op = request.POST['op']
     ids = copy.deepcopy(request.POST['ids'])
     ids = ids.replace('[', '').replace(']', '').replace(' ', '').split(',')
-    try:
-        mail = request.POST['text']
-    except:
-        mail = None
 
-    try:
-        for id in ids:
-            _admin_actions_id(request, target, op, id)
-    except:
-        logger.exception("admin_actions")
+    for id in ids:
+        _admin_actions_id(request, target, op, id)
 
     redirect = reverse('admin-list', args=(target,))
     return HttpResponseRedirect(redirect)

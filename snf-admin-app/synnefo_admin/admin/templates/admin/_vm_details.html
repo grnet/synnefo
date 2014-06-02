@@ -70,15 +70,17 @@
       <div class="tab-pane" id="network{{ vm.pk }}">
         <table class="table well">
           <thead>
-            <td>ID</td>
-            <td>Network (ID)</td>
-            <td>Created</td>
-            <td>Updated</td>
-            <td>Index</td>
-            <td>MAC</td>
-            <td>IPv4</td>
-            <td>IPv6</td>
-            <td>Firewall</td>
+            <tr>
+              <th>ID</th>
+              <th>Network (ID)</th>
+              <th>Created</th>
+              <th>Updated</th>
+              <th>Index</th>
+              <th>MAC</th>
+              <th>IPv4</th>
+              <th>IPv6</th>
+              <th>Firewall</th>
+            </tr>
           </thead>
           <tbody>
             {% for nic in vm.nics.all %}

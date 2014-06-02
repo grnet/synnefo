@@ -40,9 +40,9 @@ $(document).ready(function(){
 
   // hide/show expand/collapse 
   
-  $('.subnav .dropdown-menu a').click(function(){
-    $('.info-block-content, .show-hide-all').show();
-  });
+  // $('.subnav .dropdown-menu a').click(function(){
+  //   $('.info-block-content, .show-hide-all').show();
+  // });
 
   var txt_all = ['+ Expand all','- Collapse all'];
   
@@ -82,10 +82,10 @@ $(document).ready(function(){
   });
 
 
-  $('.info-block h3').click(function(){
-    $(this).next('.info-block-content').toggle('slow');
-    $(this).prev('.show-hide-all').toggle('slow');
-  });  
+  // $('.info-block h3').click(function(){
+  //   $(this).next('.info-block-content').toggle('slow');
+  //   $(this).prev('.show-hide-all').toggle('slow');
+  // });
   
 /*  $('.search-query').typeahead({
 >>>>>>> admin: Basic initialization of table

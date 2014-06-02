@@ -20,12 +20,12 @@ margin-left: 6px;
 .main {
 	padding: 5px 0 20px 0;
 	background: rgba(lighten($blue-light, 10%), 0.5);
-	// border-color: #AFC6D6;
-
+	&:hover {
+		background: #DDD;
+	}
 	h4 .title{
 		font-size: 21px;
 		cursor: pointer;
-		// margin-left: 20px;
 	}
 }
 
@@ -40,9 +40,6 @@ body .object-details {
 	h4 {
 		margin-left: 0;
 		margin-right: 0;
-		span {
-			margin-top: 1px;
-		}
 	}
 	h3 {
 		margin-left: 0;
@@ -58,17 +55,41 @@ body .object-details {
 	&>.object-details {
 		margin-left: -20px;
 		margin-right: -20px;
-		padding: 10px 20px;
+		padding: 20px;
 	}
 }
 
 .object-details-content .nav-tabs>li {
 	&.active>a {
+		color: $gray-dark;
 		border-color: $blue-light;
 		border-bottom-color: transparent;
 	}
 	&:not(.active)>a:hover {
 		border-color: transparent;
 		background: transparent;
+		color: $blue-intense;
+	}
+}
+
+.tab-pane {
+	overflow: auto;
+	th {
+		color: $gray-dark;
+	}
+}
+
+body .object-details h4 {
+	em {
+		float: none;
+		&.os-info {
+			float: right;
+			position: relative;
+			bottom: 3px;
+			// margin-right: 6px;
+			img {
+				height: 26px; // *** i think that is the size of all images temp use for preview
+			}
+		}
 	}
 }

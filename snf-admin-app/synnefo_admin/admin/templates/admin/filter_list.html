@@ -1,0 +1,21 @@
+{% load admin_tags %}
+{% comment %}
+Hi Athens! This is the place where we iterate the filters. You can insert
+any code you want above and below the for-loop.
+Also, check out the filter_choice.html and filter_text.html templates to
+create the filters.
+
+Note, filter.name must be sent with the Ajax request as in the following format
+"sSearch_{{filter.name}}". Also, you don't have to join choices with a comma.
+You can send them like so:
+"...&sSearch_filter=value1...&sSearch_filter=value3..." and Django will handle
+them appropriately.
+{% endcomment %}
+
+<div class="well well-lg">
+    <div class="filters">  <!-- use it to center it (sort of) -->
+    {% for filter in filter_dict %}
+        {% include filter|get_filter_template %}
+    {% endfor %}
+    </div>
+</div>

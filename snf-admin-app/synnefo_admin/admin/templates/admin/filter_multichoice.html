@@ -1,0 +1,10 @@
+<div class="btn-group">
+	<a class="btn dropdown-toggle btn-primary" data-toggle ="dropdown" href="#">
+		<span class="category">{{ filter.label }}</span>
+		<span class="caret"></span> </a>
+	<ul class="dropdown-menu choices" data-filter="{{ filter.name }}">
+		{% for choice,_ in filter.field.choices %}
+		<li><a href="#">{{ choice }}</a></li>
+		{% endfor %}
+	</ul>
+</div>

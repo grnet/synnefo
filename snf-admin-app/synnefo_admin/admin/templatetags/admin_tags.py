@@ -28,8 +28,9 @@
 # policies, either expressed or implied, of GRNET S.A.
 
 from django import template
-from astakos.logic import users
 import logging
+
+import django_filters
 
 register = template.Library()
 
@@ -205,5 +206,27 @@ def admin_debug(var):
 def get_details_template(type):
     """Get the correct template for the provided item."""
     template = 'admin/_' + type + '_details.html'
+    logging.info("Requested the %s", template)
+    return template
+
+
+@register.filter
+def get_filter_template(filter):
+    """Get the correct flter template according to the filter type.
+
+    This only works for filters that are instances of django-filter's Filter.
+    """
+    logging.info("Here for %s", filter)
+    if isinstance(filter, django_filters.CharFilter):
+        type = "char"
+    elif isinstance(filter, django_filters.BooleanFilter):
+        type = "bool"
+    elif isinstance(filter, django_filters.ChoiceFilter):
+        type = "choice"
+    elif isinstance(filter, django_filters.MultipleChoiceFilter):
+        type = "multichoice"
+    else:
+        raise Exception("Unknown filter type: %s", filter)
+    template = 'admin/filter_' + type + '.html'
     logging.info("Requested the %s", template)
     return template

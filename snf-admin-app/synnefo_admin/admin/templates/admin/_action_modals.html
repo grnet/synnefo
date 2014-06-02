@@ -10,13 +10,15 @@
                 {% if op == "contact" %}
                 <div class="form-subject form-area">
                     <label>Subject:</label>
-                    <input type="text" class="subject" form="contactForm"></input>
+                    <input type="text" name="subject" class="subject"
+                    form="contactForm" placeholder="{{mail.subject}}"></input>
                     <a data-error="empty-subject" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="Missing the subject of the e-mail."></a>
                 </div>
 
                 <div class="form-body form-area">
                     <label>Body:</label>
-                    <textarea name="text" form="contactForm" class="content body"></textarea>
+                    <textarea name="text" form="contactForm" class="content
+                        body" placeholder="{{mail.body}}"></textarea>
                     <a data-error="empty-body" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="Missing the body of the e-mail."></a>
                 </div>
                 <p>You have choosen to <em class="positive elem">{{ op }}</em> the following <em class="badge num elem positive"></em> users:

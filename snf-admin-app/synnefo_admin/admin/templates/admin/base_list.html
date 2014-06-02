@@ -2,11 +2,7 @@
 
 {% block content %}
     {% block filter-list %}
-        <div class="well well-lg">
-          <div class="btn-group filters">
-            <p>filters: tba...</p>
-          </div>
-        </div>
+        {% include "admin/filter_list.html" %}
     {% endblock filter-list %}
 
     {% block action-list %}

@@ -42,17 +42,33 @@ from django.core.urlresolvers import reverse
 from synnefo.db.models import Network
 from synnefo.logic.networks import validate_network_action
 from synnefo.logic import networks
-from astakos.im.functions import send_plain as send_email
+from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser
 
 from eztables.views import DatatablesView
 from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
                      noop)
 
+import django_filters
+
 templates = {
     'list': 'admin/network_list.html',
     'details': 'admin/network_details.html',
 }
+
+
+class NetworkFilterSet(django_filters.FilterSet):
+
+    """A collection of filters for VMs.
+
+    This filter collection is based on django-filter's FilterSet.
+    """
+
+    name = django_filters.CharFilter(label='Name', lookup_type='icontains')
+
+    class Meta:
+        model = Network
+        fields = ('name', 'state')
 
 
 def get_allowed_actions(network):
@@ -82,6 +98,7 @@ class NetworkJSONView(DatatablesView):
     fields = ('pk', 'pk', 'name', 'state', 'public', 'drained',)
 
     extra = True
+    filters = NetworkFilterSet
 
     def get_extra_data_row(self, inst):
         extra_dict = {
@@ -199,6 +216,7 @@ def catalog(request):
     """List view for Cyclades networks."""
     context = {}
     context['action_dict'] = generate_actions()
+    context['filter_dict'] = NetworkFilterSet().filters.itervalues()
     context['columns'] = ["Column 1", "ID", "Name", "Status", "Public",
                           "Drained", "Details", "Summary"]
     context['item_type'] = 'network'

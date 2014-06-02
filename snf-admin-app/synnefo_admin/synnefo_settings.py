@@ -36,8 +36,7 @@
 Django settings metadata. To be used in setup.py snf-webproject entry points.
 """
 
-installed_apps = ['djangojs', 'eztables', 'synnefo_admin.admin']
+installed_apps = ['eztables', 'django_filters', 'synnefo_admin.admin']
 #database_routers = ['synnefo_admin.admin.routers.AdminRouter']
 database_routers = []
-static_files = {'synnefo_admin' : 'admin'}
-
+static_files = {'synnefo_admin': 'admin'}

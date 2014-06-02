@@ -46,10 +46,10 @@ from urllib import unquote
 
 import astakosclient
 from snf_django.lib import astakos
+from synnefo_branding.utils import render_to_string
 
-from synnefo.db.models import VirtualMachine, Network, IPAddressLog
-from astakos.im.models import AstakosUser, ProjectMembership, Project
-from astakos.im.functions import send_plain as send_email
+from astakos.im.messages import PLAIN_EMAIL_SUBJECT as sample_subject
+from astakos.im import settings as astakos_settings
 
 # Import model-specific views
 from synnefo_admin.admin import users as user_views
@@ -216,6 +216,13 @@ def admin_user_required(func, permitted_groups=PERMITTED_GROUPS):
 default_dict = {
     'ADMIN_MEDIA_URL': ADMIN_MEDIA_URL,
     'UI_MEDIA_URL': UI_MEDIA_URL,
+    'mail': {
+        'subject': sample_subject,
+        'body': render_to_string('im/plain_email.txt', {
+                                 'baseurl': astakos_settings.BASE_URL,
+                                 'site_name': astakos_settings.SITENAME,
+                                 'support': astakos_settings.CONTACT_EMAIL})
+    }
 }
 
 

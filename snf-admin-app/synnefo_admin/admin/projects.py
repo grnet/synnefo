@@ -40,13 +40,15 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from synnefo.db.models import VirtualMachine, Network
-from astakos.im.functions import send_plain as send_email
 from astakos.im.models import AstakosUser, Project, ProjectResourceGrant
-from astakos.im.functions import approve_application
 
 from eztables.views import DatatablesView
 from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
                      noop)
+from astakos.im.user_utils import send_plain as send_email
+from astakos.im.functions import (validate_project_action, ProjectConflict,
+                                  approve_application, deny_application,
+                                  suspend, unsuspend, terminate, reinstate)
 
 templates = {
     'list': 'admin/project_list.html',
@@ -68,8 +70,11 @@ def get_allowed_actions(project):
     actions = generate_actions()
 
     for key, action in actions.iteritems():
-        if action.can_apply(project):
-            allowed_actions.append(key)
+        try:
+            if action.can_apply(project):
+                allowed_actions.append(key)
+        except ProjectConflict:
+            pass
 
     return allowed_actions
 
@@ -116,10 +121,6 @@ class ProjectJSONView(DatatablesView):
     fields = ('id', 'id', 'realname', 'state', 'creation_date', 'end_date')
 
     extra = True
-
-    def get_queryset(self):
-        qs = super(ProjectJSONView, self).get_queryset()
-        return qs.filter(is_base=False)
 
     def format_data_row(self, row):
         row[3] = (str(row[3]) + ' (' +
@@ -186,23 +187,23 @@ class ProjectJSONView(DatatablesView):
                       str(inst.limit_on_members_number)),
             'visible': True,
         }
-        extra_dict['total_resources'] = {
-            'display_name': "Total resources",
-            'value': get_total_resources(inst),
-            'visible': True
-        }
-        extra_dict['member_resources'] = {
-            'display_name': "Member resources",
-            'value': get_member_resources(inst),
-            'visible': True
-        }
-
-        if inst.last_application.comments:
-            extra_dict['comments'] = {
-                'display_name': "Comments for review",
-                'value': inst.last_application.comments,
-                'visible': True,
+        if not inst.is_base:
+            extra_dict['total_resources'] = {
+                'display_name': "Total resources",
+                'value': get_total_resources(inst),
+                'visible': True
             }
+            extra_dict['member_resources'] = {
+                'display_name': "Member resources",
+                'value': get_member_resources(inst),
+                'visible': True
+            }
+            if inst.last_application.comments:
+                extra_dict['comments'] = {
+                    'display_name': "Comments for review",
+                    'value': inst.last_application.comments,
+                    'visible': True,
+                }
 
         return extra_dict
 
@@ -220,6 +221,22 @@ class ProjectAction(AdminAction):
         AdminAction.__init__(self, name=name, target='project', f=f, **kwargs)
 
 
+def check_project_action(action):
+    return lambda p: validate_project_action(p, action)
+
+
+def check_approve(project):
+    if project.is_base:
+        return False
+    return project.last_application.can_approve()
+
+
+def check_deny(project):
+    if project.is_base:
+        return False
+    return project.last_application.can_deny()
+
+
 def generate_actions():
     """Create a list of actions on projects.
 
@@ -228,19 +245,26 @@ def generate_actions():
     """
     actions = OrderedDict()
 
-    actions['approve'] = ProjectAction(name='Approve', f=approve_application)
+    actions['approve'] = ProjectAction(name='Approve', f=approve_application,
+                                       c=check_approve,)
 
-    actions['deny'] = ProjectAction(name='Deny', f=noop)
+    actions['deny'] = ProjectAction(name='Deny', f=deny_application,
+                                    c=check_deny,)
 
-    actions['suspend'] = ProjectAction(name='Suspend', f=noop,)
+    actions['suspend'] = ProjectAction(name='Suspend', f=suspend,
+                                       c=check_project_action("SUSPEND"),)
 
-    actions['unsuspend'] = ProjectAction(name='Release suspension', f=noop)
+    actions['unsuspend'] = ProjectAction(name='Release suspension',
+                                         f=unsuspend,
+                                         c=check_project_action("UNSUSPEND"),)
 
-    actions['terminate'] = ProjectAction(name='Terminate', f=noop)
+    actions['terminate'] = ProjectAction(name='Terminate', f=terminate,
+                                         c=check_project_action("TERMINATE"),)
 
-    actions['reinstate'] = ProjectAction(name='Reinstate', f=noop)
+    actions['reinstate'] = ProjectAction(name='Reinstate', f=reinstate,
+                                         c=check_project_action("REINSTATE"),)
 
-    actions['contact'] = ProjectAction(name='Send e-mail', f=noop)
+    actions['contact'] = ProjectAction(name='Send e-mail', f=send_email,)
 
     return actions
 

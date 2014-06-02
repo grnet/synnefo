@@ -40,8 +40,6 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Group
 
-from astakos.im.functions import send_plain as send_email
-from astakos.im.models import AstakosUser
 
 from eztables.views import DatatablesView
 from actions import AdminAction, AdminActionUnknown, AdminActionNotPermitted

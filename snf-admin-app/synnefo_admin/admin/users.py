@@ -35,20 +35,27 @@ import logging
 import re
 from collections import OrderedDict
 
+from operator import or_
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from django.contrib.auth.models import Group
+from django.template import Context, Template
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser, ProjectMembership, Project
-from astakos.logic import users
+from astakos.im import user_logic as users
 
 from astakos.api.quotas import get_quota_usage
-from astakos.im.functions import send_plain as send_email
+from astakos.im.user_utils import send_plain as send_email
 
 from eztables.views import DatatablesView
 from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
                      noop)
+
+import django_filters
+from django.db.models import Q
 
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
 SHOW_DELETED_VMS = getattr(settings, 'ADMIN_SHOW_DELETED_VMS', False)
@@ -57,6 +64,79 @@ templates = {
     'list': 'admin/user_list.html',
     'details': 'admin/user_details.html',
 }
+
+
+choice2query = {
+    ('ACTIVE', ''): Q(is_active=True),
+    ('INACTIVE', ''): Q(is_active=False, moderated=True) | Q(is_rejected=True),
+    ('PENDING MODERATION', ''): Q(moderated=False, email_verified=True),
+    ('PENDING EMAIL VERIFICATION', ''): Q(email_verified=False),
+}
+
+
+#def filter_status(queryset, choices):
+    #if type(choices) is not list and type(choices) is not tuple:
+        #choices = [choices]
+    #if len(choices) == len(choice2query.keys()):
+        #return queryset
+
+    #q = Q()
+    #for choice in choices:
+        #q |= choice2query[(choice, '')]
+    #return queryset.filter(q)
+
+
+def filter_status(queryset, choice):
+    if not choice:
+        return queryset
+    q = choice2query[(choice, '')]
+    return queryset.filter(q)
+
+
+def filter_group(queryset, choice):
+    if not choice:
+        return queryset
+    return queryset.filter(groups__name_exact=choice)
+
+
+def get_groups():
+    groups = Group.objects.all().values('name')
+    return [(group['name'], '') for group in groups]
+
+
+def filter_name(queryset, search):
+    """Filter by name using keywords.
+
+    Since there is no single name field, we will search both in first_name,
+    last_name fields.
+    """
+    fields = ['first_name', 'last_name']
+    for term in search.split():
+        criterions = (Q(**{'%s__icontains' % field: term}) for field in fields)
+        qor = reduce(or_, criterions)
+        queryset = queryset.filter(qor)
+    return queryset
+
+
+class UserFilterSet(django_filters.FilterSet):
+
+    """A collection of filters for users.
+
+    This filter collection is based on django-filter's FilterSet.
+    """
+
+    uuid = django_filters.CharFilter(label='UUID', lookup_type='icontains',)
+    email = django_filters.CharFilter(label='E-mail address',
+                                      lookup_type='icontains',)
+    name = django_filters.CharFilter(label='Name', action=filter_name,)
+    status = django_filters.ChoiceFilter(label='Status', action=filter_status,
+                                         choices=choice2query.keys())
+    groups = django_filters.ChoiceFilter(label='Group', choices=get_groups(),
+                                         action=filter_group)
+
+    class Meta:
+        model = AstakosUser
+        fields = ('uuid', 'email', 'name', 'status', 'groups')
 
 
 def get_user(query):
@@ -114,6 +194,7 @@ class UserJSONView(DatatablesView):
               'is_rejected', 'moderated', 'email_verified')
 
     extra = True
+    filters = UserFilterSet
 
     def get_extra_data_row(self, inst):
         extra_dict = OrderedDict()
@@ -168,7 +249,7 @@ class UserJSONView(DatatablesView):
             'visible': True,
         }
 
-        if users.check_accept(inst):
+        if users.validate_user_action(inst, "ACCEPT"):
             extra_dict['activation_url'] = {
                 'display_name': "Activation URL",
                 'value': inst.get_activation_url(),
@@ -206,6 +287,10 @@ class UserAction(AdminAction):
         AdminAction.__init__(self, name=name, target='user', f=f, **kwargs)
 
 
+def check_user_action(action):
+    return lambda u: users.validate_user_action(u, action)
+
+
 def generate_actions():
     """Create a list of actions on users.
 
@@ -214,28 +299,29 @@ def generate_actions():
     actions = OrderedDict()
 
     actions['activate'] = UserAction(name='Activate', f=users.activate,
-                                     c=users.check_activate,
+                                     c=check_user_action("ACTIVATE"),
                                      karma='good', reversible=True)
 
     actions['deactivate'] = UserAction(name='Deactivate', f=users.deactivate,
-                                       c=users.check_deactivate,
+                                       c=check_user_action("DEACTIVATE"),
                                        karma='bad', reversible=True)
 
     actions['accept'] = UserAction(name='Accept', f=users.accept,
-                                   c=users.check_accept,
+                                   c=check_user_action("ACCEPT"),
                                    karma='good', reversible=False)
 
     actions['reject'] = UserAction(name='Reject', f=users.reject,
-                                   c=users.check_reject,
+                                   c=check_user_action("REJECT"),
                                    karma='bad', reversible=False)
 
     actions['verify'] = UserAction(name='Verify', f=users.verify,
-                                   c=users.check_verify,
+                                   c=check_user_action("VERIFY"),
                                    karma='good', reversible=False)
 
     actions['resend_verification'] = UserAction(name='Resend verification',
                                                 f=noop, karma='good',
-                                                c=users.check_verify,
+                                                c=check_user_action(
+                                                    "SEND_VERIFICATION_MAIL"),
                                                 reversible=False)
 
     actions['contact'] = UserAction(name='Send e-mail', f=send_email)
@@ -251,15 +337,26 @@ def do_action(request, op, id):
     if op == 'reject':
         actions[op].f(user, 'Rejected by the admin')
     elif op == 'contact':
-        actions[op].f(user, request.POST['text'])
+        c = Context({'name': user.realname,
+                     'first_name': user.first_name,
+                     'last_name': user.last_name})
+        t = Template(request.POST['text'])
+        body = t.render(c)
+        actions[op].f(user, request.POST['subject'], template_name=None,
+                      text=body)
     else:
         actions[op].f(user)
 
 
 def catalog(request):
     """List view for Astakos users."""
+
+    for filter in UserFilterSet().filters.itervalues():
+        logging.info("Filter %s, filter_name %s", filter, filter.name)
+
     context = {}
     context['action_dict'] = generate_actions()
+    context['filter_dict'] = UserFilterSet().filters.itervalues()
     context['columns'] = ["Column 1", "E-mail", "First Name", "Last Name",
                           "Active", "Rejected", "Moderated", "Verified",
                           "Details", "Summary"]

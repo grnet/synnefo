@@ -35,6 +35,8 @@ import logging
 import re
 from collections import OrderedDict
 
+from operator import or_
+
 from django.views.decorators.csrf import csrf_exempt
 from django.core.urlresolvers import reverse
 
@@ -42,17 +44,51 @@ from actions import AdminAction, noop
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser, ProjectMembership, Project
-from astakos.im.functions import send_plain as send_email
+from astakos.im.user_utils import send_plain as send_email
 
 from synnefo.logic import servers as servers_backend
 from synnefo.logic.commands import validate_server_action
 
 from eztables.views import DatatablesView
 
+import django_filters
+from django.db.models import Q
+
+from .users import filter_name as get_users_by_name
+
 templates = {
     'list': 'admin/vm_list.html',
     'details': 'admin/vm_details.html',
 }
+
+
+def filter_owner_name(queryset, search):
+    users = get_users_by_name(AstakosUser.objects.all(), search).values('uuid')
+    criterions = [Q(userid=user['uuid']) for user in users]
+    if not criterions:
+        return queryset.none()
+    qor = reduce(or_, criterions)
+    return queryset.filter(qor)
+
+
+class VMFilterSet(django_filters.FilterSet):
+
+    """A collection of filters for VMs.
+
+    This filter collection is based on django-filter's FilterSet.
+    """
+
+    name = django_filters.CharFilter(label='Name', lookup_type='icontains')
+    owner_name = django_filters.CharFilter(label='Owner Name',
+                                           action=filter_owner_name)
+    userid = django_filters.CharFilter(label='Owner UUID',
+                                       lookup_type='icontains')
+    imageid = django_filters.CharFilter(label='Image UUID',
+                                        lookup_type='icontains')
+
+    class Meta:
+        model = VirtualMachine
+        fields = ('operstate', 'name', 'owner_name', 'userid', 'imageid')
 
 
 def get_allowed_actions(vm):
@@ -78,6 +114,7 @@ class VMJSONView(DatatablesView):
     fields = ('pk', 'pk', 'name', 'operstate', 'suspended',)
 
     extra = True
+    filters = VMFilterSet
 
     def get_extra_data_row(self, inst):
         extra_dict = OrderedDict()
@@ -263,8 +300,10 @@ def do_action(request, op, id):
 
 def catalog(request):
     """List view for Cyclades VMs."""
+    logging.info("Filters are %s", VMFilterSet().filters)
     context = {}
     context['action_dict'] = generate_actions()
+    context['filter_dict'] = VMFilterSet().filters.itervalues()
     context['columns'] = ["Column 1", "ID", "Name", "State", "Suspended",
                           "Details", "Summary"]
     context['item_type'] = 'vm'

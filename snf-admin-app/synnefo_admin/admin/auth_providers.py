@@ -40,7 +40,6 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUserAuthProvider
-from astakos.im.functions import send_plain as send_email
 from astakos.im.models import AstakosUser
 
 from eztables.views import DatatablesView

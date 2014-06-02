@@ -40,16 +40,39 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from synnefo.db.models import Volume
-from astakos.im.functions import send_plain as send_email
+from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser
 
 from eztables.views import DatatablesView
 from actions import AdminAction, AdminActionUnknown, AdminActionNotPermitted
 
+import django_filters
+from django.db.models import Q
+
+from synnefo_admin.admin.vms import filter_owner_name
+
 templates = {
     'list': 'admin/volume_list.html',
     'details': 'admin/volume_details.html',
 }
+
+
+class VolumeFilterSet(django_filters.FilterSet):
+
+    """A collection of filters for volumes.
+
+    This filter collection is based on django-filter's FilterSet.
+    """
+
+    name = django_filters.CharFilter(label='Name', lookup_type='icontains')
+    owner_name = django_filters.CharFilter(label='Owner Name',
+                                           action=filter_owner_name)
+    userid = django_filters.CharFilter(label='Owner UUID',
+                                       lookup_type='icontains')
+
+    class Meta:
+        model = Volume
+        fields = ('name', 'owner_name', 'userid')
 
 
 def get_allowed_actions(volume):
@@ -75,6 +98,7 @@ class VolumeJSONView(DatatablesView):
               )
 
     extra = True
+    filters = VolumeFilterSet
 
     def get_extra_data_row(self, inst):
         logging.info("I am here")
@@ -164,6 +188,7 @@ def catalog(request):
     """List view for Cyclades volumes."""
     context = {}
     context['action_dict'] = generate_actions()
+    context['filter_dict'] = VolumeFilterSet().filters.itervalues()
     context['columns'] = ["Column 1", "ID", "Name", "Status", "Creation date",
                           "VM ID", "Details", "Summary"]
     context['item_type'] = 'volume'

@@ -41,7 +41,7 @@ from django.core.urlresolvers import reverse
 
 from synnefo.db.models import IPAddress
 from synnefo.logic import ips
-from astakos.im.functions import send_plain as send_email
+from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser
 
 from eztables.views import DatatablesView

@@ -92,13 +92,18 @@ class AdminAction:
         If no check function has been registered for this action, this method
         will answer always "True".
         """
+        # Check if a check function has been registered
+        if not hasattr(self, 'check'):
+            return True
+
+        # Cyclades raises BadRequest when an action is not supported for an
+        # instance.
         try:
             res = self.check(t)
-        except AttributeError:
-            return True
         except faults.BadRequest:
             return False
 
+        # We accept "None" as correct value.
         if res is None:
             res = True
         return res

@@ -40,7 +40,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from synnefo.db.models import VirtualMachine, Network
-from astakos.im.functions import send_plain as send_email
+from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
 from astakos.im.functions import approve_application
 

@@ -18,3 +18,4 @@ from astakos.im.tests.projects import *
 from astakos.im.tests.api import *
 from astakos.im.tests.views import *
 from astakos.im.tests.services import *
+from astakos.im.tests.user_logic import *

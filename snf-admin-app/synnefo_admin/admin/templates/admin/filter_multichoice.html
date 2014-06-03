@@ -1,10 +1,14 @@
-<div class="btn-group dropdown-filter">
-	<a class="btn dropdown-toggle btn-primary" data-toggle ="dropdown" href="#">
-		<span class="category">{{ filter.label }}</span>
-		<span class="caret"></span> </a>
-	<ul class="dropdown-menu choices" data-filter="{{ filter.name }}">
-		{% for choice,_ in filter.field.choices %}
-		<li><a href="#">{{ choice }}</a></li>
-		{% endfor %}
-	</ul>
+<div class="dropdown-filter">
+	<div class="dropdown">
+		<a class="" href="#" data-toggle="dropdown">
+			<span class="category">{{ filter.label }}:</span>
+			<span class="selected-value">All</span>
+			<span class="snf-angle-down arrow"></span>
+		</a>
+		<ul class="dropdown-menu choices" data-filter="{{ filter.name }}">
+			{% for choice,_ in filter.field.choices %}
+			<li><a href="#"><input type="checkbox">{{ choice }}</a></li>
+			{% endfor %}
+		</ul>
+	</div>
 </div>

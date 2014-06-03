@@ -920,35 +920,79 @@ body .object-details h4 em.os-info img {
 /* here should declare: */
 /* vars like colors and dist */
 /* and functs */
-/* line 21, ../sass/_filters.scss */
+/* line 3, ../sass/_filters.scss */
 .filters {
   margin-left: 200px;
 }
 
-/* line 25, ../sass/_filters.scss */
+/* line 7, ../sass/_filters.scss */
 .filters .badge {
   margin-left: 6px;
   opacity: 0.9;
   padding: 2px 9px;
 }
 
-/* line 31, ../sass/_filters.scss */
+/* line 13, ../sass/_filters.scss */
 .filters ul.nav a {
   padding-bottom: 10px;
 }
 
-/* line 36, ../sass/_filters.scss */
+/* line 18, ../sass/_filters.scss */
 .input-filter {
   width: 300px;
   margin-top: 10px;
   margin-right: 10px;
   display: inline-block;
 }
+/* line 23, ../sass/_filters.scss */
+.input-filter input {
+  border-radius: 0;
+}
 
-/* line 43, ../sass/_filters.scss */
+/* line 28, ../sass/_filters.scss */
 .dropdown-filter {
-  vertical-align: baseline;
+  vertical-align: bottom;
   margin-right: 10px;
+  display: inline-block;
+  background: white;
+  height: 38px;
+}
+/* line 34, ../sass/_filters.scss */
+.dropdown-filter .dropdown {
+  border: 1px solid #cccccc;
+  border-radius: 0px;
+  padding: 8px 12px;
+  line-height: 1.4;
+}
+/* line 40, ../sass/_filters.scss */
+.dropdown-filter .dropdown > a .selected-value {
+  margin-left: 4px;
+}
+/* line 43, ../sass/_filters.scss */
+.dropdown-filter .dropdown > a .arrow {
+  font-weight: bold;
+}
+/* line 49, ../sass/_filters.scss */
+.dropdown-filter .dropdown.open a {
+  text-decoration: none;
+  color: #3074ac;
+}
+/* line 54, ../sass/_filters.scss */
+.dropdown-filter .dropdown a {
+  color: #485057;
+}
+/* line 57, ../sass/_filters.scss */
+.dropdown-filter .dropdown .dropdown-menu {
+  width: auto;
+}
+/* line 59, ../sass/_filters.scss */
+.dropdown-filter .dropdown .dropdown-menu a {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+/* line 60, ../sass/_filters.scss */
+.dropdown-filter .dropdown .dropdown-menu a input[type="checkbox"] {
+  margin-right: 6px;
 }
 
 /* All checkboxes */
@@ -1408,4 +1452,9 @@ table thead th {
 /* line 662, ../sass/extra.scss */
 .app-list .custom-btn:hover span {
   border-color: white;
+}
+
+/* line 668, ../sass/extra.scss */
+a:focus {
+  text-decoration: none;
 }

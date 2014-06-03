@@ -2,7 +2,8 @@
 
 {% with vm=item %}
 <div class="object-anchor" id="vm-{{vm.pk}}"></div>
-<div class="vm-details object-details {{ rowcls }}">
+<div class="vm-details object-details {{ rowcls }}" data-id="{{vm.pk}}"
+    data-type="{{type}}">
   <h4>
       <span class="title"><a href="{% url admin-details type vm.pk %}">{{ vm|repr }}</a></span>
     <span class="badge arrow">&nbsp;</span>

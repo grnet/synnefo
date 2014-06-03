@@ -2,7 +2,8 @@
 
 {% with user=item %}
 <div class="object-anchor" id="user-{{user.uuid}}"></div>
-<div class="object-details {{ rowcls }}">
+<div class="object-details {{ rowcls }}" data-id="{{user.uuid}}"
+    data-type="{{type}}">
     <h4>
         <span class="title"><a href="{% url admin-details type user.uuid %}">{{ user|repr }}</a></span>
         <span class="badge arrow">&nbsp;</span>

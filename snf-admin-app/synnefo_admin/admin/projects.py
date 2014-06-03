@@ -39,7 +39,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
-from synnefo.db.models import VirtualMachine, Network
+from synnefo.db.models import (VirtualMachine, Network, Volume,
+                               NetworkInterface, IPAddress)
 from astakos.im.models import AstakosUser, Project, ProjectResourceGrant
 
 from eztables.views import DatatablesView
@@ -303,17 +304,21 @@ def details(request, query):
     """Details view for Astakos projects."""
     project = get_project(query)
 
-    users = project.members.all()
-    vms = VirtualMachine.objects.filter(project=project.uuid)
-    networks = Network.objects.filter(project=project.uuid)
+    user_list = project.members.all()
+    vm_list = VirtualMachine.objects.filter(project=project.uuid)
+    volume_list = Volume.objects.filter(project=project.uuid)
+    network_list = Network.objects.filter(project=project.uuid)
+    ip_list = IPAddress.objects.filter(project=project.uuid)
 
     context = {
         'main_item': project,
         'main_type': 'project',
         'associations_list': [
-            (users, 'user'),
-            (vms, 'vm'),
-            (networks, 'network'),
+            (user_list, 'user'),
+            (vm_list, 'vm'),
+            (volume_list, 'volume'),
+            (network_list, 'network'),
+            (ip_list, 'ip'),
         ]
     }
 

@@ -1,0 +1,52 @@
+{% load admin_tags %}
+
+{% with nic=item %}
+<div class="object-anchor" id="nic-{{nic.pk}}"></div>
+<div class="object-details {{ rowcls }}">
+    <h4>
+        <span class="title">{{ nic|repr }}</span>
+        <span class="badge arrow">&nbsp;</span>
+        <span class="label label-primary">ID: {{nic.pk}}</span>
+        <span class="label label-primary">MAC: {{ nic.mac }}</span>
+        <span class="label label-primary">{{ nic.state|upper }}</span>
+    </h4>
+        <div class="tags">
+        </div>
+    <div class="object-details-content">
+        <ul class="nav nav-tabs">
+            <li class="active"><a href="#details{{ type }}{{ nic.pk }}" data-toggle="tab">Details</a></li>
+            <li><a href="#security{{ type }}{{ nic.pk }}" data-toggle="tab">Security</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane active" id="details{{ type }}{{ nic.pk }}">
+                <dl class="dl-horizontal well">
+                    <dt>ID</dt><dd>{{ nic.pk }}</dd>
+                    <dt>MAC</dt><dd>{{ nic.mac }}</dd>
+                    <dt>Name</dt><dd>{{ nic.name|default:"-" }}</dd>
+                    <dt>Public</dt><dd>{{ nic.public }}</dd>
+                    <dt>User ID</dt><dd>{{ nic.userid }}</dd>
+		            <dt>Created</dt><dd>{{ nic.created }} ({{ nic.created|timesince }} <strong>ago</strong>)</dd>
+		            <dt>Updated</dt><dd>{{ nic.updated }} ({{ nic.created|timesince }} <strong>ago</strong>)</dd>
+                    <dt>State</dt><dd>{{ nic.state }}</dd>
+                </dl>
+            </div>
+            <div class="tab-pane" id="security{{ type }}{{ nic.pk }}">
+                <dl class="dl-horizontal well">
+                    <dt>Firewall profile</dt><dd>{{ nic.firewall_profile }}</dd>
+                    <dt>Security groups</dt><dd>
+                    {% for group in nic.security_groups.all %}
+                        {{ group.name|upper }} 
+                    {% empty %}
+                        None
+                    {% endfor %}
+                    </dd>
+                </dl>
+            </div>
+        </div> <!-- <div class="tab-content"> -->
+    </div> <!-- <div class="object-details-content"> -->
+    <div class="todo vm-actions clearfix">
+        {% include "admin/action_list_horizontal.html" %}
+    </div>
+</div> <!-- <div class="object-details {{ rowcls }}"> -->
+{% endwith %}
+

@@ -13,7 +13,7 @@
 
         {# This is the section for the item for which we hare requested details #}
         {% block main-item %}
-            {% include main_type|get_details_template with item=main_item %}
+            {% include main_type|get_details_template with item=main_item type=main_type %}
         {% endblock %}
 
     

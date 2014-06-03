@@ -1,0 +1,41 @@
+{% load admin_tags %}
+
+{% with ip=item %}
+<div class="object-anchor" id="ip-{{ip.pk}}"></div>
+<div class="object-details {{ rowcls }}">
+    <h4>
+        <span class="title">{{ ip.address }}</span>
+        <span class="badge arrow">&nbsp;</span>
+        <span class="label label-primary">ID: {{ip.pk}}</span>
+        {% if ip.floating_ip %}
+        <span class="label label-primary">FLOATING</span>
+        {% endif %}
+        <span class="label label-primary">IP Version: {{ ip.ipversion|upper }}</span>
+    </h4>
+        <div class="tags">
+        </div>
+    <div class="object-details-content">
+        <ul class="nav nav-tabs">
+            <li class="active"><a href="#details{{ type }}{{ ip.pk }}" data-toggle="tab">Details</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane active" id="details{{ type }}{{ ip.pk }}">
+                <dl class="dl-horizontal well">
+                    <dt>ID</dt><dd>{{ ip.pk }}</dd>
+                    <dt>Address</dt><dd>{{ ip.address }}</dd>
+                    <dt>Floating</dt><dd>{{ ip.floating_ip}}</dd>
+		            <dt>Created</dt><dd>{{ ip.created }} ({{ ip.created|timesince }} <strong>ago</strong>)</dd>
+		            <dt>Updated</dt><dd>{{ ip.updated }} ({{ ip.created|timesince }} <strong>ago</strong>)</dd>
+                    <dt>Floating</dt><dd>{{ ip.floating_ip}}</dd>
+                    <dt>Deleted</dt><dd>{{ ip.deleted}}</dd>
+
+                </dl>
+            </div>
+        </div> <!-- <div class="tab-content"> -->
+    </div> <!-- <div class="object-details-content"> -->
+    <div class="todo vm-actions clearfix">
+        {% include "admin/action_list_horizontal.html" %}
+    </div>
+</div> <!-- <div class="object-details {{ rowcls }}"> -->
+{% endwith %}
+

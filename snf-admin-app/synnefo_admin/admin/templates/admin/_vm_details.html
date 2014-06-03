@@ -4,7 +4,7 @@
 <div class="object-anchor" id="vm-{{vm.pk}}"></div>
 <div class="vm-details object-details {{ rowcls }}">
   <h4>
-    <span class="title">{{ vm.name }}</span>
+      <span class="title"><a href="{% url admin-details type vm.pk %}">{{ vm.name }}</a></span>
     <span class="badge arrow">&nbsp;</span>
     {% if vm.suspended %}
     <span class="label label-warning">SUSPENDED</span>

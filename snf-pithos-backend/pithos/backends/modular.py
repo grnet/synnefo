@@ -1233,7 +1233,7 @@ class ModularBackend(BaseBackend):
         self._report_object_change(
             user, account, path,
             details={'version': dest_version_id, 'action': 'object update'})
-        return dest_version_id
+        return dest_version_id, size_delta
 
     @debug_method
     @backend_method
@@ -1283,7 +1283,7 @@ class ModularBackend(BaseBackend):
             pass
         finally:
             self.lock_container_path = False
-        dest_version_id = self._update_object_hash(
+        dest_version_id, _ = self._update_object_hash(
             user, account, container, name, size, type, mapfile, checksum,
             domain, meta, replace_meta, permissions, available=False)
         return self.node.version_get_properties(dest_version_id,
@@ -1313,7 +1313,7 @@ class ModularBackend(BaseBackend):
         hash = map.hash()
         hexlified = binascii.hexlify(hash)
         # _update_object_hash() locks destination path
-        dest_version_id = self._update_object_hash(
+        dest_version_id, _ = self._update_object_hash(
             user, account, container, name, size, type, hexlified, checksum,
             domain, meta, replace_meta, permissions)
         self.store.map_put(hash, map)
@@ -1346,7 +1346,9 @@ class ModularBackend(BaseBackend):
                      delimiter=None, listing_limit=10000):
 
         dest_meta = dest_meta or {}
-        dest_version_ids = []
+        dest_versions = []
+        freed_space = 0
+        occupied_space = 0
         self._can_read_object(user, src_account, src_container, src_name)
 
         src_container_path = '/'.join((src_account, src_container))
@@ -1365,13 +1367,18 @@ class ModularBackend(BaseBackend):
 
         cross_account = src_account != dest_account
         cross_container = src_container != dest_container
-        if not cross_account and cross_container:
+        src_project = None  # compute it only if it is necessary
+        dest_project = self._get_project(dest_container_node)
+
+        cross_project = False
+        if cross_container:
             src_project = self._get_project(src_container_node)
-            dest_project = self._get_project(dest_container_node)
             cross_project = src_project != dest_project
-        else:
-            cross_project = False
-        report_size_change = not is_move or cross_account or cross_project
+
+        # do not perform bulk report size change in the other cases in order to
+        # catch early failures due to quota restrictions
+        bulk_report_size_change = is_move and not (cross_account or
+                                                   cross_project)
 
         path, node = self._lookup_object(src_account, src_container, src_name)
         # TODO: Will do another fetch of the properties in duplicate version...
@@ -1382,15 +1389,19 @@ class ModularBackend(BaseBackend):
         size = props[self.SIZE]
         is_copy = not is_move and (src_account, src_container, src_name) != (
             dest_account, dest_container, dest_name)  # New uuid.
-        dest_version_ids.append(self._update_object_hash(
+        dest_version_id, size_delta = self._update_object_hash(
             user, dest_account, dest_container, dest_name, size, type, hash,
             None, dest_domain, dest_meta, replace_meta, permissions,
             src_node=node, src_version_id=src_version_id, is_copy=is_copy,
-            report_size_change=report_size_change))
-        if is_move and ((src_account, src_container, src_name) !=
-                        (dest_account, dest_container, dest_name)):
-            self._delete_object(user, src_account, src_container, src_name,
-                                report_size_change=report_size_change)
+            report_size_change=(not bulk_report_size_change))
+        dest_versions.append(dest_version_id)
+        occupied_space += size_delta
+        if is_move and (src_account, src_container, src_name) != (
+                dest_account, dest_container, dest_name):
+            del_size = self._delete_object(
+                user, src_account, src_container, src_name,
+                report_size_change=(not bulk_report_size_change))
+            freed_space += del_size
 
         if delimiter:
             prefix = (src_name + delimiter if not
@@ -1416,18 +1427,31 @@ class ModularBackend(BaseBackend):
                     delimiter) else dest_name
                 vdest_name = path.replace(prefix, dest_prefix, 1)
                 # _update_object_hash() locks destination path
-                dest_version_ids.append(self._update_object_hash(
+                dest_version_id, size_delta = self._update_object_hash(
                     user, dest_account, dest_container, vdest_name, size,
                     vtype, hash, None, dest_domain, meta={},
                     replace_meta=False, permissions=None, src_node=node,
                     src_version_id=src_version_id, is_copy=is_copy,
-                    report_size_change=report_size_change))
-                if is_move and ((src_account, src_container, src_name) !=
-                                (dest_account, dest_container, dest_name)):
-                    self._delete_object(user, src_account, src_container, path,
-                                        report_size_change=report_size_change)
-        return (dest_version_ids[0] if len(dest_version_ids) == 1 else
-                dest_version_ids)
+                    report_size_change=(not bulk_report_size_change))
+                dest_versions.append(dest_version_id)
+                occupied_space += size_delta
+                if is_move and (src_account, src_container, path) != (
+                        dest_account, dest_container, vdest_name):
+                    del_size = self._delete_object(
+                        user, src_account, src_container, path,
+                        report_size_change=(not bulk_report_size_change))
+                    freed_space += del_size
+
+        if bulk_report_size_change:     # bulk report size change
+            dest_obj_path = '/'.join((dest_container_path, dest_name))
+            size_delta = occupied_space - freed_space
+            self._report_size_change(
+                user, dest_account, size_delta, dest_project,
+                details={'action': 'object move',
+                         'path': dest_obj_path,
+                         'versions': ','.join([str(id_) for id_ in
+                                               dest_versions])})
+        return dest_versions
 
     @debug_method
     @backend_method
@@ -1438,12 +1462,13 @@ class ModularBackend(BaseBackend):
         """Copy an object's data and metadata."""
 
         meta = meta or {}
-        dest_version_id = self._copy_object(
+        dest_versions = self._copy_object(
             user, src_account, src_container, src_name, dest_account,
             dest_container, dest_name, type, domain, meta, replace_meta,
             permissions, src_version, False, delimiter,
             listing_limit=listing_limit)
-        return dest_version_id
+        # propagate only the first version created
+        return dest_versions[0] if dest_versions >= 1 else None
 
     @debug_method
     @backend_method
@@ -1507,7 +1532,7 @@ class ModularBackend(BaseBackend):
                     'versions': ','.join(str(i) for i in serials)
                 }
             )
-            return
+            return size
 
         if not self._exists(node):
             raise ItemNotExists('Object is deleted.')
@@ -1517,6 +1542,8 @@ class ModularBackend(BaseBackend):
             cluster=CLUSTER_DELETED, update_statistics_ancestors_depth=1)
         del_size = self._apply_versioning(account, container, src_version_id,
                                           update_statistics_ancestors_depth=1)
+
+        freed_space = del_size
         if report_size_change:
             self._report_size_change(
                 user, account, -del_size, project,
@@ -1547,6 +1574,7 @@ class ModularBackend(BaseBackend):
                 del_size = self._apply_versioning(
                     account, container, src_version_id,
                     update_statistics_ancestors_depth=1)
+                freed_space += del_size
                 if report_size_change:
                     self._report_size_change(
                         user, account, -del_size, project,
@@ -1561,6 +1589,7 @@ class ModularBackend(BaseBackend):
         # remove all the cached allowed paths
         # removing the specific path could be more expensive
         self._reset_allowed_paths()
+        return freed_space
 
     @debug_method
     @backend_method

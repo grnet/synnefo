@@ -21,8 +21,8 @@
             {% for label, type in item_lists %}
                 <li class="active"><a href="{% url admin-list type %}">{{label}}</a></li>
             {% endfor %}
-              <li class="dropdown" data-toggle="dropdown">
-                <a href="#">Reports
+              <li class="dropdown">
+                <a href="#"  data-toggle="dropdown">Reports
                 <span class="snf-angle-down arrow"></span></a>
                 <ul class="dropdown-menu align-left">
                   <li><a href="{% url admin-stats %}">Statistics</a></li>
@@ -33,8 +33,8 @@
             </ul>
 
             <ul class="nav navbar-nav navbar-right">
-                <li class="dropdown" data-toggle="dropdown">
-                  <a href="">
+                <li class="dropdown">
+                  <a href="" data-toggle="dropdown">
                     adminuser@synnefo.org
                     <span class="snf-angle-down arrow"></span>
                   </a>
@@ -55,8 +55,8 @@
             </ul>
             <ul class="nav navbar-nav navbar-right">
               <li><a href="">Account: John Doe</a></li>
-              <li class="dropdown" data-toggle="dropdown">
-                <a href="">
+              <li class="dropdown">
+                <a href=""  id="vms" data-toggle="dropdown">
                   VMs
                   <span class="snf-angle-down arrow"></span>
                 </a>
@@ -66,15 +66,15 @@
                   <li><a href="">Debian</a></li>
                 </ul>
               </li>
-              <li class="dropdown" data-toggle="dropdown">
-                <a href="">
-                  Networks
+              <li class="dropdown">
+                <a href="" id="nets" data-toggle="dropdown">
+                  Nets...
                   <span class="snf-angle-down arrow"></span>
                 </a>
                 <ul class="dropdown-menu align-right">
-                  <li><a href="">Public</a></li>
-                  <li><a href="">Private-1</a></li>
-                  <li><a href="">grnet</a></li>
+                  <li><a href="">cute pc</a></li>
+                  <li><a href="">Windows</a></li>
+                  <li><a href="">Debian</a></li>
                 </ul>
               </li>
             </ul>

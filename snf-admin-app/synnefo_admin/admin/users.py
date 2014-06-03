@@ -43,7 +43,8 @@ from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Group
 from django.template import Context, Template
 
-from synnefo.db.models import VirtualMachine, Network, IPAddressLog
+from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
+                               NetworkInterface, IPAddress)
 from astakos.im.models import AstakosUser, ProjectMembership, Project
 from astakos.im import user_logic as users
 
@@ -411,13 +412,15 @@ def details(request, query):
     logging.info("Here")
 
     user = get_user(query)
-    quotas = get_quotas(user)
+    quota_list = get_quotas(user)
 
     project_memberships = ProjectMembership.objects.filter(person=user)
-    projects = map(lambda p: p.project, project_memberships)
+    project_list = map(lambda p: p.project, project_memberships)
 
-    vms = VirtualMachine.objects.filter(
+    vm_list = VirtualMachine.objects.filter(
         userid=user.uuid).order_by('deleted')
+
+    volume_list = Volume.objects.filter(userid=user.uuid).order_by('deleted')
 
     filter_extra = {}
     show_deleted = bool(int(request.GET.get('deleted', SHOW_DELETED_VMS)))
@@ -429,17 +432,22 @@ def details(request, query):
         **filter_extra).order_by('state').distinct()
     private_networks = Network.objects.filter(
         userid=user.uuid, **filter_extra).order_by('state')
-    networks = list(public_networks) + list(private_networks)
-    logging.info("Networks are: %s", networks)
+    network_list = list(public_networks) + list(private_networks)
+
+    nic_list = NetworkInterface.objects.filter(userid=user.uuid)
+    ip_list = IPAddress.objects.filter(userid=user.uuid).order_by('deleted')
 
     context = {
         'main_item': user,
         'main_type': 'user',
         'associations_list': [
-            (quotas, 'quota'),
-            (projects, 'project'),
-            (vms, 'vm'),
-            (networks, 'network'),
+            (quota_list, 'quota'),
+            (project_list, 'project'),
+            (vm_list, 'vm'),
+            (volume_list, 'volume'),
+            (network_list, 'network'),
+            (nic_list, 'nic'),
+            (ip_list, 'ip'),
         ]
     }
 

@@ -210,6 +210,7 @@ h3.info             { cursor:default; color:#2956B2; text-align:center; font-siz
 @import "settings";
 @import "bars-btns";
 @import "details";
+@import "filters";
 
 
 /* All checkboxes */
@@ -222,43 +223,6 @@ h3.info             { cursor:default; color:#2956B2; text-align:center; font-siz
 }
 
 
-
-/* Filters */
-
-.btn-toolbar {
-	margin-bottom: 0px;
-	padding-bottom: 10px;
-	// padding-top: 10px;
-	padding-top: 13px;
-	background: #E1EDF3;
-	// border-bottom: 1px solid rgb(224, 217, 217);
-	// border-top: 1px solid rgb(224, 217, 217);
-	-webkit-border-radius: 4px;
-	-moz-border-radius: 4px;
-	border-radius: 4px;
-}
-
-.btn-toolbar-fixed {
-	position: fixed;
-	top: 27px;
-	z-index: 10;
-	width: 960px;
-	// background-color: white;
-}
-
-.filters {
-	margin-left: 200px;
-}
-
-.filters .badge {
-	margin-left: 6px;
-	opacity: 0.9;
-	padding: 2px 9px;
-}
-
-.filters ul.nav a {
-	padding-bottom: 10px;
-}
 
 
 /* Area that includes all the info and */
@@ -700,9 +664,4 @@ table thead th {
 			}
 		}
 	}
-}
-
-.input-search {
-	width: 300px;
-	margin-top: 10px;
 }

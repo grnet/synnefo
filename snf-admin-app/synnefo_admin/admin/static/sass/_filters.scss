@@ -1,0 +1,46 @@
+@import "settings";
+
+// .btn-toolbar {
+// 	margin-bottom: 0px;
+// 	padding-bottom: 10px;
+// 	padding-top: 13px;
+// 	background: #E1EDF3;
+// 	-webkit-border-radius: 4px;
+// 	-moz-border-radius: 4px;
+// 	border-radius: 4px;
+// }
+
+// .btn-toolbar-fixed {
+// 	position: fixed;
+// 	top: 27px;
+// 	z-index: 10;
+// 	width: 960px;
+// 	// background-color: white;
+// }
+
+.filters {
+	margin-left: 200px;
+}
+
+.filters .badge {
+	margin-left: 6px;
+	opacity: 0.9;
+	padding: 2px 9px;
+}
+
+.filters ul.nav a {
+	padding-bottom: 10px;
+}
+
+
+.input-filter {
+	width: 300px;
+	margin-top: 10px;
+	margin-right: 10px;
+	display: inline-block;
+}
+
+.dropdown-filter {
+	vertical-align: baseline;
+	margin-right: 10px;
+}

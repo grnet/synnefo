@@ -15,7 +15,7 @@
 }
 
 
-.input-filter {
+.filter-input {
 	width: 300px;
 	margin-top: 10px;
 	margin-right: 10px;
@@ -25,9 +25,10 @@
 	}
 }
 
-.dropdown-filter {
+.filter-dropdown {
 	vertical-align: bottom;
 	margin-right: 10px;
+	margin-top: 10px;
 	display: inline-block;
 	background: white;
 	height: 38px;
@@ -57,7 +58,7 @@
 		.dropdown-menu {
 			width: auto;
 			a {
-				input[type="checkbox"] {
+				input {
 					margin-right: 6px;
 				}
 				padding-left: 12px;
@@ -66,4 +67,3 @@
 		}
 	}
 }
-

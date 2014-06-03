@@ -938,60 +938,61 @@ body .object-details h4 em.os-info img {
 }
 
 /* line 18, ../sass/_filters.scss */
-.input-filter {
+.filter-input {
   width: 300px;
   margin-top: 10px;
   margin-right: 10px;
   display: inline-block;
 }
 /* line 23, ../sass/_filters.scss */
-.input-filter input {
+.filter-input input {
   border-radius: 0;
 }
 
 /* line 28, ../sass/_filters.scss */
-.dropdown-filter {
+.filter-dropdown {
   vertical-align: bottom;
   margin-right: 10px;
+  margin-top: 10px;
   display: inline-block;
   background: white;
   height: 38px;
 }
-/* line 34, ../sass/_filters.scss */
-.dropdown-filter .dropdown {
+/* line 35, ../sass/_filters.scss */
+.filter-dropdown .dropdown {
   border: 1px solid #cccccc;
   border-radius: 0px;
   padding: 8px 12px;
   line-height: 1.4;
 }
-/* line 40, ../sass/_filters.scss */
-.dropdown-filter .dropdown > a .selected-value {
+/* line 41, ../sass/_filters.scss */
+.filter-dropdown .dropdown > a .selected-value {
   margin-left: 4px;
 }
-/* line 43, ../sass/_filters.scss */
-.dropdown-filter .dropdown > a .arrow {
+/* line 44, ../sass/_filters.scss */
+.filter-dropdown .dropdown > a .arrow {
   font-weight: bold;
 }
-/* line 49, ../sass/_filters.scss */
-.dropdown-filter .dropdown.open a {
+/* line 50, ../sass/_filters.scss */
+.filter-dropdown .dropdown.open a {
   text-decoration: none;
   color: #3074ac;
 }
-/* line 54, ../sass/_filters.scss */
-.dropdown-filter .dropdown a {
+/* line 55, ../sass/_filters.scss */
+.filter-dropdown .dropdown a {
   color: #485057;
 }
-/* line 57, ../sass/_filters.scss */
-.dropdown-filter .dropdown .dropdown-menu {
+/* line 58, ../sass/_filters.scss */
+.filter-dropdown .dropdown .dropdown-menu {
   width: auto;
 }
-/* line 59, ../sass/_filters.scss */
-.dropdown-filter .dropdown .dropdown-menu a {
+/* line 60, ../sass/_filters.scss */
+.filter-dropdown .dropdown .dropdown-menu a {
   padding-left: 12px;
   padding-right: 12px;
 }
-/* line 60, ../sass/_filters.scss */
-.dropdown-filter .dropdown .dropdown-menu a input[type="checkbox"] {
+/* line 61, ../sass/_filters.scss */
+.filter-dropdown .dropdown .dropdown-menu a input {
   margin-right: 6px;
 }
 

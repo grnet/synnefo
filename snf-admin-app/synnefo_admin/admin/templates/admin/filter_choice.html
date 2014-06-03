@@ -1,11 +1,11 @@
-<div class="dropdown-filter">
-	<div class="dropdown">
+<div class="filter-dropdown">
+	<div class="dropdown" data-filter="{{ filter.name }}">
 		<a class="" href="#" data-toggle="dropdown">
 			<span class="category">{{ filter.label }}:</span>
 			<span class="selected-value">All</span>
 			<span class="snf-angle-down arrow"></span>
 		</a>
-		<ul class="dropdown-menu choices" data-filter="{{ filter.name }}">
+		<ul class="dropdown-menu choices">
 			{% for choice,_ in filter.field.choices %}
 			<li><a href="#"><input type="radio">{{ choice }}</a></li>
 			{% endfor %}

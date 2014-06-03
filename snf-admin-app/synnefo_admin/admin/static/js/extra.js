@@ -1,5 +1,5 @@
 var mydata; // temp
-
+	var filters = {};
 (function($, Django){
 
 $(function(){
@@ -754,7 +754,7 @@ $(function(){
 
 	 /* Filters */
 
-	var filters = {};
+
 
 	// function dropdownSelect(dropdownUL) {
 	// 	var $dropdown = $(dropdownUL);
@@ -768,27 +768,40 @@ $(function(){
 	// 	});
 	// };
 
-	// function setFilter(key, value) {
-	// 	var searchKey = 'sSearch_'+key;
-	// 	filters[searchKey] = value;
-	// };
+	function setFilter(key, value, tableApply) {
+		console.log('search for', key, '=', value)
+		var searchKey = 'sSearch_'+key;
+		filters[searchKey] = value;
+		checkValues(filters);
+		$(tableApply).dataTable().api().ajax.reload();
+	};
+
+	function checkValues(obj) {
+		for(var prop in obj) {
+			if (obj[prop] === '' || obj[prop] === null) {
+				delete obj[prop];
+			}
+		}
+	}
 
 	// dropdownSelect('.filters .choices');
 
-	// function textFilter(extraSearch) {
-	// 	var $btn = $(extraSearch).find('button');
-	// 	$btn.click(function() {
-	// 		var key, value;
-	// 		var $input = $(this).closest(extraSearch).find('input')
-	// 		key = $input.data('filter');
-	// 		value = $input.val();
-	// 		setFilter(key, value);
-	// 		$(tableDomID).dataTable().api().ajax.reload();
-	// 	})
+	function textFilter(extraSearch) {
+		var $input = $(extraSearch).find('input');
+		$input.keyup(function(e) {
+			// if enter or space is pressed do nothing
+			console.log(e.which)
+			if(e.which !== '32' && e.which !== '13') {
+				var key, value;
+				key = $(this).data('filter');
+				value = $.trim($(this).val());
+				setFilter(key, value, tableDomID);
+			}
+		})
 
-	// };
+	};
 
-	// textFilter('.extra-search');
+	textFilter('.filter-text');
 
 	$('input').blur();
 

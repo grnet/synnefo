@@ -5,7 +5,9 @@
 			<span class="selected-value">All</span>
 			<span class="snf-angle-down arrow"></span>
 		</a>
-		<ul class="dropdown-menu choices">
+		<ul class="dropdown-menu choices multiple-selection">
+			<li class="active reset"><a href="#">All</a></li>
+			<li class="divider"></li>
 			{% for choice,_ in filter.field.choices %}
 			<li><a href="#"><input type="checkbox">{{ choice }}</a></li>
 			{% endfor %}

@@ -1,5 +1,5 @@
 var mydata; // temp
-	var filters = {};
+
 (function($, Django){
 
 $(function(){
@@ -83,15 +83,16 @@ $(function(){
 		"serverSide": serverside,
 		"ajax": {
 			"url": url,
-			"data": function(data) {
-				// here must be placed the additional data that needs to be send with the ajax call
-				// data.sSearch_status = "STOPPED";
+			"data": function(data, callback, settings) {
+
+				var prefix = 'sSearch_';
+
 				if($.isEmptyObject(filters)) {
 					console.log('no filter!')
 				}
 				else {
 					for (var prop in filters) {
-						data[prop] = filters[prop];
+						data[prefix+prop] = filters[prop];
 					}
 				}
 			},
@@ -752,39 +753,83 @@ $(function(){
     $('.main .object-details').first().find('h4').addClass('expanded');
     $('.main .object-details').first().find('.object-details-content').slideDown('slow');
 
+
+
 	 /* Filters */
+	 var filters = {};
+
+	function dropdownSelect(filterEl) {
+		var $dropdownList = $(filterEl).find('.choices');
+
+		$dropdownList.find('li a').click(function(e) {
+				e.preventDefault();
+				var $li = $(this).closest('li');
+				var key = $(this).closest(filterEl).data('filter');
+				var value = $(this).text();
 
 
+				if($li.hasClass('reset')) {
+					delete filters[key];
+					$li.addClass('active')
+					$li.siblings('.active').removeClass('active');
+					$(this).closest(filterEl).find('.selected-value').text(value);
+				}
+				else {
+					$li.toggleClass('active')
+					if($li.hasClass('active')) {
+						$li.siblings('.reset').removeClass('active')
 
-	// function dropdownSelect(dropdownUL) {
-	// 	var $dropdown = $(dropdownUL);
-	// 	$dropdown.find('li a').click(function(e) {
-	// 		var selected = $(this).text();
-	// 		var key = $dropdown.data('filter');
-	// 		var value = selected;
-	// 		$(this).closest('.btn-group').find('.dropdown-toggle .category').text(selected);
-	// 		setFilter(key, value);
-	// 		$(tableDomID).dataTable().api().ajax.reload();
-	// 	});
-	// };
+						if($li.siblings('.active').length > 0) {
+							arrayFilter(filters, key, value);
+							$(this).closest(filterEl).find('.selected-value').append(','+value)
+						}
+						else {
+							$(this).closest(filterEl).find('.selected-value').text(value);
+							filters[key] = value;
+						}
+					}
+					else {
+						if($li.siblings('.active').length >0) {
+							arrayFilter(filters, key, value, true);
+							$(this).closest(filterEl).find('.selected-value').text(filters[key])
+						}
+						else {
+							delete filters[key];
+							$li.siblings('li').find('.reset').closest('li').addClass('active');
 
-	function setFilter(key, value, tableApply) {
-		console.log('search for', key, '=', value)
-		var searchKey = 'sSearch_'+key;
-		filters[searchKey] = value;
-		checkValues(filters);
-		$(tableApply).dataTable().api().ajax.reload();
+						}
+					}
+				}
+				$(tableDomID).dataTable().api().ajax.reload();
+		});
 	};
 
-	function checkValues(obj) {
-		for(var prop in obj) {
-			if (obj[prop] === '' || obj[prop] === null) {
-				delete obj[prop];
+	function arrayFilter(filters, key, value, removeItem) {
+		var prefix = 'sSearch_';
+		console.log(filters, key, value, removeItem)
+		if(!removeItem) {
+			for(var prop in filters) {
+				if(prop === key) {
+					if (filters[prop].constructor === Array) {
+						filters[prop].push(value);
+					}
+					else {
+						var valuePrev = filters[prop];
+						filters[prop] = [valuePrev, value];
+					}
+				}
 			}
 		}
-	}
-
-	// dropdownSelect('.filters .choices');
+		else {
+			if(filters[key].lenght === 1) {
+				delete filters[key];
+			}
+			else {
+				var index = filters[key].indexOf(value);
+				filters[key].splice(index, 1);
+			}
+		}
+	};
 
 	function textFilter(extraSearch) {
 		var $input = $(extraSearch).find('input');
@@ -798,12 +843,12 @@ $(function(){
 				setFilter(key, value, tableDomID);
 			}
 		})
-
 	};
 
 	textFilter('.filter-text');
+	dropdownSelect('.filters .filter-dropdown .dropdown');
 
-	$('input').blur();
+	$('input').blur(); // onload there is no input field focus
 
 });
 }(window.jQuery, window.Django));

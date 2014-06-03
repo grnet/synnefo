@@ -920,11 +920,6 @@ body .object-details h4 em.os-info img {
 /* here should declare: */
 /* vars like colors and dist */
 /* and functs */
-/* line 3, ../sass/_filters.scss */
-.filters {
-  margin-left: 200px;
-}
-
 /* line 7, ../sass/_filters.scss */
 .filters .badge {
   margin-left: 6px;

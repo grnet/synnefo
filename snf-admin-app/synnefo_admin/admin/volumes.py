@@ -41,7 +41,7 @@ from django.core.urlresolvers import reverse
 
 from synnefo.db.models import Volume
 from astakos.im.user_utils import send_plain as send_email
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, Project
 
 from eztables.views import DatatablesView
 from actions import AdminAction, AdminActionUnknown, AdminActionNotPermitted
@@ -56,6 +56,9 @@ templates = {
     'details': 'admin/volume_details.html',
 }
 
+
+def get_volume(query):
+    return Volume.objects.get(pk=int(query))
 
 class VolumeFilterSet(django_filters.FilterSet):
 
@@ -199,38 +202,19 @@ def catalog(request):
 def details(request, query):
     """Details view for Astakos users."""
     error = request.GET.get('error', None)
-    logging.info("Here")
 
-    user = get_user(query)
-    quotas = get_quotas(user)
-
-    project_memberships = ProjectMembership.objects.filter(person=user)
-    projects = map(lambda p: p.project, project_memberships)
-
-    vms = VirtualMachine.objects.filter(
-        userid=user.uuid).order_by('deleted')
-
-    filter_extra = {}
-    show_deleted = bool(int(request.GET.get('deleted', SHOW_DELETED_VMS)))
-    if not show_deleted:
-        filter_extra['deleted'] = False
-
-    public_networks = Network.objects.filter(
-        public=True, nics__machine__userid=user.uuid,
-        **filter_extra).order_by('state').distinct()
-    private_networks = Network.objects.filter(
-        userid=user.uuid, **filter_extra).order_by('state')
-    networks = list(public_networks) + list(private_networks)
-    logging.info("Networks are: %s", networks)
+    volume = get_volume(query)
+    vm_list = [volume.machine]
+    user_list = AstakosUser.objects.filter(uuid=volume.userid)
+    project_list = Project.objects.filter(uuid=volume.project)
 
     context = {
-        'main_item': user,
-        'main_type': 'user',
+        'main_item': volume,
+        'main_type': 'volume',
         'associations_list': [
-            (quotas, 'quota'),
-            (projects, 'project'),
-            (vms, 'vm'),
-            (networks, 'network'),
+            (vm_list, 'vm'),
+            (user_list, 'user'),
+            (project_list, 'project'),
         ]
     }
 

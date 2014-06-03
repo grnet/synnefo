@@ -42,7 +42,7 @@ from django.core.urlresolvers import reverse
 from synnefo.db.models import IPAddress
 from synnefo.logic import ips
 from astakos.im.user_utils import send_plain as send_email
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, Project
 
 from eztables.views import DatatablesView
 from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
@@ -179,5 +179,31 @@ def catalog(request):
     context['columns'] = ["Column 1", "ID", "Address", "Floating",
                           "Creation date", "User ID", "Details", "Summary"]
     context['item_type'] = 'ip'
+
+    return context
+
+
+def details(request, query):
+    """Details view for Astakos users."""
+    error = request.GET.get('error', None)
+
+    ip = IPAddress.objects.get(pk=int(query))
+    vm_list = [ip.nic.machine]
+    network_list = [ip.nic.network]
+    nic_list = [ip.nic]
+    user_list = AstakosUser.objects.filter(uuid=ip.userid)
+    project_list = Project.objects.filter(uuid=ip.project)
+
+    context = {
+        'main_item': ip,
+        'main_type': 'ip',
+        'associations_list': [
+            (vm_list, 'vm'),
+            (network_list, 'network'),
+            (nic_list, 'nic'),
+            (user_list, 'user'),
+            (project_list, 'project'),
+        ]
+    }
 
     return context

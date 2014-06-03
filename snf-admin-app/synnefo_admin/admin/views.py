@@ -295,6 +295,12 @@ def details(request, type, id):
     elif type == 'network':
         context = network_views.details(request, id)
         template = network_views.templates['details']
+    elif type == 'volume':
+        context = volume_views.details(request, id)
+        template = volume_views.templates['details']
+    elif type == 'ip':
+        context = ip_views.details(request, id)
+        template = ip_views.templates['details']
     else:
         logging.error("Wrong type: %s", type)
         # TODO: Return an error here

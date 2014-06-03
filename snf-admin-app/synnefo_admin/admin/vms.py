@@ -54,7 +54,7 @@ from eztables.views import DatatablesView
 import django_filters
 from django.db.models import Q
 
-from .users import filter_name as get_users_by_name
+import users as user_views
 
 templates = {
     'list': 'admin/vm_list.html',
@@ -122,7 +122,8 @@ def filter_owner_name(queryset, search):
     if not search:
         return queryset
     # Find all the uses that match the requested search term
-    users = get_users_by_name(AstakosUser.objects.all(), search).values('uuid')
+    users = user_views.filter_name(AstakosUser.objects.all(), search).\
+        values('uuid')
     # Get the related entities with the UUIDs of these users
     return queryset.filter(userid__in=users).distinct()
 

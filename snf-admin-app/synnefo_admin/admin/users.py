@@ -61,6 +61,11 @@ import django_filters
 from django.db.models import Q
 import synnefo_admin.admin.projects as project_views
 
+import vms as vm_views
+import projects as project_views
+import networks as network_views
+import vms as vm_views
+
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
 SHOW_DELETED_VMS = getattr(settings, 'ADMIN_SHOW_DELETED_VMS', False)
 
@@ -467,14 +472,15 @@ def details(request, query):
     context = {
         'main_item': user,
         'main_type': 'user',
+        'action_dict': generate_actions(),
         'associations_list': [
-            (quota_list, 'quota'),
-            (project_list, 'project'),
-            (vm_list, 'vm'),
-            (volume_list, 'volume'),
-            (network_list, 'network'),
-            (nic_list, 'nic'),
-            (ip_list, 'ip'),
+            (quota_list, 'quota', None),
+            (project_list, 'project', project_views.generate_actions()),
+            (vm_list, 'vm', vm_views.generate_actions()),
+            (volume_list, 'volume', ),
+            (network_list, 'network', network_views.generate_actions()),
+            (nic_list, 'nic', None),
+            (ip_list, 'ip', None),
         ]
     }
 

@@ -16,7 +16,6 @@
             {% include main_type|get_details_template with item=main_item type=main_type %}
         {% endblock %}
 
-    
         {# End of the decoration of main item #}
         {% block main-item-tail %}
             {% include "admin/_base_main_item_tail.html" %}
@@ -26,7 +25,7 @@
 
     {# This is a list of associations for this item #}
     {% block item-associations-list %}
-        {% for item_list, type in associations_list %}
+        {% for item_list, type, action_dict in associations_list %}
 
             {# Seperator for the start of the list #}
             {% block item-list-head %}

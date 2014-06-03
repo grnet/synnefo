@@ -279,3 +279,6 @@ def get_project_stats(project):
                                                         'project_usage')
     return stats
 
+def can_apply(action, item):
+    """Return if action can apply on item."""
+    return action.can_apply(item)

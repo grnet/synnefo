@@ -14,13 +14,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from .common import CommonMixin
+from .quota import TestQuotaMixin
 from .delete_by_uuid import TestDeleteByUUIDMixin
 
 
-class TestSQLAlchemyBackend(CommonMixin, TestDeleteByUUIDMixin):
+class TestSQLAlchemyBackend(CommonMixin, TestDeleteByUUIDMixin,
+                            TestQuotaMixin):
     db_module = 'pithos.backends.lib.sqlalchemy'
     db_connection = 'sqlite:////tmp/test_pithos_backend.db'
 
-class TestSQLiteBackend(CommonMixin, TestDeleteByUUIDMixin):
+class TestSQLiteBackend(CommonMixin, TestDeleteByUUIDMixin, TestQuotaMixin):
         db_module = 'pithos.backends.lib.sqlite'
         db_connection = ':memory:'

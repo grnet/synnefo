@@ -1,0 +1,49 @@
+{% load admin_tags %}
+
+{% with volume=item %}
+<div class="object-anchor" id="volume-{{volume.pk}}"></div>
+<div class="object-details {{ rowcls }}">
+    <h4>
+        <span class="title">{{ volume|repr }}</span>
+        <span class="badge arrow">&nbsp;</span>
+        <span class="label label-primary">ID: {{ volume.pk }}</span>
+        <span class="label label-primary">{{ volume.size }} GB</span>
+        <span class="label label-primary">{{ volume.type|repr }}</span>
+        <span class="label label-primary">{{ volume.status|upper }}</span>
+    </h4>
+        <div class="tags">
+        </div>
+    <div class="object-details-content">
+        <ul class="nav nav-tabs">
+            <li class="active"><a href="#details{{ type }}{{ volume.pk }}" data-toggle="tab">Details</a></li>
+            <li><a href="#type{{ type }}{{ volume.pk }}" data-toggle="tab">Type</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane active" id="details{{ type }}{{ volume.pk }}">
+                <dl class="dl-horizontal well">
+                    <dt>ID</dt><dd>{{ volume.pk }}</dd>
+                    <dt>Name</dt><dd>{{ volume.name|default:"-" }}</dd>
+                    <dt>Description</dt><dd>{{ volume.description|default:"-" }}</dd>
+                    <dt>Size</dt><dd>{{ volume.size }} GB</dd>
+		            <dt>Created</dt><dd>{{ volume.created }} ({{ volume.created|timesince }} <strong>ago</strong>)</dd>
+		            <dt>Updated</dt><dd>{{ volume.updated }} ({{ volume.created|timesince }} <strong>ago</strong>)</dd>
+
+                    <dt>Snapshot counter</dt><dd>{{ volume.snapshot_counter }}</dd>
+                </dl>
+            </div>
+            <div class="tab-pane" id="type{{ type }}{{ volume.pk }}">
+                <dl class="dl-horizontal well">
+                    <dt>Type name</dt><dd>{{ volume.volume_type.name|default:"-" }}</dd>
+                    <dt>Disk template</dt><dd>{{ volume.volume_type.disk_template|default:"-" }}</dd>
+                    <dt>Provider</dt><dd>{{ volume.volume_type.provider|default:"-" }}</dd>
+                    <dt>Deleted</dt><dd>{{ volume.volume_type.deleted }}</dd>
+                </dl>
+            </div>
+        </div> <!-- <div class="tab-content"> -->
+    </div> <!-- <div class="object-details-content"> -->
+    <div class="todo vm-actions clearfix">
+        {% include "admin/action_list_horizontal.html" %}
+    </div>
+</div> <!-- <div class="object-details {{ rowcls }}"> -->
+{% endwith %}
+

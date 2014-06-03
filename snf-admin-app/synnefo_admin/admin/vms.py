@@ -62,6 +62,14 @@ templates = {
 }
 
 
+def get_vm(query):
+    try:
+        id = query.translate(None, 'vm-')
+    except Exception:
+        id = query
+    return VirtualMachine.objects.get(pk=int(id))
+
+
 def filter_owner_name(queryset, search):
     users = get_users_by_name(AstakosUser.objects.all(), search).values('uuid')
     criterions = [Q(userid=user['uuid']) for user in users]
@@ -313,23 +321,25 @@ def catalog(request):
 
 def details(request, query):
     """Details view for Astakos users."""
-    try:
-        id = query.translate(None, 'vm-')
-    except Exception:
-        id = query
-
-    vm = VirtualMachine.objects.get(pk=int(id))
-    users = [AstakosUser.objects.get(uuid=vm.userid)]
-    projects = [Project.objects.get(uuid=vm.project)]
-    networks = vm.nics.all()
+    vm = get_vm(query)
+    user_list = AstakosUser.objects.filter(uuid=vm.userid)
+    project_list = Project.objects.filter(uuid=vm.project)
+    volume_list = vm.volumes.all()
+    network_list = Network.objects.filter(machines__pk=vm.pk)
+    nic_list = vm.nics.all()
+    ip_list = [nic.ips.all() for nic in nic_list]
+    ip_list = reduce(or_, ip_list) if ip_list else ip_list
 
     context = {
         'main_item': vm,
         'main_type': 'vm',
         'associations_list': [
-            (users, 'user'),
-            (projects, 'project'),
-            (networks, 'network'),
+            (user_list, 'user'),
+            (project_list, 'project'),
+            (volume_list, 'volume'),
+            (network_list, 'network'),
+            (nic_list, 'nic'),
+            (ip_list, 'ip'),
         ]
     }
 

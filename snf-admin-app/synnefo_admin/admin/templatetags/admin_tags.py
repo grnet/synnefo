@@ -195,6 +195,8 @@ def display_list_type(type):
         return "Network Interfaces"
     elif type == "ip":
         return "IP Addresses"
+    elif type == "volume":
+        return "Volumes"
     else:
         return "Unknown type"
 

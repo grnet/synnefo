@@ -92,9 +92,10 @@ $(function(){
 				}
 				else {
 					for (var prop in filters) {
-						data[prefix+prop] = [filters[prop]];
+						data[prefix+prop] = filters[prop];
 					}
 				}
+				qq = data;
 			},
 			"dataSrc" : function(response) {
 				console.log(response);
@@ -756,6 +757,7 @@ $(function(){
 
 
 	 /* Filters */
+
 	 var filters = {};
 
 	function dropdownSelect(filterEl) {
@@ -785,7 +787,7 @@ $(function(){
 						}
 						else {
 							$(this).closest(filterEl).find('.selected-value').text(value);
-							filters[key] = value;
+							filters[key] = [value]
 						}
 					}
 					else {
@@ -795,7 +797,9 @@ $(function(){
 						}
 						else {
 							delete filters[key];
+							var resetLabel = $li.siblings('li').find('.reset').text();
 							$li.siblings('li').find('.reset').closest('li').addClass('active');
+							$(this).closest(filterEl).find('.selected-value').text()
 
 						}
 					}
@@ -810,13 +814,7 @@ $(function(){
 		if(!removeItem) {
 			for(var prop in filters) {
 				if(prop === key) {
-					if (filters[prop].constructor === Array) {
 						filters[prop].push(value);
-					}
-					else {
-						var valuePrev = filters[prop];
-						filters[prop] = [valuePrev, value];
-					}
 				}
 			}
 		}
@@ -835,13 +833,17 @@ $(function(){
 		var $input = $(extraSearch).find('input');
 		$input.keyup(function(e) {
 			// if enter or space is pressed do nothing
-			console.log(e.which)
+			console.log(e.keyCode)
 			if(e.which !== '32' && e.which !== '13') {
 				var key, value;
 				key = $(this).data('filter');
 				value = $.trim($(this).val());
+
 				filters[key] = value;
-				$(tableDomID).dataTable().api().ajax.reload();
+				if (filters[key] === '') {
+					delete filters[key];
+				}
+					$(tableDomID).dataTable().api().ajax.reload();
 			}
 		})
 	};

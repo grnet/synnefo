@@ -397,30 +397,34 @@ class AstakosUser(User):
     auth_token_expires = models.DateTimeField(
         _('Token expiration date'), null=True)
 
-    updated = models.DateTimeField(_('Update date'))
+    updated = models.DateTimeField(_('Last update date'))
 
     # Arbitrary text to identify the reason user got deactivated.
     # To be used as a reference from administrators.
     deactivated_reason = models.TextField(
-        _('Reason the user was disabled for'),
+        _('Reason for user deactivation'),
         default=None, null=True)
-    deactivated_at = models.DateTimeField(_('User deactivated at'), null=True,
+    deactivated_at = models.DateTimeField(_('User deactivation date'),
+                                          null=True,
                                           blank=True)
 
-    has_credits = models.BooleanField(_('Has credits?'), default=False)
+    has_credits = models.BooleanField(_('User has credits'), default=False)
 
     # this is set to True when user profile gets updated for the first time
-    is_verified = models.BooleanField(_('Is verified?'), default=False)
+    is_verified = models.BooleanField(_('User is verified'), default=False)
 
     # user email is verified
-    email_verified = models.BooleanField(_('Email verified?'), default=False)
+    email_verified = models.BooleanField(_('User email is verified'),
+                                         default=False)
 
     # unique string used in user email verification url
-    verification_code = models.CharField(max_length=255, null=True,
-                                         blank=False, unique=True)
+    verification_code = models.CharField(
+        _('String used for email verification'),
+        max_length=255, null=True,
+        blank=False, unique=True)
 
     # date user email verified
-    verified_at = models.DateTimeField(_('User verified email at'), null=True,
+    verified_at = models.DateTimeField(_('User verification date'), null=True,
                                        blank=True)
 
     # email verification notice was sent to the user at this time
@@ -428,13 +432,14 @@ class AstakosUser(User):
                                            null=True, blank=True)
 
     # user got rejected during moderation process
-    is_rejected = models.BooleanField(_('Account rejected'),
+    is_rejected = models.BooleanField(_('Account is rejected'),
                                       default=False)
     # reason user got rejected
-    rejected_reason = models.TextField(_('User rejected reason'), null=True,
+    rejected_reason = models.TextField(_('Reason for user rejection'),
+                                       null=True,
                                        blank=True)
     # moderation status
-    moderated = models.BooleanField(_('User moderated'), default=False)
+    moderated = models.BooleanField(_('Account is moderated'), default=False)
     # date user moderated (either accepted or rejected)
     moderated_at = models.DateTimeField(_('Date moderated'), default=None,
                                         blank=True, null=True)
@@ -446,12 +451,13 @@ class AstakosUser(User):
     # the email used to accept the user
     accepted_email = models.EmailField(null=True, default=None, blank=True)
 
-    has_signed_terms = models.BooleanField(_('I agree with the terms'),
+    has_signed_terms = models.BooleanField(_('False if needs to sign terms'),
                                            default=False)
-    date_signed_terms = models.DateTimeField(_('Signed terms date'),
+    date_signed_terms = models.DateTimeField(_('Date of terms signing'),
                                              null=True, blank=True)
     # permanent unique user identifier
-    uuid = models.CharField(max_length=255, null=False, blank=False,
+    uuid = models.CharField(_('Unique user identifier'),
+                            max_length=255, null=False, blank=False,
                             unique=True)
 
     policy = models.ManyToManyField(

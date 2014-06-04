@@ -147,7 +147,12 @@ class Command(SynnefoCommand):
             raise CommandError(("Invalid user identification: "
                                 "you should provide a valid user ID "
                                 "or a valid user UUID"))
+        try:
+            self.apply_actions(user, options)
+        except BaseException as e:
+            raise CommandError(e)
 
+    def apply_actions(self, user, options):
         if options.get('admin'):
             user.is_superuser = True
         elif options.get('noadmin'):
@@ -294,8 +299,7 @@ class Command(SynnefoCommand):
                 self.stdout.write("About to delete user %s. " % user.uuid)
                 self.confirm()
 
-            # user gets deleted too
-            user.base_project.delete()
+            user.delete()
 
         # Change users email address
         newemail = options.get('set-email', None)

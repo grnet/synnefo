@@ -229,7 +229,7 @@ def register_pending_apps(triples, force=False):
 
 def get_pending_app_quota(user):
     quota = get_user_quotas(user)
-    source = user.base_project.uuid
+    source = user.get_base_project().uuid
     return quota[source][PENDING_APP_RESOURCE]
 
 

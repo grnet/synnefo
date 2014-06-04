@@ -16,12 +16,14 @@
 import logging
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+import uuid
 
 from django.utils.translation import ugettext as _
 from django.core.mail import send_mail, get_connection
 from django.core.urlresolvers import reverse
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.db.models import Q
+from django.db.utils import IntegrityError
 
 from synnefo_branding.utils import render_to_string
 
@@ -681,29 +683,44 @@ def membership_allowed_actions(membership, request_user):
     return allowed
 
 
-def make_base_project(username):
+def new_uuid():
+    return str(uuid.uuid4())
+
+
+def make_base_project(user):
     chain = new_chain()
-    proj = create_project(
-        id=chain.chain,
-        last_application=None,
-        owner=None,
-        realname="tmp",
-        homepage="",
-        description=("system project for user " + username),
-        end_date=(datetime.now() + relativedelta(years=100)),
-        member_join_policy=CLOSED_POLICY,
-        member_leave_policy=CLOSED_POLICY,
-        limit_on_members_number=1,
-        private=True,
-        is_base=True)
-    proj.realname = "base:" + proj.uuid
-    proj.save()
-    # No quota are set; they will be filled in upon user acceptance
+    try:
+        proj = create_project(
+            id=chain.chain,
+            uuid=user.uuid,
+            last_application=None,
+            owner=None,
+            realname="system:" + user.uuid,
+            homepage="",
+            description=("system project for user " + user.username),
+            end_date=(datetime.now() + relativedelta(years=100)),
+            member_join_policy=CLOSED_POLICY,
+            member_leave_policy=CLOSED_POLICY,
+            limit_on_members_number=1,
+            private=True,
+            is_base=True)
+    except IntegrityError as e:
+        if 'uuid' in str(e):
+            m = (("The impossible happened: "
+                  "User UUID '%s' collides with an existing project. "
+                  "To resolve the issue, delete the user "
+                  "and create a new one.")
+                 % user.uuid)
+            logger.warning(m)
+            raise ProjectConflict(m)
+        raise
+    user.base_project = proj
+    user.save()
     return proj
 
 
 def enable_base_project(user):
-    project = user.base_project
+    project = make_base_project(user)
     _fill_from_skeleton(project)
     project.activate()
     new_membership(project, user, enroll=True)
@@ -1168,7 +1185,8 @@ def count_pending_app(users):
     usage = quotas.QuotaDict()
     for user in users:
         uuid = user.uuid
-        usage[uuid][user.base_project.uuid][quotas.PENDING_APP_RESOURCE] = \
+        base_project = user.get_base_project()
+        usage[uuid][base_project.uuid][quotas.PENDING_APP_RESOURCE] = \
             len(apps_d.get(uuid, []))
     return usage
 
@@ -1184,10 +1202,10 @@ def get_existing_pending_app(project):
 
 
 def qh_add_pending_app(user, project=None, force=False):
-    provisions = [(user, user.base_project, 1)]
+    provisions = [(user, user.get_base_project(), 1)]
     existing = get_existing_pending_app(project)
     for applicant, value in existing.iteritems():
-        provisions.append((applicant, applicant.base_project, -value))
+        provisions.append((applicant, applicant.get_base_project(), -value))
     return quotas.register_pending_apps(provisions, force=force)
 
 
@@ -1203,4 +1221,4 @@ def check_pending_app_quota(user, project=None):
 
 
 def qh_release_pending_app(user):
-    quotas.register_pending_apps([(user, user.base_project, -1)])
+    quotas.register_pending_apps([(user, user.get_base_project(), -1)])

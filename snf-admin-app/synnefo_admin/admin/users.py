@@ -100,7 +100,7 @@ def filter_status(queryset, choice):
 def filter_group(queryset, choice):
     if not choice:
         return queryset
-    return queryset.filter(groups__name_exact=choice)
+    return queryset.filter(groups__name__exact=choice)
 
 
 def get_groups():

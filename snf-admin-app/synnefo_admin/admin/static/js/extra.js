@@ -92,7 +92,7 @@ $(function(){
 				}
 				else {
 					for (var prop in filters) {
-						data[prefix+prop] = filters[prop];
+						data[prefix+prop] = [filters[prop]];
 					}
 				}
 			},
@@ -840,7 +840,8 @@ $(function(){
 				var key, value;
 				key = $(this).data('filter');
 				value = $.trim($(this).val());
-				setFilter(key, value, tableDomID);
+				filters[key] = value;
+				$(tableDomID).dataTable().api().ajax.reload();
 			}
 		})
 	};

@@ -22,6 +22,7 @@
             <li class="active"><a href="#prj-details{{ project.uuid }}" data-toggle="tab">Details</a></li>
             <li><a href="#prj-members{{ project.uuid }}" data-toggle="tab">Members</a></li>
             <li><a href="#prj-policies{{ project.uuid }}" data-toggle="tab">Member Policies</a></li>
+            <li><a href="#resources{{ project.uuid }}" data-toggle="tab">Resources</a></li>
         </ul>
         <div class="tab-content">
             <div class="tab-pane active" id="prj-details{{ project.uuid }}">
@@ -70,6 +71,15 @@
                     <dt>Current members</dt><dd>{{ project.members_count }}</dd>
                     <dt>Join policy</dt><dd>{{ project.member_join_policy_display }}</dd>
                     <dt>Leave policy</dt><dd>{{ project.member_leave_policy_display }}</dd>
+                </dl>
+            </div>
+            <div class="tab-pane" id="resources{{ project.uuid }}">
+                <dl class="dl-horizontal well">
+                    {% with stats=project|get_project_stats %}
+                        {% for stat_name, stat_value in stats.items %}
+                            <dt>{{ stat_name }} </dt><dd>{{ stat_value }}</dd>
+                        {% endfor %}
+                    {% endwith %}
                 </dl>
             </div>
         </div>

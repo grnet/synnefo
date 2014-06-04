@@ -34,6 +34,7 @@
 import logging
 import re
 from collections import OrderedDict
+from operator import itemgetter
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
@@ -41,7 +42,8 @@ from django.core.urlresolvers import reverse
 
 from synnefo.db.models import (VirtualMachine, Network, Volume,
                                NetworkInterface, IPAddress)
-from astakos.im.models import AstakosUser, Project, ProjectResourceGrant
+from astakos.im.models import (AstakosUser, Project, ProjectResourceGrant,
+                               Resource)
 
 from eztables.views import DatatablesView
 from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
@@ -50,6 +52,9 @@ from astakos.im.user_utils import send_plain as send_email
 from astakos.im.functions import (validate_project_action, ProjectConflict,
                                   approve_application, deny_application,
                                   suspend, unsuspend, terminate, reinstate)
+from astakos.im.quotas import get_project_quota
+
+from synnefo.util import units
 
 templates = {
     'list': 'admin/project_list.html',
@@ -95,26 +100,68 @@ def get_contact_id(inst):
         return inst.owner.uuid
 
 
-def get_total_resources(inst):
-    total = []
-    app = inst.last_application
-    for r in app.resource_grants.all():
-        pr = ProjectResourceGrant.objects.get(resource=r,
-                                              project_application=app)
-        total.append(pr.resource.display_name + ': ' +
-                     pr.display_project_capacity())
-    return ', '.join(total)
+#def get_total_resources(inst):
+    #total = []
+    #app = inst.last_application
+    #for r in app.resource_grants.all():
+        #pr = ProjectResourceGrant.objects.get(resource=r,
+                                              #project_application=app)
+        #total.append(pr.resource.display_name + ': ' +
+                     #pr.display_project_capacity())
+    #return ', '.join(total)
+
+
+def is_resource_useful(resource, real_limit):
+    """Simple function to check if the resource is useful to show.
+
+    Values that have infinite or zero limits are discarded.
+    """
+    displayed_limit = units.show(real_limit, resource.unit)
+    if not real_limit or displayed_limit == 'inf':
+        return False
+    return True
+
+
+def display_project_stats(inst, stat):
+    """Display the requested project stats in a one-line string.
+
+    Accepted stats are: 'project_limit', 'project_pending', 'project_usage'.
+    Note that the output is sanitized, meaning that stats that correspond
+    to infinite or zero limits will not be shown.
+    """
+    resource_list = []
+    quota_dict = get_project_quota(inst)
+
+    for resource_name, stats in quota_dict.iteritems():
+        resource = Resource.objects.get(name=resource_name)
+        if not is_resource_useful(resource, stats['project_limit']):
+            continue
+        value = units.show(stats[stat], resource.unit)
+        resource_list.append((resource.display_name, value))
+
+    resource_list = sorted(resource_list, key=itemgetter(0))
+    if not resource_list:
+        return "-"
+    return ', '.join((': '.join(pair) for pair in resource_list))
 
 
 def get_member_resources(inst):
+    """Get member resources in a comma-separated line."""
     total = []
     app = inst.last_application
+    quotas = get_project_quota(inst)
     for r in app.resource_grants.all():
         pr = ProjectResourceGrant.objects.get(resource=r,
                                               project_application=app)
-        total.append(pr.resource.display_name + ': ' +
-                     pr.display_member_capacity())
-    return ', '.join(total)
+        # Check the project limit to verify that we can print this resource
+        if not is_resource_useful(pr.resource,
+                                  quotas[pr.resource.name]['project_limit']):
+            continue
+
+        total.append((pr.resource.display_name, pr.display_member_capacity()))
+
+    total = sorted(total, key=itemgetter(0))
+    return ', '.join((': '.join(pair) for pair in total))
 
 
 class ProjectJSONView(DatatablesView):
@@ -155,56 +202,66 @@ class ProjectJSONView(DatatablesView):
         extra_dict['contact_id'] = {
             'display_name': "Contact ID",
             'value': get_contact_id(inst),
-            'visible': True,
+            'visible': False,
         }
         extra_dict['contact_mail'] = {
             'display_name': "Contact mail",
             'value': get_contact_mail(inst),
-            'visible': True,
+            'visible': False,
         }
         extra_dict['contact_name'] = {
             'display_name': "Contact name",
             'value': get_contact_name(inst),
-            'visible': True,
+            'visible': False,
         }
         extra_dict['uuid'] = {
             'display_name': "UUID",
             'value': inst.uuid,
-            'visible': True,
+            'visible': False,
         }
-        extra_dict['homepage'] = {
-            'display_name': "Homepage",
-            'value': inst.homepage,
-            'visible': True,
-        }
-        extra_dict['description'] = {
-            'display_name': "Description",
-            'value': inst.description,
-            'visible': True,
-        }
-        extra_dict['members'] = {
-            'display_name': "Members",
-            'value': (str(inst.members_count()) + ' / ' +
-                      str(inst.limit_on_members_number)),
-            'visible': True,
-        }
+
         if not inst.is_base:
-            extra_dict['total_resources'] = {
-                'display_name': "Total resources",
-                'value': get_total_resources(inst),
-                'visible': True
+            extra_dict['homepage'] = {
+                'display_name': "Homepage",
+                'value': inst.homepage,
+                'visible': True,
             }
-            extra_dict['member_resources'] = {
-                'display_name': "Member resources",
-                'value': get_member_resources(inst),
-                'visible': True
+
+            extra_dict['description'] = {
+                'display_name': "Description",
+                'value': inst.description,
+                'visible': True,
             }
+            extra_dict['members'] = {
+                'display_name': "Members",
+                'value': (str(inst.members_count()) + ' / ' +
+                        str(inst.limit_on_members_number)),
+                'visible': True,
+            }
+
             if inst.last_application.comments:
                 extra_dict['comments'] = {
                     'display_name': "Comments for review",
                     'value': inst.last_application.comments,
                     'visible': True,
                 }
+
+            extra_dict['member_resources'] = {
+                'display_name': "Member resource limits",
+                'value': get_member_resources(inst),
+                'visible': True
+            }
+
+        extra_dict['limit'] = {
+            'display_name': "Total resource limits",
+            'value': display_project_stats(inst, 'project_limit'),
+            'visible': True,
+        }
+        extra_dict['usage'] = {
+            'display_name': "Total resource usage",
+            'value': display_project_stats(inst, 'project_usage'),
+            'visible': True,
+        }
 
         return extra_dict
 

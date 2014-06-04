@@ -27,10 +27,13 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 
+from collections import OrderedDict
 from django import template
 import logging
 
 import django_filters
+
+import synnefo_admin.admin.projects as project_views
 
 register = template.Library()
 
@@ -260,3 +263,17 @@ def repr(item):
         pass
 
     return item.__str__()
+
+
+@register.filter
+def get_project_stats(project):
+    """Create a dictionary with a summary for a project's stats."""
+    stats = OrderedDict()
+    if not project.is_base:
+        stats['Per Member'] = project_views.get_member_resources(project)
+    stats['Total'] = project_views.display_project_stats(project,
+                                                         'project_limit')
+    stats['Used'] = project_views.display_project_stats(project,
+                                                        'project_usage')
+    return stats
+

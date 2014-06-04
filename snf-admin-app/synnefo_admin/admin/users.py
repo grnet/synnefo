@@ -45,11 +45,13 @@ from django.template import Context, Template
 
 from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
                                NetworkInterface, IPAddress)
-from astakos.im.models import AstakosUser, ProjectMembership, Project
+from astakos.im.models import AstakosUser, ProjectMembership, Project, Resource
 from astakos.im import user_logic as users
 
 from astakos.api.quotas import get_quota_usage
 from astakos.im.user_utils import send_plain as send_email
+
+from synnefo.util import units
 
 from eztables.views import DatatablesView
 from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
@@ -57,6 +59,7 @@ from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
 
 import django_filters
 from django.db.models import Q
+import synnefo_admin.admin.projects as project_views
 
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
 SHOW_DELETED_VMS = getattr(settings, 'ADMIN_SHOW_DELETED_VMS', False)
@@ -396,10 +399,15 @@ def get_quotas(user):
         q_res = source['resources'] = []
 
         for resource_name, resource in resource_dict.iteritems():
-            if resource['project_limit'] == 0:
+            # Chech if the resource is useful to display
+            r = Resource.objects.get(name=resource_name)
+            limit = resource['project_limit']
+            if not project_views.is_resource_useful(r, limit):
                 continue
-            else:
-                q_res.append((resource_name, resource))
+
+            for p, value in resource.iteritems():
+                resource[p] = units.show(value, r.unit)
+            q_res.append((r.display_name, resource))
 
         quotas.append(source)
 

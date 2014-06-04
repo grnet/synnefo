@@ -4,7 +4,7 @@
 <div class="object-anchor" id="ip-{{ip.pk}}"></div>
 <div class="object-details {{ rowcls }}">
     <h4>
-        <span class="title">{{ ip.address }}</span>
+        <span class="title"><a href="{% url admin-details type ip.pk %}">{{ ip.addr }}</a></span>
         <span class="badge arrow">&nbsp;</span>
         <span class="label label-primary">ID: {{ip.pk}}</span>
         {% if ip.floating_ip %}

@@ -4,7 +4,7 @@
 <div class="object-anchor" id="network-{{network.pk}}"></div>
 <div class="network-details object-details {{ rowcls }}">
     <h4>
-		<span class="title">{{ network|repr }}</span>
+        <span class="title"><a href="{% url admin-details type network.pk %}">{{ network|repr }}</a></span>
 		<span class="badge arrow">&nbsp;</span>
 		{{ network|network_deleted_label|safe }}
 	    {{ network|object_status_label|safe }}

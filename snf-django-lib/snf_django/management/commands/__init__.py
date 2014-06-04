@@ -490,10 +490,10 @@ class ListCommand(SynnefoCommand):
                                    % f)
 
     def display_filters(self):
-        headers = ["Filter", "Description", "Help"]
+        headers = ["Filter", "Description"]
         table = []
         for field in self.object_class._meta.fields:
-            table.append((field.name, field.verbose_name, field.help_text))
+            table.append((field.name, field.verbose_name))
         utils.pprint_table(self.stdout, table, headers)
 
 

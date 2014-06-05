@@ -71,12 +71,44 @@ def get_vm(query):
 
 
 def filter_owner_name(queryset, search):
+    """Filter by first name / last name of the owner.
+
+    This filter is a bit tricky, so an explanation is due.
+
+    The main purpose of the filter is to:
+    a) Use the `filter_name` function of `users` module to find all
+       the users whose name matches the search query.
+    b) Use the UUIDs of the filtered users to retrieve all the entities that
+       belong to them.
+
+    What we should have in mind is that the (a) query can be a rather expensive
+    one. However, the main issue here is the (b) query. For this query, a
+    naive approach would be to use Q objects like so:
+
+        Q(userid=1ae43...) | Q(userid=23bc...) | Q(userid=7be8...) | ...
+
+    Straightforward as it may be, Django will not optimize the above expression
+    into one operation but will query the database recursively. In practice, if
+    the first query hasn't narrowed down the users to less than a thousand,
+    this query will surely blow the stack of the database thread.
+
+    Given that all Q objects refer to the same database field, we can bypass
+    them and use the "__in" operator.  With "__in" we can pass a list of values
+    (uuids in our case) as a filter argument. Moreover, we can simplify things
+    a bit more by passing the queryset of (a) as the argument of "__in".  In
+    Postgres, this will create a subquery, which nullifies the need to evaluate
+    the results of (a) in memory and then pass them to (b).
+
+    Warning: Querying a database using a subquery for another database has not
+    been tested yet.
+    """
+    # Leave if no name has been given
+    if not search:
+        return queryset
+    # Find all the uses that match the requested search term
     users = get_users_by_name(AstakosUser.objects.all(), search).values('uuid')
-    criterions = [Q(userid=user['uuid']) for user in users]
-    if not criterions:
-        return queryset.none()
-    qor = reduce(or_, criterions)
-    return queryset.filter(qor)
+    # Get the related entities with the UUIDs of these users
+    return queryset.filter(userid__in=users).distinct()
 
 
 class VMFilterSet(django_filters.FilterSet):

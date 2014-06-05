@@ -47,11 +47,33 @@ from astakos.im.models import AstakosUser, Project
 from eztables.views import DatatablesView
 from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
                      noop)
+import django_filters
+
+import synnefo_admin.admin.vms as vm_views
 
 templates = {
     'list': 'admin/ip_list.html',
     'details': 'admin/ip_details.html',
 }
+
+
+class IPFilterSet(django_filters.FilterSet):
+
+    """A collection of filters for volumes.
+
+    This filter collection is based on django-filter's FilterSet.
+    """
+
+    address = django_filters.CharFilter(label='Address',
+                                        lookup_type='icontains')
+    owner_name = django_filters.CharFilter(label='Owner Name',
+                                           action=vm_views.filter_owner_name)
+    userid = django_filters.CharFilter(label='Owner UUID',
+                                       lookup_type='icontains')
+
+    class Meta:
+        model = IPAddress
+        fields = ('id', 'address', 'floating_ip', 'owner_name', 'userid',)
 
 
 def get_allowed_actions(ip):
@@ -81,6 +103,7 @@ class IPJSONView(DatatablesView):
     fields = ('pk', 'pk', 'address', 'floating_ip', 'created', 'userid',)
 
     extra = True
+    filters = IPFilterSet
 
     def get_extra_data_row(self, inst):
         extra_dict = {
@@ -176,6 +199,7 @@ def catalog(request):
     """List view for Cyclades ips."""
     context = {}
     context['action_dict'] = generate_actions()
+    context['filter_dict'] = IPFilterSet().filters.itervalues()
     context['columns'] = ["Column 1", "ID", "Address", "Floating",
                           "Creation date", "User ID", "Details", "Summary"]
     context['item_type'] = 'ip'

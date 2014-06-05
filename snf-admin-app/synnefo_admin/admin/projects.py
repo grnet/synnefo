@@ -56,6 +56,9 @@ from astakos.im.quotas import get_project_quota
 
 from synnefo.util import units
 
+import django_filters
+from django.db.models import Q
+
 templates = {
     'list': 'admin/project_list.html',
     'details': 'admin/project_details.html',
@@ -68,6 +71,42 @@ def get_project(query):
     except Exception:
         project = Project.objects.get(uuid=query)
     return project
+
+
+def get_status_choices():
+    ((value.upper(), '_') for value in Project.O_STATE_DISLAY.itervalues())
+
+
+def filter_status(queryset, choices):
+    choices = choices or ()
+    if len(choices) == len(get_status_choices()):
+        return queryset
+    q = Q()
+    logging.info("Choices: %s", choices)
+    for c in choices:
+        status = getattr(Project, 'O_%s' % c.upper())
+        q |= Q(last_application__state=status) | Q(state=status)
+        logging.info("q: %s", q)
+    return queryset.filter(q).distinct()
+
+
+class ProjectFilterSet(django_filters.FilterSet):
+
+    """A collection of filters for Projects.
+
+    This filter collection is based on django-filter's FilterSet.
+    """
+
+    realname = django_filters.CharFilter(label='Name', lookup_type='icontains')
+    uuid = django_filters.CharFilter(label='UUID', lookup_type='icontains')
+    description = django_filters.CharFilter(label='Description',
+                                            lookup_type='icontains')
+    #status = django_filters.MultipleChoiceFilter(
+        #label='Status', action=filter_status, choices=get_status_choices)
+
+    class Meta:
+        model = Project
+        fields = ('id', 'uuid', 'realname', 'description')
 
 
 def get_allowed_actions(project):
@@ -169,6 +208,7 @@ class ProjectJSONView(DatatablesView):
     fields = ('id', 'id', 'realname', 'state', 'creation_date', 'end_date')
 
     extra = True
+    filters = ProjectFilterSet
 
     def format_data_row(self, row):
         row[3] = (str(row[3]) + ' (' +
@@ -350,6 +390,7 @@ def catalog(request):
     """List view for Cyclades projects."""
     context = {}
     context['action_dict'] = generate_actions()
+    context['filter_dict'] = ProjectFilterSet().filters.itervalues()
     context['columns'] = ["Column 1", "ID", "Name", "Status", "Creation date",
                           "Expiration date", "Details", "Summary"]
     context['item_type'] = 'project'

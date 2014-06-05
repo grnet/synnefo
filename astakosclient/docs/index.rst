@@ -133,18 +133,18 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         It returns user's current quotas (as dict of dicts). In case of error
         it raises an AstakosClientException exception.
 
-    **service_get_quotas(**\ user=None, project=None\ **)**
+    **service_get_quotas(**\ user=None, project_id=None\ **)**
         It returns all users' current quotas for the resources associated with
         the service (as dict of dicts of dicts). Optionally, one can query the
         quotas of a specific user with argument user=UUID (or a list of UUID).
         Likewise one can specify a project (or a list of projects). In case of
         error it raises an AstakosClientException exception.
 
-    **service_get_project_quotas(**\ project=None\ **)**
+    **service_get_project_quotas(**\ project_id=None\ **)**
         It returns all projects' current quotas for the resources
         associated with the service (as dict of dicts).
         Optionally, one can query the quotas of a specific project with
-        argument project=UUID (or a list of UUID). In case of error it raises an
+        argument project_id=UUID (or a list of UUID). In case of error it raises an
         AstakosClientException exception.
 
     **issue_commission_generic(**\ user_provisions, project_provisions, name="", force=False, auto_accept=False\ **)**
@@ -208,7 +208,7 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
     **application_action(**\ project_id, app_id, action, reason=""\ **)**
         Perform action on a project application
 
-    **get_memberships(**\ project=None\ **)**
+    **get_memberships(**\ project_id=None\ **)**
         Retrieve all accessible memberships
 
     **get_membership(**\ memb_id\ **)**

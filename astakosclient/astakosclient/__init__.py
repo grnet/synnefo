@@ -527,32 +527,34 @@ class AstakosClient(object):
 
     # ----------------------------------
     # do a GET to ``API_SERVICE_QUOTAS``
-    def service_get_quotas(self, user=None, project=None):
+    def service_get_quotas(self, user=None, project_id=None, project=None):
         """Get all quotas for resources associated with the service
 
         Keyword arguments:
         user    -- optionally, the uuid of a specific user, or a list thereof
-        project -- optionally, the uuid of a specific project, or a list
+        project_id -- optionally, the uuid of a specific project, or a list
                    thereof
+        project -- backwards compatibility (replaced by "project_id")
 
         In case of success return a dict of dicts of dicts with current quotas
         for all users, or of a specified user, if user argument is set.
         Otherwise raise an AstakosClientException
 
         """
+        project_id = project if project_id is None else project_id
         query = self.api_service_quotas
         filters = {}
         if user is not None:
             filters['user'] = self._join_if_list(user)
-        if project is not None:
-            filters['project'] = self._join_if_list(project)
+        if project_id is not None:
+            filters['project'] = self._join_if_list(project_id)
         if filters:
             query += "?" + urllib.urlencode(filters)
         return self._call_astakos(query)
 
     # ----------------------------------
     # do a GET to ``API_SERVICE_PROJECT_QUOTAS``
-    def service_get_project_quotas(self, project=None):
+    def service_get_project_quotas(self, project_id=None, project=None):
         """Get all project quotas for resources associated with the service
 
         Keyword arguments:
@@ -564,10 +566,11 @@ class AstakosClient(object):
         set. Otherwise raise an AstakosClientException
 
         """
+        project_id = project if project_id is None else project_id
         query = self.api_service_project_quotas
         filters = {}
-        if project is not None:
-            filters['project'] = self._join_if_list(project)
+        if project_id is not None:
+            filters['project'] = self._join_if_list(project_id)
         if filters:
             query += "?" + urllib.urlencode(filters)
         return self._call_astakos(query)
@@ -916,18 +919,20 @@ class AstakosClient(object):
 
     # -------------------------------
     # do a GET to ``API_MEMBERSHIPS``
-    def get_memberships(self, project=None):
+    def get_memberships(self, project_id=None, project=None):
         """Retrieve all accessible memberships
 
         Arguments:
-        project -- filter by project (optional)
+        project_id -- filter by project (optional)
+        project    -- backwards compatibility
 
         In case of success, return a list of membership descriptions.
         """
+        project_id = project if project_id is None else project_id
         req_headers = {'content-type': 'application/json'}
         filters = {}
-        if project is not None:
-            filters["project"] = project
+        if project_id is not None:
+            filters["project"] = project_id
         path = self.api_memberships
         if filters:
             path += '?' + urllib.urlencode(filters)

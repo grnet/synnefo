@@ -78,16 +78,18 @@ choice2query = {
 }
 
 
-#def filter_status(queryset, choices):
-    #if type(choices) is not list and type(choices) is not tuple:
-        #choices = [choices]
-    #if len(choices) == len(choice2query.keys()):
-        #return queryset
+mock_providers = (
+    ('local', '_'),
+    ('shibboleth', '_')
+)
 
-    #q = Q()
-    #for choice in choices:
-        #q |= choice2query[(choice, '')]
-    #return queryset.filter(q)
+
+def filter_auth_providers(queryset, choices):
+    choices = choices or ()
+    q = Q()
+    for c in choices:
+        q |= Q(auth_providers__module=c)
+    return queryset.filter(q).distinct()
 
 
 def filter_status(queryset, choices):
@@ -149,10 +151,14 @@ class UserFilterSet(django_filters.FilterSet):
         label='Status', action=filter_status, choices=choice2query.keys())
     groups = django_filters.MultipleChoiceFilter(
         label='Group', action=filter_group, choices=get_groups())
+    auth_providers = django_filters.MultipleChoiceFilter(
+        label='Auth Providers', action=filter_auth_providers,
+        choices=mock_providers)
 
     class Meta:
         model = AstakosUser
-        fields = ('uuid', 'email', 'name', 'status', 'groups')
+        fields = ('uuid', 'email', 'name', 'status', 'groups',
+                  'auth_providers')
 
 
 def get_user(query):
@@ -280,12 +286,13 @@ class UserJSONView(DatatablesView):
             }
 
         vms = get_suspended_vms(inst)
-        if vms:
-            extra_dict['suspended_vms'] = {
-                'display_name': "Suspended VMs",
-                'value': ', '.join(vms),
-                'visible': True,
-            }
+        suspended = ', '.join(vms) if vms else 'None'
+
+        extra_dict['suspended_vms'] = {
+            'display_name': "Suspended VMs",
+            'value': suspended,
+            'visible': True,
+        }
 
         return extra_dict
 

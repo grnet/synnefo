@@ -559,10 +559,10 @@ $(function(){
 	$('.modal button[type=submit]').click(function(e) {
 		var $modal = $(this).closest('.modal');
 
-		if(selected.items.length === 0) {
-			e.preventDefault();
-			showError($modal, 'no-selected');
-		}
+		// if(selected.items.length === 0) {
+		// 	e.preventDefault();
+		// 	showError($modal, 'no-selected');
+		// }
 		if($modal.attr('id') === 'contact') {
 			var $emailSubj = $modal.find('.subject')
 			var $emailCont = $modal.find('.content')

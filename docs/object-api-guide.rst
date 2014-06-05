@@ -19,7 +19,7 @@ The present document is meant to be read alongside the OOS API documentation. Th
 
 Whatever marked as to be determined (**TBD**), should not be considered by implementors.
 
-More info about Pithos can be found here: https://code.grnet.gr/projects/pithos
+More info about Pithos can be found `here <pithos.html>`_.
 
 Document Revisions
 ^^^^^^^^^^^^^^^^^^
@@ -114,7 +114,7 @@ When done with logging in, the service's login URI should redirect to the URI pr
 
 If ``next`` request parameter is missing the call fails with BadRequest (400) response status.
 
-A user management service that implements a login URI according to these conventions is Astakos (https://code.grnet.gr/projects/astakos), by GRNET.
+A user management service that implements a login API call according to these conventions is `Astakos <astakos.html>`_, by GRNET.
 
 User feedback
 -------------

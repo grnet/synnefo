@@ -60,6 +60,11 @@ templates = {
 def get_volume(query):
     return Volume.objects.get(pk=int(query))
 
+
+def filter_machineid(qs, query):
+    return qs.filter(machine__id=int(query))
+
+
 class VolumeFilterSet(django_filters.FilterSet):
 
     """A collection of filters for volumes.
@@ -72,10 +77,15 @@ class VolumeFilterSet(django_filters.FilterSet):
                                            action=filter_owner_name)
     userid = django_filters.CharFilter(label='Owner UUID',
                                        lookup_type='icontains')
+    status = django_filters.MultipleChoiceFilter(
+        label='Status', name='status', choices=Volume.STATUS_VALUES)
+    machineid = django_filters.NumberFilter(label='VM ID',
+                                            action=filter_machineid)
 
     class Meta:
         model = Volume
-        fields = ('name', 'owner_name', 'userid')
+        fields = ('id', 'name', 'status', 'description', 'owner_name',
+                  'userid', 'machineid')
 
 
 def get_allowed_actions(volume):

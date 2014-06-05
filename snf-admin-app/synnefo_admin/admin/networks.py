@@ -76,10 +76,17 @@ class NetworkFilterSet(django_filters.FilterSet):
     """
 
     name = django_filters.CharFilter(label='Name', lookup_type='icontains')
+    state = django_filters.MultipleChoiceFilter(
+        label='Status', name='state', choices=Network.OPER_STATES)
+    owner_name = django_filters.CharFilter(label='Owner Name',
+                                           action=vm_views.filter_owner_name)
+    userid = django_filters.CharFilter(label='Owner UUID',
+                                       lookup_type='icontains')
 
     class Meta:
         model = Network
-        fields = ('name', 'state')
+        fields = ('id', 'name', 'state', 'public', 'drained', 'owner_name',
+                  'userid',)
 
 
 def get_allowed_actions(network):

@@ -2095,7 +2095,7 @@ You can see everything has been setup correctly by running:
 
 Enable the new backend by running:
 
-.. code-block::
+.. code-block:: console
 
    $ snf-manage backend-modify --drained False 1
 

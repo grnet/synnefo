@@ -226,7 +226,9 @@ def get_filter_template(filter):
     This only works for filters that are instances of django-filter's Filter.
     """
     logging.info("Here for %s", filter)
-    if isinstance(filter, django_filters.CharFilter):
+    if isinstance(filter, django_filters.NumberFilter):
+        type = "number"
+    elif isinstance(filter, django_filters.CharFilter):
         type = "char"
     elif isinstance(filter, django_filters.BooleanFilter):
         type = "bool"

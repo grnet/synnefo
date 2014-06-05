@@ -70,6 +70,22 @@ def get_vm(query):
     return VirtualMachine.objects.get(pk=int(id))
 
 
+def filter_suspended(qs, value):
+    if type(value) == list:
+        # We can't accept more than one value
+        if len(value) > 1:
+            return qs
+        # Convert string to boolean
+        value = bool(value[0])
+    if type(value) == str:
+        # Convert string to boolean
+        value = bool(value)
+
+    if value is not None:
+        return qs.filter(suspended=value)
+    return qs
+
+
 def filter_owner_name(queryset, search):
     """Filter by first name / last name of the owner.
 
@@ -127,10 +143,13 @@ class VMFilterSet(django_filters.FilterSet):
                                         lookup_type='icontains')
     operstate = django_filters.MultipleChoiceFilter(
         label='Status', name='operstate', choices=VirtualMachine.OPER_STATES)
+    suspended = django_filters.BooleanFilter(label='Suspended',
+                                             action=filter_suspended)
 
     class Meta:
         model = VirtualMachine
-        fields = ('operstate', 'name', 'owner_name', 'userid', 'imageid')
+        fields = ('id', 'operstate', 'name', 'owner_name', 'userid', 'imageid',
+                  'suspended',)
 
 
 def get_allowed_actions(vm):

@@ -90,22 +90,34 @@ choice2query = {
     #return queryset.filter(q)
 
 
-def filter_status(queryset, choice):
-    if not choice:
+def filter_status(queryset, choices):
+    choices = choices or ()
+    if len(choices) == len(choice2query.keys()):
         return queryset
-    q = choice2query[(choice, '')]
-    return queryset.filter(q)
-
-
-def filter_group(queryset, choice):
-    if not choice:
-        return queryset
-    return queryset.filter(groups__name__exact=choice)
+    q = Q()
+    logging.info("Choices: %s", choices)
+    for c in choices:
+        q |= choice2query[(c, '')]
+        logging.info("q: %s", q)
+    return queryset.filter(q).distinct()
 
 
 def get_groups():
     groups = Group.objects.all().values('name')
     return [(group['name'], '') for group in groups]
+
+
+def filter_group(queryset, choices):
+    """Filter by group name for user.
+
+    Since not all users need to be in a group, we always process the request
+    given even if all choices are selected.
+    """
+    choices = choices or ()
+    q = Q()
+    for c in choices:
+        q |= Q(groups__name__exact=c)
+    return queryset.filter(q).distinct()
 
 
 def filter_name(queryset, search):
@@ -133,10 +145,10 @@ class UserFilterSet(django_filters.FilterSet):
     email = django_filters.CharFilter(label='E-mail address',
                                       lookup_type='icontains',)
     name = django_filters.CharFilter(label='Name', action=filter_name,)
-    status = django_filters.ChoiceFilter(label='Status', action=filter_status,
-                                         choices=choice2query.keys())
-    groups = django_filters.ChoiceFilter(label='Group', choices=get_groups(),
-                                         action=filter_group)
+    status = django_filters.MultipleChoiceFilter(
+        label='Status', action=filter_status, choices=choice2query.keys())
+    groups = django_filters.MultipleChoiceFilter(
+        label='Group', action=filter_group, choices=get_groups())
 
     class Meta:
         model = AstakosUser

@@ -1,11 +1,11 @@
 <div class="filter-dropdown">
-	<div class="dropdown"  data-filter="{{ filter.name }}">
+	<div class="dropdown" data-filter="{{ filter.name }}">
 		<a class="" href="#" data-toggle="dropdown">
 			<span class="category">{{ filter.label }}:</span>
 			<span class="selected-value">All</span>
 			<span class="snf-angle-down arrow"></span>
 		</a>
-		<ul class="dropdown-menu choices multiple-selection">
+		<ul class="dropdown-menu choices">
 			<li class="active reset"><a href="#">All</a></li>
 			<li class="divider"></li>
 			{% for choice,_ in filter.field.choices %}

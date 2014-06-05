@@ -93,6 +93,8 @@ class VMFilterSet(django_filters.FilterSet):
                                        lookup_type='icontains')
     imageid = django_filters.CharFilter(label='Image UUID',
                                         lookup_type='icontains')
+    operstate = django_filters.MultipleChoiceFilter(
+        label='Status', name='operstate', choices=VirtualMachine.OPER_STATES)
 
     class Meta:
         model = VirtualMachine

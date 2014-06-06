@@ -140,13 +140,15 @@ $(function(){
 					}
 				}
 			}
-
-			clickSummary(row);
-			clickDetails(row);
 		},
 		"dom": '<"custom-buttons">frtilp',
 		"language" : {
 			"sLengthMenu": 'Pagination _MENU_'
+		},
+		"drawCallback": function(settings) {
+			updateToggleAllSelect(this);
+			clickSummary(this);
+			clickDetails(this);
 		}
 	});
 	$("div.custom-buttons").html('<a href="" class="select-all select custom-btn" data-karma="neutral"><span>Select All</span></a>');
@@ -172,14 +174,14 @@ $(function(){
 		}
 		],
 		"order": [1, "asc"],
-		"createdRow": function(row, data, dataIndex) {
-			clickSummary(row);
-			clickDetails(row);
-		},
 		"lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
 		"dom": 'frtilp',
 		"language" : {
 			"sLengthMenu": 'Pagination _MENU_'
+		},
+		"drawCallback": function(settings) {
+			clickSummary(this);
+			clickDetails(this);
 		}
 	});
 
@@ -313,14 +315,14 @@ $(function(){
 		return html;
 	};
 
-	function clickDetails(row) {
-		$(row).find('a.details-link').click(function(e) {
+	function clickDetails(table) {
+		$(table).find('tbody a.details-link').click(function(e) {
 			e.stopPropagation();
 		})
 	}
 
-	function clickSummary(row) {
-		$(row).find('a.expand-area').click(function(e) {
+	function clickSummary(table) {
+		$(table).find('tbody td:last a.expand-area').click(function(e) {
 			e.preventDefault();
 			e.stopPropagation();
 			var $summaryTd = $(this).closest('td');
@@ -487,7 +489,6 @@ $(function(){
 	/* Checks how many rows are selected and adjusts the classes and
 	the text of the select-qll btn */
 	function updateToggleAllSelect() {
-
 		var $toggleAll = $('.select-all');
 		var $label = $toggleAll.find('span')
 		var $tr = $(tableDomID).find('tbody tr');
@@ -496,12 +497,13 @@ $(function(){
 			var allSelected = true
 			$tr.each(function() {
 				allSelected = allSelected && $(this).hasClass('selected');
+				return allSelected;
 			});
 			if($toggleAll.hasClass('select') && allSelected) {
 				$toggleAll.addClass('deselect').removeClass('select');
 				$label.text('Clear All')
 			}
-			else if(!($toggleAll.hasClass('select')) && !allSelected) {
+			else if($toggleAll.hasClass('deselect') && !allSelected) {
 				$toggleAll.addClass('select').removeClass('deselect');
 				$label.text('Select All')
 			}
@@ -859,6 +861,7 @@ $(function(){
 	dropdownSelect('.filters .filter-dropdown .dropdown');
 
 	$('input').blur(); // onload there is no input field focus
-
 });
+
+
 }(window.jQuery, window.Django));

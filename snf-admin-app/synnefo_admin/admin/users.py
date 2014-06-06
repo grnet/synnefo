@@ -477,7 +477,7 @@ def details(request, query):
             (quota_list, 'quota', None),
             (project_list, 'project', project_views.generate_actions()),
             (vm_list, 'vm', vm_views.generate_actions()),
-            (volume_list, 'volume', ),
+            (volume_list, 'volume', None),
             (network_list, 'network', network_views.generate_actions()),
             (nic_list, 'nic', None),
             (ip_list, 'ip', None),

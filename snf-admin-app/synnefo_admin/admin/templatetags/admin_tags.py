@@ -272,13 +272,15 @@ def get_project_stats(project):
     """Create a dictionary with a summary for a project's stats."""
     stats = OrderedDict()
     if not project.is_base:
-        stats['Per Member'] = project_views.get_member_resources(project)
-    stats['Total'] = project_views.display_project_stats(project,
-                                                         'project_limit')
+        stats['Per Member'] = project_views.display_project_resources(project,
+                                                                      'member')
+    stats['Total'] = project_views.display_project_resources(project, 'total')
     stats['Used'] = project_views.display_project_stats(project,
                                                         'project_usage')
     return stats
 
+
+@register.filter
 def can_apply(action, item):
     """Return if action can apply on item."""
     return action.can_apply(item)

@@ -139,24 +139,13 @@ def get_contact_id(inst):
         return inst.owner.uuid
 
 
-#def get_total_resources(inst):
-    #total = []
-    #app = inst.last_application
-    #for r in app.resource_grants.all():
-        #pr = ProjectResourceGrant.objects.get(resource=r,
-                                              #project_application=app)
-        #total.append(pr.resource.display_name + ': ' +
-                     #pr.display_project_capacity())
-    #return ', '.join(total)
-
-
-def is_resource_useful(resource, real_limit):
+def is_resource_useful(resource, project_limit):
     """Simple function to check if the resource is useful to show.
 
     Values that have infinite or zero limits are discarded.
     """
-    displayed_limit = units.show(real_limit, resource.unit)
-    if not real_limit or displayed_limit == 'inf':
+    displayed_limit = units.show(project_limit, resource.unit)
+    if not resource.uplimit or displayed_limit == 'inf':
         return False
     return True
 
@@ -184,23 +173,31 @@ def display_project_stats(inst, stat):
     return ', '.join((': '.join(pair) for pair in resource_list))
 
 
-def get_member_resources(inst):
-    """Get member resources in a comma-separated line."""
-    total = []
-    app = inst.last_application
-    quotas = get_project_quota(inst)
-    for r in app.resource_grants.all():
-        pr = ProjectResourceGrant.objects.get(resource=r,
-                                              project_application=app)
+def display_project_resources(inst, type):
+    """Display project resources (member of total) in one line."""
+    resource_list = []
+    prqs = inst.resource_set
+
+    for prq in prqs:
+        r = prq.resource
+
         # Check the project limit to verify that we can print this resource
-        if not is_resource_useful(pr.resource,
-                                  quotas[pr.resource.name]['project_limit']):
+        if not is_resource_useful(r, prq.project_capacity):
             continue
 
-        total.append((pr.resource.display_name, pr.display_member_capacity()))
+        # Get human-readable (resource name, member capacity) tuple
+        if type == 'member':
+            resource_list.append((r.display_name,
+                                  prq.display_member_capacity()))
+        # Get human-readable (resource name, total capacity) tuple
+        elif type == 'total':
+            resource_list.append((r.display_name,
+                                  prq.display_project_capacity()))
+        else:
+            raise Exception("Wrong type")
 
-    total = sorted(total, key=itemgetter(0))
-    return ', '.join((': '.join(pair) for pair in total))
+    resource_list = sorted(resource_list, key=itemgetter(0))
+    return ', '.join((': '.join(pair) for pair in resource_list))
 
 
 class ProjectJSONView(DatatablesView):
@@ -275,7 +272,7 @@ class ProjectJSONView(DatatablesView):
             extra_dict['members'] = {
                 'display_name': "Members",
                 'value': (str(inst.members_count()) + ' / ' +
-                        str(inst.limit_on_members_number)),
+                          str(inst.limit_on_members_number)),
                 'visible': True,
             }
 
@@ -288,13 +285,13 @@ class ProjectJSONView(DatatablesView):
 
             extra_dict['member_resources'] = {
                 'display_name': "Member resource limits",
-                'value': get_member_resources(inst),
+                'value': display_project_resources(inst, 'member'),
                 'visible': True
             }
 
         extra_dict['limit'] = {
             'display_name': "Total resource limits",
-            'value': display_project_stats(inst, 'project_limit'),
+            'value': display_project_resources(inst, 'total'),
             'visible': True,
         }
         extra_dict['usage'] = {

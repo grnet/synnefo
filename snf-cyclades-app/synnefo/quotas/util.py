@@ -121,12 +121,12 @@ def get_quotaholder_holdings(user=None):
 
 def get_qh_users_holdings(users=None, projects=None):
     qh = Quotaholder.get()
-    return qh.service_get_quotas(user=users, project=projects)
+    return qh.service_get_quotas(user=users, project_id=projects)
 
 
 def get_qh_project_holdings(projects=None):
     qh = Quotaholder.get()
-    return qh.service_get_project_quotas(project=projects)
+    return qh.service_get_project_quotas(project_id=projects)
 
 
 def transform_quotas(quotas):

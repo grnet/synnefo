@@ -87,18 +87,13 @@ $(function(){
 
 				var prefix = 'sSearch_';
 
-				if($.isEmptyObject(filters)) {
-					console.log('no filter!')
-				}
-				else {
+				if(!$.isEmptyObject(filters)) {
 					for (var prop in filters) {
 						data[prefix+prop] = filters[prop];
 					}
 				}
-				qq = data;
 			},
 			"dataSrc" : function(response) {
-				console.log(response);
 				mydata = response;
 				extraData = response.extra;
 				if(response.aaData.length != 0) {
@@ -621,9 +616,7 @@ $(function(){
 					htmlRows += currentRow;
 				}
 				else {
-					console.log('unique is false')
 					htmlRows = htmlRows.replace('" data-itemid="' + selected.items[i].contact_id + '"', ', '+selected.items[i].item_name+'" data-itemid="' + selected.items[i].contact_id+'"');
-					console.log(htmlRows)
 					$tableBody.closest('table').before(warningMsg);
 				}
 			}
@@ -778,29 +771,45 @@ $(function(){
 				}
 				else {
 					$li.toggleClass('active')
-					if($li.hasClass('active')) {
-						$li.siblings('.reset').removeClass('active')
-
-						if($li.siblings('.active').length > 0) {
-							arrayFilter(filters, key, value);
-							$(this).closest(filterEl).find('.selected-value').append(','+value)
-						}
-						else {
+					if($(this).closest('.filter-dropdown').hasClass('filter-boolean')) {
+						if($li.hasClass('active')) {
+							$li.siblings('li').removeClass('active');
 							$(this).closest(filterEl).find('.selected-value').text(value);
-							filters[key] = [value]
-						}
-					}
-					else {
-						if($li.siblings('.active').length >0) {
-							arrayFilter(filters, key, value, true);
-							$(this).closest(filterEl).find('.selected-value').text(filters[key])
+								filters[key] = value;
 						}
 						else {
 							delete filters[key];
-							var resetLabel = $li.siblings('li').find('.reset').text();
+							var resetLabel = $li.siblings('.reset').text();
 							$li.siblings('li').find('.reset').closest('li').addClass('active');
-							$(this).closest(filterEl).find('.selected-value').text()
+							$(this).closest(filterEl).find('.selected-value').text(resetLabel)
 
+						}
+					}
+					else {
+						if($li.hasClass('active')) {
+							$li.siblings('.reset').removeClass('active')
+
+							if($li.siblings('.active').length > 0) {
+								arrayFilter(filters, key, value);
+								$(this).closest(filterEl).find('.selected-value').append(','+value)
+							}
+							else {
+								$(this).closest(filterEl).find('.selected-value').text(value);
+								filters[key] = [value]
+							}
+						}
+						else {
+							if($li.siblings('.active').length >0) {
+								arrayFilter(filters, key, value, true);
+								$(this).closest(filterEl).find('.selected-value').text(filters[key])
+							}
+							else {
+								delete filters[key];
+								var resetLabel = $li.siblings('.reset').text();
+								$li.siblings('li').find('.reset').closest('li').addClass('active');
+								$(this).closest(filterEl).find('.selected-value').text(resetLabel)
+
+							}
 						}
 					}
 				}
@@ -810,7 +819,6 @@ $(function(){
 
 	function arrayFilter(filters, key, value, removeItem) {
 		var prefix = 'sSearch_';
-		console.log(filters, key, value, removeItem)
 		if(!removeItem) {
 			for(var prop in filters) {
 				if(prop === key) {
@@ -833,7 +841,6 @@ $(function(){
 		var $input = $(extraSearch).find('input');
 		$input.keyup(function(e) {
 			// if enter or space is pressed do nothing
-			console.log(e.keyCode)
 			if(e.which !== '32' && e.which !== '13') {
 				var key, value;
 				key = $(this).data('filter');

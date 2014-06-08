@@ -12,94 +12,58 @@
 
   <body>
     {% block nav-bar %}
-    <div class="container-fluid">
-        <div class="row-fluid">
+    <div class="navbar main-nav navbar-fixed-top">
+      <ul class="nav navbar-nav navbar-left">
+          <li><a href="/admin/">S</a></li>
+      {% for label, type in item_lists %}
+          <li class="active"><a href="{% url admin-list type %}">{{label}}</a></li>
+      {% endfor %}
+        <li class="dropdown">
+          <a href="#"  data-toggle="dropdown">Reports
+          <span class="snf-angle-down arrow"></span></a>
+          <ul class="dropdown-menu align-left">
+            <li><a href="{% url admin-stats %}">Statistics</a></li>
+            <li><a href="{% url admin-charts %}">Demo Charts</a></li>
+            <li><a href="">Another Category</a></li>
+          </ul>
+        </li>
+      </ul>
 
-          <div class="navbar main-nav navbar-fixed-top">
-
-            <ul class="nav navbar-nav navbar-left">
-            {% for label, type in item_lists %}
-                <li class="active"><a href="{% url admin-list type %}">{{label}}</a></li>
-            {% endfor %}
-              <li class="dropdown">
-                <a href="#"  data-toggle="dropdown">Reports
-                <span class="snf-angle-down arrow"></span></a>
-                <ul class="dropdown-menu align-left">
-                  <li><a href="{% url admin-stats %}">Statistics</a></li>
-                  <li><a href="{% url admin-charts %}">Demo Charts</a></li>
-                  <li><a href="">Another Category</a></li>
-                </ul>
+      <ul class="nav navbar-nav navbar-right">
+          <li class="dropdown">
+            <a href="" data-toggle="dropdown">
+              adminuser@synnefo.org
+              <span class="snf-angle-down arrow"></span>
+            </a>
+            <ul class="dropdown-menu align-right">
+              <li>
+                <a href=""><span>[i]</span>Sign Out</a>
               </li>
             </ul>
+        </ul>
+    </div> <!-- /nav-main -->
+    {% endblock nav-bar %}
 
-            <ul class="nav navbar-nav navbar-right">
-                <li class="dropdown">
-                  <a href="" data-toggle="dropdown">
-                    adminuser@synnefo.org
-                    <span class="snf-angle-down arrow"></span>
-                  </a>
-                  <ul class="dropdown-menu align-right">
-                    <li>
-                      <a href=""><span>[i]</span>Sign Out</a>
-                    </li>
-                  </ul>
-              </ul>
-          </div> <!-- /nav-main -->
-          <div class="navbar sub-nav navbar-fixed-top">
-            <ul class="nav navbar-nav navbar-left custom-breadcrumb">
-              <li><a class="" href="{% url admin-home %}">Synnefo Admin Panel</a></li>
-              <li class="seperator"><span>/</span></li>
-              <li><a href="">Users</a></li>
-              <li class="seperator"><span>/</span></li>
-              <li><a href="" disabled>Details of John Doe</a></li>
-            </ul>
-            <ul class="nav navbar-nav navbar-right">
-              <li><a href="">Account: John Doe</a></li>
-              <li class="dropdown">
-                <a href=""  id="vms" data-toggle="dropdown">
-                  VMs
-                  <span class="snf-angle-down arrow"></span>
-                </a>
-                <ul class="dropdown-menu align-right">
-                  <li><a href="">cute pc</a></li>
-                  <li><a href="">Windows</a></li>
-                  <li><a href="">Debian</a></li>
-                </ul>
-              </li>
-              <li class="dropdown">
-                <a href="" id="nets" data-toggle="dropdown">
-                  Nets...
-                  <span class="snf-angle-down arrow"></span>
-                </a>
-                <ul class="dropdown-menu align-right">
-                  <li><a href="">cute pc</a></li>
-                  <li><a href="">Windows</a></li>
-                  <li><a href="">Debian</a></li>
-                </ul>
-              </li>
-            </ul>
-          </div> <!-- /sub-nav -->
-        </div> <!-- /row-fluid -->
+    {% block subnav-bar %}
+    {% endblock subnav-bar %}
+
+    {% if messages %}
+    <div class="messages">
+      {% for message in messages %}
+      <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+        <button class="close" data-dismiss="alert">×</button>
+        {{ message }}
       </div>
-      {% endblock nav-bar %}
-          {% if messages %}
-          <div class="messages">
-            {% for message in messages %}
-                <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
-                  <button class="close" data-dismiss="alert">×</button>
-                  {{ message }}
-                </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-
-        {% block main-area %}
-        <div class="main-content well well-lg">
-          {% block content %}
-          {% endblock %}
-        </div>
-        {% endblock main-area %}
+      {% endfor %}
     </div>
+    {% endif %}
+
+    {% block main-area %}
+    <div class="main-content">
+      {% block content %}
+      {% endblock %}
+    </div>
+    {% endblock main-area %}
 
     <script src="{{ MEDIA_URL }}admin/js/jquery.js"></script>
     <script src="{{ MEDIA_URL }}admin/js/bootstrap.js"></script>

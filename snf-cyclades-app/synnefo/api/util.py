@@ -67,7 +67,7 @@ def random_password():
     """Generates a random password
 
     We generate a windows compliant password: it must contain at least
-    one charachter from each of the groups: upper case, lower case, digits.
+    one character from each of the groups: upper case, lower case, digits.
     """
 
     pool = lowercase + uppercase + digits

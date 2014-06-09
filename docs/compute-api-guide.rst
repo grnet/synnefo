@@ -33,7 +33,7 @@ Authentication
 --------------
 
 All requests use the same authentication method: an ``X-Auth-Token`` header is
-passed to the servive, which is used to authenticate the user and retrieve user
+passed to the service, which is used to authenticate the user and retrieve user
 related information. No other user details are passed through HTTP.
 
 Efficient Polling with the Changes-Since Parameter
@@ -51,7 +51,7 @@ Efficient Polling with the Changes-Since Parameter
 Limitations
 -----------
 
-* Version MIME type and vesionless requests are not currently supported.
+* Version MIME type and versionless requests are not currently supported.
 
 * Cyclades only supports JSON Requests and JSON/XML Responses. XML Requests are
   currently not supported.
@@ -96,7 +96,7 @@ Description                                        URI                          
 `Get Meta Item <#get-server-metadata-item>`_       ``/servers/<server-id>/metadata/<key>``   GET    ✔        ✔
 `Update Meta Item <#update-server-metadata-item>`_ ``/servers/<server-id>/metadata/<key>``   PUT    ✔        ✔
 `Delete Meta Item <#delete-server-metadata>`_      ``/servers/<server-id>/metadata/<key>``   DELETE ✔        ✔
-`Actions <#server-actions>`_                       ``servers/<server id>/action``            POST   ✔        ✔
+`Actions <#server-actions>`_                       ``/servers/<server id>/action``           POST   ✔        ✔
 ================================================== ========================================= ====== ======== ==========
 
 .. rubric:: Flavors
@@ -520,7 +520,7 @@ project     Project assignment   ✔        **✘**
 
 * **name** can be any string
 
-* **imageRed** and **flavorRed** should refer to existing images and hardware
+* **imageRef** and **flavorRef** should refer to existing images and hardware
   flavors accessible by the user
 
 * **metadata** are ``key``:``value`` pairs of custom server-specific metadata.

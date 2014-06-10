@@ -8,6 +8,7 @@
 	min-width: 1150px;
 	&>ul>li {
 		&>a {
+			color: white;
 			padding-top: 16px;
 			&:hover {
 				padding-top: 16px;
@@ -15,12 +16,15 @@
 
 		}
 		&.active a{
-			background-color: #eeeeee;
+			// background-color: #eeeeee;
 		}
 	}
 	padding-left: $nav-side-padding;
 	padding-right: $nav-side-padding;
-	background: $blue-light;
+	// background: $blue-light;
+	background: $gray-dark;
+	border: 1px solid transparent;
+	border-bottom-color: white;
 	height: $nav-top-height;
 	z-index: 1040;
 }

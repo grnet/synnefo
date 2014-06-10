@@ -1038,23 +1038,33 @@ body .object-details h4 em.os-info img {
   vertical-align: middle;
 }
 
-/* line 249, ../sass/extra.scss */
-td:last-child {
-  max-width: 10px;
-  min-width: 10px;
+/* line 251, ../sass/extra.scss */
+.table tbody tr:hover td:last-child > a {
+  display: inline;
+  text-decoration: none;
 }
-/* line 253, ../sass/extra.scss */
+
+/* line 258, ../sass/extra.scss */
+td:last-child {
+  max-width: 40px;
+  min-width: 40px;
+}
+/* line 261, ../sass/extra.scss */
+td:last-child > a {
+  display: none;
+}
+/* line 265, ../sass/extra.scss */
 td:last-child .summary-expand {
   float: right;
   padding-left: 8px;
   background-color: #b9eeca;
   padding-right: 8px;
 }
-/* line 258, ../sass/extra.scss */
+/* line 270, ../sass/extra.scss */
 td:last-child .summary-expand:hover {
   text-decoration: none;
 }
-/* line 262, ../sass/extra.scss */
+/* line 274, ../sass/extra.scss */
 td:last-child dl {
   position: relative;
   padding: 8px;
@@ -1066,7 +1076,7 @@ td:last-child dl {
 	} */
 }
 
-/* line 276, ../sass/extra.scss */
+/* line 288, ../sass/extra.scss */
 .table-items .headerSortUp span.caret {
   border-top: 0;
   border-bottom: 4px solid;
@@ -1075,91 +1085,91 @@ td:last-child dl {
 /* a[disabled] {
 		color: #999999;
 } */
-/* line 288, ../sass/extra.scss */
+/* line 300, ../sass/extra.scss */
 a:not([disabled]):hover {
   cursor: pointer;
 }
 
-/* line 293, ../sass/extra.scss */
+/* line 305, ../sass/extra.scss */
 .modal p {
   position: relative;
 }
-/* line 297, ../sass/extra.scss */
+/* line 309, ../sass/extra.scss */
 .modal#contact p {
   margin-top: 18px;
 }
-/* line 302, ../sass/extra.scss */
+/* line 314, ../sass/extra.scss */
 .modal h4 {
   font-size: 1.1em;
 }
-/* line 306, ../sass/extra.scss */
+/* line 318, ../sass/extra.scss */
 .modal textarea, .modal input {
   width: 496px;
 }
-/* line 308, ../sass/extra.scss */
+/* line 320, ../sass/extra.scss */
 .modal textarea.body, .modal input.body {
   min-height: 160px;
 }
-/* line 313, ../sass/extra.scss */
+/* line 325, ../sass/extra.scss */
 .modal label {
   float: left;
   margin-right: 6px;
   width: 56px;
 }
-/* line 319, ../sass/extra.scss */
+/* line 331, ../sass/extra.scss */
 .modal .modal-body {
   background-color: white;
 }
-/* line 324, ../sass/extra.scss */
+/* line 336, ../sass/extra.scss */
 .modal .modal-footer {
   margin-top: 0;
 }
-/* line 326, ../sass/extra.scss */
+/* line 338, ../sass/extra.scss */
 .modal .modal-footer form {
   display: inline;
 }
 
-/* line 333, ../sass/extra.scss */
+/* line 345, ../sass/extra.scss */
 .account-action.form-btn {
   display: inline-block;
   float: left;
   margin-left: 10px;
 }
 
-/* line 339, ../sass/extra.scss */
+/* line 351, ../sass/extra.scss */
 .buttons {
   list-style: none;
 }
 
-/* line 343, ../sass/extra.scss */
+/* line 355, ../sass/extra.scss */
 .buttons li {
   display: inline-block;
   float: left;
   margin-left: 10px;
 }
 
-/* line 349, ../sass/extra.scss */
+/* line 361, ../sass/extra.scss */
 .filters.subnav-fixed {
   top: 50px;
 }
 
-/* line 355, ../sass/extra.scss */
+/* line 367, ../sass/extra.scss */
 .table-items .login-method {
   padding: 2px 16px 2px 0px;
   text-align: center;
 }
-/* line 360, ../sass/extra.scss */
+/* line 372, ../sass/extra.scss */
 .table-items th .badge {
   margin: 0 2px 0 4px;
   display: inline;
   padding-top: 2px;
 }
-/* line 365, ../sass/extra.scss */
+/* line 377, ../sass/extra.scss */
 .table-items td {
   padding: 8px 6px 0 6px;
 }
 
-/* line 370, ../sass/extra.scss */
+/* line 382, ../sass/extra.scss */
 .dataTables_length select {
   width: 55px;
   display: inline-block;
@@ -1167,27 +1177,27 @@ a:not([disabled]):hover {
   vertical-align: baseline;
 }
 
-/* line 379, ../sass/extra.scss */
+/* line 391, ../sass/extra.scss */
 #table-items-total_filter input {
   display: inline-block;
   margin-left: 8px;
 }
 
-/* line 385, ../sass/extra.scss */
+/* line 397, ../sass/extra.scss */
 .checkbox-column {
   position: relative;
 }
 
-/* line 390, ../sass/extra.scss */
+/* line 402, ../sass/extra.scss */
 .table-selected tr:hover a {
   color: red;
 }
-/* line 394, ../sass/extra.scss */
+/* line 406, ../sass/extra.scss */
 .table-selected .remove {
   border-left-color: transparent;
   text-align: center;
 }
-/* line 397, ../sass/extra.scss */
+/* line 409, ../sass/extra.scss */
 .table-selected .remove a {
   text-decoration: none;
   color: transparent;
@@ -1196,49 +1206,49 @@ a:not([disabled]):hover {
   height: 100%;
 }
 
-/* line 408, ../sass/extra.scss */
+/* line 420, ../sass/extra.scss */
 .positive.area {
   background-color: #dff0d8;
 }
-/* line 411, ../sass/extra.scss */
+/* line 423, ../sass/extra.scss */
 .positive.elem {
   color: #3c763d;
 }
 
-/* line 417, ../sass/extra.scss */
+/* line 429, ../sass/extra.scss */
 .dangerous.area {
   background-color: red;
 }
-/* line 420, ../sass/extra.scss */
+/* line 432, ../sass/extra.scss */
 .dangerous.elem {
   color: red;
 }
 
-/* line 426, ../sass/extra.scss */
+/* line 438, ../sass/extra.scss */
 .neutral.area {
   background-color: rgba(121, 176, 236, 0.78);
 }
-/* line 429, ../sass/extra.scss */
+/* line 441, ../sass/extra.scss */
 .neutral.elem {
   color: blue;
 }
 
-/* line 435, ../sass/extra.scss */
+/* line 447, ../sass/extra.scss */
 .caution.area {
   background-color: yellow;
 }
-/* line 438, ../sass/extra.scss */
+/* line 450, ../sass/extra.scss */
 .caution.elem {
   color: yellow;
 }
 
-/* line 444, ../sass/extra.scss */
+/* line 456, ../sass/extra.scss */
 .modal em {
   font-weight: bold;
   font-style: normal;
 }
 
-/* line 451, ../sass/extra.scss */
+/* line 463, ../sass/extra.scss */
 .container-demo, .chart {
   height: 400px;
   width: 100%;
@@ -1247,18 +1257,18 @@ a:not([disabled]):hover {
   padding-top: 20px;
 }
 
-/* line 459, ../sass/extra.scss */
+/* line 471, ../sass/extra.scss */
 svg > text:last-child {
   display: none;
 }
 
-/* line 464, ../sass/extra.scss */
+/* line 476, ../sass/extra.scss */
 .dropdown .arrow {
   margin-left: 6px;
   vertical-align: middle;
 }
 
-/* line 470, ../sass/extra.scss */
+/* line 482, ../sass/extra.scss */
 .error-sign {
   color: red;
   font-size: 20px;
@@ -1268,34 +1278,34 @@ svg > text:last-child {
   top: 2px;
   display: none;
 }
-/* line 478, ../sass/extra.scss */
+/* line 490, ../sass/extra.scss */
 .error-sign:hover {
   color: red;
   text-decoration: none;
 }
 
-/* line 485, ../sass/extra.scss */
+/* line 497, ../sass/extra.scss */
 .form-area {
   position: relative;
 }
 
-/* line 488, ../sass/extra.scss */
+/* line 500, ../sass/extra.scss */
 .form-subject {
   margin-bottom: 15px;
 }
 
-/* line 492, ../sass/extra.scss */
+/* line 504, ../sass/extra.scss */
 .toggle-more {
   margin-top: -16px;
   display: none;
 }
 
-/* line 499, ../sass/extra.scss */
+/* line 511, ../sass/extra.scss */
 .hidden-row {
   display: none;
 }
 
-/* line 503, ../sass/extra.scss */
+/* line 515, ../sass/extra.scss */
 .content {
   max-width: 1200px;
   margin-left: auto;
@@ -1306,7 +1316,7 @@ svg > text:last-child {
   background: #485057;
 }
 
-/* line 524, ../sass/extra.scss */
+/* line 536, ../sass/extra.scss */
 .extra-btn {
   width: 100%;
   margin-bottom: 40px;
@@ -1314,32 +1324,32 @@ svg > text:last-child {
 
 /* Landscape phone to portrait tablet */
 @media (max-width: 1300px) {
-  /* line 533, ../sass/extra.scss */
+  /* line 545, ../sass/extra.scss */
   .navbar-fixed-top .navbar-center {
     margin-top: 50px;
   }
 }
-/* line 538, ../sass/extra.scss */
+/* line 550, ../sass/extra.scss */
 html, body {
   height: 100%;
   background: #485057;
 }
 
-/* line 543, ../sass/extra.scss */
+/* line 555, ../sass/extra.scss */
 html body .dataTables_wrapper {
   padding: 10px;
 }
-/* line 545, ../sass/extra.scss */
+/* line 557, ../sass/extra.scss */
 html body .dataTables_wrapper label {
   font-weight: normal;
 }
-/* line 549, ../sass/extra.scss */
+/* line 561, ../sass/extra.scss */
 html body .dataTables_wrapper table > thead > tr > th.sorting, html body .dataTables_wrapper table > thead > tr > th.sorting_asc, html body .dataTables_wrapper table > thead > tr > th.sorting_desc {
   background-position: center left;
   padding-left: 22px;
 }
 
-/* line 557, ../sass/extra.scss */
+/* line 569, ../sass/extra.scss */
 .content .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
   background-image: -webkit-linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
   background-image: linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
@@ -1349,13 +1359,13 @@ html body .dataTables_wrapper table > thead > tr > th.sorting, html body .dataTa
   border: 1px solid #345578;
 }
 
-/* line 566, ../sass/extra.scss */
+/* line 578, ../sass/extra.scss */
 body table > tbody > tr.selected > td {
   background-color: #D2DFDB !important;
   color: #6144ac;
 }
 
-/* line 572, ../sass/extra.scss */
+/* line 584, ../sass/extra.scss */
 .custom-buttons {
   float: left;
   margin-right: 10px;
@@ -1369,97 +1379,97 @@ body table > tbody > tr.selected > td {
 	-ms-user-select: none;
 	user-select: none;
 } */
-/* line 586, ../sass/extra.scss */
+/* line 598, ../sass/extra.scss */
 *::selection {
   background: #fff2a8;
 }
 
-/* line 590, ../sass/extra.scss */
+/* line 602, ../sass/extra.scss */
 *::-moz-selection {
   background: #fff2a8;
 }
 
-/* line 594, ../sass/extra.scss */
+/* line 606, ../sass/extra.scss */
 .with-shift *::selection {
   background-color: transparent;
 }
 
-/* line 598, ../sass/extra.scss */
+/* line 610, ../sass/extra.scss */
 .with-shift *::-moz-selection {
   background: transparent;
 }
 
-/* line 606, ../sass/extra.scss */
+/* line 618, ../sass/extra.scss */
 #table-items-selected_wrapper {
   border: 1px solid gray;
   margin-bottom: 20px;
   display: none;
 }
 
-/* line 615, ../sass/extra.scss */
+/* line 627, ../sass/extra.scss */
 .warning-duplicate {
   font-size: 0.95em;
   font-style: italic;
 }
 
-/* line 620, ../sass/extra.scss */
+/* line 632, ../sass/extra.scss */
 div.dataTables_length {
   padding-left: 2em;
   padding-top: 0.55em;
 }
 
-/* line 625, ../sass/extra.scss */
+/* line 637, ../sass/extra.scss */
 table thead th {
   white-space: nowrap;
 }
 
 /* buttons */
-/* line 631, ../sass/extra.scss */
+/* line 643, ../sass/extra.scss */
 .custom-btn {
   display: inline-block;
   border: 1px solid;
   text-align: center;
 }
-/* line 635, ../sass/extra.scss */
+/* line 647, ../sass/extra.scss */
 .custom-btn > span {
   border: 1px solid transparent;
   display: block;
   height: 100%;
 }
-/* line 640, ../sass/extra.scss */
+/* line 652, ../sass/extra.scss */
 .custom-btn:hover {
   text-decoration: none;
 }
 
 /* Home */
-/* line 648, ../sass/extra.scss */
+/* line 660, ../sass/extra.scss */
 .app-list {
   margin: auto;
   position: relative;
   text-align: center;
   top: 30%;
 }
-/* line 653, ../sass/extra.scss */
+/* line 665, ../sass/extra.scss */
 .app-list .custom-btn {
   border-color: white;
   color: white;
   width: 210px;
   font-size: 24px;
 }
-/* line 658, ../sass/extra.scss */
+/* line 670, ../sass/extra.scss */
 .app-list .custom-btn span {
   line-height: 40px;
 }
-/* line 661, ../sass/extra.scss */
+/* line 673, ../sass/extra.scss */
 .app-list .custom-btn:first-child {
   margin-right: 40px;
 }
-/* line 665, ../sass/extra.scss */
+/* line 677, ../sass/extra.scss */
 .app-list .custom-btn:hover span {
   border-color: white;
 }
 
-/* line 671, ../sass/extra.scss */
+/* line 683, ../sass/extra.scss */
 a:focus {
   text-decoration: none;
 }

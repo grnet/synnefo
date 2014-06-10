@@ -246,9 +246,21 @@ h3.info             { cursor:default; color:#2956B2; text-align:center; font-siz
 	margin-left: 4px;
 	vertical-align: middle;
 }
+.table tbody tr:hover {
+	td:last-child {
+		&>a {
+			display: inline;
+			text-decoration: none;
+		}
+	}
+}
+
 td:last-child { // this is meant for summary td
-	max-width: 10px;
-	min-width: 10px;
+	max-width: 40px;
+	min-width: 40px;
+	&>a {
+		display: none;
+	}
 
 	.summary-expand {
 		float: right;

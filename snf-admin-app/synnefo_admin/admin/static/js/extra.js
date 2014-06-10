@@ -303,7 +303,6 @@ $(function(){
 		$(table).find('tbody td:last-child a.expand-area').click(function(e) {
 			e.preventDefault();
 			e.stopPropagation();
-			console.log('1')
 			var $summaryTd = $(this).closest('td');
 			var $btn = $summaryTd.find('.expand-area span');
 			var $summaryContent = $summaryTd.find('.info-summary');

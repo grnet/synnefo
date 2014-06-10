@@ -70,25 +70,34 @@
 	}
 }
 
-.login-info {
-	.dropdown>a {
-		padding-left:10px;
-		padding-bottom:8px;
-	}
-	.dropdown-menu {
-		right: 0;
-		left: auto;
-		background: $gray-dark;
-		border-color: white;
-		border-radius: 0;
-		a {
-			color: white;
-			&:hover {
-				color: $gray-dark;
-			}
+// .login-info {
+// 	.dropdown>a {
+// 		padding-left:10px;
+// 		padding-bottom:8px;
+// 	}
+// 	.dropdown-menu {
+// 		right: 0;
+// 		left: auto;
+// 		background: $gray-dark;
+// 		border-color: white;
+// 		border-radius: 0;
+// 		a {
+// 			color: white;
+// 			&:hover {
+// 				color: $gray-dark;
+// 			}
+// 		}
+// 	}
+// }
+
+	.sign-out {
+		span {
+			margin-right: 10px;
+			vertical-align: middle;
+			font-size: 18px;
 		}
 	}
-}
+
 
 .label-notice {
 	background: $gray-light;

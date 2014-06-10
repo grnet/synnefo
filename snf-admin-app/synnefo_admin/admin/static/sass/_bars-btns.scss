@@ -70,25 +70,34 @@
 	}
 }
 
-// .login-info {
-// 	.dropdown>a {
-// 		padding-left:10px;
-// 		padding-bottom:8px;
-// 	}
-// 	.dropdown-menu {
-// 		right: 0;
-// 		left: auto;
-// 		background: $gray-dark;
-// 		border-color: white;
-// 		border-radius: 0;
-// 		a {
-// 			color: white;
-// 			&:hover {
-// 				color: $gray-dark;
-// 			}
-// 		}
-// 	}
-// }
+.login-info {
+	.dropdown a {
+		padding-left:12px;
+		padding-right:12px;
+		padding-bottom:8px;
+	}
+		.dropdown:hover {
+			&>a {
+				color: $gray-dark;
+				background: white;
+				
+			}
+
+		}
+	.dropdown-menu {
+		right: 0;
+		left: auto;
+		// background: $gray-dark;
+		// border-color: white;
+		border-radius: 0;
+		a {
+			// color: white;
+			&:hover {
+				// color: $gray-dark;
+			}
+		}
+	}
+}
 
 	.sign-out {
 		span {
@@ -224,46 +233,28 @@
 			}
 		}
 		&:not(.disabled) {
+			color: white;
+			opacity: 0.8;
+			&:hover {
+				opacity:1;
+			}
+
 			&[data-karma="neutral"] {
+				background-color: $blue-intense;
 				border-color: $blue-intense;
-				color: $blue-intense;
-				&:hover {
-					span {
-						border-color: $blue-intense;
-					}
-				}
-				.badge.num {
-					border-color: $blue-intense;
-					color: $blue-intense;
-				}
 			}
 			&[data-karma="good"] {
+				background-color: $green-intense;
 				border-color: $green-intense;
-				color: $green-intense-extra;
-				&:hover {
-					span {
-						border-color: $green-intense;
-					}
-				}
 			}
 			&[data-karma="bad"] {
 				&[data-reversible="False"] {
+					background-color: $red-intense;
 					border-color: $red-intense;
-					color: $red-intense;
-					&:hover {
-						span {
-							border-color: $red-intense;
-						}
-					}
 				}
 				&[data-reversible="True"] {
+					background-color: $orange-intense;
 					border-color: $orange-intense;
-					color: $orange-intense;
-					&:hover {
-						span {
-							border-color: $orange-intense;
-						}
-					}
 				}
 			}
 		}

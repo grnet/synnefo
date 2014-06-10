@@ -246,22 +246,14 @@ h3.info             { cursor:default; color:#2956B2; text-align:center; font-siz
 	margin-left: 4px;
 	vertical-align: middle;
 }
-.table tbody tr:hover {
-	td:last-child {
-		&>a {
-			display: inline;
-			text-decoration: none;
-		}
-	}
-}
 
 td:last-child { // this is meant for summary td
-	max-width: 40px;
-	min-width: 40px;
-	&>a {
-		display: none;
+	max-width: 60px;
+	min-width: 60px;
+	padding: 8px 0;
+	.details-link:hover {
+		text-decoration: none;
 	}
-
 	.summary-expand {
 		float: right;
 		padding-left: 8px;
@@ -554,6 +546,7 @@ html, body {
 
 html body .dataTables_wrapper {
 	padding: 10px;
+	padding-top: 0;
 	label {
 	font-weight: normal;
 }
@@ -595,9 +588,9 @@ body table>tbody>tr.selected {
 	user-select: none;
 } */
 
-*::selection {
-background: #fff2a8;
-}
+// *::selection {
+// background: #fff2a8;
+// }
 
 *::-moz-selection {
 	background: #fff2a8;
@@ -682,4 +675,155 @@ table thead th {
 }
 a:focus {
 	text-decoration: none;
+}
+
+body select, body input {
+	color: $gray-dark;
+}
+
+table.dataTable tbody tr td:last-child, table.dataTable tbody tr th:last-child {
+	padding: 8px 0;
+}
+
+/* updated olga */
+
+.navbar {
+	text-shadow: none;
+}
+
+.nav > li > a:hover,
+.nav > li > a:focus,
+.nav > li.active > a,
+.nav > li:hover > a{
+	color: $gray-dark;
+	-webkit-transition: color 0 ease 0;
+  	transition: color 0 ease 0;
+  	background: white;
+}
+.dropdown-menu {
+	border-radius: 0;
+	background-color: white;
+}
+
+.dropdown-menu li > a:hover, 
+.dropdown-menu .active > a, 
+.dropdown-menu .active > a:hover { 
+	background-color: #d5d5d5; 
+	color: $gray-dark;
+} 
+
+.sub-nav {
+	color: $gray-dark;
+	background: $almost-white;
+	border: 0 none;
+}
+.sub-nav a {
+	color: $gray-dark;
+}
+
+body .well {
+	border-radius: 0;
+	border: 1px solid $gray-dark; 
+	background: inherit;
+}
+
+table.table {
+	width: 100%;
+	background-color: $gray-dark;
+	color: $almost-white;
+	tbody{
+		tr {
+			background-color: inherit;
+		}	
+		a {
+			color: white;
+		}
+	}
+}
+
+.table-striped > tbody > tr:nth-child(odd) > td,
+.table-striped > tbody > tr:nth-child(odd) > th  {
+	background-color: inherit;
+}
+
+table.dataTable tbody tr td, 
+table.dataTable tbody tr th {
+	border-top: 1px solid lighten($gray-dark, 25%);
+}
+
+table.dataTable thead th,
+table.dataTable thead td {
+  border-bottom: 1px solid white;
+}
+table.dataTable tbody tr:hover {
+	background-color: lighten($gray-dark, 5%);
+}
+table.dataTable tbody tr.selected {
+	background-color: $almost-white;
+	color: $gray-dark;
+	a {
+		color: black;
+	}
+}
+
+body table > tbody > tr.selected > td {
+	background-color: inherit!important;
+}
+
+td:last-child { // this is meant for summary td
+	.summary-expand {
+		background-color: $green-intense;
+	}
+}
+
+#table-items-total_filter {
+	label {
+		color: white;
+	}
+	input {
+		border: 0 none;
+	}
+}
+
+body table > tbody > tr.selected > td {
+  color: $gray-dark;
+}
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_processing,
+.dataTables_wrapper .dataTables_paginate {
+  color: white;
+}
+table.dataTable.no-footer {
+	border-bottom: 1px solid $almost-white;
+	margin: 2em 0;
+	background-color: $gray-dark;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+	color: white!important;
+}
+
+.content .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+	background: $gray-dark;
+	border-color: white;
+}
+
+.content .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+	border-color: transparent;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, 
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+	background: white;
+	border: transparent;
+}
+
+.dataTables_wrapper > .custom-buttons {
+	margin-bottom: 1em;
+}
+
+.badge {
+	border-radius:0;
 }

@@ -18,20 +18,26 @@
 
 
 .filter-input {
-	width: 300px;
-	margin-top: 10px;
-	margin-right: 10px;
-	display: inline-block;
+	label {
+		border: 1px solid #cccccc;
+		background: white;
+		padding: 0 10px;
+		font-weight: normal;
+		input {
+			border: 0 none;
+			background: transparent;
+			height: 38px;
+			// line-height: 38px;
+			padding: 0 5px;
+			font-weight: normal;
+		}	
+	}
 	input {
 		border-radius: 0;
 	}
 }
 
 .filter-dropdown {
-	vertical-align: bottom;
-	margin-right: 10px;
-	margin-top: 10px;
-	display: inline-block;
 	background: white;
 	height: 38px;
 	.dropdown {
@@ -68,4 +74,21 @@
 			}
 		}
 	}
+}
+
+.filter-text, 
+.filter-dropdown {
+	margin: 0 1em 1em 0;
+	display: inline-block;
+	.form-group {
+		margin: 0;
+	}
+}
+
+
+body input:focus {
+	border-color: transparent;
+	-webkit-box-shadow: none;
+	-moz-box-shadow: none;
+	box-shadow: none;
 }

@@ -173,7 +173,7 @@ def get_flavor_info(vm):
 
 class VMJSONView(DatatablesView):
     model = VirtualMachine
-    fields = ('pk', 'pk', 'name', 'operstate', 'suspended',)
+    fields = ('pk', 'name', 'operstate', 'suspended',)
 
     extra = True
     filters = VMFilterSet
@@ -366,8 +366,7 @@ def catalog(request):
     context = {}
     context['action_dict'] = generate_actions()
     context['filter_dict'] = VMFilterSet().filters.itervalues()
-    context['columns'] = ["Column 1", "ID", "Name", "State", "Suspended",
-                          "Details", "Summary"]
+    context['columns'] = ["ID", "Name", "State", "Suspended", ""]
     context['item_type'] = 'vm'
 
     return context

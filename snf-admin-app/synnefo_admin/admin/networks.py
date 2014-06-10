@@ -113,7 +113,7 @@ def get_contact_name(inst):
 
 class NetworkJSONView(DatatablesView):
     model = Network
-    fields = ('pk', 'pk', 'name', 'state', 'public', 'drained',)
+    fields = ('pk', 'name', 'state', 'public', 'drained',)
 
     extra = True
     filters = NetworkFilterSet
@@ -235,8 +235,8 @@ def catalog(request):
     context = {}
     context['action_dict'] = generate_actions()
     context['filter_dict'] = NetworkFilterSet().filters.itervalues()
-    context['columns'] = ["Column 1", "ID", "Name", "Status", "Public",
-                          "Drained", "Details", "Summary"]
+    context['columns'] = ["ID", "Name", "Status", "Public",
+                          "Drained", ""]
     context['item_type'] = 'network'
 
     return context

@@ -103,7 +103,6 @@ def get_allowed_actions(volume):
 class VolumeJSONView(DatatablesView):
     model = Volume
     fields = ('id',
-              'id',
               'name',
               'status',
               'created',
@@ -202,8 +201,8 @@ def catalog(request):
     context = {}
     context['action_dict'] = generate_actions()
     context['filter_dict'] = VolumeFilterSet().filters.itervalues()
-    context['columns'] = ["Column 1", "ID", "Name", "Status", "Creation date",
-                          "VM ID", "Details", "Summary"]
+    context['columns'] = ["ID", "Name", "Status", "Creation date",
+                          "VM ID", ""]
     context['item_type'] = 'volume'
 
     return context

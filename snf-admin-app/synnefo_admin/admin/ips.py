@@ -100,7 +100,7 @@ def get_contact_name(inst):
 
 class IPJSONView(DatatablesView):
     model = IPAddress
-    fields = ('pk', 'pk', 'address', 'floating_ip', 'created', 'userid',)
+    fields = ('pk', 'address', 'floating_ip', 'created', 'userid',)
 
     extra = True
     filters = IPFilterSet
@@ -200,8 +200,8 @@ def catalog(request):
     context = {}
     context['action_dict'] = generate_actions()
     context['filter_dict'] = IPFilterSet().filters.itervalues()
-    context['columns'] = ["Column 1", "ID", "Address", "Floating",
-                          "Creation date", "User ID", "Details", "Summary"]
+    context['columns'] = ["ID", "Address", "Floating",
+                          "Creation date", "User ID", ""]
     context['item_type'] = 'ip'
 
     return context

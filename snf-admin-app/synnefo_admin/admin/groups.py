@@ -64,7 +64,7 @@ def get_allowed_actions(group):
 
 class GroupJSONView(DatatablesView):
     model = Group
-    fields = ('id', 'id', 'name')
+    fields = ('id', 'name')
 
     extra = True
 
@@ -130,7 +130,7 @@ def catalog(request):
     """List view for Cyclades groups."""
     context = {}
     context['action_dict'] = generate_actions()
-    context['columns'] = ["Column 1", "ID", "Name", "Details", "Summary"]
+    context['columns'] = ["ID", "Name", ""]
     context['item_type'] = 'group'
 
     return context

@@ -202,16 +202,16 @@ def display_project_resources(inst, type):
 
 class ProjectJSONView(DatatablesView):
     model = Project
-    fields = ('id', 'id', 'realname', 'state', 'creation_date', 'end_date')
+    fields = ('id', 'realname', 'state', 'creation_date', 'end_date')
 
     extra = True
     filters = ProjectFilterSet
 
     def format_data_row(self, row):
-        row[3] = (str(row[3]) + ' (' +
+        row[2] = (str(row[2]) + ' (' +
                   Project.objects.get(id=row[0]).state_display() + ')')
+        row[3] = str(row[3].date())
         row[4] = str(row[4].date())
-        row[5] = str(row[5].date())
         return row
 
     def get_extra_data_row(self, inst):
@@ -388,8 +388,8 @@ def catalog(request):
     context = {}
     context['action_dict'] = generate_actions()
     context['filter_dict'] = ProjectFilterSet().filters.itervalues()
-    context['columns'] = ["Column 1", "ID", "Name", "Status", "Creation date",
-                          "Expiration date", "Details", "Summary"]
+    context['columns'] = ["ID", "Name", "Status", "Creation date",
+                          "Expiration date", ""]
     context['item_type'] = 'project'
 
     return context

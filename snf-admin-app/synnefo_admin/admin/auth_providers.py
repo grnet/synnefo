@@ -151,8 +151,8 @@ def catalog(request):
     """List view for Cyclades auth_providers."""
     context = {}
     context['action_dict'] = generate_actions()
-    context['columns'] = ["Column 1", "Name", "Identifier", "Active",
-                          "Creation date", "Details", "Summary"]
+    context['columns'] = ["Name", "Identifier", "Active",
+                          "Creation date", ""]
     context['item_type'] = 'auth_provider'
 
     return context

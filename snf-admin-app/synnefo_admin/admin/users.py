@@ -217,7 +217,7 @@ def get_suspended_vms(user):
 
 class UserJSONView(DatatablesView):
     model = AstakosUser
-    fields = ('uuid', 'email', 'first_name', 'last_name', 'is_active',
+    fields = ('email', 'first_name', 'last_name', 'is_active',
               'is_rejected', 'moderated', 'email_verified')
 
     extra = True
@@ -385,9 +385,9 @@ def catalog(request):
     context = {}
     context['action_dict'] = generate_actions()
     context['filter_dict'] = UserFilterSet().filters.itervalues()
-    context['columns'] = ["Column 1", "E-mail", "First Name", "Last Name",
+    context['columns'] = ["E-mail", "First Name", "Last Name",
                           "Active", "Rejected", "Moderated", "Verified",
-                          "Details", "Summary"]
+                        ""]
     context['item_type'] = 'user'
 
     return context

@@ -30,8 +30,4 @@ function showCurrentPlace() {
 
 showCurrentPlace();
 
-$('.sub-nav li:last-child').click(function(e) {
-	e.preventDefault();
-})
-
 });

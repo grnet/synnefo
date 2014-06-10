@@ -43,7 +43,7 @@ $(function(){
 					// $('#table-items-selected_wrapper').slideDown('slow', function() {
 					// 	$(this).animate({'min-height': '400px'})
 					// })
-	$('#table-items-selected_wrapper').slideDown('slow');
+					$('#table-items-selected_wrapper').slideDown('slow');
 				}
 			}
 			else {
@@ -97,36 +97,24 @@ $(function(){
 				mydata = response;
 				extraData = response.extra;
 				if(response.aaData.length != 0) {
-					var cols = response.aaData;
-					var rowL = cols.length;
-					var detailsCol = cols[0].length;
-					var summaryCol = ++cols[0].length;
+					var rowsArray = response.aaData;
+					var rowL = rowsArray.length;
+					var extraCol = rowsArray[0].length; //last column
 					for (var i=0; i<rowL; i++) {
-						cols[i][detailsCol] = response.extra[i].details_url;
-						cols[i][summaryCol] = response.extra[i]
+						rowsArray[i][extraCol] = response.extra[i]
 					}
 				}
 				return response.aaData;
 			}
 		},
-		"columnDefs": [{
-			"targets": -2, // the second column counting from the right is "Details"
-			"orderable": false,
-			"render": function(data, type, rowData)  {
-				return detailsTemplate(data);
-			}
-		},
+		"columnDefs": [
 		{
 			"targets": -1, // the first column counting from the right is "Summary"
 			"orderable": false,
 			"render": function(data, type, rowData) {
-				return summaryTemplate(data);
+				return extraTemplate(data);
 			},
 		},
-		{
-			targets: 0,
-			visible: false
-		}
 		],
 		"order": [1, "asc"],
 		"createdRow": function(row, data, dataIndex) {
@@ -154,18 +142,12 @@ $(function(){
 	$("div.custom-buttons").html('<a href="" class="select-all select custom-btn" data-karma="neutral"><span>Select All</span></a>');
 
 	tableSelected = $(tableSelectedDomID).DataTable({
-		"columnDefs": [{
-			"targets": -2, // the second column counting from the right is "Details"
-			"orderable": false,
-			"render": function(data, type, rowData)  {
-				return detailsTemplate(data);
-			}
-		},
+		"columnDefs": [
 		{
 			"targets": -1, // the first column counting from the right is "Summary"
 			"orderable": false,
 			"render": function(data, type, rowData) {
-				return summaryTemplate(data);
+				return extraTemplate(data);
 			},
 		},
 		{
@@ -292,15 +274,11 @@ $(function(){
 		}
 	};
 
-	function detailsTemplate(data) {
-		var html = '<a href="'+ data.value +'" class="details-link">'+ data.display_name+'</a>';
-		return html;
-	};
 
-	function summaryTemplate(data) {
+	function extraTemplate(data) {
+		yy= data;
 		var listTemplate = '<dt>{key}:</dt><dd>{value}</dd>';
-		var list = '';
-		var listItem = listTemplate.replace('{key}', prop).replace('{value}',data[prop]);
+		var list = '';		var listItem = listTemplate.replace('{key}', prop).replace('{value}',data[prop]);
 		var html;
 
 		for(var prop in data) {
@@ -311,20 +289,21 @@ $(function(){
 			}
 		}
 
-		html = '<a href="#" class="summary-expand expand-area"><span class="snf-icon snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
+		html = '<a href="'+ data["details_url"].value +'" class="details-link"><span class="snf-icon snf-search"></span></a><a href="#" class="summary-expand expand-area"><span class="snf-icon snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
 		return html;
 	};
 
 	function clickDetails(table) {
-		$(table).find('tbody a.details-link').click(function(e) {
+		$(table).find('tbody td:last-child a.details-link').click(function(e) {
 			e.stopPropagation();
 		})
 	}
 
 	function clickSummary(table) {
-		$(table).find('tbody td:last a.expand-area').click(function(e) {
+		$(table).find('tbody td:last-child a.expand-area').click(function(e) {
 			e.preventDefault();
 			e.stopPropagation();
+			console.log('1')
 			var $summaryTd = $(this).closest('td');
 			var $btn = $summaryTd.find('.expand-area span');
 			var $summaryContent = $summaryTd.find('.info-summary');

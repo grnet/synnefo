@@ -124,12 +124,12 @@ def get_exponent(style):
             raise StyleError()
 
 
-def show(n, unit, style=None):
+def show(n, unit, style=None, inf='inf'):
     if style == 'none':
         return str(n)
 
     if n == PRACTICALLY_INFINITE:
-        return 'inf'
+        return inf
 
     try:
         unit_dict = UNITS[unit]

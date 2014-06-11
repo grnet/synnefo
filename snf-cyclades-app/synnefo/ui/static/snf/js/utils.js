@@ -213,12 +213,22 @@
         return string.substring(0, len) + append;
     }
 
+    synnefo.util.PRACTICALLY_INFINITE = 9223372036854776000;
+
     synnefo.util.readablizeBytes = function(bytes, fix) {
         if (parseInt(bytes) == 0) { return '0 bytes' }
         if (fix === undefined) { fix = 2; }
+        bytes = parseInt(bytes);
+        if (bytes >= synnefo.util.PRACTICALLY_INFINITE) {
+            return 'Infinite';
+        }
         var s = ['bytes', 'kb', 'MB', 'GB', 'TB', 'PB'];
         var e = Math.floor(Math.log(bytes)/Math.log(1024));
-        return (bytes/Math.pow(1024, Math.floor(e))).toFixed(fix)+" "+s[e];
+        if (e > s.length) {
+            e = s.length - 1;
+        }
+        ret = (bytes/Math.pow(1024, Math.floor(e))).toFixed(fix)+" "+s[e];
+        return ret;
     }
     
 

@@ -2587,9 +2587,10 @@
                 value = this.get(key)
             }
             if (value <= 0) { value = 0 }
-            // greater than max js int (assume infinite quota)
-            if (value > Math.pow(2, 53) && over_value !== undefined) { 
-              return "Infinite"
+
+            value = parseInt(value);
+            if (value >= synnefo.util.PRACTICALLY_INFINITE && over_value == undefined) { 
+              return "Infinite";
             }
 
             if (!this.is_bytes()) {

@@ -82,6 +82,8 @@
       {% endblock page.project_details %}
     </dl>
   </div>
+  {% else %}
+  {{ project.uuid|owner_by_uuid }} 
   {% endif %}
 
   <div class="full-dotted {% if display_usage %}with-usage{% endif %}">

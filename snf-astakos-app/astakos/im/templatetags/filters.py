@@ -33,6 +33,7 @@ from astakos.im.models import ProjectResourceGrant, Project
 from astakos.im.views import util as views_util
 from astakos.im import util
 from astakos.im import presentation
+from astakos.im.models import AstakosUser
 
 from astakos.im import quotas
 
@@ -455,3 +456,13 @@ def inf_value_display(value):
 @register.filter
 def project_name_for_user(project, user):
     return project.display_name_for_user(user)
+
+
+@register.filter
+def owner_by_uuid(uuid):
+    try:
+        user = AstakosUser.objects.get(uuid=uuid)
+        return "%s %s (%s)" % (user.first_name, user.last_name, user.email)
+    except AstakosUser.DoesNotExist:
+        return uuid
+

@@ -1,3 +1,9 @@
+
+// Part B
+@import "settings";
+@import "bars-btns";
+@import "details";
+@import "filters";
 // Part A
 
 /*body { background: url(../img/roughcloth.png);}*/
@@ -105,7 +111,7 @@ h1 { margin-bottom: 20px; }
 .subnav-fixed h2 { display: block }
 
 .account-form { float: right; margin-top: 2px; margin-bottom: 0}
-.info-block { /*margin-top: 30px;*/ background-color: #fff; padding:0;}
+.info-block { /*margin-top: 30px;*/ padding:0;}
 
 .info-block h3 .badge {   font-size: 0.8em; padding: 5px 8px; background-color:#659CEF;}
 .info-block table { margin-bottom: 0 }
@@ -206,11 +212,6 @@ h3.info             { cursor:default; color:#2956B2; text-align:center; font-siz
 .table-sorted th.headerSortUp:hover span    { background:url(../img/arrow-down.png) no-repeat right center; }
 
 
-// Part B
-@import "settings";
-@import "bars-btns";
-@import "details";
-@import "filters";
 
 
 /* All checkboxes */
@@ -410,19 +411,19 @@ a:not([disabled]):hover {
 
 .positive {
 	&.area {
-		background-color: #dff0d8;
+		background-color: $green-intense;
 	}
 	&.elem {
-		color: #3c763d;
+		color: $green-intense;
 	}
 }
 
 .dangerous {
 	&.area {
-		background-color: red;
+		background-color: $red-intense;
 	}
 	&.elem {
-		color: red;
+		color: $red-intense;
 	}
 }
 
@@ -723,8 +724,10 @@ table.dataTable tbody tr td:last-child, table.dataTable tbody tr th:last-child {
 
 body .well {
 	border-radius: 0;
-	border: 1px solid $gray-dark; 
+	border-color: inherit; 
 	background: inherit;
+	-webkit-box-shadow: none;
+	box-shadow: none;
 }
 
 table.table {
@@ -737,6 +740,12 @@ table.table {
 		}	
 		a {
 			color: white;
+			.snf-search {
+				opacity: 0.7;
+				&:hover {
+					opacity: 1;
+				}
+			}
 		}
 	}
 }
@@ -791,7 +800,6 @@ body table > tbody > tr.selected > td {
 .dataTables_wrapper .dataTables_length,
 .dataTables_wrapper .dataTables_filter,
 .dataTables_wrapper .dataTables_info,
-.dataTables_wrapper .dataTables_processing,
 .dataTables_wrapper .dataTables_paginate {
   color: white;
 }
@@ -826,4 +834,100 @@ table.dataTable.no-footer {
 
 .badge {
 	border-radius:0;
+}
+
+
+.dataTables_wrapper .dataTables_processing {
+	background: $gray-light;
+	color: white;
+	padding: 10px;
+	-moz-box-shadow: inset 0 0 5px #888;
+	-webkit-box-shadow: inset 0 0 5px#888;
+	box-shadow: inner 0 0 5px #888;
+}
+
+
+
+.label {
+	border-radius: 0;
+	padding: 5px 10px;
+	border: 1px solid white;
+	background: inherit;
+	color: white;
+}
+
+.object-details-content {
+	color: white;
+}
+
+.tab-content {
+	background: $gray-light;
+	padding: 20px;
+	.well {
+		border-color: $gray-light;
+	}
+}
+
+.info-block.main {
+	margin-bottom: 5em;
+}
+
+.content-seperator {
+	display: none;
+}
+
+.actions-per-item {
+	color: white;
+	a {
+		color: white;
+	}
+	.custom-btn {
+		margin: 10px 10px 10px 0;
+		span {
+			padding: 5px 10px;
+			border: 1px solid inherit;
+		}
+		&:hover {
+			span {
+				border-color:white;
+			}
+		}
+	}
+}
+
+.content  {
+	h3, h4 {
+		color: white;		
+	}
+}
+
+.part-two {
+	&>.object-details {
+	border: 1px solid $gray-light-extra;		
+	}
+
+}
+
+.object-details,
+.object-details:hover, {
+  background-color: inherit;
+}
+
+.title {
+	a {
+		color: white;
+		opacity: 0.7;
+		&:hover {
+			opacity: 1;
+		}
+	}
+}
+
+.modal-content {
+	border-radius: 0;
+	color: $gray-dark;
+	.badge {
+		background-color: transparent;
+		border: 1px solid $gray-dark;
+	}
 }

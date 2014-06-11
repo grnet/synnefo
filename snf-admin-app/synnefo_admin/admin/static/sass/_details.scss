@@ -1,9 +1,9 @@
 @import "settings";
 
 body {
-	color: #3D3D3D;
+	color: white;
 	a {
-		color: #13499B
+		color: white;
 	}
 }
 
@@ -58,6 +58,13 @@ body .object-details {
 
 	.length {
 		margin-left: 6px;
+		border: 0 none;
+		&::before {
+		    content: '( ';
+		}
+		&::after {
+		    content: ' )';
+		}
 	}
 	&>.object-details {
 		margin-left: -20px;
@@ -66,16 +73,33 @@ body .object-details {
 	}
 }
 
+.part-two {
+	.object-details {
+		padding: 20px;
+		.object-details {
+			padding: 0 20px;
+		}
+	}
+}
+
+
 .object-details-content .nav-tabs>li {
+	a {
+		opacity: 0.7;
+		color: white;
+	}
 	&.active>a {
-		color: $gray-dark;
-		border-color: $blue-light;
-		border-bottom-color: transparent;
+		opacity: 1;
+		border-color: transparent;
+		background: $gray-light;
+		color: white;
+		border-radius: 0;
 	}
 	&:not(.active)>a:hover {
+		opacity: 1;
+		color: white;
 		border-color: transparent;
 		background: transparent;
-		color: $blue-intense;
 	}
 }
 

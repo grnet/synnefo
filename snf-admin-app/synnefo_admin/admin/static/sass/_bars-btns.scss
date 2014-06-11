@@ -211,7 +211,6 @@
 .sidebar, .custom-buttons {
 	a {
 		border: 1px solid;
-
 		width: 100%;
 		font-size: 14px;
 		background-color: transparent;
@@ -226,10 +225,10 @@
 		}
 		&.disabled {
 			border-color: $gray-light-extra;
-			color: $gray-light;
+			color: $gray-light-extra;
 			.badge.num {
 				border-color: $gray-light-extra;
-				color: $gray-light;
+				color: $gray-light-extra;
 			}
 		}
 		&:not(.disabled) {
@@ -263,11 +262,11 @@
 .custom-btn.expand-btn {
 	width: 110px;
 	line-height: 30px;
-	border-color: $green-intense;
-	color:$green-intense-extra;
+	color: white;
+	background: $green-intense;
+	border-color: transparent;
+	opacity:0.8;
 	&:hover {
-		&>span {
-			border-color: $green-intense;
-		}
+		opacity: 1;
 	}
 }

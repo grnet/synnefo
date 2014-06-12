@@ -7600,7 +7600,7 @@ input.has-errors {
   font-family: monospace;
   font-size: 1em;
   border: none;
-  overflow-y: hidden;
+  overflow-y: auto;
   overflow-x: hidden;
   height: 185px;
   margin: 10px 0;

@@ -1164,7 +1164,7 @@ class ModularBackend(BaseBackend):
                             hash, checksum, domain, meta, replace_meta,
                             permissions, src_node=None, src_version_id=None,
                             is_copy=False, report_size_change=True,
-                            available=True):
+                            available=True, keep_available=False):
         if permissions is not None and user != account:
             raise NotAllowedError
         self._can_write_object(user, account, container, name)
@@ -1183,7 +1183,7 @@ class ModularBackend(BaseBackend):
             user, node, src_node=src_node, size=size, type=type, hash=hash,
             checksum=checksum, is_copy=is_copy,
             update_statistics_ancestors_depth=1,
-            available=available, keep_available=False)
+            available=available, keep_available=keep_available)
 
         # Handle meta.
         if src_version_id is None:
@@ -1393,7 +1393,8 @@ class ModularBackend(BaseBackend):
             user, dest_account, dest_container, dest_name, size, type, hash,
             None, dest_domain, dest_meta, replace_meta, permissions,
             src_node=node, src_version_id=src_version_id, is_copy=is_copy,
-            report_size_change=(not bulk_report_size_change))
+            report_size_change=(not bulk_report_size_change),
+            keep_available=True)
         dest_versions.append(dest_version_id)
         occupied_space += size_delta
         if is_move and (src_account, src_container, src_name) != (
@@ -1432,7 +1433,8 @@ class ModularBackend(BaseBackend):
                     vtype, hash, None, dest_domain, meta={},
                     replace_meta=False, permissions=None, src_node=node,
                     src_version_id=src_version_id, is_copy=is_copy,
-                    report_size_change=(not bulk_report_size_change))
+                    report_size_change=(not bulk_report_size_change),
+                    keep_available=True)
                 dest_versions.append(dest_version_id)
                 occupied_space += size_delta
                 if is_move and (src_account, src_container, path) != (

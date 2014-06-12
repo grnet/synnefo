@@ -240,7 +240,7 @@
         update_projects: function() {
           this.project_select.find("option").remove();
           var min_ip_quota = {'cyclades.floating_ip': 1}
-          synnefo.storage.projects.each(function(project){
+          synnefo.storage.joined_projects.each(function(project){
             var el = $("<option></option>");
             el.attr("value", project.id);
             var project_name = util.truncate(project.get('name'), 34);

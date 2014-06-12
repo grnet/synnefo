@@ -371,8 +371,12 @@
         if (cidr) { subnet_params.subnet.cidr = cidr; }
         if (dhcp) { subnet_params.subnet.dhcp_enabled = dhcp; }
         if (dhcp === false) { subnet_params.subnet.dhcp_enabled = false; }
-
-        subnet_params.subnet.gateway_ip = gateway || null;
+        
+        // api applies a gateway address automatically when gateway_ip 
+        // parameter is missing
+        if (gateway !== "auto") {
+            subnet_params.subnet.gateway_ip = gateway || null;
+        }
         
         var cb = function() {
           synnefo.api.trigger("quotas:call");

@@ -614,6 +614,12 @@ div#footer-text{
   float: left;
 }
 
+.overlay-networks-create .clear {
+    float: none;
+    width: 100%;
+    margin-top: 5px !important;
+}
+
 .overlay-networks-create .fixpos {
   margin-top: 3px;
 }

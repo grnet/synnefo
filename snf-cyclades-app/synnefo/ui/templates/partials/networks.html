@@ -36,16 +36,32 @@
             </p>
             </div>
             <div id="network-create-dhcp-fields">
-              <div class="form-field fixpos">
-                <label for="network-type">Network subnet:</label>
-                <select id="network-create-subnet">
-                  <option selected class="auto" value="auto">Auto</option>
-                  <option value="custom" class="manual">Manual...</option>
-                </select>
+              <div class="clearfix">
+                <div class="form-field fixpos">
+                    <label for="network-create-subnet">Subnet:</label>
+                    <select id="network-create-subnet">
+                    <option selected class="auto" value="auto">Auto</option>
+                    <option value="custom" class="manual">Manual...</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label class="hidden" for="network-create-subnet-custom">Custom subnet:</label>
+                    <input type="text" id="network-create-subnet-custom" placeholder="e.g. 192.168.0.1/24"/>
+                </div>
               </div>
-              <div class="form-field">
-                <label class="hidden" for="network-custom-subnet">Custom subnet:</label>
-                <input type="text" id="network-create-subnet-custom"/>
+              <div class="clearfix">
+                <div class="form-field fixpos">
+                    <label for="network-create-gateway">Gateway:</label>
+                    <select id="network-create-gateway">
+                    <option selected class="auto" value="auto">Auto</option>
+                    <option value="custom" class="manual">Manual...</option>
+                    <option value="none">None</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label class="hidden" for="network-create-gateway-custom">Custom gateway:</label>
+                    <input type="text" id="network-create-gateway-custom" placeholder="e.g. 192.168.0.1"/>
+                </div>
               </div>
             </div>
           </div>

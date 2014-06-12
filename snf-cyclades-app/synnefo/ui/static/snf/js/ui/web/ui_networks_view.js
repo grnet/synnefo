@@ -54,6 +54,9 @@
             this.type_select = this.$("#network-create-type");
             this.subnet_select = this.$("#network-create-subnet");
             this.subnet_custom = this.$("#network-create-subnet-custom");
+
+            this.gateway_select = this.$("#network-create-gateway");
+            this.gateway_custom = this.$("#network-create-gateway-custom");
             
             this.project_select = this.$(".project-select");
                 
@@ -84,6 +87,9 @@
         reset_dhcp_form: function() {
           this.subnet_select.find("option")[0].selected = 1;
           this.subnet_custom.val("");
+          this.gateway_select.find("option")[0].selected = 1;
+          this.gateway_custom.val("");
+          this.dhcp_form.find(".form-field").removeClass("error");
         },
 
         check_dhcp_form: function() {
@@ -98,6 +104,23 @@
             } else {
                 this.subnet_custom.hide();
             }
+
+            if (this.gateway_select.val() == "custom") {
+                this.gateway_custom.show();
+            } else {
+                this.gateway_custom.hide();
+            }
+
+            if (this.subnet_select.val() == "auto") {
+                this.gateway_select.find("option")[1].disabled = true;
+                if (this.gateway_select.val() == "custom") {
+                    this.gateway_select.val("auto");
+                    this.gateway_custom.val("");
+                    this.gateway_custom.hide();
+                }
+            } else {
+                this.gateway_select.find("option")[1].disabled = false;
+            }
         },
 
         init_handlers: function() {
@@ -111,6 +134,13 @@
                 this.check_dhcp_form();
                 if (this.subnet_custom.is(":visible")) {
                     this.subnet_custom.focus();
+                }
+            }, this));
+
+            this.gateway_select.change(_.bind(function(e){
+                this.check_dhcp_form();
+                if (this.gateway_custom.is(":visible")) {
+                    this.gateway_custom.focus();
                 }
             }, this));
 
@@ -157,12 +187,25 @@
             }
 
             if (this.dhcp_select.is(":checked")) {
+                if (this.gateway_select.val() == "custom") {
+                    var gw = this.gateway_custom.val();
+                    gw = gw.replace(/^\s+|\s+$/g,"");
+                    this.gateway_custom.val(gw);
+                        
+                    if (!synnefo.util.IP_REGEX.exec(this.gateway_custom.val())) {
+                        this.gateway_custom.closest(".form-field").prev().addClass("error");
+                        return false;
+                    } else {
+                        this.gateway_custom.closest(".form-field").prev().removeClass("error");
+                    }
+                }
+
                 if (this.subnet_select.val() == "custom") {
                     var sub = this.subnet_custom.val();
                     sub = sub.replace(/^\s+|\s+$/g,"");
                     this.subnet_custom.val(sub);
                         
-                    if (!synnefo.util.IP_REGEX.exec(this.subnet_custom.val())) {
+                    if (!synnefo.util.SUBNET_REGEX.exec(this.subnet_custom.val())) {
                         this.subnet_custom.closest(".form-field").prev().addClass("error");
                         return false;
                     } else {
@@ -212,7 +255,12 @@
                     subnet = this.subnet_select.val();
                 }
                 
-            }t
+                var gw_type = this.gateway_select.val();
+                if (gw_type == "auto") { gateway = "auto"; }
+                if (gw_type == "custom") {
+                    gateway = this.gateway_custom.val();
+                }
+            }
 
             snf.storage.networks.create(
               project, name, type, subnet, dhcp, gateway, _.bind(function(){
@@ -251,6 +299,8 @@
             this.text.focus();
             this.subnet_custom.val("");
             this.subnet_select.val("auto");
+            this.gateway_select.val("auto");
+            this.gateway_custom.val("");
             this.dhcp_select.attr("checked", true);
             this.type_select.val(_.keys(synnefo.config.network_available_types)[0]);
             this.check_dhcp_form();

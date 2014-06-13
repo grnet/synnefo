@@ -12,6 +12,7 @@ $(function(){
 
 	var availableActions = {};
 	var allowedActions= {};
+	var massiveActionsMode = false;
 
 	/* Actionbar */
 	$('.actionbar a').each(function() {
@@ -33,16 +34,9 @@ $(function(){
 				if($(this).hasClass('open')) {
 					$(this).removeClass('open');
 					$('#table-items-selected_wrapper').slideUp('slow');
-					// $('#table-items-selected_wrapper').animate({'min-height': 0}, 'slow',
-					// 	function() {
-					// 		$(this).slideUp('slow');
-					// 	})
 				}
 				else {
 					$(this).addClass('open');
-					// $('#table-items-selected_wrapper').slideDown('slow', function() {
-					// 	$(this).animate({'min-height': '400px'})
-					// })
 					$('#table-items-selected_wrapper').slideDown('slow');
 				}
 			}
@@ -77,9 +71,8 @@ $(function(){
 	var tableDomID = '#table-items-total';
 	var tableSelectedDomID = '#table-items-selected'
 	table = $(tableDomID).DataTable({
-		"bPaginate": true,
-		//"sPaginationType": "bootstrap",
-		"bProcessing": true,
+		"paging": true,
+		"processing": true,
 		"serverSide": serverside,
 		"ajax": {
 			"url": url,
@@ -121,7 +114,7 @@ $(function(){
 			var extraIndex = data.length - 1;
 			row.id = data[extraIndex].id.value; //sets the dom id
 			var selectedL = selected.items.length;
-			if(selectedL !== 0) {
+			if(selectedL !== 0 && !massiveActionsMode) { // ***
 				for(var i = 0; i<selectedL; i++){
 					if (selected.items[i].id === row.id) {
 						$(row).addClass('selected')
@@ -134,12 +127,25 @@ $(function(){
 			"sLengthMenu": 'Pagination _MENU_'
 		},
 		"drawCallback": function(settings) {
+			console.log(settings)
 			updateToggleAllSelect(this);
 			clickSummary(this);
 			clickDetails(this);
 		}
 	});
-	$("div.custom-buttons").html('<a href="" class="select-all select custom-btn" data-karma="neutral"><span>Select All</span></a>');
+	$("div.custom-buttons").html('<a href="" class="select-page select custom-btn" data-karma="neutral"><span>Select Page</span></a><a href="" class="select-all select custom-btn" data-karma="neutral"><span>Remove Pagination</span></a>');
+
+	// *********
+	$('.select-all').click(function(e) {
+		e.preventDefault();
+		console.log('select all items');
+		massiveActionsMode = true;
+		table.page.len(-1).draw();
+		// $(tableDomID).dataTable().api().ajax.reload();
+	})
+
+	// *********
+
 
 	tableSelected = $(tableSelectedDomID).DataTable({
 		"columnDefs": [
@@ -353,17 +359,19 @@ $(function(){
 			}
 		}
 
-		itemsL = selected.items.length;
-			for(var i=0; i<itemsL; i++) {
-				if(selected.items[i].id === newItem.id) {
-					isNew = false;
-				}
-			}
-		if(isNew) {
-			selected.items.push(newItem);
+		// is there a chance to have an OLD item??
+		// itemsL = selected.items.length;
+		// 	for(var i=0; i<itemsL; i++) {
+		// 		if(selected.items[i].id === newItem.id) {
+		// 			isNew = false;
+		// 		}
+		// 	}
+		// if(isNew) {
+		// 	selected.items.push(newItem);
 			return newItem
-		}
-		return null;
+		// }
+		// else
+			return null;
 	};
 
 	function removeItem(itemID) {
@@ -422,7 +430,7 @@ $(function(){
 	};
 
 	function resetTable(tableDomID) {
-		// $(tableDomID).find('thead .select-all input[type=checkbox]').attr('checked', false);
+		// $(tableDomID).find('thead .select-page input[type=checkbox]').attr('checked', false);
 		selected.items = [];
 		removeSelected(true); //removes all selected items from the table of selected items
 		// $(tableDomID).find('thead .selected-num').html(selected.items.length);
@@ -441,14 +449,14 @@ $(function(){
 		}
 	});
 
-	 /* Select-all button */
+	 /* select-page button */
 
-	$('.select-all').click(function(e) {
+	$('.select-page').click(function(e) {
 		e.preventDefault();
 		toggleVisSelected(tableDomID, $(this).hasClass('select'));
 	});
 
-	/* select-all / deselect-all */
+	/* select-page / deselect-page */
 	function toggleVisSelected(tableDomID, selectFlag) {
 		lastClicked = null;
 		prevClicked = null;
@@ -467,7 +475,7 @@ $(function(){
 	/* Checks how many rows are selected and adjusts the classes and
 	the text of the select-qll btn */
 	function updateToggleAllSelect() {
-		var $toggleAll = $('.select-all');
+		var $toggleAll = $('.select-page');
 		var $label = $toggleAll.find('span')
 		var $tr = $(tableDomID).find('tbody tr');
 

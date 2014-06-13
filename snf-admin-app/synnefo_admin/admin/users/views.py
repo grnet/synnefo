@@ -111,6 +111,20 @@ class UserJSONView(DatatablesView):
             'value': inst.realname,
             'visible': False,
         }
+
+        if self.form.cleaned_data['iDisplayLength'] < 0:
+            extra_dict['minimal'] = {
+                'display_name': "No summary available",
+                'value': "Have you per chance pressed 'Select All'?",
+                'visible': True,
+            }
+        else:
+            extra_dict.update(self.add_verbose_data(inst))
+
+        return extra_dict
+
+    def add_verbose_data(self, inst):
+        extra_dict = OrderedDict()
         extra_dict['status'] = {
             'display_name': "Status",
             'value': inst.status_display,

@@ -31,6 +31,8 @@
 # interpreted as representing official policies, either expressed
 # or implied, of GRNET S.A.
 
+import functools
+
 from snf_django.lib.api import faults
 
 
@@ -108,6 +110,11 @@ class AdminAction:
             res = True
         return res
 
+    def is_user_allowed(self, user):
+        """Check if a user can author an action."""
+        groups = get_user_groups(user)
+        return set(groups) & set(self.allowed_groups)
+
 
 class AdminActionNotPermitted(Exception):
 
@@ -133,3 +140,32 @@ class AdminActionNotImplemented(Exception):
 def noop(**kwargs):
     """Placeholder function."""
     raise AdminActionNotImplemented
+
+
+def get_user_groups(user):
+    """Extract user groups from request.
+
+    This function requires that astakos client has already stored the user data
+    in the request.
+    """
+    if not user:
+        return None
+    elif isinstance(user, dict):
+        groups = user['access']['user']['roles']
+        return [g["name"] for g in groups]
+    else:
+        raise Exception
+
+
+def has_permission_or_403(actions):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(request, op, *args, **kwargs):
+            if not isinstance(actions, dict):
+                raise AdminActionNotImplemented
+            if not actions[op].is_user_allowed(request.user):
+                raise AdminActionNotPermitted
+            return func(request, *args, **kwargs)
+        return wrapper
+    return decorator
+

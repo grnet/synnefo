@@ -47,7 +47,7 @@ from astakos.im.models import (AstakosUser, Project, ProjectResourceGrant,
 
 from eztables.views import DatatablesView
 from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
-                     noop)
+                     noop, has_permission_or_403)
 from astakos.im.user_utils import send_plain as send_email
 from astakos.im.functions import (validate_project_action, ProjectConflict,
                                   approve_application, deny_application,
@@ -341,33 +341,49 @@ def generate_actions():
     actions = OrderedDict()
 
     actions['approve'] = ProjectAction(name='Approve', f=approve_application,
-                                       c=check_approve,)
+                                       c=check_approve,
+                                       allowed_groups=['superadmin'])
 
     actions['deny'] = ProjectAction(name='Deny', f=deny_application,
-                                    c=check_deny,)
+                                    c=check_deny,
+                                    allowed_groups=['superadmin'])
 
     actions['suspend'] = ProjectAction(name='Suspend', f=suspend,
-                                       c=check_project_action("SUSPEND"),)
+                                       c=check_project_action("SUSPEND"),
+                                       allowed_groups=['superadmin'])
 
     actions['unsuspend'] = ProjectAction(name='Release suspension',
                                          f=unsuspend,
-                                         c=check_project_action("UNSUSPEND"),)
+                                         c=check_project_action("UNSUSPEND"),
+                                         allowed_groups=['superadmin'])
 
     actions['terminate'] = ProjectAction(name='Terminate', f=terminate,
-                                         c=check_project_action("TERMINATE"),)
+                                         c=check_project_action("TERMINATE"),
+                                         allowed_groups=['superadmin'])
 
     actions['reinstate'] = ProjectAction(name='Reinstate', f=reinstate,
-                                         c=check_project_action("REINSTATE"),)
+                                         c=check_project_action("REINSTATE"),
+                                         allowed_groups=['superadmin'])
 
-    actions['contact'] = ProjectAction(name='Send e-mail', f=send_email,)
+    actions['contact'] = ProjectAction(name='Send e-mail', f=send_email,
+                                       allowed_groups=['admin', 'superadmin'])
 
     return actions
 
 
+def get_permitted_actions(user):
+    actions = generate_actions()
+    for key, action in actions.iteritems():
+        if not action.is_user_allowed(user):
+            actions.pop(key, None)
+    return actions
+
+
+@has_permission_or_403(generate_actions())
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     project = get_project(id)
-    actions = generate_actions()
+    actions = get_permitted_actions(request.user)
     logging.info("Op: %s, project: %s, fun: %s", op, project.uuid,
                  actions[op].f)
 
@@ -386,7 +402,7 @@ def do_action(request, op, id):
 def catalog(request):
     """List view for Cyclades projects."""
     context = {}
-    context['action_dict'] = generate_actions()
+    context['action_dict'] = get_permitted_actions(request.user)
     context['filter_dict'] = ProjectFilterSet().filters.itervalues()
     context['columns'] = ["ID", "Name", "Status", "Creation date",
                           "Expiration date", ""]

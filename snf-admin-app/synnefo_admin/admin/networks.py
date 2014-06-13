@@ -48,7 +48,7 @@ from astakos.im.models import AstakosUser, Project
 
 from eztables.views import DatatablesView
 from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
-                     noop)
+                     noop, has_permission_or_403)
 
 import django_filters
 
@@ -199,30 +199,45 @@ def generate_actions():
 
     actions['drain'] = NetworkAction(name='Drain', f=drain_network,
                                      #c=check_network_action('DRAIN'),
-                                     reversible=True)
+                                     reversible=True,
+                                     allowed_groups=['superadmin'])
 
     actions['undrain'] = NetworkAction(name='Undrain', f=undrain_network,
                                        #c=check_network_action('UNDRAIN'),
-                                       karma='neutral', reversible=True)
+                                       karma='neutral', reversible=True,
+                                       allowed_groups=['superadmin'])
 
     actions['delete'] = NetworkAction(name='Delete', f=networks.delete,
                                       c=check_network_action('DESTROY'),
-                                      karma='bad', reversible=False)
+                                      karma='bad', reversible=False,
+                                      allowed_groups=['superadmin'])
 
     actions['reassign'] = NetworkAction(name='Reassign to project', f=noop,
-                                        karma='neutral', reversible=True)
+                                        karma='neutral', reversible=True,
+                                        allowed_groups=['superadmin'])
 
     actions['change_owner'] = NetworkAction(name='Change owner', f=noop,
-                                            karma='neutral', reversible=True)
+                                            karma='neutral', reversible=True,
+                                            allowed_groups=['superadmin'])
 
-    actions['contact'] = NetworkAction(name='Send e-mail', f=send_email)
+    actions['contact'] = NetworkAction(name='Send e-mail', f=send_email,
+                                       allowed_groups=['admin', 'superadmin'])
     return actions
 
 
+def get_permitted_actions(user):
+    actions = generate_actions()
+    for key, action in actions.iteritems():
+        if not action.is_user_allowed(user):
+            actions.pop(key, None)
+    return actions
+
+
+@has_permission_or_403(generate_actions())
 def do_action(request, op, id):
     """Apply the requested action on the specified network."""
     network = Network.objects.get(pk=id)
-    actions = generate_actions()
+    actions = get_permitted_actions(request.user)
 
     if op == 'contact':
         actions[op].f(network, request.POST['text'])
@@ -233,7 +248,7 @@ def do_action(request, op, id):
 def catalog(request):
     """List view for Cyclades networks."""
     context = {}
-    context['action_dict'] = generate_actions()
+    context['action_dict'] = get_permitted_actions(request.user)
     context['filter_dict'] = NetworkFilterSet().filters.itervalues()
     context['columns'] = ["ID", "Name", "Status", "Public",
                           "Drained", ""]

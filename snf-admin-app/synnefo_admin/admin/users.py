@@ -55,7 +55,7 @@ from synnefo.util import units
 
 from eztables.views import DatatablesView
 from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
-                     noop)
+                     noop, has_permission_or_403)
 
 import django_filters
 from django.db.models import Q
@@ -328,38 +328,55 @@ def generate_actions():
 
     actions['activate'] = UserAction(name='Activate', f=users.activate,
                                      c=check_user_action("ACTIVATE"),
-                                     karma='good', reversible=True)
+                                     karma='good', reversible=True,
+                                     allowed_groups=['superadmin'])
 
     actions['deactivate'] = UserAction(name='Deactivate', f=users.deactivate,
                                        c=check_user_action("DEACTIVATE"),
-                                       karma='bad', reversible=True)
+                                       karma='bad', reversible=True,
+                                       allowed_groups=['superadmin'])
 
     actions['accept'] = UserAction(name='Accept', f=users.accept,
                                    c=check_user_action("ACCEPT"),
-                                   karma='good', reversible=False)
+                                   karma='good', reversible=False,
+                                   allowed_groups=['superadmin'])
 
     actions['reject'] = UserAction(name='Reject', f=users.reject,
                                    c=check_user_action("REJECT"),
-                                   karma='bad', reversible=False)
+                                   karma='bad', reversible=False,
+                                   allowed_groups=['superadmin'])
 
     actions['verify'] = UserAction(name='Verify', f=users.verify,
                                    c=check_user_action("VERIFY"),
-                                   karma='good', reversible=False)
+                                   karma='good', reversible=False,
+                                   allowed_groups=['superadmin'])
 
     actions['resend_verification'] = UserAction(name='Resend verification',
                                                 f=noop, karma='good',
                                                 c=check_user_action(
                                                     "SEND_VERIFICATION_MAIL"),
-                                                reversible=False)
+                                                reversible=False,
+                                                allowed_groups=['admin',
+                                                                'superadmin'])
 
-    actions['contact'] = UserAction(name='Send e-mail', f=send_email)
+    actions['contact'] = UserAction(name='Send e-mail', f=send_email,
+                                    allowed_groups=['admin', 'superadmin'])
     return actions
 
 
+def get_permitted_actions(user):
+    actions = generate_actions()
+    for key, action in actions.iteritems():
+        if not action.is_user_allowed(user):
+            actions.pop(key, None)
+    return actions
+
+
+@has_permission_or_403(generate_actions())
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     user = get_user(id)
-    actions = generate_actions()
+    actions = get_permitted_actions()
     logging.info("Op: %s, target: %s, fun: %s", op, user.email, actions[op].f)
 
     if op == 'reject':
@@ -383,7 +400,7 @@ def catalog(request):
         logging.info("Filter %s, filter_name %s", filter, filter.name)
 
     context = {}
-    context['action_dict'] = generate_actions()
+    context['action_dict'] = get_permitted_actions(request.user)
     context['filter_dict'] = UserFilterSet().filters.itervalues()
     context['columns'] = ["E-mail", "First Name", "Last Name",
                           "Active", "Rejected", "Moderated", "Verified",
@@ -472,13 +489,13 @@ def details(request, query):
     context = {
         'main_item': user,
         'main_type': 'user',
-        'action_dict': generate_actions(),
+        'action_dict': get_permitted_actions(request.user),
         'associations_list': [
             (quota_list, 'quota', None),
-            (project_list, 'project', project_views.generate_actions()),
-            (vm_list, 'vm', vm_views.generate_actions()),
+            (project_list, 'project', project_views.get_permitted_actions(request.user)),
+            (vm_list, 'vm', vm_views.get_permitted_actions(request.user)),
             (volume_list, 'volume', None),
-            (network_list, 'network', network_views.generate_actions()),
+            (network_list, 'network', network_views.get_permitted_actions(request.user)),
             (nic_list, 'nic', None),
             (ip_list, 'ip', None),
         ]

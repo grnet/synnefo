@@ -79,7 +79,8 @@ VM_SEARCH_REGEX = re.compile('vm(-){0,}(?P<vmid>[0-9]+)')
 AUTH_COOKIE_NAME = getattr(settings, 'ADMIN_AUTH_COOKIE_NAME',
                            getattr(settings, 'UI_AUTH_COOKIE_NAME',
                                    '_pithos2_a'))
-PERMITTED_GROUPS = getattr(settings, 'ADMIN_PERMITTED_GROUPS', ['admin'])
+PERMITTED_GROUPS = getattr(settings, 'ADMIN_PERMITTED_GROUPS',
+                           ['admin-readonly', 'admin', 'superadmin'])
 SHOW_DELETED_VMS = getattr(settings, 'ADMIN_SHOW_DELETED_VMS', False)
 
 

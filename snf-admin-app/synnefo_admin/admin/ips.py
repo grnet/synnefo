@@ -46,7 +46,7 @@ from astakos.im.models import AstakosUser, Project
 
 from eztables.views import DatatablesView
 from actions import (AdminAction, AdminActionUnknown, AdminActionNotPermitted,
-                     noop)
+                     noop, has_permission_or_403)
 import django_filters
 
 import synnefo_admin.admin.vms as vm_views
@@ -175,19 +175,31 @@ def generate_actions():
     actions = OrderedDict()
 
     actions['delete'] = IPAction(name='Delete', f=ips.delete_floating_ip,
-                                 karma='bad', reversible=False)
+                                 karma='bad', reversible=False,
+                                 allowed_groups=['superadmin'])
 
     actions['reassign'] = IPAction(name='Reassign to project', f=noop,
-                                   karma='neutral', reversible=True)
+                                   karma='neutral', reversible=True,
+                                   allowed_groups=['superadmin'])
 
-    actions['contact'] = IPAction(name='Send e-mail', f=send_email)
+    actions['contact'] = IPAction(name='Send e-mail', f=send_email,
+                                  allowed_groups=['admin', 'superadmin'])
     return actions
 
 
+def get_permitted_actions(user):
+    actions = generate_actions()
+    for key, action in actions.iteritems():
+        if not action.is_user_allowed(user):
+            actions.pop(key, None)
+    return actions
+
+
+@has_permission_or_403(generate_actions())
 def do_action(request, op, id):
     """Apply the requested action on the specified ip."""
     ip = IPAddress.objects.get(id=id)
-    actions = generate_actions()
+    actions = get_permitted_actions(request.user)
 
     if op == 'contact':
         actions[op].f(ip, request.POST['text'])
@@ -198,7 +210,7 @@ def do_action(request, op, id):
 def catalog(request):
     """List view for Cyclades ips."""
     context = {}
-    context['action_dict'] = generate_actions()
+    context['action_dict'] = get_permitted_actions(request.user)
     context['filter_dict'] = IPFilterSet().filters.itervalues()
     context['columns'] = ["ID", "Address", "Floating",
                           "Creation date", "User ID", ""]

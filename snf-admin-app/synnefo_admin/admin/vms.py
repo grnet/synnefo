@@ -40,7 +40,7 @@ from operator import or_
 from django.views.decorators.csrf import csrf_exempt
 from django.core.urlresolvers import reverse
 
-from actions import AdminAction, noop
+from actions import AdminAction, noop, has_permission_or_403
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser, ProjectMembership, Project
@@ -293,62 +293,85 @@ def generate_actions():
 
     actions['start'] = VMAction(name='Start', f=servers_backend.start,
                                 c=check_vm_action('START'),
-                                karma='good', reversible=True)
+                                karma='good', reversible=True,
+                                allowed_groups=['admin', 'superadmin'])
 
     actions['shutdown'] = VMAction(name='Shutdown', f=servers_backend.stop,
                                    c=check_vm_action('STOP'), karma='bad',
-                                   reversible=True)
+                                   reversible=True,
+                                   allowed_groups=['admin', 'superadmin'])
 
     actions['reboot'] = VMAction(name='Reboot', f=servers_backend.reboot,
                                  c=check_vm_action('REBOOT'), karma='bad',
-                                 reversible=True)
+                                 reversible=True,
+                                 allowed_groups=['admin', 'superadmin'])
 
     actions['resize'] = VMAction(name='Resize', f=noop,
                                  c=check_vm_action('RESIZE'), karma='neutral',
-                                 reversible=False)
+                                 reversible=False,
+                                 allowed_groups=['superadmin'])
 
     actions['destroy'] = VMAction(name='Destroy', f=servers_backend.destroy,
                                   c=check_vm_action('DESTROY'), karma='bad',
-                                  reversible=False)
+                                  reversible=False,
+                                  allowed_groups=['superadmin'])
 
     actions['connect'] = VMAction(name='Connect to network', f=noop,
-                                  karma='good', reversible=True)
+                                  karma='good', reversible=True,
+                                  allowed_groups=['superadmin'])
 
     actions['disconnect'] = VMAction(name='Disconnect from network', f=noop,
-                                     karma='bad', reversible=True)
+                                     karma='bad', reversible=True,
+                                     allowed_groups=['superadmin'])
 
     actions['attach'] = VMAction(name='Attach IP', f=noop,
                                  c=check_vm_action('ADDFLOATINGIP'),
-                                 karma='good', reversible=True)
+                                 karma='good', reversible=True,
+                                 allowed_groups=['superadmin'])
 
     actions['detach'] = VMAction(name='Detach IP', f=noop,
                                  c=check_vm_action('REMOVEFLOATINGIP'),
-                                 karma='bad', reversible=True)
+                                 karma='bad', reversible=True,
+                                 allowed_groups=['superadmin'])
 
     actions['suspend'] = VMAction(name='Suspend', f=vm_suspend,
                                   c=check_vm_action('SUSPEND'),
-                                  karma='bad', reversible=True)
+                                  karma='bad', reversible=True,
+                                  allowed_groups=['admin', 'superadmin'])
 
     actions['release'] = VMAction(name='Release suspension',
                                   f=vm_suspend_release,
                                   c=check_vm_action('RELEASE'), karma='good',
-                                  reversible=True)
+                                  reversible=True,
+                                  allowed_groups=['admin', 'superadmin'])
 
     actions['reassign'] = VMAction(name='Reassign to project', f=noop,
-                                   karma='neutral', reversible=True)
+                                   karma='neutral', reversible=True,
+                                   allowed_groups=['superadmin'])
 
     actions['change_owner'] = VMAction(name='Change owner', f=noop,
-                                       karma='neutral', reversible=True)
+                                       karma='neutral', reversible=True,
+                                       allowed_groups=['superadmin'])
 
-    actions['contact'] = VMAction(name='Send e-mail', f=send_email)
+    actions['contact'] = VMAction(name='Send e-mail', f=send_email,
+                                  allowed_groups=['admin', 'superadmin'])
 
     return actions
 
 
+def get_permitted_actions(user):
+    actions = generate_actions()
+    for key, action in actions.iteritems():
+        if not action.is_user_allowed(user):
+            actions.pop(key, None)
+    return actions
+
+
+@has_permission_or_403(generate_actions())
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     vm = VirtualMachine.objects.get(pk=id)
-    actions = generate_actions()
+    actions = get_permitted_actions(request.user)
     logging.info("Op: %s, vm: %s, fun: %s", op, vm.pk, actions[op].f)
 
     if op == 'reboot':
@@ -364,7 +387,7 @@ def catalog(request):
     """List view for Cyclades VMs."""
     logging.info("Filters are %s", VMFilterSet().filters)
     context = {}
-    context['action_dict'] = generate_actions()
+    context['action_dict'] = get_permitted_actions(request.user)
     context['filter_dict'] = VMFilterSet().filters.itervalues()
     context['columns'] = ["ID", "Name", "State", "Suspended", ""]
     context['item_type'] = 'vm'

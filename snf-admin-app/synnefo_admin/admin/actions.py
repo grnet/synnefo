@@ -168,4 +168,3 @@ def has_permission_or_403(actions):
             return func(request, *args, **kwargs)
         return wrapper
     return decorator
-

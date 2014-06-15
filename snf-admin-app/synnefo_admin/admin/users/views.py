@@ -40,8 +40,17 @@ from eztables.views import DatatablesView
 import django_filters
 from django.db.models import Q
 
-
 from synnefo_admin.admin.actions import has_permission_or_403
+from synnefo_admin.admin.vms.actions import get_permitted_actions as \
+    get_vm_actions
+from synnefo_admin.admin.volumes.actions import get_permitted_actions as \
+    get_volume_actions
+from synnefo_admin.admin.networks.actions import get_permitted_actions as \
+    get_network_actions
+from synnefo_admin.admin.ips.actions import get_permitted_actions as \
+    get_ip_actions
+from synnefo_admin.admin.projects.actions import get_permitted_actions as \
+    get_project_actions
 
 from .utils import (get_user, get_quotas, get_user_groups,
                     get_enabled_providers, get_suspended_vms, )
@@ -218,12 +227,12 @@ def details(request, query):
         'action_dict': get_permitted_actions(request.user),
         'associations_list': [
             (quota_list, 'quota', None),
-            (project_list, 'project', None),
-            (vm_list, 'vm', None),
-            (volume_list, 'volume', None),
-            (network_list, 'network', None),
+            (project_list, 'project', get_project_actions(request.user)),
+            (vm_list, 'vm', get_vm_actions(request.user)),
+            (volume_list, 'volume', get_volume_actions(request.user)),
+            (network_list, 'network', get_network_actions(request.user)),
             (nic_list, 'nic', None),
-            (ip_list, 'ip', None),
+            (ip_list, 'ip', get_ip_actions(request.user)),
         ]
     }
 

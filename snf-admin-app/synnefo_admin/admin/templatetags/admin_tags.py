@@ -30,10 +30,12 @@
 from collections import OrderedDict
 from django import template
 import logging
+logger = logging.getLogger(__name__)
 
 import django_filters
 
-import synnefo_admin.admin.projects as project_views
+import synnefo_admin.admin.projects.utils as project_utils
+from astakos.im.functions import ProjectConflict
 
 register = template.Library()
 
@@ -225,7 +227,6 @@ def get_filter_template(filter):
 
     This only works for filters that are instances of django-filter's Filter.
     """
-    logging.info("Here for %s", filter)
     if isinstance(filter, django_filters.NumberFilter):
         type = "number"
     elif isinstance(filter, django_filters.CharFilter):
@@ -272,10 +273,10 @@ def get_project_stats(project):
     """Create a dictionary with a summary for a project's stats."""
     stats = OrderedDict()
     if not project.is_base:
-        stats['Per Member'] = project_views.display_project_resources(project,
+        stats['Per Member'] = project_utils.display_project_resources(project,
                                                                       'member')
-    stats['Total'] = project_views.display_project_resources(project, 'total')
-    stats['Used'] = project_views.display_project_stats(project,
+    stats['Total'] = project_utils.display_project_resources(project, 'total')
+    stats['Used'] = project_utils.display_project_stats(project,
                                                         'project_usage')
     return stats
 
@@ -283,4 +284,7 @@ def get_project_stats(project):
 @register.filter
 def can_apply(action, item):
     """Return if action can apply on item."""
-    return action.can_apply(item)
+    try:
+        return action.can_apply(item)
+    except ProjectConflict:
+        return True

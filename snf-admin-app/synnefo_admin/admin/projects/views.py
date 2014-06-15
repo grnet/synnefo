@@ -46,6 +46,17 @@ from synnefo_admin.admin.utils import is_resource_useful
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
+from synnefo_admin.admin.users.actions import get_permitted_actions as \
+    get_user_actions
+from synnefo_admin.admin.vms.actions import get_permitted_actions as \
+    get_vm_actions
+from synnefo_admin.admin.volumes.actions import get_permitted_actions as \
+    get_volume_actions
+from synnefo_admin.admin.networks.actions import get_permitted_actions as \
+    get_network_actions
+from synnefo_admin.admin.ips.actions import get_permitted_actions as \
+    get_ip_actions
+
 from .filters import ProjectFilterSet
 from .actions import (generate_actions, get_allowed_actions,
                       get_permitted_actions)
@@ -208,12 +219,13 @@ def details(request, query):
     context = {
         'main_item': project,
         'main_type': 'project',
+        'action_dict': get_permitted_actions(request.user),
         'associations_list': [
-            (user_list, 'user'),
-            (vm_list, 'vm'),
-            (volume_list, 'volume'),
-            (network_list, 'network'),
-            (ip_list, 'ip'),
+            (user_list, 'user', get_user_actions(request.user)),
+            (vm_list, 'vm', get_vm_actions(request.user)),
+            (volume_list, 'volume', get_volume_actions(request.user)),
+            (network_list, 'network', get_network_actions(request.user)),
+            (ip_list, 'ip', get_ip_actions(request.user)),
         ]
     }
 

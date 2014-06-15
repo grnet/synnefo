@@ -2,7 +2,8 @@
 
 {% with network=item %}
 <div class="object-anchor" id="network-{{network.pk}}"></div>
-<div class="network-details object-details {{ rowcls }}">
+<div class="network-details object-details {{ rowcls }}" data-id="{{network.pk}}"
+    data-type="{{type}}">
     <h4>
         <span class="title"><a href="{% url admin-details type network.pk %}">{{ network|repr }}</a></span>
 		<span class="badge arrow">&nbsp;</span>
@@ -28,5 +29,6 @@
 			</div>
 		</div>
     </div>
+    {% include "admin/action_list_horizontal.html" %}
 </div>
 {% endwith %}

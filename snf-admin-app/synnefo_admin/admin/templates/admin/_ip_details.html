@@ -2,7 +2,8 @@
 
 {% with ip=item %}
 <div class="object-anchor" id="ip-{{ip.pk}}"></div>
-<div class="object-details {{ rowcls }}">
+<div class="object-details {{ rowcls }}" data-id="{{ip.pk}}"
+    data-type="{{type}}">
     <h4>
         <span class="title"><a href="{% url admin-details type ip.pk %}">{{ ip.address }}</a></span>
         <span class="badge arrow">&nbsp;</span>
@@ -33,9 +34,7 @@
             </div>
         </div> <!-- <div class="tab-content"> -->
     </div> <!-- <div class="object-details-content"> -->
-    <div class="todo vm-actions clearfix">
-        {% include "admin/action_list_horizontal.html" %}
-    </div>
+    {% include "admin/action_list_horizontal.html" %}
 </div> <!-- <div class="object-details {{ rowcls }}"> -->
 {% endwith %}
 

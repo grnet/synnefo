@@ -3,7 +3,8 @@
 {% with project=item page='user' %}
 <!--{{ project|admin_debug }}-->
 <div class="object-anchor" id="user-{{project.uuid}}"></div>
-<div class="object-details {{ rowcls }}">
+<div class="object-details {{ rowcls }}" data-id="{{project.uuid}}"
+    data-type="{{type}}">
     <h4>
         <span class="title"><a href="{% url admin-details type project.uuid %}">{{ project|repr }}</a></span>
         <span class="badge arrow">&nbsp;</span>
@@ -84,33 +85,6 @@
             </div>
         </div>
     </div>
-    <div class="vm-actions clearfix">
-        {% include "admin/_project_actions.html" %}
-    </div>
+    {% include "admin/action_list_horizontal.html" %}
 </div>
 {% endwith %}
-
-
-{% comment %}
-<div class="object-anchor" id="project-{{project.id}}"></div>
-<div class="vm-details object-details {{ rowcls }}">
-  <h4><em>{{ project.realname }}<span class="badge arrow">&nbsp;</span></h4>
-  <span class="label label-primary">ID: {{ project.id }}</span>
-  <span class="label label-primary">{{ project.owner }}</span>
-  <div class="vm-details-content object-details-content">
-
-    <ul class="nav nav-tabs">
-      <li class="active"><a href="#details{{ project.id }}" data-toggle="tab">Details</a></li>
-    </ul>
-    <div class="tab-content">
-      <div class="tab-pane active" id="details{{ project.id }}">
-        <dl class="dl-horizontal well">
-          <dt>ID</dt><dd>{{ project.id }}</dd>
-          <dt>Name</dt><dd>{{ project.realname }}</dd>
-          <dt>Owner</dt><dd>{{ project.owner }}</dd>
-        </dl>
-      </div>
-    </div>
-  </div>
-</div>
-{% endcomment %}

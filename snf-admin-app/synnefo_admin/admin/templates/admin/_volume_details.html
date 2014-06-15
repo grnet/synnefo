@@ -2,7 +2,8 @@
 
 {% with volume=item %}
 <div class="object-anchor" id="volume-{{volume.pk}}"></div>
-<div class="object-details {{ rowcls }}">
+<div class="object-details {{ rowcls }}" data-id="{{volume.pk}}"
+    data-type="{{type}}">
     <h4>
         <span class="title"><a href="{% url admin-details type volume.pk %}">{{ volume|repr }}</a></span>
         <span class="badge arrow">&nbsp;</span>
@@ -41,9 +42,7 @@
             </div>
         </div> <!-- <div class="tab-content"> -->
     </div> <!-- <div class="object-details-content"> -->
-    <div class="todo vm-actions clearfix">
-        {% include "admin/action_list_horizontal.html" %}
-    </div>
+    {% include "admin/action_list_horizontal.html" %}
 </div> <!-- <div class="object-details {{ rowcls }}"> -->
 {% endwith %}
 

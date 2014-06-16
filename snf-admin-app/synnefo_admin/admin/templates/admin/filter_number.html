@@ -1,4 +1,7 @@
-<div class="filter-text filter-input">
-    <input type="search" class="form-control" data-filter="{{ filter.name }}"
-    placeholder="{{ filter.label }}...">
+<div class="filter filter-text filter-input">
+	<div class="form-group">
+		<label>{{ filter.label }}:
+			<input type="search" data-filter="{{ filter.name }}">
+		</label>
+	</div>
 </div>

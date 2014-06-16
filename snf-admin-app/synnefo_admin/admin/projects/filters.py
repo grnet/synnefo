@@ -49,19 +49,23 @@ from synnefo_admin.admin.actions import (AdminAction, noop,
 
 
 def get_status_choices():
-    ((value.upper(), '_') for value in Project.O_STATE_DISLAY.itervalues())
+    """Get all possible project statuses from Project model."""
+    project_states = Project.O_STATE_DISPLAY.itervalues()
+    return [(value.upper(), '_') for value in project_states]
 
 
 def filter_status(queryset, choices):
+    """Filter project status.
+
+    Filter by project and last application status.
+    """
     choices = choices or ()
     if len(choices) == len(get_status_choices()):
         return queryset
     q = Q()
-    logging.info("Choices: %s", choices)
     for c in choices:
         status = getattr(Project, 'O_%s' % c.upper())
         q |= Q(last_application__state=status) | Q(state=status)
-        logging.info("q: %s", q)
     return queryset.filter(q).distinct()
 
 
@@ -76,9 +80,10 @@ class ProjectFilterSet(django_filters.FilterSet):
     uuid = django_filters.CharFilter(label='UUID', lookup_type='icontains')
     description = django_filters.CharFilter(label='Description',
                                             lookup_type='icontains')
-    #status = django_filters.MultipleChoiceFilter(
-        #label='Status', action=filter_status, choices=get_status_choices)
+    status = django_filters.MultipleChoiceFilter(
+        label='Status', action=filter_status, choices=get_status_choices())
+    is_base = django_filters.BooleanFilter(label='Base')
 
     class Meta:
         model = Project
-        fields = ('id', 'uuid', 'realname', 'description')
+        fields = ('id', 'uuid', 'realname', 'description', 'is_base')

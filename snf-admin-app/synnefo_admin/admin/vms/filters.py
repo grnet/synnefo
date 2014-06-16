@@ -38,22 +38,6 @@ from synnefo_admin.admin.actions import (AdminAction, noop,
 from synnefo_admin.admin.utils import filter_owner_name
 
 
-def filter_suspended(qs, value):
-    if type(value) == list:
-        # We can't accept more than one value
-        if len(value) > 1:
-            return qs
-        # Convert string to boolean
-        value = bool(value[0])
-    if type(value) == str:
-        # Convert string to boolean
-        value = bool(value)
-
-    if value is not None:
-        return qs.filter(suspended=value)
-    return qs
-
-
 class VMFilterSet(django_filters.FilterSet):
 
     """A collection of filters for VMs.
@@ -70,8 +54,6 @@ class VMFilterSet(django_filters.FilterSet):
                                         lookup_type='icontains')
     operstate = django_filters.MultipleChoiceFilter(
         label='Status', name='operstate', choices=VirtualMachine.OPER_STATES)
-    suspended = django_filters.BooleanFilter(label='Suspended',
-                                             action=filter_suspended)
 
     class Meta:
         model = VirtualMachine

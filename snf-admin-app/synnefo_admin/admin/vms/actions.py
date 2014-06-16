@@ -81,64 +81,64 @@ def generate_actions():
 
     actions['start'] = VMAction(name='Start', f=servers_backend.start,
                                 c=check_vm_action('START'),
-                                karma='good', reversible=True,
+                                karma='good',
                                 allowed_groups=['admin', 'superadmin'])
 
     actions['shutdown'] = VMAction(name='Shutdown', f=servers_backend.stop,
                                    c=check_vm_action('STOP'), karma='bad',
-                                   reversible=True,
+                                   caution_level='warning',
                                    allowed_groups=['admin', 'superadmin'])
 
     actions['reboot'] = VMAction(name='Reboot', f=servers_backend.reboot,
                                  c=check_vm_action('REBOOT'), karma='bad',
-                                 reversible=True,
+                                 caution_level='warning',
                                  allowed_groups=['admin', 'superadmin'])
 
     actions['resize'] = VMAction(name='Resize', f=noop,
                                  c=check_vm_action('RESIZE'), karma='neutral',
-                                 reversible=False,
+                                 caution_level='dangerous',
                                  allowed_groups=['superadmin'])
 
     actions['destroy'] = VMAction(name='Destroy', f=servers_backend.destroy,
                                   c=check_vm_action('DESTROY'), karma='bad',
-                                  reversible=False,
+                                  caution_level='dangerous',
                                   allowed_groups=['superadmin'])
 
     actions['connect'] = VMAction(name='Connect to network', f=noop,
-                                  karma='good', reversible=True,
+                                  karma='good',
                                   allowed_groups=['superadmin'])
 
     actions['disconnect'] = VMAction(name='Disconnect from network', f=noop,
-                                     karma='bad', reversible=True,
+                                     karma='bad',
                                      allowed_groups=['superadmin'])
 
     actions['attach'] = VMAction(name='Attach IP', f=noop,
                                  c=check_vm_action('ADDFLOATINGIP'),
-                                 karma='good', reversible=True,
+                                 karma='good',
                                  allowed_groups=['superadmin'])
 
     actions['detach'] = VMAction(name='Detach IP', f=noop,
                                  c=check_vm_action('REMOVEFLOATINGIP'),
-                                 karma='bad', reversible=True,
+                                 karma='bad',
                                  allowed_groups=['superadmin'])
 
     actions['suspend'] = VMAction(name='Suspend', f=vm_suspend,
                                   c=check_vm_action('SUSPEND'),
-                                  karma='bad', reversible=True,
+                                  karma='bad', caution_level='warning',
                                   allowed_groups=['admin', 'superadmin'])
 
     actions['release'] = VMAction(name='Release suspension',
                                   f=vm_suspend_release,
                                   c=check_vm_action('RELEASE'), karma='good',
-                                  reversible=True,
                                   allowed_groups=['admin', 'superadmin'])
 
     actions['reassign'] = VMAction(name='Reassign to project', f=noop,
-                                   karma='neutral', reversible=True,
+                                   karma='neutral', caution_level='dangerous',
                                    allowed_groups=['superadmin'])
 
     actions['change_owner'] = VMAction(name='Change owner', f=noop,
-                                       karma='neutral', reversible=True,
+                                       karma='neutral',
+                                       caution_level='dangerous',
                                        allowed_groups=['superadmin'])
 
     actions['contact'] = VMAction(name='Send e-mail', f=send_email,

@@ -48,8 +48,8 @@ class AdminAction:
         allowed_groups: The groups that are allowed to author this action.
         karma:          The impact of the action.
                         Accepted values: good, neutral, bad.
-        reversible:     Whether the action is reversible or not.
-                        Accepted values: True, False.
+        caution_level:  Indication of how much careful the user should be:
+                        Accepted values: none, warning, dangerous.
         description:    A short text that describes an action
 
     Methods:
@@ -60,29 +60,13 @@ class AdminAction:
     """
 
     def __init__(self, name, target, f, c=None, allowed_groups='admin',
-                 karma='neutral', reversible=True, description=''):
-        """Initialize the AdminAction class.
-
-        Requirements:
-            name:           The name of the action
-            target:         The target group of the action
-            f:              The function that will trigger once an action is
-                            requested.
-
-        Optional:
-            c:              The function that checks if an action can be
-                            applied to a user. By default no check is done.
-            allowed_groups: The groups that are allowed to author this action.
-            severity:       The negative impact of the action.
-                            Accepted values: trivial, big, irreversible
-                            Default: trivial
-            description:    A short text that describes an action: Default: ''
-        """
+                 karma='neutral', caution_level='none', description=''):
+        """Initialize the AdminAction class."""
         self.name = name
         self.description = description
         self.target = target
         self.karma = karma
-        self.reversible = reversible
+        self.caution_level = caution_level
         self.allowed_groups = allowed_groups
         self.f = f
         if c:
@@ -158,6 +142,11 @@ def get_user_groups(user):
 
 
 def has_permission_or_403(actions):
+    """API decorator for user permissions for actions.
+
+    Check if a user (retrieved from Astakos client) can author an action. If
+    not, raise an AdminActionNotPermitted exception.
+    """
     def decorator(func):
         @functools.wraps(func)
         def wrapper(request, op, *args, **kwargs):

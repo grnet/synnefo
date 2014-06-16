@@ -69,34 +69,33 @@ def generate_actions():
 
     actions['activate'] = UserAction(name='Activate', f=users.activate,
                                      c=check_user_action("ACTIVATE"),
-                                     karma='good', reversible=True,
+                                     karma='good',
                                      allowed_groups=['superadmin'])
 
     actions['deactivate'] = UserAction(name='Deactivate', f=users.deactivate,
                                        c=check_user_action("DEACTIVATE"),
-                                       karma='bad', reversible=True,
+                                       karma='bad', caution_level='warning',
                                        allowed_groups=['superadmin'])
 
     actions['accept'] = UserAction(name='Accept', f=users.accept,
                                    c=check_user_action("ACCEPT"),
-                                   karma='good', reversible=False,
+                                   karma='good',
                                    allowed_groups=['superadmin'])
 
     actions['reject'] = UserAction(name='Reject', f=users.reject,
                                    c=check_user_action("REJECT"),
-                                   karma='bad', reversible=False,
+                                   karma='bad', caution_level='dangerous',
                                    allowed_groups=['superadmin'])
 
     actions['verify'] = UserAction(name='Verify', f=users.verify,
                                    c=check_user_action("VERIFY"),
-                                   karma='good', reversible=False,
+                                   karma='good',
                                    allowed_groups=['superadmin'])
 
     actions['resend_verification'] = UserAction(name='Resend verification',
                                                 f=noop, karma='good',
                                                 c=check_user_action(
                                                     "SEND_VERIFICATION_MAIL"),
-                                                reversible=False,
                                                 allowed_groups=['admin',
                                                                 'superadmin'])
 

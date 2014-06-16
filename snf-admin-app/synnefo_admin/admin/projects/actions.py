@@ -87,27 +87,34 @@ def generate_actions():
 
     actions['approve'] = ProjectAction(name='Approve', f=approve_application,
                                        c=check_approve,
+                                       karma='good',
                                        allowed_groups=['superadmin'])
 
     actions['deny'] = ProjectAction(name='Deny', f=deny_application,
-                                    c=check_deny,
+                                    c=check_deny, karma='bad',
+                                    caution_level='warning',
                                     allowed_groups=['superadmin'])
 
     actions['suspend'] = ProjectAction(name='Suspend', f=suspend,
                                        c=check_project_action("SUSPEND"),
+                                       karma='bad', caution_level='warning',
                                        allowed_groups=['superadmin'])
 
     actions['unsuspend'] = ProjectAction(name='Release suspension',
                                          f=unsuspend,
                                          c=check_project_action("UNSUSPEND"),
+                                         karma='good', caution_level='warning',
                                          allowed_groups=['superadmin'])
 
     actions['terminate'] = ProjectAction(name='Terminate', f=terminate,
                                          c=check_project_action("TERMINATE"),
+                                         karma='bad',
+                                         caution_level='dangerous',
                                          allowed_groups=['superadmin'])
 
     actions['reinstate'] = ProjectAction(name='Reinstate', f=reinstate,
                                          c=check_project_action("REINSTATE"),
+                                         karma='good', caution_level='warning',
                                          allowed_groups=['superadmin'])
 
     actions['contact'] = ProjectAction(name='Send e-mail', f=send_email,

@@ -74,25 +74,27 @@ def generate_actions():
 
     actions['drain'] = NetworkAction(name='Drain', f=drain_network,
                                      #c=check_network_action('DRAIN'),
-                                     reversible=True,
+                                     caution_level=True,
                                      allowed_groups=['superadmin'])
 
     actions['undrain'] = NetworkAction(name='Undrain', f=undrain_network,
                                        #c=check_network_action('UNDRAIN'),
-                                       karma='neutral', reversible=True,
+                                       karma='neutral',
                                        allowed_groups=['superadmin'])
 
     actions['delete'] = NetworkAction(name='Delete', f=networks.delete,
                                       c=check_network_action('DESTROY'),
-                                      karma='bad', reversible=False,
+                                      karma='bad', caution_level='dangerous',
                                       allowed_groups=['superadmin'])
 
     actions['reassign'] = NetworkAction(name='Reassign to project', f=noop,
-                                        karma='neutral', reversible=True,
+                                        karma='neutral',
+                                        caution_level='dangerous',
                                         allowed_groups=['superadmin'])
 
     actions['change_owner'] = NetworkAction(name='Change owner', f=noop,
-                                            karma='neutral', reversible=True,
+                                            karma='neutral',
+                                            caution_level='dangerous',
                                             allowed_groups=['superadmin'])
 
     actions['contact'] = NetworkAction(name='Send e-mail', f=send_email,

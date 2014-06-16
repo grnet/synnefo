@@ -56,11 +56,11 @@ def generate_actions():
     actions = OrderedDict()
 
     actions['delete'] = IPAction(name='Delete', f=ips.delete_floating_ip,
-                                 karma='bad', reversible=False,
+                                 karma='bad', caution_level='dangerous',
                                  allowed_groups=['superadmin'])
 
     actions['reassign'] = IPAction(name='Reassign to project', f=noop,
-                                   karma='neutral', reversible=True,
+                                   karma='neutral', caution_level='dangerous',
                                    allowed_groups=['superadmin'])
 
     actions['contact'] = IPAction(name='Send e-mail', f=send_email,

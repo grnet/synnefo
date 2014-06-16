@@ -67,7 +67,7 @@ class VolumeJSONView(DatatablesView):
 
     def format_data_row(self, row):
         if not row[1]:
-            row[1] = "-"
+            row[1] = "(not set)"
         return row
 
     def get_extra_data_row(self, inst):
@@ -103,7 +103,7 @@ class VolumeJSONView(DatatablesView):
                 'visible': False,
             }, 'description': {
                 'display_name': "Description",
-                'value': inst.description or "-",
+                'value': inst.description or "(not set)",
                 'visible': True,
             }, 'updated': {
                 'display_name': "Update time",

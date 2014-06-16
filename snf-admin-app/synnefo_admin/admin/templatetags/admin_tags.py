@@ -273,11 +273,11 @@ def get_project_stats(project):
     """Create a dictionary with a summary for a project's stats."""
     stats = OrderedDict()
     if not project.is_base:
-        stats['Per Member'] = project_utils.display_project_resources(project,
-                                                                      'member')
+        stats['Max per member'] = \
+            project_utils.display_project_resources(project, 'member')
     stats['Total'] = project_utils.display_project_resources(project, 'total')
-    stats['Used'] = project_utils.display_project_stats(project,
-                                                        'project_usage')
+    stats['Usage'] = project_utils.display_project_stats(project,
+                                                         'project_usage')
     return stats
 
 

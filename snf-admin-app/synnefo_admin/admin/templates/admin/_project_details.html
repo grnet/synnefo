@@ -30,10 +30,10 @@
                 <dl class="dl-horizontal well">
                     <dt>ID</dt><dd>{{ project.id }}</dd>
                     <dt>UUID</dt><dd>{{ project.uuid }}</dd>
-                    <dt>Name</dt><dd>{{ project.realname|default:"-" }}</dd>
-                    <dt>Owner</dt><dd>{{ project.owner.realname|default:"-" }}</dd>
+                    <dt>Name</dt><dd>{{ project.realname|default:"(not set)" }}</dd>
                     {% if not project.is_base %}
-                        <dt>Homepage</dt><dd>{{ project.homepage }}</dd>
+                        <dt>Owner</dt><dd>{{ project.owner.realname|default:"(not set)" }}</dd>
+                        <dt>Homepage url</dt><dd>{{ project.homepage|default:"(not set)" }}</dd>
                     {% endif %}
                     <dt>Description</dt><dd>{{ project.description }}</dd>
                     <dt>Creation date</dt><dd>{{ project.creation_date }}</dd>
@@ -78,7 +78,7 @@
                 <dl class="dl-horizontal well">
                     {% with stats=project|get_project_stats %}
                         {% for stat_name, stat_value in stats.items %}
-                            <dt>{{ stat_name }} </dt><dd>{{ stat_value }}</dd>
+                            <dt>{{ stat_name }} </dt><dd>{{stat_value|default:"-" }}</dd>
                         {% endfor %}
                     {% endwith %}
                 </dl>

@@ -66,7 +66,7 @@ class NetworkJSONView(DatatablesView):
 
     def format_data_row(self, row):
         if not row[1]:
-            row[1] = "-"
+            row[1] = "(not set)"
         return row
 
     def get_extra_data_row(self, inst):

@@ -130,14 +130,14 @@ class ProjectJSONView(DatatablesView):
 
         if not inst.is_base:
             extra_dict['homepage'] = {
-                'display_name': "Homepage",
-                'value': inst.homepage or "-",
+                'display_name': "Homepage url",
+                'value': inst.homepage or "(not set)",
                 'visible': True,
             }
 
             extra_dict['description'] = {
                 'display_name': "Description",
-                'value': inst.description or "-",
+                'value': inst.description or "(not set)",
                 'visible': True,
             }
             extra_dict['members'] = {
@@ -150,23 +150,23 @@ class ProjectJSONView(DatatablesView):
             if inst.last_application.comments:
                 extra_dict['comments'] = {
                     'display_name': "Comments for review",
-                    'value': inst.last_application.comments or "-",
+                    'value': inst.last_application.comments or "(not set)",
                     'visible': True,
                 }
 
             extra_dict['member_resources'] = {
-                'display_name': "Member resource limits",
+                'display_name': "Max resources per member",
                 'value': display_project_resources(inst, 'member') or "-",
                 'visible': True
             }
 
         extra_dict['limit'] = {
-            'display_name': "Total resource limits",
+            'display_name': "Total resources",
             'value': display_project_resources(inst, 'total') or "-",
             'visible': True,
         }
         extra_dict['usage'] = {
-            'display_name': "Total resource usage",
+            'display_name': "Resource usage",
             'value': display_project_stats(inst, 'project_usage') or "-",
             'visible': True,
         }
@@ -200,7 +200,7 @@ def catalog(request):
     context['action_dict'] = get_permitted_actions(request.user)
     context['filter_dict'] = ProjectFilterSet().filters.itervalues()
     context['columns'] = ["ID", "Name", "Status", "Creation date",
-                          "Expiration date", ""]
+                          "End date", ""]
     context['item_type'] = 'project'
 
     return context

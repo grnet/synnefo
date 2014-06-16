@@ -35,7 +35,7 @@ from synnefo_branding import settings as branding_settings
 
 import astakos.im.messages as astakos_messages
 
-from astakos.im import activation_backends
+from astakos.im import activation_backends, user_logic
 from astakos.im.models import AstakosUser, ApprovalTerms, EmailChange, \
     AstakosUserAuthProvider, PendingThirdPartyUser, Component
 from astakos.im.util import get_context, prepare_response, get_query, \
@@ -627,9 +627,7 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
         messages.error(request, message)
         return HttpResponseRedirect(reverse('index'))
 
-    backend = activation_backends.get_backend()
-    result = backend.handle_verification(user, token)
-    backend.send_result_notifications(result, user)
+    result = user_logic.verify(user, token, notify_user=True)
     next = settings.ACTIVATION_REDIRECT_URL or next or reverse('index')
     if user.is_active:
         response = prepare_response(request, user, next, renew=True)
@@ -806,8 +804,7 @@ def send_activation(request, user_id, template_name='im/login.html',
             messages.error(request,
                            _(astakos_messages.ACCOUNT_ALREADY_VERIFIED))
         else:
-            activation_backend = activation_backends.get_backend()
-            activation_backend.send_user_verification_email(u)
+            user_logic.send_verification_mail(u)
             messages.success(request, astakos_messages.ACTIVATION_SENT)
 
     return HttpResponseRedirect(reverse('index'))

@@ -1,0 +1,30 @@
+@import "settings";
+// .progress-area {
+// 	display: none;
+// 	position: absolute;
+// 	width: 100%;
+// 	height: 100%;
+// 	text-align: center;
+
+// }
+
+// .in-progress .modal-body {
+// 	background-color: $gray-light-extra;
+// 	.progress-area {
+// 		display: block;
+// 	}
+	
+// }
+
+p.progress-area {
+	visibility: hidden;
+
+}
+
+.in-progress .modal-body {
+	background-color: $gray-light-extra;
+	p.progress-area {
+		visibility: visible;
+	}
+	
+}

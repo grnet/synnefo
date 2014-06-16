@@ -35,7 +35,7 @@
                 <p>Are you sure you want to complete the operation?</p>
             </div>
             <div class="modal-footer">
-                <a href="#" class="btn btn-primary reset-all" data-dismiss="modal">Cancel</a>
+                <a href="#" class="btn btn-primary" data-dismiss="modal">Cancel</a>
                 <form method="post" action="{% url admin-actions %}" id="{{ op }}Form">
                     <button type="submit" class="btn btn-primary">OK</button>
                     <input type="hidden" name="op" value="{{ op }}">
@@ -47,4 +47,26 @@
     </div>
 </div>
 {% endfor %}
+<div class="modal fade" id="massive-actions-warning" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content positive area">
+            <div class="modal-header">
+                <a class="close reset-all" data-dismiss="modal">×</a>
+                <h3 class="positive elem">Select All Items</h3>
+            </div>
+            <div class="modal-body">
+               <!--  <div class="progress-area"><img src="{{ ADMIN_MEDIA_URL }}/img/ajax-loader.gif"></div> -->
+                <p>You have chosen to select all items that meet the criteria of the filters.</p>
+                <p>This might take some time.</p>
+                <p>Are you sure you want to complete the operation?</p>
+                <p class="progress-area">Please wait...</p>
+            </div>
+            <div class="modal-footer">
+                <a href="#" class="btn btn-primary reset-all" data-dismiss="modal">Cancel</a>
+                    <button type="submit" class="btn btn-primary select-all">OK</button>
+                
+            </div>
+        </div>
+    </div>
+</div>
 

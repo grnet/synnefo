@@ -331,6 +331,7 @@ AUTH_PROVIDER_ADD_TO_EXISTING_ACCOUNT = (
 
 # Email subjects
 _SITENAME = astakos_settings.SITENAME
+PLAIN_EMAIL_SUBJECT = 'New email from %s' % _SITENAME
 INVITATION_EMAIL_SUBJECT = 'Invitation to %s' % _SITENAME
 GREETING_EMAIL_SUBJECT = 'Welcome to %s' % _SITENAME
 FEEDBACK_EMAIL_SUBJECT = 'Feedback from %s' % _SITENAME

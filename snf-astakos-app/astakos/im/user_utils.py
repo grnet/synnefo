@@ -54,6 +54,32 @@ def invite(inviter, email, realname):
     inviter.save()
 
 
+def send_plain(user, subject=_(astakos_messages.PLAIN_EMAIL_SUBJECT),
+               template_name='im/plain_email.txt', text=None):
+    """Send mail to user with fully customizable subject and body.
+
+    If the function is provided with a `template name`, then it will be used
+    for rendering the mail. Any additional text should be provided in the
+    `text` parameter and it will be included in the main body of the mail.
+
+    If the function is not provided with a `template name`, then it will use
+    the string provided in the `text` parameter as the mail body.
+    """
+    if not template_name:
+        message = text
+    else:
+        message = render_to_string(template_name, {
+                                   'user': user,
+                                   'text': text,
+                                   'baseurl': settings.BASE_URL,
+                                   'site_name': settings.SITENAME,
+                                   'support': settings.CONTACT_EMAIL})
+    sender = settings.SERVER_EMAIL
+    send_mail(subject, message, sender, [user.email],
+              connection=get_connection())
+    logger.info("Sent plain email to user: %s", user.log_display)
+
+
 def send_verification(user, template_name='im/activation_email.txt'):
     """
     Send email to user to verify his/her email and activate his/her account.

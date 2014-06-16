@@ -547,6 +547,8 @@ form input[type="text"]:-ms-input-placeholder,
 .stats .resource-bar.green .bar span		    { background:#55b577; }
 .stats .img-wrap								{ height: 100px; }
 .stats .img-wrap								{ float:left; width:100px; background:url(../images/statistics_icons.png) no-repeat center center; padding: 0 0; }
+.stats .info.warn p	     						{ color: #f00 !important; }
+.stats .info.warn span.warn-msg					{ display: inline-block; font-size: 0.8em; color: #f00; font-weight: bold; margin-right: 5px;}
 .stats .info									{ margin:0 25px ; width:320px; float:left;  }
 .stats .info p									{ color:#999; margin:0; }
 .stats .info h3									{ font-size:1.231em; color:#222222 }

@@ -430,8 +430,9 @@ _.extend(UsageView.prototype, {
         _.each(resource.projects, function(project, uuid) {
           if (active_project_uuids.indexOf(uuid) == -1) {
             var index = resource.projects[uuid].index;
-            delete resource.projects[uuid];
-            delete resource.projects_list[index];
+            resource.projects[uuid].not_a_member = true;
+          } else {
+            resource.projects[uuid].not_a_member = false;
           }
         });
         

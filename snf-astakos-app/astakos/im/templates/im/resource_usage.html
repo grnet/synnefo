@@ -16,8 +16,11 @@
       {{^system_project}}no-base-project{{/system_project}} 
       {{#system_project}}base-project{{/system_project}}" 
       data-project="{{ id }}">
-      <div class="info" data-currvalue="" data-maxvalue="">
-        <h3><a href="{{ details_url }}">{{ display_name }}</a></h3>
+      <div class="info {{#not_a_member}}warn{{/not_a_member}}" data-currvalue="" data-maxvalue="">
+          <h3>
+            {{#not_a_member}}<span class="warn-msg">[NOT A MEMBER]</span>{{/not_a_member}}
+              <a href="{{ details_url }}">{{ display_name }}</a>
+          </h3>
         <p>
           <span class="currValue">{{ usage.curr }}</span> out of 
           <span class="maxValue">{{ usage.max }}</span> {{ report_desc }}

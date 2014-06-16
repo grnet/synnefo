@@ -38,8 +38,9 @@ from astakos.im.models import AstakosUser, EmailChange, Invitation, Resource, \
     PendingThirdPartyUser, get_latest_terms, ProjectApplication, Project
 from astakos.im import presentation
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
-from astakos.im.functions import send_change_email, submit_application, \
+from astakos.im.functions import submit_application, \
     accept_membership_project_checks, ProjectError
+from astakos.im.user_utils import send_change_email
 
 from astakos.im.util import reserved_verified_email, model_to_dict
 from astakos.im import auth_providers

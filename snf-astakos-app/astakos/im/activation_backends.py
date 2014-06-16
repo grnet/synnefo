@@ -21,6 +21,7 @@ from astakos.im import models
 from astakos.im import functions
 from astakos.im import settings
 from astakos.im import forms
+from astakos.im import user_utils
 
 import astakos.im.messages as astakos_messages
 
@@ -335,7 +336,7 @@ class ActivationBackend(object):
         # invalidate previous code
         user.renew_verification_code()
         user.save()
-        functions.send_verification(user)
+        user_utils.send_verification(user)
         user.activation_sent = datetime.datetime.now()
         user.save()
 
@@ -366,7 +367,7 @@ class ActivationBackend(object):
         if result.status == self.Result.PENDING_MODERATION:
             logger.info("Sending notifications for user"
                         " verification: %s", user.log_display)
-            functions.send_account_pending_moderation_notification(
+            user_utils.send_account_pending_moderation_notification(
                 user,
                 self.pending_moderation_template_name)
             # TODO: notify user
@@ -374,11 +375,11 @@ class ActivationBackend(object):
         if result.status == self.Result.ACCEPTED:
             logger.info("Sending notifications for user"
                         " moderation: %s", user.log_display)
-            functions.send_account_activated_notification(
+            user_utils.send_account_activated_notification(
                 user,
                 self.activated_email_template_name)
-            functions.send_greeting(user,
-                                    self.greeting_template_name)
+            user_utils.send_greeting(user,
+                                     self.greeting_template_name)
             # TODO: notify admins
 
         if result.status == self.Result.REJECTED:

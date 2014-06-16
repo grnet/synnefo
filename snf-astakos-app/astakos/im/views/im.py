@@ -44,7 +44,7 @@ from astakos.im.forms import LoginForm, InvitationForm, FeedbackForm, \
     SignApprovalTermsForm, EmailChangeForm
 from astakos.im.forms import ExtendedProfileForm as ProfileForm
 from synnefo.lib.services import get_public_endpoint
-from astakos.im.functions import send_feedback, logout as auth_logout, \
+from astakos.im.user_utils import send_feedback, logout as auth_logout, \
     invite as invite_func
 from astakos.im import settings
 from astakos.im import presentation

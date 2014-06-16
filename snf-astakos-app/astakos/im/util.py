@@ -30,7 +30,7 @@ from django.utils.encoding import iri_to_uri
 from django.utils.translation import ugettext as _
 
 from astakos.im.models import AstakosUser, Invitation
-from astakos.im.functions import login
+from astakos.im.user_utils import login
 from astakos.im import settings
 
 import astakos.im.messages as astakos_messages

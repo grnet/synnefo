@@ -7,7 +7,7 @@
     <h4>
         <span class="title"><a href="{% url admin-details type user.uuid %}">{{ user|repr }}</a></span>
         <span class="badge arrow">&nbsp;</span>
-        <span class="label label-primary">{{ user|get_state|upper }}</span>
+        <span class="label label-primary">{{ user.status_display|upper }}</span>
         <span class="label label-primary">UUID: {{ user.uuid }}</span>
         <span class="label label-primary email">{{ user.email }}</span>
     </h4>
@@ -31,15 +31,32 @@
             </div>
             <div class="tab-pane" id="log{{ user.uuid }}">
                 <dl class="dl-horizontal well">
-                    <dt>Signed terms at</dt>
-                        <dd>{{ user.date_signed_terms|default:"Never" }}</dd>
-                    {% if user|check_state:'verified' %}
+                    {% if user.date_signed_terms %}
+                        <dt>Signed terms at</dt><dd>{{ user.date_signed_terms }}</dd>
+                    {% endif %}
+                    {% if user.verified_at %}
                         <dt>Verified at</dt><dd>{{ user.verified_at }}</dd>
                     {% endif %}
-                    {% if user|check_state:'moderated' %}
+                    {% if user.activation_sent %}
+                        <dt>Activation sent at</dt><dd>{{ user.activation_sent }}</dd>
+                    {% endif %}
+                    {% if user.moderated_at %}
                         <dt>Moderated at</dt><dd>{{ user.moderated_at }}</dd>
                         <dt>Moderation policy</dt><dd>{{ user.accepted_policy }}</dd>
                     {% endif %}
+                    {% if user.rejected_reason %}
+                        <dt>Rejection reason</dt><dd>{{ user.rejected_reason }}</dd>
+                    {% endif %}
+                    {% if user.deactivated_at %}
+                        <dt>Deactivated at</dt><dd>{{ user.deactivated_at }}</dd>
+                        <dt>Deactivation reason</dt><dd>{{ user.deactivated_reason }}</dd>
+                    {% endif %}
+
+                    <dt>---</dt><dd>------------------</dd>
+
+                    <dt>Last profile update at</dt><dd>{{ user.updated }}</dd>
+                    <dt>Last logged-in at</dt><dd>{{ user.last_login }}</dd>
+
                 </dl>
             </div>
             <div class="tab-pane" id="auth{{ user.uuid }}">

@@ -55,7 +55,7 @@
 		                <tr>
 		                    <td>{{ member.uuid }}</td>
 		                    <td>{{ member.realname }}</td>
-		                    <td>{{ member|get_state }}</td>
+		                    <td>{{ member.status_display|upper }}</td>
                             <td><a href="{% url admin-details page member.email %}">Details</a></td>
 		                </tr>
 		                {% empty %}

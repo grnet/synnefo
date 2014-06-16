@@ -134,55 +134,6 @@ def backend_info(vm):
     return content
 
 
-def check_state(user, state):
-    """Check if user is in the given state.
-
-    The return value is boolean
-    """
-    if state == 'activated':
-        return user.is_active
-    elif state == 'accepted':
-        return user.moderated and not user.is_rejected
-    elif state == 'rejected':
-        return user.is_rejected
-    elif state == 'verified':
-        return user.email_verified
-    elif state == 'moderated':
-        return user.moderated
-register.filter('check_state', check_state)
-
-
-@register.filter
-def get_state(user):
-    """Get the user state.
-
-    The user state can be Active/Inactive/Pending Moderation/Pending
-    Verification. The user can never be in two states in the same time.
-    """
-    if user.is_active:
-        return "Active"
-    elif user.moderated:
-        return "Inactive"
-    elif user.email_verified:
-        return "Pending Moderation"
-    else:
-        return "Pending Verification"
-
-
-@register.filter
-def get_state_list(user):
-    """Get a space separated list of states that the user is in.
-
-    The list is returned as a string, in order to be used in html tags
-    """
-    state_list = ','
-    for state in ['activated', 'accepted', 'rejected', 'verified']:
-        if check_state(user, state):
-            state_list += state + ','
-
-    return state_list
-
-
 @register.filter
 def display_list_type(type):
     """Display the type of an item list in a human readable way."""

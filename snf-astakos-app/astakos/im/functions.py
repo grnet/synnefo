@@ -22,6 +22,8 @@ from django.utils.translation import ugettext as _
 from django.db.models import Q
 from django.db.utils import IntegrityError
 
+from snf_django.lib.api import faults
+
 from astakos.im.models import AstakosUser, ProjectMembership, \
     ProjectApplication, Project, new_chain, Resource, ProjectLock, \
     create_project, ProjectResourceQuota, ProjectResourceGrant
@@ -204,10 +206,17 @@ def app_check_allowed(application, request_user,
     return _failure(silent)
 
 
-def checkAlive(project):
+def checkAlive(project, silent=False):
+    def fail(msg):
+        if silent:
+            return False, msg
+        else:
+            raise ProjectConflict(msg)
+
     if not project.is_alive:
         m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.uuid
-        raise ProjectConflict(m)
+        return fail(m)
+    return True, None
 
 
 def accept_membership_project_checks(project, request_user):
@@ -807,14 +816,20 @@ def deny_application(application_id, project_id=None, request_user=None,
     project_notif.application_notify(application, "deny")
 
 
-def check_conflicting_projects(project, new_project_name):
+def check_conflicting_projects(project, new_project_name, silent=False):
+    def fail(msg):
+        if silent:
+            return False, msg
+        else:
+            raise ProjectConflict(msg)
+
     try:
         q = Q(name=new_project_name) & ~Q(id=project.id)
         conflicting_project = Project.objects.get(q)
         m = (_("cannot approve: project with name '%s' "
                "already exists (id: %s)") %
              (new_project_name, conflicting_project.uuid))
-        raise ProjectConflict(m)  # invalid argument
+        return fail(m)
     except Project.DoesNotExist:
         pass
 
@@ -916,13 +931,99 @@ def check_expiration(execute=False):
     return [project.expiration_info() for project in expired]
 
 
+def validate_project_action(project, action, request_user=None, silent=True):
+    """Check if an action can apply on a project.
+
+    Arguments:
+        project: The target project.
+        action: The name of the action (in capital letters).
+        request_user: The user that requests the action.
+        silent: If set to True, suppress exceptions.
+
+    Returns:
+        A `(success, message)` tuple. `success` is a boolean value that
+        shows if the action can apply on a project, and `message` explains
+        why the action cannot apply on a project.
+
+        If an action can apply on a project, this function will always return
+        `(True, None)`.
+
+    Exceptions:
+        ProjectConflict: When the action cannot apply on a project due to a
+                         conflict.
+        ProjectForbidden: When a user is not allowed to apply an action on a
+                          project.
+        faults.BadRequest: When the action is unknown/malformed.
+    """
+    def fail(e, msg):
+        if silent:
+            return False, msg
+
+        if e == "PROJECT CONFLICT":
+            raise ProjectConflict(m)
+        elif e == "BAD REQUEST":
+            raise faults.BadRequest("Unknown action: %s." % action)
+        else:
+            raise Exception(e)
+
+    if action == "TERMINATE":
+        ok = project_check_allowed(project, request_user, level=ADMIN_LEVEL,
+                                   silent=silent)
+        if not ok:
+            return fail("PROJECT CONFLICT", None)
+
+        ok, m = checkAlive(project, silent=silent)
+        if not ok:
+            return fail("PROJECT CONFLICT", m)
+
+        if project.is_base:
+            m = _(astakos_messages.BASE_NO_TERMINATE) % project.uuid
+            return fail("PROJECT CONFLICT", m)
+
+    elif action == "SUSPEND":
+        ok = project_check_allowed(project, request_user, level=ADMIN_LEVEL,
+                                   silent=silent)
+        if not ok:
+            return fail("PROJECT CONFLICT", None)
+
+        ok, m = checkAlive(project, silent=silent)
+        if not ok:
+            return fail("PROJECT CONFLICT", m)
+
+    elif action == "UNSUSPEND":
+        ok = project_check_allowed(project, request_user, level=ADMIN_LEVEL,
+                                   silent=silent)
+        if not ok:
+            return fail("PROJECT CONFLICT", None)
+
+        if not project.is_suspended:
+            m = _(astakos_messages.NOT_SUSPENDED_PROJECT) % project.uuid
+            return fail("PROJECT CONFLICT", m)
+
+    elif action == "REINSTATE":
+        ok = project_check_allowed(project, request_user, level=ADMIN_LEVEL,
+                                   silent=silent)
+        if not ok:
+            return fail("PROJECT CONFLICT", None)
+
+        if not project.is_terminated:
+            m = _(astakos_messages.NOT_TERMINATED_PROJECT) % project.uuid
+            return fail("PROJECT CONFLICT", m)
+
+        ok, m = check_conflicting_projects(project, project.realname,
+                                           silent=silent)
+        if not ok:
+            return fail("PROJECT CONFLICT", m)
+
+    else:
+        return fail("BAD REQUEST", m)
+
+    return True, None
+
+
 def terminate(project_id, request_user=None, reason=None):
     project = get_project_for_update(project_id)
-    project_check_allowed(project, request_user, level=ADMIN_LEVEL)
-    checkAlive(project)
-    if project.is_base:
-        m = _(astakos_messages.BASE_NO_TERMINATE) % project.uuid
-        raise ProjectConflict(m)
+    validate_project_action(project, "TERMINATE", request_user, silent=False)
 
     project.terminate(actor=request_user, reason=reason)
     quotas.qh_sync_project(project)
@@ -933,8 +1034,7 @@ def terminate(project_id, request_user=None, reason=None):
 
 def suspend(project_id, request_user=None, reason=None):
     project = get_project_for_update(project_id)
-    project_check_allowed(project, request_user, level=ADMIN_LEVEL)
-    checkAlive(project)
+    validate_project_action(project, "SUSPEND", request_user, silent=False)
 
     project.suspend(actor=request_user, reason=reason)
     quotas.qh_sync_project(project)
@@ -945,11 +1045,7 @@ def suspend(project_id, request_user=None, reason=None):
 
 def unsuspend(project_id, request_user=None, reason=None):
     project = get_project_for_update(project_id)
-    project_check_allowed(project, request_user, level=ADMIN_LEVEL)
-
-    if not project.is_suspended:
-        m = _(astakos_messages.NOT_SUSPENDED_PROJECT) % project.uuid
-        raise ProjectConflict(m)
+    validate_project_action(project, "UNSUSPEND", request_user, silent=False)
 
     project.resume(actor=request_user, reason=reason)
     quotas.qh_sync_project(project)
@@ -960,13 +1056,7 @@ def unsuspend(project_id, request_user=None, reason=None):
 def reinstate(project_id, request_user=None, reason=None):
     get_project_lock()
     project = get_project_for_update(project_id)
-    project_check_allowed(project, request_user, level=ADMIN_LEVEL)
-
-    if not project.is_terminated:
-        m = _(astakos_messages.NOT_TERMINATED_PROJECT) % project.uuid
-        raise ProjectConflict(m)
-
-    check_conflicting_projects(project, project.realname)
+    validate_project_action(project, "REINSTATE", request_user, silent=False)
     project.resume(actor=request_user, reason=reason)
     quotas.qh_sync_project(project)
     logger.info("%s has been reinstated" % (project))

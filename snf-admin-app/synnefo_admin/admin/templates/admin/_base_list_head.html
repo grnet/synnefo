@@ -1,7 +1,11 @@
 {% load admin_tags %}
 <div class="object-details info-block well {{ rowcls }}">
+{% if item_list|length > 0 %}
 <a href="#" class="show-hide-all custom-btn expand-btn"><span>Collapse All</span></a>
-    <h3>{{ type|display_list_type }}
-		<span class="label label-info length">Total: {{item_list|length }}</span>
-    </h3>
+{% endif %}
+<h3>{{ type|display_list_type }}
+{% if item_list|length > 0 %}
+    <span class="label label-info length">Total: {{item_list|length }}</span>
+{% endif %}
+</h3>
 

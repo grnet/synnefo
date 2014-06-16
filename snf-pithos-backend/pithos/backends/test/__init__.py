@@ -16,13 +16,16 @@
 from .common import CommonMixin
 from .quota import TestQuotaMixin
 from .delete_by_uuid import TestDeleteByUUIDMixin
+from .snapshots import TestSnapshotsMixin
 
 
 class TestSQLAlchemyBackend(CommonMixin, TestDeleteByUUIDMixin,
-                            TestQuotaMixin):
+                            TestQuotaMixin, TestSnapshotsMixin):
     db_module = 'pithos.backends.lib.sqlalchemy'
     db_connection = 'sqlite:////tmp/test_pithos_backend.db'
 
-class TestSQLiteBackend(CommonMixin, TestDeleteByUUIDMixin, TestQuotaMixin):
+
+class TestSQLiteBackend(CommonMixin, TestDeleteByUUIDMixin, TestQuotaMixin,
+                        TestSnapshotsMixin):
         db_module = 'pithos.backends.lib.sqlite'
         db_connection = ':memory:'

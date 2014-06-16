@@ -131,13 +131,13 @@ class ProjectJSONView(DatatablesView):
         if not inst.is_base:
             extra_dict['homepage'] = {
                 'display_name': "Homepage",
-                'value': inst.homepage,
+                'value': inst.homepage or "-",
                 'visible': True,
             }
 
             extra_dict['description'] = {
                 'display_name': "Description",
-                'value': inst.description,
+                'value': inst.description or "-",
                 'visible': True,
             }
             extra_dict['members'] = {
@@ -150,24 +150,24 @@ class ProjectJSONView(DatatablesView):
             if inst.last_application.comments:
                 extra_dict['comments'] = {
                     'display_name': "Comments for review",
-                    'value': inst.last_application.comments,
+                    'value': inst.last_application.comments or "-",
                     'visible': True,
                 }
 
             extra_dict['member_resources'] = {
                 'display_name': "Member resource limits",
-                'value': display_project_resources(inst, 'member'),
+                'value': display_project_resources(inst, 'member') or "-",
                 'visible': True
             }
 
         extra_dict['limit'] = {
             'display_name': "Total resource limits",
-            'value': display_project_resources(inst, 'total'),
+            'value': display_project_resources(inst, 'total') or "-",
             'visible': True,
         }
         extra_dict['usage'] = {
             'display_name': "Total resource usage",
-            'value': display_project_stats(inst, 'project_usage'),
+            'value': display_project_stats(inst, 'project_usage') or "-",
             'visible': True,
         }
 

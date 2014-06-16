@@ -65,8 +65,13 @@ class VolumeJSONView(DatatablesView):
     extra = True
     filters = VolumeFilterSet
 
+    def format_data_row(self, row):
+        if not row[1]:
+            row[1] = "-"
+        return row
+
     def get_extra_data_row(self, inst):
-        logging.info("I am here")
+        extra_dict = OrderedDict()
         extra_dict = {
             'allowed_actions': {
                 'display_name': "",
@@ -98,7 +103,7 @@ class VolumeJSONView(DatatablesView):
                 'visible': False,
             }, 'description': {
                 'display_name': "Description",
-                'value': inst.description,
+                'value': inst.description or "-",
                 'visible': True,
             }, 'updated': {
                 'display_name': "Update time",

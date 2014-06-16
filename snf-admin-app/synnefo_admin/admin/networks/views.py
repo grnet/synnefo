@@ -64,6 +64,11 @@ class NetworkJSONView(DatatablesView):
     extra = True
     filters = NetworkFilterSet
 
+    def format_data_row(self, row):
+        if not row[1]:
+            row[1] = "-"
+        return row
+
     def get_extra_data_row(self, inst):
         extra_dict = {
             'allowed_actions': {

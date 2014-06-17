@@ -324,9 +324,22 @@ $(function(){
 
 	$(document).bind('keyup', function(e){
 		if(e.which === 16) {
+			deselectText();
 			$(tableDomID).removeClass('with-shift')
 		}
 	});
+
+	function deselectText() {
+	if (window.getSelection) {
+		if (window.getSelection().empty) {  // Chrome
+			window.getSelection().empty();
+		} else if (window.getSelection().removeAllRanges) {  // Firefox
+			window.getSelection().removeAllRanges();
+		}
+		} else if (document.selection) {  // IE?
+			document.selection.empty();
+		}
+	}
 
 	function selectRow(row, event) {
 		var $row = $(row);

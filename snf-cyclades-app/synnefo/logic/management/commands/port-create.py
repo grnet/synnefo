@@ -41,7 +41,7 @@ class Command(SynnefoCommand):
             default=None,
             help="Name of the port."),
         make_option(
-            "--owner",
+            "--user",
             dest="user_id",
             default=None,
             help="UUID of the owner of the Port."),

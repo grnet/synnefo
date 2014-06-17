@@ -36,8 +36,8 @@ class Command(SynnefoCommand):
             dest='address',
             help="The address to be allocated"),
         make_option(
-            '--owner',
-            dest='owner',
+            '--user',
+            dest='user',
             default=None,
             help='The owner of the floating IP'),
     )
@@ -49,10 +49,10 @@ class Command(SynnefoCommand):
 
         network_id = options['network_id']
         address = options['address']
-        owner = options['owner']
+        user = options['user']
 
-        if not owner:
-            raise CommandError("'owner' is required for floating IP creation")
+        if not user:
+            raise CommandError("'user' is required for floating IP creation")
 
         if network_id is not None:
             network = util.get_resource("network", network_id, for_update=True)
@@ -64,7 +64,7 @@ class Command(SynnefoCommand):
         else:
             network = None
 
-        floating_ip = ips.create_floating_ip(userid=owner,
+        floating_ip = ips.create_floating_ip(userid=user,
                                              network=network,
                                              address=address)
 

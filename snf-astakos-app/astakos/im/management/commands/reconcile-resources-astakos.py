@@ -36,7 +36,7 @@ class Command(SynnefoCommand):
     """
 
     option_list = SynnefoCommand.option_list + (
-        make_option("--userid", dest="userid",
+        make_option("--user", dest="userid",
                     default=None,
                     help="Reconcile resources only for this user"),
         make_option("--project",

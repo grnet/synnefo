@@ -39,8 +39,8 @@ class Command(SynnefoCommand):
             metavar='NAME',
             help="Rename server."),
         make_option(
-            '--owner',
-            dest='owner',
+            '--user',
+            dest='user',
             metavar='USER_UUID',
             help="Change ownership of server. Value must be a user UUID"),
         make_option(
@@ -94,10 +94,10 @@ class Command(SynnefoCommand):
             self.stdout.write("Set server '%s' as suspended=%s\n" %
                               (server, suspended))
 
-        new_owner = options.get('owner')
+        new_owner = options.get('user')
         if new_owner is not None:
             if "@" in new_owner:
-                raise CommandError("Invalid owner UUID.")
+                raise CommandError("Invalid user UUID.")
             old_owner = server.userid
             server.userid = new_owner
             server.save()

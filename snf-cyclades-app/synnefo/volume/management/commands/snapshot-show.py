@@ -27,7 +27,7 @@ class Command(SynnefoCommand):
     help = "Display available information about a snapshot"
     option_list = SynnefoCommand.option_list + (
         make_option(
-            '--user-id',
+            '--user',
             dest='userid',
             default=None,
             help="The UUID of the owner of the snapshot. Required"

@@ -36,7 +36,7 @@ class Command(SynnefoCommand):
             metavar='NAME',
             help="Rename a network"),
         make_option(
-            '--userid',
+            '--user',
             dest='userid',
             help="Change the owner of the network."),
         make_option(

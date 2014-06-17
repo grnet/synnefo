@@ -24,7 +24,7 @@ class Command(SynnefoCommand):
     help = "List public images or images available to a user."
     option_list = SynnefoCommand.option_list + (
         make_option(
-            '--user-id',
+            '--user',
             dest='userid',
             default=None,
             help="List all images available to that user."

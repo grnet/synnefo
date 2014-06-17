@@ -39,7 +39,7 @@ class Command(SynnefoCommand):
             default=None,
             help="Display description of the volume."),
         make_option(
-            "--owner",
+            "--user",
             dest="user_id",
             default=None,
             help="UUID of the owner of the volume."),

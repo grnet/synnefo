@@ -39,12 +39,22 @@ class WorkerGlue(object):
         bcfg.readfp(open(cfile))
         worker_id = WorkerGlue.worker_id
         WorkerGlue.ArchipelagoConfFile = cfile
-        archipelago_segment_type = 'posix'
-        archipelago_segment_name = 'archipelago'
+        try:
+            archipelago_segment_type = bcfg.get('XSEG', 'SEGMENT_TYPE')
+        except ConfigParser.NoOptionError:
+            archipelago_segment_type = 'posix'
+        try:
+            archipelago_segment_name = bcfg.get('XSEG', 'SEGMENT_NAME')
+        except ConfigParser.NoOptionError:
+            archipelago_segment_name = 'archipelago'
+        try:
+            archipelago_segment_alignment = bcfg.get('XSEG',
+                                                     'SEGMENT_ALIGNMENT')
+        except ConfigParser.NoOptionError:
+            archipelago_segment_alignment = 12
         archipelago_dynports = bcfg.getint('XSEG', 'SEGMENT_DYNPORTS')
         archipelago_ports = bcfg.getint('XSEG', 'SEGMENT_PORTS')
         archipelago_segment_size = bcfg.getint('XSEG', 'SEGMENT_SIZE')
-        archipelago_segment_alignment = 12
 
         class XsegPool(ObjectPool):
 

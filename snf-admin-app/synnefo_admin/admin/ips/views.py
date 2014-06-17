@@ -30,24 +30,13 @@ from astakos.im.models import AstakosUser, Project
 from eztables.views import DatatablesView
 import django_filters
 
-#import synnefo_admin.admin.vms as vm_views
-from synnefo_admin.admin.utils import filter_owner_name
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
-from synnefo_admin.admin.users.actions import get_permitted_actions as \
-    get_user_actions
-from synnefo_admin.admin.vms.actions import get_permitted_actions as \
-    get_vm_actions
-from synnefo_admin.admin.volumes.actions import get_permitted_actions as \
-    get_volume_actions
-from synnefo_admin.admin.networks.actions import get_permitted_actions as \
-    get_network_actions
-from synnefo_admin.admin.projects.actions import get_permitted_actions as \
-    get_project_actions
+from synnefo_admin.admin.actions import (has_permission_or_403,
+                                         get_allowed_actions,
+                                         get_permitted_actions,)
+from synnefo_admin.admin.utils import get_actions
 
 from .utils import get_contact_mail, get_contact_name
-from .actions import (generate_actions, get_allowed_actions,
-                      get_permitted_actions)
+from .actions import cached_actions
 from .filters import IPFilterSet
 
 
@@ -60,64 +49,94 @@ templates = {
 class IPJSONView(DatatablesView):
     model = IPAddress
     fields = ('pk', 'address', 'floating_ip', 'created', 'userid',)
-
-    extra = True
     filters = IPFilterSet
 
+    def get_extra_data(self, qs):
+        # FIXME: The `contact_name`, `contact_email` fields will cripple our db
+        if self.form.cleaned_data['iDisplayLength'] < 0:
+            qs = qs.only('pk', 'address', 'floating_ip', 'created', 'userid',)
+        return [self.get_extra_data_row(row) for row in qs]
+
     def get_extra_data_row(self, inst):
-        extra_dict = {
-            'allowed_actions': {
-                'display_name': "",
-                'value': get_allowed_actions(inst),
-                'visible': False,
-            }, 'id': {
-                'display_name': "ID",
-                'value': inst.pk,
-                'visible': False,
-            }, 'item_name': {
-                'display_name': "Name",
-                'value': inst.address,
-                'visible': False,
-            }, 'details_url': {
-                'display_name': "Details",
-                'value': reverse('admin-details', args=['ip', inst.pk]),
-                'visible': True,
-            }, 'contact_id': {
-                'display_name': "Contact ID",
-                'value': inst.userid,
-                'visible': False,
-            }, 'contact_mail': {
-                'display_name': "Contact mail",
-                'value': get_contact_mail(inst),
-                'visible': True,
-            }, 'contact_name': {
-                'display_name': "Contact name",
-                'value': get_contact_name(inst),
-                'visible': True,
-            }, 'updated': {
-                'display_name': "Update date",
-                'value': inst.updated,
-                'visible': True,
-            }, 'in_use': {
-                'display_name': "Currently in Use",
-                'value': inst.in_use(),
-                'visible': True,
-            }, 'network_info': {
-                'display_name': "Network info",
-                'value': ('ID: ' + str(inst.network.id) + ', Name: ' +
-                          str(inst.network.id)),
+        if self.dt_data['iDisplayLength'] < 0:
+            extra_dict = {}
+        else:
+            extra_dict = OrderedDict()
+
+        extra_dict['allowed_actions'] = {
+            'display_name': "",
+            'value': get_allowed_actions(cached_actions, inst),
+            'visible': False,
+        }
+        extra_dict['id'] = {
+            'display_name': "ID",
+            'value': inst.pk,
+            'visible': False,
+        }
+        extra_dict['item_name'] = {
+            'display_name': "Name",
+            'value': inst.address,
+            'visible': False,
+        }
+        extra_dict['details_url'] = {
+            'display_name': "Details",
+            'value': reverse('admin-details', args=['ip', inst.pk]),
+            'visible': True,
+        }
+        extra_dict['contact_id'] = {
+            'display_name': "Contact ID",
+            'value': inst.userid,
+            'visible': False,
+        }
+        extra_dict['contact_mail'] = {
+            'display_name': "Contact mail",
+            'value': get_contact_mail(inst),
+            'visible': True,
+        }
+        extra_dict['contact_name'] = {
+            'display_name': "Contact name",
+            'value': get_contact_name(inst),
+            'visible': True,
+        }
+
+        if self.form.cleaned_data['iDisplayLength'] < 0:
+            extra_dict['minimal'] = {
+                'display_name': "No summary available",
+                'value': "Have you per chance pressed 'Select All'?",
                 'visible': True,
             }
+        else:
+            extra_dict.update(self.add_verbose_data(inst))
+
+        return extra_dict
+
+    def add_verbose_data(self, inst):
+        extra_dict = OrderedDict()
+        extra_dict['updated'] = {
+            'display_name': "Update date",
+            'value': inst.updated,
+            'visible': True,
+        }
+        extra_dict['in_use'] = {
+            'display_name': "Currently in Use",
+            'value': inst.in_use(),
+            'visible': True,
+        }
+        extra_dict['network_info'] = {
+            'display_name': "Network info",
+            'value': ('ID: ' + str(inst.network.id) + ', Name: ' +
+                      str(inst.network.id)),
+            'visible': True,
         }
 
         return extra_dict
 
 
-@has_permission_or_403(generate_actions())
+@has_permission_or_403(cached_actions)
 def do_action(request, op, id):
     """Apply the requested action on the specified ip."""
     ip = IPAddress.objects.get(id=id)
-    actions = get_permitted_actions(request.user)
+    actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'contact':
         actions[op].f(ip, request.POST['text'])
@@ -128,7 +147,7 @@ def do_action(request, op, id):
 def catalog(request):
     """List view for Cyclades ips."""
     context = {}
-    context['action_dict'] = get_permitted_actions(request.user)
+    context['action_dict'] = get_permitted_actions(cached_actions, request.user)
     context['filter_dict'] = IPFilterSet().filters.itervalues()
     context['columns'] = ["ID", "Address", "Floating",
                           "Creation date", "User ID", ""]
@@ -151,13 +170,13 @@ def details(request, query):
     context = {
         'main_item': ip,
         'main_type': 'ip',
-        'action_dict': get_permitted_actions(request.user),
+        'action_dict': get_permitted_actions(cached_actions, request.user),
         'associations_list': [
-            (vm_list, 'vm', get_vm_actions(request.user)),
-            (network_list, 'network', get_network_actions(request.user)),
+            (vm_list, 'vm', get_actions("vm", request.user)),
+            (network_list, 'network', get_actions("network", request.user)),
             (nic_list, 'nic', None),
-            (user_list, 'user', get_user_actions(request.user)),
-            (project_list, 'project', get_project_actions(request.user)),
+            (user_list, 'user', get_actions("user", request.user)),
+            (project_list, 'project', get_actions("project", request.user)),
         ]
     }
 

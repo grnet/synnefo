@@ -42,24 +42,14 @@ from synnefo.util import units
 import django_filters
 from django.db.models import Q
 
-from synnefo_admin.admin.utils import is_resource_useful
+from synnefo_admin.admin.utils import is_resource_useful, get_actions
 
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
-from synnefo_admin.admin.users.actions import get_permitted_actions as \
-    get_user_actions
-from synnefo_admin.admin.vms.actions import get_permitted_actions as \
-    get_vm_actions
-from synnefo_admin.admin.volumes.actions import get_permitted_actions as \
-    get_volume_actions
-from synnefo_admin.admin.networks.actions import get_permitted_actions as \
-    get_network_actions
-from synnefo_admin.admin.ips.actions import get_permitted_actions as \
-    get_ip_actions
+from synnefo_admin.admin.actions import (has_permission_or_403,
+                                         get_allowed_actions,
+                                         get_permitted_actions,)
 
 from .filters import ProjectFilterSet
-from .actions import (generate_actions, get_allowed_actions,
-                      get_permitted_actions)
+from .actions import cached_actions
 from .utils import (get_contact_id, get_contact_name, get_contact_mail,
                     get_project, display_project_stats,
                     display_project_resources,)
@@ -74,23 +64,35 @@ templates = {
 class ProjectJSONView(DatatablesView):
     model = Project
     fields = ('id', 'realname', 'state', 'creation_date', 'end_date')
-
-    extra = True
     filters = ProjectFilterSet
 
     def format_data_row(self, row):
-        row = list(row)
-        row[2] = (str(row[2]) + ' (' +
-                  Project.objects.get(id=row[0]).state_display() + ')')
-        row[3] = str(row[3].date())
-        row[4] = str(row[4].date())
+        if self.dt_data['iDisplayLength'] > 0:
+            row = list(row)
+            row[2] = (str(row[2]) + ' (' +
+                      Project.objects.get(id=row[0]).state_display() + ')')
+            row[3] = str(row[3].date())
+            row[4] = str(row[4].date())
         return row
 
+    def get_extra_data(self, qs):
+        if self.form.cleaned_data['iDisplayLength'] < 0:
+            qs = qs.only('id', 'realname', 'state', 'is_base',
+                         'uuid',).select_related('last_application__state',
+                                                 'last_application__id',
+                                                 'owner__id', 'owner__uuid')
+        return [self.get_extra_data_row(row) for row in qs]
+
     def get_extra_data_row(self, inst):
-        extra_dict = OrderedDict()
+        if self.dt_data['iDisplayLength'] < 0:
+            extra_dict = {}
+        else:
+            extra_dict = OrderedDict()
+
         extra_dict['allowed_actions'] = {
             'display_name': "",
-            'value': get_allowed_actions(inst),
+            'value': get_allowed_actions(cached_actions, inst,
+                                         self.request.user),
             'visible': False,
         }
         extra_dict['id'] = {
@@ -110,7 +112,7 @@ class ProjectJSONView(DatatablesView):
         }
         extra_dict['contact_id'] = {
             'display_name': "Contact ID",
-            'value': get_contact_id(inst),
+            #'value': get_contact_id(inst),
             'visible': False,
         }
         extra_dict['contact_mail'] = {
@@ -123,6 +125,20 @@ class ProjectJSONView(DatatablesView):
             'value': get_contact_name(inst),
             'visible': False,
         }
+
+        if self.form.cleaned_data['iDisplayLength'] < 0:
+            extra_dict['minimal'] = {
+                'display_name': "No summary available",
+                'value': "Have you per chance pressed 'Select All'?",
+                'visible': True,
+            }
+        else:
+            extra_dict.update(self.add_verbose_data(inst))
+
+        return extra_dict
+
+    def add_verbose_data(self, inst):
+        extra_dict = OrderedDict()
         extra_dict['uuid'] = {
             'display_name': "UUID",
             'value': inst.uuid,
@@ -175,11 +191,11 @@ class ProjectJSONView(DatatablesView):
         return extra_dict
 
 
-@has_permission_or_403(generate_actions())
+@has_permission_or_403(cached_actions)
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     project = get_project(id)
-    actions = get_permitted_actions(request.user)
+    actions = get_permitted_actions(cached_actions, request.user)
     logging.info("Op: %s, project: %s, fun: %s", op, project.uuid,
                  actions[op].f)
 
@@ -200,7 +216,7 @@ def do_action(request, op, id):
 def catalog(request):
     """List view for Cyclades projects."""
     context = {}
-    context['action_dict'] = get_permitted_actions(request.user)
+    context['action_dict'] = get_permitted_actions(cached_actions, request.user)
     context['filter_dict'] = ProjectFilterSet().filters.itervalues()
     context['columns'] = ["ID", "Name", "Status", "Creation date",
                           "End date", ""]
@@ -222,13 +238,13 @@ def details(request, query):
     context = {
         'main_item': project,
         'main_type': 'project',
-        'action_dict': get_permitted_actions(request.user),
+        'action_dict': get_permitted_actions(cached_actions, request.user),
         'associations_list': [
-            (user_list, 'user', get_user_actions(request.user)),
-            (vm_list, 'vm', get_vm_actions(request.user)),
-            (volume_list, 'volume', get_volume_actions(request.user)),
-            (network_list, 'network', get_network_actions(request.user)),
-            (ip_list, 'ip', get_ip_actions(request.user)),
+            (user_list, 'user', get_actions("user", request.user)),
+            (vm_list, 'vm', get_actions("vm", request.user)),
+            (volume_list, 'volume', get_actions("volume", request.user)),
+            (network_list, 'network', get_actions("network", request.user)),
+            (ip_list, 'ip', get_actions("ip", request.user)),
         ]
     }
 

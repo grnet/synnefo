@@ -13,10 +13,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import functools
+from importlib import import_module
 from operator import or_
 from django.db.models import Q
+from django.views.decorators.gzip import gzip_page
 from synnefo.util import units
 from astakos.im.models import AstakosUser
+from .actions import get_allowed_actions, get_permitted_actions
+
+
+def conditionally_gzip_page(func):
+    """Decorator to gzip response of unpaginated json requests."""
+    @functools.wraps(func)
+    def wrapper(request, *args, **kwargs):
+        if request.REQUEST['iDisplayLength'] > 0:
+            return func(request, *args, **kwargs)
+        else:
+            return gzip_page(func)(request, *args, **kwargs)
+    return wrapper
 
 
 def is_resource_useful(resource, project_limit):
@@ -84,3 +99,17 @@ def filter_owner_name(queryset, search):
         values('uuid')
     # Get the related entities with the UUIDs of these users
     return queryset.filter(userid__in=users).distinct()
+
+
+def get_actions(target, user=None, inst=None):
+    """Generic function for getting actions for various targets.
+
+    Note: this function will import the action module for the target, which
+    means that it may be slow.
+    """
+    mod = import_module('synnefo_admin.admin.%ss.actions' % target)
+    actions = mod.cached_actions
+    if inst:
+        return get_allowed_actions(actions, inst, user)
+    else:
+        return get_permitted_actions(actions, user)

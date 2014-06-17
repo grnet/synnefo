@@ -100,23 +100,4 @@ def generate_actions():
     actions['contact'] = NetworkAction(name='Send e-mail', f=send_email,
                                        allowed_groups=['admin', 'superadmin'])
     return actions
-
-
-def get_permitted_actions(user):
-    actions = generate_actions()
-    for key, action in actions.iteritems():
-        if not action.is_user_allowed(user):
-            actions.pop(key, None)
-    return actions
-
-
-def get_allowed_actions(network):
-    """Get a list of actions that can apply to a network."""
-    allowed_actions = []
-    actions = generate_actions()
-
-    for key, action in actions.iteritems():
-        if action.can_apply(network):
-            allowed_actions.append(key)
-
-    return allowed_actions
+cached_actions = generate_actions()

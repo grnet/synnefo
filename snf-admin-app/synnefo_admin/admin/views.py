@@ -16,6 +16,7 @@
 
 import re
 import logging
+import functools
 
 from django.shortcuts import redirect
 from django.views.generic.simple import direct_to_template
@@ -44,6 +45,7 @@ import synnefo_admin.admin.projects.views as project_views
 from synnefo_admin.admin import groups as group_views
 from synnefo_admin.admin import auth_providers as auth_provider_views
 from synnefo_admin.admin import actions
+from synnefo_admin.admin.utils import conditionally_gzip_page
 
 from synnefo.ui.views import UI_MEDIA_URL
 import copy
@@ -238,25 +240,26 @@ def stats(request):
 
 
 @admin_user_required
+@conditionally_gzip_page
 def json_list(request, type):
     """Return a class-based view based on the given type."""
     logging.info("Request for json. Type: %s", type)
 
     if type == 'user':
         return user_views.UserJSONView.as_view()(request)
-    if type == 'project':
+    elif type == 'project':
         return project_views.ProjectJSONView.as_view()(request)
-    if type == 'vm':
+    elif type == 'vm':
         return vm_views.VMJSONView.as_view()(request)
-    if type == 'volume':
+    elif type == 'volume':
         return volume_views.VolumeJSONView.as_view()(request)
-    if type == 'network':
+    elif type == 'network':
         return network_views.NetworkJSONView.as_view()(request)
-    if type == 'ip':
+    elif type == 'ip':
         return ip_views.IPJSONView.as_view()(request)
-    if type == 'group':
+    elif type == 'group':
         return group_views.GroupJSONView.as_view()(request)
-    if type == 'auth_provider':
+    elif type == 'auth_provider':
         return auth_provider_views.AstakosUserAuthProviderJSONView.as_view()(request)
     else:
         logging.error("JSON view does not exist")

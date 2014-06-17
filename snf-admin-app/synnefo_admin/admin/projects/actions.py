@@ -121,26 +121,4 @@ def generate_actions():
                                        allowed_groups=['admin', 'superadmin'])
 
     return actions
-
-
-def get_permitted_actions(user):
-    actions = generate_actions()
-    for key, action in actions.iteritems():
-        if not action.is_user_allowed(user):
-            actions.pop(key, None)
-    return actions
-
-
-def get_allowed_actions(project):
-    """Get a list of actions that can apply to a project."""
-    allowed_actions = []
-    actions = generate_actions()
-
-    for key, action in actions.iteritems():
-        try:
-            if action.can_apply(project):
-                allowed_actions.append(key)
-        except ProjectConflict:
-            pass
-
-    return allowed_actions
+cached_actions = generate_actions()

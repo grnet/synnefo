@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+logger = logging.getLogger(__name__)
 import re
 from collections import OrderedDict
 
@@ -40,22 +41,14 @@ from eztables.views import DatatablesView
 import django_filters
 from django.db.models import Q
 
-from synnefo_admin.admin.actions import has_permission_or_403
-from synnefo_admin.admin.vms.actions import get_permitted_actions as \
-    get_vm_actions
-from synnefo_admin.admin.volumes.actions import get_permitted_actions as \
-    get_volume_actions
-from synnefo_admin.admin.networks.actions import get_permitted_actions as \
-    get_network_actions
-from synnefo_admin.admin.ips.actions import get_permitted_actions as \
-    get_ip_actions
-from synnefo_admin.admin.projects.actions import get_permitted_actions as \
-    get_project_actions
+from synnefo_admin.admin.actions import (has_permission_or_403,
+                                         get_allowed_actions,
+                                         get_permitted_actions,)
+from synnefo_admin.admin.utils import get_actions
 
 from .utils import (get_user, get_quotas, get_user_groups,
                     get_enabled_providers, get_suspended_vms, )
-from .actions import (generate_actions, get_allowed_actions,
-                      get_permitted_actions,)
+from .actions import cached_actions
 from .filters import UserFilterSet
 
 SHOW_DELETED_VMS = getattr(settings, 'ADMIN_SHOW_DELETED_VMS', False)
@@ -70,15 +63,24 @@ class UserJSONView(DatatablesView):
     model = AstakosUser
     fields = ('email', 'first_name', 'last_name', 'is_active',
               'is_rejected', 'moderated', 'email_verified')
-
-    extra = True
     filters = UserFilterSet
 
+    def get_extra_data(self, qs):
+        if self.form.cleaned_data['iDisplayLength'] < 0:
+            qs = qs.only('email', 'first_name', 'last_name', 'is_active',
+                         'is_rejected', 'moderated', 'email_verified', 'uuid')
+        return [self.get_extra_data_row(row) for row in qs]
+
     def get_extra_data_row(self, inst):
-        extra_dict = OrderedDict()
+        if self.dt_data['iDisplayLength'] < 0:
+            extra_dict = {}
+        else:
+            extra_dict = OrderedDict()
+
         extra_dict['allowed_actions'] = {
             'display_name': "",
-            'value': get_allowed_actions(inst),
+            'value': get_allowed_actions(cached_actions, inst,
+                                         self.request.user),
             'visible': False,
         }
         extra_dict['id'] = {
@@ -167,11 +169,11 @@ class UserJSONView(DatatablesView):
         return extra_dict
 
 
-@has_permission_or_403(generate_actions())
+@has_permission_or_403(cached_actions)
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     user = get_user(id)
-    actions = get_permitted_actions(request.user)
+    actions = get_permitted_actions(cached_actions, request.user)
     logging.info("Op: %s, target: %s, fun: %s", op, user.email, actions[op].f)
 
     if op == 'reject':
@@ -191,11 +193,8 @@ def do_action(request, op, id):
 def catalog(request):
     """List view for Astakos users."""
 
-    for filter in UserFilterSet().filters.itervalues():
-        logging.info("Filter %s, filter_name %s", filter, filter.name)
-
     context = {}
-    context['action_dict'] = get_permitted_actions(request.user)
+    context['action_dict'] = get_permitted_actions(cached_actions, request.user)
     context['filter_dict'] = UserFilterSet().filters.itervalues()
     context['columns'] = ["E-mail", "First Name", "Last Name", "Active",
                           "Rejected", "Moderated", "Verified", ""]
@@ -207,7 +206,6 @@ def catalog(request):
 def details(request, query):
     """Details view for Astakos users."""
     error = request.GET.get('error', None)
-    logging.info("Here")
 
     user = get_user(query)
     quota_list = get_quotas(user)
@@ -238,15 +236,15 @@ def details(request, query):
     context = {
         'main_item': user,
         'main_type': 'user',
-        'action_dict': get_permitted_actions(request.user),
+        'action_dict': get_permitted_actions(cached_actions, request.user),
         'associations_list': [
             (quota_list, 'quota', None),
-            (project_list, 'project', get_project_actions(request.user)),
-            (vm_list, 'vm', get_vm_actions(request.user)),
-            (volume_list, 'volume', get_volume_actions(request.user)),
-            (network_list, 'network', get_network_actions(request.user)),
+            (project_list, 'project', get_actions("project", request.user)),
+            (vm_list, 'vm', get_actions("vm", request.user)),
+            (volume_list, 'volume', get_actions("volume", request.user)),
+            (network_list, 'network', get_actions("network", request.user)),
             (nic_list, 'nic', None),
-            (ip_list, 'ip', get_ip_actions(request.user)),
+            (ip_list, 'ip', get_actions("ip", request.user)),
         ]
     }
 

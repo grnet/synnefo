@@ -33,23 +33,14 @@ from eztables.views import DatatablesView
 
 import django_filters
 
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
-from synnefo_admin.admin.users.actions import get_permitted_actions as \
-    get_user_actions
-from synnefo_admin.admin.volumes.actions import get_permitted_actions as \
-    get_volume_actions
-from synnefo_admin.admin.networks.actions import get_permitted_actions as \
-    get_network_actions
-from synnefo_admin.admin.ips.actions import get_permitted_actions as \
-    get_ip_actions
-from synnefo_admin.admin.projects.actions import get_permitted_actions as \
-    get_project_actions
+from synnefo_admin.admin.actions import (has_permission_or_403,
+                                         get_allowed_actions,
+                                         get_permitted_actions,)
+from synnefo_admin.admin.utils import get_actions
 
 from .utils import get_flavor_info, get_vm
 from .filters import VMFilterSet
-from .actions import (get_allowed_actions, generate_actions,
-                      get_permitted_actions,)
+from .actions import cached_actions
 
 templates = {
     'list': 'admin/vm_list.html',
@@ -60,15 +51,24 @@ templates = {
 class VMJSONView(DatatablesView):
     model = VirtualMachine
     fields = ('pk', 'name', 'operstate', 'suspended',)
-
-    extra = True
     filters = VMFilterSet
 
+    def get_extra_data(self, qs):
+        # FIXME: The `contact_name`, `contact_email` fields will cripple our db
+        if self.form.cleaned_data['iDisplayLength'] < 0:
+            qs = qs.only('pk', 'name', 'operstate', 'suspended', 'id',
+                         'deleted', 'task', 'userid')
+        return [self.get_extra_data_row(row) for row in qs]
+
     def get_extra_data_row(self, inst):
-        extra_dict = OrderedDict()
+        if self.dt_data['iDisplayLength'] < 0:
+            extra_dict = {}
+        else:
+            extra_dict = OrderedDict()
+
         extra_dict['allowed_actions'] = {
             'display_name': "",
-            'value': get_allowed_actions(inst),
+            'value': get_allowed_actions(cached_actions, inst),
             'visible': False,
         }
         extra_dict['id'] = {
@@ -101,6 +101,20 @@ class VMJSONView(DatatablesView):
             'value': AstakosUser.objects.get(uuid=inst.userid).realname,
             'visible': True,
         }
+
+        if self.form.cleaned_data['iDisplayLength'] < 0:
+            extra_dict['minimal'] = {
+                'display_name': "No summary available",
+                'value': "Have you per chance pressed 'Select All'?",
+                'visible': True,
+            }
+        else:
+            extra_dict.update(self.add_verbose_data(inst))
+
+        return extra_dict
+
+    def add_verbose_data(self, inst):
+        extra_dict = OrderedDict()
         extra_dict['user_id'] = {
             'display_name': "User ID",
             'value': inst.userid,
@@ -130,11 +144,11 @@ class VMJSONView(DatatablesView):
         return extra_dict
 
 
-@has_permission_or_403(generate_actions())
+@has_permission_or_403(cached_actions)
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     vm = get_vm(id)
-    actions = get_permitted_actions(request.user)
+    actions = get_permitted_actions(cached_actions, request.user)
     logging.info("Op: %s, vm: %s, fun: %s", op, vm.pk, actions[op].f)
 
     if op == 'reboot':
@@ -150,7 +164,7 @@ def catalog(request):
     """List view for Cyclades VMs."""
     logging.info("Filters are %s", VMFilterSet().filters)
     context = {}
-    context['action_dict'] = get_permitted_actions(request.user)
+    context['action_dict'] = get_permitted_actions(cached_actions, request.user)
     context['filter_dict'] = VMFilterSet().filters.itervalues()
     context['columns'] = ["ID", "Name", "State", "Suspended", ""]
     context['item_type'] = 'vm'
@@ -172,14 +186,14 @@ def details(request, query):
     context = {
         'main_item': vm,
         'main_type': 'vm',
-        'action_dict': get_permitted_actions(request.user),
+        'action_dict': get_permitted_actions(cached_actions, request.user),
         'associations_list': [
-            (user_list, 'user', get_user_actions(request.user)),
-            (project_list, 'project', get_project_actions(request.user)),
-            (volume_list, 'volume', get_volume_actions(request.user)),
-            (network_list, 'network', get_network_actions(request.user)),
+            (user_list, 'user', get_actions("user", request.user)),
+            (project_list, 'project', get_actions("project", request.user)),
+            (volume_list, 'volume', get_actions("volume", request.user)),
+            (network_list, 'network', get_actions("network", request.user)),
             (nic_list, 'nic', None),
-            (ip_list, 'ip', get_ip_actions(request.user)),
+            (ip_list, 'ip', get_actions("ip", request.user)),
         ]
     }
 

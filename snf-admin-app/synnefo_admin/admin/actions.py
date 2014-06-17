@@ -34,6 +34,7 @@
 import functools
 
 from snf_django.lib.api import faults
+from astakos.im.functions import ProjectConflict
 
 
 class AdminAction:
@@ -82,11 +83,15 @@ class AdminAction:
         if not hasattr(self, 'check'):
             return True
 
-        # Cyclades raises BadRequest when an action is not supported for an
-        # instance.
         try:
             res = self.check(t)
+        # Cyclades raises BadRequest when an action is not supported for an
+        # instance.
         except faults.BadRequest:
+            return False
+        # Astakos raises ProjectConflict when an action is not supported for an
+        # instance.
+        except ProjectConflict:
             return False
 
         # We accept "None" as correct value.
@@ -157,3 +162,29 @@ def has_permission_or_403(actions):
             return func(request, op, *args, **kwargs)
         return wrapper
     return decorator
+
+
+def get_permitted_actions(actions, user):
+    """Get a list of actions that a user is permitted to author."""
+    for key, action in actions.iteritems():
+        if not action.is_user_allowed(user):
+            actions.pop(key, None)
+    return actions
+
+
+def get_allowed_actions(actions, inst, user=None):
+    """Get a list of actions that can apply to an instance.
+
+    Optionally, if the `user` argument is passed, we return the intersection of
+    the permitted actions for the user and the allowed actions for the
+    instance.
+    """
+    allowed_actions = []
+    if user:
+        actions = get_permitted_actions(actions, user)
+
+    for key, action in actions.iteritems():
+        if action.can_apply(inst):
+            allowed_actions.append(key)
+
+    return allowed_actions

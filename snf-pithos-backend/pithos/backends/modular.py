@@ -1163,7 +1163,7 @@ class ModularBackend(BaseBackend):
             return props[self.SIZE], [x for x in hashmap]
         else:
             hashmap = self.store.map_get(self._unhexlify_hash(
-                props[self.HASH]))
+                props[self.HASH]), props[self.SIZE])
             return props[self.SIZE], [binascii.hexlify(x) for x in hashmap]
 
     def _update_object_hash(self, user, account, container, name, size, type,
@@ -1322,7 +1322,7 @@ class ModularBackend(BaseBackend):
         dest_version_id, _ = self._update_object_hash(
             user, account, container, name, size, type, hexlified, checksum,
             domain, meta, replace_meta, permissions)
-        self.store.map_put(hash, map)
+        self.store.map_put(hash, map, size, self.block_size)
         return dest_version_id, hexlified
 
     @debug_method

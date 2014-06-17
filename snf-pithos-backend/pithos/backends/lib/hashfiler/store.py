@@ -40,14 +40,11 @@ class Store(object):
               }
         self.mapper = Mapper(**pm)
 
-    def map_get(self, name):
-        return self.mapper.map_retr(name)
+    def map_get(self, name, size):
+        return self.mapper.map_retr(name, size)
 
-    def map_get_archipelago(self, name, size):
-        return self.mapper.map_retr_archipelago(name, size)
-
-    def map_put(self, name, map):
-        self.mapper.map_stor(name, map)
+    def map_put(self, name, map, size, block_size):
+        self.mapper.map_stor(name, map, size, block_size)
 
     def map_delete(self, name):
         pass

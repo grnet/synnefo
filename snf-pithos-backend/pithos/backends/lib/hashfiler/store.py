@@ -32,9 +32,11 @@ class Store(object):
 
         pb = {'blocksize': params['block_size'],
               'hashtype': params['hash_algorithm'],
+              'archipelago_cfile': params['archipelago_cfile'],
               }
         self.blocker = Blocker(**pb)
         pm = {'namelen': self.blocker.hashlen,
+              'archipelago_cfile': params['archipelago_cfile'],
               }
         self.mapper = Mapper(**pm)
 

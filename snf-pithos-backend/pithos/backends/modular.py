@@ -295,7 +295,8 @@ class ModularBackend(BaseBackend):
         params = {'path': block_path,
                   'block_size': self.block_size,
                   'hash_algorithm': self.hash_algorithm,
-                  'umask': block_umask}
+                  'umask': block_umask,
+                  'archipelago_cfile': archipelago_conf_file}
         params.update(self.block_params)
         self.store = self.block_module.Store(**params)
 

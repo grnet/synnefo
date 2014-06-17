@@ -14,8 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from binascii import hexlify
-import os
-import re
 import ctypes
 import ConfigParser
 import logging
@@ -50,7 +48,7 @@ class ArchipelagoMapper(object):
         self.namelen = params['namelen']
         cfg = {}
         bcfg = ConfigParser.ConfigParser()
-        bcfg.readfp(open(glue.WorkerGlue.ArchipelagoConfFile))
+        bcfg.readfp(open(params['archipelago_cfile']))
         cfg['blockerm'] = bcfg.getint('mapperd','blockerm_port')
         cfg['mapperd'] = bcfg.getint('vlmcd','mapper_port')
         self.ioctx_pool = glue.WorkerGlue().ioctx_pool

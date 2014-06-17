@@ -44,7 +44,7 @@ class ArchipelagoBlocker(object):
     def __init__(self, **params):
         cfg = {}
         bcfg = ConfigParser.ConfigParser()
-        bcfg.readfp(open(glue.WorkerGlue.ArchipelagoConfFile))
+        bcfg.readfp(open(params['archipelago_cfile']))
         cfg['blockerb'] = bcfg.getint('mapperd', 'blockerb_port')
         blocksize = params['blocksize']
         hashtype = params['hashtype']

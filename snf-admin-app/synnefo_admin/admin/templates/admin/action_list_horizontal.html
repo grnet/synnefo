@@ -2,7 +2,7 @@
 <div class="actions-per-item btn-group actions">
     {% for op, action in action_dict.items %}
     {% if action|can_apply:item %}
-    <a href="" data-target="#{{ op }}" data-action="{{ op }}" data-toggle="modal" data-karma={{ action.karma }} data-reversible="{{ action.reversible }}" class="custom-btn">
+    <a href="" data-target="#{{action.target}}-{{ op }}" data-action="{{ op }}" data-toggle="modal" data-karma={{ action.karma }} data-reversible="{{ action.reversible }}" class="custom-btn">
         <span>{{ action.name }}</span>
     </a>
     {% endif %}

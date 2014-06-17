@@ -1,6 +1,7 @@
 {% extends "admin/base.html" %}
 
 {% block content %}
+
     {% block filter-list %}
         {% include "admin/filter_list.html" %}
     {% endblock filter-list %}
@@ -15,7 +16,11 @@
 
     <!-- Modals -->
     {% block action-modals %}
-        {% include "admin/_action_modals.html" %}
+        {% include "admin/action_modal_list.html" %}
     {% endblock action-modals %}
 
+{% endblock %}
+
+{% block custom-javascript %}
+<!--Athens, put the javascript down slowly.-->
 {% endblock %}

@@ -292,6 +292,7 @@ def details(request, type, id):
         return
 
     context.update(default_dict)
+    context.update({'view_type': 'details'})
     return direct_to_template(request, template, extra_context=context)
 
 
@@ -330,6 +331,7 @@ def catalog(request, type):
         return
 
     context.update(default_dict)
+    context.update({'view_type': 'list'})
 
     return direct_to_template(request, template, extra_context=context)
 

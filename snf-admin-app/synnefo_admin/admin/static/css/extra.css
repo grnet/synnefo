@@ -516,7 +516,7 @@ body .object-details h4 em.os-info img {
   padding-right: 12px;
 }
 /* line 70, ../sass/_filters.scss */
-.filter-dropdown .dropdown .dropdown-menu a input {
+.filter-dropdown .dropdown .dropdown-menu a span {
   margin-right: 6px;
 }
 

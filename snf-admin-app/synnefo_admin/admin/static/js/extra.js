@@ -827,63 +827,77 @@ $(function(){
 		var $dropdownList = $(filterEl).find('.choices');
 
 		$dropdownList.find('li a').click(function(e) {
-				e.preventDefault();
-				var $li = $(this).closest('li');
-				var key = $(this).closest(filterEl).data('filter');
-				var value = $(this).text();
-
-
+			e.preventDefault();
+			var $li = $(this).closest('li');
+			var key = $(this).closest(filterEl).data('filter');
+			var value = $(this).text();
+			if($(this).closest('.filter-dropdown').hasClass('filter-boolean')) {
 				if($li.hasClass('reset')) {
 					delete filters[key];
-					$li.addClass('active')
+					$li.find('.selection-indicator').toggleClass('snf-radio-unchecked snf-radio-checked');
+					$li.addClass('active');
+					$li.siblings('.active').find('.selection-indicator').toggleClass('snf-radio-unchecked snf-radio-checked');
+					$li.siblings('.active').removeClass('active');
+					$(this).closest(filterEl).find('.selected-value').text(value);
+				}
+				$li.toggleClass('active')
+				if($li.hasClass('active')) {
+					$li.find('.selection-indicator').removeClass('snf-radio-unchecked').addClass('snf-radio-checked');
+					$li.siblings('li').removeClass('active');
+					$li.siblings('li').find('.selection-indicator').removeClass('snf-radio-checked').addClass('snf-radio-unchecked');
+					$(this).closest(filterEl).find('.selected-value').text(value);
+					filters[key] = value;
+				}
+				else {
+					delete filters[key];
+					var resetLabel = $li.siblings('.reset').text();
+					$li.siblings('li.reset').addClass('active');
+					$li.siblings('li.reset').find('.selection-indicator').removeClass('snf-radio-unchecked').addClass('snf-radio-checked');
+					$(this).closest(filterEl).find('.selected-value').text(resetLabel);
+				}
+			}
+			else {
+				if($li.hasClass('reset')) {
+					delete filters[key];
+					$li.find('.selection-indicator').toggleClass('snf-checkbox-unchecked snf-checkbox-checked');
+					$li.addClass('active');
+
+					$li.siblings('.active').find('.selection-indicator').toggleClass('snf-checkbox-unchecked snf-checkbox-checked');
 					$li.siblings('.active').removeClass('active');
 					$(this).closest(filterEl).find('.selected-value').text(value);
 				}
 				else {
-					$li.toggleClass('active')
-					if($(this).closest('.filter-dropdown').hasClass('filter-boolean')) {
-						if($li.hasClass('active')) {
-							$li.siblings('li').removeClass('active');
+					$li.toggleClass('active');
+					$li.find('.selection-indicator').toggleClass('snf-checkbox-unchecked snf-checkbox-checked');
+					if($li.hasClass('active')) {
+						$li.siblings('.reset').removeClass('active')
+						$li.siblings('.reset').find('.selection-indicator').addClass('snf-checkbox-unchecked').removeClass('snf-radio-checked');
+						if($li.siblings('.active').length > 0) {
+							arrayFilter(filters, key, value);
+							$(this).closest(filterEl).find('.selected-value').append(','+value)
+						}
+						else {
 							$(this).closest(filterEl).find('.selected-value').text(value);
-								filters[key] = value;
+							filters[key] = [value]
+						}
+					}
+					else {
+						if($li.siblings('.active').length >0) {
+							arrayFilter(filters, key, value, true);
+							$(this).closest(filterEl).find('.selected-value').text(filters[key])
 						}
 						else {
 							delete filters[key];
 							var resetLabel = $li.siblings('.reset').text();
-							$li.siblings('li').find('.reset').closest('li').addClass('active');
+							$li.siblings('li.reset').addClass('active');
+							$li.siblings('li.reset').find('.selection-indicator').removeClass('snf-radio-unchecked').addClass('snf-checkbox-checked');
 							$(this).closest(filterEl).find('.selected-value').text(resetLabel)
 
 						}
 					}
-					else {
-						if($li.hasClass('active')) {
-							$li.siblings('.reset').removeClass('active')
-
-							if($li.siblings('.active').length > 0) {
-								arrayFilter(filters, key, value);
-								$(this).closest(filterEl).find('.selected-value').append(','+value)
-							}
-							else {
-								$(this).closest(filterEl).find('.selected-value').text(value);
-								filters[key] = [value]
-							}
-						}
-						else {
-							if($li.siblings('.active').length >0) {
-								arrayFilter(filters, key, value, true);
-								$(this).closest(filterEl).find('.selected-value').text(filters[key])
-							}
-							else {
-								delete filters[key];
-								var resetLabel = $li.siblings('.reset').text();
-								$li.siblings('li').find('.reset').closest('li').addClass('active');
-								$(this).closest(filterEl).find('.selected-value').text(resetLabel)
-
-							}
-						}
-					}
 				}
-				$(tableDomID).dataTable().api().ajax.reload();
+			}
+			$(tableDomID).dataTable().api().ajax.reload();
 		});
 	};
 

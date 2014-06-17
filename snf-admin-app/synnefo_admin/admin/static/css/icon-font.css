@@ -65,3 +65,15 @@
 .snf-archive:before {
 	content: "\6b";
 }
+.snf-checkbox-checked:before {
+	content: "\6f";
+}
+.snf-checkbox-unchecked:before {
+	content: "\70";
+}
+.snf-radio-checked:before {
+	content: "\71";
+}
+.snf-radio-unchecked:before {
+	content: "\72";
+}

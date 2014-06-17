@@ -46,14 +46,11 @@ class ArchipelagoMapper(object):
     def __init__(self, **params):
         self.params = params
         self.namelen = params['namelen']
-        cfg = {}
-        bcfg = ConfigParser.ConfigParser()
-        bcfg.readfp(open(params['archipelago_cfile']))
-        cfg['blockerm'] = bcfg.getint('mapperd','blockerm_port')
-        cfg['mapperd'] = bcfg.getint('vlmcd','mapper_port')
+        cfg = ConfigParser.ConfigParser()
+        cfg.readfp(open(params['archipelago_cfile']))
         self.ioctx_pool = glue.WorkerGlue().ioctx_pool
-        self.dst_port = int(cfg['blockerm'])
-        self.mapperd_port = int(cfg['mapperd'])
+        self.dst_port = int(cfg.getint('mapperd', 'blockerm_port'))
+        self.mapperd_port = int(cfg.getint('vlmcd', 'mapper_port'))
 
     def _get_rear_map(self, maphash, create=0):
         name = hexlify(maphash)

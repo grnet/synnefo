@@ -42,10 +42,8 @@ class ArchipelagoBlocker(object):
     hashtype = None
 
     def __init__(self, **params):
-        cfg = {}
-        bcfg = ConfigParser.ConfigParser()
-        bcfg.readfp(open(params['archipelago_cfile']))
-        cfg['blockerb'] = bcfg.getint('mapperd', 'blockerb_port')
+        cfg = ConfigParser.ConfigParser()
+        cfg.readfp(open(params['archipelago_cfile']))
         blocksize = params['blocksize']
         hashtype = params['hashtype']
         try:
@@ -59,7 +57,7 @@ class ArchipelagoBlocker(object):
 
         self.blocksize = blocksize
         self.ioctx_pool = glue.WorkerGlue().ioctx_pool
-        self.dst_port = int(cfg['blockerb'])
+        self.dst_port = int(cfg.getint('mapperd', 'blockerb_port'))
         self.hashtype = hashtype
         self.hashlen = len(emptyhash)
         self.emptyhash = emptyhash

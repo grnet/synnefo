@@ -68,7 +68,7 @@ class Command(SynnefoCommand):
             default="True",
             choices=["True", "False"],
             metavar="True|False",
-            help="Wait for Ganeti jobs to complete."),
+            help="Wait for Ganeti jobs to complete. [Default: True]"),
     )
 
     @transaction.commit_on_success

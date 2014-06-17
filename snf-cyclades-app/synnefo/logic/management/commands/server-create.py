@@ -70,7 +70,7 @@ class Command(SynnefoCommand):
             default="False",
             choices=["True", "False"],
             metavar="True|False",
-            help="Wait for Ganeti job to complete."),
+            help="Wait for Ganeti job to complete. [Default: False]"),
 
     )
 

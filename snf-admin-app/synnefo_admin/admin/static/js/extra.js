@@ -112,27 +112,23 @@ $(function(){
 		],
 		"order": [1, "asc"],
 		"createdRow": function(row, data, dataIndex) {
-			// var extraIndex = data.length - 1;
-			// row.id = data[extraIndex].id.value; //sets the dom id
+			var extraIndex = data.length - 1;
+			row.id = data[extraIndex].id.value; //sets the dom id
 		},
 		"dom": '<"custom-buttons">frtilp',
 		"language" : {
 			"sLengthMenu": 'Pagination _MENU_'
 		},
 		"drawCallback": function(settings) {
-
 			isSelected();
 			updateToggleAllSelect();
 			clickSummary(this);
 			clickDetails(this);
-
 		}
 	});
-	$("div.custom-buttons").html('<a href="" class="select-page select custom-btn" data-karma="neutral"><span>Select Page</span></a><a href="" class="select custom-btn" data-karma="neutral" data-toggle="modal" data-target="#massive-actions-warning"><span>Do not press me yet!</span></a>');
+	$("div.custom-buttons").html('<a href="" class="select-page select custom-btn" data-karma="neutral"><span>Select Page</span></a><a href="" class="select select-all custom-btn" data-karma="neutral" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>');
 
-	// *********
 	function isSelected() {
-		console.log('isSelected', table.rows()[0].length);
 		var tableLength = table.rows()[0].length;
 		var selectedL = selected.items.length;
 		if(selectedL !== 0 && tableLength !== 0) { // ***
@@ -150,77 +146,75 @@ $(function(){
 	}
 
 	var newTable = true;
-	$('.select-all').click(function(e) {
-		$(this).closest('.modal').addClass('in-progress')
+	$('.select-all-confirm').click(function(e) {
+		$(this).closest('.modal').addClass('in-progress');
 		console.log('select all items', new Date);
+		if(newTable) {
+			// console.log('newtable')
+			newTable = false;
+			countme = true;
+			$(tableMassiveDomID).DataTable({
+				"paging": false,
+				"processing": false,
+				"serverSide": true,
+				"ajax": {
+					"url": url,
+					"data": function(data, callback, settings) {
 
-	if(newTable) {
-		console.log('gia na ta paroume ola')
-		newTable = false;
-		countme = true;
-		$(tableMassiveDomID).DataTable({
-			"paging": false,
-			"processing": false,
-			"serverSide": true,
-			"ajax": {
-				"url": url,
-				"data": function(data, callback, settings) {
+						var prefix = 'sSearch_';
 
-					var prefix = 'sSearch_';
-
-					if(!$.isEmptyObject(filters)) {
-						for (var prop in filters) {
-							data[prefix+prop] = filters[prop];
+						if(!$.isEmptyObject(filters)) {
+							for (var prop in filters) {
+								data[prefix+prop] = filters[prop];
+							}
 						}
+					},
+
+					"dataSrc" : function(response) {
+						alldata = response;
+						extraData = response.extra;
+						if(response.aaData.length != 0) {
+							var rowsArray = response.aaData;
+							var rowL = rowsArray.length;
+							var extraCol = rowsArray[0].length; //last column
+							for (var i=0; i<rowL; i++) {
+								rowsArray[i][extraCol] = response.extra[i]
+							}
+						}
+						console.log('return response', new Date)
+						return response.aaData;
 					}
 				},
-
-				"dataSrc" : function(response) {
-					alldata = response;
-					extraData = response.extra;
-					if(response.aaData.length != 0) {
-						var rowsArray = response.aaData;
-						var rowL = rowsArray.length;
-						var extraCol = rowsArray[0].length; //last column
-						for (var i=0; i<rowL; i++) {
-							rowsArray[i][extraCol] = response.extra[i]
-						}
+				createdRow: function(row, data, dataIndex) {
+					if(countme) {
+						console.log('1st row', new Date);
+						countme = false;
 					}
-					console.log('return response', new Date)
-					return response.aaData;
-				}
-			},
-			createdRow: function(row, data, dataIndex) {
-				if(countme) {
-					console.log('1st row', new Date);
-					countme = false
-					
-				}
-				var info = data[data.length - 1];
-				// console.log(info);
-				var newItem = addItem(info);
-				enableActions(newItem.actions);
-				keepSelected(data);
+					var info = data[data.length - 1];
+					// console.log(info);
+					var newItem = addItem(info);
+					if(newItem !== null) {
+						enableActions(newItem.actions);
+						keepSelected(data);
+					}
 
-			},
-			"drawCallback": function(settings) {
-				console.log('1-drawCallback', new Date)
-				isSelected();
-				updateCounter('.selected-num')
-				console.log('2-drawCallback', new Date)
-				$('#massive-actions-warning').modal('hide')
-				$('#massive-actions-warning').removeClass('in-progress')
-			}
-		});
-	}
-	else {
-		$(tableMassiveDomID).dataTable().api().ajax.reload();
-	}
+				},
+				"drawCallback": function(settings) {
+					console.log('1-drawCallback', new Date)
+					isSelected();
+					updateCounter('.selected-num')
+					$('#massive-actions-warning').modal('hide')
+					$('#massive-actions-warning').removeClass('in-progress')
+					console.log('2-drawCallback', new Date)
+					tableSelected.rows().draw();
+					console.log('3-drawCallback', new Date)
+				}
+			});
+		}
+		else {
+			$(tableMassiveDomID).dataTable().api().ajax.reload();
+		}
 	});
-
-
-	// *********
-
 
 	tableSelected = $(tableSelectedDomID).DataTable({
 		"columnDefs": [
@@ -241,13 +235,19 @@ $(function(){
 		"drawCallback": function(settings) {
 			clickSummary(this);
 			clickDetails(this);
+		},
+		"createdRow": function(row, data, dataIndex) {
+			var extraIndex = data.length - 1;
+			row.id = 'selected-'+data[extraIndex].id.value; //sets the dom id
 		}
 	});
 
-	function keepSelected(data) {
-		var itemID = data[data.length - 1].id.value;
-		var row = tableSelected.row.add(data).draw().node();
-		$(row).addClass('selected-'+itemID);
+	function keepSelected(data, drawNow) {
+		if(drawNow) {
+			tableSelected.row.add(data).draw();
+		}
+		else
+			tableSelected.row.add(data).node();
 	};
 
 	function removeSelected(rowID) {
@@ -255,8 +255,7 @@ $(function(){
 			tableSelected.clear().draw()
 		}
 		else {
-		var	$row = $(tableSelectedDomID).find('.selected-'+rowID);
-		var row = tableSelected.row($row).remove().draw();
+			tableSelected.row('#selected-'+rowID).remove().draw();
 		}
 	};
 
@@ -336,7 +335,7 @@ $(function(){
 			var newItem = addItem(info);
 			enableActions(newItem.actions)
 			selData = table.row($row).data();
-			keepSelected(selData)
+			keepSelected(selData, true);
 		}
 		updateCounter('.selected-num');
 		updateToggleAllSelect();
@@ -423,22 +422,22 @@ $(function(){
 		   "actions": {}
 		}
 
-		for (var i = 0; i<actionsL; i++) {
-			newItem.actions[actionsArray[i]] = true;
-		}
-		for(var prop in availableActions) {
-			if(!(prop in newItem.actions)) {
-				newItem.actions[prop] = false;
-			}
-		}
-
 		itemsL = selected.items.length;
 			for(var i=0; i<itemsL; i++) {
 				if(selected.items[i].id === newItem.id) {
 					isNew = false;
+					break;
 				}
 			}
 		if(isNew) {
+			for (var i = 0; i<actionsL; i++) {
+				newItem.actions[actionsArray[i]] = true;
+			}
+			for(var prop in availableActions) {
+				if(!(prop in newItem.actions)) {
+					newItem.actions[prop] = false;
+				}
+			}
 			selected.items.push(newItem);
 			return newItem
 		}
@@ -513,13 +512,6 @@ $(function(){
 		updateToggleAllSelect();
 	};
 
-	$('#table-items-total_filter input[type=search]').keypress(function(e) {
-		// if space or enter is typed do nothing
-		if(e.which !== '32' && e.which !== '13') {
-			// $(tableDomID) = $(this).closest('.dataTables_wrapper').find('table').attr('id')
-			resetTable(tableDomID);
-		}
-	});
 
 	 /* select-page button */
 
@@ -527,6 +519,7 @@ $(function(){
 		e.preventDefault();
 		toggleVisSelected(tableDomID, $(this).hasClass('select'));
 	});
+
 
 	/* select-page / deselect-page */
 	function toggleVisSelected(tableDomID, selectFlag) {
@@ -548,8 +541,8 @@ $(function(){
 	the text of the select-qll btn */
 	function updateToggleAllSelect() {
 		// console.log('updateToggleAllSelect', new Date)
-		var $toggleAll = $('.select-page');
-		var $label = $toggleAll.find('span')
+		var $togglePageItems = $('.select-page');
+		var $label = $togglePageItems.find('span')
 		var $tr = $(tableDomID).find('tbody tr');
 		if($tr.length > 1) {
 			var allSelected = true
@@ -557,17 +550,17 @@ $(function(){
 				allSelected = allSelected && $(this).hasClass('selected');
 				return allSelected;
 			});
-			if($toggleAll.hasClass('select') && allSelected) {
-				$toggleAll.addClass('deselect').removeClass('select');
-				$label.text('Clear All')
+			if($togglePageItems.hasClass('select') && allSelected) {
+				$togglePageItems.addClass('deselect').removeClass('select');
+				$label.text('Deselect Page')
 			}
-			else if($toggleAll.hasClass('deselect') && !allSelected) {
-				$toggleAll.addClass('select').removeClass('deselect');
-				$label.text('Select All')
+			else if($togglePageItems.hasClass('deselect') && !allSelected) {
+				$togglePageItems.addClass('select').removeClass('deselect');
+				$label.text('Select Page')
 			}
 		}
 		else {
-			$toggleAll.addClass('select').removeClass('deselect')
+			$togglePageItems.addClass('select').removeClass('deselect')
 			$label.text('Select All')
 		}
 	};

@@ -103,6 +103,12 @@ $(function(){
 		},
 		"columnDefs": [
 		{
+			"targets": 0,
+			"render": function(data, type, rowData) {
+				return checkboxTemplate(data, 'unchecked');
+			}
+		},
+		{
 			"targets": -1, // the first column counting from the right is "Summary"
 			"orderable": false,
 			"render": function(data, type, rowData) {
@@ -126,7 +132,7 @@ $(function(){
 			clickDetails(this);
 		}
 	});
-	$("div.custom-buttons").html('<a href="" class="select-page select custom-btn" data-karma="neutral"><span>Select Page</span></a><a href="" class="select select-all custom-btn" data-karma="neutral" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>');
+	$("div.custom-buttons").html('<a href="" class="select-page select custom-btn" data-karma="neutral"><span>Select Page</span></a>'+'<a href="" class="select select-all custom-btn" data-karma="neutral" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>'+'<a href="" class="deselect clear-all custom-btn" data-karma="neutral" data-toggle="modal" data-target="#clear-all-warning"><span>Clear All</span></a>');
 
 	function isSelected() {
 		var tableLength = table.rows()[0].length;
@@ -138,6 +144,7 @@ $(function(){
 				for(var i = 0; i<selectedL; i++){
 					if (selected.items[i].id === table.row(j).data()[extraIndex].id.value) {
 						$(table.row(j).nodes()).addClass('selected');
+						$(table.row(j).nodes()).find('td:first-child .selection-indicator').toggleClass('snf-checkbox-checked snf-checkbox-unchecked');
 						break;
 					}
 				}
@@ -219,6 +226,12 @@ $(function(){
 	tableSelected = $(tableSelectedDomID).DataTable({
 		"columnDefs": [
 		{
+			"targets": 0,
+			"render": function(data, type, rowData) {
+				return checkboxTemplate(data, 'checked');
+			}
+		},
+		{
 			"targets": -1, // the first column counting from the right is "Summary"
 			"orderable": false,
 			"render": function(data, type, rowData) {
@@ -239,7 +252,7 @@ $(function(){
 		"createdRow": function(row, data, dataIndex) {
 			var extraIndex = data.length - 1;
 			row.id = 'selected-'+data[extraIndex].id.value; //sets the dom id
-		}
+		},
 	});
 
 	function keepSelected(data, drawNow) {
@@ -317,6 +330,7 @@ $(function(){
 
 	function selectRow(row, event) {
 		var $row = $(row);
+		$row.find('td:first-child .selection-indicator').toggleClass('snf-checkbox-checked snf-checkbox-unchecked');
 		if(event === "click") { // the param is event from a tr
 			prevClicked = lastClicked;
 			lastClicked = $row
@@ -351,9 +365,13 @@ $(function(){
 		}
 	};
 
+	function checkboxTemplate(data, initState) {
+		var html = '<span class="snf-icon snf-checkbox-'+initState+' selection-indicator"></span>'+data;
+		return html;
+	}
 
 	function extraTemplate(data) {
-		yy= data;
+
 		var listTemplate = '<dt>{key}:</dt><dd>{value}</dd>';
 		var list = '';
 		var listItem = listTemplate.replace('{key}', prop).replace('{value}',data[prop]);
@@ -501,14 +519,13 @@ $(function(){
 	};
 
 	function resetTable(tableDomID) {
-		// $(tableDomID).find('thead .select-page input[type=checkbox]').attr('checked', false);
 		selected.items = [];
 		removeSelected(true); //removes all selected items from the table of selected items
-		// $(tableDomID).find('thead .selected-num').html(selected.items.length);
-		// $(this).siblings('table').find('thead .selected-num');
 		updateCounter('.selected-num');
 		enableActions(undefined, true);
+		$(table.rows('.selected').nodes()).find('td:first-child .selection-indicator').toggleClass('snf-checkbox-checked snf-checkbox-unchecked');
 		$(tableDomID).dataTable().api().rows('.selected').nodes().to$().removeClass('selected');
+
 		updateToggleAllSelect();
 	};
 

@@ -354,6 +354,11 @@ class ModularBackend(BaseBackend):
 
         self._reset_allowed_paths()
 
+    @property
+    def empty_string_hash(self):
+        return binascii.hexlify(HashMap(self.block_size,
+                                        self.hash_algorithm).hash())
+
     def pre_exec(self, lock_container_path=False):
         self.lock_container_path = lock_container_path
         self.wrapper.execute()
@@ -1173,14 +1178,17 @@ class ModularBackend(BaseBackend):
 
         self._can_read_object(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
-        props = self._get_version(node, version)
+        props = self._get_version(node, version, keys=_propnames)
         if props[self.HASH] is None:
-            return 0, ()
+            return 0, []
         if props[self.HASH].startswith('archip:'):
             hashmap = self._update_available(props)
             return props[self.SIZE], [x for x in hashmap]
         else:
-            hashmap = self.store.map_get(props[self.HASH], props[self.SIZE])
+            size = props[self.SIZE]
+            if size == 0:
+                return 0, [self.empty_string_hash]
+            hashmap = self.store.map_get(props[self.MAPFILE], props[self.SIZE])
             return props[self.SIZE], [x for x in hashmap]
 
     def _update_object_hash(self, user, account, container, name, size, type,
@@ -1342,7 +1350,8 @@ class ModularBackend(BaseBackend):
         dest_version_id, _, mapfile = self._update_object_hash(
             user, account, container, name, size, type, hexlified, checksum,
             domain, meta, replace_meta, permissions, is_snapshot=False)
-        self.store.map_put(mapfile, map_, size, self.block_size)
+        if size != 0:
+            self.store.map_put(mapfile, map_, size, self.block_size)
         return dest_version_id, hexlified
 
     @debug_method

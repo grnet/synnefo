@@ -61,7 +61,7 @@ class ArchipelagoMapper(object):
         hashes = ()
         ioctx = self.ioctx_pool.pool_get()
         req = Request.get_mapr_request(ioctx, self.mapperd_port,
-                                       hexlify(maphash), offset=0, size=size)
+                                       maphash, offset=0, size=size)
         flags = req.get_flags()
         flags |= XF_ASSUMEV0
         req.set_flags(flags)
@@ -80,12 +80,12 @@ class ArchipelagoMapper(object):
             self.ioctx_pool.pool_put(ioctx)
             raise Exception("Could not retrieve Archipelago mapfile.")
         req = Request.get_close_request(ioctx, self.mapperd_port,
-                                        hexlify(maphash))
+                                        maphash)
         req.submit()
         req.wait()
         ret = req.success()
         if ret is False:
-            logger.warning("Could not close map %s" % hexlify(maphash))
+            logger.warning("Could not close map %s" % maphash)
             pass
         req.put()
         self.ioctx_pool.pool_put(ioctx)
@@ -99,7 +99,7 @@ class ArchipelagoMapper(object):
             objects.append({'name': hexlify(h), 'flags': XF_MAPFLAG_READONLY})
         ioctx = self.ioctx_pool.pool_get()
         req = Request.get_create_request(ioctx, self.mapperd_port,
-                                         hexlify(maphash),
+                                         maphash,
                                          mapflags=XF_MAPFLAG_READONLY,
                                          objects=objects, blocksize=block_size,
                                          size=size)
@@ -109,6 +109,6 @@ class ArchipelagoMapper(object):
         if ret is False:
             req.put()
             self.ioctx_pool.pool_put(ioctx)
-            raise IOError("Could not write map %s" % hexlify(maphash))
+            raise IOError("Could not write map %s" % maphash)
         req.put()
         self.ioctx_pool.pool_put(ioctx)

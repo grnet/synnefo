@@ -32,6 +32,6 @@ class Mapper(object):
         """
         return self.archip_map.map_retr(maphash, size)
 
-    def map_stor(self, maphash, hashes, blocksize, size):
+    def map_stor(self, maphash, hashes, size, blocksize):
         """Store hashes in the given hashes map."""
-        self.archip_map.map_stor(maphash, hashes, blocksize, size)
+        self.archip_map.map_stor(maphash, hashes, size, blocksize)

@@ -1162,9 +1162,8 @@ class ModularBackend(BaseBackend):
             hashmap = self._update_available(props)
             return props[self.SIZE], [x for x in hashmap]
         else:
-            hashmap = self.store.map_get(self._unhexlify_hash(
-                props[self.HASH]), props[self.SIZE])
-            return props[self.SIZE], [binascii.hexlify(x) for x in hashmap]
+            hashmap = self.store.map_get(props[self.HASH], props[self.SIZE])
+            return props[self.SIZE], [x for x in hashmap]
 
     def _update_object_hash(self, user, account, container, name, size, type,
                             hash, checksum, domain, meta, replace_meta,

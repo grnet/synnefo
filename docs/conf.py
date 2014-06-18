@@ -42,7 +42,6 @@ html_theme_options = {
 	'codetextcolor':    '#333333'
 }
 
-html_static_path = ['_static']
 htmlhelp_basename = 'synnefodoc'
 
 intersphinx_mapping = {

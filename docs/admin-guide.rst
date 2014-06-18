@@ -1513,7 +1513,7 @@ host and export the RRD directory to the snf-stats-app node via e.g. NFS.
 ``GRAPH_PREFIX`` is the directory where collectd stores the resulting
 stats graphs. You should create it manually, in case it doesn't exist.
 
-.. code-block::
+.. code-block:: console
 
     # mkdir /var/cache/snf-stats-app/
     # chown www-data:wwwdata /var/cache/snf-stats-app/
@@ -1525,6 +1525,7 @@ directory.
 
 snf-stats-app, based on the ``STATS_BASE_URL`` setting will export the
 following URL 'endpoints`:
+
  * CPU stats bar: ``STATS_BASE_URL``/v1.0/cpu-bar/<encrypted VM hostname>
  * Network stats bar: ``STATS_BASE_URL``/v1.0/net-bar/<encrypted VM hostname>
  * CPU stats daily graph: ``STATS_BASE_URL``/v1.0/cpu-ts/<encrypted VM hostname>
@@ -1534,7 +1535,7 @@ following URL 'endpoints`:
 
 You can verify that these endpoints are exported by issuing:
 
-.. code-block::
+.. code-block:: console
 
     # snf-manage show_urls
 
@@ -1542,6 +1543,7 @@ snf-cyclades-gtools configuration
 `````````````````````````````````
 
 To enable VM stats collecting, you will need to:
+
  * Install collectd on the every Ganeti (VM-capable) node.
  * Enable the Ganeti stats plugin in your collectd configuration. This can be
    achived by either copying the example collectd conf file that comes with

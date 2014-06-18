@@ -299,7 +299,7 @@ Finally, the request can contain the following optional attributes:
 
 Example request:
 
-.. code:: json
+.. code-block:: json
 
  {"port": {
      "name": "port1",

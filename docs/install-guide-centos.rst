@@ -1398,7 +1398,7 @@ Ganeti will make use of drbd. To install drbd, you're gonna need to use packages
 from the `ELRepo <http://elrepo.org/tiki/tiki-index.php>`_. To install ELRepo,
 run:
 
-.. code-block:: consolse
+.. code-block:: console
 
    # rpm -Uvh http://www.elrepo.org/elrepo-release-6-6.el6.elrepo.noarch.rpm
 

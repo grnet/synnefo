@@ -784,6 +784,7 @@ netTimeSeries Network load / time graph URL
 *Example Get Server Stats Response: JSON*
 
 .. code-block:: javascript
+
   GET https://example.org/compute/v2.0/servers/5678/stats
   {
     "stats": {

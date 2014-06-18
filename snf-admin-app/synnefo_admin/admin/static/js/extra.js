@@ -134,7 +134,7 @@ $(function(){
 	});
 	$("div.custom-buttons").html('<a href="" class="select-page select custom-btn" data-karma="neutral"><span>Select Page</span></a>'+'<a href="" class="select select-all custom-btn" data-karma="neutral" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>'+'<a href="" class="deselect clear-all custom-btn" data-karma="neutral" data-toggle="modal" data-target="#clear-all-warning"><span>Clear All</span></a>');
 
-	function isSelected() {
+	function isSelected(remove) {
 		var tableLength = table.rows()[0].length;
 		var selectedL = selected.items.length;
 		if(selectedL !== 0 && tableLength !== 0) { // ***
@@ -143,7 +143,13 @@ $(function(){
 			for(var j = 0; j<tableLength; j++) { // index of rows start from zero
 				for(var i = 0; i<selectedL; i++){
 					if (selected.items[i].id === table.row(j).data()[extraIndex].id.value) {
-						$(table.row(j).nodes()).addClass('selected');
+						if(remove) {
+							$(table.row(j).nodes()).removeClass('selected');
+						}
+						else {
+							$(table.row(j).nodes()).addClass('selected');
+
+						}
 						$(table.row(j).nodes()).find('td:first-child .selection-indicator').toggleClass('snf-checkbox-checked snf-checkbox-unchecked');
 						break;
 					}
@@ -201,8 +207,20 @@ $(function(){
 					// console.log(info);
 					var newItem = addItem(info);
 					if(newItem !== null) {
-						enableActions(newItem.actions);
-						keepSelected(data);
+						if(dataIndex>=1000) {
+							if(dataIndex%1000 === 0){
+								setTimeout(function() {
+									console.log('stop');
+									enableActions(newItem.actions);
+									keepSelected(data);
+								}, 50)
+							}
+							else {
+								enableActions(newItem.actions);
+								keepSelected(data);
+
+							}
+						}
 					}
 
 				},
@@ -268,6 +286,7 @@ $(function(){
 			tableSelected.clear().draw()
 		}
 		else {
+			console.log('1')
 			tableSelected.row('#selected-'+rowID).remove().draw();
 		}
 	};
@@ -280,6 +299,26 @@ $(function(){
 			$('.actionbar').find('a.toggle-selected').addClass('disabled');	
 		}
 	}
+
+	$(tableSelectedDomID).on('click', 'tbody tr', function() {
+		var $tr = $(this);
+		var column = $tr.find('td').length - 1;
+		var $trID = $(this).attr('id');
+		var selectedRow = tableSelected.row('#'+$trID);
+		var itemID = tableSelected.cell('#'+$trID, column).data().id.value;
+		$tr.find('td:first-child .selection-indicator').addClass('snf-checkbox-unchecked').removeClass('snf-checkbox-checked');
+		$tr.fadeOut('slow', function() {
+			selectedRow.remove().draw();
+			table.row('#'+itemID).nodes().to$().removeClass('selected');
+			$(table.row('#'+itemID).nodes()).find('td:first-child .selection-indicator').addClass('snf-checkbox-unchecked').removeClass('snf-checkbox-checked');
+
+		});
+		removeItem(itemID);
+		enableActions(undefined, true);
+		updateCounter('.selected-num');
+		updateToggleAllSelect();
+	});
+
 
 	$(tableDomID).on('click', 'tbody tr', function(e) {
 		selectRow(this, e.type);
@@ -362,6 +401,8 @@ $(function(){
 			var newItem = addItem(info);
 			enableActions(newItem.actions)
 			selData = table.row($row).data();
+			// console.log(table.row($row).index())
+
 			keepSelected(selData, true);
 		}
 		updateCounter('.selected-num');
@@ -574,7 +615,7 @@ $(function(){
 		var $togglePageItems = $('.select-page');
 		var $label = $togglePageItems.find('span')
 		var $tr = $(tableDomID).find('tbody tr');
-		if($tr.length > 1) {
+		if($tr.length >= 1) {
 			var allSelected = true
 			$tr.each(function() {
 				allSelected = allSelected && $(this).hasClass('selected');
@@ -591,7 +632,7 @@ $(function(){
 		}
 		else {
 			$togglePageItems.addClass('select').removeClass('deselect')
-			$label.text('Select All')
+			$label.text('Select Page')
 		}
 	};
 

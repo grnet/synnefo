@@ -134,7 +134,7 @@ $(function(){
 	});
 	$("div.custom-buttons").html('<a href="" class="select-page select custom-btn" data-karma="neutral"><span>Select Page</span></a>'+'<a href="" class="select select-all custom-btn" data-karma="neutral" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>'+'<a href="" class="deselect clear-all custom-btn" data-karma="neutral" data-toggle="modal" data-target="#clear-all-warning"><span>Clear All</span></a>');
 
-	function isSelected(remove) {
+	function isSelected() {
 		var tableLength = table.rows()[0].length;
 		var selectedL = selected.items.length;
 		if(selectedL !== 0 && tableLength !== 0) { // ***
@@ -143,14 +143,8 @@ $(function(){
 			for(var j = 0; j<tableLength; j++) { // index of rows start from zero
 				for(var i = 0; i<selectedL; i++){
 					if (selected.items[i].id === table.row(j).data()[extraIndex].id.value) {
-						if(remove) {
-							$(table.row(j).nodes()).removeClass('selected');
-						}
-						else {
-							$(table.row(j).nodes()).addClass('selected');
-
-						}
-						$(table.row(j).nodes()).find('td:first-child .selection-indicator').toggleClass('snf-checkbox-checked snf-checkbox-unchecked');
+						$(table.row(j).nodes()).addClass('selected');
+						$(table.row(j).nodes()).find('td:first-child .selection-indicator').addClass('snf-checkbox-checked').removeClass('snf-checkbox-unchecked');
 						break;
 					}
 				}
@@ -204,7 +198,6 @@ $(function(){
 						countme = false;
 					}
 					var info = data[data.length - 1];
-					// console.log(info);
 					var newItem = addItem(info);
 					if(newItem !== null) {
 						if(dataIndex>=1000) {
@@ -215,14 +208,12 @@ $(function(){
 									keepSelected(data);
 								}, 50)
 							}
-							else {
-								enableActions(newItem.actions);
-								keepSelected(data);
-
-							}
+						}
+						else {
+							enableActions(newItem.actions);
+							keepSelected(data);
 						}
 					}
-
 				},
 				"drawCallback": function(settings) {
 					console.log('1-drawCallback', new Date)
@@ -233,6 +224,7 @@ $(function(){
 					console.log('2-drawCallback', new Date)
 					tableSelected.rows().draw();
 					console.log('3-drawCallback', new Date)
+					updateToggleAllSelect();
 				}
 			});
 		}

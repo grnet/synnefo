@@ -46,26 +46,20 @@ html_static_path = ['_static']
 htmlhelp_basename = 'synnefodoc'
 
 intersphinx_mapping = {
-        'pithon': ('http://docs.python.org/', None),
+        'python': ('http://docs.python.org/', None),
         'django': ('https://docs.djangoproject.com/en/dev/',
                    'https://docs.djangoproject.com/en/dev/_objects/')
 }
 
-SYNNEFO_DOCS_BASE_URL = 'http://www.synnefo.org/docs'
-SYNNEFO_PROJECTS = {
-    'synnefo': 'dev',
-    'pithos': 'dev',
-    'snf-webproject': 'dev',
-    'snf-common': 'dev',
-    'snf-image': 'dev',
-    'snf-astakos-client': 'dev',
-    'snf-cyclades-app': 'dev'
-}
+SYNNEFO_PROJECTS = ['synnefo', 'archipelago', 'kamaki', 'snf-image',
+                    'snf-image-creator', 'nfdhcpd', 'snf-vncauthproxy',
+                    'snf-network']
 
-for name, ver in SYNNEFO_PROJECTS.iteritems():
-    intersphinx_mapping[name.replace("-","")] = (SYNNEFO_DOCS_BASE_URL +
-                                                 '%s/%s/' % (name, ver),
-                                 None)
+SYNNEFO_DOCS_BASEURL = 'https://www.synnefo.org/docs/%s/latest/objects.inv'
+
+for project in SYNNEFO_PROJECTS:
+    project_url = SYNNEFO_DOCS_BASEURL % project
+    intersphinx_mapping[project.replace('-', '')] = (os.path.dirname(project_url), project_url)
 
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.intersphinx',

@@ -106,7 +106,9 @@ def _customize_settings_from_tmpl(tmpl, replace):
     shutil.copyfile(local, custom)
     for k, v in replace.iteritems():
         regex = "re.sub('%{0}%', '{1}', line)".format(k.upper(), v)
-        massedit.edit_files([custom], [regex], dry_run=False)
+        editor = massedit.Editor(dry_run=False)
+        editor.set_code_expr([regex])
+        editor.edit_file(custom)
 
     return custom
 

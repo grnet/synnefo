@@ -828,7 +828,7 @@ delete the Cyclades Images but will leave the Pithos file as is (unregister).
 
 Apart from using `kamaki` to see and hangle the available images, the
 administrator can use `snf-manage image-list` and `snf-manage image-show`
-commands to list and inspect the available public images. Also, the `--user-id`
+commands to list and inspect the available public images. Also, the `--user`
 option can be used the see the images of a specific user.
 
 Virtual Servers
@@ -855,8 +855,8 @@ bypassing automatic VM allocation.
 
 .. code-block:: console
 
- $ snf-manage server-create --flavor-id=1 --image-id=fc0f6858-f962-42ce-bf9a-1345f89b3d5e \
-    --user-id=7cf4d078-67bf-424d-8ff2-8669eb4841ea --backend-id=2 \
+ $ snf-manage server-create --flavor=1 --image=fc0f6858-f962-42ce-bf9a-1345f89b3d5e \
+    --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea --backend-id=2 \
     --password='example_passw0rd' --name='test_vm'
 
 The above commnd will create a new VM for user
@@ -1067,7 +1067,7 @@ from VMs.
 
 .. code-block:: console
 
- $ snf-manage network-create --owner=7cf4d078-67bf-424d-8ff2-8669eb4841ea --name=prv_net-1 \
+ $ snf-manage network-create --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea --name=prv_net-1 \
     --subnet=192.168.2.0/24 --gateway=192.168.2.1 --dhcp=True --flavor=PHYSICAL_VLAN
 
 Inspect the state of the network in Cyclades DB and in all the Ganeti backends:
@@ -1138,14 +1138,14 @@ from `snf-manage` would look like this:
  ---------------------------------------------------------------------------------------------
   1  Internet       None  ACTIVE    True  10.2.1.0/24      10.2.1.1    False              True
 
- $ snf-manage floating-ip-create --owner=7cf4d078-67bf-424d-8ff2-8669eb4841ea --network=1
+ $ snf-manage floating-ip-create --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea --network=1
 
  $ snf-manage floating-ip-list --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea
  id   address       network                             user.uuid  server
  ------------------------------------------------------------------------
  38  10.2.1.2             1  7cf4d078-67bf-424d-8ff2-8669eb4841ea      42
 
- $ snf-manage port-create --owner=7cf4d078-67bf-424d-8ff2-8669eb4841ea --network=1 \
+ $ snf-manage port-create --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea --network=1 \
                           --ipv4-address=10.2.1.2 --floating-ip=38
 
  $ snf-manage port-list --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea

@@ -41,6 +41,12 @@ Synnefo-wide
     specifies the directory to be used by Synnefo components to write
     their log files.
 
+* Rename argument names of Synnefo management commands
+
+  * All Synnefo management commands now use 'user/flavor/image/network'
+    as argument names, instead of 'userid/user-id/owner/flavor-id/image
+    -id/network-id', for consistency across commands.
+
 Astakos
 -------
 

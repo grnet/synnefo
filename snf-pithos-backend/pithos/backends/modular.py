@@ -1171,25 +1171,25 @@ class ModularBackend(BaseBackend):
                                            'map_check_timestamp', time())
             return hashmap
 
+    def _get_object_hashmap(self, props):
+        if props[self.HASH] is None:
+            return []
+        if props[self.HASH].startswith('archip:'):
+            return self._update_available(props)
+        else:
+            size = props[self.SIZE]
+            if size == 0:
+                return [self.empty_string_hash]
+            return self.store.map_get(props[self.MAPFILE], props[self.SIZE])
+
     @debug_method
     @backend_method
     def get_object_hashmap(self, user, account, container, name, version=None):
         """Return the object's size and a list with partial hashes."""
-
         self._can_read_object(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version, keys=_propnames)
-        if props[self.HASH] is None:
-            return 0, []
-        if props[self.HASH].startswith('archip:'):
-            hashmap = self._update_available(props)
-            return props[self.SIZE], [x for x in hashmap]
-        else:
-            size = props[self.SIZE]
-            if size == 0:
-                return 0, [self.empty_string_hash]
-            hashmap = self.store.map_get(props[self.MAPFILE], props[self.SIZE])
-            return props[self.SIZE], [x for x in hashmap]
+        return props[self.SIZE], self._get_object_hashmap(props)
 
     def _update_object_hash(self, user, account, container, name, size, type,
                             hash, checksum, domain, meta, replace_meta,
@@ -1418,19 +1418,23 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_object(src_account, src_container, src_name)
         # TODO: Will do another fetch of the properties in duplicate version...
         props = self._get_version(
-            node, src_version)  # Check to see if source exists.
+            node, src_version, keys=_propnames)  # Check to see if source exists.
         src_version_id = props[self.SERIAL]
         hash = props[self.HASH]
         size = props[self.SIZE]
         is_snapshot = props[self.IS_SNAPSHOT]
         is_copy = not is_move and (src_account, src_container, src_name) != (
             dest_account, dest_container, dest_name)  # New uuid.
-        dest_version_id, size_delta = self._update_object_hash(
+        dest_version_id, size_delta, mapfile = self._update_object_hash(
             user, dest_account, dest_container, dest_name, size, type, hash,
             None, dest_domain, dest_meta, replace_meta, permissions,
             src_node=node, src_version_id=src_version_id, is_copy=is_copy,
             report_size_change=(not bulk_report_size_change),
             keep_available=True, is_snapshot=is_snapshot)
+        if size != 0:
+            src_hashmap = self._get_object_hashmap(props)
+            src_hashmap = map(self._unhexlify_hash, src_hashmap)
+            self.store.map_put(mapfile, src_hashmap, size, self.block_size)
         dest_versions.append(dest_version_id)
         occupied_space += size_delta
         if is_move and (src_account, src_container, src_name) != (
@@ -1453,25 +1457,31 @@ class ModularBackend(BaseBackend):
             nodes = [elem[2] for elem in src_names]
             # TODO: Will do another fetch of the properties
             # in duplicate version...
-            props = self._get_versions(nodes)  # Check to see if source exists.
+            props = self._get_versions(nodes,
+                                       keys=_propnames)
 
             for prop, path, node in zip(props, paths, nodes):
                 src_version_id = prop[self.SERIAL]
                 hash = prop[self.HASH]
                 vtype = prop[self.TYPE]
                 size = prop[self.SIZE]
-                is_snapshot = props[self.IS_SNAPSHOT]
+                is_snapshot = prop[self.IS_SNAPSHOT]
                 dest_prefix = dest_name + delimiter if not dest_name.endswith(
                     delimiter) else dest_name
                 vdest_name = path.replace(prefix, dest_prefix, 1)
                 # _update_object_hash() locks destination path
-                dest_version_id, size_delta = self._update_object_hash(
+                dest_version_id, size_delta, mapfile = self._update_object_hash(
                     user, dest_account, dest_container, vdest_name, size,
                     vtype, hash, None, dest_domain, meta={},
                     replace_meta=False, permissions=None, src_node=node,
                     src_version_id=src_version_id, is_copy=is_copy,
                     report_size_change=(not bulk_report_size_change),
                     keep_available=True, is_snapshot=is_snapshot)
+                if size != 0:
+                    src_hashmap = self._get_object_hashmap(prop)
+                    src_hashmap = map(self._unhexlify_hash, src_hashmap)
+                    self.store.map_put(mapfile, src_hashmap, size,
+                                       self.block_size)
                 dest_versions.append(dest_version_id)
                 occupied_space += size_delta
                 if is_move and (src_account, src_container, path) != (

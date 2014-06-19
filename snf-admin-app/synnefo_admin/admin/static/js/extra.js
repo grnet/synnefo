@@ -299,10 +299,10 @@ $(function(){
 		}
 	}
 
-	$(tableSelectedDomID).on('click', 'tbody tr', function() {
-		var $tr = $(this);
+	$(tableSelectedDomID).on('click', 'tbody tr td:first-child .selection-indicator', function() {
+		var $tr = $(this).closest('tr');
 		var column = $tr.find('td').length - 1;
-		var $trID = $(this).attr('id');
+		var $trID = $tr.attr('id');
 		var selectedRow = tableSelected.row('#'+$trID);
 		var itemID = tableSelected.cell('#'+$trID, column).data().id.value;
 		$tr.find('td:first-child .selection-indicator').addClass('snf-checkbox-unchecked').removeClass('snf-checkbox-checked');

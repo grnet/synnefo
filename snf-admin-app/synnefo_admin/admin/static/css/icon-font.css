@@ -77,3 +77,6 @@
 .snf-radio-unchecked:before {
 	content: "\72";
 }
+.snf-info:before {
+	content: "\73";
+}

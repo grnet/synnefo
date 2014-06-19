@@ -154,6 +154,8 @@ $(function(){
 
 	var newTable = true;
 	$('.select-all-confirm').click(function(e) {
+		console.profile("test");
+		console.time("test");
 		$(this).closest('.modal').addClass('in-progress');
 		console.log('select all items', new Date);
 		if(newTable) {
@@ -185,7 +187,7 @@ $(function(){
 							var rowL = rowsArray.length;
 							var extraCol = rowsArray[0].length; //last column
 							for (var i=0; i<rowL; i++) {
-								rowsArray[i][extraCol] = response.extra[i]
+								rowsArray[i][extraCol] = response.extra[i] // ***
 							}
 						}
 						console.log('return response', new Date)
@@ -211,7 +213,9 @@ $(function(){
 						}
 						else {
 							enableActions(newItem.actions);
+							//console.time("keepSelected");
 							keepSelected(data);
+							//console.timeEnd("keepSelected");
 						}
 					}
 				},
@@ -225,6 +229,8 @@ $(function(){
 					tableSelected.rows().draw();
 					console.log('3-drawCallback', new Date)
 					updateToggleAllSelect();
+					console.profileEnd("test");
+					console.timeEnd("test");
 				}
 			});
 		}
@@ -266,6 +272,7 @@ $(function(){
 	});
 
 	function keepSelected(data, drawNow) {
+		//return;
 		if(drawNow) {
 			tableSelected.row.add(data).draw();
 		}
@@ -989,6 +996,10 @@ $(function(){
 	dropdownSelect('.filters .filter-dropdown .dropdown');
 
 	$('input').blur(); // onload there is no input field focus
+	$("[data-toggle=popover]").click(function(e) {
+		e.preventDefault();
+	})
+	$("[data-toggle=popover]").popover();
 });
 
 

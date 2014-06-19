@@ -772,7 +772,7 @@ table.dataTable tbody tr:hover {
 table.dataTable tbody tr.selected {
 	background-color: $almost-white;
 	color: $gray-dark;
-	a {
+	a:not(.summary-expand) {
 		color: black;
 	}
 }
@@ -931,5 +931,19 @@ table.dataTable.no-footer {
 	.badge {
 		background-color: transparent;
 		border: 1px solid $gray-dark;
+	}
+}
+
+.popover {
+	z-index: 2000;
+	dl {
+		color: black;
+		font-weight: normal;
+		dt {
+			width: 90px;
+		}
+		dd {
+			margin-left: 110px;
+		}
 	}
 }

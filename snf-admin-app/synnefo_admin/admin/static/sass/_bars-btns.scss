@@ -129,39 +129,13 @@
 	top: $nav-top-height;
 	padding-left: $nav-side-padding;
 	padding-right: $nav-side-padding;
-	.nav.custom-breadcrumb {
-		li {
-			a {
-				padding-right: 2px;
-				padding-left: 2px;
-				&:hover {
-					background-color: initial;
-					color: $blue-intense;
-				}
-			}
-			&:last-child {
-				a:hover {
-					color: $gray-dark;
-					cursor: default;
-				}
-			}
-			&:first-child {
-				a {
-					color: lighten($gray-dark, 10%);
-					font-weight: bold;
-					&:hover {
-						color: $blue-intense;
-					}
-				}
-			}
+		min-height: initial;
+	.nav {
+		&>li>a{
+			padding-top: 8px;
+			padding-bottom: 9px;
 		}
-		.seperator {
-			padding-top: 17px;
-			padding-bottom: 13px;
-			margin-right: 4px;
-			margin-left: 4px;
-			color: $blue-light;
-		}
+		
 	}
 }
 
@@ -204,14 +178,15 @@
 		margin-bottom: 6px;
 	}
 }
-.custom-buttons .custom-btn {
+.custom-buttons .custom-btn, .actions-per-item .custom-btn {
 	min-width: 80px;
 	float: left;
 	width: auto;
 	margin-right: 10px;
 }
 
-.sidebar, .custom-buttons {
+
+.sidebar, .custom-buttons, .actions-per-item {
 	a {
 		border: 1px solid;
 		width: 100%;
@@ -240,7 +215,6 @@
 			&:hover {
 				opacity:1;
 			}
-
 			&[data-karma="neutral"] {
 				background-color: $blue-intense;
 				border-color: $blue-intense;
@@ -249,16 +223,22 @@
 				background-color: $green-intense;
 				border-color: $green-intense;
 			}
+
 			&[data-karma="bad"] {
-				&[data-reversible="False"] {
-					background-color: $red-intense;
-					border-color: $red-intense;
-				}
-				&[data-reversible="True"] {
-					background-color: $orange-intense;
-					border-color: $orange-intense;
-				}
+				background-color: $orange-intense;
+				border-color: $orange-intense;
 			}
+
+			&[data-caution="warning"][data-karma="good"], &[data-caution="warning"][data-karma="neutral"] {
+				background-color: $orange-intense;
+				border-color: $orange-intense;
+			}
+
+			&[data-caution="dangerous"][data-karma="bad"], &[data-caution="dangerous"][data-karma="neutral"] {
+				background-color: $red-intense;
+				border-color: $red-intense;
+			}
+
 		}
 	}
 }
@@ -271,5 +251,15 @@
 	opacity:0.8;
 	&:hover {
 		opacity: 1;
+	}
+}
+
+
+.instructions-icon {
+	color: $blue-intense;
+	font-size: 22px;
+
+	&:hover {
+		text-decoration: none;
 	}
 }

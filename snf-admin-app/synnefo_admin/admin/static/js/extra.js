@@ -132,7 +132,12 @@ $(function(){
 			clickDetails(this);
 		}
 	});
-	$("div.custom-buttons").html('<a href="" class="select-page select custom-btn" data-karma="neutral"><span>Select Page</span></a>'+'<a href="" class="select select-all custom-btn" data-karma="neutral" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>'+'<a href="" class="deselect clear-all custom-btn" data-karma="neutral" data-toggle="modal" data-target="#clear-all-warning"><span>Clear All</span></a>');
+	$("div.custom-buttons").html('<a href="" id="select-page" class="select custom-btn" data-karma="neutral"><span>Select Page</span></a>'+'<a href="" class="select select-all custom-btn" data-karma="neutral" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>'+'<a href="" id="clear-all" class="disabled deselect custom-btn" data-karma="neutral" data-toggle="modal" data-target="#clear-all-warning"><span>Clear All</span></a>');
+
+	$('.content').on('click', '#clear-all.disabled', function(e) {
+		e.preventDefault();
+		e.stopPropagation();
+	})
 
 	function isSelected() {
 		var tableLength = table.rows()[0].length;
@@ -231,6 +236,7 @@ $(function(){
 					updateToggleAllSelect();
 					console.profileEnd("test");
 					console.timeEnd("test");
+					updateClearAll();
 				}
 			});
 		}
@@ -285,7 +291,6 @@ $(function(){
 			tableSelected.clear().draw()
 		}
 		else {
-			console.log('1')
 			tableSelected.row('#selected-'+rowID).remove().draw();
 		}
 	};
@@ -357,6 +362,7 @@ $(function(){
 				}
 			}
 		}
+		updateClearAll();
 	});
 
 	$(document).bind('keydown', function(e){
@@ -401,7 +407,6 @@ $(function(){
 			var newItem = addItem(info);
 			enableActions(newItem.actions)
 			selData = table.row($row).data();
-			// console.log(table.row($row).index())
 
 			keepSelected(selData, true);
 		}
@@ -453,6 +458,7 @@ $(function(){
 		$(table).find('tbody td:last-child a.expand-area').click(function(e) {
 			e.preventDefault();
 			e.stopPropagation();
+
 			var $summaryTd = $(this).closest('td');
 			var $btn = $summaryTd.find('.expand-area span');
 			var $summaryContent = $summaryTd.find('.info-summary');
@@ -586,7 +592,7 @@ $(function(){
 
 	 /* select-page button */
 
-	$('.select-page').click(function(e) {
+	$('#select-page').click(function(e) {
 		e.preventDefault();
 		toggleVisSelected(tableDomID, $(this).hasClass('select'));
 	});
@@ -612,7 +618,7 @@ $(function(){
 	the text of the select-qll btn */
 	function updateToggleAllSelect() {
 		// console.log('updateToggleAllSelect', new Date)
-		var $togglePageItems = $('.select-page');
+		var $togglePageItems = $('#select-page');
 		var $label = $togglePageItems.find('span')
 		var $tr = $(tableDomID).find('tbody tr');
 		if($tr.length >= 1) {
@@ -636,6 +642,15 @@ $(function(){
 		}
 	};
 
+	function updateClearAll() {
+		var $clearAllBtn = $('#clear-all')
+		if(selected.items.length === 0) {
+			$clearAllBtn.addClass('disabled');
+		}
+		else {
+			$clearAllBtn.removeClass('disabled');
+		}
+	}
 
 	/* Modals */
 
@@ -679,6 +694,7 @@ $(function(){
 		resetInputs($modal);
 		removeWarnings($modal);
 		resetTable(tableDomID);
+		updateClearAll();
 	});
 	$('.modal button[type=submit]').click(function(e) {
 		var $modal = $(this).closest('.modal');

@@ -320,38 +320,43 @@ $(function(){
 
 
 	$(tableDomID).on('click', 'tbody tr', function(e) {
-		selectRow(this, e.type);
-		var select;
-		if($(this).hasClass('selected')) {
-			select = true;
+		prevClicked = lastClicked;
+		lastClicked =  $(this);
+		if(!e.shiftKey) {
+			selectRow(this, e.type);
 		}
 		else {
-			select = false;
+			var select;
+			if($(this).hasClass('selected')) {
+				select = false;
+			}
+			else {
+				select = true;
+			}
+			if(e.shiftKey && prevClicked !== null && lastClicked !== null) {
+				var startRow;
+				var start = prevClicked.index();
+				var end = lastClicked.index();
+				if(start < end) {
+					startRow = prevClicked;
+					for (var i = start; i<=end; i++) {
+						if((select && !($(startRow).hasClass('selected'))) || (!select && $(startRow).hasClass('selected'))) {
+							selectRow(startRow);
+						}
+						startRow = startRow.next();
+					}
+				}
+				else if(end < start) {
+					startRow = prevClicked;
+					for (var i = start; i>=end; i--) {
+						if((select && !($(startRow).hasClass('selected'))) || (!select && $(startRow).hasClass('selected'))) {
+							selectRow(startRow);
+						}
+						startRow = startRow.prev();
+					}
+				}
+			}
 		}
-		if(e.shiftKey && prevClicked !== null && lastClicked !== null) {
-			var startRow;
-			var start = prevClicked.index() + 1;
-			var end = lastClicked.index();
-			if(start < end) {
-				startRow = prevClicked.next();
-				for (var i = start; i<end; i++) {
-					if((select && !($(startRow).hasClass('selected'))) || (!select && $(startRow).hasClass('selected'))) {
-						selectRow(startRow);
-					}
-					startRow = startRow.next();
-				}
-			}
-			else if(end < start) {
-				startRow = prevClicked.prev();
-				end = end+2;
-				for (var i = start; i>end; i--) {
-					if((select && !($(startRow).hasClass('selected'))) || (!select && $(startRow).hasClass('selected'))) {
-						selectRow(startRow);
-					}
-					startRow = startRow.prev();
-				}
-			}
-			}
 	});
 
 	$(document).bind('keydown', function(e){
@@ -379,13 +384,9 @@ $(function(){
 		}
 	}
 
-	function selectRow(row, event) {
+	function selectRow(row) {
 		var $row = $(row);
 		$row.find('td:first-child .selection-indicator').toggleClass('snf-checkbox-checked snf-checkbox-unchecked');
-		if(event === "click") { // the param is event from a tr
-			prevClicked = lastClicked;
-			lastClicked = $row
-		}
 		var infoRow = table.row($row).data();
 		var info = infoRow[infoRow.length - 1]
 		// var info = $(tableDomID).dataTable().api().cell($row.find('td:last-child')).data();

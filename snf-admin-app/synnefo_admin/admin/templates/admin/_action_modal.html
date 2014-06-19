@@ -20,6 +20,17 @@
                     <textarea name="text" form="contactForm" class="email-content
                         body">{{ mail.body }}</textarea>
                     <a data-error="empty-body" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="Missing the body of the e-mail."></a>
+                    <div class="extra-info">
+                        <a href="" class="snf-icon snf-info instructions-icon" data-container="body" data-toggle="popover" data-html="true" data-placement="right" data-content="
+                        <h2>hi</h2>
+                        <dl class='dl-horizontal'>
+                        <dt>Full name: </dt><dd>user.full_name</dt>
+                        <dt>Last name: </dt><dd>user.last_name</dt>
+                        <dt>Full name: </dt><dd>user.first_name</dt>
+                        <dt>E-mail: </dt><dd>user.email</dt>
+                        </dl>"></a>
+                        <!-- place here the msg for duplicates -->
+                    </div>
                 </div>
                 {# If we are in a details view, then the number of items is just one, so we can get rid of the plural #}
                 <p>You have choosen to <em class="positive elem">{{ op }}</em> the following <em class="badge num elem positive"></em> user{% if view_type == 'list' %}s{% endif %}:

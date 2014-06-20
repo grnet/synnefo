@@ -121,7 +121,7 @@ class AdminActionNotImplemented(Exception):
     pass
 
 
-def noop(**kwargs):
+def noop(*args, **kwargs):
     """Placeholder function."""
     raise AdminActionNotImplemented
 
@@ -154,6 +154,6 @@ def has_permission_or_403(actions):
                 raise AdminActionNotImplemented
             if not actions[op].is_user_allowed(request.user):
                 raise AdminActionNotPermitted
-            return func(request, *args, **kwargs)
+            return func(request, op, *args, **kwargs)
         return wrapper
     return decorator

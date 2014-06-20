@@ -133,7 +133,7 @@ class VMJSONView(DatatablesView):
 @has_permission_or_403(generate_actions())
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
-    vm = VirtualMachine.objects.get(pk=id)
+    vm = get_vm(id)
     actions = get_permitted_actions(request.user)
     logging.info("Op: %s, vm: %s, fun: %s", op, vm.pk, actions[op].f)
 

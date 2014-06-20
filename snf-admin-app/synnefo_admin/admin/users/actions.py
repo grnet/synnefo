@@ -92,12 +92,10 @@ def generate_actions():
                                    karma='good',
                                    allowed_groups=['superadmin'])
 
-    actions['resend_verification'] = UserAction(name='Resend verification',
-                                                f=noop, karma='good',
-                                                c=check_user_action(
-                                                    "SEND_VERIFICATION_MAIL"),
-                                                allowed_groups=['admin',
-                                                                'superadmin'])
+    actions['resend_verification'] = UserAction(
+        name='Resend verification', f=users.send_verification_mail,
+        karma='good', c=check_user_action("SEND_VERIFICATION_MAIL"),
+        allowed_groups=['admin', 'superadmin'])
 
     actions['contact'] = UserAction(name='Send e-mail', f=send_email,
                                     allowed_groups=['admin', 'superadmin'])

@@ -191,8 +191,10 @@ def do_action(request, op, id):
         actions[op].f(user, request.POST['text'])
     elif op == 'approve':
         actions[op].f(project.last_application.id)
+    elif op == 'deny':
+        actions[op].f(project.last_application.id)
     else:
-        actions[op].f(project)
+        actions[op].f(project.id)
 
 
 def catalog(request):

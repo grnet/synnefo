@@ -171,7 +171,7 @@ class UserJSONView(DatatablesView):
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     user = get_user(id)
-    actions = get_permitted_actions()
+    actions = get_permitted_actions(request.user)
     logging.info("Op: %s, target: %s, fun: %s", op, user.email, actions[op].f)
 
     if op == 'reject':

@@ -1665,7 +1665,7 @@ They are also available from our apt repository: ``apt.dev.grnet.gr``
  * `snf-cyclades-app <http://www.synnefo.org/docs/snf-cyclades-app/latest/index.html>`_
  * `snf-cyclades-gtools <http://www.synnefo.org/docs/snf-cyclades-gtools/latest/index.html>`_
  * `astakosclient <http://www.synnefo.org/docs/astakosclient/latest/index.html>`_
- * `snf-vncauthproxy <https://code.grnet.gr/projects/vncauthproxy>`_
+ * `snf-vncauthproxy <https://github.com/grnet/snf-vncauthproxy>`_
  * `snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html/>`_
  * `snf-image-creator <http://www.synnefo.org/docs/snf-image-creator/latest/index.html>`_
  * `snf-occi <http://www.synnefo.org/docs/snf-occi/latest/index.html>`_

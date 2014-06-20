@@ -49,7 +49,7 @@ setup(
     name='snf-deploy',
     version=VERSION,
     license='BSD',
-    url='http://code.grnet.gr/',
+    url='https://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
     long_description=SHORT_DESCRIPTION,
     classifiers=CLASSIFIERS,

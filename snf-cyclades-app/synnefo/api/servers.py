@@ -20,6 +20,7 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
+from django.core.urlpatterns import reverse
 
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils
@@ -28,6 +29,7 @@ from synnefo.api import util
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
 from synnefo.logic import servers, utils as logic_utils, server_attachments
 from synnefo.volume.util import get_volume
+from synnefo.ui.views import machines_console
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -559,7 +561,9 @@ def delete_server(request, server_id):
 
 
 # additional server actions
-ARBITRARY_ACTIONS = ['console', 'firewallProfile', 'reassign']
+ARBITRARY_ACTIONS = ['console', 'firewallProfile', 'reassign',
+                     'os-getVNCConsole', 'os-getRDPConsole',
+                     'os-getSPICEConsole']
 
 
 def key_to_action(key):
@@ -910,6 +914,92 @@ def resize(request, vm, args):
     return HttpResponse(status=202)
 
 
+@server_action('os-getSPICEConsole')
+def os_get_spice_console(request, vm, args):
+    # Normal Response Code: 200
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       buildInProgress (409),
+    #                       overLimit (413)
+
+    log.info('Get Spice console for VM %s: %s', vm, args)
+
+    raise faults.NotImplemented('Spice console not implemented')
+
+
+@server_action('os-getRDPConsole')
+def os_get_rdp_console(request, vm, args):
+    # Normal Response Code: 200
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       buildInProgress (409),
+    #                       overLimit (413)
+
+    log.info('Get RDP console for VM %s: %s', vm, args)
+
+    raise faults.NotImplemented('RDP console not implemented')
+
+
+machines_console_url = reverse(machines_console)
+
+
+@server_action('os-getVNCConsole')
+def os_get_vnc_console(request, vm, args):
+    # Normal Response Code: 200
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       buildInProgress (409),
+    #                       overLimit (413)
+
+    log.info('Get osVNC console for VM %s: %s', vm, args)
+
+    console_type = args.get('type')
+    if console_type is None:
+        raise faults.BadRequest("No console 'type' specified.")
+
+    supported_types = {'novnc': 'vnc-wss', 'xvpvnc': 'vnc'}
+    if console_type not in supported_types:
+        raise faults.BadRequest('Supported types: %s' %
+                                ', '.join(supported_types.keys()))
+
+    console_info = servers.console(vm, supported_types[console_type])
+
+    if console_type == 'novnc':
+        # Return the URL of the WebSocket noVNC client
+        url = settings.CYCLADES_BASE_URL + machines_console_url
+        url += '?host=%(host)s&port=%(port)s&password=%(password)s' \
+               % console_info
+    else:
+        # Return a URL to paste into a Java VNC client
+        # FIXME: VNC clients (and the TigerVNC Java applet) can't handle the
+        # password.
+        url = '%(host)s:%(port)s?password=%(password)s'
+
+    resp = {'type': console_type,
+            'url': url}
+
+    if request.serialization == 'xml':
+        mimetype = 'application/xml'
+        data = render_to_string('os-console.xml', {'console': resp})
+    else:
+        mimetype = 'application/json'
+        data = json.dumps({'console': resp})
+
+    return HttpResponse(data, mimetype=mimetype, status=200)
+
+
 @server_action('console')
 def get_console(request, vm, args):
     # Normal Response Code: 200
@@ -927,8 +1017,12 @@ def get_console(request, vm, args):
     console_type = args.get("type")
     if console_type is None:
         raise faults.BadRequest("No console 'type' specified.")
-    elif console_type != "vnc":
-        raise faults.BadRequest("Console 'type' can only be 'vnc'.")
+
+    supported_types = ['vnc', 'vnc-ws', 'vnc-wss']
+    if console_type not in supported_types:
+        raise faults.BadRequest('Supported types: %s' %
+                                ', '.join(supported_types))
+
     console_info = servers.console(vm, console_type)
 
     if request.serialization == 'xml':

@@ -3,7 +3,7 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content positive area">
             <div class="modal-header">
-                <a class="close reset-all" data-dismiss="modal">×</a>
+                <a class="close" data-dismiss="modal">×</a>
                 <h3 class="positive elem">{{ action.name }}</h3>
             </div>
             <div class="modal-body">
@@ -33,19 +33,22 @@
                     </div>
                 </div>
                 {# If we are in a details view, then the number of items is just one, so we can get rid of the plural #}
-                <p>You have choosen to <em class="positive elem">{{ op }}</em> the following <em class="badge num elem positive"></em> user{% if view_type == 'list' %}s{% endif %}:
+                <div class="summary">
+                    <p>You have choosen to <em class="positive elem">{{ op }}</em> the following <em class="badge num elem positive"></em> user{% if view_type == 'list' %}s{% endif %}:
                 {% else %}
-                <p>You have choosen to <em class="positive elem">{{ op }}</em> the following <em class="badge num elem positive"></em> {{action.target}}{% if view_type == 'list' %}s{% endif %}:
+                <div class="summary">
+                    <p>You have choosen to <em class="positive elem">{{ op }}</em> the following <em class="badge num elem positive"></em> {{action.target}}{% if view_type == 'list' %}s{% endif %}:
                 {% endif %}
-                    <a data-error="no-selected" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="There are no selected items to complete this action."></a>
-                </p>
-                {% if view_type == "list" %}
-                <table class="table-selected table table-bordered">
-                    <tbody>
-                    </tbody>
-                </table>
-                <button class= "btn btn-info toggle-more closed">Show All</button>
-                {% endif %}
+                        <a data-error="no-selected" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="There are no selected items to complete this action."></a>
+                    </p>
+                    {% if view_type == "list" %}
+                    <table class="table-selected table table-bordered">
+                        <tbody>
+                        </tbody>
+                    </table>
+                    <button class= "btn btn-info toggle-more closed">Show All</button>
+                    {% endif %}
+                </div>
                 <p>Are you sure you want to complete the operation?</p>
             </div>
             <div class="modal-footer">

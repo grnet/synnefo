@@ -58,4 +58,88 @@ $(document).ready(function(){
   }); 
 
 
+		/* Modals */
+
+	$('.actions-per-item .custom-btn').click(function() {
+		console.log('you clicked me');
+		var itemID = $(this).closest('.object-details').data('id');
+		var itemName = $(this).closest('.object-details').find('h4 .title').text();
+		var modalID = $(this).data('target')
+		console.log('itemID', itemID);
+		console.log('itemName', itemName);
+		console.log('modalID', modalID);
+		drawModalSingleItem(modalID, itemName, itemID);
+	});
+
+
+	function showError(modal, errorSign) {
+		var $modal = $(modal);
+		var $errorMsg = $modal.find('*[data-error="'+errorSign+'"]');
+		$errorMsg.show();
+	};
+
+	function checkInput(modal, inputArea, errorSign) {
+		var $inputArea = $(inputArea);
+		var $errorSign = $(modal).find('*[data-error="'+errorSign+'"]');
+
+		$inputArea.keyup(function() {
+			if($.trim($inputArea.val())) {
+				$errorSign.hide();
+			}
+		})
+
+	};
+
+	function resetErrors(modal) {
+		var $modal = $(modal);
+		$modal.find('.error-sign').hide();
+	};
+
+	function resetInputs(modal) {
+		var $modal = $(modal);
+		$modal.find('textarea').val('');
+		$modal.find('input[type=text]').val('');
+
+	};
+
+	function resetItemInfo(modal) {
+		var $modal = $(modal);
+		$modal.find('.summary .info-list').remove();
+	}
+
+	$('.modal button[type=submit]').click(function(e) {
+		var $modal = $(this).closest('.modal');
+		if($modal.attr('id') === 'user-contact') {
+			var $emailSubj = $modal.find('.subject')
+			var $emailCont = $modal.find('.email-content')
+			if(!$.trim($emailSubj.val())) {
+				e.preventDefault();
+				showError($modal, 'empty-subject');
+				checkInput($modal, $emailSubj, 'empty-subject');
+			}
+			if(!$.trim($emailCont.val())) {
+				e.preventDefault();
+				showError($modal, 'empty-body')
+				checkInput($modal, $emailCont, 'empty-body');
+			}
+		}
+	});
+
+
+	function drawModalSingleItem(modalID, itemName, itemID) {
+		var $summary = $(modalID).find('.modal-body .summary');
+		var $idsInput = $(modalID).find('.modal-footer form input[name="ids"]');
+		var html = '<dl class="dl-horizontal info-list"><dt>Name:</dt><dd>'+itemName+'</dd><dt>ID:</dt><dd>'+itemID+'</dd><dl>'
+		$idsInput.val(itemID);
+		$summary.append(html);
+	};
+
+	$('.modal').find('*[data-dismiss="modal"]').click(function() {
+		$modal =$(this).closest('.modal');
+		resetInputs($modal);
+		resetErrors($modal);
+		resetItemInfo($modal);
+
+	});
+
 });

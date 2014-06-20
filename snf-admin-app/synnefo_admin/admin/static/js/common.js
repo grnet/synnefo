@@ -73,14 +73,6 @@ $(document).ready(function(){
     }
   });   
 
- 
-  
-  $('.object-details h4').click(function(){
-
-    $(this).siblings('.object-details-content').toggle('slow');
-    $(this).toggleClass('expanded');
-  });
-
 
   // $('.info-block h3').click(function(){
   //   $(this).next('.info-block-content').toggle('slow');

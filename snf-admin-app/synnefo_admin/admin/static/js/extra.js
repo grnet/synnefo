@@ -595,6 +595,7 @@ $(function(){
 	$('#select-page').click(function(e) {
 		e.preventDefault();
 		toggleVisSelected(tableDomID, $(this).hasClass('select'));
+		updateClearAll();
 	});
 
 
@@ -880,12 +881,12 @@ $(function(){
 		});
 	};
 
-    $('.actionbar .toggle-selected').click(function (e) {
-        e.preventDefault();
-    })
+	$('.actionbar .toggle-selected').click(function (e) {
+		e.preventDefault();
+	})
 
-    $('.main .object-details').first().find('h4').addClass('expanded');
-    $('.main .object-details').first().find('.object-details-content').slideDown('slow');
+	$('.main .object-details').first().find('h4').addClass('expanded');
+	$('.main .object-details').first().find('.object-details-content').slideDown('slow');
 
 
 
@@ -1017,6 +1018,33 @@ $(function(){
 		e.preventDefault();
 	})
 	$("[data-toggle=popover]").popover();
+
+
+
+  /* For Details page */
+
+  $('.object-details h4 .arrow,.object-details h4 .title').click(function(){
+	var $expandBtn = $(this);
+	var $areas = $expandBtn.closest('.info-block.object-details') // *** add another class
+	$expandBtn.closest('h4').siblings('.object-details-content').toggle('slow');
+	$expandBtn.closest('h4').toggleClass('expanded');
+	var hasClass = $expandBtn.closest('h4').hasClass('expanded');
+	var allSameClass = true;
+
+	($areas.find('.object-details')).each(function() {
+		if(hasClass)
+			allSameClass = allSameClass && $(this).find('h4').hasClass('expanded');
+		else
+			allSameClass = allSameClass && !$(this).find('h4').hasClass('expanded');
+
+		if(!allSameClass)
+			return false;
+	});
+	console.log(allSameClass)
+	if(allSameClass)
+		$expandBtn.closest('.info-block.object-details').find('.show-hide-all').trigger('click');
+  });
+
 });
 
 

@@ -1,12 +1,6 @@
-$(document).ready(function(){ $("input").focus(); })
+
 
 $(document).ready(function(){
-
- // table sorting
-
-   /*$('.table-sorted:not(.table-users)').tablesorter({
-      sortList : [[2,0]],
-  });*/
 
  // fix sub nav on scroll
   var $win = $(window)
@@ -38,61 +32,63 @@ $(document).ready(function(){
 
   $win.on('scroll', processScroll)
 
-  // hide/show expand/collapse 
-  
-  // $('.subnav .dropdown-menu a').click(function(){
-  //   $('.info-block-content, .show-hide-all').show();
-  // });
 
-  var txt_all = ['+ Expand all','- Collapse all'];
-  
+/* General */
 
-  $('.show-hide-all span').text(txt_all[0]);
-  
-  
-  $('.show-hide-all').click(function(e){
+  /* When the user scrolls check if sidebar needs to get fixed position */
+  /*$(window).scroll(function() {
+    fixedMimeSubnav();
+  });*/
+
+
+  /* Sets sidebar's position fixed */
+  /* subnav-fixed is added/removed from processScroll() */
+/*  function fixedMimeSubnav() {
+    if($('.actionbar').hasClass('subnav-fixed'))
+      $('.info').addClass('info-fixed').removeClass('info');
+    else
+      $('.info').removeClass('info-fixed').addClass('info');
+  };
+
+*/
+
+
+  // $('input').blur(); // onload there is no input field focus
+  $("[data-toggle=popover]").click(function(e) {
     e.preventDefault();
-    $(this).toggleClass('open');
-    var tabs = $(this).parent('.info-block').find('.object-details-content');
+  })
+  $("[data-toggle=popover]").popover();
 
 
-    if ($(this).hasClass('open')){
-      $(this).text( txt_all[1]);
-      tabs.each(function() {
-        $(this).slideDown('slow');
-        $(this).siblings('h4').addClass('expanded');
-      });
+  /* Temporary: the server should indicate the current place */
+  var curPath = window.location.pathname;
 
+  function showCurrentPlace() {
+    var pathArray = curPath.split('/');
 
-    } else {
-      $(this).text( txt_all[0]);
-      tabs.each(function() {
-        $(this).slideUp('slow');
-        $(this).siblings('h4').removeClass('expanded');
-      });
-    }
-  });   
+    $('.main-nav li').each(function () {
 
+      if($(this).find('a').attr('href') === curPath) {
+        if($(this).closest('ul').hasClass('dropdown-menu')) {
+          $(this).closest('li').addClass('active');
+          $(this).closest('ul').closest('li').addClass('active');
+        }
+        else {
+          $(this).closest('li').addClass('active');
 
-  // $('.info-block h3').click(function(){
-  //   $(this).next('.info-block-content').toggle('slow');
-  //   $(this).prev('.show-hide-all').toggle('slow');
-  // });
-  
-/*  $('.search-query').typeahead({
->>>>>>> admin: Basic initialization of table
-    source: function(typeahead, query) {
-      if (query.indexOf("@") > -1) {
-        $.ajax({
-          url:'/admin/api/users/?prefix='+query, 
-          dataType:'json', 
-          success: function(d){
-            return typeahead.process(d);
-          }
-      })
-      } else {
+        }
       }
-    }
-  })*/
+      else if('/'+pathArray[1]+'/'+pathArray[2] === $(this).find('a').attr('href')) { // sumvasi! ***
+        $(this).closest('li').addClass('active');
+      }
+      else {
+        $(this).closest('li').removeClass('active');
+      }
+    });
+  };
+
+  showCurrentPlace();
+
+
 })
 

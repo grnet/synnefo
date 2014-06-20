@@ -49,15 +49,6 @@ $(function(){
 
 	/* Table */
 
-	/* Currently not in use */
-	/* Sort a colum with checkboxes */
-	/* Create an array with the values of all the checkboxes in a column */
-	$.fn.dataTableExt.afnSortData['dom-checkbox'] = function  (oSettings, iColumn) {
-		return $.map( oSettings.oApi._fnGetTrNodes(oSettings), function (tr, i) {
-			return $('td:eq('+iColumn+') input', tr).prop('checked') ? '0' : '1';
-		} );
-	};
-
 	var url = $('#table-items-total').data("url");
 	var serverside = Boolean($('#table-items-total').data("server-side"));
 	var table;
@@ -133,7 +124,6 @@ $(function(){
 		}
 	});
 	$("div.custom-buttons").html('<a href="" id="select-page" class="select custom-btn" data-karma="neutral"><span>Select Page</span></a>'+'<a href="" class="select select-all custom-btn" data-karma="neutral" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>'+'<a href="" id="clear-all" class="disabled deselect custom-btn" data-karma="neutral" data-toggle="modal" data-target="#clear-all-warning"><span>Clear All</span></a>');
-
 	$('.content').on('click', '#clear-all.disabled', function(e) {
 		e.preventDefault();
 		e.stopPropagation();
@@ -207,20 +197,12 @@ $(function(){
 					var info = data[data.length - 1];
 					var newItem = addItem(info);
 					if(newItem !== null) {
-						if(dataIndex>=1000) {
-							if(dataIndex%1000 === 0){
+					enableActions(newItem.actions);
+					keepSelected(data);
+						if(dataIndex>=500 && dataIndex%500 === 0) {
 								setTimeout(function() {
-									console.log('stop');
-									enableActions(newItem.actions);
-									keepSelected(data);
-								}, 50)
-							}
-						}
-						else {
-							enableActions(newItem.actions);
-							//console.time("keepSelected");
-							keepSelected(data);
-							//console.timeEnd("keepSelected");
+									return true;
+								}, 50);
 						}
 					}
 				},
@@ -653,7 +635,8 @@ $(function(){
 		}
 	}
 
-	/* Modals */
+
+		/* Modals */
 
 	function showError(modal, errorSign) {
 		var $modal = $(modal);
@@ -839,57 +822,9 @@ $(function(){
 	});
 
 
-	/* General */
-
-	/* When the user scrolls check if sidebar needs to get fixed position */
-	/*$(window).scroll(function() {
-		fixedMimeSubnav();
-	});*/
-
-
-	/* Sets sidebar's position fixed */
-	/* subnav-fixed is added/removed from processScroll() */
-/*  function fixedMimeSubnav() {
-		if($('.actionbar').hasClass('subnav-fixed'))
-			$('.info').addClass('info-fixed').removeClass('info');
-		else
-			$('.info').removeClass('info-fixed').addClass('info');
-	};
-
-*/
-
-	/* Currently not in use */
-	/* The parameter string has the following form: */
-	/* ",str1,str2,...,strN," */
-	/* The formDataListAttr function returns an array: [str1, str2, ..., strN]   */
-	function formDataListAttr(strList) {
-
-		var array = strList.substring(1, strList.length-1).split(',');
-		var arrayL = array.length;
-		var obj = {};
-		for(var i=0; i<arrayL; i++) {
-			obj[array[i]] =true;
-		}
-		return obj;
-	};
-
-	/* Currently not in use */
-	/* Extend String Prototype */
-	String.prototype.toDash = function(){
-		return this.replace(/([A-Z])/g, function($1){
-			return "-"+$1.toLowerCase();
-		});
-	};
-
 	$('.actionbar .toggle-selected').click(function (e) {
 		e.preventDefault();
 	})
-
-	$('.main .object-details').first().find('h4').addClass('expanded');
-	$('.main .object-details').first().find('.object-details-content').slideDown('slow');
-
-
-
 	 /* Filters */
 
 	 var filters = {};
@@ -1012,39 +947,6 @@ $(function(){
 
 	textFilter('.filter-text');
 	dropdownSelect('.filters .filter-dropdown .dropdown');
-
-	$('input').blur(); // onload there is no input field focus
-	$("[data-toggle=popover]").click(function(e) {
-		e.preventDefault();
-	})
-	$("[data-toggle=popover]").popover();
-
-
-
-  /* For Details page */
-
-  $('.object-details h4 .arrow,.object-details h4 .title').click(function(){
-	var $expandBtn = $(this);
-	var $areas = $expandBtn.closest('.info-block.object-details') // *** add another class
-	$expandBtn.closest('h4').siblings('.object-details-content').toggle('slow');
-	$expandBtn.closest('h4').toggleClass('expanded');
-	var hasClass = $expandBtn.closest('h4').hasClass('expanded');
-	var allSameClass = true;
-
-	($areas.find('.object-details')).each(function() {
-		if(hasClass)
-			allSameClass = allSameClass && $(this).find('h4').hasClass('expanded');
-		else
-			allSameClass = allSameClass && !$(this).find('h4').hasClass('expanded');
-
-		if(!allSameClass)
-			return false;
-	});
-	console.log(allSameClass)
-	if(allSameClass)
-		$expandBtn.closest('.info-block.object-details').find('.show-hide-all').trigger('click');
-  });
-
 });
 
 

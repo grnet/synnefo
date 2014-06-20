@@ -1593,7 +1593,7 @@
                     break;
                 case 'console':
                     this.__make_api_call(this.url() + "/action", "create", 
-                                         {'console': {'type':'vnc'}}, 
+                                         {'console': {'type':'vnc-wss'}},
                                          function(data) {
                         var cons_data = data.console;
                         success.apply(this, [cons_data]);

@@ -67,6 +67,7 @@ class VolumeJSONView(DatatablesView):
 
     def format_data_row(self, row):
         if not row[1]:
+            row = list(row)
             row[1] = "(not set)"
         return row
 

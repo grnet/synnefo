@@ -79,6 +79,7 @@ class ProjectJSONView(DatatablesView):
     filters = ProjectFilterSet
 
     def format_data_row(self, row):
+        row = list(row)
         row[2] = (str(row[2]) + ' (' +
                   Project.objects.get(id=row[0]).state_display() + ')')
         row[3] = str(row[3].date())

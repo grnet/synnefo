@@ -263,3 +263,7 @@
 		text-decoration: none;
 	}
 }
+
+a.disabled {
+	cursor: default !important;
+}

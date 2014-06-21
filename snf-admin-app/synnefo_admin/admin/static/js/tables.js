@@ -709,13 +709,15 @@ $(function(){
 		var modalType = $(modalID).data('type');
 		var $counter = $(modalID).find('.num');
 		var rowsNum = selected.items.length;
+		var $actionBtn = $(modalID).find('.apply-action');
+		console.log('drawModal', $actionBtn);
 		var maxVisible = 5;
 		var currentRow;
 		var htmlRows = '';
 		var unique = true;
 		var uniqueProp = '';
 		var count = 0;
-		var $idsInput = $(modalID).find('.modal-footer form input[name="ids"]');
+		// var $idsInput = $(modalID).find('.modal-footer form input[name="ids"]');
 		var idsArray = [];
 		var warningMsg = '<p class="warning-duplicate">Duplicate accounts have been detected</p>';
 		$tableBody.empty();
@@ -765,7 +767,7 @@ $(function(){
 		}
 		$tableBody.append(htmlRows); // should change
 		$tableBody.find('tr').tooltip();
-		$idsInput.val('['+idsArray+']');
+		$actionBtn.attr('data-ids','['+idsArray+']');
 		updateCounter($counter, idsArray.length); // ***
 		
 		if(idsArray.length >= maxVisible) {

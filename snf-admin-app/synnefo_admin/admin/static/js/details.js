@@ -128,9 +128,9 @@ $(document).ready(function(){
 
 	function drawModalSingleItem(modalID, itemName, itemID) {
 		var $summary = $(modalID).find('.modal-body .summary');
-		var $idsInput = $(modalID).find('.modal-footer form input[name="ids"]');
+		var $actionBtn = $(modalID).find('.apply-action');
 		var html = '<dl class="dl-horizontal info-list"><dt>Name:</dt><dd>'+itemName+'</dd><dt>ID:</dt><dd>'+itemID+'</dd><dl>'
-		$idsInput.val(itemID);
+		$actionBtn.attr('data-ids','['+itemID+']');
 		$summary.append(html);
 	};
 

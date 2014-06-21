@@ -53,6 +53,43 @@ $(document).ready(function(){
 */
 
 
+  /* Ajax for actions */
+
+  $('.modal .apply-action').click(function() {
+    console.log('hi');
+    var $modal = $(this).closest('.modal')
+    var url = $(this).data('url');
+
+    var data = {
+      op: $(this).data('op'),
+      target: $(this).data('target'),
+      ids: $(this).data('ids')
+    }
+    var contactAction = (data.op === 'contact' ? true : false);
+
+    if(contactAction) {
+      data['subject'] = $modal.find('input[name="subject"]').val();
+      data['text'] = $modal.find('textarea[name="text"]').text();
+    }
+
+    $.ajax({
+      url: url,
+      type: 'POST',
+      data: data,
+      success: function(response, statusText, jqXHR) {
+        console.log('did it!', statusText)
+      },
+      error: function(jqXHR, statusText) {
+        console.log('error', statusText)
+      }
+    });
+
+  });
+
+
+
+
+
   // $('input').blur(); // onload there is no input field focus
   $("[data-toggle=popover]").click(function(e) {
     e.preventDefault();

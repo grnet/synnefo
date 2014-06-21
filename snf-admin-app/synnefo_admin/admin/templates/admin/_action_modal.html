@@ -13,8 +13,7 @@
                     <input type="text" name="subject" class="subject"
                     form="contactForm" value="{{mail.subject}}"></input>
                     <a data-error="empty-subject" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="Missing the subject of the e-mail."></a>
-                </div>
-
+                </divq
                 <div class="form-body form-area">
                     <label>Body:</label>
                     <textarea name="text" form="contactForm" class="email-content
@@ -53,12 +52,7 @@
             </div>
             <div class="modal-footer">
                 <a href="#" class="btn btn-primary" data-dismiss="modal">Cancel</a>
-                <form method="post" action="{% url admin-actions %}" id="{{ op }}Form">
-                    <button type="submit" class="btn btn-primary">OK</button>
-                    <input type="hidden" name="op" value="{{ op }}">
-                    <input type="hidden" name="ids" value="">
-                    <input type="hidden" name="target" value="{{ action.target }}">
-                </form>
+                <button data-url={% url admin-actions %} data-op={{ op }} data-ids="" data-target={{ action.target }} class="btn btn-primary apply-action">OK</button>
             </div>
         </div>
     </div>

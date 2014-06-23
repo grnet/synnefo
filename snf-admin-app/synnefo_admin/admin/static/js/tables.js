@@ -111,6 +111,8 @@ $(function(){
 		"createdRow": function(row, data, dataIndex) {
 			var extraIndex = data.length - 1;
 			row.id = data[extraIndex].id.value; //sets the dom id
+			clickSummary(row);
+			clickDetails(row);
 		},
 		"dom": '<"custom-buttons">frtilp',
 		"language" : {
@@ -119,8 +121,6 @@ $(function(){
 		"drawCallback": function(settings) {
 			isSelected();
 			updateToggleAllSelect();
-			clickSummary(this);
-			clickDetails(this);
 		}
 	});
 	$("div.custom-buttons").html('<a href="" id="select-page" class="select custom-btn" data-karma="neutral"><span>Select Page</span></a>'+'<a href="" class="select select-all custom-btn" data-karma="neutral" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>'+'<a href="" id="clear-all" class="disabled deselect custom-btn" data-karma="neutral" data-toggle="modal" data-target="#clear-all-warning"><span>Clear All</span></a>');
@@ -249,13 +249,11 @@ $(function(){
 		"language" : {
 			"sLengthMenu": 'Pagination _MENU_'
 		},
-		"drawCallback": function(settings) {
-			clickSummary(this);
-			clickDetails(this);
-		},
 		"createdRow": function(row, data, dataIndex) {
 			var extraIndex = data.length - 1;
 			row.id = 'selected-'+data[extraIndex].id.value; //sets the dom id
+			clickDetails(row);
+			clickSummary(row);
 		},
 	});
 
@@ -426,26 +424,28 @@ $(function(){
 			}
 		}
 
-		html = '<a href="'+ data["details_url"].value +'" class="details-link"><span class="snf-icon snf-search"></span></a><a href="#" class="summary-expand expand-area"><span class="snf-icon snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
+		html = '<a href="'+ data["details_url"].value +' " class="details-link"><span class="snf-icon snf-search"></span></a><a href="#" class="summary-expand expand-area"><span class="snf-icon snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
 		return html;
 	};
 
-	function clickDetails(table) {
-		$(table).find('tbody td:last-child a.details-link').click(function(e) {
+	function clickDetails(row) {
+		$(row).find('td:last-child a.details-link').click(function(e) {
 			e.stopPropagation();
+			console.log('clickDetails')
 		})
 	}
 
-	function clickSummary(table) {
-		$(table).find('tbody td:last-child a.expand-area').click(function(e) {
+	function clickSummary(row) {
+		// console.log(tableP)
+		$(row).find('td:last-child a.expand-area').click(function(e) {
 			e.preventDefault();
 			e.stopPropagation();
-
+			console.log(1, this)
 			var $summaryTd = $(this).closest('td');
 			var $btn = $summaryTd.find('.expand-area span');
 			var $summaryContent = $summaryTd.find('.info-summary');
 			
-			var summaryContentWidth = $summaryTd.closest('tr').width()// - parseInt($summaryContent.css('padding-right').replace("px", "")) - parseInt($summaryContent.css('padding-left').replace("px", ""));
+			var summaryContentWidth = $summaryTd.closest('tr').width();
 			var summaryContPos = summaryContentWidth - $summaryTd.width() - parseInt($summaryContent.css('padding-left').replace("px", "")) -2; // border width?
 
 			$summaryContent.css({

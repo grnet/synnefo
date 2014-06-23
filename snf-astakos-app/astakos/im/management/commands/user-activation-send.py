@@ -14,8 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from snf_django.management.commands import SynnefoCommand, CommandError
-from astakos.im import activation_backends
-activation_backend = activation_backends.get_backend()
+from astakos.im.user_logic import send_verification_mail
 
 from ._common import get_user
 
@@ -38,6 +37,6 @@ class Command(SynnefoCommand):
                     "User email already verified '%s'\n" % (user.email,))
                 continue
 
-            activation_backend.send_user_verification_email(user)
+            send_verification_mail(user)
 
             self.stderr.write("Activation sent to '%s'\n" % (user.email,))

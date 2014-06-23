@@ -19,211 +19,20 @@ from dateutil.relativedelta import relativedelta
 import uuid
 
 from django.utils.translation import ugettext as _
-from django.core.mail import send_mail, get_connection
-from django.core.urlresolvers import reverse
-from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.db.models import Q
 from django.db.utils import IntegrityError
 
-from synnefo_branding.utils import render_to_string
+from snf_django.lib.api import faults
 
-from synnefo.lib import join_urls
-from astakos.im.models import AstakosUser, Invitation, ProjectMembership, \
+from astakos.im.models import AstakosUser, ProjectMembership, \
     ProjectApplication, Project, new_chain, Resource, ProjectLock, \
     create_project, ProjectResourceQuota, ProjectResourceGrant
 from astakos.im import quotas
 from astakos.im import project_notif
-from astakos.im import settings
 
 import astakos.im.messages as astakos_messages
 
 logger = logging.getLogger(__name__)
-
-
-def login(request, user):
-    auth_login(request, user)
-    from astakos.im.models import SessionCatalog
-    SessionCatalog(
-        session_key=request.session.session_key,
-        user=user
-    ).save()
-    logger.info('%s logged in.', user.log_display)
-
-
-def logout(request, *args, **kwargs):
-    user = request.user
-    auth_logout(request, *args, **kwargs)
-    user.delete_online_access_tokens()
-    logger.info('%s logged out.', user.log_display)
-
-
-def send_verification(user, template_name='im/activation_email.txt'):
-    """
-    Send email to user to verify his/her email and activate his/her account.
-    """
-    url = join_urls(settings.BASE_HOST,
-                    user.get_activation_url(nxt=reverse('index')))
-    message = render_to_string(template_name, {
-                               'user': user,
-                               'url': url,
-                               'baseurl': settings.BASE_URL,
-                               'site_name': settings.SITENAME,
-                               'support': settings.CONTACT_EMAIL})
-    sender = settings.SERVER_EMAIL
-    send_mail(_(astakos_messages.VERIFICATION_EMAIL_SUBJECT), message, sender,
-              [user.email],
-              connection=get_connection())
-    logger.info("Sent user verification email: %s", user.log_display)
-
-
-def _send_admin_notification(template_name,
-                             context=None,
-                             user=None,
-                             msg="",
-                             subject='alpha2 testing notification',):
-    """
-    Send notification email to settings.HELPDESK + settings.MANAGERS +
-    settings.ADMINS.
-    """
-    if context is None:
-        context = {}
-    if not 'user' in context:
-        context['user'] = user
-
-    message = render_to_string(template_name, context)
-    sender = settings.SERVER_EMAIL
-    recipient_list = [e[1] for e in settings.HELPDESK +
-                      settings.MANAGERS + settings.ADMINS]
-    send_mail(subject, message, sender, recipient_list,
-              connection=get_connection())
-    if user:
-        msg = 'Sent admin notification (%s) for user %s' % (msg,
-                                                            user.log_display)
-    else:
-        msg = 'Sent admin notification (%s)' % msg
-
-    logger.log(settings.LOGGING_LEVEL, msg)
-
-
-def send_account_pending_moderation_notification(
-        user,
-        template_name='im/account_pending_moderation_notification.txt'):
-    """
-    Notify admins that a new user has verified his email address and moderation
-    step is required to activate his account.
-    """
-    subject = (_(astakos_messages.ACCOUNT_CREATION_SUBJECT) %
-               {'user': user.email})
-    return _send_admin_notification(template_name, {}, subject=subject,
-                                    user=user, msg="account creation")
-
-
-def send_account_activated_notification(
-        user,
-        template_name='im/account_activated_notification.txt'):
-    """
-    Send email to settings.HELPDESK + settings.MANAGERES + settings.ADMINS
-    lists to notify that a new account has been accepted and activated.
-    """
-    message = render_to_string(
-        template_name,
-        {'user': user}
-    )
-    sender = settings.SERVER_EMAIL
-    recipient_list = [e[1] for e in settings.HELPDESK +
-                      settings.MANAGERS + settings.ADMINS]
-    send_mail(_(astakos_messages.HELPDESK_NOTIFICATION_EMAIL_SUBJECT) %
-              {'user': user.email},
-              message, sender, recipient_list, connection=get_connection())
-    msg = 'Sent helpdesk admin notification for %s'
-    logger.log(settings.LOGGING_LEVEL, msg, user.email)
-
-
-def send_invitation(invitation, template_name='im/invitation.txt'):
-    """
-    Send invitation email.
-    """
-    subject = _(astakos_messages.INVITATION_EMAIL_SUBJECT)
-    url = '%s?code=%d' % (join_urls(settings.BASE_HOST,
-                                    reverse('index')), invitation.code)
-    message = render_to_string(template_name, {
-                               'invitation': invitation,
-                               'url': url,
-                               'baseurl': settings.BASE_URL,
-                               'site_name': settings.SITENAME,
-                               'support': settings.CONTACT_EMAIL})
-    sender = settings.SERVER_EMAIL
-    send_mail(subject, message, sender, [invitation.username],
-              connection=get_connection())
-    msg = 'Sent invitation %s'
-    logger.log(settings.LOGGING_LEVEL, msg, invitation)
-    inviter_invitations = invitation.inviter.invitations
-    invitation.inviter.invitations = max(0, inviter_invitations - 1)
-    invitation.inviter.save()
-
-
-def send_greeting(user, email_template_name='im/welcome_email.txt'):
-    """
-    Send welcome email to an accepted/activated user.
-
-    Raises SMTPException, socket.error
-    """
-    subject = _(astakos_messages.GREETING_EMAIL_SUBJECT)
-    message = render_to_string(email_template_name, {
-                               'user': user,
-                               'url': join_urls(settings.BASE_HOST,
-                                                reverse('index')),
-                               'baseurl': settings.BASE_URL,
-                               'site_name': settings.SITENAME,
-                               'support': settings.CONTACT_EMAIL})
-    sender = settings.SERVER_EMAIL
-    send_mail(subject, message, sender, [user.email],
-              connection=get_connection())
-    msg = 'Sent greeting %s'
-    logger.log(settings.LOGGING_LEVEL, msg, user.log_display)
-
-
-def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
-    subject = _(astakos_messages.FEEDBACK_EMAIL_SUBJECT)
-    from_email = settings.SERVER_EMAIL
-    recipient_list = [e[1] for e in settings.HELPDESK]
-    content = render_to_string(email_template_name, {
-        'message': msg,
-        'data': data,
-        'user': user})
-    send_mail(subject, content, from_email, recipient_list,
-              connection=get_connection())
-    msg = 'Sent feedback from %s'
-    logger.log(settings.LOGGING_LEVEL, msg, user.log_display)
-
-
-def send_change_email(ec, request,
-                      email_template_name=
-                      'registration/email_change_email.txt'):
-    url = ec.get_url()
-    url = request.build_absolute_uri(url)
-    c = {'url': url,
-         'site_name': settings.SITENAME,
-         'support': settings.CONTACT_EMAIL,
-         'ec': ec}
-    message = render_to_string(email_template_name, c)
-    from_email = settings.SERVER_EMAIL
-    send_mail(_(astakos_messages.EMAIL_CHANGE_EMAIL_SUBJECT), message,
-              from_email,
-              [ec.new_email_address], connection=get_connection())
-    msg = 'Sent change email for %s'
-    logger.log(settings.LOGGING_LEVEL, msg, ec.user.log_display)
-
-
-def invite(inviter, email, realname):
-    inv = Invitation(inviter=inviter, username=email, realname=realname)
-    inv.save()
-    send_invitation(inv)
-    inviter.invitations = max(0, inviter.invitations - 1)
-    inviter.save()
-
-
-### PROJECT FUNCTIONS ###
 
 
 class ProjectError(Exception):
@@ -397,10 +206,17 @@ def app_check_allowed(application, request_user,
     return _failure(silent)
 
 
-def checkAlive(project):
+def checkAlive(project, silent=False):
+    def fail(msg):
+        if silent:
+            return False, msg
+        else:
+            raise ProjectConflict(msg)
+
     if not project.is_alive:
         m = _(astakos_messages.NOT_ALIVE_PROJECT) % project.uuid
-        raise ProjectConflict(m)
+        return fail(m)
+    return True, None
 
 
 def accept_membership_project_checks(project, request_user):
@@ -1000,14 +816,20 @@ def deny_application(application_id, project_id=None, request_user=None,
     project_notif.application_notify(application, "deny")
 
 
-def check_conflicting_projects(project, new_project_name):
+def check_conflicting_projects(project, new_project_name, silent=False):
+    def fail(msg):
+        if silent:
+            return False, msg
+        else:
+            raise ProjectConflict(msg)
+
     try:
         q = Q(name=new_project_name) & ~Q(id=project.id)
         conflicting_project = Project.objects.get(q)
         m = (_("cannot approve: project with name '%s' "
                "already exists (id: %s)") %
              (new_project_name, conflicting_project.uuid))
-        raise ProjectConflict(m)  # invalid argument
+        return fail(m)
     except Project.DoesNotExist:
         pass
 
@@ -1109,13 +931,99 @@ def check_expiration(execute=False):
     return [project.expiration_info() for project in expired]
 
 
+def validate_project_action(project, action, request_user=None, silent=True):
+    """Check if an action can apply on a project.
+
+    Arguments:
+        project: The target project.
+        action: The name of the action (in capital letters).
+        request_user: The user that requests the action.
+        silent: If set to True, suppress exceptions.
+
+    Returns:
+        A `(success, message)` tuple. `success` is a boolean value that
+        shows if the action can apply on a project, and `message` explains
+        why the action cannot apply on a project.
+
+        If an action can apply on a project, this function will always return
+        `(True, None)`.
+
+    Exceptions:
+        ProjectConflict: When the action cannot apply on a project due to a
+                         conflict.
+        ProjectForbidden: When a user is not allowed to apply an action on a
+                          project.
+        faults.BadRequest: When the action is unknown/malformed.
+    """
+    def fail(e, msg):
+        if silent:
+            return False, msg
+
+        if e == "PROJECT CONFLICT":
+            raise ProjectConflict(m)
+        elif e == "BAD REQUEST":
+            raise faults.BadRequest("Unknown action: %s." % action)
+        else:
+            raise Exception(e)
+
+    if action == "TERMINATE":
+        ok = project_check_allowed(project, request_user, level=ADMIN_LEVEL,
+                                   silent=silent)
+        if not ok:
+            return fail("PROJECT CONFLICT", None)
+
+        ok, m = checkAlive(project, silent=silent)
+        if not ok:
+            return fail("PROJECT CONFLICT", m)
+
+        if project.is_base:
+            m = _(astakos_messages.BASE_NO_TERMINATE) % project.uuid
+            return fail("PROJECT CONFLICT", m)
+
+    elif action == "SUSPEND":
+        ok = project_check_allowed(project, request_user, level=ADMIN_LEVEL,
+                                   silent=silent)
+        if not ok:
+            return fail("PROJECT CONFLICT", None)
+
+        ok, m = checkAlive(project, silent=silent)
+        if not ok:
+            return fail("PROJECT CONFLICT", m)
+
+    elif action == "UNSUSPEND":
+        ok = project_check_allowed(project, request_user, level=ADMIN_LEVEL,
+                                   silent=silent)
+        if not ok:
+            return fail("PROJECT CONFLICT", None)
+
+        if not project.is_suspended:
+            m = _(astakos_messages.NOT_SUSPENDED_PROJECT) % project.uuid
+            return fail("PROJECT CONFLICT", m)
+
+    elif action == "REINSTATE":
+        ok = project_check_allowed(project, request_user, level=ADMIN_LEVEL,
+                                   silent=silent)
+        if not ok:
+            return fail("PROJECT CONFLICT", None)
+
+        if not project.is_terminated:
+            m = _(astakos_messages.NOT_TERMINATED_PROJECT) % project.uuid
+            return fail("PROJECT CONFLICT", m)
+
+        ok, m = check_conflicting_projects(project, project.realname,
+                                           silent=silent)
+        if not ok:
+            return fail("PROJECT CONFLICT", m)
+
+    else:
+        return fail("BAD REQUEST", m)
+
+    return True, None
+
+
 def terminate(project_id, request_user=None, reason=None):
     project = get_project_for_update(project_id)
-    project_check_allowed(project, request_user, level=ADMIN_LEVEL)
-    checkAlive(project)
-    if project.is_base:
-        m = _(astakos_messages.BASE_NO_TERMINATE) % project.uuid
-        raise ProjectConflict(m)
+    validate_project_action(project, "TERMINATE", request_user, silent=False)
 
     project.terminate(actor=request_user, reason=reason)
     quotas.qh_sync_project(project)
@@ -1126,8 +1034,7 @@ def terminate(project_id, request_user=None, reason=None):
 
 def suspend(project_id, request_user=None, reason=None):
     project = get_project_for_update(project_id)
-    project_check_allowed(project, request_user, level=ADMIN_LEVEL)
-    checkAlive(project)
+    validate_project_action(project, "SUSPEND", request_user, silent=False)
 
     project.suspend(actor=request_user, reason=reason)
     quotas.qh_sync_project(project)
@@ -1138,11 +1045,7 @@ def suspend(project_id, request_user=None, reason=None):
 
 def unsuspend(project_id, request_user=None, reason=None):
     project = get_project_for_update(project_id)
-    project_check_allowed(project, request_user, level=ADMIN_LEVEL)
-
-    if not project.is_suspended:
-        m = _(astakos_messages.NOT_SUSPENDED_PROJECT) % project.uuid
-        raise ProjectConflict(m)
+    validate_project_action(project, "UNSUSPEND", request_user, silent=False)
 
     project.resume(actor=request_user, reason=reason)
     quotas.qh_sync_project(project)
@@ -1153,13 +1056,7 @@ def unsuspend(project_id, request_user=None, reason=None):
 def reinstate(project_id, request_user=None, reason=None):
     get_project_lock()
     project = get_project_for_update(project_id)
-    project_check_allowed(project, request_user, level=ADMIN_LEVEL)
-
-    if not project.is_terminated:
-        m = _(astakos_messages.NOT_TERMINATED_PROJECT) % project.uuid
-        raise ProjectConflict(m)
-
-    check_conflicting_projects(project, project.realname)
+    validate_project_action(project, "REINSTATE", request_user, silent=False)
     project.resume(actor=request_user, reason=reason)
     quotas.qh_sync_project(project)
     logger.info("%s has been reinstated" % (project))

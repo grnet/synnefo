@@ -26,10 +26,8 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
 from astakos.im.models import AstakosUser
-from astakos.im import activation_backends
 from ._common import (remove_user_permission, add_user_permission, is_uuid)
-
-activation_backend = activation_backends.get_backend()
+from astakos.im import user_logic as user_action
 
 
 class Command(SynnefoCommand):
@@ -160,21 +158,14 @@ class Command(SynnefoCommand):
 
         if options.get('reject'):
             reject_reason = options.get('reject_reason', None)
-            res = activation_backend.handle_moderation(
-                user,
-                accept=False,
-                reject_reason=reject_reason)
-            activation_backend.send_result_notifications(res, user)
+            res = user_action.reject(user, reject_reason)
             if res.is_error():
                 self.stderr.write("Failed to reject: %s\n" % res.message)
             else:
                 self.stderr.write("Account rejected\n")
 
         if options.get('verify'):
-            res = activation_backend.handle_verification(
-                user,
-                user.verification_code)
-            #activation_backend.send_result_notifications(res, user)
+            res = user_action.verify(user, user.verification_code)
             if res.is_error():
                 self.stderr.write("Failed to verify: %s\n" % res.message)
             else:
@@ -182,24 +173,22 @@ class Command(SynnefoCommand):
                                   % res.status_display())
 
         if options.get('accept'):
-            res = activation_backend.handle_moderation(user, accept=True)
-            activation_backend.send_result_notifications(res, user)
+            res = user_action.accept(user)
             if res.is_error():
                 self.stderr.write("Failed to accept: %s\n" % res.message)
             else:
                 self.stderr.write("Account accepted and activated\n")
 
         if options.get('active'):
-            res = activation_backend.activate_user(user)
+            res = user_action.activate(user)
             if res.is_error():
                 self.stderr.write("Failed to activate: %s\n" % res.message)
             else:
                 self.stderr.write("Account %s activated\n" % user.username)
 
         elif options.get('inactive'):
-            res = activation_backend.deactivate_user(
-                user,
-                reason=options.get('inactive_reason', None))
+            inactive_reason = options.get('inactive_reason', None)
+            res = user_action.deactivate(user, inactive_reason)
             if res.is_error():
                 self.stderr.write("Failed to deactivate: %s\n" % res.message)
             else:

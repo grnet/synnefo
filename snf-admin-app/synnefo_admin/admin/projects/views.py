@@ -63,16 +63,19 @@ templates = {
 
 class ProjectJSONView(DatatablesView):
     model = Project
-    fields = ('id', 'realname', 'state', 'creation_date', 'end_date')
+    fields = ('id', 'realname', '{owner__first_name} {owner__last_name}',
+              'state', 'creation_date', 'end_date')
     filters = ProjectFilterSet
 
     def format_data_row(self, row):
         if self.dt_data['iDisplayLength'] > 0:
             row = list(row)
-            row[2] = (str(row[2]) + ' (' +
+            if row[2] == "None None":
+                row[2] = "(not set)"
+            row[3] = (str(row[3]) + ' (' +
                       Project.objects.get(id=row[0]).state_display() + ')')
-            row[3] = str(row[3].date())
             row[4] = str(row[4].date())
+            row[5] = str(row[5].date())
         return row
 
     def get_extra_data(self, qs):
@@ -218,8 +221,8 @@ def catalog(request):
     context = {}
     context['action_dict'] = get_permitted_actions(cached_actions, request.user)
     context['filter_dict'] = ProjectFilterSet().filters.itervalues()
-    context['columns'] = ["ID", "Name", "Status", "Creation date",
-                          "End date", ""]
+    context['columns'] = ["ID", "Name", "Owner Name", "Status",
+                          "Creation date", "End date", ""]
     context['item_type'] = 'project'
 
     return context

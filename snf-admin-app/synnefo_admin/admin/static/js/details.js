@@ -41,7 +41,7 @@ $(document).ready(function(){
 
 
     if ($(this).hasClass('open')){
-      $(this).text( txt_all[1]);
+      $(this).find('span').text( txt_all[1]);
       tabs.each(function() {
         $(this).slideDown('slow');
         $(this).siblings('h4').addClass('expanded');
@@ -49,7 +49,7 @@ $(document).ready(function(){
 
 
     } else {
-      $(this).text( txt_all[0]);
+      $(this).find('span').text( txt_all[0]);
       tabs.each(function() {
         $(this).slideUp('slow');
         $(this).siblings('h4').removeClass('expanded');

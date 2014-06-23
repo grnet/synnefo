@@ -208,7 +208,13 @@ default_dict = {
         'body': render_to_string('im/plain_email.txt', {
             'baseurl': astakos_settings.BASE_URL,
             'site_name': astakos_settings.SITENAME,
-            'support': astakos_settings.CONTACT_EMAIL}).replace('\n\n\n', '\n')
+            'support': astakos_settings.CONTACT_EMAIL}).replace('\n\n\n', '\n'),
+        'legend': {
+            'Full name': "{{ full_name }}",
+            'First name': "{{ firstname }}",
+            'Last name': "{{ last_name }}",
+            'Email': "{{ email }}",
+        }
     },
     'item_lists': (('Users', 'user'),
                    ('VMs', 'vm'),

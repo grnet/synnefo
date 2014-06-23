@@ -417,8 +417,10 @@ def hanging_networks(backend, GNets):
     """
     def get_network_groups(group_list):
         groups = set()
-        for (name, mode, link) in group_list:
-            groups.add(name)
+        # Since ganeti 2.10 networks are connected to nodegroups
+        # with mode and link AND vlan (ovs extra nicparam)
+        for group_info in group_list:
+            groups.add(group_info[0])
         return groups
 
     with pooled_rapi_client(backend) as c:

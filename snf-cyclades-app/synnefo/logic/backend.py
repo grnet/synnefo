@@ -1030,7 +1030,7 @@ def connect_network(network, backend, depends=[], group=None):
         for group in groups:
             job_id = client.ConnectNetwork(network.backend_id, group,
                                            network.mode, network.link,
-                                           conflicts_check,
+                                           conflicts_check=conflicts_check,
                                            depends=depends)
             job_ids.append(job_id)
     return job_ids

@@ -221,6 +221,10 @@ default_dict = {
 }
 
 
+def logout(request):
+    return HttpResponseRedirect(reverse('logout'))
+
+
 @admin_user_required
 def home(request):
     """Home view."""

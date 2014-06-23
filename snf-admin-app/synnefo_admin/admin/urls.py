@@ -38,6 +38,7 @@ from django.conf.urls import patterns, url
 urlpatterns = patterns(
     'synnefo_admin.admin.views',
     url(r'^$', 'home', name='admin-home'),
+    url(r'^logout$', 'logout', name='admin-logout'),
     url(r'^charts$', 'charts', name='admin-charts'),
     url(r'^stats$', 'stats', name='admin-stats'),
     url(r'^json/(?P<type>.*)$', 'json_list', name='admin-json'),

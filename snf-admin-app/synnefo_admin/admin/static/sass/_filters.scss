@@ -42,7 +42,7 @@
 	background: white;
 	height: 38px;
 	.dropdown {
-		border: 1px solid #cccccc;
+		// border: 1px solid #cccccc;
 		border-radius: 0px;
 		padding: 8px 12px;
 		line-height: 1.4; //same as inputs
@@ -58,7 +58,7 @@
 		&.open {
 			a {
 				text-decoration: none;
-				color: $blue-intense;
+				color: $total-black;
 			}
 		}
 		a {

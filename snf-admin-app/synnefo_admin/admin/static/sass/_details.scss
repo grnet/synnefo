@@ -32,7 +32,158 @@ margin-left: 6px;
 	}
 	.object-details {
 		padding-left: 0px;
+		padding-right: 0px;@import "settings";
+
+body {
+	color: white;
+	a {
+		color: white;
+	}
+}
+
+
+
+.object-details h4 .label {
+// font-size: 0.65em;
+	font-style: normal;
+	font-weight: normal;
+	float: right;
+	margin-left: 15px;
+	background: $almost-white;
+	color: $total-black;
+	&.important {
+		font-weight: bold;
+	}
+	&.label-success {
+		background: $good-karma-color;
+		border-color: $good-karma-color;
+		color: $almost-white;
+	}
+}
+
+.main {
+	padding: 5px 0 0px 0;
+	background: transparent;
+	&:hover {
+		// background: #DDD;
+	}
+	h4 .title{
+		font-size: 21px;
+		cursor: pointer;
+	}
+	a {
+		color: white;
+	}
+	.object-details {
+		padding-left: 0px;
 		padding-right: 0px;
+	}
+}
+
+body .well {
+	border-color: $blue-light;
+
+}
+// .tab-content dl {
+// 	background: white;
+// }
+body .object-details {
+	h4 {
+		margin-left: 0;
+		margin-right: 0;
+	}
+	h3 {
+		margin: 0 0 2em;
+	}
+	p {
+		margin: 10px 20px;
+		font-style: italic;
+	}
+
+	.length {
+		margin-left: 6px;
+		border: 0 none;
+		font-style: italic;
+		&::before {
+		    content: '( ';
+		}
+		&::after {
+		    content: ' )';
+		}
+	}
+	&>.object-details {
+		margin-left: -20px;
+		margin-right: -20px;
+		padding: 20px;
+	}
+}
+
+.part-two {
+	.object-details {
+		padding: 20px;
+		.object-details {
+			padding: 0 20px;
+		}
+	}
+}
+
+
+.object-details-content .nav-tabs>li {
+	a {
+		opacity: 0.7;
+		color: white;
+	}
+	&.active>a {
+		opacity: 1;
+		border-color: transparent;
+		background: $gray-light;
+		color: white;
+		border-radius: 0;
+	}
+	&:not(.active)>a:hover {
+		opacity: 1;
+		color: white;
+		border-color: transparent;
+		background: transparent;
+	}
+}
+
+.tab-pane {
+	overflow: auto;
+	th {
+		color: $gray-dark;
+	}
+}
+
+body .object-details h4 {
+	em {
+		float: none;
+		&.os-info {
+			float: right;
+			position: relative;
+			bottom: 3px;
+			// margin-right: 6px;
+			img {
+				height: 26px; // *** i think that is the size of all images temp use for preview
+			}
+		}
+	}
+}
+
+.content-seperator {
+	width: 100%;
+	border-bottom: 1px solid white;
+	margin-top: 20px;
+	margin-bottom: 20px;
+}
+
+.content.part-one {
+	margin-bottom: 0;
+	margin-top: 160px;
+}
+.content.part-two {
+	margin-top: 0;
+}
 	}
 }
 

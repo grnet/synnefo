@@ -22,9 +22,8 @@
 	padding-left: $nav-side-padding;
 	padding-right: $nav-side-padding;
 	// background: $blue-light;
-	background: $gray-dark;
-	border: 1px solid transparent;
-	border-bottom-color: white;
+	background: $total-black;
+	border: 0 none;
 	height: $nav-top-height;
 	z-index: 1040;
 }
@@ -170,23 +169,23 @@
 .sidebar {
 	a {
 		&:first-child {
-			margin-bottom: 38px;
+			margin-bottom: 48px;
 		}
 		&:last-child {
-			margin-top: 32px; //32+6=38
+			margin-top: 48px; //32+6=38
 		}
 		margin-bottom: 6px;
 	}
 }
-.custom-buttons .custom-btn, .actions-per-item .custom-btn {
+/* .custom-buttons .custom-btn, .actions-per-item .custom-btn {
 	min-width: 80px;
 	float: left;
 	width: auto;
 	margin-right: 10px;
-}
+} */
 
 
-.sidebar, .custom-buttons, .actions-per-item {
+/* .sidebar, .custom-buttons, .actions-per-item {
 	a {
 		border: 1px solid;
 		width: 100%;
@@ -215,34 +214,12 @@
 			&:hover {
 				opacity:1;
 			}
-			&[data-karma="neutral"] {
-				background-color: $blue-intense;
-				border-color: $blue-intense;
-			}
-			&[data-karma="good"] {
-				background-color: $green-intense;
-				border-color: $green-intense;
-			}
-
-			&[data-karma="bad"] {
-				background-color: $orange-intense;
-				border-color: $orange-intense;
-			}
-
-			&[data-caution="warning"][data-karma="good"], &[data-caution="warning"][data-karma="neutral"] {
-				background-color: $orange-intense;
-				border-color: $orange-intense;
-			}
-
-			&[data-caution="dangerous"][data-karma="bad"], &[data-caution="dangerous"][data-karma="neutral"] {
-				background-color: $red-intense;
-				border-color: $red-intense;
-			}
+			
 
 		}
 	}
-}
-.custom-btn.expand-btn {
+} */
+/* .custom-btn.expand-btn {
 	width: 110px;
 	line-height: 30px;
 	color: white;
@@ -252,7 +229,7 @@
 	&:hover {
 		opacity: 1;
 	}
-}
+} */
 
 
 .instructions-icon {
@@ -261,6 +238,144 @@
 
 	&:hover {
 		text-decoration: none;
+	}
+}
+
+/* 
+Βuttons 
+Αll buttons have colors depending on their karma.
+Default color applies to non-karma buttons
+*/
+
+
+.custom-btn {
+	display: inline-block;
+	border: 1px solid $default-btn-color;
+	text-align: center;
+	// background: $default-btn-color;
+	opacity: 0.7;
+	&>span {
+		border: 1px solid transparent;
+		display: block;
+		height: 100%;
+		padding: 5px 10px;
+	}
+	&:hover {
+		text-decoration: none;
+		opacity: 1;
+		span {
+			color: white;
+		}
+	}
+	// &[data-karma="bad"] {
+	// 	background: $bad-karma-color;
+	// 	border-color: $bad-karma-color;
+	// }
+	// &[data-karma="neutral"] {
+	// 	background: $neutral-karma-color;
+	// 	border-color: $neutral-karma-color;
+	// }
+	// &[data-karma="good"] {
+	// 	background: $good-karma-color;
+	// 	border-color: $good-karma-color;
+	// }
+
+	&[data-karma="neutral"] {
+		background-color: $blue-intense;
+		border-color: $blue-intense;
+	}
+	&[data-karma="good"] {
+		background-color: $green-intense;
+		border-color: $green-intense;
+	}
+
+	&[data-karma="bad"] {
+		background-color: $orange-intense;
+		border-color: $orange-intense;
+	}
+
+	&[data-caution="warning"][data-karma="good"], &[data-caution="warning"][data-karma="neutral"] {
+		background-color: $orange-intense;
+		border-color: $orange-intense;
+	}
+
+	&[data-caution="dangerous"][data-karma="bad"], &[data-caution="dangerous"][data-karma="neutral"] {
+		background-color: $red-intense;
+		border-color: $red-intense;
+	}
+}
+
+/*
+Disabled buttons are transparent with light gray border
+and light gray font colors
+*/
+
+body .content .custom-btn.disabled {
+	background-color: transparent;
+	border-color: $almost-white;
+	opacity: 0.7;
+	color: $almost-white;
+	&:hover {
+		opacity: 0.7;
+	}
+}
+
+/*
+Sidebar buttons are displayed as block elements
+*/
+
+.sidebar  {
+	.custom-btn {
+		display: block;
+		margin: 0 0 1em;
+		span {
+			padding: 8px;
+		}
+	}
+}
+
+/*
+Custom-buttons are buttons of lesser significance.
+They have black background
+*/
+
+body .custom-buttons {
+	.custom-btn:not(.disabled) {
+		background-color: $total-black;
+		border-color: transparent;
+		border-bottom: 2px solid transparent;
+		margin-right: 1em;
+		&:hover {
+			border-bottom-color: $almost-white;	
+		}
+	}
+}
+
+
+.expand-btn {
+	float:right;
+	background-color: $total-black;
+	// border:0 none;
+	border-color: transparent;
+	border-bottom: 2px solid transparent;
+	&:hover {
+		border-bottom-color: $almost-white;	
+	}
+}
+/*
+Extra-button is used to show total selected rows
+*/
+
+.extra-btn {
+	margin-bottom: 2em;
+	.badge {
+		background: white;
+		color: $default-btn-color;
+	}
+	&:hover {
+		.badge	 {
+			color: $default-btn-color;
+		}
 	}
 }
 

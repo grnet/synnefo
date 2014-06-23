@@ -164,7 +164,6 @@ textarea:focus          {
 .badge-important        { background-color: #F81A23; }
 .badge-info           { background-color:#659CEF }
 .show-hide-tabs         { margin:2em 0; }
-.show-hide-all          { float:right; /*margin:20px 0;*/ line-height:27px; /* margin-right: 20px; */}
 .toggle .badge          { font-size:14px; padding:5px 9px; }
 .toggle .badge:hover      { cursor:pointer;  }
 .show-hide-tabs .badge      { background-color:#8BBA00; }
@@ -184,7 +183,11 @@ textarea:focus          {
 .account h3:hover,
 .account h4:hover       { color:#666 }
 .object-details         { /* padding: 10px 20px; */  padding: 10px 20px 0 20px;}
-.object-details h4        { cursor:pointer; margin-left: 20px; margin-right: 20px; }
+.object-details h4 .title, 
+.object-details h4 .arrow {
+	cursor: pointer;
+}
+
 .object-details h4 em     { float:right; font-style:normal; font-size:0.833em;}
 .object-details h4 em img   { margin:0 5px; }
 h4 .badge.arrow           { padding:6px 9px 2px; background:url(../img/glyphicons-halflings.png) 160px 43px transparent;}
@@ -527,14 +530,6 @@ svg>text:last-child {
 	// box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px #659cef;
 }
 
-
-.extra-btn {
-	width: 100%;
-	margin-bottom: 40px;
-}
-
-
-
 /* Landscape phone to portrait tablet */
 @media (max-width: 1300px) { // temp
 	.navbar-fixed-top .navbar-center{
@@ -634,22 +629,6 @@ table thead th {
 	white-space: nowrap;
 }
 
-/* buttons */
-
-.custom-btn {
-	display: inline-block;
-	border: 1px solid;
-	text-align: center;
-	&>span {
-		border: 1px solid transparent;
-		display: block;
-		height: 100%;
-	}
-	&:hover {
-		text-decoration: none;
-	}
-	
-}
 
 /* Home */
 
@@ -684,10 +663,6 @@ body select, body input {
 	color: $gray-dark;
 }
 
-table.dataTable tbody tr td:last-child, table.dataTable tbody tr th:last-child {
-	padding: 8px 0;
-}
-
 /* updated olga */
 
 .navbar {
@@ -699,12 +674,20 @@ table.dataTable tbody tr td:last-child, table.dataTable tbody tr th:last-child {
 .nav > li.active > a,
 .nav > li:hover > a{
 	color: $gray-dark;
-	-webkit-transition: color 0 ease 0;
-  	transition: color 0 ease 0;
+	-webkit-transition: all 0 ease 0;
+  	transition: all 0 ease 0;
   	background: white;
+}
+
+.nav > li > a {
+	-webkit-transition: all 0 ease 0;
+  	transition: all 0 ease 0;
+
 }
 .dropdown-menu {
 	border-radius: 0;
+	border: 0 none;
+	border-top: 1px solid $gray-light;
 	background-color: white;
 }
 
@@ -716,12 +699,18 @@ table.dataTable tbody tr td:last-child, table.dataTable tbody tr th:last-child {
 } 
 
 .sub-nav {
-	color: $gray-dark;
-	background: $almost-white;
+	background: $gray-light;
 	border: 0 none;
-}
-.sub-nav a {
-	color: $gray-dark;
+	.nav {
+		& > li > a {
+			color: $almost-white;
+		}
+		& > li:hover {
+			a {
+				color: $gray-dark;
+			}
+		}
+	}
 }
 
 body .well {
@@ -760,6 +749,7 @@ table.table {
 table.dataTable tbody tr td, 
 table.dataTable tbody tr th {
 	border-top: 1px solid lighten($gray-dark, 25%);
+	padding: 10px;
 }
 
 table.dataTable thead th,
@@ -851,8 +841,8 @@ table.dataTable.no-footer {
 
 
 .label {
-	border-radius: 0;
-	padding: 5px 10px;
+	border-radius: 10px;
+	padding: 3px 8px;
 	border: 1px solid white;
 	background: inherit;
 	color: white;
@@ -879,21 +869,8 @@ table.dataTable.no-footer {
 }
 
 .actions-per-item {
-	color: white;
-	a {
-		color: white;
-	}
 	.custom-btn {
 		margin: 10px 10px 10px 0;
-		span {
-			padding: 5px 10px;
-			border: 1px solid inherit;
-		}
-		&:hover {
-			span {
-				border-color:white;
-			}
-		}
 	}
 }
 
@@ -945,5 +922,35 @@ table.dataTable.no-footer {
 		dd {
 			margin-left: 110px;
 		}
+	}
+}
+
+#logo-icon {
+	height: 50px;
+	line-height: 50px;
+	vertical-align: middle;
+	padding: 0 15px;
+	&:hover {
+		background-color: white;
+		a {
+			background-position: center top;
+		}
+	}
+	a {
+		position: relative;
+		top: 3px;
+		width: 17px;
+		height: 15px; 
+		display: inline-block;
+		margin-top: 2px;
+		overflow: hidden;
+		padding: 0;
+		background:url(../logo.png) no-repeat center bottom;
+	}
+}
+
+.filters {
+	a:focus, input:focus {
+		outline: none;
 	}
 }

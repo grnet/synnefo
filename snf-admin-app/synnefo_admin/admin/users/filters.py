@@ -32,6 +32,7 @@ from astakos.im import user_logic as users
 
 from astakos.api.quotas import get_quota_usage
 from astakos.im.user_utils import send_plain as send_email
+from astakos.im import auth_providers
 
 from synnefo.util import units
 
@@ -51,18 +52,23 @@ choice2query = {
 }
 
 
-mock_providers = (
-    ('local', '_'),
-    ('shibboleth', '_')
-)
+auth_providers = [(key, '_') for key in auth_providers.PROVIDERS.iterkeys()]
 
 
-def filter_auth_providers(queryset, choices):
+def filter_has_auth_providers(queryset, choices):
     choices = choices or ()
     q = Q()
     for c in choices:
         q |= Q(auth_providers__module=c)
     return queryset.filter(q).distinct()
+
+
+def filter_has_not_auth_providers(queryset, choices):
+    choices = choices or ()
+    q = Q()
+    for c in choices:
+        q |= Q(auth_providers__module=c)
+    return queryset.exclude(q).distinct()
 
 
 def filter_status(queryset, choices):
@@ -105,11 +111,15 @@ class UserFilterSet(django_filters.FilterSet):
         label='Status', action=filter_status, choices=choice2query.keys())
     groups = django_filters.MultipleChoiceFilter(
         label='Group', action=filter_group, choices=get_groups())
-    auth_providers = django_filters.MultipleChoiceFilter(
-        label='Auth Providers', action=filter_auth_providers,
-        choices=mock_providers)
+    has_auth_providers = django_filters.MultipleChoiceFilter(
+        label='HAS Auth Providers', action=filter_has_auth_providers,
+        choices=auth_providers)
+    has_not_auth_providers = django_filters.MultipleChoiceFilter(
+        label='HAS NOT Auth Providers', action=filter_has_not_auth_providers,
+        choices=auth_providers)
+
 
     class Meta:
         model = AstakosUser
         fields = ('uuid', 'email', 'name', 'status', 'groups',
-                  'auth_providers')
+                  'has_auth_providers', 'has_not_auth_providers')

@@ -17,6 +17,7 @@
 import re
 import logging
 import functools
+import json
 
 from django.shortcuts import redirect
 from django.views.generic.simple import direct_to_template
@@ -25,6 +26,7 @@ from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.core.urlresolvers import reverse
 from django.views.decorators.csrf import csrf_exempt
+from django.core.serializers.json import DjangoJSONEncoder
 
 from urllib import unquote
 
@@ -48,7 +50,8 @@ from synnefo_admin.admin import actions
 from synnefo_admin.admin.utils import conditionally_gzip_page
 
 from synnefo.ui.views import UI_MEDIA_URL
-import copy
+
+JSON_MIMETYPE = "application/json"
 
 # for django-eztables
 from django.template import add_to_builtins
@@ -377,20 +380,32 @@ def admin_actions(request):
     Expects a JSON with the following fields: <TODO>
     """
     logging.info("Entered admin actions view")
+    status = 200
+    response = {
+        'result': "All actions finished successfully"
+    }
 
-    if request.method == "POST":
-        logging.info("POST body: %s", request.POST)
+    if request.method != "POST":
+        logging.error("We have not received a POST request")
+        status = 305
+        response['result'] = "Only POST is allowed"
 
-    target = request.POST['target']
-    op = request.POST['op']
-    ids = copy.deepcopy(request.POST['ids'])
+    logging.info("This is the request %s", request.body)
+
+    objs = json.loads(request.body)
+    logging.info("This is the decoded dictionary %s", objs)
+
+    target = objs['target']
+    op = objs['op']
+    ids = objs['ids']
     ids = ids.replace('[', '').replace(']', '').replace(' ', '').split(',')
 
     try:
         for id in ids:
             _admin_actions_id(request, target, op, id)
     except actions.AdminActionNotPermitted:
-        raise PermissionDenied
+        status = 403
+        response['result'] = "You are not allowed to do this operation"
 
-    redirect = reverse('admin-list', args=(target,))
-    return HttpResponseRedirect(redirect)
+    return HttpResponse(json.dumps(response, cls=DjangoJSONEncoder),
+                        mimetype=JSON_MIMETYPE, status=status)

@@ -72,10 +72,13 @@ $(document).ready(function(){
       data['text'] = $modal.find('textarea[name="text"]').text();
     }
 
+    console.log('Ids are ' + data['ids'])
+
     $.ajax({
       url: url,
       type: 'POST',
-      data: data,
+      data: JSON.stringify(data),
+      contentType: 'application/json',
       success: function(response, statusText, jqXHR) {
         console.log('did it!', statusText)
       },

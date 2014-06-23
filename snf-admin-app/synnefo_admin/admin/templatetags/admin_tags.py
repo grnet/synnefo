@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 import django_filters
 
 import synnefo_admin.admin.projects.utils as project_utils
-from astakos.im.functions import ProjectConflict
+from astakos.im.models import AstakosUser
 
 register = template.Library()
 
@@ -235,7 +235,6 @@ def get_project_stats(project):
 @register.filter
 def can_apply(action, item):
     """Return if action can apply on item."""
-    try:
-        return action.can_apply(item)
-    except ProjectConflict:
-        return True
+    if action.name == "Send e-mail" and action.target != 'user':
+        return False
+    return action.can_apply(item)

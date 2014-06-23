@@ -24,7 +24,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Group
-from django.template import Context, Template
 
 from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
                                NetworkInterface, IPAddress)
@@ -44,7 +43,7 @@ from django.db.models import Q
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
-from synnefo_admin.admin.utils import get_actions
+from synnefo_admin.admin.utils import get_actions, render_email
 
 from .utils import (get_user, get_quotas, get_user_groups,
                     get_enabled_providers, get_suspended_vms, )
@@ -179,13 +178,8 @@ def do_action(request, op, id):
     if op == 'reject':
         actions[op].f(user, 'Rejected by the admin')
     elif op == 'contact':
-        c = Context({'name': user.realname,
-                     'first_name': user.first_name,
-                     'last_name': user.last_name})
-        t = Template(request.POST['text'])
-        body = t.render(c)
-        actions[op].f(user, request.POST['subject'], template_name=None,
-                      text=body)
+        subject, body = render_email(request.POST, user)
+        actions[op].f(user, subject, template_name=None, text=body)
     else:
         actions[op].f(user)
 

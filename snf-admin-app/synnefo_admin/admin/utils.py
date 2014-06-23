@@ -14,12 +14,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import functools
+import logging
 from importlib import import_module
 from operator import or_
+
 from django.db.models import Q
 from django.views.decorators.gzip import gzip_page
+from django.template import Context, Template
+
 from synnefo.util import units
 from astakos.im.models import AstakosUser
+
 from .actions import get_allowed_actions, get_permitted_actions
 
 
@@ -113,3 +118,29 @@ def get_actions(target, user=None, inst=None):
         return get_allowed_actions(actions, inst, user)
     else:
         return get_permitted_actions(actions, user)
+
+
+def render_email(request, user):
+    """Render an email and return its subject and body.
+
+    This function takes as arguments a QueryDict and a user. The user will
+    serve as the target of the mail. The QueryDict should contain a `text` and
+    `subject` attribute that will be used as the body and subject of the mail
+    respectively.
+
+    The email can optionally be customized with user information. If the user
+    has provided any one of the following variables:
+
+        {{ full_name }}, {{ first_name }}, {{ last_name }}, {{ email }}
+
+    then they will be rendered appropriately.
+    """
+    subject = request['subject']
+    c = Context({'full_name': user.realname,
+                 'first_name': user.first_name,
+                 'last_name': user.last_name,
+                 'email': user.email, })
+    t = Template(request['text'])
+    body = t.render(c)
+    logging.info("Subject is %s, body is %s", subject, body)
+    return subject, body

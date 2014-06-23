@@ -30,7 +30,7 @@ import django_filters
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
-from synnefo_admin.admin.utils import get_actions
+from synnefo_admin.admin.utils import get_actions, render_email
 
 from .utils import get_volume
 from .actions import cached_actions
@@ -141,7 +141,9 @@ def do_action(request, op, id):
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'contact':
-        actions[op].f(volume, request.POST['text'])
+        user = AstakosUser.objects.get(uuid=volume.userid)
+        subject, body = render_email(request.POST, user)
+        actions[op].f(user, subject, template_name=None, text=body)
     else:
         actions[op].f(volume)
 

@@ -42,7 +42,8 @@ from synnefo.util import units
 import django_filters
 from django.db.models import Q
 
-from synnefo_admin.admin.utils import is_resource_useful, get_actions
+from synnefo_admin.admin.utils import (is_resource_useful, get_actions,
+                                       render_email)
 
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
@@ -207,7 +208,8 @@ def do_action(request, op, id):
             user = project.members.all()[0]
         else:
             user = project.owner
-        actions[op].f(user, request.POST['text'])
+        subject, body = render_email(request.POST, user)
+        actions[op].f(user, subject, template_name=None, text=body)
     elif op == 'approve':
         actions[op].f(project.last_application.id)
     elif op == 'deny':

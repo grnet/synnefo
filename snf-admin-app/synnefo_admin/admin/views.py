@@ -208,7 +208,7 @@ default_dict = {
         'body': render_to_string('im/plain_email.txt', {
             'baseurl': astakos_settings.BASE_URL,
             'site_name': astakos_settings.SITENAME,
-            'support': astakos_settings.CONTACT_EMAIL})
+            'support': astakos_settings.CONTACT_EMAIL}).replace('\n\n\n', '\n')
     },
     'item_lists': (('Users', 'user'),
                    ('VMs', 'vm'),
@@ -397,12 +397,15 @@ def admin_actions(request):
     logging.info("This is the request %s", request.body)
 
     objs = json.loads(request.body)
-    logging.info("This is the decoded dictionary %s", objs)
+    request.POST = objs
+    logging.info("This is the decoded dictionary %s", request.POST)
 
     target = objs['target']
     op = objs['op']
     ids = objs['ids']
-    ids = ids.replace('[', '').replace(']', '').replace(' ', '').split(',')
+    logging.info("Type ids %s", type(ids))
+    if type(ids) is not list:
+        ids = ids.replace('[', '').replace(']', '').replace(' ', '').split(',')
 
     try:
         for id in ids:

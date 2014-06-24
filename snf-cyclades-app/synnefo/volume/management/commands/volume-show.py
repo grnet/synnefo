@@ -40,5 +40,6 @@ class Command(SynnefoCommand):
 
         volume = common.get_resource("volume", args[0])
 
-        pprint.pprint_volume(volume, stdout=self.stdout)
+        pprint.pprint_volume(volume, stdout=self.stdout,
+                             display_mails=options["displayname"])
         self.stdout.write('\n\n')

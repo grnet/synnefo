@@ -27,7 +27,8 @@ from synnefo.logic import backend as backend_mod
 from synnefo.logic.rapi import GanetiApiError, GanetiRapiClient
 from synnefo.logic.utils import (id_from_instance_name,
                                  id_from_network_name,
-                                 id_from_nic_name)
+                                 id_from_nic_name,
+                                 id_from_disk_name)
 from django.core.exceptions import ObjectDoesNotExist
 import logging
 log = logging.getLogger(__name__)
@@ -64,8 +65,9 @@ def get_resource(name, value, for_update=False):
         capital_name = "Floating IP"
     else:
         capital_name = name.capitalize()
+    PREFIXED_RESOURCES = ["server", "network", "port", "volume"]
 
-    if isinstance(value, basestring) and name in ["server", "network", "port"]:
+    if isinstance(value, basestring) and name in PREFIXED_RESOURCES:
         if value.startswith(settings.BACKEND_PREFIX_ID):
             try:
                 if name == "server":
@@ -74,6 +76,8 @@ def get_resource(name, value, for_update=False):
                     value = id_from_network_name(value)
                 elif name == "port":
                     value = id_from_nic_name(value)
+                elif name == "volume":
+                    value = id_from_disk_name(value)
             except ValueError:
                 raise CommandError("Invalid {} ID: {}".format(capital_name,
                                                               value))

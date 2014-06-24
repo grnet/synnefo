@@ -25,8 +25,8 @@ class Command(RemoveCommand):
     help = "Remove a snapshot"
     option_list = RemoveCommand.option_list + (
         make_option(
-            "--user_id",
-            dest="user_id",
+            "--user",
+            dest="user",
             default=None,
             help="UUID of the owner of the snapshot"),
     )
@@ -39,15 +39,15 @@ class Command(RemoveCommand):
         force = options['force']
         message = "snapshots" if len(args) > 1 else "snapshot"
         self.confirm_deletion(force, message, args)
-        user_id = self.options["user_id"]
+        userid = options["user"]
 
         for snapshot_id in args:
             self.stdout.write("\n")
             try:
-                snapshot = util.get_snapshot(user_id, snapshot_id)
+                snapshot = util.get_snapshot(userid, snapshot_id)
 
                 snapshots.delete(snapshot)
                 self.stdout.write("Successfully removed snapshot %s\n"
-                                  % snapshot)
+                                  % snapshot_id)
             except CommandError as e:
                 self.stdout.write("Error -- %s\n" % e.message)

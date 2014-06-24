@@ -531,7 +531,10 @@ def parse_instance_disks(gnt_disks):
 def update_snapshot(snap_id, user_id, job_id, job_status, etime):
     """Update a snapshot based on result of a Ganeti job."""
     if job_status in rapi.JOB_STATUS_FINALIZED:
-        status = rapi.JOB_STATUS_SUCCESS and "AVAILABLE" or "ERROR"
+        if (job_status == rapi.JOB_STATUS_SUCCESS):
+            status = "AVAILABLE"
+        else:
+            status = "ERROR"
         log.debug("Updating status of snapshot '%s' to '%s'", snap_id, status)
         volume.util.update_snapshot_status(snap_id, user_id, status=status)
 

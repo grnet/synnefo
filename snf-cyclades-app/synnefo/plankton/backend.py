@@ -47,6 +47,7 @@ from django.conf import settings
 from django.utils import importlib
 from django.utils.encoding import smart_unicode, smart_str
 from pithos.backends.base import NotAllowedError, VersionNotExists, QuotaError
+from pithos.backends.util import PithosBackendPool
 from snf_django.lib.api import faults
 
 Location = namedtuple("ObjectLocation", ["account", "container", "path"])
@@ -64,19 +65,19 @@ PLANKTON_META = ('container_format', 'disk_format', 'name',
 MAX_META_KEY_LENGTH = 128 - len(PLANKTON_DOMAIN) - len(PROPERTY_PREFIX)
 MAX_META_VALUE_LENGTH = 256
 
-
-from pithos.backends.util import PithosBackendPool
-_pithos_backend_pool = \
-    PithosBackendPool(
-        settings.PITHOS_BACKEND_POOL_SIZE,
-        astakos_auth_url=settings.ASTAKOS_AUTH_URL,
-        service_token=settings.CYCLADES_SERVICE_TOKEN,
-        astakosclient_poolsize=settings.CYCLADES_ASTAKOSCLIENT_POOLSIZE,
-        db_connection=settings.BACKEND_DB_CONNECTION,
-        block_path=settings.BACKEND_BLOCK_PATH)
+_pithos_backend_pool = None
 
 
 def get_pithos_backend():
+    global _pithos_backend_pool
+    if _pithos_backend_pool is None:
+        _pithos_backend_pool = PithosBackendPool(
+            settings.PITHOS_BACKEND_POOL_SIZE,
+            astakos_auth_url=settings.ASTAKOS_AUTH_URL,
+            service_token=settings.CYCLADES_SERVICE_TOKEN,
+            astakosclient_poolsize=settings.CYCLADES_ASTAKOSCLIENT_POOLSIZE,
+            db_connection=settings.BACKEND_DB_CONNECTION,
+            block_path=settings.BACKEND_BLOCK_PATH)
     return _pithos_backend_pool.pool_get()
 
 

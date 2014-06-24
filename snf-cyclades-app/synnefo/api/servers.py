@@ -49,11 +49,15 @@ urlpatterns = patterns(
 )
 
 VOLUME_SOURCE_TYPES = [
-    "snapshot",
     "image",
     "volume",
     "blank"
 ]
+
+if settings.CYCLADES_SNAPSHOTS_ENABLED:
+    # If snapshots are enabled, add 'snapshot' to the list of allowed sources
+    # for a new block device.
+    VOLUME_SOURCE_TYPES.append("snapshot")
 
 
 def demux(request):

@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from django.conf import settings
 from django.conf.urls.defaults import patterns, include
 from django.http import HttpResponseNotAllowed
 from snf_django.lib import api
@@ -130,15 +131,21 @@ volume_v2_patterns = patterns(
     (r'^volumes/(\d+)/metadata/?(?:.json)?$', volume_metadata_demux),
     (r'^volumes/(\d+)/metadata/(.+)(?:.json)?$', volume_metadata_item_demux),
     (r'^volumes/(\d+)/action(?:.json|.xml)?$', volume_action_demux),
-    (r'^snapshots/?(?:.json)?$', snapshot_demux),
-    (r'^snapshots/detail$', views.list_snapshots, {'detail': True}),
-    (r'^snapshots/([\w-]+)(?:.json)?$', snapshot_item_demux),
-    (r'^snapshots/([\w-]+)/metadata/?(?:.json)?$', snapshot_metadata_demux),
-    (r'^snapshots/([\w-]+)/metadata/(.+)(?:.json)?$',
-        snapshot_metadata_item_demux),
     (r'^types/?(?:.json)?$', views.list_volume_types),
     (r'^types/(\d+)(?:.json)?$', views.get_volume_type),
 )
+
+if settings.CYCLADES_SNAPSHOTS_ENABLED:
+    volume_v2_patterns += patterns(
+        '',
+        (r'^snapshots/?(?:.json)?$', snapshot_demux),
+        (r'^snapshots/detail$', views.list_snapshots, {'detail': True}),
+        (r'^snapshots/([\w-]+)(?:.json)?$', snapshot_item_demux),
+        (r'^snapshots/([\w-]+)/metadata/?(?:.json)?$',
+            snapshot_metadata_demux),
+        (r'^snapshots/([\w-]+)/metadata/(.+)(?:.json)?$',
+            snapshot_metadata_item_demux),
+    )
 
 urlpatterns = patterns(
     '',

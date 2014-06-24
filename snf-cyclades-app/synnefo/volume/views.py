@@ -19,6 +19,7 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.utils.encoding import smart_unicode
+from django.conf import settings
 
 from dateutil.parser import parse as date_parse
 
@@ -123,9 +124,14 @@ def create_volume(request):
     # Id of the volume to clone from
     source_volume_id = utils.get_attribute(vol_dict, "source_volid",
                                            required=False)
+
     # Id of the snapshot to create the volume from
     source_snapshot_id = utils.get_attribute(vol_dict, "snapshot_id",
                                              required=False)
+    if source_snapshot_id and not settings.CYCLADES_SNAPSHOTS_ENABLED:
+        raise faults.NotImplemented("Making a clone from a snapshot is not"
+                                    " implemented")
+
     # Reference to an Image stored in Glance
     source_image_id = utils.get_attribute(vol_dict, "imageRef", required=False)
 

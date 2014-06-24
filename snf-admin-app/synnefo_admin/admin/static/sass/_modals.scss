@@ -28,3 +28,223 @@ p.progress-area {
 	}
 	
 }
+
+.modal {
+	p {
+		position: relative;
+	}
+	&#user-contact {
+		p {
+			margin-top: 18px;
+		}
+	}
+
+	h3 {
+		// font-size: 1.1em;
+		font-weight: bold
+	}
+
+	textarea, input {
+		width: 87%;
+		vertical-align: text-top;
+		padding: 4px 8px;
+		&.body {
+			min-height: 160px;
+		}
+	}
+		
+	label {
+		// float: left;
+		margin-right: 6px;
+		width: 56px;
+	}
+
+	.modal-body {
+		background-color: white;
+
+	}
+
+	.modal-footer {
+		margin-top: 0;
+		form {
+			display: inline;
+		}
+	}
+
+}
+
+.modal {
+	.custom-btn {
+		color: white;
+		opacity: 0.9;
+		&:hover {
+			opacity: 1;
+		}
+	}
+	&[data-karma="dark"] {
+		.elem {
+			color: $gray-light
+		}
+		.area {
+			border: 10px solid $gray-light-extra;
+		}
+	}
+	&[data-karma="neutral"] {
+		.elem {
+			color: darken($blue-intense, 10%);
+
+		}
+		.area {
+			border: 10px solid $blue-intense;
+			
+		}
+	}
+	&[data-karma="good"] {
+		.elem {
+			color: darken($green-intense, 10%);
+
+		}
+		.area {
+			border: 10px solid $green-intense;
+			
+		}
+	}
+		
+
+	&[data-karma="bad"] {
+		.elem {
+			color: darken($orange-intense, 10%);
+
+		}
+		.area {
+			border: 10px solid $orange-intense;
+			
+		}
+	}
+
+	&[data-caution="warning"][data-karma="good"], &[data-caution="warning"][data-karma="neutral"] {
+		.elem {
+			color: darken($orange-intense, 10%);
+
+		}
+		.area {
+			border: 10px solid $orange-intense;
+			
+		}
+	}
+
+	&[data-caution="dangerous"][data-karma="bad"], &[data-caution="dangerous"][data-karma="neutral"] {
+		.elem {
+			color: darken($red-intense, 10%);
+
+		}
+		.area {
+			border: 10px solid $red-intense;
+			
+		}
+	}
+}
+
+.custom-btn[data-karma="dark"] {
+	background-color: #222222;
+	border-color: transparent;
+	// opacity: 0.9;
+	// &:hover {
+	// 	opacity: 1;
+	// }
+}
+.modal {
+	em {
+		font-weight: bold;
+		font-style: normal;
+	}
+}
+
+.modal-content {
+	border-radius: 0;
+	color: $gray-dark;
+	.badge {
+		background-color: transparent;
+		// border: 1px solid $gray-dark;
+	}
+}
+
+.popover {
+	z-index: 2000;
+	dl {
+		color: black;
+		font-weight: normal;
+		dt {
+			width: 90px;
+		}
+		dd {
+			margin-left: 110px;
+		}
+	}
+	h2 {
+		font-size: 16px;
+		font-weight: bold;
+		text-align: center;
+	}
+}
+
+
+.instructions-icon {
+	color: $blue-intense;
+	font-size: 22px;
+	margin-left: 62px;
+	&:hover {
+		text-decoration: none;
+	}
+}
+
+.extra-info {
+	margin-top: 10px;
+}
+
+.error-sign {
+	color: red;
+	font-size: 20px;
+	margin-left: 10px;
+	position: absolute;
+	right: 8px;
+	top: 2px;
+	display: none;
+	&:hover {
+		color: red;
+		// color:#A80A0A;
+		text-decoration: none;
+	}
+}
+
+.form-area {
+	position: relative;
+}
+.form-subject {
+	margin-bottom: 15px;
+}
+
+.toggle-more {
+	margin-top: -16px;
+	display: none;
+}
+
+.table-selected {
+	td:last-child {
+		position: relative;
+		padding-right: 36px;
+	}
+	tr:hover {
+		a {
+			color: red;
+		}
+	}
+	.remove {
+		position: absolute;
+		right: 14px;
+		color: transparent;
+		&:hover {
+			text-decoration: none;
+		}
+	}
+}

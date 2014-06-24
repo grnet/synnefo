@@ -87,7 +87,7 @@
 }
 
 
-body input:focus {
+body input:not(.subject):focus {
 	border-color: transparent;
 	-webkit-box-shadow: none;
 	-moz-box-shadow: none;

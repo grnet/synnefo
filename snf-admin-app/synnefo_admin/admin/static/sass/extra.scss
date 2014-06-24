@@ -183,7 +183,7 @@ textarea:focus          {
 .account h3:hover,
 .account h4:hover       { color:#666 }
 .object-details         { /* padding: 10px 20px; */  padding: 10px 20px 0 20px;}
-.object-details h4 .title, 
+.object-details h4 .title,
 .object-details h4 .arrow {
 	cursor: pointer;
 }
@@ -253,7 +253,7 @@ h3.info             { cursor:default; color:#2956B2; text-align:center; font-siz
 	vertical-align: middle;
 }
 
-td:last-child { // this is meant for summary td
+table:not(.table-selected) td:last-child { // this is meant for summary td
 	max-width: 60px;
 	min-width: 60px;
 	padding: 8px 0;
@@ -263,7 +263,7 @@ td:last-child { // this is meant for summary td
 	.summary-expand {
 		float: right;
 		padding-left: 8px;
-		background-color: rgb(185, 238, 202);
+		// background-color: rgb(185, 238, 202);
 		padding-right: 8px;
 		&:hover {
 			text-decoration: none;
@@ -299,46 +299,7 @@ a:not([disabled]):hover {
 	cursor: pointer;
 }
 
-.modal {
-	p {
-		position: relative;
-	}
-	&#contact {
-		p {
-			margin-top: 18px;
-		}
-	}
 
-	h4 {
-		font-size: 1.1em;
-	}
-
-	textarea, input {
-		width: 496px;
-		&.body {
-			min-height: 160px;
-		}
-	}
-
-	label {
-		float: left;
-		margin-right: 6px;
-		width: 56px;
-	}
-
-	.modal-body {
-		background-color: white;
-
-	}
-
-	.modal-footer {
-		margin-top: 0;
-		form {
-			display: inline;
-		}
-	}
-
-}
 
 .account-action.form-btn {
 		display: inline-block;
@@ -395,68 +356,6 @@ a:not([disabled]):hover {
 .checkbox-column {
 	position: relative;
 }
-.table-selected {
-	tr:hover {
-		a {
-			color: red;
-		}
-	}
-	.remove {
-		border-left-color: transparent;
-		text-align: center;
-		a {
-			text-decoration: none;
-			color: transparent;
-			display: block;
-			width: 100%;
-			height: 100%
-		}
-	}
-}
-
-.positive {
-	&.area {
-		background-color: $green-intense;
-	}
-	&.elem {
-		color: $green-intense;
-	}
-}
-
-.dangerous {
-	&.area {
-		background-color: $red-intense;
-	}
-	&.elem {
-		color: $red-intense;
-	}
-}
-
-.neutral {
-	&.area {
-		background-color: rgba(121, 176, 236, 0.78);
-	}
-	&.elem {
-		color: blue;
-	}
-}
-
-.caution {
-	&.area {
-		background-color: yellow;
-	}
-	&.elem {
-		color: yellow;
-	}
-}
-
-.modal {
-	em {
-		font-weight: bold;
-		font-style: normal;
-	}
-}
-
 
 .container-demo, .chart {
 	height: 400px;
@@ -476,35 +375,6 @@ svg>text:last-child {
 	vertical-align: middle;
 }
 
-
-.error-sign {
-	color: red;
-	font-size: 20px;
-	margin-left: 10px;
-	position: absolute;
-	right: 8px;
-	top: 2px;
-	display: none;
-	&:hover {
-		color: red;
-		// color:#A80A0A;
-		text-decoration: none;
-	}
-}
-
-.form-area {
-	position: relative;
-}
-.form-subject {
-	margin-bottom: 15px;
-}
-
-.toggle-more {
-	margin-top: -16px;
-	// position: relative;
-	// right: -429px;
-	display: none;
-}
 
 .hidden-row {
 	display: none;
@@ -675,13 +545,13 @@ body select, body input {
 .nav > li:hover > a{
 	color: $gray-dark;
 	-webkit-transition: all 0 ease 0;
-  	transition: all 0 ease 0;
+	transition: all 0 ease 0;
   	background: white;
 }
 
 .nav > li > a {
 	-webkit-transition: all 0 ease 0;
-  	transition: all 0 ease 0;
+	transition: all 0 ease 0;
 
 }
 .dropdown-menu {
@@ -721,7 +591,7 @@ body .well {
 	box-shadow: none;
 }
 
-table.table {
+table.table:not(.table-selected) {
 	width: 100%;
 	background-color: $gray-dark;
 	color: $almost-white;
@@ -902,28 +772,7 @@ table.dataTable.no-footer {
 	}
 }
 
-.modal-content {
-	border-radius: 0;
-	color: $gray-dark;
-	.badge {
-		background-color: transparent;
-		border: 1px solid $gray-dark;
-	}
-}
 
-.popover {
-	z-index: 2000;
-	dl {
-		color: black;
-		font-weight: normal;
-		dt {
-			width: 90px;
-		}
-		dd {
-			margin-left: 110px;
-		}
-	}
-}
 
 #logo-icon {
 	height: 50px;
@@ -940,7 +789,7 @@ table.dataTable.no-footer {
 		position: relative;
 		top: 3px;
 		width: 17px;
-		height: 15px; 
+		height: 15px;
 		display: inline-block;
 		margin-top: 2px;
 		overflow: hidden;

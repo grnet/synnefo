@@ -172,7 +172,7 @@
 			margin-bottom: 48px;
 		}
 		&:last-child {
-			margin-top: 48px; //32+6=38
+			margin-top: 48px;
 		}
 		margin-bottom: 6px;
 	}
@@ -214,8 +214,6 @@
 			&:hover {
 				opacity:1;
 			}
-			
-
 		}
 	}
 } */
@@ -232,17 +230,10 @@
 } */
 
 
-.instructions-icon {
-	color: $blue-intense;
-	font-size: 22px;
 
-	&:hover {
-		text-decoration: none;
-	}
-}
 
-/* 
-Βuttons 
+/*
+Βuttons
 Αll buttons have colors depending on their karma.
 Default color applies to non-karma buttons
 */
@@ -346,12 +337,11 @@ body .custom-buttons {
 		border-bottom: 2px solid transparent;
 		margin-right: 1em;
 		&:hover {
-			border-bottom-color: $almost-white;	
-		}
+			border-bottom-color: $almost-white;
 	}
 }
 
-
+}
 .expand-btn {
 	float:right;
 	background-color: $total-black;
@@ -359,7 +349,7 @@ body .custom-buttons {
 	border-color: transparent;
 	border-bottom: 2px solid transparent;
 	&:hover {
-		border-bottom-color: $almost-white;	
+		border-bottom-color: $almost-white;
 	}
 }
 /*
@@ -369,13 +359,14 @@ Extra-button is used to show total selected rows
 .extra-btn {
 	margin-bottom: 2em;
 	.badge {
-		background: white;
-		color: $default-btn-color;
+		background: transparent;
+		border: 1px solid;
+		line-height: 0.8;
 	}
 	&:hover {
-		.badge	 {
-			color: $default-btn-color;
-		}
+		// .badge	 {
+		// 	color: $default-btn-color;
+		// }
 	}
 }
 

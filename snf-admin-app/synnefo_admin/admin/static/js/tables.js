@@ -123,7 +123,10 @@ $(function(){
 			updateToggleAllSelect();
 		}
 	});
-	$("div.custom-buttons").html('<a href="" id="select-page" class="select custom-btn" data-karma="neutral"><span>Select Page</span></a>'+'<a href="" class="select select-all custom-btn" data-karma="neutral" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>'+'<a href="" id="clear-all" class="disabled deselect custom-btn" data-karma="neutral" data-toggle="modal" data-target="#clear-all-warning"><span>Clear All</span></a>');
+	var btn1 = '<a href="" id="select-page" class="select custom-btn" data-karma="neutral" data-caution="none"><span>Select Page</span></a>';
+	var btn2 = '<a href="" class="select select-all custom-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>';
+	var btn3 = '<a href="" id="clear-all" class="disabled deselect custom-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#clear-all-warning"><span>Clear All</span></a>'
+	$("div.custom-buttons").html(btn1+btn2+btn3);
 	$('.content').on('click', '#clear-all.disabled', function(e) {
 		e.preventDefault();
 		e.stopPropagation();
@@ -194,16 +197,24 @@ $(function(){
 						console.log('1st row', new Date);
 						countme = false;
 					}
+					console.time('info')
 					var info = data[data.length - 1];
+					console.timeEnd('info')
+					console.time('newItem')
 					var newItem = addItem(info);
+					console.timeEnd('newItem')
 					if(newItem !== null) {
-					enableActions(newItem.actions);
-					keepSelected(data);
-						if(dataIndex>=500 && dataIndex%500 === 0) {
-								setTimeout(function() {
-									return true;
-								}, 50);
-						}
+						console.time('enableActions')
+						enableActions(newItem.actions);
+						console.timeEnd('enableActions')
+						console.time('keepSelected')
+						keepSelected(data);
+						console.timeEnd('keepSelected')
+							if(dataIndex>=500 && dataIndex%500 === 0) {
+									setTimeout(function() {
+										return true;
+									}, 50);
+							}
 					}
 				},
 				"drawCallback": function(settings) {
@@ -219,11 +230,16 @@ $(function(){
 					console.profileEnd("test");
 					console.timeEnd("test");
 					updateClearAll();
+			console.log($(tableMassiveDomID).find('tr').length)
 				}
 			});
 		}
 		else {
+			console.log($(tableMassiveDomID).find('tr').length)
+			console.time('reload')
 			$(tableMassiveDomID).dataTable().api().ajax.reload();
+			console.timeEnd('reload')
+
 		}
 	});
 
@@ -266,6 +282,8 @@ $(function(){
 			tableSelected.row.add(data).node();
 	};
 
+
+	/* Removes a row from the table of selected items */
 	function removeSelected(rowID) {
 		if(rowID === true) {
 			tableSelected.clear().draw()
@@ -274,6 +292,12 @@ $(function(){
 			tableSelected.row('#selected-'+rowID).remove().draw();
 		}
 	};
+
+	/* Applies style that indicates that a row from the main table is not selected */
+	function deselectRow(itemID) {
+		table.row('#'+itemID).nodes().to$().removeClass('selected');
+		$(table.row('#'+itemID).nodes()).find('td:first-child .selection-indicator').addClass('snf-checkbox-unchecked').removeClass('snf-checkbox-checked');
+	}
 
 	function updateDisplaySelected() {
 		if(selected.items.length > 0) {
@@ -295,6 +319,7 @@ $(function(){
 			selectedRow.remove().draw();
 			table.row('#'+itemID).nodes().to$().removeClass('selected');
 			$(table.row('#'+itemID).nodes()).find('td:first-child .selection-indicator').addClass('snf-checkbox-unchecked').removeClass('snf-checkbox-checked');
+			deselectRow(itemID)
 
 		});
 		removeItem(itemID);
@@ -436,11 +461,9 @@ $(function(){
 	}
 
 	function clickSummary(row) {
-		// console.log(tableP)
 		$(row).find('td:last-child a.expand-area').click(function(e) {
 			e.preventDefault();
 			e.stopPropagation();
-			console.log(1, this)
 			var $summaryTd = $(this).closest('td');
 			var $btn = $summaryTd.find('.expand-area span');
 			var $summaryContent = $summaryTd.find('.info-summary');
@@ -569,6 +592,7 @@ $(function(){
 		$(tableDomID).dataTable().api().rows('.selected').nodes().to$().removeClass('selected');
 
 		updateToggleAllSelect();
+		updateClearAll();
 	};
 
 
@@ -600,7 +624,6 @@ $(function(){
 	/* Checks how many rows are selected and adjusts the classes and
 	the text of the select-qll btn */
 	function updateToggleAllSelect() {
-		// console.log('updateToggleAllSelect', new Date)
 		var $togglePageItems = $('#select-page');
 		var $label = $togglePageItems.find('span')
 		var $tr = $(tableDomID).find('tbody tr');
@@ -662,47 +685,121 @@ $(function(){
 	};
 	function resetInputs(modal) {
 		var $modal = $(modal);
-		$modal.find('textarea').val('');
-		$modal.find('input[type=text]').val('');
-
+		$modal.find('textarea').val('Dear ,\n\n\nIf you did not sign up for this account you can ignore this email.\n\n\nFor any remarks or problems you may contact support@synnefo.live.\nThank you for participating in Synnefo.\n GRNET');
+		$modal.find('input[type=text]').val('New email from ~okeanos');
 	};
 	function removeWarnings(modal) {
 		var $modal = $(modal);
 		modal.find('.warning-duplicate').remove();
 	}
 
-	$('.modal .reset-all').click(function(e) {
-		// var table = '#'+ 'table-items-total_wrapper';
+	$('.modal-footer .cancel').click(function(e) {
+		$('[data-toggle="popover"]').popover('hide');
 		var $modal = $(this).closest('.modal');
 		resetErrors($modal);
 		resetInputs($modal);
 		removeWarnings($modal);
-		resetTable(tableDomID);
+		// resetTable(tableDomID);
+		updateToggleAllSelect();
 		updateClearAll();
+		enableActions(undefined, true);
 	});
-	$('.modal button[type=submit]').click(function(e) {
+	$('.modal .apply-action').click(function(e) {
 		var $modal = $(this).closest('.modal');
-
-		// if(selected.items.length === 0) {
-		// 	e.preventDefault();
-		// 	showError($modal, 'no-selected');
-		// }
-		if($modal.attr('id') === 'contact') {
-			var $emailSubj = $modal.find('.subject')
-			var $emailCont = $modal.find('.email-content')
+		var completeAction = true;
+		if(selected.items.length === 0) {
+				// e.preventDefault();
+			e.stopPropagation();
+			showError($modal, 'no-selected');
+			completeAction = false;
+		}
+		if($modal.attr('id') === 'user-contact') {
+			var $emailSubj = $modal.find('.subject');
+			var $emailCont = $modal.find('.email-content');
 			if(!$.trim($emailSubj.val())) {
-				e.preventDefault();
+				// e.preventDefault();
+				e.stopPropagation();
+				console.log('empty')
 				showError($modal, 'empty-subject');
 				checkInput($modal, $emailSubj, 'empty-subject');
+				completeAction = false;
 			}
 			if(!$.trim($emailCont.val())) {
-				e.preventDefault();
+				// e.preventDefault();
+				e.stopPropagation();
 				showError($modal, 'empty-body')
 				checkInput($modal, $emailCont, 'empty-body');
+				completeAction = false;
 			}
+		}
+		if(completeAction) {
+			performAction($modal);
+			resetErrors($modal);
+			resetInputs($modal);
+			removeWarnings($modal);
+			resetTable(tableDomID);
 		}
 	});
 
+	/* remove an item after the modal is visible */
+	$('.modal').on('click', '.remove', function(e) {
+		e.preventDefault();
+		var $modal = $(this).closest('.modal')
+		var $actionBtn = $modal.find('.modal-footer .apply-action');
+		var $num = $modal.find('.num');
+		var $tr = $(this).closest('tr');
+		var itemID = $tr.attr('data-itemid');
+		// uuidsArray has only the uuids of selected items, none of the other info
+		idsArray = [];
+		deselectRow(itemID)
+		removeSelected(itemID)
+		removeItem(itemID, false);
+		var selectedNum = selected.items.length;
+		for (var i=0; i< selectedNum; i++)
+			idsArray.push(selected.items[i].id);
+		$actionBtn.attr('data-ids','[' + idsArray + ']');
+		$tr.slideUp('slow', function() {
+			$(this).siblings('.hidden-row').first().css('display', 'table-row');
+			$(this).siblings('.hidden-row').first().removeClass('hidden-row');
+			if($(this).siblings('.hidden-row').length === 0) {
+				$modal.find('.toggle-more').hide(); // it would be better to be visible and disabled? ***
+			}
+		});
+		$num.html(selectedNum); // should this use updateCounter?
+		updateCounter('.selected-num');
+	});
+
+
+	function performAction(modal) {
+		var $modal = $(modal);
+		var $actionBtn = $modal.find('.apply-action')
+		var url = $actionBtn.data('url');
+
+		var data = {
+		op: $actionBtn.data('op'),
+		target: $actionBtn.data('target'),
+		ids: $actionBtn.data('ids')
+		}
+		var contactAction = (data.op === 'contact' ? true : false);
+
+		if(contactAction) {
+			data['subject'] = $modal.find('input[name="subject"]').val();
+			data['text'] = $modal.find('textarea[name="text"]').val();
+		}
+		console.log(data)
+		$.ajax({
+		url: url,
+		type: 'POST',
+		data: JSON.stringify(data),
+		contentType: 'application/json',
+		success: function(response, statusText, jqXHR) {
+		  console.log('did it!', statusText)
+		},
+		error: function(jqXHR, statusText) {
+		  console.log('error', statusText)
+		}
+		});
+	}
 
 	function drawModal(modalID) {
 		var $tableBody = $(modalID).find('.table-selected tbody');
@@ -720,10 +817,11 @@ $(function(){
 		// var $idsInput = $(modalID).find('.modal-footer form input[name="ids"]');
 		var idsArray = [];
 		var warningMsg = '<p class="warning-duplicate">Duplicate accounts have been detected</p>';
+		var warningInserted = false;
 		$tableBody.empty();
 		if(modalType === "contact") {
 			uniqueProp = 'contact_id'
-			var templateRow = '<tr data-toggle="tooltip" data-placement="bottom" title="" data-itemid=""><td class="full-name"></td><td class="email"></td><td class="remove"><a>X</a></td></tr>';
+			var templateRow = '<tr title="" data-itemid=""><td class="full-name"></td><td class="email"><a class="remove">X</a></td></tr>';
 			for(var i=0; i<rowsNum; i++) {
 				for(var j = 0; j<i; j++) {
 					if(selected.items[i][uniqueProp] === selected.items[j][uniqueProp]) {
@@ -736,14 +834,17 @@ $(function(){
 					currentRow = templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].contact_id+'"');
 					currentRow = currentRow.replace('title=""', 'title="'+selected.items[i].item_name+'"')
 					currentRow = currentRow.replace('<td class="full-name"></td>', '<td class="full-name">'+selected.items[i].contact_name+'</td>');
-					currentRow = currentRow.replace('<td class="email"></td>', '<td class="email">'+selected.items[i].contact_email+'</td>');
+					currentRow = currentRow.replace('<td class="email"><', '<td class="email">'+selected.items[i].contact_email+'<');
 					if(i >= maxVisible)
 						currentRow = currentRow.replace('<tr', '<tr class="hidden-row"');
 					htmlRows += currentRow;
 				}
 				else {
 					htmlRows = htmlRows.replace('" data-itemid="' + selected.items[i].contact_id + '"', ', '+selected.items[i].item_name+'" data-itemid="' + selected.items[i].contact_id+'"');
-					$tableBody.closest('table').before(warningMsg);
+					if(!warningInserted) {
+						$tableBody.closest('table').before(warningMsg);
+						warningInserted = true;
+					}
 				}
 			}
 		}
@@ -752,21 +853,21 @@ $(function(){
 		else {
 			uniqueProp = 'id';
 
-			var templateRow = '<tr data-itemid=""><td class="item-name"></td><td class="item-id"></td><td class="owner-name"></td><td class="owner-email"></td><td class="remove"><a>X</a></td></tr>';
+			var templateRow = '<tr data-itemid=""><td class="item-name"></td><td class="item-id"></td><td class="owner-name"></td><td class="owner-email"><a class="remove">X</a></td></tr>';
 			for(var i=0; i<rowsNum; i++) {
 				idsArray.push(selected.items[i][uniqueProp]);
 				currentRow =templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].id+'"')
 				currentRow = currentRow.replace('<td class="item-name"></td>', '<td class="item-name">'+selected.items[i].item_name+'</td>');
 				currentRow = currentRow.replace('<td class="item-id"></td>', '<td class="item-id">'+selected.items[i].id+'</td>');
 				currentRow = currentRow.replace('<td class="owner-name"></td>', '<td class="owner-name">'+selected.items[i].contact_name+'</td>');
-				currentRow = currentRow.replace('<td class="owner-email"></td>', '<td class="owner-email">'+selected.items[i].contact_email+'</td>');
+				currentRow = currentRow.replace('<td class="owner-email"><', '<td class="owner-email">'+selected.items[i].contact_email+'<');
 				if(i >= maxVisible)
 					currentRow = currentRow.replace('<tr', '<tr class="hidden-row"');
 				htmlRows += currentRow;
 			}
 		}
 		$tableBody.append(htmlRows); // should change
-		$tableBody.find('tr').tooltip();
+		// $tableBody.find('tr').tooltip();
 		$actionBtn.attr('data-ids','['+idsArray+']');
 		updateCounter($counter, idsArray.length); // ***
 		
@@ -781,14 +882,14 @@ $(function(){
 				if($(this).hasClass('closed')) {
 					$(this).toggleClass('closed open');
 					$tableBody.find('tr').slideDown('slow', function() {
-						$(that).text('Show Less');
+						$(that).find('span').text('Show Less');
 						// $(this).removeClass('hidden-row')
 					});
 				}
 				else if($(this).hasClass('open')) {
 					$(this).toggleClass('closed open');
 					$tableBody.find('tr.hidden-row').slideUp('slow', function() {
-					$(that).text('Show All');
+					$(that).find('span').text('Show All');
 
 					});
 				}
@@ -796,32 +897,7 @@ $(function(){
 		}
 	};
 
-	/* remove an item after the modal is visible */
-	$('.modal').on('click', 'td.remove a', function(e) {
-		e.preventDefault();
-		var $modal = $(this).closest('.modal')
-		var $idsInput = $modal.find('.modal-footer form input[name="ids"]');
-		var $num = $modal.find('.num');
-		var $tr = $(this).closest('tr');
-		var itemID = $tr.data('itemid');
-		// uuidsArray has only the uuids of selected items, none of the other info
-		idsArray = [];
 
-		removeItem(itemID, false);
-
-		var selectedNum = selected.items.length;
-		for (var i=0; i< selectedNum; i++)
-			idsArray.push(selected.items[i].id);
-		$idsInput.val('[' + idsArray + ']');
-		$tr.slideUp('slow', function() {
-			$(this).siblings('.hidden-row').first().css('display', 'table-row');
-			$(this).siblings('.hidden-row').first().removeClass('hidden-row');
-			if($(this).siblings('.hidden-row').length === 0) {
-				$modal.find('.toggle-more').hide(); // it would be better to be visible and disabled? ***
-			}
-		});
-		$num.html(selectedNum);
-	});
 
 
 	$('.actionbar .toggle-selected').click(function (e) {

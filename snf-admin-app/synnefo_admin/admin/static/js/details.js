@@ -64,10 +64,7 @@ $(document).ready(function(){
 		console.log('you clicked me');
 		var itemID = $(this).closest('.object-details').data('id');
 		var itemName = $(this).closest('.object-details').find('h4 .title').text();
-		var modalID = $(this).data('target')
-		console.log('itemID', itemID);
-		console.log('itemName', itemName);
-		console.log('modalID', modalID);
+		var modalID = $(this).data('target');
 		drawModalSingleItem(modalID, itemName, itemID);
 	});
 
@@ -97,33 +94,14 @@ $(document).ready(function(){
 
 	function resetInputs(modal) {
 		var $modal = $(modal);
-		$modal.find('textarea').val('');
-		$modal.find('input[type=text]').val('');
-
+		$modal.find('textarea').val('Dear ,\n\n\nIf you did not sign up for this account you can ignore this email.\n\n\nFor any remarks or problems you may contact support@synnefo.live.\nThank you for participating in Synnefo.\n GRNET');
+		$modal.find('input[type=text]').val('New email from ~okeanos');
 	};
-
+		
 	function resetItemInfo(modal) {
 		var $modal = $(modal);
 		$modal.find('.summary .info-list').remove();
 	}
-
-	$('.modal button[type=submit]').click(function(e) {
-		var $modal = $(this).closest('.modal');
-		if($modal.attr('id') === 'user-contact') {
-			var $emailSubj = $modal.find('.subject')
-			var $emailCont = $modal.find('.email-content')
-			if(!$.trim($emailSubj.val())) {
-				e.preventDefault();
-				showError($modal, 'empty-subject');
-				checkInput($modal, $emailSubj, 'empty-subject');
-			}
-			if(!$.trim($emailCont.val())) {
-				e.preventDefault();
-				showError($modal, 'empty-body')
-				checkInput($modal, $emailCont, 'empty-body');
-			}
-		}
-	});
 
 
 	function drawModalSingleItem(modalID, itemName, itemID) {
@@ -134,12 +112,78 @@ $(document).ready(function(){
 		$summary.append(html);
 	};
 
-	$('.modal').find('*[data-dismiss="modal"]').click(function() {
+
+	function performAction(modal) {
+		var $modal = $(modal);
+		var $actionBtn = $modal.find('.apply-action')
+		var url = $actionBtn.data('url');
+
+		var data = {
+		op: $actionBtn.data('op'),
+		target: $actionBtn.data('target'),
+		ids: $actionBtn.data('ids')
+		}
+		var contactAction = (data.op === 'contact' ? true : false);
+
+		if(contactAction) {
+			data['subject'] = $modal.find('input[name="subject"]').val();
+			data['text'] = $modal.find('textarea[name="text"]').val();
+		}
+		console.log(data)
+		$.ajax({
+		url: url,
+		type: 'POST',
+		data: JSON.stringify(data),
+		contentType: 'application/json',
+		success: function(response, statusText, jqXHR) {
+		  console.log('did it!', statusText)
+		},
+		error: function(jqXHR, statusText) {
+		  console.log('error', statusText)
+		}
+		});
+	}
+
+	$('.modal').find('.cancel').click(function() {
+		console.log('- cancel -')
 		$modal =$(this).closest('.modal');
 		resetInputs($modal);
 		resetErrors($modal);
 		resetItemInfo($modal);
+		$('[data-toggle="popover"]').popover('hide');
 
 	});
 
+
+	$('.modal .apply-action').click(function(e) {
+		console.log('- apply action -')
+		var $modal = $(this).closest('.modal');
+		var completeAction = true;
+		if($modal.attr('id') === 'user-contact') {
+			var $emailSubj = $modal.find('.subject');
+			var $emailCont = $modal.find('.email-content');
+			if(!$.trim($emailSubj.val())) {
+				// e.preventDefault();
+				e.stopPropagation();
+				console.log('empty')
+				showError($modal, 'empty-subject');
+				checkInput($modal, $emailSubj, 'empty-subject');
+				completeAction = false;
+			}
+			if(!$.trim($emailCont.val())) {
+				// e.preventDefault();
+				e.stopPropagation();
+				showError($modal, 'empty-body')
+				checkInput($modal, $emailCont, 'empty-body');
+				completeAction = false;
+			}
+		}
+		if(completeAction) {
+			performAction($modal);
+			resetErrors($modal);
+			resetInputs($modal);
+		}
+	});
+
+	
 });

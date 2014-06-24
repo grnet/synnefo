@@ -164,6 +164,10 @@ def get_image_dict(image_id, user_id):
     image["location"] = img["location"]
     image["is_snapshot"] = img["is_snapshot"]
     image["status"] = img["status"]
+    image["version"] = img["version"]
+    image["is_public"] = img["is_public"]
+    image["owner"] = img["owner"]
+
     size = image["size"] = img["size"]
 
     mapfile = img["mapfile"]

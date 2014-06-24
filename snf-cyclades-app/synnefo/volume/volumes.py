@@ -116,6 +116,7 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
                (volume_type.id, volume_type.disk_template))
         raise faults.BadRequest(msg)
 
+    source_version = None
     # TODO: Check Volume/Snapshot Status
     if source_type == "snapshot":
         source_snapshot = util.get_snapshot(user_id, source_uuid,
@@ -133,6 +134,7 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
             raise faults.BadRequest("Volume size '%s' is smaller than"
                                     " snapshot's size '%s'"
                                     % (size << 30, source_snapshot["size"]))
+        source_version = source_snapshot["version"]
         origin = source_snapshot["mapfile"]
     elif source_type == "image":
         source_image = util.get_image(user_id, source_uuid,
@@ -148,6 +150,7 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
                                     " image's size '%s'"
                                     % (size << 30, source_image["size"]))
         source = Volume.prefix_source(source_uuid, source_type="image")
+        source_version = source_image["version"]
         origin = source_image["mapfile"]
     elif source_type == "blank":
         if size is None:
@@ -182,6 +185,7 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
                                    description=description,
                                    delete_on_termination=delete_on_termination,
                                    source=source,
+                                   source_version=source_version,
                                    origin=origin,
                                    index=index,
                                    status="CREATING")

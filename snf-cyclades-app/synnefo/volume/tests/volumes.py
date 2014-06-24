@@ -141,6 +141,7 @@ class VolumesTest(BaseAPITest):
             'mapfile': 'snf-snapshot-43',
             'id': 12,
             'name': "test_image",
+            'version': 42,
             'size': 1242,
             'disk_format': 'diskdump',
             'status': 'AVAILABLE',

@@ -28,7 +28,7 @@ from synnefo.logic import backend, ips, utils
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.db.models import (NetworkInterface, VirtualMachine,
                                VirtualMachineMetadata, IPAddressLog, Network,
-                               pooled_rapi_client)
+                               Image, pooled_rapi_client)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 from synnefo.logic import rapi
 from synnefo.volume.volumes import _create_volume
@@ -82,6 +82,26 @@ def create(userid, name, password, flavor, image_id, metadata={},
     if volumes[0]["source_type"] == "blank":
         raise faults.BadRequest("Root volume cannot be blank")
 
+
+    try:
+        is_system = (image["owner"] == settings.SYSTEM_IMAGES_OWNER)
+        Image.objects.get_or_create(uuid=image["id"],
+                                    version=image["version"],
+                                    owner=image["owner"],
+                                    name=image["name"],
+                                    location=image["location"],
+                                    mapfile=image["mapfile"],
+                                    is_public=image["is_public"],
+                                    is_snapshot=image["is_snapshot"],
+                                    is_system=is_system,
+                                    os=image["metadata"].get("OS"),
+                                    osfamily=image["metadata"].get("OSFAMILY")
+                                    )
+    except Exception as e:
+        # Image info is not critical. Continue if it fails for any reason
+        log.warning("Failed to store image info: %s", e)
+
+
     if use_backend is None:
         # Allocate server to a Ganeti backend
         use_backend = allocate_new_server(userid, flavor)
@@ -98,7 +118,8 @@ def create(userid, name, password, flavor, image_id, metadata={},
                                        backend=use_backend,
                                        userid=userid,
                                        project=project,
-                                       imageid=image_id,
+                                       imageid=image["id"],
+                                       image_version=image["version"],
                                        flavor=flavor,
                                        operstate="BUILD")
     log.info("Created entry in DB for VM '%s'", vm)

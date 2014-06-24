@@ -501,6 +501,8 @@ def image_to_dict(location, metadata, permissions):
     image['owner'] = account
     image["store"] = u"pithos"
     image["is_snapshot"] = metadata.pop(PLANKTON_PREFIX + "is_snapshot", False)
+    image["version"] = metadata["version"]
+
     # Permissions
     users = list(permissions.get("read", []))
     image["is_public"] = "*" in users

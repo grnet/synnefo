@@ -332,6 +332,7 @@ class VirtualMachine(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
     imageid = models.CharField(max_length=100, null=False)
+    image_version = models.IntegerField(null=True)
     hostid = models.CharField(max_length=100)
     flavor = models.ForeignKey(Flavor, on_delete=models.PROTECT)
     deleted = models.BooleanField('Deleted', default=False, db_index=True)
@@ -449,6 +450,30 @@ class VirtualMachineMetadata(models.Model):
 
     def __unicode__(self):
         return u'<Metadata %s: %s>' % (self.meta_key, self.meta_value)
+
+
+class Image(models.Model):
+    """Model representing Images of created VirtualMachines.
+
+    This model stores basic information about Images which have been used to
+    create VirtualMachines or Volumes.
+
+    """
+
+    uuid = models.CharField(max_length=128)
+    version = models.IntegerField(null=False)
+    owner = models.CharField(max_length=128, null=False)
+    name = models.CharField(max_length=256, null=False)
+    location = models.TextField()
+    mapfile = models.CharField(max_length=256, null=False)
+    is_public = models.BooleanField(default=False, null=False)
+    is_snapshot = models.BooleanField(default=False, null=False)
+    is_system = models.BooleanField(default=False, null=False)
+    os = models.CharField(max_length=256)
+    osfamily = models.CharField(max_length=256)
+
+    class Meta:
+        unique_together = (('uuid', 'version'),)
 
 
 class Network(models.Model):
@@ -1080,6 +1105,7 @@ class Volume(models.Model):
                                                 default=True, null=False)
 
     source = models.CharField(max_length=128, null=True)
+    source_version = models.IntegerField(null=True)
     origin = models.CharField(max_length=128, null=True)
 
     deleted = models.BooleanField("Deleted", default=False, null=False,

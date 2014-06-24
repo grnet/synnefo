@@ -313,7 +313,6 @@ class JobFileHandler(pyinotify.ProcessEvent):
                 reason = reason[0]
                 if reason[0] == "gnt:user":
                     snapshot_info = reason[1]
-            self.logger.critical("LALALL %s", job_fields["disks"][0])
             job_fields["disks"][0][1]["snapshot_info"] = snapshot_info
 
         msg = {"type": "ganeti-op-status",

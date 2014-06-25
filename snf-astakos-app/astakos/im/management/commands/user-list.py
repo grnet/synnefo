@@ -82,11 +82,11 @@ class Command(ListCommand):
                     dest='pending_verification',
                     default=False,
                     help="Display unverified users"),
-        make_option("--displayname",
+        make_option("--display-mails",
                     dest="displayname",
                     action="store_true",
                     default=False,
-                    help="Display user displayname (enabled by default)")
+                    help="Display user email (enabled by default)")
     )
 
     def handle_args(self, *args, **options):

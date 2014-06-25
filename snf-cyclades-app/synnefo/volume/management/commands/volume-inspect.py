@@ -26,11 +26,11 @@ class Command(SynnefoCommand):
 
     option_list = SynnefoCommand.option_list + (
         make_option(
-            '--displayname',
+            '--display-mails',
             action='store_true',
-            dest='displayname',
+            dest='displaymail',
             default=False,
-            help="Display both uuid and display name"),
+            help="Display both uuid and email"),
     )
 
     @convert_api_faults
@@ -41,7 +41,7 @@ class Command(SynnefoCommand):
         volume = common.get_resource("volume", args[0])
 
         pprint.pprint_volume(volume, stdout=self.stdout,
-                             display_mails=options["displayname"])
+                             display_mails=options['displaymail'])
         self.stdout.write('\n\n')
 
         pprint.pprint_volume_in_ganeti(volume, stdout=self.stdout)

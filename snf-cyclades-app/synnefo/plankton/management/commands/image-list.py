@@ -39,7 +39,7 @@ class Command(SynnefoCommand):
             images = backend._list_images(user)
             images.sort(key=lambda x: x['created_at'], reverse=True)
 
-        headers = ("id", "name", "owner", "public")
+        headers = ("id", "name", "user.uuid", "public")
         table = []
         for img in images:
             fields = (img["id"], img["name"], img["owner"],

@@ -28,11 +28,11 @@ class Command(SynnefoCommand):
 
     option_list = SynnefoCommand.option_list + (
         make_option(
-            "--displayname",
+            "--display-mails",
             action="store_true",
-            dest="displayname",
+            dest="displaymail",
             default=False,
-            help="Display both UUID and display name"),
+            help="Display both UUID and email"),
         make_option(
             "--backends",
             dest="backends",
@@ -47,9 +47,9 @@ class Command(SynnefoCommand):
             raise CommandError("Please provide a network ID.")
 
         network = common.get_resource("network", args[0])
-        displayname = options["displayname"]
+        display_mails = options["displaymail"]
 
-        pprint.pprint_network(network, display_mails=displayname,
+        pprint.pprint_network(network, display_mails=display_mails,
                               stdout=self.stdout)
         self.stdout.write("\n\n")
         pprint.pprint_network_subnets(network, stdout=self.stdout)

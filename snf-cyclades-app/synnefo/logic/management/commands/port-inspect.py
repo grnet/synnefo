@@ -33,11 +33,11 @@ class Command(SynnefoCommand):
             default=False,
             help="Show non-archived jobs concerning port."),
         make_option(
-            '--displayname',
+            '--display-mails',
             action='store_true',
-            dest='displayname',
+            dest='displaymails',
             default=False,
-            help="Display both uuid and display name"),
+            help="Display both uuid and email"),
     )
 
     @convert_api_faults
@@ -46,8 +46,10 @@ class Command(SynnefoCommand):
             raise CommandError("Please provide a port ID")
 
         port = common.get_resource("port", args[0])
+        display_mails = options['displaymails']
 
-        pprint.pprint_port(port, stdout=self.stdout)
+        pprint.pprint_port(port, display_mails=display_mail,
+                           stdout=self.stdout)
         self.stdout.write('\n\n')
 
         pprint.pprint_port_ips(port, stdout=self.stdout)

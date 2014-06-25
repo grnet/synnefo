@@ -192,15 +192,20 @@ def pprint_pool(name, pool_map, step=80, stdout=None):
     stdout.write("\n")
 
 
-def pprint_port(port, stdout=None, title=None):
+def pprint_port(port, display_mails=False, stdout=None, title=None):
     if stdout is None:
         stdout = sys.stdout
     if title is None:
         title = "State of Port %s in DB" % port.id
+
+    ucache = UserCache(ASTAKOS_AUTH_URL, ASTAKOS_TOKEN)
+    userid = port.userid
+
     port = OrderedDict([
         ("id", port.id),
         ("name", port.name),
         ("userid", port.userid),
+        ("username", ucache.get_name(userid) if display_mails else None),
         ("server", port.machine_id),
         ("network", port.network_id),
         ("device_owner", port.device_owner),

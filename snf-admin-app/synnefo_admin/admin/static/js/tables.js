@@ -449,7 +449,7 @@ $(function(){
 			}
 		}
 
-		html = '<a href="'+ data["details_url"].value +' " class="details-link"><span class="snf-icon snf-search"></span></a><a href="#" class="summary-expand expand-area"><span class="snf-icon snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
+		html = '<a title="Details" href="'+ data["details_url"].value +' " class="details-link"><span class="snf-icon snf-search"></span></a><a title="Show summary" href="#" class="summary-expand expand-area"><span class="snf-icon snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
 		return html;
 	};
 
@@ -836,7 +836,7 @@ $(function(){
 				if(unique === true) {
 					idsArray.push(selected.items[i][uniqueProp]);
 					currentRow = templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].contact_id+'"');
-					currentRow = currentRow.replace('title=""', 'title="'+selected.items[i].item_name+'"')
+					currentRow = currentRow.replace('title=""', 'title="related with: '+selected.items[i].item_name+'"')
 					currentRow = currentRow.replace('<td class="full-name"></td>', '<td class="full-name">'+selected.items[i].contact_name+'</td>');
 					currentRow = currentRow.replace('<td class="email"><', '<td class="email">'+selected.items[i].contact_email+'<');
 					if(i >= maxVisible)

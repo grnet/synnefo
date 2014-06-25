@@ -42,7 +42,8 @@ def pprint_network(network, display_mails=False, stdout=None, title=None):
         ("backend-name", network.backend_id),
         ("state", network.state),
         ("userid", userid),
-        ("username", ucache.get_name(userid) if display_mails else None),
+        ("username", ucache.get_name(userid) if (display_mails and userid is
+                                                 not None) else None),
         ("public", network.public),
         ("floating_ip_pool", network.floating_ip_pool),
         ("external_router", network.external_router),

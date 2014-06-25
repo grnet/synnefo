@@ -17,7 +17,7 @@ from django.db import transaction
 from django.utils import simplejson as json
 from datetime import datetime, timedelta
 
-from synnefo.db.models import (VirtualMachine, Network,
+from synnefo.db.models import (VirtualMachine, Network, Volume,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
                                Flavor, IPAddress, IPAddressLog)
@@ -479,12 +479,9 @@ def update_vm_disks(vm, disks, etime=None):
             else:
                 log.info("disk '%s' is still being created" % db_disk)
         elif db_disk is None:
-            # Disk exists in Ganeti but not in DB
-            # TODO: Automatically import disk!
-            msg = ("disk/%s of VM %s does not exist in DB! Cannot"
-                   " automatically fix this issue!" % (disk_name, vm))
-            log.error(msg)
-            continue
+            log.warning("Automatically adopting unknown disk '%s' of instance"
+                        " '%s'", disk_name, vm)
+            adopt_instance_disk(vm, gnt_disk)
         elif not disks_are_equal(db_disk, gnt_disk):
             # Disk has changed
             if gnt_disk["size"] != db_disk.size:
@@ -522,10 +519,39 @@ def parse_instance_disks(gnt_disks):
         disk_info = {
             'index': index,
             'size': gnt_disk["size"] >> 10,  # Size in GB
+            'uuid': gnt_disk['uuid'],
             'status': "IN_USE"}
 
         disks.append((disk_id, disk_info))
     return dict(disks)
+
+
+def adopt_instance_disk(server, gnt_disk):
+    """Create a new Cyclades Volume by adopting an existing Ganeti Disk."""
+    disk_uuid = gnt_disk["uuid"]
+    disk_size = gnt_disk["size"]
+    disk_index = gnt_disk.get("index", 0)
+    vol = Volume.objects.create(userid=server.userid,
+                                project=server.project,
+                                size=disk_size,
+                                volume_type=server.flavor.volume_type,
+                                name="",
+                                machine=server,
+                                description=None,
+                                delete_on_termination=True,
+                                source="blank",
+                                source_version=None,
+                                origin=None,
+                                index=disk_index,
+                                status="CREATING")
+
+    with pooled_rapi_client(server) as c:
+        jobid = c.ModifyInstance(instance=server.backend_vm_id,
+                                 disks=[("modify", disk_uuid,
+                                         {"name": vol.backend_volume_uuid})])
+    log.info("Adopting disk '%s' of instance '%s' to volume '%s'. jobid: %s",
+             disk_uuid, server, vol, jobid)
+    return vol
 
 
 def update_snapshot(snap_id, user_id, job_id, job_status, etime):

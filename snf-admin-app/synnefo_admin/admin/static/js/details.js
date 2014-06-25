@@ -3,7 +3,7 @@ $(document).ready(function(){
 	$('.main .object-details').first().find('.object-details-content').slideDown('slow');
 
 
-	 $('.object-details h4 .arrow,.object-details h4 .title').click(function(){
+	 $('.object-details h4 .arrow,.object-details h4 .title .arrow').click(function(){
 	var $expandBtn = $(this);
 	var $areas = $expandBtn.closest('.info-block.object-details') // *** add another class
 	$expandBtn.closest('h4').siblings('.object-details-content').toggle('slow');

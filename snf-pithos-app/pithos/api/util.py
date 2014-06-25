@@ -49,6 +49,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_ARCHIPELAGO_CONF,
                                  BACKEND_XSEG_POOL_SIZE,
                                  BACKEND_MAP_CHECK_INTERVAL,
+                                 BACKEND_MAPFILE_PREFIX,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
@@ -1038,7 +1039,8 @@ BACKEND_KWARGS = dict(
     container_versioning_policy=BACKEND_VERSIONING,
     archipelago_conf_file=BACKEND_ARCHIPELAGO_CONF,
     xseg_pool_size=BACKEND_XSEG_POOL_SIZE,
-    map_check_interval=BACKEND_MAP_CHECK_INTERVAL)
+    map_check_interval=BACKEND_MAP_CHECK_INTERVAL,
+    mapfile_prefix=BACKEND_MAPFILE_PREFIX)
 
 _pithos_backend_pool = PithosBackendPool(size=BACKEND_POOL_SIZE,
                                          **BACKEND_KWARGS)

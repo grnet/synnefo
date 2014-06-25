@@ -106,6 +106,13 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
         # X-lock on the server.
         index = server.volumes.filter(deleted=False).count()
 
+    if size is not None:
+        try:
+            size = int(size)
+        except (TypeError, ValueError):
+            raise faults.BadRequest("Volume 'size' needs to be a positive"
+                                    " integer value.")
+
     # Only ext_ disk template supports cloning from another source. Otherwise
     # is must be the root volume so that 'snf-image' fill the volume
     can_have_source = (index == 0 or

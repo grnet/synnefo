@@ -3,8 +3,8 @@ var mydata; // temp
 (function($, Django){
 
 $(function(){
-	var lastClicked = null;
-	var prevClicked = null;
+	var $lastClicked = null;
+	var $prevClicked = null;
 	 selected = {
 		items: [],
 		actions: {}
@@ -329,26 +329,26 @@ $(function(){
 	});
 
 
-	$(tableDomID).on('click', 'tbody tr', function(e) {
-		prevClicked = lastClicked;
-		lastClicked =  $(this);
+	$(tableDomID).on('click', 'tbody tr .selection-indicator', function(e) {
+		$prevClicked = $lastClicked;
+		$lastClicked =  $(this).closest('tr');
 		if(!e.shiftKey) {
-			selectRow(this, e.type);
+			selectRow($lastClicked, e.type);
 		}
 		else {
 			var select;
-			if($(this).hasClass('selected')) {
+			if($lastClicked.hasClass('selected')) {
 				select = false;
 			}
 			else {
 				select = true;
 			}
-			if(e.shiftKey && prevClicked !== null && lastClicked !== null) {
+			if(e.shiftKey && $prevClicked !== null && $lastClicked !== null) {
 				var startRow;
-				var start = prevClicked.index();
-				var end = lastClicked.index();
+				var start = $prevClicked.index();
+				var end = $lastClicked.index();
 				if(start < end) {
-					startRow = prevClicked;
+					startRow = $prevClicked;
 					for (var i = start; i<=end; i++) {
 						if((select && !($(startRow).hasClass('selected'))) || (!select && $(startRow).hasClass('selected'))) {
 							selectRow(startRow);
@@ -357,7 +357,7 @@ $(function(){
 					}
 				}
 				else if(end < start) {
-					startRow = prevClicked;
+					startRow = $prevClicked;
 					for (var i = start; i>=end; i--) {
 						if((select && !($(startRow).hasClass('selected'))) || (!select && $(startRow).hasClass('selected'))) {
 							selectRow(startRow);
@@ -456,7 +456,6 @@ $(function(){
 	function clickDetails(row) {
 		$(row).find('td:last-child a.details-link').click(function(e) {
 			e.stopPropagation();
-			console.log('clickDetails')
 		})
 	}
 
@@ -607,8 +606,8 @@ $(function(){
 
 	/* select-page / deselect-page */
 	function toggleVisSelected(tableDomID, selectFlag) {
-		lastClicked = null;
-		prevClicked = null;
+		$lastClicked = null;
+		$prevClicked = null;
 		if(selectFlag) {
 			$(tableDomID).find('tbody tr:not(.selected)').each(function() { // temp : shouldn't have a func that calls a named func
 				selectRow(this);

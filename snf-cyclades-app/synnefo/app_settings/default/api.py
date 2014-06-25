@@ -166,3 +166,6 @@ CYCLADES_VNCAUTHPROXY_OPTS = {
     'ca_cert': None,
     'strict': False,
 }
+
+# The maximum allowed size(GB) for a Cyclades Volume
+CYCLADES_VOLUME_MAX_SIZE = 200

@@ -112,6 +112,11 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
         except (TypeError, ValueError):
             raise faults.BadRequest("Volume 'size' needs to be a positive"
                                     " integer value.")
+        if size < 1:
+            raise faults.BadRequest("Volume size must be a positive integer")
+        if size > settings.CYCLADES_VOLUME_MAX_SIZE:
+            raise faults.BadRequest("Maximum volume size is '%sGB'" %
+                                    settings.CYCLADES_VOLUME_MAX_SIZE)
 
     # Only ext_ disk template supports cloning from another source. Otherwise
     # is must be the root volume so that 'snf-image' fill the volume

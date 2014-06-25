@@ -230,7 +230,7 @@ $(function(){
 					console.profileEnd("test");
 					console.timeEnd("test");
 					updateClearAll();
-			console.log($(tableMassiveDomID).find('tr').length)
+				console.log($(tableMassiveDomID).find('tr').length)
 				}
 			});
 		}
@@ -583,7 +583,7 @@ $(function(){
 		}
 	};
 
-	function resetTable(tableDomID) {
+	function resetAll(tableDomID) {
 		selected.items = [];
 		removeSelected(true); //removes all selected items from the table of selected items
 		updateCounter('.selected-num');
@@ -693,17 +693,22 @@ $(function(){
 		modal.find('.warning-duplicate').remove();
 	}
 
-	$('.modal-footer .cancel').click(function(e) {
+	$('.modal .cancel').click(function(e) {
 		$('[data-toggle="popover"]').popover('hide');
 		var $modal = $(this).closest('.modal');
 		resetErrors($modal);
 		resetInputs($modal);
 		removeWarnings($modal);
-		// resetTable(tableDomID);
+		// resetAll(tableDomID);
 		updateToggleAllSelect();
 		updateClearAll();
 		enableActions(undefined, true);
 	});
+
+	$('.modal .clear-all-confirm').click(function() {
+		resetAll(tableDomID);
+	});
+
 	$('.modal .apply-action').click(function(e) {
 		var $modal = $(this).closest('.modal');
 		var completeAction = true;
@@ -737,7 +742,7 @@ $(function(){
 			resetErrors($modal);
 			resetInputs($modal);
 			removeWarnings($modal);
-			resetTable(tableDomID);
+			resetAll(tableDomID);
 		}
 	});
 
@@ -790,7 +795,7 @@ $(function(){
 		$.ajax({
 		url: url,
 		type: 'POST',
-		data: JSON.stringify(data),
+		// data: JSON.stringify(data),
 		contentType: 'application/json',
 		success: function(response, statusText, jqXHR) {
 		  console.log('did it!', statusText)
@@ -852,7 +857,6 @@ $(function(){
 
 		else {
 			uniqueProp = 'id';
-
 			var templateRow = '<tr data-itemid=""><td class="item-name"></td><td class="item-id"></td><td class="owner-name"></td><td class="owner-email"><a class="remove">X</a></td></tr>';
 			for(var i=0; i<rowsNum; i++) {
 				idsArray.push(selected.items[i][uniqueProp]);

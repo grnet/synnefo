@@ -50,8 +50,6 @@ from astakos.im.auth import make_local_user
 
 logger = logging.getLogger(__name__)
 
-ADMIN_GROUPS = ['admin']
-
 try:
     AUTH_URL = settings.astakos_services \
                 ["astakos_identity"]["endpoints"][0]["publicURL"]

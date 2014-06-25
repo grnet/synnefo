@@ -38,6 +38,8 @@ from astakos.im.models import AstakosUser, get_latest_terms
 from astakos.im.auth import make_local_user
 from astakos.im import activation_backends
 
+ADMIN_GROUPS = settings.ADMIN_API_PERMITTED_GROUPS
+
 activation_backend = activation_backends.get_backend()
 
 logger = logging.getLogger(__name__)
@@ -78,7 +80,7 @@ def user_api_method(http_method):
         @api.api_method(http_method=http_method, user_required=True,
                         token_required=True, logger=logger,
                         serializations=['json'])
-        @api.user_in_groups(permitted_groups=['admin'],
+        @api.user_in_groups(permitted_groups=ADMIN_GROUPS,
                             logger=logger)
         @wraps(func)
         def method(*args, **kwargs):

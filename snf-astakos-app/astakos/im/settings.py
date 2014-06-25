@@ -249,3 +249,7 @@ _default_project_members_limit_choices = (
 PROJECT_MEMEBRS_LIMIT_CHOICES = getattr(settings,
                                  'ASTAKOS_PROJECT_MEMBERS_LIMIT_CHOICES',
                                  _default_project_members_limit_choices)
+
+ADMIN_API_PERMITTED_GROUPS = getattr(settings,
+                                     'ASTAKOS_ADMIN_API_PERMITTED_GROUPS',
+                                     ['admin-api'])

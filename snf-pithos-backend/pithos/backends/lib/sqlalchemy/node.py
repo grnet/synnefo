@@ -297,7 +297,9 @@ class Node(DBWorker):
                     self.versions.c.checksum,
                     self.versions.c.cluster,
                     self.versions.c.available,
-                    self.versions.c.map_check_timestamp],
+                    self.versions.c.map_check_timestamp,
+                    self.versions.c.mapfile,
+                    self.versions.c.is_snapshot],
                    self.versions.c.node == node)
         s = s.order_by(self.versions.c.serial)
         r = self.conn.execute(s)
@@ -674,7 +676,9 @@ class Node(DBWorker):
                     self.versions.c.checksum,
                     self.versions.c.cluster,
                     self.versions.c.available,
-                    self.versions.c.map_check_timestamp])
+                    self.versions.c.map_check_timestamp,
+                    self.versions.c.mapfile,
+                    self.versions.c.is_snapshot])
         if before != inf:
             filtered = select([func.max(self.versions.c.serial)],
                               self.versions.c.node == node)
@@ -826,7 +830,8 @@ class Node(DBWorker):
                         v.c.size, v.c.type, v.c.source,
                         v.c.mtime, v.c.muser, v.c.uuid,
                         v.c.checksum, v.c.cluster,
-                        v.c.available, v.c.map_check_timestamp]
+                        v.c.available, v.c.map_check_timestamp,
+                        v.c.mapfile, v.c.is_snapshot]
             s = select(cols)
         if before != inf:
             c = select([func.max(self.versions.c.serial)],
@@ -866,7 +871,8 @@ class Node(DBWorker):
                         v.c.size, v.c.type, v.c.source,
                         v.c.mtime, v.c.muser, v.c.uuid,
                         v.c.checksum, v.c.cluster,
-                        v.c.available, v.c.map_check_timestamp]
+                        v.c.available, v.c.map_check_timestamp,
+                        v.c.mapfile, v.c.is_snapshot]
             s = select(cols)
         if before != inf:
             c = select([func.max(self.versions.c.serial)],
@@ -924,6 +930,7 @@ class Node(DBWorker):
                           update_statistics_ancestors_depth=None):
         """Move the version into another cluster."""
 
+        mtime = time()
         props = self.version_get_properties(serial)
         if not props:
             return
@@ -1198,7 +1205,9 @@ class Node(DBWorker):
                        self.versions.c.checksum,
                        self.versions.c.cluster,
                        self.versions.c.available,
-                       self.versions.c.map_check_timestamp],
+                       self.versions.c.map_check_timestamp,
+                       self.versions.c.mapfile,
+                       self.versions.c.is_snapshot],
                        from_obj=[inner_join]).distinct()
 
         s = s.where(self.versions.c.cluster != except_cluster)
@@ -1335,9 +1344,13 @@ class Node(DBWorker):
         n = self.nodes.alias('n')
         a = self.attributes.alias('a')
 
-        s = select([n.c.path, v.c.serial, v.c.node, v.c.hash, v.c.size,
-                    v.c.type, v.c.source, v.c.mtime, v.c.muser, v.c.uuid,
-                    v.c.checksum, v.c.cluster, a.c.key, a.c.value])
+        props = [n.c.path, v.c.serial, v.c.node, v.c.hash, v.c.size, v.c.type,
+                 v.c.source, v.c.mtime, v.c.muser, v.c.uuid, v.c.checksum,
+                 v.c.cluster, v.c.available, v.c.map_check_timestamp,
+                 v.c.mapfile, v.c.is_snapshot]
+        cols = props + [a.c.key, a.c.value]
+
+        s = select(cols)
         if cluster:
             s = s.where(v.c.cluster == cluster)
         s = s.where(v.c.serial == a.c.serial)
@@ -1351,10 +1364,10 @@ class Node(DBWorker):
         rows = r.fetchall()
         r.close()
 
-        group_by = itemgetter(slice(12))
+        group_by = itemgetter(slice(len(props)))
         rows.sort(key=group_by)
         groups = groupby(rows, group_by)
-        return [(k[0], k[1:], dict([i[12:] for i in data])) for
+        return [(k[0], k[1:], dict([i[len(props):] for i in data])) for
                 (k, data) in groups]
 
     def get_props(self, paths):

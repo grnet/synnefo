@@ -228,8 +228,21 @@ default_dict = {
 }
 
 
+@admin_user_required
 def logout(request):
-    return HttpResponseRedirect(reverse('logout'))
+    try:
+        auth_token = request.user['access']['token']['id']
+        ac = astakosclient.AstakosClient(auth_token,
+                                                    settings.ASTAKOS_AUTH_URL,
+                                                    retry=2, use_pool=True,
+                                                    logger=logger)
+        logout_url = ac.ui_url + '/logout'
+    except Exception as e:
+        logger.exception("Why?")
+        raise e
+
+
+    return HttpResponseRedirect(logout_url)
 
 
 @admin_user_required

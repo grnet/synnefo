@@ -1,7 +1,14 @@
 $(document).ready(function(){
 
-
-	 $('.object-details h4 .arrow').click(function(){
+	var navsHeight = $('.main-nav').height() + $('.sub-nav').height();
+	$('.sub-nav .link-to-anchor').click(function(e) {
+		e.preventDefault();
+		var pos = $($.attr(this, 'href')).offset().top - navsHeight;
+		$('html, body').animate({
+			scrollTop: pos
+		}, 500)
+	})
+	$('.object-details h4 .arrow').click(function(){
 		var $expandBtn = $(this);
 		$expandBtn.closest('h4').toggleClass('expanded');
 		var hasClass = $expandBtn.closest('h4').hasClass('expanded');
@@ -30,7 +37,7 @@ $(document).ready(function(){
 		});
 		if(allSameClass)
 			$expandBtn.closest('.info-block.object-details').find('.show-hide-all').trigger('click');
-	  });
+	});
 
 	   // hide/show expand/collapse 
   

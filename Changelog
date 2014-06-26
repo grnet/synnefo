@@ -88,6 +88,16 @@ Astakos
 * Projects can be set `private', making it accessible only to its owner and
   members.
 
+Cyclades
+--------
+
+* Add support for snf-vncauthproxy 1.6 (configurable VNC console types)
+
+Cyclades UI
+-----------
+
+* Replace TigerVNC Java client with an HTML5 Websocket-based client (noVNC)
+
 Pithos
 ------
 

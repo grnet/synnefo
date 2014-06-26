@@ -7,7 +7,7 @@
     data-type="{{type}}">
     <h4>
         <span class="title"><a href="{% url admin-details type project.uuid %}">{{ project|repr }}</a></span>
-        <span class="badge arrow">&nbsp;</span>
+        <span class="arrow  snf-icon snf-angle-down"></span>
         <span class="label label-primary">{{ project.state_display|upper }}</span>
         <span class="label label-primary">UUID: {{ project.uuid }}</span>
         <span class="label label-primary">

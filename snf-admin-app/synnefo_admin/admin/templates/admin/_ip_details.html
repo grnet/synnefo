@@ -6,7 +6,7 @@
     data-type="{{type}}">
     <h4>
         <span class="title"><a href="{% url admin-details type ip.pk %}">{{ ip.address }}</a></span>
-        <span class="badge arrow">&nbsp;</span>
+        <span class="arrow  snf-icon snf-angle-down"></span>
         <span class="label label-primary">ID: {{ip.pk}}</span>
         {% if ip.floating_ip %}
         <span class="label label-primary">FLOATING</span>

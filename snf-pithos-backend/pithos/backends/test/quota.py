@@ -715,3 +715,73 @@ class TestQuotaMixin(object):
                 holder=account,
                 provisions={(account, 'pithos.diskspace'): -len(data2)},
                 name='/'.join([account, container, obj2]))]
+
+    @assert_issue_commission_calls
+    def test_delete_container_contents(self):
+        account = self.account
+        container = get_random_name()
+        project = unicode(uuidlib.uuid4())
+        self.b.put_container(account, account, container,
+                             policy={'project': project})
+
+        folder = get_random_name()
+        self.create_folder(account, account, container, folder)
+
+        obj1 = '/'.join([folder, get_random_name()])
+        data = self._upload_object(account, account, container, obj1)
+
+        obj2 = '/'.join([folder, get_random_name()])
+        data += self._upload_object(account, account, container, obj2)
+
+        self.b.delete_container(account, account, container, delimiter='/')
+
+        self.expected_issue_commission_calls += [
+            call.issue_one_commissions(
+                holder=account,
+                provisions={(project, 'pithos.diskspace'): -len(data)},
+                name='/'.join([account, container, '']))]
+
+    @assert_issue_commission_calls
+    def test_delete_object(self):
+        account = self.account
+        container = get_random_name()
+        project = unicode(uuidlib.uuid4())
+        self.b.put_container(account, account, container,
+                             policy={'project': project})
+
+        obj = get_random_name()
+        data = self._upload_object(account, account, container, obj)
+
+        self.b.delete_object(account, account, container, obj)
+
+        self.expected_issue_commission_calls += [
+            call.issue_one_commissions(
+                holder=account,
+                provisions={(project, 'pithos.diskspace'): -len(data)},
+                name='/'.join([account, container, obj]))]
+
+    @assert_issue_commission_calls
+    def test_delete_dir(self):
+        account = self.account
+        container = get_random_name()
+        project = unicode(uuidlib.uuid4())
+        self.b.put_container(account, account, container,
+                             policy={'project': project})
+
+        folder = get_random_name()
+        self.create_folder(account, account, container, folder)
+
+        obj1 = '/'.join([folder, get_random_name()])
+        data = self._upload_object(account, account, container, obj1)
+
+        obj2 = '/'.join([folder, get_random_name()])
+        data += self._upload_object(account, account, container, obj2)
+
+        self.b.delete_object(account, account, container, folder,
+                             delimiter='/')
+
+        self.expected_issue_commission_calls += [
+            call.issue_one_commissions(
+                holder=account,
+                provisions={(project, 'pithos.diskspace'): -len(data)},
+                name='/'.join([account, container, folder, '']))]

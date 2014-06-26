@@ -760,6 +760,8 @@ class ModularBackend(BaseBackend):
                 size_range=None, all_props=True, public=False,
                 listing_limit=listing_limit)
             paths = []
+            freed_space = 0
+            dest_versions = []
             for t in src_names:
                 path = '/'.join((account, container, t[0]))
                 node = t[2]
@@ -769,18 +771,21 @@ class ModularBackend(BaseBackend):
                     user, node, size=0, type='', hash=None, checksum='',
                     cluster=CLUSTER_DELETED,
                     update_statistics_ancestors_depth=1)
+                dest_versions.append(dest_version_id)
                 del_size = self._apply_versioning(
                     account, container, src_version_id,
                     update_statistics_ancestors_depth=1)
-                self._report_size_change(
-                    user, account, -del_size, project, {
-                        'action': 'object delete',
-                        'path': path,
-                        'versions': ','.join([str(dest_version_id)])})
+                freed_space += del_size
                 self._report_object_change(
                     user, account, path, details={'action': 'object delete'})
                 paths.append(path)
             self.permissions.access_clear_bulk(paths)
+
+            self._report_size_change(
+                user, account, -freed_space, project, {
+                    'action': 'object delete',
+                    'path': '/'.join((account, container, '')),
+                    'versions': ','.join([str(id_) for id_ in dest_versions])})
 
         # remove all the cached allowed paths
         # removing the specific path could be more expensive
@@ -1546,12 +1551,7 @@ class ModularBackend(BaseBackend):
                                           update_statistics_ancestors_depth=1)
 
         freed_space = del_size
-        if report_size_change:
-            self._report_size_change(
-                user, account, -del_size, project,
-                {'action': 'object delete',
-                 'path': path,
-                 'versions': ','.join([str(dest_version_id)])})
+        dest_versions = []
         self._report_object_change(
             user, account, path, details={'action': 'object delete'})
         self.permissions.access_clear(path)
@@ -1577,16 +1577,21 @@ class ModularBackend(BaseBackend):
                     account, container, src_version_id,
                     update_statistics_ancestors_depth=1)
                 freed_space += del_size
-                if report_size_change:
-                    self._report_size_change(
-                        user, account, -del_size, project,
-                        {'action': 'object delete',
-                         'path': path,
-                         'versions': ','.join([str(dest_version_id)])})
+                dest_versions.append(dest_version_id)
                 self._report_object_change(
                     user, account, path, details={'action': 'object delete'})
                 paths.append(path)
             self.permissions.access_clear_bulk(paths)
+
+        if report_size_change:
+            path = '/'.join([account, container, name])
+            if delimiter:
+                path += '/'
+            self._report_size_change(
+                user, account, -freed_space, project,
+                {'action': 'object delete',
+                 'path': path,
+                 'versions': ','.join([str(id_) for id_ in dest_versions])})
 
         # remove all the cached allowed paths
         # removing the specific path could be more expensive

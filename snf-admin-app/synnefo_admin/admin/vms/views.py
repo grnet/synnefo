@@ -37,6 +37,7 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
 from synnefo_admin.admin.utils import get_actions, render_email
+from synnefo_admin.admin.users.utils import get_user
 
 from .utils import get_flavor_info, get_vm
 from .filters import VMFilterSet
@@ -147,14 +148,15 @@ class VMJSONView(DatatablesView):
 @has_permission_or_403(cached_actions)
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
-    vm = get_vm(id)
+    if op == "contact":
+        user = get_user(id)
+    else:
+        vm = get_vm(id)
     actions = get_permitted_actions(cached_actions, request.user)
-    logging.info("Op: %s, vm: %s, fun: %s", op, vm.pk, actions[op].f)
 
     if op == 'reboot':
         actions[op].f(vm, "SOFT")
     elif op == 'contact':
-        user = AstakosUser.objects.get(uuid=vm.userid)
         subject, body = render_email(request.POST, user)
         actions[op].f(user, subject, template_name=None, text=body)
     else:

@@ -48,6 +48,7 @@ from synnefo_admin.admin.utils import (is_resource_useful, get_actions,
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
+from synnefo_admin.admin.users.utils import get_user
 
 from .filters import ProjectFilterSet
 from .actions import cached_actions
@@ -198,16 +199,13 @@ class ProjectJSONView(DatatablesView):
 @has_permission_or_403(cached_actions)
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
-    project = get_project(id)
+    if op == "contact":
+        user = get_user(id)
+    else:
+        project = get_project(id)
     actions = get_permitted_actions(cached_actions, request.user)
-    logging.info("Op: %s, project: %s, fun: %s", op, project.uuid,
-                 actions[op].f)
 
     if op == 'contact':
-        if project.is_base:
-            user = project.members.all()[0]
-        else:
-            user = project.owner
         subject, body = render_email(request.POST, user)
         actions[op].f(user, subject, template_name=None, text=body)
     elif op == 'approve':

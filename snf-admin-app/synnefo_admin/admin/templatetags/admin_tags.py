@@ -196,6 +196,26 @@ def get_filter_template(filter):
 
 
 @register.filter
+def id(item):
+    try:
+        return item['project'].uuid
+    except TypeError:
+        pass
+
+    try:
+        return item.uuid
+    except AttributeError:
+        pass
+
+    try:
+        return item.id
+    except AttributeError:
+        pass
+
+    return item.pk
+
+
+@register.filter
 def repr(item):
     """Return the string representation of an item.
 
@@ -204,6 +224,16 @@ def repr(item):
     Finally, if an item has none of the above attributes, or the attributes are
     empty, return the result of the __str__ method of the item.
     """
+    try:
+        return item.address
+    except AttributeError:
+        pass
+
+    try:
+        return item['project'].realname
+    except TypeError:
+        pass
+
     try:
         if item.realname:
             return item.realname

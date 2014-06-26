@@ -36,6 +36,7 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
 from synnefo_admin.admin.utils import get_actions, render_email
+from synnefo_admin.admin.users.utils import get_user
 
 from .filters import NetworkFilterSet
 from .actions import cached_actions
@@ -137,11 +138,13 @@ class NetworkJSONView(DatatablesView):
 @has_permission_or_403(cached_actions)
 def do_action(request, op, id):
     """Apply the requested action on the specified network."""
-    network = Network.objects.get(pk=id)
+    if op == "contact":
+        user = get_user(id)
+    else:
+        network = Network.objects.get(pk=id)
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'contact':
-        user = AstakosUser.objects.get(uuid=network.userid)
         subject, body = render_email(request.POST, user)
         actions[op].f(user, subject, template_name=None, text=body)
     else:

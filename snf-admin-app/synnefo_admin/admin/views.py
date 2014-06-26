@@ -223,7 +223,8 @@ default_dict = {
                    ('IPs', 'ip'),
                    ('Projects', 'project'),
                    ('User Groups', 'group'),
-                   ('User Auth Providers', 'auth_provider'))
+                   #('User Auth Providers', 'auth_provider'),
+                   )
 }
 
 

@@ -963,7 +963,7 @@ $(function(){
 						$li.siblings('.reset').find('.selection-indicator').addClass('snf-checkbox-unchecked').removeClass('snf-radio-checked');
 						if($li.siblings('.active').length > 0) {
 							arrayFilter(filters, key, value);
-							$(this).closest(filterEl).find('.selected-value').append(','+value)
+							$(this).closest(filterEl).find('.selected-value').append(', '+value)
 						}
 						else {
 							$(this).closest(filterEl).find('.selected-value').text(value);

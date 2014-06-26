@@ -38,6 +38,15 @@ from synnefo_admin.admin.actions import (AdminAction, noop,
 from synnefo_admin.admin.utils import filter_owner_name
 
 
+def filter_vm_id(queryset, query):
+    # FIXME: This should change
+    prefix = 'snf-'
+    query = query.replace(prefix, '')
+    if not query.isdigit():
+        return queryset
+    return queryset.filter(id__contains=query)
+
+
 class VMFilterSet(django_filters.FilterSet):
 
     """A collection of filters for VMs.
@@ -45,6 +54,7 @@ class VMFilterSet(django_filters.FilterSet):
     This filter collection is based on django-filter's FilterSet.
     """
 
+    id = django_filters.CharFilter(label='VM ID', action=filter_vm_id)
     name = django_filters.CharFilter(label='Name', lookup_type='icontains')
     owner_name = django_filters.CharFilter(label='Owner Name',
                                            action=filter_owner_name)

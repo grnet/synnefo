@@ -1,3 +1,4 @@
+{% load admin_tags %}
 <!--<div class="modal fade" id="{{type}}-{{ op }}" data-type="{{ op }}" data-backdrop="static" data-keyboard="false">-->
 <div class="modal fade" id="{{action.target}}-{{ op }}" data-backdrop="static" data-keyboard="false" data-karma={{ action.karma }} data-caution={{ action.caution_level }} data-type={{ op }}>
     <div class="modal-dialog modal-lg">
@@ -46,11 +47,10 @@
                     <button class= "custom-btn toggle-more closed" data-karma="dark"><span>Show All</span></button>
                     {% endif %}
                 </div>
-                <p>Are you sure you want to complete the operation?</p>
             </div>
             <div class="modal-footer">
                 <a href="#" class="custom-btn cancel" data-karma={{ action.karma }} data-caution={{ action.caution_level }} data-dismiss="modal"><span>Cancel</span></a>
-                <a data-url={% url admin-actions %} data-op={{ op }} data-ids="" data-target={{ action.target }} class="custom-btn apply-action" data-karma={{ action.karma }} data-caution={{ action.caution_level }} data-dismiss="modal"><span>OK</span></a>
+                <a data-url={% url admin-actions %} data-op={{ op }} data-ids="" data-target={{ action.target }} class="custom-btn apply-action" data-karma={{ action.karma }} data-caution={{ action.caution_level }} data-dismiss="modal"><span>{{ op|verbify }}</span></a>
             </div>
         </div>
     </div>

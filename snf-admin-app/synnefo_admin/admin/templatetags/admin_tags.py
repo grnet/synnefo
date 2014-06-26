@@ -250,6 +250,16 @@ def repr(item):
 
 
 @register.filter
+def verbify(action):
+    """Create verb from action name.
+
+    If action has more than one words, then we keep the first one which, by
+    convention, will be a verb.
+    """
+    return action.split()[0].capitalize()
+
+
+@register.filter
 def get_project_stats(project):
     """Create a dictionary with a summary for a project's stats."""
     stats = OrderedDict()

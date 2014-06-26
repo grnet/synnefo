@@ -20,7 +20,7 @@
                         body">{{ mail.body }}</textarea>
                     <a data-error="empty-body" class="error-sign snf-icon snf-exclamation-sign" href="#" rel="tooltip" title="Missing the body of the e-mail."></a>
                     <div class="extra-info">
-                        <a href="" class="snf-icon snf-info instructions-icon" data-container="body" data-toggle="popover" data-html="true" data-placement="right" data-content="
+                        <a href="" class="snf-icon snf-info instructions-icon" data-container="*[data-type='contact']" data-toggle="popover" data-html="true" data-placement="right" data-content="
                         <h2>Legend</h2>
                         <dl class='dl-horizontal'>
                             {% for name, attr in mail.legend.items %}

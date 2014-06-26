@@ -737,6 +737,7 @@ $(function(){
 			}
 		}
 		if(completeAction) {
+			$('[data-toggle="popover"]').popover('hide');
 			performAction($modal);
 			resetErrors($modal);
 			resetInputs($modal);

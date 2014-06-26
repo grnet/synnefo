@@ -154,7 +154,6 @@ $('.main .object-details h4 .arrow').trigger('click')
 	}
 
 	$('.modal').find('.cancel').click(function() {
-		console.log('- cancel -')
 		$modal =$(this).closest('.modal');
 		resetInputs($modal);
 		resetErrors($modal);
@@ -165,7 +164,6 @@ $('.main .object-details h4 .arrow').trigger('click')
 
 
 	$('.modal .apply-action').click(function(e) {
-		console.log('- apply action -')
 		var $modal = $(this).closest('.modal');
 		var completeAction = true;
 		if($modal.attr('id') === 'user-contact') {
@@ -189,8 +187,10 @@ $('.main .object-details h4 .arrow').trigger('click')
 		}
 		if(completeAction) {
 			performAction($modal);
-			resetErrors($modal);
 			resetInputs($modal);
+			resetErrors($modal);
+			resetItemInfo($modal);
+			$('[data-toggle="popover"]').popover('hide');
 		}
 	});
 

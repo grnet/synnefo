@@ -101,10 +101,12 @@ $('.main .object-details h4 .arrow').trigger('click')
 		$modal.find('.error-sign').hide();
 	};
 
+	var defaultEmailSubj = $('.modal[data-type="contact"]').find('.subject').val();
+	var defaultEmailBody = $('.modal[data-type="contact"]').find('.email-content').val();
 	function resetInputs(modal) {
 		var $modal = $(modal);
-		$modal.find('textarea').val('Dear ,\n\n\nIf you did not sign up for this account you can ignore this email.\n\n\nFor any remarks or problems you may contact support@synnefo.live.\nThank you for participating in Synnefo.\n GRNET');
-		$modal.find('input[type=text]').val('New email from ~okeanos');
+		$modal.find('input[type=text]').val(defaultEmailSubj);
+		$modal.find('textarea').val(defaultEmailBody);
 	};
 		
 	function resetItemInfo(modal) {

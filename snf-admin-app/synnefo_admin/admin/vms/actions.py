@@ -65,7 +65,7 @@ def vm_suspend_release(vm):
 def check_vm_action(action):
     if action == 'SUSPEND':
         return lambda vm: not vm.suspended
-    elif action == 'RELEASE':
+    elif action == 'UNSUSPEND':
         return lambda vm: vm.suspended
     else:
         return lambda vm: validate_server_action(vm, action)
@@ -127,10 +127,10 @@ def generate_actions():
                                   karma='bad', caution_level='warning',
                                   allowed_groups=['admin', 'superadmin'])
 
-    actions['release'] = VMAction(name='Release suspension',
-                                  f=vm_suspend_release,
-                                  c=check_vm_action('RELEASE'), karma='good',
-                                  allowed_groups=['admin', 'superadmin'])
+    actions['unsuspend'] = VMAction(name='Unsuspend', f=vm_suspend_release,
+                                    c=check_vm_action('UNSUSPEND'),
+                                    karma='good',
+                                    allowed_groups=['admin', 'superadmin'])
 
     actions['reassign'] = VMAction(name='Reassign to project', f=noop,
                                    karma='neutral', caution_level='dangerous',

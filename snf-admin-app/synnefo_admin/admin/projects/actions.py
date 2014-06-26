@@ -100,7 +100,7 @@ def generate_actions():
                                        karma='bad', caution_level='warning',
                                        allowed_groups=['superadmin'])
 
-    actions['unsuspend'] = ProjectAction(name='Release suspension',
+    actions['unsuspend'] = ProjectAction(name='Unsuspend',
                                          f=unsuspend,
                                          c=check_project_action("UNSUSPEND"),
                                          karma='good', caution_level='warning',

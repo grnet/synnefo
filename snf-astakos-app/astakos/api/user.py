@@ -155,7 +155,7 @@ def users_list(request, action='list', detail=False):
 @transaction.commit_on_success
 def users_create(request):
     user_id = request.user_uniq
-    req = api.utils.get_request_dict(request)
+    req = api.utils.get_json_body(request)
     logger.info('users_create: %s request: %s', user_id, req)
 
     user_data = req.get('user', {})
@@ -223,7 +223,7 @@ def users_create(request):
 @transaction.commit_on_success
 def user_action(request, user_id):
     admin_id = request.user_uniq
-    req = api.utils.get_request_dict(request)
+    req = api.utils.get_json_body(request)
     logger.info('user_action: %s user: %s request: %s', admin_id, user_id, req)
     if 'activate' in req:
         try:
@@ -281,7 +281,7 @@ def user_action(request, user_id):
 @transaction.commit_on_success
 def user_update(request, user_id):
     admin_id = request.user_uniq
-    req = api.utils.get_request_dict(request)
+    req = api.utils.get_json_body(request)
     logger.info('user_update: %s user: %s request: %s', admin_id, user_id, req)
 
     user_data = req.get('user', {})

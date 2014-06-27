@@ -109,6 +109,7 @@ def user_to_dict(user, detail=True):
             d[date_field] = None
 
     methods = d['authentication_methods'] = []
+    d['roles'] = list(user.groups.values_list("name", flat=True))
 
     for provider in user.auth_providers.filter():
         method_fields = ['identifier', 'active', 'affiliation']

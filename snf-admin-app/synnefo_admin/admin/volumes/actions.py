@@ -29,6 +29,7 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
+from synnefo_admin.admin.utils import update_actions_rbac
 from synnefo_admin.admin.utils import filter_owner_name
 
 
@@ -52,7 +53,9 @@ def generate_actions():
     """
     actions = OrderedDict()
 
-    actions['contact'] = VolumeAction(name='Send e-mail', f=send_email,
-                                      allowed_groups=['admin', 'superadmin'])
+    actions['contact'] = VolumeAction(name='Send e-mail', f=send_email,)
+
+    update_actions_rbac(actions)
+
     return actions
 cached_actions = generate_actions()

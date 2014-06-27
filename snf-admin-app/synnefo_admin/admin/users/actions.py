@@ -42,6 +42,7 @@ import django_filters
 from django.db.models import Q
 
 from synnefo_admin.admin.actions import AdminAction, noop
+from synnefo_admin.admin.utils import update_actions_rbac
 
 class UserAction(AdminAction):
 
@@ -69,35 +70,31 @@ def generate_actions():
 
     actions['activate'] = UserAction(name='Activate', f=users.activate,
                                      c=check_user_action("ACTIVATE"),
-                                     karma='good',
-                                     allowed_groups=['superadmin'])
+                                     karma='good',)
 
     actions['deactivate'] = UserAction(name='Deactivate', f=users.deactivate,
                                        c=check_user_action("DEACTIVATE"),
-                                       karma='bad', caution_level='warning',
-                                       allowed_groups=['superadmin'])
+                                       karma='bad', caution_level='warning',)
 
     actions['accept'] = UserAction(name='Accept', f=users.accept,
                                    c=check_user_action("ACCEPT"),
-                                   karma='good',
-                                   allowed_groups=['superadmin'])
+                                   karma='good',)
 
     actions['reject'] = UserAction(name='Reject', f=users.reject,
                                    c=check_user_action("REJECT"),
-                                   karma='bad', caution_level='dangerous',
-                                   allowed_groups=['superadmin'])
+                                   karma='bad', caution_level='dangerous',)
 
     actions['verify'] = UserAction(name='Verify', f=users.verify,
                                    c=check_user_action("VERIFY"),
-                                   karma='good',
-                                   allowed_groups=['superadmin'])
+                                   karma='good',)
 
     actions['resend_verification'] = UserAction(
         name='Resend verification', f=users.send_verification_mail,
-        karma='good', c=check_user_action("SEND_VERIFICATION_MAIL"),
-        allowed_groups=['admin', 'superadmin'])
+        karma='good', c=check_user_action("SEND_VERIFICATION_MAIL"),)
 
-    actions['contact'] = UserAction(name='Send e-mail', f=send_email,
-                                    allowed_groups=['admin', 'superadmin'])
+    actions['contact'] = UserAction(name='Send e-mail', f=send_email,)
+
+    update_actions_rbac(actions)
+
     return actions
 cached_actions = generate_actions()

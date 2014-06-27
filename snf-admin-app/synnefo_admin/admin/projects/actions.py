@@ -46,6 +46,7 @@ from synnefo_admin.admin.utils import is_resource_useful
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
+from synnefo_admin.admin.utils import update_actions_rbac
 
 
 class ProjectAction(AdminAction):
@@ -87,38 +88,33 @@ def generate_actions():
 
     actions['approve'] = ProjectAction(name='Approve', f=approve_application,
                                        c=check_approve,
-                                       karma='good',
-                                       allowed_groups=['superadmin'])
+                                       karma='good',)
 
     actions['deny'] = ProjectAction(name='Deny', f=deny_application,
                                     c=check_deny, karma='bad',
-                                    caution_level='warning',
-                                    allowed_groups=['superadmin'])
+                                    caution_level='warning',)
 
     actions['suspend'] = ProjectAction(name='Suspend', f=suspend,
                                        c=check_project_action("SUSPEND"),
-                                       karma='bad', caution_level='warning',
-                                       allowed_groups=['superadmin'])
+                                       karma='bad', caution_level='warning',)
 
     actions['unsuspend'] = ProjectAction(name='Unsuspend',
                                          f=unsuspend,
                                          c=check_project_action("UNSUSPEND"),
-                                         karma='good', caution_level='warning',
-                                         allowed_groups=['superadmin'])
+                                         karma='good', caution_level='warning',)
 
     actions['terminate'] = ProjectAction(name='Terminate', f=terminate,
                                          c=check_project_action("TERMINATE"),
                                          karma='bad',
-                                         caution_level='dangerous',
-                                         allowed_groups=['superadmin'])
+                                         caution_level='dangerous',)
 
     actions['reinstate'] = ProjectAction(name='Reinstate', f=reinstate,
                                          c=check_project_action("REINSTATE"),
-                                         karma='good', caution_level='warning',
-                                         allowed_groups=['superadmin'])
+                                         karma='good', caution_level='warning',)
 
-    actions['contact'] = ProjectAction(name='Send e-mail', f=send_email,
-                                       allowed_groups=['admin', 'superadmin'])
+    actions['contact'] = ProjectAction(name='Send e-mail', f=send_email,)
+
+    update_actions_rbac(actions)
 
     return actions
 cached_actions = generate_actions()

@@ -35,6 +35,7 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
+from synnefo_admin.admin.utils import update_actions_rbac
 
 
 class VMAction(AdminAction):
@@ -81,68 +82,56 @@ def generate_actions():
 
     actions['start'] = VMAction(name='Start', f=servers_backend.start,
                                 c=check_vm_action('START'),
-                                karma='good',
-                                allowed_groups=['admin', 'superadmin'])
+                                karma='good',)
 
     actions['shutdown'] = VMAction(name='Shutdown', f=servers_backend.stop,
                                    c=check_vm_action('STOP'), karma='bad',
-                                   caution_level='warning',
-                                   allowed_groups=['admin', 'superadmin'])
+                                   caution_level='warning',)
 
     actions['reboot'] = VMAction(name='Reboot', f=servers_backend.reboot,
                                  c=check_vm_action('REBOOT'), karma='bad',
-                                 caution_level='warning',
-                                 allowed_groups=['admin', 'superadmin'])
+                                 caution_level='warning',)
 
     actions['resize'] = VMAction(name='Resize', f=noop,
                                  c=check_vm_action('RESIZE'), karma='neutral',
-                                 caution_level='dangerous',
-                                 allowed_groups=['superadmin'])
+                                 caution_level='dangerous',)
 
     actions['destroy'] = VMAction(name='Destroy', f=servers_backend.destroy,
                                   c=check_vm_action('DESTROY'), karma='bad',
-                                  caution_level='dangerous',
-                                  allowed_groups=['superadmin'])
+                                  caution_level='dangerous',)
 
     actions['connect'] = VMAction(name='Connect to network', f=noop,
-                                  karma='good',
-                                  allowed_groups=['superadmin'])
+                                  karma='good',)
 
     actions['disconnect'] = VMAction(name='Disconnect from network', f=noop,
-                                     karma='bad',
-                                     allowed_groups=['superadmin'])
+                                     karma='bad',)
 
     actions['attach'] = VMAction(name='Attach IP', f=noop,
                                  c=check_vm_action('ADDFLOATINGIP'),
-                                 karma='good',
-                                 allowed_groups=['superadmin'])
+                                 karma='good',)
 
     actions['detach'] = VMAction(name='Detach IP', f=noop,
                                  c=check_vm_action('REMOVEFLOATINGIP'),
-                                 karma='bad',
-                                 allowed_groups=['superadmin'])
+                                 karma='bad',)
 
     actions['suspend'] = VMAction(name='Suspend', f=vm_suspend,
                                   c=check_vm_action('SUSPEND'),
-                                  karma='bad', caution_level='warning',
-                                  allowed_groups=['admin', 'superadmin'])
+                                  karma='bad', caution_level='warning',)
 
     actions['unsuspend'] = VMAction(name='Unsuspend', f=vm_suspend_release,
                                     c=check_vm_action('UNSUSPEND'),
-                                    karma='good',
-                                    allowed_groups=['admin', 'superadmin'])
+                                    karma='good',)
 
     actions['reassign'] = VMAction(name='Reassign to project', f=noop,
-                                   karma='neutral', caution_level='dangerous',
-                                   allowed_groups=['superadmin'])
+                                   karma='neutral', caution_level='dangerous',)
 
     actions['change_owner'] = VMAction(name='Change owner', f=noop,
                                        karma='neutral',
-                                       caution_level='dangerous',
-                                       allowed_groups=['superadmin'])
+                                       caution_level='dangerous',)
 
-    actions['contact'] = VMAction(name='Send e-mail', f=send_email,
-                                  allowed_groups=['admin', 'superadmin'])
+    actions['contact'] = VMAction(name='Send e-mail', f=send_email,)
+
+    update_actions_rbac(actions)
 
     return actions
 cached_actions = generate_actions()

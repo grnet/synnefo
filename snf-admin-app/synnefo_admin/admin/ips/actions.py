@@ -32,7 +32,7 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import filter_owner_name
+from synnefo_admin.admin.utils import filter_owner_name, update_actions_rbac
 
 
 class IPAction(AdminAction):
@@ -56,14 +56,14 @@ def generate_actions():
     actions = OrderedDict()
 
     actions['delete'] = IPAction(name='Delete', f=ips.delete_floating_ip,
-                                 karma='bad', caution_level='dangerous',
-                                 allowed_groups=['superadmin'])
+                                 karma='bad', caution_level='dangerous',)
 
     actions['reassign'] = IPAction(name='Reassign to project', f=noop,
-                                   karma='neutral', caution_level='dangerous',
-                                   allowed_groups=['superadmin'])
+                                   karma='neutral', caution_level='dangerous',)
 
-    actions['contact'] = IPAction(name='Send e-mail', f=send_email,
-                                  allowed_groups=['admin', 'superadmin'])
+    actions['contact'] = IPAction(name='Send e-mail', f=send_email,)
+
+    update_actions_rbac(actions)
+
     return actions
 cached_actions = generate_actions()

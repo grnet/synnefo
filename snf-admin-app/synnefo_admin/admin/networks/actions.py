@@ -34,7 +34,7 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import filter_owner_name
+from synnefo_admin.admin.utils import filter_owner_name, update_actions_rbac
 
 
 class NetworkAction(AdminAction):
@@ -78,31 +78,28 @@ def generate_actions():
 
     actions['drain'] = NetworkAction(name='Drain', f=drain_network,
                                      #c=check_network_action('DRAIN'),
-                                     caution_level=True,
-                                     allowed_groups=['superadmin'])
+                                     caution_level=True,)
 
     actions['undrain'] = NetworkAction(name='Undrain', f=undrain_network,
                                        #c=check_network_action('UNDRAIN'),
-                                       karma='neutral',
-                                       allowed_groups=['superadmin'])
+                                       karma='neutral',)
 
     actions['delete'] = NetworkAction(name='Delete', f=networks.delete,
                                       c=check_network_action('DESTROY'),
-                                      karma='bad', caution_level='dangerous',
-                                      allowed_groups=['superadmin'])
+                                      karma='bad', caution_level='dangerous',)
 
     actions['reassign'] = NetworkAction(name='Reassign to project', f=noop,
                                         karma='neutral',
-                                        caution_level='dangerous',
-                                        allowed_groups=['superadmin'])
+                                        caution_level='dangerous',)
 
     actions['change_owner'] = NetworkAction(name='Change owner', f=noop,
                                             karma='neutral',
-                                            caution_level='dangerous',
-                                            allowed_groups=['superadmin'])
+                                            caution_level='dangerous',)
 
     actions['contact'] = NetworkAction(name='Send e-mail', f=send_email,
-                                       c=check_network_action("contact"),
-                                       allowed_groups=['admin', 'superadmin'])
+                                       c=check_network_action("contact"),)
+
+    update_actions_rbac(actions)
+
     return actions
 cached_actions = generate_actions()

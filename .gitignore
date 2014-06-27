@@ -9,6 +9,8 @@ share/
 build/
 include/
 !snf-cyclades-app/synnefo/ui/static/snf/extra/noVNC/include/
+_sass/
+.sass-cache/
 *.pt.py
 *.installed.cfg
 *.sqlite

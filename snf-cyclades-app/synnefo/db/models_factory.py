@@ -58,7 +58,7 @@ class FlavorFactory(factory.DjangoModelFactory):
 
     cpu = factory.Sequence(lambda n: n + 2, type=int)
     ram = factory.Sequence(lambda n: n * 512, type=int)
-    disk = factory.Sequence(lambda n: n * 10, type=int)
+    disk = factory.Sequence(lambda n: n * 1, type=int)
     volume_type = factory.SubFactory(VolumeTypeFactory)
     deleted = False
 

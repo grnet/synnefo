@@ -289,6 +289,7 @@ class Command(SynnefoCommand):
                 self.confirm()
 
             user.delete()
+            user.base_project and user.base_project.delete()
 
         # Change users email address
         newemail = options.get('set-email', None)

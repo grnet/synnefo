@@ -244,7 +244,8 @@ class AuthProvider(object):
                 user = pending._instance.user
                 logger.info("Removing existing unverified user (%r)",
                             user.log_display)
-                user.base_project.delete()
+                user.base_project and user.base_project.delete()
+                user.delete()
 
         create_params = {
             'module': self.module,

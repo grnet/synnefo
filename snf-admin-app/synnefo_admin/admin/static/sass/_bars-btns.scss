@@ -295,13 +295,15 @@ They have black background
 */
 
 body .custom-buttons {
-	.custom-btn:not(.disabled) {
-		background-color: $total-black;
-		border-color: transparent;
-		border-bottom: 2px solid transparent;
+	.custom-btn {
 		margin-right: 1em;
-		&:hover {
-			border-bottom-color: $almost-white;
+		&:not(.disabled) {
+			background-color: $total-black;
+			border-color: transparent;
+			border-bottom: 2px solid transparent;
+			&:hover {
+				border-bottom-color: $almost-white;
+		}
 	}
 }
 
@@ -316,21 +318,19 @@ body .custom-buttons {
 		border-bottom-color: $almost-white;
 	}
 }
+
 /*
 Extra-button is used to show total selected rows
 */
 
 .extra-btn {
-	margin-bottom: 2em;
-	.badge {
+	&>span {
+		display: inline-block;
 		background: transparent;
-		border: 1px solid;
-		line-height: 0.8;
-	}
-	&:hover {
-		// .badge	 {
-		// 	color: $default-btn-color;
-		// }
+		&.badge {
+			border: 1px solid;
+			vertical-align: middle;
+		}
 	}
 }
 

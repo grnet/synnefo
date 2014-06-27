@@ -1,10 +1,5 @@
 <div class="sidebar actionbar">
 	<div class="btn-group-vertical">
-	<a href="" class="disabled toggle-selected extra-btn custom-btn" data-karma="neutral">
-		<span>
-			Show selected <span class="badge num selected-num">0</span>
-		</span>
-	</a>
 	{% for op, action in action_dict.items %}
     <a href=""data-target="#{{action.target}}-{{ op }}" data-action="{{ op }}" data-toggle="modal" data-karma={{ action.karma }} data-caution="{{ action.caution_level }}" class="disabled custom-btn">
 	        <span>{{ action.name }}</span>

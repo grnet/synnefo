@@ -248,25 +248,28 @@ Custom-buttons are buttons of lesser significance.
 They have black background
 */
 /* line 298, ../sass/_bars-btns.scss */
+body .custom-buttons .custom-btn {
+  margin-right: 1em;
+}
+/* line 300, ../sass/_bars-btns.scss */
 body .custom-buttons .custom-btn:not(.disabled) {
   background-color: #222222;
   border-color: transparent;
   border-bottom: 2px solid transparent;
-  margin-right: 1em;
 }
-/* line 303, ../sass/_bars-btns.scss */
+/* line 304, ../sass/_bars-btns.scss */
 body .custom-buttons .custom-btn:not(.disabled):hover {
   border-bottom-color: #eeeeee;
 }
 
-/* line 309, ../sass/_bars-btns.scss */
+/* line 311, ../sass/_bars-btns.scss */
 .expand-btn {
   float: right;
   background-color: #222222;
   border-color: transparent;
   border-bottom: 2px solid transparent;
 }
-/* line 315, ../sass/_bars-btns.scss */
+/* line 317, ../sass/_bars-btns.scss */
 .expand-btn:hover {
   border-bottom-color: #eeeeee;
 }
@@ -274,15 +277,15 @@ body .custom-buttons .custom-btn:not(.disabled):hover {
 /*
 Extra-button is used to show total selected rows
 */
-/* line 323, ../sass/_bars-btns.scss */
-.extra-btn {
-  margin-bottom: 2em;
-}
-/* line 325, ../sass/_bars-btns.scss */
-.extra-btn .badge {
+/* line 327, ../sass/_bars-btns.scss */
+.extra-btn > span {
+  display: inline-block;
   background: transparent;
+}
+/* line 330, ../sass/_bars-btns.scss */
+.extra-btn > span.badge {
   border: 1px solid;
-  line-height: 0.8;
+  vertical-align: middle;
 }
 
 /* line 337, ../sass/_bars-btns.scss */

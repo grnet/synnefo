@@ -21,6 +21,7 @@ from operator import or_
 
 from django.core.urlresolvers import reverse
 from django.db.models import Q
+from django.conf import settings
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser, ProjectMembership, Project
@@ -39,8 +40,7 @@ from synnefo_admin.admin.utils import filter_owner_name
 
 
 def filter_vm_id(queryset, query):
-    # FIXME: This should change
-    prefix = 'snf-'
+    prefix = settings.BACKEND_PREFIX_ID
     query = query.replace(prefix, '')
     if not query.isdigit():
         return queryset

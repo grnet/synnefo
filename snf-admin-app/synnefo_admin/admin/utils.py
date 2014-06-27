@@ -22,6 +22,7 @@ from django.db.models import Q
 from django.views.decorators.gzip import gzip_page
 from django.template import Context, Template
 from django.conf import settings
+from django.core.urlresolvers import reverse
 
 from synnefo.util import units
 from astakos.im.models import AstakosUser
@@ -161,3 +162,13 @@ def render_email(request, user):
     body = t.render(c)
     logging.info("Subject is %s, body is %s", subject, body)
     return subject, body
+
+
+def create_details_href(type, name, id):
+    """Create an href (name + url) for the details page of an item."""
+    url = reverse('admin-details', args=[type, id])
+    if len(str(id)) > 12:
+        href = '<a href=%s>%s</a>' % (url, name)
+    else:
+        href = '<a href=%s>%s (id:%s)</a>' % (url, name, id)
+    return href

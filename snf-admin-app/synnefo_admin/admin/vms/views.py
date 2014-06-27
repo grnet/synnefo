@@ -39,7 +39,7 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
 from synnefo_admin.admin.utils import get_actions, render_email
 from synnefo_admin.admin.users.utils import get_user
 
-from .utils import get_flavor_info, get_vm
+from .utils import get_flavor_info, get_vm, get_user_details_href
 from .filters import VMFilterSet
 from .actions import cached_actions
 
@@ -95,12 +95,12 @@ class VMJSONView(DatatablesView):
         extra_dict['contact_email'] = {
             'display_name': "Contact email",
             'value': AstakosUser.objects.get(uuid=inst.userid).email,
-            'visible': True,
+            'visible': False,
         }
         extra_dict['contact_name'] = {
             'display_name': "Contact name",
             'value': AstakosUser.objects.get(uuid=inst.userid).realname,
-            'visible': True,
+            'visible': False,
         }
 
         if self.form.cleaned_data['iDisplayLength'] < 0:
@@ -116,9 +116,9 @@ class VMJSONView(DatatablesView):
 
     def add_verbose_data(self, inst):
         extra_dict = OrderedDict()
-        extra_dict['user_id'] = {
-            'display_name': "User ID",
-            'value': inst.userid,
+        extra_dict['user_info'] = {
+            'display_name': "User",
+            'value': get_user_details_href(inst),
             'visible': True,
         }
         extra_dict['image_id'] = {

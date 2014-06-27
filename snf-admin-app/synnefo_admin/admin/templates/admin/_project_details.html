@@ -1,7 +1,6 @@
 {% load admin_tags %}
 
 {% with project=item page='user' %}
-<!--{{ project|admin_debug }}-->
 <div class="object-anchor" id="project-{{project.uuid}}"></div>
 <div class="object-details {{ rowcls }}" data-id="{{project.uuid}}"
     data-type="{{type}}">

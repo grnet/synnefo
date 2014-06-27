@@ -29,8 +29,13 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import filter_owner_name
+from synnefo_admin.admin.utils import filter_owner_name, create_details_href
 
 
 def get_volume(query):
     return Volume.objects.get(pk=int(query))
+
+
+def get_user_details_href(volume):
+    user = AstakosUser.objects.get(uuid=volume.userid)
+    return create_details_href('user', user.realname, user.uuid)

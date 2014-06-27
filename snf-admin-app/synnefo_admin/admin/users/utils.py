@@ -40,7 +40,7 @@ from eztables.views import DatatablesView
 import django_filters
 from django.db.models import Q
 
-from synnefo_admin.admin.utils import is_resource_useful
+from synnefo_admin.admin.utils import is_resource_useful, create_details_href
 
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
 
@@ -129,4 +129,8 @@ def get_user_groups(user):
 
 def get_suspended_vms(user):
     vms = VirtualMachine.objects.filter(userid=user.uuid, suspended=True)
-    return map(lambda x: x.name, list(vms))
+    if not vms:
+        return 'None'
+
+    urls = [create_details_href('vm', vm.name, vm.pk) for vm in vms]
+    return ', '.join(urls)

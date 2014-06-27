@@ -28,7 +28,8 @@ from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
 
 from eztables.views import DatatablesView
-import django_filters
+
+from synnefo_admin.admin.utils import create_details_href
 
 
 def get_contact_email(inst):
@@ -39,3 +40,11 @@ def get_contact_email(inst):
 def get_contact_name(inst):
     if inst.userid:
         return AstakosUser.objects.get(uuid=inst.userid).realname,
+
+
+def get_user_details_href(volume):
+    if volume.userid:
+        user = AstakosUser.objects.get(uuid=volume.userid)
+        return create_details_href('user', user.realname, user.uuid)
+    else:
+        return "-"

@@ -34,7 +34,7 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import filter_owner_name
+from synnefo_admin.admin.utils import filter_owner_name, create_details_href
 
 
 def get_network(query):
@@ -44,8 +44,20 @@ def get_network(query):
 def get_contact_email(inst):
     if inst.userid:
         return AstakosUser.objects.get(uuid=inst.userid).email,
+    else:
+        return "-"
 
 
 def get_contact_name(inst):
     if inst.userid:
         return AstakosUser.objects.get(uuid=inst.userid).realname,
+    else:
+        return "-"
+
+
+def get_user_details_href(inst):
+    if inst.userid:
+        user = AstakosUser.objects.get(uuid=inst.userid)
+        return create_details_href('user', user.realname, user.uuid)
+    else:
+        return "-"

@@ -33,7 +33,7 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
 from synnefo_admin.admin.utils import get_actions, render_email
 from synnefo_admin.admin.users.utils import get_user
 
-from .utils import get_volume
+from .utils import get_volume, get_user_details_href
 from .actions import cached_actions
 from .filters import VolumeFilterSet
 
@@ -116,6 +116,11 @@ class VolumeJSONView(DatatablesView):
 
     def add_verbose_data(self, inst):
         extra_dict = OrderedDict()
+        extra_dict['user_info'] = {
+            'display_name': "User",
+            'value': get_user_details_href(inst),
+            'visible': True,
+        }
         extra_dict['description'] = {
             'display_name': "Description",
             'value': inst.description or "(not set)",
@@ -124,11 +129,6 @@ class VolumeJSONView(DatatablesView):
         extra_dict['updated'] = {
             'display_name': "Update time",
             'value': inst.updated,
-            'visible': True,
-        }
-        extra_dict['user_info'] = {
-            'display_name': "User info",
-            'value': inst.userid,
             'visible': True,
         }
 

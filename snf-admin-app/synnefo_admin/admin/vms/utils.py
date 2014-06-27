@@ -35,17 +35,19 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
+from synnefo_admin.admin.utils import create_details_href
 
 
 def get_vm(query):
-    try:
-        id = query.translate(None, 'vm-')
-    except Exception:
-        id = query
-    return VirtualMachine.objects.get(pk=int(id))
+    return VirtualMachine.objects.get(pk=int(query))
 
 
 def get_flavor_info(vm):
     return ('CPU: ' + str(vm.flavor.cpu) + ', RAM: ' + str(vm.flavor.ram) +
             ', Disk size: ' + str(vm.flavor.disk) + ', Disk template: ' +
             str(vm.flavor.volume_type.disk_template))
+
+
+def get_user_details_href(vm):
+    user = AstakosUser.objects.get(uuid=vm.userid)
+    return create_details_href('user', user.realname, user.uuid)

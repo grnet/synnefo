@@ -43,7 +43,8 @@ from django.db.models import Q
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
-from synnefo_admin.admin.utils import get_actions, render_email
+from synnefo_admin.admin.utils import (get_actions, render_email,
+                                       create_details_href)
 
 from .utils import (get_user, get_quotas, get_user_groups,
                     get_enabled_providers, get_suspended_vms, )
@@ -156,12 +157,11 @@ class UserJSONView(DatatablesView):
                 'visible': True,
             }
 
-        vms = get_suspended_vms(inst)
-        suspended = ', '.join(vms) if vms else 'None'
+        suspended_vms = get_suspended_vms(inst)
 
         extra_dict['suspended_vms'] = {
             'display_name': "Suspended VMs",
-            'value': suspended,
+            'value': suspended_vms,
             'visible': True,
         }
 

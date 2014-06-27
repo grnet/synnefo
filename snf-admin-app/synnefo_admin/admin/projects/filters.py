@@ -82,7 +82,7 @@ class ProjectFilterSet(django_filters.FilterSet):
                                             lookup_type='icontains')
     status = django_filters.MultipleChoiceFilter(
         label='Status', action=filter_status, choices=get_status_choices())
-    is_base = django_filters.BooleanFilter(label='Base')
+    is_base = django_filters.BooleanFilter(label='System')
 
     class Meta:
         model = Project

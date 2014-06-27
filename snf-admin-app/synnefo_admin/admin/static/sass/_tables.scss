@@ -1,7 +1,87 @@
-@import "settings";
-/* These are used in pages with tables */
-
+table thead th {
+    white-space: nowrap;
+}
 .selection-indicator {
 	margin-right: 6px;
 	cursor: pointer
 }
+
+/* Table of users */
+
+table:not(.table-selected) td:last-child { // this is meant for summary td
+    max-width: 60px;
+    min-width: 60px;
+    padding: 8px 0;
+    .details-link:hover {
+        text-decoration: none;
+    }
+    .summary-expand {
+        float: right;
+        padding-left: 8px;
+        // background-color: rgb(185, 238, 202);
+        padding-right: 8px;
+        &:hover {
+            text-decoration: none;
+        }
+    }
+     dl {
+     // background-color: pink;
+     position: relative;
+     padding: 8px;
+     display: none;
+     margin-bottom: 0;
+     margin-top: 20px;
+     /* dd {
+        display: inline-block;
+        } */
+    }
+}
+
+
+.table-items .headerSortUp span.caret {
+    border-top: 0;
+    border-bottom: 4px solid;
+}
+
+
+.table-items {
+    .login-method {
+        padding: 2px 16px 2px 0px;
+        text-align: center;
+    }
+
+    th .badge {
+        margin: 0 2px 0 4px;
+        display: inline;
+        padding-top: 2px;
+    }
+    td {
+        padding:8px 6px 0 6px;
+    }
+}
+
+
+#table-items-total_filter {
+    label {
+        color: white;
+    }
+    input {
+        border: 0 none;
+    }
+}
+
+#table-items-total_filter {
+    input {
+        display: inline-block;
+        margin-left: 8px;
+    }
+}
+
+
+#table-items-selected_wrapper {
+
+    border: 1px solid gray;
+    margin-bottom: 20px;
+    display: none;
+}
+

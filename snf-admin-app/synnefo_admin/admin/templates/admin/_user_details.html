@@ -7,9 +7,9 @@
     <h4>
         <span class="title"><a href="{% url admin-details type user.uuid %}">{{ user|repr }}</a></span>
         <span class="arrow snf-icon snf-angle-down"></span>
-        <span class="label label-primary">{{ user.status_display|upper }}</span>
-        <span class="label label-primary">UUID: {{ user.uuid }}</span>
-        <span class="label label-primary email">{{ user.email }}</span>
+        <span class="label">{{ user.status_display|upper }}</span>
+        <span class="label">UUID: {{ user.uuid }}</span>
+        <span class="label">{{ user.email }}</span>
     </h4>
 
     <div class="object-details-content">

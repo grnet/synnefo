@@ -1,20 +1,6 @@
-@import "settings";
-
-body {
-	color: white;
-	a {
-		color: white;
-	}
-}
-
-
-
 .object-details h4 .label {
-// font-size: 0.65em;
-font-style: normal;
-font-weight: normal;
-float: right;
-margin-left: 6px;
+	float: right;
+	margin-left: 10px;
 }
 
 .main {
@@ -80,10 +66,6 @@ body {
 	}
 }
 
-body .well {
-	border-color: $blue-light;
-
-}
 // .tab-content dl {
 // 	background: white;
 // }
@@ -191,9 +173,8 @@ body .well {
 	border-color: $blue-light;
 
 }
-.tab-content dl {
-	background: white;
-}
+
+
 body .object-details {
 	h4 {
 		margin-left: 0;

@@ -7,11 +7,11 @@
     <h4>
         <span class="title"><a href="{% url admin-details type ip.pk %}">{{ ip.address }}</a></span>
         <span class="arrow  snf-icon snf-angle-down"></span>
-        <span class="label label-primary">ID: {{ip.pk}}</span>
+        <span class="label">ID: {{ip.pk}}</span>
         {% if ip.floating_ip %}
-        <span class="label label-primary">FLOATING</span>
+        <span class="label">FLOATING</span>
         {% endif %}
-        <span class="label label-primary">IP Version: {{ ip.ipversion|upper }}</span>
+        <span class="label">IP Version: {{ ip.ipversion|upper }}</span>
     </h4>
         <div class="tags">
         </div>

@@ -1,9 +1,13 @@
-@import "settings";
-
 .filters-area {
 	border-bottom: 1px solid white;
 	padding-bottom: 16px;
 	margin-bottom: 16px;
+}
+
+.filters {
+	a:focus, input:focus {
+		outline: none;
+	}
 }
 
 .filters .badge {
@@ -92,4 +96,9 @@ body input:not(.subject):focus {
 	-webkit-box-shadow: none;
 	-moz-box-shadow: none;
 	box-shadow: none;
+}
+
+
+.filters.subnav-fixed {
+	top: $navbar-height;
 }

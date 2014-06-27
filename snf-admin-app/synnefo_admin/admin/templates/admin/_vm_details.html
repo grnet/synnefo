@@ -11,9 +11,9 @@
     <span class="label label-warning">SUSPENDED</span>
     {% endif %}
     {{ vm|object_status_label|safe }}
-    <span class="label label-primary">ID: {{ vm.pk }}</span>
-    <span class="label label-primary">{{ vm|vm_public_ip }}</span>
-    <span class="label label-primary flavor">
+    <span class="label">ID: {{ vm.pk }}</span>
+    <span class="label">{{ vm|vm_public_ip }}</span>
+    <span class="label flavor">
       <span class="cpu">{{ vm.flavor.cpu }}x</span>
       <span class="ram">{{ vm.flavor.ram}}MB</span>
       <span class="disk">{{ vm.flavor.disk }}GB</span>

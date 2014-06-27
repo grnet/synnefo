@@ -2,16 +2,15 @@
 /* vars like colors and dist */
 /* and functs */
 
+@import "bootstrap/variables";  
+
 $total-width: 960px;
-$nav-top-height: 50px;
 $nav-side-padding: 20px;
 
 
 $blue-light: #B2CAE9;
 $blue-light-extra: #AFC6D6;
 $blue-intense: #3C96E0;
-$gray-dark: #404040;
-$gray-light: #5A5959;
 $gray-light-extra: lighten($gray-light, 20%);
 $green-intense: #00a551;
 $green-intense-extra: darken($green-intense, 10%);

@@ -464,26 +464,45 @@ def update_vm_disks(vm, disks, etime=None):
     db_disks = dict([(disk.id, disk)
                      for disk in vm.volumes.filter(deleted=False)])
 
+    db_keys = set(db_disks.keys())
+    gnt_keys = set(gnt_disks.keys())
+    skip_db_stale = False
+
     changes = []
-    for disk_name in set(db_disks.keys()) | set(gnt_disks.keys()):
-        db_disk = db_disks.get(disk_name)
-        gnt_disk = gnt_disks.get(disk_name)
-        if gnt_disk is None:
-            # Disk exists in DB but not in Ganeti
-            if disk_is_stale(vm, disk):
-                log.debug("Removing stale disk '%s'" % db_disk)
-                db_disk.status = "DELETED"
-                db_disk.deleted = True
-                db_disk.save()
-                changes.append(("remove", db_disk, {}))
-            else:
-                log.info("disk '%s' is still being created" % db_disk)
-        elif db_disk is None:
-            log.warning("Automatically adopting unknown disk '%s' of instance"
-                        " '%s'", disk_name, vm)
+
+    # Disks that exist in Ganeti but not in DB
+    for disk_name in (gnt_keys - db_keys):
+        gnt_disk = gnt_disks[disk_name]
+        if ((disk_name.startswith(UNKNOWN_DISK_PREFIX)) and
+           (len(db_keys - gnt_keys) > 0)):
+            log.warning("Ganeti disk '%s' of VM '%s' does not exist in DB,"
+                        " while there are stale DB volumes. Cannot"
+                        " automatically fix this issue.", disk_name, vm)
+            skip_db_stale = True
+        else:
+            log.warning("Automatically adopting unknown disk '%s' of"
+                        " instance '%s'", disk_name, vm)
             adopt_instance_disk(vm, gnt_disk)
-        elif not disks_are_equal(db_disk, gnt_disk):
-            # Disk has changed
+
+    # Disks that exist in DB but not in Ganeti
+    for disk_name in (db_keys - gnt_keys):
+        db_disk = db_disks[disk_name]
+        if db_disk.status != "DELETING" and skip_db_stale:
+            continue
+        if disk_is_stale(vm, disk):
+            log.debug("Removing stale disk '%s'", db_disk)
+            db_disk.status = "DELETED"
+            db_disk.deleted = True
+            db_disk.save()
+            changes.append(("remove", db_disk, {}))
+        else:
+            log.info("disk '%s' is still being created" % db_disk)
+
+    # Disks that exist both in DB and in Ganeti
+    for disk_name in (db_keys & gnt_keys):
+        db_disk = db_disks[disk_name]
+        gnt_disk = gnt_disks[disk_name]
+        if not disks_are_equal(db_disk, gnt_disk):  # Modified Disk
             if gnt_disk["size"] != db_disk.size:
                 # Size of the disk has changed! TODO: Fix flavor!
                 size_delta = gnt_disk["size"] - db_disk.size

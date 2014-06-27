@@ -19,6 +19,11 @@
 		span {
 			border-color: $color;
 		}
+		&.disabled {
+			span {
+				border-color: transparent;
+			}
+		}
 	}
 }
 

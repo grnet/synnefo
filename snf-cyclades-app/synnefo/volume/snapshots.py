@@ -22,8 +22,6 @@ from synnefo.volume import util
 
 log = logging.getLogger(__name__)
 
-PLANKTON_PREFIX = "plankton:"
-PROPERTY_PREFIX = "property:"
 SNAPSHOTS_MAPFILE_PREFIX = "archip:"
 
 
@@ -65,14 +63,14 @@ def create(user_id, volume, name, description, metadata, force=False):
     transaction.commit()
 
     snapshot_metadata = {
-        PLANKTON_PREFIX + "name": name,
-        PLANKTON_PREFIX + "status": "CREATING",
-        PLANKTON_PREFIX + "disk_format": "diskdump",
-        PLANKTON_PREFIX + "container_format": "bare",
-        PLANKTON_PREFIX + "is_snapshot": True,
+        "name": name,
+        "status": "CREATING",
+        "disk_format": "diskdump",
+        "container_format": "bare",
+        "is_snapshot": True,
         # Snapshot specific
-        PLANKTON_PREFIX + "description": description,
-        PLANKTON_PREFIX + "volume_id": volume.id,
+        "description": description,
+        "volume_id": volume.id,
     }
 
     # Snapshots are used as images. We set the most important properties
@@ -86,8 +84,8 @@ def create(user_id, volume, name, description, metadata, force=False):
                                      .values_list("meta_key", "meta_value"))
     metadata.update(vm_metadata)
 
-    for key, val in metadata.items():
-        snapshot_metadata[PLANKTON_PREFIX + PROPERTY_PREFIX + key] = val
+    snapshot_properties = PlanktonBackend._prefix_properties(metadata)
+    snapshot_metadata.update(snapshot_properties)
 
     # Generate a name for the Pithos file. Also, generate a name for the
     # Archipelago mapfile.

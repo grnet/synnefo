@@ -49,6 +49,7 @@ from django.utils.encoding import smart_unicode, smart_str
 from pithos.backends.base import NotAllowedError, VersionNotExists, QuotaError
 from pithos.backends.util import PithosBackendPool
 from snf_django.lib.api import faults
+from snf_django.management.utils import parse_bool
 
 Location = namedtuple("ObjectLocation", ["account", "container", "path"])
 
@@ -199,26 +200,30 @@ class PlanktonBackend(object):
         return self._get_image(uuid)
 
     def _update_metadata(self, uuid, location, metadata, replace=False):
-        _prefixed_metadata = self._prefix_metadata(metadata)
-        prefixed = {}
-        for k, v in _prefixed_metadata.items():
-            # Encode to UTF-8
-            k, v = smart_unicode(k), smart_unicode(v)
-            # Check the length of key/value
-            if len(k) > 128:
-                raise faults.BadRequest('Metadata keys should be less than %s'
-                                        ' characters' % MAX_META_KEY_LENGTH)
-            if len(v) > 256:
-                raise faults.BadRequest('Metadata values should be less than'
-                                        ' %scharacters.'
-                                        % MAX_META_VALUE_LENGTH)
-            prefixed[k] = v
+        prefixed = self._prefix_and_validate_metadata(metadata)
 
         account, container, path = location
         self.backend.update_object_meta(self.user, account, container, path,
                                         PLANKTON_DOMAIN, prefixed, replace)
         logger.debug("User '%s' updated image '%s', metadata: '%s'", self.user,
                      uuid, prefixed)
+
+    def _prefix_and_validate_metadata(self, metadata):
+        _prefixed_metadata = self._prefix_metadata(metadata)
+        prefixed = {}
+        for k, v in _prefixed_metadata.items():
+            # Encode to UTF-8
+            k, v = smart_unicode(k), smart_unicode(v)
+            # Check the length of key/value
+            if len(k) > MAX_META_KEY_LENGTH:
+                raise faults.BadRequest('Metadata keys should be less than %s'
+                                        ' characters' % MAX_META_KEY_LENGTH)
+            if len(v) > MAX_META_VALUE_LENGTH:
+                raise faults.BadRequest('Metadata values should be less than'
+                                        ' %s characters.'
+                                        % MAX_META_VALUE_LENGTH)
+            prefixed[k] = v
+        return prefixed
 
     def _get_raw_metadata(self, uuid, version=None, check_image=True):
         """Get info and metadata in Plankton doamin for the Pithos object.
@@ -448,6 +453,7 @@ class PlanktonBackend(object):
     # Snapshots
     @handle_pithos_backend
     def register_snapshot(self, name, mapfile, size, metadata):
+        metadata = self._prefix_and_validate_metadata(metadata)
         snapshot_id = self.backend.register_object_map(
             user=self.user,
             account=self.user,
@@ -467,7 +473,7 @@ class PlanktonBackend(object):
         return [s for s in _snapshots if s["is_snapshot"]]
 
     @handle_pithos_backend
-    def get_snapshot(self, user, snapshot_uuid):
+    def get_snapshot(self, snapshot_uuid):
         snap = self._get_image(snapshot_uuid)
         if snap.get("is_snapshot", False) is False:
             raise faults.ItemNotFound("Snapshots '%s' does not exist" %
@@ -520,7 +526,8 @@ def image_to_dict(location, metadata, permissions):
     image["size"] = metadata["bytes"]
     image['owner'] = account
     image["store"] = u"pithos"
-    image["is_snapshot"] = metadata.pop(PLANKTON_PREFIX + "is_snapshot", False)
+    image["is_snapshot"] = parse_bool(metadata.pop(PLANKTON_PREFIX +
+                                                   "is_snapshot", False))
     image["version"] = metadata["version"]
 
     # Permissions

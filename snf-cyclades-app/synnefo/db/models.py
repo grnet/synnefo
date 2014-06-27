@@ -37,8 +37,10 @@ log = logging.getLogger(__name__)
 
 class VolumeType(models.Model):
     NAME_LENGTH = 255
+    DISK_TEMPLATE_LENGTH = 32
     name = models.CharField("Name", max_length=NAME_LENGTH)
-    disk_template = models.CharField('Disk Template', max_length=32)
+    disk_template = models.CharField('Disk Template',
+                                     max_length=DISK_TEMPLATE_LENGTH)
     deleted = models.BooleanField('Deleted', default=False)
 
     def __str__(self):

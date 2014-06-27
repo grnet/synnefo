@@ -48,7 +48,7 @@ class Command(SynnefoCommand):
         port = common.get_resource("port", args[0])
         display_mails = options['displaymails']
 
-        pprint.pprint_port(port, display_mails=display_mail,
+        pprint.pprint_port(port, display_mails=display_mails,
                            stdout=self.stdout)
         self.stdout.write('\n\n')
 

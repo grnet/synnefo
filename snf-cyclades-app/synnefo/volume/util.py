@@ -62,7 +62,7 @@ def get_volume_type(volume_type_id, for_update=False, include_deleted=False,
 def get_snapshot(user_id, snapshot_id, exception=faults.ItemNotFound):
     try:
         with backend.PlanktonBackend(user_id) as b:
-            return b.get_snapshot(user_id, snapshot_id)
+            return b.get_snapshot(snapshot_id)
     except faults.ItemNotFound:
         raise exception("Snapshot %s not found" % snapshot_id)
 

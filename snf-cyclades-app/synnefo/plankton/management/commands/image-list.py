@@ -39,10 +39,10 @@ class Command(SynnefoCommand):
             images = backend._list_images(user)
             images.sort(key=lambda x: x['created_at'], reverse=True)
 
-        headers = ("id", "name", "user.uuid", "public")
+        headers = ("id", "name", "user.uuid", "public", "snapshot")
         table = []
         for img in images:
             fields = (img["id"], img["name"], img["owner"],
-                      str(img["is_public"]))
+                      str(img["is_public"]), str(img["is_snapshot"]))
             table.append(fields)
         pprint_table(self.stdout, table, headers)

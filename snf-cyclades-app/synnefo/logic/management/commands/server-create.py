@@ -58,7 +58,7 @@ class Command(SynnefoCommand):
                          " --port id:<port_id>"
                          " --port floatingip:<floatingip_id>."),
         make_option("--volume", dest="volumes", action="append",
-                    help="--volume size=<size>, --volume id=<volume_id"
+                    help="--volume size=<size>, --volume id=<volume_id>"
                          ", --volume size=<size>,image=<image_id>"
                          ", --volume size=<size>,snapshot=<snapshot_id>",
                     default=[]),

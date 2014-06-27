@@ -32,6 +32,12 @@ class Command(SynnefoCommand):
             default=None,
             help="The UUID of the owner of the snapshot. Required"
                  "if snapshot is not public"),
+        make_option(
+            '--public',
+            dest='public',
+            default=False,
+            action="store_true",
+            help="Use this option if the snapshot is public"),
     )
 
     @common.convert_api_faults
@@ -42,8 +48,17 @@ class Command(SynnefoCommand):
 
         snapshot_id = args[0]
         userid = options["userid"]
+        public = options["public"]
 
-        with PlanktonBackend(userid) as backend:
-            snapshot = backend.get_snapshot(userid, snapshot_id)
+        if (userid is None) and (public is False):
+            raise CommandError("'user' option or 'public' option is required")
+
+        try:
+            with PlanktonBackend(userid) as backend:
+                snapshot = backend.get_snapshot(snapshot_id)
+        except:
+            raise CommandError("An error occurred, verify that snapshot and "
+                               "user ID are valid")
+
         utils.pprint_table(out=self.stdout, table=[snapshot.values()],
                            headers=snapshot.keys(), vertical=True)

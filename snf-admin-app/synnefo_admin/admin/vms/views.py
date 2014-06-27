@@ -92,8 +92,8 @@ class VMJSONView(DatatablesView):
             'value': inst.userid,
             'visible': False,
         }
-        extra_dict['contact_mail'] = {
-            'display_name': "Contact mail",
+        extra_dict['contact_email'] = {
+            'display_name': "Contact email",
             'value': AstakosUser.objects.get(uuid=inst.userid).email,
             'visible': True,
         }

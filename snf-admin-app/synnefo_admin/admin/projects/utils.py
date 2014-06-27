@@ -56,7 +56,7 @@ def get_project(query):
     return project
 
 
-def get_contact_mail(inst):
+def get_contact_email(inst):
     if inst.owner:
         return inst.owner.email,
 

@@ -88,8 +88,8 @@ class AstakosUserAuthProviderJSONView(DatatablesView):
                 'value': (reverse('admin-details', args=['auth_provider',
                                                          inst.id])),
                 'visible': True,
-            }, 'contact_mail': {
-                'display_name': "Contact mail",
+            }, 'contact_email': {
+                'display_name': "Contact email",
                 'value': None,
                 'visible': False,
             }, 'contact_name': {

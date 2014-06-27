@@ -52,7 +52,7 @@ from synnefo_admin.admin.users.utils import get_user
 
 from .filters import ProjectFilterSet
 from .actions import cached_actions
-from .utils import (get_contact_id, get_contact_name, get_contact_mail,
+from .utils import (get_contact_id, get_contact_name, get_contact_email,
                     get_project, display_project_stats,
                     display_project_resources,)
 
@@ -120,9 +120,9 @@ class ProjectJSONView(DatatablesView):
             #'value': get_contact_id(inst),
             'visible': False,
         }
-        extra_dict['contact_mail'] = {
-            'display_name': "Contact mail",
-            'value': get_contact_mail(inst),
+        extra_dict['contact_email'] = {
+            'display_name': "Contact email",
+            'value': get_contact_email(inst),
             'visible': False,
         }
         extra_dict['contact_name'] = {

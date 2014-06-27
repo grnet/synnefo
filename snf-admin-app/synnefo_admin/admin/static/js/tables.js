@@ -500,7 +500,7 @@ $(function(){
 		   "item_name": infoObj.item_name.value,
 		   "contact_id": infoObj.contact_id.value,
 		   "contact_name": infoObj.contact_name.value,
-		   "contact_email": infoObj.contact_mail.value,
+		   "contact_email": infoObj.contact_email.value,
 		   "actions": {}
 		}
 

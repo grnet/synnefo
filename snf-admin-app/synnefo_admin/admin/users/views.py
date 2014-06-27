@@ -102,8 +102,8 @@ class UserJSONView(DatatablesView):
             'value': inst.uuid,
             'visible': False,
         }
-        extra_dict['contact_mail'] = {
-            'display_name': "Contact mail",
+        extra_dict['contact_email'] = {
+            'display_name': "Contact email",
             'value': inst.email,
             'visible': False,
         }

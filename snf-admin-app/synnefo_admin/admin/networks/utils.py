@@ -41,7 +41,7 @@ def get_network(query):
     return Network.objects.get(pk=int(query))
 
 
-def get_contact_mail(inst):
+def get_contact_email(inst):
     if inst.userid:
         return AstakosUser.objects.get(uuid=inst.userid).email,
 

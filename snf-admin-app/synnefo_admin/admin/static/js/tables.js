@@ -36,7 +36,7 @@ $(function(){
 
 
 	/* Table */
-
+	/* For the tables we have used DataTables 1.10.0 */
 	var url = $('#table-items-total').data("url");
 	var serverside = Boolean($('#table-items-total').data("server-side"));
 	var table;

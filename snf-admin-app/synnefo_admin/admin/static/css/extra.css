@@ -1276,36 +1276,35 @@ a:not([disabled]):hover {
   width: 100%;
   margin: 20px auto;
   border: 1px solid cyan;
-  padding-top: 20px;
 }
 
-/* line 157, ../sass/extra.scss */
+/* line 156, ../sass/extra.scss */
 svg > text:last-child {
   display: none;
 }
 
-/* line 162, ../sass/extra.scss */
+/* line 161, ../sass/extra.scss */
 .dropdown .arrow {
   margin-left: 6px;
   vertical-align: middle;
 }
 
-/* line 168, ../sass/extra.scss */
+/* line 167, ../sass/extra.scss */
 .hidden-row {
   display: none;
 }
 
-/* line 173, ../sass/extra.scss */
+/* line 172, ../sass/extra.scss */
 html body .dataTables_wrapper label {
   font-weight: normal;
 }
-/* line 177, ../sass/extra.scss */
+/* line 176, ../sass/extra.scss */
 html body .dataTables_wrapper table > thead > tr > th.sorting, html body .dataTables_wrapper table > thead > tr > th.sorting_asc, html body .dataTables_wrapper table > thead > tr > th.sorting_desc {
   background-position: center left;
   padding-left: 22px;
 }
 
-/* line 185, ../sass/extra.scss */
+/* line 184, ../sass/extra.scss */
 .container .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
   background-image: -webkit-linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
   background-image: linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
@@ -1315,52 +1314,52 @@ html body .dataTables_wrapper table > thead > tr > th.sorting, html body .dataTa
   border: 1px solid #345578;
 }
 
-/* line 194, ../sass/extra.scss */
+/* line 193, ../sass/extra.scss */
 body table > tbody > tr.selected > td {
   background-color: #D2DFDB !important;
   color: #6144ac;
 }
 
-/* line 200, ../sass/extra.scss */
+/* line 199, ../sass/extra.scss */
 .custom-buttons {
   float: left;
   margin-right: 10px;
 }
 
-/* line 206, ../sass/extra.scss */
+/* line 205, ../sass/extra.scss */
 *::-moz-selection {
   background: #fff2a8;
 }
 
-/* line 210, ../sass/extra.scss */
+/* line 209, ../sass/extra.scss */
 .with-shift *::selection {
   background-color: transparent;
 }
 
-/* line 214, ../sass/extra.scss */
+/* line 213, ../sass/extra.scss */
 .with-shift *::-moz-selection {
   background: transparent;
 }
 
-/* line 223, ../sass/extra.scss */
+/* line 222, ../sass/extra.scss */
 .warning-duplicate {
   font-size: 0.95em;
   font-style: italic;
 }
 
-/* line 228, ../sass/extra.scss */
+/* line 227, ../sass/extra.scss */
 div.dataTables_length {
   padding-left: 2em;
   padding-top: 0.55em;
 }
 
 /* updated olga */
-/* line 236, ../sass/extra.scss */
+/* line 235, ../sass/extra.scss */
 .navbar {
   text-shadow: none;
 }
 
-/* line 243, ../sass/extra.scss */
+/* line 242, ../sass/extra.scss */
 .nav > li > a:hover,
 .nav > li > a:focus,
 .nav > li.active > a,
@@ -1371,13 +1370,13 @@ div.dataTables_length {
   background: white;
 }
 
-/* line 250, ../sass/extra.scss */
+/* line 249, ../sass/extra.scss */
 .nav > li > a {
   -webkit-transition: all 0 ease 0;
   transition: all 0 ease 0;
 }
 
-/* line 255, ../sass/extra.scss */
+/* line 254, ../sass/extra.scss */
 .dropdown-menu {
   border-radius: 0;
   border: 0 none;
@@ -1385,7 +1384,7 @@ div.dataTables_length {
   background-color: white;
 }
 
-/* line 264, ../sass/extra.scss */
+/* line 263, ../sass/extra.scss */
 .dropdown-menu li > a:hover,
 .dropdown-menu .active > a,
 .dropdown-menu .active > a:hover {
@@ -1393,92 +1392,92 @@ div.dataTables_length {
   color: #404040;
 }
 
-/* line 269, ../sass/extra.scss */
+/* line 268, ../sass/extra.scss */
 .sub-nav {
   background: #5a5959;
   border: 0 none;
 }
-/* line 273, ../sass/extra.scss */
+/* line 272, ../sass/extra.scss */
 .sub-nav .nav > li > a {
   color: #eeeeee;
 }
-/* line 277, ../sass/extra.scss */
+/* line 276, ../sass/extra.scss */
 .sub-nav .nav > li:hover a {
   color: #404040;
 }
 
-/* line 285, ../sass/extra.scss */
+/* line 284, ../sass/extra.scss */
 table.table:not(.table-selected) {
   width: 100%;
   background-color: #404040;
   color: #eeeeee;
 }
-/* line 290, ../sass/extra.scss */
+/* line 289, ../sass/extra.scss */
 table.table:not(.table-selected) tbody tr {
   background-color: inherit;
 }
-/* line 293, ../sass/extra.scss */
+/* line 292, ../sass/extra.scss */
 table.table:not(.table-selected) tbody a {
   color: white;
 }
-/* line 295, ../sass/extra.scss */
+/* line 294, ../sass/extra.scss */
 table.table:not(.table-selected) tbody a .snf-search {
   opacity: 0.7;
 }
-/* line 297, ../sass/extra.scss */
+/* line 296, ../sass/extra.scss */
 table.table:not(.table-selected) tbody a .snf-search:hover {
   opacity: 1;
 }
 
-/* line 306, ../sass/extra.scss */
+/* line 305, ../sass/extra.scss */
 .table-striped > tbody > tr:nth-child(odd) > td,
 .table-striped > tbody > tr:nth-child(odd) > th {
   background-color: inherit;
 }
 
-/* line 311, ../sass/extra.scss */
+/* line 310, ../sass/extra.scss */
 table.dataTable tbody tr td,
 table.dataTable tbody tr th {
   border-top: 1px solid gray;
 }
 
-/* line 316, ../sass/extra.scss */
+/* line 315, ../sass/extra.scss */
 table.dataTable thead th,
 table.dataTable thead td {
   border-bottom: 1px solid white;
 }
 
-/* line 319, ../sass/extra.scss */
+/* line 318, ../sass/extra.scss */
 table.dataTable tbody tr:hover {
   background-color: #4d4d4d;
 }
 
-/* line 322, ../sass/extra.scss */
+/* line 321, ../sass/extra.scss */
 table.dataTable tbody tr.selected {
   background-color: #eeeeee;
   color: #404040;
 }
-/* line 325, ../sass/extra.scss */
+/* line 324, ../sass/extra.scss */
 table.dataTable tbody tr.selected a:not(.summary-expand) {
   color: black;
 }
 
-/* line 330, ../sass/extra.scss */
+/* line 329, ../sass/extra.scss */
 body table > tbody > tr.selected > td {
   background-color: inherit !important;
 }
 
-/* line 335, ../sass/extra.scss */
+/* line 334, ../sass/extra.scss */
 td:last-child .summary-expand {
   background-color: #00a551;
 }
 
-/* line 341, ../sass/extra.scss */
+/* line 340, ../sass/extra.scss */
 body table > tbody > tr.selected > td {
   color: #404040;
 }
 
-/* line 347, ../sass/extra.scss */
+/* line 346, ../sass/extra.scss */
 .dataTables_wrapper .dataTables_length,
 .dataTables_wrapper .dataTables_filter,
 .dataTables_wrapper .dataTables_info,
@@ -1486,47 +1485,47 @@ body table > tbody > tr.selected > td {
   color: white;
 }
 
-/* line 350, ../sass/extra.scss */
+/* line 349, ../sass/extra.scss */
 table.dataTable.no-footer {
   border-bottom: 1px solid #eeeeee;
   margin: 2em 0;
   background-color: #404040;
 }
 
-/* line 356, ../sass/extra.scss */
+/* line 355, ../sass/extra.scss */
 .dataTables_wrapper .dataTables_paginate .paginate_button {
   color: white !important;
 }
 
-/* line 360, ../sass/extra.scss */
+/* line 359, ../sass/extra.scss */
 .container .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
   background: #404040;
   border-color: white;
 }
 
-/* line 365, ../sass/extra.scss */
+/* line 364, ../sass/extra.scss */
 .container .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
   border-color: transparent;
 }
 
-/* line 370, ../sass/extra.scss */
+/* line 369, ../sass/extra.scss */
 .dataTables_wrapper .dataTables_paginate .paginate_button.current,
 .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
   background: white;
   border: transparent;
 }
 
-/* line 375, ../sass/extra.scss */
+/* line 374, ../sass/extra.scss */
 .dataTables_wrapper > .custom-buttons {
   margin-bottom: 1em;
 }
 
-/* line 379, ../sass/extra.scss */
+/* line 378, ../sass/extra.scss */
 .badge {
   border-radius: 0;
 }
 
-/* line 384, ../sass/extra.scss */
+/* line 383, ../sass/extra.scss */
 .dataTables_wrapper .dataTables_processing {
   background: #5a5959;
   color: white;
@@ -1536,37 +1535,37 @@ table.dataTable.no-footer {
   box-shadow: inner 0 0 5px #888;
 }
 
-/* line 393, ../sass/extra.scss */
+/* line 392, ../sass/extra.scss */
 .object-details-content {
   color: white;
 }
 
-/* line 397, ../sass/extra.scss */
+/* line 396, ../sass/extra.scss */
 .tab-content {
   background: #5a5959;
   padding: 20px;
 }
-/* line 400, ../sass/extra.scss */
+/* line 399, ../sass/extra.scss */
 .tab-content .well {
   border-color: #5a5959;
 }
 
-/* line 405, ../sass/extra.scss */
+/* line 404, ../sass/extra.scss */
 .info-block.main {
   margin-bottom: 5em;
 }
 
-/* line 409, ../sass/extra.scss */
+/* line 408, ../sass/extra.scss */
 .content-seperator {
   display: none;
 }
 
-/* line 414, ../sass/extra.scss */
+/* line 413, ../sass/extra.scss */
 .actions-per-item .custom-btn {
   margin: 10px 10px 10px 0;
 }
 
-/* line 421, ../sass/extra.scss */
+/* line 420, ../sass/extra.scss */
 .part-two > .object-details {
   border: 1px solid #8d8c8c;
 }

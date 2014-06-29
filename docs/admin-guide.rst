@@ -843,7 +843,7 @@ others, by a prefix in their names. This prefix is defined in
 
 Apart from handling Cyclades VM at the Ganeti level, the administrator can
 also use the `snf-manage server-*` commands. These command cover the most
-common tasks that are relative with VM handling. Below we describe come
+common tasks that are relative with VM handling. Below we describe some
 of them, but for more information you can use the `--help` option of all
 `snf-manage server-* commands`. These command cover the most
 
@@ -1060,7 +1060,7 @@ better understanding of these commands, refer to their help messages.
 
 Create a virtual private network for user
 `7cf4d078-67bf-424d-8ff2-8669eb4841ea` using the `PHYSICAL_VLAN` flavor, which
-means that the network will be uniquely assigned a phsyical VLAN. The network
+means that the network will be uniquely assigned a physical VLAN. The network
 is assigned an IPv4 subnet, described by it's CIDR and gateway. Also,
 the `--dhcp=True` option is used, to make `nfdhcpd` response to DHCP queries
 from VMs.

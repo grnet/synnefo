@@ -4,10 +4,6 @@ table thead th {
     white-space: nowrap;
 }
 
-.summary-expand {
-    background-color: $green-intense;
-}
-
 /* Table of users */
 
 .table-items {
@@ -45,6 +41,8 @@ table:not(.table-selected) td:last-child { // this is meant for summary td
         float: right;
         padding-left: 8px;
         padding-right: 8px;
+        background-color: $green-intense;
+        color: #fff;
         &:hover {
             text-decoration: none;
         }

@@ -406,44 +406,43 @@ textarea {
 
 /* line 48, ../sass/bootstrap/_scaffolding.scss */
 a {
-  color: white;
+  color: #9ed34d;
   text-decoration: none;
 }
 /* line 53, ../sass/bootstrap/_scaffolding.scss */
 a:hover, a:focus {
-  color: #d9d9d9;
-  text-decoration: underline;
+  color: #77aa2a;
 }
-/* line 58, ../sass/bootstrap/_scaffolding.scss */
+/* line 57, ../sass/bootstrap/_scaffolding.scss */
 a:focus {
   outline: thin dotted;
   outline: 5px auto -webkit-focus-ring-color;
   outline-offset: -2px;
 }
 
-/* line 69, ../sass/bootstrap/_scaffolding.scss */
+/* line 68, ../sass/bootstrap/_scaffolding.scss */
 figure {
   margin: 0;
 }
 
-/* line 76, ../sass/bootstrap/_scaffolding.scss */
+/* line 75, ../sass/bootstrap/_scaffolding.scss */
 img {
   vertical-align: middle;
 }
 
-/* line 81, ../sass/bootstrap/_scaffolding.scss */
+/* line 80, ../sass/bootstrap/_scaffolding.scss */
 .img-responsive {
   display: block;
   max-width: 100%;
   height: auto;
 }
 
-/* line 86, ../sass/bootstrap/_scaffolding.scss */
+/* line 85, ../sass/bootstrap/_scaffolding.scss */
 .img-rounded {
   border-radius: 6px;
 }
 
-/* line 93, ../sass/bootstrap/_scaffolding.scss */
+/* line 92, ../sass/bootstrap/_scaffolding.scss */
 .img-thumbnail {
   padding: 4px;
   line-height: 1.42857;
@@ -457,12 +456,12 @@ img {
   height: auto;
 }
 
-/* line 106, ../sass/bootstrap/_scaffolding.scss */
+/* line 105, ../sass/bootstrap/_scaffolding.scss */
 .img-circle {
   border-radius: 50%;
 }
 
-/* line 113, ../sass/bootstrap/_scaffolding.scss */
+/* line 112, ../sass/bootstrap/_scaffolding.scss */
 hr {
   margin-top: 20px;
   margin-bottom: 20px;
@@ -470,7 +469,7 @@ hr {
   border-top: 1px solid #eeeeee;
 }
 
-/* line 125, ../sass/bootstrap/_scaffolding.scss */
+/* line 124, ../sass/bootstrap/_scaffolding.scss */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -3105,7 +3104,7 @@ select[multiple].input-lg,
 
 /* line 85, ../sass/bootstrap/_buttons.scss */
 .btn-link {
-  color: white;
+  color: #9ed34d;
   font-weight: normal;
   cursor: pointer;
   border-radius: 0;
@@ -3122,7 +3121,7 @@ select[multiple].input-lg,
 }
 /* line 105, ../sass/bootstrap/_buttons.scss */
 .btn-link:hover, .btn-link:focus {
-  color: #d9d9d9;
+  color: #77aa2a;
   text-decoration: underline;
   background-color: transparent;
 }
@@ -4817,7 +4816,7 @@ input[type="button"].btn-block {
 /* line 48, ../sass/bootstrap/_navs.scss */
 .nav .open > a, .nav .open > a:hover, .nav .open > a:focus {
   background-color: #eeeeee;
-  border-color: white;
+  border-color: #9ed34d;
 }
 /* line 59, ../sass/bootstrap/_navs.scss */
 .nav .nav-divider {
@@ -5546,7 +5545,7 @@ input[type="button"].btn-block {
   padding: 6px 12px;
   line-height: 1.42857;
   text-decoration: none;
-  color: white;
+  color: #9ed34d;
   background-color: white;
   border: 1px solid #dddddd;
   margin-left: -1px;
@@ -5568,7 +5567,7 @@ input[type="button"].btn-block {
 .pagination > li > a:hover, .pagination > li > a:focus,
 .pagination > li > span:hover,
 .pagination > li > span:focus {
-  color: #d9d9d9;
+  color: #77aa2a;
   background-color: #eeeeee;
   border-color: #dddddd;
 }
@@ -5812,7 +5811,7 @@ a.badge:hover, a.badge:focus {
 /* line 49, ../sass/bootstrap/_badges.scss */
 a.list-group-item.active > .badge,
 .nav-pills > .active > a > .badge {
-  color: white;
+  color: #9ed34d;
   background-color: white;
 }
 
@@ -5896,7 +5895,7 @@ a.list-group-item.active > .badge,
 a.thumbnail:hover,
 a.thumbnail:focus,
 a.thumbnail.active {
-  border-color: white;
+  border-color: #9ed34d;
 }
 
 /* line 9, ../sass/bootstrap/_alerts.scss */

@@ -101,17 +101,9 @@ h3.info             { cursor:default; color:#2956B2; text-align:center; font-siz
 	margin-left: 200px;
 }
 
-
-
-/* a[disabled] {
-		color: #999999;
-} */
-
 a:not([disabled]):hover {
 	cursor: pointer;
 }
-
-
 
 .account-action.form-btn {
 		display: inline-block;
@@ -128,19 +120,6 @@ a:not([disabled]):hover {
 		float: left;
 		margin-left: 10px;
 }
-
-
-
-.dataTables_length {
-	select {
-		width: 55px;
-		display: inline-block;
-		margin-left: 4px;
-		vertical-align: baseline;
-	}
-}
-
-
 
 .checkbox-column {
 	position: relative;
@@ -168,33 +147,7 @@ svg>text:last-child {
 	display: none;
 }
 
-html body .dataTables_wrapper {
-	label {
-		font-weight: normal;
-	}
-	table {
-		&>thead>tr>th.sorting,  &>thead>tr>th.sorting_asc, &>thead>tr>th.sorting_desc{
-			background-position: center left;
-			padding-left: 22px;
-		}
-	}
-}
 
-// if we replace bootwatch with the corresponding sass file this should be @import .btn-primary
-.container .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-	background-image: -webkit-linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
-	background-image: linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
-	background-repeat: no-repeat;
-	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff6d94bf', endColorstr='#ff3e648d', GradientType=0);
-	filter: none;
-	border: 1px solid #345578;
-}
-body table>tbody>tr.selected {
-	&>td {
-		background-color: #D2DFDB !important;
-		color: rgb(97, 68, 172);
-	}
-}
 
 .custom-buttons {
 	float: left;
@@ -214,19 +167,9 @@ body table>tbody>tr.selected {
 	background: transparent;
 }
 
-// .table-selected-main tr{
-// 	display: none;
-// }
-
-
 .warning-duplicate {
 	font-size: 0.95em;
 	font-style: italic;
-}
-
-div.dataTables_length {
-	padding-left: 2em;
-	padding-top: 0.55em;
 }
 
 
@@ -281,114 +224,6 @@ div.dataTables_length {
 }
 
 
-table.table:not(.table-selected) {
-	width: 100%;
-	background-color: $gray-dark;
-	color: $almost-white;
-	tbody{
-		tr {
-			background-color: inherit;
-		}	
-		a {
-			color: white;
-			.snf-search {
-				opacity: 0.7;
-				&:hover {
-					opacity: 1;
-				}
-			}
-		}
-	}
-}
-
-.table-striped > tbody > tr:nth-child(odd) > td,
-.table-striped > tbody > tr:nth-child(odd) > th  {
-	background-color: inherit;
-}
-
-table.dataTable tbody tr td, 
-table.dataTable tbody tr th {
-	border-top: 1px solid lighten($gray-dark, 25%);
-}
-
-table.dataTable thead th,
-table.dataTable thead td {
-  border-bottom: 1px solid white;
-}
-table.dataTable tbody tr:hover {
-	background-color: lighten($gray-dark, 5%);
-}
-table.dataTable tbody tr.selected {
-	background-color: $almost-white;
-	color: $gray-dark;
-	a:not(.summary-expand) {
-		color: black;
-	}
-}
-
-body table > tbody > tr.selected > td {
-	background-color: inherit!important;
-}
-
-td:last-child { // this is meant for summary td
-	.summary-expand {
-		background-color: $green-intense;
-	}
-}
-
-
-body table > tbody > tr.selected > td {
-  color: $gray-dark;
-}
-.dataTables_wrapper .dataTables_length,
-.dataTables_wrapper .dataTables_filter,
-.dataTables_wrapper .dataTables_info,
-.dataTables_wrapper .dataTables_paginate {
-  color: white;
-}
-table.dataTable.no-footer {
-	border-bottom: 1px solid $almost-white;
-	margin: 2em 0;
-	background-color: $gray-dark;
-}
-
-.dataTables_wrapper .dataTables_paginate .paginate_button {
-	color: white!important;
-}
-
-.container .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-	background: $gray-dark;
-	border-color: white;
-}
-
-.container .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
-	border-color: transparent;
-}
-
-.dataTables_wrapper .dataTables_paginate .paginate_button.current, 
-.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
-	background: white;
-	border: transparent;
-}
-
-.dataTables_wrapper > .custom-buttons {
-	margin-bottom: 1em;
-}
-
-.badge {
-	border-radius:0;
-}
-
-
-.dataTables_wrapper .dataTables_processing {
-	background: $gray-light;
-	color: white;
-	padding: 10px;
-	-moz-box-shadow: inset 0 0 5px #888;
-	-webkit-box-shadow: inset 0 0 5px#888;
-	box-shadow: inner 0 0 5px #888;
-}
-
 .object-details-content {
 	color: white;
 }
@@ -423,3 +258,7 @@ table.dataTable.no-footer {
 
 }
 
+.selection-indicator {
+	margin-right: 6px;
+	cursor: pointer
+}

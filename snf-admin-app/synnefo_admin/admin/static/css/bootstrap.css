@@ -5785,7 +5785,7 @@ input[type="button"].btn-block {
   white-space: nowrap;
   text-align: center;
   background-color: #5a5959;
-  border-radius: 10px;
+  border-radius: 0;
 }
 /* line 22, ../sass/bootstrap/_badges.scss */
 .badge:empty {

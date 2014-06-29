@@ -1,12 +1,27 @@
 table thead th {
     white-space: nowrap;
 }
-.selection-indicator {
-	margin-right: 6px;
-	cursor: pointer
+
+.summary-expand {
+    background-color: $green-intense;
 }
 
 /* Table of users */
+
+.table-items {
+    tbody{
+        a {
+            color: white;
+            .snf-search {
+                opacity: 0.7;
+                &:hover {
+                    opacity: 1;
+                }
+            }
+        }
+    }
+}
+
 
 table:not(.table-selected) td:last-child { // this is meant for summary td
     max-width: 60px;
@@ -83,5 +98,113 @@ table:not(.table-selected) td:last-child { // this is meant for summary td
     border: 1px solid gray;
     margin-bottom: 20px;
     display: none;
+}
+
+// datatables
+
+
+div.dataTables_length {
+    padding-left: 2em;
+    padding-top: 0.55em;
+}
+
+
+.dataTables_length {
+    select {
+        width: 55px;
+        display: inline-block;
+        margin-left: 4px;
+        vertical-align: baseline;
+    }
+}
+
+html body .dataTables_wrapper {
+    label {
+        font-weight: normal;
+    }
+    table {
+        &>thead>tr>th.sorting,  &>thead>tr>th.sorting_asc, &>thead>tr>th.sorting_desc{
+            background-position: center left;
+            padding-left: 22px;
+        }
+    }
+}
+
+// if we replace bootwatch with the corresponding sass file this should be @import .btn-primary
+.container .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background-image: -webkit-linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
+    background-image: linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
+    background-repeat: no-repeat;
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff6d94bf', endColorstr='#ff3e648d', GradientType=0);
+    filter: none;
+    border: 1px solid #345578;
+}
+
+table.dataTable tbody tr {
+    background-color: inherit;
+}
+
+table.dataTable tbody tr td, 
+table.dataTable tbody tr th {
+    border-top: 1px solid lighten($gray-dark, 25%);
+}
+
+table.dataTable thead th,
+table.dataTable thead td {
+  border-bottom: 1px solid white;
+}
+table.dataTable tbody tr:hover {
+    background-color: lighten($gray-dark, 5%);
+}
+table.dataTable tbody tr.selected {
+    background-color: $almost-white;
+    color: $gray-dark;
+    a:not(.summary-expand) {
+        color: black;
+    }
+}
+
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_paginate {
+  color: white;
+}
+table.dataTable.no-footer {
+    border-bottom: 1px solid $almost-white;
+    margin: 2em 0;
+    background-color: $gray-dark;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: white!important;
+}
+
+.container .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: $gray-dark;
+    border-color: white;
+}
+
+.container .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover {
+    border-color: transparent;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, 
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    background: white;
+    border: transparent;
+}
+
+.dataTables_wrapper > .custom-buttons {
+    margin-bottom: 1em;
+}
+
+.dataTables_wrapper .dataTables_processing {
+    background: $gray-light;
+    color: white;
+    padding: 10px;
+    -moz-box-shadow: inset 0 0 5px #888;
+    -webkit-box-shadow: inset 0 0 5px#888;
+    box-shadow: inner 0 0 5px #888;
 }
 

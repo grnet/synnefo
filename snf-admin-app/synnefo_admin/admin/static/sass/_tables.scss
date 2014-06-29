@@ -1,3 +1,5 @@
+@import "bootstrap/mixins";
+
 table thead th {
     white-space: nowrap;
 }
@@ -9,57 +11,12 @@ table thead th {
 /* Table of users */
 
 .table-items {
-    tbody{
-        a {
-            color: white;
-            .snf-search {
-                opacity: 0.7;
-                &:hover {
-                    opacity: 1;
-                }
-            }
-        }
-    }
-}
-
-
-table:not(.table-selected) td:last-child { // this is meant for summary td
-    max-width: 60px;
-    min-width: 60px;
-    padding: 8px 0;
-    .details-link:hover {
-        text-decoration: none;
-    }
-    .summary-expand {
-        float: right;
-        padding-left: 8px;
-        // background-color: rgb(185, 238, 202);
-        padding-right: 8px;
+    .snf-search {
+        opacity: 0.7;
         &:hover {
-            text-decoration: none;
+            opacity: 1;
         }
     }
-     dl {
-     // background-color: pink;
-     position: relative;
-     padding: 8px;
-     display: none;
-     margin-bottom: 0;
-     margin-top: 20px;
-     /* dd {
-        display: inline-block;
-        } */
-    }
-}
-
-
-.table-items .headerSortUp span.caret {
-    border-top: 0;
-    border-bottom: 4px solid;
-}
-
-
-.table-items {
     .login-method {
         padding: 2px 16px 2px 0px;
         text-align: center;
@@ -76,6 +33,38 @@ table:not(.table-selected) td:last-child { // this is meant for summary td
 }
 
 
+
+table:not(.table-selected) td:last-child { // this is meant for summary td
+    max-width: 60px;
+    min-width: 60px;
+    padding: 8px 5px;
+    .details-link:hover {
+        text-decoration: none;
+    }
+    .summary-expand {
+        float: right;
+        padding-left: 8px;
+        padding-right: 8px;
+        &:hover {
+            text-decoration: none;
+        }
+    }
+     dl {
+     position: relative;
+     padding: 8px;
+     display: none;
+     margin-bottom: 0;
+     margin-top: 20px;
+    }
+}
+
+
+.table-items .headerSortUp span.caret {
+    border-top: 0;
+    border-bottom: 4px solid;
+}
+
+
 #table-items-total_filter {
     label {
         color: white;
@@ -89,12 +78,12 @@ table:not(.table-selected) td:last-child { // this is meant for summary td
     input {
         display: inline-block;
         margin-left: 8px;
+        color: $gray-dark;
     }
 }
 
-
 #table-items-selected_wrapper {
-
+    padding: 10px;
     border: 1px solid gray;
     margin-bottom: 20px;
     display: none;
@@ -118,17 +107,6 @@ div.dataTables_length {
     }
 }
 
-html body .dataTables_wrapper {
-    label {
-        font-weight: normal;
-    }
-    table {
-        &>thead>tr>th.sorting,  &>thead>tr>th.sorting_asc, &>thead>tr>th.sorting_desc{
-            background-position: center left;
-            padding-left: 22px;
-        }
-    }
-}
 
 // if we replace bootwatch with the corresponding sass file this should be @import .btn-primary
 .container .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
@@ -144,14 +122,10 @@ table.dataTable tbody tr {
     background-color: inherit;
 }
 
-table.dataTable tbody tr td, 
-table.dataTable tbody tr th {
-    border-top: 1px solid lighten($gray-dark, 25%);
-}
-
 table.dataTable thead th,
 table.dataTable thead td {
   border-bottom: 1px solid white;
+  border-top: 1px solid lighten($gray-dark, 25%);
 }
 table.dataTable tbody tr:hover {
     background-color: lighten($gray-dark, 5%);
@@ -164,6 +138,19 @@ table.dataTable tbody tr.selected {
     }
 }
 
+
+html body .dataTables_wrapper {
+    label {
+        font-weight: normal;
+    }
+    table {
+        th.sorting,  th.sorting_asc, th.sorting_desc{
+            background-position: center left;
+            padding-left: 22px;
+        }
+    }
+}
+
 .dataTables_wrapper .dataTables_length,
 .dataTables_wrapper .dataTables_filter,
 .dataTables_wrapper .dataTables_info,
@@ -173,7 +160,6 @@ table.dataTable tbody tr.selected {
 table.dataTable.no-footer {
     border-bottom: 1px solid $almost-white;
     margin: 2em 0;
-    background-color: $gray-dark;
 }
 
 .dataTables_wrapper .dataTables_paginate .paginate_button {
@@ -202,9 +188,8 @@ table.dataTable.no-footer {
 .dataTables_wrapper .dataTables_processing {
     background: $gray-light;
     color: white;
-    padding: 10px;
-    -moz-box-shadow: inset 0 0 5px #888;
-    -webkit-box-shadow: inset 0 0 5px#888;
-    box-shadow: inner 0 0 5px #888;
+    padding: 5px 10px;
+    @include box-shadow(inset 0 0 5px #888);
+    z-index: 1;
 }
 

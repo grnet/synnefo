@@ -77,6 +77,8 @@ table:not(.table-selected) td:last-child { // this is meant for summary td
         display: inline-block;
         margin-left: 8px;
         color: $gray-dark;
+        outline: none;
+        padding: 5px 0;
     }
 }
 

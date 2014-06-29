@@ -19,11 +19,6 @@
 		span {
 			border-color: $color;
 		}
-		&.disabled {
-			span {
-				border-color: transparent;
-			}
-		}
 	}
 }
 
@@ -276,6 +271,7 @@ body .container .custom-btn.disabled {
 	}
 }
 
+
 /*
 Sidebar buttons are displayed as block elements
 */
@@ -290,23 +286,22 @@ Sidebar buttons are displayed as block elements
 	}
 }
 
-/*
-Custom-buttons are buttons of lesser significance.
-They have black background
-*/
 
 body .custom-buttons {
+	.custom-btn {
+		margin-right: 1em;
+	}
 	.custom-btn:not(.disabled) {
 		background-color: $total-black;
 		border-color: transparent;
 		border-bottom: 2px solid transparent;
-        margin-right: 1em;
 		color: #fff;
 		&:hover {
 			border-bottom-color: $almost-white;
-	    }
-    }
+		}
+	}
 }
+
 .expand-btn {
 	float:right;
 	background-color: $total-black;
@@ -317,19 +312,23 @@ body .custom-buttons {
 		border-bottom-color: $almost-white;
 	}
 }
-
 /*
 Extra-button is used to show total selected rows
 */
 
 .extra-btn {
-	&>span {
-		display: inline-block;
+	margin-bottom: 2em;
+	.badge {
 		background: transparent;
-		&.badge {
-			border: 1px solid;
-			vertical-align: middle;
-		}
+		border: 1px solid;
+		line-height: 0.8;
+		display: inline;
+		margin-left: 10px;
+	}
+	&:hover {
+		// .badge	 {
+		// 	color: $default-btn-color;
+		// }
 	}
 }
 

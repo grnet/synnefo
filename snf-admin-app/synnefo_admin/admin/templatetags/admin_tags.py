@@ -153,6 +153,8 @@ def display_list_type(type):
         return "IP Addresses"
     elif type == "volume":
         return "Volumes"
+    elif type == "ip_log":
+        return "IP Log"
     else:
         return "Unknown type"
 

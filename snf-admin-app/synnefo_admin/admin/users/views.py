@@ -227,6 +227,18 @@ def details(request, query):
     nic_list = NetworkInterface.objects.filter(userid=user.uuid)
     ip_list = IPAddress.objects.filter(userid=user.uuid).order_by('deleted')
 
+    qor = [Q(server_id=vm.pk) for vm in vm_list]
+    ip_log_list = []
+    if qor:
+        qor = reduce(or_, qor)
+        ip_log_list = IPAddressLog.objects.filter(qor).order_by("allocated_at")
+
+    for ipaddr in ip_log_list:
+        ipaddr.ip = IPAddress.objects.get(address=ipaddr.address)
+        ipaddr.vm = VirtualMachine.objects.get(id=ipaddr.server_id)
+        ipaddr.network = Network.objects.get(id=ipaddr.network_id)
+        ipaddr.user = user
+
     context = {
         'main_item': user,
         'main_type': 'user',
@@ -239,6 +251,7 @@ def details(request, query):
             (network_list, 'network', get_actions("network", request.user)),
             (nic_list, 'nic', None),
             (ip_list, 'ip', get_actions("ip", request.user)),
+            (ip_log_list, 'ip_log', None),
         ]
     }
 

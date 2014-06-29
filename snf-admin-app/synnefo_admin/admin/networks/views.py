@@ -23,7 +23,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from synnefo.db.models import (Network, VirtualMachine, NetworkInterface,
-                               IPAddress)
+                               IPAddress, IPAddressLog)
 from synnefo.logic.networks import validate_network_action
 from synnefo.logic import networks
 from astakos.im.user_utils import send_plain as send_email
@@ -182,6 +182,15 @@ def details(request, query):
     user_list = AstakosUser.objects.filter(uuid=network.userid)
     project_list = Project.objects.filter(uuid=network.project)
 
+    ip_log_list = IPAddressLog.objects.filter(network_id=network.pk)\
+        .order_by("allocated_at")
+
+    for ipaddr in ip_log_list:
+        ipaddr.ip = IPAddress.objects.get(address=ipaddr.address)
+        ipaddr.vm = VirtualMachine.objects.get(id=ipaddr.server_id)
+        ipaddr.network = network
+        ipaddr.user = AstakosUser.objects.get(uuid=ipaddr.vm.userid)
+
     context = {
         'main_item': network,
         'main_type': 'network',
@@ -192,6 +201,7 @@ def details(request, query):
             (ip_list, 'ip', get_actions("ip", request.user)),
             (user_list, 'user', get_actions("user", request.user)),
             (project_list, 'project', get_actions("project", request.user)),
+            (ip_log_list, 'ip_log', None),
         ]
     }
 

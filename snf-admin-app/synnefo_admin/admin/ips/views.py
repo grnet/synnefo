@@ -22,7 +22,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
-from synnefo.db.models import IPAddress
+from synnefo.db.models import IPAddress, IPAddressLog, VirtualMachine, Network
 from synnefo.logic import ips
 from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
@@ -36,7 +36,8 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
 from synnefo_admin.admin.utils import get_actions, render_email
 from synnefo_admin.admin.users.utils import get_user
 
-from .utils import get_contact_email, get_contact_name, get_user_details_href
+from .utils import (get_contact_email, get_contact_name, get_user_details_href,
+                    get_ip)
 from .actions import cached_actions
 from .filters import IPFilterSet
 
@@ -170,12 +171,21 @@ def details(request, query):
     """Details view for Astakos users."""
     error = request.GET.get('error', None)
 
-    ip = IPAddress.objects.get(pk=int(query))
+    ip = get_ip(query)
     vm_list = [ip.nic.machine]
     network_list = [ip.nic.network]
     nic_list = [ip.nic]
     user_list = AstakosUser.objects.filter(uuid=ip.userid)
     project_list = Project.objects.filter(uuid=ip.project)
+
+    ip_log_list = IPAddressLog.objects.filter(address=ip.address)\
+        .order_by("allocated_at")
+
+    for ipaddr in ip_log_list:
+        ipaddr.ip = ip
+        ipaddr.vm = VirtualMachine.objects.get(id=ipaddr.server_id)
+        ipaddr.network = Network.objects.get(id=ipaddr.network_id)
+        ipaddr.user = AstakosUser.objects.get(uuid=ipaddr.vm.userid)
 
     context = {
         'main_item': ip,
@@ -187,6 +197,7 @@ def details(request, query):
             (nic_list, 'nic', None),
             (user_list, 'user', get_actions("user", request.user)),
             (project_list, 'project', get_actions("project", request.user)),
+            (ip_log_list, 'ip_log', None),
         ]
     }
 

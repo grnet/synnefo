@@ -32,6 +32,14 @@ from eztables.views import DatatablesView
 from synnefo_admin.admin.utils import create_details_href
 
 
+def get_ip(query):
+    if query.isdigit():
+        ip = IPAddress.objects.get(pk=int(query))
+    else:
+        ip = IPAddress.objects.get(address=query)
+    return ip
+
+
 def get_contact_email(inst):
     if inst.userid:
         return AstakosUser.objects.get(uuid=inst.userid).email,

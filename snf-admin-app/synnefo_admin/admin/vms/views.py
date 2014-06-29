@@ -22,7 +22,8 @@ from operator import or_
 from django.core.urlresolvers import reverse
 from django.db.models import Q
 
-from synnefo.db.models import VirtualMachine, Network, IPAddressLog
+from synnefo.db.models import (VirtualMachine, Network, IPAddressLog,
+                               IPAddress)
 from astakos.im.models import AstakosUser, ProjectMembership, Project
 from astakos.im.user_utils import send_plain as send_email
 
@@ -186,6 +187,15 @@ def details(request, query):
     ip_list = [nic.ips.all() for nic in nic_list]
     ip_list = reduce(or_, ip_list) if ip_list else ip_list
 
+    ip_log_list = IPAddressLog.objects.filter(server_id=vm.pk)\
+        .order_by("allocated_at")
+
+    for ipaddr in ip_log_list:
+        ipaddr.ip = IPAddress.objects.get(address=ipaddr.address)
+        ipaddr.vm = vm
+        ipaddr.network = Network.objects.get(id=ipaddr.network_id)
+        ipaddr.user = AstakosUser.objects.get(uuid=ipaddr.vm.userid)
+
     context = {
         'main_item': vm,
         'main_type': 'vm',
@@ -197,6 +207,7 @@ def details(request, query):
             (network_list, 'network', get_actions("network", request.user)),
             (nic_list, 'nic', None),
             (ip_list, 'ip', get_actions("ip", request.user)),
+            (ip_log_list, 'ip_log', None),
         ]
     }
 

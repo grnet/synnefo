@@ -1,0 +1,34 @@
+{% load admin_tags %}
+
+{% with ip_log=item %}
+<div class="object-details {{ rowcls }}" data-id="{{ip_log.pk}}"
+    data-type="{{type}}">
+    <h4>
+        <span>
+            <img src="{{ ADMIN_MEDIA_URL }}img/ip.png"/>
+            <a href={% url admin-details 'ip' ip_log.address %}>{{ ip_log.ip|repr }}</a>
+        </span>
+        &nbsp&nbsp&nbsp
+        <span>
+            <img src="{{ ADMIN_MEDIA_URL }}img/vm.png"/>
+            <a href={% url admin-details 'vm' ip_log.server_id %}>{{ ip_log.vm|repr }}</a>
+        </span>
+        &nbsp&nbsp&nbsp
+        <span>
+            <img src="{{ ADMIN_MEDIA_URL }}img/network.png"/>
+            <a href={% url admin-details 'network' ip_log.network_id %}>{{ ip_log.network|repr }}</a>
+        </span>
+        &nbsp&nbsp&nbsp
+        <span>
+            <img src="{{ ADMIN_MEDIA_URL }}img/user.png"/>
+            <a href={% url admin-details 'user' ip_log.user.uuid %}>{{ ip_log.user|repr }}</a>
+        </span>
+        &nbsp&nbsp&nbsp
+        <span class="label">TO: {{ ip_log.released_at|default:"-" }}</span>
+        <span class="label">FROM: {{ ip_log.allocated_at }}</span>
+        {% if ip_log.active %}
+        <span class="label">ACTIVE</span>
+        {% endif %}
+    </h4>
+</div> <!-- <div class="object-details {{ rowcls }}"> -->
+{% endwith %}

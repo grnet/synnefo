@@ -40,7 +40,7 @@
 @mixin custom-btn($color:$default-btn-color, $padding:$default-btn-padding) {
 	@include default-btn();
 	border: 1px solid $color;
-	color: #fff;
+	color: $secondary-link-color;
 	span {
 		border: 1px solid transparent;
 		padding: $padding;
@@ -48,7 +48,7 @@
 	}
 	&:hover {
 		span {
-			color: #fff;
+			color: $secondary-link-color;
 		}
 	}
 }

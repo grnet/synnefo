@@ -1,26 +1,136 @@
 @import "settings";
 
-// implies a structure <a><span>button</span></a>
-@mixin line-btn($color:$link-color, $background:inherit, $padding:5px) {
-	border: 1px solid $color;
+// ====== BUTTONS ====== //
+// All buttons imply a structure <a><span>button</span></a>
+@mixin default-btn() {
 	display: inline-block;
 	text-align: center;
 	opacity: 0.7;
-	color: $color;
 	span {
 		display: block;
+		height: 100%;
 		line-height: 100%;
+		padding: $default-btn-padding;
+	}
+	&:hover {
+		text-decoration: none;
+		opacity: 1;
+	}
+}
+
+
+// Transparent buttons with thin $color border that get thicker on hover
+@mixin outline-btn($color:$secondary-link-color, $background:inherit, $padding:$default-btn-padding) {
+	@include default-btn();
+	border: 1px solid $color;
+	color: $color;
+	span {
 		border: 1px solid transparent;
 		padding: $padding;
 	}
 	&:hover {
-		opacity: 1;
-		text-decoration: none;
 		span {
 			border-color: $color;
 		}
 	}
 }
+
+// Normal button with background-color and white font color
+@mixin custom-btn($color:$default-btn-color, $padding:$default-btn-padding) {
+	@include default-btn();
+	border: 1px solid $color;
+	color: #fff;
+	span {
+		border: 1px solid transparent;
+		padding: $padding;
+		background: transparent;
+	}
+	&:hover {
+		span {
+			color: #fff;
+		}
+	}
+}
+
+@mixin line-btn($color:$total-black, $padding:$default-btn-padding) {
+	@include default-btn();
+	background-color: $total-black;
+	border-bottom: 2px solid $total-black; 
+	color: #fff;
+	&:hover {
+		color: #fff;
+		border-bottom-color: $almost-white;
+	}
+}
+
+/*
+Disabled buttons are transparent with light gray border
+and light gray font colors
+*/
+
+body .container .custom-btn.disabled,
+body .container .outline-btn.disabled,
+body .container .line-btn.disabled {
+	background-color: transparent;
+	border-color: $almost-white;
+	opacity: 0.7;
+	color: $almost-white;
+	span {
+
+	}
+	&:hover {
+		opacity: 0.7;
+	}
+}
+
+
+.line-btn {
+	@include line-btn();
+}
+
+.custom-btn {
+	@include custom-btn();
+	
+	// &[data-karma="bad"] {
+	// 	background: $bad-karma-color;
+	// 	border-color: $bad-karma-color;
+	// }
+	// &[data-karma="neutral"] {
+	// 	background: $neutral-karma-color;
+	// 	border-color: $neutral-karma-color;
+	// }
+	// &[data-karma="good"] {
+	// 	background: $good-karma-color;
+	// 	border-color: $good-karma-color;
+	// }
+
+	&[data-karma="neutral"] {
+		background-color: $blue-intense;
+		border-color: $blue-intense;
+	}
+	&[data-karma="good"] {
+		background-color: $green-intense;
+		border-color: $green-intense;
+	}
+
+	&[data-karma="bad"] {
+		background-color: $orange-intense;
+		border-color: $orange-intense;
+	}
+
+	&[data-caution="warning"][data-karma="good"], &[data-caution="warning"][data-karma="neutral"] {
+		background-color: $orange-intense;
+		border-color: $orange-intense;
+	}
+
+	&[data-caution="dangerous"][data-karma="bad"], &[data-caution="dangerous"][data-karma="neutral"] {
+		background-color: $red-intense;
+		border-color: $red-intense;
+	}
+}
+
+
+// ====== STUFF ====== //
 
 .navbar a{
 	color: $gray-dark;
@@ -190,86 +300,6 @@
 }
 
 
-/*
-Βuttons
-Αll buttons have colors depending on their karma.
-Default color applies to non-karma buttons
-*/
-
-
-.custom-btn {
-	display: inline-block;
-	border: 1px solid $default-btn-color;
-	text-align: center;
-	color: $secondary-link-color;
-	// background: $default-btn-color;
-	opacity: 0.7;
-	&>span {
-		border: 1px solid transparent;
-		display: block;
-		height: 100%;
-		padding: 5px 10px;
-	}
-	&:hover {
-		text-decoration: none;
-		opacity: 1;
-		span {
-			color: white;
-		}
-	}
-	// &[data-karma="bad"] {
-	// 	background: $bad-karma-color;
-	// 	border-color: $bad-karma-color;
-	// }
-	// &[data-karma="neutral"] {
-	// 	background: $neutral-karma-color;
-	// 	border-color: $neutral-karma-color;
-	// }
-	// &[data-karma="good"] {
-	// 	background: $good-karma-color;
-	// 	border-color: $good-karma-color;
-	// }
-
-	&[data-karma="neutral"] {
-		background-color: $blue-intense;
-		border-color: $blue-intense;
-	}
-	&[data-karma="good"] {
-		background-color: $green-intense;
-		border-color: $green-intense;
-	}
-
-	&[data-karma="bad"] {
-		background-color: $orange-intense;
-		border-color: $orange-intense;
-	}
-
-	&[data-caution="warning"][data-karma="good"], &[data-caution="warning"][data-karma="neutral"] {
-		background-color: $orange-intense;
-		border-color: $orange-intense;
-	}
-
-	&[data-caution="dangerous"][data-karma="bad"], &[data-caution="dangerous"][data-karma="neutral"] {
-		background-color: $red-intense;
-		border-color: $red-intense;
-	}
-}
-
-/*
-Disabled buttons are transparent with light gray border
-and light gray font colors
-*/
-
-body .container .custom-btn.disabled {
-	background-color: transparent;
-	border-color: $almost-white;
-	opacity: 0.7;
-	color: $almost-white;
-	&:hover {
-		opacity: 0.7;
-	}
-}
-
 
 /*
 Sidebar buttons are displayed as block elements
@@ -285,32 +315,16 @@ Sidebar buttons are displayed as block elements
 	}
 }
 
-
 body .custom-buttons {
-	.custom-btn {
+	float: left;
+	margin-right: 10px;
+	.line-btn {
 		margin-right: 1em;
 	}
-	.custom-btn:not(.disabled) {
-		background-color: $total-black;
-		border-color: transparent;
-		border-bottom: 2px solid transparent;
-		color: #fff;
-		&:hover {
-			border-bottom-color: $almost-white;
-		}
-	}
 }
 
-.expand-btn {
-	float:right;
-	background-color: $total-black;
-	// border:0 none;
-	border-color: transparent;
-	border-bottom: 2px solid transparent;
-	&:hover {
-		border-bottom-color: $almost-white;
-	}
-}
+
+
 /*
 Extra-button is used to show total selected rows
 */
@@ -319,10 +333,8 @@ Extra-button is used to show total selected rows
 	margin-bottom: 2em;
 	.badge {
 		background: transparent;
-		border: 1px solid;
 		line-height: 0.8;
 		display: inline;
-		margin-left: 10px;
 	}
 	&:hover {
 		// .badge	 {
@@ -333,4 +345,8 @@ Extra-button is used to show total selected rows
 
 a.disabled {
 	cursor: default !important;
+}
+
+.show-hide-all {
+	float:right;
 }

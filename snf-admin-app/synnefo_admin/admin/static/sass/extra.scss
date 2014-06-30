@@ -83,7 +83,7 @@ h3.info             { cursor:default; color:#2956B2; text-align:center; font-siz
 		width: 210px;
 		font-size: 24px;
 		margin: 0 20px;
-		@include line-btn($padding:12px 10px);
+		@include outline-btn($padding:12px 10px);
 		opacity: 1;
 	}
 }
@@ -137,24 +137,14 @@ svg>text:last-child {
 	display: none;
 }
 
-
 .dropdown .arrow {
 	margin-left: 6px;
 	vertical-align: middle;
 }
 
-
 .hidden-row {
 	display: none;
 }
-
-
-
-.custom-buttons {
-	float: left;
-	margin-right: 10px;
-}
-
 
 *::-moz-selection {
 	background: #fff2a8;

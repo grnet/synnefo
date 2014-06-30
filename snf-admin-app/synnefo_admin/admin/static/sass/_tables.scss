@@ -133,9 +133,6 @@ table.dataTable tbody tr:hover {
 table.dataTable tbody tr.selected {
     background-color: $almost-white;
     color: $gray-dark;
-    a:not(.summary-expand) {
-        color: black;
-    }
 }
 
 

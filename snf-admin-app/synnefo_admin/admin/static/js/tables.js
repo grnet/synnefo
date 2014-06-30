@@ -785,7 +785,7 @@ $(function(){
 		$.ajax({
 		url: url,
 		type: 'POST',
-		// data: JSON.stringify(data),
+		data: JSON.stringify(data),
 		contentType: 'application/json',
 		success: function(response, statusText, jqXHR) {
 		  console.log('did it!', statusText)

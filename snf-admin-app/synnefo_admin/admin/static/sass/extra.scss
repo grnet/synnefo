@@ -62,6 +62,9 @@ h4 i              { margin-top: 4px; margin-right: 10px;}
 h3.info             { cursor:default; color:#2956B2; text-align:center; font-size:16px; margin-bottom:0;}
 
 
+a.disabled {
+	cursor: default !important;
+}
 /* All checkboxes */
 
 .checkbox {
@@ -111,11 +114,11 @@ a:not([disabled]):hover {
 		margin-left: 10px;
 }
 
-.buttons {
+.buttons-list {
 		list-style: none;
 }
 
-.buttons li {
+.buttons-list li {
 		display: inline-block;
 		float: left;
 		margin-left: 10px;
@@ -233,12 +236,6 @@ svg>text:last-child {
 
 .content-seperator {
 	display: none;
-}
-
-.actions-per-item {
-	.custom-btn {
-		margin: 10px 10px 10px 0;
-	}
 }
 
 

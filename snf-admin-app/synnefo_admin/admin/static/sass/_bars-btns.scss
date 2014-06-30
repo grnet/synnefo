@@ -2,6 +2,7 @@
 
 // ====== BUTTONS ====== //
 // All buttons imply a structure <a><span>button</span></a>
+
 @mixin default-btn() {
 	display: inline-block;
 	text-align: center;
@@ -52,6 +53,7 @@
 	}
 }
 
+// Buttons with thick bottom border on hover
 @mixin line-btn($color:$total-black, $padding:$default-btn-padding) {
 	@include default-btn();
 	background-color: $total-black;
@@ -85,6 +87,10 @@ body .container .line-btn.disabled {
 
 
 .line-btn {
+	@include line-btn();
+}
+
+.default-btn {
 	@include line-btn();
 }
 
@@ -219,13 +225,13 @@ body .container .line-btn.disabled {
 	}
 }
 
-	.sign-out {
-		span {
-			margin-right: 10px;
-			vertical-align: middle;
-			font-size: 18px;
-		}
+.sign-out {
+	span {
+		margin-right: 10px;
+		vertical-align: middle;
+		font-size: 18px;
 	}
+}
 
 
 .label-notice {
@@ -302,7 +308,7 @@ body .container .line-btn.disabled {
 
 
 /*
-Sidebar buttons are displayed as block elements
+Positioning or customizing buttons
 */
 
 .sidebar  {
@@ -321,6 +327,9 @@ body .custom-buttons {
 	.line-btn {
 		margin-right: 1em;
 	}
+	.disabled {
+		display: none;
+	}
 }
 
 
@@ -330,23 +339,20 @@ Extra-button is used to show total selected rows
 */
 
 .extra-btn {
-	margin-bottom: 2em;
 	.badge {
 		background: transparent;
 		line-height: 0.8;
 		display: inline;
+		padding: 0;
 	}
-	&:hover {
-		// .badge	 {
-		// 	color: $default-btn-color;
-		// }
-	}
-}
-
-a.disabled {
-	cursor: default !important;
 }
 
 .show-hide-all {
 	float:right;
+}
+
+.actions-per-item {
+	.custom-btn {
+		margin: 10px 10px 10px 0;
+	}
 }

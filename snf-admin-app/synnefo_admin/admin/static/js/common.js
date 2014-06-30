@@ -2,35 +2,43 @@
 
 $(document).ready(function(){
 
- // fix sub nav on scroll
-  var $win = $(window)
-    , $nav = $('.subnav:not(.main-nav)')
-    , navTop = $('.subnav:not(.main-nav)').length && $('.subnav:not(.main-nav)').offset().top
-    , isFixed = 0,
-      navMainTop = $('.main-nav').outerHeight();
+  // elements that adjust their position over scroll
+  var $actionbar = $('.actionbar');
+  var $infoBlock = $('.info-block');
+  var infoBlockMarg = $infoBlock.css('marginRight');
+  var actionbarTop = $actionbar.offset().top;
+  var actionBarWidth = $actionbar.outerWidth(true);
+  var $win = $(window),
+      isFixed = 0,
+      navHeight = $('.main-nav').outerHeight(true),
+      filtersHeight = $('.filters').outerHeight()
 
-  function processScroll() {
-    var i, scrollTop = $win.scrollTop();
-    var navTemp = navTop - navMainTop*2;
-    if (scrollTop >= (navTop - navMainTop*2) && !isFixed) {
-      console.log('1 scrollTop: '+scrollTop+' navTop: '+navTemp);
-      isFixed = 1;
-      $nav.addClass('subnav-fixed');
-    } else if (scrollTop <= (navTop -navMainTop*2) && isFixed) {
-      console.log('2 scrollTop: '+scrollTop+' navTop: '+navTemp);
-      isFixed = 0;
-      $nav.removeClass('subnav-fixed');
+    function processScroll() {
+      var i, scrollTop = $win.scrollTop();
+      if(scrollTop >= navHeight+filtersHeight && !isFixed) {
+        console.log('1')
+        isFixed = 1;
+        $actionbar.addClass('fixed');
+        $actionbar.css('top', navHeight);
+        if(!$infoBlock.hasClass('.fixed-arround')) {
+          $infoBlock.addClass('fixed-arround');
+          $infoBlock.css('marginLeft', actionBarWidth);
+        }
+      }
+      else if(scrollTop <= navHeight+filtersHeight && isFixed){
+        console.log('2');
+        isFixed = 0;
+        $actionbar.removeClass('fixed');
+        if($infoBlock.hasClass('fixed-arround')) {
+          $infoBlock.removeClass('fixed-arround');
+          $infoBlock.css('marginLeft', infoBlockMarg);
+        }
+        
+      }
     }
-  }
-
   processScroll();
 
-  // hack sad times - holdover until rewrite for 2.1
-  $nav.on('click', function () {
-    console.log('click')
-    // if (!isFixed) setTimeout(functio/n () {  $win.scrollTop($win.scrollTop()) }, 10)
-  })
-
+ 
   $win.on('scroll', processScroll)
 
 

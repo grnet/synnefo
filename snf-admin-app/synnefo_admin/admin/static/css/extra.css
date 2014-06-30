@@ -1128,6 +1128,11 @@ table.dataTable.no-footer {
   z-index: 1;
 }
 
+/* line 186, ../sass/_tables.scss */
+.fixed {
+  position: fixed;
+}
+
 /* line 16, ../sass/extra.scss */
 html, body {
   height: 100%;

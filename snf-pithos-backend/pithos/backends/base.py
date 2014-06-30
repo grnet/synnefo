@@ -673,7 +673,7 @@ class BaseBackend(object):
         """Store a block and return the hash."""
         return 0
 
-    def update_block(self, hash, data, offset=0):
+    def update_block(self, hash, data, offset=0, is_snapshot=False):
         """Update a known block and return the hash.
 
         Raises:

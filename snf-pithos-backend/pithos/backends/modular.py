@@ -125,7 +125,6 @@ logger = logging.getLogger(__name__)
 _propnames = ('serial', 'node',  'hash', 'size', 'type', 'source', 'mtime',
               'muser', 'uuid', 'checksum', 'cluster', 'available',
               'map_check_timestamp', 'mapfile', 'is_snapshot')
-_api_propnames = _propnames[:-2]
 _props = lambda props: OrderedDict((props[i], i) for i in range(len(props)))
 
 
@@ -290,7 +289,7 @@ class ModularBackend(BaseBackend):
         for x in ['READ', 'WRITE']:
             setattr(self, x, getattr(self.db_module, x))
         params.update({'mapfile_prefix': self.mapfile_prefix,
-                       'props': _props(_api_propnames)})
+                       'props': _props(_propnames)})
         self.permissions = self.db_module.Permissions(**params)
         self.node = self.db_module.Node(**params)
         for x in ['ROOTNODE', 'MATCH_PREFIX', 'MATCH_EXACT']:
@@ -1021,7 +1020,9 @@ class ModularBackend(BaseBackend):
                      'uuid': props[self.UUID],
                      'checksum': props[self.CHECKSUM],
                      'available': props[self.AVAILABLE],
-                     'map_check_timestamp': props[self.MAP_CHECK_TIMESTAMP]})
+                     'map_check_timestamp': props[self.MAP_CHECK_TIMESTAMP],
+                     'mapfile': props[self.MAPFILE],
+                     'is_snapshot': props[self.IS_SNAPSHOT]})
         return meta
 
     @debug_method
@@ -1151,8 +1152,7 @@ class ModularBackend(BaseBackend):
                     raise NotAllowedError(
                         'Consequent map checks are limited: retry later.')
         try:
-            hashmap = self.store.map_get_archipelago(props[self.HASH],
-                                                     props[self.SIZE])
+            hashmap = self.store.map_get(props[self.HASH], props[self.SIZE])
         except:  # map does not exist
             # Raising an exception results in db transaction rollback
             # However we have to force the update of the database
@@ -1171,16 +1171,17 @@ class ModularBackend(BaseBackend):
                                            'map_check_timestamp', time())
             return hashmap
 
-    def _get_object_hashmap(self, props):
+    def _get_object_hashmap(self, props, update_available=True):
         if props[self.HASH] is None:
             return []
-        if props[self.HASH].startswith('archip:'):
-            return self._update_available(props)
+        if props[self.IS_SNAPSHOT]:
+            if update_available:
+                return self._update_available(props)
         else:
             size = props[self.SIZE]
             if size == 0:
                 return [self.empty_string_hash]
-            return self.store.map_get(props[self.MAPFILE], props[self.SIZE])
+        return self.store.map_get(props[self.MAPFILE], props[self.SIZE])
 
     @debug_method
     @backend_method
@@ -1189,7 +1190,8 @@ class ModularBackend(BaseBackend):
         self._can_read_object(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version, keys=_propnames)
-        return props[self.SIZE], self._get_object_hashmap(props)
+        return props[self.IS_SNAPSHOT], props[self.SIZE], \
+                self._get_object_hashmap(props, update_available=True)
 
     def _update_object_hash(self, user, account, container, name, size, type,
                             hash, checksum, domain, meta, replace_meta,
@@ -1329,10 +1331,20 @@ class ModularBackend(BaseBackend):
                               replace_meta=False, permissions=None):
         """Create/update an object's hashmap and return the new version."""
 
-        for h in hashmap:
-            if h.startswith('archip_'):
-                raise IllegalOperationError(
-                    'Cannot update Archipelago Volume hashmap.')
+        try:
+            path, node = self._lookup_object(account, container, name,
+                                            lock_container=True)
+        except:
+            pass
+        else:
+            try:
+                props = self._get_version(node)
+            except ItemNotExists:
+                pass
+            else:
+                if props[self.IS_SNAPSHOT]:
+                    raise IllegalOperationError(
+                        'Cannot update Archipelago Volume hashmap.')
         meta = meta or {}
         if size == 0:  # No such thing as an empty hashmap.
             hashmap = [self.put_block('')]
@@ -1418,23 +1430,38 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_object(src_account, src_container, src_name)
         # TODO: Will do another fetch of the properties in duplicate version...
         props = self._get_version(
-            node, src_version, keys=_propnames)  # Check to see if source exists.
+            node, src_version,
+            keys=_propnames)  # Check to see if source exists.
         src_version_id = props[self.SERIAL]
         hash = props[self.HASH]
         size = props[self.SIZE]
         is_snapshot = props[self.IS_SNAPSHOT]
         is_copy = not is_move and (src_account, src_container, src_name) != (
             dest_account, dest_container, dest_name)  # New uuid.
-        dest_version_id, size_delta, mapfile = self._update_object_hash(
+
+        src_mapfile = props[self.MAPFILE]
+        force_mapfile = src_mapfile if not is_copy else None
+
+        dest_version_id, size_delta, dest_mapfile = self._update_object_hash(
             user, dest_account, dest_container, dest_name, size, type, hash,
             None, dest_domain, dest_meta, replace_meta, permissions,
             src_node=node, src_version_id=src_version_id, is_copy=is_copy,
             report_size_change=(not bulk_report_size_change),
-            keep_available=True, is_snapshot=is_snapshot)
-        if size != 0:
-            src_hashmap = self._get_object_hashmap(props)
-            src_hashmap = map(self._unhexlify_hash, src_hashmap)
-            self.store.map_put(mapfile, src_hashmap, size, self.block_size)
+            keep_available=True, is_snapshot=is_snapshot,
+            force_mapfile=force_mapfile)
+
+        # store destination mapfile
+        if size != 0 and src_mapfile != dest_mapfile:
+            try:
+                hashmap = self._get_object_hashmap(props,
+                                                   update_available=False)
+            except:
+                raise NotAllowedError("Copy is not permitted: failed to get "
+                                      "source object's mapfile: %s" %
+                                      src_mapfile)
+            hashmap = map(self._unhexlify_hash, hashmap)
+            self.store.map_put(dest_mapfile, hashmap, size, self.block_size)
+
         dest_versions.append(dest_version_id)
         occupied_space += size_delta
         if is_move and (src_account, src_container, src_name) != (
@@ -1469,19 +1496,34 @@ class ModularBackend(BaseBackend):
                 dest_prefix = dest_name + delimiter if not dest_name.endswith(
                     delimiter) else dest_name
                 vdest_name = path.replace(prefix, dest_prefix, 1)
+
+                src_mapfile = prop[self.MAPFILE]
+                force_mapfile = src_mapfile if not is_copy else None
+
                 # _update_object_hash() locks destination path
-                dest_version_id, size_delta, mapfile = self._update_object_hash(
-                    user, dest_account, dest_container, vdest_name, size,
-                    vtype, hash, None, dest_domain, meta={},
-                    replace_meta=False, permissions=None, src_node=node,
-                    src_version_id=src_version_id, is_copy=is_copy,
-                    report_size_change=(not bulk_report_size_change),
-                    keep_available=True, is_snapshot=is_snapshot)
-                if size != 0:
-                    src_hashmap = self._get_object_hashmap(prop)
-                    src_hashmap = map(self._unhexlify_hash, src_hashmap)
-                    self.store.map_put(mapfile, src_hashmap, size,
+                dest_version_id, size_delta, dest_mapfile = \
+                    self._update_object_hash(
+                        user, dest_account, dest_container, vdest_name, size,
+                        vtype, hash, None, dest_domain, meta={},
+                        replace_meta=False, permissions=None, src_node=node,
+                        src_version_id=src_version_id, is_copy=is_copy,
+                        report_size_change=(not bulk_report_size_change),
+                        keep_available=True, is_snapshot=is_snapshot,
+                        force_mapfile=force_mapfile)
+
+                # store destination mapfile
+                if size != 0 and src_mapfile != dest_mapfile:
+                    try:
+                        hashmap = self._get_object_hashmap(
+                            prop, update_available=False)
+                    except:
+                        raise NotAllowedError(
+                            "Copy is not permitted: failed to get "
+                            "source object's mapfile: %s" % src_mapfile)
+                    hashmap = map(self._unhexlify_hash, hashmap)
+                    self.store.map_put(dest_mapfile, hashmap, size,
                                        self.block_size)
+
                 dest_versions.append(dest_version_id)
                 occupied_space += size_delta
                 if is_move and (src_account, src_container, path) != (
@@ -1722,10 +1764,7 @@ class ModularBackend(BaseBackend):
         """Return a block's data."""
 
         logger.debug("get_block: %s", hash)
-        if hash.startswith('archip_'):
-            block = self.store.block_get_archipelago(hash)
-        else:
-            block = self.store.block_get(self._unhexlify_hash(hash))
+        block = self.store.block_get_archipelago(hash)
         if not block:
             raise ItemNotExists('Block does not exist')
         return block
@@ -1736,11 +1775,12 @@ class ModularBackend(BaseBackend):
         logger.debug("put_block: %s", len(data))
         return binascii.hexlify(self.store.block_put(data))
 
-    def update_block(self, hash, data, offset=0):
+    def update_block(self, hash, data, offset=0, is_snapshot=False):
         """Update a known block and return the hash."""
 
-        logger.debug("update_block: %s %s %s", hash, len(data), offset)
-        if hash.startswith('archip_'):
+        logger.debug("update_block: %s %s %s %s", hash, len(data),
+                     is_snapshot, offset)
+        if is_snapshot:
             raise IllegalOperationError(
                 'Cannot update an Archipelago Volume block.')
         if offset == 0 and len(data) == self.block_size:
@@ -1930,16 +1970,18 @@ class ModularBackend(BaseBackend):
             self.node.version_recluster(pre_version_id, CLUSTER_HISTORY,
                                         update_statistics_ancestors_depth)
 
+        mapfile = force_mapfile if force_mapfile is not None else src_mapfile
         try:
             dest_version_id, _, mapfile = self.node.version_create(
                 node, hash, size, type, src_version_id, user, uuid, checksum,
                 cluster, update_statistics_ancestors_depth,
                 available=src_available,
                 map_check_timestamp=src_map_check_timestamp,
-                mapfile=force_mapfile is not None or src_mapfile,
+                mapfile=mapfile,
                 is_snapshot=src_is_snapshot)
         except Exception, e:
             logger.exception(e)
+            # TODO handle failures
             raise ValueError
 
         self.node.attribute_unset_is_latest(node, dest_version_id)
@@ -2303,6 +2345,12 @@ class ModularBackend(BaseBackend):
 
     def _build_metadata(self, props, user_defined=None,
                         include_user_defined=True):
+        if not props[self.AVAILABLE]:
+            self._update_available(props)
+            available = self.node.version_get_properties(
+                props[self.SERIAL], keys=('available',))[0]
+        else:
+            available = props[self.AVAILABLE]
         meta = {'bytes': props[self.SIZE],
                 'type': props[self.TYPE],
                 'hash': props[self.HASH],
@@ -2310,7 +2358,10 @@ class ModularBackend(BaseBackend):
                 'version_timestamp': props[self.MTIME],
                 'modified_by': props[self.MUSER],
                 'uuid': props[self.UUID],
-                'checksum': props[self.CHECKSUM]}
+                'checksum': props[self.CHECKSUM],
+                'available': available,
+                'mapfile': props[self.MAPFILE],
+                'is_snapshot': props[self.IS_SNAPSHOT]}
         if include_user_defined and user_defined is not None:
             meta.update(user_defined)
         return meta

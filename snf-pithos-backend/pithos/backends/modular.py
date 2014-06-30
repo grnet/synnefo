@@ -1191,7 +1191,7 @@ class ModularBackend(BaseBackend):
         """Return the object's size and a list with partial hashes."""
         self._can_read_object(user, account, container, name)
         path, node = self._lookup_object(account, container, name)
-        props = self._get_version(node, version, keys=_propnames)
+        props = self._get_version(node, version)
         return props[self.IS_SNAPSHOT], props[self.SIZE], \
                 self._get_object_hashmap(props, update_available=True)
 
@@ -1486,8 +1486,7 @@ class ModularBackend(BaseBackend):
             nodes = [elem[2] for elem in src_names]
             # TODO: Will do another fetch of the properties
             # in duplicate version...
-            props = self._get_versions(nodes,
-                                       keys=_propnames)
+            props = self._get_versions(nodes)
 
             for prop, path, node in zip(props, paths, nodes):
                 src_version_id = prop[self.SERIAL]
@@ -1967,7 +1966,7 @@ class ModularBackend(BaseBackend):
             pre_version_id = None
             props = self.node.version_lookup(node, inf, CLUSTER_NORMAL)
             if props is not None:
-                pre_version_id = props.serial
+                pre_version_id = props[self.SERIAL]
         if pre_version_id is not None:
             self.node.version_recluster(pre_version_id, CLUSTER_HISTORY,
                                         update_statistics_ancestors_depth)

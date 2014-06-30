@@ -771,7 +771,7 @@ class Node(DBWorker):
                        available=True, map_check_timestamp=None,
                        mapfile=None, is_snapshot=False):
         """Create a new version from the given properties.
-           Return the (serial, mtime) of the new version.
+           Return the (serial, mtime, mapfile) of the new version.
 
            If mapfile is not None, set mapfile to this value.
            Otherwise, assign to the mapfile a new unique identifier.
@@ -780,6 +780,12 @@ class Node(DBWorker):
         """
 
         mtime = time()
+        if size == 0:
+            mapfile = None
+        elif mapfile is None:
+            mapfile = functions.concat(literal(self.mapfile_prefix),
+                                       functions.next_value(self.mapfile_seq))
+
         s = self.versions.insert().returning(self.versions.c.serial,
                                              self.versions.c.mtime,
                                              self.versions.c.mapfile)
@@ -788,9 +794,7 @@ class Node(DBWorker):
             mtime=mtime, muser=muser, uuid=uuid, checksum=checksum,
             cluster=cluster, available=available,
             map_check_timestamp=map_check_timestamp,
-            mapfile=(mapfile or
-                     functions.concat(literal(self.mapfile_prefix),
-                                      functions.next_value(self.mapfile_seq))),
+            mapfile=mapfile,
             is_snapshot=is_snapshot)
         r = self.conn.execute(s)
         serial, mtime, mapfile = r.fetchone()
@@ -930,7 +934,6 @@ class Node(DBWorker):
                           update_statistics_ancestors_depth=None):
         """Move the version into another cluster."""
 
-        mtime = time()
         props = self.version_get_properties(serial)
         if not props:
             return

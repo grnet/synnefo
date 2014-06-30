@@ -580,7 +580,9 @@ class Node(DBWorker):
        Otherwise, assign to the mapfile a new unique identifier.
         """
 
-        if mapfile is None:
+        if size == 0:
+            mapfile = None
+        elif mapfile is None:
             q = ("insert into mapfile_seq (dummy) values (?)")
             serial = self.execute(q, (False,)).lastrowid
             mapfile = ''.join([self.mapfile_prefix, unicode(serial)])
@@ -632,8 +634,8 @@ class Node(DBWorker):
             else:
                 cols = ("serial, node, hash, size, type, source, mtime, "
                         "muser, uuid, checksum, cluster, "
-                        "available, map_check_timestamp,"
-                        "mapfile, is_snapshot"),
+                        "available, map_check_timestamp, "
+                        "mapfile, is_snapshot")
             q = q % (cols, subq)
 
         self.execute(q, args + [cluster])
@@ -667,10 +669,10 @@ class Node(DBWorker):
             if keys:
                 cols = ','.join(k for k in keys if k in self._props)
             else:
-                cols = ("serial, node, hash, size, type, source, mtime, "
-                        "muser, uuid, checksum, cluster, "
-                        "available, map_check_timestamp,"
-                        "mapfile, is_snapshot")
+                cols = ("v.serial, v.node, v.hash, v.size, v.type, v.source, "
+                        "v.mtime, v.muser, v.uuid, v.checksum, v.cluster, "
+                        "v.available, v.map_check_timestamp,v.mapfile, "
+                        "v.is_snapshot")
             q = q % (cols, subq, "order by path" if order_by_path else "")
 
         args += [cluster]
@@ -687,7 +689,7 @@ class Node(DBWorker):
         """
 
         props = props or self._props
-        keys = keys or props.keys
+        keys = keys or props.keys()
         cols = ','.join(k for k in keys if k in props)
         q = ("select %s from versions where serial = ? ") % cols
         args = [serial]
@@ -715,7 +717,7 @@ class Node(DBWorker):
         if not props:
             return
         node = props[self.NODE]
-        size = props[self.IZE]
+        size = props[self.SIZE]
         oldcluster = props[self.CLUSTER]
         if cluster == oldcluster:
             return

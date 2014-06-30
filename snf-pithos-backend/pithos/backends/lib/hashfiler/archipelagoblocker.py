@@ -56,7 +56,7 @@ class ArchipelagoBlocker(object):
         emptyhash = hasher.digest()
 
         self.blocksize = blocksize
-        self.ioctx_pool = glue.WorkerGlue().ioctx_pool
+        self.ioctx_pool = glue.WorkerGlue.ioctx_pool
         self.dst_port = int(cfg.getint('mapperd', 'blockerb_port'))
         self.hashtype = hashtype
         self.hashlen = len(emptyhash)

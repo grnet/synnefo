@@ -302,6 +302,8 @@ class ModularBackend(BaseBackend):
         glue.WorkerGlue.setupXsegPool(ObjectPool, Segment, Xseg_ctx,
                                       cfile=archipelago_conf_file,
                                       pool_size=xseg_pool_size)
+
+        self.ioctx_pool = glue.WorkerGlue.ioctx_pool
         self.block_module = load_module(block_module)
         self.block_params = block_params
         params = {'path': block_path,

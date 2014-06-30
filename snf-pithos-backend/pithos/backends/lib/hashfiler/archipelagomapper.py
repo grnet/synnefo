@@ -49,7 +49,7 @@ class ArchipelagoMapper(object):
         self.namelen = params['namelen']
         cfg = ConfigParser.ConfigParser()
         cfg.readfp(open(params['archipelago_cfile']))
-        self.ioctx_pool = glue.WorkerGlue().ioctx_pool
+        self.ioctx_pool = glue.WorkerGlue.ioctx_pool
         self.dst_port = int(cfg.getint('mapperd', 'blockerm_port'))
         self.mapperd_port = int(cfg.getint('vlmcd', 'mapper_port'))
 

@@ -62,6 +62,9 @@ PROPERTY_PREFIX = 'property:'
 PLANKTON_META = ('container_format', 'disk_format', 'name',
                  'status', 'created_at', 'volume_id', 'description')
 
+SNAPSHOTS_CONTAINER = "snapshots"
+SNAPSHOTS_TYPE = "application/octet-stream"
+
 MAX_META_KEY_LENGTH = 128 - len(PLANKTON_DOMAIN) - len(PROPERTY_PREFIX)
 MAX_META_VALUE_LENGTH = 256
 
@@ -258,7 +261,7 @@ class PlanktonBackend(object):
         location, _ = self._get_raw_metadata(uuid)
         permissions = self._get_raw_permissions(uuid, location)
         read = set(permissions.get("read", []))
-        if not user in read:
+        if user not in read:
             read.add(user)
             permissions["read"] = list(read)
             self._update_permissions(uuid, location, permissions)
@@ -375,7 +378,7 @@ class PlanktonBackend(object):
         meta["name"] = name
         meta["status"] = "AVAILABLE"
         meta['created_at'] = str(time())
-        #meta["is_snapshot"] = False
+        # meta["is_snapshot"] = False
         self._update_metadata(uuid, location, metadata=meta, replace=False)
 
         logger.debug("User '%s' registered image '%s'('%s')", self.user,
@@ -443,6 +446,22 @@ class PlanktonBackend(object):
         return filter(lambda img: img["is_public"], images)
 
     # Snapshots
+    @handle_pithos_backend
+    def register_snapshot(self, name, mapfile, size, metadata):
+        snapshot_id = self.backend.register_object_map(
+            user=self.user,
+            account=self.user,
+            container=SNAPSHOTS_CONTAINER,
+            name=name,
+            mapfile=mapfile,
+            size=size,
+            domain=PLANKTON_DOMAIN,
+            type=SNAPSHOTS_TYPE,
+            meta=metadata,
+            replace_meta=True,
+            permissions=None)
+        return snapshot_id
+
     def list_snapshots(self, user=None):
         _snapshots = self.list_images()
         return [s for s in _snapshots if s["is_snapshot"]]

@@ -22,14 +22,8 @@ from synnefo.volume import util
 
 log = logging.getLogger(__name__)
 
-PLANKTON_DOMAIN = "plankton"
 PLANKTON_PREFIX = "plankton:"
-
 PROPERTY_PREFIX = "property:"
-
-SNAPSHOT_PREFIX = "snapshot:"
-SNAPSHOTS_CONTAINER = "snapshots"
-SNAPSHOTS_TYPE = "application/octet-stream"
 SNAPSHOTS_MAPFILE_PREFIX = "archip:"
 
 
@@ -103,20 +97,11 @@ def create(user_id, volume, name, description, metadata, force=False):
     # Convert size from Gbytes to bytes
     size = volume.size << 30
 
-    with PlanktonBackend(user_id) as pithos_backend:
-        # move this to plankton backend
-        snapshot_id = pithos_backend.backend.register_object_map(
-            user=user_id,
-            account=user_id,
-            container=SNAPSHOTS_CONTAINER,
-            name=snapshot_pithos_name,
-            size=size,
-            domain=PLANKTON_DOMAIN,
-            type=SNAPSHOTS_TYPE,
-            mapfile=mapfile,
-            meta=snapshot_metadata,
-            replace_meta=True,
-            permissions=None)
+    with PlanktonBackend(user_id) as b:
+        snapshot_id = b.register_snapshot(name=snapshot_pithos_name,
+                                          mapfile=mapfile,
+                                          size=size,
+                                          metadata=snapshot_metadata)
 
     backend.snapshot_instance(volume.machine,
                               snapshot_name=snapshot_pithos_name,

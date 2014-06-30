@@ -12,6 +12,11 @@ p.progress-area {
 }
 
 .modal {
+	&[data-item="user"] {
+		&:not([data-type="contact"]) .table-selected td:nth-child(3){
+			display: none;
+		}
+	}
 
 	&#user-contact {
 		p {

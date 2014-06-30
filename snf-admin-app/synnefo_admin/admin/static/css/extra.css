@@ -1,4 +1,3 @@
-@charset "UTF-8";
 /* here should declare: */
 /* vars like colors and dist */
 /* and functs */
@@ -703,163 +702,167 @@ p.progress-area {
   visibility: visible;
 }
 
-/* line 17, ../sass/_modals.scss */
+/* line 16, ../sass/_modals.scss */
+.modal[data-item="user"]:not([data-type="contact"]) .table-selected td:nth-child(3) {
+  display: none;
+}
+/* line 22, ../sass/_modals.scss */
 .modal#user-contact p {
   margin-top: 18px;
 }
-/* line 22, ../sass/_modals.scss */
+/* line 27, ../sass/_modals.scss */
 .modal h3 {
   font-weight: bold;
 }
-/* line 27, ../sass/_modals.scss */
+/* line 32, ../sass/_modals.scss */
 .modal textarea, .modal input {
   width: 87%;
   vertical-align: text-top;
   padding: 4px 8px;
 }
-/* line 31, ../sass/_modals.scss */
+/* line 36, ../sass/_modals.scss */
 .modal textarea.body, .modal input.body {
   min-height: 160px;
 }
-/* line 36, ../sass/_modals.scss */
+/* line 41, ../sass/_modals.scss */
 .modal label {
   margin-right: 6px;
   width: 56px;
 }
-/* line 42, ../sass/_modals.scss */
+/* line 47, ../sass/_modals.scss */
 .modal .modal-body {
   background-color: white;
 }
-/* line 47, ../sass/_modals.scss */
+/* line 52, ../sass/_modals.scss */
 .modal .modal-footer {
   margin-top: 0;
 }
-/* line 49, ../sass/_modals.scss */
+/* line 54, ../sass/_modals.scss */
 .modal .modal-footer form {
   display: inline;
 }
 
-/* line 57, ../sass/_modals.scss */
+/* line 62, ../sass/_modals.scss */
 .modal .custom-btn {
   color: white;
   opacity: 0.9;
 }
-/* line 60, ../sass/_modals.scss */
+/* line 65, ../sass/_modals.scss */
 .modal .custom-btn:hover {
   opacity: 1;
 }
-/* line 65, ../sass/_modals.scss */
+/* line 70, ../sass/_modals.scss */
 .modal[data-karma="dark"] .elem {
   color: #5a5959;
 }
-/* line 68, ../sass/_modals.scss */
+/* line 73, ../sass/_modals.scss */
 .modal[data-karma="dark"] .area {
   border: 10px solid #8d8c8c;
 }
-/* line 73, ../sass/_modals.scss */
+/* line 78, ../sass/_modals.scss */
 .modal[data-karma="neutral"] .elem {
   color: #207dc9;
 }
-/* line 77, ../sass/_modals.scss */
+/* line 82, ../sass/_modals.scss */
 .modal[data-karma="neutral"] .area {
   border: 10px solid #3c96e0;
 }
-/* line 83, ../sass/_modals.scss */
+/* line 88, ../sass/_modals.scss */
 .modal[data-karma="good"] .elem {
   color: #007238;
 }
-/* line 87, ../sass/_modals.scss */
+/* line 92, ../sass/_modals.scss */
 .modal[data-karma="good"] .area {
   border: 10px solid #00a551;
 }
-/* line 95, ../sass/_modals.scss */
+/* line 100, ../sass/_modals.scss */
 .modal[data-karma="bad"] .elem {
   color: #a66b18;
 }
-/* line 99, ../sass/_modals.scss */
+/* line 104, ../sass/_modals.scss */
 .modal[data-karma="bad"] .area {
   border: 10px solid #d2881f;
 }
-/* line 106, ../sass/_modals.scss */
+/* line 111, ../sass/_modals.scss */
 .modal[data-caution="warning"][data-karma="good"] .elem, .modal[data-caution="warning"][data-karma="neutral"] .elem {
   color: #a66b18;
 }
-/* line 110, ../sass/_modals.scss */
+/* line 115, ../sass/_modals.scss */
 .modal[data-caution="warning"][data-karma="good"] .area, .modal[data-caution="warning"][data-karma="neutral"] .area {
   border: 10px solid #d2881f;
 }
-/* line 117, ../sass/_modals.scss */
+/* line 122, ../sass/_modals.scss */
 .modal[data-caution="dangerous"][data-karma="bad"] .elem, .modal[data-caution="dangerous"][data-karma="neutral"] .elem {
   color: #c21934;
 }
-/* line 121, ../sass/_modals.scss */
+/* line 126, ../sass/_modals.scss */
 .modal[data-caution="dangerous"][data-karma="bad"] .area, .modal[data-caution="dangerous"][data-karma="neutral"] .area {
   border: 10px solid #e42a48;
 }
 
-/* line 128, ../sass/_modals.scss */
+/* line 133, ../sass/_modals.scss */
 .custom-btn[data-karma="dark"] {
   background-color: #222222;
   border-color: transparent;
 }
 
-/* line 137, ../sass/_modals.scss */
+/* line 142, ../sass/_modals.scss */
 .modal em {
   font-weight: bold;
   font-style: normal;
 }
 
-/* line 143, ../sass/_modals.scss */
+/* line 148, ../sass/_modals.scss */
 .modal-content {
   border-radius: 0;
   color: #404040;
 }
-/* line 146, ../sass/_modals.scss */
+/* line 151, ../sass/_modals.scss */
 .modal-content .badge {
   background-color: transparent;
 }
 
-/* line 152, ../sass/_modals.scss */
+/* line 157, ../sass/_modals.scss */
 .popover {
   z-index: 2000;
 }
-/* line 154, ../sass/_modals.scss */
+/* line 159, ../sass/_modals.scss */
 .popover dl {
   color: black;
   font-weight: normal;
 }
-/* line 157, ../sass/_modals.scss */
+/* line 162, ../sass/_modals.scss */
 .popover dl dt {
   width: 90px;
 }
-/* line 160, ../sass/_modals.scss */
+/* line 165, ../sass/_modals.scss */
 .popover dl dd {
   margin-left: 110px;
 }
-/* line 164, ../sass/_modals.scss */
+/* line 169, ../sass/_modals.scss */
 .popover h2 {
   font-size: 16px;
   font-weight: bold;
   text-align: center;
 }
 
-/* line 172, ../sass/_modals.scss */
+/* line 177, ../sass/_modals.scss */
 .instructions-icon {
   color: #3c96e0;
   font-size: 22px;
   margin-left: 62px;
 }
-/* line 176, ../sass/_modals.scss */
+/* line 181, ../sass/_modals.scss */
 .instructions-icon:hover {
   text-decoration: none;
 }
 
-/* line 181, ../sass/_modals.scss */
+/* line 186, ../sass/_modals.scss */
 .extra-info {
   margin-top: 10px;
 }
 
-/* line 185, ../sass/_modals.scss */
+/* line 190, ../sass/_modals.scss */
 .error-sign {
   color: red;
   font-size: 20px;
@@ -869,44 +872,44 @@ p.progress-area {
   top: 2px;
   display: none;
 }
-/* line 193, ../sass/_modals.scss */
+/* line 198, ../sass/_modals.scss */
 .error-sign:hover {
   color: red;
   text-decoration: none;
 }
 
-/* line 200, ../sass/_modals.scss */
+/* line 205, ../sass/_modals.scss */
 .form-area {
   position: relative;
 }
 
-/* line 203, ../sass/_modals.scss */
+/* line 208, ../sass/_modals.scss */
 .form-subject {
   margin-bottom: 15px;
 }
 
-/* line 207, ../sass/_modals.scss */
+/* line 212, ../sass/_modals.scss */
 .toggle-more {
   margin-top: -16px;
   display: none;
 }
 
-/* line 213, ../sass/_modals.scss */
+/* line 218, ../sass/_modals.scss */
 .table-selected td:last-child {
   position: relative;
   padding-right: 36px;
 }
-/* line 218, ../sass/_modals.scss */
+/* line 223, ../sass/_modals.scss */
 .table-selected tr:hover a {
   color: red;
 }
-/* line 222, ../sass/_modals.scss */
+/* line 227, ../sass/_modals.scss */
 .table-selected .remove {
   position: absolute;
   right: 14px;
   color: transparent;
 }
-/* line 226, ../sass/_modals.scss */
+/* line 231, ../sass/_modals.scss */
 .table-selected .remove:hover {
   text-decoration: none;
 }

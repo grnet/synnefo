@@ -621,6 +621,16 @@ body .object-details h4 em.os-info img {
   margin-top: 0;
 }
 
+/* line 276, ../sass/_details.scss */
+h4 .arrow {
+  position: relative;
+}
+/* line 278, ../sass/_details.scss */
+h4 .arrow:hover {
+  top: 2px;
+  cursor: pointer;
+}
+
 /* line 1, ../sass/_filters.scss */
 .filters-area {
   border-bottom: 1px solid white;

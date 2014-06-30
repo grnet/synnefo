@@ -271,3 +271,13 @@ body .object-details h4 {
 .content.part-two {
 	margin-top: 0;
 }
+
+h4 {
+	.arrow {
+		position: relative;
+		&:hover {
+			top: 2px;
+			cursor: pointer;
+		}
+	}
+}

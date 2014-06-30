@@ -32,6 +32,7 @@ $brand-danger:          #d9534f !default;
 $body-bg:               $gray-dark;
 //** Global text color on `<body>`.
 $text-color:            #fff;
+$dark-text-color:       $gray-dark;
 
 //** Global textual link color.
 $link-color:            #2995EE;
@@ -581,12 +582,12 @@ $modal-backdrop-bg:           #000 !default;
 //** Modal backdrop opacity
 $modal-backdrop-opacity:      .5 !default;
 //** Modal header border color
-$modal-header-border-color:   #e5e5e5 !default;
+$modal-header-border-color:   transparent;
 //** Modal footer border color
 $modal-footer-border-color:   $modal-header-border-color !default;
 
 $modal-lg:                    900px !default;
-$modal-md:                    600px !default;
+$modal-md:                    760px !default;
 $modal-sm:                    300px !default;
 
 

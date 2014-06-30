@@ -12,6 +12,11 @@ p.progress-area {
 }
 
 .modal {
+	&[data-item="user"] {
+		&:not([data-type="contact"]) .table-selected td:nth-child(3){
+			display: none;
+		}
+	}
 
 	&#user-contact {
 		p {
@@ -20,7 +25,7 @@ p.progress-area {
 	}
 
 	h3 {
-		// font-size: 1.1em;
+		margin-top: 0;
 		font-weight: bold
 	}
 
@@ -49,6 +54,11 @@ p.progress-area {
 		form {
 			display: inline;
 		}
+		.cancel {
+			float: left;
+			background-color: $gray-dark;
+			border-color: $gray-dark;
+		}
 	}
 
 }
@@ -65,28 +75,17 @@ p.progress-area {
 		.elem {
 			color: $gray-light
 		}
-		.area {
-			border: 10px solid $gray-light-extra;
-		}
 	}
 	&[data-karma="neutral"] {
 		.elem {
 			color: darken($blue-intense, 10%);
 
 		}
-		.area {
-			border: 10px solid $blue-intense;
-			
-		}
 	}
 	&[data-karma="good"] {
 		.elem {
 			color: darken($green-intense, 10%);
 
-		}
-		.area {
-			border: 10px solid $green-intense;
-			
 		}
 	}
 		
@@ -96,20 +95,12 @@ p.progress-area {
 			color: darken($orange-intense, 10%);
 
 		}
-		.area {
-			border: 10px solid $orange-intense;
-			
-		}
 	}
 
 	&[data-caution="warning"][data-karma="good"], &[data-caution="warning"][data-karma="neutral"] {
 		.elem {
 			color: darken($orange-intense, 10%);
 
-		}
-		.area {
-			border: 10px solid $orange-intense;
-			
 		}
 	}
 
@@ -118,20 +109,12 @@ p.progress-area {
 			color: darken($red-intense, 10%);
 
 		}
-		.area {
-			border: 10px solid $red-intense;
-			
-		}
 	}
 }
 
 .custom-btn[data-karma="dark"] {
 	background-color: #222222;
 	border-color: transparent;
-	// opacity: 0.9;
-	// &:hover {
-	// 	opacity: 1;
-	// }
 }
 .modal {
 	em {
@@ -141,11 +124,10 @@ p.progress-area {
 }
 
 .modal-content {
-	border-radius: 0;
+	padding: 20px;
 	color: $gray-dark;
 	.badge {
 		background-color: transparent;
-		// border: 1px solid $gray-dark;
 	}
 }
 

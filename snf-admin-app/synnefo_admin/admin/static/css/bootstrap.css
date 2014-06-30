@@ -402,47 +402,48 @@ textarea {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
+  color: #404040;
 }
 
-/* line 48, ../sass/bootstrap/_scaffolding.scss */
+/* line 49, ../sass/bootstrap/_scaffolding.scss */
 a {
   color: #2995ee;
   text-decoration: none;
 }
-/* line 53, ../sass/bootstrap/_scaffolding.scss */
+/* line 54, ../sass/bootstrap/_scaffolding.scss */
 a:hover, a:focus {
   color: #0f6ebc;
 }
-/* line 57, ../sass/bootstrap/_scaffolding.scss */
+/* line 58, ../sass/bootstrap/_scaffolding.scss */
 a:focus {
   outline: thin dotted;
   outline: 5px auto -webkit-focus-ring-color;
   outline-offset: -2px;
 }
 
-/* line 68, ../sass/bootstrap/_scaffolding.scss */
+/* line 69, ../sass/bootstrap/_scaffolding.scss */
 figure {
   margin: 0;
 }
 
-/* line 75, ../sass/bootstrap/_scaffolding.scss */
+/* line 76, ../sass/bootstrap/_scaffolding.scss */
 img {
   vertical-align: middle;
 }
 
-/* line 80, ../sass/bootstrap/_scaffolding.scss */
+/* line 81, ../sass/bootstrap/_scaffolding.scss */
 .img-responsive {
   display: block;
   max-width: 100%;
   height: auto;
 }
 
-/* line 85, ../sass/bootstrap/_scaffolding.scss */
+/* line 86, ../sass/bootstrap/_scaffolding.scss */
 .img-rounded {
   border-radius: 6px;
 }
 
-/* line 92, ../sass/bootstrap/_scaffolding.scss */
+/* line 93, ../sass/bootstrap/_scaffolding.scss */
 .img-thumbnail {
   padding: 4px;
   line-height: 1.42857;
@@ -456,12 +457,12 @@ img {
   height: auto;
 }
 
-/* line 105, ../sass/bootstrap/_scaffolding.scss */
+/* line 106, ../sass/bootstrap/_scaffolding.scss */
 .img-circle {
   border-radius: 50%;
 }
 
-/* line 112, ../sass/bootstrap/_scaffolding.scss */
+/* line 113, ../sass/bootstrap/_scaffolding.scss */
 hr {
   margin-top: 20px;
   margin-bottom: 20px;
@@ -469,7 +470,7 @@ hr {
   border-top: 1px solid #eeeeee;
 }
 
-/* line 124, ../sass/bootstrap/_scaffolding.scss */
+/* line 125, ../sass/bootstrap/_scaffolding.scss */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -6791,7 +6792,7 @@ button.close {
   background-color: white;
   border: 1px solid #999999;
   border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 6px;
+  border-radius: 0;
   -webkit-box-shadow: 0 3px 9px rgba(0, 0, 0, 0.5);
   box-shadow: 0 3px 9px rgba(0, 0, 0, 0.5);
   background-clip: padding-box;
@@ -6822,7 +6823,7 @@ button.close {
 /* line 76, ../sass/bootstrap/_modals.scss */
 .modal-header {
   padding: 15px;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid transparent;
   min-height: 16.42857px;
 }
 
@@ -6848,7 +6849,7 @@ button.close {
   margin-top: 15px;
   padding: 19px 20px 20px;
   text-align: right;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid transparent;
 }
 /* line 21, ../sass/bootstrap/_mixins.scss */
 .modal-footer:before, .modal-footer:after {
@@ -6876,7 +6877,7 @@ button.close {
 @media (min-width: 768px) {
   /* line 125, ../sass/bootstrap/_modals.scss */
   .modal-dialog {
-    width: 600px;
+    width: 760px;
     margin: 30px auto;
   }
 

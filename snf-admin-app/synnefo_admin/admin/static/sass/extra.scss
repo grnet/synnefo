@@ -31,7 +31,7 @@ body {
  
 .dropdown-menu li > a:hover, 
 .dropdown-menu .active > a, 
-.dropdown-menu .active > a:hover { background-color: #d5d5d5; } 
+.dropdown-menu .active > a:hover { background-color: $gray-lighter; } 
 
 .object-details-content     { /*margin:1em 0;*/ margin: 1em 0 0 0; display:none; }
 .account .object-details-content{ display:block; }
@@ -175,8 +175,14 @@ svg>text:last-child {
 
 .nav > li > a:hover,
 .nav > li > a:focus,
-.nav > li.active > a,
 .nav > li:hover > a{
+	color: $gray-dark;
+	-webkit-transition: all 0 ease 0;
+	transition: all 0 ease 0;
+  	background: $gray-lighter;
+}
+
+.nav > li.active > a {
 	color: $gray-dark;
 	-webkit-transition: all 0 ease 0;
 	transition: all 0 ease 0;
@@ -195,10 +201,15 @@ svg>text:last-child {
 	background-color: white;
 }
 
-.dropdown-menu li > a:hover, 
 .dropdown-menu .active > a, 
 .dropdown-menu .active > a:hover { 
-	background-color: #d5d5d5; 
+	background-color: $gray-light; 
+	color: $gray-dark;
+} 
+
+
+.dropdown-menu li > a:hover,  { 
+	background-color: $gray-lighter; 
 	color: $gray-dark;
 } 
 

@@ -1300,7 +1300,7 @@ body {
 .dropdown-menu li > a:hover,
 .dropdown-menu .active > a,
 .dropdown-menu .active > a:hover {
-  background-color: #d5d5d5;
+  background-color: #d9d9d9;
 }
 
 /* line 36, ../sass/extra.scss */
@@ -1577,24 +1577,31 @@ svg > text:last-child {
   text-shadow: none;
 }
 
-/* line 179, ../sass/extra.scss */
+/* line 178, ../sass/extra.scss */
 .nav > li > a:hover,
 .nav > li > a:focus,
-.nav > li.active > a,
 .nav > li:hover > a {
+  color: #404040;
+  -webkit-transition: all 0 ease 0;
+  transition: all 0 ease 0;
+  background: #d9d9d9;
+}
+
+/* line 185, ../sass/extra.scss */
+.nav > li.active > a {
   color: #404040;
   -webkit-transition: all 0 ease 0;
   transition: all 0 ease 0;
   background: white;
 }
 
-/* line 186, ../sass/extra.scss */
+/* line 192, ../sass/extra.scss */
 .nav > li > a {
   -webkit-transition: all 0 ease 0;
   transition: all 0 ease 0;
 }
 
-/* line 191, ../sass/extra.scss */
+/* line 197, ../sass/extra.scss */
 .dropdown-menu {
   border-radius: 0;
   border: 0 none;
@@ -1602,59 +1609,64 @@ svg > text:last-child {
   background-color: white;
 }
 
-/* line 200, ../sass/extra.scss */
-.dropdown-menu li > a:hover,
+/* line 205, ../sass/extra.scss */
 .dropdown-menu .active > a,
 .dropdown-menu .active > a:hover {
-  background-color: #d5d5d5;
+  background-color: #5a5959;
   color: #404040;
 }
 
-/* line 205, ../sass/extra.scss */
+/* line 211, ../sass/extra.scss */
+.dropdown-menu li > a:hover {
+  background-color: #d9d9d9;
+  color: #404040;
+}
+
+/* line 216, ../sass/extra.scss */
 .sub-nav {
   background: #5a5959;
   border: 0 none;
 }
-/* line 209, ../sass/extra.scss */
+/* line 220, ../sass/extra.scss */
 .sub-nav .nav > li > a {
   color: #eeeeee;
 }
-/* line 213, ../sass/extra.scss */
+/* line 224, ../sass/extra.scss */
 .sub-nav .nav > li:hover a {
   color: #404040;
 }
 
-/* line 221, ../sass/extra.scss */
+/* line 232, ../sass/extra.scss */
 .object-details-content {
   color: white;
 }
 
-/* line 225, ../sass/extra.scss */
+/* line 236, ../sass/extra.scss */
 .tab-content {
   background: #5a5959;
   padding: 20px;
 }
-/* line 228, ../sass/extra.scss */
+/* line 239, ../sass/extra.scss */
 .tab-content .well {
   border-color: #5a5959;
 }
 
-/* line 233, ../sass/extra.scss */
+/* line 244, ../sass/extra.scss */
 .info-block.main {
   margin-bottom: 5em;
 }
 
-/* line 237, ../sass/extra.scss */
+/* line 248, ../sass/extra.scss */
 .content-seperator {
   display: none;
 }
 
-/* line 243, ../sass/extra.scss */
+/* line 254, ../sass/extra.scss */
 .part-two > .object-details {
   border: 1px solid #8d8c8c;
 }
 
-/* line 249, ../sass/extra.scss */
+/* line 260, ../sass/extra.scss */
 .selection-indicator {
   margin-right: 6px;
   cursor: pointer;

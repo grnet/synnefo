@@ -467,7 +467,7 @@ hr {
   margin-top: 20px;
   margin-bottom: 20px;
   border: 0;
-  border-top: 1px solid #eeeeee;
+  border-top: 1px solid #d9d9d9;
 }
 
 /* line 125, ../sass/bootstrap/_scaffolding.scss */
@@ -744,7 +744,7 @@ a.bg-danger:hover {
 .page-header {
   padding-bottom: 9px;
   margin: 40px 0 20px;
-  border-bottom: 1px solid #eeeeee;
+  border-bottom: 1px solid #d9d9d9;
 }
 
 /* line 139, ../sass/bootstrap/_type.scss */
@@ -843,7 +843,7 @@ blockquote {
   padding: 10px 20px;
   margin: 0 0 20px;
   font-size: 17.5px;
-  border-left: 5px solid #eeeeee;
+  border-left: 5px solid #d9d9d9;
 }
 /* line 230, ../sass/bootstrap/_type.scss */
 blockquote p:last-child,
@@ -872,7 +872,7 @@ blockquote .small:before {
 blockquote.pull-right {
   padding-right: 15px;
   padding-left: 0;
-  border-right: 5px solid #eeeeee;
+  border-right: 5px solid #d9d9d9;
   border-left: 0;
   text-align: right;
 }
@@ -2465,7 +2465,7 @@ output {
 /* line 142, ../sass/bootstrap/_forms.scss */
 .form-control[disabled], .form-control[readonly], fieldset[disabled] .form-control {
   cursor: not-allowed;
-  background-color: #eeeeee;
+  background-color: #d9d9d9;
   opacity: 1;
 }
 
@@ -4683,7 +4683,7 @@ input[type="button"].btn-block {
   line-height: 1;
   color: #555555;
   text-align: center;
-  background-color: #eeeeee;
+  background-color: #d9d9d9;
   border: 1px solid #cccccc;
   border-radius: 0;
 }
@@ -4801,7 +4801,7 @@ input[type="button"].btn-block {
 /* line 24, ../sass/bootstrap/_navs.scss */
 .nav > li > a:hover, .nav > li > a:focus {
   text-decoration: none;
-  background-color: #eeeeee;
+  background-color: #d9d9d9;
 }
 /* line 31, ../sass/bootstrap/_navs.scss */
 .nav > li.disabled > a {
@@ -4816,7 +4816,7 @@ input[type="button"].btn-block {
 }
 /* line 48, ../sass/bootstrap/_navs.scss */
 .nav .open > a, .nav .open > a:hover, .nav .open > a:focus {
-  background-color: #eeeeee;
+  background-color: #d9d9d9;
   border-color: #2995ee;
 }
 /* line 59, ../sass/bootstrap/_navs.scss */
@@ -4849,7 +4849,7 @@ input[type="button"].btn-block {
 }
 /* line 89, ../sass/bootstrap/_navs.scss */
 .nav-tabs > li > a:hover {
-  border-color: #eeeeee #eeeeee inherit;
+  border-color: #d9d9d9 #d9d9d9 inherit;
 }
 /* line 98, ../sass/bootstrap/_navs.scss */
 .nav-tabs > li.active > a, .nav-tabs > li.active > a:hover, .nav-tabs > li.active > a:focus {
@@ -5569,7 +5569,7 @@ input[type="button"].btn-block {
 .pagination > li > span:hover,
 .pagination > li > span:focus {
   color: #0f6ebc;
-  background-color: #eeeeee;
+  background-color: #d9d9d9;
   border-color: #dddddd;
 }
 /* line 53, ../sass/bootstrap/_pagination.scss */
@@ -5667,7 +5667,7 @@ input[type="button"].btn-block {
 .pager li > a:hover,
 .pager li > a:focus {
   text-decoration: none;
-  background-color: #eeeeee;
+  background-color: #d9d9d9;
 }
 /* line 32, ../sass/bootstrap/_pager.scss */
 .pager .next > a,
@@ -5826,7 +5826,7 @@ a.list-group-item.active > .badge,
   padding: 30px;
   margin-bottom: 30px;
   color: inherit;
-  background-color: #eeeeee;
+  background-color: #d9d9d9;
 }
 /* line 13, ../sass/bootstrap/_jumbotron.scss */
 .jumbotron h1,

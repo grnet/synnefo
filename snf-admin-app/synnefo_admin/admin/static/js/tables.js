@@ -114,7 +114,11 @@ $(function(){
 	var btn1 = '<a href="" id="select-page" class="select line-btn" data-karma="neutral" data-caution="none"><span>Select Page</span></a>';
 	var btn2 = '<a href="" class="select select-all line-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>';
 	var btn3 = '<a href="" id="clear-all" class="disabled deselect line-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#clear-all-warning"><span>Clear All</span></a>';
+<<<<<<< HEAD
 	var btn4 = '<a href="" class="disabled toggle-selected extra-btn line-btn" data-karma="neutral"><span class="text">Show selected (<span class="badge num selected-num">0</span>)</span></a>';
+=======
+	var btn4 = '<a href="" class="disabled toggle-selected extra-btn line-btn" data-karma="neutral"><span class="text">Show selected <span class="badge num selected-num">(0)</span></span></a>';
+>>>>>>> admin-ui: Clean up button stye
 	$("div.custom-buttons").html(btn1+btn2+btn3+btn4);
 	$('.content').on('click', '#clear-all.disabled', function(e) {
 		e.preventDefault();

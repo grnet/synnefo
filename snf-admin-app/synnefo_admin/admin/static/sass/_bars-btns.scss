@@ -90,10 +90,6 @@ body .container .line-btn.disabled {
 	@include line-btn();
 }
 
-.default-btn {
-	@include line-btn();
-}
-
 .custom-btn {
 	@include custom-btn();
 	
@@ -356,3 +352,4 @@ Extra-button is used to show total selected rows
 		margin: 10px 10px 10px 0;
 	}
 }
+

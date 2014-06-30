@@ -770,6 +770,7 @@ p.progress-area {
 .modal .modal-footer form {
   display: inline;
 }
+<<<<<<< HEAD
 /* line 57, ../sass/_modals.scss */
 .modal .modal-footer .cancel {
   float: left;
@@ -778,10 +779,15 @@ p.progress-area {
 }
 
 /* line 67, ../sass/_modals.scss */
+=======
+
+/* line 62, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .modal .custom-btn {
   color: white;
   opacity: 0.9;
 }
+<<<<<<< HEAD
 /* line 70, ../sass/_modals.scss */
 .modal .custom-btn:hover {
   opacity: 1;
@@ -812,36 +818,113 @@ p.progress-area {
 }
 
 /* line 115, ../sass/_modals.scss */
+=======
+/* line 65, ../sass/_modals.scss */
+.modal .custom-btn:hover {
+  opacity: 1;
+}
+/* line 70, ../sass/_modals.scss */
+.modal[data-karma="dark"] .elem {
+  color: #5a5959;
+}
+/* line 73, ../sass/_modals.scss */
+.modal[data-karma="dark"] .area {
+  border: 10px solid #8d8c8c;
+}
+/* line 78, ../sass/_modals.scss */
+.modal[data-karma="neutral"] .elem {
+  color: #207dc9;
+}
+/* line 82, ../sass/_modals.scss */
+.modal[data-karma="neutral"] .area {
+  border: 10px solid #3c96e0;
+}
+/* line 88, ../sass/_modals.scss */
+.modal[data-karma="good"] .elem {
+  color: #007238;
+}
+/* line 92, ../sass/_modals.scss */
+.modal[data-karma="good"] .area {
+  border: 10px solid #00a551;
+}
+/* line 100, ../sass/_modals.scss */
+.modal[data-karma="bad"] .elem {
+  color: #a66b18;
+}
+/* line 104, ../sass/_modals.scss */
+.modal[data-karma="bad"] .area {
+  border: 10px solid #d2881f;
+}
+/* line 111, ../sass/_modals.scss */
+.modal[data-caution="warning"][data-karma="good"] .elem, .modal[data-caution="warning"][data-karma="neutral"] .elem {
+  color: #a66b18;
+}
+/* line 115, ../sass/_modals.scss */
+.modal[data-caution="warning"][data-karma="good"] .area, .modal[data-caution="warning"][data-karma="neutral"] .area {
+  border: 10px solid #d2881f;
+}
+/* line 122, ../sass/_modals.scss */
+.modal[data-caution="dangerous"][data-karma="bad"] .elem, .modal[data-caution="dangerous"][data-karma="neutral"] .elem {
+  color: #c21934;
+}
+/* line 126, ../sass/_modals.scss */
+.modal[data-caution="dangerous"][data-karma="bad"] .area, .modal[data-caution="dangerous"][data-karma="neutral"] .area {
+  border: 10px solid #e42a48;
+}
+
+/* line 133, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .custom-btn[data-karma="dark"] {
   background-color: #222222;
   border-color: transparent;
 }
 
+<<<<<<< HEAD
 /* line 120, ../sass/_modals.scss */
+=======
+/* line 142, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .modal em {
   font-weight: bold;
   font-style: normal;
 }
 
+<<<<<<< HEAD
 /* line 126, ../sass/_modals.scss */
+=======
+/* line 148, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .modal-content {
   padding: 20px;
   color: #404040;
 }
+<<<<<<< HEAD
 /* line 129, ../sass/_modals.scss */
+=======
+/* line 151, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .modal-content .badge {
   background-color: transparent;
 }
 
+<<<<<<< HEAD
 /* line 134, ../sass/_modals.scss */
 .popover {
   z-index: 2000;
 }
 /* line 136, ../sass/_modals.scss */
+=======
+/* line 157, ../sass/_modals.scss */
+.popover {
+  z-index: 2000;
+}
+/* line 159, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .popover dl {
   color: black;
   font-weight: normal;
 }
+<<<<<<< HEAD
 /* line 139, ../sass/_modals.scss */
 .popover dl dt {
   width: 90px;
@@ -851,29 +934,56 @@ p.progress-area {
   margin-left: 110px;
 }
 /* line 146, ../sass/_modals.scss */
+=======
+/* line 162, ../sass/_modals.scss */
+.popover dl dt {
+  width: 90px;
+}
+/* line 165, ../sass/_modals.scss */
+.popover dl dd {
+  margin-left: 110px;
+}
+/* line 169, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .popover h2 {
   font-size: 16px;
   font-weight: bold;
   text-align: center;
 }
 
+<<<<<<< HEAD
 /* line 154, ../sass/_modals.scss */
+=======
+/* line 177, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .instructions-icon {
   color: #3c96e0;
   font-size: 22px;
   margin-left: 62px;
 }
+<<<<<<< HEAD
 /* line 158, ../sass/_modals.scss */
+=======
+/* line 181, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .instructions-icon:hover {
   text-decoration: none;
 }
 
+<<<<<<< HEAD
 /* line 163, ../sass/_modals.scss */
+=======
+/* line 186, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .extra-info {
   margin-top: 10px;
 }
 
+<<<<<<< HEAD
 /* line 167, ../sass/_modals.scss */
+=======
+/* line 190, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .error-sign {
   color: red;
   font-size: 20px;
@@ -883,44 +993,76 @@ p.progress-area {
   top: 2px;
   display: none;
 }
+<<<<<<< HEAD
 /* line 175, ../sass/_modals.scss */
+=======
+/* line 198, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .error-sign:hover {
   color: red;
   text-decoration: none;
 }
 
+<<<<<<< HEAD
 /* line 182, ../sass/_modals.scss */
+=======
+/* line 205, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .form-area {
   position: relative;
 }
 
+<<<<<<< HEAD
 /* line 185, ../sass/_modals.scss */
+=======
+/* line 208, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .form-subject {
   margin-bottom: 15px;
 }
 
+<<<<<<< HEAD
 /* line 189, ../sass/_modals.scss */
+=======
+/* line 212, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .toggle-more {
   margin-top: -16px;
   display: none;
 }
 
+<<<<<<< HEAD
 /* line 195, ../sass/_modals.scss */
+=======
+/* line 218, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .table-selected td:last-child {
   position: relative;
   padding-right: 36px;
 }
+<<<<<<< HEAD
 /* line 200, ../sass/_modals.scss */
 .table-selected tr:hover a {
   color: red;
 }
 /* line 204, ../sass/_modals.scss */
+=======
+/* line 223, ../sass/_modals.scss */
+.table-selected tr:hover a {
+  color: red;
+}
+/* line 227, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .table-selected .remove {
   position: absolute;
   right: 14px;
   color: transparent;
 }
+<<<<<<< HEAD
 /* line 208, ../sass/_modals.scss */
+=======
+/* line 231, ../sass/_modals.scss */
+>>>>>>> admin-ui: Hide 1st column in user's modals
 .table-selected .remove:hover {
   text-decoration: none;
 }

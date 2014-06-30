@@ -82,7 +82,6 @@ def create(userid, name, password, flavor, image_id, metadata={},
     if volumes[0]["source_type"] == "blank":
         raise faults.BadRequest("Root volume cannot be blank")
 
-
     try:
         is_system = (image["owner"] == settings.SYSTEM_IMAGES_OWNER)
         Image.objects.get_or_create(uuid=image["id"],
@@ -94,13 +93,13 @@ def create(userid, name, password, flavor, image_id, metadata={},
                                     is_public=image["is_public"],
                                     is_snapshot=image["is_snapshot"],
                                     is_system=is_system,
-                                    os=image["metadata"].get("OS"),
-                                    osfamily=image["metadata"].get("OSFAMILY")
+                                    os=image["metadata"].get("OS", "unknown"),
+                                    osfamily=image["metadata"].get("OSFAMILY",
+                                                                   "unknown")
                                     )
     except Exception as e:
         # Image info is not critical. Continue if it fails for any reason
         log.warning("Failed to store image info: %s", e)
-
 
     if use_backend is None:
         # Allocate server to a Ganeti backend

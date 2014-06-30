@@ -13,11 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
+import sys
 import re
 import logging
-import functools
 import json
+from importlib import import_module
 
 from django.shortcuts import redirect
 from django.views.generic.simple import direct_to_template
@@ -33,6 +33,7 @@ from urllib import unquote
 import astakosclient
 from snf_django.lib import astakos
 from synnefo_branding.utils import render_to_string
+from snf_django.lib.api import faults
 
 from astakos.im.messages import PLAIN_EMAIL_SUBJECT as sample_subject
 from astakos.im import settings as astakos_settings
@@ -74,6 +75,17 @@ SHOW_DELETED_VMS = getattr(settings, 'ADMIN_SHOW_DELETED_VMS', False)
 
 
 ### Helper functions
+
+def get_view_module(view_type):
+    try:
+        # This module will not be reloaded again as it's probably cached.
+        return import_module('synnefo_admin.admin.%ss.views' % view_type)
+    except ImportError:
+        return import_module('synnefo_admin.admin.%ss' % view_type)
+    except ImportError:
+        logging.error("Cannot get view for type: %s", view_type)
+        raise Http404
+
 
 def get_token_from_cookie(request, cookiename):
     """Extract token from provided cookie.
@@ -196,15 +208,12 @@ default_dict = {
 def logout(request):
     try:
         auth_token = request.user['access']['token']['id']
-        ac = astakosclient.AstakosClient(auth_token,
-                                                    settings.ASTAKOS_AUTH_URL,
-                                                    retry=2, use_pool=True,
-                                                    logger=logger)
+        ac = astakosclient.AstakosClient(auth_token, settings.ASTAKOS_AUTH_URL,
+                                         retry=2, use_pool=True, logger=logger)
         logout_url = ac.ui_url + '/logout'
     except Exception as e:
         logger.exception("Why?")
         raise e
-
 
     return HttpResponseRedirect(logout_url)
 
@@ -254,6 +263,7 @@ def json_list(request, type):
         return auth_provider_views.AstakosUserAuthProviderJSONView.as_view()(request)
     else:
         logging.error("JSON view does not exist")
+        raise Http404
 
 
 @csrf_exempt
@@ -262,31 +272,12 @@ def details(request, type, id):
     """Admin-Interface generic details view."""
     logging.info("Request for details. Type: %s, ID: %s", type, id)
 
-    if type == 'user':
-        context = user_views.details(request, id)
-        template = user_views.templates['details']
-    elif type == 'project':
-        context = project_views.details(request, id)
-        template = project_views.templates['details']
-    elif type == 'vm':
-        context = vm_views.details(request, id)
-        template = vm_views.templates['details']
-    elif type == 'network':
-        context = network_views.details(request, id)
-        template = network_views.templates['details']
-    elif type == 'volume':
-        context = volume_views.details(request, id)
-        template = volume_views.templates['details']
-    elif type == 'ip':
-        context = ip_views.details(request, id)
-        template = ip_views.templates['details']
-    else:
-        logging.error("Wrong type: %s", type)
-        # TODO: Return an error here
-        return
-
+    mod = get_view_module(type)
+    context = mod.details(request, id)
     context.update(default_dict)
     context.update({'view_type': 'details'})
+
+    template = mod.templates['details']
     return direct_to_template(request, template, extra_context=context)
 
 
@@ -295,69 +286,13 @@ def catalog(request, type):
     """Admin-Interface generic list view."""
     logging.info("Request for list. Type: %s", type)
 
-    if type == 'user':
-        context = user_views.catalog(request)
-        template = user_views.templates['list']
-    elif type == 'project':
-        context = project_views.catalog(request)
-        template = project_views.templates['list']
-    elif type == 'vm':
-        context = vm_views.catalog(request)
-        template = vm_views.templates['list']
-    elif type == 'volume':
-        context = volume_views.catalog(request)
-        template = volume_views.templates['list']
-    elif type == 'network':
-        context = network_views.catalog(request)
-        template = network_views.templates['list']
-    elif type == 'ip':
-        context = ip_views.catalog(request)
-        template = ip_views.templates['list']
-    elif type == 'group':
-        context = group_views.catalog(request)
-        template = group_views.templates['list']
-    elif type == 'auth_provider':
-        context = auth_provider_views.catalog(request)
-        template = auth_provider_views.templates['list']
-    else:
-        logging.error("Wrong type: %s", type)
-        # TODO: Return an error here
-        return
-
+    mod = get_view_module(type)
+    context = mod.catalog(request)
     context.update(default_dict)
     context.update({'view_type': 'list'})
 
+    template = mod.templates['list']
     return direct_to_template(request, template, extra_context=context)
-
-
-def _admin_actions_id(request, target, op, id):
-    if target == 'user':
-        user_views.do_action(request, op, id)
-    elif target == 'vm':
-        vm_views.do_action(request, op, id)
-    elif target == 'volume':
-        volume_views.do_action(request, op, id)
-    elif target == 'network':
-        network_views.do_action(request, op, id)
-    elif target == 'ip':
-        ip_views.do_action(request, op, id)
-    elif target == 'project':
-        project_views.do_action(request, op, id)
-    else:
-        raise Exception("Wrong target: %s", target)
-
-
-@csrf_exempt
-@admin_user_required
-def admin_actions_id(request, target, op, id):
-    logging.info("Entered admin actions view for a specific ID")
-
-    if request.method == "POST":
-        logging.info("POST body: %s", request.POST)
-
-    _admin_actions_id(request, target, op, id)
-
-    return HttpResponseRedirect(redirect)
 
 
 @csrf_exempt
@@ -367,19 +302,17 @@ def admin_actions(request):
 
     Expects a JSON with the following fields: <TODO>
     """
-    logging.info("Entered admin actions view")
     status = 200
     response = {
-        'result': "All actions finished successfully"
+        'result': "All actions finished successfully",
+        'error_ids': [],
     }
 
     if request.method != "POST":
-        logging.error("We have not received a POST request")
-        status = 305
+        status = 405
         response['result'] = "Only POST is allowed"
 
     logging.info("This is the request %s", request.body)
-
     objs = json.loads(request.body)
     request.POST = objs
     logging.info("This is the decoded dictionary %s", request.POST)
@@ -387,16 +320,43 @@ def admin_actions(request):
     target = objs['target']
     op = objs['op']
     ids = objs['ids']
-    logging.info("Type ids %s", type(ids))
     if type(ids) is not list:
         ids = ids.replace('[', '').replace(']', '').replace(' ', '').split(',')
 
     try:
-        for id in ids:
-            _admin_actions_id(request, target, op, id)
-    except actions.AdminActionNotPermitted:
-        status = 403
-        response['result'] = "You are not allowed to do this operation"
+        mod = get_view_module(target)
+    except Http404:
+        status = 404
+        response['result'] = "You have requested an unknown operation."
+
+    for id in ids:
+        try:
+            mod.do_action(request, op, id)
+        except faults.BadRequest:
+            status = 400
+            response['result'] = "Bad request."
+            response['error_ids'].append(id)
+        except actions.AdminActionNotPermitted:
+            status = 403
+            response['result'] = "You are not allowed to do this operation."
+            response['error_ids'].append(id)
+        except faults.NotAllowed:
+            status = 403
+            response['result'] = "You are not allowed to do this operation."
+            response['error_ids'].append(id)
+        except actions.AdminActionUnknown:
+            status = 404
+            response['result'] = "You have requested an unknown operation."
+            break
+        except actions.AdminActionNotImplemented:
+            status = 501
+            response['result'] = "You have requested an unimplemented action."
+            break
+
+    if hasattr(mod, 'wait_action'):
+        wait_ids = set(ids) - set(response['error_ids'])
+        for id in wait_ids:
+            mod.wait_action(request, op, id)
 
     return HttpResponse(json.dumps(response, cls=DjangoJSONEncoder),
                         mimetype=JSON_MIMETYPE, status=status)

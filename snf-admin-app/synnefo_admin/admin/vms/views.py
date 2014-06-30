@@ -16,6 +16,7 @@
 import logging
 import re
 from collections import OrderedDict
+import time
 
 from operator import or_
 
@@ -29,6 +30,7 @@ from astakos.im.user_utils import send_plain as send_email
 
 from synnefo.logic import servers as servers_backend
 from synnefo.logic.commands import validate_server_action
+from synnefo.management.common import wait_server_task
 
 from eztables.views import DatatablesView
 
@@ -162,6 +164,29 @@ def do_action(request, op, id):
         actions[op].f(user, subject, template_name=None, text=body)
     else:
         actions[op].f(vm)
+
+
+@has_permission_or_403(cached_actions)
+def wait_action(request, op, id):
+    """Wait for the requested action to end."""
+    if op == "contact" or op == "suspend" or op == "unsuspend":
+        return
+
+    terminal_state = ["ERROR"]
+    if op == "start" or op == "reboot":
+        terminal_state.append("STARTED")
+    elif op == "shutdown":
+        terminal_state.append("STOPPED")
+    elif op == "destroy":
+        terminal_state.append("DESTROYED")
+
+    while True:
+        vm = get_vm(id)
+        if vm.operstate in terminal_state:
+            break
+        time.sleep(1)
+
+    return
 
 
 def catalog(request):

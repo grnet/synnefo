@@ -824,13 +824,14 @@ class ObjectWrapper(object):
     in each entry of the range list.
     """
 
-    def __init__(self, backend, ranges, sizes, hashmaps, boundary):
+    def __init__(self, backend, ranges, sizes, hashmaps, boundary, meta):
         self.backend = backend
         self.ranges = ranges
         self.sizes = sizes
         self.hashmaps = hashmaps
         self.boundary = boundary
         self.size = sum(self.sizes)
+        self.meta = meta
 
         self.file_index = 0
         self.block_index = 0
@@ -945,7 +946,8 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
         boundary = uuid.uuid4().hex
     else:
         boundary = ''
-    wrapper = ObjectWrapper(request.backend, ranges, sizes, hashmaps, boundary)
+    wrapper = ObjectWrapper(request.backend, ranges, sizes, hashmaps,
+                            boundary, meta)
     response = HttpResponse(wrapper, status=ret)
     put_object_headers(
         response, meta, restricted=public,
@@ -966,7 +968,7 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
     return response
 
 
-def put_object_block(request, hashmap, data, offset):
+def put_object_block(request, hashmap, data, offset, is_snapshot):
     """Put one block of data at the given offset."""
 
     bi = int(offset / request.backend.block_size)
@@ -975,13 +977,14 @@ def put_object_block(request, hashmap, data, offset):
     if bi < len(hashmap):
         try:
             hashmap[bi] = request.backend.update_block(hashmap[bi],
-                                                       data[:bl], bo)
+                                                       data[:bl],
+                                                       offset=bo,
+                                                       is_snapshot=is_snapshot)
         except IllegalOperationError, e:
             raise faults.Forbidden(e[0])
     else:
         hashmap.append(request.backend.put_block(('\x00' * bo) + data[:bl]))
     return bl  # Return ammount of data written.
-
 
 def hashmap_md5(backend, hashmap, size):
     """Produce the MD5 sum from the data in the hashmap."""

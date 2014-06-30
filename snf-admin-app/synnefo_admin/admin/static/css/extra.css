@@ -296,13 +296,21 @@ Extra-button is used to show total selected rows
   display: inline;
   padding: 0;
 }
-
+/* line 343, ../sass/_bars-btns.scss */
+.extra-btn .badge::before {
+  content: "(";
+}
 /* line 346, ../sass/_bars-btns.scss */
+.extra-btn .badge::after {
+  content: ")";
+}
+
+/* line 352, ../sass/_bars-btns.scss */
 .show-hide-all {
   float: right;
 }
 
-/* line 351, ../sass/_bars-btns.scss */
+/* line 357, ../sass/_bars-btns.scss */
 .actions-per-item .custom-btn {
   margin: 10px 10px 10px 0;
 }

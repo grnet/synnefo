@@ -340,6 +340,12 @@ Extra-button is used to show total selected rows
 		line-height: 0.8;
 		display: inline;
 		padding: 0;
+		&::before {
+			content: "("
+		}
+		&::after {
+			content: ")"
+		}
 	}
 }
 

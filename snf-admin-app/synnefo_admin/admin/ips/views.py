@@ -169,12 +169,10 @@ def catalog(request):
 
 def details(request, query):
     """Details view for Astakos users."""
-    error = request.GET.get('error', None)
-
     ip = get_ip(query)
-    vm_list = [ip.nic.machine]
-    network_list = [ip.nic.network]
-    nic_list = [ip.nic]
+    vm_list = [ip.nic.machine] if ip.in_use() else []
+    network_list = [ip.nic.network] if ip.in_use() else []
+    nic_list = [ip.nic] if ip.in_use() else []
     user_list = AstakosUser.objects.filter(uuid=ip.userid)
     project_list = Project.objects.filter(uuid=ip.project)
 

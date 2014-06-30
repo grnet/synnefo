@@ -199,8 +199,6 @@ def catalog(request):
 
 def details(request, query):
     """Details view for Astakos users."""
-    error = request.GET.get('error', None)
-
     user = get_user(query)
     quota_list = get_quotas(user)
 

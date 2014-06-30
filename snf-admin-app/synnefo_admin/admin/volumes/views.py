@@ -165,8 +165,6 @@ def catalog(request):
 
 def details(request, query):
     """Details view for Astakos users."""
-    error = request.GET.get('error', None)
-
     volume = get_volume(query)
     vm_list = [volume.machine]
     user_list = AstakosUser.objects.filter(uuid=volume.userid)

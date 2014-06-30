@@ -816,7 +816,7 @@ $(function(){
 		$tableBody.empty();
 		if(modalType === "contact") {
 			uniqueProp = 'contact_id'
-			var templateRow = '<tr title="" data-itemid=""><td class="full-name"></td><td class="email"><a class="remove">X</a></td></tr>';
+			var templateRow = '<tr title="" data-itemid=""><td class="full-name"></td><td class="email"><a class="remove" title="Remove item from selection">X</a></td></tr>';
 			for(var i=0; i<rowsNum; i++) {
 				for(var j = 0; j<i; j++) {
 					if(selected.items[i][uniqueProp] === selected.items[j][uniqueProp]) {
@@ -847,7 +847,7 @@ $(function(){
 
 		else {
 			uniqueProp = 'id';
-			var templateRow = '<tr data-itemid=""><td class="item-name"></td><td class="item-id"></td><td class="owner-name"></td><td class="owner-email"><a class="remove">X</a></td></tr>';
+			var templateRow = '<tr data-itemid=""><td class="item-name"></td><td class="item-id"></td><td class="owner-name"></td><td class="owner-email"><a class="remove" title="Remove item from selection">X</a></td></tr>';
 			for(var i=0; i<rowsNum; i++) {
 				idsArray.push(selected.items[i][uniqueProp]);
 				currentRow =templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].id+'"')

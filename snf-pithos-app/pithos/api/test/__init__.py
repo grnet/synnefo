@@ -43,6 +43,7 @@ import django.utils.simplejson as json
 import sys
 import random
 import functools
+import time
 
 
 pithos_test_settings = functools.partial(with_settings, pithos_settings)
@@ -124,6 +125,11 @@ def filter_headers(headers, prefix):
 
 
 class PithosTestSuiteRunner(DjangoTestSuiteRunner):
+    def setup_test_environment(self, **kwargs):
+        pithos_settings.BACKEND_MAPFILE_PREFIX = \
+            'snf_test_pithos_app_%s_' % time.time()
+        super(PithosTestSuiteRunner, self).setup_test_environment(**kwargs)
+
     def setup_databases(self, **kwargs):
         old_names, mirrors = super(PithosTestSuiteRunner,
                                    self).setup_databases(**kwargs)

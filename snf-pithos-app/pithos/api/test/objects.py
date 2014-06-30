@@ -852,8 +852,9 @@ class ObjectPut(PithosAPITest):
         r = self.put('%s?hashmap=' % url, data=hashmap)
         self.assertEqual(r.status_code, 400)
 
-        length = random.randint(TEST_BLOCK_SIZE, 2 * TEST_BLOCK_SIZE)
-        data = get_random_data(length=length)
+        l = list(data)
+        l[-1] = chr((ord(l[-1]) + 1) % 255)  # Change only the last char
+        data = ''.join(l)
         hashes = HashMap(TEST_BLOCK_SIZE, TEST_HASH_ALGORITHM)
         hashes.load(data)
         hexlified = [hexlify(h) for h in hashes]
@@ -866,7 +867,7 @@ class ObjectPut(PithosAPITest):
         except:
             self.fail("shouldn't happen")
         else:
-            self.assertEqual(sorted(missing), sorted(hexlified))
+            self.assertEqual(sorted(missing), sorted(hexlified[-1:]))
 
         r = self.get('%s?hashmap=&format=xml' % url)
         oname = get_random_name()

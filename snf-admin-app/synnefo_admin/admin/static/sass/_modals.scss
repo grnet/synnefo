@@ -145,6 +145,7 @@ p.progress-area {
 	}
 	h2 {
 		font-size: 16px;
+        color: $gray-dark;
 		font-weight: bold;
 		text-align: center;
 	}
@@ -196,11 +197,21 @@ p.progress-area {
 		position: relative;
 		padding-right: 36px;
 	}
+    tr:nth-child(2n){
+        background: darken(#fff, 5%);
+    }
+    tr {
+        a {
+            font-weight: bold;
+        }
+    }
 	tr:hover {
+        background: $gray-lighter;
 		a {
 			color: red;
 		}
 	}
+    
 	.remove {
 		position: absolute;
 		right: 14px;

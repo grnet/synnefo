@@ -844,27 +844,28 @@ p.progress-area {
 /* line 146, ../sass/_modals.scss */
 .popover h2 {
   font-size: 16px;
+  color: #404040;
   font-weight: bold;
   text-align: center;
 }
 
-/* line 154, ../sass/_modals.scss */
+/* line 155, ../sass/_modals.scss */
 .instructions-icon {
   color: #3c96e0;
   font-size: 22px;
   margin-left: 62px;
 }
-/* line 158, ../sass/_modals.scss */
+/* line 159, ../sass/_modals.scss */
 .instructions-icon:hover {
   text-decoration: none;
 }
 
-/* line 163, ../sass/_modals.scss */
+/* line 164, ../sass/_modals.scss */
 .extra-info {
   margin-top: 10px;
 }
 
-/* line 167, ../sass/_modals.scss */
+/* line 168, ../sass/_modals.scss */
 .error-sign {
   color: red;
   font-size: 20px;
@@ -874,44 +875,56 @@ p.progress-area {
   top: 2px;
   display: none;
 }
-/* line 175, ../sass/_modals.scss */
+/* line 176, ../sass/_modals.scss */
 .error-sign:hover {
   color: red;
   text-decoration: none;
 }
 
-/* line 182, ../sass/_modals.scss */
+/* line 183, ../sass/_modals.scss */
 .form-area {
   position: relative;
 }
 
-/* line 185, ../sass/_modals.scss */
+/* line 186, ../sass/_modals.scss */
 .form-subject {
   margin-bottom: 15px;
 }
 
-/* line 189, ../sass/_modals.scss */
+/* line 190, ../sass/_modals.scss */
 .toggle-more {
   margin-top: -16px;
   display: none;
 }
 
-/* line 195, ../sass/_modals.scss */
+/* line 196, ../sass/_modals.scss */
 .table-selected td:last-child {
   position: relative;
   padding-right: 36px;
 }
 /* line 200, ../sass/_modals.scss */
+.table-selected tr:nth-child(2n) {
+  background: #f2f2f2;
+}
+/* line 204, ../sass/_modals.scss */
+.table-selected tr a {
+  font-weight: bold;
+}
+/* line 208, ../sass/_modals.scss */
+.table-selected tr:hover {
+  background: #d9d9d9;
+}
+/* line 210, ../sass/_modals.scss */
 .table-selected tr:hover a {
   color: red;
 }
-/* line 204, ../sass/_modals.scss */
+/* line 215, ../sass/_modals.scss */
 .table-selected .remove {
   position: absolute;
   right: 14px;
   color: transparent;
 }
-/* line 208, ../sass/_modals.scss */
+/* line 219, ../sass/_modals.scss */
 .table-selected .remove:hover {
   text-decoration: none;
 }

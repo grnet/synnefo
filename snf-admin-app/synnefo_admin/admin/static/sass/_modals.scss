@@ -21,6 +21,10 @@ p.progress-area {
 	&#user-contact {
 		p {
 			margin-top: 18px;
+			position: relative;
+			.error-sign {
+				top: 0;
+			}
 		}
 	}
 
@@ -41,7 +45,8 @@ p.progress-area {
 	label {
 		// float: left;
 		margin-right: 6px;
-		width: 56px;
+		width: 70px;
+		vertical-align: sub;
 	}
 
 	.modal-body {
@@ -155,7 +160,7 @@ p.progress-area {
 .instructions-icon {
 	color: $blue-intense;
 	font-size: 22px;
-	margin-left: 62px;
+	margin-left: 78px;
 	&:hover {
 		text-decoration: none;
 	}
@@ -170,8 +175,8 @@ p.progress-area {
 	font-size: 20px;
 	margin-left: 10px;
 	position: absolute;
-	right: 8px;
-	top: 2px;
+	// right: 8px;
+	top: 6px;
 	display: none;
 	&:hover {
 		color: red;

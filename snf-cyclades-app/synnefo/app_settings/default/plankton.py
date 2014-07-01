@@ -5,7 +5,6 @@
 
 # Backend settings
 BACKEND_DB_CONNECTION = 'sqlite:////usr/share/synnefo/pithos/backend.db'
-BACKEND_BLOCK_PATH = '/usr/share/synnefo/pithos/data/'
 PITHOS_BACKEND_POOL_SIZE = 8
 
 # The Pithos container where images will be stored by default

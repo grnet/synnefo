@@ -407,12 +407,12 @@ textarea {
 
 /* line 49, ../sass/bootstrap/_scaffolding.scss */
 a {
-  color: #2995ee;
+  color: #4d99d8;
   text-decoration: none;
 }
 /* line 54, ../sass/bootstrap/_scaffolding.scss */
 a:hover, a:focus {
-  color: #0f6ebc;
+  color: #77b1e1;
 }
 /* line 58, ../sass/bootstrap/_scaffolding.scss */
 a:focus {
@@ -3105,7 +3105,7 @@ select[multiple].input-lg,
 
 /* line 85, ../sass/bootstrap/_buttons.scss */
 .btn-link {
-  color: #2995ee;
+  color: #4d99d8;
   font-weight: normal;
   cursor: pointer;
   border-radius: 0;
@@ -3122,7 +3122,7 @@ select[multiple].input-lg,
 }
 /* line 105, ../sass/bootstrap/_buttons.scss */
 .btn-link:hover, .btn-link:focus {
-  color: #0f6ebc;
+  color: #77b1e1;
   text-decoration: underline;
   background-color: transparent;
 }
@@ -4817,7 +4817,7 @@ input[type="button"].btn-block {
 /* line 48, ../sass/bootstrap/_navs.scss */
 .nav .open > a, .nav .open > a:hover, .nav .open > a:focus {
   background-color: #d9d9d9;
-  border-color: #2995ee;
+  border-color: #4d99d8;
 }
 /* line 59, ../sass/bootstrap/_navs.scss */
 .nav .nav-divider {
@@ -5546,7 +5546,7 @@ input[type="button"].btn-block {
   padding: 6px 12px;
   line-height: 1.42857;
   text-decoration: none;
-  color: #2995ee;
+  color: #4d99d8;
   background-color: white;
   border: 1px solid #dddddd;
   margin-left: -1px;
@@ -5568,7 +5568,7 @@ input[type="button"].btn-block {
 .pagination > li > a:hover, .pagination > li > a:focus,
 .pagination > li > span:hover,
 .pagination > li > span:focus {
-  color: #0f6ebc;
+  color: #77b1e1;
   background-color: #d9d9d9;
   border-color: #dddddd;
 }
@@ -5812,7 +5812,7 @@ a.badge:hover, a.badge:focus {
 /* line 49, ../sass/bootstrap/_badges.scss */
 a.list-group-item.active > .badge,
 .nav-pills > .active > a > .badge {
-  color: #2995ee;
+  color: #4d99d8;
   background-color: white;
 }
 
@@ -5896,7 +5896,7 @@ a.list-group-item.active > .badge,
 a.thumbnail:hover,
 a.thumbnail:focus,
 a.thumbnail.active {
-  border-color: #2995ee;
+  border-color: #4d99d8;
 }
 
 /* line 9, ../sass/bootstrap/_alerts.scss */

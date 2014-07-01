@@ -974,7 +974,7 @@ table:not(.table-selected) td:last-child .summary-expand {
   float: right;
   padding-left: 8px;
   padding-right: 8px;
-  background-color: #2995ee;
+  background-color: #4d99d8;
   color: #fff;
 }
 /* line 47, ../sass/_tables.scss */

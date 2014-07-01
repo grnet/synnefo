@@ -1,19 +1,26 @@
 {% extends "admin/base.html" %}
 
 {% block content %}
-<div id="pie-drilldown" class="chart"></div>
-<div id="pie-simple" class="chart"></div>
-<div id="timeline1" class="chart"></div>
-<div id="timeline2" class="chart"></div>
-<div id="timeline3" class="chart"></div>
-<div id="timeline4" class="chart"></div>
-<div id="columnchart" class="chart"></div>
+</h1>Resource Usage</h1>
+<div id="infra-usage" class="chart"></div>
+<div id="resource-usage" class="chart"></div>
+</h1>User status and providers</h1>
+<div id="provider-status" class="chart"></div>
+<div id="provider-status-reversed" class="chart"></div>
+<div id="provider-exclusiveness" class="chart"></div>
+</h1>VM status</h1>
+<div id="server-status" class="chart"></div>
+</h1>IP status</h1>
+<div id="ip-pool-status" class="chart"></div>
+</h1>Disk templates</h1>
+<div id="disk-templates" class="chart"></div>
+</h1>Images</h1>
+<div id="images" class="chart"></div>
 {% endblock %}
 
 {% block custom-javascript %}
 <script src="{{ MEDIA_URL }}admin/Highstock/js/highstock.src.js"></script>
 <script src="{{ MEDIA_URL }}admin/Highcharts/js/modules/drilldown.js"></script>
 <script src="{{ MEDIA_URL }}admin/js/charts.js"></script>
+<script src="{{ MEDIA_URL }}admin/js/charts_common.js"></script>
 {% endblock %}
-
-

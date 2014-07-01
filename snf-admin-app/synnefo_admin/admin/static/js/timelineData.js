@@ -1,6 +1,5 @@
-$(document).ready(function() {
 // jQuery19101265758378431201_1398693835039(/* AAPL historical OHLC data from the Google Finance API */
-timelineArray = [
+var timelineArray = [
 /* May 2006 */
 [1147651200000,67.79],
 [1147737600000,64.98],
@@ -1860,4 +1859,4 @@ timelineArray = [
 [1367971200000,463.84],
 [1368057600000,456.77],
 [1368144000000,452.97]
-]});
+];

@@ -1,638 +1,596 @@
-$(document).ready(function() {
-		/**
-	 * Dark theme for Highcharts JS
-	 * @author Torstein Honsi
-	 */
+function humanize(value, unit) {
+    if (!unit) {
+        return value;
+    }
 
-	// Load the fonts
-	Highcharts.createElement('link', {
-	   href: 'http://fonts.googleapis.com/css?family=Unica+One',
-	   rel: 'stylesheet',
-	   type: 'text/css'
-	}, null, document.getElementsByTagName('head')[0]);
+    var units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
 
-	Highcharts.theme = {
-	   colors: ["#2b908f", "#90ee7e", "#f45b5b", "#7798BF", "#aaeeee", "#ff0066", "#eeaaee",
-	      "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"],
-	   chart: {
-	      backgroundColor: {
-	         linearGradient: { x1: 0, y1: 0, x2: 1, y2: 1 },
-	         stops: [
-	            [0, '#2a2a2b'],
-	            [1, '#3e3e40']
-	         ]
-	      },
-	      style: {
-	         fontFamily: "'Unica One', sans-serif"
-	      },
-	      plotBorderColor: '#606063'
-	   },
-	   title: {
-	      style: {
-	         color: '#E0E0E3',
-	         textTransform: 'uppercase',
-	         fontSize: '20px'
-	      }
-	   },
-	   subtitle: {
-	      style: {
-	         color: '#E0E0E3',
-	         textTransform: 'uppercase'
-	      }
-	   },
-	   xAxis: {
-	      gridLineColor: '#707073',
-	      labels: {
-	         style: {
-	            color: '#E0E0E3'
-	         }
-	      },
-	      lineColor: '#707073',
-	      minorGridLineColor: '#505053',
-	      tickColor: '#707073',
-	      title: {
-	         style: {
-	            color: '#A0A0A3'
+    var i = 0;
+    while (value >= 1024) {
+        i++;
+        value = value / 1024;
+    }
 
-	         }
-	      }
-	   },
-	   yAxis: {
-	      gridLineColor: '#707073',
-	      labels: {
-	         style: {
-	            color: '#E0E0E3'
-	         }
-	      },
-	      lineColor: '#707073',
-	      minorGridLineColor: '#505053',
-	      tickColor: '#707073',
-	      tickWidth: 1,
-	      title: {
-	         style: {
-	            color: '#A0A0A3'
-	         }
-	      }
-	   },
-	   tooltip: {
-	      backgroundColor: 'rgba(0, 0, 0, 0.85)',
-	      style: {
-	         color: '#F0F0F0'
-	      }
-	   },
-	   plotOptions: {
-	      series: {
-	         dataLabels: {
-	            color: '#B0B0B3'
-	         },
-	         marker: {
-	            lineColor: '#333'
-	         }
-	      },
-	      boxplot: {
-	         fillColor: '#505053'
-	      },
-	      candlestick: {
-	         lineColor: 'white'
-	      },
-	      errorbar: {
-	         color: 'white'
-	      }
-	   },
-	   legend: {
-	      itemStyle: {
-	         color: '#E0E0E3'
-	      },
-	      itemHoverStyle: {
-	         color: '#FFF'
-	      },
-	      itemHiddenStyle: {
-	         color: '#606063'
-	      }
-	   },
-	   credits: {
-	      style: {
-	         color: '#666'
-	      }
-	   },
-	   labels: {
-	      style: {
-	         color: '#707073'
-	      }
-	   },
+    return Math.floor(value) + ' ' + units[i];
+}
 
-	   drilldown: {
-	      activeAxisLabelStyle: {
-	         color: '#F0F0F3'
-	      },
-	      activeDataLabelStyle: {
-	         color: '#F0F0F3'
-	      }
-	   },
+function percentify(value, total) {
+    return Math.floor(100 * (value / total));
+}
 
-	   navigation: {
-	      buttonOptions: {
-	         symbolStroke: '#DDDDDD',
-	         theme: {
-	            fill: '#505053'
-	         }
-	      }
-	   },
+String.prototype.capitalize = function() {
+        return this.charAt(0).toUpperCase() + this.slice(1);
+}
 
-	   // scroll charts
-	   rangeSelector: {
-	      buttonTheme: {
-	         fill: '#505053',
-	         stroke: '#000000',
-	         style: {
-	            color: '#CCC'
-	         },
-	         states: {
-	            hover: {
-	               fill: '#707073',
-	               stroke: '#000000',
-	               style: {
-	                  color: 'white'
-	               }
-	            },
-	            select: {
-	               fill: '#000003',
-	               stroke: '#000000',
-	               style: {
-	                  color: 'white'
-	               }
-	            }
-	         }
-	      },
-	      inputBoxBorderColor: '#505053',
-	      inputStyle: {
-	         backgroundColor: '#333',
-	         color: 'silver'
-	      },
-	      labelStyle: {
-	         color: 'silver'
-	      }
-	   },
+function infraUsage(data) {
+    categories = {
+        'astakos.pending_app': 'Project apps',
+        'cyclades.cpu': 'CPUs',
+        'cyclades.disk': 'System Disk',
+        'cyclades.floating_ip': 'Public (Floating) IPs',
+        'cyclades.network.private': 'Private Networks',
+        'cyclades.ram': 'RAM',
+        'cyclades.vm': 'VMs',
+        'pithos.diskspace': 'Storage space',
+    };
 
-	   navigator: {
-	      handles: {
-	         backgroundColor: '#666',
-	         borderColor: '#AAA'
-	      },
-	      outlineColor: '#CCC',
-	      maskFill: 'rgba(255,255,255,0.1)',
-	      series: {
-	         color: '#7798BF',
-	         lineColor: '#A6C7ED'
-	      },
-	      xAxis: {
-	         gridLineColor: '#505053'
-	      }
-	   },
+    var displayed_categories = [];
+    var used = [];
+    var free = [];
 
-	   scrollbar: {
-	      barBackgroundColor: '#808083',
-	      barBorderColor: '#808083',
-	      buttonArrowColor: '#CCC',
-	      buttonBackgroundColor: '#606063',
-	      buttonBorderColor: '#606063',
-	      rifleColor: '#FFF',
-	      trackBackgroundColor: '#404043',
-	      trackBorderColor: '#404043'
-	   },
+    for (key in categories) {
+        if (!categories.hasOwnProperty(key)) {
+            continue;
+        }
 
-	   // special colors for some of the
-	   legendBackgroundColor: 'rgba(0, 0, 0, 0.5)',
-	   background2: '#505053',
-	   dataLabelsColor: '#B0B0B3',
-	   textColor: '#C0C0C0',
-	   contrastTextColor: '#F0F0F3',
-	   maskColor: 'rgba(255,255,255,0.3)'
-	};
+        displayed_categories.push(categories[key]);
 
-	// Apply the theme
-	Highcharts.setOptions(Highcharts.theme);
+        resource = data['resources']['all'][key];
+        var u  = resource['used'];
+        var f  = resource['allocated'] - resource['used'];
+        var unit  = resource['unit'];
 
+        var usedData = {
+            'y': u,
+            'human': humanize(u, unit),
+        };
 
-	// Highcharts.setOptions({colors: ['#69cd8e', '#f45b5b', '#f7a35c', '#aaa6a6', '#64E572', '#FF9655', '#FFF263', '#6AF9C4']});
-	// with drilldown
-	$('#pie-drilldown').highcharts({
-	chart: {
-			plotBackgroundColor: null,
-			plotBorderWidth: null,
-			plotShadow: false,
-			type: 'pie'
-		},
-		title: {
-			text: 'Accounts State'
-		},
-		subtitle: {
-			text: "Click the slices to view the authentication methods of each category"
-		},
-		tooltip: {
-			headerFormat: '<span>{point.key} Accounts</span><br/>',
-			pointFormat: 'Population: {point.num}'
-		},
-		plotOptions: {
-			pie: {
-				allowPointSelect: true,
-				cursor: 'pointer',
-				dataLabels: {
-					enabled: true,
-					format: '<b>{point.name}: {point.percentage:.1f} %</b>',
-					style: {
-						colors: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-					}
-				}
-			}
-		},
-		series: [{
-			// type: 'column',
-			name: 'Accounts' ,
-			data: 
-				[{
-					name: 'Active',
-					y: 63.2,
-					// sliced: true,
-					// selected: true,
-					num: 3000,
-					drilldown: 'providers-act',
-					// color: '#69cd8e'
-				},
-				{
-					name: 'Inactive',
-					y:   2.4,
-					drilldown: 'providers-inact',
-					num: 100,
-				},
-				{
-					name: 'Pending Moderation',
-					y: 27.1,
-					num: 700,
-					drilldown: 'providers-pMod'
-				},
-				{
-					name: 'Pending Verification',
-					y: 7.3,
-					num: 300,
-					drilldown: 'providers-pVer'
-				}]
-		}],
-		drilldown: {
-			series: 
-				[{
-					id: 'providers-act',
-					type: 'column',
-					data: [
-						{
-							name: 'Shibboleth',
-							y: 60, // percentage is per parent-slice (60% of active accounts are shibboleth)
+        var freeData = {
+            'y': f,
+            'human': humanize(f, unit),
+        };
 
-						},
-						{
-							name: 'Local',
-							y: 40,
-							color: '#839dd6'
-						}]
-				},
-				{
-					id: 'providers-inact',
-					data: [
-						{
-							name: 'Shibboleth',
-							y: 10
-						},
-						{
-						name: 'Local',
-						y: 90,
-						color: '#839dd6'
-						}]
-				},
-				{
-					id: 'providers-pMod',
-					data: [
-						{
-							name: 'Shibboleth',
-							y: 0
-						},
-					{
-						name: 'Local',
-						y: 100,
-						color: '#839dd6'
-					}]
-				},
-				{
-					id: 'providers-pVer',
-					data: [
-						{
-							name: 'Shibboleth',
-							y: 20
-						},
-						{
-							name: 'Local',
-							y: 80,
-							color: '#839dd6'
-						}]
-				}]
-		}
-	});
+        used.push(usedData);
+        free.push(freeData);
+    }
 
-
-
-
-$('#pie-simple').highcharts({
-	chart: {
-			plotBackgroundColor: null,
-			plotBorderWidth: null,
-			plotShadow: false,
-			type: 'pie'
-		},
-		title: {
-			text: 'Servers Status'
-		},
-		subtitle: {
-			text: "Data Last update: 12/12/2012 01.00"
-		},
-		tooltip: {
-			headerFormat: '<span>{point.key} Servers</span><br/>',
-			pointFormat: 'Population: {point.num}'
-		},
-		plotOptions: {
-			pie: {
-				allowPointSelect: true,
-				cursor: 'pointer',
-				dataLabels: {
-					enabled: true,
-					format: '<b>{point.name}: {point.percentage:.1f} %</b>',
-					style: {
-						colors: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-					}
-				}
-			}
-		},
-		series: [{
-			// type: 'pie',
-			name: 'Servers' ,
-			data: 
-				[{
-					name: 'Started',
-					y: 45,
-					// sliced: true,
-					// selected: true,
-					num: 2250
-				},
-				{
-					name: 'Error',
-					y:   5,
-					num: 250,
-				},
-				{
-					name: 'Stopped',
-					y: 50,
-					num: 2500,
-					color: '#858585'
-				}]
-		}]
-	});
-
-
-	/*
-	Notes:
-	- the series.data should be placed in this order so each pie-slice to have the right color (eg active <- green)
-	- I want the tooltip to have the raw number of population se I added "property"
-	- The plan is to create series.data form the accountsData func that will take as parameter an array of objs like accounts
-	*/
-	//     function accountsData() {
-
-	//     }
-	//     var accounts = [
-	//     {
-	//     	state: 'Active',
-	//     	population: 1000,
-	//     	percentage: 0
-	//     },
-	//     {
-	//     	state: 'Inactive',
-	//     	population: 10,
-	//     	percentage: 0
-	//     },
-	//     {
-	//     	state: 'Pending Verification',
-	//     	population: 300,
-	//     	percentage: 0
-	//     },
-	//     {
-	//     	state: 'Pending Moderation',
-	//     	population: 700,
-	//     	percentage: 0
-	//     }]
-
-
-		$('#timeline1').highcharts('StockChart', {
-			rangeSelector : {
-				selected : 3,
-				inputEnabled: $('#timeline1').width() > 480
-			},
-			yAxis: {
-				// title: {
-				// 	text: 'Activated Users'
-				// },
-			// 	// opposite: true,
-				lineWidth: 1,
-				tickWidth: 1,
-				// offset: 20,
-				labels: {
-					align: 'left',
-					x: 18,
-					y: 3
-				}
-			},
-			// xAxis: [{
-
-			// 	lineWidth: 2,
-			// 	tickWidth: 2
-			// }],
-			title : {
-				text : 'Demo Zoomable Timeline'
-			},
-			series : [{
-				name : 'demo',
-				data : timelineArray,
-				tooltip: {
-					valueDecimals: 2
-				}
-			}]
-		});
-		$('#timeline2').highcharts('StockChart', {
-			rangeSelector : {
-				selected : 0,
-				inputEnabled: $('#timeline2').width() > 480
-			},
-			title : {
-				text : 'Demo Zoomable Timeline'
-			},
-			series : [{
-				name : 'demo',
-				data : timelineArray,
-				marker : {
-					enabled : true,
-					radius : 3
-				},
-				shadow : true,
-				tooltip: {
-					valueDecimals: 2
-				}
-			}]
-		});
-		$('#timeline3').highcharts('StockChart', {
-			rangeSelector : {
-				selected : 4,
-				inputEnabled: $('#timeline3').width() > 480
-			},
-			title : {
-				text : 'Demo Zoomable Timeline'
-			},
-			series : [{
-				name : 'demo',
-				data : timelineArray,
-				type: 'area',
-				threshold : null,
-				// marker : {
-					// enabled : true,
-					// radius : 3
-				// },
-				// shadow : true,
-				tooltip: {
-					valueDecimals: 2
-				},
-				fillColor : {
-					linearGradient : {
-						x1: 0,
-						y1: 0,
-						x2: 0,
-						y2: 1
-					},
-					stops : [
-						[0, Highcharts.getOptions().colors[7]],
-						[1, Highcharts.Color(Highcharts.getOptions().colors[3]).setOpacity(0).get('rgba')]
-					]
-				}
-			}]
-		});
-		$('#timeline4').highcharts({
-            chart: {
-                zoomType: 'xy'
-            },
+    $('#infra-usage').highcharts({
+        chart: {
+            type: 'column'
+        },
+        title: {
+            text: 'Total resource usage'
+        },
+        xAxis: {
+            categories: displayed_categories
+        },
+        yAxis: {
+            min: 0,
             title: {
-                text: 'Demo Alternative Way to Zoom'
+                text: 'Usage percentage'
             },
-            subtitle: {
-                text: document.ontouchstart === undefined ?
-                    'Click and drag in the plot area to zoom in' :
-                    'Pinch the chart to zoom in'
-            },
-            xAxis: {
-                type: 'datetime',
-                minRange: 14 * 24 * 3600000 // fourteen days
-            },
-            yAxis: {
-                title: {
-                    text: 'Blah Blah'
-                },
-                // opposite: true // here is working just fine
-            },
-            legend: {
-                enabled: false
-            },
-            plotOptions: {
-                area: {
-                    fillColor: {
-                        linearGradient: { x1: 0, y1: 0, x2: 0, y2: 1},
-                        stops: [
-                            [0, Highcharts.getOptions().colors[0]],
-                            [1, Highcharts.Color(Highcharts.getOptions().colors[0]).setOpacity(0).get('rgba')]
-                        ]
-                    },
-                    marker: {
-                        radius: 2
-                    },
-                    lineWidth: 1,
-                    states: {
-                        hover: {
-                            lineWidth: 1
-                        }
-                    },
-                    threshold: null
+            stackLabels: {
+                enabled: true,
+                style: {
+                    fontWeight: 'bold',
+                    color: (Highcharts.theme && Highcharts.theme.textColor) || 'gray'
                 }
             },
+        },
+        tooltip: {
+            pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.human}</b> ({point.percentage:.0f}%)<br/>',
+            shared: true
+        },
+        plotOptions: {
+            column: {
+                stacking: 'percent'
+            }
+        },
+        series: [{
+            name: 'Free',
+            data: free,
+        }, {
+            name: 'Used',
+            data: used,
+        }]
+    });
+}
 
-            series: [{
-                type: 'area',
-                name: 'Demo',
-                data: timelineArray
-            }]
-        });
 
-	$('#columnchart').highcharts({
-            chart: {
-                type: 'column'
+function resourceUsage(data, name) {
+    var providers = data['providers'];
+    var used = [];
+    var free = [];
+
+    for (var i = 0; i < providers.length; i++)  {
+        provider = providers[i];
+
+        resource = data['resources'][provider][name];
+        var u  = resource['used'];
+        var f  = resource['allocated'] - resource['used'];
+        var unit  = resource['unit'];
+
+        var usedData = {
+            'y': u,
+            'human': humanize(u, unit),
+        };
+
+        var freeData = {
+            'y': f,
+            'human': humanize(f, unit),
+        };
+
+        used.push(usedData);
+        free.push(freeData);
+    }
+
+    $('#resource-usage').highcharts({
+        chart: {
+            type: 'bar'
+        },
+        title: {
+            text: name + ' usage per provider'
+        },
+        xAxis: {
+            categories: providers
+        },
+        yAxis: {
+            min: 0,
+            title: {
+                text: data['resources']['all'][name]['description'],
+            },
+            stackLabels: {
+                enabled: true,
+                style: {
+                    fontWeight: 'bold',
+                    color: (Highcharts.theme && Highcharts.theme.textColor) || 'gray'
+                }
+            },
+        },
+        legend : {
+            reversed: true,
+        },
+        tooltip: {
+            pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.human}</b><br/>',
+            shared: true
+        },
+        plotOptions: {
+            series: {
+                stacking: 'normal'
+            }
+        },
+        series: [{
+            name: 'Free',
+            data: free,
+        }, {
+            name: 'Used',
+            data: used,
+        }]
+    });
+}
+
+
+function statusPerProvider(data) {
+    var providers = [];
+    // This for-in loop works this way only for JSON objects. Otherwise, we
+    // need to check if the key belongs to the object prototype.
+    for (key in data['users']) {
+        providers.push(key);
+    }
+
+    var statuses = [];
+    for (key in data['users']['all']) {
+        statuses.push(key);
+    }
+
+    var provider_status_data = [];
+    for (var i = 0; i < providers.length; i++)  {
+        var provider = providers[i];
+        var status_array = [];
+
+        for (var j = 0; j < statuses.length; j++) {
+            var status = statuses[j];
+            status_array.push(data['users'][provider][status]);
+        }
+
+        var statusData = {
+            name: provider,
+            data: status_array,
+        };
+
+        provider_status_data.push(statusData);
+    }
+
+    $('#provider-status').highcharts({
+        chart: {
+            type: 'column'
+        },
+        title: {
+            text: 'User status per provider'
+        },
+        xAxis: {
+            categories: statuses
+        },
+        yAxis: {
+            //min: 0,
+            title: {
+                text: 'Users (log scale)'
+            },
+            type: 'logarithmic',
+        },
+        tooltip: {
+            pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>',
+            shared: true
+        },
+        series: provider_status_data
+    });
+}
+
+function statusPerProviderReversed(data) {
+    var providers = [];
+    // This for-in loop works this way only for JSON objects. Otherwise, we
+    // need to check if the key belongs to the object prototype.
+    for (key in data['users']) {
+        providers.push(key);
+    }
+
+    var statuses = [];
+    for (key in data['users']['all']) {
+        statuses.push(key);
+    }
+
+    var provider_status_data_rev = [];
+    for (var i = 0; i < statuses.length; i++)  {
+        var status = statuses[i];
+        var providers_array = [];
+
+        for (var j = 0; j < providers.length; j++) {
+            var provider = providers[j];
+            providers_array.push(data['users'][provider][status]);
+        }
+
+        var statusData = {
+            name: status,
+            data: providers_array,
+        };
+
+        provider_status_data_rev.push(statusData);
+    }
+
+    $('#provider-status-reversed').highcharts({
+        chart: {
+            type: 'column'
+        },
+        title: {
+            text: 'Providers per user status'
+        },
+        xAxis: {
+            categories: providers
+        },
+        yAxis: {
+            //min: 0,
+            title: {
+                text: 'Users (log scale)'
+            },
+            type: 'logarithmic',
+        },
+        tooltip: {
+            pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>',
+            shared: true
+        },
+        series: provider_status_data_rev
+    });
+}
+
+function exclusiveProviders(data) {
+    providers = data['providers']
+    var excl = [];
+    var non_excl = [];
+
+    for (var i = 0; i < providers.length; i++)  {
+        var provider = providers[i];
+        var prov_data = data['users'][provider];
+
+        var e  = prov_data['exclusive'];
+        var ne  = prov_data['active'] - prov_data['exclusive'];
+
+        excl.push(e);
+        non_excl.push(ne);
+    }
+
+    $('#provider-exclusiveness').highcharts({
+        chart: {
+            type: 'column'
+        },
+        title: {
+            text: 'Exclusive users per Provider'
+        },
+        xAxis: {
+            categories: providers
+        },
+        yAxis: {
+            min: 0,
+            title: {
+                text: 'Active users'
+            },
+            stackLabels: {
+                enabled: true,
+                style: {
+                    fontWeight: 'bold',
+                    color: (Highcharts.theme && Highcharts.theme.textColor) || 'gray'
+                }
+            },
+        },
+        tooltip: {
+            pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>',
+            shared: true
+        },
+        plotOptions: {
+            series: {
+                stacking: 'normal'
+            }
+        },
+        series: [{
+            name: 'Exclusive',
+            data: excl,
+        }, {
+            name: 'Non-exclusive',
+            data: non_excl,
+        }]
+    });
+}
+
+function serverStatus(data) {
+    var total_servers = 0;
+    var servers = data['servers'];
+    for (status in servers) {
+        total_servers += servers[status]['count'];
+    }
+
+    var server_data = [];
+    for (status in data['servers']) {
+        var count = servers[status]['count'];
+        var statusData = {
+            name: status.capitalize(),
+            y: percentify(count, total_servers),
+            num: count,
+        }
+
+        if (status === 'started') {
+            statusData.sliced = true;
+            statusData.selected = true;
+        }
+
+        server_data.push(statusData);
+    }
+
+    $('#server-status').highcharts({
+        chart: {
+                plotBackgroundColor: null,
+                plotBorderWidth: null,
+                plotShadow: false,
+                type: 'pie'
             },
             title: {
-                text: 'VMs per disk'
-            },
-            // subtitle: {
-            //     text: ''
-            // },
-            xAxis: {
-                categories: [
-                    'Jan',
-                    'Feb',
-                    'Mar',
-                    'Apr',
-                    'May',
-                    'Jun',
-                    'Jul',
-                    'Aug',
-                    'Sep',
-                    'Oct',
-                    'Nov',
-                    'Dec'
-                ]
-            },
-            yAxis: {
-                min: 0,
-                title: {
-                    text: 'Number of VMs'
-                }
+                text: 'Servers Status'
             },
             tooltip: {
-                headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
-                pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
-                    '<td style="padding:0"><b>{point.y:.1f} mm</b></td></tr>',
-                footerFormat: '</table>',
-                shared: true,
-                useHTML: true
+                headerFormat: '<span>{point.key} Servers</span><br/>',
+                pointFormat: 'Number: {point.num}'
             },
             plotOptions: {
-                column: {
-                    pointPadding: 0.2,
-                    borderWidth: 0,
-                    pointWidth: 20
+                pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+                    dataLabels: {
+                        enabled: true,
+                        format: '<b>{point.name}: {point.percentage:.1f} %</b>',
+                        style: {
+                            colors: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                        }
+                    }
                 }
             },
             series: [{
-                name: '100GB',
-                data: [49.9, 71.5, 106.4, 129.2, 144.0, 176.0, 135.6, 148.5, 216.4, 194.1, 95.6, 54.4]
-            }, {
-                name: '30GB',
-                data: [83.6, 78.8, 98.5, 93.4, 106.0, 84.5, 105.0, 104.3, 91.2, 83.5, 106.6, 92.3]
-            }, {
-                name: '20GB',
-                data: [48.9, 38.8, 39.3, 41.4, 47.0, 48.3, 59.0, 59.6, 52.4, 65.2, 59.3, 51.2]
-            }, {
-                name: '5GB',
-                data: [42.4, 33.2, 34.5, 39.7, 52.6, 75.5, 57.4, 60.4, 47.6, 39.1, 46.8, 51.1]
+                name: 'Servers' ,
+                data: server_data
             }]
         });
+}
 
-});
+function ipPoolStatus(data) {
+    var ip_pools = data['ip_pools'];
+
+    var total_ips = 0;
+    for (status in ip_pools) {
+        total_ips += ip_pools[status]['total'];
+    }
+
+    ip_data = [];
+    for (status in ip_pools) {
+        var ip_sp = ip_pools[status];
+        var a = ip_sp['total'] - ip_sp['free'];
+        var f = ip_sp['free'];
+        var a_percent = percentify(a, total_ips);
+        var f_percent = percentify(f, total_ips);
+
+        var ipData = {
+            name: status.capitalize() + ' - Allocated',
+            y: a_percent,
+            num: a,
+        }
+        if (status === 'active') {
+            ipData.sliced = true;
+            ipData.selected = true;
+        }
+        ip_data.push(ipData);
+
+        var ipData = {
+            name: status.capitalize() + ' - Free',
+            y: f_percent,
+            num: f,
+        }
+        ip_data.push(ipData);
+    }
+
+    $('#ip-pool-status').highcharts({
+        chart: {
+                plotBackgroundColor: null,
+                plotBorderWidth: null,
+                plotShadow: false,
+                type: 'pie'
+            },
+            title: {
+                text: 'IP Allocation Status'
+            },
+            tooltip: {
+                headerFormat: '<span>{point.key} IPs</span><br/>',
+                pointFormat: 'Number: {point.num}'
+            },
+            plotOptions: {
+                pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+                    dataLabels: {
+                        enabled: true,
+                        format: '<b>{point.name}: {point.percentage:.1f} %</b>',
+                        style: {
+                            colors: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                        }
+                    }
+                }
+            },
+            series: [{
+                name: 'IPs' ,
+                data: ip_data
+            }]
+        });
+}
+
+function diskTemplates(data) {
+    var servers = data['servers'];
+    var total_disks = 0;
+    var templates = {};
+    for (status in servers) {
+        var disks = servers[status]['disk'];
+        for (key in disks) {
+            if (!templates.hasOwnProperty(key)) {
+                templates[key] = 0;
+            }
+            for (flavor in disks[key]) {
+                templates[key] += disks[key][flavor];
+                total_disks += disks[key][flavor];
+            }
+        }
+    }
+
+    var disk_data = []
+    for (t in templates) {
+        if (!templates.hasOwnProperty(t)) {
+            continue;
+        }
+        var diskData = {
+            name: t.capitalize(),
+            y: percentify(templates[t], total_disks),
+            num: templates[t],
+        }
+
+        disk_data.push(diskData);
+    }
+
+    $('#disk-templates').highcharts({
+        chart: {
+                plotBackgroundColor: null,
+                plotBorderWidth: null,
+                plotShadow: false,
+                type: 'pie'
+            },
+            title: {
+                text: 'Disk templates'
+            },
+            tooltip: {
+                headerFormat: '<span>{point.key} Template</span><br/>',
+                pointFormat: 'Number: {point.num}'
+            },
+            plotOptions: {
+                pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+                    dataLabels: {
+                        enabled: true,
+                        format: '<b>{point.name}: {point.percentage:.1f} %</b>',
+                        style: {
+                            colors: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                        }
+                    }
+                }
+            },
+            series: [{
+                name: 'Disk templates' ,
+                data: disk_data,
+            }]
+        });
+}
+
+function imagesStats(data) {
+    var images = data['images'];
+    var total_images = 0;
+
+    for (i in images) {
+        total_images += images[i];
+    }
+
+    var image_data = [];
+    for (i in images) {
+        var imageData = {
+            name: i,
+            y: percentify(images[i], total_images),
+            num: images[i],
+        }
+
+        image_data.push(imageData);
+    }
+
+    $('#images').highcharts({
+        chart: {
+                plotBackgroundColor: null,
+                plotBorderWidth: null,
+                plotShadow: false,
+                type: 'pie'
+            },
+            title: {
+                text: 'VMs from Images'
+            },
+            tooltip: {
+                headerFormat: '<span>{point.key} Image</span><br/>',
+                pointFormat: 'Number: {point.num}'
+            },
+            plotOptions: {
+                pie: {
+                    allowPointSelect: true,
+                    cursor: 'pointer',
+                    dataLabels: {
+                        enabled: true,
+                        format: '<b>{point.name}: {point.percentage:.1f} %</b>',
+                        style: {
+                            colors: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
+                        }
+                    }
+                }
+            },
+            series: [{
+                name: 'Images' ,
+                data: image_data,
+            }]
+        });
+}

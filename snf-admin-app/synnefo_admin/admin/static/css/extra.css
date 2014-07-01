@@ -276,27 +276,31 @@ body .custom-buttons .disabled {
 Extra-button is used to show total selected rows
 */
 /* line 323, ../sass/_bars-btns.scss */
+.extra-btn span {
+  display: inline-block;
+}
+/* line 326, ../sass/_bars-btns.scss */
 .extra-btn .badge {
   background: transparent;
   line-height: 0.8;
   display: inline;
-  padding: 0;
+  padding: 0 5px 0 0;
 }
-/* line 328, ../sass/_bars-btns.scss */
+/* line 331, ../sass/_bars-btns.scss */
 .extra-btn .badge::before {
   content: "(";
 }
-/* line 331, ../sass/_bars-btns.scss */
+/* line 334, ../sass/_bars-btns.scss */
 .extra-btn .badge::after {
   content: ")";
 }
 
-/* line 337, ../sass/_bars-btns.scss */
+/* line 340, ../sass/_bars-btns.scss */
 .show-hide-all {
   float: right;
 }
 
-/* line 342, ../sass/_bars-btns.scss */
+/* line 345, ../sass/_bars-btns.scss */
 .actions-per-item .custom-btn {
   margin: 10px 10px 10px 0;
 }

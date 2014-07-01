@@ -320,11 +320,14 @@ Extra-button is used to show total selected rows
 */
 
 .extra-btn {
+    span {
+        display: inline-block;
+    }
 	.badge {
 		background: transparent;
 		line-height: 0.8;
 		display: inline;
-		padding: 0;
+		padding: 0 5px 0 0;
 		&::before {
 			content: "("
 		}
@@ -343,4 +346,3 @@ Extra-button is used to show total selected rows
 		margin: 10px 10px 10px 0;
 	}
 }
-

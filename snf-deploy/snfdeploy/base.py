@@ -165,7 +165,7 @@ class ComponentRunner(FabricRunner):
 
     def _check_status(self):
         if status.check(self):
-            raise BaseException("Component already istalled: %s " %
+            raise BaseException("Component already installed: %s " %
                                 self.__class__.__name__)
 
     def _update_status(self):

@@ -20,6 +20,7 @@ from binascii import hexlify
 from collections import defaultdict
 from urllib import quote, unquote
 from functools import partial
+from unittest import skipIf
 
 from pithos.api.test import (PithosAPITest, pithos_settings,
                              AssertMappingInvariant, AssertUUidInvariant,
@@ -2095,6 +2096,9 @@ class ObjectPost(PithosAPITest):
         content = r.content
         self.assertEqual(content, d2 + d3[-1])
 
+    @skipIf(pithos_settings.BACKEND_DB_MODULE ==\
+            'pithos.backends.lib.sqlite',
+            "This test is only meaningfull for SQLAlchemy backend")
     def test_update_invalid_permissions(self):
         url = join_urls(self.pithos_path, self.user, self.container,
                         self.object)

@@ -268,3 +268,50 @@ svg>text:last-child {
 	margin-right: 6px;
 	cursor: pointer
 }
+
+.notify {
+	display: none;
+	padding: 30px 10px 15px;
+	width: 100%;
+	position: fixed;
+	bottom: 0px;
+	background: $brand-info;
+	.btns {
+		width: 100%;
+		text-align: center;
+		.custom-btn:first-child {
+			float: left;
+		}
+		.custom-btn:last-child {
+			float: right;
+		}
+	}
+	.dl-horizontal {
+		// width: 900px;
+		// margin: auto;
+		dt{
+			width: 220px;
+			// margin-right: 6px;
+			text-align: left;
+			span {
+				font-size: 20px;
+				vertical-align: text-bottom;
+				&.success {
+					color: darken($brand-success, 10%);
+				}
+				&.error {
+					color: $brand-danger;
+				}
+			}
+		}
+		dd {
+			margin-left: 220px;
+		}
+		&:not(:last-child) {
+			margin-bottom: 16px;
+		}
+	}
+	p {
+		text-align: center;
+	}
+}

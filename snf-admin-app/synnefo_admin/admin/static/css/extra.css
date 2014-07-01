@@ -1546,3 +1546,56 @@ svg > text:last-child {
   margin-right: 6px;
   cursor: pointer;
 }
+
+/* line 254, ../sass/extra.scss */
+.notify {
+  display: none;
+  padding: 30px 10px 15px;
+  width: 100%;
+  position: fixed;
+  bottom: 0px;
+  background: #5bc0de;
+}
+/* line 261, ../sass/extra.scss */
+.notify .btns {
+  width: 100%;
+  text-align: center;
+}
+/* line 264, ../sass/extra.scss */
+.notify .btns .custom-btn:first-child {
+  float: left;
+}
+/* line 267, ../sass/extra.scss */
+.notify .btns .custom-btn:last-child {
+  float: right;
+}
+/* line 274, ../sass/extra.scss */
+.notify .dl-horizontal dt {
+  width: 220px;
+  text-align: left;
+}
+/* line 278, ../sass/extra.scss */
+.notify .dl-horizontal dt span {
+  font-size: 20px;
+  vertical-align: text-bottom;
+}
+/* line 281, ../sass/extra.scss */
+.notify .dl-horizontal dt span.success {
+  color: #449d44;
+}
+/* line 284, ../sass/extra.scss */
+.notify .dl-horizontal dt span.error {
+  color: #d9534f;
+}
+/* line 289, ../sass/extra.scss */
+.notify .dl-horizontal dd {
+  margin-left: 220px;
+}
+/* line 292, ../sass/extra.scss */
+.notify .dl-horizontal:not(:last-child) {
+  margin-bottom: 16px;
+}
+/* line 296, ../sass/extra.scss */
+.notify p {
+  text-align: center;
+}

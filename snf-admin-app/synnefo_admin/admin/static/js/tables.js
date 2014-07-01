@@ -3,9 +3,45 @@ var mydata; // temp
 (function($, Django){
 
 $(function(){
+
+	var $actionbar = $('.actionbar'),
+		$infoBlock = $('.info-block'),
+		infoBlockMarg = $infoBlock.css('marginRight'),
+		actionbarTop = $actionbar.offset().top,
+		actionBarWidth = $actionbar.outerWidth(true),
+		$win = $(window),
+		isFixed = 0,
+		navHeight = $('.main-nav').outerHeight(true),
+		filtersHeight = $('.filters').outerHeight();
+
+	function processScroll() {
+		var i, scrollTop = $win.scrollTop();
+		if(scrollTop >= navHeight+filtersHeight && !isFixed) {
+			isFixed = 1;
+			$actionbar.addClass('fixed');
+			$actionbar.css('top', navHeight);
+			if(!$infoBlock.hasClass('.fixed-arround')) {
+				$infoBlock.addClass('fixed-arround');
+				$infoBlock.css('marginLeft', actionBarWidth);
+			}
+		}
+		else if(scrollTop <= navHeight+filtersHeight && isFixed){
+			isFixed = 0;
+			$actionbar.removeClass('fixed');
+			if($infoBlock.hasClass('fixed-arround')) {
+				$infoBlock.removeClass('fixed-arround');
+				$infoBlock.css('marginLeft', infoBlockMarg);
+			}
+		}
+	}
+	processScroll();
+
+
+	$win.on('scroll', processScroll)
+
 	var $lastClicked = null;
 	var $prevClicked = null;
-	 selected = {
+	var selected = {
 		items: [],
 		actions: {}
 	};
@@ -764,11 +800,13 @@ $(function(){
 		updateCounter('.selected-num');
 	});
 
+	var $notificationArea = $('.notify');
 
 	function performAction(modal) {
 		var $modal = $(modal);
 		var $actionBtn = $modal.find('.apply-action')
 		var url = $actionBtn.data('url');
+
 
 		var data = {
 		op: $actionBtn.data('op'),
@@ -783,18 +821,66 @@ $(function(){
 		}
 		console.log(data)
 		$.ajax({
-		url: url,
-		type: 'POST',
-		data: JSON.stringify(data),
-		contentType: 'application/json',
-		success: function(response, statusText, jqXHR) {
-		  console.log('did it!', statusText)
-		},
-		error: function(jqXHR, statusText) {
-		  console.log('error', statusText)
-		}
+			url: url,
+			type: 'POST',
+			data: JSON.stringify(data),
+			contentType: 'application/json',
+			timeout: 100000,
+			success: function(response, statusText, jqXHR) {
+				var htmlSuccess = '<dl class="dl-horizontal"><dt><span class="success snf-icon snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>'+response.result+'<a href="" class="remove-log">icon</a></dd></dl>';
+				$notificationArea.find('.btns').before(htmlSuccess);
+				var height = -$notificationArea.outerHeight(true)
+					if($notificationArea.css('bottom') !== '0px')
+						$notificationArea.css('bottom', height)
+					$notificationArea.show();
+					$notificationArea.animate({'bottom': '0px'})
+			},
+			error: function(jqXHR, statusText) {
+				console.log(jqXHR, statusText, jqXHR.status);
+				var htmlError;
+				if(jqXHR.status === 500 || jqXHR.status === 0) {
+					htmlError = '<dl class="dl-horizontal"><dt><span class="error snf-icon snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>[code: '+ jqXHR.status +'] '+jqXHR.statusText+'<a href="" class="remove-log">icon</a></dd></dl>';
+				}
+				else {
+
+					htmlError ='<dl class="dl-horizontal"><dt><span class="error snf-icon snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>'+jqXHR.result+'</dd><dt>Error for the items: </dt><dd>'+jqXHR.error_ids.toString().replace(/\,/gi, ', ')+'<a href="" class="remove-log">icon</a></dd></dl>';
+				}
+
+				$notificationArea.find('.btns').before(htmlError);
+				var height = -$notificationArea.outerHeight(true)
+				if($notificationArea.css('bottom') !== '0px') {
+					$notificationArea.css('bottom', height)
+				}
+				$notificationArea.show();
+				$notificationArea.animate({'bottom': '0px'})
+			}
 		});
 	}
+
+	$notificationArea.on('click', '.remove-log', function(e) {
+		e.preventDefault();
+		console.log($(this));
+		var $dl = $(this).closest('dl');
+		$dl.fadeOut('slow', function() {
+			$dl.remove();
+			if($notificationArea.find('dl').length === 0) {
+				$notificationArea.find('.close-notifications').trigger('click');
+			}
+		});
+	});
+	$notificationArea.on('click', '.close-notifications', function(e) {
+		e.preventDefault();
+		var height = -$notificationArea.outerHeight(true)
+		$notificationArea.animate({'bottom': height}, 'slow')
+	});
+	$notificationArea.on('click', '.clear-notifications', function(e) {
+		e.preventDefault();
+		$notificationArea.find('dl').fadeOut('slow', function() {
+			$(this).remove();
+			$notificationArea.find('.close-notifications').trigger('click');
+		});
+
+	});
 
 	function drawModal(modalID) {
 		var $tableBody = $(modalID).find('.table-selected tbody');

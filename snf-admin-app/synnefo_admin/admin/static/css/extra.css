@@ -1574,33 +1574,40 @@ svg > text:last-child {
 .notify .btns .custom-btn:last-child {
   float: right;
 }
-/* line 292, ../sass/extra.scss */
+/* line 293, ../sass/extra.scss */
+.notify .dl-horizontal:hover a {
+  color: #d9534f;
+}
+/* line 297, ../sass/extra.scss */
 .notify .dl-horizontal dt {
   width: 220px;
   text-align: left;
 }
-/* line 296, ../sass/extra.scss */
+/* line 301, ../sass/extra.scss */
 .notify .dl-horizontal dt span {
   font-size: 20px;
   vertical-align: text-bottom;
+  margin-right: 10px;
 }
-/* line 299, ../sass/extra.scss */
+/* line 305, ../sass/extra.scss */
 .notify .dl-horizontal dt span.success {
   color: #449d44;
 }
-/* line 302, ../sass/extra.scss */
+/* line 308, ../sass/extra.scss */
 .notify .dl-horizontal dt span.error {
   color: #d9534f;
 }
-/* line 307, ../sass/extra.scss */
+/* line 313, ../sass/extra.scss */
 .notify .dl-horizontal dd {
   margin-left: 220px;
 }
-/* line 310, ../sass/extra.scss */
+/* line 315, ../sass/extra.scss */
+.notify .dl-horizontal dd a {
+  color: transparent;
+  margin-left: 10px;
+  font-weight: bold;
+}
+/* line 321, ../sass/extra.scss */
 .notify .dl-horizontal:not(:last-child) {
   margin-bottom: 16px;
-}
-/* line 314, ../sass/extra.scss */
-.notify p {
-  text-align: center;
 }

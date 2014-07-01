@@ -77,7 +77,6 @@ $('.main .object-details h4 .arrow').trigger('click')
 		/* Modals */
 
 	$('.actions-per-item .custom-btn').click(function() {
-		console.log('you clicked me');
 		var itemID = $(this).closest('.object-details').data('id');
 		var itemName = $(this).closest('.object-details').find('h4 .title').text();
 		var modalID = $(this).data('target');
@@ -153,9 +152,9 @@ $('.main .object-details h4 .arrow').trigger('click')
 			type: 'POST',
 			data: JSON.stringify(data),
 			contentType: 'application/json',
-			timeout: 1,
+			timeout: 100000,
 			success: function(response, statusText, jqXHR) {
-				var htmlSuccess = '<dl class="dl-horizontal"><dt><span class="success snf-icon snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>'+response.result+'<a href="" class="remove-log">icon</a></dd></dl>';
+				var htmlSuccess = '<dl class="dl-horizontal"><dt><span class="success snf-icon snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>'+response.result+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
 				$notificationArea.find('.btns').before(htmlSuccess);
 				var height = -$notificationArea.outerHeight(true)
 					if($notificationArea.css('bottom') !== '0px')
@@ -167,11 +166,11 @@ $('.main .object-details h4 .arrow').trigger('click')
 				console.log(jqXHR, statusText, jqXHR.status);
 				var htmlError;
 				if(jqXHR.status === 500 || jqXHR.status === 0) {
-					htmlError = '<dl class="dl-horizontal"><dt><span class="error snf-icon snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>[code: '+ jqXHR.status +'] '+jqXHR.statusText+'<a href="" class="remove-log">icon</a></dd></dl>';
+					htmlError = '<dl class="dl-horizontal"><dt><span class="error snf-icon snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>[code: '+ jqXHR.status +'] '+jqXHR.statusText+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
 				}
 				else {
 
-					htmlError ='<dl class="dl-horizontal"><dt><span class="error snf-icon snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>'+jqXHR.result+'</dd><dt>Error for the items: </dt><dd>'+jqXHR.error_ids.toString().replace(/\,/gi, ', ')+'<a href="" class="remove-log">icon</a></dd></dl>';
+					htmlError ='<dl class="dl-horizontal"><dt><span class="error snf-icon snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>'+jqXHR.result+'</dd><dt>Error for the items: </dt><dd>'+jqXHR.error_ids.toString().replace(/\,/gi, ', ')+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
 				}
 
 				$notificationArea.find('.btns').before(htmlError);
@@ -187,7 +186,6 @@ $('.main .object-details h4 .arrow').trigger('click')
 
 	$notificationArea.on('click', '.remove-log', function(e) {
 		e.preventDefault();
-		console.log($(this));
 		var $dl = $(this).closest('dl');
 		$dl.fadeOut('slow', function() {
 			$dl.remove();
@@ -229,7 +227,6 @@ $('.main .object-details h4 .arrow').trigger('click')
 			if(!$.trim($emailSubj.val())) {
 				// e.preventDefault();
 				e.stopPropagation();
-				console.log('empty')
 				showError($modal, 'empty-subject');
 				checkInput($modal, $emailSubj, 'empty-subject');
 				completeAction = false;

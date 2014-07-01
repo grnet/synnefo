@@ -289,6 +289,11 @@ svg>text:last-child {
 	.dl-horizontal {
 		// width: 900px;
 		// margin: auto;
+		&:hover {
+			a {
+				color: $brand-danger;
+			}
+		}
 		dt{
 			width: 220px;
 			// margin-right: 6px;
@@ -296,6 +301,7 @@ svg>text:last-child {
 			span {
 				font-size: 20px;
 				vertical-align: text-bottom;
+				margin-right: 10px;
 				&.success {
 					color: darken($brand-success, 10%);
 				}
@@ -306,12 +312,14 @@ svg>text:last-child {
 		}
 		dd {
 			margin-left: 220px;
+			a {
+				color: transparent;
+				margin-left: 10px;
+				font-weight: bold;
+			}
 		}
 		&:not(:last-child) {
 			margin-bottom: 16px;
 		}
-	}
-	p {
-		text-align: center;
 	}
 }

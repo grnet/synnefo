@@ -1,4 +1,11 @@
+@mixin box-shadow($shadow...) {
+  -webkit-box-shadow: $shadow; // iOS <4.3 & Android <4.1
+          box-shadow: $shadow;
+}
+
+
 @import "settings";
+
 @import "bars-btns";
 @import "details";
 @import "filters";
@@ -203,7 +210,7 @@ svg>text:last-child {
 
 .dropdown-menu .active > a, 
 .dropdown-menu .active > a:hover { 
-	background-color: $gray-light; 
+	background-color: $gray-lighter; 
 	color: $gray-dark;
 } 
 

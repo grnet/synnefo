@@ -1,7 +1,9 @@
+$body-padding-top: 100px;
+$filter-margin: 20px;
+$filter-height: 40px;
+
 .filters-area {
-	border-bottom: 1px solid white;
-	padding-bottom: 16px;
-	margin-bottom: 16px;
+	margin-bottom: $body-padding-top/2 - $filter-margin;
 }
 
 .filters {
@@ -20,36 +22,42 @@
 	padding-bottom: 10px;
 }
 
-
-.filter-input {
-	label {
-		border: 1px solid #cccccc;
-		background: white;
-		padding: 0 10px;
-		font-weight: normal;
-		color: $gray-dark;
-		input {
-			border: 0 none;
-			background: transparent;
-			height: 38px;
-			// line-height: 38px;
-			padding: 0 5px;
-			font-weight: normal;
-		}	
-	}
-	input {
-		border-radius: 0;
-	}
+.filter {
+    height: $filter-height;
+    margin: 0 $filter-margin $filter-margin 0;
+    display: inline-block;
+    background: #fff;
+    .form-group {
+        margin: 0;
+        height: $filter-height;
+    }
+    label, 
+    .dropdown{
+        height: $filter-height;
+        line-height: $filter-height;
+        border: 0 none;
+        padding: 0 10px;
+        color: $gray-dark;
+        background: transparent;
+        font-weight: normal;
+    }
+    .dropdown-menu {
+        margin: 0;
+    }
+    input {
+        border: 0 none;
+        background: transparent;
+        height: $filter-height;
+        line-height: $filter-height;
+        padding: 0 5px;
+        font-weight: normal;
+        border-radius: 0;
+    }
 }
 
+
 .filter-dropdown {
-	background: white;
-	height: 38px;
 	.dropdown {
-		// border: 1px solid #cccccc;
-		border-radius: 0px;
-		padding: 8px 12px;
-		line-height: 1.4; //same as inputs
 		&>a {
 			.selected-value {
 				margin-left: 4px;
@@ -81,21 +89,11 @@
 	}
 }
 
-.filter-text, 
-.filter-dropdown {
-	margin: 0 1em 1em 0;
-	display: inline-block;
-	.form-group {
-		margin: 0;
-	}
-}
 
 
 body input:not(.subject):focus {
 	border-color: transparent;
-	-webkit-box-shadow: none;
-	-moz-box-shadow: none;
-	box-shadow: none;
+    @include box-shadow(none);
 }
 
 

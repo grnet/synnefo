@@ -9,3 +9,11 @@
 <div id="timeline4" class="chart"></div>
 <div id="columnchart" class="chart"></div>
 {% endblock %}
+
+{% block custom-javascript %}
+<script src="{{ MEDIA_URL }}admin/Highstock/js/highstock.src.js"></script>
+<script src="{{ MEDIA_URL }}admin/Highcharts/js/modules/drilldown.js"></script>
+<script src="{{ MEDIA_URL }}admin/js/charts.js"></script>
+{% endblock %}
+
+

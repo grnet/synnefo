@@ -86,8 +86,6 @@ class HashMap(list):
 DEFAULT_DB_MODULE = 'pithos.backends.lib.sqlalchemy'
 DEFAULT_DB_CONNECTION = 'sqlite:///backend.db'
 DEFAULT_BLOCK_MODULE = 'pithos.backends.lib.hashfiler'
-DEFAULT_BLOCK_PATH = 'data/'
-DEFAULT_BLOCK_UMASK = 0o022
 DEFAULT_BLOCK_SIZE = 4 * 1024 * 1024  # 4MB
 DEFAULT_HASH_ALGORITHM = 'sha256'
 # DEFAULT_QUEUE_MODULE = 'pithos.backends.lib.rabbitmq'
@@ -221,8 +219,7 @@ class ModularBackend(BaseBackend):
     """
 
     def __init__(self, db_module=None, db_connection=None,
-                 block_module=None, block_path=None, block_umask=None,
-                 block_size=None, hash_algorithm=None,
+                 block_module=None, block_size=None, hash_algorithm=None,
                  queue_module=None, queue_hosts=None, queue_exchange=None,
                  astakos_auth_url=None, service_token=None,
                  astakosclient_poolsize=None,
@@ -239,8 +236,6 @@ class ModularBackend(BaseBackend):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
         block_module = block_module or DEFAULT_BLOCK_MODULE
-        block_path = block_path or DEFAULT_BLOCK_PATH
-        block_umask = block_umask or DEFAULT_BLOCK_UMASK
         block_params = block_params or DEFAULT_BLOCK_PARAMS
         block_size = block_size or DEFAULT_BLOCK_SIZE
         hash_algorithm = hash_algorithm or DEFAULT_HASH_ALGORITHM
@@ -306,10 +301,8 @@ class ModularBackend(BaseBackend):
         self.ioctx_pool = glue.WorkerGlue.ioctx_pool
         self.block_module = load_module(block_module)
         self.block_params = block_params
-        params = {'path': block_path,
-                  'block_size': self.block_size,
+        params = {'block_size': self.block_size,
                   'hash_algorithm': self.hash_algorithm,
-                  'umask': block_umask,
                   'archipelago_cfile': archipelago_conf_file}
         params.update(self.block_params)
         self.store = self.block_module.Store(**params)

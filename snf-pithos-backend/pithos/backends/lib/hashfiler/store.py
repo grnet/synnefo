@@ -22,14 +22,10 @@ from mapper import Mapper
 class Store(object):
     """Store.
        Required constructor parameters: path, block_size, hash_algorithm,
-       umask, blockpool, mappool.
+       blockpool, mappool.
     """
 
     def __init__(self, **params):
-        umask = params['umask']
-        if umask is not None:
-            os.umask(umask)
-
         pb = {'blocksize': params['block_size'],
               'hashtype': params['hash_algorithm'],
               'archipelago_cfile': params['archipelago_cfile'],

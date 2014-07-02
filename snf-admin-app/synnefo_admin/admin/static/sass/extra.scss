@@ -275,7 +275,8 @@ svg>text:last-child {
 	width: 100%;
 	position: fixed;
 	bottom: 0px;
-	background: $brand-info;
+	background: $brand-primary;
+    color: $dark-text-color;
 	.btns {
 		width: 100%;
 		text-align: center;

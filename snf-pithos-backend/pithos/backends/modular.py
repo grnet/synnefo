@@ -979,7 +979,7 @@ class ModularBackend(BaseBackend):
             if not props[self.AVAILABLE]:
                 try:
                     self._update_available(props)
-                except (NotAllowedError, IllegalOperationError):
+                except IllegalOperationError:
                     pass  # just update the database
                 finally:
                     # get updated properties
@@ -1144,8 +1144,8 @@ class ModularBackend(BaseBackend):
             if props[self.MAP_CHECK_TIMESTAMP]:
                 elapsed_time = time() - float(props[self.MAP_CHECK_TIMESTAMP])
                 if elapsed_time < self.map_check_interval:
-                    raise NotAllowedError(
-                        'Consequent map checks are limited: retry later.')
+                    raise IllegalOperationError(
+                        'Unable to retrieve Archipelago volume hashmap')
         try:
             hashmap = self.store.map_get(props[self.HASH], props[self.SIZE])
         except:  # map does not exist
@@ -1158,7 +1158,7 @@ class ModularBackend(BaseBackend):
             self.wrapper.commit()  # commit transaction
             self.wrapper.execute()  # start new transaction
             raise IllegalOperationError(
-                'Unable to retrieve Archipelago Volume hashmap.')
+                'Unable to retrieve Archipelago volume hashmap')
         else:  # map exists
             self.node.version_put_property(props[self.SERIAL],
                                            'available', True)
@@ -1339,7 +1339,7 @@ class ModularBackend(BaseBackend):
             else:
                 if props[self.IS_SNAPSHOT]:
                     raise IllegalOperationError(
-                        'Cannot update Archipelago Volume hashmap.')
+                        'Cannot update Archipelago volume hashmap.')
         meta = meta or {}
         if size == 0:  # No such thing as an empty hashmap.
             hashmap = [self.put_block('')]
@@ -1784,7 +1784,7 @@ class ModularBackend(BaseBackend):
                      is_snapshot, offset)
         if is_snapshot:
             raise IllegalOperationError(
-                'Cannot update an Archipelago Volume block.')
+                'Cannot update an Archipelago volume block.')
         if offset == 0 and len(data) == self.block_size:
             return self.put_block(data)
         h = self.store.block_update(self._unhexlify_hash(hash), offset, data)

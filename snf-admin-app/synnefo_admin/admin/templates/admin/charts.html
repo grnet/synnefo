@@ -3,15 +3,15 @@
 {% block content %}
 <div class="charts">
 <div class="sidebar">
-    <a href="" data-chart="resource-usage"><span>Resource Usage</span></a>
-    <a href="" class="active" data-chart="temp"><span>User status and providers</span></a>
-    <a href="" data-chart="vm-status"><span>VM status</span></a>
-    <a href="" data-chart="ip-status"><span>IP status</span></a>
-    <a href="" data-chart="disk-templates"><span>Disk templates</span></a>
-    <a href="" data-chart="images"><span>Images</span></a>
+    <a href="" data-chart="resource-usage" class="active" style="display: block"><span>Resource Usage</span></a>
+    <a href="" data-chart="temp" style="display: block"><span>User status and providers</span></a>
+    <a href="" data-chart="vm-status" style="display: block"><span>VM status</span></a>
+    <a href="" data-chart="ip-status" style="display: block"><span>IP status</span></a>
+    <a href="" data-chart="disk-templates" style="display: block"><span>Disk templates</span></a>
+    <a href="" data-chart="images" style="display: block"><span>Images</span></a>
 </div>
 <div class="info well">
-    <div id="infra-usage" class="chart" data-chart="resource-usage"></div>
+    <div id="infra-usage" class="chart" data-chart="resource-usage" style="display: block"></div>
     <div id="resource-usage" class="chart" data-chart="resource-usage"></div>
     <div id="provider-status" class="chart" data-chart="temp"></div>
     <div id="provider-status-reversed" class="chart" data-chart="temp"></div>
@@ -33,9 +33,4 @@
 {% endblock %}
 
 
-    $('.charts .sidebar a').click(function(e) {
-        e.preventDefault();
-        $(this).toggleClass('active');
-        var el = $(this).attr('data-chart');
-        $('.info').find('div[data-chart='+el+']').toggle('slow')
-    })
+

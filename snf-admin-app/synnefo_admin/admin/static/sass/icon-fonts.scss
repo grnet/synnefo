@@ -79,6 +79,24 @@
 	&.snf-info:before {
 		content: "\73";
 	}
+	&.snf-user-outline:before {
+	content: "\75";
+	}
+	&.snf-user-full:before {
+		content: "\74";
+	}
+	&.snf-wallet-full:before {
+	content: "\78";
+	}
+	&.snf-pig:before {
+		content: "\76";
+	}
+	&.snf-bag:before {
+		content: "\77";
+	}
+	&.snf-wallet-outline:before {
+		content: "\79";
+	}
 }
 
 /* Font with kpal icons */

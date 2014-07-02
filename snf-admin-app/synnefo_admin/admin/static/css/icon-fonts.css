@@ -95,6 +95,30 @@
 .snf-font-admin.snf-info:before {
   content: "\73";
 }
+/* line 82, ../sass/icon-fonts.scss */
+.snf-font-admin.snf-user-outline:before {
+  content: "\75";
+}
+/* line 85, ../sass/icon-fonts.scss */
+.snf-font-admin.snf-user-full:before {
+  content: "\74";
+}
+/* line 88, ../sass/icon-fonts.scss */
+.snf-font-admin.snf-wallet-full:before {
+  content: "\78";
+}
+/* line 91, ../sass/icon-fonts.scss */
+.snf-font-admin.snf-pig:before {
+  content: "\76";
+}
+/* line 94, ../sass/icon-fonts.scss */
+.snf-font-admin.snf-bag:before {
+  content: "\77";
+}
+/* line 97, ../sass/icon-fonts.scss */
+.snf-font-admin.snf-wallet-outline:before {
+  content: "\79";
+}
 
 /* Font with kpal icons */
 @font-face {
@@ -105,7 +129,7 @@
   font-style: normal;
 }
 
-/* line 97, ../sass/icon-fonts.scss */
+/* line 115, ../sass/icon-fonts.scss */
 .snf-font {
   font-family: 'snf-font';
   speak: none;
@@ -116,307 +140,307 @@
   line-height: 1;
   -webkit-font-smoothing: antialiased;
 }
-/* line 107, ../sass/icon-fonts.scss */
+/* line 125, ../sass/icon-fonts.scss */
 .snf-font.snf-eye:before {
   content: "\41";
 }
-/* line 110, ../sass/icon-fonts.scss */
+/* line 128, ../sass/icon-fonts.scss */
 .snf-font.snf-radio-checked:before {
   content: "\42";
 }
-/* line 113, ../sass/icon-fonts.scss */
+/* line 131, ../sass/icon-fonts.scss */
 .snf-font.snf-radio-unchecked:before {
   content: "\43";
 }
-/* line 116, ../sass/icon-fonts.scss */
+/* line 134, ../sass/icon-fonts.scss */
 .snf-font.snf-close:before {
   content: "\44";
 }
-/* line 119, ../sass/icon-fonts.scss */
+/* line 137, ../sass/icon-fonts.scss */
 .snf-font.snf-www:before {
   content: "\49";
 }
-/* line 122, ../sass/icon-fonts.scss */
+/* line 140, ../sass/icon-fonts.scss */
 .snf-font.snf-arrow-up:before {
   content: "\4c";
 }
-/* line 125, ../sass/icon-fonts.scss */
+/* line 143, ../sass/icon-fonts.scss */
 .snf-font.snf-arrow-down:before {
   content: "\4d";
 }
-/* line 128, ../sass/icon-fonts.scss */
+/* line 146, ../sass/icon-fonts.scss */
 .snf-font.snf-checkbox-unchecked:before {
   content: "\61";
 }
-/* line 131, ../sass/icon-fonts.scss */
+/* line 149, ../sass/icon-fonts.scss */
 .snf-font.snf-checkbox-checked:before {
   content: "\62";
 }
-/* line 134, ../sass/icon-fonts.scss */
+/* line 152, ../sass/icon-fonts.scss */
 .snf-font.snf-cancel-circled:before {
   content: "\63";
 }
-/* line 137, ../sass/icon-fonts.scss */
+/* line 155, ../sass/icon-fonts.scss */
 .snf-font.snf-search:before {
   content: "\64";
 }
-/* line 140, ../sass/icon-fonts.scss */
+/* line 158, ../sass/icon-fonts.scss */
 .snf-font.snf-twitter-logo:before {
   content: "\67";
 }
-/* line 143, ../sass/icon-fonts.scss */
+/* line 161, ../sass/icon-fonts.scss */
 .snf-font.snf-ok:before {
   content: "\68";
 }
-/* line 146, ../sass/icon-fonts.scss */
+/* line 164, ../sass/icon-fonts.scss */
 .snf-font.snf-switch:before {
   content: "\69";
 }
-/* line 149, ../sass/icon-fonts.scss */
+/* line 167, ../sass/icon-fonts.scss */
 .snf-font.snf-ban-circle:before {
   content: "\6a";
 }
-/* line 152, ../sass/icon-fonts.scss */
+/* line 170, ../sass/icon-fonts.scss */
 .snf-font.snf-ok-sign:before {
   content: "\6c";
 }
-/* line 155, ../sass/icon-fonts.scss */
+/* line 173, ../sass/icon-fonts.scss */
 .snf-font.snf-minus-sign:before {
   content: "\6e";
 }
-/* line 158, ../sass/icon-fonts.scss */
+/* line 176, ../sass/icon-fonts.scss */
 .snf-font.snf-edit:before {
   content: "\71";
 }
-/* line 161, ../sass/icon-fonts.scss */
+/* line 179, ../sass/icon-fonts.scss */
 .snf-font.snf-listview:before {
   content: "\73";
 }
-/* line 164, ../sass/icon-fonts.scss */
+/* line 182, ../sass/icon-fonts.scss */
 .snf-font.snf-gridview:before {
   content: "\74";
 }
-/* line 167, ../sass/icon-fonts.scss */
+/* line 185, ../sass/icon-fonts.scss */
 .snf-font.snf-dashboard-outline:before {
   content: "\7a";
 }
-/* line 170, ../sass/icon-fonts.scss */
+/* line 188, ../sass/icon-fonts.scss */
 .snf-font.snf-pithos-outline:before {
   content: "\79";
 }
-/* line 173, ../sass/icon-fonts.scss */
+/* line 191, ../sass/icon-fonts.scss */
 .snf-font.snf-info-full:before {
   content: "\70";
 }
-/* line 176, ../sass/icon-fonts.scss */
+/* line 194, ../sass/icon-fonts.scss */
 .snf-font.snf-volume-create-full:before {
   content: "\36";
 }
-/* line 179, ../sass/icon-fonts.scss */
+/* line 197, ../sass/icon-fonts.scss */
 .snf-font.snf-image-full:before {
   content: "\51";
 }
-/* line 182, ../sass/icon-fonts.scss */
+/* line 200, ../sass/icon-fonts.scss */
 .snf-font.snf-pc-create-full:before {
   content: "\53";
 }
-/* line 185, ../sass/icon-fonts.scss */
+/* line 203, ../sass/icon-fonts.scss */
 .snf-font.snf-network-create-outline:before {
   content: "\54";
 }
-/* line 188, ../sass/icon-fonts.scss */
+/* line 206, ../sass/icon-fonts.scss */
 .snf-font.snf-network-create-full:before {
   content: "\55";
 }
-/* line 191, ../sass/icon-fonts.scss */
+/* line 209, ../sass/icon-fonts.scss */
 .snf-font.snf-ram-outline:before {
   content: "\4a";
 }
-/* line 194, ../sass/icon-fonts.scss */
+/* line 212, ../sass/icon-fonts.scss */
 .snf-font.snf-nic-outline:before {
   content: "\50";
 }
-/* line 197, ../sass/icon-fonts.scss */
+/* line 215, ../sass/icon-fonts.scss */
 .snf-font.snf-ram-full:before {
   content: "\52";
 }
-/* line 200, ../sass/icon-fonts.scss */
+/* line 218, ../sass/icon-fonts.scss */
 .snf-font.snf-nic-full:before {
   content: "\72";
 }
-/* line 203, ../sass/icon-fonts.scss */
+/* line 221, ../sass/icon-fonts.scss */
 .snf-font.snf-network-broken-1-full:before {
   content: "\56";
 }
-/* line 206, ../sass/icon-fonts.scss */
+/* line 224, ../sass/icon-fonts.scss */
 .snf-font.snf-network-broken-2-full:before {
   content: "\57";
 }
-/* line 209, ../sass/icon-fonts.scss */
+/* line 227, ../sass/icon-fonts.scss */
 .snf-font.snf-pc-broken-full:before {
   content: "\58";
 }
-/* line 212, ../sass/icon-fonts.scss */
+/* line 230, ../sass/icon-fonts.scss */
 .snf-font.snf-pc-reboot-full:before {
   content: "\59";
 }
-/* line 215, ../sass/icon-fonts.scss */
+/* line 233, ../sass/icon-fonts.scss */
 .snf-font.snf-pc-switch-full:before {
   content: "\5a";
 }
-/* line 218, ../sass/icon-fonts.scss */
+/* line 236, ../sass/icon-fonts.scss */
 .snf-font.snf-key-full:before {
   content: "\31";
 }
-/* line 221, ../sass/icon-fonts.scss */
+/* line 239, ../sass/icon-fonts.scss */
 .snf-font.snf-router-full:before {
   content: "\32";
 }
-/* line 224, ../sass/icon-fonts.scss */
+/* line 242, ../sass/icon-fonts.scss */
 .snf-font.snf-chip-full:before {
   content: "\33";
 }
-/* line 227, ../sass/icon-fonts.scss */
+/* line 245, ../sass/icon-fonts.scss */
 .snf-font.snf-plus-full:before {
   content: "\34";
 }
-/* line 230, ../sass/icon-fonts.scss */
+/* line 248, ../sass/icon-fonts.scss */
 .snf-font.snf-snapshot-full:before {
   content: "\4e";
 }
-/* line 233, ../sass/icon-fonts.scss */
+/* line 251, ../sass/icon-fonts.scss */
 .snf-font.snf-pithos-full:before {
   content: "\35";
 }
-/* line 236, ../sass/icon-fonts.scss */
+/* line 254, ../sass/icon-fonts.scss */
 .snf-font.snf-volume-full:before {
   content: "\4f";
 }
-/* line 239, ../sass/icon-fonts.scss */
+/* line 257, ../sass/icon-fonts.scss */
 .snf-font.snf-network-full:before {
   content: "\4b";
 }
-/* line 242, ../sass/icon-fonts.scss */
+/* line 260, ../sass/icon-fonts.scss */
 .snf-font.snf-pc-full:before {
   content: "\78";
 }
-/* line 245, ../sass/icon-fonts.scss */
+/* line 263, ../sass/icon-fonts.scss */
 .snf-font.snf-network-broken-1-outline:before {
   content: "\37";
 }
-/* line 248, ../sass/icon-fonts.scss */
+/* line 266, ../sass/icon-fonts.scss */
 .snf-font.snf-network-broken-2-outline:before {
   content: "\38";
 }
-/* line 251, ../sass/icon-fonts.scss */
+/* line 269, ../sass/icon-fonts.scss */
 .snf-font.snf-pc-broken-outline:before {
   content: "\39";
 }
-/* line 254, ../sass/icon-fonts.scss */
+/* line 272, ../sass/icon-fonts.scss */
 .snf-font.snf-volume-broken-outline:before {
   content: "\30";
 }
-/* line 257, ../sass/icon-fonts.scss */
+/* line 275, ../sass/icon-fonts.scss */
 .snf-font.snf-pc-reboot-outline:before {
   content: "\21";
 }
-/* line 260, ../sass/icon-fonts.scss */
+/* line 278, ../sass/icon-fonts.scss */
 .snf-font.snf-pc-switch-outline:before {
   content: "\40";
 }
-/* line 263, ../sass/icon-fonts.scss */
+/* line 281, ../sass/icon-fonts.scss */
 .snf-font.snf-key-outline:before {
   content: "\23";
 }
-/* line 266, ../sass/icon-fonts.scss */
+/* line 284, ../sass/icon-fonts.scss */
 .snf-font.snf-router-outline:before {
   content: "\48";
 }
-/* line 269, ../sass/icon-fonts.scss */
+/* line 287, ../sass/icon-fonts.scss */
 .snf-font.snf-chip-outline:before {
   content: "\45";
 }
-/* line 272, ../sass/icon-fonts.scss */
+/* line 290, ../sass/icon-fonts.scss */
 .snf-font.snf-image-outline:before {
   content: "\66";
 }
-/* line 275, ../sass/icon-fonts.scss */
+/* line 293, ../sass/icon-fonts.scss */
 .snf-font.snf-plus-outline:before {
   content: "\6d";
 }
-/* line 278, ../sass/icon-fonts.scss */
+/* line 296, ../sass/icon-fonts.scss */
 .snf-font.snf-snapshot-outline:before {
   content: "\65";
 }
-/* line 281, ../sass/icon-fonts.scss */
+/* line 299, ../sass/icon-fonts.scss */
 .snf-font.snf-volume-outline:before {
   content: "\75";
 }
-/* line 284, ../sass/icon-fonts.scss */
+/* line 302, ../sass/icon-fonts.scss */
 .snf-font.snf-network-outline:before {
   content: "\76";
 }
-/* line 287, ../sass/icon-fonts.scss */
+/* line 305, ../sass/icon-fonts.scss */
 .snf-font.snf-pc-outline:before {
   content: "\77";
 }
-/* line 290, ../sass/icon-fonts.scss */
+/* line 308, ../sass/icon-fonts.scss */
 .snf-font.snf-info-outline:before {
   content: "\6f";
 }
-/* line 293, ../sass/icon-fonts.scss */
+/* line 311, ../sass/icon-fonts.scss */
 .snf-font.snf-thunder-full:before {
   content: "\6b";
 }
-/* line 296, ../sass/icon-fonts.scss */
+/* line 314, ../sass/icon-fonts.scss */
 .snf-font.snf-lock-closed-full:before {
   content: "\46";
 }
-/* line 299, ../sass/icon-fonts.scss */
+/* line 317, ../sass/icon-fonts.scss */
 .snf-font.snf-lock-open-full:before {
   content: "\47";
 }
-/* line 303, ../sass/icon-fonts.scss */
+/* line 321, ../sass/icon-fonts.scss */
 .snf-font.snf-link-outline:before {
   content: "\26";
 }
-/* line 306, ../sass/icon-fonts.scss */
+/* line 324, ../sass/icon-fonts.scss */
 .snf-font.snf-refresh-outline:before {
   content: "\29";
 }
-/* line 309, ../sass/icon-fonts.scss */
+/* line 327, ../sass/icon-fonts.scss */
 .snf-font.snf-download-full:before {
   content: "\25";
 }
-/* line 312, ../sass/icon-fonts.scss */
+/* line 330, ../sass/icon-fonts.scss */
 .snf-font.snf-person-outline:before {
   content: "\2a";
 }
-/* line 315, ../sass/icon-fonts.scss */
+/* line 333, ../sass/icon-fonts.scss */
 .snf-font.snf-upload-full:before {
   content: "\28";
 }
-/* line 318, ../sass/icon-fonts.scss */
+/* line 336, ../sass/icon-fonts.scss */
 .snf-font.snf-arrow-right-small-full:before {
   content: "\2d";
 }
-/* line 321, ../sass/icon-fonts.scss */
+/* line 339, ../sass/icon-fonts.scss */
 .snf-font.snf-copy-outline:before {
   content: "\3f";
 }
-/* line 324, ../sass/icon-fonts.scss */
+/* line 342, ../sass/icon-fonts.scss */
 .snf-font.snf-copy-full:before {
   content: "\22";
 }
-/* line 327, ../sass/icon-fonts.scss */
+/* line 345, ../sass/icon-fonts.scss */
 .snf-font.snf-arrow-left-small-full:before {
   content: "\5f";
 }
-/* line 330, ../sass/icon-fonts.scss */
+/* line 348, ../sass/icon-fonts.scss */
 .snf-font.snf-trash-full:before {
   content: "\3d";
 }
-/* line 333, ../sass/icon-fonts.scss */
+/* line 351, ../sass/icon-fonts.scss */
 .snf-font.snf-trash-outline:before {
   content: "\24";
 }

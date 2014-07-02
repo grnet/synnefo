@@ -24,9 +24,7 @@
                 <dl class="dl-horizontal well">
                     <dt>UUID</dt><dd>{{ user.uuid }}</dd>
                     <dt>Name</dt><dd>{{ user.realname }}</dd>
-                    {% if user.is_project_admin %}
-                        <dt>PROJECT ADMIN</dt>
-                    {% endif %}
+                    <dt>Groups</dt><dd>{{ user|get_groups }}</dd>
                 </dl>
             </div>
             <div class="tab-pane" id="log{{ user.uuid }}">

@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 import django_filters
 
 import synnefo_admin.admin.projects.utils as project_utils
+import synnefo_admin.admin.users.utils as user_utils
 from astakos.im.models import AstakosUser
 
 register = template.Library()
@@ -249,6 +250,11 @@ def repr(item):
         pass
 
     return item.__str__()
+
+
+@register.filter
+def get_groups(user):
+    return user_utils.get_user_groups(user)
 
 
 @register.filter

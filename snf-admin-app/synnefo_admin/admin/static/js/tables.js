@@ -476,7 +476,12 @@ $(function(){
 			}
 		}
 
-		html = '<a title="Details" href="'+ data["details_url"].value +' " class="details-link"><span class="snf-font-admin snf-search"></span></a><a title="Show summary" href="#" class="summary-expand expand-area"><span class="snf-font-admin snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
+        html = '';
+        if (data.hasOwnProperty('details_url')) {
+            html += '<a title="Details" href="'+ data["details_url"].value +' " class="details-link">';
+        }
+
+		html += '<span class="snf-font-admin snf-search"></span></a><a title="Show summary" href="#" class="summary-expand expand-area"><span class="snf-font-admin snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
 		return html;
 	};
 

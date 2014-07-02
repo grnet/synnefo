@@ -45,6 +45,7 @@ import synnefo_admin.admin.volumes.views as volume_views
 import synnefo_admin.admin.networks.views as network_views
 import synnefo_admin.admin.ips.views as ip_views
 import synnefo_admin.admin.projects.views as project_views
+import synnefo_admin.admin.ip_logs.views as ip_log_views
 from synnefo_admin.admin import groups as group_views
 from synnefo_admin.admin import auth_providers as auth_provider_views
 from synnefo_admin.admin import actions
@@ -193,6 +194,7 @@ default_dict = {
                    ('Volumes', 'volume'),
                    ('Networks', 'network'),
                    ('IPs', 'ip'),
+                   ('IP History', 'ip_log'),
                    ('Projects', 'project'),
                    ('User Groups', 'group'),
                    #('User Auth Providers', 'auth_provider'),
@@ -253,6 +255,8 @@ def json_list(request, type):
         return network_views.NetworkJSONView.as_view()(request)
     elif type == 'ip':
         return ip_views.IPJSONView.as_view()(request)
+    elif type == 'ip_log':
+        return ip_log_views.IPLogJSONView.as_view()(request)
     elif type == 'group':
         return group_views.GroupJSONView.as_view()(request)
     elif type == 'auth_provider':

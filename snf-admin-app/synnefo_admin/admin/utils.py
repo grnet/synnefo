@@ -101,8 +101,25 @@ def filter_owner_name(queryset, search):
     # Leave if no name has been given
     if not search:
         return queryset
-    # Find all the uses that match the requested search term
+    # Find all the users that match the requested search term
     users = filter_name(AstakosUser.objects.all(), search).\
+        values('uuid')
+    # Get the related entities with the UUIDs of these users
+    return queryset.filter(userid__in=users).distinct()
+
+
+def filter_email(queryset, search):
+    """Filter by email."""
+    queryset = queryset.filter(email__icontains=search)
+    return queryset
+
+
+def filter_owner_email(queryset, search):
+    # Leave if no name has been given
+    if not search:
+        return queryset
+    # Find all the users that match the requested search term
+    users = filter_email(AstakosUser.objects.all(), search).\
         values('uuid')
     # Get the related entities with the UUIDs of these users
     return queryset.filter(userid__in=users).distinct()
@@ -167,8 +184,8 @@ def render_email(request, user):
 def create_details_href(type, name, id):
     """Create an href (name + url) for the details page of an item."""
     url = reverse('admin-details', args=[type, id])
-    if len(str(id)) > 12:
-        href = '<a href=%s>%s</a>' % (url, name)
+    if type == 'user':
+        href = '<a href=%s>%s (email:%s)</a>' % (url, name, id)
     else:
         href = '<a href=%s>%s (id:%s)</a>' % (url, name, id)
     return href

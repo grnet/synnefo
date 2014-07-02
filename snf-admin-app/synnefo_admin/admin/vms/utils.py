@@ -50,4 +50,4 @@ def get_flavor_info(vm):
 
 def get_user_details_href(vm):
     user = AstakosUser.objects.get(uuid=vm.userid)
-    return create_details_href('user', user.realname, user.uuid)
+    return create_details_href('user', user.realname, user.email)

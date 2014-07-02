@@ -185,7 +185,7 @@ def create_details_href(type, name, id):
     """Create an href (name + url) for the details page of an item."""
     url = reverse('admin-details', args=[type, id])
     if type == 'user':
-        href = '<a href=%s>%s (email:%s)</a>' % (url, name, id)
+        href = '<a href=%s>%s (%s)</a>' % (url, name, id)
     else:
         href = '<a href=%s>%s (id:%s)</a>' % (url, name, id)
     return href

@@ -38,4 +38,4 @@ def get_volume(query):
 
 def get_user_details_href(volume):
     user = AstakosUser.objects.get(uuid=volume.userid)
-    return create_details_href('user', user.realname, user.uuid)
+    return create_details_href('user', user.realname, user.email)

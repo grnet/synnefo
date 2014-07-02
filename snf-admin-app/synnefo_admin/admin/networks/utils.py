@@ -58,6 +58,6 @@ def get_contact_name(inst):
 def get_user_details_href(inst):
     if inst.userid:
         user = AstakosUser.objects.get(uuid=inst.userid)
-        return create_details_href('user', user.realname, user.uuid)
+        return create_details_href('user', user.realname, user.email)
     else:
         return "-"

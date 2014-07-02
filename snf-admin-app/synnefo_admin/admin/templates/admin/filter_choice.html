@@ -3,13 +3,13 @@
 		<a class="" href="#" data-toggle="dropdown">
 			<span class="category">{{ filter.label }}:</span>
 			<span class="selected-value">All</span>
-			<span class="snf-icon snf-angle-down arrow"></span>
+			<span class="snf-font-admin snf-angle-down arrow"></span>
 		</a>
 		<ul class="dropdown-menu choices">
-			<li class="active reset"><a href="#"><span class="selection-indicator snf-icon snf-checkbox-checked">All</a></li>
+			<li class="active reset"><a href="#"><span class="selection-indicator snf-font-admin snf-checkbox-checked">All</a></li>
 			<li class="divider"></li>
 			{% for choice,_ in filter.field.choices %}
-			<li><a href="#"><span class="selection-indicator snf-icon snf-checkbox-unchecked"></span>{{ choice }}</a></li>
+			<li><a href="#"><span class="selection-indicator snf-font-admin snf-checkbox-unchecked"></span>{{ choice }}</a></li>
 			{% endfor %}
 		</ul>
 	</div>

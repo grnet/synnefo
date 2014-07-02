@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <title>Synnefo admin</title>
     <link href="{{ ADMIN_MEDIA_URL }}css/bootstrap.css" rel="stylesheet">
-    <link href="{{ ADMIN_MEDIA_URL }}css/icon-font.css" rel="stylesheet">
+    <link href="{{ ADMIN_MEDIA_URL }}css/icon-fonts.css" rel="stylesheet">
     <link href="{{ ADMIN_MEDIA_URL }}DataTables/media/css/jquery.dataTables.css" rel="stylesheet">
     <link href="{{ ADMIN_MEDIA_URL }}css/extra.css" rel="stylesheet">
     <!--
@@ -23,7 +23,7 @@
       {% endfor %}
         <li class="dropdown">
           <a href="#"  data-toggle="dropdown">Reports
-          <span class="snf-icon snf-angle-down arrow"></span></a>
+          <span class="snf-font-admin snf-angle-down arrow"></span></a>
           <ul class="dropdown-menu align-left">
             <li><a href="{% url admin-stats %}">Statistics</a></li>
             <li><a href="{% url admin-charts %}">Demo Charts</a></li>
@@ -36,11 +36,11 @@
           <li class="dropdown">
             <a href="" data-toggle="dropdown">
                 {{ user.access.user.name }}
-              <span class="snf-icon snf-angle-down arrow"></span>
+              <span class="snf-font-admin snf-angle-down arrow"></span>
             </a>
             <ul class="dropdown-menu align-right">
               <li>
-                <a href="{% url admin-logout %}" class="sign-out"><span class="snf-icon snf-sign-out"></span>Sign Out</a>
+                <a href="{% url admin-logout %}" class="sign-out"><span class="snf-font-admin snf-sign-out"></span>Sign Out</a>
               </li>
             </ul>
         </ul>

@@ -6,7 +6,7 @@
     data-type="{{type}}">
     <h4>
         <span class="title"><a href="{% url admin-details type network.pk %}">{{ network|repr }}</a></span>
-		<span class="arrow  snf-icon snf-angle-down"></span>
+		<span class="arrow  snf-font-admin snf-angle-down"></span>
 		{{ network|network_deleted_label|safe }}
 	    {{ network|object_status_label|safe }}
 		<span class="label">ID: {{ network.pk }}</span>

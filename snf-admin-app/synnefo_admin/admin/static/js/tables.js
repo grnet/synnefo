@@ -455,7 +455,7 @@ $(function(){
 	};
 
 	function checkboxTemplate(data, initState) {
-		var html = '<span class="snf-icon snf-checkbox-'+initState+' selection-indicator"></span>'+data;
+		var html = '<span class="snf-font-admin snf-checkbox-'+initState+' selection-indicator"></span>'+data;
 		return html;
 	}
 
@@ -474,7 +474,7 @@ $(function(){
 			}
 		}
 
-		html = '<a title="Details" href="'+ data["details_url"].value +' " class="details-link"><span class="snf-icon snf-search"></span></a><a title="Show summary" href="#" class="summary-expand expand-area"><span class="snf-icon snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
+		html = '<a title="Details" href="'+ data["details_url"].value +' " class="details-link"><span class="snf-font-admin snf-search"></span></a><a title="Show summary" href="#" class="summary-expand expand-area"><span class="snf-font-admin snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
 		return html;
 	};
 
@@ -827,7 +827,7 @@ $(function(){
 			contentType: 'application/json',
 			timeout: 100000,
 			success: function(response, statusText, jqXHR) {
-				var htmlSuccess = '<dl class="dl-horizontal"><dt><span class="success snf-icon snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>'+response.result+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
+				var htmlSuccess = '<dl class="dl-horizontal"><dt><span class="success snf-font-admin snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>'+response.result+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
 				$notificationArea.find('.btns').before(htmlSuccess);
 				var height = -$notificationArea.outerHeight(true)
 					if($notificationArea.css('bottom') !== '0px')
@@ -839,11 +839,11 @@ $(function(){
 				console.log(jqXHR, statusText, jqXHR.status);
 				var htmlError;
 				if(jqXHR.status === 500 || jqXHR.status === 0) {
-					htmlError = '<dl class="dl-horizontal"><dt><span class="error snf-icon snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>[code: '+ jqXHR.status +'] '+jqXHR.statusText+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
+					htmlError = '<dl class="dl-horizontal"><dt><span class="error snf-font-admin snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>[code: '+ jqXHR.status +'] '+jqXHR.statusText+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
 				}
 				else {
 
-					htmlError ='<dl class="dl-horizontal"><dt><span class="error snf-icon snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>'+jqXHR.result+'</dd><dt>Error for the items: </dt><dd>'+jqXHR.error_ids.toString().replace(/\,/gi, ', ')+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
+					htmlError ='<dl class="dl-horizontal"><dt><span class="error snf-font-admin snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>'+jqXHR.result+'</dd><dt>Error for the items: </dt><dd>'+jqXHR.error_ids.toString().replace(/\,/gi, ', ')+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
 				}
 
 				$notificationArea.find('.btns').before(htmlError);

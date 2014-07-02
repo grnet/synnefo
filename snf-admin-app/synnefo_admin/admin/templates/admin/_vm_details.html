@@ -6,7 +6,7 @@
     data-type="{{type}}">
   <h4>
       <span class="title"><a href="{% url admin-details type vm.pk %}">{{ vm|repr }}</a></span>
-    <span class="arrow  snf-icon snf-angle-down"></span>
+    <span class="arrow  snf-font-admin snf-angle-down"></span>
     {% if vm.suspended %}
     <span class="label label-warning">SUSPENDED</span>
     {% endif %}

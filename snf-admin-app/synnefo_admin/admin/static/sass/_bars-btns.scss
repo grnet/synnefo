@@ -169,6 +169,14 @@ body .container .line-btn.disabled {
 		font-size: 26px;
 	}
 	.login-info {
+        .dropdown > a {
+            color: #fff;
+            display: inline-block;
+            padding: 0 10px;
+        }
+        .dropdown-menu {
+            top: 27px;
+        }
 		float: right;
 		position: relative;
 		line-height: 40px;
@@ -193,6 +201,7 @@ body .container .line-btn.disabled {
 }
 
 .login-info {
+    .drop
 	.dropdown a {
 		padding-left:12px;
 		padding-right:12px;

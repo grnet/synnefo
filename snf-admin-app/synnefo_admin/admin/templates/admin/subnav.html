@@ -13,7 +13,8 @@
           <span class="snf-font-admin snf-angle-down arrow"></span>
         </a>
         <ul class="dropdown-menu align-right">
-            <li class="all"><a href="#{{ type }}-area" class="link-to-anchor">All</a></li>
+            <li><a href="#{{ type }}-area" class="link-to-anchor">All</a></li>
+            <li class="divider"></li>
 
             {% if type != 'ip_log' %}
             {% for item in item_list %}

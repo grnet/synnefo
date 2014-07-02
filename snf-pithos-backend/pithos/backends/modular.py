@@ -1186,7 +1186,7 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version)
         return props[self.IS_SNAPSHOT], props[self.SIZE], \
-                self._get_object_hashmap(props, update_available=True)
+            self._get_object_hashmap(props, update_available=True)
 
     def _update_object_hash(self, user, account, container, name, size, type,
                             hash, checksum, domain, meta, replace_meta,
@@ -1328,7 +1328,7 @@ class ModularBackend(BaseBackend):
 
         try:
             path, node = self._lookup_object(account, container, name,
-                                            lock_container=True)
+                                             lock_container=True)
         except:
             pass
         else:

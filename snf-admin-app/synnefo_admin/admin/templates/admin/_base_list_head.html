@@ -10,4 +10,17 @@
 {% endif %}
 </h3>
 <h6><i>for <b>{{ main_item|repr }}</b></i></h6>
+{% if type == 'ip_log' %}
+<table>
+    <thead>
+        <th>IP</th>
+        <th>VM</th>
+        <th>Network</th>
+        <th>User</th>
+        <th>Attached date</th>
+        <th>Detached date</th>
+        <th>State</th>
+    </thead>
+    <tbody>
+{% endif %}
 

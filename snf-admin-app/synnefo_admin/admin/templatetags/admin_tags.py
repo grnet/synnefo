@@ -154,7 +154,7 @@ def display_list_type(type):
     elif type == "volume":
         return "Volumes"
     elif type == "ip_log":
-        return "IP Log"
+        return "IP History"
     else:
         return "Unknown type"
 

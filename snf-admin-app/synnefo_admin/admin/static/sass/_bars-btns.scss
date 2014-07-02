@@ -141,18 +141,30 @@ body .container .line-btn.disabled {
 .main-nav {
 	&>ul>li {
 		&>a {
+            height: $menu-height;
+            line-height: $menu-height;
+            padding: 0 12px;
 			color: white;
-			padding-top: 16px;
-			&:hover {
-				padding-top: 16px;
-			}
+            &.home-icon {
+                padding: 0;
+                height: $menu-height;
+                width: $menu-height;
+                text-align: center;
+                line-height: $menu-height;
+                img {
+                    max-height: $menu-height;
+                }
+                &:hover {
+                    background: $hover-nav-color;
+                }
+            }
 
 		}
 		&.active a{
 			// background-color: #eeeeee;
 		}
 	}
-	padding-left: $nav-side-padding;
+	padding-left: 0;
 	padding-right: $nav-side-padding;
 	background: $total-black;
 	border: 0 none;

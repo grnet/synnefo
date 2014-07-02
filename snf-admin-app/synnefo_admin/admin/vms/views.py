@@ -136,12 +136,12 @@ class VMJSONView(DatatablesView):
         }
         extra_dict['created'] = {
             'display_name': "Created",
-            'value': inst.created,
+            'value': inst.created.strftime("%Y-%m-%d %H:%M"),
             'visible': True,
         }
         extra_dict['updated'] = {
             'display_name': "Updated",
-            'value': inst.updated,
+            'value': inst.updated.strftime("%Y-%m-%d %H:%M"),
             'visible': True,
         }
 

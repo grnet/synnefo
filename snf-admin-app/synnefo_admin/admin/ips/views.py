@@ -53,6 +53,11 @@ class IPJSONView(DatatablesView):
     fields = ('pk', 'address', 'floating_ip', 'created', 'userid',)
     filters = IPFilterSet
 
+    def format_data_row(self, row):
+        row = list(row)
+        row[3] = row[3].strftime("%Y-%m-%d %H:%M")
+        return row
+
     def get_extra_data(self, qs):
         # FIXME: The `contact_name`, `contact_email` fields will cripple our db
         if self.form.cleaned_data['iDisplayLength'] < 0:
@@ -121,7 +126,7 @@ class IPJSONView(DatatablesView):
         }
         extra_dict['updated'] = {
             'display_name': "Update date",
-            'value': inst.updated,
+            'value': inst.updated.strftime("%Y-%m-%d %H:%M"),
             'visible': True,
         }
         extra_dict['in_use'] = {

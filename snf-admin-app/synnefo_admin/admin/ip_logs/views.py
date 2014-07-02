@@ -51,6 +51,15 @@ class IPLogJSONView(DatatablesView):
               'released_at', 'active',)
     filters = IPLogFilterSet
 
+    def format_data_row(self, row):
+        row = list(row)
+        row[3] = row[3].strftime("%Y-%m-%d %H:%M")
+        if row[4]:
+            row[4] = row[4].strftime("%Y-%m-%d %H:%M")
+        else:
+            row[4] = "-"
+        return row
+
     def get_extra_data_row(self, inst):
         extra_dict = OrderedDict()
         extra_dict['id'] = {

@@ -49,9 +49,10 @@ class VolumeJSONView(DatatablesView):
     filters = VolumeFilterSet
 
     def format_data_row(self, row):
+        row = list(row)
         if not row[1]:
-            row = list(row)
             row[1] = "(not set)"
+        row[3] = row[3].strftime("%Y-%m-%d %H:%M")
         return row
 
     def get_extra_data(self, qs):
@@ -128,7 +129,7 @@ class VolumeJSONView(DatatablesView):
         }
         extra_dict['updated'] = {
             'display_name': "Update time",
-            'value': inst.updated,
+            'value': inst.updated.strftime("%Y-%m-%d %H:%M"),
             'visible': True,
         }
 

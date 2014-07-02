@@ -136,7 +136,7 @@ class NetworkJSONView(DatatablesView):
         }
         extra_dict['updated'] = {
             'display_name': "Update time",
-            'value': inst.updated,
+            'value': inst.updated.strftime("%Y-%m-%d %H:%M"),
             'visible': True,
         }
 

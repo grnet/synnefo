@@ -206,7 +206,7 @@
         
         view_id: "vm_resize_view",
         content_selector: "#vm-resize-overlay-content",
-        css_class: 'overlay-vm-resize overlay-info',
+        css_class: 'overlay-vm-resize overlay-info create-wizard-overlay',
         overlay_id: "vm-resize-overlay",
 
         subtitle: "",

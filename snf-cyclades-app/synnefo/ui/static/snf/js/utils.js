@@ -274,6 +274,28 @@
 
         return {del: removed, add: added};
     }
+    
+    synnefo.util.set_tooltip = function(el, title, custom_params) {
+        if ($(el).data.tooltip) { return }
+        var base_params = {
+            'tipClass': 'tooltip',
+            'position': 'top center',
+            'offset': [-5, 0]
+        }
+        if (!custom_params) { custom_params = {}; }
+        var params = _.extend({}, base_params, custom_params);
+
+        if (title !== undefined)  {
+            $(el).attr("title", title);
+        }
+        
+        $(el).tooltip(params);
+    }
+
+    synnefo.util.unset_tooltip = function(el) {
+        $(el).attr("title", "");
+        $(el).tooltip("remove");
+    }
 
     synnefo.util.open_window = function(url, name, opts) {
         // default specs
@@ -673,5 +695,34 @@
         $(elements).insertBefore(before);
         return this;
     };
+    
+    // https://gist.github.com/gid79/854708
+    var tooltip = $.fn.tooltip,
+        slice = Array.prototype.slice;
+ 
+    function removeTooltip($elements){
+        $elements.each(function(){
+            if (!$(this).data("tooltip")) { return }
+            var $element = $(this),
+                api = $element.data("tooltip"),
+                tip = api.getTip(),
+                trigger = api.getTrigger();
+            api.hide();
+            if( tip ){
+                tip.remove();
+            }
+            trigger.unbind('mouseenter mouseleave');
+            $element.removeData("tooltip");
+        });
+    }
+ 
+    $.fn.tooltip = function(p){
+        if( p === 'remove'){
+            removeTooltip(this);
+            return this;
+        } else {
+            return tooltip.apply(this, slice.call(arguments,0));
+        }
+    }
 
 })(this);

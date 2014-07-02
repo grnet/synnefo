@@ -224,7 +224,7 @@
                 <div class="rename">
                     <div class="form-field">
                         <h4>Machine name</h4>
-                        <h3 class="vm-name">
+                        <h3 class="vm-name item-name">
                         </h3>
                     </div>
                     
@@ -285,7 +285,7 @@
                             <ul class="confirm-params meta">
                             </ul>
                         </div>
-                        <div class="list-cont confirm-cont meta">
+                        <div class="list-cont confirm-cont meta last">
                             <h4>{% trans "SSH Keys" %}</h4>
                             <ul class="confirm-params ssh">
                             </ul>
@@ -325,7 +325,7 @@
     </div>
     <div class="password-cont clearfix">
         <div class="password-label">{% blocktrans %}Write down your password now:{% endblocktrans %}</div>
-        <div class="password" id="new-machine-password">password</div>
+        <input class="password reset" disabled id="new-machine-password"/>
         <div class="clipboard new-vm-password-copy"></div>
     </div>
     <div class="description subinfo">

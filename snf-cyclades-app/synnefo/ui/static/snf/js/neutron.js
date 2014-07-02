@@ -632,6 +632,14 @@
       },
 
       proxy_attrs: {
+        '_status': [
+            ['status', 'port', 'port.vm'], function() {
+                var status = this.get("status");
+                var port = this.get("port");
+                var vm = port && port.get("vm");
+                return status + (vm ? vm.state() : "");
+            }
+        ],
         'ip': [
           ['floating_ip_adress'], function() {
             return this.get('floating_ip_address'); 

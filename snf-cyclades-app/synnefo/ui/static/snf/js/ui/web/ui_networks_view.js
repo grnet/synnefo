@@ -33,6 +33,21 @@
     // logging
     var logger = new snf.logging.logger("SNF-VIEWS");
     var debug = _.bind(logger.debug, logger);
+
+    var min_network_quota = {
+      'cyclades.network.private': 1
+    };
+    
+    views.CreateNetworkSelectProjectView = 
+        views.CreateVMSelectProjectView.extend({
+            tpl: '#create-view-projects-select-tpl',
+            required_quota: function() {
+                return min_network_quota
+            },
+            model_view_cls: views.CreateVMSelectProjectItemView.extend({
+                display_quota: min_network_quota
+            })
+        });
     
     views.NetworkCreateView = views.Overlay.extend({
         view_id: "network_create_view",
@@ -58,7 +73,8 @@
             this.gateway_select = this.$("#network-create-gateway");
             this.gateway_custom = this.$("#network-create-gateway-custom");
             
-            this.project_select = this.$(".project-select");
+            this.projects_list = this.$(".projects-list");
+            this.project_select_view = undefined;
                 
             this.dhcp_form = this.$("#network-create-dhcp-fields");
             
@@ -152,11 +168,11 @@
                 e.preventDefault();
                 this.submit;
                 return false;
-            }, this))
+            }, this));
 
             this.text.keypress(_.bind(function(e){
                 if (e.which == 13) {this.submit()};
-            },this))
+            },this));
         },
 
         submit: function() {
@@ -169,21 +185,22 @@
             // sanitazie
             var t = this.text.val();
             t = t.replace(/^\s+|\s+$/g,"");
+            is_valid = true;
             this.text.val(t);
 
             if (this.text.val() == "") {
                 this.text.closest(".form-field").addClass("error");
                 this.text.focus();
-                return false;
+                is_valid = false;
             } else {
                 this.text.closest(".form-field").removeClass("error");
             }
             
             var project = this.get_project();
             if (!project || !project.quotas.can_fit({'cyclades.network.private': 1})) {
-                this.project_select.closest(".form-field").addClass("error");
-                this.project_select.focus();
-                return false;
+                this.projects_list.addClass("error");
+                this.projects_list.focus();
+                is_valid = false;
             }
 
             if (this.dhcp_select.is(":checked")) {
@@ -194,9 +211,11 @@
                         
                     if (!synnefo.util.IP_REGEX.exec(this.gateway_custom.val())) {
                         this.gateway_custom.closest(".form-field").prev().addClass("error");
-                        return false;
+                        this.gateway_custom.closest(".form-field").addClass("error");
+                        is_valid = false;
                     } else {
                         this.gateway_custom.closest(".form-field").prev().removeClass("error");
+                        this.gateway_custom.closest(".form-field").removeClass("error");
                     }
                 }
 
@@ -207,14 +226,15 @@
                         
                     if (!synnefo.util.SUBNET_REGEX.exec(this.subnet_custom.val())) {
                         this.subnet_custom.closest(".form-field").prev().addClass("error");
-                        return false;
+                        this.subnet_custom.closest(".form-field").addClass("error");
+                        is_valid = false;
                     } else {
                         this.subnet_custom.closest(".form-field").prev().removeClass("error");
+                        this.subnet_custom.closest(".form-field").removeClass("error");
                     }
                 };
             }
-
-            return true;
+            return is_valid;
         },
         
         get_next_available_subnet: function() {
@@ -241,7 +261,7 @@
             var dhcp = this.dhcp_select.is(":checked");
             var subnet = null;
             var type = this.type_select.val();
-            var project_id = this.project_select.val();
+            var project_id = this.get_project().get("id");
             var project = synnefo.storage.projects.get(project_id);
 
             var gateway = undefined;
@@ -268,30 +288,34 @@
             }, this));
         },
         
-        update_projects: function() {
-          this.project_select.find("option").remove();
-          var min_network_quota = {'cyclades.network.private': 1}
-          synnefo.storage.joined_projects.each(function(project){
-            var el = $("<option></option>");
-            el.attr("value", project.id);
-            var name = '{0} ({1} available)'.format(project.get('name'), 
-              project.quotas.get('cyclades.network.private').get('available'));
-            el.text(name);
-            if (!project.quotas.can_fit(min_network_quota)) {
-              el.attr('disabled', true);
-            }
-            this.project_select.append(el);
-          }, this);
+        get_project: function() {
+          var project = this.project_select_view.get_selected()[0];
+          return project;
         },
         
-        get_project: function() {
-          var project_id = this.project_select.val();
-          var project = synnefo.storage.projects.get(project_id);
-          return project;
+        init_subviews: function() {
+          if (!this.project_select_view) {
+            var view_cls = views.CreateNetworkSelectProjectView;
+            this.project_select_view = new view_cls({
+              container: this.projects_list,
+              collection: synnefo.storage.joined_projects,
+              parent_view: this
+            });
+          }
+          this.project_select_view.show(true);
+          var project = synnefo.storage.quotas.get_available_projects(min_network_quota)[0];
+          if (project) {
+            this.project_select_view.set_current(project);
+          }
+        },
+        
+        hide: function() {
+          this.project_select_view && this.project_select_view.hide(true);
+          views.NetworkCreateView.__super__.hide.apply(this, arguments);
         },
 
         beforeOpen: function() {
-            this.update_projects();
+            this.init_subviews();
             this.create_button.removeClass("in-progress")
             this.$(".form-field").removeClass("error");
             this.text.val("");
@@ -646,7 +670,7 @@
 
       group_key: 'name',
       group_network: function(n) {
-        return n.get('is_public')
+        return n && n.get && n.get('is_public')
       },
       
       init: function() {

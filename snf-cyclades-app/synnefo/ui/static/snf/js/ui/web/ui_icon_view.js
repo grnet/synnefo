@@ -324,10 +324,10 @@
         },
 
         submit: function() {
-            var value = _(self.$('input').val()).trim();
+            var value = _(this.$('input').val()).trim();
             if (value == "") { return };
             this.renaming = false;
-            this.vm.rename(self.$('input').val());
+            this.vm.rename(this.$('input').val());
             this.update_layout();
         }
     });
@@ -872,12 +872,13 @@
             var project = vm.get('project')
             if (project) {
               el.find(".project-name").text(
-                  _.truncate(project.get('name'), 20));
+                 "[" +  _.truncate(project.get('name'), 20) + "]"
+              );
             }
             // truncate name
             el.find("span.name").text(util.truncate(vm.get("name"), 40));
 
-            el.find('.fqdn').text(
+            el.find('.fqdn').val(
                 vm.get('fqdn') || synnefo.config.no_fqdn_message);
             el.find("div.status").text(STATE_TEXTS[vm.state()]);
             // set state class

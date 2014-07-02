@@ -47,6 +47,10 @@
     <script src="{{ SYNNEFO_JS_LIB_URL}}filereader.js"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}filesaver.js"></script>
 
+    <script src="{{ SYNNEFO_JS_LIB_URL}}select2.min.js"></script>
+    <link rel="stylesheet" type="text/css" 
+          href="{{ SYNNEFO_CSS_URL }}select2.css?v={{ SYNNEFO_JS_LIB_VERSION }}"/>
+
 
     <script src="{{ SYNNEFO_JS_LIB_URL}}underscore.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}underscore.string.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
@@ -81,12 +85,12 @@
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_icon_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_single_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_list_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_networks_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_public_keys_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_ips_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_metadata_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_feedback_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_create_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_networks_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_ips_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_volumes_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_connect_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_vm_resize_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
@@ -142,8 +146,6 @@
             'DISCONNECT': '{% trans "Disconnecting..." %}',
             'RESIZE': '{% trans "Resizing..." %}'
         }
-
-
 
         // building statuses
         var BUILDING_MESSAGES = {
@@ -603,9 +605,13 @@
 
     <div id="create-view-select-project-item-tpl" class="hidden inner-tpl">
         <option class="clearfix select-item project clearfix" 
-                data-rv-value="model.id">
-                <span data-rv-text="model.name|truncate 25"></span>
-                <span class="quota" data-rv-html="model._quota|quotas_option_html"></span>
+        data-rv-value="model.id">
+        <div class="project-select-item-content clearfix">
+                <span class-"project-name" 
+                    data-rv-text="model.name|truncate 25"></span>
+                <span class="quota" 
+                    data-rv-html="model._quota|quotas_option_html"></span>
+            </div>
         </option>
     </div>
 
@@ -616,7 +622,6 @@
         $(document).ready(function() {
             $(".css-panes").hide();
 
-            // TODO: match <= 1.9.1
             if ($.browser.mozilla && $.browser.version.substr(0,3) == "1.9") {
                 synnefo.config.overlay_speed = 0;
                 $.fx.off = true;
@@ -698,6 +703,9 @@
             synnefo.config.automatic_network_range_format = {{ automatic_network_range_format|safe }};
             synnefo.config.custom_image_help_url = '{{ custom_image_help_url|safe }}';
             synnefo.config.forced_server_networks = {{ forced_server_networks|safe }};
+            synnefo.config.limit_reached_msg = 'Usage limit reached';
+            synnefo.config.volume_max_size = {{ volume_max_size|safe }};
+            synnefo.config.snapshots_enabled = {{ snapshots_enabled|safe }};
             
             synnefo.auth_client = new synnefo.auth.AstakosClient({
                 login_url: synnefo.config.login_redirect,
@@ -722,11 +730,8 @@
             synnefo.config.system_images_owners = {{ system_images_owners|safe }};
             synnefo.ui.init();
             synnefo.ui.main.bind("ready", function(){
-                //$("#create-volume a").click();
-                //window.setTimeout(function() {
-                //    $(".create-volume .form-action.next").click();
-                //}, 500);
             });
+
         });
     </script>
 </body>

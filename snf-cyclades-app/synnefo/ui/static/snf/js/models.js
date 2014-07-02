@@ -2567,8 +2567,14 @@
             return this.get('resource').get('unit') == 'bytes';
         },
         
+        infinite: function(active) {
+            var suffix = '';
+            if (active) { suffix = '_active' }
+            return this.get("limit" + suffix) >= snf.util.PRACTICALLY_INFINITE; 
+        },
+
         get_available: function(active) {
-            suffix = '';
+            var suffix = '';
             if (active) { suffix = '_active'}
             var value = this.get('limit'+suffix) - this.get('usage'+suffix);
             if (active) {
@@ -2589,8 +2595,8 @@
             if (value <= 0) { value = 0 }
 
             value = parseInt(value);
-            if (value >= synnefo.util.PRACTICALLY_INFINITE && over_value == undefined) { 
-              return "Infinite";
+            if (this.infinite()) { 
+              return "Unlimited";
             }
 
             if (!this.is_bytes()) {
@@ -2881,7 +2887,7 @@
     snf.storage.joined_projects = new Backbone.FilteredCollection(undefined, {
         collection: synnefo.storage.projects,
         collectionFilter: function(m) {
-            return !m.get("missing");
+            return m.get && !m.get("missing");
         }
     });
 })(this);

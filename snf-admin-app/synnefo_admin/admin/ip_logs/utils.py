@@ -22,7 +22,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
-from synnefo.db.models import IPAddress, VirtualMachine
+from synnefo.db.models import IPAddress, VirtualMachine, Network
 from synnefo.logic import ips
 from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
@@ -30,6 +30,21 @@ from astakos.im.models import AstakosUser, Project
 from eztables.views import DatatablesView
 
 from synnefo_admin.admin.utils import create_details_href
+
+
+def get_ip_details_href(ip_log):
+    ip = IPAddress.objects.get(address=ip_log.address)
+    return create_details_href('ip', ip.address, ip.pk)
+
+
+def get_vm_details_href(ip_log):
+    vm = VirtualMachine.objects.get(pk=ip_log.server_id)
+    return create_details_href('vm', vm.name, vm.pk)
+
+
+def get_network_details_href(ip_log):
+    network = Network.objects.get(pk=ip_log.network_id)
+    return create_details_href('network', network.name, network.pk)
 
 
 def get_user_details_href(ip_log):

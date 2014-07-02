@@ -186,6 +186,8 @@ def create_details_href(type, name, id):
     url = reverse('admin-details', args=[type, id])
     if type == 'user':
         href = '<a href=%s>%s (%s)</a>' % (url, name, id)
+    elif type == 'ip':
+        href = '<a href=%s>%s</a>' % (url, name)
     else:
         href = '<a href=%s>%s (id:%s)</a>' % (url, name, id)
     return href

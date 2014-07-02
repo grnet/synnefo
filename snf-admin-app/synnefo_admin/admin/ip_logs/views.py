@@ -36,7 +36,8 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
 from synnefo_admin.admin.utils import get_actions, render_email
 from synnefo_admin.admin.users.utils import get_user
 
-from .utils import get_user_details_href
+from .utils import (get_user_details_href, get_ip_details_href,
+                    get_vm_details_href, get_network_details_href)
 from .filters import IPLogFilterSet
 
 
@@ -66,6 +67,21 @@ class IPLogJSONView(DatatablesView):
             'display_name': "ID",
             'value': inst.pk,
             'visible': False,
+        }
+        extra_dict['ip_info'] = {
+            'display_name': "IP",
+            'value': get_ip_details_href(inst),
+            'visible': True,
+        }
+        extra_dict['vm_info'] = {
+            'display_name': "VM",
+            'value': get_vm_details_href(inst),
+            'visible': True,
+        }
+        extra_dict['network_info'] = {
+            'display_name': "Network",
+            'value': get_network_details_href(inst),
+            'visible': True,
         }
         extra_dict['user_info'] = {
             'display_name': "User",

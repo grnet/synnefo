@@ -89,7 +89,6 @@ $(function(){
 	table = $(tableDomID).DataTable({
 		"paging": true,
 		"processing": true,
-        "autoWidth": false,
 		"serverSide": serverside,
 		"ajax": {
 			"url": url,
@@ -271,7 +270,6 @@ $(function(){
 	});
 
 	tableSelected = $(tableSelectedDomID).DataTable({
-        "autoWidth": false,
 		"columnDefs": [
 		{
 			"targets": 0,
@@ -458,32 +456,36 @@ $(function(){
 	};
 
 	function checkboxTemplate(data, initState) {
-		var html = '<span class="snf-font-admin snf-checkbox-'+initState+' selection-indicator"></span>'+data;
-		return html;
+		if($actionbar.length > 0)
+			return '<span class="snf-font-admin snf-checkbox-'+initState+' selection-indicator"></span>'+data;
+		else
+			return data;
+
 	}
 
 	function extraTemplate(data) {
 
-		var listTemplate = '<dt>{key}:</dt><dd>{value}</dd>';
-		var list = '';
-		var listItem = listTemplate.replace('{key}', prop).replace('{value}',data[prop]);
-		var html;
 
-		for(var prop in data) {
-			if(prop !== "details_url") {
-				if(data[prop].visible) {
-					list += listTemplate.replace('{key}', data[prop].display_name).replace('{value}',data[prop].value);
+			var listTemplate = '<dt>{key}:</dt><dd>{value}</dd>';
+			var list = '';
+			var listItem = listTemplate.replace('{key}', prop).replace('{value}',data[prop]);
+			var html;
+			var hasDetails = false;
+			for(var prop in data) {
+				if(prop !== "details_url") {
+					if(data[prop].visible) {
+						list += listTemplate.replace('{key}', data[prop].display_name).replace('{value}',data[prop].value);
+					}
+				}
+				else {
+					hasDetails = true;
 				}
 			}
-		}
-
-        html = '';
-        if (data.hasOwnProperty('details_url')) {
-            html += '<a title="Details" href="'+ data["details_url"].value +' " class="details-link">';
-        }
-
-		html += '<span class="snf-font-admin snf-search"></span></a><a title="Show summary" href="#" class="summary-expand expand-area"><span class="snf-font-admin snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
-		return html;
+			if(hasDetails)
+			html = '<a title="Details" href="'+ data["details_url"].value +' " class="details-link"><span class="snf-font-admin snf-search"></span></a><a title="Show summary" href="#" class="summary-expand expand-area"><span class="snf-font-admin snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
+		else 
+			html = '<a title="Show summary" href="#" class="summary-expand expand-area"><span class="snf-font-admin snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
+			return html;
 	};
 
 	function clickDetails(row) {

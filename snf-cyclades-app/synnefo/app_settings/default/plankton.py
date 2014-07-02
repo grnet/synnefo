@@ -19,7 +19,7 @@ DEFAULT_CONTAINER_FORMAT = 'bare'
 # The owner of the images that will be marked as "system images" by the UI
 SYSTEM_IMAGES_OWNER = 'okeanos'
 
-#Archipelago Configuration File
+# Archipelago Configuration File
 PITHOS_BACKEND_ARCHIPELAGO_CONF = '/etc/archipelago/archipelago.conf'
 
 # Archipelagp xseg pool size

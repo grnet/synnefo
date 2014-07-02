@@ -88,6 +88,7 @@ $(function(){
 	table = $(tableDomID).DataTable({
 		"paging": true,
 		"processing": true,
+        "autoWidth": false,
 		"serverSide": serverside,
 		"ajax": {
 			"url": url,
@@ -269,6 +270,7 @@ $(function(){
 	});
 
 	tableSelected = $(tableSelectedDomID).DataTable({
+        "autoWidth": false,
 		"columnDefs": [
 		{
 			"targets": 0,

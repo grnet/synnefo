@@ -41,6 +41,7 @@
 	@include default-btn();
 	border: 1px solid $color;
 	color: $secondary-link-color;
+    background-color: $color;
 	span {
 		border: 1px solid transparent;
 		padding: $padding;
@@ -374,4 +375,15 @@ Extra-button is used to show total selected rows
 	.custom-btn {
 		margin: 10px 10px 10px 0;
 	}
+}
+.charts {
+    .sidebar {
+        a {
+            margin-bottom: 1em;
+            @include outline-btn();
+        }
+        a.active {
+            @include custom-btn();
+        }
+    }
 }

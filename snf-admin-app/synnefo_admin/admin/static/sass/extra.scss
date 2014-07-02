@@ -141,9 +141,8 @@ a:not([disabled]):hover {
 .container-demo, .chart {
 	height: 400px;
 	width: 100%;
-	margin: 20px auto;
-	border: 1px solid cyan;
-	padding-top: 20px;
+	margin: 0 auto 40px;
+    display: none;
 }
 
 svg>text:last-child {
@@ -191,9 +190,9 @@ svg>text:last-child {
 	transition: all 0 ease 0;
   	background: $gray-lighter;
 }
-.main-nav > li > a:hover,
-.main-nav > li > a:focus,
-.main-nav > li:hover > a{
+.main-nav .nav > li > a:hover,
+.main-nav .nav > li > a:focus,
+.main-nav .nav > li:hover > a{
 	color: #fff;
   	background: $hover-nav-color;
 }

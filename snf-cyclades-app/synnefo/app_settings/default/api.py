@@ -18,7 +18,7 @@ ADMIN_STATS_PERMITTED_GROUPS = ["admin-stats"]
 
 # Enable/Disable the snapshots feature altogether at the API level.
 # If set to False, Cyclades will not expose the '/snapshots' API URL
-# of the ‘volume’ app.
+# of the 'volume' app.
 CYCLADES_SNAPSHOTS_ENABLED = True
 
 #

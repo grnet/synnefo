@@ -234,7 +234,7 @@ body .container .line-btn.disabled:hover {
 /* line 277, ../sass/_bars-btns.scss */
 .sidebar {
   margin: 0 30px 0 0;
-  width: 150px;
+  width: 120px;
   height: auto;
   float: left;
 }
@@ -637,7 +637,7 @@ h4 .arrow:hover {
 
 /* line 25, ../sass/_filters.scss */
 .filter {
-  height: 40px;
+  height: 34px;
   margin: 0 20px 20px 0;
   display: inline-block;
   background: #fff;
@@ -645,13 +645,13 @@ h4 .arrow:hover {
 /* line 30, ../sass/_filters.scss */
 .filter .form-group {
   margin: 0;
-  height: 40px;
+  height: 34px;
 }
 /* line 35, ../sass/_filters.scss */
 .filter label,
 .filter .dropdown {
-  height: 40px;
-  line-height: 40px;
+  height: 34px;
+  line-height: 34px;
   border: 0 none;
   padding: 0 10px;
   color: #404040;
@@ -666,8 +666,8 @@ h4 .arrow:hover {
 .filter input {
   border: 0 none;
   background: transparent;
-  height: 40px;
-  line-height: 40px;
+  height: 34px;
+  line-height: 34px;
   padding: 0 5px;
   font-weight: normal;
   border-radius: 0;

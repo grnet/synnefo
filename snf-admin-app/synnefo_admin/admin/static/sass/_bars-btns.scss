@@ -276,7 +276,7 @@ body .container .line-btn.disabled {
 
 .sidebar {
 	margin: 0 30px 0 0;
-	width: 150px;
+	width: $sidebar-width;
 	height: auto;
 	float: left;
 	.btn-group-vertical {

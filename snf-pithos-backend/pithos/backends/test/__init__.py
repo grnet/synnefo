@@ -18,14 +18,56 @@ from .quota import TestQuotaMixin
 from .delete_by_uuid import TestDeleteByUUIDMixin
 from .snapshots import TestSnapshotsMixin
 
+from sqlalchemy import create_engine
+
+import os
+import time
 
 class TestSQLAlchemyBackend(CommonMixin, TestDeleteByUUIDMixin,
                             TestQuotaMixin, TestSnapshotsMixin):
     db_module = 'pithos.backends.lib.sqlalchemy'
-    db_connection = 'sqlite:////tmp/test_pithos_backend.db'
+    db_connection_str = '%(scheme)s://%(user)s:%(pwd)s@%(host)s:%(port)s/%(name)s'
+    scheme = os.environ.get('DB_SCHEME', 'postgres')
+    user = os.environ.get('DB_USER', 'synnefo')
+    pwd = os.environ.get('DB_PWD', 'example_passw0rd')
+    host = os.environ.get('DB_HOST', 'db.synnefo.live')
+    port = os.environ.get('DB_PORT', 5432)
+    name = 'test_pithos_backend'
+    db_connection = db_connection_str % locals()
+    mapfile_prefix ='snf_test_pithos_backend_sqlalchemy_%s_' % time.time()
 
+    @classmethod
+    def create_db(cls):
+        db = cls.db_connection_str % {'scheme': cls.scheme, 'user': cls.user,
+                                      'pwd': cls.pwd, 'host': cls.host,
+                                      'port':cls.port, 'name': 'template1'}
+        e = create_engine(db)
+        c = e.connect()
+        c.connection.connection.set_isolation_level(0)
+        c.execute('create database %s' % cls.name)
+        c.connection.connection.set_isolation_level(1)
+
+    @classmethod
+    def destroy_db(cls):
+        db = cls.db_connection_str % {'scheme': cls.scheme, 'user': cls.user,
+                                      'pwd': cls.pwd, 'host': cls.host,
+                                      'port':cls.port, 'name': 'template1'}
+        e = create_engine(db)
+        c = e.connect()
+        c.connection.connection.set_isolation_level(0)
+        c.execute('drop database %s' % cls.name)
+        c.connection.connection.set_isolation_level(1)
 
 class TestSQLiteBackend(CommonMixin, TestDeleteByUUIDMixin, TestQuotaMixin,
                         TestSnapshotsMixin):
-        db_module = 'pithos.backends.lib.sqlite'
-        db_connection = ':memory:'
+    db_module = 'pithos.backends.lib.sqlite'
+    db_connection = location = '/tmp/test_pithos_backend.db'
+    mapfile_prefix ='snf_test_pithos_backend_sqlite_%s_' % time.time()
+
+    @classmethod
+    def create_db(cls):
+        pass
+
+    @classmethod
+    def destroy_db(cls):
+        os.remove(cls.location)

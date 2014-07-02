@@ -16,29 +16,34 @@
 from mock import MagicMock
 
 from pithos.backends.base import ItemNotExists
-from pithos.backends.random_word import get_random_word
 from pithos.backends.util import connect_backend
+
+from .util import get_random_data
 
 import random
 import unittest
 
-get_random_data = lambda length: get_random_word(length)[:length]
-
-
 class CommonMixin(unittest.TestCase):
     block_size = 1024
     hash_algorithm = 'sha256'
-    block_path = '/tmp/data'
     account = 'user'
     free_versioning = True
+
+    @classmethod
+    def setUpClass(cls):
+        cls.create_db()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.destroy_db()
 
     def setUp(self):
         self.b = connect_backend(db_connection=self.db_connection,
                                  db_module=self.db_module,
-                                 block_path=self.block_path,
                                  block_size=self.block_size,
                                  hash_algorithm=self.hash_algorithm,
-                                 free_versioning=self.free_versioning)
+                                 free_versioning=self.free_versioning,
+                                 mapfile_prefix=self.mapfile_prefix)
         self.b.astakosclient = MagicMock()
         self.b.astakosclient.issue_one_commission.return_value = 42
         self.b.commission_serials = MagicMock()

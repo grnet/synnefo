@@ -13,40 +13,58 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from pithos.backends.base import (IllegalOperationError, NotAllowedError,
+                                  ItemNotExists)
 
 class TestSnapshotsMixin(object):
     def test_copy_snapshot(self):
         name = 'snf-snap-1-1'
         t = [self.account, self.account, 'snapshots', name]
+        mapfile = 'archip:%s' % name
         self.b.register_object_map(*t, size=100,
                                    type='application/octet-stream',
-                                   mapfile='archip:%s' % name)
+                                   mapfile=mapfile)
 
         meta = self.b.get_object_meta(*t, include_user_defined=False)
         self.assertTrue('available' in meta)
         self.assertEqual(meta['available'], False)
+        self.assertTrue('mapfile' in meta)
+        self.assertEqual(meta['mapfile'], mapfile)
+        self.assertTrue('is_snapshot' in meta)
+        self.assertEqual(meta['is_snapshot'], True)
 
         dest_name = 'snf-snap-1-2'
         t2 = [self.account, self.account, 'snapshots', dest_name]
-        self.b.copy_object(*(t + t2[1:]), type='application/octet-stream',
-                           domain='snapshots')
+        self.assertRaises(NotAllowedError, self.b.copy_object, *(t + t2[1:]),
+                          type='application/octet-stream', domain='snapshots')
 
-        meta2 = self.b.get_object_meta(*t2, include_user_defined=False)
+        self.assertRaises(ItemNotExists, self.b.get_object_meta, *t2)
+
+        meta2 = self.b.get_object_meta(*t, include_user_defined=False)
         self.assertTrue('available' in meta2)
         self.assertEqual(meta['available'], meta2['available'])
+        self.assertTrue('mapfile' in meta2)
+        self.assertTrue(meta['mapfile'] == meta2['mapfile'])
+        self.assertTrue('is_snapshot' in meta2)
+        self.assertEqual(meta['is_snapshot'], meta2['is_snapshot'])
 
     def test_move_snapshot(self):
-        name = 'snf-snap-1-1'
+        name = 'snf-snap-2-1'
         t = [self.account, self.account, 'snapshots', name]
+        mapfile = 'archip:%s' % name
         self.b.register_object_map(*t, size=100,
                                    type='application/octet-stream',
-                                   mapfile='archip:%s' % name)
+                                   mapfile=mapfile)
 
         meta = self.b.get_object_meta(*t, include_user_defined=False)
         self.assertTrue('available' in meta)
         self.assertEqual(meta['available'], False)
+        self.assertTrue('mapfile' in meta)
+        self.assertEqual(meta['mapfile'], mapfile)
+        self.assertTrue('is_snapshot' in meta)
+        self.assertEqual(meta['is_snapshot'], True)
 
-        dest_name = 'snf-snap-1-2'
+        dest_name = 'snf-snap-2-2'
         t2 = [self.account, self.account, 'snapshots', dest_name]
         self.b.move_object(*(t + t2[1:]), type='application/octet-stream',
                            domain='snapshots')
@@ -54,3 +72,51 @@ class TestSnapshotsMixin(object):
         meta2 = self.b.get_object_meta(*t2, include_user_defined=False)
         self.assertTrue('available' in meta2)
         self.assertEqual(meta['available'], meta2['available'])
+        self.assertTrue('mapfile' in meta2)
+        self.assertEqual(meta['mapfile'], meta2['mapfile'])
+        self.assertTrue('is_snapshot', meta2['is_snapshot'])
+        self.assertEqual(meta['is_snapshot'], meta2['is_snapshot'])
+
+    def test_update_snapshot(self):
+        name = 'snf-snap-3-1'
+        mapfile = 'archip:%s' % name
+        t = [self.account, self.account, 'snapshots', name]
+        self.b.register_object_map(*t, size=100,
+                                   type='application/octet-stream',
+                                   mapfile=mapfile)
+        meta = self.b.get_object_meta(*t, include_user_defined=False)
+        self.assertTrue('available' in meta)
+        self.assertEqual(meta['available'], False)
+        self.assertTrue('mapfile' in meta)
+        self.assertEqual(meta['mapfile'], mapfile)
+        self.assertTrue('is_snapshot' in meta)
+        self.assertEqual(meta['is_snapshot'], True)
+
+        domain = 'plankton'
+        self.b.update_object_meta(*t, domain=domain, meta={'foo': 'bar'})
+        meta2 = self.b.get_object_meta(*t, domain=domain,
+                                      include_user_defined=True)
+        self.assertTrue('available' in meta2)
+        self.assertEqual(meta2['available'], False)
+        self.assertTrue('mapfile' in meta2)
+        self.assertEqual(meta2['mapfile'], mapfile)
+        self.assertTrue('is_snapshot' in meta2)
+        self.assertEqual(meta2['is_snapshot'], True)
+        self.assertTrue('foo' in meta2)
+        self.assertTrue(meta2['foo'], 'bar')
+
+        try:
+            self.b.update_object_hashmap(*t, size=0,
+                                         type='application/octet-stream',
+                                         hashmap=(), checksum='',
+                                         domain='plankton')
+        except IllegalOperationError:
+            meta = self.b.get_object_meta(*t, include_user_defined=False)
+            self.assertTrue('available' in meta)
+            self.assertEqual(meta['available'], False)
+            self.assertTrue('mapfile' in meta)
+            self.assertEqual(meta['mapfile'], mapfile)
+            self.assertTrue('is_snapshot' in meta)
+            self.assertEqual(meta['is_snapshot'], True)
+        else:
+            self.fail('Update snapshot should not be allowed')

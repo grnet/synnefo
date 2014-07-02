@@ -151,7 +151,7 @@ def find_package_data(
 setup(
     name='snf-pithos-tools',
     version=VERSION,
-    license='BSD',
+    license='GNU GPLv3',
     url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
     long_description=README + '\n\n' + CHANGES,

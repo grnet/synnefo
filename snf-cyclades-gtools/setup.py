@@ -33,7 +33,7 @@ setup(
     maintainer='Synnefo development team',
     maintainer_email='synnefo-devel@googlegroups.com',
 
-    license="BSD",
+    license="GNU GPLv3",
     namespace_packages=["synnefo", "synnefo.versions"],
     packages=["synnefo", "synnefo.ganeti", "synnefo.versions"],
     dependency_links=['http://www.synnefo.org/packages/pypi'],

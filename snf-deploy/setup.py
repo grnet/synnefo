@@ -48,7 +48,7 @@ INSTALL_REQUIRES = [
 setup(
     name='snf-deploy',
     version=VERSION,
-    license='BSD',
+    license='GNU GPLv3',
     url='https://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
     long_description=SHORT_DESCRIPTION,

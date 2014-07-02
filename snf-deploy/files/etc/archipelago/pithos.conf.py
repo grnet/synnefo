@@ -19,24 +19,26 @@ import os
 from pithos.workers import glue
 from multiprocessing import Lock
 
+
 def find_hole(WORKERS, FOLLOW_WORKERS):
     old_key = []
-    old_age =  []
+    old_age = []
     for key in FOLLOW_WORKERS:
         if key not in WORKERS.keys():
-                old_age.append(FOLLOW_WORKERS[key] )
-                old_key.append( key )
+                old_age.append(FOLLOW_WORKERS[key])
+                old_key.append(key)
                 break
     if len(old_age) and len(old_key):
         for key in old_key:
-                del FOLLOW_WORKERS[key]
+            del FOLLOW_WORKERS[key]
         return old_age
     return old_age
+
 
 def follow_workers(pid, wid, WORKERS):
     hole = None
     if os.path.isfile('/dev/shm/wid'):
-        fd = open('/dev/shm/wid','rb')
+        fd = open('/dev/shm/wid', 'rb')
         f = pickle.load(fd)
         hole = find_hole(WORKERS, f)
         if len(hole) > 0:
@@ -45,26 +47,29 @@ def follow_workers(pid, wid, WORKERS):
             k = {pid: wid}
         f.update(k)
         fd.close()
-        fd = open('/dev/shm/wid','wb')
+        fd = open('/dev/shm/wid', 'wb')
         pickle.dump(f, fd)
         fd.close()
     else:
-        fd = open('/dev/shm/wid','wb')
-        pickle.dump({pid:wid}, fd)
+        fd = open('/dev/shm/wid', 'wb')
+        pickle.dump({pid: wid}, fd)
         fd.close()
     return hole
+
 
 def allocate_wid(pid, wid, WORKERS):
     hole = None
     hole = follow_workers(pid, wid, WORKERS)
     return hole
 
+
 def when_ready(server):
     server.lock = Lock()
 
+
 def update_workers(pid, wid):
     if os.path.isfile('/dev/shm/wid'):
-        fd = open('/dev/shm/wid','rb')
+        fd = open('/dev/shm/wid', 'rb')
         f = pickle.load(fd)
         for k, v in f.items():
             if wid == v:
@@ -73,40 +78,44 @@ def update_workers(pid, wid):
         k = {pid: wid}
         f.update(k)
         fd.close()
-        fd = open('/dev/shm/wid','wb')
+        fd = open('/dev/shm/wid', 'wb')
         pickle.dump(f, fd)
         fd.close()
     else:
-        fd = open('/dev/shm/wid','wb')
-        pickle.dump({pid:wid}, fd)
+        fd = open('/dev/shm/wid', 'wb')
+        pickle.dump({pid: wid}, fd)
         fd.close()
+
 
 def resize_workers(no_workers):
     if os.path.isfile('/dev/shm/wid'):
-        fd = open('/dev/shm/wid','rb')
+        fd = open('/dev/shm/wid', 'rb')
         f = pickle.load(fd)
         for k, v in f.items():
             if v > no_workers:
                 del f[k]
         fd.close()
-        fd = open('/dev/shm/wid','wb')
+        fd = open('/dev/shm/wid', 'wb')
         pickle.dump(f, fd)
         fd.close()
 
-def post_fork(server,worker):
+
+def post_fork(server, worker):
     server.lock.acquire()
     if worker.worker_id <= server.num_workers:
         update_workers(worker.pid, worker.worker_id)
-        glue.WorkerGlue.setmap(worker.pid,worker.worker_id)
+        glue.WorkerGlue.setmap(worker.pid, worker.worker_id)
     else:
-        wid = allocate_wid(worker.pid,worker.worker_id, server.WORKERS)
-        glue.WorkerGlue.setmap(worker.pid,wid[0])
+        wid = allocate_wid(worker.pid, worker.worker_id, server.WORKERS)
+        glue.WorkerGlue.setmap(worker.pid, wid[0])
     resize_workers(server.num_workers)
     server.lock.release()
+
 
 def worker_exit(server, worker):
     if glue.WorkerGlue.ioctx_pool:
         glue.WorkerGlue.ioctx_pool._shutdown_pool()
+
 
 def on_exit(server):
     os.unlink('/dev/shm/wid')

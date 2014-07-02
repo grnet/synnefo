@@ -8,6 +8,7 @@ bin/
 share/
 build/
 include/
+!snf-cyclades-app/synnefo/ui/static/snf/extra/noVNC/include/
 *.pt.py
 *.installed.cfg
 *.sqlite

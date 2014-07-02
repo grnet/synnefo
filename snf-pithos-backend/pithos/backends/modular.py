@@ -1434,6 +1434,10 @@ class ModularBackend(BaseBackend):
         is_copy = not is_move and (src_account, src_container, src_name) != (
             dest_account, dest_container, dest_name)  # New uuid.
 
+        if is_copy and not props[self.AVAILABLE]:
+            raise NotAllowedError('Copying objects not available in the '
+                                  'storage backend is forbidden.')
+
         src_mapfile = props[self.MAPFILE]
         force_mapfile = src_mapfile if not is_copy else None
 
@@ -1490,6 +1494,10 @@ class ModularBackend(BaseBackend):
                 dest_prefix = dest_name + delimiter if not dest_name.endswith(
                     delimiter) else dest_name
                 vdest_name = path.replace(prefix, dest_prefix, 1)
+
+                if is_copy and not prop[self.AVAILABLE]:
+                    raise NotAllowedError('Copying objects not available in '
+                                          'the storage backend is forbidden.')
 
                 src_mapfile = prop[self.MAPFILE]
                 force_mapfile = src_mapfile if not is_copy else None

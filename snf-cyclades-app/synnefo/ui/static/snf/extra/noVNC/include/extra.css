@@ -1,0 +1,198 @@
+
+#noVNC_status {
+    color: #222;
+    text-align: left;
+    line-height: 24px;
+    height: 24px;
+    padding: 0;
+    padding-left: 140px;
+    position:static;
+    width: auto;
+    font-weight: normal;
+    font-size:12px;
+}
+
+#noVNC_clipboard {
+    display: none;
+}
+.noVNC_extra_keys {
+    float: right;
+}
+#noVNC_mobile_buttons {
+    display:block;
+}
+
+#noVNC-control-bar {
+    position: static;
+    height: auto;
+    background: transparent;
+
+}
+#noVNC_mobile_buttons {
+    display: inline-block;
+}
+
+#noVNC_screen {
+    border-bottom-right-radius: 0;
+}
+
+.noVNC-buttons-left,
+.noVNC-buttons-right{
+    padding: 0;
+    position: static;
+}
+
+.noVNC-buttons-right label {
+    font-size: 12px;
+    top: -2px;
+    position:relative;
+}
+
+.noVNC_status_button {
+    background: #4F5255;
+    padding:2px;
+    opacity: 0.8;
+    border-radius: 0;
+    height: 15px;
+}
+.noVNC_status_button:hover {
+    opacity: 1;
+}
+.noVNC_status_button_selected {
+    background: #F24E53;
+    border-radius: 0;
+    padding:2px;
+    height: 15px;
+}
+
+.myKeyboardInput {
+    position: absolute;
+    left: -5000px;
+}
+.console .actions-bar {
+    background: #74aec9;
+    padding: 0 10px;
+    border-top: 1px solid #c7dfe9;
+}
+.console .help-text {
+    background: #74aec9;
+    font-size: 12px;
+    color: #222;
+    line-height:100%;
+    height: auto;
+}
+.console .help-text span {
+    display: block;
+    border-top: 1px solid #c7dfe9;
+    padding: 6px 10px 7px 150px;
+}
+
+.console .help-text a {
+    float: right;
+    font-weight: bold;
+    text-decoration: none;
+    color: #4085a5;
+    position: relative;
+    left:-5px;
+}
+.console .help-text a:hover {
+    color: #fff;
+}
+#noVNC_logo {
+    visibility: hidden;
+}
+
+#console-header {
+    background: #4085a5;
+    height: auto;
+    min-height: 31px;
+    margin: 0;
+    padding: 4px 10px 4px 150px;
+    line-height: 31px;
+    position: relative;
+}
+.console .console-header-logo {
+    display: block;
+    position: absolute;
+    width: 130px;
+    height: 30px;
+    top: 4px;
+    left:10px;
+    position: absolute;
+    padding: 0;
+    margin: 0;
+}
+
+.console .console-header-logo a {
+    text-decoration: none;
+}
+
+.console .console-header-logo img {
+    max-width: 130px;
+    max-height: 31px;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+}
+
+.console .console-header-logo span {
+   font-size: 20px;
+   color: #fff;
+   font-family: "Courier New";
+   font-weight: bold;
+}
+
+.console .console-info {
+    position: static;
+    margin: 0;
+    display: inline-block;
+    font-size: 12px;
+}
+.console .console-info div {
+    line-height: 130%;
+}
+
+.ipv6-text, .ipv4-text {
+    font-size: 12px;
+
+}
+#sendEnterButton {
+    height: 21px;
+    color: #fff;
+}
+.keyboardInputInitiator {
+    margin: 0 0 0 -10px;
+    height: 18px;
+    position: relative;
+    top: -1px;
+}
+.console-body {
+    background-image: none;
+}
+.console input[type="checkbox"] {
+    vertical-align: bottom;
+}
+.host-ip span {
+    white-space: nowrap;
+}
+
+#showKeyboard,
+#clipboardButton,
+#sendEnterButton,
+#noVNC_mouse_button0,
+#noVNC_mouse_button1,
+#noVNC_mouse_button2,
+#noVNC_mouse_button3,
+#noVNC_mouse_button4,
+#disconnectButton,
+#noVNC_ctrl_box,
+#noVNC_alt_box,
+#ctrl_label,
+#alt_label,
+#connectButton
+{
+    position: absolute;
+    left: -2000px;
+    top: -2000px;
+    z-index: -1;
+}

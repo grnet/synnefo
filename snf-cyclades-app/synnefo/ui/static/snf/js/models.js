@@ -1490,8 +1490,7 @@
         get_console_url: function(data) {
             var url_params = {
                 machine: this.get("name"),
-                host_ip: this.get_hostname(),
-                host_ip_v6: this.get_hostname(),
+                machine_hostname: this.get_hostname(),
                 host: data.host,
                 port: data.port,
                 password: data.password

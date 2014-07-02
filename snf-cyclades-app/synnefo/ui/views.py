@@ -244,11 +244,9 @@ def machines_console(request):
     port = request.GET.get('port', '')
     password = request.GET.get('password', '')
     machine = request.GET.get('machine', '')
-    host_ip = request.GET.get('host_ip', '')
-    host_ip_v6 = request.GET.get('host_ip_v6', '')
+    machine_hostname = request.GET.get('machine_hostname', '')
     context = {'host': host, 'port': port, 'password': password,
-               'machine': machine, 'host_ip': host_ip,
-               'host_ip_v6': host_ip_v6}
+               'machine': machine, 'machine_hostname': machine_hostname}
     return template('machines_console', request, context)
 
 

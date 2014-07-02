@@ -631,6 +631,11 @@ h4 .arrow:hover {
   cursor: pointer;
 }
 
+/* line 285, ../sass/_details.scss */
+.icon-link {
+  margin-right: 10px;
+}
+
 /* line 5, ../sass/_filters.scss */
 .filters-area {
   margin-bottom: 40px;

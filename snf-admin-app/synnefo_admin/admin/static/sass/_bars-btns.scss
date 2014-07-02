@@ -139,7 +139,6 @@ body .container .line-btn.disabled {
 }
 
 .main-nav {
-	min-width: 1150px;
 	&>ul>li {
 		&>a {
 			color: white;
@@ -348,6 +347,15 @@ Extra-button is used to show total selected rows
 
 .show-hide-all {
 	float:right;
+    em {
+        font-style: normal;
+    }
+    &.line-btn {
+        padding: $default-btn-padding;
+        span {
+            display:inline;
+        }
+    }
 }
 
 .actions-per-item {

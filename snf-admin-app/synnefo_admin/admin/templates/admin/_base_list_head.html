@@ -2,16 +2,18 @@
 <div class="object-anchor" id="{{ type }}-area"></div>
 <div class="object-details info-block well {{ rowcls }}">
 {% if item_list|length > 0 and type != 'ip_log' %}
-<a href="#" class="show-hide-all line-btn"><span>Collapse All</span></a>
+<a href="#" class="show-hide-all line-btn">
+    <span>Collapse All </span>
+    <em>({{item_list|length }})</em>
+
+</a>
 {% endif %}
-<h3>{{ type|display_list_type }}
-{% if item_list|length > 0 and type != 'ip_log' %}
-    <span class="label length">Total: {{item_list|length }}</span>
-{% endif %}
+<h3>
+    {{ type|display_list_type }}
+    <em> for {{ main_item|repr }}</em>
 </h3>
-<h6><i>for <b>{{ main_item|repr }}</b></i></h6>
 {% if type == 'ip_log' %}
-<table>
+<table class="table">
     <thead>
         <th>IP</th>
         <th>VM</th>

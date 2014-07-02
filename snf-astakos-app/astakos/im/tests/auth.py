@@ -160,7 +160,7 @@ class ShibbolethTests(TestCase):
         user = AstakosUser.objects.get()
         provider = user.get_auth_provider("shibboleth")
         first_login_date = provider._instance.last_login_at
-        self.assertTrue(provider._instance.last_login_at)
+        self.assertFalse(provider._instance.last_login_at)
         headers = provider.provider_details['info']['headers']
         self.assertEqual(headers.get('SHIB_CUSTOM_IDP_KEY'), 'test')
 
@@ -219,6 +219,7 @@ class ShibbolethTests(TestCase):
         user = r.context['request'].user
         provider = user.get_auth_provider()._instance
         # last login date updated
+        self.assertTrue(provider.last_login_at)
         self.assertNotEqual(provider.last_login_at, first_login_date)
         self.assertEqual(provider.last_login_at, user.last_login)
 

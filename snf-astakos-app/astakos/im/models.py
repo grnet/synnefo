@@ -1515,11 +1515,11 @@ class ProjectResourceGrant(models.Model):
 
     def display_member_capacity(self):
         return units.show(self.member_capacity, self.resource.unit,
-                          inf="Infinite")
+                          inf="Unlimited")
 
     def display_project_capacity(self):
         return units.show(self.project_capacity, self.resource.unit,
-                          inf="Infinite")
+                          inf="Unlimited")
 
     def project_diffs(self):
         project = self.project_application.chain
@@ -1532,9 +1532,15 @@ class ProjectResourceGrant(models.Model):
             self.project_capacity - project_resource.project_capacity
         if self.project_capacity == units.PRACTICALLY_INFINITE:
             project_diff = units.PRACTICALLY_INFINITE
+        if project_resource.project_capacity == units.PRACTICALLY_INFINITE:
+            project_diff = -units.PRACTICALLY_INFINITE
+
         member_diff = self.member_capacity - project_resource.member_capacity
         if self.member_capacity == units.PRACTICALLY_INFINITE:
             member_diff = units.PRACTICALLY_INFINITE
+        if project_resource.member_capacity == units.PRACTICALLY_INFINITE:
+            member_diff = -units.PRACTICALLY_INFINITE
+
         return [project_diff, member_diff]
 
     def display_project_diff(self):
@@ -1542,12 +1548,36 @@ class ProjectResourceGrant(models.Model):
         proj_abs, member_abs = proj, member
         unit = self.resource.unit
 
-        def disp(v):
+        def disp(v, disp_func=None):
+            if not disp_func:
+                disp_func = lambda : ''
+
             if v == 0:
                 return ''
             sign = u'+' if v >= 0 else u'-'
-            return sign + unicode(units.show(abs(v), unit, inf="Infinite"))
-        return map(disp, [proj_abs, member_abs])
+            ext = units.show(abs(v), unit, inf="Unlimited")
+            if ext == "Unlimited" and sign == u'+':
+                disp = disp_func()
+                if disp:
+                    ext = "from %s" % disp
+            else:
+                disp = disp_func()
+                ext = sign + "" + ext
+            return unicode(ext)
+
+        project_resource = None
+        try:
+            project = self.project_application.chain
+            project_resource = project.resource_set.get(resource=self.resource)
+        except:
+            pass
+
+        memb_disp = project_resource.display_member_capacity if \
+            project_resource else None
+        proj_disp = project_resource.display_project_capacity if \
+            project_resource else None
+        return [disp(proj_abs, proj_disp),
+                disp(member_abs, memb_disp)]
 
     def __unicode__(self):
         return 'Max %s per user: %s' % (self.resource.pluralized_display_name,
@@ -1910,11 +1940,11 @@ class ProjectResourceQuota(models.Model):
 
     def display_member_capacity(self):
         return units.show(self.member_capacity, self.resource.unit,
-                          inf="Infinite")
+                          inf="Unlimited")
 
     def display_project_capacity(self):
         return units.show(self.project_capacity, self.resource.unit,
-                          inf="Infinite")
+                          inf="Unlimited")
 
 
 class ProjectLogManager(models.Manager):

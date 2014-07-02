@@ -20,7 +20,7 @@ RESOURCES = {
     'groups': {
         'compute': {
             'help_text': ('Compute resources '
-                          '(amount of VMs, CPUs, RAM, System disk) '),
+                          '(amount of VMs, CPUs, RAM, Hard disk) '),
             'is_abbreviation': False,
             'report_desc': '',
             'verbose_name': 'compute',
@@ -50,28 +50,28 @@ RESOURCES = {
                                       'Pithos that will be granted for use '
                                       'across all users of this Project '),
             'is_abbreviation': False,
-            'report_desc': 'Storage Space',
+            'report_desc': 'File Storage Space',
             'placeholder': 'eg. 10GB',
-            'verbose_name': 'Storage Space',
+            'verbose_name': 'File Storage Space',
             'group': 'storage'
         },
         'cyclades.disk': {
-            'help_text': ('This is the System Disk that the VMs have that '
+            'help_text': ('This is the Hard Disk that the VMs have that '
                           'run the OS '),
             'help_text_input_each': ("This is the total amount of System Disk "
                                      "that will be granted to each user of "
                                      "this Project (this refers to the total "
-                                     "System Disk of all VMs, not each VM's "
-                                     "System Disk)"),
+                                     "Hard Disk of all VMs, not each VM's "
+                                     "Hard Disk)"),
             'help_text_input_total': ("This is the total amount of System "
                                       "Disk that will be granted across all "
                                       "users of this Project (this refers to "
-                                      "the total System Disk of all VMs, not "
-                                      "each VM's System Disk)"),
+                                      "the total Hard Disk of all VMs, not "
+                                      "each VM's Hard Disk)"),
             'is_abbreviation': False,
-            'report_desc': 'System Disk',
+            'report_desc': 'Hard Disk Storage',
             'placeholder': 'eg. 5GB, 2GB etc',
-            'verbose_name': 'System Disk',
+            'verbose_name': 'Hard Disk Storage',
             'group': 'compute'
         },
         'cyclades.total_ram': {

@@ -114,15 +114,15 @@
           <dt>{{rp.resource.pluralized_display_name}}</dt>
           <dd>
             <div class="resource">
-                {{ rp.display_project_capacity|inf_display|default:"(not set)" }}
-                {% if is_modification %}
-                {{ rp|resource_diff:"project" }}
-                {% endif %}
-            </div>
-            <div class="resource fix-col">
                 {{ rp.display_member_capacity|inf_display|default:"(not set)" }}
                 {% if is_modification %}
                 {{ rp|resource_diff:"member" }}
+                {% endif %}
+            </div>
+            <div class="resource fix-col">
+                {{ rp.display_project_capacity|inf_display|default:"(not set)" }}
+                {% if is_modification %}
+                {{ rp|resource_diff:"project" }}
                 {% endif %}
             </div>
             {% if display_usage %}
@@ -184,7 +184,7 @@
           ({{ remaining_memberships_count }}
           membership{{ remaining_memberships_count|pluralize }}
           remain{{ remaining_memberships_count|pluralize:"s," }})
-          {% else %}(Infinite memberships remain){% endif %}
+          {% else %}(Unlimited memberships remain){% endif %}
           {% else %}&nbsp;{% endif %} 
         </span>
       </dd>

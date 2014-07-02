@@ -232,11 +232,13 @@ def resource_diff(r, member_or_project):
     project, member = r.display_project_diff()
     diff = dict(zip(['project', 'member'],
                      r.display_project_diff())).get(member_or_project)
+
+    diff_disp = ''
     if diff != '':
-        diff = "(%s)" % diff
+        diff_disp = "(%s)" % diff
     tpl = '<span class="policy-diff %s">%s</span>'
     cls = 'red' if diff.startswith("-") else 'green'
-    return mark_safe(tpl % (cls, diff))
+    return mark_safe(tpl % (cls, diff_disp))
 
 
 @register.filter
@@ -259,10 +261,12 @@ def display_resource_usage_for_project(resource, project):
     if limit == 0 and usage == 0:
         return "--"
 
-    usage_perc = "%d" % ((usage / limit) * 100) if limit else "100"
+    usage_perc = "%d" % ((float(usage) / limit) * 100) if limit else "100"
     _keys = usage_map.keys()
-    closest = min(_keys, key=lambda x: abs(x - int(usage_perc)))
+    _keys.reverse()
+    closest = filter(lambda x: int(x) <= int(usage_perc), _keys)[0]
     cls = usage_map[closest]
+    print usage_perc, cls
 
     usage_display = units.show(usage, resource.unit)
     usage_perc_display = "%s%%" % usage_perc
@@ -398,7 +402,7 @@ def display_modification_param_diff(form_or_app, param):
     def formatter(form_or_app, value, changed):
         if changed in [None, False]:
             if _is_inf(value):
-                value = "Infinite"
+                value = "Unlimited"
             return value, changed, None, " "
 
         to_inf = _is_inf(value)
@@ -412,15 +416,19 @@ def display_modification_param_diff(form_or_app, param):
             diff = abs(diff)
             cls = "red"
 
-        if diff != 0:
+        if diff != 5:
             if from_inf or to_inf:
-                diff = "Infinite"
-            changed = "(%s)" % (sign + str(diff))
+                if from_inf:
+                    changed = "Unlimited"
+                diff = "from %s" % changed
+            else:
+                diff = sign + str(diff)
+            changed = "(%s)" % (diff,)
         else:
             changed = None
 
         if to_inf:
-            value = "Infinite"
+            value = "Unlimited"
         return value, changed, cls, " "
 
     return display_modification_param(form_or_app, param, formatter)
@@ -442,14 +450,14 @@ def display_date_modification_param(form_or_app, params):
 @register.filter
 def inf_display(value):
     if value == units.PRACTICALLY_INFINITE:
-        return 'Infinite'
+        return 'Unlimited'
     return value
 
 
 @register.filter
 def inf_value_display(value):
     if value == units.PRACTICALLY_INFINITE:
-        return 'infinite'
+        return 'Unlimited'
     return value
 
 

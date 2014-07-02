@@ -1,3 +1,4 @@
+{% if action_dict %}
 <div class="sidebar actionbar">
 	<div class="btn-group-vertical">
 	{% for op, action in action_dict.items %}
@@ -7,3 +8,4 @@
     {% endfor %}
 	</div>
 </div>
+{% endif %}

@@ -267,5 +267,11 @@ $(document).ready(function() {
 
 	// Apply the theme
 	Highcharts.setOptions(Highcharts.theme);
+	    $('.charts .sidebar a').click(function(e) {
+        e.preventDefault();
+        $(this).toggleClass('active');
+        var el = $(this).attr('data-chart');
+        $('.info').find('div[data-chart='+el+']').slideToggle('slow')
+    })
 });
 

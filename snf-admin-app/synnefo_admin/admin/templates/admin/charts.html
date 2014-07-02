@@ -3,25 +3,26 @@
 {% block content %}
 <div class="charts">
 <div class="sidebar">
-    <a href="">Resource Usage</a>
-    <a href="" class="active">User status and providers</a>
-    <a href="">VM status</a>
-    <a href="">IP status</a>
-    <a href="">Disk templates</a>
-    <a href="">Images</a>
+    <a href="" data-chart="resource-usage"><span>Resource Usage</span></a>
+    <a href="" class="active" data-chart="temp"><span>User status and providers</span></a>
+    <a href="" data-chart="vm-status"><span>VM status</span></a>
+    <a href="" data-chart="ip-status"><span>IP status</span></a>
+    <a href="" data-chart="disk-templates"><span>Disk templates</span></a>
+    <a href="" data-chart="images"><span>Images</span></a>
 </div>
 <div class="info well">
-    <div id="infra-usage" class="chart"></div>
-    <div id="resource-usage" class="chart"></div>
-    <div id="provider-status" class="chart"></div>
-    <div id="provider-status-reversed" class="chart"></div>
-    <div id="provider-exclusiveness" class="chart"></div>
-    <div id="server-status" class="chart"></div>
-    <div id="ip-pool-status" class="chart"></div>
-    <div id="disk-templates" class="chart"></div>
-    <div id="images" class="chart"></div>
+    <div id="infra-usage" class="chart" data-chart="resource-usage"></div>
+    <div id="resource-usage" class="chart" data-chart="resource-usage"></div>
+    <div id="provider-status" class="chart" data-chart="temp"></div>
+    <div id="provider-status-reversed" class="chart" data-chart="temp"></div>
+    <div id="provider-exclusiveness" class="chart" data-chart="temp"></div>
+    <div id="server-status" class="chart" data-chart="vm-status"></div>
+    <div id="ip-pool-status" class="chart" data-chart="ip-status"></div>
+    <div id="disk-templates" class="chart" data-chart="disk-templates"></div>
+    <div id="images" class="chart" data-chart="images"></div>
 </div>
 </div>
+
 {% endblock %}
 
 {% block custom-javascript %}
@@ -30,3 +31,11 @@
 <script src="{{ MEDIA_URL }}admin/js/charts.js"></script>
 <script src="{{ MEDIA_URL }}admin/js/charts_common.js"></script>
 {% endblock %}
+
+
+    $('.charts .sidebar a').click(function(e) {
+        e.preventDefault();
+        $(this).toggleClass('active');
+        var el = $(this).attr('data-chart');
+        $('.info').find('div[data-chart='+el+']').toggle('slow')
+    })

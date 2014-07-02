@@ -82,11 +82,7 @@ class GroupJSONView(DatatablesView):
                 'display_name': "Name",
                 'value': inst.name,
                 'visible': False,
-            }, 'details_url': {
-                'display_name': "Details",
-                'value': reverse('admin-details', args=['group', inst.id]),
-                'visible': True,
-            }
+            },
         }
 
         return extra_dict

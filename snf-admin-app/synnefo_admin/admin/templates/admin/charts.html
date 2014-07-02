@@ -1,21 +1,27 @@
 {% extends "admin/base.html" %}
 
 {% block content %}
-</h1>Resource Usage</h1>
-<div id="infra-usage" class="chart"></div>
-<div id="resource-usage" class="chart"></div>
-</h1>User status and providers</h1>
-<div id="provider-status" class="chart"></div>
-<div id="provider-status-reversed" class="chart"></div>
-<div id="provider-exclusiveness" class="chart"></div>
-</h1>VM status</h1>
-<div id="server-status" class="chart"></div>
-</h1>IP status</h1>
-<div id="ip-pool-status" class="chart"></div>
-</h1>Disk templates</h1>
-<div id="disk-templates" class="chart"></div>
-</h1>Images</h1>
-<div id="images" class="chart"></div>
+<div class="charts">
+<div class="sidebar">
+    <a href="">Resource Usage</a>
+    <a href="" class="active">User status and providers</a>
+    <a href="">VM status</a>
+    <a href="">IP status</a>
+    <a href="">Disk templates</a>
+    <a href="">Images</a>
+</div>
+<div class="info well">
+    <div id="infra-usage" class="chart"></div>
+    <div id="resource-usage" class="chart"></div>
+    <div id="provider-status" class="chart"></div>
+    <div id="provider-status-reversed" class="chart"></div>
+    <div id="provider-exclusiveness" class="chart"></div>
+    <div id="server-status" class="chart"></div>
+    <div id="ip-pool-status" class="chart"></div>
+    <div id="disk-templates" class="chart"></div>
+    <div id="images" class="chart"></div>
+</div>
+</div>
 {% endblock %}
 
 {% block custom-javascript %}

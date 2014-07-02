@@ -852,7 +852,7 @@
                 }
                 
                 return key;
-            }), function(ret) { return ret });
+            }, this), function(ret) { return ret });
             
             $("li.predefined-selection").addClass("disabled");
             _.each(this.valid_predefined, function(key) {

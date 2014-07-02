@@ -54,10 +54,6 @@ from synnefo.ui.views import UI_MEDIA_URL
 
 JSON_MIMETYPE = "application/json"
 
-# for django-eztables
-from django.template import add_to_builtins
-add_to_builtins('eztables.templatetags.eztables')
-
 logger = logging.getLogger(__name__)
 
 ADMIN_MEDIA_URL = getattr(settings, 'ADMIN_MEDIA_URL',

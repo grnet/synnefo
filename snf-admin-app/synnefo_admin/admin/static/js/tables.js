@@ -4,40 +4,41 @@ var mydata; // temp
 
 $(function(){
 
-	var $actionbar = $('.actionbar'),
-		$infoBlock = $('.info-block'),
-		infoBlockMarg = $infoBlock.css('marginRight'),
-		actionbarTop = $actionbar.offset().top,
-		actionBarWidth = $actionbar.outerWidth(true),
-		$win = $(window),
-		isFixed = 0,
-		navHeight = $('.main-nav').outerHeight(true),
-		filtersHeight = $('.filters').outerHeight();
+		var $actionbar = $('.actionbar');
 
-	function processScroll() {
-		var i, scrollTop = $win.scrollTop();
-		if(scrollTop >= navHeight+filtersHeight && !isFixed) {
-			isFixed = 1;
-			$actionbar.addClass('fixed');
-			$actionbar.css('top', navHeight);
-			if(!$infoBlock.hasClass('.fixed-arround')) {
-				$infoBlock.addClass('fixed-arround');
-				$infoBlock.css('marginLeft', actionBarWidth);
+	if($actionbar.length > 0) {
+		var $infoBlock = $('.info-block'),
+			infoBlockMarg = $infoBlock.css('marginRight'),
+			actionbarTop = $actionbar.offset().top,
+			actionBarWidth = $actionbar.outerWidth(true),
+			$win = $(window),
+			isFixed = 0,
+			navHeight = $('.main-nav').outerHeight(true),
+			filtersHeight = $('.filters').outerHeight();
+
+		function processScroll() {
+			var i, scrollTop = $win.scrollTop();
+			if(scrollTop >= navHeight+filtersHeight && !isFixed) {
+				isFixed = 1;
+				$actionbar.addClass('fixed');
+				$actionbar.css('top', navHeight);
+				if(!$infoBlock.hasClass('.fixed-arround')) {
+					$infoBlock.addClass('fixed-arround');
+					$infoBlock.css('marginLeft', actionBarWidth);
+				}
+			}
+			else if(scrollTop <= navHeight+filtersHeight && isFixed){
+				isFixed = 0;
+				$actionbar.removeClass('fixed');
+				if($infoBlock.hasClass('fixed-arround')) {
+					$infoBlock.removeClass('fixed-arround');
+					$infoBlock.css('marginLeft', infoBlockMarg);
+				}
 			}
 		}
-		else if(scrollTop <= navHeight+filtersHeight && isFixed){
-			isFixed = 0;
-			$actionbar.removeClass('fixed');
-			if($infoBlock.hasClass('fixed-arround')) {
-				$infoBlock.removeClass('fixed-arround');
-				$infoBlock.css('marginLeft', infoBlockMarg);
-			}
-		}
+		processScroll();
+		$win.on('scroll', processScroll);
 	}
-	processScroll();
-
-
-	$win.on('scroll', processScroll)
 
 	var $lastClicked = null;
 	var $prevClicked = null;

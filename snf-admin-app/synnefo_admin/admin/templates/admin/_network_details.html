@@ -5,7 +5,8 @@
 <div class="network-details object-details {{ rowcls }}" data-id="{{network.pk}}"
     data-type="{{type}}">
     <h4>
-        <span class="title"><a href="{% url admin-details type network.pk %}">{{ network|repr }}</a></span>
+		<a href="{% url admin-details type network.pk %}" class="snf-font-admin snf-search icon-link" title="Details for {{ network|repr }}"></a>
+        <span class="title">{{ network|repr }}</span>
 		<span class="arrow  snf-font-admin snf-angle-down"></span>
 		{{ network|network_deleted_label|safe }}
 	    {{ network|object_status_label|safe }}

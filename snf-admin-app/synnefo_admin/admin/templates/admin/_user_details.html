@@ -5,7 +5,8 @@
 <div class="object-details {{ rowcls }}" data-id="{{user.uuid}}"
     data-type="{{type}}">
     <h4>
-        <span class="title"><a href="{% url admin-details type user.uuid %}">{{ user|repr }}</a></span>
+        <a href="{% url admin-details type user.uuid %}" class="snf-font-admin snf-search icon-link" title="Details for {{ user|repr }}"></a>
+        <span class="title">{{ user|repr }}</span>
         <span class="arrow snf-font-admin snf-angle-down"></span>
         <span class="label">{{ user.status_display|upper }}</span>
         <span class="label">UUID: {{ user.uuid }}</span>

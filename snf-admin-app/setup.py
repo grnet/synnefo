@@ -154,12 +154,12 @@ def find_package_data(
     return out
 
 setup(
-    name = 'snf-admin-app',
-    version = VERSION,
-    license = 'BSD',
-    url = 'http://www.synnefo.org/',
-    description = SHORT_DESCRIPTION,
-    classifiers = CLASSIFIERS,
+    name='snf-admin-app',
+    version=VERSION,
+    license='BSD',
+    url='http://www.synnefo.org/',
+    description=SHORT_DESCRIPTION,
+    classifiers=CLASSIFIERS,
 
     author='Synnefo development team',
     author_email='synnefo-devel@googlegroups.com',
@@ -172,16 +172,17 @@ setup(
     include_package_data=True,
     zip_safe=False,
 
-    install_requires = INSTALL_REQUIRES,
+    install_requires=INSTALL_REQUIRES,
 
-    dependency_links = ['http://www.synnefo.org/packages/pypi'],
+    dependency_links=['http://www.synnefo.org/packages/pypi'],
 
-    entry_points = {
-     'synnefo': [
-         'web_apps = synnefo_admin.synnefo_settings:installed_apps',
-         'db_routers = synnefo_admin.synnefo_settings:database_routers',
-         'urls = synnefo_admin.urls:urlpatterns',
-         'web_static = synnefo_admin.synnefo_settings:static_files'
-         ]
-      },
+    entry_points={
+        'synnefo': [
+            'default_settings = synnefo_admin.app_settings.default',
+            'web_apps = synnefo_admin.app_settings:installed_apps',
+            'db_routers = synnefo_admin.app_settings:database_routers',
+            'urls = synnefo_admin.urls:urlpatterns',
+            'web_static = synnefo_admin.app_settings:static_files'
+        ]
+    },
 )

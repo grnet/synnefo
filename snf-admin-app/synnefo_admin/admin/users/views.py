@@ -51,8 +51,6 @@ from .utils import (get_user, get_quotas, get_user_groups,
 from .actions import cached_actions
 from .filters import UserFilterSet
 
-SHOW_DELETED_VMS = getattr(settings, 'ADMIN_SHOW_DELETED_VMS', False)
-
 templates = {
     'list': 'admin/user_list.html',
     'details': 'admin/user_details.html',

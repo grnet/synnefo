@@ -38,6 +38,10 @@ from snf_django.lib.api import faults
 from astakos.im.messages import PLAIN_EMAIL_SUBJECT as sample_subject
 from astakos.im import settings as astakos_settings
 
+from synnefo_admin.admin_settings import (ADMIN_MEDIA_URL, AUTH_COOKIE_NAME,
+                                          ADMIN_PERMITTED_GROUPS,
+                                          ADMIN_ENABLED)
+
 # Import model-specific views
 import synnefo_admin.admin.users.views as user_views
 import synnefo_admin.admin.vms.views as vm_views
@@ -56,20 +60,6 @@ from synnefo.ui.views import UI_MEDIA_URL
 JSON_MIMETYPE = "application/json"
 
 logger = logging.getLogger(__name__)
-
-ADMIN_MEDIA_URL = getattr(settings, 'ADMIN_MEDIA_URL',
-                          settings.MEDIA_URL + 'admin/')
-
-IP_SEARCH_REGEX = re.compile('([0-9]+)(?:\.[0-9]+){3}')
-VM_SEARCH_REGEX = re.compile('vm(-){0,}(?P<vmid>[0-9]+)')
-
-AUTH_COOKIE_NAME = getattr(settings, 'ADMIN_AUTH_COOKIE_NAME',
-                           getattr(settings, 'UI_AUTH_COOKIE_NAME',
-                                   '_pithos2_a'))
-PERMITTED_GROUPS = getattr(settings, 'ADMIN_PERMITTED_GROUPS',
-                           ['admin-readonly', 'admin', 'superadmin'])
-SHOW_DELETED_VMS = getattr(settings, 'ADMIN_SHOW_DELETED_VMS', False)
-
 
 ### Helper functions
 
@@ -125,13 +115,12 @@ def token_check(func):
     return wrapper
 
 
-def admin_user_required(func, permitted_groups=PERMITTED_GROUPS):
+def admin_user_required(func, permitted_groups=ADMIN_PERMITTED_GROUPS):
     """
     Django view wrapper that checks if identified request user has admin
     permissions (exists in admin group)
     """
     def wrapper(request, *args, **kwargs):
-        ADMIN_ENABLED = getattr(settings, 'ADMIN_ENABLED', True)
         if not ADMIN_ENABLED:
             raise Http404
 

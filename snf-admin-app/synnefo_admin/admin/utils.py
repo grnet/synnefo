@@ -21,9 +21,9 @@ from operator import or_
 from django.db.models import Q
 from django.views.decorators.gzip import gzip_page
 from django.template import Context, Template
-from django.conf import settings
 from django.core.urlresolvers import reverse
 
+from synnefo_admin import admin_settings as settings
 from synnefo.util import units
 from astakos.im.models import AstakosUser
 

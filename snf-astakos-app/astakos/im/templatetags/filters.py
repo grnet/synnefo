@@ -266,7 +266,6 @@ def display_resource_usage_for_project(resource, project):
     _keys.reverse()
     closest = filter(lambda x: int(x) <= int(usage_perc), _keys)[0]
     cls = usage_map[closest]
-    print usage_perc, cls
 
     usage_display = units.show(usage, resource.unit)
     usage_perc_display = "%s%%" % usage_perc

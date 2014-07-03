@@ -754,7 +754,7 @@ class TestProjects(TestCase):
             'end_date': dto.strftime("%Y-%m-%d"),
             'member_join_policy': 2,
             'member_leave_policy': 1,
-            'limit_on_members_number': 5,
+            'limit_on_members_number_0': 5,
             'service1.resource_m_uplimit': 100,
             'is_selected_service1.resource': "1",
             'astakos.pending_app_m_uplimit': 100,
@@ -798,6 +798,7 @@ class TestProjects(TestCase):
             'end_date': dto.strftime("%Y-%m-%d"),
             'member_join_policy': 2,
             'member_leave_policy': 1,
+            'limit_on_members_number_0': '5',
             'service1.resource_m_uplimit': 10,
             'service1.resource_p_uplimit': 100,
             'is_selected_service1.resource': "1",
@@ -807,7 +808,6 @@ class TestProjects(TestCase):
         self.assertEqual(r.status_code, 200)
         form = r.context['form']
         form.is_valid()
-        # no limit_on_members_number was set, form is still valid
         self.assertEqual(r.context['form'].is_valid(), True)
 
         application_data['limit_on_members_number'] = 5

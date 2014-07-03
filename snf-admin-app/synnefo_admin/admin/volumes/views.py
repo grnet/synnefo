@@ -18,12 +18,11 @@ import logging
 from collections import OrderedDict
 
 from django.core.urlresolvers import reverse
+from django.utils.html import escape
 
 from synnefo.db.models import Volume, VirtualMachine
 from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
-
-from eztables.views import DatatablesView
 
 import django_filters
 
@@ -32,6 +31,7 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_permitted_actions,)
 from synnefo_admin.admin.utils import get_actions, render_email
 from synnefo_admin.admin.users.utils import get_user
+from synnefo_admin.admin.tables import AdminJSONView
 
 from .utils import get_volume, get_user_details_href
 from .actions import cached_actions
@@ -43,7 +43,7 @@ templates = {
 }
 
 
-class VolumeJSONView(DatatablesView):
+class VolumeJSONView(AdminJSONView):
     model = Volume
     fields = ('id', 'name', 'status', 'created', 'machine__pk',)
     filters = VolumeFilterSet
@@ -80,7 +80,7 @@ class VolumeJSONView(DatatablesView):
         }
         extra_dict['item_name'] = {
             'display_name': "Name",
-            'value': inst.name,
+            'value': escape(inst.name),
             'visible': False,
         }
         extra_dict['details_url'] = {
@@ -95,12 +95,12 @@ class VolumeJSONView(DatatablesView):
         }
         extra_dict['contact_email'] = {
             'display_name': "Contact email",
-            'value': AstakosUser.objects.get(uuid=inst.userid).email,
+            'value': escape(AstakosUser.objects.get(uuid=inst.userid).email),
             'visible': False,
         }
         extra_dict['contact_name'] = {
             'display_name': "Contact name",
-            'value': AstakosUser.objects.get(uuid=inst.userid).realname,
+            'value': escape(AstakosUser.objects.get(uuid=inst.userid).realname),
             'visible': False,
         }
 
@@ -124,7 +124,7 @@ class VolumeJSONView(DatatablesView):
         }
         extra_dict['description'] = {
             'display_name': "Description",
-            'value': inst.description or "(not set)",
+            'value': escape(inst.description) or "(not set)",
             'visible': True,
         }
         extra_dict['updated'] = {

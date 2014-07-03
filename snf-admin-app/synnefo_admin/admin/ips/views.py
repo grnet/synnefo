@@ -21,13 +21,13 @@ from collections import OrderedDict
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from django.utils.html import escape
 
 from synnefo.db.models import IPAddress, IPAddressLog, VirtualMachine, Network
 from synnefo.logic import ips
 from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
 
-from eztables.views import DatatablesView
 import django_filters
 
 from synnefo_admin.admin.actions import (has_permission_or_403,
@@ -35,9 +35,10 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_permitted_actions,)
 from synnefo_admin.admin.utils import get_actions, render_email
 from synnefo_admin.admin.users.utils import get_user
+from synnefo_admin.admin.tables import AdminJSONView
 
 from .utils import (get_contact_email, get_contact_name, get_user_details_href,
-                    get_ip)
+                    get_ip, get_network_details_href)
 from .actions import cached_actions
 from .filters import IPFilterSet
 
@@ -48,7 +49,7 @@ templates = {
 }
 
 
-class IPJSONView(DatatablesView):
+class IPJSONView(AdminJSONView):
     model = IPAddress
     fields = ('pk', 'address', 'floating_ip', 'created', 'userid',)
     filters = IPFilterSet
@@ -97,12 +98,12 @@ class IPJSONView(DatatablesView):
         }
         extra_dict['contact_email'] = {
             'display_name': "Contact email",
-            'value': get_contact_email(inst),
+            'value': escape(get_contact_email(inst)),
             'visible': False,
         }
         extra_dict['contact_name'] = {
             'display_name': "Contact name",
-            'value': get_contact_name(inst),
+            'value': escape(get_contact_name(inst)),
             'visible': False,
         }
 
@@ -136,8 +137,7 @@ class IPJSONView(DatatablesView):
         }
         extra_dict['network_info'] = {
             'display_name': "Network info",
-            'value': ('ID: ' + str(inst.network.id) + ', Name: ' +
-                      str(inst.network.id)),
+            'value': get_network_details_href(inst),
             'visible': True,
         }
 

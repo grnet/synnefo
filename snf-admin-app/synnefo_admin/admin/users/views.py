@@ -24,6 +24,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Group
+from django.utils.html import escape
 
 from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
                                NetworkInterface, IPAddress)
@@ -35,7 +36,6 @@ from astakos.im.user_utils import send_plain as send_email
 
 from synnefo.util import units
 
-from eztables.views import DatatablesView
 
 import django_filters
 from django.db.models import Q
@@ -45,6 +45,7 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_permitted_actions,)
 from synnefo_admin.admin.utils import (get_actions, render_email,
                                        create_details_href,)
+from synnefo_admin.admin.tables import AdminJSONView
 
 from .utils import (get_user, get_quotas, get_user_groups,
                     get_enabled_providers, get_suspended_vms, )
@@ -57,7 +58,7 @@ templates = {
 }
 
 
-class UserJSONView(DatatablesView):
+class UserJSONView(AdminJSONView):
     model = AstakosUser
     fields = ('email', 'first_name', 'last_name', 'is_active',
               'is_rejected', 'moderated', 'email_verified')
@@ -88,7 +89,7 @@ class UserJSONView(DatatablesView):
         }
         extra_dict['item_name'] = {
             'display_name': "Name",
-            'value': inst.realname,
+            'value': escape(inst.realname),
             'visible': False,
         }
         extra_dict['details_url'] = {
@@ -103,12 +104,12 @@ class UserJSONView(DatatablesView):
         }
         extra_dict['contact_email'] = {
             'display_name': "Contact email",
-            'value': inst.email,
+            'value': escape(inst.email),
             'visible': False,
         }
         extra_dict['contact_name'] = {
             'display_name': "Contact name",
-            'value': inst.realname,
+            'value': escape(inst.realname),
             'visible': False,
         }
 
@@ -132,7 +133,7 @@ class UserJSONView(DatatablesView):
         }
         extra_dict['groups'] = {
             'display_name': "Groups",
-            'value': get_user_groups(inst),
+            'value': escape(get_user_groups(inst)),
             'visible': True,
         }
         extra_dict['enabled_providers'] = {

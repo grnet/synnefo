@@ -21,13 +21,13 @@ from collections import OrderedDict
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from django.utils.html import escape
 
 from synnefo.db.models import IPAddress, IPAddressLog, VirtualMachine, Network
 from synnefo.logic import ips
 from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
 
-from eztables.views import DatatablesView
 import django_filters
 
 from synnefo_admin.admin.actions import (has_permission_or_403,
@@ -35,6 +35,7 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_permitted_actions,)
 from synnefo_admin.admin.utils import get_actions, render_email
 from synnefo_admin.admin.users.utils import get_user
+from synnefo_admin.admin.tables import AdminJSONView
 
 from .utils import (get_user_details_href, get_ip_details_href,
                     get_vm_details_href, get_network_details_href)
@@ -46,7 +47,7 @@ templates = {
 }
 
 
-class IPLogJSONView(DatatablesView):
+class IPLogJSONView(AdminJSONView):
     model = IPAddressLog
     fields = ('address', 'server_id', 'network_id', 'allocated_at',
               'released_at', 'active',)

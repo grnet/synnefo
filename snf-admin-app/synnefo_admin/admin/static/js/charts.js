@@ -22,6 +22,21 @@ String.prototype.capitalize = function() {
         return this.charAt(0).toUpperCase() + this.slice(1);
 }
 
+String.prototype.sanitize = function() {
+    new_string = ""
+    for (var i = 0, len = this.length; i < len; i++) {
+        c = this.charAt(i);
+        if (/^[a-zA-Z0-9]$/.test(c)) {
+            new_string += c;
+        } else if (/^[\.\-\_\:\~]$/.test(c)) {
+            new_string += c;
+        } else {
+            new_string += "_"; // replace it with a safe character
+        }
+    }
+    return new_string;
+}
+
 function infraUsage(data) {
     categories = {
         'astakos.pending_app': 'Project apps',
@@ -553,7 +568,7 @@ function imagesStats(data) {
     var image_data = [];
     for (i in images) {
         var imageData = {
-            name: i,
+            name: i.sanitize(), // Sanitize user input aggressively
             y: percentify(images[i], total_images),
             num: images[i],
         }

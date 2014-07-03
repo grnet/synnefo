@@ -22,6 +22,7 @@ from operator import or_
 
 from django.core.urlresolvers import reverse
 from django.db.models import Q
+from django.utils.html import escape
 
 from synnefo.db.models import (VirtualMachine, Network, IPAddressLog,
                                IPAddress)
@@ -32,7 +33,6 @@ from synnefo.logic import servers as servers_backend
 from synnefo.logic.commands import validate_server_action
 from synnefo.management.common import wait_server_task
 
-from eztables.views import DatatablesView
 
 import django_filters
 
@@ -41,6 +41,7 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_permitted_actions,)
 from synnefo_admin.admin.utils import get_actions, render_email
 from synnefo_admin.admin.users.utils import get_user
+from synnefo_admin.admin.tables import AdminJSONView
 
 from .utils import get_flavor_info, get_vm, get_user_details_href
 from .filters import VMFilterSet
@@ -52,7 +53,7 @@ templates = {
 }
 
 
-class VMJSONView(DatatablesView):
+class VMJSONView(AdminJSONView):
     model = VirtualMachine
     fields = ('pk', 'name', 'operstate', 'suspended',)
     filters = VMFilterSet
@@ -82,7 +83,7 @@ class VMJSONView(DatatablesView):
         }
         extra_dict['item_name'] = {
             'display_name': "Name",
-            'value': inst.name,
+            'value': escape(inst.name),
             'visible': False,
         }
         extra_dict['details_url'] = {
@@ -97,12 +98,12 @@ class VMJSONView(DatatablesView):
         }
         extra_dict['contact_email'] = {
             'display_name': "Contact email",
-            'value': AstakosUser.objects.get(uuid=inst.userid).email,
+            'value': escape(AstakosUser.objects.get(uuid=inst.userid).email),
             'visible': False,
         }
         extra_dict['contact_name'] = {
             'display_name': "Contact name",
-            'value': AstakosUser.objects.get(uuid=inst.userid).realname,
+            'value': escape(AstakosUser.objects.get(uuid=inst.userid).realname),
             'visible': False,
         }
 

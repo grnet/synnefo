@@ -22,13 +22,13 @@ from operator import itemgetter
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from django.utils.html import escape
 
 from synnefo.db.models import (VirtualMachine, Network, Volume,
                                NetworkInterface, IPAddress)
 from astakos.im.models import (AstakosUser, Project, ProjectResourceGrant,
                                Resource)
 
-from eztables.views import DatatablesView
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
 from astakos.im.user_utils import send_plain as send_email
@@ -49,6 +49,7 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
 from synnefo_admin.admin.users.utils import get_user
+from synnefo_admin.admin.tables import AdminJSONView
 
 from .filters import ProjectFilterSet
 from .actions import cached_actions
@@ -63,7 +64,7 @@ templates = {
 }
 
 
-class ProjectJSONView(DatatablesView):
+class ProjectJSONView(AdminJSONView):
     model = Project
     fields = ('id', 'realname', '{owner__first_name} {owner__last_name}',
               'state', 'creation_date', 'end_date')
@@ -107,7 +108,7 @@ class ProjectJSONView(DatatablesView):
         }
         extra_dict['item_name'] = {
             'display_name': "Name",
-            'value': inst.realname,
+            'value': escape(inst.realname),
             'visible': False,
         }
         extra_dict['details_url'] = {
@@ -117,17 +118,17 @@ class ProjectJSONView(DatatablesView):
         }
         extra_dict['contact_id'] = {
             'display_name': "Contact ID",
-            #'value': get_contact_id(inst),
+            'value': get_contact_id(inst),
             'visible': False,
         }
         extra_dict['contact_email'] = {
             'display_name': "Contact email",
-            'value': get_contact_email(inst),
+            'value': escape(get_contact_email(inst)),
             'visible': False,
         }
         extra_dict['contact_name'] = {
             'display_name': "Contact name",
-            'value': get_contact_name(inst),
+            'value': escape(get_contact_name(inst)),
             'visible': False,
         }
 
@@ -153,13 +154,13 @@ class ProjectJSONView(DatatablesView):
         if not inst.is_base:
             extra_dict['homepage'] = {
                 'display_name': "Homepage url",
-                'value': inst.homepage or "(not set)",
+                'value': escape(inst.homepage) or "(not set)",
                 'visible': True,
             }
 
             extra_dict['description'] = {
                 'display_name': "Description",
-                'value': inst.description or "(not set)",
+                'value': escape(inst.description) or "(not set)",
                 'visible': True,
             }
             extra_dict['members'] = {
@@ -172,7 +173,7 @@ class ProjectJSONView(DatatablesView):
             if inst.last_application.comments:
                 extra_dict['comments'] = {
                     'display_name': "Comments for review",
-                    'value': inst.last_application.comments or "(not set)",
+                    'value': escape(inst.last_application.comments) or "(not set)",
                     'visible': True,
                 }
 

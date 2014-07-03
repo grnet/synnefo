@@ -56,3 +56,11 @@ def get_user_details_href(ip):
         return create_details_href('user', user.realname, user.email)
     else:
         return "-"
+
+
+def get_network_details_href(ip):
+    if ip.in_use():
+        network = ip.nic.network
+        return create_details_href('network', network.name, network.pk)
+    else:
+        return "-"

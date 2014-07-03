@@ -22,6 +22,7 @@ from django.db.models import Q
 from django.views.decorators.gzip import gzip_page
 from django.template import Context, Template
 from django.core.urlresolvers import reverse
+from django.utils.html import escape
 
 from synnefo_admin import admin_settings as settings
 from synnefo.util import units
@@ -183,6 +184,7 @@ def render_email(request, user):
 
 
 def create_details_href(type, name, id):
+    name = escape(name)
     """Create an href (name + url) for the details page of an item."""
     url = reverse('admin-details', args=[type, id])
     if type == 'user':
@@ -229,7 +231,6 @@ def customize_details_context(context):
         assoc = list(assoc)
         qs = exclude_deleted(qs, assoc[1])
         qs = filter_distinct(qs, assoc[1])
-        qs = limit_associations(qs)
         assoc[0] = qs
         new_assoc.append(assoc)
     context['associations_list'] = new_assoc

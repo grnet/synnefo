@@ -21,6 +21,7 @@ from collections import OrderedDict
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from django.utils.html import escape
 
 from synnefo.db.models import (Network, VirtualMachine, NetworkInterface,
                                IPAddress, IPAddressLog)
@@ -29,7 +30,6 @@ from synnefo.logic import networks
 from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
 
-from eztables.views import DatatablesView
 import django_filters
 
 from synnefo_admin.admin.actions import (has_permission_or_403,
@@ -37,6 +37,7 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_permitted_actions,)
 from synnefo_admin.admin.utils import get_actions, render_email
 from synnefo_admin.admin.users.utils import get_user
+from synnefo_admin.admin.tables import AdminJSONView
 
 from .filters import NetworkFilterSet
 from .actions import cached_actions
@@ -50,7 +51,7 @@ templates = {
 }
 
 
-class NetworkJSONView(DatatablesView):
+class NetworkJSONView(AdminJSONView):
     model = Network
     fields = ('pk', 'name', 'state', 'public', 'drained',)
     filters = NetworkFilterSet
@@ -86,7 +87,7 @@ class NetworkJSONView(DatatablesView):
         }
         extra_dict['item_name'] = {
             'display_name': "Name",
-            'value': inst.name,
+            'value': escape(inst.name),
             'visible': False,
         }
         extra_dict['details_url'] = {
@@ -101,12 +102,12 @@ class NetworkJSONView(DatatablesView):
         }
         extra_dict['contact_email'] = {
             'display_name': "Contact email",
-            'value': get_contact_email(inst),
+            'value': escape(get_contact_email(inst)),
             'visible': False,
         }
         extra_dict['contact_name'] = {
             'display_name': "Contact name",
-            'value': get_contact_name(inst),
+            'value': escape(get_contact_name(inst)),
             'visible': False,
         }
 

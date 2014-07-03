@@ -200,7 +200,7 @@ def create_server(vm, nics, volumes, flavor, image, personality, password):
 
     # If the root volume has a provider, then inform snf-image to not fill
     # the volume with data
-    image_id = image["backend_id"]
+    image_id = image["pithosmap"]
     root_volume = volumes[0]
     if root_volume.volume_type.provider in settings.GANETI_CLONE_PROVIDERS:
         image_id = "null"

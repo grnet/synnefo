@@ -830,7 +830,7 @@ def create_instance(vm, nics, volumes, flavor, image):
     kw['osparams'] = {
         'config_url': vm.config_url,
         # Store image id and format to Ganeti
-        'img_id': image['backend_id'],
+        'img_id': image['pithosmap'],
         'img_format': image['format']}
 
     # Use opportunistic locking

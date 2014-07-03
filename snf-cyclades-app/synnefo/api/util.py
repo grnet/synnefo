@@ -170,7 +170,7 @@ def get_image_dict(image_id, user_id):
 
     size = image["size"] = img["size"]
     mapfile = image["mapfile"] = img["mapfile"]
-    image["backend_id"] = PITHOSMAP_PREFIX + "/".join([mapfile, str(size)])
+    image["pithosmap"] = PITHOSMAP_PREFIX + "/".join([mapfile, str(size)])
 
     properties = img.get("properties", {})
     image["metadata"] = dict((key.upper(), val)

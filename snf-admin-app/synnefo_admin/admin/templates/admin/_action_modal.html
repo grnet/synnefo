@@ -50,7 +50,7 @@
             </div>
             <div class="modal-footer">
                 <a href="#" class="custom-btn cancel" data-karma={{ action.karma }} data-caution={{ action.caution_level }} data-dismiss="modal"><span>Cancel</span></a>
-                <a data-url={% url admin-actions %} data-op={{ op }} data-ids="" data-target={{ action.target }} class="custom-btn apply-action" data-karma={{ action.karma }} data-caution={{ action.caution_level }} data-dismiss="modal"><span>{{ op|verbify }}</span></a>
+                <a data-url={% url admin-actions %} data-op={{ op }} data-ids="" data-target={{ action.target }} class="custom-btn apply-action" data-karma={{ action.karma }} data-caution={{ action.caution_level }} data-dismiss="modal"><span>{{ action.name }}</span></a>
             </div>
         </div>
     </div>

@@ -44,7 +44,7 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
 from synnefo_admin.admin.utils import (get_actions, render_email,
-                                       create_details_href)
+                                       create_details_href,)
 
 from .utils import (get_user, get_quotas, get_user_groups,
                     get_enabled_providers, get_suspended_vms, )
@@ -200,28 +200,19 @@ def details(request, query):
     user = get_user(query)
     quota_list = get_quotas(user)
 
-    project_memberships = ProjectMembership.objects.filter(person=user)
-    project_list = map(lambda p: p.project, project_memberships)
+    qor = Q(members=user) | Q(last_application__applicant=user)
+    project_list = Project.objects.filter(qor)
 
-    vm_list = VirtualMachine.objects.filter(
-        userid=user.uuid).order_by('deleted')
+    vm_list = VirtualMachine.objects.filter(userid=user.uuid)
 
-    volume_list = Volume.objects.filter(userid=user.uuid).order_by('deleted')
+    volume_list = Volume.objects.filter(userid=user.uuid)
 
-    filter_extra = {}
-    show_deleted = bool(int(request.GET.get('deleted', SHOW_DELETED_VMS)))
-    if not show_deleted:
-        filter_extra['deleted'] = False
-
-    public_networks = Network.objects.filter(
-        public=True, nics__machine__userid=user.uuid,
-        **filter_extra).order_by('state').distinct()
-    private_networks = Network.objects.filter(
-        userid=user.uuid, **filter_extra).order_by('state')
-    network_list = list(public_networks) + list(private_networks)
+    qor = Q(public=True, nics__machine__userid=user.uuid) | Q(userid=user.uuid)
+    network_list = Network.objects.filter(qor)
 
     nic_list = NetworkInterface.objects.filter(userid=user.uuid)
-    ip_list = IPAddress.objects.filter(userid=user.uuid).order_by('deleted')
+
+    ip_list = IPAddress.objects.filter(userid=user.uuid)
 
     qor = [Q(server_id=vm.pk) for vm in vm_list]
     ip_log_list = []

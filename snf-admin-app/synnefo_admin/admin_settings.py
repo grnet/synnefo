@@ -86,3 +86,9 @@ DEFAULT_ADMIN_RBAC = {
     },
 }
 ADMIN_RBAC = getattr(settings, 'ADMIN_RBAC', DEFAULT_ADMIN_RBAC)
+
+# With this option, the user can define whether to show deleted items on the
+# details page of another item. Note that the details page of the deleted
+# item will be shown properly.
+ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS = getattr(
+    settings, 'ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS', False)

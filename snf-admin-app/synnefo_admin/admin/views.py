@@ -53,7 +53,8 @@ import synnefo_admin.admin.ip_logs.views as ip_log_views
 from synnefo_admin.admin import groups as group_views
 from synnefo_admin.admin import auth_providers as auth_provider_views
 from synnefo_admin.admin import actions
-from synnefo_admin.admin.utils import conditionally_gzip_page
+from synnefo_admin.admin.utils import (conditionally_gzip_page,
+                                       customize_details_context)
 
 from synnefo.ui.views import UI_MEDIA_URL
 
@@ -263,6 +264,7 @@ def details(request, type, id):
 
     mod = get_view_module(type)
     context = mod.details(request, id)
+    context = customize_details_context(context)
     context.update(default_dict)
     context.update({'view_type': 'details'})
 

@@ -19,7 +19,7 @@ from collections import OrderedDict
 
 from django.core.urlresolvers import reverse
 
-from synnefo.db.models import Volume
+from synnefo.db.models import Volume, VirtualMachine
 from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
 

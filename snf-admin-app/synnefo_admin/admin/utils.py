@@ -28,6 +28,7 @@ from synnefo.util import units
 from astakos.im.models import AstakosUser
 
 from .actions import get_allowed_actions, get_permitted_actions
+logger = logging.getLogger(__name__)
 
 
 def conditionally_gzip_page(func):
@@ -191,3 +192,37 @@ def create_details_href(type, name, id):
     else:
         href = '<a href=%s>%s (id:%s)</a>' % (url, name, id)
     return href
+
+
+def exclude_deleted(qs, model_type):
+    """Exclude deleted items."""
+    if isinstance(qs, list):
+        return qs
+
+    if model_type in ['vm', 'volume', 'network', 'ip']:
+        return qs.exclude(deleted=True)
+    elif model_type == 'nic':
+        return qs.exclude(machine__deleted=True)
+    else:
+        return qs
+
+
+def filter_distinct(qs, model_type):
+    if isinstance(qs, list) or model_type == 'ip_log':
+        return qs
+    return qs.distinct()
+
+
+def customize_details_context(context):
+    """Perform generic customizations on the detail context."""
+    if not settings.ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS:
+        new_assoc = []
+        for assoc in context['associations_list']:
+            qs = assoc[0]
+            assoc = list(assoc)
+            qs = exclude_deleted(qs, assoc[1])
+            qs = filter_distinct(qs, assoc[1])
+            assoc[0] = qs
+            new_assoc.append(assoc)
+        context['associations_list'] = new_assoc
+    return context

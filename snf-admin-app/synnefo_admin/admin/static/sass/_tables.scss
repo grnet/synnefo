@@ -113,6 +113,9 @@ div.dataTables_length {
 
 table.dataTable tbody tr {
     background-color: inherit;
+    &.even {
+        background-color: lighten($gray-dark, 5%); 
+    }
 }
 
 table.dataTable thead th,
@@ -121,7 +124,7 @@ table.dataTable thead td {
   border-top: 1px solid lighten($gray-dark, 25%);
 }
 table.dataTable tbody tr:hover {
-    background-color: lighten($gray-dark, 5%);
+    background-color: lighten($gray-dark, 12%);
 }
 table.dataTable tbody tr.selected {
     background-color: $almost-white;

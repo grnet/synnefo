@@ -1,5 +1,5 @@
 <div class="info-block well info">
-	<table class="table table-selected-main" id="table-items-selected">
+	<table class="table-selected-main" id="table-items-selected">
 		<thead>
 			<tr>
 			{% for column in columns %}
@@ -9,7 +9,7 @@
 		</thead>
 	</table>
 
-	<table class="table table-items" id="table-items-total"
+	<table class="table-items" id="table-items-total"
 		data-url="{% url admin-json item_type %}" data-server-side="true"
 		data-content="{{ item_type }}">
 		<thead>

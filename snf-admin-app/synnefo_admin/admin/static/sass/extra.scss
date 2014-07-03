@@ -98,6 +98,10 @@ a.disabled {
 		margin: 0 20px;
 		@include outline-btn($padding:12px 10px);
 		opacity: 1;
+        &.disabled {
+            opacity: 0.5;
+            border-color: #ccc;
+        }
 	}
 }
 
@@ -284,7 +288,17 @@ svg>text:last-child {
 	bottom: 0px;
 	background: $brand-primary;
     color: $dark-text-color;
+    .close-notify {
+        position: absolute;
+        right: 20px;
+        top: 20px;
+        color: $gray-dark;
+        &:hover {
+            color: $total-black;
+        }
+    }
 	.btns {
+        display: none;
 		width: 100%;
 		text-align: center;
 		.custom-btn:first-child {
@@ -304,7 +318,7 @@ svg>text:last-child {
 		}
 		dt{
 			width: 220px;
-			// margin-right: 6px;
+            vertical-align: top;
 			text-align: left;
 			span {
 				font-size: 20px;

@@ -377,7 +377,12 @@ Extra-button is used to show total selected rows
 	}
 }
 .charts {
+    .well {
+        padding-left: 140px;
+    }
     .sidebar {
+        position: fixed;
+
         a {
             margin-bottom: 1em;
             @include outline-btn();

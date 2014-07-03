@@ -837,7 +837,7 @@ $(function(){
 			contentType: 'application/json',
 			timeout: 100000,
 			success: function(response, statusText, jqXHR) {
-				var htmlSuccess = '<dl class="dl-horizontal"><dt><span class="success snf-font-admin snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>'+response.result+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
+				var htmlSuccess = '<dl class="dl-horizontal"><dt><span class="success snf-font-admin snf-ok"></span> Action '+data.op+': </dt><dd>'+response.result+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
 				$notificationArea.find('.btns').before(htmlSuccess);
 				var height = -$notificationArea.outerHeight(true)
 					if($notificationArea.css('bottom') !== '0px')
@@ -849,7 +849,7 @@ $(function(){
 				console.log(jqXHR, statusText, jqXHR.status);
 				var htmlError;
 				if(jqXHR.status === 500 || jqXHR.status === 0) {
-					htmlError = '<dl class="dl-horizontal"><dt><span class="error snf-font-admin snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>[code: '+ jqXHR.status +'] '+jqXHR.statusText+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
+					htmlError = '<dl class="dl-horizontal"><dt><span class="error snf-font-admin snf-remove"></span> Action '+data.op+': </dt><dd>[code: '+ jqXHR.status +'] '+jqXHR.statusText+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
 				}
 				else {
 

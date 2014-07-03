@@ -70,13 +70,15 @@
 
       model_actions: {
         'snapshot': [['status', 'vm', 'ext'], function() {
+            if (!synnefo.config.snapshots_enabled) { return false }
             if (!this.get('ext')) { return false }
             var removing = this.get('status') == 'deleting';
             var creating = this.get('status') == 'creating';
             var vm = this.get('vm');
             return vm && vm.can_connect() && !removing && !creating;
         }],
-        'remove': [['is_root', 'vm'], function() {
+
+        'remove': [['is_root', 'vm', 'ext'], function() {
             var removing = this.get('status') == 'deleting';
             var creating = this.get('status') == 'creating';
             if (this.get('is_root')) { return false }
@@ -143,6 +145,8 @@
           });
       },
 
+      do_remove: function(succ, err) { return this.do_destroy(succ, err) },
+
       do_destroy: function(succ, err) {
         this.actions.reset_pending();
         this.destroy({
@@ -187,11 +191,14 @@
         volume.is_root = false;
         if (attachments.length)  {
             if (attachments[0].device_index === 0) {
-                    volume.display_name = "Root disk";
+                    volume.display_name = "Boot disk";
                     volume.is_root = true;
                     volume.rename_disabled = true;
             }
             volume._index = attachments[0].device_index;
+            volume._index_set = true;
+        } else {
+            volume._index_set = false;
         }
         return volume;
       },
@@ -221,6 +228,7 @@
         var cb = function(data) {
           callback && callback(data);
         }
+
         this.api_call(this.path + "/", "create", {'volume': volume}, undefined, 
                       undefined, cb, {critical: true});
       }

@@ -725,7 +725,7 @@ class AstakosUser(User):
     # URL methods
     @property
     def auth_providers_display(self):
-        return ",".join(["%s:%s" % (p.module, p.identifier) for p in
+        return ",".join(["%s:%s" % (p.module, p.identifier or '') for p in
                          self.get_enabled_auth_providers()])
 
     def add_auth_provider(self, module='local', identifier=None, **params):
@@ -826,6 +826,29 @@ class AstakosUser(User):
         logger.info('The following access tokens will be deleted: %s',
                     offline_tokens)
         offline_tokens.delete()
+
+    def get_last_logins(self):
+        providers = self.auth_providers.filter().order_by('-last_login_at')
+        providers = providers.filter(last_login_at__isnull=False)
+        logins = []
+        for provider in providers:
+            logins.append((provider.module, provider.last_login_at))
+
+        return logins
+
+    @property
+    def last_login_info_display(self):
+        logins = self.get_last_logins()
+        display = []
+
+        if len(logins) == 0:
+            return "No login info available"
+
+        for module, date in logins:
+            display.append("[%s] %s" % (module, date))
+
+        return ", ".join(display)
+
 
 
 class AstakosUserAuthProviderManager(models.Manager):
@@ -961,6 +984,8 @@ class AstakosUserAuthProvider(models.Model):
                                     default='astakos')
     info_data = models.TextField(default="", null=True, blank=True)
     created = models.DateTimeField('Creation date', auto_now_add=True)
+    last_login_at = models.DateTimeField('Last login date', null=True,
+                                         default=None)
 
     objects = AstakosUserAuthProviderManager()
 
@@ -1489,10 +1514,12 @@ class ProjectResourceGrant(models.Model):
         unique_together = ("resource", "project_application")
 
     def display_member_capacity(self):
-        return units.show(self.member_capacity, self.resource.unit)
+        return units.show(self.member_capacity, self.resource.unit,
+                          inf="Unlimited")
 
     def display_project_capacity(self):
-        return units.show(self.project_capacity, self.resource.unit)
+        return units.show(self.project_capacity, self.resource.unit,
+                          inf="Unlimited")
 
     def project_diffs(self):
         project = self.project_application.chain
@@ -1503,7 +1530,17 @@ class ProjectResourceGrant(models.Model):
 
         project_diff = \
             self.project_capacity - project_resource.project_capacity
+        if self.project_capacity == units.PRACTICALLY_INFINITE:
+            project_diff = units.PRACTICALLY_INFINITE
+        if project_resource.project_capacity == units.PRACTICALLY_INFINITE:
+            project_diff = -units.PRACTICALLY_INFINITE
+
         member_diff = self.member_capacity - project_resource.member_capacity
+        if self.member_capacity == units.PRACTICALLY_INFINITE:
+            member_diff = units.PRACTICALLY_INFINITE
+        if project_resource.member_capacity == units.PRACTICALLY_INFINITE:
+            member_diff = -units.PRACTICALLY_INFINITE
+
         return [project_diff, member_diff]
 
     def display_project_diff(self):
@@ -1511,10 +1548,36 @@ class ProjectResourceGrant(models.Model):
         proj_abs, member_abs = proj, member
         unit = self.resource.unit
 
-        def disp(v):
+        def disp(v, disp_func=None):
+            if not disp_func:
+                disp_func = lambda : ''
+
+            if v == 0:
+                return ''
             sign = u'+' if v >= 0 else u'-'
-            return sign + unicode(units.show(abs(v), unit))
-        return map(disp, [proj_abs, member_abs])
+            ext = units.show(abs(v), unit, inf="Unlimited")
+            if ext == "Unlimited" and sign == u'+':
+                disp = disp_func()
+                if disp:
+                    ext = "from %s" % disp
+            else:
+                disp = disp_func()
+                ext = sign + "" + ext
+            return unicode(ext)
+
+        project_resource = None
+        try:
+            project = self.project_application.chain
+            project_resource = project.resource_set.get(resource=self.resource)
+        except:
+            pass
+
+        memb_disp = project_resource.display_member_capacity if \
+            project_resource else None
+        proj_disp = project_resource.display_project_capacity if \
+            project_resource else None
+        return [disp(proj_abs, proj_disp),
+                disp(member_abs, memb_disp)]
 
     def __unicode__(self):
         return 'Max %s per user: %s' % (self.resource.pluralized_display_name,
@@ -1557,6 +1620,11 @@ class ProjectManager(models.Manager):
         if flt is not None:
             q &= flt
         return self.filter(q)
+
+    @property
+    def has_infinite_members_limit(self):
+        return self.limit_on_members_number == units.PRACTICALLY_INFINITE
+
 
 
 class Project(models.Model):
@@ -1836,6 +1904,10 @@ class Project(models.Model):
         return presentation.PROJECT_MEMBER_LEAVE_POLICIES.get(policy)
 
     @property
+    def has_infinite_members_limit(self):
+        return self.limit_on_members_number == units.PRACTICALLY_INFINITE
+
+    @property
     def resource_set(self):
         return self.projectresourcequota_set.order_by('resource__name')
 
@@ -1867,10 +1939,12 @@ class ProjectResourceQuota(models.Model):
         unique_together = ("resource", "project")
 
     def display_member_capacity(self):
-        return units.show(self.member_capacity, self.resource.unit)
+        return units.show(self.member_capacity, self.resource.unit,
+                          inf="Unlimited")
 
     def display_project_capacity(self):
-        return units.show(self.project_capacity, self.resource.unit)
+        return units.show(self.project_capacity, self.resource.unit,
+                          inf="Unlimited")
 
 
 class ProjectLogManager(models.Manager):

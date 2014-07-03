@@ -371,8 +371,12 @@
         if (cidr) { subnet_params.subnet.cidr = cidr; }
         if (dhcp) { subnet_params.subnet.dhcp_enabled = dhcp; }
         if (dhcp === false) { subnet_params.subnet.dhcp_enabled = false; }
-
-        subnet_params.subnet.gateway_ip = gateway || null;
+        
+        // api applies a gateway address automatically when gateway_ip 
+        // parameter is missing
+        if (gateway !== "auto") {
+            subnet_params.subnet.gateway_ip = gateway || null;
+        }
         
         var cb = function() {
           synnefo.api.trigger("quotas:call");
@@ -628,6 +632,14 @@
       },
 
       proxy_attrs: {
+        '_status': [
+            ['status', 'port', 'port.vm'], function() {
+                var status = this.get("status");
+                var port = this.get("port");
+                var vm = port && port.get("vm");
+                return status + (vm ? vm.state() : "");
+            }
+        ],
         'ip': [
           ['floating_ip_adress'], function() {
             return this.get('floating_ip_address'); 

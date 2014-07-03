@@ -16,11 +16,15 @@
       {{^system_project}}no-base-project{{/system_project}} 
       {{#system_project}}base-project{{/system_project}}" 
       data-project="{{ id }}">
-      <div class="info" data-currvalue="" data-maxvalue="">
-        <h3><a href="{{ details_url }}">{{ display_name }}</a></h3>
+      <div class="info {{#not_a_member}}warn{{/not_a_member}}" data-currvalue="" data-maxvalue="">
+          <h3>
+            <a href="{{ details_url }}">{{{ display_name }}}</a>
+            {{#not_a_member}}<span class="warn-msg">[NOT A MEMBER]</span>{{/not_a_member}}
+          </h3>
         <p>
           <span class="currValue">{{ usage.curr }}</span> out of 
           <span class="maxValue">{{ usage.max }}</span> {{ report_desc }}
+          (<span class="leftValue">{{ usage.left }}</span> left)
         </p>
       </div>
       <div class="bar">
@@ -57,9 +61,7 @@
 </script>
 
 <div class="maincol {% block innerpage.class %}{% endblock %}"> 
-    <h2>RESOURCE USAGE 
-        (<a href="#base" class="filter-base">SHOW SYSTEM PROJECT</a><a href="#all" class="filter-all">SHOW ALL PROJECTS</a>)
-    </h2>
+    <h2>RESOURCE USAGE</h2>
     <div id="quota-container" class='filter-base'>
     </div>
 </div>

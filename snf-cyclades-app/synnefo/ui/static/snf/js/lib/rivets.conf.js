@@ -27,7 +27,12 @@ COLLECTION_EVENTS = ['add', 'remove', 'update', 'reset']
 
 _.extend(rivets.formatters, {
 
-  prefix: function(value, prefix) {
+  in_brackets: function(value) {
+      return "[" + value + "]";
+  },
+
+  prefix: function(value) {
+    var prefix = _.rest(_.toArray(arguments), 1).join(" ");
     return prefix + value.toString();
   },
   

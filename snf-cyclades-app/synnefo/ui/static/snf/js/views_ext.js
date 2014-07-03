@@ -239,7 +239,6 @@
         this._model_views = {};
         this.list_el = $(this.$(".items-list").get(0));
         this.empty_el = $(this.$(".empty-list").get(0));
-        if (this._id) { debugger }
         if (this.create_view_cls) {
           this._create_view = new this.create_view_cls();
           this._create_view.parent_view = this;
@@ -264,14 +263,15 @@
       
       update_quota: function() {
         var can_create = synnefo.storage.quotas.can_create(this.quota_key);
+        var msg = snf.config.limit_reached_msg;
         if (can_create) {
           this.create_button.removeClass("disabled");
-          this.create_button.attr("title", "");
+          snf.util.unset_tooltip(this.create_button);
         } else {
           this.create_button.addClass("disabled");
-          this.create_button.attr("title", 
-                                  this.quota_limit_message || 
-                                      "Quota limit reached")
+          snf.util.set_tooltip(this.create_button, 
+            this.quota_limit_message || msg,  
+            {tipClass: 'warning tooltip'});
         }
       },
       
@@ -410,18 +410,16 @@
             view.disable && view.disable(disabled); 
             if (_.isString(disabled)) {
                 var el = view.el;
-                el.attr("title", disabled);
                 var tooltip = {
-                    'tipClass': 'tooltip', 
-                    'position': 'top center',
-                    'offset': [-5, 0]
+                    'tipClass': 'tooltip warning', 
+                    'position': 'center right',
+                    'offset': [0, -200]
                 };
-                $(el).tooltip(tooltip);
+                snf.util.set_tooltip(el, disabled, tooltip);
             }
         } else {
             var el = view.el;
-            el.removeData('tooltip').unbind().next('div.tooltip').remove();
-            el.attr("title", "");
+            snf.util.unset_tooltip(el);
             view.enable && view.enable();
         }
       },
@@ -561,7 +559,8 @@
             return view.model
           }
         });
-        return _.filter(models, function(m) { return m });
+        var selected = _.filter(models, function(m) { return m });
+        return selected;
       },
         
       select_any: function() {

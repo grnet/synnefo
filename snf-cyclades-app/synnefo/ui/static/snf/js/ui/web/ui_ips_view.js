@@ -25,6 +25,21 @@
     var storage = snf.storage = snf.storage || {};
     var util = snf.util = snf.util || {};
 
+    var min_ip_quota = {
+      'cyclades.floating_ip': 1
+    };
+    
+    views.CreateIPSelectProjectView = 
+        views.CreateVMSelectProjectView.extend({
+            tpl: '#create-view-projects-select-tpl',
+            required_quota: function() {
+                return min_ip_quota
+            },
+            model_view_cls: views.CreateVMSelectProjectItemView.extend({
+                display_quota: min_ip_quota
+            })
+        });
+
     views.IpPortView = views.ext.ModelView.extend({
       tpl: '#ip-port-view-tpl',
       
@@ -107,11 +122,24 @@
       },
 
       status_cls: function() {
-        return this.status_cls_map[this.model.get('status')];
+          var status = this.model.get('status');
+          var vm = this.model.get("port") && this.model.get("port").get("vm");
+          if (status == "CONNECTED" && vm) {
+            return snf.views.ext.VM_STATUS_CLS_MAP[vm.state()].join(" ");
+          } else {
+            return this.status_cls_map[this.model.get('status')];
+          }
       },
 
       status_display: function(v) {
-        return this.status_map[this.model.get('status')];
+        var vm_status = "";
+        var vm = this.model.get("port") && this.model.get("port").get("vm");
+        var ip_status = this.status_map[this.model.get('status')];
+        if (vm) {
+            vm_status = STATE_TEXTS[vm.state()] || "";
+        }
+        if (!vm_status) { return ip_status; }
+        return ip_status + " - " + vm_status;
       },
       
       show_reassign_view: function() {
@@ -182,7 +210,8 @@
 
             this.create_button = this.$("form .form-action.create");
             this.form = this.$("form");
-            this.project_select = this.$(".project-select");
+            this.projects_list = this.$(".projects-list");
+            this.project_select_view = undefined;
             this.init_handlers();
         },
 
@@ -218,7 +247,7 @@
             if (this.create_button.hasClass("in-progress")) { return }
             this.create_button.addClass("in-progress");
 
-            var project_id = this.project_select.val();
+            var project_id = this.get_project().get("id");
             var project = synnefo.storage.projects.get(project_id);
 
 
@@ -237,38 +266,37 @@
               });
         },
         
-        update_projects: function() {
-          this.project_select.find("option").remove();
-          var min_ip_quota = {'cyclades.floating_ip': 1}
-          synnefo.storage.projects.each(function(project){
-            var el = $("<option></option>");
-            el.attr("value", project.id);
-            var project_name = util.truncate(project.get('name'), 34);
-            var name = '{0} ({1} available)'.format(project_name, 
-              project.quotas.get('cyclades.floating_ip').get('available'));
-            el.text(name);
-            if (!project.quotas.can_fit(min_ip_quota)) {
-              el.attr('disabled', true);
-            }
-            this.project_select.append(el);
-          }, this);
+        get_project: function() {
+          var project = this.project_select_view.get_selected()[0];
+          return project;
         },
         
-        get_project: function() {
-          var project_id = this.project_select.val();
-          var project = synnefo.storage.projects.get(project_id);
-          return project;
+        init_subviews: function() {
+          if (!this.project_select_view) {
+            var view_cls = views.CreateIPSelectProjectView;
+            this.project_select_view = new view_cls({
+              container: this.projects_list,
+              collection: synnefo.storage.joined_projects,
+              parent_view: this
+            });
+          }
+          this.project_select_view.show(true);
+          var project = synnefo.storage.quotas.get_available_projects(min_ip_quota)[0];
+          if (project) {
+            this.project_select_view.set_current(project);
+          }
+        },
+        
+        hide: function() {
+          this.project_select_view && this.project_select_view.hide(true);
+          views.FloatingIPCreateView.__super__.hide.apply(this, arguments);
         },
 
         beforeOpen: function() {
-            this.update_projects();
+            this.init_subviews();
             this.create_button.removeClass("in-progress")
             this.$(".form-field").removeClass("error");
-        },
-
-        onOpen: function() {
-            this.project_select.focus();
-        }    
+        }
     });
 
     views.IpCollectionView = views.ext.CollectionView.extend({

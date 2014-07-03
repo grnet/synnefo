@@ -155,6 +155,8 @@ h5 {
 .tab-name, 
 .machine-container .name,
 h5.namecontainer span,
+.entry h3 span,
+.nested-model-list .model-item .inner.main-content .title,
 .single .machine-detail.title {
     font-family: 'Ubuntu', sans-serif;
 }
@@ -610,8 +612,10 @@ div#footer-text{
     width: 140px;
 }
 
-.overlay-networks-create .form-action {
-  float: left;
+.overlay-networks-create .clear {
+    float: none;
+    width: 100%;
+    margin-top: 5px !important;
 }
 
 .overlay-networks-create .fixpos {
@@ -636,6 +640,13 @@ form .fields-desc {
 
 .overlay-networks-create form select {
   padding: 1px;
+}
+
+.overlay-networks-create .col-fields .form-field.project-select {
+    float: none;
+    margin: 0;
+    border-bottom: none;
+    height: 34px;
 }
 
 .overlay-networks-create #network-create-subnet-custom {
@@ -834,7 +845,7 @@ div.image-container {
 
 #machinesview .build-progress .btn {
     cursor: pointer;
-    background-color: #5e1616;
+    background-color: #666666;
     color: #FFF;
     padding: 3px;
 }
@@ -1065,7 +1076,7 @@ div.connect-arrow {
     display: none;
     left: -3px;
     position: absolute;
-    top: 22px;
+    top: 30px;
 }
 
 div.connect-arrow:hover, div.connect-arrow.border-hover, div.connect-arrow-ie, div.connect-arrow.border-ie {
@@ -1093,7 +1104,7 @@ div.connect-border:hover {
     display: none;
     left: -15px;
     position: absolute;
-    top: 22px;
+    top: 30px;
 }
 
 .standard .machine .logo {
@@ -1183,7 +1194,7 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
 }
 
 .build-state .indicator1, .build-state .indicator2, .build-state .indicator3, .build-state .indicator4 {
-    background-color: #FF7F2A;
+    background-color: #4085a5 !important;
 }
 
 .destroying-state .indicator1, .destroying-state .indicator3, .destroying-state .indicator2, .destroying-state .indicator4 {
@@ -3271,6 +3282,12 @@ div.reboot-dialog button.details:hover {
   padding-top: 5px;
 }
 
+.machine .info-content.inner-collection .index-display {
+    float: left;
+    padding: 4px;
+    margin-right: 7px;
+}
+
 .machine .info-content.inner-collection .type-display {
   float: left;
   margin-right: 10px;
@@ -3279,6 +3296,12 @@ div.reboot-dialog button.details:hover {
   color: #fff;
   background-color: #4085A5;
   padding: 3px;
+  min-width: 22px;
+  text-align: center;
+}
+
+.machine .info-content.inner-collection .volume-item .type-display {
+    min-width: 26px;
 }
 
 .single .machine .info-content.inner-collection .model-item .title {
@@ -4268,11 +4291,11 @@ h3.overlay-inner-title {
 }
 
 #creation-password-overlay .password {
-    font-size: 1.5em;
+    font-size: 1.5em !important;
     font-weight: bold;
     letter-spacing: 2px;
-    font-family: Georgia, Times, serif;
-    margin-right: 5em;
+    font-family: Georgia, Times, serif !important;
+    margin-right: 2em;
     float: right;
     margin-top: -4px;
 }
@@ -4430,6 +4453,7 @@ h3.overlay-inner-title {
 }
 
 .fqdn {
+    width: 100%;
 }
 
 .column2 .fqdn {
@@ -4443,6 +4467,11 @@ h3.overlay-inner-title {
     padding: 0.2em 0.5em;
     border: 1px solid #888;
     z-index: 50000;
+}
+
+.tooltip.warning {
+    background-color: #940606;
+    color: #FFFFFF;
 }
 
 /*404 and 500 pages*/
@@ -5440,6 +5469,12 @@ table.list-machines .wave {
     margin-right: 10px;
 }
 
+.form-field.error textarea,
+.form-field.error select,
+.form-field.error input {
+    border-color: #f00 !important;
+}
+
 .form-field.error label {
     color: #ff0000;
     text-decoration: underline;
@@ -5609,8 +5644,28 @@ table.list-machines .wave {
 }
 
 .create-wizard-overlay.create-volume .vms-list {
-    height: 182px;
+    max-height: 290px;
     overflow: auto;
+}
+
+.create-wizard-overlay.create-volume .volume-description {
+    margin-top: 10px;
+}
+
+.create-wizard-overlay.create-volume h3.item-name {
+    background-image: url("../images/volume-icon-small.png");
+}
+
+.create-wizard-overlay.create-volume .rename input.volume-name {
+    background-image: url("../images/volume-icon-small.png");
+    padding-left: 30px !important; 
+    width: 93.5% !important;
+}
+
+.create-wizard-overlay.create-volume .volume-description textarea {
+    width: 98%;
+    height: 250px;
+    padding: 4px;
 }
 
 .create-wizard-overlay.create-volume .vms-list .model-item .indicators {
@@ -5631,22 +5686,12 @@ table.list-machines .wave {
 }
 
 .create-wizard-overlay.create-volume .step-cont .project-select {
-  height: 40px;
+    margin-bottom: 10px;
 }
 
-.create-wizard-overlay .step-cont .project-select {
-  height: 44px;
+.overlay-info.overlay-ip-create .project-select {
+    margin-bottom: 17px;
 }
-
-.create-wizard-overlay .step-cont .project-select select {
-  width: 100%;
-  padding: 3px;
-  background-color: #eee;
-  color: #444;
-  border: 1px solid #8FBCD1;
-}
-
-.create-wizard-overlay .step-cont .project-select option {}
 
 .create-wizard-overlay .create-step-cont {
     min-height: 250px;
@@ -5740,6 +5785,10 @@ table.list-machines .wave {
     background-color: #FF9955;
 }
 
+.create-wizard-overlay .images-filters .cont {
+    margin-bottom: 15px;
+}
+
 .create-wizard-overlay .images-filter-cont, 
 .create-vm .flavors-predefined-cont {
     width: 18%;
@@ -5747,6 +5796,25 @@ table.list-machines .wave {
     float:left;
     border-right: 1px solid #A1C8DB;
     overflow: auto;
+}
+
+.create-vm .project-select {
+    margin-top: 0 !important;
+    margin-bottom: 7px !important;
+}
+
+.create-vm .images-list-cont.content-cont,
+.create-vm .images-filter-cont.content-cont {
+    height: 370px;
+}
+
+.overlay-vm-resize .create-vm .flavor-options-cont {
+    height: auto !important;
+}
+
+.create-vm .flavor-options-cont,
+.create-vm .flavors-predefined-cont {
+    height: 327px !important;
 }
 
 .create-wizard-overlay .flavor-options-cont.volume.name h4 {
@@ -6111,6 +6179,12 @@ table.list-machines .wave {
     color: #FF7F2A;
 }
 
+.create-wizard-overlay .images-list #create-vm-image-empty-disk .owner,
+.create-wizard-overlay .images-list #create-vm-image-empty-disk .show-details,
+.create-wizard-overlay .images-list #create-vm-image-empty-disk .size {
+    display: none !important;
+}
+
 .create-wizard-overlay .images-list li {
     min-height: 30px;
 }
@@ -6258,7 +6332,7 @@ table.list-machines .wave {
 }
 
 .create-wizard-overlay.create-volume .steps-history .steps-history-cont.current {
-    width: 571px;
+    width: 416px;
 }
 
 .create-wizard-overlay .steps-history-step {
@@ -6396,7 +6470,7 @@ table.list-machines .wave {
     margin-bottom: 15px;
 }
 
-.create-wizard-overlay .vm-confirm h3.vm-name {
+.create-wizard-overlay .vm-confirm h3.item-name {
     background-repeat: no-repeat;
     background-position: left center;
     font-size: 1.4em;
@@ -6515,6 +6589,13 @@ table.list-machines .wave {
     float: left;
 }
 
+.create-wizard-overlay .create-step-cont .confirm-cont.wide.last {
+    width: 46% !important;
+}
+.create-wizard-overlay .create-step-cont .confirm-cont.wide {
+    width: 50%;
+}
+
 .create-wizard-overlay .create-step-cont .confirm-cont ul li .title {
     width: 55px;
     float: left;
@@ -6606,7 +6687,7 @@ table.list-machines .wave {
     margin-right: 0;
 }
 
-.create-wizard-overlay .create-step-cont .list-cont.meta {
+.create-wizard-overlay .create-step-cont .list-cont.last {
     margin-right:0;
     border-right: none;
     width: 195px;
@@ -6933,8 +7014,9 @@ input.has-errors {
 }
 
 .pane-view .collection-list-view .model-view .main-content-inner {
-  padding: 10px 20px;
+  padding: 20px 20px;
   padding-right: 10px;
+  padding-top: 20px;
   /*overflow: hidden;*/
 }
 
@@ -7024,9 +7106,9 @@ input.has-errors {
   text-align: right;
   margin-right: 4px;
   margin-top: 5px;
-  width: 150px;
+  width: 170px;
   position: absolute;
-  top:-4px;
+  top: -4px;
   right: 0;
 }
 
@@ -7145,11 +7227,11 @@ input.has-errors {
 }
 
 .model-item .status-inactive .status-indicator .indicator {
-  background-color: #940606;
+  background-color: #666666;
 }
 
 .model-item .status-terminated .status-indicator .indicator {
-  background-color: #5E1616;
+  background-color: #5e1616;
 }
 
 .model-item .status-error .status-indicator .indicator {
@@ -7157,14 +7239,13 @@ input.has-errors {
 }
 
 .model-item .status-progress .status-indicator .indicator {
-  background-color: #FF7F2A;
+  background-color: #4085a5 !important;
 }
 
 .model-item .status-indicator .indicator {
   width: 10px;
   height: 11px;
   float: right;
-  background-color: #EFF7FA;
   margin-right: 3px;
 }
 
@@ -7214,8 +7295,12 @@ input.has-errors {
 /* end vm sprites */
 
 /* ips */
+#ips-list-view .model-view .main-content-inner {
+    padding-bottom: 25px;
+}
+
 #ips-list-view .inline.ports.nested-model-list {
-  width: 280px;
+  width: 360px;
 }
 
 .ip-port-view .title {
@@ -7232,11 +7317,15 @@ input.has-errors {
 
 .nested-model-list {
   position: relative;
-  top: 43px;
+  top: 40px;
   overflow: visible;
   width: 531px;
   margin-left: -41px;
   margin-bottom: 39px;
+}
+
+.items-sublist.private .nested-model-list {
+  top: 27px;
 }
 
 .entry.inline .nested-model-list {
@@ -7244,12 +7333,20 @@ input.has-errors {
 }
 
 .entry.inline .nested-model-list .model-item .outer {
-  width: 220px;
+  width: 320px;
+}
+
+.volume-item .entry.inline .nested-model-list {
+    margin-left: -19px;
+}
+
+.entry.inline .ports.nested-model-list {
+    top: 34px;
 }
 
 .entry.inline .nested-model-list {
   position: absolute;
-  top: 17px;
+  top: 32px;
   margin-left: -9px;
   margin-bottom: 0;
   width: 420px;
@@ -7456,8 +7553,17 @@ input.has-errors {
 
 .network-ports-toggler {
   position: absolute;
-  top: 30px;
+  top: 40px;
   left: 0px;
+}
+
+.private .model-name {
+    height: 17px;
+    margin-top: -6px;
+}
+
+.private .network-ports-toggler {
+    top: 40px;
 }
 
 .model-form-actions .form-action {
@@ -7600,7 +7706,7 @@ input.has-errors {
   font-family: monospace;
   font-size: 1em;
   border: none;
-  overflow-y: hidden;
+  overflow-y: auto;
   overflow-x: hidden;
   height: 185px;
   margin: 10px 0;
@@ -7822,14 +7928,11 @@ input.has-errors {
   font-weight: normal;
   font-size: 11px;
   color: #222;
-  padding: 3px 6px;
+  margin-bottom: 2px;
 }
 
-.collection .project-name-cont,
 .icon .project-name-cont {
-  position: absolute;
-  top: 40px;
-  right: 5px;
+  margin-bottom: 7px;
 }
 
 .icon .machine-data {
@@ -7837,12 +7940,18 @@ input.has-errors {
 }
 
 .icon .machine-data .project-name-cont {
-  top: 57px; 
+    padding: 0;
+    margin-top: -3px;
+}
+
+#networks-list-view .project-name-cont {
+    margin-top: 2px;
 }
 
 #volumes-list-view .items-sublist.system .project-name-cont,
 #volumes-list-view .items-sublist.system .project-name-con:hover {
     color: #999;
+    cursor: default;
 }
 
 
@@ -7850,16 +7959,32 @@ input.has-errors {
   min-height: 70px;
 }
 
-
-.project.select-item .checkbox {
-  margin-top: 10px;
+.select2-drop .select-item {
+    text-align: left;
 }
 
-select .resource-key,
-select .resource-value,
-.project.select-item.disabled .quota .resource-key,
-.project.select-item.disabled .quota .resource-value {
-  color: #ddd;
+.select2-drop .select-item .quota .resource .value {
+    font-weight: bold;
+    margin-left: 1px;
+}
+
+.select2-drop .select-item .quota .resource {
+    margin-right: 8px;
+}
+
+.select2-drop .select-item .quota {
+    float: right;
+    margin:0 !important;
+    padding:0 !important;
+}
+
+.create-vm .step-cont .project-select {
+    margin-bottom: 5px;
+    margin-top: -7px;
+}
+
+.project-select .select2-chosen .quota {
+    display: none;
 }
 
 #project-select-content .model-usage {
@@ -8060,6 +8185,11 @@ option.project.select-item.selected {
     top: -5px;
 }
 
+.volume-item .disk-template {
+    font-weight: bold;
+    color: #3582Ac;
+}
+
 .volume-item .volume-size {
     font-weight: bold;
     font-size: 0.8em;
@@ -8071,10 +8201,17 @@ option.project.select-item.selected {
 }
 
 .volume-item .volume-size span {
-    background-color: #5CA1C0;
     padding: 1px 8px;
-    color: #ffffff;
-    border: 1px solid #40809C;
+    color: #222222;
+    position: relative;
+    left: -1px;
+    top: -25px;
+    font-size: 1.4em;
+    text-shadow: 
+        -1px -1px 0 rgba(239, 239, 239, 0.7),  
+        1px -1px 0 rgba(239, 239, 239, 0.7),
+        -1px 1px 0 rgba(239, 239, 239, 0.7),
+        1px 1px 0 rgba(239, 239, 239, 0.7);
 }
 
 .volume-item .vm-view-cont img {
@@ -8083,44 +8220,69 @@ option.project.select-item.selected {
 
 .volume-item .vm-view-cont {
     margin-left: 10px;
-    margin-top: 10px;
+    margin-top: 12px;
+}
+
+.volume-item .vms.nested-model-list .title {
+    font-weight: normal !important;
 }
 
 .volume-item .vms.nested-model-list {
-    width: 300px;
+    width: 360px;
     position: relative;
-    top: -2px;
+    top: -12px;
 }
 
 .volume-item .toggler-wrap {
-    margin-top: 8px;
+    margin-top: -12px;
     margin-left: 2px;
 }
 
+.volume-item .content-cont .model-rename-view {
+    width: 330px;
+}
+
+.volume-item .content-cont .edit-btn.hidden {
+    visibility: hidden;
+}
+
 .volume-item .content-cont .edit-btn {
-    /*position: absolute;*/
-    /*right: 10px;*/
-    /*top: 75px;*/
+    position: absolute;
+    right:-29px;
+    top: 93px;
     z-index: 10000;
     height: 20px;
-    display: block;
     float: right;
     margin-right: 5px;
 }
 
 .volume-item .content-cont .rename-actions {
-    left: -10px;
+    position: absolute;
+    left: 286px;
+    top: 93px;
 }
 
 .volume-item .content-cont textarea.readonly {
     cursor: pointer;
-    background-color: #cecece;
+    background-color: #F2EFEF;
 }
 
 .volume-item .content-cont textarea {
-    max-width: 412px;
+    padding: 6px;
+    max-width: 270px;
     width: 270px;
     height: 100px;
     margin-left: 2px;
     margin-top: 5px;
+}
+
+input.reset {
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border: none;
+    font-size: inherit !important;
+    font-family: inherit !important;
+    color: inherit !important;
+    background-color: transparent;
 }

@@ -91,7 +91,7 @@ for review. Please make sure the following reflect exactly your request.
                     {% with rp.m_diff as diff %}
                         <span class="policy-diff 
                             {% if diff.increased %}green{% else %}red{% endif %}"
-                            >({{ diff.operator }}{{ diff.diff_display }})</span>
+                            >({% if diff.diff_is_inf %}{{ diff.prev_display }} to {% else %}{{ diff.operator }}{% endif %}{{ diff.diff_display }})</span>
                     {% endwith %}
                     {% endif %}
                     </div>
@@ -101,7 +101,7 @@ for review. Please make sure the following reflect exactly your request.
                     {% with rp.p_diff as diff %}
                         <span class="policy-diff 
                             {% if diff.increased %}green{% else %}red{% endif %}">
-                            ({{ diff.operator }}{{ diff.diff_display }})
+                            ({% if diff.diff_is_inf %}{{ diff.prev_display }} to {% else %}{{ diff.operator }}{% endif %}{{ diff.diff_display }})
                         </span>
                     {% endwith %}
                     {% endif %}

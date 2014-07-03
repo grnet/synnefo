@@ -6,8 +6,8 @@ var truncate = function(str, n){
   var re = str.match(p);
   var l  = re[0].length;
   var re = re[0].replace(/\s$/,'');
-  if (l < str.length) return re + '&hellip;';
-  return str;
+  if (l < str.length) return _.escape(re) + '&hellip;';
+  return _.escape(str);
 };
 
 // helper humanize methods
@@ -55,7 +55,7 @@ WARN = DO_LOG ? _.bind(console.warn, console) : function() {};
 
 var default_usage_cls_map = {
   0: 'green',
-  33: 'yellow',
+  33: 'orange',
   66: 'red'
 }
 
@@ -99,6 +99,7 @@ _.extend(UsageView.prototype, {
       this.setQuotas(this.settings.quotas);
     }
     this.initLayout();
+    this.el.main.removeClass('filter-base');
   },
   
   $: function(selector) {
@@ -196,7 +197,7 @@ _.extend(UsageView.prototype, {
 
   addProject: function(uuid, details) {
     LOG("New project", uuid, details);
-    details.display_name = truncate(details.name, 35);
+    details.display_name = truncate(details.name, 25);
     details.details_url = this.project_url_tpl.replace("UUID", details.id);
     this.projects[uuid] = details;
   },
@@ -227,7 +228,7 @@ _.extend(UsageView.prototype, {
         if (project_el.length === 0) {
           self.renderResourceProjects(self.container, self.resources[key]);
         } else {
-          self.updateResourceElement(project_el, project.usage);
+          self.updateResourceElement(project_el, project.usage, project);
         }
       });
       var project_ids = _.keys(self.project_quotas);
@@ -246,8 +247,9 @@ _.extend(UsageView.prototype, {
 
     el.find(".currValue").text(usage.curr);
     el.find(".maxValue").text(usage.max);
+    el.find(".leftValue").text(usage.left);
     bar_el.css({width:usage.ratio + "%"});
-    project_bar_el.css({width: usage.project_warn_ratio + "%"});
+    project_bar_el.css({width: usage.user_project_ratio + "%"});
 
     bar_value.text(usage.ratio+"%");
     var left = usage.label_left + "%";
@@ -273,34 +275,55 @@ _.extend(UsageView.prototype, {
     var resource = quotas ? quotas[resource_name] : this.quotas[resource_name];
     var resource_meta = this.resources[resource_name];
     if (!resource_meta) { return }
-    var value, limit, ratio, cls, label_left, label_col,
-        project_value, project_limit, project_ratio, project_cls, project_left;
+    var value, limit, ratio, cls, label_left, label_col, left,
+        project_value, project_limit, project_ratio, project_cls, project_left,
+        user_project_left;
     
     limit = resource.limit;
     value = resource.usage;
+    left = limit - value;
     project_limit = resource.project_limit;
     project_value = resource.project_usage;
     project_left = project_limit - project_value;
+    user_project_left = 0;
+    user_project_ratio = 0;
 
+    if (left > project_left) {
+        user_project_left = left - project_left;
+    }
+
+    if (user_project_left < 0) { user_project_left = 0; }
+    if (left < 0) { left = 0; }
     if (project_left < 0) { project_left = 0; }
     if (value < 0) { value = 0; }
     if (project_value < 0) { project_value = 0; }
-  
+    
     ratio = (value/limit) * 100;
     if (value == 0) { ratio = 0; }
-    if (value > limit) {
+    if (value >= limit) {
       ratio = 100;
+    }
+    
+    if (left && limit && user_project_left) {
+        user_project_ratio = (user_project_left / limit) * 100;
+        if (user_project_ratio > ratio) {
+            user_project_ratio = 100 - ratio;
+        }
+        user_project_ratio = parseInt(user_project_ratio);
+        console.log("USER PROJECT RATIO", user_project_ratio);
     }
 
     project_ratio = (project_value/project_limit) * 100;
     if (project_value == 0) { project_ratio = 0 }
-    if (project_value > project_limit) {
+    if (project_value >= project_limit) {
       project_ratio = 100;
     }
   
     if (resource_meta.unit == 'bytes') {
       value = humanize.filesize(value);
       limit = humanize.filesize(limit);
+      left = humanize.filesize(left);
+      user_project_left = humanize.filesize(user_project_left);
       project_value = humanize.filesize(value);
       project_limit = humanize.filesize(limit);
       project_left = humanize.filesize(project_left);
@@ -317,7 +340,6 @@ _.extend(UsageView.prototype, {
       }
     });
 
-
     var span = (ratio + '').length >= 3 ? 15 : 12;
     label_left = ratio >= 30 ? ratio - span : ratio;
     label_col = label_left == ratio ? 'inherit' : '#fff';
@@ -326,14 +348,13 @@ _.extend(UsageView.prototype, {
     ratio = humanize.numberFormat(ratio , 0);
     project_ratio = humanize.numberFormat(project_ratio , 0);
     
-    var project_warn = project_ratio >= 80 && ratio != 100 ? true : false;
-    var project_warn_ratio = project_warn ? 100 - ratio : 0;
-    
-    var project_warn_msg = "WARNING: " + project_left + " left in project";
+    var project_warn = user_project_ratio && ratio != 100 ? true : false;
+    var project_warn_msg = "WARNING: " + project_left + " left in project.";
 
     qdata = {
       'curr': value, 
       'max': limit, 
+      'left': left,
       'ratio': ratio, 
       'cls': cls,
       'label_left': label_left, 
@@ -344,7 +365,8 @@ _.extend(UsageView.prototype, {
       'project_cls': project_cls,
       'project_warn': project_warn,
       'project_warn_msg': project_warn_msg,
-      'project_warn_ratio': project_warn_ratio
+      'user_project_left': user_project_left,
+      'user_project_ratio': user_project_ratio
     };
     _.extend(qdata, resource);
     return qdata;
@@ -397,7 +419,8 @@ _.extend(UsageView.prototype, {
 
         var resource = self.resources[k];
         var project_usage = self.getUsage(k, resources);
-        var resource_projects_list = self.resources[k].projects_list;
+        var resource_projects_list = resource.projects_list;
+        var resource_projects = resource.projects;
 
         if (!self.projects[uuid]) { 
           self.getProjects(function(data) {
@@ -417,6 +440,7 @@ _.extend(UsageView.prototype, {
             resource.projects[uuid].display_name = 'System project';
           }
         }
+
         var resource_project = resource.projects[uuid];
         resource_project.usage = project_usage;
 
@@ -426,19 +450,21 @@ _.extend(UsageView.prototype, {
         } else {
           resource_projects_list[resource_project.index] = resource_project;
         }
-
-        _.each(resource.projects, function(project, uuid) {
-          if (active_project_uuids.indexOf(uuid) == -1) {
-            var index = resource.projects[uuid].index;
-            delete resource.projects[uuid];
-            delete resource.projects_list[index];
-          }
-        });
         
-        resource.projects_list = resource.projects_list.sort(function(p1, p2) {
+        resource.projects_list.sort(function(p1, p2) {
           if (p1.system_project && !p2.system_project) { return -1; }
           if (!p1.system_project && p2.system_project) { return 1;  }
-          return p1.name > p2.name;
+          return -1;
+        });
+        
+        // update indexes
+        _.each(resource.projects_list, function(p, index) {
+            if (!_.contains(active_project_uuids, p.id)) {
+                p.not_a_member = true;
+            } else {
+                p.not_a_member = false;
+            }
+            p.index = index;
         });
       });
     });

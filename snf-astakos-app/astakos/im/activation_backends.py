@@ -357,10 +357,10 @@ class ActivationBackend(object):
         if not ok:
             return ActivationResult(self.Result.ERROR, msg)
 
-        user.is_active = False
-        user.deactivated_reason = reason
         if user.is_active:
             user.deactivated_at = datetime.datetime.now()
+        user.is_active = False
+        user.deactivated_reason = reason
         user.save()
         logger.info("User deactivated: %s", user.log_display)
         return ActivationResult(self.Result.DEACTIVATED)

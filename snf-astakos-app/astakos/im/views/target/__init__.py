@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+import datetime
 
 from django.contrib import messages
 from django.http import HttpResponseRedirect
@@ -234,6 +235,7 @@ def handle_third_party_login(request, provider_module, identifier,
         third_party_key = get_pending_key(request)
 
     provider = user.get_auth_provider(provider_module, identifier)
+
     if user.is_active:
         if not provider.get_login_policy:
             messages.error(request, provider.get_login_disabled_msg)
@@ -246,6 +248,7 @@ def handle_third_party_login(request, provider_module, identifier,
         messages.success(request, provider.get_login_success_msg)
         add_pending_auth_provider(request, third_party_key, provider)
         response.set_cookie('astakos_last_login_method', provider_module)
+        provider.update_last_login_at()
         return response
     else:
         message = user.get_inactive_message(provider_module, identifier)

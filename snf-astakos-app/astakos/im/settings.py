@@ -235,3 +235,21 @@ ENDPOINT_CACHE_TIMEOUT = getattr(settings,
 RESOURCE_CACHE_TIMEOUT = getattr(settings,
                                  'ASTAKOS_RESOURCE_CACHE_TIMEOUT',
                                  60)
+
+ADMIN_API_ENABLED = getattr(settings, 'ASTAKOS_ADMIN_API_ENABLED', False)
+
+_default_project_members_limit_choices = (
+    ('Unlimited', 'Unlimited'),
+    ('5', '5'),
+    ('15', '15'),
+    ('50', '50'),
+    ('100', '100')
+)
+
+PROJECT_MEMEBRS_LIMIT_CHOICES = getattr(settings,
+                                 'ASTAKOS_PROJECT_MEMBERS_LIMIT_CHOICES',
+                                 _default_project_members_limit_choices)
+
+ADMIN_API_PERMITTED_GROUPS = getattr(settings,
+                                     'ASTAKOS_ADMIN_API_PERMITTED_GROUPS',
+                                     ['admin-api'])

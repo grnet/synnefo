@@ -18,20 +18,32 @@
     </div>
 
     <div class="items-list clearfix">
-        <div class="custom items-sublist"></div>
         <div class="system items-sublist"></div>
+        <div class="custom items-sublist"></div>
     </div>
   </div>
 </div>
 
 <div id="volume-vm-view-tpl" class="hidden">
-  <div class="vm">
-    <img data-rv-show="model.in_progress" 
-            src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
-            class="progress-indicator" />
-    <span data-rv-hide="model.in_progress" data-rv-html="model.os|os_icon"></span>
-    <span data-rv-text="model.name|truncate 30"></span>
-  </div>
+    <div class="model-item">
+      <div class="outer">
+        <div data-rv-class="model.vm.status|vm_status_cls">
+          <div class="model-logo vm-icon medium2 state1"
+            data-rv-style="model.vm.status|vm_style"></div>
+          <h3 class="title" data-rv-text="model.vm.name|truncate 50"></h3>
+          <h5 class="subtitle">
+            <img data-rv-show="model.in_progress" 
+                 src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
+                 class="progress-indicator" />
+            <div data-rv-hide="model.in_progress">
+              <span data-rv-show="model._index_set" class="key">Disk</span>
+              <span data-rv-show="model._index_set" class="value" data-rv-text="model._index|prefix #"></span>
+              <span data-rv-show="model._index_set" class="value" data-rv-html="model.vm|flavor_tpl"></span>
+            </div>
+          </h5>
+        </div>
+      </div>
+    </div>
 </div>
 
 <div id="volume-view-tpl" data-rv-class-actionpending="model.actions.pending"
@@ -39,11 +51,6 @@
   <div class="clearfix">
     <div class="main-content clearfix" style="position: relative">
       <div class="main-content-inner clearfix">
-        <div class="project-name-cont" 
-          data-rv-on-click="view.show_reassign_view"
-          data-rv-show="model.tenant_id">
-            <span class="project-name" data-rv-text="model.project.name|truncate 20"></span>
-        </div>
         <img class="logo" data-rv-src="model.status|model_icon" />
         <div class="volume-size">
             <span data-rv-text="model.size|size_display"></span>
@@ -52,15 +59,20 @@
             <div data-rv-show="model" 
                 data-rv-model-view="model|VolumeItemRenameView">
             </div>
+            <div class="project-name-cont" 
+                data-rv-on-click="view.show_reassign_view"
+                data-rv-class="model.is_root|check_can_reassign",
+            data-rv-show="model.tenant_id">
+                <span class="project-name" data-rv-text="model.project.name|truncate 20|in_brackets"></span>
+            </div>
             <div data-rv-if="model.vm" class="vms nested-model-list proxy inline">
                 <div class="vm-view-cont">
-                    <div data-rv-show="model.vm" data-rv-model-view="model.vm|VolumeVmView"></div>
+                    <div data-rv-show="model.vm" data-rv-model-view="model|VolumeVmView"></div>
                 </div>
             </div>
-
             <div class="toggler-wrap clearfix">
                 <div class="cont-toggler desc">
-                    <span class="label">description</span>
+                    <span class="label">info</span>
                 </div>
             </div>
             <div class="content-cont">
@@ -74,7 +86,6 @@
                 </div>
             </div>
         </div>
-
         <div class="entry-right">
           <div data-rv-class="model.status|status_cls" class="status">
             <div class="status-title">

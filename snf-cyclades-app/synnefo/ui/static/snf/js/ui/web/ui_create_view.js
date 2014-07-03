@@ -43,17 +43,20 @@
       can_deselect: false,
       display_quota: min_vm_quota,
       quotas_option_html: function() {
-        var data = "(";
+        var data = "";
         _.each(this.display_quota, function(val, key) {
           var q = this.model.quotas.get(key);
           if (!q) { return }
-          var content = '{0}: {1},  ';
+          var content = '<span class="resource">' +
+                        '<span class="key">{0}:</span>' +
+                        '<span class="value">{1}</span>' +
+                        '</span>';
           data += content.format(q.get('resource').get('display_name'), 
                                  q.get_readable('available'));
         }, this);
         data = data.substring(0, data.length-3);
         if (data) {
-            data += ")";
+            data += "";
         }
         return data;
       }
@@ -61,10 +64,44 @@
 
     views.CreateVMSelectProjectView = views.ext.CollectionSelectView.extend({
       tpl: '#create-view-projects-select-tpl',
+      select2_params: {},
       model_view_cls: views.CreateVMSelectProjectItemView,
       required_quota: function() {
           return min_vm_quota
       },
+      
+      _select2_format_result: function(state) {
+          return $(state.element).html();
+      },
+
+      _select2_format_selection: function(state) {
+          return $(state.element).html();
+      },
+
+      post_init: function() {
+        this._select = $(this.el).find("select");
+        this._select.addClass("project-select")
+        this._select.select2(
+            _.extend({}, {
+                width: "100%",
+                formatResult: this._select2_format_result,
+                formatSelection: this._select2_format_selection
+        }, this.select2_params));
+        views.CreateVMSelectProjectView.__super__.post_init.apply(this, arguments);
+      },
+
+      set_current: function(model) {
+        if (!this._model_views[model.id]) { return }
+        var view = this._model_views[model.id];
+        view.select();
+        this._select.select2("val", view.el.attr("value"));
+      },
+        
+      hide: function() {
+          this._select.select2("close");
+          views.CreateVMSelectProjectView.__super__.hide.apply(this, arguments);
+      },
+
       init: function() {
         this.handle_quota_changed = _.bind(this.handle_quota_changed, this);
         views.CreateVMSelectProjectView.__super__.init.apply(this, arguments);
@@ -77,7 +114,10 @@
           } else {
             view.set_enabled();
           }
+          view.model.trigger("change:_quota");
         }, this);
+        // force select2 to update data
+        this._select.data().select2.search.trigger("keyup-change");
       },
 
       set_handlers: function() {
@@ -130,7 +170,7 @@
 
             _.bindAll(this, "handle_vm_added");
             storage.vms.bind("add", this.handle_vm_added);
-            this.password.text("");
+            this.password.val("");
         },
 
         handle_vm_added: function() {
@@ -139,7 +179,7 @@
         
         show_password: function() {
             this.$(".show-machine").addClass("in-progress");
-            this.password.text(this.pass);
+            this.password.val(this.pass);
             if (storage.vms.get(this.vm_id)) {
                 this.$(".show-machine").removeClass("in-progress");
             }
@@ -148,7 +188,7 @@
         },
 
         onClose: function() {
-            this.password.text("");
+            this.password.val("");
             this.vm_id = undefined;
             try { delete this.clip; } catch (err) {};
         },
@@ -164,7 +204,6 @@
         show: function(pass, vm_id) {
             this.pass = pass;
             this.vm_id = vm_id;
-            
             views.VMCreationPasswordView.__super__.show.apply(this, arguments);
         }
     })
@@ -225,8 +264,8 @@
             this.categories_list = this.$(".category-filters");
             
             // params initialization
-            this.type_selections = {"system": "System"};
-            this.type_selections_order = ['system'];
+            this.type_selections = this.type_selections || {"system": "System"};
+            this.type_selections_order = this.type_selections_order || ['system'];
             
             this.images_storage = snf.storage.images;
 
@@ -235,7 +274,6 @@
                 this.type_selections = _.extend(
                     this.images_storage.type_selections,
                     this.type_selections)
-
                 this.type_selections_order = this.images_storage.type_selections_order;
             }
 
@@ -248,7 +286,11 @@
 
             // handlers initialization
             this.create_types_selection_options();
-            this.create_snapshot_types_selection_options();
+            if (synnefo.config.snapshots_enabled) {
+                this.create_snapshot_types_selection_options();
+            } else {
+                this.$(".snapshot-types-cont").hide();
+            }
             this.init_handlers();
             this.init_position();
         },
@@ -298,6 +340,7 @@
 
         create_types_selection_options: function() {
             var list = this.$(".image-types-cont ul.type-filter");
+            list.empty();
             _.each(this.type_selections_order, _.bind(function(key) {
                 list.append('<li id="type-select-{0}">{1}</li>'.format(
                     key, this.type_selections[key]));
@@ -308,6 +351,7 @@
         create_snapshot_types_selection_options: function() {
             var exclude = [];
             var list = this.$(".snapshot-types-cont ul.type-filter");
+            list.empty();
             _.each(this.type_selections_order, _.bind(function(key) {
                 if (_.includes(exclude, key)) { return }
                 var label = this.type_selections[key].replace("images", "snapshots");
@@ -338,12 +382,13 @@
                 this.categories_list.append(el);
             }, this));
 
+            var empty = this.categories_list.parent().find(".empty");
             if (!categories.length) { 
                 this.categories_list.parent().find(".clear").hide();
-                this.categories_list.parent().find(".empty").show();
+                empty.show();
             } else {
                 this.categories_list.parent().find(".clear").show();
-                this.categories_list.parent().find(".empty").hide();
+                empty.hide();
             }
         },
         
@@ -364,7 +409,11 @@
             this.reset_categories();
             this.update_images(images);
             this.reset_images();
-            this.select_image(this.selected_image);
+            var to_select = this.selected_image;
+            if (!_.contains(this.images_ids, this.selected_image && this.selected_image.get("id"))) {
+                to_select = this.images.length && this.images[0];
+            }
+            this.select_image(to_select);
             this.hide_list_loading();
             $(".custom-image-help").hide();
             if (this.selected_type == 'personal' && !images.length) {
@@ -384,8 +433,16 @@
                 _.bind(this.show_loading_view, this), 
                 _.bind(this.hide_loading_view, this)
             );
-
             this.update_layout_for_type(type);
+            this.selected_type_el = this.types.filter(".selected").closest("ul").parent();
+            this.update_type_messages(this.selected_type_el);
+        },
+        
+        update_type_messages: function(el) {
+            var empty = this.images_list.parent().find(".empty");
+            empty.text(el.data("list-empty"));
+            var heading = this.images_list.parent().find("h4");
+            heading.text(el.data("list-title"));
         },
 
         update_layout_for_type: function(type) {
@@ -454,13 +511,17 @@
             this.image_details.hide();
             this.validate();
         },
+        
+        get_image_icon_tag: function(image) {
+            return snf.ui.helpers.os_icon_tag(image.escape("OS"));
+        },
 
         update_image_details: function(image) {
             this.image_details_desc.hide().parent().hide();
             if (image.get_description()) {
                 this.image_details_desc.html(image.get_description(false)).show().parent().show();
             }
-            var img = snf.ui.helpers.os_icon_tag(image.escape("OS"))
+            var img = this.get_image_icon_tag(image);
             if (image.get("name")) {
                 this.image_details_title.html(img + image.escape("name")).show().parent().show();
             }
@@ -528,11 +589,12 @@
                 this.add_image(img);
             }, this))
             
+            var empty = this.images_list.parent().find(".empty");
             if (this.images.length) {
-                this.images_list.parent().find(".empty").hide();
+                empty.hide();
                 this.images_list.show();
             } else {
-                this.images_list.parent().find(".empty").show();
+                empty.show();
                 this.images_list.hide();
             }
 
@@ -540,7 +602,6 @@
             this.images_list.find(".image-details").click(function(){
                 self.select_image($(this).data("image"));
             });
-            
         },
 
         show: function() {
@@ -564,11 +625,12 @@
                              '{3}</span>' + 
                              '<p>{4}</p>' +
                              '</li>';
-
+            
+            var icon_tag = this.get_image_icon_tag(img);
             var image = $(image_html.format(
               _.escape(util.truncate(img.get("name"), 50)), 
               img.id, 
-              snf.ui.helpers.os_icon_tag(img.escape("OS")),
+              icon_tag,
               _.escape(img.get_readable_size()),
               description,
               _.escape(img.display_owner())
@@ -790,7 +852,7 @@
                 }
                 
                 return key;
-            }), function(ret) { return ret });
+            }, this), function(ret) { return ret });
             
             $("li.predefined-selection").addClass("disabled");
             _.each(this.valid_predefined, function(key) {
@@ -1074,7 +1136,6 @@
                                                                 values.disk_template);
 
                 this.disk_templates.append(disk_template);
-                //disk_template.tooltip({position:'top center', offset:[-5,0], delay:100, tipClass:'tooltip disktip'});
                 this.__added_flavors.disk_template.push(values.disk_template)
             }
             
@@ -1626,7 +1687,7 @@
             this.ip_addresses.empty();
             if (!ips|| ips.length == 0) {
                 this.ip_addresses.append(this.make("li", {'class':'empty'}, 
-                                           'No ip addresses selected'))
+                                           'No IP addresses selected'))
             }
             _.each(ips, _.bind(function(ip) {
                 var ip_address = $('<span class="ip"></span>');

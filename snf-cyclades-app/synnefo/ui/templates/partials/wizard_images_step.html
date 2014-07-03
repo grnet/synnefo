@@ -1,13 +1,27 @@
 {% load i18n %}
 <div class="images-filter-cont content-cont">
     <div class="images-filters">
-        <div class="image-types-cont">
+        <div class="other-types-cont hidden cont"
+            data-list-title="Available disks"
+            data-list-empty="No disks available."
+            >
+            <ul class="type-filter" >
+                <h4>Disks</h4>
+                <li id="type-select-empty">Empty</li>
+            </ul>
+        </div>
+        <div class="image-types-cont cont" 
+            data-list-title="Available images"
+            data-list-empty="No images available."
+            >
             <h4>Images</h4>
             <ul class="type-filter">
             </ul>
         </div>
-        <br />
-        <div class="snapshot-types-cont">
+        <div class="snapshot-types-cont cont" 
+            data-list-title="Available snapshots"
+            data-list-empty="No snapshots available."
+            >
             <h4>Snapshots</h4>
             <ul class="type-filter">
             </ul>

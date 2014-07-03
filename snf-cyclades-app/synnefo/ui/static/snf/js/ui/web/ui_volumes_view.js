@@ -39,6 +39,22 @@
       'cyclades.disk': 1
     };
     
+    views.ext.VM_STATUS_CLS_MAP = {
+        'UNKNOWN':          ['status-error'],
+        'BUILD':            ['build-state status-progress'],
+        'REBOOT':           ['status-progress reboot-state'],
+        'STOPPED':          ['status-terminated'],
+        'ACTIVE':           ['status-active'],
+        'ERROR':            ['status-error'],
+        'DELETED':          ['destroying-state'],
+        'DESTROY':          ['destroying-state'],
+        'SHUTDOWN':         ['shutting-state'],
+        'START':            ['starting-state'],
+        'CONNECT':          ['connecting-state'],
+        'DISCONNECT':       ['disconnecting-state'],
+        'RESIZE':           ['rebooting-state']
+    };
+
     views.CreateVolumeSelectProjectView = 
         views.CreateVMSelectProjectView.extend({
             tpl: '#create-view-projects-select-tpl',
@@ -57,6 +73,57 @@
     
     views.CreateVolumeImageStepView = views.CreateImageSelectView.extend({
         step: 1,
+            
+        default_type: 'empty',
+        type_selections: {},
+        type_selections_order: [],
+
+        initialize: function() {
+            views.CreateVolumeImageStepView.__super__.initialize.apply(this, arguments);
+            this.$(".other-types-cont").removeClass("hidden");
+            var images = this.$(".image-types-cont");
+            var snapshots = this.$(".snapshot-types-cont");
+            images.appendTo(snapshots.parent());
+
+            this.empty_image = new synnefo.glance.models.GlanceImage();
+            this.empty_image.set({
+                id: "empty-disk",
+                name: "Empty disk",
+                size: 0,
+                description: "Empty disk"
+            });
+            delete this.type_selections['system'];
+            this.type_selections_order.splice(0, 1);
+            this.create_types_selection_options();
+            this.create_snapshot_types_selection_options();
+        },
+        
+        get_image_icon_tag: function(image) {
+            if (image.get("id") == "empty-disk") {
+                var url = snf.config.images_url + "volume-icon-small.png";
+                return '<img src="{0}" />'.format(url);
+            }
+            return views.CreateVolumeImageStepView.__super__.get_image_icon_tag.call(this, image);
+        },
+        display_warning_for_image: function(image) {
+          if (image && !image.is_system_image() && 
+              !image.owned_by(synnefo.user) && image.get("id") != "empty-disk") {
+            this.parent.el.find(".image-warning").show();
+            this.parent.el.find(".create-controls").hide();
+          } else {
+            this.parent.el.find(".image-warning").hide();
+            this.parent.el.find(".create-controls").show();
+          }
+        },
+
+        update_images: function(images) {
+            if (this.selected_type == "empty") {
+                this.images = [this.empty_image];
+                this.images_ids = [this.empty_image.get("id")];
+                return this.images;
+            }
+            return views.CreateVolumeImageStepView.__super__.update_images.call(this, images);
+        },
 
         get_available_projects_for_disk_size: function(size) {
             var check = function(p) {
@@ -84,7 +151,7 @@
         }
     });
 
-    views.CreateVolumeDetailsStepView = views.CreateWizardStepView.extend({
+    views.CreateVolumeProjectStepView = views.CreateWizardStepView.extend({
         step: 2,
         
         new_volume_title: "New disk",
@@ -99,7 +166,6 @@
             this.projects_list = this.$(".project-select");
             this.project_select_view = undefined;
 
-
             this.size_input = this.el.find(".size-slider");
             this.size_input.bind("keyup", _.bind(function() {
                 window.setTimeout(_.bind(function() {
@@ -110,13 +176,6 @@
                 }, this), 200);
             }, this));
             this.size_input.simpleSlider(this.slider_settings);
-
-            this.desc_input = this.$(".volume-description");
-            this.name_input = this.$(".volume-name");
-            this.name_changed = false;
-            this.name_input.bind("keypup", _.bind(function() {
-                this.name_changed = true;
-            }));
         },
 
         slider_settings: {
@@ -134,47 +193,7 @@
             this.size_input.simpleSlider("setMin", val);
         },
         
-        reset: function() {
-            this.name_changed = false;
-            this.name_input.val(this.new_volume_title);
-            this.desc_input.val('');
-        },
-        
-        vm_filter: function(m) {
-            return m.can_attach_volume();
-        },
-
-        disabled_filter_ext: function(m) {
-            var check = !m.can_attach_volume() || !m.is_ext();
-            if (check) {
-                return "You cannot attach non empty disk to this machine."
-            }
-            return false;
-        },
-
-        disabled_filter: function(m) {
-            return !m.can_attach_volume();
-        },
-
         init_subviews: function() {
-          if (!this.vm_select_view) {
-
-            this.vms_collection = new Backbone.FilteredCollection(undefined, {
-              collection: synnefo.storage.vms,
-              collectionFilter: this.vm_filter
-            });
-
-            this.vm_select_view = new views.VMSelectView({
-              collection: this.vms_collection, 
-              container: this.$(".vms-list"),
-              parent: this,
-              allow_multiple: false,
-              allow_empty: false
-            });
-            this.vm_select_view.max_title_length = 38;
-            this.vm_select_view.show(true);
-          }
-
           if (!this.project_select_view) {
             var view_cls = views.CreateVolumeSelectProjectView;
             this.project_select_view = new view_cls({
@@ -186,34 +205,27 @@
             this.project_select_view.show(true);
           }
 
-          this.vm_select_view.bind("deselect", 
-                                _.bind(this.handle_vm_select, this));
-          this.vm_select_view.bind("change", 
-                                _.bind(this.handle_vm_select, this));
           this.project_select_view.bind("change", 
                                 _.bind(this.handle_project_select, this));
+          
           this.project_select_view.set_current(this.parent.project);
           this.handle_project_select(this.parent.project);
         },
 
         hide_step: function() {
-          this.project_select_view && this.project_select_view.hide(true);
-          this.vm_select_view && this.vm_select_view.hide(true);
+          window.setTimeout(_.bind(function() {
+              this.project_select_view && this.project_select_view.hide(true);
+          }, this), 200);
         },
         
         hide: function() {
-          this.vm_select_view.unbind("deselect");
-          this.vm_select_view.unbind("change");
           this.project_select_view.unbind("change");
+          views.CreateVolumeProjectStepView.__super__.hide.apply(this, arguments);
         },
 
         update_layout: function() {
         },
         
-        handle_vm_select: function() {
-            this.parent.submit_btn.show();
-        },
-
         handle_project_select: function(projects) {
           if (!projects.length ) { return }
           var project = projects[0];
@@ -222,11 +234,12 @@
 
         handle_project_change: function() {
             if (!this.parent.project) { return }
-            var available = 
-                this.parent.project.quotas.get("cyclades.disk")
-                .get("available");
-
+            var disk = this.parent.project.quotas.get("cyclades.disk");
+            var available = disk.get("available");
             available = available / Math.pow(1024, 3);
+            if (disk.infinite()) {
+                available = synnefo.config.volume_max_size;
+            }
             this.set_slider_max(parseInt(available));
             this.update_layout();
         },
@@ -243,41 +256,102 @@
             this.size_input.simpleSlider("setRatio", 0);
         },
         
-        get: function() {
-            return {
-                'name': _.trim(this.name_input.val()) || this.new_volume_title,
-                'description': _.trim(this.desc_input.val()) || "",
-                'size': parseInt(this.size_input.val()) || 1,
-                'vm': this.vm_select_view.get_selected()[0],
-                'project': this.parent.project
-            }
-        },
-        
         select_available_project: function() {
           var img_view = this.parent.steps[1];
           var img = img_view.selected_image;
           var size = 1 * Math.pow(1024, 3);
-          if (img) { img.get('size') }
+          if (img) { size = img.get('size'); }
+          var current = this.parent.project;
+          if (current.quotas.can_fit({'cyclades.disk': size})) { return }
           var projects = img_view.get_available_projects_for_disk_size(size);
           if (!projects.length) { return }
           this.project_select_view.set_current(projects[0]);
         },
         
-        update_image_name: function() {
-          var img_view = this.parent.steps[1];
-          var img = img_view.selected_image;
-          var name = "Empty disk";
-          if (img) {
-              name = img.get("name");
-          }
-          this.$(".volume-image").text(snf.util.truncate(name, 34));
+        show: function() {
+          var args = _.toArray(arguments);
+          this.init_subviews();
+          this.project_select_view.show(true);
+          this.select_available_project();
+          this.reset_slider();
+          views.CreateVolumeProjectStepView.__super__.show.apply(this, arguments);
+        },
+
+        get: function() {
+            return {
+                'project': this.parent.project,
+                'size': parseInt(this.size_input.val()) || 1
+            }
+        }
+    });
+
+    views.CreateVolumeMachineStepView = views.CreateWizardStepView.extend({
+        step: 3,
+        initialize: function() {
+            views.CreateVolumeMachineStepView.__super__.initialize.apply(
+                this, arguments);
+            this.vm_select_view = undefined;
+        },
+
+        update_layout: function() {
         },
         
+        init_subviews: function() {
+          if (!this.vm_select_view) {
+            this.vms_collection = new Backbone.FilteredCollection(undefined, {
+              collection: synnefo.storage.vms,
+              collectionFilter: this.vm_filter
+            });
+            this.vm_select_view = new views.VMSelectView({
+              collection: this.vms_collection, 
+              container: this.$(".vms-list"),
+              parent: this,
+              allow_multiple: false,
+              allow_empty: false
+            });
+            this.vm_select_view.max_title_length = 38;
+            this.vm_select_view.show(true);
+          }
+
+          this.vm_select_view.bind("deselect", 
+                                _.bind(this.handle_vm_select, this));
+          this.vm_select_view.bind("change", 
+                                _.bind(this.handle_vm_select, this));
+        },
+
+        vm_filter: function(m) {
+            return m.can_attach_volume();
+        },
+
+        disabled_filter_ext: function(m) {
+            var check = !m.can_attach_volume() || !m.is_ext();
+            if (check) {
+                return "You can only attach an empty disk to this machine."
+            }
+            return false;
+        },
+
+        disabled_filter: function(m) {
+            return !m.can_attach_volume();
+        },
+
+        handle_vm_select: function() {
+            this.parent.next_btn.show();
+        },
+
+        validate_vms: function() {
+            if (this.vm_select_view.get_selected().length == 0) {
+                this.parent.next_btn.hide();
+            } else {
+                this.parent.next_btn.show();
+            }
+        },
+
         update_vms_filter: function() {
             var img_view = this.parent.steps[1];
             var img = img_view.selected_image;
-
-            if (img) {
+            
+            if (img && img.id != "empty-disk") {
                 this.vm_select_view.disabled_filter = this.disabled_filter_ext;
             } else {
                 this.vm_select_view.disabled_filter = this.disabled_filter;
@@ -285,9 +359,58 @@
             this.vm_select_view.update_disabled();
         },
 
+        reset: function() {
+        },
+        
+        hide_step: function() {
+          window.setTimeout(_.bind(function() {
+              this.vm_select_view && this.vm_select_view.hide(true);
+          }, this), 200);
+        },
+
+        hide: function() {
+          this.vm_select_view.unbind("deselect");
+          this.vm_select_view.unbind("change");
+          views.CreateVolumeMachineStepView.__super__.hide.apply(this, arguments);
+        },
+
+        show: function() {
+          var args = _.toArray(arguments);
+          this.init_subviews();
+          this.validate_vms();
+          this.vm_select_view.show(true);
+          this.update_vms_filter();
+          views.CreateVolumeMachineStepView.__super__.show.apply(this, arguments);
+        },
+
+        get: function() {
+            return {
+                'vm': this.vm_select_view.get_selected()[0]
+            }
+        }
+
+    });
+
+    views.CreateVolumeDetailsStepView = views.CreateWizardStepView.extend({
+        step: 4,
+        initialize: function() {
+            views.CreateVolumeDetailsStepView.__super__.initialize.apply(
+                this, arguments);
+            this.desc_input = this.$(".volume-info");
+            this.name_input = this.$(".volume-name");
+            this.name_changed = false;
+            this.desc_changed = false;
+            this.name_input.keyup( _.bind(function() {
+                this.name_changed = true;
+            }, this));
+            this.desc_input.keyup(_.bind(function() {
+                this.desc_changed = true;
+            }, this));
+        },
+
         update_volume_details: function() {
             var img = this.parent.steps[1].selected_image;
-            if (!this.name_changed) {
+            if (!this.name_changed && !this.desc_changed) {
                 if (img) {
                     this.name_input.val(img.get('name') + ' volume');
                     this.desc_input.val(img.get('description'));
@@ -298,30 +421,56 @@
             }
         },
         
-        validate_vms: function() {
-            if (this.vm_select_view.get_selected().length == 0) {
-                this.parent.submit_btn.hide();
-            } else {
-                this.parent.submit_btn.show();
-            }
+        update_layout: function() {
+        },
+        
+        reset: function() {
+          this.name_changed = false;
+          this.desc_changed = false;
+          this.name_input.val(this.new_volume_title);
+          this.desc_input.val('');
         },
 
         show: function() {
-          var args = _.toArray(arguments);
-          this.init_subviews();
-          this.project_select_view.show(true);
-          this.select_available_project();
-          this.vm_select_view.show(true);
-          this.update_vms_filter();
+          this.update_volume_details();
           window.setTimeout(_.bind(function() {
             this.name_input.select();
           }, this), 50);
-          this.update_image_name();
-          this.update_volume_details();
-          this.reset_slider();
-          this.validate_vms();
-          views.CreateVolumeDetailsStepView.__super__.show.call(this, args);
+          views.CreateVolumeDetailsStepView.__super__.show.apply(this, arguments);
         },
+
+        get: function() {
+            return {
+                'name': _.trim(this.name_input.val()) || this.new_volume_title,
+                'description': _.trim(this.desc_input.val()) || ""
+            }
+        }
+    });
+
+    views.CreateVolumeConfirmStepView = views.CreateWizardStepView.extend({
+        step: 5,
+        update_layout: function() {
+          var params = this.parent.get_params();
+          var image_name = "Empty disk"
+          if (params.image) {
+              image_name = params.image.get("name");
+          }
+          this.$(".image-name").text(snf.util.truncate(image_name, 44));
+
+          var name = params.name;
+          this.$(".volume-name").text(snf.util.truncate(name, 54));
+
+          var desc = params.description;
+          this.$(".volume-info").text(desc);
+
+          var vm= params.vm;
+          this.$(".volume-machine").text(snf.util.truncate(vm.get("name"), 44));
+
+          var size = params.size;
+          this.$(".volume-size").text(size + " GB");
+        },
+
+        get: function() { return {} }
     });
 
     views.VolumeCreateView = views.VMCreateView.extend({
@@ -331,30 +480,23 @@
         
         setup_step_views: function() {
             this.steps[1] = new views.CreateVolumeImageStepView(this);
-            this.steps[1].default_type = undefined;
             this.steps[1].bind("change", _.bind(function(data) {
                 this.trigger("image:change", data)
             }, this));
-            this.steps[2] = new views.CreateVolumeDetailsStepView(this);
-            this.no_source_button = this.el.find(".empty-volume");
-            this.no_source_button.click(_.bind(function() {
-                this.steps[1].selected_image = undefined;
-                this.steps[2].set_slider_min(1);
-                this.set_step(2);
-                this.update_layout();
-            }, this));
+            this.steps[2] = new views.CreateVolumeProjectStepView(this);
+            this.steps[3] = new views.CreateVolumeMachineStepView(this);
+            this.steps[4] = new views.CreateVolumeDetailsStepView(this);
+            this.steps[5] = new views.CreateVolumeConfirmStepView(this);
         },
         
         show_step: function(step) {
             views.VolumeCreateView.__super__.show_step.call(this, step);
-            if (step > 1) {
-                this.no_source_button.hide();
-            } else {
-                this.no_source_button.show();
-            }
         },
         
         validate: function() { return true },
+
+        onClose: function() {
+        },
 
         submit: function() {
             if (this.submiting) { return };
@@ -366,6 +508,9 @@
             if (this.validate(data)) {
                 this.submit_btn.addClass("in-progress");
                 this.submiting = true;
+                if (data.image.get("id") == "empty-disk") {
+                    data.image = undefined;
+                }
                 storage.volumes.create(
                     data.name, data.size, data.vm, data.project, data.image,
                     data.description, {}, 
@@ -402,11 +547,11 @@
               self.disable_desc_edit();
           });
           this.desc_text.bind('dblclick', function() {
-              if (self.desc_editing) { retrun }
+              if (self.desc_editing) { return }
               self.enable_desc_edit();
           });
           this.desc_edit_btn.bind('click', function() {
-              if (self.desc_editing) { retrun }
+              if (self.desc_editing) { return }
               self.enable_desc_edit();
           });
 
@@ -416,7 +561,7 @@
       
       reset_description: function() {
           var desc = this.model.get('display_description');
-          this.desc_text.val(desc || "No description");
+          this.desc_text.val(desc || "No info set");
       },
 
       update_description: function() {
@@ -427,7 +572,7 @@
       },
 
       enable_desc_edit: function() {
-          this.desc_edit_btn.hide();
+          this.desc_edit_btn.addClass("hidden");
           this.desc_text.attr("readonly", false);
           this.desc_text.removeClass("readonly");
           this.desc_text.focus();
@@ -436,7 +581,7 @@
       },
 
       disable_desc_edit: function() {
-          this.desc_edit_btn.show();
+          this.desc_edit_btn.removeClass("hidden");
           this.desc_text.attr("readonly", true);
           this.desc_text.addClass("readonly");
           this.desc_actions.hide();
@@ -498,14 +643,40 @@
           synnefo.ui.main.volume_reassign_view.show(this.model);
       },
 
+      check_can_reassign: function() {
+          var action = this.$(".project-name");
+          if (this.model.get("is_root")) {
+              snf.util.set_tooltip(action, "You cannot change the project of boot disks.", {tipClass:"tooltip warning"});
+              return "project-name-cont disabled";
+          } else {
+              snf.util.unset_tooltip(action);
+              return "project-name-cont";
+          }
+      },
+
       status_cls: function() {
-        return this.status_cls_map[this.model.get('status')];
+          var status = this.model.get('status');
+          var vm = this.model.get("vm");
+          if (status == "in_use" && vm) {
+            return snf.views.ext.VM_STATUS_CLS_MAP[vm.state()].join(" ");
+          } else {
+            return this.status_cls_map[this.model.get('status')];
+          }
       },
 
       status_display: function(v) {
-        return this.status_map[this.model.get('status')];
+        var vm_status = "";
+        var volume_status = this.model.get('status');
+        var volume_status_disp = this.status_map[volume_status];
+        if (this.model.get('vm')) {
+            vm_status = STATE_TEXTS[this.model.get('vm').state()] || "";
+        }
+        if (!vm_status || volume_status != "in_use") { 
+            return volume_status_disp; 
+        }
+        return volume_status_disp + " - " + vm_status;
       },
-      
+
       model_icon: function() {
         var img = 'volume-icon-detached.png';
         var src = synnefo.config.images_url + '{0}';
@@ -533,6 +704,16 @@
       model_view_cls: views.VolumeView,
       create_view_cls: views.VolumeCreateView,
       quota_key: 'volume',
+
+      check_empty: function() {
+        views.VolumesCollectionView.__super__.check_empty.apply(this, arguments);
+        if (this.collection.filter(function(n){ return !n.get('is_root')}).length == 0) {
+          this.list_el.find(".custom").hide();  
+        } else {
+          this.list_el.find(".custom").show();  
+        }
+      },
+
       parent_for_model: function(m) {
         if (m.get('is_root')) {
           return this.list_el.find(".system");
@@ -554,7 +735,55 @@
       os_icon: function() {
           var data = '<img src="{0}" />';
           return data.format(synnefo.ui.helpers.vm_icon_path(this.model));
-      }
+      },
+
+      flavor_tpl: function() {
+        var vm = this.model.get("vm");
+        var flavor = vm && vm.get_flavor();
+        var tpl = flavor && flavor.get("disk_template");
+        var map = synnefo.config.flavors_disk_templates_info;
+        if (tpl in map) {
+            tpl = map[tpl].name || tpl;
+        }
+        return tpl ? '- <span class="disk-template">' + tpl + '</span>' : '';
+      },
+
+      vm_status_cls: function(vm) {
+        var cls = 'inner clearfix main-content';
+        if (!this.model.get('vm')) { return cls }
+        if (this.model.get('vm').in_error_state()) {
+          cls += ' vm-status-error';
+        }
+        return cls
+      },
+
+      vm_style: function() {
+        var cls, icon_state;
+        var style = "background-image: url('{0}')";
+        var vm = this.model.get('vm')
+        if (!vm) { return }
+        this.$(".model-logo").removeClass("state1 state2 state3 state4");
+        icon_state = vm.is_active() ? "on" : "off";
+        if (icon_state == "on") {
+          cls = "state1"
+        } else {
+          cls = "state2"
+        }
+        this.$(".model-logo").addClass(cls);
+        return style.format(this.get_vm_icon_path(this.model.get('vm'), 
+                                                  'medium2'));
+      },
+
+      get_vm_icon_path: function(vm, icon_type) {
+        var os = vm.get_os();
+        var icons = window.os_icons || views.IconView.VM_OS_ICONS;
+
+        if (icons.indexOf(os) == -1) {
+          os = "unknown";
+        }
+
+        return views.IconView.VM_OS_ICON_TPLS()[icon_type].format(os);
+      },
     });
 
     views.SnapshotCreateView = views.Overlay.extend({

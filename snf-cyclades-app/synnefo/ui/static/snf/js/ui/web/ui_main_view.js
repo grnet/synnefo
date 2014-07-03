@@ -210,6 +210,23 @@
                 }
             });
 
+            this.init_ns("volumes", {
+                msg_tpl:"Your actions will affect 1 Volume.",
+                msg_tpl_plural:"{0} actions will affect {0} Volumes.",
+                actions_msg: {confirm: "Confirm all", cancel: "Cancel all"},
+                limit: 1,
+                cancel_all: function(actions, config) {
+                  _.each(actions, function(action, id) {
+                    action.model.actions.reset_pending();
+                  });
+                },
+                do_all: function(actions, config) {
+                  _.each(actions, function(action, id) {
+                    var action_method = "do_{0}".format(action.actions[0]);
+                    action.model[action_method].apply(action.model);
+                  });
+                }
+            });
 
             this.init_ns("keys", {
                 msg_tpl:"Your actions will affect 1 public key.",
@@ -285,6 +302,7 @@
             var ns_map = {
               'ips': storage.floating_ips,
               'keys': storage.keys,
+              'volumes': storage.volumes,
               'nets': storage.networks
             }
             _.each(ns_map, function(store, ns) {
@@ -311,6 +329,10 @@
             }
 
             if (type == "ips") {
+                actions[model.id] = {model: model, actions: action};
+            }
+
+            if (type == "volumes") {
                 actions[model.id] = {model: model, actions: action};
             }
 
@@ -972,26 +994,15 @@
         },
         
         update_create_buttons_status: function() {
-            var nets = storage.quotas.can_create('network');
             var vms = storage.quotas.can_create('vm');
-            var ips = storage.quotas.can_create('ip');
-            
-            if (!nets) {
-                $("#networks-pane .create-button a").addClass("disabled");
-            } else {
-                $("#networks-pane .create-button a").removeClass("disabled");
-            }
-
+            var create_button = $("#createcontainer #create"); 
+            var msg = snf.config.limit_reached_msg;
             if (!vms) {
-                $("#createcontainer #create").addClass("disabled");
+                create_button.addClass("disabled");
+                snf.util.set_tooltip(create_button, msg, {tipClass: 'warning tooltip'});
             } else {
-                $("#createcontainer #create").removeClass("disabled");
-            }
-
-            if (!ips) {
-                $("#ips-pane #create-ip a").addClass("disabled");
-            } else {
-                $("#ips-pane #create-ip a").removeClass("disabled");
+                create_button.removeClass("disabled");
+                snf.util.unset_tooltip(create_button);
             }
         },
 

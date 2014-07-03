@@ -1490,8 +1490,7 @@
         get_console_url: function(data) {
             var url_params = {
                 machine: this.get("name"),
-                host_ip: this.get_hostname(),
-                host_ip_v6: this.get_hostname(),
+                machine_hostname: this.get_hostname(),
                 host: data.host,
                 port: data.port,
                 password: data.password
@@ -2567,8 +2566,14 @@
             return this.get('resource').get('unit') == 'bytes';
         },
         
+        infinite: function(active) {
+            var suffix = '';
+            if (active) { suffix = '_active' }
+            return this.get("limit" + suffix) >= snf.util.PRACTICALLY_INFINITE; 
+        },
+
         get_available: function(active) {
-            suffix = '';
+            var suffix = '';
             if (active) { suffix = '_active'}
             var value = this.get('limit'+suffix) - this.get('usage'+suffix);
             if (active) {
@@ -2587,9 +2592,10 @@
                 value = this.get(key)
             }
             if (value <= 0) { value = 0 }
-            // greater than max js int (assume infinite quota)
-            if (value > Math.pow(2, 53) && over_value !== undefined) { 
-              return "Infinite"
+
+            value = parseInt(value);
+            if (this.infinite()) { 
+              return "Unlimited";
             }
 
             if (!this.is_bytes()) {
@@ -2880,7 +2886,7 @@
     snf.storage.joined_projects = new Backbone.FilteredCollection(undefined, {
         collection: synnefo.storage.projects,
         collectionFilter: function(m) {
-            return !m.get("missing");
+            return m.get && !m.get("missing");
         }
     });
 })(this);

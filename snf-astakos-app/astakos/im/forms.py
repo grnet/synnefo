@@ -33,7 +33,7 @@ from django.core import validators
 from synnefo.util import units
 from synnefo_branding.utils import render_to_string
 from synnefo.lib import join_urls
-from astakos.im.fields import EmailField
+from astakos.im.fields import EmailField, InfiniteChoiceField
 from astakos.im.models import AstakosUser, EmailChange, Invitation, Resource, \
     PendingThirdPartyUser, get_latest_terms, ProjectApplication, Project
 from astakos.im import presentation
@@ -709,11 +709,12 @@ class ProjectApplicationForm(forms.ModelForm):
         coerce=int,
         choices=leave_policies)
 
-    limit_on_members_number = forms.IntegerField(
+    limit_on_members_number = InfiniteChoiceField(
+        choices=settings.PROJECT_MEMEBRS_LIMIT_CHOICES,
         label=max_members_label,
         help_text=max_members_help,
-        min_value=0,
-        required=False)
+        initial="Unlimited",
+        required=True)
 
     class Meta:
         model = ProjectApplication
@@ -735,11 +736,13 @@ class ProjectApplicationForm(forms.ModelForm):
             if instance.is_base:
                 name_field = self.fields['name']
                 name_field.validators = [base_app_name_validator]
-
+            if self.initial['limit_on_members_number'] == \
+                                                    units.PRACTICALLY_INFINITE:
+                self.initial['limit_on_members_number'] = 'Unlimited'
 
     def clean_limit_on_members_number(self):
         value = self.cleaned_data.get('limit_on_members_number')
-        if value is None:
+        if value in ["inf", "Unlimited"]:
             return units.PRACTICALLY_INFINITE
         return value
 
@@ -830,6 +833,8 @@ class ProjectApplicationForm(forms.ModelForm):
             if name.endswith('_uplimit'):
                 is_project_limit = name.endswith('_p_uplimit')
                 suffix = '_p_uplimit' if is_project_limit else '_m_uplimit'
+                if value == 'inf' or value == 'Unlimited':
+                    value = units.PRACTICALLY_INFINITE
                 uplimit = value
                 prefix, _suffix = name.split(suffix)
 
@@ -853,6 +858,9 @@ class ProjectApplicationForm(forms.ModelForm):
                         raise forms.ValidationError(m)
 
                     display = units.show(uplimit, resource.unit)
+                    if display == "inf":
+                        display = "Unlimited"
+
                     handled = resource_indexes.get(prefix)
 
                     diff_data = None
@@ -866,14 +874,30 @@ class ProjectApplicationForm(forms.ModelForm):
 
                             if pval != uplimit:
                                 diff = pval - uplimit
+
+                                diff_display = units.show(abs(diff),
+                                                          resource.unit,
+                                                          inf="Unlimited")
+                                diff_is_inf = False
+                                prev_is_inf = False
+                                if uplimit == units.PRACTICALLY_INFINITE:
+                                    diff_display = "Unlimited"
+                                    diff_is_inf = True
+                                if pval == units.PRACTICALLY_INFINITE:
+                                    diff_display = "Unlimited"
+                                    prev_is_inf = True
+
+                                prev_display = units.show(pval, resource.unit,
+                                                          inf="Unlimited")
+
                                 diff_data = {
                                     'prev': pval,
-                                    'prev_display': units.show(pval,
-                                                               resource.unit),
+                                    'prev_display': prev_display,
                                     'diff': diff,
-                                    'diff_display': units.show(abs(diff),
-                                                               resource.unit),
+                                    'diff_display': diff_display,
                                     'increased': diff < 0,
+                                    'diff_is_inf': diff_is_inf,
+                                    'prev_is_inf': prev_is_inf,
                                     'operator': '+' if diff < 0 else '-'
                                 }
 

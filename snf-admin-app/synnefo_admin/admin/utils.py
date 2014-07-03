@@ -196,6 +196,9 @@ def create_details_href(type, name, id):
 
 def exclude_deleted(qs, model_type):
     """Exclude deleted items."""
+    if not settings.ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS:
+        return qs
+
     if isinstance(qs, list):
         return qs
 
@@ -213,16 +216,21 @@ def filter_distinct(qs, model_type):
     return qs.distinct()
 
 
+def limit_associations(qs):
+    limit = settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
+    return qs[:limit]
+
+
 def customize_details_context(context):
     """Perform generic customizations on the detail context."""
-    if not settings.ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS:
-        new_assoc = []
-        for assoc in context['associations_list']:
-            qs = assoc[0]
-            assoc = list(assoc)
-            qs = exclude_deleted(qs, assoc[1])
-            qs = filter_distinct(qs, assoc[1])
-            assoc[0] = qs
-            new_assoc.append(assoc)
-        context['associations_list'] = new_assoc
+    new_assoc = []
+    for assoc in context['associations_list']:
+        qs = assoc[0]
+        assoc = list(assoc)
+        qs = exclude_deleted(qs, assoc[1])
+        qs = filter_distinct(qs, assoc[1])
+        qs = limit_associations(qs)
+        assoc[0] = qs
+        new_assoc.append(assoc)
+    context['associations_list'] = new_assoc
     return context

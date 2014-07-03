@@ -92,3 +92,8 @@ ADMIN_RBAC = getattr(settings, 'ADMIN_RBAC', DEFAULT_ADMIN_RBAC)
 # item will be shown properly.
 ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS = getattr(
     settings, 'ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS', False)
+
+# With this option, the user can define the number of associated items that
+# will be shown for each category, so as not to flood the page.
+ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY = getattr(
+    settings, 'ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY', 50)

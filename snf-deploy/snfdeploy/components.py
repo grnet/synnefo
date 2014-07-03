@@ -1708,9 +1708,7 @@ class Archip(base.Component):
 
 
 class ArchipSynnefo(base.Component):
-    REQUIRED_PACKAGES = [
-        "python-svipc",
-        ]
+    REQUIRED_PACKAGES = []
 
     def _configure(self):
         r1 = {"HOST": self.node.fqdn}

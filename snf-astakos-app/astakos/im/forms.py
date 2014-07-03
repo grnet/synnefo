@@ -710,7 +710,7 @@ class ProjectApplicationForm(forms.ModelForm):
         choices=leave_policies)
 
     limit_on_members_number = InfiniteChoiceField(
-        choices=settings.PROJECT_MEMEBRS_LIMIT_CHOICES,
+        choices=settings.PROJECT_MEMBERS_LIMIT_CHOICES,
         label=max_members_label,
         help_text=max_members_help,
         initial="Unlimited",

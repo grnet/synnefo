@@ -246,7 +246,7 @@ _default_project_members_limit_choices = (
     ('100', '100')
 )
 
-PROJECT_MEMEBRS_LIMIT_CHOICES = getattr(settings,
+PROJECT_MEMBERS_LIMIT_CHOICES = getattr(settings,
                                  'ASTAKOS_PROJECT_MEMBERS_LIMIT_CHOICES',
                                  _default_project_members_limit_choices)
 

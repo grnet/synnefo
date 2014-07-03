@@ -618,7 +618,7 @@ class ServerCreateAPITest(ComputeAPITest):
         self.assertEqual(volume.source, "image:%s" % fixed_image()["id"])
         self.assertEqual(volume.delete_on_termination, True)
         self.assertEqual(volume.userid, user)
-        self.assertEqual(volume.origin, "pithos:" + fixed_image()["mapfile"])
+        self.assertEqual(volume.origin, fixed_image()["mapfile"])
 
         # Test using a snapshot
         request["server"]["block_device_mapping_v2"] = [

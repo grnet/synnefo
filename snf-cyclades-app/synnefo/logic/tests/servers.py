@@ -104,7 +104,7 @@ class ServerCreationTest(TransactionTestCase):
         name, args, kwargs = mrapi().CreateInstance.mock_calls[-1]
         self.assertEqual(kwargs["disks"][0],
                          {"provider": "archipelago",
-                          "origin": "pithos:test_mapfile",
+                          "origin": "test_mapfile",
                           "name": vm.volumes.all()[0].backend_volume_uuid,
                           "foo": "mpaz",
                           "lala": "lolo",

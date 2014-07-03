@@ -381,9 +381,11 @@ Extra-button is used to show total selected rows
         a {
             margin-bottom: 1em;
             @include outline-btn();
+            display: block;
         }
         a.active {
             @include custom-btn();
+            display: block;
         }
     }
 }

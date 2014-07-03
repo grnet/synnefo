@@ -350,6 +350,7 @@ Extra-button is used to show total selected rows
   opacity: 0.7;
   border: 1px solid white;
   color: white;
+  display: block;
 }
 /* line 10, ../sass/_bars-btns.scss */
 .charts .sidebar a span {
@@ -372,7 +373,7 @@ Extra-button is used to show total selected rows
 .charts .sidebar a:hover span {
   border-color: white;
 }
-/* line 385, ../sass/_bars-btns.scss */
+/* line 386, ../sass/_bars-btns.scss */
 .charts .sidebar a.active {
   display: inline-block;
   text-align: center;
@@ -380,6 +381,7 @@ Extra-button is used to show total selected rows
   border: 1px solid #3c96e0;
   color: white;
   background-color: #3c96e0;
+  display: block;
 }
 /* line 10, ../sass/_bars-btns.scss */
 .charts .sidebar a.active span {

@@ -268,11 +268,21 @@ $(document).ready(function() {
 
 	// Apply the theme
 	Highcharts.setOptions(Highcharts.theme);
-	    $('.charts .sidebar a').click(function(e) {
+   
+    // when page is loaded show charts whose sidebar a is active
+    function display_charts_init(){
+        $('.charts .sidebar a.active').each(function(){
+            var el = $(this).attr('data-chart');
+            $('.info').find('div[data-chart='+el+']').show();
+        });
+    };
+
+    display_charts_init();
+
+    $('.charts .sidebar a').click(function(e) {
         e.preventDefault();
         $(this).toggleClass('active');
         var el = $(this).attr('data-chart');
-        $('.info').find('div[data-chart='+el+']').slideToggle('slow')
+        $('.info').find('div[data-chart='+el+']').stop(true, false).slideToggle('slow')
     })
 });
-

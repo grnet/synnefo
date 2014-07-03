@@ -160,27 +160,17 @@ def get_image_dict(image_id, user_id):
     img = get_image(image_id, user_id)
     image["id"] = img["id"]
     image["name"] = img["name"]
-    image["format"] = img["disk_format"]
     image["location"] = img["location"]
     image["is_snapshot"] = img["is_snapshot"]
-    image["status"] = img["status"]
-    image["version"] = img["version"]
     image["is_public"] = img["is_public"]
+    image["status"] = img["status"]
     image["owner"] = img["owner"]
+    image["format"] = img["disk_format"]
+    image["version"] = img["version"]
 
     size = image["size"] = img["size"]
-
-    mapfile = img["mapfile"]
-    if mapfile.startswith("archip:"):
-        _, unprefixed_mapfile, = mapfile.split("archip:")
-        mapfile = unprefixed_mapfile
-    else:
-        unprefixed_mapfile = mapfile
-        mapfile = "pithos:" + mapfile
-
-    image["backend_id"] = PITHOSMAP_PREFIX + "/".join([unprefixed_mapfile,
-                                                       str(size)])
-    image["mapfile"] = mapfile
+    mapfile = image["mapfile"] = img["mapfile"]
+    image["backend_id"] = PITHOSMAP_PREFIX + "/".join([mapfile, str(size)])
 
     properties = img.get("properties", {})
     image["metadata"] = dict((key.upper(), val)

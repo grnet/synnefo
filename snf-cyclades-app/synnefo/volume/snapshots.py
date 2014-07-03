@@ -22,8 +22,6 @@ from synnefo.volume import util
 
 log = logging.getLogger(__name__)
 
-SNAPSHOTS_MAPFILE_PREFIX = "archip:"
-
 
 @transaction.commit_on_success
 def create(user_id, volume, name, description, metadata, force=False):
@@ -64,10 +62,8 @@ def create(user_id, volume, name, description, metadata, force=False):
 
     snapshot_metadata = {
         "name": name,
-        "status": "CREATING",
         "disk_format": "diskdump",
         "container_format": "bare",
-        "is_snapshot": True,
         # Snapshot specific
         "description": description,
         "volume_id": volume.id,
@@ -87,22 +83,20 @@ def create(user_id, volume, name, description, metadata, force=False):
     snapshot_properties = PlanktonBackend._prefix_properties(metadata)
     snapshot_metadata.update(snapshot_properties)
 
-    # Generate a name for the Pithos file. Also, generate a name for the
-    # Archipelago mapfile.
-    snapshot_pithos_name = generate_snapshot_pithos_name(volume)
-    mapfile = SNAPSHOTS_MAPFILE_PREFIX + snapshot_pithos_name
+    # Generate a name for the Archipelago mapfile.
+    mapfile = generate_mapfile_name(volume)
 
     # Convert size from Gbytes to bytes
     size = volume.size << 30
 
     with PlanktonBackend(user_id) as b:
-        snapshot_id = b.register_snapshot(name=snapshot_pithos_name,
+        snapshot_id = b.register_snapshot(name=name,
                                           mapfile=mapfile,
                                           size=size,
                                           metadata=snapshot_metadata)
 
     backend.snapshot_instance(volume.machine,
-                              snapshot_name=snapshot_pithos_name,
+                              snapshot_name=mapfile,
                               snapshot_id=snapshot_id)
 
     snapshot = util.get_snapshot(user_id, snapshot_id)
@@ -110,8 +104,8 @@ def create(user_id, volume, name, description, metadata, force=False):
     return snapshot
 
 
-def generate_snapshot_pithos_name(volume):
-    """Helper function to generate a name for the Pithos file."""
+def generate_mapfile_name(volume):
+    """Helper function to generate a name for the Archipelago mapfile."""
     # time = isoformat(datetime.datetime.now())
     return "snf-snap-%s-%s" % (volume.id,
                                volume.snapshot_counter)

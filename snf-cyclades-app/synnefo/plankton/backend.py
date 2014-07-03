@@ -27,7 +27,6 @@ The Plankton attributes are the following:
   - owner: the file's account
   - properties: stored as user meta prefixed with PROPERTY_PREFIX
   - size: the 'bytes' meta
-  - status: stored as a system meta
   - store: is always 'pithos'
   - updated_at: the 'modified' meta
 """
@@ -49,7 +48,6 @@ from django.utils.encoding import smart_unicode, smart_str
 from pithos.backends.base import NotAllowedError, VersionNotExists, QuotaError
 from pithos.backends.util import PithosBackendPool
 from snf_django.lib.api import faults
-from snf_django.management.utils import parse_bool
 
 Location = namedtuple("ObjectLocation", ["account", "container", "path"])
 
@@ -383,9 +381,7 @@ class PlanktonBackend(object):
         meta.update(self._prefix_properties(properties))
         # Add extra metadata
         meta["name"] = name
-        meta["status"] = "AVAILABLE"
         meta['created_at'] = str(time())
-        # meta["is_snapshot"] = False
         self._update_metadata(uuid, location, metadata=meta, replace=False)
 
         logger.debug("User '%s' registered image '%s'('%s')", self.user,
@@ -486,14 +482,6 @@ class PlanktonBackend(object):
     def delete_snapshot(self, snapshot_uuid):
         self.backend.delete_by_uuid(self.user, snapshot_uuid)
 
-    @handle_pithos_backend
-    def update_status(self, image_uuid, status):
-        """Update status of snapshot"""
-        location, _ = self._get_raw_metadata(image_uuid)
-        properties = {"status": status.upper()}
-        self._update_metadata(image_uuid, location, properties, replace=False)
-        return self._get_image(image_uuid)
-
 
 def create_url(account, container, name):
     """Create a Pithos URL from the object info"""
@@ -522,15 +510,16 @@ def image_to_dict(location, metadata, permissions):
 
     image = {}
     image["id"] = metadata["uuid"]
-    image["mapfile"] = metadata["hash"]
+    image["mapfile"] = metadata["mapfile"]
     image["checksum"] = metadata["hash"]
     image["location"] = create_url(account, container, name)
     image["size"] = metadata["bytes"]
     image['owner'] = account
     image["store"] = u"pithos"
-    image["is_snapshot"] = parse_bool(metadata.pop(PLANKTON_PREFIX +
-                                                   "is_snapshot", False))
+    image["is_snapshot"] = metadata["is_snapshot"]
     image["version"] = metadata["version"]
+
+    image["status"] = "AVAILABLE" if metadata.get("available") else "CREATING"
 
     # Permissions
     users = list(permissions.get("read", []))
@@ -554,14 +543,13 @@ def image_to_dict(location, metadata, permissions):
             key = key.replace(PLANKTON_PREFIX, "")
             # Keep only those in plankton metadata
             if key in PLANKTON_META:
-                if key == "status":
-                    image["status"] = val.upper()
                 if key != "created_at":
                     # created timestamp is return in 'created_at' field
                     image[key] = val
             elif key.startswith(PROPERTY_PREFIX):
                 key = key.replace(PROPERTY_PREFIX, "")
                 properties[key] = val
+
     image["properties"] = properties
 
     return image

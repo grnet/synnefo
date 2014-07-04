@@ -44,7 +44,7 @@ from distutils.util import convert_path
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
 
-from synnefo.versions.app import __version__
+from synnefo_admin.version import __version__
 
 # Package info
 VERSION = __version__
@@ -60,6 +60,8 @@ CLASSIFIERS = []
 INSTALL_REQUIRES = [
     'Django>=1.4, <1.5',
     'snf-django-lib',
+    'django-filter',
+    'django-eztables',
     'pycrypto>=2.1.0',
 ]
 

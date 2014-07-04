@@ -183,7 +183,6 @@ $(function(){
 		$(this).closest('.modal').addClass('in-progress');
 		console.log('select all items', new Date);
 		if(newTable) {
-			// console.log('newtable')
 			newTable = false;
 			countme = true;
 			$(tableMassiveDomID).DataTable({
@@ -725,15 +724,21 @@ $(function(){
 	};
 	function removeWarnings(modal) {
 		var $modal = $(modal);
-		modal.find('.warning-duplicate').remove();
+		$modal.find('.warning-duplicate').remove();
 	}
 
+	function resetToggleAllBtn(modal) {
+		var $modal = $(modal);
+		$modal.find('.toggle-more').removeClass('open').addClass('closed');
+		$modal.find('.toggle-more').find('span').text('Show all');
+	}
 	$('.modal .cancel').click(function(e) {
 		$('[data-toggle="popover"]').popover('hide');
 		var $modal = $(this).closest('.modal');
 		resetErrors($modal);
 		resetInputs($modal);
 		removeWarnings($modal);
+		resetToggleAllBtn($modal);
 		// resetAll(tableDomID);
 		updateToggleAllSelect();
 		updateClearAll();
@@ -748,7 +753,6 @@ $(function(){
 		var $modal = $(this).closest('.modal');
 		var completeAction = true;
 		if(selected.items.length === 0) {
-				// e.preventDefault();
 			e.stopPropagation();
 			showError($modal, 'no-selected');
 			completeAction = false;
@@ -757,9 +761,7 @@ $(function(){
 			var $emailSubj = $modal.find('.subject');
 			var $emailCont = $modal.find('.email-content');
 			if(!$.trim($emailSubj.val())) {
-				// e.preventDefault();
 				e.stopPropagation();
-				console.log('empty')
 				showError($modal, 'empty-subject');
 				checkInput($modal, $emailSubj, 'empty-subject');
 				completeAction = false;
@@ -779,6 +781,7 @@ $(function(){
 			resetInputs($modal);
 			removeWarnings($modal);
 			resetAll(tableDomID);
+			resetToggleAllBtn($modal);
 		}
 	});
 
@@ -833,7 +836,6 @@ $(function(){
 			data['subject'] = $modal.find('input[name="subject"]').val();
 			data['text'] = $modal.find('textarea[name="text"]').val();
 		}
-		console.log(data)
 		$.ajax({
 			url: url,
 			type: 'POST',
@@ -969,7 +971,6 @@ $(function(){
 			}
 		}
 		$tableBody.append(htmlRows); // should change
-		// $tableBody.find('tr').tooltip();
 		$actionBtn.attr('data-ids','['+idsArray+']');
 		updateCounter($counter, idsArray.length); // ***
 		
@@ -979,25 +980,23 @@ $(function(){
 
 			$btn.css('display', 'block');
 
-			$btn.click( function(e) {
-				var that = this;
-				if($(this).hasClass('closed')) {
-					$(this).toggleClass('closed open');
-					$tableBody.find('tr').slideDown('slow', function() {
-						$(that).find('span').text('Show Less');
-						// $(this).removeClass('hidden-row')
-					});
-				}
-				else if($(this).hasClass('open')) {
-					$(this).toggleClass('closed open');
-					$tableBody.find('tr.hidden-row').slideUp('slow', function() {
-					$(that).find('span').text('Show All');
+					}
+	};
 
-					});
-				}
+	$('.modal .toggle-more').click( function() {
+		var $tableBody = $(this).closest('.modal').find('table');
+		if($(this).hasClass('closed')) {
+			$(this).find('span').text('Show less');
+			$tableBody.find('.hidden-row').slideDown('slow');
+		}
+		else {
+			var that = this;
+			$tableBody.find('tr.hidden-row').slideUp('slow', function() {
+				$(that).find('span').text('Show all');
 			});
 		}
-	};
+		$(this).toggleClass('closed open');
+		});
 
 
 

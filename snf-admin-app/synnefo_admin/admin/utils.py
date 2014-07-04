@@ -231,6 +231,7 @@ def customize_details_context(context):
         assoc = list(assoc)
         qs = exclude_deleted(qs, assoc[1])
         qs = filter_distinct(qs, assoc[1])
+        qs = limit_associations(qs)
         assoc[0] = qs
         new_assoc.append(assoc)
     context['associations_list'] = new_assoc

@@ -17,7 +17,7 @@ $(document).ready(function(){
 			$expandBtn.closest('h4').siblings('.object-details-content').stop().slideDown('slow');
 		}
 		else {
-			$(this).siblings('h4').find('.arrow').removeClass('snf-angle-up').addClass('snf-angle-down')
+			$(this).closest('h4').find('.arrow').removeClass('snf-angle-up').addClass('snf-angle-down')
 			$expandBtn.closest('h4').siblings('.object-details-content').stop().slideUp('slow');
 		}
 

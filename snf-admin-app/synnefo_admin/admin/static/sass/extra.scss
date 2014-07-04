@@ -101,6 +101,11 @@ a.disabled {
         &.disabled {
             opacity: 0.5;
             border-color: #ccc;
+            &:hover {
+                span {
+                    border-color: transparent;
+                }
+            }
         }
 	}
 }
@@ -277,7 +282,8 @@ svg>text:last-child {
 
 .selection-indicator {
 	margin-right: 6px;
-	cursor: pointer
+	cursor: pointer;
+    padding: 0 6px;
 }
 
 .notify {
@@ -332,6 +338,7 @@ svg>text:last-child {
         }
     }
 	.dl-horizontal {
+        margin-left: 21px;
 		// width: 900px;
 		// margin: auto;
 		dt{

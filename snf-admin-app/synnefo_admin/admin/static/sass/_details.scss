@@ -281,6 +281,7 @@ body .object-details h4 {
 h4 {
 	.arrow {
 		position: relative;
+        padding: 0 8px;
 		&:hover {
 			top: 2px;
 			cursor: pointer;

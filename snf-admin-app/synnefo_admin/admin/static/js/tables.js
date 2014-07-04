@@ -152,10 +152,12 @@ $(function(){
 	var btn2 = '<a href="" class="select select-all line-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>';
 	var btn3 = '<a href="" id="clear-all" class="disabled deselect line-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#clear-all-warning"><span>Clear All</span></a>';
 	var btn4 = '<a href="" class="disabled toggle-selected extra-btn line-btn" data-karma="neutral"><span class="text">Show selected </span><span class="badge num selected-num">0</span></a>';
-	$("div.custom-buttons").html(btn1+btn2+btn3+btn4);
-	$('.content').on('click', '#clear-all.disabled', function(e) {
+	var btn5 = '<a href="" id="reload-table" class="select line-btn" data-karma="neutral" data-caution="none"><span>Reload Table</span></a>';
+	$("div.custom-buttons").html(btn5+btn1+btn2+btn3+btn4);
+
+	$('.container').on('click', '#reload-table', function(e) {
 		e.preventDefault();
-		e.stopPropagation();
+		$(tableDomID).dataTable().api().ajax.reload();
 	})
 
 	function isSelected() {
@@ -824,7 +826,7 @@ $(function(){
 		var logID = 'action-'+countAction;
 		countAction++;
 		var removeBtn = '<a href="" class="remove-icon remove-log" title="Remove this line">X</a>';
-		var warningMsg = '<p class="warning">The data of the table maybe out of date. Click "reload" to update them.</p>'
+		var warningMsg = '<p class="warning">The data of the table maybe out of date. Click "Reload Table" to update them.</p>'
 		var data = {
 		op: $actionBtn.attr('data-op'),
 		target: $actionBtn.attr('data-target'),

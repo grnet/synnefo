@@ -2,7 +2,7 @@
 {% with source=item project=item.project %}
 <div class="object-anchor" id="source-{{project.id}}"></div>
 <div class="object-details {{ rowcls }}">
-    <h4>
+    <h4 class="clearfix">
         <span class="title">{{ project|repr }}</span>
         <span class="arrow  snf-font-admin snf-angle-down"></span>
         <span class="label">ID: {{ project.id }}</span>

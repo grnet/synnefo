@@ -4,7 +4,7 @@
 <div class="object-anchor" id="volume-{{volume.pk}}"></div>
 <div class="object-details {{ rowcls }}" data-id="{{volume.pk}}"
     data-type="{{type}}">
-    <h4>
+    <h4 class="clearfix">
         <a href="{% url admin-details type volume.pk %}" class="snf-font-admin snf-search icon-link" title="Details for {{ volume|repr }}"></a>
         <span class="title">{{ volume|repr }}</span>
         <span class="arrow  snf-font-admin snf-angle-down"></span>

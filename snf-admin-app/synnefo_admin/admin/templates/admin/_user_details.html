@@ -4,7 +4,7 @@
 <div class="object-anchor" id="user-{{user.uuid}}"></div>
 <div class="object-details {{ rowcls }}" data-id="{{user.uuid}}"
     data-type="{{type}}">
-    <h4>
+    <h4 class="clearfix">
         <a href="{% url admin-details type user.uuid %}" class="snf-font-admin snf-search icon-link" title="Details for {{ user|repr }}"></a>
         <span class="title">{{ user|repr }}</span>
         <span class="arrow snf-font-admin snf-angle-down"></span>

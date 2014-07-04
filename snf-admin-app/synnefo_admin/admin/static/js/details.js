@@ -130,15 +130,20 @@ $('.main .object-details h4 .arrow').trigger('click')
 	};
 
 	var $notificationArea = $('.notify');
+	var countAction = 0;
 	function performAction(modal) {
 		var $modal = $(modal);
 		var $actionBtn = $modal.find('.apply-action')
-		var url = $actionBtn.data('url');
-
+		var url = $actionBtn.attr('data-url');
+		var actionName = $actionBtn.find('span').text();
+		var logID = 'action-'+countAction;
+		countAction++;
+		var removeBtn = '<a href="" class="remove-icon remove-log" title="Remove this line">X</a>';
+		var warningMsg = '<p class="warning">The data of the page maybe out of date. Refresh it, to update them.</p>'
 		var data = {
-		op: $actionBtn.data('op'),
-		target: $actionBtn.data('target'),
-		ids: $actionBtn.data('ids')
+		op: $actionBtn.attr('data-op'),
+		target: $actionBtn.attr('data-target'),
+		ids: $actionBtn.attr('data-ids')
 		}
 		var contactAction = (data.op === 'contact' ? true : false);
 
@@ -153,59 +158,66 @@ $('.main .object-details h4 .arrow').trigger('click')
 			data: JSON.stringify(data),
 			contentType: 'application/json',
 			timeout: 100000,
-			success: function(response, statusText, jqXHR) {
-				var htmlSuccess = '<dl class="dl-horizontal"><dt><span class="success snf-font-admin snf-ok"></span> Action '+data.op+': </dt><dd>'+response.result+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
-				$notificationArea.find('.btns').before(htmlSuccess);
-				var height = -$notificationArea.outerHeight(true)
-					if($notificationArea.css('bottom') !== '0px')
-						$notificationArea.css('bottom', height)
-					$notificationArea.show();
-					$notificationArea.animate({'bottom': '0px'})
-			},
-			error: function(jqXHR, statusText) {
-				console.log(jqXHR, statusText, jqXHR.status);
-				var htmlError;
-				if(jqXHR.status === 500 || jqXHR.status === 0) {
-					htmlError = '<dl class="dl-horizontal"><dt><span class="error snf-font-admin snf-remove"></span> Action '+data.op+': </dt><dd>[code: '+ jqXHR.status +'] '+jqXHR.statusText+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
+			beforeSend: function(jqXHR, settings) {
+				var htmlPending = '<p class="log" id='+logID+'><span class="pending state-icon snf-font-admin snf-exclamation-sign"></span>Action <em>"'+actionName+'"</em> is <em class="pending">pending</em>.'+removeBtn+'</p>';
+				if($notificationArea.find('.warning').length === 0) {
+					$notificationArea.find('.container').append(htmlPending);
+					$notificationArea.find('.container').append(warningMsg);
 				}
 				else {
-
-					htmlError ='<dl class="dl-horizontal"><dt><span class="error snf-font-admin snf-exclamation-sign"></span> Action '+data.op+': </dt><dd>'+jqXHR.result+'</dd><dt>Error for the items: </dt><dd>'+jqXHR.error_ids.toString().replace(/\,/gi, ', ')+'<a href="" class="remove-log" title="Remove this line">X</a></dd></dl>';
+					$notificationArea.find('.warning').before(htmlPending);
+				}
+				snf.funcs.showBottomModal($notificationArea);
+				$notificationArea.find('.warning').fadeIn('slow');
+			},
+			success: function(response, statusText, jqXHR) {
+				var htmlSuccess = '<p class="log"><span class="success state-icon snf-font-admin snf-ok"></span>Action <em>"'+actionName+'"</em> has <em class="succeed">succeed</em>.'+removeBtn+'</p>';
+				$notificationArea.find('#'+logID).replaceWith(htmlSuccess);
+				snf.funcs.showBottomModal($notificationArea);
+			},
+			error: function(jqXHR, statusText) {
+				var htmlErrorSum = '<p><span class="error state-icon snf-font-admin snf-remove"></span>Action <em>"'+actionName+'"</em> has <em class="error">failed</em>.'+removeBtn+'</p>'
+				var htmlErrorReason, htmlErrorIDs, htmlError;
+				if(jqXHR.status === 500 || jqXHR.status === 0) {
+					htmlErrorReason = '<dl class="dl-horizontal"><dt>Reason:</dt><dd>'+jqXHR.statusText+' (code: '+jqXHR.status+').</dd></dl>';
+					htmlErrorIDs = '';
+				}
+				else {
+					htmlErrorReason = '<dl class="dl-horizontal">'+'<dt>Reason:</dt><dd>'+jqXHR.responseJSON.result+'</dd>';
+					htmlErrorIDs ='<dt>IDs:</dt><dd>'+jqXHR.responseJSON.error_ids.toString().replace(/\,/gi, ', ')+'</dd>'+'</dl>'
 				}
 
-				$notificationArea.find('.btns').before(htmlError);
-				var height = -$notificationArea.outerHeight(true)
-				if($notificationArea.css('bottom') !== '0px') {
-					$notificationArea.css('bottom', height)
+				htmlError = '<div class="log">'+htmlErrorSum+htmlErrorReason+htmlErrorIDs+'</div>'
+				$notificationArea.find('#'+logID).replaceWith(htmlError);
+				if($notificationArea.find('.warning').length === 0) {
+					$notificationArea.find('.container').append(warningMsg);
 				}
-				$notificationArea.show();
-				$notificationArea.animate({'bottom': '0px'})
+
+				snf.funcs.showBottomModal($notificationArea);
 			}
 		});
 	}
 
 	$notificationArea.on('click', '.remove-log', function(e) {
 		e.preventDefault();
-		var $dl = $(this).closest('dl');
-		$dl.fadeOut('slow', function() {
-			$dl.remove();
-			if($notificationArea.find('dl').length === 0) {
+		console.log($(this));
+		var $log = $(this).closest('.log');
+		$log.slideUp('slow', function() {
+			$log.remove();
+			if($notificationArea.find('.log').length === 0) {
 				$notificationArea.find('.close-notifications').trigger('click');
+
 			}
 		});
 	});
 	$notificationArea.on('click', '.close-notifications', function(e) {
 		e.preventDefault();
 		var height = -$notificationArea.outerHeight(true)
-		$notificationArea.animate({'bottom': height}, 'slow')
-	});
-	$notificationArea.on('click', '.clear-notifications', function(e) {
-		e.preventDefault();
-		$notificationArea.find('dl').fadeOut('slow', function() {
-			$(this).remove();
-			$notificationArea.find('.close-notifications').trigger('click');
+		$notificationArea.animate({'bottom': height}, 'slow', function() {
+			if($notificationArea.find('.log').length === 0) {
+				$notificationArea.find('.warning').remove();
+			}
 		});
-
 	});
 
 	$('.modal').find('.cancel').click(function() {

@@ -1701,65 +1701,70 @@ svg > text:last-child {
   color: #404040;
 }
 /* line 291, ../sass/extra.scss */
+.notify .container > *:not(:last-child) {
+  margin-bottom: 16px;
+}
+/* line 294, ../sass/extra.scss */
+.notify .remove-icon {
+  color: transparent;
+  margin-left: 20px;
+  font-weight: bold;
+}
+/* line 300, ../sass/extra.scss */
+.notify .container > *:hover .remove-icon {
+  color: #d9534f;
+}
+/* line 304, ../sass/extra.scss */
+.notify .state-icon {
+  margin-right: 10px;
+}
+/* line 307, ../sass/extra.scss */
+.notify .success {
+  color: #449d44;
+}
+/* line 310, ../sass/extra.scss */
+.notify .error {
+  color: #d9534f;
+}
+/* line 313, ../sass/extra.scss */
+.notify .pending {
+  color: #f0ad4e;
+}
+/* line 316, ../sass/extra.scss */
+.notify em {
+  font-style: normal;
+  font-weight: bold;
+}
+/* line 320, ../sass/extra.scss */
+.notify .warning {
+  font-style: italic;
+  font-weight: bold;
+  color: #5a5959;
+}
+/* line 325, ../sass/extra.scss */
 .notify .close-notify {
   position: absolute;
   right: 20px;
   top: 20px;
   color: #404040;
 }
-/* line 296, ../sass/extra.scss */
+/* line 330, ../sass/extra.scss */
 .notify .close-notify:hover {
   color: #222222;
 }
-/* line 300, ../sass/extra.scss */
-.notify .btns {
-  display: none;
-  width: 100%;
-  text-align: center;
-}
-/* line 304, ../sass/extra.scss */
-.notify .btns .custom-btn:first-child {
-  float: left;
-}
-/* line 307, ../sass/extra.scss */
-.notify .btns .custom-btn:last-child {
-  float: right;
-}
-/* line 315, ../sass/extra.scss */
-.notify .dl-horizontal:hover a {
-  color: #d9534f;
-}
-/* line 319, ../sass/extra.scss */
+/* line 337, ../sass/extra.scss */
 .notify .dl-horizontal dt {
-  width: 220px;
+  width: 80px;
   vertical-align: top;
   text-align: left;
 }
-/* line 323, ../sass/extra.scss */
+/* line 341, ../sass/extra.scss */
 .notify .dl-horizontal dt span {
   font-size: 20px;
   vertical-align: text-bottom;
   margin-right: 10px;
 }
-/* line 327, ../sass/extra.scss */
-.notify .dl-horizontal dt span.success {
-  color: #449d44;
-}
-/* line 330, ../sass/extra.scss */
-.notify .dl-horizontal dt span.error {
-  color: #d9534f;
-}
-/* line 335, ../sass/extra.scss */
+/* line 347, ../sass/extra.scss */
 .notify .dl-horizontal dd {
-  margin-left: 220px;
-}
-/* line 337, ../sass/extra.scss */
-.notify .dl-horizontal dd a {
-  color: transparent;
-  margin-left: 10px;
-  font-weight: bold;
-}
-/* line 343, ../sass/extra.scss */
-.notify .dl-horizontal:not(:last-child) {
-  margin-bottom: 16px;
+  margin-left: 80px;
 }

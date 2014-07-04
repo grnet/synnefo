@@ -288,7 +288,41 @@ svg>text:last-child {
 	bottom: 0px;
 	background: $brand-primary;
     color: $dark-text-color;
-    .close-notify {
+    .container>*:not(:last-child) {
+			margin-bottom: 16px;
+	}
+	.remove-icon {
+		color: transparent;
+		margin-left: 20px;
+		font-weight: bold;
+	}
+	.container>*:hover {
+		.remove-icon {
+			color: $brand-danger;
+		}
+	}
+	.state-icon {
+		margin-right: 10px;
+	}
+	.success {
+		color: darken($brand-success, 10%);
+	}
+	.error {
+		color: $brand-danger;
+	}
+	.pending {
+		color: $brand-warning;
+	}
+	em {
+		font-style: normal;
+		font-weight: bold;
+	}
+	.warning {
+		font-style: italic;
+		font-weight: bold;
+		color: $gray-light;
+	}
+	.close-notify {
         position: absolute;
         right: 20px;
         top: 20px;
@@ -297,51 +331,21 @@ svg>text:last-child {
             color: $total-black;
         }
     }
-	.btns {
-        display: none;
-		width: 100%;
-		text-align: center;
-		.custom-btn:first-child {
-			float: left;
-		}
-		.custom-btn:last-child {
-			float: right;
-		}
-	}
 	.dl-horizontal {
 		// width: 900px;
 		// margin: auto;
-		&:hover {
-			a {
-				color: $brand-danger;
-			}
-		}
 		dt{
-			width: 220px;
+			width: 80px;
             vertical-align: top;
 			text-align: left;
 			span {
 				font-size: 20px;
 				vertical-align: text-bottom;
 				margin-right: 10px;
-				&.success {
-					color: darken($brand-success, 10%);
-				}
-				&.error {
-					color: $brand-danger;
-				}
 			}
 		}
 		dd {
-			margin-left: 220px;
-			a {
-				color: transparent;
-				margin-left: 10px;
-				font-weight: bold;
-			}
-		}
-		&:not(:last-child) {
-			margin-bottom: 16px;
+			margin-left: 80px;
 		}
 	}
 }

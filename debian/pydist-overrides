@@ -16,3 +16,4 @@ snf-branding snf-branding
 snf-webproject snf-webproject
 py-rrdtool python-rrdtool
 django-tables2 python-django-tables2
+django-eztables python-django-eztables

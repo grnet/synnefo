@@ -1677,8 +1677,6 @@ class Archip(base.Component):
         "blktap-utils",
         "archipelago",
         "archipelago-dbg",
-        "archipelago-modules-dkms",
-        "archipelago-modules-source",
         "archipelago-rados",
         "archipelago-rados-dbg",
         "libxseg0",

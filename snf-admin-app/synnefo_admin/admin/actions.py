@@ -149,10 +149,11 @@ def has_permission_or_403(actions):
 
 def get_permitted_actions(actions, user):
     """Get a list of actions that a user is permitted to author."""
+    permitted_actions = {}
     for key, action in actions.iteritems():
-        if not action.is_user_allowed(user):
-            actions.pop(key, None)
-    return actions
+        if action.is_user_allowed(user):
+            permitted_actions[key] = action
+    return permitted_actions
 
 
 def get_allowed_actions(actions, inst, user=None):

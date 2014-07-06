@@ -167,7 +167,7 @@ def catalog(request):
 def details(request, query):
     """Details view for Astakos users."""
     volume = get_volume(query)
-    vm_list = [volume.machine]
+    vm_list = VirtualMachine.objects.filter(volumes=volume)
     user_list = AstakosUser.objects.filter(uuid=volume.userid)
     project_list = Project.objects.filter(uuid=volume.project)
 

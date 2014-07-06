@@ -72,10 +72,6 @@ class AdminAction:
         # instance.
         except faults.BadRequest:
             return False
-        # Astakos raises ProjectConflict when an action is not supported for an
-        # instance.
-        except ProjectConflict:
-            return False
 
         # We accept "None" as correct value.
         if res is None:

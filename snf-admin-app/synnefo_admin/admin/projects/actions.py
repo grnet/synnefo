@@ -63,7 +63,11 @@ class ProjectAction(AdminAction):
 
 
 def check_project_action(action):
-    return lambda p: validate_project_action(p, action)
+    def check(p, action):
+        res, _ = validate_project_action(p, action)
+        return res
+
+    return lambda p: check(p, action)
 
 
 def check_approve(project):

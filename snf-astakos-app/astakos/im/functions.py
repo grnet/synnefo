@@ -831,7 +831,7 @@ def check_conflicting_projects(project, new_project_name, silent=False):
              (new_project_name, conflicting_project.uuid))
         return fail(m)
     except Project.DoesNotExist:
-        pass
+        return True, None
 
 
 def approve_application(application_id, project_id=None, request_user=None,

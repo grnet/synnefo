@@ -58,7 +58,12 @@ class UserAction(AdminAction):
 
 
 def check_user_action(action):
-    return lambda u: users.validate_user_action(u, action)
+    def check(u, action):
+        res, _ = users.validate_user_action(u, action, verification_code=\
+                                            u.verification_code)
+        return res
+
+    return lambda u: check(u, action)
 
 
 def generate_actions():

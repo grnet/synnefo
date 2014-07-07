@@ -30,7 +30,7 @@ from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
 from astakos.im.models import AstakosUser, ProjectMembership, Project, Resource
 from astakos.im import user_logic as users
 
-from astakos.api.quotas import get_quota_usage
+from astakos.im.quotas import list_user_quotas
 from astakos.im.user_utils import send_plain as send_email
 
 from synnefo.util import units
@@ -70,7 +70,7 @@ def get_user(query):
 
 
 def get_quotas(user):
-    """Transform the usage dictionary, as retrieved from api.quotas.
+    """Transform the resource usage dictionary of a user.
 
     Return a list of dictionaries that represent the quotas of the user. Each
     dictionary has the following form:
@@ -82,7 +82,7 @@ def get_quotas(user):
     }
 
     where 'Resource Name' is the name of the resource and <Resource dict> is
-    the dictionary that is returned by get_quota_usage and has the following
+    the dictionary that is returned by list_user_quotas and has the following
     fields:
 
         pending, project_pending, project_limit, project_usage, usage.
@@ -90,7 +90,7 @@ def get_quotas(user):
     Note, the get_quota_usage function returns many dicts, but we only keep the
     ones that have project_limit > 0
     """
-    usage = get_quota_usage(user)
+    usage = list_user_quotas([user])[user.uuid]
 
     quotas = []
     for project_id, resource_dict in usage.iteritems():

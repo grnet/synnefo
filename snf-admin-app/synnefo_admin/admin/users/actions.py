@@ -31,7 +31,6 @@ from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
 from astakos.im.models import AstakosUser, ProjectMembership, Project, Resource
 from astakos.im import user_logic as users
 
-from astakos.api.quotas import get_quota_usage
 from astakos.im.user_utils import send_plain as send_email
 
 from synnefo.util import units

@@ -31,9 +31,6 @@ INSTALLED_APPS = (
 INSTALLED_APPS = extend_list_from_entry_point(INSTALLED_APPS, 'synnefo', \
         'web_apps')
 
-DATABASE_ROUTERS = []
-DATABASE_ROUTERS = extend_list_from_entry_point(DATABASE_ROUTERS, 'synnefo', \
-        'db_routers')
 
 TEMPLATE_CONTEXT_PROCESSORS = (
     'django.core.context_processors.request',

@@ -33,8 +33,7 @@ from synnefo_admin.admin.utils import create_details_href
 
 
 def get_ip_details_href(ip_log):
-    ip = IPAddress.objects.get(address=ip_log.address)
-    return create_details_href('ip', ip.address, ip.pk)
+    return create_details_href('ip', ip_log.address, ip_log.address)
 
 
 def get_vm_details_href(ip_log):

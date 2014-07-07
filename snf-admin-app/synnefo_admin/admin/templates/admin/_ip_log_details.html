@@ -3,7 +3,7 @@
 {% with ip_log=item %}
 <tr>
     <td>
-        <a href={% url admin-details 'ip' ip_log.address %}>{{ ip_log.ip|repr }}</a>
+        <a href={% url admin-details 'ip' ip_log.address %}>{{ ip_log.address }}</a>
     </td>
     <td>
         <a href={% url admin-details 'vm' ip_log.server_id %}>{{ ip_log.vm|repr }}</a>

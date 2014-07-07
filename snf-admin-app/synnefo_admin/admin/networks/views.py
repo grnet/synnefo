@@ -187,7 +187,6 @@ def details(request, query):
         .order_by("allocated_at")
 
     for ipaddr in ip_log_list:
-        ipaddr.ip = IPAddress.objects.get(address=ipaddr.address)
         ipaddr.vm = VirtualMachine.objects.get(id=ipaddr.server_id)
         ipaddr.network = network
         ipaddr.user = AstakosUser.objects.get(uuid=ipaddr.vm.userid)

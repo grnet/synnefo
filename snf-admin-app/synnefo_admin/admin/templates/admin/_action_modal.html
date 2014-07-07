@@ -4,7 +4,7 @@
     <div class="modal-dialog modal-md">
         <div class="modal-content area">
             <div class="modal-header">
-                <a class="close" data-dismiss="modal">×</a>
+                <a class="close cancel" data-dismiss="modal">×</a>
                 <h3 class="elem">{{ action.name }}</h3>
             </div>
             <div class="modal-body">
@@ -32,10 +32,10 @@
                 </div>
                 {# If we are in a details view, then the number of items is just one, so we can get rid of the plural #}
                 <div class="summary">
-                    <p>You have choosen to <em class="elem">{{ op }}</em> the following <em class="num elem"></em> user{% if view_type == 'list' %}s{% endif %}:
+                    <p>You have choosen to <em class="elem lowercase">{{ action.name }}</em> the following <em class="num elem"></em> user{% if view_type == 'list' %}s{% endif %}:
                 {% else %}
                 <div class="summary">
-                    <p>You have choosen to <em class="elem">{{ op }}</em> the following <em class="num elem"></em> {{action.target}}{% if view_type == 'list' %}s{% endif %}:
+                    <p>You have choosen to <em class="elem lowercase">{{ action.name }}</em> the following <em class="num elem"></em> {{action.target}}{% if view_type == 'list' %}s{% endif %}:
                 {% endif %}
                         <a data-error="no-selected" class="error-sign snf-font-admin snf-exclamation-sign" href="#" rel="tooltip" title="There are no selected items to complete this action."></a>
                     </p>
@@ -49,7 +49,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <a href="#" class="custom-btn cancel" data-karma={{ action.karma }} data-caution={{ action.caution_level }} data-dismiss="modal"><span>Cancel</span></a>
+                <a href="#" class="custom-btn cancel" data-dismiss="modal"><span>Cancel</span></a>
                 <a data-url={% url admin-actions %} data-op={{ op }} data-ids="" data-target={{ action.target }} class="custom-btn apply-action" data-karma={{ action.karma }} data-caution={{ action.caution_level }} data-dismiss="modal"><span>{{ action.name }}</span></a>
             </div>
         </div>

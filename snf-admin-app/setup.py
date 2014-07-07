@@ -182,7 +182,6 @@ setup(
         'synnefo': [
             'default_settings = synnefo_admin.app_settings.default',
             'web_apps = synnefo_admin.app_settings:installed_apps',
-            'db_routers = synnefo_admin.app_settings:database_routers',
             'urls = synnefo_admin.urls:urlpatterns',
             'web_static = synnefo_admin.app_settings:static_files'
         ]

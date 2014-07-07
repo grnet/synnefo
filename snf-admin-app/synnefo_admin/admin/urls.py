@@ -40,7 +40,6 @@ urlpatterns = patterns(
     url(r'^$', 'home', name='admin-home'),
     url(r'^logout$', 'logout', name='admin-logout'),
     url(r'^charts$', 'charts', name='admin-charts'),
-    url(r'^stats$', 'stats', name='admin-stats'),
     url(r'^json/(?P<type>.*)$', 'json_list', name='admin-json'),
     url(r'^actions/$', 'admin_actions', name='admin-actions'),
     url(r'^(?P<type>.*)/(?P<id>.*)$', 'details', name='admin-details'),

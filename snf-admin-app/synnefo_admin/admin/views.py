@@ -221,13 +221,6 @@ def charts(request):
 
 
 @admin_user_required
-def stats(request):
-    """Dummy view for stats."""
-    return direct_to_template(request, "admin/stats.html",
-                              extra_context=default_dict)
-
-
-@admin_user_required
 @conditionally_gzip_page
 def json_list(request, type):
     """Return a class-based view based on the given type."""

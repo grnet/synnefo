@@ -1,8 +1,6 @@
 var mydata; // temp
 
-(function($, Django){
-
-$(function(){
+$(document).ready(function() {
 
 		var $actionbar = $('.actionbar');
 
@@ -1150,5 +1148,3 @@ $(function(){
 	dropdownSelect('.filters .filter-dropdown .dropdown');
 });
 
-
-}(window.jQuery, window.Django));

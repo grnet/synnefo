@@ -22,6 +22,7 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db import transaction
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import redirect
 from django.utils.translation import ugettext as _
@@ -819,8 +820,10 @@ def resource_usage(request):
 
     # resolve uuids of projects the user consumes quota from
     user = request.user
+    quota_filters = Q(usage_min__gt=0, limit__gt=0)
     quota_uuids = map(lambda k: k[1],
-                      quotas.get_users_quotas_counters([user])[0].keys())
+                      quotas.get_users_quotas_counters([user],
+                                                       flt=quota_filters)[0].keys(),)
     # resolve uuids of projects the user is member to
     user_memberships = request.user.projectmembership_set.actually_accepted()
     membership_uuids = [m.project.uuid for m in user_memberships]

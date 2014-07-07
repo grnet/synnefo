@@ -32,8 +32,16 @@ from eztables.views import DatatablesView
 from synnefo_admin.admin.utils import create_details_href
 
 
+def ip_exists(addr):
+    return IPAddress.objects.filter(address=addr).exists()
+
+
 def get_ip_details_href(ip_log):
-    return create_details_href('ip', ip_log.address, ip_log.address)
+    addr = ip_log.address
+    if ip_exists(addr):
+        return create_details_href('ip', addr, addr)
+    else:
+        return addr
 
 
 def get_vm_details_href(ip_log):

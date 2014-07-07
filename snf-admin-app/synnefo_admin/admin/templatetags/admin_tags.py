@@ -36,7 +36,7 @@ import django_filters
 
 import synnefo_admin.admin.projects.utils as project_utils
 import synnefo_admin.admin.users.utils as user_utils
-from astakos.im.models import AstakosUser
+import synnefo_admin.admin.ip_logs.utils as iplog_utils
 
 register = template.Library()
 
@@ -216,6 +216,11 @@ def id(item):
         pass
 
     return item.pk
+
+
+@register.filter
+def ip_exists(addr):
+    return iplog_utils.ip_exists(addr)
 
 
 @register.filter

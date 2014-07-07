@@ -190,7 +190,7 @@ class AuthProvider(object):
 
     def update_last_login_at(self):
         instance = self._instance
-        user = instance.user
+        user = instance.user.__class__.objects.get(pk=instance.user.pk)
         date = datetime.now()
         instance.last_login_at = user.last_login = date
         instance.save()

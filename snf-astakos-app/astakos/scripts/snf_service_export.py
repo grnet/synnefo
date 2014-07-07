@@ -231,6 +231,18 @@ cyclades_services = {
         ],
         'resources': {},
     },
+
+    'cyclades_volume': {
+        'type': 'volume',
+        'component': 'cyclades',
+        'prefix': 'volume',
+        'public': True,
+        'endpoints': [
+            {'versionId': 'v2.0',
+             'publicURL': None},
+        ],
+        'resources': {},
+    },
 }
 
 pithos_services = {

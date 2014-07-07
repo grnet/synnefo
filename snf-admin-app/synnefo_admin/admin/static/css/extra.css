@@ -850,124 +850,128 @@ p.progress-area {
   margin-top: 18px;
   position: relative;
 }
-/* line 25, ../sass/_modals.scss */
-.modal#user-contact p .error-sign {
+/* line 27, ../sass/_modals.scss */
+.modal p {
+  position: relative;
+}
+/* line 30, ../sass/_modals.scss */
+.modal p > .error-sign {
   top: 0;
 }
-/* line 31, ../sass/_modals.scss */
+/* line 34, ../sass/_modals.scss */
 .modal h3 {
   margin-top: 0;
   font-weight: bold;
 }
-/* line 36, ../sass/_modals.scss */
+/* line 39, ../sass/_modals.scss */
 .modal textarea, .modal input {
   width: 87%;
   vertical-align: text-top;
   padding: 4px 8px;
 }
-/* line 40, ../sass/_modals.scss */
+/* line 43, ../sass/_modals.scss */
 .modal textarea.body, .modal input.body {
   min-height: 160px;
 }
-/* line 45, ../sass/_modals.scss */
+/* line 48, ../sass/_modals.scss */
 .modal label {
   margin-right: 6px;
   width: 70px;
   vertical-align: sub;
 }
-/* line 52, ../sass/_modals.scss */
+/* line 55, ../sass/_modals.scss */
 .modal .modal-body {
   background-color: white;
 }
-/* line 57, ../sass/_modals.scss */
+/* line 60, ../sass/_modals.scss */
 .modal .modal-footer {
   margin-top: 0;
 }
-/* line 59, ../sass/_modals.scss */
+/* line 62, ../sass/_modals.scss */
 .modal .modal-footer form {
   display: inline;
 }
-/* line 62, ../sass/_modals.scss */
-.modal .modal-footer .cancel {
+/* line 65, ../sass/_modals.scss */
+.modal .modal-footer .custom-btn:first-child {
   float: left;
   background-color: #404040;
   border-color: #404040;
 }
 
-/* line 72, ../sass/_modals.scss */
+/* line 75, ../sass/_modals.scss */
 .modal .custom-btn {
   color: white;
   opacity: 0.9;
 }
-/* line 75, ../sass/_modals.scss */
+/* line 78, ../sass/_modals.scss */
 .modal .custom-btn:hover {
   opacity: 1;
 }
-/* line 80, ../sass/_modals.scss */
+/* line 83, ../sass/_modals.scss */
 .modal[data-karma="dark"] .elem {
   color: #5a5959;
 }
-/* line 85, ../sass/_modals.scss */
+/* line 88, ../sass/_modals.scss */
 .modal[data-karma="neutral"] .elem {
   color: #207dc9;
 }
-/* line 91, ../sass/_modals.scss */
+/* line 94, ../sass/_modals.scss */
 .modal[data-karma="good"] .elem {
   color: #007238;
 }
-/* line 99, ../sass/_modals.scss */
+/* line 102, ../sass/_modals.scss */
 .modal[data-karma="bad"] .elem {
   color: #a66b18;
 }
-/* line 106, ../sass/_modals.scss */
+/* line 109, ../sass/_modals.scss */
 .modal[data-caution="warning"][data-karma="good"] .elem, .modal[data-caution="warning"][data-karma="neutral"] .elem {
   color: #a66b18;
 }
-/* line 113, ../sass/_modals.scss */
+/* line 116, ../sass/_modals.scss */
 .modal[data-caution="dangerous"][data-karma="bad"] .elem, .modal[data-caution="dangerous"][data-karma="neutral"] .elem {
   color: #c21934;
 }
 
-/* line 120, ../sass/_modals.scss */
+/* line 123, ../sass/_modals.scss */
 .custom-btn[data-karma="dark"] {
   background-color: #222222;
   border-color: transparent;
 }
 
-/* line 125, ../sass/_modals.scss */
+/* line 128, ../sass/_modals.scss */
 .modal em {
   font-weight: bold;
   font-style: normal;
 }
 
-/* line 131, ../sass/_modals.scss */
+/* line 134, ../sass/_modals.scss */
 .modal-content {
   padding: 20px;
   color: #404040;
 }
-/* line 134, ../sass/_modals.scss */
+/* line 137, ../sass/_modals.scss */
 .modal-content .badge {
   background-color: transparent;
 }
 
-/* line 139, ../sass/_modals.scss */
+/* line 142, ../sass/_modals.scss */
 .popover {
   z-index: 2000;
 }
-/* line 141, ../sass/_modals.scss */
+/* line 144, ../sass/_modals.scss */
 .popover dl {
   color: black;
   font-weight: normal;
 }
-/* line 144, ../sass/_modals.scss */
+/* line 147, ../sass/_modals.scss */
 .popover dl dt {
   width: 90px;
 }
-/* line 147, ../sass/_modals.scss */
+/* line 150, ../sass/_modals.scss */
 .popover dl dd {
   margin-left: 110px;
 }
-/* line 151, ../sass/_modals.scss */
+/* line 154, ../sass/_modals.scss */
 .popover h2 {
   font-size: 16px;
   color: #404040;
@@ -975,23 +979,23 @@ p.progress-area {
   text-align: center;
 }
 
-/* line 160, ../sass/_modals.scss */
+/* line 163, ../sass/_modals.scss */
 .instructions-icon {
   color: #3c96e0;
   font-size: 22px;
   margin-left: 78px;
 }
-/* line 164, ../sass/_modals.scss */
+/* line 167, ../sass/_modals.scss */
 .instructions-icon:hover {
   text-decoration: none;
 }
 
-/* line 169, ../sass/_modals.scss */
+/* line 172, ../sass/_modals.scss */
 .extra-info {
   margin-top: 10px;
 }
 
-/* line 173, ../sass/_modals.scss */
+/* line 176, ../sass/_modals.scss */
 .error-sign {
   color: red;
   font-size: 20px;
@@ -1000,56 +1004,56 @@ p.progress-area {
   top: 6px;
   display: none;
 }
-/* line 181, ../sass/_modals.scss */
+/* line 184, ../sass/_modals.scss */
 .error-sign:hover {
   color: red;
   text-decoration: none;
 }
 
-/* line 188, ../sass/_modals.scss */
+/* line 191, ../sass/_modals.scss */
 .form-area {
   position: relative;
 }
 
-/* line 191, ../sass/_modals.scss */
+/* line 194, ../sass/_modals.scss */
 .form-subject {
   margin-bottom: 15px;
 }
 
-/* line 195, ../sass/_modals.scss */
+/* line 198, ../sass/_modals.scss */
 .toggle-more {
   margin-top: -16px;
   display: none;
 }
 
-/* line 201, ../sass/_modals.scss */
+/* line 204, ../sass/_modals.scss */
 .table-selected td:last-child {
   position: relative;
   padding-right: 36px;
 }
-/* line 205, ../sass/_modals.scss */
+/* line 208, ../sass/_modals.scss */
 .table-selected tr:nth-child(2n) {
   background: #f2f2f2;
 }
-/* line 209, ../sass/_modals.scss */
+/* line 212, ../sass/_modals.scss */
 .table-selected tr a {
   font-weight: bold;
 }
-/* line 213, ../sass/_modals.scss */
+/* line 216, ../sass/_modals.scss */
 .table-selected tr:hover {
   background: #d9d9d9;
 }
-/* line 215, ../sass/_modals.scss */
+/* line 218, ../sass/_modals.scss */
 .table-selected tr:hover a {
   color: red;
 }
-/* line 220, ../sass/_modals.scss */
+/* line 223, ../sass/_modals.scss */
 .table-selected .remove {
   position: absolute;
   right: 14px;
   color: transparent;
 }
-/* line 224, ../sass/_modals.scss */
+/* line 227, ../sass/_modals.scss */
 .table-selected .remove:hover {
   text-decoration: none;
 }
@@ -1777,4 +1781,9 @@ svg > text:last-child {
 /* line 354, ../sass/extra.scss */
 .notify .dl-horizontal dd {
   margin-left: 80px;
+}
+
+/* line 359, ../sass/extra.scss */
+.lowercase {
+  text-transform: lowercase;
 }

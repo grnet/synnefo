@@ -44,7 +44,7 @@ def select_db(app):
     """Generic selection of database."""
     if app == "db":
         return 'cyclades'
-    if app in ["im", "auth"]:
+    if app in ["im", "auth", "sessions", "quotaholder_app"]:
         return 'astakos'
     return None
 

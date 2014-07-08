@@ -21,7 +21,6 @@ from collections import OrderedDict
 from operator import or_
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Group
 from django.utils.html import escape
@@ -38,6 +37,7 @@ from synnefo.util import units
 import django_filters
 from django.db.models import Q
 
+from synnefo_admin import admin_settings as settings
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
@@ -219,6 +219,8 @@ def details(request, query):
     if qor:
         qor = reduce(or_, qor)
         ip_log_list = IPAddressLog.objects.filter(qor).order_by("allocated_at")
+        lim = settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
+        ip_log_list = ip_log_list[:lim]
 
     for ipaddr in ip_log_list:
         ipaddr.vm = VirtualMachine.objects.get(id=ipaddr.server_id)

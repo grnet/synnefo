@@ -36,6 +36,7 @@ from synnefo.management.common import wait_server_task
 
 import django_filters
 
+from synnefo_admin import admin_settings as settings
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
@@ -215,6 +216,8 @@ def details(request, query):
 
     ip_log_list = IPAddressLog.objects.filter(server_id=vm.pk)\
         .order_by("allocated_at")
+    lim = settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
+    ip_log_list = ip_log_list[:lim]
 
     for ipaddr in ip_log_list:
         ipaddr.vm = vm

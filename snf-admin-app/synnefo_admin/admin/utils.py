@@ -198,7 +198,7 @@ def create_details_href(type, name, id):
 
 def exclude_deleted(qs, model_type):
     """Exclude deleted items."""
-    if not settings.ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS:
+    if settings.ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS:
         return qs
 
     if isinstance(qs, list):

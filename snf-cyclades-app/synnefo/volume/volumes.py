@@ -222,8 +222,12 @@ def delete(volume):
 @transaction.commit_on_success
 def update(volume, name=None, description=None, delete_on_termination=None):
     if name is not None:
+        utils.check_name_length(name, Volume.NAME_LENGTH,
+                                "Volume name is too long")
         volume.name = name
     if description is not None:
+        utils.check_name_length(description, Volume.DESCRIPTION_LENGTH,
+                                "Volume description is too long")
         volume.description = description
     if delete_on_termination is not None:
         validate_volume_termination(volume.volume_type, delete_on_termination)

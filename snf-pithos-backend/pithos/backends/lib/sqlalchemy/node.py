@@ -640,7 +640,7 @@ class Node(DBWorker):
         while True:
             if node == ROOTNODE:
                 break
-            if recursion_depth and recursion_depth <= i:
+            if recursion_depth is not None and recursion_depth <= i:
                 break
             props = self.node_get_properties(node)
             if props is None:

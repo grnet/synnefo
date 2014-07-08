@@ -44,6 +44,16 @@
       },
 
       proxy_attrs: { 
+          '_status': [['vm', 'vm.state', 'vm.status', 'status'], function() {
+              return this.get('status');
+          }],
+          'in_progress': [['status', 'vm', 'vm.status'], function() {
+              var vm = this.get('vm');
+              if (vm && vm.get('in_progress')) {
+                  return true
+              }
+              return false;
+          }],
           'ext': [['vm', 'volume_type'], function() {
               var vm = this.get('vm');
               if (!vm) { return false }
@@ -214,6 +224,7 @@
           'display_description': description || null,
           'size': parseInt(size),
           'server_id': vm.id,
+          'project': project.id,
           'metadata': {}
         }
 

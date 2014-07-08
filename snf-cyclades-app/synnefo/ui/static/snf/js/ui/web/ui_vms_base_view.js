@@ -340,11 +340,7 @@
             }
             
             var el = this.vm(vm);
-            if (vm.can_resize()) {
-              el.addClass("can-resize");
-            } else {
-              el.removeClass("can-resize");
-            }
+            el.addClass("can-resize");
 
             if (vm.get('suspended')) {
               el.addClass("suspended");

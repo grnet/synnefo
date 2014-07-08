@@ -1177,6 +1177,14 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     background: transparent;
 }
 
+.connecting-state .indicator1, .connecting-state .indicator2, .connecting-state .indicator3, .connecting-state .indicator4 {
+    background-color: #d4aa00;
+}
+
+.disconnecting-state .indicator1, .disconnecting-state .indicator2, .disconnecting-state .indicator3, .disconnecting-state .indicator4 {
+    background-color: #d4aa00;
+}
+
 .running-state .indicator1, .running-state .indicator2, .running-state .indicator3, .running-state .indicator4 {
     background-color: #63cf1c;
 }
@@ -2525,6 +2533,10 @@ div.list table thead .vmname {
     clear: right;
     float:right;
     margin: 10px 6px 0 15px;
+}
+
+.progress-indicator.spinner {
+    margin-top: 50px;
 }
 
 .icon .spinner {
@@ -4298,6 +4310,7 @@ h3.overlay-inner-title {
     margin-right: 2em;
     float: right;
     margin-top: -4px;
+    width: 200px;
 }
 
 .feedback-form .description {
@@ -5666,10 +5679,11 @@ table.list-machines .wave {
     width: 98%;
     height: 250px;
     padding: 4px;
+    max-width: 582px;
+    max-height: 250px;
 }
 
 .create-wizard-overlay.create-volume .vms-list .model-item .indicators {
-    margin-top: -17px;
     float: right;
 }
 
@@ -6155,7 +6169,7 @@ table.list-machines .wave {
 }
 
 
-.create-wizard-overlay .images-info-cont h4, .create-vm .create-step-cont .param h4{
+.create-wizard-overlay .images-info-cont h4, .create-vm .create-step-cont .param h4, h4.project-name {
     color: #FF9955;
     margin-bottom: 1em;
     font-size: 1.2em;
@@ -6625,10 +6639,12 @@ table.list-machines .wave {
     width: auto;
 }
 
+.create-wizard-overlay .create-step-cont .list-cont ul li.flavor-project .value,
 .create-wizard-overlay .create-step-cont .list-cont ul li.image-name .value {
   width: 120px;
   text-indent: 0;
   margin-left: 0;
+  text-align: left;
 }
 
 .create-wizard-overlay .create-step-cont .list-cont ul li {

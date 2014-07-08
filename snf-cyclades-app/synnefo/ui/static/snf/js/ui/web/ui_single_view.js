@@ -506,6 +506,8 @@
         'START':            ['state', 'starting-state'],
         'CONNECT':          ['state', 'connecting-state'],
         'DISCONNECT':       ['state', 'disconnecting-state'],
+        'ATTACH_VOLUME':    ['state', 'connecting-state'],
+        'DETACH_VOLUME':    ['state', 'disconnecting-state'],
         'RESIZE':           ['state', 'rebooting-state']
     };
 

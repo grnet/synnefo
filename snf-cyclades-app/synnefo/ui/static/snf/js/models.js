@@ -633,7 +633,7 @@
           }
           if (key == 'disk') {
             parser = synnefo.util.readablizeBytes
-            getter = this.ram_to_bytes
+            getter = this.disk_to_bytes
           }
           if (key == 'cpu') {
             parser = function(v) { return v + 'x' }
@@ -1796,6 +1796,8 @@
         'START'         : ['destroy'],
         'CONNECT'       : ['destroy'],
         'DISCONNECT'    : ['destroy'],
+        'DETACH_VOLUME' : ['destroy'],
+        'ATTACH_VOLUME' : ['destroy'],
         'RESIZE'        : ['destroy'],
         'REASSIGN'      : ['destroy']
     }
@@ -1830,6 +1832,8 @@
         'CONNECT',
         'DISCONNECT',
         'FIREWALL',
+        'DETACH_VOLUME',
+        'ATTACH_VOLUME',
         'REASSIGN',
         'RESIZE'
     ]);
@@ -2626,6 +2630,9 @@
           },
           'ip': {
             'cyclades.floating_ip': 1
+          },
+          'volume': {
+            'cyclades.disk': 1
           }
         },
 

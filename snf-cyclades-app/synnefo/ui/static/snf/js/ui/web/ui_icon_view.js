@@ -688,9 +688,7 @@
         init_handlers: function() {
           this.resize_actions.bind('click', _.bind(function(e){
               if (this.vm.in_error_state()) { return }
-              if (this.vm.can_resize()) {
-                ui.main.vm_resize_view.show(this.vm);
-              }
+              ui.main.vm_resize_view.show(this.vm);
           }, this));
         },
 
@@ -882,8 +880,8 @@
                 vm.get('fqdn') || synnefo.config.no_fqdn_message);
             el.find("div.status").text(STATE_TEXTS[vm.state()]);
             // set state class
-            el.find("div.state").removeClass().addClass(
-                views.IconView.STATE_CLASSES[vm.state()].join(" "));
+            var cls = views.IconView.STATE_CLASSES[vm.state()] || ['state'];
+            el.find("div.state").removeClass().addClass(cls.join(" "));
             // os icon
             el.find("div.logo").css({
                 'background-image': "url(" + 
@@ -961,6 +959,8 @@
         'START':            ['state', 'starting-state'],
         'CONNECT':          ['state', 'connecting-state'],
         'DISCONNECT':       ['state', 'disconnecting-state'],
+        'ATTACH_VOLUME':    ['state', 'connecting-state'],
+        'DETACH_VOLUME':    ['state', 'disconnecting-state'],
         'RESIZE':           ['state', 'rebooting-state']
     };
 

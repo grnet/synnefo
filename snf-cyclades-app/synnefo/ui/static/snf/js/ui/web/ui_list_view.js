@@ -335,8 +335,9 @@
         },
 
         get_vm_table_data: function(vm) {
+            var cls = views.ListView.STATE_CLASSES[vm.state()] || [];
             var checkbox = '<input type="checkbox" class="' + 
-                views.ListView.STATE_CLASSES[vm.state()].join(" ") + 
+                cls.join(" ") + 
                 ' list-vm-checkbox" id="checkbox-' + this.id_tpl + vm.id + '"/>';
 
             var img = '<img class="os_icon" src="'+ this.get_vm_icon_path(vm, "small") +'" />';
@@ -487,7 +488,7 @@
 
             return views.ListView.VM_OS_ICON_TPLS()[icon_type].format(os, st);
         }
-    })
+    });
 
     views.ListView.VM_OS_ICON_TPLS = function() {
         return {
@@ -510,6 +511,8 @@
         'START':            ['starting-state'],
         'CONNECT':          ['connecting-state'],
         'DISCONNECT':       ['disconnecting-state'],
+        'ATTACH_VOLUME':    ['connecting-state'],
+        'DETACH_VOLUME':    ['disconnecting-state'],
         'RESIZE':           ['rebooting-state']
     };
 

@@ -51,6 +51,8 @@
         'SHUTDOWN':         ['shutting-state'],
         'START':            ['starting-state'],
         'CONNECT':          ['connecting-state'],
+        'DETACH_VOLUME':    ['disconnecting-state'],
+        'ATTACH_VOLUME':    ['connecting-state'],
         'DISCONNECT':       ['disconnecting-state'],
         'RESIZE':           ['rebooting-state']
     };
@@ -59,9 +61,10 @@
         views.CreateVMSelectProjectView.extend({
             tpl: '#create-view-projects-select-tpl',
             required_quota: function() {
-                var size = 1;
+                var size = Math.pow(1024, 3);
                 var img = this.parent_view.parent.steps[1].selected_image;
-                if (img) {
+
+                if (img && !img.id == "empty-disk") {
                     size = img.get("size");
                 }
                 return {'cyclades.disk': size}
@@ -105,6 +108,7 @@
             }
             return views.CreateVolumeImageStepView.__super__.get_image_icon_tag.call(this, image);
         },
+
         display_warning_for_image: function(image) {
           if (image && !image.is_system_image() && 
               !image.owned_by(synnefo.user) && image.get("id") != "empty-disk") {
@@ -170,12 +174,17 @@
             this.size_input.bind("keyup", _.bind(function() {
                 window.setTimeout(_.bind(function() {
                     var value = this.size_input.val();
+                    if (!parseInt(value)) { 
+                        value = this.min_size; 
+                        this.size_input.val(value);
+                    }
                     if (parseInt(value)) {
                         this.size_input.simpleSlider("setValue", value);
                     }
-                }, this), 200);
+                }, this), 50);
             }, this));
             this.size_input.simpleSlider(this.slider_settings);
+            this.min_size = 1;
         },
 
         slider_settings: {
@@ -215,11 +224,12 @@
         hide_step: function() {
           window.setTimeout(_.bind(function() {
               this.project_select_view && this.project_select_view.hide(true);
-          }, this), 200);
+          }, this), 50);
         },
         
         hide: function() {
           this.project_select_view.unbind("change");
+          this.project_select_view && this.project_select_view.hide(true);
           views.CreateVolumeProjectStepView.__super__.hide.apply(this, arguments);
         },
 
@@ -248,7 +258,12 @@
             if (!this.parent.project) { return }
             this.current_image = image;
             var size = image ? image.get("size") : 1;
-            this.set_slider_min(size / Math.pow(1024, 3));
+            size = size / Math.pow(1024, 3);
+            if (size > parseInt(size)) {
+                size = parseInt(size) + 1;
+            }
+            this.set_slider_min(size);
+            this.min_size = size || 1;
             this.update_layout();
         },
             
@@ -456,6 +471,9 @@
               image_name = params.image.get("name");
           }
           this.$(".image-name").text(snf.util.truncate(image_name, 44));
+          
+          var project_name = params.project.get("name");
+          this.$(".project-name").text(snf.util.truncate(project_name, 44));
 
           var name = params.name;
           this.$(".volume-name").text(snf.util.truncate(name, 54));
@@ -496,6 +514,7 @@
         validate: function() { return true },
 
         onClose: function() {
+          this.current_view && this.current_view.hide && this.current_view.hide(true);
         },
 
         submit: function() {
@@ -882,7 +901,8 @@
             this.creating = true;
             this.vm.create_snapshot({
                 display_name: name, 
-                display_description: desc
+                display_description: desc,
+                volume_id: this.volume.id
             }, _.bind(function() {
               this.creating = false;
               this.show_success();

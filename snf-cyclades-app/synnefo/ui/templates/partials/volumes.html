@@ -14,7 +14,7 @@
     </div>
 
     <div class="empty-list hidden">
-      <p>{% trans "No disks available" %}</p>
+      <p>{% trans "No disks available." %}</p>
     </div>
 
     <div class="items-list clearfix">
@@ -87,10 +87,9 @@
             </div>
         </div>
         <div class="entry-right">
-          <div data-rv-class="model.status|status_cls" class="status">
+          <div data-rv-class="model._status|status_cls" class="status">
             <div class="status-title">
-              <span data-rv-text="model.status|status_display">Active</span>
-              <span data-rv-show="model.in_progress">...</span>
+              <span data-rv-text="model._status|status_display">Active</span>
             </div>
             <div class="status-indicator clearfix">
               <div class="indicator indicator1"></div>
@@ -101,7 +100,9 @@
             <div class="state state-indicator">
               <div class="action-indicator"></div>
             </div>
-            <div data-show="model.status|in_progress" class="status-progress"></div>
+            <img data-rv-show="model.in_progress" 
+                 src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/small/progress.gif" 
+                 class="progress-indicator spinner" />
           </div>
         </div>
       </div>

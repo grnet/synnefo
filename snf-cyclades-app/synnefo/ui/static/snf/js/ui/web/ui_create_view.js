@@ -718,6 +718,10 @@
           this.handle_project_select(this.parent.project);
         },
 
+        hide: function() {
+            this.hide_step();
+        },
+
         hide_step: function() {
             this.project_select_view && this.project_select_view.hide(true);
         },
@@ -1665,7 +1669,7 @@
             this.name = this.$("h3.vm-name");
             this.keys = this.$(".confirm-params.ssh");
             this.meta = this.$(".confirm-params.meta");
-            this.project = this.$(".confirm-cont.flavor .project-name");
+            this.project = this.$(".confirm-cont.image .project-name");
             this.ip_addresses = this.$(".confirm-params.ip-addresses");
             this.private_networks = this.$(".confirm-params.private-networks");
             this.init_handlers();
@@ -1991,6 +1995,7 @@
         },
 
         onClose: function() {
+          this.current_view && this.current_view.hide && this.current_view.hide(true);
           if (this.steps && this.steps[3]) {
             this.steps[3].remove();
           }

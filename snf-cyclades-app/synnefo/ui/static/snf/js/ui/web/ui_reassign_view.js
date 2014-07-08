@@ -224,6 +224,11 @@
               filter_func: _.bind(this.can_fit_func, this),
               quotas_keys: this.resources
             });
+
+            this.collection_view.bind("change:select", function(item) {
+                this.handle_project_change(item.model);
+            }, this);
+
             this.collection_view.show(true);
             this.collection_view.model_usage = this.model_usage;
             this.collection_view.resource_model = this.model;
@@ -233,6 +238,16 @@
               this.collection_view.set_selected(this.model.get('project'));
             }
             this.list.append($(this.collection_view.el));
+            this.handle_project_change();
+        },
+
+        handle_project_change: function(project) {
+            var project = project || this.collection_view.get_selected();
+            if (project.id == this.model.get('project').id) {
+                this.submit_button.addClass("disabled");
+            } else {
+                this.submit_button.removeClass("disabled");
+            }
         },
 
         init_handlers: function() {
@@ -240,6 +255,7 @@
         },
 
         submit: function() {
+          if (this.submit_button.hasClass("disabled")) { return }
           if (this.in_progress) { return }
           var project = this.collection_view.get_selected();
           if (project.id == this.model.get('project').id) {
@@ -280,6 +296,7 @@
       description: 'Select project assign machine to',
       resources: ['cyclades.vm', 'cyclades.ram', 
                   'cyclades.cpu', 'cyclades.disk'],
+
       model_usage: function(model) {
           var quotas = model.get_flavor().quotas();
           var total = false;

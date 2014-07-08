@@ -98,7 +98,7 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
     utils.check_name_length(name, Volume.NAME_LENGTH,
                             "Volume name is too long")
     utils.check_name_length(description, Volume.DESCRIPTION_LENGTH,
-                            "Volume name is too long")
+                            "Volume description is too long")
     validate_volume_termination(volume_type, delete_on_termination)
 
     if index is None:

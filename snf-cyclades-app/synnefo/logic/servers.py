@@ -297,6 +297,7 @@ def _resize(vm, flavor):
 
 @transaction.commit_on_success
 def reassign(vm, project):
+    commands.validate_server_action(vm, "REASSIGN")
     action_fields = {"to_project": project, "from_project": vm.project}
     log.info("Reassigning VM %s from project %s to %s",
              vm, vm.project, project)

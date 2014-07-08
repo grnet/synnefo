@@ -43,6 +43,10 @@ def validate_server_action(vm, action):
         raise faults.BadRequest("Cannot perform '%s' action while there is a"
                                 " pending '%s'." % (action, pending_action))
 
+    # Reassigning is permitted in any state
+    if action == "REASSIGN":
+        return
+
     # Check if action can be performed to VM's operstate
     operstate = vm.operstate
     if operstate == "ERROR":

@@ -1197,6 +1197,11 @@ def attach_volume(vm, volume, depends=[]):
     if volume.origin is not None:
         disk["origin"] = volume.origin
 
+    extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
+                                .get(disk_provider)
+    if extra_disk_params is not None:
+        disk.update(extra_disk_params)
+
     kwargs = {
         "instance": vm.backend_vm_id,
         "disks": [("add", "-1", disk)],

@@ -241,10 +241,10 @@ def update(volume, name=None, description=None, delete_on_termination=None):
 def reassign_volume(volume, project):
     if volume.index == 0:
         raise faults.Conflict("Cannot reassign: %s is a system volume" %
-                              volume)
+                              volume.id)
     action_fields = {"from_project": volume.project, "to_project": project}
     log.info("Reassigning volume %s from project %s to %s",
-             volume, volume.project, project)
+             volume.id, volume.project, project)
     volume.project = project
     volume.save()
     quotas.issue_and_accept_commission(volume, action="REASSIGN",

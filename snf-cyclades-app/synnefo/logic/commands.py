@@ -31,7 +31,7 @@ def validate_server_action(vm, action):
     if vm.deleted:
         raise faults.BadRequest("Server '%s' has been deleted." % vm.id)
 
-    # Destroyin a server should always be permitted
+    # Destroying a server should always be permitted
     if action == "DESTROY":
         return
 
@@ -39,7 +39,7 @@ def validate_server_action(vm, action):
     pending_action = vm.task
     if pending_action:
         if pending_action == "BUILD":
-            raise faults.BuildInProgress("Server '%s' is being build." % vm.id)
+            raise faults.BuildInProgress("Server '%s' is being built." % vm.id)
         raise faults.BadRequest("Cannot perform '%s' action while there is a"
                                 " pending '%s'." % (action, pending_action))
 
@@ -53,7 +53,7 @@ def validate_server_action(vm, action):
         raise faults.BadRequest("Cannot perform '%s' action while server is"
                                 " in 'ERROR' state." % action)
     elif operstate == "BUILD" and action != "BUILD":
-        raise faults.BuildInProgress("Server '%s' is being build." % vm.id)
+        raise faults.BuildInProgress("Server '%s' is being built." % vm.id)
     elif (action == "START" and operstate != "STOPPED") or\
          (action == "STOP" and operstate != "STARTED") or\
          (action == "RESIZE" and operstate != "STOPPED") or\

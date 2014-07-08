@@ -153,7 +153,10 @@ html body .dataTables_wrapper {
 .dataTables_wrapper .dataTables_filter,
 .dataTables_wrapper .dataTables_info,
 .dataTables_wrapper .dataTables_paginate {
-  color: white;
+    padding-top: 0;
+    margin-bottom: 0.5em;
+    color: white;
+    line-height: $datatabled-actions-height;
 }
 table.dataTable.no-footer {
     border-bottom: 1px solid $almost-white;
@@ -162,6 +165,7 @@ table.dataTable.no-footer {
 
 .dataTables_wrapper .dataTables_paginate .paginate_button {
     color: white!important;
+    padding: 0 1em;
 }
 
 .container .dataTables_wrapper .dataTables_paginate .paginate_button:hover {

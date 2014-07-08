@@ -2,7 +2,13 @@
 
 {% block nav-bar %}
 <div class="nav-simple navbar-fixed-top">
-	<span class="header">Synnefo Admin Panel</span>
+	<span class="header">
+    {% if BRANDING_ADMIN_LOGO_URL %}
+    <img src="{{ BRANDING_ADMIN_LOGO_URL }}" alt="{{ BRANDING_SERVICE_NAME }} Admin Panel" />
+    {% else %}
+        Synnefo Admin Panel
+    {% endif %}
+    </span>
 	<div class="login-info">Welcome,
 		<span class="dropdown" >
             <a href="" data-toggle="dropdown">{{ user.access.user.name }}

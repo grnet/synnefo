@@ -179,6 +179,9 @@ body .container .line-btn.disabled {
 		float: left;
 		line-height: 40px;
 		font-size: 26px;
+        img {
+            max-height: 50px;
+        }
 	}
 	.login-info {
         .dropdown > a {

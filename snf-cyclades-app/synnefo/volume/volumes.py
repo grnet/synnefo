@@ -209,10 +209,14 @@ def delete(volume):
     """Delete a Volume"""
     # A volume is deleted by detaching it from the server that is attached.
     # Deleting a detached volume is not implemented.
-    if volume.machine_id is not None:
-        server_attachments.detach_volume(volume.machine, volume)
+    server_id = volume.machine_id
+    if server_id is not None:
+        server = util.get_server(volume.userid, server_id, for_update=True,
+                                 non_deleted=True,
+                                 exception=faults.BadRequest)
+        server_attachments.detach_volume(server, volume)
         log.info("Detach volume '%s' from server '%s', job: %s",
-                 volume.id, volume.machine_id, volume.backendjobid)
+                 volume.id, server_id, volume.backendjobid)
     else:
         raise faults.BadRequest("Cannot delete a detached volume")
 

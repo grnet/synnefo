@@ -987,7 +987,7 @@ def add(request, net, args):
         raise faults.BadRequest('Malformed Request.')
 
     vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
-                     non_deleted=True)
+                     for_update=True, non_deleted=True)
     servers.connect(vm, network=net)
     return HttpResponse(status=202)
 
@@ -1015,7 +1015,7 @@ def remove(request, net, args):
     nic = util.get_nic(nic_id=nic_id)
     server_id = nic.machine_id
     vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
-                     non_deleted=True)
+                     for_update=True, non_deleted=True)
 
     servers.disconnect(vm, nic)
 
@@ -1075,7 +1075,7 @@ def get_volumes(request, server_id):
 def get_volume_info(request, server_id, volume_id):
     log.debug("get_volume_info server_id %s volume_id", server_id, volume_id)
     user_id = request.user_uniq
-    vm = util.get_vm(server_id, user_id)
+    vm = util.get_vm(server_id, user_id, for_update=False)
     volume = get_volume(user_id, volume_id, for_update=False, non_deleted=True,
                         exception=faults.BadRequest)
     servers._check_attachment(vm, volume)
@@ -1108,7 +1108,7 @@ def attach_volume(request, server_id):
 def detach_volume(request, server_id, volume_id):
     log.debug("detach_volume server_id %s volume_id", server_id, volume_id)
     user_id = request.user_uniq
-    vm = util.get_vm(server_id, user_id, non_deleted=True)
+    vm = util.get_vm(server_id, user_id, for_update=True, non_deleted=True)
     volume = get_volume(user_id, volume_id, for_update=True, non_deleted=True,
                         exception=faults.BadRequest)
     vm = server_attachments.detach_volume(vm, volume)

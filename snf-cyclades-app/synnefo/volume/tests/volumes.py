@@ -183,7 +183,7 @@ class VolumesTest(BaseAPITest):
                           volumes.delete,
                           vol)
 
-        vm = mf.VirtualMachineFactory()
+        vm = mf.VirtualMachineFactory(userid=vol.userid)
         # Also we cannot delete root volume
         vol.index = 0
         vol.machine = vm

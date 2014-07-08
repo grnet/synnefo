@@ -20,6 +20,7 @@ from binascii import hexlify
 from collections import defaultdict
 from urllib import quote, unquote
 from functools import partial
+from unittest import skipIf
 
 from pithos.api.test import (PithosAPITest, pithos_settings,
                              AssertMappingInvariant, AssertUUidInvariant,
@@ -852,8 +853,9 @@ class ObjectPut(PithosAPITest):
         r = self.put('%s?hashmap=' % url, data=hashmap)
         self.assertEqual(r.status_code, 400)
 
-        length = random.randint(TEST_BLOCK_SIZE, 2 * TEST_BLOCK_SIZE)
-        data = get_random_data(length=length)
+        l = list(data)
+        l[-1] = chr((ord(l[-1]) + 1) % 255)  # Change only the last char
+        data = ''.join(l)
         hashes = HashMap(TEST_BLOCK_SIZE, TEST_HASH_ALGORITHM)
         hashes.load(data)
         hexlified = [hexlify(h) for h in hashes]
@@ -866,7 +868,7 @@ class ObjectPut(PithosAPITest):
         except:
             self.fail("shouldn't happen")
         else:
-            self.assertEqual(sorted(missing), sorted(hexlified))
+            self.assertEqual(sorted(missing), sorted(hexlified[-1:]))
 
         r = self.get('%s?hashmap=&format=xml' % url)
         oname = get_random_name()
@@ -2094,6 +2096,9 @@ class ObjectPost(PithosAPITest):
         content = r.content
         self.assertEqual(content, d2 + d3[-1])
 
+    @skipIf(pithos_settings.BACKEND_DB_MODULE ==\
+            'pithos.backends.lib.sqlite',
+            "This test is only meaningfull for SQLAlchemy backend")
     def test_update_invalid_permissions(self):
         url = join_urls(self.pithos_path, self.user, self.container,
                         self.object)

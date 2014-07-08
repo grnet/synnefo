@@ -24,9 +24,6 @@ from pithos.backends.filter import parse_filters
 
 ROOTNODE = 0
 
-(SERIAL, NODE, HASH, SIZE, TYPE, SOURCE, MTIME, MUSER, UUID, CHECKSUM,
- CLUSTER, AVAILABLE, MAP_CHECK_TIMESTAMP) = range(13)
-
 (MATCH_PREFIX, MATCH_EXACT) = range(2)
 
 inf = float('inf')
@@ -68,23 +65,6 @@ def strprevling(prefix):
     return s
 
 
-_propnames = {
-    'serial': 0,
-    'node': 1,
-    'hash': 2,
-    'size': 3,
-    'type': 4,
-    'source': 5,
-    'mtime': 6,
-    'muser': 7,
-    'uuid': 8,
-    'checksum': 9,
-    'cluster': 10,
-    'avalaible': 11,
-    'map_check_timestamp': 12
-}
-
-
 class Node(DBWorker):
     """Nodes store path organization and have multiple versions.
        Versions store object history and have multiple attributes.
@@ -94,6 +74,10 @@ class Node(DBWorker):
     # TODO: Provide an interface for included and excluded clusters.
 
     def __init__(self, **params):
+        self._props = params.pop('props')
+        for p in self._props:
+            setattr(self, p.upper(), self._props[p])
+        self.mapfile_prefix = params.pop('mapfile_prefix', 'snf_file_')
         DBWorker.__init__(self, **params)
         execute = self.execute
 
@@ -151,6 +135,8 @@ class Node(DBWorker):
                             cluster    integer not null default 0,
                             available   boolean not null default true,
                             map_check_timestamp integer,
+                            mapfile     text,
+                            is_snapshot   boolean not null default false,
                             foreign key (node)
                             references nodes(node)
                             on update cascade
@@ -176,6 +162,10 @@ class Node(DBWorker):
                     on attributes(domain) """)
         execute(""" create index if not exists idx_attributes_serial_node
                     on attributes(serial, node) """)
+
+        execute(""" create table if not exists mapfile_seq
+                          ( serial    integer primary key,
+                            dummy     boolean default -1) """)
 
         wrapper = self.wrapper
         wrapper.execute()
@@ -242,15 +232,17 @@ class Node(DBWorker):
         l = self.fetchone()
         return l[0] if l is not None else None
 
-    def node_get_versions(self, node, keys=(), propnames=_propnames):
+    def node_get_versions(self, node, keys=(), props=None):
         """Return the properties of all versions at node.
            If keys is empty, return all properties in the order
            (serial, node, hash, size, type, source, mtime, muser, uuid,
             checksum, cluster, available, map_check_timestamp).
         """
 
+        props = props or self._props
         q = ("select serial, node, hash, size, type, source, mtime, muser, "
-             "uuid, checksum, cluster "
+             "uuid, checksum, cluster, available, map_check_timestamp, "
+             "mapfile, is_snapshot "
              "from versions "
              "where node = ?")
         self.execute(q, (node,))
@@ -260,7 +252,7 @@ class Node(DBWorker):
 
         if not keys:
             return r
-        return [[p[propnames[k]] for k in keys if k in propnames] for p in r]
+        return [[p[props[k]] for k in keys if k in props] for p in r]
 
     def node_count_children(self, node):
         """Return node's child count."""
@@ -518,7 +510,8 @@ class Node(DBWorker):
 
         # The latest version.
         q = ("select serial, node, hash, size, type, source, mtime, muser, "
-             "uuid, checksum, cluster, available, map_check_timestamp "
+             "uuid, checksum, cluster, available, map_check_timestamp, "
+             "mapfile, is_snapshot "
              "from versions v "
              "where serial = %s "
              "and cluster != ?")
@@ -528,7 +521,8 @@ class Node(DBWorker):
         props = fetchone()
         if props is None:
             return None
-        mtime = props[MTIME]
+
+        mtime = props[self.MTIME]
 
         # First level, just under node (get population).
         q = ("select count(serial), sum(size), max(mtime) "
@@ -565,7 +559,7 @@ class Node(DBWorker):
         r = fetchone()
         if r is None:
             return None
-        size = r[1] - props[SIZE]
+        size = r[1] - props[self.SIZE]
         mtime = max(mtime, r[2])
         return (count, size, mtime)
 
@@ -577,31 +571,53 @@ class Node(DBWorker):
     def version_create(self, node, hash, size, type, source, muser, uuid,
                        checksum, cluster=0,
                        update_statistics_ancestors_depth=None,
-                       available=True, map_check_timestamp=None):
+                       available=True, map_check_timestamp=None,
+                       mapfile=True, is_snapshot=False):
         """Create a new version from the given properties.
-           Return the (serial, mtime) of the new version.
+           Return the (serial, mtime, mapfile) of the new version.
+
+       If mapfile is not None, set mapfile to this value.
+       Otherwise, assign to the mapfile a new unique identifier.
         """
 
+        if size == 0:
+            mapfile = None
+        elif mapfile is None:
+            q = ("insert into mapfile_seq (dummy) values (?)")
+            serial = self.execute(q, (False,)).lastrowid
+            mapfile = ''.join([self.mapfile_prefix, unicode(serial)])
+
         q = ("insert into versions (node, hash, size, type, source, mtime, "
-             "muser, uuid, checksum, cluster, available, map_check_timestamp) "
-             "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+             "muser, uuid, checksum, cluster, available, "
+             "map_check_timestamp, mapfile, is_snapshot) "
+             "values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         mtime = time()
         props = (node, hash, size, type, source, mtime, muser,
-                 uuid, checksum, cluster, available, map_check_timestamp)
+                 uuid, checksum, cluster, available, map_check_timestamp,
+                 mapfile, is_snapshot)
         serial = self.execute(q, props).lastrowid
         self.statistics_update_ancestors(node, 1, size, mtime, cluster,
                                          update_statistics_ancestors_depth)
 
         self.nodes_set_latest_version(node, serial)
 
-        return serial, mtime
+        return serial, mtime, mapfile
 
-    def version_lookup(self, node, before=inf, cluster=0, all_props=True):
+    def version_lookup(self, node, before=inf, cluster=0, all_props=True,
+                       keys=()):
         """Lookup the current version of the given node.
-           Return a list with its properties:
-           (serial, node, hash, size, type, source, mtime,
-            muser, uuid, checksum, cluster, available, map_check_timestamp)
-           or None if the current version is not found in the given cluster.
+           If the current version is not found in the given cluster,
+           return None.
+           If all_props is False, return the version's serial.
+           Otherwise:
+               If keys is not empty, return only the specific properties
+               (by filtering out the invalid ones).
+
+               If keys is empty, return all properties in the order
+               (serial, node, hash, size, type, source, mtime, muser, uuid,
+                checksum, cluster, available, map_check_timestamp)
+               This is bad tactic, since it may have considerable
+               impact on the performance.
         """
 
         q = ("select %s "
@@ -613,10 +629,14 @@ class Node(DBWorker):
         if not all_props:
             q = q % ("serial", subq)
         else:
-            q = q % (("serial, node, hash, size, type, source, mtime, muser, "
-                      "uuid, checksum, cluster, "
-                      "available, map_check_timestamp"),
-                     subq)
+            if keys:
+                cols = ','.join((k for k in keys if k in self._props))
+            else:
+                cols = ("serial, node, hash, size, type, source, mtime, "
+                        "muser, uuid, checksum, cluster, "
+                        "available, map_check_timestamp, "
+                        "mapfile, is_snapshot")
+            q = q % (cols, subq)
 
         self.execute(q, args + [cluster])
         props = self.fetchone()
@@ -625,11 +645,13 @@ class Node(DBWorker):
         return None
 
     def version_lookup_bulk(self, nodes, before=inf, cluster=0,
-                            all_props=True, order_by_path=False):
+                            all_props=True, order_by_path=False,
+                            keys=()):
         """Lookup the current versions of the given nodes.
            Return a list with their properties:
            (serial, node, hash, size, type, source, mtime, muser, uuid,
-            checksum, cluster).
+            checksum, cluster, available, map_check_timestamp,
+            mapfile, is_snapshot).
         """
 
         if not nodes:
@@ -644,17 +666,20 @@ class Node(DBWorker):
         if not all_props:
             q = q % ("serial", subq, '')
         else:
-            q = q % (("serial, v.node, hash, size, type, source, mtime, "
-                      "muser, uuid, checksum, cluster, "
-                      "available, map_check_timestamp"),
-                     subq,
-                     "order by path" if order_by_path else "")
+            if keys:
+                cols = ','.join(k for k in keys if k in self._props)
+            else:
+                cols = ("v.serial, v.node, v.hash, v.size, v.type, v.source, "
+                        "v.mtime, v.muser, v.uuid, v.checksum, v.cluster, "
+                        "v.available, v.map_check_timestamp,v.mapfile, "
+                        "v.is_snapshot")
+            q = q % (cols, subq, "order by path" if order_by_path else "")
 
         args += [cluster]
         self.execute(q, args)
         return self.fetchall()
 
-    def version_get_properties(self, serial, keys=(), propnames=_propnames,
+    def version_get_properties(self, serial, keys=(), props=None,
                                node=None):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
@@ -663,27 +688,23 @@ class Node(DBWorker):
             checksum, cluster, available, map_check_timestamp).
         """
 
-        q = ("select serial, node, hash, size, type, source, mtime, muser, "
-             "uuid, checksum, cluster, available, map_check_timestamp "
-             "from versions "
-             "where serial = ? ")
+        props = props or self._props
+        keys = keys or props.keys()
+        cols = ','.join(k for k in keys if k in props)
+        q = ("select %s from versions where serial = ? ") % cols
         args = [serial]
         if node is not None:
             q += ("and node = ?")
             args += [node]
         self.execute(q, args)
         r = self.fetchone()
-        if r is None:
-            return r
+        return r
 
-        if not keys:
-            return r
-        return [r[propnames[k]] for k in keys if k in propnames]
-
-    def version_put_property(self, serial, key, value):
+    def version_put_property(self, serial, key, value, props=None):
         """Set value for the property of version specified by key."""
 
-        if key not in _propnames:
+        props = props or self._props
+        if key not in props:
             return
         q = "update versions set %s = ? where serial = ?" % key
         self.execute(q, (value, serial))
@@ -695,9 +716,9 @@ class Node(DBWorker):
         props = self.version_get_properties(serial)
         if not props:
             return
-        node = props[NODE]
-        size = props[SIZE]
-        oldcluster = props[CLUSTER]
+        node = props[self.NODE]
+        size = props[self.SIZE]
+        oldcluster = props[self.CLUSTER]
         if cluster == oldcluster:
             return
 
@@ -716,10 +737,10 @@ class Node(DBWorker):
         props = self.version_get_properties(serial)
         if not props:
             return
-        node = props[NODE]
-        hash = props[HASH]
-        size = props[SIZE]
-        cluster = props[CLUSTER]
+        node = props[self.NODE]
+        hash = props[self.HASH]
+        size = props[self.SIZE]
+        cluster = props[self.CLUSTER]
 
         mtime = time()
         self.statistics_update_ancestors(node, -1, -size, mtime, cluster,
@@ -1021,7 +1042,8 @@ class Node(DBWorker):
         else:
             q = q % (("v.serial, v.node, v.hash, v.size, v.type, v.source, "
                       "v.mtime, v.muser, v.uuid, v.checksum, v.cluster, "
-                      "v.available, v.map_check_timestamp"),
+                      "v.available, v.map_check_timestamp, "
+                      "mapfile, is_snapshot"),
                      subq)
         args += [except_cluster, parent, start, nextling]
         start_index = len(args) - 2
@@ -1116,15 +1138,16 @@ class Node(DBWorker):
            for the objects in the specific domain and cluster.
         """
 
-        q = ("select n.path, v.serial, v.node, v.hash, "
-             "v.size, v.type, v.source, v.mtime, v.muser, "
-             "v.uuid, v.checksum, v.cluster, a.key, a.value "
-             "from nodes n, versions v, attributes a "
+        props = ('n.path', 'v.serial', 'v.node', 'v.hash', 'v.size', 'v.type',
+                'v.source', 'v.mtime', 'v.muser', 'v.uuid', 'v.checksum',
+                'v.cluster', 'v.mapfile', 'v.is_snapshot')
+        cols = props + ['a.key', 'a.value']
+        q = ("select %s from nodes n, versions v, attributes a "
              "where v.serial = a.serial and "
              "a.domain = ? and "
              "a.node = n.node and "
              "a.is_latest = 1 and "
-             "n.path in (%s)") % ','.join('?' for _ in paths)
+             "n.path in (%s)") % (cols, ','.join('?' for _ in paths))
         args = [domain]
         map(args.append, paths)
         if cluster is not None:
@@ -1134,10 +1157,10 @@ class Node(DBWorker):
         self.execute(q, args)
         rows = self.fetchall()
 
-        group_by = itemgetter(slice(12))
+        group_by = itemgetter(slice(len(props)))
         rows.sort(key=group_by)
         groups = groupby(rows, group_by)
-        return [(k[0], k[1:], dict([i[12:] for i in data])) for
+        return [(k[0], k[1:], dict([i[len(props):] for i in data])) for
                 (k, data) in groups]
 
     def get_props(self, paths):

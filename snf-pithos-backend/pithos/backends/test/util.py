@@ -1,4 +1,4 @@
-# Copyright (C) 2010-2014 GRNET S.A.
+# Copyright (C) 2014 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,12 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from dbwrapper import DBWrapper
-from node import (Node, ROOTNODE, MATCH_PREFIX, MATCH_EXACT)
-from permissions import Permissions, READ, WRITE
-from config import Config
-from quotaholder_serials import QuotaholderSerial
+import random
+import string
 
-__all__ = ["DBWrapper",
-           "Node", "ROOTNODE", "MATCH_PREFIX", "MATCH_EXACT", "Permissions",
-           "READ", "WRITE", "Config", "QuotaholderSerial"]
+get_random_data = lambda length: ''.join(random.choice(string.letters[:26])
+                                         for i in xrange(length))
+get_random_name = lambda: get_random_data(length=8)

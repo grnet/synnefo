@@ -1677,8 +1677,6 @@ class Archip(base.Component):
         "blktap-utils",
         "archipelago",
         "archipelago-dbg",
-        "archipelago-modules-dkms",
-        "archipelago-modules-source",
         "archipelago-rados",
         "archipelago-rados-dbg",
         "libxseg0",
@@ -1708,9 +1706,7 @@ class Archip(base.Component):
 
 
 class ArchipSynnefo(base.Component):
-    REQUIRED_PACKAGES = [
-        "python-svipc",
-        ]
+    REQUIRED_PACKAGES = []
 
     def _configure(self):
         r1 = {"HOST": self.node.fqdn}

@@ -81,7 +81,9 @@ def get_pithos_backend():
             service_token=settings.CYCLADES_SERVICE_TOKEN,
             astakosclient_poolsize=settings.CYCLADES_ASTAKOSCLIENT_POOLSIZE,
             db_connection=settings.BACKEND_DB_CONNECTION,
-            block_path=settings.BACKEND_BLOCK_PATH)
+            archipelago_conf_file=settings.PITHOS_BACKEND_ARCHIPELAGO_CONF,
+            xseg_pool_size=settings.PITHOS_BACKEND_XSEG_POOL_SIZE,
+            map_check_interval=settings.PITHOS_BACKEND_MAP_CHECK_INTERVAL)
     return _pithos_backend_pool.pool_get()
 
 

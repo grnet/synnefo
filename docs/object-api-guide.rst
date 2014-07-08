@@ -964,6 +964,7 @@ The ``X-Object-Sharing`` header may include either a ``read=...`` comma-separate
 Return Code                     Description
 ==============================  ==============================
 201 (Created)                   The object has been created
+403 (Forbidden)                 If ``X-Copy-From`` and the source object is not available in the storage backend.
 409 (Conflict)                  The object can not be created from the provided hashmap (a list of missing hashes will be included in the reply)
 411 (Length Required)           Missing ``Content-Length`` or ``Content-Type`` in the request
 413 (Request Entity Too Large)  Insufficient quota to complete the request
@@ -1015,6 +1016,7 @@ X-Object-Version            The object's new version
 Return Code                     Description
 ==============================  ==============================
 201 (Created)                   The object has been created
+403 (Forbidden)                 If the source object is not available in the storage backend.
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 ==============================  ==============================
 

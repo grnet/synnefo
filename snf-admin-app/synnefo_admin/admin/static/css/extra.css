@@ -2275,23 +2275,24 @@ Extra-button is used to show total selected rows
 .object-details h4 .label {
   float: right;
   margin-left: 10px;
+  margin-bottom: 10px;
 }
 
-/* line 7, ../sass/_details.scss */
+/* line 8, ../sass/_details.scss */
 .main {
   padding: 5px 0 0px 0;
   background: transparent;
 }
-/* line 13, ../sass/_details.scss */
+/* line 14, ../sass/_details.scss */
 .main h4 .title {
   font-size: 21px;
   cursor: pointer;
 }
-/* line 17, ../sass/_details.scss */
+/* line 18, ../sass/_details.scss */
 .main a {
   color: white;
 }
-/* line 20, ../sass/_details.scss */
+/* line 21, ../sass/_details.scss */
 .main .object-details {
   padding-left: 0px;
   padding-right: 0px;
@@ -2299,15 +2300,15 @@ Extra-button is used to show total selected rows
   /* vars like colors and dist */
   /* and functs */
 }
-/* line 24, ../sass/_details.scss */
+/* line 25, ../sass/_details.scss */
 .main .object-details body {
   color: white;
 }
-/* line 26, ../sass/_details.scss */
+/* line 27, ../sass/_details.scss */
 .main .object-details body a {
   color: white;
 }
-/* line 33, ../sass/_details.scss */
+/* line 34, ../sass/_details.scss */
 .main .object-details .object-details h4 .label {
   font-style: normal;
   font-weight: normal;
@@ -2316,83 +2317,83 @@ Extra-button is used to show total selected rows
   background: #eeeeee;
   color: #222222;
 }
-/* line 41, ../sass/_details.scss */
+/* line 42, ../sass/_details.scss */
 .main .object-details .object-details h4 .label.important {
   font-weight: bold;
 }
-/* line 44, ../sass/_details.scss */
+/* line 45, ../sass/_details.scss */
 .main .object-details .object-details h4 .label.label-success {
   background: #00a551;
   border-color: #00a551;
   color: #eeeeee;
 }
-/* line 51, ../sass/_details.scss */
+/* line 52, ../sass/_details.scss */
 .main .object-details .main {
   padding: 5px 0 0px 0;
   background: transparent;
 }
-/* line 57, ../sass/_details.scss */
+/* line 58, ../sass/_details.scss */
 .main .object-details .main h4 .title {
   font-size: 21px;
   cursor: pointer;
 }
-/* line 61, ../sass/_details.scss */
+/* line 62, ../sass/_details.scss */
 .main .object-details .main a {
   color: white;
 }
-/* line 64, ../sass/_details.scss */
+/* line 65, ../sass/_details.scss */
 .main .object-details .main .object-details {
   padding-left: 0px;
   padding-right: 0px;
 }
-/* line 74, ../sass/_details.scss */
+/* line 75, ../sass/_details.scss */
 .main .object-details body .object-details h4 {
   margin-left: 0;
   margin-right: 0;
 }
-/* line 78, ../sass/_details.scss */
+/* line 79, ../sass/_details.scss */
 .main .object-details body .object-details h3 {
   margin: 0 0 2em;
 }
-/* line 81, ../sass/_details.scss */
+/* line 82, ../sass/_details.scss */
 .main .object-details body .object-details p {
   margin: 10px 20px;
   font-style: italic;
 }
-/* line 86, ../sass/_details.scss */
+/* line 87, ../sass/_details.scss */
 .main .object-details body .object-details .length {
   margin-left: 6px;
   border: 0 none;
   font-style: italic;
 }
-/* line 90, ../sass/_details.scss */
+/* line 91, ../sass/_details.scss */
 .main .object-details body .object-details .length::before {
   content: '( ';
 }
-/* line 93, ../sass/_details.scss */
+/* line 94, ../sass/_details.scss */
 .main .object-details body .object-details .length::after {
   content: ' )';
 }
-/* line 97, ../sass/_details.scss */
+/* line 98, ../sass/_details.scss */
 .main .object-details body .object-details > .object-details {
   margin-left: -20px;
   margin-right: -20px;
   padding: 20px;
 }
-/* line 105, ../sass/_details.scss */
+/* line 106, ../sass/_details.scss */
 .main .object-details .part-two .object-details {
   padding: 20px;
 }
-/* line 107, ../sass/_details.scss */
+/* line 108, ../sass/_details.scss */
 .main .object-details .part-two .object-details .object-details {
   padding: 0 20px;
 }
-/* line 115, ../sass/_details.scss */
+/* line 116, ../sass/_details.scss */
 .main .object-details .object-details-content .nav-tabs > li a {
   opacity: 0.7;
   color: white;
 }
-/* line 119, ../sass/_details.scss */
+/* line 120, ../sass/_details.scss */
 .main .object-details .object-details-content .nav-tabs > li.active > a {
   opacity: 1;
   border-color: transparent;
@@ -2400,113 +2401,113 @@ Extra-button is used to show total selected rows
   color: white;
   border-radius: 0;
 }
-/* line 126, ../sass/_details.scss */
+/* line 127, ../sass/_details.scss */
 .main .object-details .object-details-content .nav-tabs > li:not(.active) > a:hover {
   opacity: 1;
   color: white;
   border-color: transparent;
   background: transparent;
 }
-/* line 134, ../sass/_details.scss */
+/* line 135, ../sass/_details.scss */
 .main .object-details .tab-pane {
   overflow: auto;
 }
-/* line 136, ../sass/_details.scss */
+/* line 137, ../sass/_details.scss */
 .main .object-details .tab-pane th {
   color: #404040;
 }
-/* line 142, ../sass/_details.scss */
+/* line 143, ../sass/_details.scss */
 .main .object-details body .object-details h4 em {
   float: none;
 }
-/* line 144, ../sass/_details.scss */
+/* line 145, ../sass/_details.scss */
 .main .object-details body .object-details h4 em.os-info {
   float: right;
   position: relative;
   bottom: 3px;
 }
-/* line 149, ../sass/_details.scss */
+/* line 150, ../sass/_details.scss */
 .main .object-details body .object-details h4 em.os-info img {
   height: 26px;
 }
-/* line 156, ../sass/_details.scss */
+/* line 157, ../sass/_details.scss */
 .main .object-details .content-seperator {
   width: 100%;
   border-bottom: 1px solid white;
   margin-top: 20px;
   margin-bottom: 20px;
 }
-/* line 163, ../sass/_details.scss */
+/* line 164, ../sass/_details.scss */
 .main .object-details .content.part-one {
   margin-bottom: 0;
   margin-top: 160px;
 }
-/* line 167, ../sass/_details.scss */
+/* line 168, ../sass/_details.scss */
 .main .object-details .content.part-two {
   margin-top: 0;
 }
 
-/* line 173, ../sass/_details.scss */
+/* line 174, ../sass/_details.scss */
 body .well {
   border-color: #b2cae9;
 }
 
-/* line 180, ../sass/_details.scss */
+/* line 181, ../sass/_details.scss */
 body .object-details h4 {
   margin-left: 0;
   margin-right: 0;
 }
-/* line 184, ../sass/_details.scss */
+/* line 185, ../sass/_details.scss */
 body .object-details h3 {
   margin-left: 0;
   margin-top: 0;
 }
-/* line 187, ../sass/_details.scss */
+/* line 188, ../sass/_details.scss */
 body .object-details h3 em {
   font-size: 0.6em;
   font-weight: bold;
 }
-/* line 192, ../sass/_details.scss */
+/* line 193, ../sass/_details.scss */
 body .object-details p {
   margin: 10px 20px;
   font-style: italic;
 }
-/* line 197, ../sass/_details.scss */
+/* line 198, ../sass/_details.scss */
 body .object-details .length {
   margin-left: 6px;
   float: right;
   border: 0 none;
 }
-/* line 201, ../sass/_details.scss */
+/* line 202, ../sass/_details.scss */
 body .object-details .length::before {
   content: '( ';
 }
-/* line 204, ../sass/_details.scss */
+/* line 205, ../sass/_details.scss */
 body .object-details .length::after {
   content: ' )';
 }
-/* line 208, ../sass/_details.scss */
+/* line 209, ../sass/_details.scss */
 body .object-details > .object-details {
   margin-left: -20px;
   margin-right: -20px;
   padding: 20px;
 }
 
-/* line 216, ../sass/_details.scss */
+/* line 217, ../sass/_details.scss */
 .part-two .object-details {
   padding: 20px;
 }
-/* line 218, ../sass/_details.scss */
+/* line 219, ../sass/_details.scss */
 .part-two .object-details .object-details {
   padding: 0 20px;
 }
 
-/* line 226, ../sass/_details.scss */
+/* line 227, ../sass/_details.scss */
 .object-details-content .nav-tabs > li a {
   opacity: 0.7;
   color: white;
 }
-/* line 230, ../sass/_details.scss */
+/* line 231, ../sass/_details.scss */
 .object-details-content .nav-tabs > li.active > a {
   opacity: 1;
   border-color: transparent;
@@ -2514,7 +2515,7 @@ body .object-details > .object-details {
   color: white;
   border-radius: 0;
 }
-/* line 237, ../sass/_details.scss */
+/* line 238, ../sass/_details.scss */
 .object-details-content .nav-tabs > li:not(.active) > a:hover {
   opacity: 1;
   color: white;
@@ -2522,31 +2523,31 @@ body .object-details > .object-details {
   background: transparent;
 }
 
-/* line 245, ../sass/_details.scss */
+/* line 246, ../sass/_details.scss */
 .tab-pane {
   overflow: auto;
 }
-/* line 247, ../sass/_details.scss */
+/* line 248, ../sass/_details.scss */
 .tab-pane th {
   color: #404040;
 }
 
-/* line 253, ../sass/_details.scss */
+/* line 254, ../sass/_details.scss */
 body .object-details h4 em {
   float: none;
 }
-/* line 255, ../sass/_details.scss */
+/* line 256, ../sass/_details.scss */
 body .object-details h4 em.os-info {
   float: right;
   position: relative;
   bottom: 3px;
 }
-/* line 260, ../sass/_details.scss */
+/* line 261, ../sass/_details.scss */
 body .object-details h4 em.os-info img {
   height: 26px;
 }
 
-/* line 267, ../sass/_details.scss */
+/* line 268, ../sass/_details.scss */
 .content-seperator {
   width: 100%;
   border-bottom: 1px solid white;
@@ -2554,29 +2555,29 @@ body .object-details h4 em.os-info img {
   margin-bottom: 20px;
 }
 
-/* line 274, ../sass/_details.scss */
+/* line 275, ../sass/_details.scss */
 .content.part-one {
   margin-bottom: 0;
   margin-top: 160px;
 }
 
-/* line 278, ../sass/_details.scss */
+/* line 279, ../sass/_details.scss */
 .content.part-two {
   margin-top: 0;
 }
 
-/* line 283, ../sass/_details.scss */
+/* line 284, ../sass/_details.scss */
 h4 .arrow {
   position: relative;
   padding: 0 8px;
 }
-/* line 286, ../sass/_details.scss */
+/* line 287, ../sass/_details.scss */
 h4 .arrow:hover {
   top: 2px;
   cursor: pointer;
 }
 
-/* line 292, ../sass/_details.scss */
+/* line 293, ../sass/_details.scss */
 .icon-link {
   margin-right: 10px;
 }

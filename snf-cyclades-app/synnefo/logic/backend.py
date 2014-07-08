@@ -173,6 +173,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
             disk_changes = update_vm_disks(vm, disks, etime)
             job_fields["disks"] = disk_changes
 
+    vm_deleted = False
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if opcode == 'OP_INSTANCE_CREATE' and status in (rapi.JOB_STATUS_CANCELED,
                                                      rapi.JOB_STATUS_ERROR):
@@ -187,9 +188,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         # See ticket #799 for all the details.
         if (status == rapi.JOB_STATUS_SUCCESS or
            (status == rapi.JOB_STATUS_ERROR and not vm_exists_in_backend(vm))):
-            # server has been deleted, so delete the server's attachments
-            vm.volumes.all().update(deleted=True, status="DELETED",
-                                    machine=None)
+            vm_deleted = True
             for nic in vm.nics.all():
                 # but first release the IP
                 remove_nic_ips(nic)
@@ -210,6 +209,9 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
 
     # Update VM's state and flavor after handling of quotas, since computation
     # of quotas depends on these attributes
+    if vm_deleted:
+        vm.volumes.filter(deleted=False).update(deleted=True, status="DELETED",
+                                                machine=None)
     if new_operstate is not None:
         vm.operstate = new_operstate
     if new_flavor is not None:

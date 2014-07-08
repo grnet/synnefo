@@ -140,7 +140,7 @@ class CycladesTests(BurninTests):
         server = self.clients.cyclades.create_server(
             servername, flavor['id'], image['id'],
             personality=personality, networks=networks,
-            project=project_id)
+            project_id=project_id)
 
         self.info("Server id: %s", server['id'])
         self.info("Server password: %s", server['adminPass'])
@@ -433,7 +433,7 @@ class CycladesTests(BurninTests):
         name = self.run_id
         network = self.clients.network.create_network(
             "MAC_FILTERED", name=name, shared=False,
-            project=project_id)
+            project_id=project_id)
         self.info("Network with id %s created", network['id'])
         subnet = self.clients.network.create_subnet(
             network['id'], cidr=cidr, enable_dhcp=dhcp)

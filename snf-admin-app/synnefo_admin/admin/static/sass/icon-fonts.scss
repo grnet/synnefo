@@ -9,99 +9,6 @@
 	font-style: normal;
 }
 
-.snf-font-admin {
-	font-family: 'font-icons';
-	speak: none;
-	font-style: normal;
-	font-weight: normal;
-	font-variant: normal;
-	text-transform: none;
-	line-height: 1;
-
-	/* Better Font Rendering =========== */
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
-
-	&.snf-ok:before {
-		content: "\61";
-	}
-	&.snf-remove:before {
-		content: "\62";
-	}
-	&.snf-envelope:before {
-		content: "\63";
-	}
-	&.snf-envelope-alt:before {
-		content: "\64";
-	}
-	&.snf-angle-up:before {
-		content: "\65";
-	}
-	&.snf-angle-down:before {
-		content: "\66";
-	}
-	&.snf-exclamation-sign:before {
-		content: "\67";
-	}
-	&.snf-clipboard-h:before {
-		content: "\68";
-	}
-	&.snf-clipboard-i:before {
-		content: "\69";
-	}
-	&.snf-clipboard-j:before {
-		content: "\6a";
-	}
-	&.snf-copy:before {
-		content: "\6c";
-	}
-	&.snf-search:before {
-		content: "\6d";
-	}
-	&.snf-sign-out:before {
-		content: "\6e";
-	}
-	&.snf-archive:before {
-		content: "\6b";
-	}
-	&.snf-checkbox-checked:before {
-		content: "\6f";
-	}
-	&.snf-checkbox-unchecked:before {
-		content: "\70";
-	}
-	&.snf-radio-checked:before {
-		content: "\71";
-	}
-	&.snf-radio-unchecked:before {
-		content: "\72";
-	}
-	&.snf-info:before {
-		content: "\73";
-	}
-	&.snf-user-outline:before {
-	content: "\75";
-	}
-	&.snf-user-full:before {
-		content: "\74";
-	}
-	&.snf-wallet-full:before {
-	content: "\78";
-	}
-	&.snf-pig:before {
-		content: "\76";
-	}
-	&.snf-bag:before {
-		content: "\77";
-	}
-	&.snf-wallet-outline:before {
-		content: "\79";
-	}
-	&.snf-keyboard:before {
-		content: "\7a";
-	}
-}
-
 /* Font with kpal icons */
 
 @font-face {
@@ -115,243 +22,336 @@
 	font-style: normal;
 }
 
-.snf-font {
-	font-family: 'snf-font';
+@mixin font-base($font-family){
+    font-family: $font-family;
 	speak: none;
 	font-style: normal;
 	font-weight: normal;
 	font-variant: normal;
 	text-transform: none;
 	line-height: 1;
+
+	/* Better Font Rendering =========== */
 	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
 
-	&.snf-eye:before {
-		content: "\41";
-	}
-	&.snf-radio-checked:before {
-		content: "\42";
-	}
-	&.snf-radio-unchecked:before {
-		content: "\43";
-	}
-	&.snf-close:before {
-		content: "\44";
-	}
-	&.snf-www:before {
-		content: "\49";
-	}
-	&.snf-arrow-up:before {
-		content: "\4c";
-	}
-	&.snf-arrow-down:before {
-		content: "\4d";
-	}
-	&.snf-checkbox-unchecked:before {
-		content: "\61";
-	}
-	&.snf-checkbox-checked:before {
-		content: "\62";
-	}
-	&.snf-cancel-circled:before {
-		content: "\63";
-	}
-	&.snf-search:before {
-		content: "\64";
-	}
-	&.snf-twitter-logo:before {
-		content: "\67";
-	}
-	&.snf-ok:before {
-		content: "\68";
-	}
-	&.snf-switch:before {
-		content: "\69";
-	}
-	&.snf-ban-circle:before {
-		content: "\6a";
-	}
-	&.snf-ok-sign:before {
-		content: "\6c";
-	}
-	&.snf-minus-sign:before {
-		content: "\6e";
-	}
-	&.snf-edit:before {
-		content: "\71";
-	}
-	&.snf-listview:before {
-		content: "\73";
-	}
-	&.snf-gridview:before {
-		content: "\74";
-	}
-	&.snf-dashboard-outline:before {
-		content: "\7a";
-	}
-	&.snf-pithos-outline:before {
-		content: "\79";
-	}
-	&.snf-info-full:before {
-		content: "\70";
-	}
-	&.snf-volume-create-full:before {
-		content: "\36";
-	}
-	&.snf-image-full:before {
-		content: "\51";
-	}
-	&.snf-pc-create-full:before {
-		content: "\53";
-	}
-	&.snf-network-create-outline:before {
-		content: "\54";
-	}
-	&.snf-network-create-full:before {
-		content: "\55";
-	}
-	&.snf-ram-outline:before {
-		content: "\4a";
-	}
-	&.snf-nic-outline:before {
-		content: "\50";
-	}
-	&.snf-ram-full:before {
-		content: "\52";
-	}
-	&.snf-nic-full:before {
-		content: "\72";
-	}
-	&.snf-network-broken-1-full:before {
-		content: "\56";
-	}
-	&.snf-network-broken-2-full:before {
-		content: "\57";
-	}
-	&.snf-pc-broken-full:before {
-		content: "\58";
-	}
-	&.snf-pc-reboot-full:before {
-		content: "\59";
-	}
-	&.snf-pc-switch-full:before {
-		content: "\5a";
-	}
-	&.snf-key-full:before {
-		content: "\31";
-	}
-	&.snf-router-full:before {
-		content: "\32";
-	}
-	&.snf-chip-full:before {
-		content: "\33";
-	}
-	&.snf-plus-full:before {
-		content: "\34";
-	}
-	&.snf-snapshot-full:before {
-		content: "\4e";
-	}
-	&.snf-pithos-full:before {
-		content: "\35";
-	}
-	&.snf-volume-full:before {
-		content: "\4f";
-	}
-	&.snf-network-full:before {
-		content: "\4b";
-	}
-	&.snf-pc-full:before {
-		content: "\78";
-	}
-	&.snf-network-broken-1-outline:before {
-		content: "\37";
-	}
-	&.snf-network-broken-2-outline:before {
-		content: "\38";
-	}
-	&.snf-pc-broken-outline:before {
-		content: "\39";
-	}
-	&.snf-volume-broken-outline:before {
-		content: "\30";
-	}
-	&.snf-pc-reboot-outline:before {
-		content: "\21";
-	}
-	&.snf-pc-switch-outline:before {
-		content: "\40";
-	}
-	&.snf-key-outline:before {
-		content: "\23";
-	}
-	&.snf-router-outline:before {
-		content: "\48";
-	}
-	&.snf-chip-outline:before {
-		content: "\45";
-	}
-	&.snf-image-outline:before {
-		content: "\66";
-	}
-	&.snf-plus-outline:before {
-		content: "\6d";
-	}
-	&.snf-snapshot-outline:before {
-		content: "\65";
-	}
-	&.snf-volume-outline:before {
-		content: "\75";
-	}
-	&.snf-network-outline:before {
-		content: "\76";
-	}
-	&.snf-pc-outline:before {
-		content: "\77";
-	}
-	&.snf-info-outline:before {
-		content: "\6f";
-	}
-	&.snf-thunder-full:before {
-		content: "\6b";
-	}
-	&.snf-lock-closed-full:before {
-		content: "\46";
-	}
-	&.snf-lock-open-full:before {
-		content: "\47";
-	}
+@mixin font-icon($font-family, $char) {
+    @include font-base($font-family);
+    &:before {
+        content: $char;
+    }
+}
 
-	&.snf-link-outline:before {
-		content: "\26";
-	}
-	&.snf-refresh-outline:before {
-		content: "\29";
-	}
-	&.snf-download-full:before {
-		content: "\25";
-	}
-	&.snf-person-outline:before {
-		content: "\2a";
-	}
-	&.snf-upload-full:before {
-		content: "\28";
-	}
-	&.snf-arrow-right-small-full:before {
-		content: "\2d";
-	}
-	&.snf-copy-outline:before {
-		content: "\3f";
-	}
-	&.snf-copy-full:before {
-		content: "\22";
-	}
-	&.snf-arrow-left-small-full:before {
-		content: "\5f";
-	}
-	&.snf-trash-full:before {
-		content: "\3d";
-	}
-	&.snf-trash-outline:before {
-		content: "\24";
-	}
+
+.snf-ok{
+    @include font-icon('font-icons',"\61");
+}
+.snf-remove {
+    @include font-icon('font-icons', "\62");
+}
+.snf-envelope {
+    @include font-icon('font-icons', "\63");
+}
+.snf-envelope-alt {
+    @include font-icon('font-icons', "\64");
+}
+.snf-angle-up {
+    @include font-icon('font-icons', "\65");
+}
+.snf-angle-down {
+    @include font-icon('font-icons', "\66");
+}
+.snf-exclamation-sign {
+    @include font-icon('font-icons', "\67");
+}
+.snf-clipboard-h {
+    @include font-icon('font-icons', "\68");
+}
+.snf-clipboard-i {
+    @include font-icon('font-icons', "\69");
+}
+.snf-clipboard-j {
+    @include font-icon('font-icons', "\6a");
+}
+.snf-copy {
+    @include font-icon('font-icons', "\6c");
+}
+.snf-search {
+    @include font-icon('font-icons', "\6d");
+}
+.snf-sign-out {
+    @include font-icon('font-icons', "\6e");
+}
+.snf-archive {
+    @include font-icon('font-icons', "\6b");
+}
+.snf-checkbox-checked {
+    @include font-icon('font-icons', "\6f");
+}
+.snf-checkbox-unchecked {
+    @include font-icon('font-icons', "\70");
+}
+.snf-radio-checked {
+    @include font-icon('font-icons', "\71");
+}
+.snf-radio-unchecked {
+    @include font-icon('font-icons', "\72");
+}
+.snf-info {
+    @include font-icon('font-icons', "\73");
+}
+.snf-user-outline {
+    @include font-icon('font-icons', "\75");
+}
+.snf-user-full {
+    @include font-icon('font-icons', "\74");
+}
+.snf-wallet-full {
+    @include font-icon('font-icons', "\78");
+}
+.snf-pig {
+    @include font-icon('font-icons', "\76");
+}
+.snf-bag {
+    @include font-icon('font-icons', "\77");
+}
+.snf-wallet-outline {
+    @include font-icon('font-icons', "\79");
+}
+.snf-keyboard {
+    @include font-icon('font-icons', "\7a");
+}
+
+
+
+
+.snf-eye {
+    @include font-icon('snf-font', "\41");
+}
+.snf-radio-checked {
+    @include font-icon('snf-font', "\42");
+}
+.snf-radio-unchecked {
+    @include font-icon('snf-font', "\43");
+}
+.snf-close {
+    @include font-icon('snf-font', "\44");
+}
+.snf-www {
+    @include font-icon('snf-font', "\49");
+}
+.snf-arrow-up {
+    @include font-icon('snf-font', "\4c");
+}
+.snf-arrow-down {
+    @include font-icon('snf-font', "\4d");
+}
+.snf-checkbox-unchecked {
+    @include font-icon('snf-font', "\61");
+}
+.snf-checkbox-checked {
+    @include font-icon('snf-font', "\62");
+}
+.snf-cancel-circled {
+    @include font-icon('snf-font', "\63");
+}
+.snf-search {
+    @include font-icon('snf-font', "\64");
+}
+.snf-twitter-logo {
+    @include font-icon('snf-font', "\67");
+}
+.snf-ok {
+    @include font-icon('snf-font', "\68");
+}
+.snf-switch {
+    @include font-icon('snf-font', "\69");
+}
+.snf-ban-circle {
+    @include font-icon('snf-font', "\6a");
+}
+.snf-ok-sign {
+    @include font-icon('snf-font', "\6c");
+}
+.snf-minus-sign {
+    @include font-icon('snf-font', "\6e");
+}
+.snf-edit {
+    @include font-icon('snf-font', "\71");
+}
+.snf-listview {
+    @include font-icon('snf-font', "\73");
+}
+.snf-gridview {
+    @include font-icon('snf-font', "\74");
+}
+.snf-dashboard-outline {
+    @include font-icon('snf-font', "\7a");
+}
+.snf-pithos-outline {
+    @include font-icon('snf-font', "\79");
+}
+.snf-info-full {
+    @include font-icon('snf-font', "\70");
+}
+.snf-volume-create-full {
+    @include font-icon('snf-font', "\36");
+}
+.snf-image-full {
+    @include font-icon('snf-font', "\51");
+}
+.snf-pc-create-full {
+    @include font-icon('snf-font', "\53");
+}
+.snf-network-create-outline {
+    @include font-icon('snf-font', "\54");
+}
+.snf-network-create-full {
+    @include font-icon('snf-font', "\55");
+}
+.snf-ram-outline {
+    @include font-icon('snf-font', "\4a");
+}
+.snf-nic-outline {
+    @include font-icon('snf-font', "\50");
+}
+.snf-ram-full {
+    @include font-icon('snf-font', "\52");
+}
+.snf-nic-full {
+    @include font-icon('snf-font', "\72");
+}
+.snf-network-broken-1-full {
+    @include font-icon('snf-font', "\56");
+}
+.snf-network-broken-2-full {
+    @include font-icon('snf-font', "\57");
+}
+.snf-pc-broken-full {
+    @include font-icon('snf-font', "\58");
+}
+.snf-pc-reboot-full {
+    @include font-icon('snf-font', "\59");
+}
+.snf-pc-switch-full {
+    @include font-icon('snf-font', "\5a");
+}
+.snf-key-full {
+    @include font-icon('snf-font', "\31");
+}
+.snf-router-full {
+    @include font-icon('snf-font', "\32");
+}
+.snf-chip-full {
+    @include font-icon('snf-font', "\33");
+}
+.snf-plus-full {
+    @include font-icon('snf-font', "\34");
+}
+.snf-snapshot-full {
+    @include font-icon('snf-font', "\4e");
+}
+.snf-pithos-full {
+    @include font-icon('snf-font', "\35");
+}
+.snf-volume-full {
+    @include font-icon('snf-font', "\4f");
+}
+.snf-network-full {
+    @include font-icon('snf-font', "\4b");
+}
+.snf-pc-full {
+    @include font-icon('snf-font', "\78");
+}
+.snf-network-broken-1-outline {
+    @include font-icon('snf-font', "\37");
+}
+.snf-network-broken-2-outline {
+    @include font-icon('snf-font', "\38");
+}
+.snf-pc-broken-outline {
+    @include font-icon('snf-font', "\39");
+}
+.snf-volume-broken-outline {
+    @include font-icon('snf-font', "\30");
+}
+.snf-pc-reboot-outline {
+    @include font-icon('snf-font', "\21");
+}
+.snf-pc-switch-outline {
+    @include font-icon('snf-font', "\40");
+}
+.snf-key-outline {
+    @include font-icon('snf-font', "\23");
+}
+.snf-router-outline {
+    @include font-icon('snf-font', "\48");
+}
+.snf-chip-outline {
+    @include font-icon('snf-font', "\45");
+}
+.snf-image-outline {
+    @include font-icon('snf-font', "\66");
+}
+.snf-plus-outline {
+    @include font-icon('snf-font', "\6d");
+}
+.snf-snapshot-outline {
+    @include font-icon('snf-font', "\65");
+}
+.snf-volume-outline {
+    @include font-icon('snf-font', "\75");
+}
+.snf-network-outline {
+    @include font-icon('snf-font', "\76");
+}
+.snf-pc-outline {
+    @include font-icon('snf-font', "\77");
+}
+.snf-info-outline {
+    @include font-icon('snf-font', "\6f");
+}
+.snf-thunder-full {
+    @include font-icon('snf-font', "\6b");
+}
+.snf-lock-closed-full {
+    @include font-icon('snf-font', "\46");
+}
+.snf-lock-open-full {
+    @include font-icon('snf-font', "\47");
+}
+
+.snf-link-outline {
+    @include font-icon('snf-font', "\26");
+}
+.snf-refresh-outline {
+    @include font-icon('snf-font', "\29");
+}
+.snf-download-full {
+    @include font-icon('snf-font', "\25");
+}
+.snf-person-outline {
+    @include font-icon('snf-font', "\2a");
+}
+.snf-upload-full {
+    @include font-icon('snf-font', "\28");
+}
+.snf-arrow-right-small-full {
+    @include font-icon('snf-font', "\2d");
+}
+.snf-copy-outline {
+    @include font-icon('snf-font', "\3f");
+}
+.snf-copy-full {
+    @include font-icon('snf-font', "\22");
+}
+.snf-arrow-left-small-full {
+    @include font-icon('snf-font', "\5f");
+}
+.snf-trash-full {
+    @include font-icon('snf-font', "\3d");
+}
+.snf-trash-outline {
+    @include font-icon('snf-font', "\24");
 }

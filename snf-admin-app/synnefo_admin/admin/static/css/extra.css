@@ -414,27 +414,1880 @@ Extra-button is used to show total selected rows
   color: white;
 }
 
-/* line 1, ../sass/_details.scss */
+@font-face {
+  font-family: 'font-icons';
+  src: url("../fonts/font-icons.eot?hm0cup");
+  src: url("../fonts/font-icons.eot?#iefixhm0cup") format("embedded-opentype"), url("../fonts/font-icons.woff?hm0cup") format("woff"), url("../fonts/font-icons.ttf?hm0cup") format("truetype"), url("../fonts/font-icons.svg?hm0cup#font-icons") format("svg");
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Font with kpal icons */
+@font-face {
+  font-family: "snf-font";
+  src: url("../fonts/snf-font.eot");
+  src: url("../fonts/snf-font.eot?#iefix") format("embedded-opentype"), url("../fonts/snf-font.woff") format("woff"), url("../fonts/snf-font.ttf") format("truetype"), url("../fonts/snf-font.svg#snf-font") format("svg");
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* line 47, ../sass/icon-fonts.scss */
+.snf-ok {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-ok:before {
+  content: "\61";
+}
+
+/* line 50, ../sass/icon-fonts.scss */
+.snf-remove {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-remove:before {
+  content: "\62";
+}
+
+/* line 53, ../sass/icon-fonts.scss */
+.snf-envelope {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-envelope:before {
+  content: "\63";
+}
+
+/* line 56, ../sass/icon-fonts.scss */
+.snf-envelope-alt {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-envelope-alt:before {
+  content: "\64";
+}
+
+/* line 59, ../sass/icon-fonts.scss */
+.snf-angle-up {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-angle-up:before {
+  content: "\65";
+}
+
+/* line 62, ../sass/icon-fonts.scss */
+.snf-angle-down {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-angle-down:before {
+  content: "\66";
+}
+
+/* line 65, ../sass/icon-fonts.scss */
+.snf-exclamation-sign {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-exclamation-sign:before {
+  content: "\67";
+}
+
+/* line 68, ../sass/icon-fonts.scss */
+.snf-clipboard-h {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-clipboard-h:before {
+  content: "\68";
+}
+
+/* line 71, ../sass/icon-fonts.scss */
+.snf-clipboard-i {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-clipboard-i:before {
+  content: "\69";
+}
+
+/* line 74, ../sass/icon-fonts.scss */
+.snf-clipboard-j {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-clipboard-j:before {
+  content: "\6a";
+}
+
+/* line 77, ../sass/icon-fonts.scss */
+.snf-copy {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-copy:before {
+  content: "\6c";
+}
+
+/* line 80, ../sass/icon-fonts.scss */
+.snf-search {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-search:before {
+  content: "\6d";
+}
+
+/* line 83, ../sass/icon-fonts.scss */
+.snf-sign-out {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-sign-out:before {
+  content: "\6e";
+}
+
+/* line 86, ../sass/icon-fonts.scss */
+.snf-archive {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-archive:before {
+  content: "\6b";
+}
+
+/* line 89, ../sass/icon-fonts.scss */
+.snf-checkbox-checked {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-checkbox-checked:before {
+  content: "\6f";
+}
+
+/* line 92, ../sass/icon-fonts.scss */
+.snf-checkbox-unchecked {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-checkbox-unchecked:before {
+  content: "\70";
+}
+
+/* line 95, ../sass/icon-fonts.scss */
+.snf-radio-checked {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-radio-checked:before {
+  content: "\71";
+}
+
+/* line 98, ../sass/icon-fonts.scss */
+.snf-radio-unchecked {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-radio-unchecked:before {
+  content: "\72";
+}
+
+/* line 101, ../sass/icon-fonts.scss */
+.snf-info {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-info:before {
+  content: "\73";
+}
+
+/* line 104, ../sass/icon-fonts.scss */
+.snf-user-outline {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-user-outline:before {
+  content: "\75";
+}
+
+/* line 107, ../sass/icon-fonts.scss */
+.snf-user-full {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-user-full:before {
+  content: "\74";
+}
+
+/* line 110, ../sass/icon-fonts.scss */
+.snf-wallet-full {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-wallet-full:before {
+  content: "\78";
+}
+
+/* line 113, ../sass/icon-fonts.scss */
+.snf-pig {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-pig:before {
+  content: "\76";
+}
+
+/* line 116, ../sass/icon-fonts.scss */
+.snf-bag {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-bag:before {
+  content: "\77";
+}
+
+/* line 119, ../sass/icon-fonts.scss */
+.snf-wallet-outline {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-wallet-outline:before {
+  content: "\79";
+}
+
+/* line 122, ../sass/icon-fonts.scss */
+.snf-keyboard {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-keyboard:before {
+  content: "\7a";
+}
+
+/* line 129, ../sass/icon-fonts.scss */
+.snf-eye {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-eye:before {
+  content: "\41";
+}
+
+/* line 132, ../sass/icon-fonts.scss */
+.snf-radio-checked {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-radio-checked:before {
+  content: "\42";
+}
+
+/* line 135, ../sass/icon-fonts.scss */
+.snf-radio-unchecked {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-radio-unchecked:before {
+  content: "\43";
+}
+
+/* line 138, ../sass/icon-fonts.scss */
+.snf-close {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-close:before {
+  content: "\44";
+}
+
+/* line 141, ../sass/icon-fonts.scss */
+.snf-www {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-www:before {
+  content: "\49";
+}
+
+/* line 144, ../sass/icon-fonts.scss */
+.snf-arrow-up {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-arrow-up:before {
+  content: "\4c";
+}
+
+/* line 147, ../sass/icon-fonts.scss */
+.snf-arrow-down {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-arrow-down:before {
+  content: "\4d";
+}
+
+/* line 150, ../sass/icon-fonts.scss */
+.snf-checkbox-unchecked {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-checkbox-unchecked:before {
+  content: "\61";
+}
+
+/* line 153, ../sass/icon-fonts.scss */
+.snf-checkbox-checked {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-checkbox-checked:before {
+  content: "\62";
+}
+
+/* line 156, ../sass/icon-fonts.scss */
+.snf-cancel-circled {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-cancel-circled:before {
+  content: "\63";
+}
+
+/* line 159, ../sass/icon-fonts.scss */
+.snf-search {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-search:before {
+  content: "\64";
+}
+
+/* line 162, ../sass/icon-fonts.scss */
+.snf-twitter-logo {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-twitter-logo:before {
+  content: "\67";
+}
+
+/* line 165, ../sass/icon-fonts.scss */
+.snf-ok {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-ok:before {
+  content: "\68";
+}
+
+/* line 168, ../sass/icon-fonts.scss */
+.snf-switch {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-switch:before {
+  content: "\69";
+}
+
+/* line 171, ../sass/icon-fonts.scss */
+.snf-ban-circle {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-ban-circle:before {
+  content: "\6a";
+}
+
+/* line 174, ../sass/icon-fonts.scss */
+.snf-ok-sign {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-ok-sign:before {
+  content: "\6c";
+}
+
+/* line 177, ../sass/icon-fonts.scss */
+.snf-minus-sign {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-minus-sign:before {
+  content: "\6e";
+}
+
+/* line 180, ../sass/icon-fonts.scss */
+.snf-edit {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-edit:before {
+  content: "\71";
+}
+
+/* line 183, ../sass/icon-fonts.scss */
+.snf-listview {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-listview:before {
+  content: "\73";
+}
+
+/* line 186, ../sass/icon-fonts.scss */
+.snf-gridview {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-gridview:before {
+  content: "\74";
+}
+
+/* line 189, ../sass/icon-fonts.scss */
+.snf-dashboard-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-dashboard-outline:before {
+  content: "\7a";
+}
+
+/* line 192, ../sass/icon-fonts.scss */
+.snf-pithos-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-pithos-outline:before {
+  content: "\79";
+}
+
+/* line 195, ../sass/icon-fonts.scss */
+.snf-info-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-info-full:before {
+  content: "\70";
+}
+
+/* line 198, ../sass/icon-fonts.scss */
+.snf-volume-create-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-volume-create-full:before {
+  content: "\36";
+}
+
+/* line 201, ../sass/icon-fonts.scss */
+.snf-image-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-image-full:before {
+  content: "\51";
+}
+
+/* line 204, ../sass/icon-fonts.scss */
+.snf-pc-create-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-pc-create-full:before {
+  content: "\53";
+}
+
+/* line 207, ../sass/icon-fonts.scss */
+.snf-network-create-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-network-create-outline:before {
+  content: "\54";
+}
+
+/* line 210, ../sass/icon-fonts.scss */
+.snf-network-create-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-network-create-full:before {
+  content: "\55";
+}
+
+/* line 213, ../sass/icon-fonts.scss */
+.snf-ram-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-ram-outline:before {
+  content: "\4a";
+}
+
+/* line 216, ../sass/icon-fonts.scss */
+.snf-nic-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-nic-outline:before {
+  content: "\50";
+}
+
+/* line 219, ../sass/icon-fonts.scss */
+.snf-ram-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-ram-full:before {
+  content: "\52";
+}
+
+/* line 222, ../sass/icon-fonts.scss */
+.snf-nic-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-nic-full:before {
+  content: "\72";
+}
+
+/* line 225, ../sass/icon-fonts.scss */
+.snf-network-broken-1-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-network-broken-1-full:before {
+  content: "\56";
+}
+
+/* line 228, ../sass/icon-fonts.scss */
+.snf-network-broken-2-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-network-broken-2-full:before {
+  content: "\57";
+}
+
+/* line 231, ../sass/icon-fonts.scss */
+.snf-pc-broken-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-pc-broken-full:before {
+  content: "\58";
+}
+
+/* line 234, ../sass/icon-fonts.scss */
+.snf-pc-reboot-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-pc-reboot-full:before {
+  content: "\59";
+}
+
+/* line 237, ../sass/icon-fonts.scss */
+.snf-pc-switch-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-pc-switch-full:before {
+  content: "\5a";
+}
+
+/* line 240, ../sass/icon-fonts.scss */
+.snf-key-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-key-full:before {
+  content: "\31";
+}
+
+/* line 243, ../sass/icon-fonts.scss */
+.snf-router-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-router-full:before {
+  content: "\32";
+}
+
+/* line 246, ../sass/icon-fonts.scss */
+.snf-chip-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-chip-full:before {
+  content: "\33";
+}
+
+/* line 249, ../sass/icon-fonts.scss */
+.snf-plus-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-plus-full:before {
+  content: "\34";
+}
+
+/* line 252, ../sass/icon-fonts.scss */
+.snf-snapshot-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-snapshot-full:before {
+  content: "\4e";
+}
+
+/* line 255, ../sass/icon-fonts.scss */
+.snf-pithos-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-pithos-full:before {
+  content: "\35";
+}
+
+/* line 258, ../sass/icon-fonts.scss */
+.snf-volume-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-volume-full:before {
+  content: "\4f";
+}
+
+/* line 261, ../sass/icon-fonts.scss */
+.snf-network-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-network-full:before {
+  content: "\4b";
+}
+
+/* line 264, ../sass/icon-fonts.scss */
+.snf-pc-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-pc-full:before {
+  content: "\78";
+}
+
+/* line 267, ../sass/icon-fonts.scss */
+.snf-network-broken-1-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-network-broken-1-outline:before {
+  content: "\37";
+}
+
+/* line 270, ../sass/icon-fonts.scss */
+.snf-network-broken-2-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-network-broken-2-outline:before {
+  content: "\38";
+}
+
+/* line 273, ../sass/icon-fonts.scss */
+.snf-pc-broken-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-pc-broken-outline:before {
+  content: "\39";
+}
+
+/* line 276, ../sass/icon-fonts.scss */
+.snf-volume-broken-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-volume-broken-outline:before {
+  content: "\30";
+}
+
+/* line 279, ../sass/icon-fonts.scss */
+.snf-pc-reboot-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-pc-reboot-outline:before {
+  content: "\21";
+}
+
+/* line 282, ../sass/icon-fonts.scss */
+.snf-pc-switch-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-pc-switch-outline:before {
+  content: "\40";
+}
+
+/* line 285, ../sass/icon-fonts.scss */
+.snf-key-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-key-outline:before {
+  content: "\23";
+}
+
+/* line 288, ../sass/icon-fonts.scss */
+.snf-router-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-router-outline:before {
+  content: "\48";
+}
+
+/* line 291, ../sass/icon-fonts.scss */
+.snf-chip-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-chip-outline:before {
+  content: "\45";
+}
+
+/* line 294, ../sass/icon-fonts.scss */
+.snf-image-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-image-outline:before {
+  content: "\66";
+}
+
+/* line 297, ../sass/icon-fonts.scss */
+.snf-plus-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-plus-outline:before {
+  content: "\6d";
+}
+
+/* line 300, ../sass/icon-fonts.scss */
+.snf-snapshot-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-snapshot-outline:before {
+  content: "\65";
+}
+
+/* line 303, ../sass/icon-fonts.scss */
+.snf-volume-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-volume-outline:before {
+  content: "\75";
+}
+
+/* line 306, ../sass/icon-fonts.scss */
+.snf-network-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-network-outline:before {
+  content: "\76";
+}
+
+/* line 309, ../sass/icon-fonts.scss */
+.snf-pc-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-pc-outline:before {
+  content: "\77";
+}
+
+/* line 312, ../sass/icon-fonts.scss */
+.snf-info-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-info-outline:before {
+  content: "\6f";
+}
+
+/* line 315, ../sass/icon-fonts.scss */
+.snf-thunder-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-thunder-full:before {
+  content: "\6b";
+}
+
+/* line 318, ../sass/icon-fonts.scss */
+.snf-lock-closed-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-lock-closed-full:before {
+  content: "\46";
+}
+
+/* line 321, ../sass/icon-fonts.scss */
+.snf-lock-open-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-lock-open-full:before {
+  content: "\47";
+}
+
+/* line 325, ../sass/icon-fonts.scss */
+.snf-link-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-link-outline:before {
+  content: "\26";
+}
+
+/* line 328, ../sass/icon-fonts.scss */
+.snf-refresh-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-refresh-outline:before {
+  content: "\29";
+}
+
+/* line 331, ../sass/icon-fonts.scss */
+.snf-download-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-download-full:before {
+  content: "\25";
+}
+
+/* line 334, ../sass/icon-fonts.scss */
+.snf-person-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-person-outline:before {
+  content: "\2a";
+}
+
+/* line 337, ../sass/icon-fonts.scss */
+.snf-upload-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-upload-full:before {
+  content: "\28";
+}
+
+/* line 340, ../sass/icon-fonts.scss */
+.snf-arrow-right-small-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-arrow-right-small-full:before {
+  content: "\2d";
+}
+
+/* line 343, ../sass/icon-fonts.scss */
+.snf-copy-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-copy-outline:before {
+  content: "\3f";
+}
+
+/* line 346, ../sass/icon-fonts.scss */
+.snf-copy-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-copy-full:before {
+  content: "\22";
+}
+
+/* line 349, ../sass/icon-fonts.scss */
+.snf-arrow-left-small-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-arrow-left-small-full:before {
+  content: "\5f";
+}
+
+/* line 352, ../sass/icon-fonts.scss */
+.snf-trash-full {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-trash-full:before {
+  content: "\3d";
+}
+
+/* line 355, ../sass/icon-fonts.scss */
+.snf-trash-outline {
+  font-family: "snf-font";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-trash-outline:before {
+  content: "\24";
+}
+
+/* line 2, ../sass/_details.scss */
 .object-details h4 .label {
   float: right;
   margin-left: 10px;
 }
 
-/* line 6, ../sass/_details.scss */
+/* line 7, ../sass/_details.scss */
 .main {
   padding: 5px 0 0px 0;
   background: transparent;
 }
-/* line 12, ../sass/_details.scss */
+/* line 13, ../sass/_details.scss */
 .main h4 .title {
   font-size: 21px;
   cursor: pointer;
 }
-/* line 16, ../sass/_details.scss */
+/* line 17, ../sass/_details.scss */
 .main a {
   color: white;
 }
-/* line 19, ../sass/_details.scss */
+/* line 20, ../sass/_details.scss */
 .main .object-details {
   padding-left: 0px;
   padding-right: 0px;
@@ -442,15 +2295,15 @@ Extra-button is used to show total selected rows
   /* vars like colors and dist */
   /* and functs */
 }
-/* line 23, ../sass/_details.scss */
+/* line 24, ../sass/_details.scss */
 .main .object-details body {
   color: white;
 }
-/* line 25, ../sass/_details.scss */
+/* line 26, ../sass/_details.scss */
 .main .object-details body a {
   color: white;
 }
-/* line 32, ../sass/_details.scss */
+/* line 33, ../sass/_details.scss */
 .main .object-details .object-details h4 .label {
   font-style: normal;
   font-weight: normal;
@@ -459,83 +2312,83 @@ Extra-button is used to show total selected rows
   background: #eeeeee;
   color: #222222;
 }
-/* line 40, ../sass/_details.scss */
+/* line 41, ../sass/_details.scss */
 .main .object-details .object-details h4 .label.important {
   font-weight: bold;
 }
-/* line 43, ../sass/_details.scss */
+/* line 44, ../sass/_details.scss */
 .main .object-details .object-details h4 .label.label-success {
   background: #00a551;
   border-color: #00a551;
   color: #eeeeee;
 }
-/* line 50, ../sass/_details.scss */
+/* line 51, ../sass/_details.scss */
 .main .object-details .main {
   padding: 5px 0 0px 0;
   background: transparent;
 }
-/* line 56, ../sass/_details.scss */
+/* line 57, ../sass/_details.scss */
 .main .object-details .main h4 .title {
   font-size: 21px;
   cursor: pointer;
 }
-/* line 60, ../sass/_details.scss */
+/* line 61, ../sass/_details.scss */
 .main .object-details .main a {
   color: white;
 }
-/* line 63, ../sass/_details.scss */
+/* line 64, ../sass/_details.scss */
 .main .object-details .main .object-details {
   padding-left: 0px;
   padding-right: 0px;
 }
-/* line 73, ../sass/_details.scss */
+/* line 74, ../sass/_details.scss */
 .main .object-details body .object-details h4 {
   margin-left: 0;
   margin-right: 0;
 }
-/* line 77, ../sass/_details.scss */
+/* line 78, ../sass/_details.scss */
 .main .object-details body .object-details h3 {
   margin: 0 0 2em;
 }
-/* line 80, ../sass/_details.scss */
+/* line 81, ../sass/_details.scss */
 .main .object-details body .object-details p {
   margin: 10px 20px;
   font-style: italic;
 }
-/* line 85, ../sass/_details.scss */
+/* line 86, ../sass/_details.scss */
 .main .object-details body .object-details .length {
   margin-left: 6px;
   border: 0 none;
   font-style: italic;
 }
-/* line 89, ../sass/_details.scss */
+/* line 90, ../sass/_details.scss */
 .main .object-details body .object-details .length::before {
   content: '( ';
 }
-/* line 92, ../sass/_details.scss */
+/* line 93, ../sass/_details.scss */
 .main .object-details body .object-details .length::after {
   content: ' )';
 }
-/* line 96, ../sass/_details.scss */
+/* line 97, ../sass/_details.scss */
 .main .object-details body .object-details > .object-details {
   margin-left: -20px;
   margin-right: -20px;
   padding: 20px;
 }
-/* line 104, ../sass/_details.scss */
+/* line 105, ../sass/_details.scss */
 .main .object-details .part-two .object-details {
   padding: 20px;
 }
-/* line 106, ../sass/_details.scss */
+/* line 107, ../sass/_details.scss */
 .main .object-details .part-two .object-details .object-details {
   padding: 0 20px;
 }
-/* line 114, ../sass/_details.scss */
+/* line 115, ../sass/_details.scss */
 .main .object-details .object-details-content .nav-tabs > li a {
   opacity: 0.7;
   color: white;
 }
-/* line 118, ../sass/_details.scss */
+/* line 119, ../sass/_details.scss */
 .main .object-details .object-details-content .nav-tabs > li.active > a {
   opacity: 1;
   border-color: transparent;
@@ -543,113 +2396,113 @@ Extra-button is used to show total selected rows
   color: white;
   border-radius: 0;
 }
-/* line 125, ../sass/_details.scss */
+/* line 126, ../sass/_details.scss */
 .main .object-details .object-details-content .nav-tabs > li:not(.active) > a:hover {
   opacity: 1;
   color: white;
   border-color: transparent;
   background: transparent;
 }
-/* line 133, ../sass/_details.scss */
+/* line 134, ../sass/_details.scss */
 .main .object-details .tab-pane {
   overflow: auto;
 }
-/* line 135, ../sass/_details.scss */
+/* line 136, ../sass/_details.scss */
 .main .object-details .tab-pane th {
   color: #404040;
 }
-/* line 141, ../sass/_details.scss */
+/* line 142, ../sass/_details.scss */
 .main .object-details body .object-details h4 em {
   float: none;
 }
-/* line 143, ../sass/_details.scss */
+/* line 144, ../sass/_details.scss */
 .main .object-details body .object-details h4 em.os-info {
   float: right;
   position: relative;
   bottom: 3px;
 }
-/* line 148, ../sass/_details.scss */
+/* line 149, ../sass/_details.scss */
 .main .object-details body .object-details h4 em.os-info img {
   height: 26px;
 }
-/* line 155, ../sass/_details.scss */
+/* line 156, ../sass/_details.scss */
 .main .object-details .content-seperator {
   width: 100%;
   border-bottom: 1px solid white;
   margin-top: 20px;
   margin-bottom: 20px;
 }
-/* line 162, ../sass/_details.scss */
+/* line 163, ../sass/_details.scss */
 .main .object-details .content.part-one {
   margin-bottom: 0;
   margin-top: 160px;
 }
-/* line 166, ../sass/_details.scss */
+/* line 167, ../sass/_details.scss */
 .main .object-details .content.part-two {
   margin-top: 0;
 }
 
-/* line 172, ../sass/_details.scss */
+/* line 173, ../sass/_details.scss */
 body .well {
   border-color: #b2cae9;
 }
 
-/* line 179, ../sass/_details.scss */
+/* line 180, ../sass/_details.scss */
 body .object-details h4 {
   margin-left: 0;
   margin-right: 0;
 }
-/* line 183, ../sass/_details.scss */
+/* line 184, ../sass/_details.scss */
 body .object-details h3 {
   margin-left: 0;
   margin-top: 0;
 }
-/* line 186, ../sass/_details.scss */
+/* line 187, ../sass/_details.scss */
 body .object-details h3 em {
   font-size: 0.6em;
   font-weight: bold;
 }
-/* line 191, ../sass/_details.scss */
+/* line 192, ../sass/_details.scss */
 body .object-details p {
   margin: 10px 20px;
   font-style: italic;
 }
-/* line 196, ../sass/_details.scss */
+/* line 197, ../sass/_details.scss */
 body .object-details .length {
   margin-left: 6px;
   float: right;
   border: 0 none;
 }
-/* line 200, ../sass/_details.scss */
+/* line 201, ../sass/_details.scss */
 body .object-details .length::before {
   content: '( ';
 }
-/* line 203, ../sass/_details.scss */
+/* line 204, ../sass/_details.scss */
 body .object-details .length::after {
   content: ' )';
 }
-/* line 207, ../sass/_details.scss */
+/* line 208, ../sass/_details.scss */
 body .object-details > .object-details {
   margin-left: -20px;
   margin-right: -20px;
   padding: 20px;
 }
 
-/* line 215, ../sass/_details.scss */
+/* line 216, ../sass/_details.scss */
 .part-two .object-details {
   padding: 20px;
 }
-/* line 217, ../sass/_details.scss */
+/* line 218, ../sass/_details.scss */
 .part-two .object-details .object-details {
   padding: 0 20px;
 }
 
-/* line 225, ../sass/_details.scss */
+/* line 226, ../sass/_details.scss */
 .object-details-content .nav-tabs > li a {
   opacity: 0.7;
   color: white;
 }
-/* line 229, ../sass/_details.scss */
+/* line 230, ../sass/_details.scss */
 .object-details-content .nav-tabs > li.active > a {
   opacity: 1;
   border-color: transparent;
@@ -657,7 +2510,7 @@ body .object-details > .object-details {
   color: white;
   border-radius: 0;
 }
-/* line 236, ../sass/_details.scss */
+/* line 237, ../sass/_details.scss */
 .object-details-content .nav-tabs > li:not(.active) > a:hover {
   opacity: 1;
   color: white;
@@ -665,31 +2518,31 @@ body .object-details > .object-details {
   background: transparent;
 }
 
-/* line 244, ../sass/_details.scss */
+/* line 245, ../sass/_details.scss */
 .tab-pane {
   overflow: auto;
 }
-/* line 246, ../sass/_details.scss */
+/* line 247, ../sass/_details.scss */
 .tab-pane th {
   color: #404040;
 }
 
-/* line 252, ../sass/_details.scss */
+/* line 253, ../sass/_details.scss */
 body .object-details h4 em {
   float: none;
 }
-/* line 254, ../sass/_details.scss */
+/* line 255, ../sass/_details.scss */
 body .object-details h4 em.os-info {
   float: right;
   position: relative;
   bottom: 3px;
 }
-/* line 259, ../sass/_details.scss */
+/* line 260, ../sass/_details.scss */
 body .object-details h4 em.os-info img {
   height: 26px;
 }
 
-/* line 266, ../sass/_details.scss */
+/* line 267, ../sass/_details.scss */
 .content-seperator {
   width: 100%;
   border-bottom: 1px solid white;
@@ -697,29 +2550,29 @@ body .object-details h4 em.os-info img {
   margin-bottom: 20px;
 }
 
-/* line 273, ../sass/_details.scss */
+/* line 274, ../sass/_details.scss */
 .content.part-one {
   margin-bottom: 0;
   margin-top: 160px;
 }
 
-/* line 277, ../sass/_details.scss */
+/* line 278, ../sass/_details.scss */
 .content.part-two {
   margin-top: 0;
 }
 
-/* line 282, ../sass/_details.scss */
+/* line 283, ../sass/_details.scss */
 h4 .arrow {
   position: relative;
   padding: 0 8px;
 }
-/* line 285, ../sass/_details.scss */
+/* line 286, ../sass/_details.scss */
 h4 .arrow:hover {
   top: 2px;
   cursor: pointer;
 }
 
-/* line 291, ../sass/_details.scss */
+/* line 292, ../sass/_details.scss */
 .icon-link {
   margin-right: 10px;
 }

@@ -5,9 +5,9 @@
 <div class="object-details {{ rowcls }}" data-id="{{project.uuid}}"
     data-type="{{type}}">
     <h4 class="clearfix">
-        <a href="{% url admin-details type project.uuid %}" class="snf-font-admin snf-search icon-link" title="Details for {{ project|repr }}"></a>
+        <a href="{% url admin-details type project.uuid %}" class="snf-search icon-link" title="Details for {{ project|repr }}"></a>
         <span class="title">{{ project|repr }}</span>
-        <span class="arrow  snf-font-admin snf-angle-down"></span>
+        <span class="arrow  snf-angle-down"></span>
         <span class="label">{{ project.state_display|upper }}</span>
         <span class="label">UUID: {{ project.uuid }}</span>
         <span class="label">

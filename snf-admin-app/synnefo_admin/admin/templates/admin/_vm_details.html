@@ -5,9 +5,9 @@
 <div class="vm-details object-details {{ rowcls }}" data-id="{{vm.pk}}"
     data-type="{{type}}">
   <h4 class="clearfix">
-  <a href="{% url admin-details type vm.pk %}" class="snf-font-admin snf-search icon-link" title="Details for {{ vm|repr }}"></a>
+  <a href="{% url admin-details type vm.pk %}" class="snf-search icon-link" title="Details for {{ vm|repr }}"></a>
     <span class="title">{{ vm|repr }}</span>
-    <span class="arrow  snf-font-admin snf-angle-down"></span>
+    <span class="arrow  snf-angle-down"></span>
     {% if vm.suspended %}
     <span class="label label-warning">SUSPENDED</span>
     {% endif %}

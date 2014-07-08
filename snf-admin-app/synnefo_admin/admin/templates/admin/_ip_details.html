@@ -5,9 +5,9 @@
 <div class="object-details {{ rowcls }}" data-id="{{ip.pk}}"
     data-type="{{type}}">
     <h4 class="clearfix">
-        <a href="{% url admin-details type ip.pk %}" class="snf-font-admin snf-search icon-link" title="Details for {{ ip.address }}"></a>
+        <a href="{% url admin-details type ip.pk %}" class="snf-search icon-link" title="Details for {{ ip.address }}"></a>
         <span class="title">{{ ip.address }}</span>
-        <span class="arrow  snf-font-admin snf-angle-down"></span>
+        <span class="arrow  snf-angle-down"></span>
         <span class="label">ID: {{ip.pk}}</span>
         {% if ip.floating_ip %}
         <span class="label">FLOATING</span>

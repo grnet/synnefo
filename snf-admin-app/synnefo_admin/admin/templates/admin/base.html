@@ -23,7 +23,7 @@
       {% endfor %}
         <li class="dropdown">
           <a href="#"  data-toggle="dropdown">Reports
-          <span class="snf-font-admin snf-angle-down arrow"></span></a>
+          <span class="snf-angle-down arrow"></span></a>
           <ul class="dropdown-menu align-left">
             <li><a href="{% url admin-charts %}">Charts</a></li>
           </ul>
@@ -34,11 +34,11 @@
           <li class="dropdown">
             <a href="" data-toggle="dropdown">
                 {{ user.access.user.name }}
-              <span class="snf-font-admin snf-angle-down arrow"></span>
+              <span class="snf-angle-down arrow"></span>
             </a>
             <ul class="dropdown-menu align-right">
               <li>
-                <a href="{% url admin-logout %}" class="sign-out"><span class="snf-font-admin snf-sign-out"></span>Sign Out</a>
+                <a href="{% url admin-logout %}" class="sign-out"><span class="snf-sign-out"></span>Sign Out</a>
               </li>
             </ul>
         </ul>
@@ -66,7 +66,7 @@
     </div>
     {% endblock main-area %}
     <div class="notify">
-      <a href="" class="close-notify close-notifications" title="Close notification area"><span class="snf-font-admin snf-remove"></span></a>
+      <a href="" class="close-notify close-notifications" title="Close notification area"><span class="snf-remove"></span></a>
       <div class="container">
       </div>
     </div>

@@ -140,13 +140,13 @@ class UserJSONView(AdminJSONView):
             'visible': True,
         }
 
-        if (users.validate_user_action(inst, "ACCEPT") and
-                inst.verification_code):
-            extra_dict['activation_url'] = {
-                'display_name': "Activation URL",
-                'value': inst.get_activation_url(),
-                'visible': True,
-            }
+        #if (users.validate_user_action(inst, "ACCEPT") and
+        #        inst.verification_code):
+        #    extra_dict['activation_url'] = {
+        #        'display_name': "Activation URL",
+        #        'value': inst.get_activation_url(),
+        #        'visible': True,
+        #    }
 
         if inst.accepted_policy:
             extra_dict['moderation_policy'] = {

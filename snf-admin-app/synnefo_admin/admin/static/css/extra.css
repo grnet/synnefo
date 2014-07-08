@@ -1217,7 +1217,6 @@ html body .dataTables_wrapper table th.sorting, html body .dataTables_wrapper ta
 
 /* line 155, ../sass/_tables.scss */
 .dataTables_wrapper .dataTables_length,
-.dataTables_wrapper .dataTables_filter,
 .dataTables_wrapper .dataTables_info,
 .dataTables_wrapper .dataTables_paginate {
   padding-top: 0;

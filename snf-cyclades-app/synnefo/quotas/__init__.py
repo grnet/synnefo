@@ -358,6 +358,12 @@ def get_commission_info(resource, action, action_fields=None):
                 return None
         elif action == "DESTROY":
             volumes = resource.volumes.filter(deleted=False)
+            if resource.operstate != "BUILD":
+                # Count only the volumes that are in the 'IN_USE' status,
+                # because a pending commission exists for the other volumes.
+                # The pending commission will be rejected, but
+                # snf-dispatcher will finally fix the quotas.
+                volumes = volumes.filter(status="IN_USE")
             resources.update(offline_resources)
             resources.update(get_volume_resources(volumes))
             if resource.operstate in ["STARTED", "BUILD", "ERROR"]:

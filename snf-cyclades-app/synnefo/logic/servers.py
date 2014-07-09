@@ -394,7 +394,7 @@ def console(vm, console_type):
 
     vnc_extra_opts = settings.CYCLADES_VNCAUTHPROXY_OPTS
     fwd = request_vnc_forwarding(sport, daddr, dport, password,
-                                 **vnc_extra_opts)
+                                 console_type=console_type, **vnc_extra_opts)
 
     if fwd['status'] != "OK":
         log.error("vncauthproxy returned error status: '%s'" % fwd)
@@ -407,7 +407,7 @@ def console(vm, console_type):
         raise faults.ServiceUnavailable('VNC Server settings changed.')
 
     console = {
-        'type': 'vnc',
+        'type': console_type,
         'host': getfqdn(),
         'port': fwd['source_port'],
         'password': password}

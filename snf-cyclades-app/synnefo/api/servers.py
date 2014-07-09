@@ -20,7 +20,7 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
-from django.core.urlpatterns import reverse
+from django.core.urlresolvers import reverse
 
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils
@@ -29,7 +29,6 @@ from synnefo.api import util
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata)
 from synnefo.logic import servers, utils as logic_utils, server_attachments
 from synnefo.volume.util import get_volume
-from synnefo.ui.views import machines_console
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -948,7 +947,7 @@ def os_get_rdp_console(request, vm, args):
     raise faults.NotImplemented('RDP console not implemented')
 
 
-machines_console_url = reverse(machines_console)
+machines_console_url = None
 
 
 @server_action('os-getVNCConsole')
@@ -976,11 +975,14 @@ def os_get_vnc_console(request, vm, args):
 
     console_info = servers.console(vm, supported_types[console_type])
 
+    global machines_console_url
+    if machines_console_url is None:
+        machines_console_url = reverse('synnefo.ui.views.machines_console')
+
     if console_type == 'novnc':
         # Return the URL of the WebSocket noVNC client
         url = settings.CYCLADES_BASE_URL + machines_console_url
-        url += '?host=%(host)s&port=%(port)s&password=%(password)s' \
-               % console_info
+        url += '?host=%(host)s&port=%(port)s&password=%(password)s'
     else:
         # Return a URL to paste into a Java VNC client
         # FIXME: VNC clients (and the TigerVNC Java applet) can't handle the
@@ -988,7 +990,7 @@ def os_get_vnc_console(request, vm, args):
         url = '%(host)s:%(port)s?password=%(password)s'
 
     resp = {'type': console_type,
-            'url': url}
+            'url': url % console_info}
 
     if request.serialization == 'xml':
         mimetype = 'application/xml'

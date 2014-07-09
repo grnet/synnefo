@@ -42,7 +42,7 @@ from synnefo.util import units
 import django_filters
 from django.db.models import Q
 
-from synnefo_admin.admin.utils import is_resource_useful
+from synnefo_admin.admin.utils import is_resource_useful, filter_id
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
@@ -76,6 +76,7 @@ class ProjectFilterSet(django_filters.FilterSet):
     This filter collection is based on django-filter's FilterSet.
     """
 
+    id = django_filters.CharFilter(label='Project ID', action=filter_id('id'))
     realname = django_filters.CharFilter(label='Name', lookup_type='icontains')
     uuid = django_filters.CharFilter(label='UUID', lookup_type='icontains')
     description = django_filters.CharFilter(label='Description',
@@ -86,4 +87,4 @@ class ProjectFilterSet(django_filters.FilterSet):
 
     class Meta:
         model = Project
-        fields = ('id', 'uuid', 'realname', 'description', 'is_base')
+        fields = ['id', 'uuid', 'realname', 'description', 'is_base']

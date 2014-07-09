@@ -49,4 +49,4 @@ class IPFilterSet(django_filters.FilterSet):
 
     class Meta:
         model = IPAddress
-        fields = ('id', 'address', 'floating_ip', 'owner_name', 'userid',)
+        fields = ('address', 'floating_ip', 'owner_name', 'userid',)

@@ -36,15 +36,7 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import filter_owner_name
-
-
-def filter_vm_id(queryset, query):
-    prefix = settings.BACKEND_PREFIX_ID
-    query = query.replace(prefix, '')
-    if not query.isdigit():
-        return queryset
-    return queryset.filter(id__contains=query)
+from synnefo_admin.admin.utils import filter_owner_name, filter_vm_id
 
 
 class VMFilterSet(django_filters.FilterSet):
@@ -54,7 +46,8 @@ class VMFilterSet(django_filters.FilterSet):
     This filter collection is based on django-filter's FilterSet.
     """
 
-    id = django_filters.CharFilter(label='VM ID', action=filter_vm_id)
+    machineid = django_filters.CharFilter(label='VM ID',
+                                          action=filter_vm_id('id'))
     name = django_filters.CharFilter(label='Name', lookup_type='icontains')
     owner_name = django_filters.CharFilter(label='Owner Name',
                                            action=filter_owner_name)
@@ -67,5 +60,5 @@ class VMFilterSet(django_filters.FilterSet):
 
     class Meta:
         model = VirtualMachine
-        fields = ('id', 'operstate', 'name', 'owner_name', 'userid', 'imageid',
-                  'suspended',)
+        fields = ('machineid', 'operstate', 'name', 'owner_name', 'userid',
+                  'imageid', 'suspended',)

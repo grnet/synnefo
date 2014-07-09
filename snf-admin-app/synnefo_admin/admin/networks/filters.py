@@ -34,7 +34,7 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import filter_owner_name
+from synnefo_admin.admin.utils import filter_owner_name, filter_id
 
 
 class NetworkFilterSet(django_filters.FilterSet):
@@ -44,6 +44,8 @@ class NetworkFilterSet(django_filters.FilterSet):
     This filter collection is based on django-filter's FilterSet.
     """
 
+    networkid = django_filters.NumberFilter(label='Network ID',
+                                            action=filter_id('id'))
     name = django_filters.CharFilter(label='Name', lookup_type='icontains')
     state = django_filters.MultipleChoiceFilter(
         label='Status', name='state', choices=Network.OPER_STATES)
@@ -54,5 +56,5 @@ class NetworkFilterSet(django_filters.FilterSet):
 
     class Meta:
         model = Network
-        fields = ('id', 'name', 'state', 'public', 'drained', 'owner_name',
-                  'userid',)
+        fields = ('networkid', 'name', 'state', 'public', 'drained',
+                  'owner_name', 'userid',)

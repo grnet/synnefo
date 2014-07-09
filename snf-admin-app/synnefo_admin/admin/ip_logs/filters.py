@@ -30,7 +30,8 @@ from astakos.im.models import AstakosUser, Project
 from eztables.views import DatatablesView
 import django_filters
 
-from synnefo_admin.admin.utils import filter_owner_name, filter_owner_email
+from synnefo_admin.admin.utils import (filter_owner_name, filter_owner_email,
+                                       filter_id, filter_vm_id)
 
 
 def filter_user_name(queryset, query):
@@ -59,13 +60,15 @@ class IPLogFilterSet(django_filters.FilterSet):
     address = django_filters.CharFilter(label='Address',
                                         lookup_type='icontains')
     server_id = django_filters.CharFilter(label='VM ID',
-                                          lookup_type='icontains')
-    user_name = django_filters.CharFilter(label='User Name',
+                                          action=filter_vm_id('server_id'))
+    network_id = django_filters.CharFilter(label='Network ID',
+                                           action=filter_id('network_id'))
+    user_name = django_filters.CharFilter(label='Owner Name',
                                           action=filter_user_name)
-    user_email = django_filters.CharFilter(label='User Email',
+    user_email = django_filters.CharFilter(label='Owner Email',
                                            action=filter_user_email)
 
     class Meta:
+        model = IPAddressLog
         fields = ('address', 'server_id', 'network_id', 'user_name',
                   'user_email')
-        model = IPAddressLog

@@ -29,11 +29,8 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import filter_owner_name
-
-
-def filter_machineid(qs, query):
-    return qs.filter(machine__id=int(query))
+from synnefo_admin.admin.utils import (filter_owner_name, filter_id,
+                                       filter_vm_id)
 
 
 class VolumeFilterSet(django_filters.FilterSet):
@@ -43,6 +40,9 @@ class VolumeFilterSet(django_filters.FilterSet):
     This filter collection is based on django-filter's FilterSet.
     """
 
+    volumeid = django_filters.CharFilter(label='Volume ID',
+                                         lookup_type='icontains',
+                                         action=filter_id('id'))
     name = django_filters.CharFilter(label='Name', lookup_type='icontains')
     owner_name = django_filters.CharFilter(label='Owner Name',
                                            action=filter_owner_name)
@@ -50,10 +50,10 @@ class VolumeFilterSet(django_filters.FilterSet):
                                        lookup_type='icontains')
     status = django_filters.MultipleChoiceFilter(
         label='Status', name='status', choices=Volume.STATUS_VALUES)
-    machineid = django_filters.NumberFilter(label='VM ID',
-                                            action=filter_machineid)
+    machineid = django_filters.CharFilter(label='VM ID',
+                                          action=filter_vm_id('machine__id'))
 
     class Meta:
         model = Volume
-        fields = ('id', 'name', 'status', 'description', 'owner_name',
+        fields = ('volumeid', 'name', 'status', 'description', 'owner_name',
                   'userid', 'machineid')

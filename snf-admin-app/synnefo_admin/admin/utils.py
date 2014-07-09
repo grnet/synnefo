@@ -23,8 +23,9 @@ from django.views.decorators.gzip import gzip_page
 from django.template import Context, Template
 from django.core.urlresolvers import reverse
 from django.utils.html import escape
+from django.conf import settings
 
-from synnefo_admin import admin_settings as settings
+from synnefo_admin import admin_settings
 from synnefo.util import units
 from astakos.im.models import AstakosUser
 
@@ -127,6 +128,27 @@ def filter_owner_email(queryset, search):
     return queryset.filter(userid__in=users).distinct()
 
 
+def filter_id(field):
+    def _filter_id(qs, query):
+        if not query:
+            return qs
+        return qs.filter(**{"%s__icontains" % field: int(query)})
+
+    return _filter_id
+
+
+def filter_vm_id(field):
+    def _filter_vm_id(qs, query):
+        query = str(query)
+        prefix = settings.BACKEND_PREFIX_ID
+        query = query.replace(prefix, '')
+        if not query.isdigit():
+            return qs
+        return qs.filter(**{"%s__icontains" % field: int(query)})
+
+    return _filter_vm_id
+
+
 def get_actions(target, user=None, inst=None):
     """Generic function for getting actions for various targets.
 
@@ -150,7 +172,7 @@ def update_actions_rbac(actions):
         target = action.target
         groups = []
         try:
-            groups = settings.ADMIN_RBAC[target][op]
+            groups = admin_settings.ADMIN_RBAC[target][op]
         except KeyError:
             pass
 
@@ -198,7 +220,7 @@ def create_details_href(type, name, id):
 
 def exclude_deleted(qs, model_type):
     """Exclude deleted items."""
-    if settings.ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS:
+    if admin_settings.ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS:
         return qs
 
     if isinstance(qs, list):
@@ -219,7 +241,7 @@ def filter_distinct(qs, model_type):
 
 
 def limit_associations(qs):
-    limit = settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
+    limit = admin_settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
     return qs[:limit]
 
 

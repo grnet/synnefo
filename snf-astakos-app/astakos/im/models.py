@@ -1580,8 +1580,10 @@ class ProjectResourceGrant(models.Model):
                 disp(member_abs, memb_disp)]
 
     def __unicode__(self):
-        return 'Max %s per user: %s' % (self.resource.pluralized_display_name,
-                                        self.display_member_capacity())
+        return 'Max %s per member: %s; project total: %s' % (
+            self.resource.pluralized_display_name,
+            self.display_member_capacity(),
+            self.display_project_capacity())
 
 
 class ProjectManager(models.Manager):

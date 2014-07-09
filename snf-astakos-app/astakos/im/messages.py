@@ -342,19 +342,21 @@ HELPDESK_NOTIFICATION_EMAIL_SUBJECT = \
 EMAIL_CHANGE_EMAIL_SUBJECT = 'Email change on %s ' % _SITENAME
 PASSWORD_RESET_EMAIL_SUBJECT = 'Password reset on %s ' % _SITENAME
 PROJECT_CREATION_SUBJECT = \
-    '%s project application created (%%(name)s)' % _SITENAME
+    '%s application for a new project created (%%s)' % _SITENAME
+PROJECT_MODIFICATION_SUBJECT = \
+    '%s application for a project modification created (%%s)' % _SITENAME
 PROJECT_APPROVED_SUBJECT = \
-    '%s project application approved (%%(name)s)' % _SITENAME
+    '%s project application approved (%%s)' % _SITENAME
 PROJECT_DENIED_SUBJECT = \
-    '%s project application denied (%%(name)s)' % _SITENAME
+    '%s project application denied (%%s)' % _SITENAME
 PROJECT_TERMINATION_SUBJECT = \
-    '%s project terminated (%%(name)s)' % _SITENAME
+    '%s project terminated (%%s)' % _SITENAME
 PROJECT_SUSPENSION_SUBJECT = \
-    '%s project suspended (%%(name)s)' % _SITENAME
+    '%s project suspended (%%s)' % _SITENAME
 PROJECT_UNSUSPENSION_SUBJECT = \
-    '%s project resumed (%%(name)s)' % _SITENAME
+    '%s project resumed (%%s)' % _SITENAME
 PROJECT_REINSTATEMENT_SUBJECT = \
-    '%s project reinstated (%%(name)s)' % _SITENAME
+    '%s project reinstated (%%s)' % _SITENAME
 PROJECT_MEMBERSHIP_CHANGE_SUBJECT = \
     '%s project membership changed (%%(name)s)' % _SITENAME
 PROJECT_MEMBERSHIP_ENROLL_SUBJECT = \

@@ -87,17 +87,21 @@ def membership_request_notify(project, requested_user, action):
 
 
 APPLICATION_DATA = {
-    "submit": lambda a: (
+    "submit_new": lambda a: (
         NOTIFY_RECIPIENTS,
-        _(messages.PROJECT_CREATION_SUBJECT) % a.__dict__,
+        _(messages.PROJECT_CREATION_SUBJECT) % a.chain.realname,
         "im/projects/project_creation_notification.txt"),
+    "submit_modification": lambda a: (
+        NOTIFY_RECIPIENTS,
+        _(messages.PROJECT_MODIFICATION_SUBJECT) % a.chain.realname,
+        "im/projects/project_modification_notification.txt"),
     "deny": lambda a: (
         [a.applicant.email],
-        _(messages.PROJECT_DENIED_SUBJECT) % a.__dict__,
+        _(messages.PROJECT_DENIED_SUBJECT) % a.chain.realname,
         "im/projects/project_denial_notification.txt"),
     "approve": lambda a: (
         [a.applicant.email],
-        _(messages.PROJECT_APPROVED_SUBJECT) % a.__dict__,
+        _(messages.PROJECT_APPROVED_SUBJECT) % a.chain.realname,
         "im/projects/project_approval_notification.txt"),
 }
 
@@ -116,16 +120,16 @@ def application_notify(application, action):
 
 PROJECT_DATA = {
     "terminate": lambda p: (
-        _(messages.PROJECT_TERMINATION_SUBJECT) % p.__dict__,
+        _(messages.PROJECT_TERMINATION_SUBJECT) % p.realname,
         "im/projects/project_termination_notification.txt"),
     "reinstate": lambda p: (
-        _(messages.PROJECT_REINSTATEMENT_SUBJECT) % p.__dict__,
+        _(messages.PROJECT_REINSTATEMENT_SUBJECT) % p.realname,
         "im/projects/project_reinstatement_notification.txt"),
     "suspend": lambda p: (
-        _(messages.PROJECT_SUSPENSION_SUBJECT) % p.__dict__,
+        _(messages.PROJECT_SUSPENSION_SUBJECT) % p.realname,
         "im/projects/project_suspension_notification.txt"),
     "unsuspend": lambda p: (
-        _(messages.PROJECT_UNSUSPENSION_SUBJECT) % p.__dict__,
+        _(messages.PROJECT_UNSUSPENSION_SUBJECT) % p.realname,
         "im/projects/project_unsuspension_notification.txt"),
 }
 

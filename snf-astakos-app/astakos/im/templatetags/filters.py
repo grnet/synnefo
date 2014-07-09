@@ -473,3 +473,9 @@ def owner_by_uuid(uuid):
     except AstakosUser.DoesNotExist:
         return uuid
 
+
+@register.filter
+def format_inf(value):
+    if _is_inf(value):
+        return "Unlimited"
+    return value

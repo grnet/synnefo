@@ -691,7 +691,8 @@ def submit_application(owner=None,
 
     logger.info("User %s submitted %s." %
                 (request_user.log_display, application.log_display))
-    project_notif.application_notify(application, "submit")
+    action = "submit_new" if project_id is None else "submit_modification"
+    project_notif.application_notify(application, action)
     return application
 
 

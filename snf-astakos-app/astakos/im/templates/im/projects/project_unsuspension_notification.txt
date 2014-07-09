@@ -1,5 +1,5 @@
 {% extends "im/email.txt" %}
 
 {% block content %}
-Your suspended project ({{object.name}}) has been resumed.
+Your suspended project {{object.realname}} has been resumed.
 {% endblock content %}

@@ -69,6 +69,10 @@ def filter_name(queryset, search):
     return queryset
 
 
+def flatten(l):
+    return [item for sublist in l for item in sublist]
+
+
 def filter_owner_name(queryset, search):
     """Filter by first name / last name of the owner.
 
@@ -106,7 +110,8 @@ def filter_owner_name(queryset, search):
         return queryset
     # Find all the users that match the requested search term
     users = filter_name(AstakosUser.objects.all(), search).\
-        values('uuid')
+        values_list('uuid')
+    users = flatten(users)
     # Get the related entities with the UUIDs of these users
     return queryset.filter(userid__in=users).distinct()
 
@@ -123,7 +128,8 @@ def filter_owner_email(queryset, search):
         return queryset
     # Find all the users that match the requested search term
     users = filter_email(AstakosUser.objects.all(), search).\
-        values('uuid')
+        values_list('uuid')
+    users = flatten(users)
     # Get the related entities with the UUIDs of these users
     return queryset.filter(userid__in=users).distinct()
 

@@ -358,7 +358,7 @@ def get_commission_info(resource, action, action_fields=None):
                 return None
         elif action == "DESTROY":
             volumes = resource.volumes.filter(deleted=False)
-            if resource.operstate != "BUILD":
+            if resource.operstate not in ["BUILD", "ERROR"]:
                 # Count only the volumes that are in the 'IN_USE' status,
                 # because a pending commission exists for the other volumes.
                 # The pending commission will be rejected, but

@@ -198,28 +198,6 @@ $('.main .object-details h4 .arrow').trigger('click')
 		});
 	}
 
-	$notificationArea.on('click', '.remove-log', function(e) {
-		e.preventDefault();
-		console.log($(this));
-		var $log = $(this).closest('.log');
-		$log.slideUp('slow', function() {
-			$log.remove();
-			if($notificationArea.find('.log').length === 0) {
-				$notificationArea.find('.close-notifications').trigger('click');
-
-			}
-		});
-	});
-	$notificationArea.on('click', '.close-notifications', function(e) {
-		e.preventDefault();
-		var height = -$notificationArea.outerHeight(true)
-		$notificationArea.animate({'bottom': height}, 'slow', function() {
-			if($notificationArea.find('.log').length === 0) {
-				$notificationArea.find('.warning').remove();
-			}
-		});
-	});
-
 	$('.modal').find('.cancel').click(function() {
 		$modal =$(this).closest('.modal');
 		resetInputs($modal);

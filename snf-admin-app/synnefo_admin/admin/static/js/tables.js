@@ -40,7 +40,7 @@ $(document).ready(function() {
 
 	var $lastClicked = null;
 	var $prevClicked = null;
-	selected = {
+	var selected = {
 		items: [],
 		actions: {}
 	};
@@ -178,11 +178,6 @@ $(document).ready(function() {
 		$(tableDomID).dataTable().api().ajax.reload();
 	})
 
-	function trimedCellTemplate(strData, limit) {
-		console.log(strData, limit)
-		var html = '<span title="click to see">'+'<span data-container="body" data-toggle="popover" data-placement="bottom" data-content="'+strData+'">'+strData.substring(0, limit)+'...'+'</span>'+'</span>';
-		return html;
-	};
 
 	function isSelected() {
 		var tableLength = table.rows()[0].length;
@@ -310,6 +305,18 @@ $(document).ready(function() {
 				return extraTemplate(data);
 			},
 		},
+			// "targets": '_all' this must be the last item of the array
+			{
+				"targets": '_all',
+				"render": function( data, type, row, meta ) {
+					if(data.length > maxCellChar) {
+						return trimedCellTemplate(data, maxCellChar);
+					}
+					else {
+						return data;
+					}
+				}
+			},
 		],
 		"order": [1, "asc"],
 		"lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
@@ -481,6 +488,12 @@ $(document).ready(function() {
 		}
 	};
 
+	function trimedCellTemplate(strData, limit) {
+		console.log(strData, limit)
+		var html = '<span title="click to see">'+'<span data-container="body" data-toggle="popover" data-placement="bottom" data-content="'+strData+'">'+strData.substring(0, limit)+'...'+'</span>'+'</span>';
+		return html;
+	};
+
 	function checkboxTemplate(data, initState) {
 		if(data.length > maxCellChar) {
 			data = trimedCellTemplate(data, maxCellChar);
@@ -526,7 +539,7 @@ $(document).ready(function() {
 	function clickSummary(row) {
 		$(row).find('td:last-child a.expand-area').click(function(e) {
 			e.preventDefault();
-			e.stopPropagation();
+			// e.stopPropagation();
 			var $summaryTd = $(this).closest('td');
 			var $btn = $summaryTd.find('.expand-area span');
 			var $summaryContent = $summaryTd.find('.info-summary');
@@ -914,22 +927,6 @@ $(document).ready(function() {
 		});
 	};
 
-	$notificationArea.on('click', '.remove-log', function(e) {
-		e.preventDefault();
-		console.log($(this));
-		var $log = $(this).closest('.log');
-		$log.fadeOut('slow', function() {
-			$log.remove();
-			if($notificationArea.find('.log').length === 0) {
-				$notificationArea.find('.close-notifications').trigger('click');
-
-			}
-		});
-	});
-	$notificationArea.on('click', '.close-notifications', function(e) {
-		e.preventDefault();
-		snf.funcs.hideBottomModal($notificationArea);
-	});
 
 	function drawModal(modalID) {
 		var $tableBody = $(modalID).find('.table-selected tbody');

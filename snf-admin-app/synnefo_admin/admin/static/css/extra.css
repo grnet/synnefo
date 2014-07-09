@@ -2380,6 +2380,10 @@ Extra-button is used to show total selected rows
   margin-right: -20px;
   padding: 20px;
 }
+/* line 105, ../sass/_details.scss */
+.main .object-details .part-two {
+  padding-bottom: 20px;
+}
 /* line 106, ../sass/_details.scss */
 .main .object-details .part-two .object-details {
   padding: 20px;
@@ -2388,12 +2392,12 @@ Extra-button is used to show total selected rows
 .main .object-details .part-two .object-details .object-details {
   padding: 0 20px;
 }
-/* line 116, ../sass/_details.scss */
+/* line 117, ../sass/_details.scss */
 .main .object-details .object-details-content .nav-tabs > li a {
   opacity: 0.7;
   color: white;
 }
-/* line 120, ../sass/_details.scss */
+/* line 121, ../sass/_details.scss */
 .main .object-details .object-details-content .nav-tabs > li.active > a {
   opacity: 1;
   border-color: transparent;
@@ -2401,113 +2405,113 @@ Extra-button is used to show total selected rows
   color: white;
   border-radius: 0;
 }
-/* line 127, ../sass/_details.scss */
+/* line 128, ../sass/_details.scss */
 .main .object-details .object-details-content .nav-tabs > li:not(.active) > a:hover {
   opacity: 1;
   color: white;
   border-color: transparent;
   background: transparent;
 }
-/* line 135, ../sass/_details.scss */
+/* line 136, ../sass/_details.scss */
 .main .object-details .tab-pane {
   overflow: auto;
 }
-/* line 137, ../sass/_details.scss */
+/* line 138, ../sass/_details.scss */
 .main .object-details .tab-pane th {
   color: #404040;
 }
-/* line 143, ../sass/_details.scss */
+/* line 144, ../sass/_details.scss */
 .main .object-details body .object-details h4 em {
   float: none;
 }
-/* line 145, ../sass/_details.scss */
+/* line 146, ../sass/_details.scss */
 .main .object-details body .object-details h4 em.os-info {
   float: right;
   position: relative;
   bottom: 3px;
 }
-/* line 150, ../sass/_details.scss */
+/* line 151, ../sass/_details.scss */
 .main .object-details body .object-details h4 em.os-info img {
   height: 26px;
 }
-/* line 157, ../sass/_details.scss */
+/* line 158, ../sass/_details.scss */
 .main .object-details .content-seperator {
   width: 100%;
   border-bottom: 1px solid white;
   margin-top: 20px;
   margin-bottom: 20px;
 }
-/* line 164, ../sass/_details.scss */
+/* line 165, ../sass/_details.scss */
 .main .object-details .content.part-one {
   margin-bottom: 0;
   margin-top: 160px;
 }
-/* line 168, ../sass/_details.scss */
+/* line 169, ../sass/_details.scss */
 .main .object-details .content.part-two {
   margin-top: 0;
 }
 
-/* line 174, ../sass/_details.scss */
+/* line 175, ../sass/_details.scss */
 body .well {
   border-color: #b2cae9;
 }
 
-/* line 181, ../sass/_details.scss */
+/* line 182, ../sass/_details.scss */
 body .object-details h4 {
   margin-left: 0;
   margin-right: 0;
 }
-/* line 185, ../sass/_details.scss */
+/* line 186, ../sass/_details.scss */
 body .object-details h3 {
   margin-left: 0;
   margin-top: 0;
 }
-/* line 188, ../sass/_details.scss */
+/* line 189, ../sass/_details.scss */
 body .object-details h3 em {
   font-size: 0.6em;
   font-weight: bold;
 }
-/* line 193, ../sass/_details.scss */
+/* line 194, ../sass/_details.scss */
 body .object-details p {
   margin: 10px 20px;
   font-style: italic;
 }
-/* line 198, ../sass/_details.scss */
+/* line 199, ../sass/_details.scss */
 body .object-details .length {
   margin-left: 6px;
   float: right;
   border: 0 none;
 }
-/* line 202, ../sass/_details.scss */
+/* line 203, ../sass/_details.scss */
 body .object-details .length::before {
   content: '( ';
 }
-/* line 205, ../sass/_details.scss */
+/* line 206, ../sass/_details.scss */
 body .object-details .length::after {
   content: ' )';
 }
-/* line 209, ../sass/_details.scss */
+/* line 210, ../sass/_details.scss */
 body .object-details > .object-details {
   margin-left: -20px;
   margin-right: -20px;
   padding: 20px;
 }
 
-/* line 217, ../sass/_details.scss */
+/* line 218, ../sass/_details.scss */
 .part-two .object-details {
   padding: 20px;
 }
-/* line 219, ../sass/_details.scss */
+/* line 220, ../sass/_details.scss */
 .part-two .object-details .object-details {
   padding: 0 20px;
 }
 
-/* line 227, ../sass/_details.scss */
+/* line 228, ../sass/_details.scss */
 .object-details-content .nav-tabs > li a {
   opacity: 0.7;
   color: white;
 }
-/* line 231, ../sass/_details.scss */
+/* line 232, ../sass/_details.scss */
 .object-details-content .nav-tabs > li.active > a {
   opacity: 1;
   border-color: transparent;
@@ -2515,7 +2519,7 @@ body .object-details > .object-details {
   color: white;
   border-radius: 0;
 }
-/* line 238, ../sass/_details.scss */
+/* line 239, ../sass/_details.scss */
 .object-details-content .nav-tabs > li:not(.active) > a:hover {
   opacity: 1;
   color: white;
@@ -2523,31 +2527,31 @@ body .object-details > .object-details {
   background: transparent;
 }
 
-/* line 246, ../sass/_details.scss */
+/* line 247, ../sass/_details.scss */
 .tab-pane {
   overflow: auto;
 }
-/* line 248, ../sass/_details.scss */
+/* line 249, ../sass/_details.scss */
 .tab-pane th {
   color: #404040;
 }
 
-/* line 254, ../sass/_details.scss */
+/* line 255, ../sass/_details.scss */
 body .object-details h4 em {
   float: none;
 }
-/* line 256, ../sass/_details.scss */
+/* line 257, ../sass/_details.scss */
 body .object-details h4 em.os-info {
   float: right;
   position: relative;
   bottom: 3px;
 }
-/* line 261, ../sass/_details.scss */
+/* line 262, ../sass/_details.scss */
 body .object-details h4 em.os-info img {
   height: 26px;
 }
 
-/* line 268, ../sass/_details.scss */
+/* line 269, ../sass/_details.scss */
 .content-seperator {
   width: 100%;
   border-bottom: 1px solid white;
@@ -2555,29 +2559,29 @@ body .object-details h4 em.os-info img {
   margin-bottom: 20px;
 }
 
-/* line 275, ../sass/_details.scss */
+/* line 276, ../sass/_details.scss */
 .content.part-one {
   margin-bottom: 0;
   margin-top: 160px;
 }
 
-/* line 279, ../sass/_details.scss */
+/* line 280, ../sass/_details.scss */
 .content.part-two {
   margin-top: 0;
 }
 
-/* line 284, ../sass/_details.scss */
+/* line 285, ../sass/_details.scss */
 h4 .arrow {
   position: relative;
   padding: 0 8px;
 }
-/* line 287, ../sass/_details.scss */
+/* line 288, ../sass/_details.scss */
 h4 .arrow:hover {
   top: 2px;
   cursor: pointer;
 }
 
-/* line 293, ../sass/_details.scss */
+/* line 294, ../sass/_details.scss */
 .icon-link {
   margin-right: 10px;
 }
@@ -2801,59 +2805,58 @@ p.progress-area {
   font-weight: bold;
   font-style: normal;
 }
-
-/* line 134, ../sass/_modals.scss */
-.modal-content {
-  padding: 20px;
-  color: #404040;
-}
-/* line 137, ../sass/_modals.scss */
-.modal-content .badge {
-  background-color: transparent;
-}
-
-/* line 142, ../sass/_modals.scss */
-.popover {
+/* line 132, ../sass/_modals.scss */
+.modal .popover {
   z-index: 2000;
 }
-/* line 144, ../sass/_modals.scss */
-.popover dl {
+/* line 134, ../sass/_modals.scss */
+.modal .popover dl {
   color: black;
   font-weight: normal;
 }
-/* line 147, ../sass/_modals.scss */
-.popover dl dt {
+/* line 137, ../sass/_modals.scss */
+.modal .popover dl dt {
   width: 90px;
 }
-/* line 150, ../sass/_modals.scss */
-.popover dl dd {
+/* line 140, ../sass/_modals.scss */
+.modal .popover dl dd {
   margin-left: 110px;
 }
-/* line 154, ../sass/_modals.scss */
-.popover h2 {
+/* line 144, ../sass/_modals.scss */
+.modal .popover h2 {
   font-size: 16px;
   color: #404040;
   font-weight: bold;
   text-align: center;
 }
 
-/* line 163, ../sass/_modals.scss */
+/* line 154, ../sass/_modals.scss */
+.modal-content {
+  padding: 20px;
+  color: #404040;
+}
+/* line 157, ../sass/_modals.scss */
+.modal-content .badge {
+  background-color: transparent;
+}
+
+/* line 164, ../sass/_modals.scss */
 .instructions-icon {
   color: #3c96e0;
   font-size: 22px;
   margin-left: 78px;
 }
-/* line 167, ../sass/_modals.scss */
+/* line 168, ../sass/_modals.scss */
 .instructions-icon:hover {
   text-decoration: none;
 }
 
-/* line 172, ../sass/_modals.scss */
+/* line 173, ../sass/_modals.scss */
 .extra-info {
   margin-top: 10px;
 }
 
-/* line 176, ../sass/_modals.scss */
+/* line 177, ../sass/_modals.scss */
 .error-sign {
   color: red;
   font-size: 20px;
@@ -2862,56 +2865,56 @@ p.progress-area {
   top: 6px;
   display: none;
 }
-/* line 184, ../sass/_modals.scss */
+/* line 185, ../sass/_modals.scss */
 .error-sign:hover {
   color: red;
   text-decoration: none;
 }
 
-/* line 191, ../sass/_modals.scss */
+/* line 192, ../sass/_modals.scss */
 .form-area {
   position: relative;
 }
 
-/* line 194, ../sass/_modals.scss */
+/* line 195, ../sass/_modals.scss */
 .form-subject {
   margin-bottom: 15px;
 }
 
-/* line 198, ../sass/_modals.scss */
+/* line 199, ../sass/_modals.scss */
 .toggle-more {
   margin-top: -16px;
   display: none;
 }
 
-/* line 204, ../sass/_modals.scss */
+/* line 205, ../sass/_modals.scss */
 .table-selected td:last-child {
   position: relative;
   padding-right: 36px;
 }
-/* line 208, ../sass/_modals.scss */
+/* line 209, ../sass/_modals.scss */
 .table-selected tr:nth-child(2n) {
   background: #f2f2f2;
 }
-/* line 212, ../sass/_modals.scss */
+/* line 213, ../sass/_modals.scss */
 .table-selected tr a {
   font-weight: bold;
 }
-/* line 216, ../sass/_modals.scss */
+/* line 217, ../sass/_modals.scss */
 .table-selected tr:hover {
   background: #d9d9d9;
 }
-/* line 218, ../sass/_modals.scss */
+/* line 219, ../sass/_modals.scss */
 .table-selected tr:hover a {
   color: red;
 }
-/* line 223, ../sass/_modals.scss */
+/* line 224, ../sass/_modals.scss */
 .table-selected .remove {
   position: absolute;
   right: 14px;
   color: transparent;
 }
-/* line 227, ../sass/_modals.scss */
+/* line 228, ../sass/_modals.scss */
 .table-selected .remove:hover {
   text-decoration: none;
 }
@@ -3563,7 +3566,6 @@ svg > text:last-child {
 
 /* line 289, ../sass/extra.scss */
 .notify {
-  display: none;
   padding: 30px 10px 15px;
   width: 100%;
   position: fixed;
@@ -3644,7 +3646,40 @@ svg > text:last-child {
   margin-left: 80px;
 }
 
-/* line 359, ../sass/extra.scss */
+/* line 360, ../sass/extra.scss */
 .lowercase {
   text-transform: lowercase;
+}
+
+/* line 364, ../sass/extra.scss */
+.keyboard-icon {
+  font-size: 20px;
+  vertical-align: sub;
+}
+
+/* line 372, ../sass/extra.scss */
+.shortcuts .key {
+  padding: 2px 9px;
+  font-style: normal;
+  font-weight: bold;
+  border: 1px solid gray;
+  border-radius: 6px;
+}
+
+/* line 381, ../sass/extra.scss */
+body > .popover {
+  max-width: none;
+  color: black;
+  margin-bottom: 20px;
+}
+/* line 386, ../sass/extra.scss */
+body > .popover h2 {
+  text-align: center;
+  font-size: 1.2em;
+  font-weight: bold;
+}
+/* line 391, ../sass/extra.scss */
+body > .popover dt {
+  margin-bottom: 8px;
+  overflow: visible;
 }

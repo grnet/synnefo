@@ -1,25 +1,11 @@
 $(document).ready(function() {
+	var astakos_stats_url = $('#charts').data("astakos-stats");
+	var cyclades_stats_url = $('#charts').data("cyclades-stats");
     var astakos_stats = {};
     var cyclades_stats = {};
 
-	// Highcharts.setOptions({colors: ['#69cd8e', '#f45b5b', '#f7a35c', '#aaa6a6', '#64E572', '#FF9655', '#FFF263', '#6AF9C4']});
-	// with drilldown
-    function getXAuthToken() {
-        var re = new RegExp("_pithos2_a=([^;]+)");
-        var value = re.exec(document.cookie);
-        if (value === null) {
-            return null;
-        }
-        value = value[1];
-        var token = value.split('%7C')[1];
-        return token;
-    }
-
     $.ajax({
-        beforeSend: function(xhrObj){
-            xhrObj.setRequestHeader("X-Auth-Token", getXAuthToken());
-        },
-        url: '/astakos/admin/stats/detail',
+        url: astakos_stats_url,
         type: 'GET',
         contentType: 'application/json',
         success: function(response, statusText, jqXHR) {
@@ -36,10 +22,7 @@ $(document).ready(function() {
     });
 
     $.ajax({
-        beforeSend: function(xhrObj){
-            xhrObj.setRequestHeader("X-Auth-Token", getXAuthToken());
-        },
-        url: '/cyclades/admin/stats/detail',
+        url: cyclades_stats_url,
         type: 'GET',
         contentType: 'application/json',
         success: function(response, statusText, jqXHR) {

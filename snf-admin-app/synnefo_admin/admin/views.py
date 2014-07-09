@@ -35,8 +35,11 @@ from snf_django.lib import astakos
 from synnefo_branding.utils import render_to_string
 from snf_django.lib.api import faults
 
+
 from astakos.im.messages import PLAIN_EMAIL_SUBJECT as sample_subject
 from astakos.im import settings as astakos_settings
+from astakos.admin import stats as astakos_stats
+from synnefo.admin import stats as cyclades_stats
 
 from synnefo_admin.admin_settings import (ADMIN_MEDIA_URL, AUTH_COOKIE_NAME,
                                           ADMIN_PERMITTED_GROUPS,
@@ -221,6 +224,34 @@ def charts(request):
 
 
 @admin_user_required
+def stats_component(request, component):
+    data = {}
+    status = 200
+    if component == 'astakos':
+        data = astakos_stats.get_public_stats()
+    elif component == 'cyclades':
+        data = cyclades_stats.get_public_stats()
+    else:
+        status = 404
+    return HttpResponse(json.dumps(data, cls=DjangoJSONEncoder),
+                        mimetype=JSON_MIMETYPE, status=status)
+
+
+@admin_user_required
+def stats_component_details(request, component):
+    data = {}
+    status = 200
+    if component == 'astakos':
+        data = astakos_stats.get_astakos_stats()
+    elif component == 'cyclades':
+        data = cyclades_stats.get_cyclades_stats()
+    else:
+        status = 404
+    return HttpResponse(json.dumps(data, cls=DjangoJSONEncoder),
+                        mimetype=JSON_MIMETYPE, status=status)
+
+
+@admin_user_required
 @conditionally_gzip_page
 def json_list(request, type):
     """Return a class-based view based on the given type."""
@@ -249,7 +280,6 @@ def json_list(request, type):
         raise Http404
 
 
-@csrf_exempt
 @admin_user_required
 def details(request, type, id):
     """Admin-Interface generic details view."""

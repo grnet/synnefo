@@ -904,28 +904,12 @@ class ModularBackend(object):
                 virtual=False, domain=None, keys=[], shared=False, until=None,
                 size_range=None, all_props=True, public=False,
                 listing_limit=listing_limit)
-            paths = []
             freed_space = 0
             for t in src_names:
-                path = '/'.join((account, container, t[0]))
-                node = t[2]
-                if not self._exists(node):
-                    continue
-
-                # keep reference to the mapfile
-                # in case we will want to delete them in the future
-                src_version_id, dest_version_id, _ = \
-                    self._put_version_duplicate(
-                        user, node, size=0, type='', hash=None, checksum='',
-                        cluster=CLUSTER_DELETED,
-                        update_statistics_ancestors_depth=1,
-                        keep_src_mapfile=True)
-                del_size = self._apply_versioning(
-                    account, container, src_version_id,
-                    update_statistics_ancestors_depth=1)
+                del_size = self._delete_object(user, account, container, t[0],
+                                               delimiter=None,
+                                               report_size_change=False)
                 freed_space += del_size
-                paths.append(path)
-            self.permissions.access_clear_bulk(paths)
 
             self._report_size_change(
                 user, account, -freed_space, project, name='/'.join((account,
@@ -1660,7 +1644,8 @@ class ModularBackend(object):
                      dest_account, dest_container, dest_name, type,
                      dest_domain=None, dest_meta=None, replace_meta=False,
                      permissions=None, src_version=None, is_move=False,
-                     delimiter=None, listing_limit=10000):
+                     delimiter=None, listing_limit=10000,
+                     report_size_change=True):
 
         dest_meta = dest_meta or {}
         dest_versions = []
@@ -1720,7 +1705,8 @@ class ModularBackend(object):
             user, dest_account, dest_container, dest_name, size, type, hash,
             None, dest_domain, dest_meta, replace_meta, permissions,
             src_node=node, src_version_id=src_version_id, is_copy=is_copy,
-            report_size_change=(not bulk_report_size_change),
+            report_size_change=(report_size_change and
+                                (not bulk_report_size_change)),
             keep_available=True, is_snapshot=is_snapshot,
             force_mapfile=force_mapfile)
 
@@ -1741,7 +1727,8 @@ class ModularBackend(object):
                 dest_account, dest_container, dest_name):
             del_size = self._delete_object(
                 user, src_account, src_container, src_name,
-                report_size_change=(not bulk_report_size_change))
+                report_size_change=(report_size_change and
+                                    (not bulk_report_size_change)))
             freed_space += del_size
 
         if delimiter:
@@ -1759,62 +1746,30 @@ class ModularBackend(object):
             # in duplicate version...
             props = self._get_versions(nodes)
 
-            for prop, path, node in zip(props, paths, nodes):
-                src_version_id = prop[self.SERIAL]
-                hash = prop[self.HASH]
-                vtype = prop[self.TYPE]
-                size = prop[self.SIZE]
-                is_snapshot = prop[self.IS_SNAPSHOT]
-                dest_prefix = dest_name + delimiter if not dest_name.endswith(
-                    delimiter) else dest_name
-                vdest_name = path.replace(prefix, dest_prefix, 1)
-
-                if is_copy and prop[self.AVAILABLE] != MAP_AVAILABLE:
-                    raise NotAllowedError("Copying objects not available in "
-                                          "the storage backend is forbidden.")
-
-                src_mapfile = prop[self.MAPFILE]
-                force_mapfile = src_mapfile if not is_copy else None
-
-                # _update_object_hash() locks destination path
-                dest_version_id, size_delta, dest_mapfile = \
-                    self._update_object_hash(
-                        user, dest_account, dest_container, vdest_name, size,
-                        vtype, hash, None, dest_domain, meta={},
-                        replace_meta=False, permissions=None, src_node=node,
-                        src_version_id=src_version_id, is_copy=is_copy,
-                        report_size_change=(not bulk_report_size_change),
-                        keep_available=True, is_snapshot=is_snapshot,
-                        force_mapfile=force_mapfile)
-
-                # store destination mapfile
-                if size != 0 and src_mapfile != dest_mapfile:
-                    try:
-                        hashmap = self._get_object_hashmap(
-                            prop, update_available=False)
-                    except:
-                        raise NotAllowedError(
-                            "Copy is not permitted: failed to get "
-                            "source object's mapfile: %s" % src_mapfile)
-                    self.store.map_put(dest_mapfile, hashmap, size,
-                                       self.block_size)
-
-                dest_versions.append(dest_version_id)
+            for prop, vsrc_name, node in zip(props, paths, nodes):
+                dest_prefix = (dest_name + delimiter if not
+                               dest_name.endswith(delimiter) else dest_name)
+                _version_id = prop[self.SERIAL]
+                _type = prop[self.TYPE]
+                _dest_name = vsrc_name.replace(prefix, dest_prefix, 1)
+                serials, size_delta, del_size = self._copy_object(
+                    user, src_account, src_container, vsrc_name,
+                    dest_account, dest_container, _dest_name, _type,
+                    src_version=_version_id, is_move=is_move,
+                    delimiter=None,
+                    report_size_change=(not bulk_report_size_change))
+                dest_versions.extend(serials)
                 occupied_space += size_delta
-                if is_move and (src_account, src_container, path) != (
-                        dest_account, dest_container, vdest_name):
-                    del_size = self._delete_object(
-                        user, src_account, src_container, path,
-                        report_size_change=(not bulk_report_size_change))
-                    freed_space += del_size
+                freed_space += del_size
 
-        if bulk_report_size_change:     # bulk report size change
+        # bulk repost size change
+        if report_size_change and bulk_report_size_change:
             dest_obj_path = '/'.join((dest_container_path, dest_name))
             size_delta = occupied_space - freed_space
             self._report_size_change(
                 user, dest_account, size_delta, dest_project,
                 name=dest_obj_path)
-        return dest_versions
+        return dest_versions, occupied_space, freed_space
 
     @debug_method
     @backend_method
@@ -1848,7 +1803,7 @@ class ModularBackend(object):
             user, src_account, src_container, src_name, dest_account,
             dest_container, dest_name, type, domain, meta, replace_meta,
             permissions, src_version, False, delimiter,
-            listing_limit=listing_limit)
+            listing_limit=listing_limit)[0]
         # propagate only the first version created
         return dest_versions[0] if dest_versions >= 1 else None
 
@@ -1933,11 +1888,10 @@ class ModularBackend(object):
             user, node, size=0, type='', hash=None, checksum='',
             cluster=CLUSTER_DELETED, update_statistics_ancestors_depth=1,
             keep_src_mapfile=True)
-        del_size = self._apply_versioning(account, container, src_version_id,
-                                          update_statistics_ancestors_depth=1)
-
-        freed_space = del_size
-        self.permissions.access_clear(path)
+        freed_space = self._apply_versioning(
+            account, container, src_version_id,
+            update_statistics_ancestors_depth=1)
+        paths = [path]
 
         if delimiter:
             prefix = name + delimiter if not name.endswith(delimiter) else name
@@ -1946,27 +1900,14 @@ class ModularBackend(object):
                 virtual=False, domain=None, keys=[], shared=False, until=None,
                 size_range=None, all_props=True, public=False,
                 listing_limit=listing_limit)
-            paths = []
             for t in src_names:
                 path = '/'.join((account, container, t[0]))
-                node = t[2]
-                if not self._exists(node):
-                    continue
-
-                # keep reference to the mapfile
-                # in case we will want to delete them in the future
-                src_version_id, dest_version_id, _ = \
-                    self._put_version_duplicate(
-                        user, node, size=0, type='', hash=None, checksum='',
-                        cluster=CLUSTER_DELETED,
-                        update_statistics_ancestors_depth=1,
-                        keep_src_mapfile=True)
-                del_size = self._apply_versioning(
-                    account, container, src_version_id,
-                    update_statistics_ancestors_depth=1)
+                del_size = self._delete_object(user, account, container, t[0],
+                                               delimiter=None,
+                                               report_size_change=False)
                 freed_space += del_size
                 paths.append(path)
-            self.permissions.access_clear_bulk(paths)
+        self.permissions.access_clear_bulk(paths)
 
         if report_size_change:
             path = '/'.join([account, container, name])

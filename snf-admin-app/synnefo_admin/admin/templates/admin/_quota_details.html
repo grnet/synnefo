@@ -3,9 +3,13 @@
 <div class="object-anchor" id="source-{{project.id}}"></div>
 <div class="object-details {{ rowcls }}">
     <h4 class="clearfix">
-        <span class="title">{{ project|repr }}</span>
-        <span class="arrow  snf-angle-down"></span>
-        <span class="label">ID: {{ project.id }}</span>
+        <div class="lt">
+            <span class="title">{{ project|repr }}</span>
+            <span class="arrow  snf-angle-down"></span>
+        </div>
+        <div class="rt">
+            <span class="label">ID: {{ project.id }}</span>
+        </div>
     </h4>
     <div class="object-details-content">
         <ul class="nav nav-tabs">

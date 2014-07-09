@@ -24,6 +24,11 @@ body {
 .container-solid{
     min-width: 1050px!important;
 }
+
+.container:not(.container-solid){
+    max-width: 960px;
+}
+
 // custom styles ovewriting bootstrap
 // labels
 .label {
@@ -33,7 +38,7 @@ body {
 
 
 .info-block h3 .badge {   font-size: 0.8em; padding: 5px 8px; background-color:#659CEF;}
-.object-anchor { margin-bottom: 5px; height:15px; }
+.object-anchor {height:2px; }
 
 /* new styles olga */
 
@@ -251,11 +256,6 @@ svg>text:last-child {
 	}
 }
 
-
-.object-details-content {
-	color: white;
-}
-
 .tab-content {
 	background: $gray-light;
 	padding: 20px;
@@ -264,21 +264,11 @@ svg>text:last-child {
 	}
 }
 
-.info-block.main {
-	margin-bottom: 5em;
-}
 
 .content-seperator {
 	display: none;
 }
 
-
-.part-two {
-	&>.object-details {
-		border: 1px solid $gray-light-extra;		
-	}
-
-}
 
 .selection-indicator {
 	margin-right: 6px;

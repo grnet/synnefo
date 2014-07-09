@@ -4,11 +4,15 @@
 <div class="object-anchor" id="nic-{{nic.pk}}"></div>
 <div class="object-details {{ rowcls }}">
     <h4>
-        <span class="title">{{ nic|repr }}</span>
-        <span class="arrow  snf-angle-down"></span>
-        <span class="label">ID: {{nic.pk}}</span>
-        <span class="label">MAC: {{ nic.mac }}</span>
-        <span class="label">{{ nic.state|upper }}</span>
+        <div class="lt">
+            <span class="title">{{ nic|repr }}</span>
+            <span class="arrow  snf-angle-down"></span>
+        </div>
+        <div class="lt">
+            <span class="label">ID: {{nic.pk}}</span>
+            <span class="label">MAC: {{ nic.mac }}</span>
+            <span class="label">{{ nic.state|upper }}</span>
+        </div>
     </h4 class="clearfix">
         <div class="tags">
         </div>

@@ -5,12 +5,16 @@
 <div class="object-details {{ rowcls }}" data-id="{{user.uuid}}"
     data-type="{{type}}">
     <h4 class="clearfix">
-        <a href="{% url admin-details type user.uuid %}" class="snf-search icon-link" title="Details for {{ user|repr }}"></a>
-        <span class="title">{{ user|repr }}</span>
-        <span class="arrow snf-angle-down"></span>
-        <span class="label">{{ user.status_display|upper }}</span>
-        <span class="label">UUID: {{ user.uuid }}</span>
-        <span class="label">{{ user.email }}</span>
+        <div class="lt"
+            <a href="{% url admin-details type user.uuid %}" class="snf-search icon-link" title="Details for {{ user|repr }}"></a>
+            <span class="title">{{ user|repr }}</span>
+            <span class="arrow snf-angle-down"></span>
+        </div>
+        <div class="rt">
+            <span class="label">{{ user.status_display|upper }}</span>
+            <span class="label">UUID: {{ user.uuid }}</span>
+            <span class="label">{{ user.email }}</span>
+        </div>
     </h4>
 
     <div class="object-details-content">

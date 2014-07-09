@@ -5,14 +5,18 @@
 <div class="object-details {{ rowcls }}" data-id="{{ip.pk}}"
     data-type="{{type}}">
     <h4 class="clearfix">
-        <a href="{% url admin-details type ip.pk %}" class="snf-search icon-link" title="Details for {{ ip.address }}"></a>
-        <span class="title">{{ ip.address }}</span>
-        <span class="arrow  snf-angle-down"></span>
-        <span class="label">ID: {{ip.pk}}</span>
-        {% if ip.floating_ip %}
-        <span class="label">FLOATING</span>
-        {% endif %}
-        <span class="label">IP Version: {{ ip.ipversion|upper }}</span>
+        <div class="lt">
+            <a href="{% url admin-details type ip.pk %}" class="snf-search icon-link" title="Details for {{ ip.address }}"></a>
+            <span class="title">{{ ip.address }}</span>
+            <span class="arrow  snf-angle-down"></span>
+        </div>
+        <div class="rt">
+            <span class="label">ID: {{ip.pk}}</span>
+            {% if ip.floating_ip %}
+            <span class="label">FLOATING</span>
+            {% endif %}
+            <span class="label">IP Version: {{ ip.ipversion|upper }}</span>
+        </div>
     </h4>
         <div class="tags">
         </div>

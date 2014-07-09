@@ -5,18 +5,22 @@
 <div class="object-details {{ rowcls }}" data-id="{{project.uuid}}"
     data-type="{{type}}">
     <h4 class="clearfix">
-        <a href="{% url admin-details type project.uuid %}" class="snf-search icon-link" title="Details for {{ project|repr }}"></a>
-        <span class="title">{{ project|repr }}</span>
-        <span class="arrow  snf-angle-down"></span>
-        <span class="label">{{ project.state_display|upper }}</span>
-        <span class="label">UUID: {{ project.uuid }}</span>
-        <span class="label">
-        {% if project.is_base %}
-            SYSTEM
-        {% else %}
-            Members: {{ project.members_count }}
-        {% endif %}
-        </span>
+        <div class="lt">
+            <a href="{% url admin-details type project.uuid %}" class="snf-search icon-link" title="Details for {{ project|repr }}"></a>
+            <span class="title">{{ project|repr }}</span>
+            <span class="arrow  snf-angle-down"></span>
+        </div>
+        <div class="rt">
+            <span class="label">{{ project.state_display|upper }}</span>
+            <span class="label">UUID: {{ project.uuid }}</span>
+            <span class="label">
+            {% if project.is_base %}
+                SYSTEM
+            {% else %}
+                Members: {{ project.members_count }}
+            {% endif %}
+            </span>
+        </div>
     </h4>
     <div class="object-details-content">
         <ul class="nav nav-tabs">

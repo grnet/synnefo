@@ -123,6 +123,7 @@ class GetCommissionInfoTest(TestCase):
         flavor = mfactory.FlavorFactory(cpu=2, ram=1024, disk=20)
         vm = mfactory.VirtualMachineFactory(flavor=flavor)
         mfactory.VolumeFactory(size=20, machine=vm, deleted=False,
+                               status="IN_USE",
                                delete_on_termination=True)
         vm.volumes.update(project=vm.project)
         #commission = quotas.get_commission_info(vm, "BUILD")

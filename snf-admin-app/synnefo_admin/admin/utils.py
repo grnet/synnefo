@@ -146,11 +146,14 @@ def filter_id(field):
 def filter_vm_id(field):
     def _filter_vm_id(qs, query):
         query = str(query)
+        lookup_type = 'contains'
         prefix = settings.BACKEND_PREFIX_ID
-        query = query.replace(prefix, '')
+        if query.startswith(prefix):
+            query = query.replace(prefix, '')
+            lookup_type = 'startswith'
         if not query.isdigit():
             return qs
-        return qs.filter(**{"%s__icontains" % field: int(query)})
+        return qs.filter(**{"%s__%s" % (field, lookup_type): int(query)})
 
     return _filter_vm_id
 

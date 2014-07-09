@@ -86,6 +86,7 @@ $(document).ready(function() {
 	var tableMassiveDomID = '#total-list'
 	table = $(tableDomID).DataTable({
 		"paging": true,
+		// "stateSave": true,
 		"processing": true,
 		"serverSide": serverside,
 		"ajax": {
@@ -274,6 +275,7 @@ $(document).ready(function() {
 	});
 
 	tableSelected = $(tableSelectedDomID).DataTable({
+		// "stateSave": true,
 		"columnDefs": [
 		{
 			"targets": 0,
@@ -903,12 +905,7 @@ $(document).ready(function() {
 	});
 	$notificationArea.on('click', '.close-notifications', function(e) {
 		e.preventDefault();
-		var height = -$notificationArea.outerHeight(true)
-		$notificationArea.animate({'bottom': height}, 'slow', function() {
-			if($notificationArea.find('.log').length === 0) {
-				$notificationArea.find('.warning').remove();
-			}
-		});
+		snf.funcs.hideBottomModal($notificationArea);
 	});
 
 	function drawModal(modalID) {

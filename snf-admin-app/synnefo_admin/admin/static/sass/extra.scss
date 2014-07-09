@@ -287,7 +287,7 @@ svg>text:last-child {
 }
 
 .notify {
-	display: none;
+	// display: none;
 	padding: 30px 10px 15px;
 	width: 100%;
 	position: fixed;
@@ -356,6 +356,40 @@ svg>text:last-child {
 		}
 	}
 }
+
 .lowercase {
 	text-transform:lowercase;
+}
+
+.keyboard-icon {
+	// margin-right: 10px;
+	font-size: 20px;
+	vertical-align: sub;
+}
+
+
+.shortcuts {
+	.key {
+		padding: 2px 9px;
+		font-style: normal;
+		font-weight: bold;
+		border: 1px solid gray;
+		border-radius: 6px;
+	}
+}
+
+body>.popover {
+	// same as .info-block>.popover
+	max-width: none;
+	color: black;
+	margin-bottom: 20px;
+	h2 {
+		text-align: center;
+		font-size: 1.2em;
+		font-weight: bold;
+	}
+	dt {
+		margin-bottom: 8px;
+		overflow: visible;
+	}
 }

@@ -1,5 +1,6 @@
 $(document).ready(function(){
-
+	var $notificationArea = $('.notify');
+	$notificationArea.css('bottom', -$notificationArea.outerHeight(true))
 	$('.error-sign').click(function(e) {
 		e.preventDefault();
 	});
@@ -9,6 +10,27 @@ $(document).ready(function(){
 	});
 	$("[data-toggle=popover]").popover();
 	$("[data-toggle=tooltip]").tooltip();
+
+	$('body').on('click', function (e) {
+    //did not click a popover toggle or popover
+    if ($(e.target).data('toggle') !== 'popover'
+        && $(e.target).parents('.popover.in').length === 0) {
+        $('[data-toggle="popover"]').popover('hide');
+    }
+});
+
+	$('.modal').on('hidden.bs.modal', function () {
+		$(this).find('.cancel').trigger('click');
+	})
+
+	$(document).keypress(function(e) {
+		if (!($(e.target).closest("input")[0] || $(e.target).closest("textarea")[0])) {
+			if(e.which === 105) {// 105 = "i"
+				snf.funcs.toggleBottomModal($notificationArea);
+			}
+		}
+	});
+
 });
 
 snf = {
@@ -17,8 +39,29 @@ snf = {
 			var height = -$modal.outerHeight(true)
 			if($modal.css('bottom') !== '0px')
 				$modal.css('bottom', height)
-			$modal.show();
-			$modal.animate({'bottom': '0px'}, 'slow')
+				$modal.animate({'bottom': '0px'}, 'slow');
+		},
+		hideBottomModal: function($modal) {
+			var height = -$modal.outerHeight(true)
+			$modal.animate({'bottom': height}, 'slow', function() {
+				if($modal.find('.log').length === 0) {
+					$modal.find('.warning').remove();
+				}
+			});
+		},
+		toggleBottomModal: function($modal) {
+			var height = -$modal.outerHeight(true);
+			if($modal.css('bottom') !== '0px') {
+				$modal.css('bottom', height)
+				$modal.animate({'bottom': '0px'}, 'slow');
+			}
+			else {
+				$modal.animate({'bottom': height}, 'slow', function() {
+					if($modal.find('.log').length === 0) {
+						$modal.find('.warning').remove();
+					}
+				});
+			}
 		}
-	}
+	},
 };

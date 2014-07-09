@@ -1,6 +1,6 @@
 {% load admin_tags %}
 <!--<div class="modal fade" id="{{type}}-{{ op }}" data-type="{{ op }}" data-backdrop="static" data-keyboard="false">-->
-<div class="modal fade" data-item ={{ action.target }} id="{{action.target}}-{{ op }}" data-backdrop="static" data-keyboard="false" data-karma={{ action.karma }} data-caution={{ action.caution_level }} data-type={{ op }}>
+<div class="modal fade" data-item ={{ action.target }} id="{{action.target}}-{{ op }}" data-backdrop="static" data-keyboard="true" tabindex="-1" data-karma={{ action.karma }} data-caution={{ action.caution_level }} data-type={{ op }}>
     <div class="modal-dialog modal-md">
         <div class="modal-content area">
             <div class="modal-header">

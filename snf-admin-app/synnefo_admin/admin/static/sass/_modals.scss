@@ -129,6 +129,26 @@ p.progress-area {
 		font-weight: bold;
 		font-style: normal;
 	}
+	.popover {
+		z-index: 2000;
+		dl {
+			color: black;
+			font-weight: normal;
+			dt {
+				width: 90px;
+			}
+			dd {
+				margin-left: 110px;
+			}
+		}
+		h2 {
+			font-size: 16px;
+	        color: $gray-dark;
+			font-weight: bold;
+			text-align: center;
+		}
+	}
+
 }
 
 .modal-content {
@@ -139,25 +159,6 @@ p.progress-area {
 	}
 }
 
-.popover {
-	z-index: 2000;
-	dl {
-		color: black;
-		font-weight: normal;
-		dt {
-			width: 90px;
-		}
-		dd {
-			margin-left: 110px;
-		}
-	}
-	h2 {
-		font-size: 16px;
-        color: $gray-dark;
-		font-weight: bold;
-		text-align: center;
-	}
-}
 
 
 .instructions-icon {

@@ -613,6 +613,10 @@ def _modify_projects(projects, request):
     quotas.qh_sync_projects(projects)
 
 
+MAX_TEXT_INPUT = 4096
+MAX_BIGINT = 2**63 - 1
+
+
 def submit_application(owner=None,
                        name=None,
                        project_id=None,
@@ -636,6 +640,31 @@ def submit_application(owner=None,
             raise ProjectConflict("Cannot modify an uninitialized project.")
 
     policies = validate_resource_policies(resources)
+
+    if homepage is not None:
+        maxlen = ProjectApplication.MAX_HOMEPAGE_LENGTH
+        if len(homepage) > maxlen:
+            raise ProjectBadRequest(
+                "'homepage' value exceeds max length %s" % maxlen)
+    if description is not None:
+        maxlen = MAX_TEXT_INPUT
+        if len(description) > maxlen:
+            raise ProjectBadRequest(
+                "'description' value exceeds max length %s" % maxlen)
+    if comments is not None:
+        maxlen = MAX_TEXT_INPUT
+        if len(comments) > maxlen:
+            raise ProjectBadRequest(
+                "'comments' value exceeds max length %s" % maxlen)
+    if limit_on_members_number is not None:
+        maxlen = MAX_BIGINT
+        if limit_on_members_number > maxlen:
+            raise ProjectBadRequest(
+                "max_members exceeds max value %s" % maxlen)
+    if end_date is not None:
+        if end_date < datetime.now():
+            raise ProjectBadRequest(
+                "'end_date' must be in the future")
 
     force = request_user.is_project_admin()
     ok, limit = qh_add_pending_app(request_user, project, force)
@@ -722,6 +751,9 @@ def validate_resource_policies(policies, admin=False):
         if not isinstance(p_capacity, (int, long)) or \
                 not isinstance(m_capacity, (int, long)):
             raise ProjectBadRequest("Malformed resource policies")
+        if p_capacity > MAX_BIGINT or m_capacity > MAX_BIGINT:
+            raise ProjectBadRequest(
+                "Quota limit exceeds max value %s" % MAX_BIGINT)
         pols.append((resource_d[resource_name], m_capacity, p_capacity))
     return pols
 

@@ -1325,6 +1325,8 @@ class ProjectApplication(models.Model):
     DISMISSED = 4
     CANCELLED = 5
 
+    MAX_HOMEPAGE_LENGTH = 255
+
     state = models.IntegerField(default=PENDING,
                                 db_index=True)
     owner = models.ForeignKey(
@@ -1336,7 +1338,7 @@ class ProjectApplication(models.Model):
                               related_name='chained_apps',
                               db_column='chain')
     name = models.CharField(max_length=80, null=True)
-    homepage = models.URLField(max_length=255, null=True,
+    homepage = models.URLField(max_length=MAX_HOMEPAGE_LENGTH, null=True,
                                verify_exists=False)
     description = models.TextField(null=True, blank=True)
     start_date = models.DateTimeField(null=True, blank=True)
@@ -1678,7 +1680,9 @@ class Project(models.Model):
         null=True,
         db_index=True)
     realname = models.CharField(max_length=80)
-    homepage = models.URLField(max_length=255, verify_exists=False)
+    homepage = models.URLField(
+        max_length=ProjectApplication.MAX_HOMEPAGE_LENGTH,
+        verify_exists=False)
     description = models.TextField(blank=True)
     end_date = models.DateTimeField()
     member_join_policy = models.IntegerField()

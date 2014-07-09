@@ -151,7 +151,7 @@ class ProjectAPITest(TestCase):
 
         app1 = {"name": "test.pr",
                 "description": u"δεσκρίπτιον",
-                "end_date": "2013-5-5T20:20:20Z",
+                "end_date": "2113-5-5T20:20:20Z",
                 "join_policy": "auto",
                 "max_members": 5,
                 "resources": {u"σέρβις1.ρίσορς11": {
@@ -219,7 +219,7 @@ class ProjectAPITest(TestCase):
         # Modify of uninitialized failed
         app2 = {"name": "test.pr",
                 "start_date": "2013-5-5T20:20:20Z",
-                "end_date": "2013-7-5T20:20:20Z",
+                "end_date": "2113-7-5T20:20:20Z",
                 "join_policy": "moderated",
                 "leave_policy": "auto",
                 "max_members": 3,
@@ -543,72 +543,96 @@ class ProjectAPITest(TestCase):
                         action, content_type="application/json", **h_owner)
         self.assertEqual(r.status_code, 400)
 
-        ap = {"owner": "nonex",
-              "join_policy": "nonex",
-              "leave_policy": "nonex",
-              "start_date": "nonex",
-              "homepage": {},
-              "max_members": -3,
-              "resources": [],
-              }
 
+        ap_base = {
+            "owner": self.user1.uuid,
+            "name": "domain.name",
+            "join_policy": "auto",
+            "leave_policy": "closed",
+            "start_date": "2113-01-01T0:0Z",
+            "end_date": "2114-01-01T0:0Z",
+            "max_members": 0,
+            "resources": {
+                u"σέρβις1.ρίσορς11": {
+                    "member_capacity": 512,
+                    "project_capacity": 1024}
+                },
+            }
+        status, body = self.create(ap_base, h_owner)
+        project_b_id = body["id"]
+        app_b_id = body["application"]
+        self.assertEqual(status, 201)
+
+        # Cancel
+        status = self.project_action(project_b_id, "cancel",
+                                     app_id=app_b_id, headers=h_owner)
+        self.assertEqual(status, 200)
+
+        ap = copy.deepcopy(ap_base)
+        ap["owner"] = "nonex"
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 400)
         self.assertEqual(body["badRequest"]["message"], "User does not exist.")
 
-        ap["owner"] = self.user1.uuid
+        ap = copy.deepcopy(ap_base)
+        ap.pop("name")
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 400)
 
-        ap["name"] = "some.name"
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["join_policy"] = "auto"
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["leave_policy"] = "closed"
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["start_date"] = "2013-01-01T0:0Z"
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["end_date"] = "2014-01-01T0:0Z"
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["max_members"] = 0
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["homepage"] = "a.stri.ng"
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["resources"] = {42: 42}
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["resources"] = {u"σέρβις1.ρίσορς11": {"member_capacity": 512}}
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["resources"] = {
-            u"σέρβις1.ρίσορς11": {
-                "member_capacity": 512,
-                "project_capacity": 1024}
-            }
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 201)
-
+        ap = copy.deepcopy(ap_base)
         ap["name"] = "non_domain_name"
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 400)
 
-        ap["name"] = "domain.name"
+        ap = copy.deepcopy(ap_base)
+        ap["join_policy"] = "nonex"
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["leave_policy"] = "nonex"
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap.pop("end_date")
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["end_date"] = "2000-01-01T0:0Z"
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["start_date"] = "nonex"
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["max_members"] = -3
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["max_members"] = 2**63
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["homepage"] = 100 * "huge"
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["resources"] = {42: 42}
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["resources"] = {u"σέρβις1.ρίσορς11": {"member_capacity": 512}}
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
 
         filters = {"state": "nonex"}
         r = client.get(reverse("api_projects"), filters, **h_owner)

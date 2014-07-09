@@ -80,7 +80,7 @@ $(document).ready(function() {
 	var extraData;
 	// sets the classes of the btns that are used for navigation throw the pages (next, prev, 1, 2, 3...)
 	// $.fn.dataTableExt.oStdClasses.sPageButton = "btn btn-primary";
-
+	var maxCellChar = 30;
 	var tableDomID = '#table-items-total';
 	var tableSelectedDomID = '#table-items-selected'
 	var tableMassiveDomID = '#total-list'
@@ -117,19 +117,31 @@ $(document).ready(function() {
 			}
 		},
 		"columnDefs": [
-		{
-			"targets": 0,
-			"render": function(data, type, rowData) {
-				return checkboxTemplate(data, 'unchecked');
-			}
-		},
-		{
-			"targets": -1, // the first column counting from the right is "Summary"
-			"orderable": false,
-			"render": function(data, type, rowData) {
-				return extraTemplate(data);
-			}
-		},
+			{
+				"targets": 0,
+				"render": function(data, type, rowData) {
+					return checkboxTemplate(data, 'unchecked');
+				}
+			},
+			{
+				"targets": -1, // the first column counting from the right is "Summary"
+				"orderable": false,
+				"render": function(data, type, rowData) {
+					return extraTemplate(data);
+				}
+			},
+			// "targets": '_all' this must be the last item of the array
+			{
+				"targets": '_all',
+				"render": function( data, type, row, meta ) {
+					if(data.length > maxCellChar) {
+						return trimedCellTemplate(data, maxCellChar);
+					}
+					else {
+						return data;
+					}
+				}
+			},
 		],
 		"order": [1, "asc"],
 		"createdRow": function(row, data, dataIndex) {
@@ -138,6 +150,7 @@ $(document).ready(function() {
 			clickSummary(row);
 			clickDetails(row);
 		},
+
 		"dom": '<"custom-buttons">frtilp',
 		"language" : {
 			"sLengthMenu": 'Pagination _MENU_'
@@ -145,6 +158,7 @@ $(document).ready(function() {
 		"drawCallback": function(settings) {
 			isSelected();
 			updateToggleAllSelect();
+			$("[data-toggle=popover]").popover();
 		}
 	});
 	var btn1 = '<a href="" id="select-page" class="select line-btn" data-karma="neutral" data-caution="none"><span>Select Page</span></a>';
@@ -163,6 +177,12 @@ $(document).ready(function() {
 		e.preventDefault();
 		$(tableDomID).dataTable().api().ajax.reload();
 	})
+
+	function trimedCellTemplate(strData, limit) {
+		console.log(strData, limit)
+		var html = '<span title="click to see">'+'<span data-container="body" data-toggle="popover" data-placement="bottom" data-content="'+strData+'">'+strData.substring(0, limit)+'...'+'</span>'+'</span>';
+		return html;
+	};
 
 	function isSelected() {
 		var tableLength = table.rows()[0].length;
@@ -462,6 +482,9 @@ $(document).ready(function() {
 	};
 
 	function checkboxTemplate(data, initState) {
+		if(data.length > maxCellChar) {
+			data = trimedCellTemplate(data, maxCellChar);
+		}
 		if($actionbar.length > 0)
 			return '<span class="snf-font-admin snf-checkbox-'+initState+' selection-indicator"></span>'+data;
 		else

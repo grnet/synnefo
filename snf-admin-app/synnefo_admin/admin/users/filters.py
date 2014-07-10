@@ -75,10 +75,8 @@ def filter_status(queryset, choices):
     if len(choices) == len(choice2query.keys()):
         return queryset
     q = Q()
-    logging.info("Choices: %s", choices)
     for c in choices:
         q |= choice2query[(c, '')]
-        logging.info("q: %s", q)
     return queryset.filter(q).distinct()
 
 

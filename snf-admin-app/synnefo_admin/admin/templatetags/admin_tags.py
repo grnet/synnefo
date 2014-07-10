@@ -171,7 +171,6 @@ def admin_debug(var):
 def get_details_template(type):
     """Get the correct template for the provided item."""
     template = 'admin/_' + type + '_details.html'
-    logging.info("Requested the %s", template)
     return template
 
 
@@ -194,7 +193,6 @@ def get_filter_template(filter):
     else:
         raise Exception("Unknown filter type: %s", filter)
     template = 'admin/filter_' + type + '.html'
-    logging.info("Requested the %s", template)
     return template
 
 

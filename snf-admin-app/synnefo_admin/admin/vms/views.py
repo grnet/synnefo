@@ -194,7 +194,6 @@ def wait_action(request, op, id):
 
 def catalog(request):
     """List view for Cyclades VMs."""
-    logging.info("Filters are %s", VMFilterSet().filters)
     context = {}
     context['action_dict'] = get_permitted_actions(cached_actions, request.user)
     context['filter_dict'] = VMFilterSet().filters.itervalues()

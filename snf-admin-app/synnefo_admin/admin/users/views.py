@@ -171,7 +171,6 @@ def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     user = get_user(id)
     actions = get_permitted_actions(cached_actions, request.user)
-    logging.info("Op: %s, target: %s, fun: %s", op, user.email, actions[op].f)
 
     if op == 'reject':
         actions[op].f(user, 'Rejected by the admin')

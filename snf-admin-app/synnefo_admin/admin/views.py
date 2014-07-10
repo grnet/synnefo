@@ -57,7 +57,7 @@ from synnefo_admin.admin import groups as group_views
 from synnefo_admin.admin import auth_providers as auth_provider_views
 from synnefo_admin.admin import actions
 from synnefo_admin.admin.utils import (conditionally_gzip_page,
-                                       customize_details_context)
+                                       customize_details_context, admin_log)
 
 from synnefo.ui.views import UI_MEDIA_URL
 
@@ -129,7 +129,6 @@ def admin_user_required(func, permitted_groups=ADMIN_PERMITTED_GROUPS):
             raise Http404
 
         token = get_token_from_cookie(request, AUTH_COOKIE_NAME)
-        logging.info("My token: %s", token)
         astakos.get_user(request, settings.ASTAKOS_AUTH_URL,
                          fallback_token=token, logger=logger)
         if hasattr(request, 'user') and request.user:
@@ -197,14 +196,11 @@ default_dict = {
 
 @admin_user_required
 def logout(request):
-    try:
-        auth_token = request.user['access']['token']['id']
-        ac = astakosclient.AstakosClient(auth_token, settings.ASTAKOS_AUTH_URL,
-                                         retry=2, use_pool=True, logger=logger)
-        logout_url = ac.ui_url + '/logout'
-    except Exception as e:
-        logger.exception("Why?")
-        raise e
+    admin_log(request)
+    auth_token = request.user['access']['token']['id']
+    ac = astakosclient.AstakosClient(auth_token, settings.ASTAKOS_AUTH_URL,
+                                     retry=2, use_pool=True, logger=logger)
+    logout_url = ac.ui_url + '/logout'
 
     return HttpResponseRedirect(logout_url)
 
@@ -212,6 +208,7 @@ def logout(request):
 @admin_user_required
 def home(request):
     """Home view."""
+    admin_log(request)
     return direct_to_template(request, "admin/home.html",
                               extra_context=default_dict)
 
@@ -219,12 +216,14 @@ def home(request):
 @admin_user_required
 def charts(request):
     """Dummy view for charts."""
+    admin_log(request)
     return direct_to_template(request, "admin/charts.html",
                               extra_context=default_dict)
 
 
 @admin_user_required
 def stats_component(request, component):
+    admin_log(request, component=component)
     data = {}
     status = 200
     if component == 'astakos':
@@ -239,6 +238,7 @@ def stats_component(request, component):
 
 @admin_user_required
 def stats_component_details(request, component):
+    admin_log(request, component=component)
     data = {}
     status = 200
     if component == 'astakos':
@@ -255,7 +255,7 @@ def stats_component_details(request, component):
 @conditionally_gzip_page
 def json_list(request, type):
     """Return a class-based view based on the given type."""
-    logging.info("Request for json. Type: %s", type)
+    admin_log(request, type=type)
 
     if type == 'user':
         return user_views.UserJSONView.as_view()(request)
@@ -283,7 +283,7 @@ def json_list(request, type):
 @admin_user_required
 def details(request, type, id):
     """Admin-Interface generic details view."""
-    logging.info("Request for details. Type: %s, ID: %s", type, id)
+    admin_log(request, type=type, id=id)
 
     mod = get_view_module(type)
     context = mod.details(request, id)
@@ -298,7 +298,7 @@ def details(request, type, id):
 @admin_user_required
 def catalog(request, type):
     """Admin-Interface generic list view."""
-    logging.info("Request for list. Type: %s", type)
+    admin_log(request, type=type)
 
     mod = get_view_module(type)
     context = mod.catalog(request)
@@ -316,6 +316,7 @@ def admin_actions(request):
 
     Expects a JSON with the following fields: <TODO>
     """
+    admin_log(request, json=request.REQUEST)
     status = 200
     response = {
         'result': "All actions finished successfully",
@@ -326,10 +327,10 @@ def admin_actions(request):
         status = 405
         response['result'] = "Only POST is allowed"
 
-    logging.info("This is the request %s", request.body)
+    #logging.info("This is the request %s", request.body)
     objs = json.loads(request.body)
     request.POST = objs
-    logging.info("This is the decoded dictionary %s", request.POST)
+    #logging.info("This is the decoded dictionary %s", request.POST)
 
     target = objs['target']
     op = objs['op']

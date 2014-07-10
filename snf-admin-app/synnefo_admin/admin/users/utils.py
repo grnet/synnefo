@@ -63,7 +63,7 @@ def get_user(query):
         else:
             user = AstakosUser.objects.get(email=query)
     except ObjectDoesNotExist:
-        logging.info("Failed to resolve '%s' into account" % query)
+        logging.error("Failed to resolve '%s' into account" % query)
         return None
 
     return user

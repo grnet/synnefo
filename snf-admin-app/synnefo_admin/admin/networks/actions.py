@@ -51,7 +51,6 @@ class NetworkAction(AdminAction):
 
 
 def drain_network(network):
-    logging.info("Draining network")
     network.drained = True
     network.save()
 

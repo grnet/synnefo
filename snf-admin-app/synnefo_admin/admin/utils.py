@@ -15,6 +15,7 @@
 
 import functools
 import logging
+import inspect
 from importlib import import_module
 from operator import or_
 
@@ -31,6 +32,17 @@ from astakos.im.models import AstakosUser
 
 from .actions import get_allowed_actions, get_permitted_actions
 logger = logging.getLogger(__name__)
+
+
+def admin_log(request, *argc, **kwargs):
+    caller_name = inspect.stack()[1][3]
+    s = "User: %s, " % request.user['access']['user']['name']
+    s += "View: %s, " % caller_name
+
+    for key, value in kwargs.iteritems():
+        s += "%s: %s, " % (key.capitalize(), value)
+
+    logging.info(s)
 
 
 def conditionally_gzip_page(func):
@@ -210,7 +222,7 @@ def render_email(request, user):
                  'email': user.email, })
     t = Template(request['text'])
     body = t.render(c)
-    logging.info("Subject is %s, body is %s", subject, body)
+    #logging.info("Subject is %s, body is %s", subject, body)
     return subject, body
 
 

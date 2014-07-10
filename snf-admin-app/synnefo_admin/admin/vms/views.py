@@ -74,7 +74,8 @@ class VMJSONView(AdminJSONView):
 
         extra_dict['allowed_actions'] = {
             'display_name': "",
-            'value': get_allowed_actions(cached_actions, inst),
+            'value': get_allowed_actions(cached_actions, inst,
+                                         self.request.user),
             'visible': False,
         }
         extra_dict['id'] = {

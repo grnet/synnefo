@@ -20,7 +20,7 @@
                 <dl class="dl-horizontal well">
                     {% for name, quota in source.resources %}
                     <dt>{{ name }}</dt><dd>{{ quota.project_usage }}
-                    <b>from</b> {{ quota.project_limit }}</dd>
+                    from {{ quota.project_limit }}</dd>
                     {% endfor %}
                 </dl>
             </div>

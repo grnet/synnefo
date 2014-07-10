@@ -3325,33 +3325,28 @@ svg > text:last-child {
 }
 
 /* line 175, ../sass/extra.scss */
-*::-moz-selection {
-  background: #fff2a8;
-}
-
-/* line 179, ../sass/extra.scss */
 .with-shift *::selection {
   background-color: transparent;
 }
 
-/* line 183, ../sass/extra.scss */
+/* line 179, ../sass/extra.scss */
 .with-shift *::-moz-selection {
   background: transparent;
 }
 
-/* line 187, ../sass/extra.scss */
+/* line 183, ../sass/extra.scss */
 .warning-duplicate {
   font-size: 0.95em;
   font-style: italic;
 }
 
 /* updated olga */
-/* line 195, ../sass/extra.scss */
+/* line 191, ../sass/extra.scss */
 .navbar {
   text-shadow: none;
 }
 
-/* line 201, ../sass/extra.scss */
+/* line 197, ../sass/extra.scss */
 .nav > li > a:hover,
 .nav > li > a:focus,
 .nav > li:hover > a {
@@ -3361,7 +3356,7 @@ svg > text:last-child {
   background: #d9d9d9;
 }
 
-/* line 209, ../sass/extra.scss */
+/* line 205, ../sass/extra.scss */
 .main-nav .nav > li > a:hover,
 .main-nav .nav > li > a:focus,
 .main-nav .nav > li:hover > a {
@@ -3369,7 +3364,7 @@ svg > text:last-child {
   background: #333333;
 }
 
-/* line 213, ../sass/extra.scss */
+/* line 209, ../sass/extra.scss */
 .nav > li.active > a {
   color: #404040;
   -webkit-transition: all 0 ease 0;
@@ -3377,13 +3372,13 @@ svg > text:last-child {
   background: white;
 }
 
-/* line 220, ../sass/extra.scss */
+/* line 216, ../sass/extra.scss */
 .nav > li > a {
   -webkit-transition: all 0 ease 0;
   transition: all 0 ease 0;
 }
 
-/* line 225, ../sass/extra.scss */
+/* line 221, ../sass/extra.scss */
 .dropdown-menu {
   border-radius: 0;
   border: 0 none;
@@ -3391,56 +3386,56 @@ svg > text:last-child {
   background-color: white;
 }
 
-/* line 233, ../sass/extra.scss */
+/* line 229, ../sass/extra.scss */
 .dropdown-menu .active > a,
 .dropdown-menu .active > a:hover {
   background-color: #d9d9d9;
   color: #404040;
 }
 
-/* line 239, ../sass/extra.scss */
+/* line 235, ../sass/extra.scss */
 .dropdown-menu li > a:hover {
   background-color: #d9d9d9;
   color: #404040;
 }
 
-/* line 244, ../sass/extra.scss */
+/* line 240, ../sass/extra.scss */
 .sub-nav {
   background: #5a5959;
   border: 0 none;
 }
-/* line 248, ../sass/extra.scss */
+/* line 244, ../sass/extra.scss */
 .sub-nav .nav > li > a {
   color: #eeeeee;
 }
-/* line 252, ../sass/extra.scss */
+/* line 248, ../sass/extra.scss */
 .sub-nav .nav > li:hover a {
   color: #404040;
 }
 
-/* line 259, ../sass/extra.scss */
+/* line 255, ../sass/extra.scss */
 .tab-content {
   background: #5a5959;
   padding: 20px;
 }
-/* line 262, ../sass/extra.scss */
+/* line 258, ../sass/extra.scss */
 .tab-content .well {
   border-color: #5a5959;
 }
 
-/* line 268, ../sass/extra.scss */
+/* line 264, ../sass/extra.scss */
 .content-seperator {
   display: none;
 }
 
-/* line 273, ../sass/extra.scss */
+/* line 269, ../sass/extra.scss */
 .selection-indicator {
   margin-right: 6px;
   cursor: pointer;
   padding: 0 6px;
 }
 
-/* line 279, ../sass/extra.scss */
+/* line 275, ../sass/extra.scss */
 .notify {
   padding: 30px 10px 15px;
   width: 100%;
@@ -3449,91 +3444,91 @@ svg > text:last-child {
   background: white;
   color: #404040;
 }
-/* line 287, ../sass/extra.scss */
+/* line 283, ../sass/extra.scss */
 .notify .container > *:not(:last-child) {
   margin-bottom: 16px;
 }
-/* line 290, ../sass/extra.scss */
+/* line 286, ../sass/extra.scss */
 .notify .remove-icon {
   color: transparent;
   margin-left: 20px;
   font-weight: bold;
 }
-/* line 296, ../sass/extra.scss */
+/* line 292, ../sass/extra.scss */
 .notify .container > *:hover .remove-icon {
   color: #d9534f;
 }
-/* line 300, ../sass/extra.scss */
+/* line 296, ../sass/extra.scss */
 .notify .state-icon {
   margin-right: 10px;
 }
-/* line 303, ../sass/extra.scss */
+/* line 299, ../sass/extra.scss */
 .notify .success {
   color: #449d44;
 }
-/* line 306, ../sass/extra.scss */
+/* line 302, ../sass/extra.scss */
 .notify .error {
   color: #d9534f;
 }
-/* line 309, ../sass/extra.scss */
+/* line 305, ../sass/extra.scss */
 .notify .pending {
   color: #f0ad4e;
 }
-/* line 312, ../sass/extra.scss */
+/* line 308, ../sass/extra.scss */
 .notify em {
   font-style: normal;
   font-weight: bold;
 }
-/* line 316, ../sass/extra.scss */
+/* line 312, ../sass/extra.scss */
 .notify .warning {
   font-style: italic;
   font-weight: bold;
   color: #5a5959;
 }
-/* line 321, ../sass/extra.scss */
+/* line 317, ../sass/extra.scss */
 .notify .close-notify {
   position: absolute;
   right: 20px;
   top: 20px;
   color: #404040;
 }
-/* line 326, ../sass/extra.scss */
+/* line 322, ../sass/extra.scss */
 .notify .close-notify:hover {
   color: #222222;
 }
-/* line 330, ../sass/extra.scss */
+/* line 326, ../sass/extra.scss */
 .notify .dl-horizontal {
   margin-left: 21px;
 }
-/* line 334, ../sass/extra.scss */
+/* line 330, ../sass/extra.scss */
 .notify .dl-horizontal dt {
   width: 80px;
   vertical-align: top;
   text-align: left;
 }
-/* line 338, ../sass/extra.scss */
+/* line 334, ../sass/extra.scss */
 .notify .dl-horizontal dt span {
   font-size: 20px;
   vertical-align: text-bottom;
   margin-right: 10px;
 }
-/* line 344, ../sass/extra.scss */
+/* line 340, ../sass/extra.scss */
 .notify .dl-horizontal dd {
   margin-left: 80px;
 }
 
-/* line 350, ../sass/extra.scss */
+/* line 346, ../sass/extra.scss */
 .lowercase {
   text-transform: lowercase;
 }
 
-/* line 354, ../sass/extra.scss */
+/* line 350, ../sass/extra.scss */
 .keyboard-icon {
   font-size: 20px;
   vertical-align: sub;
 }
 
-/* line 362, ../sass/extra.scss */
+/* line 358, ../sass/extra.scss */
 .shortcuts .key {
   padding: 2px 9px;
   font-style: normal;
@@ -3542,19 +3537,19 @@ svg > text:last-child {
   border-radius: 6px;
 }
 
-/* line 371, ../sass/extra.scss */
+/* line 367, ../sass/extra.scss */
 body > .popover {
   max-width: none;
   color: black;
   margin-bottom: 20px;
 }
-/* line 376, ../sass/extra.scss */
+/* line 372, ../sass/extra.scss */
 body > .popover h2 {
   text-align: center;
   font-size: 1.2em;
   font-weight: bold;
 }
-/* line 381, ../sass/extra.scss */
+/* line 377, ../sass/extra.scss */
 body > .popover dt {
   margin-bottom: 8px;
   overflow: visible;

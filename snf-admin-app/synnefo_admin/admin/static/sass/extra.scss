@@ -172,10 +172,6 @@ svg>text:last-child {
 	display: none;
 }
 
-*::-moz-selection {
-	background: #fff2a8;
-}
-
 .with-shift *::selection {
 	background-color: transparent;
 }

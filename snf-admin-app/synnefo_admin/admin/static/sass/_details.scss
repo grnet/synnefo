@@ -4,6 +4,9 @@
 	h4 .title{
 		font-size: 24px;
 	}
+    .rt {
+        padding-top:5px;
+    }
 }
 
 .object-details {
@@ -14,7 +17,6 @@
             float: left;
         }
         .rt {
-            padding-top:5px;
             overflow: hidden;
         }
         .arrow {
@@ -157,4 +159,25 @@
 }
 .snf-details-user {
     @extend .snf-user-full;
+}
+
+.show-hide-all {
+    span.snf-font-arrow-up {
+        @extend .snf-arrow-up;
+        display: none;
+        padding: 0;
+    }
+    span.snf-font-arrow-down {
+        @extend .snf-arrow-down;
+        display: inline;
+        padding: 0;
+    }
+    &.open {
+        .snf-font-arrow-up {
+            display: inline;
+        } 
+        .snf-font-arrow-down {
+            display: none;
+        }
+    }
 }

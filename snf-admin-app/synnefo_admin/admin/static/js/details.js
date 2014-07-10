@@ -42,10 +42,10 @@ $(document).ready(function(){
 	   // hide/show expand/collapse 
   
 
-  var txt_all = ['+ Expand all','- Collapse all'];
+  var txt_all = ['Expand all','Collapse all'];
   
 
-  $('.show-hide-all span').text(txt_all[0]);
+  $('.show-hide-all span.txt').text(txt_all[0]);
   
   
   $('.show-hide-all').click(function(e){
@@ -54,7 +54,7 @@ $(document).ready(function(){
     var tabs = $(this).parent('.info-block').find('.object-details-content');
 
     if ($(this).hasClass('open')){
-      $(this).find('span').text( txt_all[1]);
+      $(this).find('span.txt').text( txt_all[1]);
       tabs.each(function() {
         $(this).stop().slideDown('slow');
         $(this).siblings('h4').addClass('expanded');
@@ -63,7 +63,7 @@ $(document).ready(function(){
 
 
     } else {
-      $(this).find('span').text( txt_all[0]);
+      $(this).find('span.txt').text( txt_all[0]);
       tabs.each(function() {
         $(this).stop().slideUp('slow');
         $(this).siblings('h4').removeClass('expanded');

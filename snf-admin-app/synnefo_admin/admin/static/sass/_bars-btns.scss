@@ -8,7 +8,7 @@
 	text-align: center;
 	opacity: 0.7;
 	span {
-		display: block;
+		display: inline-block;
 		height: 100%;
 		line-height: 100%;
 		padding: $default-btn-padding;
@@ -17,6 +17,9 @@
 		text-decoration: none;
 		opacity: 1;
 	}
+    span[class^="snf-font"] {
+        display: inline;
+    }
 }
 
 
@@ -28,6 +31,7 @@
 	span {
 		border: 1px solid transparent;
 		padding: $padding;
+        width: 100%;
 	}
 	&:hover {
 		span {
@@ -335,6 +339,12 @@ body .custom-buttons {
 	.disabled {
 		display: none;
 	}
+    .snf-font-reload {
+        @extend .snf-refresh-outline;
+    }
+    .snf-font-remove {
+        @extend .snf-remove;
+    }
 }
 
 

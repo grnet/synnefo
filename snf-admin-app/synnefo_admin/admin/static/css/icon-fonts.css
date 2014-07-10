@@ -483,7 +483,43 @@
   content: "\7a";
 }
 
-/* line 129, ../sass/icon-fonts.scss */
+/* line 126, ../sass/icon-fonts.scss */
+.snf-book-1 {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-book-1:before {
+  content: "\41";
+}
+
+/* line 130, ../sass/icon-fonts.scss */
+.snf-book-2 {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* line 41, ../sass/icon-fonts.scss */
+.snf-book-2:before {
+  content: "\42";
+}
+
+/* line 134, ../sass/icon-fonts.scss */
 .snf-eye {
   font-family: "snf-font";
   speak: none;
@@ -501,7 +537,7 @@
   content: "\41";
 }
 
-/* line 132, ../sass/icon-fonts.scss */
+/* line 137, ../sass/icon-fonts.scss */
 .snf-radio-checked {
   font-family: "snf-font";
   speak: none;
@@ -519,7 +555,7 @@
   content: "\42";
 }
 
-/* line 135, ../sass/icon-fonts.scss */
+/* line 140, ../sass/icon-fonts.scss */
 .snf-radio-unchecked {
   font-family: "snf-font";
   speak: none;
@@ -537,7 +573,7 @@
   content: "\43";
 }
 
-/* line 138, ../sass/icon-fonts.scss */
+/* line 143, ../sass/icon-fonts.scss */
 .snf-close {
   font-family: "snf-font";
   speak: none;
@@ -555,7 +591,7 @@
   content: "\44";
 }
 
-/* line 141, ../sass/icon-fonts.scss */
+/* line 146, ../sass/icon-fonts.scss */
 .snf-www {
   font-family: "snf-font";
   speak: none;
@@ -573,7 +609,7 @@
   content: "\49";
 }
 
-/* line 144, ../sass/icon-fonts.scss */
+/* line 149, ../sass/icon-fonts.scss */
 .snf-arrow-up {
   font-family: "snf-font";
   speak: none;
@@ -591,7 +627,7 @@
   content: "\4c";
 }
 
-/* line 147, ../sass/icon-fonts.scss */
+/* line 152, ../sass/icon-fonts.scss */
 .snf-arrow-down {
   font-family: "snf-font";
   speak: none;
@@ -609,7 +645,7 @@
   content: "\4d";
 }
 
-/* line 150, ../sass/icon-fonts.scss */
+/* line 155, ../sass/icon-fonts.scss */
 .snf-checkbox-unchecked {
   font-family: "snf-font";
   speak: none;
@@ -627,7 +663,7 @@
   content: "\61";
 }
 
-/* line 153, ../sass/icon-fonts.scss */
+/* line 158, ../sass/icon-fonts.scss */
 .snf-checkbox-checked {
   font-family: "snf-font";
   speak: none;
@@ -645,7 +681,7 @@
   content: "\62";
 }
 
-/* line 156, ../sass/icon-fonts.scss */
+/* line 161, ../sass/icon-fonts.scss */
 .snf-cancel-circled {
   font-family: "snf-font";
   speak: none;
@@ -663,7 +699,7 @@
   content: "\63";
 }
 
-/* line 159, ../sass/icon-fonts.scss */
+/* line 164, ../sass/icon-fonts.scss */
 .snf-search {
   font-family: "snf-font";
   speak: none;
@@ -681,7 +717,7 @@
   content: "\64";
 }
 
-/* line 162, ../sass/icon-fonts.scss */
+/* line 167, ../sass/icon-fonts.scss */
 .snf-twitter-logo {
   font-family: "snf-font";
   speak: none;
@@ -699,7 +735,7 @@
   content: "\67";
 }
 
-/* line 165, ../sass/icon-fonts.scss */
+/* line 170, ../sass/icon-fonts.scss */
 .snf-ok {
   font-family: "snf-font";
   speak: none;
@@ -717,7 +753,7 @@
   content: "\68";
 }
 
-/* line 168, ../sass/icon-fonts.scss */
+/* line 173, ../sass/icon-fonts.scss */
 .snf-switch {
   font-family: "snf-font";
   speak: none;
@@ -735,7 +771,7 @@
   content: "\69";
 }
 
-/* line 171, ../sass/icon-fonts.scss */
+/* line 176, ../sass/icon-fonts.scss */
 .snf-ban-circle {
   font-family: "snf-font";
   speak: none;
@@ -753,7 +789,7 @@
   content: "\6a";
 }
 
-/* line 174, ../sass/icon-fonts.scss */
+/* line 179, ../sass/icon-fonts.scss */
 .snf-ok-sign {
   font-family: "snf-font";
   speak: none;
@@ -771,7 +807,7 @@
   content: "\6c";
 }
 
-/* line 177, ../sass/icon-fonts.scss */
+/* line 182, ../sass/icon-fonts.scss */
 .snf-minus-sign {
   font-family: "snf-font";
   speak: none;
@@ -789,7 +825,7 @@
   content: "\6e";
 }
 
-/* line 180, ../sass/icon-fonts.scss */
+/* line 185, ../sass/icon-fonts.scss */
 .snf-edit {
   font-family: "snf-font";
   speak: none;
@@ -807,7 +843,7 @@
   content: "\71";
 }
 
-/* line 183, ../sass/icon-fonts.scss */
+/* line 188, ../sass/icon-fonts.scss */
 .snf-listview {
   font-family: "snf-font";
   speak: none;
@@ -825,7 +861,7 @@
   content: "\73";
 }
 
-/* line 186, ../sass/icon-fonts.scss */
+/* line 191, ../sass/icon-fonts.scss */
 .snf-gridview {
   font-family: "snf-font";
   speak: none;
@@ -843,7 +879,7 @@
   content: "\74";
 }
 
-/* line 189, ../sass/icon-fonts.scss */
+/* line 194, ../sass/icon-fonts.scss */
 .snf-dashboard-outline {
   font-family: "snf-font";
   speak: none;
@@ -861,7 +897,7 @@
   content: "\7a";
 }
 
-/* line 192, ../sass/icon-fonts.scss */
+/* line 197, ../sass/icon-fonts.scss */
 .snf-pithos-outline {
   font-family: "snf-font";
   speak: none;
@@ -879,7 +915,7 @@
   content: "\79";
 }
 
-/* line 195, ../sass/icon-fonts.scss */
+/* line 200, ../sass/icon-fonts.scss */
 .snf-info-full {
   font-family: "snf-font";
   speak: none;
@@ -897,7 +933,7 @@
   content: "\70";
 }
 
-/* line 198, ../sass/icon-fonts.scss */
+/* line 203, ../sass/icon-fonts.scss */
 .snf-volume-create-full {
   font-family: "snf-font";
   speak: none;
@@ -915,7 +951,7 @@
   content: "\36";
 }
 
-/* line 201, ../sass/icon-fonts.scss */
+/* line 206, ../sass/icon-fonts.scss */
 .snf-image-full {
   font-family: "snf-font";
   speak: none;
@@ -933,7 +969,7 @@
   content: "\51";
 }
 
-/* line 204, ../sass/icon-fonts.scss */
+/* line 209, ../sass/icon-fonts.scss */
 .snf-pc-create-full {
   font-family: "snf-font";
   speak: none;
@@ -951,7 +987,7 @@
   content: "\53";
 }
 
-/* line 207, ../sass/icon-fonts.scss */
+/* line 212, ../sass/icon-fonts.scss */
 .snf-network-create-outline {
   font-family: "snf-font";
   speak: none;
@@ -969,7 +1005,7 @@
   content: "\54";
 }
 
-/* line 210, ../sass/icon-fonts.scss */
+/* line 215, ../sass/icon-fonts.scss */
 .snf-network-create-full {
   font-family: "snf-font";
   speak: none;
@@ -987,7 +1023,7 @@
   content: "\55";
 }
 
-/* line 213, ../sass/icon-fonts.scss */
+/* line 218, ../sass/icon-fonts.scss */
 .snf-ram-outline {
   font-family: "snf-font";
   speak: none;
@@ -1005,7 +1041,7 @@
   content: "\4a";
 }
 
-/* line 216, ../sass/icon-fonts.scss */
+/* line 221, ../sass/icon-fonts.scss */
 .snf-nic-outline {
   font-family: "snf-font";
   speak: none;
@@ -1023,7 +1059,7 @@
   content: "\50";
 }
 
-/* line 219, ../sass/icon-fonts.scss */
+/* line 224, ../sass/icon-fonts.scss */
 .snf-ram-full {
   font-family: "snf-font";
   speak: none;
@@ -1041,7 +1077,7 @@
   content: "\52";
 }
 
-/* line 222, ../sass/icon-fonts.scss */
+/* line 227, ../sass/icon-fonts.scss */
 .snf-nic-full {
   font-family: "snf-font";
   speak: none;
@@ -1059,7 +1095,7 @@
   content: "\72";
 }
 
-/* line 225, ../sass/icon-fonts.scss */
+/* line 230, ../sass/icon-fonts.scss */
 .snf-network-broken-1-full {
   font-family: "snf-font";
   speak: none;
@@ -1077,7 +1113,7 @@
   content: "\56";
 }
 
-/* line 228, ../sass/icon-fonts.scss */
+/* line 233, ../sass/icon-fonts.scss */
 .snf-network-broken-2-full {
   font-family: "snf-font";
   speak: none;
@@ -1095,7 +1131,7 @@
   content: "\57";
 }
 
-/* line 231, ../sass/icon-fonts.scss */
+/* line 236, ../sass/icon-fonts.scss */
 .snf-pc-broken-full {
   font-family: "snf-font";
   speak: none;
@@ -1113,7 +1149,7 @@
   content: "\58";
 }
 
-/* line 234, ../sass/icon-fonts.scss */
+/* line 239, ../sass/icon-fonts.scss */
 .snf-pc-reboot-full {
   font-family: "snf-font";
   speak: none;
@@ -1131,7 +1167,7 @@
   content: "\59";
 }
 
-/* line 237, ../sass/icon-fonts.scss */
+/* line 242, ../sass/icon-fonts.scss */
 .snf-pc-switch-full {
   font-family: "snf-font";
   speak: none;
@@ -1149,7 +1185,7 @@
   content: "\5a";
 }
 
-/* line 240, ../sass/icon-fonts.scss */
+/* line 245, ../sass/icon-fonts.scss */
 .snf-key-full {
   font-family: "snf-font";
   speak: none;
@@ -1167,7 +1203,7 @@
   content: "\31";
 }
 
-/* line 243, ../sass/icon-fonts.scss */
+/* line 248, ../sass/icon-fonts.scss */
 .snf-router-full {
   font-family: "snf-font";
   speak: none;
@@ -1185,7 +1221,7 @@
   content: "\32";
 }
 
-/* line 246, ../sass/icon-fonts.scss */
+/* line 251, ../sass/icon-fonts.scss */
 .snf-chip-full {
   font-family: "snf-font";
   speak: none;
@@ -1203,7 +1239,7 @@
   content: "\33";
 }
 
-/* line 249, ../sass/icon-fonts.scss */
+/* line 254, ../sass/icon-fonts.scss */
 .snf-plus-full {
   font-family: "snf-font";
   speak: none;
@@ -1221,7 +1257,7 @@
   content: "\34";
 }
 
-/* line 252, ../sass/icon-fonts.scss */
+/* line 257, ../sass/icon-fonts.scss */
 .snf-snapshot-full {
   font-family: "snf-font";
   speak: none;
@@ -1239,7 +1275,7 @@
   content: "\4e";
 }
 
-/* line 255, ../sass/icon-fonts.scss */
+/* line 260, ../sass/icon-fonts.scss */
 .snf-pithos-full {
   font-family: "snf-font";
   speak: none;
@@ -1257,7 +1293,7 @@
   content: "\35";
 }
 
-/* line 258, ../sass/icon-fonts.scss */
+/* line 263, ../sass/icon-fonts.scss */
 .snf-volume-full {
   font-family: "snf-font";
   speak: none;
@@ -1275,7 +1311,7 @@
   content: "\4f";
 }
 
-/* line 261, ../sass/icon-fonts.scss */
+/* line 266, ../sass/icon-fonts.scss */
 .snf-network-full {
   font-family: "snf-font";
   speak: none;
@@ -1293,7 +1329,7 @@
   content: "\4b";
 }
 
-/* line 264, ../sass/icon-fonts.scss */
+/* line 269, ../sass/icon-fonts.scss */
 .snf-pc-full {
   font-family: "snf-font";
   speak: none;
@@ -1311,7 +1347,7 @@
   content: "\78";
 }
 
-/* line 267, ../sass/icon-fonts.scss */
+/* line 272, ../sass/icon-fonts.scss */
 .snf-network-broken-1-outline {
   font-family: "snf-font";
   speak: none;
@@ -1329,7 +1365,7 @@
   content: "\37";
 }
 
-/* line 270, ../sass/icon-fonts.scss */
+/* line 275, ../sass/icon-fonts.scss */
 .snf-network-broken-2-outline {
   font-family: "snf-font";
   speak: none;
@@ -1347,7 +1383,7 @@
   content: "\38";
 }
 
-/* line 273, ../sass/icon-fonts.scss */
+/* line 278, ../sass/icon-fonts.scss */
 .snf-pc-broken-outline {
   font-family: "snf-font";
   speak: none;
@@ -1365,7 +1401,7 @@
   content: "\39";
 }
 
-/* line 276, ../sass/icon-fonts.scss */
+/* line 281, ../sass/icon-fonts.scss */
 .snf-volume-broken-outline {
   font-family: "snf-font";
   speak: none;
@@ -1383,7 +1419,7 @@
   content: "\30";
 }
 
-/* line 279, ../sass/icon-fonts.scss */
+/* line 284, ../sass/icon-fonts.scss */
 .snf-pc-reboot-outline {
   font-family: "snf-font";
   speak: none;
@@ -1401,7 +1437,7 @@
   content: "\21";
 }
 
-/* line 282, ../sass/icon-fonts.scss */
+/* line 287, ../sass/icon-fonts.scss */
 .snf-pc-switch-outline {
   font-family: "snf-font";
   speak: none;
@@ -1419,7 +1455,7 @@
   content: "\40";
 }
 
-/* line 285, ../sass/icon-fonts.scss */
+/* line 290, ../sass/icon-fonts.scss */
 .snf-key-outline {
   font-family: "snf-font";
   speak: none;
@@ -1437,7 +1473,7 @@
   content: "\23";
 }
 
-/* line 288, ../sass/icon-fonts.scss */
+/* line 293, ../sass/icon-fonts.scss */
 .snf-router-outline {
   font-family: "snf-font";
   speak: none;
@@ -1455,7 +1491,7 @@
   content: "\48";
 }
 
-/* line 291, ../sass/icon-fonts.scss */
+/* line 296, ../sass/icon-fonts.scss */
 .snf-chip-outline {
   font-family: "snf-font";
   speak: none;
@@ -1473,7 +1509,7 @@
   content: "\45";
 }
 
-/* line 294, ../sass/icon-fonts.scss */
+/* line 299, ../sass/icon-fonts.scss */
 .snf-image-outline {
   font-family: "snf-font";
   speak: none;
@@ -1491,7 +1527,7 @@
   content: "\66";
 }
 
-/* line 297, ../sass/icon-fonts.scss */
+/* line 302, ../sass/icon-fonts.scss */
 .snf-plus-outline {
   font-family: "snf-font";
   speak: none;
@@ -1509,7 +1545,7 @@
   content: "\6d";
 }
 
-/* line 300, ../sass/icon-fonts.scss */
+/* line 305, ../sass/icon-fonts.scss */
 .snf-snapshot-outline {
   font-family: "snf-font";
   speak: none;
@@ -1527,7 +1563,7 @@
   content: "\65";
 }
 
-/* line 303, ../sass/icon-fonts.scss */
+/* line 308, ../sass/icon-fonts.scss */
 .snf-volume-outline {
   font-family: "snf-font";
   speak: none;
@@ -1545,7 +1581,7 @@
   content: "\75";
 }
 
-/* line 306, ../sass/icon-fonts.scss */
+/* line 311, ../sass/icon-fonts.scss */
 .snf-network-outline {
   font-family: "snf-font";
   speak: none;
@@ -1563,7 +1599,7 @@
   content: "\76";
 }
 
-/* line 309, ../sass/icon-fonts.scss */
+/* line 314, ../sass/icon-fonts.scss */
 .snf-pc-outline {
   font-family: "snf-font";
   speak: none;
@@ -1581,7 +1617,7 @@
   content: "\77";
 }
 
-/* line 312, ../sass/icon-fonts.scss */
+/* line 317, ../sass/icon-fonts.scss */
 .snf-info-outline {
   font-family: "snf-font";
   speak: none;
@@ -1599,7 +1635,7 @@
   content: "\6f";
 }
 
-/* line 315, ../sass/icon-fonts.scss */
+/* line 320, ../sass/icon-fonts.scss */
 .snf-thunder-full {
   font-family: "snf-font";
   speak: none;
@@ -1617,7 +1653,7 @@
   content: "\6b";
 }
 
-/* line 318, ../sass/icon-fonts.scss */
+/* line 323, ../sass/icon-fonts.scss */
 .snf-lock-closed-full {
   font-family: "snf-font";
   speak: none;
@@ -1635,7 +1671,7 @@
   content: "\46";
 }
 
-/* line 321, ../sass/icon-fonts.scss */
+/* line 326, ../sass/icon-fonts.scss */
 .snf-lock-open-full {
   font-family: "snf-font";
   speak: none;
@@ -1653,7 +1689,7 @@
   content: "\47";
 }
 
-/* line 325, ../sass/icon-fonts.scss */
+/* line 330, ../sass/icon-fonts.scss */
 .snf-link-outline {
   font-family: "snf-font";
   speak: none;
@@ -1671,7 +1707,7 @@
   content: "\26";
 }
 
-/* line 328, ../sass/icon-fonts.scss */
+/* line 333, ../sass/icon-fonts.scss */
 .snf-refresh-outline {
   font-family: "snf-font";
   speak: none;
@@ -1689,7 +1725,7 @@
   content: "\29";
 }
 
-/* line 331, ../sass/icon-fonts.scss */
+/* line 336, ../sass/icon-fonts.scss */
 .snf-download-full {
   font-family: "snf-font";
   speak: none;
@@ -1707,7 +1743,7 @@
   content: "\25";
 }
 
-/* line 334, ../sass/icon-fonts.scss */
+/* line 339, ../sass/icon-fonts.scss */
 .snf-person-outline {
   font-family: "snf-font";
   speak: none;
@@ -1725,7 +1761,7 @@
   content: "\2a";
 }
 
-/* line 337, ../sass/icon-fonts.scss */
+/* line 342, ../sass/icon-fonts.scss */
 .snf-upload-full {
   font-family: "snf-font";
   speak: none;
@@ -1743,7 +1779,7 @@
   content: "\28";
 }
 
-/* line 340, ../sass/icon-fonts.scss */
+/* line 345, ../sass/icon-fonts.scss */
 .snf-arrow-right-small-full {
   font-family: "snf-font";
   speak: none;
@@ -1761,7 +1797,7 @@
   content: "\2d";
 }
 
-/* line 343, ../sass/icon-fonts.scss */
+/* line 348, ../sass/icon-fonts.scss */
 .snf-copy-outline {
   font-family: "snf-font";
   speak: none;
@@ -1779,7 +1815,7 @@
   content: "\3f";
 }
 
-/* line 346, ../sass/icon-fonts.scss */
+/* line 351, ../sass/icon-fonts.scss */
 .snf-copy-full {
   font-family: "snf-font";
   speak: none;
@@ -1797,7 +1833,7 @@
   content: "\22";
 }
 
-/* line 349, ../sass/icon-fonts.scss */
+/* line 354, ../sass/icon-fonts.scss */
 .snf-arrow-left-small-full {
   font-family: "snf-font";
   speak: none;
@@ -1815,7 +1851,7 @@
   content: "\5f";
 }
 
-/* line 352, ../sass/icon-fonts.scss */
+/* line 357, ../sass/icon-fonts.scss */
 .snf-trash-full {
   font-family: "snf-font";
   speak: none;
@@ -1833,7 +1869,7 @@
   content: "\3d";
 }
 
-/* line 355, ../sass/icon-fonts.scss */
+/* line 360, ../sass/icon-fonts.scss */
 .snf-trash-outline {
   font-family: "snf-font";
   speak: none;

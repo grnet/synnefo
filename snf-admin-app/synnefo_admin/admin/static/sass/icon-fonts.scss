@@ -123,8 +123,13 @@
     @include font-icon('font-icons', "\7a");
 }
 
+.snf-book-1 {
+    @include font-icon('font-icons', "\41");
+}
 
-
+.snf-book-2 {
+    @include font-icon('font-icons',  "\42");
+}
 
 .snf-eye {
     @include font-icon('snf-font', "\41");

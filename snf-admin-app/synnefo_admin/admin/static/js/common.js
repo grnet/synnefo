@@ -23,9 +23,10 @@ $(document).ready(function(){
 		$(this).find('.cancel').trigger('click');
 	});
 
-	$(document).keypress(function(e) {
+	$(document).keyup(function(e) {
+		console.log(e.which, e.keyCode)
 		if (!($(e.target).closest("input")[0] || $(e.target).closest("textarea")[0])) {
-			if(e.which === 105) {// 105 = "i"
+			if(e.keyCode === 73) {
 				snf.funcs.toggleBottomModal($notificationArea);
 			}
 		}
@@ -53,7 +54,6 @@ snf = {
 	funcs: {
 		showBottomModal: function($modal) {
 			var height = -$modal.outerHeight(true)
-			if($modal.css('bottom') !== '0px')
 				$modal.css('bottom', height)
 				$modal.animate({'bottom': '0px'}, 'slow');
 		},
@@ -66,17 +66,11 @@ snf = {
 			});
 		},
 		toggleBottomModal: function($modal) {
-			var height = -$modal.outerHeight(true);
 			if($modal.css('bottom') !== '0px') {
-				$modal.css('bottom', height)
-				$modal.animate({'bottom': '0px'}, 'slow');
+				snf.funcs.showBottomModal($modal);
 			}
 			else {
-				$modal.animate({'bottom': height}, 'slow', function() {
-					if($modal.find('.log').length === 0) {
-						$modal.find('.warning').remove();
-					}
-				});
+				snf.funcs.hideBottomModal($modal);
 			}
 		}
 	},

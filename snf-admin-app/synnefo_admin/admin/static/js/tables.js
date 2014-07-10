@@ -143,7 +143,7 @@ $(document).ready(function() {
 				}
 			},
 		],
-		"order": [1, "asc"],
+		"order": [0, "asc"],
 		"createdRow": function(row, data, dataIndex) {
 			var extraIndex = data.length - 1;
 			row.id = data[extraIndex].id.value; //sets the dom id
@@ -318,7 +318,7 @@ $(document).ready(function() {
 				}
 			},
 		],
-		"order": [1, "asc"],
+		"order": [0, "asc"],
 		"lengthMenu": [[5, 10, 25, 50, -1], [5, 10, 25, 50, "All"]],
 		"dom": 'frtilp',
 		"language" : {

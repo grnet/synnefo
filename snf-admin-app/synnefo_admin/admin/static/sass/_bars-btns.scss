@@ -385,6 +385,7 @@ Extra-button is used to show total selected rows
 }
 
 .actions-per-item {
+    padding-left: $details-title-height;
 	.custom-btn {
 		margin: 10px 10px 10px 0;
 	}

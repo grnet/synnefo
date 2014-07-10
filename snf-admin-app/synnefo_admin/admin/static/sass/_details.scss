@@ -7,6 +7,9 @@
     .rt {
         padding-top:5px;
     }
+    .actions-per-item {
+        padding: 0;
+    }
 }
 
 .object-details {
@@ -56,7 +59,7 @@
 	}
 	h3 {
         font-size: 18px;
-		margin: 0 0 2em;
+		margin: 0 0 1em;
         font-weight: 400;
         line-height: $details-title-height;
         em {
@@ -123,14 +126,22 @@
 	&>.object-details {
         border-top: 2px solid $gray-light-extra;		
         background: lighten($body-bg, 3%);
-		padding: 20px;
+		padding:14px 20px;
 		.object-details {
 			padding: 5px 20px;
             &:hover {
                 background: lighten($body-bg, 5%);
             }
 		}
-	}
+    }
+    .object-details-content {
+        padding: 0 $details-title-height;
+    }
+    .custom-btn {
+        span {
+            padding: 5px;
+        }
+    }
 }
 
 

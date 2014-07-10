@@ -48,10 +48,13 @@ body {
 .dropdown-menu .active > a, 
 .dropdown-menu .active > a:hover { background-color: $gray-lighter; } 
 
-.object-details-content     { /*margin:1em 0;*/ margin: 1em 0 0 0; display:none; }
+.object-details-content     { display:none; }
 .account .object-details-content{ display:block; }
 .nav-tabs           { margin:0; border:0 none; }
 .tab-content .dl-horizontal   { margin:0; }
+.tab-content .dl-horizontal dd {
+    word-wrap: break-word;
+}
 .nav-tabs > .active > a, 
 .nav-tabs > .active > a:hover { background-color:#F5F5F5; color:#2956B2; font-weight:bold;}
 .nav-tabs > li          { margin-bottom:-2px; }

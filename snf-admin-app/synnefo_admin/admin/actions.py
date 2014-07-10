@@ -69,8 +69,9 @@ class AdminAction:
         try:
             res = self.check(t)
         # Cyclades raises BadRequest when an action is not supported for an
-        # instance.
-        except faults.BadRequest:
+        # instance. Also, if a server is in the process of being created, it
+        # throws BuildInProgress.
+        except (faults.BadRequest, faults.BuildInProgress):
             return False
 
         # We accept "None" as correct value.

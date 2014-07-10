@@ -86,7 +86,7 @@ def display_project_stats(inst, stat):
         if not is_resource_useful(resource, stats['project_limit']):
             continue
         value = units.show(stats[stat], resource.unit)
-        resource_list.append((resource.display_name, value))
+        resource_list.append((resource.report_desc, value))
 
     resource_list = sorted(resource_list, key=itemgetter(0))
     if not resource_list:
@@ -108,11 +108,11 @@ def display_project_resources(inst, type):
 
         # Get human-readable (resource name, member capacity) tuple
         if type == 'member':
-            resource_list.append((r.display_name,
+            resource_list.append((r.report_desc,
                                   prq.display_member_capacity()))
         # Get human-readable (resource name, total capacity) tuple
         elif type == 'total':
-            resource_list.append((r.display_name,
+            resource_list.append((r.report_desc,
                                   prq.display_project_capacity()))
         else:
             raise Exception("Wrong type")

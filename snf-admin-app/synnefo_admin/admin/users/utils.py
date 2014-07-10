@@ -107,7 +107,7 @@ def get_quotas(user):
 
             for p, value in resource.iteritems():
                 resource[p] = units.show(value, r.unit)
-            q_res.append((r.display_name, resource))
+            q_res.append((r.report_desc, resource))
 
         quotas.append(source)
 

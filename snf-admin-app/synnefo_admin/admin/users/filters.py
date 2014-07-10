@@ -55,7 +55,9 @@ auth_providers = [(key, '_') for key in auth_providers.PROVIDERS.iterkeys()]
 
 
 def filter_has_auth_providers(queryset, choices):
-    choices = choices or ()
+    if not choices:
+        return queryset
+
     q = Q()
     for c in choices:
         q |= Q(auth_providers__module=c)
@@ -63,11 +65,21 @@ def filter_has_auth_providers(queryset, choices):
 
 
 def filter_has_not_auth_providers(queryset, choices):
-    choices = choices or ()
+    if not choices:
+        return queryset
+
     q = Q()
     for c in choices:
         q |= Q(auth_providers__module=c)
-    return queryset.exclude(q).distinct()
+
+    # We cannot use `exclude` here as `exclude` does not play nicely with
+    # multi-valued fields (see https://code.djangoproject.com/ticket/14645)
+    #
+    # Instead, we create a subquery to filter all users that actually match the
+    # requested providers and then exclude them. Given that the subquery is in
+    # the same database, it probably has small overhead.
+    user_ids = AstakosUser.objects.filter(q).values('id')
+    return queryset.exclude(id__in=user_ids).distinct()
 
 
 def filter_status(queryset, choices):

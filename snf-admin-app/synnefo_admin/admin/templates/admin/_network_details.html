@@ -6,8 +6,9 @@
     data-type="{{type}}">
     <h4 class="clearfix">
         <div class="lt">
-		
+            {% if type != main_type %}
             <a href="{% url admin-details type network.pk %}" class="snf-search icon-link" title="Details for {{ network|repr }}"></a>
+            {% endif %}
             <span class="title">{{ network|repr }}</span>
 		    <span class="arrow  snf-angle-down"></span>
 		</div>

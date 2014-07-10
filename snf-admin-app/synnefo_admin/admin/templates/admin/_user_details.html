@@ -5,8 +5,10 @@
 <div class="object-details {{ rowcls }}" data-id="{{user.uuid}}"
     data-type="{{type}}">
     <h4 class="clearfix">
-        <div class="lt"
+        <div class="lt">
+            {% if type != main_type %}
             <a href="{% url admin-details type user.uuid %}" class="snf-search icon-link" title="Details for {{ user|repr }}"></a>
+            {% endif %}
             <span class="title">{{ user|repr }}</span>
             <span class="arrow snf-angle-down"></span>
         </div>

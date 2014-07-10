@@ -289,3 +289,14 @@ def can_apply(action, item):
     if action.name == "Send e-mail" and action.target != 'user':
         return False
     return action.can_apply(item)
+
+
+@register.filter
+def default_value(f):
+    """Set default value for filters.
+
+    By default the value is all, except for filters with "NOT" in their label.
+    """
+    if 'NOT' in f.label:
+        return 'None'
+    return 'All'

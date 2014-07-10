@@ -15,6 +15,9 @@
             {{ network|network_deleted_label|safe }}
 	        {{ network|object_status_label|safe }}
 		    <span class="label">ID: {{ network.pk }}</span>
+            {% if network.public %}
+                <span class="label">PUBLIC</span>
+            {% endif %}
         </div>
     </h4>
     <div class="network-details-content object-details-content">

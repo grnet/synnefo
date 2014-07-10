@@ -2429,41 +2429,37 @@ Extra-button is used to show total selected rows
 .tab-pane {
   overflow: auto;
 }
-/* line 120, ../sass/_details.scss */
-.tab-pane th {
-  color: #404040;
-}
 
-/* line 126, ../sass/_details.scss */
+/* line 123, ../sass/_details.scss */
 .part-two > .object-details {
   border-top: 2px solid #8d8c8c;
   background: #484848;
   padding: 20px;
 }
-/* line 130, ../sass/_details.scss */
+/* line 127, ../sass/_details.scss */
 .part-two > .object-details .object-details {
   padding: 5px 20px;
 }
-/* line 132, ../sass/_details.scss */
+/* line 129, ../sass/_details.scss */
 .part-two > .object-details .object-details:hover {
   background: #4d4d4d;
 }
 
-/* line 165, ../sass/_details.scss */
+/* line 162, ../sass/_details.scss */
 .show-hide-all span.snf-font-arrow-up {
   display: none;
   padding: 0;
 }
-/* line 170, ../sass/_details.scss */
+/* line 167, ../sass/_details.scss */
 .show-hide-all span.snf-font-arrow-down {
   display: inline;
   padding: 0;
 }
-/* line 176, ../sass/_details.scss */
+/* line 173, ../sass/_details.scss */
 .show-hide-all.open .snf-font-arrow-up {
   display: inline;
 }
-/* line 179, ../sass/_details.scss */
+/* line 176, ../sass/_details.scss */
 .show-hide-all.open .snf-font-arrow-down {
   display: none;
 }

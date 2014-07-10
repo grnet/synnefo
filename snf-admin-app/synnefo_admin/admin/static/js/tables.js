@@ -539,13 +539,12 @@ $(document).ready(function() {
 	function clickSummary(row) {
 		$(row).find('td:last-child a.expand-area').click(function(e) {
 			e.preventDefault();
-			// e.stopPropagation();
 			var $summaryTd = $(this).closest('td');
 			var $btn = $summaryTd.find('.expand-area span');
 			var $summaryContent = $summaryTd.find('.info-summary');
 			
 			var summaryContentWidth = $summaryTd.closest('tr').width();
-			var summaryContPos = summaryContentWidth - $summaryTd.width() - parseInt($summaryContent.css('padding-left').replace("px", "")) -2; // border width?
+			var summaryContPos = summaryContentWidth - $summaryTd.width() - parseInt($summaryContent.css('padding-left').replace("px", "")) + parseInt($summaryTd.css('padding-left').replace("px", ""));
 
 			$summaryContent.css({
 				width: summaryContentWidth +'px',

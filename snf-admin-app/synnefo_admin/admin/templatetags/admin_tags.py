@@ -41,18 +41,6 @@ import synnefo_admin.admin.ip_logs.utils as iplog_utils
 register = template.Library()
 
 
-@register.filter(name="vm_public_ip")
-def vm_public_ip(vm):
-    """
-    Identify if vm is connected to ``public`` network and return the ipv4
-    address
-    """
-    try:
-        return vm.nics.filter(network__public=True)[0].ipv4_address
-    except IndexError:
-        return "No public ip"
-
-
 VM_STATE_CSS_MAP = {
         'BUILD': 'warning',
         'PENDING': 'warning',

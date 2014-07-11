@@ -48,6 +48,15 @@ from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
 
 
+def get_actual_owner(inst):
+    if inst.owner:
+        return inst.owner
+    try:
+        return inst.members.all()[0]
+    except IndexError:
+        return None
+
+
 def get_project(query):
     try:
         project = Project.objects.get(id=query)
@@ -57,18 +66,21 @@ def get_project(query):
 
 
 def get_contact_email(inst):
-    if inst.owner:
-        return inst.owner.email,
+    owner = get_actual_owner(inst)
+    if owner:
+        return owner.email
 
 
 def get_contact_name(inst):
-    if inst.owner:
-        return inst.owner.realname,
+    owner = get_actual_owner(inst)
+    if owner:
+        return owner.realname
 
 
 def get_contact_id(inst):
-    if inst.owner:
-        return inst.owner.uuid
+    owner = get_actual_owner(inst)
+    if owner:
+        return owner.uuid
 
 
 def get_policies(inst):

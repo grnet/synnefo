@@ -130,26 +130,26 @@ The volume attributes are listed `here <#volume-ref>`_
       {
         "links": [
           {
-            "href": "https://example.org/cyclades/v2/volumes/v0lum31", 
+            "href": "https://example.org/cyclades/v2/volumes/42",
             "rel": "self"
           }, {
-            "href": "https://example.org/cyclades/v2/volumes/v0lum31", 
+            "href": "https://example.org/cyclades/v2/volumes/42",
             "rel": "bookmark"
           }
         ],
-        "id": "v0lum31",
+        "id": "42",
         "display_name": "Volume One",
       }, {
         "links": [
           {
-            "href": "https://example.org/cyclades/v2/volumes/v0lum32", 
+            "href": "https://example.org/cyclades/v2/volumes/43",
             "rel": "self"
           }, {
-            "href": "https://example.org/cyclades/v2/volumes/v0lum32", 
+            "href": "https://example.org/cyclades/v2/volumes/43",
             "rel": "bookmark"
           }
         ],
-        "id": "v0lum32",
+        "id": "43",
         "display_name": "Volume Two",
       }
     ]
@@ -166,14 +166,14 @@ The volume attributes are listed `here <#volume-ref>`_
       {
         "links": [
           {
-            "href": "https://example.org/cyclades/v2/volumes/v0lum31", 
+            "href": "https://example.org/cyclades/v2/volumes/42",
             "rel": "self"
           }, {
-            "href": "https://example.org/cyclades/v2/volumes/v0lum31", 
+            "href": "https://example.org/cyclades/v2/volumes/42",
             "rel": "bookmark"
           }
         ],
-        "id": "v0lum31",
+        "id": "42",
         "display_name": "Volume One",
         "status": "AVAILABLE",
         "size": 2,
@@ -186,18 +186,18 @@ The volume attributes are listed `here <#volume-ref>`_
         "attachments": [],
         "volume_type": 1,
         "delete_on_termination": True,
-        "project": "d3f4u1t-pr0j3ct"
+        "project": "1234"
       }, {
         "links": [
           {
-            "href": "https://example.org/cyclades/v2/volumes/v0lum32", 
+            "href": "https://example.org/cyclades/v2/volumes/43",
             "rel": "self"
           }, {
-            "href": "https://example.org/cyclades/v2/volumes/v0lum32", 
+            "href": "https://example.org/cyclades/v2/volumes/43",
             "rel": "bookmark"
           }
         ],
-        "id": "v0lum32",
+        "id": "43",
         "display_name": "Volume Two",
         "status": "AVAILABLE",
         "size": 3,
@@ -210,7 +210,7 @@ The volume attributes are listed `here <#volume-ref>`_
         "attachments": [],
         "volume_type": 2,
         "delete_on_termination": False,
-        "project": "d3f4u1t-pr0j3ct"
+        "project": "1234"
       },
     ]
   }
@@ -266,20 +266,20 @@ Volume attributes are explained `here <#volume-ref>`_
 
 .. code-block:: javascript
 
-  GET https://example.org/cyclades/v2/volumes/v0lum33
+  GET https://example.org/cyclades/v2/volumes/44
 
   {
     "volume": {
       "links": [
         {
-          "href": "https://example.org/cyclades/v2/volumes/v0lum33", 
+          "href": "https://example.org/cyclades/v2/volumes/44",
           "rel": "self"
         }, {
-          "href": "https://example.org/cyclades/v2/volumes/v0lum33", 
+          "href": "https://example.org/cyclades/v2/volumes/44",
           "rel": "bookmark"
         }
       ],
-      "id": "v0lum33",
+      "id": "44",
       "display_name": "Volume Three",
       "status": "CREATING",
       "size": 10,
@@ -292,7 +292,7 @@ Volume attributes are explained `here <#volume-ref>`_
       "attachments": [],
       "volume_type": 2,
       "delete_on_termination": False,
-      "project": "d3f4u1t-pr0j3ct"
+      "project": "1234"
     }
   }
 
@@ -352,7 +352,7 @@ project             Assigned project for quotas      ✔        **✘**
     "volume": {
       "size": 10,
       "display_name": "Volume Three",
-      "server_id": "s3rv3r2",
+      "server_id": "117",
       "volume_type": 1,
     }
   }
@@ -393,14 +393,14 @@ Volume attributes are `listed here <#server-ref>`_.
     "volume": {
       "links": [
         {
-          "href": "https://example.org/cyclades/v2/volumes/v0lum33", 
+          "href": "https://example.org/cyclades/v2/volumes/44",
           "rel": "self"
         }, {
-          "href": "https://example.org/cyclades/v2/volumes/v0lum33", 
+          "href": "https://example.org/cyclades/v2/volumes/44",
           "rel": "bookmark"
         }
       ],
-      "id": "v0lum33",
+      "id": "44",
       "display_name": "Volume Three",
       "status": "CREATING",
       "size": 10,
@@ -413,7 +413,7 @@ Volume attributes are `listed here <#server-ref>`_.
       "attachments": [],
       "volume_type": 1,
       "delete_on_termination": True,
-      "project": "d3f4u1t-pr0j3ct"
+      "project": "1234"
     }
   }
 
@@ -450,14 +450,13 @@ Attribute             Description           Cyclades OS/Block Storage
 display_name          Server name           ✔        ✔
 display_description   Descrition            ✔        ✔
 delete_on_termination Switch this attribute ✔        **✘**
-metadata              set new metadata      ✔        ✔
 ===================== ===================== ======== ==========
 
 *Example Rename Server Request: JSON*
 
 .. code-block:: javascript
 
-  POST https://example.org/cyclades/v2/volumes/v0lum33
+  POST https://example.org/cyclades/v2/volumes/42
 
   {"volume": {"display_name": "New name"}}
 
@@ -493,8 +492,82 @@ Volume attributes are explained `here <#volume-ref>`_
 
   {
     "volume": {
-      "id": "v0lum33",
+      "id": "42",
       "display_name": "New Name",
+      ...
+    }
+  }
+
+Update Volume Metadata
+----------------------
+
+.. rubric:: Response
+
+================================= ======== ======== ==========
+URI                               Method   Cyclades OS/Block Storage
+================================= ======== ======== ==========
+``/volumes/<volume id>/metadata`` POST/PUT    ✔        ✔
+================================= ======== ======== ==========
+
+* POST will create new metadata for the specified Volume if the key doesn't
+  exist, while it will update metadata for which the key already exists.
+* PUT will delete any old existing metadata and it'll replace them with
+  the ones specified in the request.
+
+============== ========================= ======== ==========
+Request Header Value                     Cyclades OS/Block Storage
+============== ========================= ======== ==========
+X-Auth-Token   User authentication token required required
+Content-Type   Type or request body      required required
+Content-Length Length of request body    required required
+============== ========================= ======== ==========
+
+Request body contents::
+
+  volume: {
+    <key>: <value>,
+    ...
+  }
+
+*Example Append Metadata Request: JSON*
+
+.. code-block:: javascript
+
+  POST https://example.org/cyclades/v2/volumes/42/metadata
+
+  {"metadata": {"key_to_append": "value_to_append"}}
+
+.. rubric:: Response
+
+=========================== =====================
+Return Code                 Description
+=========================== =====================
+200 (OK)                    Request succeeded
+400 (Bad Request)           Malformed request
+401 (Unauthorized)          Missing or expired user token
+403 (Forbidden)             User is not allowed to perform this operation
+404 (Not Found)             Volume not found
+500 (Internal Server Error) The request cannot be completed because of an
+\                           internal error
+503 (Service Unavailable)   No available backends or service currently
+\                           unavailable
+=========================== =====================
+
+Response body contents::
+
+  metadata: {
+    <key>: <value>,
+    ...
+  }
+
+*Example update volume Response*
+
+.. code-block:: javascript
+
+  {
+    "metadata": {
+      "key1": "value1",
+      "key2": "value2",
       ...
     }
   }
@@ -561,9 +634,9 @@ Request body contents::
 
 .. code-block:: javascript
 
-  POST https://example.org//cyclades/v2/volumes/v0lum33/action
+  POST https://example.org//cyclades/v2/volumes/42/action
 
-  {"reassign": {"project": "al73rn47iv3-pr0j3c7"}}
+  {"reassign": {"project": "4321"}}
 
 
 .. rubric:: Response
@@ -645,28 +718,28 @@ The snapshot attributes are listed `here <#snapshot-ref>`_
       {
         "links": [
           {
-            "href": "https://example.org/cyclades/v2/snapshots/sn4p5h071", 
+            "href": "https://example.org/cyclades/v2/snapshots/42",
             "rel": "self"
           }, {
-            "href": "https://example.org/cyclades/v2/snapshots/sn4p5h071", 
+            "href": "https://example.org/cyclades/v2/snapshots/42",
             "rel": "bookmark"
           }
         ],
-        "id": "sn4p5h071",
+        "id": "42",
         "display_name": "Snapshot One",
       }, {
         "links": [
           {
-            "href": "https://example.org/cyclades/v2/snapshots/sn4p5h072", 
+            "href": "https://example.org/cyclades/v2/snapshots/42",
             "rel": "self"
           }, {
-            "href": "https://example.org/cyclades/v2/snapshots/sn4p5h072", 
+            "href": "https://example.org/cyclades/v2/snapshots/42",
             "rel": "bookmark"
           }
         ],
-        "id": "sn4p5h072",
+        "id": "42",
         "display_name": "Snapshot Two",
-      } 
+      }
     ]
   }
 
@@ -681,42 +754,42 @@ The snapshot attributes are listed `here <#snapshot-ref>`_
       {
         "links": [
           {
-            "href": "https://example.org/cyclades/v2/snapshots/sn4p5h071", 
+            "href": "https://example.org/cyclades/v2/snapshots/42",
             "rel": "self"
           }, {
-            "href": "https://example.org/cyclades/v2/snapshots/sn4p5h071", 
+            "href": "https://example.org/cyclades/v2/snapshots/42",
             "rel": "bookmark"
           }
         ],
-        "id": "sn4p5h071",
+        "id": "42",
         "display_name": "Snapshot One",
         "status": "ACTIVE",
         "size": 2,
         "display_description": null,
         "created_at": "2014-05-19T19:52:04.949734",
         "metadata": {},
-        "volume_id": "v0lum31",
+        "volume_id": "123",
         "os-extended-snapshot-attribute:progress": "100%"
       }, {
         "links": [
           {
-            "href": "https://example.org/cyclades/v2/snapshots/sn4p5h072", 
+            "href": "https://example.org/cyclades/v2/snapshots/43",
             "rel": "self"
           }, {
-            "href": "https://example.org/cyclades/v2/snapshots/sn4p5h072", 
+            "href": "https://example.org/cyclades/v2/snapshots/43",
             "rel": "bookmark"
           }
         ],
-        "id": "sn4p5h072",
+        "id": "43",
         "display_name": "Snapshot Two",
         "status": "ACTIVE",
         "size": 3,
         "display_description": null,
         "created_at": "2014-05-20T19:52:04.949734",
         "metadata": {},
-        "volume_id": "v0lum32",
+        "volume_id": "124",
         "os-extended-snapshot-attribute:progress": "100%"
-      } 
+      }
     ]
   }
 
@@ -777,21 +850,21 @@ Snapshot attributes are explained `here <#snapshot-ref>`_
     "snapshot": {
       "links": [
         {
-          "href": "https://example.org/cyclades/v2/snapshots/sn4p5h071", 
+          "href": "https://example.org/cyclades/v2/snapshots/42",
           "rel": "self"
         }, {
-          "href": "https://example.org/cyclades/v2/snapshots/sn4p5h071", 
+          "href": "https://example.org/cyclades/v2/snapshots/42",
           "rel": "bookmark"
         }
       ],
-      "id": "sn4p5h071",
+      "id": "42",
       "display_name": "Snapshot One",
       "status": "ACTIVE",
       "size": 2,
       "display_description": null,
       "created_at": "2014-05-19T19:52:04.949734",
       "metadata": {},
-      "volume_id": "v0lum31",
+      "volume_id": "123",
       "os-extended-snapshot-attribute:progress": "100%",
     }
   }
@@ -842,7 +915,7 @@ force               Whether to snapshot              **✘**    ✔
 
   {
     "volume": {
-      "volume_id": "v0lum33",
+      "volume_id": "44",
       "display_name": "Snapshot Three"
     }
   }
@@ -883,21 +956,21 @@ Snapshots attributes are `listed here <#snapshot-ref>`_.
     "snapshot": {
       "links": [
         {
-          "href": "https://example.org/cyclades/v2/snapshots/sn4psh0t3", 
+          "href": "https://example.org/cyclades/v2/snapshots/44",
           "rel": "self"
         }, {
-          "href": "https://example.org/cyclades/v2/snapshots/sn4psh0t3",
+          "href": "https://example.org/cyclades/v2/snapshots/44",
           "rel": "bookmark"
         }
       ],
-      "id": "sn4psh0t3",
+      "id": "44",
       "display_name": "Snapshot Three",
       "status": "CREATING",
       "size": 10,
       "display_description": null,
       "created_at": "2014-05-19T19:52:04.949734",
       "metadata": {},
-      "volume_id": "v0lum31",
+      "volume_id": "123",
       "os-extended-snapshot-attribute:progress": "100%",
     }
   }
@@ -940,7 +1013,7 @@ display_description Descrition            ✔        ✔
 
 .. code-block:: javascript
 
-  POST https://example.org/cyclades/v2/snapshots/sn4psh0t3
+  POST https://example.org/cyclades/v2/snapshots/44
 
   {"snapshot": {"display_name": "New name"}}
 
@@ -976,7 +1049,7 @@ Snapshot attributes are explained `here <#snapshot-ref>`_
 
   {
     "snapshot": {
-      "id": "sn4psh0t3",
+      "id": "44",
       "display_name": "New Name",
       ...
     }

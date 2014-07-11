@@ -585,6 +585,11 @@ class ProjectAPITest(TestCase):
         self.assertEqual(status, 400)
 
         ap = copy.deepcopy(ap_base)
+        ap["name"] = 100 * "domain.name." + ".org"
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
         ap["join_policy"] = "nonex"
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 400)

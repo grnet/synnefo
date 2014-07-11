@@ -276,7 +276,7 @@ $(document).ready(function() {
 					console.profileEnd("test");
 					console.timeEnd("test");
 					updateClearAll();
-				console.log($(tableMassiveDomID).find('tr').length)
+					console.log($(tableMassiveDomID).find('tr').length)
 				}
 			});
 		}
@@ -606,8 +606,8 @@ $(document).ready(function() {
 		var items = selected.items;
 		var itemsL = items.length;
 		for (var i = 0; i<itemsL; i++) {
-			if(items[i].id === itemID) {
-				items.splice(i, 1);
+			if(String(items[i].id) === String(itemID)) {
+				selected.items.splice(i, 1);
 				break;
 			}
 		}
@@ -808,12 +808,20 @@ $(document).ready(function() {
 		var itemID = $tr.attr('data-itemid');
 		// uuidsArray has only the uuids of selected items, none of the other info
 		idsArray = [];
-		deselectRow(itemID)
-		removeSelected(itemID)
-		removeItem(itemID, false);
+		deselectRow(itemID);
+		removeSelected(itemID);
+		removeItem(itemID);
 		var selectedNum = selected.items.length;
-		for (var i=0; i< selectedNum; i++)
-			idsArray.push(selected.items[i].id);
+		if($(this).closest('.modal').attr('data-type') === 'contact') {
+			for (var i=0; i< selectedNum; i++) {
+				idsArray.push(selected.items[i].contact_id);
+			}
+		}
+		else {
+			for (var i=0; i< selectedNum; i++){
+				idsArray.push(selected.items[i].id);
+			}
+		}
 		$actionBtn.attr('data-ids','[' + idsArray + ']');
 		$tr.slideUp('slow', function() {
 			$(this).siblings('.hidden-row').first().css('display', 'table-row');
@@ -927,7 +935,7 @@ $(document).ready(function() {
 				}
 				if(unique === true) {
 					idsArray.push(selected.items[i][uniqueProp]);
-					currentRow = templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].contact_id+'"');
+					currentRow = templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].id+'"');
 					currentRow = currentRow.replace('title=""', 'title="related with: '+selected.items[i].item_name+'"')
 					currentRow = currentRow.replace('<td class="full-name"></td>', '<td class="full-name">'+selected.items[i].contact_name+'</td>');
 					currentRow = currentRow.replace('<td class="email"><', '<td class="email">'+selected.items[i].contact_email+'<');
@@ -936,7 +944,7 @@ $(document).ready(function() {
 					htmlRows += currentRow;
 				}
 				else {
-					htmlRows = htmlRows.replace('" data-itemid="' + selected.items[i].contact_id + '"', ', '+selected.items[i].item_name+'" data-itemid="' + selected.items[i].contact_id+'"');
+					htmlRows = htmlRows.replace('" data-itemid="' + selected.items[i].id + '"', ', '+selected.items[i].item_name+'" data-itemid="' + selected.items[i].id+'"');
 					if(!warningInserted) {
 						$tableBody.closest('table').before(warningMsg);
 						warningInserted = true;

@@ -1,3 +1,57 @@
+snf = {
+	modals: {
+		showBottomModal: function($modal) {
+			var height = -$modal.outerHeight(true)
+				$modal.css('bottom', height)
+				$modal.animate({'bottom': '0px'}, 'slow');
+		},
+		hideBottomModal: function($modal) {
+			var height = -$modal.outerHeight(true)
+			$modal.animate({'bottom': height}, 'slow', function() {
+				if($modal.find('.log').length === 0) {
+					$modal.find('.warning').remove();
+				}
+			});
+		},
+		toggleBottomModal: function($modal) {
+			if($modal.css('bottom') !== '0px') {
+				snf.modals.showBottomModal($modal);
+			}
+			else {
+				snf.modals.hideBottomModal($modal);
+			}
+		},
+		showError: function(modal, errorSign) {
+			var $modal = $(modal);
+			var $errorMsg = $modal.find('*[data-error="'+errorSign+'"]');
+			console.log('*', $modal, $errorMsg)
+			$errorMsg.show();
+		},
+		resetErrors: function (modal) {
+			var $modal = $(modal);
+			$modal.find('.error-sign').hide();
+		},
+		checkInput: function(modal, inputArea, errorSign) {
+			var $inputArea = $(inputArea);
+			var $errorSign = $(modal).find('*[data-error="'+errorSign+'"]');
+
+			$inputArea.keyup(function() {
+				if($.trim($inputArea.val())) {
+					$errorSign.hide();
+				}
+			})
+		},
+		defaultEmailSubj: undefined,
+		defaultEmailBody: undefined,
+		resetInputs: function(modal) {
+			var $modal = $(modal);
+			$modal.find('input[type=text]').val(snf.modals.defaultEmailSubj);
+			$modal.find('textarea').val(snf.modals.defaultEmailBody);
+		},
+	},
+};
+
+
 $(document).ready(function(){
 	var $notificationArea = $('.notify');
 	$notificationArea.css('bottom', -$notificationArea.outerHeight(true))
@@ -27,7 +81,7 @@ $(document).ready(function(){
 		console.log(e.which, e.keyCode)
 		if (!($(e.target).closest("input")[0] || $(e.target).closest("textarea")[0])) {
 			if(e.keyCode === 73) {
-				snf.funcs.toggleBottomModal($notificationArea);
+				snf.modals.toggleBottomModal($notificationArea);
 			}
 		}
 	});
@@ -45,33 +99,8 @@ $(document).ready(function(){
 	});
 	$notificationArea.on('click', '.close-notifications', function(e) {
 		e.preventDefault();
-		snf.funcs.hideBottomModal($notificationArea);
+		snf.modals.hideBottomModal($notificationArea);
 	});
-
+	snf.modals.defaultEmailSubj = $('.modal[data-type="contact"]').find('.subject').val();
+	snf.modals.defaultEmailBody = $('.modal[data-type="contact"]').find('.email-content').val();
 });
-
-snf = {
-	funcs: {
-		showBottomModal: function($modal) {
-			var height = -$modal.outerHeight(true)
-				$modal.css('bottom', height)
-				$modal.animate({'bottom': '0px'}, 'slow');
-		},
-		hideBottomModal: function($modal) {
-			var height = -$modal.outerHeight(true)
-			$modal.animate({'bottom': height}, 'slow', function() {
-				if($modal.find('.log').length === 0) {
-					$modal.find('.warning').remove();
-				}
-			});
-		},
-		toggleBottomModal: function($modal) {
-			if($modal.css('bottom') !== '0px') {
-				snf.funcs.showBottomModal($modal);
-			}
-			else {
-				snf.funcs.hideBottomModal($modal);
-			}
-		}
-	},
-};

@@ -489,7 +489,6 @@ $(document).ready(function() {
 	};
 
 	function trimedCellTemplate(strData, limit) {
-		console.log(strData, limit)
 		var html = '<span title="click to see">'+'<span data-container="body" data-toggle="popover" data-placement="bottom" data-content="'+strData+'">'+strData.substring(0, limit)+'...'+'</span>'+'</span>';
 		return html;
 	};
@@ -735,36 +734,8 @@ $(document).ready(function() {
 
 
 		/* Modals */
-	function showError(modal, errorSign) {
-		var $modal = $(modal);
-		var $errorMsg = $modal.find('*[data-error="'+errorSign+'"]');
-		$errorMsg.show();
-	};
 
-	function resetErrors(modal) {
-		var $modal = $(modal);
-		$modal.find('.error-sign').hide();
-	};
-
-	function checkInput(modal, inputArea, errorSign) {
-		var $inputArea = $(inputArea);
-		var $errorSign = $(modal).find('*[data-error="'+errorSign+'"]');
-
-		$inputArea.keyup(function() {
-			if($.trim($inputArea.val())) {
-				$errorSign.hide();
-			}
-		})
-
-	};
-	var defaultEmailSubj = $('.modal[data-type="contact"]').find('.subject').val();
-	var defaultEmailBody = $('.modal[data-type="contact"]').find('.email-content').val();
-	function resetInputs(modal) {
-		var $modal = $(modal);
-		$modal.find('input[type=text]').val(defaultEmailSubj);
-		$modal.find('textarea').val(defaultEmailBody);
-	};
-	function removeWarnings(modal) {
+	function removeWarningDupl(modal) {
 		var $modal = $(modal);
 		$modal.find('.warning-duplicate').remove();
 	}
@@ -777,9 +748,9 @@ $(document).ready(function() {
 	$('.modal .cancel').click(function(e) {
 		$('[data-toggle="popover"]').popover('hide');
 		var $modal = $(this).closest('.modal');
-		resetErrors($modal);
-		resetInputs($modal);
-		removeWarnings($modal);
+		snf.modals.resetErrors($modal);
+		snf.modals.resetInputs($modal);
+		removeWarningDupl($modal);
 		resetToggleAllBtn($modal);
 		// resetAll(tableDomID);
 		updateToggleAllSelect();
@@ -796,32 +767,32 @@ $(document).ready(function() {
 		var completeAction = true;
 		if(selected.items.length === 0) {
 			e.stopPropagation();
-			showError($modal, 'no-selected');
+			snf.modals.showError($modal, 'no-selected');
 			completeAction = false;
 		}
-		if($modal.attr('id') === 'user-contact') {
+		if($modal.attr('data-type') === 'contact') {
 			var $emailSubj = $modal.find('.subject');
 			var $emailCont = $modal.find('.email-content');
 			if(!$.trim($emailSubj.val())) {
 				e.stopPropagation();
-				showError($modal, 'empty-subject');
-				checkInput($modal, $emailSubj, 'empty-subject');
+				snf.modals.showError($modal, 'empty-subject');
+				snf.modals.checkInput($modal, $emailSubj, 'empty-subject');
 				completeAction = false;
 			}
 			if(!$.trim($emailCont.val())) {
 				// e.preventDefault();
 				e.stopPropagation();
-				showError($modal, 'empty-body')
-				checkInput($modal, $emailCont, 'empty-body');
+				snf.modals.showError($modal, 'empty-body')
+				snf.modals.checkInput($modal, $emailCont, 'empty-body');
 				completeAction = false;
 			}
 		}
 		if(completeAction) {
 			$('[data-toggle="popover"]').popover('hide');
 			performAction($modal);
-			resetErrors($modal);
-			resetInputs($modal);
-			removeWarnings($modal);
+			snf.modals.resetErrors($modal);
+			snf.modals.resetInputs($modal);
+			removeWarningDupl($modal);
 			resetAll(tableDomID);
 			resetToggleAllBtn($modal);
 		}
@@ -893,14 +864,14 @@ $(document).ready(function() {
 				else {
 					$notificationArea.find('.warning').before(htmlPending);
 				}
-				snf.funcs.showBottomModal($notificationArea);
+				snf.modals.showBottomModal($notificationArea);
 				$notificationArea.find('.warning').fadeIn('slow');
 			},
 			// complete: function()
 			success: function(response, statusText, jqXHR) {
 				var htmlSuccess = '<p class="log"><span class="success state-icon snf-font-admin snf-ok"></span>Action <em>"'+actionName+'"</em> for '+countItems+' items has <em class="succeed">succeed</em>.'+removeBtn+'</p>';
 				$notificationArea.find('#'+logID).replaceWith(htmlSuccess);
-				snf.funcs.showBottomModal($notificationArea);
+				snf.modals.showBottomModal($notificationArea);
 			},
 			error: function(jqXHR, statusText) {
 				console.log(jqXHR, statusText, jqXHR.status);
@@ -921,7 +892,7 @@ $(document).ready(function() {
 					$notificationArea.find('.container').append(warningMsg);
 				}
 
-				snf.funcs.showBottomModal($notificationArea);
+				snf.modals.showBottomModal($notificationArea);
 			}
 		});
 	};
@@ -933,7 +904,6 @@ $(document).ready(function() {
 		var $counter = $(modalID).find('.num');
 		var rowsNum = selected.items.length;
 		var $actionBtn = $(modalID).find('.apply-action');
-		console.log('drawModal', $actionBtn);
 		var maxVisible = 5;
 		var currentRow;
 		var htmlRows = '';

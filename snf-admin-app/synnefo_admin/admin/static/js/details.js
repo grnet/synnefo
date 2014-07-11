@@ -10,9 +10,9 @@ $(document).ready(function(){
 	})
 	$('.object-details h4 .arrow').click(function(){
 		var $expandBtn = $(this);
-		var hasClass = !$expandBtn.closest('h4').hasClass('expanded');
+		var hasNotClass = !$expandBtn.closest('h4').hasClass('expanded');
 
-		if(hasClass) {
+		if(hasNotClass) {
 			$expandBtn.removeClass('snf-angle-down').addClass('snf-angle-up');
 			$expandBtn.closest('h4').siblings('.object-details-content').stop().slideDown('slow');
 		}
@@ -24,9 +24,10 @@ $(document).ready(function(){
 		var $areas = $expandBtn.closest('.info-block.object-details') // *** add another class
 
 		var allSameClass = true;
+		$expandBtn.closest('h4').toggleClass('expanded');
 
 		($areas.find('.object-details')).each(function() {
-			if(hasClass)
+			if(hasNotClass)
 				allSameClass = allSameClass && $(this).find('h4').hasClass('expanded');
 			else
 				allSameClass = allSameClass && !$(this).find('h4').hasClass('expanded');
@@ -34,9 +35,10 @@ $(document).ready(function(){
 			if(!allSameClass)
 				return false;
 		});
-		if(allSameClass)
-			$expandBtn.closest('.info-block.object-details').find('.show-hide-all').trigger('click');
-		$expandBtn.closest('h4').toggleClass('expanded');
+		if(allSameClass){
+			console.log('STAMATA NA ANOIGEIS TA PANTA!')
+					$expandBtn.closest('.info-block.object-details').find('.show-hide-all').trigger('click');
+				}
 	});
 
 	   // hide/show expand/collapse 
@@ -83,43 +85,10 @@ $('.main .object-details h4 .arrow').trigger('click')
 		drawModalSingleItem(modalID, itemName, itemID);
 	});
 
-
-	function showError(modal, errorSign) {
-		var $modal = $(modal);
-		var $errorMsg = $modal.find('*[data-error="'+errorSign+'"]');
-		$errorMsg.show();
-	};
-
-	function checkInput(modal, inputArea, errorSign) {
-		var $inputArea = $(inputArea);
-		var $errorSign = $(modal).find('*[data-error="'+errorSign+'"]');
-
-		$inputArea.keyup(function() {
-			if($.trim($inputArea.val())) {
-				$errorSign.hide();
-			}
-		})
-
-	};
-
-	function resetErrors(modal) {
-		var $modal = $(modal);
-		$modal.find('.error-sign').hide();
-	};
-
-	var defaultEmailSubj = $('.modal[data-type="contact"]').find('.subject').val();
-	var defaultEmailBody = $('.modal[data-type="contact"]').find('.email-content').val();
-	function resetInputs(modal) {
-		var $modal = $(modal);
-		$modal.find('input[type=text]').val(defaultEmailSubj);
-		$modal.find('textarea').val(defaultEmailBody);
-	};
-		
 	function resetItemInfo(modal) {
 		var $modal = $(modal);
 		$modal.find('.summary .info-list').remove();
 	}
-
 
 	function drawModalSingleItem(modalID, itemName, itemID) {
 		var $summary = $(modalID).find('.modal-body .summary');
@@ -167,13 +136,13 @@ $('.main .object-details h4 .arrow').trigger('click')
 				else {
 					$notificationArea.find('.warning').before(htmlPending);
 				}
-				snf.funcs.showBottomModal($notificationArea);
+				snf.modals.showBottomModal($notificationArea);
 				$notificationArea.find('.warning').fadeIn('slow');
 			},
 			success: function(response, statusText, jqXHR) {
 				var htmlSuccess = '<p class="log"><span class="success state-icon snf-font-admin snf-ok"></span>Action <em>"'+actionName+'"</em> has <em class="succeed">succeed</em>.'+removeBtn+'</p>';
 				$notificationArea.find('#'+logID).replaceWith(htmlSuccess);
-				snf.funcs.showBottomModal($notificationArea);
+				snf.modals.showBottomModal($notificationArea);
 			},
 			error: function(jqXHR, statusText) {
 				var htmlErrorSum = '<p><span class="error state-icon snf-font-admin snf-remove"></span>Action <em>"'+actionName+'"</em> has <em class="error">failed</em>.'+removeBtn+'</p>'
@@ -193,15 +162,15 @@ $('.main .object-details h4 .arrow').trigger('click')
 					$notificationArea.find('.container').append(warningMsg);
 				}
 
-				snf.funcs.showBottomModal($notificationArea);
+				snf.modals.showBottomModal($notificationArea);
 			}
 		});
 	}
 
 	$('.modal').find('.cancel').click(function() {
 		$modal =$(this).closest('.modal');
-		resetInputs($modal);
-		resetErrors($modal);
+		snf.modals.resetInputs($modal);
+		snf.modals.resetErrors($modal);
 		resetItemInfo($modal);
 		$('[data-toggle="popover"]').popover('hide');
 
@@ -211,28 +180,28 @@ $('.main .object-details h4 .arrow').trigger('click')
 	$('.modal .apply-action').click(function(e) {
 		var $modal = $(this).closest('.modal');
 		var completeAction = true;
-		if($modal.attr('id') === 'user-contact') {
+		if($modal.attr('data-type') === 'contact') {
 			var $emailSubj = $modal.find('.subject');
 			var $emailCont = $modal.find('.email-content');
 			if(!$.trim($emailSubj.val())) {
 				// e.preventDefault();
 				e.stopPropagation();
-				showError($modal, 'empty-subject');
-				checkInput($modal, $emailSubj, 'empty-subject');
+				snf.modals.showError($modal, 'empty-subject');
+				snf.modals.checkInput($modal, $emailSubj, 'empty-subject');
 				completeAction = false;
 			}
 			if(!$.trim($emailCont.val())) {
 				// e.preventDefault();
 				e.stopPropagation();
-				showError($modal, 'empty-body')
-				checkInput($modal, $emailCont, 'empty-body');
+				snf.modals.showError($modal, 'empty-body')
+				snf.modals.checkInput($modal, $emailCont, 'empty-body');
 				completeAction = false;
 			}
 		}
 		if(completeAction) {
 			performAction($modal);
-			resetInputs($modal);
-			resetErrors($modal);
+			snf.modals.resetInputs($modal);
+			snf.modals.resetErrors($modal);
 			resetItemInfo($modal);
 			$('[data-toggle="popover"]').popover('hide');
 		}

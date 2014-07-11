@@ -73,6 +73,12 @@ def create(user_id, size, server_id, name=None, description=None,
     if project is None:
         project = user_id
 
+    if metadata is not None and \
+       len(metadata) > settings.CYCLADES_VOLUME_MAX_METADATA:
+        raise faults.BadRequest("Volumes cannot have more than %s metadata "
+                                "items" %
+                                settings.CYCLADES_VOLUME_MAX_METADATA)
+
     volume = _create_volume(server, user_id, project, size,
                             source_type, source_uuid,
                             volume_type=volume_type, name=name,

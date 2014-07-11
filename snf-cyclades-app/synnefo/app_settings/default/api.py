@@ -174,3 +174,6 @@ CYCLADES_VNCAUTHPROXY_OPTS = {
 
 # The maximum allowed size(GB) for a Cyclades Volume
 CYCLADES_VOLUME_MAX_SIZE = 200
+
+# The maximum allowed metadata items for a Cyclades Volume
+CYCLADES_VOLUME_MAX_METADATA = 10

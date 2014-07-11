@@ -245,10 +245,22 @@ def update_volume_metadata(request, volume_id, reset=False):
     volume = util.get_volume(request.user_uniq, volume_id, for_update=True,
                              non_deleted=True)
     if reset:
+        if len(meta_dict) > settings.CYCLADES_VOLUME_MAX_METADATA:
+            raise faults.BadRequest("Volumes cannot have more than %s metadata "
+                                    "items" %
+                                    settings.CYCLADES_VOLUME_MAX_METADATA)
+
         volume.metadata.all().delete()
         for key, value in meta_dict.items():
             volume.metadata.create(key=key, value=value)
     else:
+        if len(meta_dict) + len(volume.metadata.all()) - \
+           len(volume.metadata.all().filter(key__in=meta_dict.keys())) > \
+           settings.CYCLADES_VOLUME_MAX_METADATA:
+            raise faults.BadRequest("Volumes cannot have more than %s metadata"
+                                    " items" %
+                                    settings.CYCLADES_VOLUME_MAX_METADATA)
+
         for key, value in meta_dict.items():
             try:
                 # Update existing metadata

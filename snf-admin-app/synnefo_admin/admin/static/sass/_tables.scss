@@ -35,7 +35,8 @@ table th {
 
 
 
-table:not(.table-selected) td:last-child { // this is meant for summary td
+.table-selected-main:not(.table-selected) td:last-child,
+.table-items:not(.table-selected) td:last-child{ // this is meant for summary td
     max-width: 60px;
     min-width: 60px;
     padding: 8px 5px;

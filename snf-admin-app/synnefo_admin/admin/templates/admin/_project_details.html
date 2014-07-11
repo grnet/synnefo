@@ -50,12 +50,11 @@
                 </dl>
             </div>
             <div class="tab-pane" id="prj-members{{ project.uuid }}">
-		 		<table class="table well">
+		 		<table class="table">
 		            <thead>
 		                <td>UUID</td>
 		                <td>Name</td>
 		                <td>Status</td>
-		                <td></td>
 		            </thead>
 		            <tbody>
                         {% with members=project|get_project_members %}

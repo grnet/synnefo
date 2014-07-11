@@ -122,15 +122,21 @@
 .snf-keyboard {
     @include font-icon('font-icons', "\7a");
 }
-
 .snf-book-1 {
     @include font-icon('font-icons', "\41");
 }
-
 .snf-book-2 {
     @include font-icon('font-icons',  "\42");
 }
-
+.snf-bell-1 {
+    @include font-icon('font-icons',  "\43");
+}
+.snf-bell-2 {
+    @include font-icon('font-icons',  "\44");
+}
+.snf-bell-3 {
+    @include font-icon('font-icons',  "\45");
+}
 .snf-eye {
     @include font-icon('snf-font', "\41");
 }

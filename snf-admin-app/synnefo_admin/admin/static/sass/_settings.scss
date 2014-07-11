@@ -1,44 +1,10 @@
-/* here should declare: */
-/* vars like colors and dist */
-/* and functs */
+@import "global";
 
 @import "bootstrap/variables";  
 
 $total-width: 960px;
 $nav-side-padding: 20px;
 $sidebar-width: 110px;
-$secondary-link-color: #fff;
-
-$blue-light: #B2CAE9;
-$blue-light-extra: #AFC6D6;
-$blue-intense: #3C96E0;
-$gray-light-extra: lighten($gray-light, 20%);
-$green-intense: #00a551;
-$green-intense-extra: darken($green-intense, 10%);
-$red-intense: #E42A48;
-$orange-intense: #D2881F;
-
-// should I use something like that?
-// $warning
-// $warning-area
-
-// $error
-// $error-area
-
-// $positive
-// $positive-area
-
-
-$almost-white: #eeeeee;
-$total-black: #222;
-
-
-// Βutton colors
-$default-btn-color: $blue-intense;
-$bad-karma-color: $red-intense;
-$neutral-karma-color: $orange-intense;
-$good-karma-color: $green-intense;
-
 $default-btn-padding: 8px;
 $menu-height: 50px;
 $hover-nav-color: #333;

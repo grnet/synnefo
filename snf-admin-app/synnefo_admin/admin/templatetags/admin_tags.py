@@ -44,7 +44,7 @@ register = template.Library()
 VM_STATE_CSS_MAP = {
         'BUILD': 'warning',
         'PENDING': 'warning',
-        'ERROR': 'important',
+        'ERROR': 'danger',
         'STOPPED': 'notice',
         'STARTED': 'success',
         'ACTIVE': 'success',
@@ -75,7 +75,7 @@ def network_deleted_label(network):
     """
     deleted_label = ""
     if network.deleted:
-        deleted_label = '<span class="label label-important">Deleted</span>'
+        deleted_label = '<span class="label label-danger">Deleted</span>'
     return deleted_label
 
 

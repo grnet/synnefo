@@ -34,15 +34,8 @@
             float: right;
             margin-left: 15px;
             margin-bottom: 10px;
-            background: $almost-white;
-            color: $total-black;
             &.important {
                 font-weight: bold;
-            }
-            &.label-success {
-                background: $good-karma-color;
-                border-color: $good-karma-color;
-                color: $almost-white;
             }
         }
         em {

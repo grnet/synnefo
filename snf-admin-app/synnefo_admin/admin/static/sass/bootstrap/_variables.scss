@@ -12,9 +12,9 @@ $bootstrap-sass-asset-helper: (twbs-font-path("") != unquote('twbs-font-path("")
 //## Gray and brand colors for use across Bootstrap.
 
 $gray-darker:            lighten(#000, 13.5%) !default; // #222
-$gray-dark:              #404040;
+$gray-dark:              $snf_gray-dark;
 $gray:                   lighten(#000, 33.5%) !default; // #555
-$gray-light:             #5A5959;
+$gray-light:             $snf_gray-light;
 $gray-lighter:           lighten(#000, 85%) !default; // #eee
 
 $brand-primary:         #fff;
@@ -540,7 +540,7 @@ $popover-arrow-outer-fallback-color:  darken($popover-fallback-border-color, 20%
 //##
 
 //** Default label background color
-$label-default-bg:            $gray-light !default;
+$label-default-bg:            $almost-white !default;
 //** Primary label background color
 $label-primary-bg:            $brand-primary !default;
 //** Success label background color
@@ -553,7 +553,7 @@ $label-warning-bg:            $brand-warning !default;
 $label-danger-bg:             $brand-danger !default;
 
 //** Default label text color
-$label-color:                 #fff !default;
+$label-color:                 $gray-dark !default;
 //** Default text color of a linked label
 $label-link-hover-color:      #fff !default;
 

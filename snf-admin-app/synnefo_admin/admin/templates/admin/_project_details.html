@@ -15,10 +15,11 @@
         <div class="rt">
             <span class="label">{{ project.state_display|upper }}</span>
             <span class="label">UUID: {{ project.uuid }}</span>
-            <span class="label">
             {% if project.is_base %}
+            <span class="label label-info">
                 SYSTEM
             {% else %}
+            <span class="label">
                 Members: {{ project.members_count }}
             {% endif %}
             </span>

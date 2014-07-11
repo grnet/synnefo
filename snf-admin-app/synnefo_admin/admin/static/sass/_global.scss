@@ -1,0 +1,24 @@
+$secondary-link-color: #fff;
+$snf_gray-dark:              #404040;
+$snf_gray-light:             #5A5959;
+$blue-light: #B2CAE9;
+$blue-light-extra: #AFC6D6;
+$blue-intense: #3C96E0;
+$gray-light-extra: lighten($snf_gray-light, 20%);
+$green-intense: #00a551;
+$green-intense-extra: darken($green-intense, 10%);
+$red-intense: #E42A48;
+$orange-intense: #D2881F;
+
+$almost-white: #eeeeee;
+$total-black: #222;
+
+
+// Βutton colors
+$default-btn-color: $blue-intense;
+$bad-karma-color: $red-intense;
+$neutral-karma-color: $orange-intense;
+$good-karma-color: $green-intense;
+$hover-nav-color: #333;
+
+

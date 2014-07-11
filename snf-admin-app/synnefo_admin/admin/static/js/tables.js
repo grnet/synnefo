@@ -1020,7 +1020,7 @@ $(document).ready(function() {
 
 	 /* Filters */
 
-	 var filters = {};
+	var filters = {};
 
 	function dropdownSelect(filterEl) {
 		var $dropdownList = $(filterEl).find('.choices');
@@ -1033,28 +1033,31 @@ $(document).ready(function() {
 			if($(this).closest('.filter-dropdown').hasClass('filter-boolean')) {
 				if($li.hasClass('reset')) {
 					delete filters[key];
-					$li.find('.selection-indicator').toggleClass('snf-radio-unchecked snf-radio-checked');
-					$li.addClass('active');
-					$li.siblings('.active').find('.selection-indicator').toggleClass('snf-radio-unchecked snf-radio-checked');
-					$li.siblings('.active').removeClass('active');
-					$(this).closest(filterEl).find('.selected-value').text(value);
-				}
-				$li.toggleClass('active')
-				if($li.hasClass('active')) {
 					$li.find('.selection-indicator').removeClass('snf-radio-unchecked').addClass('snf-radio-checked');
-					$li.siblings('li').removeClass('active');
-					$li.siblings('li').find('.selection-indicator').removeClass('snf-radio-checked').addClass('snf-radio-unchecked');
-					$(this).closest(filterEl).find('.selected-value').text(value);
-					filters[key] = value;
+					$li.addClass('active');
+					$li.siblings('.active').find('.selection-indicator').removeClass('snf-radio-checked').addClass('snf-radio-unchecked');
+					$li.siblings('.active').removeClass('active');
+					$(this).closest(filterEl).find('.selected-value').text(String(value));
 				}
 				else {
-					delete filters[key];
-					var resetLabel = $li.siblings('.reset').text();
-					$li.siblings('li.reset').addClass('active');
-					$li.siblings('li.reset').find('.selection-indicator').removeClass('snf-radio-unchecked').addClass('snf-radio-checked');
-					$(this).closest(filterEl).find('.selected-value').text(resetLabel);
+					$li.toggleClass('active')
+					if($li.hasClass('active')) {
+						$li.find('.selection-indicator').removeClass('snf-radio-unchecked').addClass('snf-radio-checked');
+						$li.siblings('li').removeClass('active');
+						$li.siblings('li').find('.selection-indicator').removeClass('snf-radio-checked').addClass('snf-radio-unchecked');
+						$(this).closest(filterEl).find('.selected-value').text(value);
+						filters[key] = value;
+					}
+					else {
+						delete filters[key];
+						var resetLabel = $li.siblings('.reset').text();
+						$li.siblings('li.reset').addClass('active');
+						$li.siblings('li.reset').find('.selection-indicator').removeClass('snf-radio-unchecked').addClass('snf-radio-checked');
+						$(this).closest(filterEl).find('.selected-value').text(resetLabel);
+					}
 				}
 			}
+			// multichoice filter
 			else {
 				if($li.hasClass('reset')) {
 					delete filters[key];
@@ -1070,7 +1073,7 @@ $(document).ready(function() {
 					$li.find('.selection-indicator').toggleClass('snf-checkbox-unchecked snf-checkbox-checked');
 					if($li.hasClass('active')) {
 						$li.siblings('.reset').removeClass('active')
-						$li.siblings('.reset').find('.selection-indicator').addClass('snf-checkbox-unchecked').removeClass('snf-radio-checked');
+						$li.siblings('.reset').find('.selection-indicator').removeClass('snf-checkbox-checked').addClass('snf-checkbox-unchecked');
 						if($li.siblings('.active').length > 0) {
 							arrayFilter(filters, key, value);
 							$(this).closest(filterEl).find('.selected-value').append(', '+value)
@@ -1080,16 +1083,19 @@ $(document).ready(function() {
 							filters[key] = [value]
 						}
 					}
+					// deselect a choice
 					else {
 						if($li.siblings('.active').length >0) {
 							arrayFilter(filters, key, value, true);
-							$(this).closest(filterEl).find('.selected-value').text(filters[key])
+							console.log(filters[key])
+							$(this).closest(filterEl).find('.selected-value').text(filters[key].toString().replace(/\,/gi, ', '))
 						}
+						// deselect the only selection that the user made before
 						else {
 							delete filters[key];
 							var resetLabel = $li.siblings('.reset').text();
 							$li.siblings('li.reset').addClass('active');
-							$li.siblings('li.reset').find('.selection-indicator').removeClass('snf-radio-unchecked').addClass('snf-checkbox-checked');
+							$li.siblings('li.reset').find('.selection-indicator').removeClass('snf-checkbox-unchecked').addClass('snf-checkbox-checked');
 							$(this).closest(filterEl).find('.selected-value').text(resetLabel)
 
 						}

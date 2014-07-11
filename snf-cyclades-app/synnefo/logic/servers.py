@@ -67,6 +67,10 @@ def create(userid, name, password, flavor, image_id, metadata={},
         raise faults.BadRequest("You need to specify either an image or a"
                                 " block device mapping.")
 
+    if len(metadata) > settings.CYCLADES_VM_MAX_METADATA:
+        raise faults.BadRequest("Virtual Machines cannot have more than %s "
+                                "metadata items" %
+                                settings.CYCLADES_VM_MAX_METADATA)
     # Get image info
     image = util.get_image_dict(image_id, userid)
 

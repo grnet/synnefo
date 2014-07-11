@@ -177,3 +177,6 @@ CYCLADES_VOLUME_MAX_SIZE = 200
 
 # The maximum allowed metadata items for a Cyclades Volume
 CYCLADES_VOLUME_MAX_METADATA = 10
+
+# The maximmum allowed metadata items for a Cyclades Virtual Machine
+CYCLADES_VM_MAX_METADATA = 10

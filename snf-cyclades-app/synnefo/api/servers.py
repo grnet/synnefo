@@ -686,6 +686,13 @@ def update_metadata(request, server_id):
     metadata = utils.get_attribute(req, "metadata", required=True,
                                    attr_type=dict)
 
+    if len(metadata) + len(vm.metadata.all()) - \
+       len(vm.metadata.all().filter(meta_key__in=metadata.keys())) > \
+       settings.CYCLADES_VM_MAX_METADATA:
+        raise faults.BadRequest("Virtual Machines cannot have more than %s "
+                                "metadata items" %
+                                settings.CYCLADES_VM_MAX_METADATA)
+
     for key, val in metadata.items():
         if not isinstance(key, (basestring, int)) or\
            not isinstance(val, (basestring, int)):

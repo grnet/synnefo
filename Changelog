@@ -92,6 +92,10 @@ Cyclades
 --------
 
 * Add support for snf-vncauthproxy 1.6 (configurable VNC console types)
+* Add setting `CYCLADES_VM_MAX_METADATA` to limit the maximum number of Virtual
+  Machine metadata items
+* Add setting `CYCLADES_VOLUME_MAX_METADATA` to limit the maximum number of
+  Volume metadata items
 
 Cyclades UI
 -----------

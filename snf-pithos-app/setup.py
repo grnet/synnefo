@@ -47,7 +47,8 @@ INSTALL_REQUIRES = [
     'astakosclient',
     'snf-django-lib',
     'snf-webproject',
-    'snf-branding'
+    'snf-branding',
+    'lxml',
 ]
 
 EXTRAS_REQUIRES = {

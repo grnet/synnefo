@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from lxml import etree
+
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
@@ -981,7 +983,7 @@ def _object_read(request, v_account, v_container, v_object):
     return object_data_response(request, sizes, hashmaps, meta)
 
 
-@api_method('PUT', format_allowed=False, user_required=True, logger=logger,
+@api_method('PUT', format_allowed=True, user_required=True, logger=logger,
             lock_container_path=True)
 def object_write(request, v_account, v_container, v_object):
     # Normal Response Codes: 201
@@ -1060,17 +1062,35 @@ def object_write(request, v_account, v_container, v_object):
         raise faults.LengthRequired('Missing Content-Type header')
 
     if 'hashmap' in request.GET:
+        if request.serialization not in ('json', 'xml'):
+            raise faults.BadRequest('Invalid hashmap format')
+
         data = ''
         for block in socket_read_iterator(request, content_length,
                                           request.backend.block_size):
             data = ''.join([data, block])
 
-        try:
-            d = json.loads(data)
-            hashmap = d['hashes']
-            size = int(d['bytes'])
-        except:
-            raise faults.BadRequest('Invalid data formatting')
+        if request.serialization == 'json':
+            try:
+                d = json.loads(data)
+                if not hasattr(d, '__getitem__'):
+                    raise faults.BadRequest('Invalid data formating')
+                hashmap = d['hashes']
+                size = int(d['bytes'])
+            except:
+                raise faults.BadRequest('Invalid data formatting')
+        elif request.serialization == 'xml':
+            try:
+                obj = etree.fromstring(data)
+                size = int(obj.attrib.get('bytes'))
+
+                hashes = obj.findall('hash')
+                hashmap = []
+                for hash in hashes:
+                    hashmap.append(hash.text)
+            except:
+                raise faults.BadRequest('Invalid data formatting')
+
         checksum = ''  # Do not set to None (will copy previous value).
     else:
         etag = request.META.get('HTTP_ETAG')

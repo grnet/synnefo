@@ -62,7 +62,7 @@ def is_resource_useful(resource, project_limit):
     Values that have infinite or zero limits are discarded.
     """
     displayed_limit = units.show(project_limit, resource.unit)
-    if not project_limit or not resource.uplimit or displayed_limit == 'inf':
+    if project_limit == 0 or not resource.uplimit or displayed_limit == 'inf':
         return False
     return True
 

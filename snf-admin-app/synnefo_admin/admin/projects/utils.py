@@ -71,51 +71,76 @@ def get_contact_id(inst):
         return inst.owner.uuid
 
 
-def display_project_stats(inst, stat):
-    """Display the requested project stats in a one-line string.
+def get_policies(inst):
+    policies = inst.projectresourcequota_set.all()
+    policy_list = []
+
+    for p in policies:
+        r = p.resource
+        if not is_resource_useful(r, p.project_capacity):
+            continue
+        policy_list.append(p)
+
+    return policy_list
+
+
+def get_project_usage(inst):
+    """Return requested project quota type.
 
     Accepted stats are: 'project_limit', 'project_pending', 'project_usage'.
     Note that the output is sanitized, meaning that stats that correspond
-    to infinite or zero limits will not be shown.
+    to infinite or zero limits will not be returned.
     """
     resource_list = []
     quota_dict = get_project_quota(inst)
+    if not quota_dict:
+        return []
 
-    for resource_name, stats in quota_dict.iteritems():
-        resource = Resource.objects.get(name=resource_name)
-        if not is_resource_useful(resource, stats['project_limit']):
-            continue
-        value = units.show(stats[stat], resource.unit)
-        resource_list.append((resource.report_desc, value))
+    policies = get_policies(inst)
+    for p in policies:
+        r = p.resource
+        value = units.show(quota_dict[r.name]['project_usage'], r.unit)
+        resource_list.append((r.report_desc, value))
 
-    resource_list = sorted(resource_list, key=itemgetter(0))
+    return resource_list
+
+
+def get_project_quota_category(inst, category):
+    """Get the quota for project member"""
+    resource_list = []
+    policies = get_policies(inst)
+
+    for p in policies:
+        r = p.resource
+        # Get human-readable (resource name, member capacity) tuple
+        if "member":
+            resource_list.append((r.report_desc, p.display_member_capacity()))
+        elif "limit":
+            resource_list.append((r.report_desc, p.display_project_capacity()))
+
+    return resource_list
+
+
+def display_quota_horizontally(resource_list):
+    """Display resource lists in one line."""
     if not resource_list:
         return "-"
     return ', '.join((': '.join(pair) for pair in resource_list))
 
 
-def display_project_resources(inst, type):
-    """Display project resources (member of total) in one line."""
-    resource_list = []
-    prqs = inst.resource_set
+def display_project_usage_horizontally(inst):
+    """Display the requested project stats in a one-line string."""
+    resource_list = get_project_usage(inst)
+    return display_quota_horizontally(resource_list)
 
-    for prq in prqs:
-        r = prq.resource
 
-        # Check the project limit to verify that we can print this resource
-        if not is_resource_useful(r, prq.project_capacity):
-            continue
+def display_member_quota_horizontally(inst):
+    """Display project resources (member or total) in one line."""
+    resource_list = get_project_quota_category(inst, "member")
+    return display_quota_horizontally(resource_list)
 
-        # Get human-readable (resource name, member capacity) tuple
-        if type == 'member':
-            resource_list.append((r.report_desc,
-                                  prq.display_member_capacity()))
-        # Get human-readable (resource name, total capacity) tuple
-        elif type == 'total':
-            resource_list.append((r.report_desc,
-                                  prq.display_project_capacity()))
-        else:
-            raise Exception("Wrong type")
 
-    resource_list = sorted(resource_list, key=itemgetter(0))
-    return ', '.join((': '.join(pair) for pair in resource_list))
+def display_project_limit_horizontally(inst):
+    """Display project resources (member or total) in one line."""
+    resource_list = get_project_quota_category(inst, "limit")
+    return display_quota_horizontally(resource_list)

@@ -54,8 +54,9 @@ from synnefo_admin.admin.tables import AdminJSONView
 from .filters import ProjectFilterSet
 from .actions import cached_actions
 from .utils import (get_contact_id, get_contact_name, get_contact_email,
-                    get_project, display_project_stats,
-                    display_project_resources,)
+                    get_project, display_project_usage_horizontally,
+                    display_member_quota_horizontally,
+                    display_project_limit_horizontally)
 
 
 templates = {
@@ -179,18 +180,18 @@ class ProjectJSONView(AdminJSONView):
 
             extra_dict['member_resources'] = {
                 'display_name': "Max resources per member",
-                'value': display_project_resources(inst, 'member') or "-",
+                'value': display_member_quota_horizontally(inst),
                 'visible': True
             }
 
         extra_dict['limit'] = {
             'display_name': "Total resources",
-            'value': display_project_resources(inst, 'total') or "-",
+            'value': display_project_limit_horizontally(inst),
             'visible': True,
         }
         extra_dict['usage'] = {
             'display_name': "Resource usage",
-            'value': display_project_stats(inst, 'project_usage') or "-",
+            'value': display_project_usage_horizontally(inst),
             'visible': True,
         }
 

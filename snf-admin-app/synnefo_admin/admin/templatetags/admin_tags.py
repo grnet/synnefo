@@ -261,14 +261,25 @@ def verbify(action):
 @register.filter
 def get_project_stats(project):
     """Create a dictionary with a summary for a project's stats."""
-    stats = OrderedDict()
-    if not project.is_base:
-        stats['Max per member'] = \
-            project_utils.display_project_resources(project, 'member')
-    stats['Total'] = project_utils.display_project_resources(project, 'total')
-    stats['Usage'] = project_utils.display_project_stats(project,
-                                                         'project_usage')
-    return stats
+    limit = project_utils.get_project_quota_category(project, "limit")
+    usage = project_utils.get_project_usage(project)
+    member = project_utils.get_project_quota_category(project, "member")
+    if not usage:
+        usage = [(name, '-',) for name, _ in limit]
+
+    if project.is_base:
+        all_stats = zip(limit, usage)
+    else:
+        all_stats = zip(member, limit, usage)
+
+    new_stats = OrderedDict()
+    for row in all_stats:
+        resource_name = row[0][0]
+        new_stats[resource_name] = []
+        for _, value in row:
+            new_stats[resource_name].append(value)
+
+    return new_stats
 
 
 @register.filter

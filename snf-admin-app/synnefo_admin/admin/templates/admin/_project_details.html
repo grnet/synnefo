@@ -83,11 +83,28 @@
             </div>
             <div class="tab-pane" id="resources{{ project.uuid }}">
                 <dl class="dl-horizontal well">
-                    {% with stats=project|get_project_stats %}
-                        {% for stat_name, stat_value in stats.items %}
-                            <dt>{{ stat_name }} </dt><dd>{{stat_value|default:"-" }}</dd>
-                        {% endfor %}
-                    {% endwith %}
+		 		<table class="table well">
+		            <thead>
+                        <td></td>
+                        {% if not project.is_base %}
+                        <td><b>Max per Member</b></td>
+                        {% endif %}
+                        <td><b>Max per Project</b></td>
+                        <td><b>Usage</b></td>
+		            </thead>
+		            <tbody>
+                        {% with stats=project|get_project_stats %}
+                            {% for resource_name, values in stats.items %}
+                            <tr>
+                                <td>{{ resource_name }}</td>
+                                {% for value in values %}
+                                    <td>{{ value }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        {% endwith %}
+		            </tbody>
+		        </table>
                 </dl>
             </div>
         </div>

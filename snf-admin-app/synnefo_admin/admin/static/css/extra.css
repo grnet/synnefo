@@ -2,7 +2,7 @@
 Disabled buttons are transparent with light gray border
 and light gray font colors
 */
-/* line 80, ../sass/_bars-btns.scss */
+/* line 85, ../sass/_bars-btns.scss */
 body .container .custom-btn.disabled,
 body .container .outline-btn.disabled,
 body .container .line-btn.disabled {
@@ -11,14 +11,14 @@ body .container .line-btn.disabled {
   opacity: 0.7;
   color: #eeeeee;
 }
-/* line 88, ../sass/_bars-btns.scss */
+/* line 93, ../sass/_bars-btns.scss */
 body .container .custom-btn.disabled:hover,
 body .container .outline-btn.disabled:hover,
 body .container .line-btn.disabled:hover {
   opacity: 0.7;
 }
 
-/* line 94, ../sass/_bars-btns.scss */
+/* line 99, ../sass/_bars-btns.scss */
 .line-btn {
   display: inline-block;
   text-align: center;
@@ -39,17 +39,17 @@ body .container .line-btn.disabled:hover {
   text-decoration: none;
   opacity: 1;
 }
-/* line 20, ../sass/_bars-btns.scss */
-.line-btn span[class^="snf-font"] {
+/* line 25, ../sass/_bars-btns.scss */
+.line-btn .snf-font-remove {
   display: inline;
 }
-/* line 67, ../sass/_bars-btns.scss */
+/* line 72, ../sass/_bars-btns.scss */
 .line-btn:hover {
   color: #fff;
   border-bottom-color: #eeeeee;
 }
 
-/* line 98, ../sass/_bars-btns.scss */
+/* line 103, ../sass/_bars-btns.scss */
 .custom-btn {
   display: inline-block;
   text-align: center;
@@ -70,52 +70,52 @@ body .container .line-btn.disabled:hover {
   text-decoration: none;
   opacity: 1;
 }
-/* line 20, ../sass/_bars-btns.scss */
-.custom-btn span[class^="snf-font"] {
+/* line 25, ../sass/_bars-btns.scss */
+.custom-btn .snf-font-remove {
   display: inline;
 }
-/* line 49, ../sass/_bars-btns.scss */
+/* line 54, ../sass/_bars-btns.scss */
 .custom-btn span {
   border: 1px solid transparent;
   padding: 8px;
   background: transparent;
 }
-/* line 55, ../sass/_bars-btns.scss */
+/* line 60, ../sass/_bars-btns.scss */
 .custom-btn:hover span {
   color: white;
 }
-/* line 114, ../sass/_bars-btns.scss */
+/* line 119, ../sass/_bars-btns.scss */
 .custom-btn[data-karma="neutral"] {
   background-color: #3c96e0;
   border-color: #3c96e0;
 }
-/* line 118, ../sass/_bars-btns.scss */
+/* line 123, ../sass/_bars-btns.scss */
 .custom-btn[data-karma="good"] {
   background-color: #00a551;
   border-color: #00a551;
 }
-/* line 123, ../sass/_bars-btns.scss */
+/* line 128, ../sass/_bars-btns.scss */
 .custom-btn[data-karma="bad"] {
   background-color: #d2881f;
   border-color: #d2881f;
 }
-/* line 128, ../sass/_bars-btns.scss */
+/* line 133, ../sass/_bars-btns.scss */
 .custom-btn[data-caution="warning"][data-karma="good"], .custom-btn[data-caution="warning"][data-karma="neutral"] {
   background-color: #d2881f;
   border-color: #d2881f;
 }
-/* line 133, ../sass/_bars-btns.scss */
+/* line 138, ../sass/_bars-btns.scss */
 .custom-btn[data-caution="dangerous"][data-karma="bad"], .custom-btn[data-caution="dangerous"][data-karma="neutral"] {
   background-color: #e42a48;
   border-color: #e42a48;
 }
 
-/* line 142, ../sass/_bars-btns.scss */
+/* line 147, ../sass/_bars-btns.scss */
 .navbar a {
   color: #404040;
 }
 
-/* line 146, ../sass/_bars-btns.scss */
+/* line 151, ../sass/_bars-btns.scss */
 .main-nav {
   padding-left: 0;
   padding-right: 20px;
@@ -123,14 +123,14 @@ body .container .line-btn.disabled:hover {
   border: 0 none;
   z-index: 1040;
 }
-/* line 148, ../sass/_bars-btns.scss */
+/* line 153, ../sass/_bars-btns.scss */
 .main-nav > ul > li > a {
   height: 50px;
   line-height: 50px;
   padding: 0 12px;
   color: white;
 }
-/* line 153, ../sass/_bars-btns.scss */
+/* line 158, ../sass/_bars-btns.scss */
 .main-nav > ul > li > a.home-icon {
   padding: 0;
   height: 50px;
@@ -138,132 +138,132 @@ body .container .line-btn.disabled:hover {
   text-align: center;
   line-height: 50px;
 }
-/* line 159, ../sass/_bars-btns.scss */
+/* line 164, ../sass/_bars-btns.scss */
 .main-nav > ul > li > a.home-icon img {
   max-height: 50px;
 }
-/* line 162, ../sass/_bars-btns.scss */
+/* line 167, ../sass/_bars-btns.scss */
 .main-nav > ul > li > a.home-icon:hover {
   background: #333333;
 }
 
-/* line 179, ../sass/_bars-btns.scss */
+/* line 184, ../sass/_bars-btns.scss */
 .nav-simple {
   padding: 20px;
   border-bottom: 1px solid white;
 }
-/* line 182, ../sass/_bars-btns.scss */
+/* line 187, ../sass/_bars-btns.scss */
 .nav-simple .header {
   float: left;
   line-height: 40px;
   font-size: 26px;
 }
-/* line 186, ../sass/_bars-btns.scss */
+/* line 191, ../sass/_bars-btns.scss */
 .nav-simple .header img {
   max-height: 50px;
 }
-/* line 190, ../sass/_bars-btns.scss */
+/* line 195, ../sass/_bars-btns.scss */
 .nav-simple .login-info {
   float: right;
   position: relative;
   line-height: 40px;
   font-size: 16px;
 }
-/* line 191, ../sass/_bars-btns.scss */
+/* line 196, ../sass/_bars-btns.scss */
 .nav-simple .login-info .dropdown > a {
   color: #fff;
   display: inline-block;
   padding: 0 10px;
 }
-/* line 196, ../sass/_bars-btns.scss */
+/* line 201, ../sass/_bars-btns.scss */
 .nav-simple .login-info .dropdown-menu {
   top: 27px;
 }
 
-/* line 209, ../sass/_bars-btns.scss */
+/* line 214, ../sass/_bars-btns.scss */
 .dropdown .dropdown-menu.align-left a {
   text-align: left;
   padding-left: 11px;
 }
-/* line 213, ../sass/_bars-btns.scss */
+/* line 218, ../sass/_bars-btns.scss */
 .dropdown .dropdown-menu.align-right a {
   text-align: right;
 }
-/* line 217, ../sass/_bars-btns.scss */
+/* line 222, ../sass/_bars-btns.scss */
 .dropdown a:hover {
   text-decoration: none;
 }
 
-/* line 224, ../sass/_bars-btns.scss */
+/* line 229, ../sass/_bars-btns.scss */
 .login-info .drop
 .dropdown a {
   padding-left: 12px;
   padding-right: 12px;
   padding-bottom: 8px;
 }
-/* line 230, ../sass/_bars-btns.scss */
+/* line 235, ../sass/_bars-btns.scss */
 .login-info .dropdown:hover > a {
   color: #404040;
   background: white;
 }
-/* line 237, ../sass/_bars-btns.scss */
+/* line 242, ../sass/_bars-btns.scss */
 .login-info .dropdown-menu {
   right: 0;
   left: auto;
   border-radius: 0;
 }
 
-/* line 253, ../sass/_bars-btns.scss */
+/* line 258, ../sass/_bars-btns.scss */
 .sign-out span {
   margin-right: 10px;
   vertical-align: middle;
   font-size: 18px;
 }
 
-/* line 261, ../sass/_bars-btns.scss */
+/* line 266, ../sass/_bars-btns.scss */
 .label-notice {
   background: #5a5959;
 }
 
-/* line 265, ../sass/_bars-btns.scss */
+/* line 270, ../sass/_bars-btns.scss */
 .nav .dropdown:hover > ul.dropdown-menu, .nav-simple .dropdown:hover > ul.dropdown-menu {
   display: block;
 }
 
-/* line 269, ../sass/_bars-btns.scss */
+/* line 274, ../sass/_bars-btns.scss */
 .nav > li > a {
   padding-right: 12px;
   padding-left: 12px;
 }
 
 /* Submenu with bradcrumb */
-/* line 277, ../sass/_bars-btns.scss */
+/* line 282, ../sass/_bars-btns.scss */
 .sub-nav {
   top: 50px;
   padding-left: 20px;
   padding-right: 20px;
   min-height: initial;
 }
-/* line 284, ../sass/_bars-btns.scss */
+/* line 289, ../sass/_bars-btns.scss */
 .sub-nav .nav > li > a {
   padding-top: 8px;
   padding-bottom: 9px;
 }
 
 /* Sidebar */
-/* line 296, ../sass/_bars-btns.scss */
+/* line 301, ../sass/_bars-btns.scss */
 .sidebar {
   margin: 0 30px 0 0;
   width: 110px;
   height: auto;
   float: left;
 }
-/* line 301, ../sass/_bars-btns.scss */
+/* line 306, ../sass/_bars-btns.scss */
 .sidebar .btn-group-vertical {
   width: 100%;
 }
 
-/* line 306, ../sass/_bars-btns.scss */
+/* line 311, ../sass/_bars-btns.scss */
 .sidebar.sidebar-fixed {
   top: 80px;
   left: auto;
@@ -279,26 +279,26 @@ body .container .line-btn.disabled:hover {
 /*
 Positioning or customizing buttons
 */
-/* line 324, ../sass/_bars-btns.scss */
+/* line 329, ../sass/_bars-btns.scss */
 .sidebar .custom-btn {
   display: block;
   margin: 0 0 1em;
 }
-/* line 327, ../sass/_bars-btns.scss */
+/* line 332, ../sass/_bars-btns.scss */
 .sidebar .custom-btn span {
   padding: 8px;
 }
 
-/* line 333, ../sass/_bars-btns.scss */
+/* line 338, ../sass/_bars-btns.scss */
 body .custom-buttons {
   float: left;
   margin-right: 10px;
 }
-/* line 336, ../sass/_bars-btns.scss */
+/* line 341, ../sass/_bars-btns.scss */
 body .custom-buttons .line-btn {
   margin-right: 1em;
 }
-/* line 339, ../sass/_bars-btns.scss */
+/* line 344, ../sass/_bars-btns.scss */
 body .custom-buttons .disabled {
   display: none;
 }
@@ -306,61 +306,61 @@ body .custom-buttons .disabled {
 /*
 Extra-button is used to show total selected rows
 */
-/* line 357, ../sass/_bars-btns.scss */
+/* line 362, ../sass/_bars-btns.scss */
 .extra-btn span {
   display: inline-block;
 }
-/* line 360, ../sass/_bars-btns.scss */
+/* line 365, ../sass/_bars-btns.scss */
 .extra-btn .badge {
   background: transparent;
   line-height: 0.8;
   display: inline;
   padding: 0 5px 0 0;
 }
-/* line 365, ../sass/_bars-btns.scss */
+/* line 370, ../sass/_bars-btns.scss */
 .extra-btn .badge::before {
   content: "(";
 }
-/* line 368, ../sass/_bars-btns.scss */
+/* line 373, ../sass/_bars-btns.scss */
 .extra-btn .badge::after {
   content: ")";
 }
 
-/* line 374, ../sass/_bars-btns.scss */
+/* line 379, ../sass/_bars-btns.scss */
 .show-hide-all {
   float: right;
 }
-/* line 376, ../sass/_bars-btns.scss */
+/* line 381, ../sass/_bars-btns.scss */
 .show-hide-all em {
   font-style: normal;
 }
-/* line 379, ../sass/_bars-btns.scss */
+/* line 384, ../sass/_bars-btns.scss */
 .show-hide-all.line-btn {
   padding: 8px;
 }
-/* line 381, ../sass/_bars-btns.scss */
+/* line 386, ../sass/_bars-btns.scss */
 .show-hide-all.line-btn span {
   display: inline;
 }
 
-/* line 387, ../sass/_bars-btns.scss */
+/* line 392, ../sass/_bars-btns.scss */
 .actions-per-item {
   padding-left: 35px;
 }
-/* line 389, ../sass/_bars-btns.scss */
+/* line 394, ../sass/_bars-btns.scss */
 .actions-per-item .custom-btn {
   margin: 10px 10px 10px 0;
 }
 
-/* line 394, ../sass/_bars-btns.scss */
+/* line 399, ../sass/_bars-btns.scss */
 .charts .well {
   padding-left: 140px;
 }
-/* line 397, ../sass/_bars-btns.scss */
+/* line 402, ../sass/_bars-btns.scss */
 .charts .sidebar {
   position: fixed;
 }
-/* line 400, ../sass/_bars-btns.scss */
+/* line 405, ../sass/_bars-btns.scss */
 .charts .sidebar a {
   margin-bottom: 1em;
   display: inline-block;
@@ -382,21 +382,21 @@ Extra-button is used to show total selected rows
   text-decoration: none;
   opacity: 1;
 }
-/* line 20, ../sass/_bars-btns.scss */
-.charts .sidebar a span[class^="snf-font"] {
+/* line 25, ../sass/_bars-btns.scss */
+.charts .sidebar a .snf-font-remove {
   display: inline;
 }
-/* line 31, ../sass/_bars-btns.scss */
+/* line 36, ../sass/_bars-btns.scss */
 .charts .sidebar a span {
   border: 1px solid transparent;
   padding: 8px;
   width: 100%;
 }
-/* line 37, ../sass/_bars-btns.scss */
+/* line 42, ../sass/_bars-btns.scss */
 .charts .sidebar a:hover span {
   border-color: white;
 }
-/* line 405, ../sass/_bars-btns.scss */
+/* line 410, ../sass/_bars-btns.scss */
 .charts .sidebar a.active {
   display: inline-block;
   text-align: center;
@@ -418,17 +418,17 @@ Extra-button is used to show total selected rows
   text-decoration: none;
   opacity: 1;
 }
-/* line 20, ../sass/_bars-btns.scss */
-.charts .sidebar a.active span[class^="snf-font"] {
+/* line 25, ../sass/_bars-btns.scss */
+.charts .sidebar a.active .snf-font-remove {
   display: inline;
 }
-/* line 49, ../sass/_bars-btns.scss */
+/* line 54, ../sass/_bars-btns.scss */
 .charts .sidebar a.active span {
   border: 1px solid transparent;
   padding: 8px;
   background: transparent;
 }
-/* line 55, ../sass/_bars-btns.scss */
+/* line 60, ../sass/_bars-btns.scss */
 .charts .sidebar a.active:hover span {
   color: white;
 }
@@ -3319,17 +3319,17 @@ a.disabled {
   text-decoration: none;
   opacity: 1;
 }
-/* line 20, ../sass/_bars-btns.scss */
-.app-list a span[class^="snf-font"] {
+/* line 25, ../sass/_bars-btns.scss */
+.app-list a .snf-font-remove {
   display: inline;
 }
-/* line 31, ../sass/_bars-btns.scss */
+/* line 36, ../sass/_bars-btns.scss */
 .app-list a span {
   border: 1px solid transparent;
   padding: 12px 10px;
   width: 100%;
 }
-/* line 37, ../sass/_bars-btns.scss */
+/* line 42, ../sass/_bars-btns.scss */
 .app-list a:hover span {
   border-color: white;
 }

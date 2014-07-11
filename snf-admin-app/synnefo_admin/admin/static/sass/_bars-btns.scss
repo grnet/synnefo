@@ -17,9 +17,14 @@
 		text-decoration: none;
 		opacity: 1;
 	}
-    span[class^="snf-font"] {
-        display: inline;
-    }
+    // span[class^="snf-font"] {
+    //     display: inline;
+    // }
+
+    // temporary
+	.snf-font-remove {
+		display: inline;
+	}
 }
 
 

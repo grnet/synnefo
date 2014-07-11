@@ -77,14 +77,20 @@ $(document).ready(function(){
 		$(this).find('.cancel').trigger('click');
 	});
 
+	$('#toggle-notifications').click(function(e) {
+		e.preventDefault();
+		snf.modals.toggleBottomModal($notificationArea);
+	});
+
 	$(document).keyup(function(e) {
-		console.log(e.which, e.keyCode)
 		if (!($(e.target).closest("input")[0] || $(e.target).closest("textarea")[0])) {
 			if(e.keyCode === 73) {
-				snf.modals.toggleBottomModal($notificationArea);
+				$('#toggle-notifications').trigger('click');
 			}
 		}
 	});
+
+
 	$notificationArea.on('click', '.remove-log', function(e) {
 		e.preventDefault();
 		console.log($(this));
@@ -97,10 +103,12 @@ $(document).ready(function(){
 			}
 		});
 	});
+
 	$notificationArea.on('click', '.close-notifications', function(e) {
 		e.preventDefault();
 		snf.modals.hideBottomModal($notificationArea);
 	});
+
 	snf.modals.defaultEmailSubj = $('.modal[data-type="contact"]').find('.subject').val();
 	snf.modals.defaultEmailBody = $('.modal[data-type="contact"]').find('.email-content').val();
 });

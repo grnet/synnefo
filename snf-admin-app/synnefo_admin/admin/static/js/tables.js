@@ -165,13 +165,13 @@ $(document).ready(function() {
 	var btn2 = '<a href="" class="select select-all line-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>';
 	var btn3 = '<a href="" id="clear-all" class="disabled deselect line-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#clear-all-warning"><span class="snf-font-remove"></span><span>Clear All</span></a>';
 	var btn4 = '<a href="" class="disabled toggle-selected extra-btn line-btn" data-karma="neutral"><span class="text">Show selected </span><span class="badge num selected-num">0</span></a>';
-	var btn5 = '<a href="" id="reload-table" class="select line-btn" data-karma="neutral" data-caution="none"><span class="snf-font-reload"></span><span>Reload Table</span></a>';
+	var btn5 = '<a href="" id="reload-table" class="line-btn" data-karma="neutral" data-caution="none" title="Reload table"><span class="snf-font-reload"></span></a>';
 
 	if($actionbar.length > 0) {
-		$("div.custom-buttons").html(btn5+btn1+btn2+btn3+btn4);
+		$("div.custom-buttons:not(.bottom)").html(btn5+btn1+btn2+btn3+btn4);
 	}
 	else {
-		$("div.custom-buttons").html(btn5);
+		$("div.custom-buttons:not(.bottom)").html(btn5);
 	}
 	$('.container').on('click', '#reload-table', function(e) {
 		e.preventDefault();

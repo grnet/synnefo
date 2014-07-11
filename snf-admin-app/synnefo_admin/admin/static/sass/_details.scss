@@ -18,6 +18,8 @@
         letter-spacing: 1px;
  	    .lt{
             float: left;
+            max-width: 60%;
+            word-wrap: break-word;
         }
         .rt {
             overflow: hidden;

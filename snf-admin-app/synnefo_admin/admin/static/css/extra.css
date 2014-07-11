@@ -2401,99 +2401,101 @@ Extra-button is used to show total selected rows
 /* line 19, ../sass/_details.scss */
 .object-details h4 .lt {
   float: left;
+  max-width: 60%;
+  word-wrap: break-word;
 }
-/* line 22, ../sass/_details.scss */
+/* line 24, ../sass/_details.scss */
 .object-details h4 .rt {
   overflow: hidden;
 }
-/* line 25, ../sass/_details.scss */
+/* line 27, ../sass/_details.scss */
 .object-details h4 .arrow {
   position: relative;
   padding: 0 8px;
 }
-/* line 28, ../sass/_details.scss */
+/* line 30, ../sass/_details.scss */
 .object-details h4 .arrow:hover {
   top: 2px;
   cursor: pointer;
 }
-/* line 33, ../sass/_details.scss */
+/* line 35, ../sass/_details.scss */
 .object-details h4 .label {
   float: right;
   margin-left: 15px;
   margin-bottom: 10px;
 }
-/* line 37, ../sass/_details.scss */
+/* line 39, ../sass/_details.scss */
 .object-details h4 .label.important {
   font-weight: bold;
 }
-/* line 41, ../sass/_details.scss */
+/* line 43, ../sass/_details.scss */
 .object-details h4 em {
   float: none;
 }
-/* line 43, ../sass/_details.scss */
+/* line 45, ../sass/_details.scss */
 .object-details h4 em.os-info {
   float: right;
   position: relative;
   bottom: 3px;
 }
-/* line 47, ../sass/_details.scss */
+/* line 49, ../sass/_details.scss */
 .object-details h4 em.os-info img {
   height: 26px;
 }
-/* line 53, ../sass/_details.scss */
+/* line 55, ../sass/_details.scss */
 .object-details h3 {
   font-size: 18px;
   margin: 0 0 1em;
   font-weight: 400;
   line-height: 35px;
 }
-/* line 58, ../sass/_details.scss */
+/* line 60, ../sass/_details.scss */
 .object-details h3 em {
   margin-left: 10px;
   font-size: 14px;
 }
-/* line 62, ../sass/_details.scss */
+/* line 64, ../sass/_details.scss */
 .object-details h3 span[class^="snf-details"] {
   float: left;
   margin-right: 8px;
   font-size: 35px;
 }
-/* line 68, ../sass/_details.scss */
+/* line 70, ../sass/_details.scss */
 .object-details .icon-link {
   margin-right: 10px;
 }
-/* line 71, ../sass/_details.scss */
+/* line 73, ../sass/_details.scss */
 .object-details p {
   margin: 10px 20px;
   font-style: italic;
 }
-/* line 76, ../sass/_details.scss */
+/* line 78, ../sass/_details.scss */
 .object-details .length {
   margin-left: 6px;
   border: 0 none;
   font-style: italic;
 }
-/* line 80, ../sass/_details.scss */
+/* line 82, ../sass/_details.scss */
 .object-details .length::before {
   content: '( ';
 }
-/* line 83, ../sass/_details.scss */
+/* line 85, ../sass/_details.scss */
 .object-details .length::after {
   content: ' )';
 }
-/* line 87, ../sass/_details.scss */
+/* line 89, ../sass/_details.scss */
 .object-details > .object-details {
   margin-left: -20px;
   margin-right: -20px;
   padding: 12px 20px;
 }
 
-/* line 95, ../sass/_details.scss */
+/* line 97, ../sass/_details.scss */
 .object-details-content .nav-tabs > li a {
   opacity: 0.7;
   color: white;
 }
-/* line 99, ../sass/_details.scss */
+/* line 101, ../sass/_details.scss */
 .object-details-content .nav-tabs > li.active > a {
   opacity: 1;
   border-color: transparent;
@@ -2501,7 +2503,7 @@ Extra-button is used to show total selected rows
   color: white;
   border-radius: 0;
 }
-/* line 106, ../sass/_details.scss */
+/* line 108, ../sass/_details.scss */
 .object-details-content .nav-tabs > li:not(.active) > a:hover {
   opacity: 1;
   color: white;
@@ -2509,56 +2511,56 @@ Extra-button is used to show total selected rows
   background: transparent;
 }
 
-/* line 114, ../sass/_details.scss */
+/* line 116, ../sass/_details.scss */
 .tab-pane {
   overflow: auto;
 }
 
-/* line 119, ../sass/_details.scss */
+/* line 121, ../sass/_details.scss */
 .part-two h2 {
   font-size: 24px;
   margin-bottom: 2em;
   padding-top: 1em;
   border-top: 2px solid #818181;
 }
-/* line 126, ../sass/_details.scss */
+/* line 128, ../sass/_details.scss */
 .part-two > .object-details {
   border-bottom: 2px solid #818181;
   background: #383838;
   padding: 14px 20px;
 }
-/* line 130, ../sass/_details.scss */
+/* line 132, ../sass/_details.scss */
 .part-two > .object-details .object-details {
   padding: 5px 20px;
 }
-/* line 132, ../sass/_details.scss */
+/* line 134, ../sass/_details.scss */
 .part-two > .object-details .object-details:hover {
   background: #3d3d3d;
 }
-/* line 137, ../sass/_details.scss */
+/* line 139, ../sass/_details.scss */
 .part-two > .object-details .custom-btn span {
   padding: 5px;
 }
-/* line 142, ../sass/_details.scss */
+/* line 144, ../sass/_details.scss */
 .part-two .object-details-content {
   padding: 0 35px;
 }
 
-/* line 174, ../sass/_details.scss */
+/* line 176, ../sass/_details.scss */
 .show-hide-all span.snf-font-arrow-up {
   display: none;
   padding: 0;
 }
-/* line 179, ../sass/_details.scss */
+/* line 181, ../sass/_details.scss */
 .show-hide-all span.snf-font-arrow-down {
   display: inline;
   padding: 0;
 }
-/* line 185, ../sass/_details.scss */
+/* line 187, ../sass/_details.scss */
 .show-hide-all.open .snf-font-arrow-up {
   display: inline;
 }
-/* line 188, ../sass/_details.scss */
+/* line 190, ../sass/_details.scss */
 .show-hide-all.open .snf-font-arrow-down {
   display: none;
 }

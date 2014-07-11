@@ -1,6 +1,8 @@
-$secondary-link-color: #fff;
-$snf_gray-dark:              #404040;
-$snf_gray-light:             #5A5959;
+// Palette;
+
+$snf_gray-dark:              #303030;
+$snf_gray-light:             #4e4e4e;
+$ciel: #4d99d8;
 $blue-light: #B2CAE9;
 $blue-light-extra: #AFC6D6;
 $blue-intense: #3C96E0;
@@ -9,9 +11,24 @@ $green-intense: #00a551;
 $green-intense-extra: darken($green-intense, 10%);
 $red-intense: #E42A48;
 $orange-intense: #D2881F;
-
 $almost-white: #eeeeee;
 $total-black: #222;
+$hover-nav-color: #333;
+
+// Text and background colors/
+
+$snf_body-bg:               $snf_gray-dark;
+$snf_text-color:            white;
+$snf_reverse-text-color:    $snf_gray-dark;
+
+
+// Link colors
+
+$snf_link-color:            $ciel;
+$secondary-link-color:      #fff;
+
+// State colors
+
 
 
 // Βutton colors

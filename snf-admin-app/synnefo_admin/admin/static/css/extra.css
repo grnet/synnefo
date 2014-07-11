@@ -112,7 +112,7 @@ body .container .line-btn.disabled:hover {
 
 /* line 147, ../sass/_bars-btns.scss */
 .navbar a {
-  color: #404040;
+  color: #303030;
 }
 
 /* line 151, ../sass/_bars-btns.scss */
@@ -203,7 +203,7 @@ body .container .line-btn.disabled:hover {
 }
 /* line 235, ../sass/_bars-btns.scss */
 .login-info .dropdown:hover > a {
-  color: #404040;
+  color: #303030;
   background: white;
 }
 /* line 242, ../sass/_bars-btns.scss */
@@ -222,7 +222,7 @@ body .container .line-btn.disabled:hover {
 
 /* line 266, ../sass/_bars-btns.scss */
 .label-notice {
-  background: #5a5959;
+  background: #4e4e4e;
 }
 
 /* line 270, ../sass/_bars-btns.scss */
@@ -2497,7 +2497,7 @@ Extra-button is used to show total selected rows
 .object-details-content .nav-tabs > li.active > a {
   opacity: 1;
   border-color: transparent;
-  background: #5a5959;
+  background: #4e4e4e;
   color: white;
   border-radius: 0;
 }
@@ -2515,43 +2515,50 @@ Extra-button is used to show total selected rows
 }
 
 /* line 119, ../sass/_details.scss */
+.part-two h2 {
+  font-size: 24px;
+  margin-bottom: 2em;
+  padding-top: 1em;
+  border-top: 2px solid #818181;
+}
+/* line 126, ../sass/_details.scss */
 .part-two > .object-details {
-  border-top: 2px solid #8d8c8c;
-  background: #484848;
+  border-bottom: 2px solid #818181;
+  background: #383838;
   padding: 14px 20px;
 }
-/* line 123, ../sass/_details.scss */
+/* line 130, ../sass/_details.scss */
 .part-two > .object-details .object-details {
   padding: 5px 20px;
 }
-/* line 125, ../sass/_details.scss */
+/* line 132, ../sass/_details.scss */
 .part-two > .object-details .object-details:hover {
-  background: #4d4d4d;
+  background: #3d3d3d;
 }
-/* line 130, ../sass/_details.scss */
+/* line 137, ../sass/_details.scss */
+.part-two > .object-details .custom-btn span {
+  padding: 5px;
+}
+/* line 142, ../sass/_details.scss */
 .part-two .object-details-content {
   padding: 0 35px;
 }
-/* line 134, ../sass/_details.scss */
-.part-two .custom-btn span {
-  padding: 5px;
-}
 
-/* line 166, ../sass/_details.scss */
+/* line 174, ../sass/_details.scss */
 .show-hide-all span.snf-font-arrow-up {
   display: none;
   padding: 0;
 }
-/* line 171, ../sass/_details.scss */
+/* line 179, ../sass/_details.scss */
 .show-hide-all span.snf-font-arrow-down {
   display: inline;
   padding: 0;
 }
-/* line 177, ../sass/_details.scss */
+/* line 185, ../sass/_details.scss */
 .show-hide-all.open .snf-font-arrow-up {
   display: inline;
 }
-/* line 180, ../sass/_details.scss */
+/* line 188, ../sass/_details.scss */
 .show-hide-all.open .snf-font-arrow-down {
   display: none;
 }
@@ -2597,7 +2604,7 @@ Extra-button is used to show total selected rows
   line-height: 30px;
   border: 0 none;
   padding: 0 10px;
-  color: #404040;
+  color: #303030;
   background: transparent;
   font-weight: normal;
 }
@@ -2631,7 +2638,7 @@ Extra-button is used to show total selected rows
 }
 /* line 76, ../sass/_filters.scss */
 .filter-dropdown .dropdown a {
-  color: #404040;
+  color: #303030;
 }
 /* line 79, ../sass/_filters.scss */
 .filter-dropdown .dropdown .dropdown-menu {
@@ -2666,7 +2673,7 @@ p.progress-area {
 
 /* line 6, ../sass/_modals.scss */
 .in-progress .modal-body {
-  background-color: #8d8c8c;
+  background-color: #818181;
 }
 /* line 8, ../sass/_modals.scss */
 .in-progress .modal-body p.progress-area {
@@ -2726,8 +2733,8 @@ p.progress-area {
 /* line 65, ../sass/_modals.scss */
 .modal .modal-footer .custom-btn:first-child {
   float: left;
-  background-color: #404040;
-  border-color: #404040;
+  background-color: #303030;
+  border-color: #303030;
 }
 
 /* line 75, ../sass/_modals.scss */
@@ -2741,7 +2748,7 @@ p.progress-area {
 }
 /* line 83, ../sass/_modals.scss */
 .modal[data-karma="dark"] .elem {
-  color: #5a5959;
+  color: #4e4e4e;
 }
 /* line 88, ../sass/_modals.scss */
 .modal[data-karma="neutral"] .elem {
@@ -2795,7 +2802,7 @@ p.progress-area {
 /* line 144, ../sass/_modals.scss */
 .modal .popover h2 {
   font-size: 16px;
-  color: #404040;
+  color: #303030;
   font-weight: bold;
   text-align: center;
 }
@@ -2803,7 +2810,7 @@ p.progress-area {
 /* line 154, ../sass/_modals.scss */
 .modal-content {
   padding: 20px;
-  color: #404040;
+  color: #303030;
 }
 /* line 157, ../sass/_modals.scss */
 .modal-content .badge {
@@ -2967,7 +2974,7 @@ table:not(.table-selected) td:last-child dl {
 #table-items-selected_filter input {
   display: inline-block;
   margin-left: 8px;
-  color: #404040;
+  color: #303030;
   outline: none;
   padding: 5px;
   border: 0 none;
@@ -3015,25 +3022,25 @@ table.dataTable tbody tr {
 }
 /* line 120, ../sass/_tables.scss */
 table.dataTable tbody tr.even {
-  background-color: #4d4d4d;
+  background-color: #3d3d3d;
 }
 
 /* line 126, ../sass/_tables.scss */
 table.dataTable thead th,
 table.dataTable thead td {
   border-bottom: 1px solid white;
-  border-top: 1px solid gray;
+  border-top: 1px solid #707070;
 }
 
 /* line 130, ../sass/_tables.scss */
 table.dataTable tbody tr:hover {
-  background-color: #5f5f5f;
+  background-color: #4f4f4f;
 }
 
 /* line 133, ../sass/_tables.scss */
 table.dataTable tbody tr.selected {
   background-color: #eeeeee;
-  color: #404040;
+  color: #303030;
 }
 
 /* line 140, ../sass/_tables.scss */
@@ -3070,7 +3077,7 @@ table.dataTable.no-footer {
 
 /* line 170, ../sass/_tables.scss */
 .container .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-  background: #404040;
+  background: #303030;
   border-color: white;
 }
 
@@ -3093,7 +3100,7 @@ table.dataTable.no-footer {
 
 /* line 189, ../sass/_tables.scss */
 .dataTables_wrapper .dataTables_processing {
-  background: #5a5959;
+  background: #4e4e4e;
   color: white;
   padding: 5px 10px;
   -webkit-box-shadow: inset 0 0 5px #888888;
@@ -3435,7 +3442,7 @@ svg > text:last-child {
 .nav > li > a:hover,
 .nav > li > a:focus,
 .nav > li:hover > a {
-  color: #404040;
+  color: #303030;
   -webkit-transition: all 0 ease 0;
   transition: all 0 ease 0;
   background: #d9d9d9;
@@ -3451,7 +3458,7 @@ svg > text:last-child {
 
 /* line 204, ../sass/extra.scss */
 .nav > li.active > a {
-  color: #404040;
+  color: #303030;
   -webkit-transition: all 0 ease 0;
   transition: all 0 ease 0;
   background: white;
@@ -3467,7 +3474,7 @@ svg > text:last-child {
 .dropdown-menu {
   border-radius: 0;
   border: 0 none;
-  border-top: 1px solid #5a5959;
+  border-top: 1px solid #4e4e4e;
   background-color: white;
 }
 
@@ -3475,18 +3482,18 @@ svg > text:last-child {
 .dropdown-menu .active > a,
 .dropdown-menu .active > a:hover {
   background-color: #d9d9d9;
-  color: #404040;
+  color: #303030;
 }
 
 /* line 230, ../sass/extra.scss */
 .dropdown-menu li > a:hover {
   background-color: #d9d9d9;
-  color: #404040;
+  color: #303030;
 }
 
 /* line 235, ../sass/extra.scss */
 .sub-nav {
-  background: #5a5959;
+  background: #4e4e4e;
   border: 0 none;
 }
 /* line 239, ../sass/extra.scss */
@@ -3495,17 +3502,17 @@ svg > text:last-child {
 }
 /* line 243, ../sass/extra.scss */
 .sub-nav .nav > li:hover a {
-  color: #404040;
+  color: #303030;
 }
 
 /* line 250, ../sass/extra.scss */
 .tab-content {
-  background: #5a5959;
+  background: #4e4e4e;
   padding: 20px;
 }
 /* line 253, ../sass/extra.scss */
 .tab-content .well {
-  border-color: #5a5959;
+  border-color: #4e4e4e;
 }
 
 /* line 259, ../sass/extra.scss */
@@ -3527,7 +3534,7 @@ svg > text:last-child {
   position: fixed;
   bottom: 0px;
   background: white;
-  color: #404040;
+  color: #303030;
 }
 /* line 278, ../sass/extra.scss */
 .notify .container > *:not(:last-child) {
@@ -3568,14 +3575,14 @@ svg > text:last-child {
 .notify .warning {
   font-style: italic;
   font-weight: bold;
-  color: #5a5959;
+  color: #4e4e4e;
 }
 /* line 312, ../sass/extra.scss */
 .notify .close-notify {
   position: absolute;
   right: 20px;
   top: 20px;
-  color: #404040;
+  color: #303030;
 }
 /* line 317, ../sass/extra.scss */
 .notify .close-notify:hover {

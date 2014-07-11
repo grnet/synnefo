@@ -206,6 +206,5 @@ $('.main .object-details h4 .arrow').trigger('click')
 			$('[data-toggle="popover"]').popover('hide');
 		}
 	});
-
-	
+    
 });

@@ -274,7 +274,7 @@ svg>text:last-child {
 	position: fixed;
 	bottom: 0px;
 	background: $brand-primary;
-    color: $dark-text-color;
+    color: $snf_reverse-text-color;
     .container>*:not(:last-child) {
 			margin-bottom: 16px;
 	}

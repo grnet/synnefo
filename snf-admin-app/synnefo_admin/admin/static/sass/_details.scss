@@ -116,8 +116,15 @@
 }
 
 .part-two {
-	&>.object-details {
+     h2 {
+        font-size: 24px;
+        margin-bottom: 2em;
+        padding-top: 1em;
         border-top: 2px solid $gray-light-extra;		
+    }
+   
+	&>.object-details {
+        border-bottom: 2px solid $gray-light-extra;		
         background: lighten($body-bg, 3%);
 		padding:14px 20px;
 		.object-details {
@@ -126,15 +133,16 @@
                 background: lighten($body-bg, 5%);
             }
 		}
+        .custom-btn {
+            span {
+                padding: 5px;
+            }
+        }
     }
     .object-details-content {
         padding: 0 $details-title-height;
     }
-    .custom-btn {
-        span {
-            padding: 5px;
-        }
-    }
+    
 }
 
 

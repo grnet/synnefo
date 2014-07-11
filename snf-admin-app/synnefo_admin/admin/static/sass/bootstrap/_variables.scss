@@ -29,15 +29,15 @@ $brand-danger:          #d9534f !default;
 // ## Settings for some of the most global styles.
 
 //** Background color for `<body>`.
-$body-bg:               $gray-dark;
+$body-bg:               $snf_body-bg;
 //** Global text color on `<body>`.
-$text-color:            #fff;
-$dark-text-color:       $gray-dark;
+$text-color:            $snf_text-color;
+$reverse-text-color:    $snf_reverse-text-color;
 
 //** Global textual link color.
-$link-color:            #4D99D8;
+$link-color:            $snf_link-color;
 //** Link hover color set via `darken()` function.
-$link-hover-color:      lighten($link-color, 10%) !default;
+$link-hover-color:      lighten($link-color, 13%) !default;
 
 
 //== Typography

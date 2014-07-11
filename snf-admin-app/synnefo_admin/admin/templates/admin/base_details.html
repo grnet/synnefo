@@ -30,9 +30,11 @@
 
 </div>
 
-<div class="container part-two">
+<div class="container part-two">    
 
-    {# This is a list of associations for this item #}
+    <h2>Associations for <em>'{{ main_item|repr }}'</em> :</h2>
+
+        {# This is a list of associations for this item #}
     {% block item-associations-list %}
         {% for item_list, type, action_dict in associations_list %}
 

@@ -27,6 +27,7 @@
 # those of the authors and should not be interpreted as representing official
 # policies, either expressed or implied, of GRNET S.A.
 
+from importlib import import_module
 from collections import OrderedDict
 from django import template
 import logging
@@ -37,6 +38,7 @@ import django_filters
 import synnefo_admin.admin.projects.utils as project_utils
 import synnefo_admin.admin.users.utils as user_utils
 import synnefo_admin.admin.ip_logs.utils as iplog_utils
+mod = import_module('astakos.im.management.commands.project-show')
 
 register = template.Library()
 
@@ -256,6 +258,12 @@ def verbify(action):
     convention, will be a verb.
     """
     return action.split()[0].capitalize()
+
+
+@register.filter
+def get_project_members(project):
+    members, _ = mod.members_fields(project)
+    return members
 
 
 @register.filter

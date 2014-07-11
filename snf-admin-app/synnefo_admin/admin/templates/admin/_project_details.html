@@ -58,18 +58,19 @@
 		                <td></td>
 		            </thead>
 		            <tbody>
-		                {% for member in project.members.all %}
-		                <tr>
-		                    <td>{{ member.uuid }}</td>
-		                    <td>{{ member.realname }}</td>
-		                    <td>{{ member.status_display|upper }}</td>
-                            <td><a href="{% url admin-details page member.email %}">Details</a></td>
-		                </tr>
-		                {% empty %}
-		                <tr>
-		                    <td colspan=9>No members available</td>
-		                </tr>
+                        {% with members=project|get_project_members %}
+                        {% for m in members %}
+                            <tr>
+                                {% for val in m %}
+                                <td>{{ val }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan=9>No members available</td>
+                            </tr>
 		                {% endfor %}
+                        {% endwith %}
 		            </tbody>
 		        </table>
             </div>

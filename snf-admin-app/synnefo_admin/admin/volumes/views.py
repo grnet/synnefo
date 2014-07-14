@@ -37,7 +37,7 @@ from synnefo_admin.admin.associations import (
     NetworkAssociation, NicAssociation, IPAssociation, IPLogAssociation,
     ProjectAssociation)
 
-from .utils import get_volume, get_user_details_href
+from .utils import get_volume, get_user_details_href, get_vm_details_href
 from .actions import cached_actions
 from .filters import VolumeFilterSet
 
@@ -126,6 +126,12 @@ class VolumeJSONView(AdminJSONView):
             'value': get_user_details_href(inst),
             'visible': True,
         }
+        if inst.machine:
+            extra_dict['vm_info'] = {
+                'display_name': "VM",
+                'value': get_vm_details_href(inst),
+                'visible': True,
+            }
         extra_dict['description'] = {
             'display_name': "Description",
             'value': escape(inst.description) or "(not set)",

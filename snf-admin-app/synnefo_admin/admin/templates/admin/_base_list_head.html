@@ -1,12 +1,13 @@
 {% load admin_tags %}
+
 <div class="object-anchor" id="{{ type }}-area"></div>
 <div class="object-details info-block well {{ rowcls }}">
-{% if item_list|length > 0 and type != 'ip_log' %}
+{% if association.items|length > 0 and type != 'ip_log' %}
 <a href="#" class="show-hide-all line-btn">
     <span class="snf-font-arrow-up"></span>
     <span class="snf-font-arrow-down"></span>
     <span class="txt">Collapse All </span>
-    <em>({{item_list|length }})</em>
+    <em>({{ association.items|length }})</em>
 
 </a>
 {% endif %}
@@ -15,6 +16,9 @@
     {{ type|display_list_type }}
     <em> of '{{ main_item|repr }}'</em>
 </h3>
+Excluding {{ association.deleted }} deleted entries,
+Showing {{ association.showing }} / {{ association.total }} entries
+
 {% if type == 'ip_log' %}
 <table class="table">
     <thead>

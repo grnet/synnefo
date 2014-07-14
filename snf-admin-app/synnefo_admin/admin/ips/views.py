@@ -29,13 +29,18 @@ from astakos.im.models import AstakosUser, Project
 
 import django_filters
 
-from synnefo_admin import admin_settings as settings
+from synnefo_admin import admin_settings
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
 from synnefo_admin.admin.utils import get_actions, render_email
 from synnefo_admin.admin.users.utils import get_user
 from synnefo_admin.admin.tables import AdminJSONView
+from synnefo_admin.admin.associations import (
+    UserAssociation, QuotaAssociation, VMAssociation, VolumeAssociation,
+    NetworkAssociation, NicAssociation, IPAssociation, IPLogAssociation,
+    ProjectAssociation, SimpleVMAssociation, SimpleNetworkAssociation,
+    SimpleNicAssociation)
 
 from .utils import (get_contact_email, get_contact_name, get_user_details_href,
                     get_ip, get_network_details_href)
@@ -176,34 +181,41 @@ def catalog(request):
 def details(request, query):
     """Details view for Astakos users."""
     ip = get_ip(query)
+    associations = []
+    lim = admin_settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
+
     vm_list = [ip.nic.machine] if ip.in_use() else []
+    associations.append(SimpleVMAssociation(request, vm_list,))
+
     network_list = [ip.nic.network] if ip.in_use() else []
+    associations.append(SimpleNetworkAssociation(request, network_list,))
+
     nic_list = [ip.nic] if ip.in_use() else []
+    associations.append(SimpleNicAssociation(request, nic_list,))
+
     user_list = AstakosUser.objects.filter(uuid=ip.userid)
+    associations.append(UserAssociation(request, user_list,))
+
     project_list = Project.objects.filter(uuid=ip.project)
+    associations.append(ProjectAssociation(request, project_list,))
 
     ip_log_list = IPAddressLog.objects.filter(address=ip.address)\
         .order_by("allocated_at")
-    lim = settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
+    total = ip_log_list.count()
     ip_log_list = ip_log_list[:lim]
 
     for ipaddr in ip_log_list:
         ipaddr.vm = VirtualMachine.objects.get(id=ipaddr.server_id)
         ipaddr.network = Network.objects.get(id=ipaddr.network_id)
         ipaddr.user = AstakosUser.objects.get(uuid=ipaddr.vm.userid)
+    associations.append(IPLogAssociation(request, ip_log_list, total=total))
+
 
     context = {
         'main_item': ip,
         'main_type': 'ip',
         'action_dict': get_permitted_actions(cached_actions, request.user),
-        'associations_list': [
-            (vm_list, 'vm', get_actions("vm", request.user)),
-            (network_list, 'network', get_actions("network", request.user)),
-            (nic_list, 'nic', None),
-            (user_list, 'user', get_actions("user", request.user)),
-            (project_list, 'project', get_actions("project", request.user)),
-            (ip_log_list, 'ip_log', None),
-        ]
+        'associations_list': associations,
     }
 
     return context

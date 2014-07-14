@@ -5,20 +5,20 @@
         <li><a href="#{{ main_type }}-{{ main_item|id }}" class="link-to-anchor">
             {{ main_type|title }}: {{ main_item|repr }}</a>
         </li>
-    {% for item_list, type, _ in associations_list %}
-    {% if item_list %}
+    {% for association in associations_list %}
+    {% if association.items %}
       <li class="dropdown">
       <a href="#" data-toggle="dropdown">
-          {{ type|display_list_type }}
+          {{ association.type|display_list_type }}
           <span class="snf-angle-down arrow"></span>
         </a>
         <ul class="dropdown-menu">
-            <li><a href="#{{ type }}-area" class="link-to-anchor">All</a></li>
+            <li><a href="#{{ association.type }}-area" class="link-to-anchor">All</a></li>
             <li class="divider"></li>
 
-            {% if type != 'ip_log' %}
-            {% for item in item_list %}
-            <li><a href="#{{ type }}-{{ item|id }}" class="link-to-anchor">{{ item|repr }}</a></li>
+            {% if association.type != 'ip_log' %}
+            {% for item in association.items %}
+            <li><a href="#{{ association.type }}-{{ item|id }}" class="link-to-anchor">{{ item|repr }}</a></li>
             {% endfor %}
             {% endif %}
         </ul>

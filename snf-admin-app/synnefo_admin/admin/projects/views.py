@@ -20,7 +20,6 @@ from collections import OrderedDict
 from operator import itemgetter
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.utils.html import escape
 
@@ -50,6 +49,10 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_permitted_actions,)
 from synnefo_admin.admin.users.utils import get_user
 from synnefo_admin.admin.tables import AdminJSONView
+from synnefo_admin.admin.associations import (
+    UserAssociation, QuotaAssociation, VMAssociation, VolumeAssociation,
+    NetworkAssociation, NicAssociation, IPAssociation, IPLogAssociation,
+    ProjectAssociation)
 
 from .filters import ProjectFilterSet
 from .actions import cached_actions
@@ -233,24 +236,28 @@ def catalog(request):
 def details(request, query):
     """Details view for Astakos projects."""
     project = get_project(query)
+    associations = []
 
     user_list = project.members.all()
+    associations.append(UserAssociation(request, user_list,))
+
     vm_list = VirtualMachine.objects.filter(project=project.uuid)
+    associations.append(VMAssociation(request, vm_list,))
+
     volume_list = Volume.objects.filter(project=project.uuid)
+    associations.append(VolumeAssociation(request, volume_list,))
+
     network_list = Network.objects.filter(project=project.uuid)
+    associations.append(NetworkAssociation(request, network_list,))
+
     ip_list = IPAddress.objects.filter(project=project.uuid)
+    associations.append(IPAssociation(request, ip_list,))
 
     context = {
         'main_item': project,
         'main_type': 'project',
         'action_dict': get_permitted_actions(cached_actions, request.user),
-        'associations_list': [
-            (user_list, 'user', get_actions("user", request.user)),
-            (vm_list, 'vm', get_actions("vm", request.user)),
-            (volume_list, 'volume', get_actions("volume", request.user)),
-            (network_list, 'network', get_actions("network", request.user)),
-            (ip_list, 'ip', get_actions("ip", request.user)),
-        ]
+        'associations_list': associations,
     }
 
     return context

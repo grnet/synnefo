@@ -287,7 +287,7 @@ def details(request, type, id):
 
     mod = get_view_module(type)
     context = mod.details(request, id)
-    context = customize_details_context(context)
+    customize_details_context(context)
     context.update(default_dict)
     context.update({'view_type': 'details'})
 

@@ -176,6 +176,9 @@ def get_actions(target, user=None, inst=None):
     Note: this function will import the action module for the target, which
     means that it may be slow.
     """
+    if target in ['quota', 'nic', 'ip_log']:
+        return None
+
     mod = import_module('synnefo_admin.admin.%ss.actions' % target)
     actions = mod.cached_actions
     if inst:
@@ -239,43 +242,33 @@ def create_details_href(type, name, id):
     return href
 
 
-def exclude_deleted(qs, model_type):
+def filter_distinct(assoc):
+    if assoc.qs:
+        assoc.qs = assoc.qs.distinct()
+
+
+def exclude_deleted(assoc):
     """Exclude deleted items."""
-    if admin_settings.ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS:
-        return qs
+    if admin_settings.ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS or not assoc.qs:
+        return
 
-    if isinstance(qs, list):
-        return qs
+    if assoc.type in ['vm', 'volume', 'network', 'ip']:
+        assoc.qs = assoc.qs.exclude(deleted=True)
+    elif assoc.type == 'nic':
+        assoc.qs = assoc.qs.exclude(machine__deleted=True)
 
-    if model_type in ['vm', 'volume', 'network', 'ip']:
-        return qs.exclude(deleted=True)
-    elif model_type == 'nic':
-        return qs.exclude(machine__deleted=True)
-    else:
-        return qs
+    assoc.deleted = assoc.total - assoc.qs.count()
 
 
-def filter_distinct(qs, model_type):
-    if isinstance(qs, list) or model_type == 'ip_log':
-        return qs
-    return qs.distinct()
-
-
-def limit_associations(qs):
+def limit_shown(assoc):
     limit = admin_settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
-    return qs[:limit]
+    assoc.items = assoc.items[:limit]
+    assoc.showing = assoc.count_items()
 
 
 def customize_details_context(context):
     """Perform generic customizations on the detail context."""
-    new_assoc = []
     for assoc in context['associations_list']:
-        qs = assoc[0]
-        assoc = list(assoc)
-        qs = exclude_deleted(qs, assoc[1])
-        qs = filter_distinct(qs, assoc[1])
-        qs = limit_associations(qs)
-        assoc[0] = qs
-        new_assoc.append(assoc)
-    context['associations_list'] = new_assoc
-    return context
+        filter_distinct(assoc)
+        exclude_deleted(assoc)
+        limit_shown(assoc)

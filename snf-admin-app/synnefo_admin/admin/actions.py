@@ -20,7 +20,7 @@ from snf_django.lib.api import faults
 from astakos.im.functions import ProjectConflict
 
 
-class AdminAction:
+class AdminAction(object):
 
     """Generic class for actions on admin targets.
 

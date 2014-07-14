@@ -17,7 +17,7 @@
             {% if ip.floating_ip %}
             <span class="label">FLOATING</span>
             {% endif %}
-            <span class="label">IP Version: {{ ip.ipversion|upper }}</span>
+            <span class="label">IPv{{ ip.ipversion }}</span>
         </span>
     </h4>
         <div class="tags">

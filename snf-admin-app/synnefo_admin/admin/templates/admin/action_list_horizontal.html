@@ -1,6 +1,6 @@
 {% load admin_tags %}
 <div class="actions-per-item actions">
-    {% for op, action in action_dict.items %}
+    {% for op, action in association.actions.items %}
     {% if action|can_apply:item %}
     <a href="" data-target="#{{action.target}}-{{ op }}" data-action="{{ op }}" data-toggle="modal" data-karma="{{ action.karma }}" data-caution="{{ action.caution_level }}" class="custom-btn">
         <span>{{ action.name }}</span>

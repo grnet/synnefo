@@ -32,6 +32,10 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
 from synnefo_admin.admin.utils import get_actions, render_email
 from synnefo_admin.admin.users.utils import get_user
 from synnefo_admin.admin.tables import AdminJSONView
+from synnefo_admin.admin.associations import (
+    UserAssociation, QuotaAssociation, VMAssociation, VolumeAssociation,
+    NetworkAssociation, NicAssociation, IPAssociation, IPLogAssociation,
+    ProjectAssociation)
 
 from .utils import get_volume, get_user_details_href
 from .actions import cached_actions
@@ -167,19 +171,22 @@ def catalog(request):
 def details(request, query):
     """Details view for Astakos users."""
     volume = get_volume(query)
+    associations = []
+
     vm_list = VirtualMachine.objects.filter(volumes=volume)
+    associations.append(VMAssociation(request, vm_list,))
+
     user_list = AstakosUser.objects.filter(uuid=volume.userid)
+    associations.append(UserAssociation(request, user_list,))
+
     project_list = Project.objects.filter(uuid=volume.project)
+    associations.append(ProjectAssociation(request, project_list,))
 
     context = {
         'main_item': volume,
         'main_type': 'volume',
         'action_dict': get_permitted_actions(cached_actions, request.user),
-        'associations_list': [
-            (vm_list, 'vm', get_actions("vm", request.user)),
-            (user_list, 'user', get_actions("user", request.user)),
-            (project_list, 'project', get_actions("project", request.user)),
-        ]
+        'associations_list': associations,
     }
 
     return context

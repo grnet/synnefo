@@ -37,13 +37,17 @@ from synnefo.util import units
 import django_filters
 from django.db.models import Q
 
-from synnefo_admin import admin_settings as settings
+from synnefo_admin import admin_settings
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
 from synnefo_admin.admin.utils import (get_actions, render_email,
                                        create_details_href,)
 from synnefo_admin.admin.tables import AdminJSONView
+from synnefo_admin.admin.associations import (
+    UserAssociation, QuotaAssociation, VMAssociation, VolumeAssociation,
+    NetworkAssociation, NicAssociation, IPAssociation, IPLogAssociation,
+    ProjectAssociation)
 
 from .utils import (get_user, get_quotas, get_user_groups,
                     get_enabled_providers, get_suspended_vms, )
@@ -197,47 +201,51 @@ def catalog(request):
 def details(request, query):
     """Details view for Astakos users."""
     user = get_user(query)
+    associations = []
+    lim = admin_settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
+
     quota_list = get_quotas(user)
+    total = len(quota_list)
+    quota_list = quota_list[:lim]
+    associations.append(QuotaAssociation(request, quota_list, total=total))
 
     qor = Q(members=user) | Q(last_application__applicant=user)
     project_list = Project.objects.filter(qor)
+    associations.append(ProjectAssociation(request, project_list))
 
     vm_list = VirtualMachine.objects.filter(userid=user.uuid)
+    associations.append(VMAssociation(request, vm_list))
 
     volume_list = Volume.objects.filter(userid=user.uuid)
+    associations.append(VolumeAssociation(request, volume_list))
 
     qor = Q(public=True, nics__machine__userid=user.uuid) | Q(userid=user.uuid)
     network_list = Network.objects.filter(qor)
+    associations.append(NetworkAssociation(request, network_list))
 
     nic_list = NetworkInterface.objects.filter(userid=user.uuid)
+    associations.append(NicAssociation(request, nic_list))
 
     ip_list = IPAddress.objects.filter(userid=user.uuid)
+    associations.append(IPAssociation(request, ip_list))
 
     vm_ids = VirtualMachine.objects.filter(userid=user.uuid).values('pk')
     ip_log_list = IPAddressLog.objects.filter(server_id__in=vm_ids).\
         order_by("allocated_at")
-    lim = settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
+    total = ip_log_list.count()
     ip_log_list = ip_log_list[:lim]
 
     for ipaddr in ip_log_list:
         ipaddr.vm = VirtualMachine.objects.get(id=ipaddr.server_id)
         ipaddr.network = Network.objects.get(id=ipaddr.network_id)
         ipaddr.user = user
+    associations.append(IPLogAssociation(request, ip_log_list, total=total))
 
     context = {
         'main_item': user,
         'main_type': 'user',
         'action_dict': get_permitted_actions(cached_actions, request.user),
-        'associations_list': [
-            (quota_list, 'quota', None),
-            (project_list, 'project', get_actions("project", request.user)),
-            (vm_list, 'vm', get_actions("vm", request.user)),
-            (volume_list, 'volume', get_actions("volume", request.user)),
-            (network_list, 'network', get_actions("network", request.user)),
-            (nic_list, 'nic', None),
-            (ip_list, 'ip', get_actions("ip", request.user)),
-            (ip_log_list, 'ip_log', None),
-        ]
+        'associations_list': associations,
     }
 
     return context

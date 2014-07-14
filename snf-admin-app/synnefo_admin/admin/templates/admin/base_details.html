@@ -30,13 +30,14 @@
 
 </div>
 
-<div class="container part-two">    
+<div class="container part-two">
 
     <h2>Associations for <em>'{{ main_item|repr }}'</em> :</h2>
 
-        {# This is a list of associations for this item #}
+    {# This is a list of associations for this item #}
     {% block item-associations-list %}
-        {% for item_list, type, action_dict in associations_list %}
+        {% for association in associations_list %}
+        {% with type=association.type %}
 
             {# Seperator for the start of the list #}
             {% block item-list-head %}
@@ -45,7 +46,7 @@
 
             {# This is an item list for each association #}
             {% block item-list %}
-                {% for item in item_list %}
+                {% for item in association.items %}
 
 	                <!-- {% cycle 'row1' 'row2' as rowcls %}  -->
                     {# Details for an item in the list #}
@@ -62,6 +63,7 @@
                 {% include "admin/_base_list_tail.html" %}
             {% endblock item-list-tail %}
 
+        {% endwith %}
         {% empty %}
         <p>No associations for this item</p>
         {% endfor %}

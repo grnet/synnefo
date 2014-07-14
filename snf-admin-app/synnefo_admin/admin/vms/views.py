@@ -36,13 +36,17 @@ from synnefo.management.common import wait_server_task
 
 import django_filters
 
-from synnefo_admin import admin_settings as settings
+from synnefo_admin import admin_settings
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
 from synnefo_admin.admin.utils import get_actions, render_email
 from synnefo_admin.admin.users.utils import get_user
 from synnefo_admin.admin.tables import AdminJSONView
+from synnefo_admin.admin.associations import (
+    UserAssociation, QuotaAssociation, VMAssociation, VolumeAssociation,
+    NetworkAssociation, NicAssociation, IPAssociation, IPLogAssociation,
+    ProjectAssociation)
 
 from .utils import get_flavor_info, get_vm, get_user_details_href
 from .filters import VMFilterSet
@@ -206,37 +210,43 @@ def catalog(request):
 def details(request, query):
     """Details view for Astakos users."""
     vm = get_vm(query)
+    associations = []
+    lim = admin_settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
+
     user_list = AstakosUser.objects.filter(uuid=vm.userid)
+    associations.append(UserAssociation(request, user_list,))
+
     project_list = Project.objects.filter(uuid=vm.project)
+    associations.append(ProjectAssociation(request, project_list,))
+
     volume_list = vm.volumes.all()
+    associations.append(VolumeAssociation(request, volume_list,))
+
     network_list = Network.objects.filter(machines__pk=vm.pk)
+    associations.append(NetworkAssociation(request, network_list,))
+
     nic_list = vm.nics.all()
-    ip_list = [nic.ips.all() for nic in nic_list]
-    ip_list = reduce(or_, ip_list) if ip_list else ip_list
+    associations.append(NicAssociation(request, nic_list,))
+
+    ip_list = IPAddress.objects.filter(nic__in=vm.nics.all())
+    associations.append(IPAssociation(request, ip_list,))
 
     ip_log_list = IPAddressLog.objects.filter(server_id=vm.pk)\
         .order_by("allocated_at")
-    lim = settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
+    total = ip_log_list.count()
     ip_log_list = ip_log_list[:lim]
 
     for ipaddr in ip_log_list:
         ipaddr.vm = vm
         ipaddr.network = Network.objects.get(id=ipaddr.network_id)
         ipaddr.user = AstakosUser.objects.get(uuid=ipaddr.vm.userid)
+    associations.append(IPLogAssociation(request, ip_log_list, total=total))
 
     context = {
         'main_item': vm,
         'main_type': 'vm',
         'action_dict': get_permitted_actions(cached_actions, request.user),
-        'associations_list': [
-            (user_list, 'user', get_actions("user", request.user)),
-            (project_list, 'project', get_actions("project", request.user)),
-            (volume_list, 'volume', get_actions("volume", request.user)),
-            (network_list, 'network', get_actions("network", request.user)),
-            (nic_list, 'nic', None),
-            (ip_list, 'ip', get_actions("ip", request.user)),
-            (ip_log_list, 'ip_log', None),
-        ]
+        'associations_list': associations,
     }
 
     return context

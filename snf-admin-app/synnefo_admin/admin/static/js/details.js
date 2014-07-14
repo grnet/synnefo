@@ -11,34 +11,49 @@ $(document).ready(function(){
 	$('.object-details h4 .arrow').click(function(){
 		var $expandBtn = $(this);
 		var hasNotClass = !$expandBtn.closest('h4').hasClass('expanded');
+		$expandBtn.closest('h4').toggleClass('expanded');
 
 		if(hasNotClass) {
 			$expandBtn.removeClass('snf-angle-down').addClass('snf-angle-up');
 			$expandBtn.closest('h4').siblings('.object-details-content').stop().slideDown('slow');
 		}
 		else {
-			$(this).closest('h4').find('.arrow').removeClass('snf-angle-up').addClass('snf-angle-down')
+			$expandBtn.removeClass('snf-angle-up').addClass('snf-angle-down')
 			$expandBtn.closest('h4').siblings('.object-details-content').stop().slideUp('slow');
 		}
 
 		var $areas = $expandBtn.closest('.info-block.object-details') // *** add another class
 
 		var allSameClass = true;
-		$expandBtn.closest('h4').toggleClass('expanded');
 
 		($areas.find('.object-details')).each(function() {
-			if(hasNotClass)
+			if(hasNotClass){
 				allSameClass = allSameClass && $(this).find('h4').hasClass('expanded');
-			else
+			}
+			else{
 				allSameClass = allSameClass && !$(this).find('h4').hasClass('expanded');
+			}
 
-			if(!allSameClass)
+			if(!allSameClass){
 				return false;
+			}
 		});
+		var $toggleAllBtn = $expandBtn.closest('.info-block.object-details').find('.show-hide-all');
 		if(allSameClass){
-			console.log('STAMATA NA ANOIGEIS TA PANTA!')
-					$expandBtn.closest('.info-block.object-details').find('.show-hide-all').trigger('click');
-				}
+			console.log('toggle all');
+			if($expandBtn.closest('h4').hasClass('expanded')){
+				$toggleAllBtn.addClass('open');
+				$toggleAllBtn.find('.txt').text(txt_all[1]);
+			}
+			else {
+				$toggleAllBtn.removeClass('open');
+				$toggleAllBtn.find('.txt').text(txt_all[0]);
+			}
+		}
+		else {
+			$toggleAllBtn.removeClass('open');
+			$toggleAllBtn.find('.txt').text(txt_all[0]);
+		}
 	});
 
 	   // hide/show expand/collapse 

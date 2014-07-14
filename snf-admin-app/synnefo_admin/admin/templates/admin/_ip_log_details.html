@@ -4,7 +4,7 @@
 <tr>
     <td>
         {% if ip_log.address|ip_exists %}
-            <a href={% url admin-details 'ip' ip_log.address %}>{{ ip_log.address }}aaaa</a>
+            <a href={% url admin-details 'ip' ip_log.address %}>{{ ip_log.address }}</a>
         {% else %}
             {{ ip_log.address }}
         {% endif %}

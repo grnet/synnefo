@@ -88,6 +88,27 @@ Astakos
 * Projects can be set `private', making it accessible only to its owner and
   members.
 
+* Admin users API
+
+    * Extend astakos identity API to support user management functionality.
+    * Admin API related settings
+	* ``ADMIN_API_ENABLED``
+	  Whether or not the admin api endpoints will be enabled.
+
+	* ``ADMIN_API_PERMITTED_GROUPS``
+	  A list of group names for which users which belong to any of 
+	  them be granted full access to the admin API endpoints.
+
+*  Updated projects integration in UI
+
+    * Display both max per member/total in group quota in project views.
+    * Enhanced usage view to display individual resource usage details for
+      each of the projects the user is associated with.
+    * Display project usage statistics in project details view.
+    * Display system projects in admin project list view.
+    * Handle display of infinite resource quota values.
+
+
 Cyclades
 --------
 
@@ -100,7 +121,41 @@ Cyclades
 Cyclades UI
 -----------
 
+* In sync with the updated astakos projects API
+
+    * Include a project select widget within all resource create views, to let user 
+      decide the project that the created resources will be assigned to.
+    * Display resource assigned project in resource list views.
+    * Let user reassign resource project.
+
+* Volumes API integration.
+
+    * Introduce the Disks list/create views.
+    * Display machine attached disks in icon/single machine views.
+    * Use ``CYCLADES_VOLUME_MAX_SIZE`` setting to determine the 
+      maximum allowed disk size.
+
+* Integrate volume snapshots
+
+    * Include available snapshots in disk/vm create wizards.
+    * Disk snaphot create actions.
+    * The ui snapshoting functionality (snapshot actions and listing) 
+      can be enabled/disabled using the introduced ``UI_SNAPSHOTS_ENABLED`` 
+      setting.
+
 * Replace TigerVNC Java client with an HTML5 Websocket-based client (noVNC)
+
+* Other UI fixes
+
+    * Disabled suspended vm actions
+    * Custom error message for 413 api error response codes
+    * Enable resize actions from both info/actions subviews for active
+      machines
+    * Update images collection each time machine create wizard opens
+    * Fixed a couple of title truncate in several views
+    * Handle display of infinite resource quota values.
+    * Improve network create wizard. Support for custom gateway.
+    * Common font styling for all resource titles
 
 Pithos
 ------

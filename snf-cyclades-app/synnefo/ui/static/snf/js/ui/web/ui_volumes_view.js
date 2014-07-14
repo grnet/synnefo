@@ -927,9 +927,7 @@
           var vid = this.volume.get('id');
           var trunc = snf.util.truncate;
 
-          var date = '{0}-{1}-{2} {3}:{4}:{5}'.format(
-            d.getFullYear(), d.getMonth()+1, d.getDate(), d.getHours(), 
-            d.getMinutes(), d.getSeconds());
+          var date = synnefo.util.formatDate(d).replace(/\//g, '-');
             
           var trunc_len = 40;
           var sname = trunc(vname, trunc_len);

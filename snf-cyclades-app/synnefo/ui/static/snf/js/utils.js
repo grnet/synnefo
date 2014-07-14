@@ -242,7 +242,10 @@
             'allow_report': false,
             'type': 'Network'
         },
-        
+        'limit_error': {
+            'title': 'API error',
+            'message': 'Not enough quota available to perform this action.'
+        },
         'error': {
             'title': 'API error',
             'message': null
@@ -574,7 +577,7 @@
                 $.each(json_data, function(key, obj) {
                     code = obj.code;
                     details = obj.details;
-                    error_message = obj.message;
+                    error_message = obj.message ? obj.message : error_message;
                 })
             } else {
                 details = json_data;

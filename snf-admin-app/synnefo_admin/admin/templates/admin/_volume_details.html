@@ -13,6 +13,7 @@
             <span class="arrow  snf-angle-down"></span>
         </span>
         <span class="rt">
+            {{ volume|object_status_label|safe }}
             <span class="label">ID: {{ volume.pk }}</span>
             <span class="label">{{ volume.size }} GB</span>
             <span class="label">{{ volume.type|repr }}</span>

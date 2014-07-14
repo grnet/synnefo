@@ -59,8 +59,13 @@ def object_status_label(vm_or_net):
     """
     Return a span label styled based on the vm current status
     """
-    state = vm_or_net.operstate if hasattr(vm_or_net, 'operstate') else \
-        vm_or_net.state
+    if hasattr(vm_or_net, 'operstate'):
+        state = vm_or_net.operstate
+    elif hasattr(vm_or_net, 'status'):
+        state = vm_or_net.status
+    else:
+        state = vm_or_net.state
+
     state_cls = VM_STATE_CSS_MAP.get(state, 'notice')
     label_cls = "label label-%s" % state_cls
 

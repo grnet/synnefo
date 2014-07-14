@@ -720,6 +720,11 @@ class SynnefoCI(object):
             # targets.
             m = re.search("github.com/([^/]+)/([^/]+)/pull/(\d+)",
                           pull_request)
+            if m is None:
+                self.logger.error("Couldn't find a valid GitHub pull request"
+                                  " URL")
+                sys.exit(1)
+
             group = m.group(1)
             repo = m.group(2)
             pull_number = m.group(3)

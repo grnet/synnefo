@@ -42,7 +42,16 @@ body {
 
 .object-details-content     { display:none; }
 .account .object-details-content{ display:block; }
-.nav-tabs           { margin:0; border:0 none; }
+.nav.nav-tabs           { 
+    margin:0; 
+    border:0 none; 
+    li:not(.active):hover {
+        a {
+            color: white;
+            background: transparent;        
+        }
+    }
+}
 .tab-content .dl-horizontal   { margin:0; }
 .tab-content .dl-horizontal dd {
     word-wrap: break-word;
@@ -156,6 +165,10 @@ a:not([disabled]):hover {
 
 svg>text:last-child {
 	display: none;
+}
+
+.login-info .dropdown {
+    display: inline;
 }
 
 .dropdown .arrow {

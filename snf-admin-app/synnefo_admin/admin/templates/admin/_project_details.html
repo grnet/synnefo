@@ -5,14 +5,14 @@
 <div class="object-details {{ rowcls }}" data-id="{{project.uuid}}"
     data-type="{{type}}">
     <h4 class="clearfix">
-        <div class="lt">
+        <span class="lt">
             {% if type != main_type %}
             <a href="{% url admin-details type project.uuid %}" class="snf-search icon-link" title="Details for {{ project|repr }}"></a>
             {% endif %}
             <span class="title">{{ project|repr }}</span>
             <span class="arrow  snf-angle-down"></span>
-        </div>
-        <div class="rt">
+        </span>
+        <span class="rt">
             <span class="label">{{ project.state_display|upper }}</span>
             <span class="label">UUID: {{ project.uuid }}</span>
             {% if project.is_base %}
@@ -23,7 +23,7 @@
                 Members: {{ project.members_count }}
             {% endif %}
             </span>
-        </div>
+        </span>
     </h4>
     <div class="object-details-content">
         <ul class="nav nav-tabs">
@@ -52,9 +52,11 @@
             <div class="tab-pane" id="prj-members{{ project.uuid }}">
 		 		<table class="table">
 		            <thead>
-		                <td>UUID</td>
-		                <td>Name</td>
-		                <td>Status</td>
+                        <tr>
+                            <td>UUID</td>
+                            <td>Name</td>
+                            <td>Status</td>
+                        </tr>
 		            </thead>
 		            <tbody>
                         {% with members=project|get_project_members %}
@@ -66,7 +68,7 @@
                             </tr>
                         {% empty %}
                             <tr>
-                                <td colspan=9>No members available</td>
+                                <td colspan=3>No members available</td>
                             </tr>
 		                {% endfor %}
                         {% endwith %}
@@ -81,16 +83,18 @@
                     <dt>Leave policy</dt><dd>{{ project.member_leave_policy_display }}</dd>
                 </dl>
             </div>
+
             <div class="tab-pane" id="resources{{ project.uuid }}">
-                <dl class="dl-horizontal well">
-		 		<table class="table well">
+		 		<table class="table">
 		            <thead>
-                        <td></td>
-                        {% if not project.is_base %}
-                        <td><b>Max per Member</b></td>
-                        {% endif %}
-                        <td><b>Max per Project</b></td>
-                        <td><b>Usage</b></td>
+                        <tr>
+                            <th></th>
+                            {% if not project.is_base %}
+                            <th>Max per Member</th>
+                            {% endif %}
+                            <th>Max per Project</th>
+                            <th>Usage</th>
+                        </tr>
 		            </thead>
 		            <tbody>
                         {% with stats=project|get_project_stats %}
@@ -98,14 +102,13 @@
                             <tr>
                                 <td>{{ resource_name }}</td>
                                 {% for value in values %}
-                                    <td>{{ value }}</td>
+                                <td>{{ value }}</td>
                                 {% endfor %}
                             </tr>
                             {% endfor %}
                         {% endwith %}
 		            </tbody>
 		        </table>
-                </dl>
             </div>
         </div>
     </div>

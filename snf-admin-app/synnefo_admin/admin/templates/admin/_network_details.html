@@ -5,21 +5,21 @@
 <div class="network-details object-details {{ rowcls }}" data-id="{{network.pk}}"
     data-type="{{type}}">
     <h4 class="clearfix">
-        <div class="lt">
+        <span class="lt">
             {% if type != main_type %}
             <a href="{% url admin-details type network.pk %}" class="snf-search icon-link" title="Details for {{ network|repr }}"></a>
             {% endif %}
             <span class="title">{{ network|repr }}</span>
 		    <span class="arrow  snf-angle-down"></span>
-		</div>
-        <div class="rt">
+		</span>
+        <span class="rt">
             {{ network|network_deleted_label|safe }}
 	        {{ network|object_status_label|safe }}
 		    <span class="label">ID: {{ network.pk }}</span>
             {% if network.public %}
                 <span class="label">PUBLIC</span>
             {% endif %}
-        </div>
+        </span>
     </h4>
     <div class="network-details-content object-details-content">
         <ul class="nav nav-tabs">

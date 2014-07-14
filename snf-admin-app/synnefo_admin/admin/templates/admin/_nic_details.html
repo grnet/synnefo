@@ -3,17 +3,17 @@
 {% with nic=item %}
 <div class="object-anchor" id="nic-{{nic.pk}}"></div>
 <div class="object-details {{ rowcls }}">
-    <h4>
-        <div class="lt">
+    <h4 class="clearfix">
+        <span class="lt">
             <span class="title">{{ nic|repr }}</span>
             <span class="arrow  snf-angle-down"></span>
-        </div>
-        <div class="rt">
+        </span>
+        <span class="rt">
             <span class="label">ID: {{nic.pk}}</span>
             <span class="label">MAC: {{ nic.mac }}</span>
             <span class="label">{{ nic.state|upper }}</span>
-        </div>
-    </h4 class="clearfix">
+        </span>
+    </h4>
         <div class="tags">
         </div>
     <div class="object-details-content">

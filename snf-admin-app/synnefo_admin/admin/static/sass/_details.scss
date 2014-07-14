@@ -17,11 +17,13 @@
         font-size: 14px;
         letter-spacing: 1px;
  	    .lt{
+            display: block;
             float: left;
             max-width: 60%;
             word-wrap: break-word;
         }
         .rt {
+            display: block;
             overflow: hidden;
         }
         .arrow {

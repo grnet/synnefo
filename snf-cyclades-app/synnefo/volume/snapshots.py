@@ -19,6 +19,7 @@ from snf_django.lib.api import faults
 from synnefo.plankton.backend import PlanktonBackend
 from synnefo.logic import backend
 from synnefo.volume import util
+from synnefo.util import units
 
 log = logging.getLogger(__name__)
 
@@ -90,10 +91,16 @@ def create(user_id, volume, name, description, metadata, force=False):
     size = volume.size << 30
 
     with PlanktonBackend(user_id) as b:
-        snapshot_id = b.register_snapshot(name=name,
-                                          mapfile=mapfile,
-                                          size=size,
-                                          metadata=snapshot_metadata)
+        try:
+            snapshot_id = b.register_snapshot(name=name,
+                                              mapfile=mapfile,
+                                              size=size,
+                                              metadata=snapshot_metadata)
+        except faults.OverLimit:
+            msg = ("Resource limit exceeded for your account."
+                   " Not enough storage space to create snapshot of"
+                   " %s size." % units.show(size, "bytes", "gb"))
+            raise faults.OverLimit(msg)
 
     backend.snapshot_instance(volume.machine,
                               snapshot_name=mapfile,

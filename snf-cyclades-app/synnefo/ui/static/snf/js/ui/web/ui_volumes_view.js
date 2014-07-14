@@ -332,6 +332,8 @@
                                 _.bind(this.handle_vm_select, this));
           this.vm_select_view.bind("change", 
                                 _.bind(this.handle_vm_select, this));
+          this.vm_select_view.bind("change:select", 
+                                _.bind(this.handle_vm_select, this));
         },
 
         vm_filter: function(m) {
@@ -351,7 +353,11 @@
         },
 
         handle_vm_select: function() {
-            this.parent.next_btn.show();
+            if (this.vm_select_view && this.vm_select_view.get_selected().length) {
+                this.parent.next_btn.show();
+            } else {
+                this.parent.next_btn.hide();
+            }
         },
 
         validate_vms: function() {

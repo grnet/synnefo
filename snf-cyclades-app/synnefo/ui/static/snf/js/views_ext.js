@@ -593,11 +593,19 @@
             this.trigger("change", this.get_selected());
           }
         }, this);
+
+        if (!this.allow_empty && !this.get_selected().length) {
+            view.select();
+        }
       },
 
       set_current: function(model) {
         if (!this._model_views[model.id]) { return }
         this._model_views[model.id].select();
+      },
+
+      post_remove_model_view: function(view, model) {
+          if (view.selected) { view.disabled = true; view.deselect() }
       }
 
     });

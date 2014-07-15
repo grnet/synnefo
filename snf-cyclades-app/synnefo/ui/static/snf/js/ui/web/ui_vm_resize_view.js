@@ -261,10 +261,11 @@
         submit_resize: function(flv) {
             if (this.submit.hasClass("in-progress")) { return }
             this.submit.addClass("in-progress");
+            var vm = this.vm;
             var complete = _.bind(function() {
-              this.vm.set({'flavor': flv});
-              this.vm.set({'flavorRef': flv.id});
-              this.hide();
+              vm.set({'flavor': flv});
+              vm.set({'flavorRef': flv.id});
+              this.vm && this.hide();
             }, this);
             this.vm.call("resize", complete, complete, {flavor:flv.id});
         },
@@ -392,6 +393,7 @@
         },
 
         onClose: function() {
+            if (!this.visible()) { return }
             this.editing = false;
             this.vm.unbind("change", this.handle_vm_change);
             this.vm.unbind("change:status", this.handle_shutdown_complete);

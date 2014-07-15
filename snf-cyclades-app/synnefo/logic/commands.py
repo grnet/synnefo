@@ -103,6 +103,10 @@ def server_command(action, action_fields=None):
 
             # XXX: Special case for server creation!
             if action == "BUILD":
+                serial = vm.serial
+                serial.pending = False
+                serial.accept = True
+                serial.save()
                 # Perform a commit, because the VirtualMachine must be saved to
                 # DB before the OP_INSTANCE_CREATE job in enqueued in Ganeti.
                 # Otherwise, messages will arrive from snf-dispatcher about

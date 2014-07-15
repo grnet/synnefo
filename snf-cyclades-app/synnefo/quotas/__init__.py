@@ -149,13 +149,6 @@ def issue_commission(resource, action, name="", force=False, auto_accept=False,
         serial_info["resolved"] = True
 
     serial = QuotaHolderSerial.objects.create(**serial_info)
-
-    # Correlate the serial with the resource. Resolved serials are not
-    # attached to resources
-    if not auto_accept:
-        resource.serial = serial
-        resource.save()
-
     return serial
 
 
@@ -463,6 +456,13 @@ def handle_resource_commission(resource, action, commission_name,
     serial = issue_commission(resource, action, name=commission_name,
                               force=force, auto_accept=auto_accept,
                               action_fields=action_fields)
+
+    # Correlate the serial with the resource. Resolved serials are not
+    # attached to resources
+    if not auto_accept:
+        resource.serial = serial
+        resource.save()
+
     return serial
 
 

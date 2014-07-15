@@ -42,7 +42,7 @@ from synnefo.util import units
 import django_filters
 from django.db.models import Q
 
-from synnefo_admin.admin.utils import is_resource_useful
+from synnefo_admin.admin.utils import get_resource, is_resource_useful
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
@@ -84,7 +84,7 @@ def get_contact_id(inst):
 
 
 def get_policies(inst):
-    policies = inst.projectresourcequota_set.all()
+    policies = inst.projectresourcequota_set.all().prefetch_related('resource')
     policy_list = []
 
     for p in policies:

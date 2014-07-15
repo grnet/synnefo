@@ -84,10 +84,7 @@ class AdminQuerySetAssociation(AdminAssociation):
 
 
 class AdminSimpleAssociation(AdminAssociation):
-
-    @property
-    def qs(self):
-        return None
+    pass
 
 
 class UserAssociation(AdminQuerySetAssociation):

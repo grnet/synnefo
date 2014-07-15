@@ -28,7 +28,7 @@ from django.conf import settings
 
 from synnefo_admin import admin_settings
 from synnefo.util import units
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, Resource
 
 from .actions import get_allowed_actions, get_permitted_actions
 logger = logging.getLogger(__name__)
@@ -56,13 +56,22 @@ def conditionally_gzip_page(func):
     return wrapper
 
 
-def is_resource_useful(resource, project_limit):
+def get_resource(name):
+    r = cached_resources.get(name, None)
+    if not r:
+        r = Resource.objects.get(name=name)
+        cached_resources[name] = r
+    return r
+cached_resources = {}
+
+
+def is_resource_useful(resource, limit):
     """Simple function to check if the resource is useful to show.
 
     Values that have infinite or zero limits are discarded.
     """
-    displayed_limit = units.show(project_limit, resource.unit)
-    if project_limit == 0 or not resource.uplimit or displayed_limit == 'inf':
+    displayed_limit = units.show(limit, resource.unit)
+    if limit == 0 or not resource.uplimit or displayed_limit == 'inf':
         return False
     return True
 
@@ -243,13 +252,14 @@ def create_details_href(type, name, id):
 
 
 def filter_distinct(assoc):
-    if assoc.qs:
+    if hasattr(assoc, 'qs'):
         assoc.qs = assoc.qs.distinct()
 
 
 def exclude_deleted(assoc):
     """Exclude deleted items."""
-    if admin_settings.ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS or not assoc.qs:
+    if (admin_settings.ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS or
+            not hasattr(assoc, 'qs')):
         return
 
     if assoc.type in ['vm', 'volume', 'network', 'ip']:

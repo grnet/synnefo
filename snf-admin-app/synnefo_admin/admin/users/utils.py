@@ -30,7 +30,7 @@ from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
 from astakos.im.models import AstakosUser, ProjectMembership, Project, Resource
 from astakos.im import user_logic as users
 
-from astakos.im.quotas import list_user_quotas
+from astakos.im.quotas import get_user_quotas
 from astakos.im.user_utils import send_plain as send_email
 
 from synnefo.util import units
@@ -40,7 +40,8 @@ from eztables.views import DatatablesView
 import django_filters
 from django.db.models import Q
 
-from synnefo_admin.admin.utils import is_resource_useful, create_details_href
+from synnefo_admin.admin.utils import (get_resource, is_resource_useful,
+                                       create_details_href)
 
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
 
@@ -88,9 +89,9 @@ def get_quotas(user):
         pending, project_pending, project_limit, project_usage, usage.
 
     Note, the get_quota_usage function returns many dicts, but we only keep the
-    ones that have project_limit > 0
+    ones that have limit > 0
     """
-    usage = list_user_quotas([user])[user.uuid]
+    usage = get_user_quotas(user)
 
     quotas = []
     for project_id, resource_dict in usage.iteritems():
@@ -100,14 +101,14 @@ def get_quotas(user):
 
         for resource_name, resource in resource_dict.iteritems():
             # Chech if the resource is useful to display
-            r = Resource.objects.get(name=resource_name)
-            limit = resource['project_limit']
+            limit = resource['limit']
+            r = get_resource(resource_name)
             if not is_resource_useful(r, limit):
                 continue
 
-            for p, value in resource.iteritems():
-                resource[p] = units.show(value, r.unit)
-            q_res.append((r.report_desc, resource))
+            usage = units.show(resource['usage'], r.unit)
+            limit = units.show(resource['limit'], r.unit)
+            q_res.append((r.report_desc, usage, limit,))
 
         quotas.append(source)
 

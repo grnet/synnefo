@@ -360,6 +360,8 @@ Extra-button is used to show total selected rows
 		line-height: 0.8;
 		display: inline;
 		padding: 0 5px 0 0;
+        font-weight: normal;
+        font-size: 1em;
 		&::before {
 			content: "("
 		}

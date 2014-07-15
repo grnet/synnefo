@@ -15,9 +15,25 @@
     <span class="snf-details-{{type}}"></span>
     {{ type|display_list_type }}
     <em> of '{{ main_item|repr }}'</em>
+    {% if association.deleted  or association.deleted|add:association.showing < association.total %}
+    <span   class="popover-dismiss" 
+            data-html="true" 
+            data-trigger="hover" 
+            data-toggle="popover" 
+            data-content="
+            {% if association.deleted %}
+            Excluding <b>{{ association.deleted }} deleted entries</b> from the results.
+ <br>
+            {% endif %}
+            {% if association.deleted|add:association.showing < association.total %}
+            Showing <b>{{ association.showing }} out of {{ association.total }}</b> total entries.<br>
+            {% endif %}
+To view all entries visit the {{ type|display_list_type }} tab in navigation."
+            ">
+        !
+    </span>
+    {% endif %}
 </h3>
-Excluding {{ association.deleted }} deleted entries,
-Showing {{ association.showing }} / {{ association.total }} entries
 
 {% if type == 'ip_log' %}
 <table class="table">

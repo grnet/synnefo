@@ -3,7 +3,7 @@
 // ====== BUTTONS ====== //
 // All buttons imply a structure <a><span>button</span></a>
 
-@mixin default-btn() {
+@mixin default-btn($padding: $default-btn-padding) {
 	display: inline-block;
 	text-align: center;
 	opacity: 0.7;
@@ -11,7 +11,7 @@
 		display: inline-block;
 		height: 100%;
 		line-height: 100%;
-		padding: $default-btn-padding;
+		padding: $padding;
 	}
 	&:hover {
 		text-decoration: none;
@@ -30,12 +30,11 @@
 
 // Transparent buttons with thin $color border that get thicker on hover
 @mixin outline-btn($color:$secondary-link-color, $background:inherit, $padding:$default-btn-padding) {
-	@include default-btn();
+	@include default-btn($padding);
 	border: 1px solid $color;
 	color: $color;
 	span {
 		border: 1px solid transparent;
-		padding: $padding;
         width: 100%;
 	}
 	&:hover {
@@ -47,13 +46,12 @@
 
 // Normal button with background-color and white font color
 @mixin custom-btn($color:$default-btn-color, $padding:$default-btn-padding) {
-	@include default-btn();
+	@include default-btn($padding);
 	border: 1px solid $color;
 	color: $secondary-link-color;
     background-color: $color;
 	span {
 		border: 1px solid transparent;
-		padding: $padding;
 		background: transparent;
 	}
 	&:hover {
@@ -65,9 +63,9 @@
 
 // Buttons with thick bottom border on hover
 @mixin line-btn($color:$total-black, $padding:$default-btn-padding) {
-	@include default-btn();
-	background-color: $total-black;
-	border-bottom: 2px solid $total-black; 
+	@include default-btn($padding);
+	background-color: $color;
+	border-bottom: 2px solid $color; 
 	color: #fff;
 	&:hover {
 		color: #fff;

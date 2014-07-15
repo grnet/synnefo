@@ -111,12 +111,17 @@ def server_command(action, action_fields=None):
                 # After committing the locks are released. Refetch the instance
                 # to guarantee x-lock.
                 vm = VirtualMachine.objects.select_for_update().get(id=vm.id)
+                # XXX: Special case for server creation: we must accept the
+                # commission because the VM has been stored in DB. Also, if
+                # communication with Ganeti fails, the job will never reach
+                # Ganeti, and the commission will never be resolved.
+                quotas.accept_resource_serial(vm)
 
             # Send the job to Ganeti and get the associated jobID
             try:
                 job_id = func(vm, *args, **kwargs)
             except Exception as e:
-                if vm.serial is not None:
+                if vm.serial is not None and action != "BUILD":
                     # Since the job never reached Ganeti, reject the commission
                     log.debug("Rejecting commission: '%s', could not perform"
                               " action '%s': %s" % (vm.serial,  action, e))
@@ -124,13 +129,6 @@ def server_command(action, action_fields=None):
                     quotas.reject_resource_serial(vm)
                     transaction.commit()
                 raise
-
-            if action == "BUILD" and vm.serial is not None:
-                # XXX: Special case for server creation: we must accept the
-                # commission because the VM has been stored in DB. Also, if
-                # communication with Ganeti fails, the job will never reach
-                # Ganeti, and the commission will never be resolved.
-                quotas.accept_resource_serial(vm)
 
             log.info("user: %s, vm: %s, action: %s, job_id: %s, serial: %s",
                      user_id, vm.id, action, job_id, vm.serial)

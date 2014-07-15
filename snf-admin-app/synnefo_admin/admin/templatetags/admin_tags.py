@@ -47,7 +47,7 @@ VM_STATE_CSS_MAP = {
         'BUILD': 'warning',
         'PENDING': 'warning',
         'ERROR': 'danger',
-        'STOPPED': 'notice',
+        'STOPPED': 'info',
         'STARTED': 'success',
         'ACTIVE': 'success',
         'DESTROYED': 'inverse'
@@ -66,12 +66,12 @@ def object_status_label(vm_or_net):
     else:
         state = vm_or_net.state
 
-    state_cls = VM_STATE_CSS_MAP.get(state, 'notice')
+    state_cls = VM_STATE_CSS_MAP.get(state, 'info')
     label_cls = "label label-%s" % state_cls
 
     deleted_label = ""
     if vm_or_net.deleted:
-        deleted_label = '<span class="label label-important">Deleted</span>'
+        deleted_label = '<span class="label label-danger">Deleted</span>'
     return '%s\n<span class="%s">%s</span>' % (deleted_label, label_cls, state)
 
 

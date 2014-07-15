@@ -220,50 +220,45 @@ body .container .line-btn.disabled:hover {
   font-size: 18px;
 }
 
-/* line 266, ../sass/_bars-btns.scss */
-.label-notice {
-  background: #4e4e4e;
-}
-
-/* line 270, ../sass/_bars-btns.scss */
+/* line 265, ../sass/_bars-btns.scss */
 .nav .dropdown:hover > ul.dropdown-menu, .nav-simple .dropdown:hover > ul.dropdown-menu {
   display: block;
 }
 
-/* line 274, ../sass/_bars-btns.scss */
+/* line 269, ../sass/_bars-btns.scss */
 .nav > li > a {
   padding-right: 12px;
   padding-left: 12px;
 }
 
 /* Submenu with bradcrumb */
-/* line 282, ../sass/_bars-btns.scss */
+/* line 277, ../sass/_bars-btns.scss */
 .sub-nav {
   top: 50px;
   padding-left: 20px;
   padding-right: 20px;
   min-height: initial;
 }
-/* line 289, ../sass/_bars-btns.scss */
+/* line 284, ../sass/_bars-btns.scss */
 .sub-nav .nav > li > a {
   padding-top: 8px;
   padding-bottom: 9px;
 }
 
 /* Sidebar */
-/* line 301, ../sass/_bars-btns.scss */
+/* line 296, ../sass/_bars-btns.scss */
 .sidebar {
   margin: 0 30px 0 0;
   width: 110px;
   height: auto;
   float: left;
 }
-/* line 306, ../sass/_bars-btns.scss */
+/* line 301, ../sass/_bars-btns.scss */
 .sidebar .btn-group-vertical {
   width: 100%;
 }
 
-/* line 311, ../sass/_bars-btns.scss */
+/* line 306, ../sass/_bars-btns.scss */
 .sidebar.sidebar-fixed {
   top: 80px;
   left: auto;
@@ -279,26 +274,26 @@ body .container .line-btn.disabled:hover {
 /*
 Positioning or customizing buttons
 */
-/* line 329, ../sass/_bars-btns.scss */
+/* line 324, ../sass/_bars-btns.scss */
 .sidebar .custom-btn {
   display: block;
   margin: 0 0 1em;
 }
-/* line 332, ../sass/_bars-btns.scss */
+/* line 327, ../sass/_bars-btns.scss */
 .sidebar .custom-btn span {
   padding: 8px;
 }
 
-/* line 338, ../sass/_bars-btns.scss */
+/* line 333, ../sass/_bars-btns.scss */
 body .custom-buttons {
   float: left;
   margin-right: 10px;
 }
-/* line 341, ../sass/_bars-btns.scss */
+/* line 336, ../sass/_bars-btns.scss */
 body .custom-buttons .line-btn {
   margin-right: 1em;
 }
-/* line 344, ../sass/_bars-btns.scss */
+/* line 339, ../sass/_bars-btns.scss */
 body .custom-buttons .disabled {
   display: none;
 }
@@ -306,61 +301,61 @@ body .custom-buttons .disabled {
 /*
 Extra-button is used to show total selected rows
 */
-/* line 362, ../sass/_bars-btns.scss */
+/* line 357, ../sass/_bars-btns.scss */
 .extra-btn span {
   display: inline-block;
 }
-/* line 365, ../sass/_bars-btns.scss */
+/* line 360, ../sass/_bars-btns.scss */
 .extra-btn .badge {
   background: transparent;
   line-height: 0.8;
   display: inline;
   padding: 0 5px 0 0;
 }
-/* line 370, ../sass/_bars-btns.scss */
+/* line 365, ../sass/_bars-btns.scss */
 .extra-btn .badge::before {
   content: "(";
 }
-/* line 373, ../sass/_bars-btns.scss */
+/* line 368, ../sass/_bars-btns.scss */
 .extra-btn .badge::after {
   content: ")";
 }
 
-/* line 379, ../sass/_bars-btns.scss */
+/* line 374, ../sass/_bars-btns.scss */
 .show-hide-all {
   float: right;
 }
-/* line 381, ../sass/_bars-btns.scss */
+/* line 376, ../sass/_bars-btns.scss */
 .show-hide-all em {
   font-style: normal;
 }
-/* line 384, ../sass/_bars-btns.scss */
+/* line 379, ../sass/_bars-btns.scss */
 .show-hide-all.line-btn {
   padding: 8px;
 }
-/* line 386, ../sass/_bars-btns.scss */
+/* line 381, ../sass/_bars-btns.scss */
 .show-hide-all.line-btn span {
   display: inline;
 }
 
-/* line 392, ../sass/_bars-btns.scss */
+/* line 387, ../sass/_bars-btns.scss */
 .actions-per-item {
   padding-left: 35px;
 }
-/* line 394, ../sass/_bars-btns.scss */
+/* line 389, ../sass/_bars-btns.scss */
 .actions-per-item .custom-btn {
   margin: 10px 10px 10px 0;
 }
 
-/* line 399, ../sass/_bars-btns.scss */
+/* line 394, ../sass/_bars-btns.scss */
 .charts .well {
   padding-left: 140px;
 }
-/* line 402, ../sass/_bars-btns.scss */
+/* line 397, ../sass/_bars-btns.scss */
 .charts .sidebar {
   position: fixed;
 }
-/* line 405, ../sass/_bars-btns.scss */
+/* line 400, ../sass/_bars-btns.scss */
 .charts .sidebar a {
   margin-bottom: 1em;
   display: inline-block;
@@ -396,7 +391,7 @@ Extra-button is used to show total selected rows
 .charts .sidebar a:hover span {
   border-color: white;
 }
-/* line 410, ../sass/_bars-btns.scss */
+/* line 405, ../sass/_bars-btns.scss */
 .charts .sidebar a.active {
   display: inline-block;
   text-align: center;

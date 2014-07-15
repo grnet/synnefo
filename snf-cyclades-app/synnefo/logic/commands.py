@@ -126,7 +126,7 @@ def server_command(action, action_fields=None):
                     log.debug("Rejecting commission: '%s', could not perform"
                               " action '%s': %s" % (vm.serial,  action, e))
                     transaction.rollback()
-                    quotas.reject_resource_serial(vm)
+                    quotas.reject_serial(vm.serial)
                     transaction.commit()
                 raise
 

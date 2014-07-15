@@ -154,22 +154,30 @@ def issue_commission(resource, action, name="", force=False, auto_accept=False,
 
 def accept_resource_serial(resource, strict=True):
     serial = resource.serial
-    assert serial.pending or serial.accept, "%s can't be accepted" % serial
-    log.debug("Accepting serial %s of resource %s", serial, resource)
-    _resolve_commissions(accept=[serial.serial], strict=strict)
+    accept_serial(serial, strict=strict)
     resource.serial = None
     resource.save()
     return resource
+
+
+def accept_serial(serial, strict=True):
+    assert serial.pending or serial.accept, "%s can't be accepted" % serial
+    log.debug("Accepting serial %s", serial)
+    _resolve_commissions(accept=[serial.serial], strict=strict)
 
 
 def reject_resource_serial(resource, strict=True):
     serial = resource.serial
-    assert serial.pending or not serial.accept, "%s can't be rejected" % serial
-    log.debug("Rejecting serial %s of resource %s", serial, resource)
-    _resolve_commissions(reject=[serial.serial], strict=strict)
+    reject_serial(serial)
     resource.serial = None
     resource.save()
     return resource
+
+
+def reject_serial(serial, strict=True):
+    assert serial.pending or not serial.accept, "%s can't be rejected" % serial
+    log.debug("Rejecting serial %s", serial)
+    _resolve_commissions(reject=[serial.serial], strict=strict)
 
 
 def _resolve_commissions(accept=None, reject=None, strict=True):
@@ -301,7 +309,7 @@ def issue_and_accept_commission(resource, action="BUILD", action_fields=None):
 
     try:
         # Accept the commission to quotaholder
-        accept_resource_serial(resource)
+        accept_serial(serial)
     except:
         # Do not crash if we can not accept commission to Quotaholder. Quotas
         # have already been reserved and the resource already exists in DB.

@@ -17,7 +17,6 @@
             <span class="label">ID: {{ volume.pk }}</span>
             <span class="label">{{ volume.size }} GB</span>
             <span class="label">{{ volume.type|repr }}</span>
-            <span class="label">{{ volume.status|upper }}</span>
         </span>
     </h4>
         <div class="tags">
@@ -36,7 +35,6 @@
                     <dt>Size</dt><dd>{{ volume.size }} GB</dd>
 		            <dt>Created</dt><dd>{{ volume.created }} ({{ volume.created|timesince }} ago)</dd>
 		            <dt>Updated</dt><dd>{{ volume.updated }} ({{ volume.created|timesince }} ago)</dd>
-
                     <dt>Snapshot counter</dt><dd>{{ volume.snapshot_counter }}</dd>
                 </dl>
             </div>

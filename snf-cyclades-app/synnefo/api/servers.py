@@ -694,6 +694,13 @@ def update_metadata(request, server_id):
                                 settings.CYCLADES_VM_MAX_METADATA)
 
     for key, val in metadata.items():
+        if len(key) > VirtualMachineMetadata.KEY_LENGTH:
+            raise faults.BadRequest("Malformed Request. Metadata key is too"
+                                    " long")
+        if len(val) > VirtualMachineMetadata.VALUE_LENGTH:
+            raise faults.BadRequest("Malformed Request. Metadata value is too"
+                                    " long")
+
         if not isinstance(key, (basestring, int)) or\
            not isinstance(val, (basestring, int)):
             raise faults.BadRequest("Malformed Request. Invalid metadata.")
@@ -748,11 +755,27 @@ def create_metadata_item(request, server_id, key):
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
 
+    value = metadict[key]
+
+    # Check key, value length
+    if len(key) > VirtualMachineMetadata.KEY_LENGTH:
+        raise faults.BadRequest("Malformed Request. Metadata key is too long")
+    if len(value) > VirtualMachineMetadata.VALUE_LENGTH:
+        raise faults.BadRequest("Malformed Request. Metadata value is too"
+                                " long")
+
+    # Check number of metadata items
+    if vm.metadata.exclude(meta_key=key).count() == \
+       settings.CYCLADES_VM_MAX_METADATA:
+        raise faults.BadRequest("Virtual Machines cannot have more than %s"
+                                " metadata items" %
+                                settings.CYCLADES_VM_MAX_METADATA)
+
     meta, created = VirtualMachineMetadata.objects.get_or_create(
         meta_key=key,
         vm=vm)
 
-    meta.meta_value = metadict[key]
+    meta.meta_value = value
     meta.save()
     vm.save()
     d = {meta.meta_key: meta.meta_value}

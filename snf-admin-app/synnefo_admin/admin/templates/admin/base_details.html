@@ -51,7 +51,7 @@
 	                <!-- {% cycle 'row1' 'row2' as rowcls %}  -->
                     {# Details for an item in the list #}
                     {% block item-details %}
-                        {% include type|get_details_template %}
+                        {% include type|get_details_template with action_dict=association.actions%}
                     {% endblock item-details %}
                 {% empty %}
                     <p>No items in the list</p>

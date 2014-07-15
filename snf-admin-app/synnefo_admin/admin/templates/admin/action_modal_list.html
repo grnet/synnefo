@@ -8,8 +8,8 @@
 
 {% elif view_type == "details" %}
 
-    {% for _, _, action_dict in associations_list %}
-        {% for op, action in action_dict.items %}
+    {% for association in associations_list %}
+        {% for op, action in association.actions.items %}
             {% include "admin/_action_modal.html" %}
         {% endfor %}
     {% endfor %}

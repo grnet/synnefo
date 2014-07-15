@@ -214,7 +214,7 @@ svg>text:last-child {
 	color: #fff;
   	background: $hover-nav-color;
 }
-.nav > li.active > a {
+.main-nav .nav > li.active > a {
 	color: $gray-dark;
 	-webkit-transition: all 0 ease 0;
 	transition: all 0 ease 0;

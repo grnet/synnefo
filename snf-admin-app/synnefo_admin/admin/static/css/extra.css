@@ -3516,58 +3516,59 @@ svg > text:last-child {
   border: 0 none;
   border-top: 1px solid #4e4e4e;
   background-color: white;
+  overflow-y: auto;
 }
 
-/* line 237, ../sass/extra.scss */
+/* line 238, ../sass/extra.scss */
 .dropdown-menu .active > a,
 .dropdown-menu .active > a:hover {
   background-color: #d9d9d9;
   color: #303030;
 }
 
-/* line 243, ../sass/extra.scss */
+/* line 244, ../sass/extra.scss */
 .dropdown-menu li > a:hover {
   background-color: #d9d9d9;
   color: #303030;
 }
 
-/* line 248, ../sass/extra.scss */
+/* line 249, ../sass/extra.scss */
 .sub-nav {
   background: #4e4e4e;
   border: 0 none;
 }
-/* line 252, ../sass/extra.scss */
+/* line 253, ../sass/extra.scss */
 .sub-nav .nav > li > a {
   color: #eeeeee;
 }
-/* line 256, ../sass/extra.scss */
+/* line 257, ../sass/extra.scss */
 .sub-nav .nav > li:hover a {
   color: #303030;
 }
 
-/* line 263, ../sass/extra.scss */
+/* line 264, ../sass/extra.scss */
 .tab-content {
   background: #4e4e4e;
   padding: 20px;
 }
-/* line 266, ../sass/extra.scss */
+/* line 267, ../sass/extra.scss */
 .tab-content .well {
   border-color: #4e4e4e;
 }
 
-/* line 272, ../sass/extra.scss */
+/* line 273, ../sass/extra.scss */
 .content-seperator {
   display: none;
 }
 
-/* line 277, ../sass/extra.scss */
+/* line 278, ../sass/extra.scss */
 .selection-indicator {
   margin-right: 6px;
   cursor: pointer;
   padding: 0 6px;
 }
 
-/* line 283, ../sass/extra.scss */
+/* line 284, ../sass/extra.scss */
 .notify {
   padding: 30px 10px 15px;
   width: 100%;
@@ -3576,91 +3577,91 @@ svg > text:last-child {
   background: white;
   color: #303030;
 }
-/* line 291, ../sass/extra.scss */
+/* line 292, ../sass/extra.scss */
 .notify .container > *:not(:last-child) {
   margin-bottom: 16px;
 }
-/* line 294, ../sass/extra.scss */
+/* line 295, ../sass/extra.scss */
 .notify .remove-icon {
   color: transparent;
   margin-left: 20px;
   font-weight: bold;
 }
-/* line 300, ../sass/extra.scss */
+/* line 301, ../sass/extra.scss */
 .notify .container > *:hover .remove-icon {
   color: #d9534f;
 }
-/* line 304, ../sass/extra.scss */
+/* line 305, ../sass/extra.scss */
 .notify .state-icon {
   margin-right: 10px;
 }
-/* line 307, ../sass/extra.scss */
+/* line 308, ../sass/extra.scss */
 .notify .success {
   color: #449d44;
 }
-/* line 310, ../sass/extra.scss */
+/* line 311, ../sass/extra.scss */
 .notify .error {
   color: #d9534f;
 }
-/* line 313, ../sass/extra.scss */
+/* line 314, ../sass/extra.scss */
 .notify .pending {
   color: #f0ad4e;
 }
-/* line 316, ../sass/extra.scss */
+/* line 317, ../sass/extra.scss */
 .notify em {
   font-style: normal;
   font-weight: bold;
 }
-/* line 320, ../sass/extra.scss */
+/* line 321, ../sass/extra.scss */
 .notify .warning {
   font-style: italic;
   font-weight: bold;
   color: #4e4e4e;
 }
-/* line 325, ../sass/extra.scss */
+/* line 326, ../sass/extra.scss */
 .notify .close-notify {
   position: absolute;
   right: 20px;
   top: 20px;
   color: #303030;
 }
-/* line 330, ../sass/extra.scss */
+/* line 331, ../sass/extra.scss */
 .notify .close-notify:hover {
   color: #222222;
 }
-/* line 334, ../sass/extra.scss */
+/* line 335, ../sass/extra.scss */
 .notify .dl-horizontal {
   margin-left: 21px;
 }
-/* line 338, ../sass/extra.scss */
+/* line 339, ../sass/extra.scss */
 .notify .dl-horizontal dt {
   width: 80px;
   vertical-align: top;
   text-align: left;
 }
-/* line 342, ../sass/extra.scss */
+/* line 343, ../sass/extra.scss */
 .notify .dl-horizontal dt span {
   font-size: 20px;
   vertical-align: text-bottom;
   margin-right: 10px;
 }
-/* line 348, ../sass/extra.scss */
+/* line 349, ../sass/extra.scss */
 .notify .dl-horizontal dd {
   margin-left: 80px;
 }
 
-/* line 354, ../sass/extra.scss */
+/* line 355, ../sass/extra.scss */
 .lowercase {
   text-transform: lowercase;
 }
 
-/* line 358, ../sass/extra.scss */
+/* line 359, ../sass/extra.scss */
 .book-icon {
   font-size: 20px;
   vertical-align: sub;
 }
 
-/* line 366, ../sass/extra.scss */
+/* line 367, ../sass/extra.scss */
 .shortcuts .key {
   padding: 2px 9px;
   font-style: normal;
@@ -3669,19 +3670,19 @@ svg > text:last-child {
   border-radius: 6px;
 }
 
-/* line 375, ../sass/extra.scss */
+/* line 376, ../sass/extra.scss */
 body > .popover {
   max-width: none;
   color: black;
   margin-bottom: 20px;
 }
-/* line 380, ../sass/extra.scss */
+/* line 381, ../sass/extra.scss */
 body > .popover h2 {
   text-align: center;
   font-size: 1.2em;
   font-weight: bold;
 }
-/* line 385, ../sass/extra.scss */
+/* line 386, ../sass/extra.scss */
 body > .popover dt {
   margin-bottom: 8px;
   overflow: visible;

@@ -221,5 +221,24 @@ $('.main .object-details h4 .arrow').trigger('click')
 			$('[data-toggle="popover"]').popover('hide');
 		}
 	});
-    
+
+    setDropdownHeight();
 });
+
+$(window).resize(function(){
+    setDropdownHeight();
+})
+
+function setDropdownHeight() {
+    var mainNavH = $('.main-nav').height();
+    var subNavH = $('.sub-nav').height();
+    var windowH = $(window).height();
+    // 20 is the distance from the bottom of the page so that
+    // the dropdown does not collapse with the window
+    var res = windowH - (mainNavH + subNavH) - 20;
+    $('.dropdown-menu').each(function(){
+        $(this).css('max-height', res);
+    });
+}
+
+

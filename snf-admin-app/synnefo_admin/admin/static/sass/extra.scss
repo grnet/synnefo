@@ -231,6 +231,7 @@ svg>text:last-child {
 	border: 0 none;
 	border-top: 1px solid $gray-light;
 	background-color: white;
+    overflow-y: auto;
 }
 
 .dropdown-menu .active > a, 

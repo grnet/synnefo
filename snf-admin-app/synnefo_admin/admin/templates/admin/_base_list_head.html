@@ -14,7 +14,7 @@
 <h3>
     <span class="snf-details-{{type}}"></span>
     {{ type|display_list_type }}
-    <em title="{{  main_item|repr }}" data-toggle="tooltip" data-placement="bottom" > of '{{ main_item|repr }}'</em>
+    <em> of '{{ main_item|repr }}'</em>
     {% if association.deleted  or association.deleted|add:association.showing < association.total %}
     <span   class="popover-dismiss" 
             data-html="true" 

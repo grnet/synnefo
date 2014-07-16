@@ -54,8 +54,9 @@ function infraUsage(data) {
     var free = [];
 
     for (key in categories) {
+        // why do we need it?
         if (!categories.hasOwnProperty(key)) {
-            continue;
+            continue; // jumps over one iteration
         }
 
         displayed_categories.push(categories[key]);
@@ -121,8 +122,10 @@ function infraUsage(data) {
     });
 }
 
-
 function resourceUsage(data, name) {
+    var domID = 'recource-'+name.replace(/\./gi, '_');
+    $('#resource-usage').append('<div id="'+domID+'"></div>')
+
     var providers = data['providers'];
     var used = [];
     var free = [];
@@ -148,8 +151,7 @@ function resourceUsage(data, name) {
         used.push(usedData);
         free.push(freeData);
     }
-
-    $('#resource-usage').highcharts({
+    $('#'+domID).highcharts({
         chart: {
             type: 'bar'
         },

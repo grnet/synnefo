@@ -12,7 +12,7 @@
     <a href="" data-chart="disk-templates"><span>Disk templates</span></a>
     <a href="" data-chart="images"><span>Images</span></a>
 </div>
-<div class="info well">
+<div class="well">
     <div id="infra-usage" class="chart" data-chart="resource-usage"></div>
     <div id="resource-usage" class="chart" data-chart="resource-usage"></div>
     <div id="provider-status" class="chart" data-chart="temp"></div>
@@ -30,6 +30,7 @@
 {% block custom-javascript %}
 <script src="{{ MEDIA_URL }}admin/js/highstock.src.js"></script>
 <script src="{{ MEDIA_URL }}admin/js/Highcharts_drilldown.src.js"></script>
+<script src="{{ MEDIA_URL }}admin/js/HighchartsDarkTheme.js"></script>
 <script src="{{ MEDIA_URL }}admin/js/charts.js"></script>
 <script src="{{ MEDIA_URL }}admin/js/charts_common.js"></script>
 {% endblock %}

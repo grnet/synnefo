@@ -252,6 +252,12 @@ svg>text:last-child {
 	.nav {
 		& > li > a {
 			color: $almost-white;
+            i {
+                display: inline-block;
+                @include text-overflow();
+                max-width: 200px;
+                vertical-align: bottom;
+            }
 		}
 		& > li:hover {
 			a {
@@ -387,4 +393,13 @@ body>.popover {
 		margin-bottom: 8px;
 		overflow: visible;
 	}
+}
+.dl-horizontal {
+    dt, dd {
+        word-wrap: break-word;
+    }
+}
+
+.tooltip-inner {
+    word-wrap: break-word;
 }

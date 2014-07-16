@@ -3,7 +3,7 @@
     <ul class="nav navbar-nav navbar-left">
       <!-- For main item -->
         <li><a href="#{{ main_type }}-{{ main_item|id }}" class="link-to-anchor">
-            {{ main_type|title }}: {{ main_item|repr }}</a>
+            {{ main_type|title }}: <i data-toggle="tooltip" data-placement="bottom" title="{{ main_item|repr }}">{{ main_item|repr }}</i></a>
         </li>
     {% for association in associations_list %}
     {% if association.items %}

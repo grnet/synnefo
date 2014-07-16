@@ -1,4 +1,5 @@
 @import "icon-fonts";
+@import "bootstrap/mixins";
 .main {
     margin:2em 0 5em;
 	h4 .title{
@@ -63,6 +64,10 @@
         em {
             margin-left: 10px;
             font-size: 14px;
+            display: inline-block;
+            @include text-overflow();
+            max-width: 50%;
+            vertical-align: top;
         }
         span[class^="snf-details"] {
             float: left;
@@ -147,6 +152,13 @@
         margin-bottom: 2em;
         padding-top: 1em;
         border-top: 2px solid $gray-light-extra;		
+        em {
+            max-width: 50%;
+            display: inline-block;
+            @include text-overflow();
+            vertical-align: top;
+
+        }
     }
    
 	&>.object-details {

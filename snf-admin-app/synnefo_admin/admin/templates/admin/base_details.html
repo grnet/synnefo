@@ -32,7 +32,7 @@
 
 <div class="container part-two">
 
-    <h2>Associations for <em>'{{ main_item|repr }}'</em> :</h2>
+    <h2>Associations for <em title="{{ main_item|repr }}" data-toggle="tooltip" data-placement="bottom">'{{ main_item|repr }}'</em> :</h2>
 
     {# This is a list of associations for this item #}
     {% block item-associations-list %}

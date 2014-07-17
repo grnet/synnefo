@@ -2547,15 +2547,19 @@ Extra-button is used to show total selected rows
   overflow: auto;
 }
 
-/* line 151, ../sass/_details.scss */
-.part-two h2 {
+/* line 150, ../sass/_details.scss */
+.parts-separator {
+  border-top: 2px solid #818181;
+  padding-top: 1em;
+}
+/* line 153, ../sass/_details.scss */
+.parts-separator h2 {
   font-size: 24px;
   margin-bottom: 2em;
   padding-top: 1em;
-  border-top: 2px solid #818181;
 }
-/* line 156, ../sass/_details.scss */
-.part-two h2 em {
+/* line 157, ../sass/_details.scss */
+.parts-separator h2 em {
   max-width: 50%;
   display: inline-block;
   overflow: hidden;
@@ -2563,44 +2567,45 @@ Extra-button is used to show total selected rows
   white-space: nowrap;
   vertical-align: top;
 }
-/* line 165, ../sass/_details.scss */
+
+/* line 168, ../sass/_details.scss */
 .part-two > .object-details {
   border-bottom: 2px solid #818181;
   background: #383838;
   padding: 14px 20px;
 }
-/* line 169, ../sass/_details.scss */
+/* line 172, ../sass/_details.scss */
 .part-two > .object-details .object-details {
   padding: 5px 20px;
 }
-/* line 171, ../sass/_details.scss */
+/* line 174, ../sass/_details.scss */
 .part-two > .object-details .object-details:hover {
   background: #3d3d3d;
 }
-/* line 176, ../sass/_details.scss */
+/* line 179, ../sass/_details.scss */
 .part-two > .object-details .custom-btn span {
   padding: 5px;
 }
-/* line 181, ../sass/_details.scss */
+/* line 184, ../sass/_details.scss */
 .part-two .object-details-content {
   padding: 0 35px;
 }
 
-/* line 213, ../sass/_details.scss */
+/* line 216, ../sass/_details.scss */
 .show-hide-all span.snf-font-arrow-up {
   display: none;
   padding: 0;
 }
-/* line 218, ../sass/_details.scss */
+/* line 221, ../sass/_details.scss */
 .show-hide-all span.snf-font-arrow-down {
   display: inline;
   padding: 0;
 }
-/* line 224, ../sass/_details.scss */
+/* line 227, ../sass/_details.scss */
 .show-hide-all.open .snf-font-arrow-up {
   display: inline;
 }
-/* line 227, ../sass/_details.scss */
+/* line 230, ../sass/_details.scss */
 .show-hide-all.open .snf-font-arrow-down {
   display: none;
 }

@@ -147,12 +147,13 @@
 	overflow: auto;
 }
 
-.part-two {
-     h2 {
+.parts-separator {
+    border-top: 2px solid $gray-light-extra;
+    padding-top: 1em;
+    h2 {
         font-size: 24px;
         margin-bottom: 2em;
         padding-top: 1em;
-        border-top: 2px solid $gray-light-extra;		
         em {
             max-width: 50%;
             display: inline-block;
@@ -161,7 +162,9 @@
 
         }
     }
-   
+}
+
+.part-two {
 	&>.object-details {
         border-bottom: 2px solid $gray-light-extra;		
         background: lighten($body-bg, 3%);

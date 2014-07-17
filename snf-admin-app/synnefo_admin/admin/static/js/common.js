@@ -1,7 +1,7 @@
 snf = {
 	modals: {
 		showBottomModal: function($modal) {
-			var height = -$modal.outerHeight(true)
+			var height = -$modal.outerHeight(true);
 				$modal.css('bottom', height)
 				$modal.animate({'bottom': '0px'}, 'slow');
 		},

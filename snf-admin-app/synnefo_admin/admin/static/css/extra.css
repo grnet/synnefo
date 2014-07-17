@@ -427,6 +427,14 @@ Extra-button is used to show total selected rows
   color: white;
 }
 
+/* line 408, ../sass/_bars-btns.scss */
+.notify .reload-btn {
+  padding: 0 4px;
+  font-size: 18px;
+  vertical-align: middle;
+  color: blue;
+}
+
 @font-face {
   font-family: 'font-icons';
   src: url("../fonts/font-icons.eot?hm0cup");

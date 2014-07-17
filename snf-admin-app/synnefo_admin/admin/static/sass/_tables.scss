@@ -199,3 +199,9 @@ table.dataTable.no-footer {
 .fixed {
     position: fixed;
 }
+
+.ip_log {
+    @include tdWrap(2, 250px);
+    @include tdWrap(3, 150px);
+    @include tdWrap(4, 150px);
+}

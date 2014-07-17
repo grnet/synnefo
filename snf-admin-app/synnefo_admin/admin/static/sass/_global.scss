@@ -46,3 +46,15 @@ $hover-nav-color: #333;
      -moz-border-radius: $width/2;
           border-radius: $width/2;
 }
+
+@mixin tdWrap($i, $width){
+    tr {
+        td:nth-child(#{$i}), th:nth-child(#{$i}) {
+            word-break: break-word;
+            max-width: $width;
+        }
+    }
+}
+
+
+

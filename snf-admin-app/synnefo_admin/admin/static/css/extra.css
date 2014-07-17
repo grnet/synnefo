@@ -3160,6 +3160,22 @@ table.dataTable.no-footer {
   position: fixed;
 }
 
+/* line 52, ../sass/_global.scss */
+.ip_log tr td:nth-child(2), .ip_log tr th:nth-child(2) {
+  word-break: break-word;
+  max-width: 250px;
+}
+/* line 52, ../sass/_global.scss */
+.ip_log tr td:nth-child(3), .ip_log tr th:nth-child(3) {
+  word-break: break-word;
+  max-width: 150px;
+}
+/* line 52, ../sass/_global.scss */
+.ip_log tr td:nth-child(4), .ip_log tr th:nth-child(4) {
+  word-break: break-word;
+  max-width: 150px;
+}
+
 /* line 16, ../sass/extra.scss */
 html, body {
   height: 100%;

@@ -1127,7 +1127,10 @@ $(document).ready(function() {
 	};
 
 	function textFilter(extraSearch) {
+		snf.timer = 0;
+		console.log('snf.timer', snf.timer)
 		var $input = $(extraSearch).find('input');
+		var timeID;
 		$input.keyup(function(e) {
 			// if enter or space is pressed do nothing
 			if(e.which !== '32' && e.which !== '13') {
@@ -1139,7 +1142,15 @@ $(document).ready(function() {
 				if (filters[key] === '') {
 					delete filters[key];
 				}
-					$(tableDomID).dataTable().api().ajax.reload();
+
+				if(snf.timer === 0) {
+					snf.timer = 1;
+					setTimeout(function() {
+						$(tableDomID).dataTable().api().ajax.reload();
+						console.log('yio!', filters)
+						snf.timer = 0;
+					}, snf.ajaxdelay)
+				}
 			}
 		})
 	};

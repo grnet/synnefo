@@ -49,6 +49,8 @@ snf = {
 			$modal.find('textarea').val(snf.modals.defaultEmailBody);
 		},
 	},
+	timer: 0,
+	ajaxdelay: 400
 };
 
 

@@ -792,6 +792,13 @@ def validate_resource_policies(policies, admin=False):
         if p_capacity > MAX_BIGINT or m_capacity > MAX_BIGINT:
             raise ProjectBadRequest(
                 "Quota limit exceeds max value %s" % MAX_BIGINT)
+        if p_capacity < 0 or m_capacity < 0:
+            raise ProjectBadRequest(
+                "Negative quota limit is not allowed")
+        if p_capacity < m_capacity:
+            raise ProjectBadRequest(
+                "Project quota limit is less than member limit for "
+                "resource '%s'" % resource_name)
         pols.append((resource_d[resource_name], m_capacity, p_capacity))
     return pols
 

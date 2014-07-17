@@ -639,6 +639,18 @@ class ProjectAPITest(TestCase):
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 400)
 
+        ap = copy.deepcopy(ap_base)
+        ap["resources"] = {u"σέρβις1.ρίσορς11": {"member_capacity": -512,
+                                                 "project_capacity": 256}}
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["resources"] = {u"σέρβις1.ρίσορς11": {"member_capacity": 512,
+                                                 "project_capacity": 256}}
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
         filters = {"state": "nonex"}
         r = client.get(reverse("api_projects"), filters, **h_owner)
         self.assertEqual(r.status_code, 400)

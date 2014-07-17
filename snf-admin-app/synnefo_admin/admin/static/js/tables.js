@@ -877,7 +877,7 @@ $(document).ready(function() {
 			},
 			// complete: function()
 			success: function(response, statusText, jqXHR) {
-				var htmlSuccess = '<p class="log"><span class="success state-icon snf-font-admin snf-ok"></span>Action <em>"'+actionName+'"</em> for '+countItems+' items has <em class="succeed">succeed</em>.'+removeBtn+'</p>';
+				var htmlSuccess = '<p class="log"><span class="success state-icon snf-font-admin snf-ok"></span>Action <em>"'+actionName+'"</em> for '+countItems+' items has <em class="succeed">succeeded</em>.'+removeBtn+'</p>';
 				$notificationArea.find('#'+logID).replaceWith(htmlSuccess);
 				snf.modals.showBottomModal($notificationArea);
 			},

@@ -430,13 +430,13 @@ $(document).ready(function() {
 	});
 
 	$(document).bind('keydown', function(e){
-		if(e.shiftKey) {
+		if(e.shiftKey && !$(e.target).is('input') && !$(e.target).is('textarea')) {
 			$(tableDomID).addClass('with-shift')
 		}
 	});
 
 	$(document).bind('keyup', function(e){
-		if(e.which === 16) {
+		if(e.which === 16 && !$(e.target).is('input') && !$(e.target).is('textarea')) {
 			deselectText();
 			$(tableDomID).removeClass('with-shift')
 		}
@@ -1130,7 +1130,7 @@ $(document).ready(function() {
 		snf.timer = 0;
 		console.log('snf.timer', snf.timer)
 		var $input = $(extraSearch).find('input');
-		var timeID;
+
 		$input.keyup(function(e) {
 			// if enter or space is pressed do nothing
 			if(e.which !== '32' && e.which !== '13') {
@@ -1145,9 +1145,8 @@ $(document).ready(function() {
 
 				if(snf.timer === 0) {
 					snf.timer = 1;
-					setTimeout(function() {
+					timeID = setTimeout(function() {
 						$(tableDomID).dataTable().api().ajax.reload();
-						console.log('yio!', filters)
 						snf.timer = 0;
 					}, snf.ajaxdelay)
 				}

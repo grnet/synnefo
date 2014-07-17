@@ -24,7 +24,7 @@ from sqlalchemy.schema import Index, Sequence
 from sqlalchemy.sql import (func, and_, or_, not_, select, bindparam, exists,
                             functions)
 from sqlalchemy.sql.expression import true, literal
-from sqlalchemy.exc import NoSuchTableError
+from sqlalchemy.exc import NoSuchTableError, IntegrityError
 
 from dbworker import DBWorker, ESCAPE_CHAR
 
@@ -211,12 +211,18 @@ class Node(DBWorker):
         """Create a new node from the given properties.
            Return the node identifier of the new node.
         """
-        #TODO catch IntegrityError?
+        t = self.conn.begin_nested()  # create savepoint
         s = self.nodes.insert().values(parent=parent, path=path)
-        r = self.conn.execute(s)
-        inserted_primary_key = r.inserted_primary_key[0]
-        r.close()
-        return inserted_primary_key
+        try:
+            r = self.conn.execute(s)
+        except IntegrityError:
+            t.rollback()
+            raise ValueError('Attempt to create a node which already exists.')
+        else:
+            t.commit()
+            inserted_primary_key = r.inserted_primary_key[0]
+            r.close()
+            return inserted_primary_key
 
     def node_lookup(self, path, for_update=False):
         """Lookup the current node of the given path.

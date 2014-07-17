@@ -1814,10 +1814,14 @@ class ModularBackend(BaseBackend):
 
     def _put_path(self, user, parent, path,
                   update_statistics_ancestors_depth=None):
-        node = self.node.node_create(parent, path)
-        self.node.version_create(node, None, 0, '', None, user,
-                                 self._generate_uuid(), '', CLUSTER_NORMAL,
-                                 update_statistics_ancestors_depth)
+        try:
+            node = self.node.node_create(parent, path)
+        except ValueError:  # integrity error
+            node = self.node.node_lookup(path)
+        else:
+            self.node.version_create(node, None, 0, '', None, user,
+                                     self._generate_uuid(), '', CLUSTER_NORMAL,
+                                     update_statistics_ancestors_depth)
         return node
 
     def _lookup_account(self, account, create=True):

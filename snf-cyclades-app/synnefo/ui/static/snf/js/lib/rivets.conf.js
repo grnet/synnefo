@@ -48,7 +48,7 @@ _.extend(rivets.formatters, {
   },
 
   list_truncate: function(value, size) {
-    size = size === undefined ? 38 : size;
+    size = size === undefined ? 34 : size;
     return synnefo.util.truncate(value, size);
   },
 

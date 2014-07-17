@@ -874,7 +874,7 @@
               );
             }
             // truncate name
-            el.find("span.name").text(util.truncate(vm.get("name"), 40));
+            el.find("span.name").text(util.truncate(vm.get("name"), 37));
 
             el.find('.fqdn').val(
                 vm.get('fqdn') || synnefo.config.no_fqdn_message);

@@ -436,7 +436,7 @@
               el.find(".project-name").text(_.truncate(project.get('name'), 20));
             }
             // truncate name
-            el.find(".machine-detail.name").text(util.truncate(vm.get("name"), 53));
+            el.find(".machine-detail.name").text(util.truncate(vm.get("name"), 45));
             el.find(".fqdn").val(vm.get("fqdn") || synnefo.config.no_fqdn_message);
             // set the state (i18n ??)
             el.find(".state-label").text(STATE_TEXTS[vm.state()]);

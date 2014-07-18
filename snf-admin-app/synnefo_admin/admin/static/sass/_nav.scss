@@ -1,0 +1,73 @@
+.navbar-default {
+    border: 0 none;
+    z-index: 1040;
+    .home-icon {
+        padding: 0;
+        height: $menu-height;
+        width: $menu-height;
+        text-align: center;
+        line-height: $menu-height;
+        img {
+            max-height: $menu-height;
+        }
+    }
+
+}
+
+.sub-nav {
+    top: $menu-height;
+    min-height: inherit;
+    .nav {
+        >li>a {
+            padding-top: 8px;
+            padding-bottom: 8px;
+        }
+    }
+}
+.dropdown-menu {
+    overflow-y: auto;
+}
+
+.nav .dropdown:hover > ul.dropdown-menu, 
+.nav-simple .dropdown:hover > ul.dropdown-menu {
+	display: block;
+}
+
+
+.nav-simple {
+	padding: $nav-side-padding;
+	border-bottom: 1px solid white;
+	.header {
+		float: left;
+		line-height: 40px;
+		font-size: 26px;
+        img {
+            max-height: 50px;
+        }
+	}
+	.login-info {
+        float: right;
+        position: relative;
+        line-height: 40px;
+        font-size: 16px;
+        .dropdown { 
+            display: inline;
+            &:hover {
+                &>a {
+                    background: lighten($hover-nav-color, 10%); 
+                }
+            }
+            &> a {
+                color: #fff;
+                display: inline-block;
+                padding: 0 10px;
+            }
+        }
+        .dropdown-menu {
+            left: auto;
+            right: 0;
+            top: 27px;
+        }
+    }
+}
+

@@ -1,7 +1,3 @@
-$body-padding-top: 100px;
-$filter-margin: 10px;
-$filter-height: 30px;
-
 .filters-area {
 	margin-bottom: $body-padding-top/2 - $filter-margin;
 }
@@ -65,7 +61,6 @@ $filter-height: 30px;
 			.arrow {
 				font-weight: bold;
 			}
-			// border: 1px solid $gray-dark;
 		}
 		&.open {
 			a {

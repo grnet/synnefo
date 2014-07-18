@@ -14,7 +14,7 @@
 
   <body>
     {% block nav-bar %}
-    <div class="navbar main-nav navbar-fixed-top">
+    <div class="navbar navbar-default navbar-fixed-top">
       <ul class="nav navbar-nav navbar-left">
           <li><a href="{% url admin-home %}" title="Homepage" class="home-icon"><img src="{{ BRANDING_IMAGE_MEDIA_URL }}cloudbar_home.png" alt="S" /></a></li>
       {% for label, type in item_lists %}

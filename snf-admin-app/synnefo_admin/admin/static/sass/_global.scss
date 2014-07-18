@@ -30,6 +30,7 @@ $secondary-link-color:      #fff;
 // State colors
 
 
+$menu-height: 50px;
 
 // Βutton colors
 $default-btn-color: $blue-intense;
@@ -55,6 +56,12 @@ $hover-nav-color: #333;
         }
     }
 }
+
+@mixin box-shadow($shadow...) {
+  -webkit-box-shadow: $shadow; // iOS <4.3 & Android <4.1
+          box-shadow: $shadow;
+}
+
 
 
 

@@ -820,6 +820,7 @@ class ObjectPut(PithosAPITest):
     def test_create_object_by_hashmap(self):
         cname = self.container
         block_size = pithos_settings.BACKEND_BLOCK_SIZE
+        block_hash = pithos_settings.BACKEND_HASH_ALGORITHM
 
         # upload an object
         oname, data = self.upload_object(cname, length=block_size + 1)[:-1]
@@ -863,8 +864,8 @@ class ObjectPut(PithosAPITest):
         r = self.put('%s?hashmap=' % url, data='not json')
         self.assertEqual(r.status_code, 400)
 
-        d = {"block_hash": "sha1",
-             "block_size": TEST_BLOCK_SIZE}
+        d = {"block_hash": block_hash,
+             "block_size": block_size}
         hashmap = json.dumps(d)
         r = self.put('%s?hashmap=' % url, data=hashmap)
         self.assertEqual(r.status_code, 400)
@@ -877,13 +878,12 @@ class ObjectPut(PithosAPITest):
         r = self.put('%s?hashmap=' % url, data=hashmap)
         self.assertEqual(r.status_code, 400)
 
-        l = list(data)
-        l[-1] = chr((ord(l[-1]) + 1) % 255)  # Change only the last char
-        data = ''.join(l)
-        hashes = HashMap(TEST_BLOCK_SIZE, TEST_HASH_ALGORITHM)
-        hashes.load(data)
+        length = (block_size  - len(data) % block_size)
+        more_data = ''.join([data, get_random_data(length=length)])
+        hashes = HashMap(block_size, block_hash)
+        hashes.load(more_data)
         hexlified = [hexlify(h) for h in hashes]
-        d.update({"hashes": hexlified, "bytes": len(data)})
+        d.update({"hashes": hexlified, "bytes": len(more_data)})
         hashmap = json.dumps(d)
         r = self.put('%s?hashmap=' % url, data=hashmap)
         self.assertEqual(r.status_code, 409)
@@ -892,7 +892,7 @@ class ObjectPut(PithosAPITest):
         except:
             self.fail("shouldn't happen")
         else:
-            self.assertEqual(sorted(missing), sorted(hexlified[-1:]))
+            self.assertEqual(missing, hexlified[-1:])
 
         r = self.get('%s?hashmap=&format=xml' % url)
         oname = get_random_name()

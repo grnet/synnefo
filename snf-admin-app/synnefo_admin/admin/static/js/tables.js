@@ -135,7 +135,7 @@ $(document).ready(function() {
 				"targets": '_all',
 				"render": function( data, type, row, meta ) {
 					if(data.length > maxCellChar) {
-						return trimedCellTemplate(data, maxCellChar);
+						return _.template(snf.tables.html.trimedCell, {data: data, trimmedData: data.substring(0, maxCellChar)});
 					}
 					else {
 						return data;
@@ -161,17 +161,13 @@ $(document).ready(function() {
 			$("[data-toggle=popover]").popover();
 		}
 	});
-	var btn1 = '<a href="" id="select-page" class="select line-btn" data-karma="neutral" data-caution="none"><span>Select Page</span></a>';
-	var btn2 = '<a href="" class="select select-all line-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#massive-actions-warning"><span>Select All</span></a>';
-	var btn3 = '<a href="" id="clear-all" class="disabled deselect line-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#clear-all-warning"><span class="snf-font-remove"></span><span>Clear All</span></a>';
-	var btn4 = '<a href="" class="disabled toggle-selected extra-btn line-btn" data-karma="neutral"><span class="text">Show selected </span><span class="badge num selected-num">0</span></a>';
-	var btn5 = '<a href="" class="line-btn reload-table" data-karma="neutral" data-caution="none" title="Reload table"><span class="snf-font-reload"></span></a>';
 
 	if($actionbar.length > 0) {
-		$("div.custom-buttons:not(.bottom)").html(btn5+btn1+btn2+btn3+btn4);
+		var btns = snf.tables.html.reloadTable + snf.tables.html.selectPageBtn + snf.tables.html.selectAllBtn + snf.tables.html.clearSelected + snf.tables.html.toggleSelected
+		$("div.custom-buttons:not(.bottom)").html(btns);
 	}
 	else {
-		$("div.custom-buttons:not(.bottom)").html(btn5);
+		$("div.custom-buttons:not(.bottom)").html(snf.tables.html.reloadTable);
 	}
 	$('.container').on('click', '.reload-table', function(e) {
 		e.preventDefault();
@@ -310,7 +306,7 @@ $(document).ready(function() {
 				"targets": '_all',
 				"render": function( data, type, row, meta ) {
 					if(data.length > maxCellChar) {
-						return trimedCellTemplate(data, maxCellChar);
+						return _.template(snf.tables.html.trimedCell, {data: data, trimmedData: data.substring(0, maxCellChar)});
 					}
 					else {
 						return data;
@@ -488,44 +484,36 @@ $(document).ready(function() {
 		}
 	};
 
-	function trimedCellTemplate(strData, limit) {
-		var html = '<span title="click to see">'+'<span data-container="body" data-toggle="popover" data-placement="bottom" data-content="'+strData+'">'+strData.substring(0, limit)+'...'+'</span>'+'</span>';
-		return html;
-	};
-
 	function checkboxTemplate(data, initState) {
 		if(data.length > maxCellChar) {
-			data = trimedCellTemplate(data, maxCellChar);
+			data = _.template(snf.tables.html.trimedCell, {data: data, trimmedData: data.substring(0, maxCellChar)});
 		}
 		if($actionbar.length > 0)
-			return '<span class="snf-font-admin snf-checkbox-'+initState+' selection-indicator"></span>'+data;
+			return _.template(snf.tables.html.checkboxCell, {state: initState, content: data});
 		else
 			return data;
-
 	}
 
 	function extraTemplate(data) {
-
-
-			var listTemplate = '<dt>{key}:</dt><dd>{value}</dd>';
 			var list = '';
-			var listItem = listTemplate.replace('{key}', prop).replace('{value}',data[prop]);
 			var html;
 			var hasDetails = false;
 			for(var prop in data) {
 				if(prop !== "details_url") {
 					if(data[prop].visible) {
-						list += listTemplate.replace('{key}', data[prop].display_name).replace('{value}',data[prop].value);
+						list += _.template(snf.tables.html.summaryLine, {key: data[prop].display_name, value: data[prop].value});
 					}
 				}
 				else {
 					hasDetails = true;
 				}
 			}
-			if(hasDetails)
-			html = '<a title="Details" href="'+ data["details_url"].value +' " class="details-link"><span class="snf-font-admin snf-search"></span></a><a title="Show summary" href="#" class="summary-expand expand-area"><span class="snf-font-admin snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
-		else 
-			html = '<a title="Show summary" href="#" class="summary-expand expand-area"><span class="snf-font-admin snf-angle-down"></span></a><dl class="info-summary dl-horizontal">'+ list +'</dl>';
+		if(hasDetails) {
+			html = _.template(snf.tables.html.detailsBtn, {url: data["details_url"].value}) + _.template(snf.tables.html.summary, {list: list});
+		}
+		else {
+			html = _.template(snf.tables.html.summary, {list: list});
+		}
 			return html;
 	};
 
@@ -761,7 +749,8 @@ $(document).ready(function() {
 	$('.modal .clear-all-confirm').click(function() {
 		resetAll(tableDomID);
 	});
-
+	var $notificationArea = $('.notify');
+	var countAction = 0;
 	$('.modal .apply-action').click(function(e) {
 		var $modal = $(this).closest('.modal');
 		var completeAction = true;
@@ -789,12 +778,13 @@ $(document).ready(function() {
 		}
 		if(completeAction) {
 			$('[data-toggle="popover"]').popover('hide');
-			performAction($modal);
+			snf.modals.performAction($modal, $notificationArea, snf.modals.html.reloadTable, selected.items.length, countAction);
 			snf.modals.resetErrors($modal);
 			snf.modals.resetInputs($modal);
 			removeWarningDupl($modal);
 			resetAll(tableDomID);
 			resetToggleAllBtn($modal);
+			countAction++;
 		}
 	});
 
@@ -833,77 +823,6 @@ $(document).ready(function() {
 		$num.html(selectedNum); // should this use updateCounter?
 		updateCounter('.selected-num');
 	});
-
-	var $notificationArea = $('.notify');
-	var countAction = 0;
-	function performAction(modal) {
-		var $modal = $(modal);
-		var $actionBtn = $modal.find('.apply-action')
-		var url = $actionBtn.attr('data-url');
-		var countItems = selected.items.length;
-		var actionName = $actionBtn.find('span').text();
-		var logID = 'action-'+countAction;
-		countAction++;
-		var removeBtn = '<a href="" class="remove-icon remove-log" title="Remove this line">X</a>';
-		var warningMsg = '<p class="warning">The data of the table maybe out of date.<a class="snf-refresh-outline reload-table reload-btn" title="reload table"></a></p>'
-		var data = {
-		op: $actionBtn.attr('data-op'),
-		target: $actionBtn.attr('data-target'),
-		ids: $actionBtn.attr('data-ids')
-		}
-		var contactAction = (data.op === 'contact' ? true : false);
-
-		if(contactAction) {
-			data['subject'] = $modal.find('input[name="subject"]').val();
-			data['text'] = $modal.find('textarea[name="text"]').val();
-		}
-		$.ajax({
-			url: url,
-			type: 'POST',
-			data: JSON.stringify(data),
-			contentType: 'application/json',
-			timeout: 100000,
-			beforeSend: function(jqXHR, settings) {
-				var htmlPending = '<p class="log" id='+logID+'><span class="pending state-icon snf-font-admin snf-exclamation-sign"></span>Action <em>"'+actionName+'"</em> for '+countItems+' items is <em class="pending">pending</em>.'+removeBtn+'</p>';
-				if($notificationArea.find('.warning').length === 0) {
-					$notificationArea.find('.container').append(htmlPending);
-					$notificationArea.find('.container').append(warningMsg);
-				}
-				else {
-					$notificationArea.find('.warning').before(htmlPending);
-				}
-				snf.modals.showBottomModal($notificationArea);
-				$notificationArea.find('.warning').fadeIn('slow');
-			},
-			// complete: function()
-			success: function(response, statusText, jqXHR) {
-				var htmlSuccess = '<p class="log"><span class="success state-icon snf-font-admin snf-ok"></span>Action <em>"'+actionName+'"</em> for '+countItems+' items has <em class="succeed">succeeded</em>.'+removeBtn+'</p>';
-				$notificationArea.find('#'+logID).replaceWith(htmlSuccess);
-				snf.modals.showBottomModal($notificationArea);
-			},
-			error: function(jqXHR, statusText) {
-				console.log(jqXHR, statusText, jqXHR.status);
-				var htmlErrorSum = '<p><span class="error state-icon snf-font-admin snf-remove"></span>Action <em>"'+actionName+'"</em> for '+countItems+' items has <em class="error">failed</em>.'+removeBtn+'</p>'
-				var htmlErrorReason, htmlErrorIDs, htmlError;
-				if(jqXHR.status === 500 || jqXHR.status === 0) {
-					htmlErrorReason = '<dl class="dl-horizontal"><dt>Reason:</dt><dd>'+jqXHR.statusText+' (code: '+jqXHR.status+').</dd></dl>';
-					htmlErrorIDs = '';
-				}
-				else {
-					htmlErrorReason = '<dl class="dl-horizontal">'+'<dt>Reason:</dt><dd>'+jqXHR.responseJSON.result+'</dd>';
-					htmlErrorIDs ='<dt>IDs:</dt><dd>'+jqXHR.responseJSON.error_ids.toString().replace(/\,/gi, ', ')+'</dd>'+'</dl>'
-				}
-
-				htmlError = '<div class="log">'+htmlErrorSum+htmlErrorReason+htmlErrorIDs+'</div>'
-				$notificationArea.find('#'+logID).replaceWith(htmlError);
-				if($notificationArea.find('.warning').length === 0) {
-					$notificationArea.find('.container').append(warningMsg);
-				}
-
-				snf.modals.showBottomModal($notificationArea);
-			}
-		});
-	};
 
 
 	function drawModal(modalID) {

@@ -108,79 +108,12 @@ $('.main .object-details h4 .arrow').trigger('click')
 	function drawModalSingleItem(modalID, itemName, itemID) {
 		var $summary = $(modalID).find('.modal-body .summary');
 		var $actionBtn = $(modalID).find('.apply-action');
-		var html = '<dl class="dl-horizontal info-list"><dt>Name:</dt><dd>'+itemName+'</dd><dt>ID:</dt><dd>'+itemID+'</dd><dl>'
+		var html = _.template(snf.modals.html.singleItemInfo);
+
 		$actionBtn.attr('data-ids','['+itemID+']');
-		$summary.append(html);
+		$summary.append(html({name: itemName, id: itemID}));
 	};
 
-	var $notificationArea = $('.notify');
-	var countAction = 0;
-	function performAction(modal) {
-		var $modal = $(modal);
-		var $actionBtn = $modal.find('.apply-action')
-		var url = $actionBtn.attr('data-url');
-		var actionName = $actionBtn.find('span').text();
-		var logID = 'action-'+countAction;
-		countAction++;
-		var removeBtn = '<a href="" class="remove-icon remove-log" title="Remove this line">X</a>';
-		var warningMsg = '<p class="warning">The data of the page maybe out of date. Refresh it, to update them.</p>'
-		var data = {
-		op: $actionBtn.attr('data-op'),
-		target: $actionBtn.attr('data-target'),
-		ids: $actionBtn.attr('data-ids')
-		}
-		var contactAction = (data.op === 'contact' ? true : false);
-
-		if(contactAction) {
-			data['subject'] = $modal.find('input[name="subject"]').val();
-			data['text'] = $modal.find('textarea[name="text"]').val();
-		}
-		console.log(data)
-		$.ajax({
-			url: url,
-			type: 'POST',
-			data: JSON.stringify(data),
-			contentType: 'application/json',
-			timeout: 100000,
-			beforeSend: function(jqXHR, settings) {
-				var htmlPending = '<p class="log" id='+logID+'><span class="pending state-icon snf-font-admin snf-exclamation-sign"></span>Action <em>"'+actionName+'"</em> is <em class="pending">pending</em>.'+removeBtn+'</p>';
-				if($notificationArea.find('.warning').length === 0) {
-					$notificationArea.find('.container').append(htmlPending);
-					$notificationArea.find('.container').append(warningMsg);
-				}
-				else {
-					$notificationArea.find('.warning').before(htmlPending);
-				}
-				snf.modals.showBottomModal($notificationArea);
-				$notificationArea.find('.warning').fadeIn('slow');
-			},
-			success: function(response, statusText, jqXHR) {
-				var htmlSuccess = '<p class="log"><span class="success state-icon snf-font-admin snf-ok"></span>Action <em>"'+actionName+'"</em> has <em class="succeed">succeeded</em>.'+removeBtn+'</p>';
-				$notificationArea.find('#'+logID).replaceWith(htmlSuccess);
-				snf.modals.showBottomModal($notificationArea);
-			},
-			error: function(jqXHR, statusText) {
-				var htmlErrorSum = '<p><span class="error state-icon snf-font-admin snf-remove"></span>Action <em>"'+actionName+'"</em> has <em class="error">failed</em>.'+removeBtn+'</p>'
-				var htmlErrorReason, htmlErrorIDs, htmlError;
-				if(jqXHR.status === 500 || jqXHR.status === 0) {
-					htmlErrorReason = '<dl class="dl-horizontal"><dt>Reason:</dt><dd>'+jqXHR.statusText+' (code: '+jqXHR.status+').</dd></dl>';
-					htmlErrorIDs = '';
-				}
-				else {
-					htmlErrorReason = '<dl class="dl-horizontal">'+'<dt>Reason:</dt><dd>'+jqXHR.responseJSON.result+'</dd>';
-					htmlErrorIDs ='<dt>IDs:</dt><dd>'+jqXHR.responseJSON.error_ids.toString().replace(/\,/gi, ', ')+'</dd>'+'</dl>'
-				}
-
-				htmlError = '<div class="log">'+htmlErrorSum+htmlErrorReason+htmlErrorIDs+'</div>'
-				$notificationArea.find('#'+logID).replaceWith(htmlError);
-				if($notificationArea.find('.warning').length === 0) {
-					$notificationArea.find('.container').append(warningMsg);
-				}
-
-				snf.modals.showBottomModal($notificationArea);
-			}
-		});
-	}
 
 	$('.modal').find('.cancel').click(function() {
 		$modal =$(this).closest('.modal');
@@ -191,7 +124,8 @@ $('.main .object-details h4 .arrow').trigger('click')
 
 	});
 
-
+	var $notificationArea = $('.notify');
+	var countAction = 0;
 	$('.modal .apply-action').click(function(e) {
 		var $modal = $(this).closest('.modal');
 		var completeAction = true;
@@ -214,11 +148,12 @@ $('.main .object-details h4 .arrow').trigger('click')
 			}
 		}
 		if(completeAction) {
-			performAction($modal);
+			snf.modals.performAction($modal, $notificationArea, snf.modals.html.reloadTable, 0, countAction);
 			snf.modals.resetInputs($modal);
 			snf.modals.resetErrors($modal);
 			resetItemInfo($modal);
 			$('[data-toggle="popover"]').popover('hide');
+			countAction++;
 		}
 	});
 

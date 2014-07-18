@@ -30,6 +30,8 @@
                 <dl class="dl-horizontal well">
                     <dt>UUID</dt><dd>{{ user.uuid }}</dd>
                     <dt>Name</dt><dd>{{ user.realname }}</dd>
+                    <dt>Email</dt><dd>{{ user.email }}</dd>
+                    <dt>Status</dt><dd>{{ user.status_display|upper }}</dd>
                     <dt>Groups</dt><dd>{{ user|get_groups }}</dd>
                 </dl>
             </div>
@@ -55,9 +57,6 @@
                         <dt>Deactivated at</dt><dd>{{ user.deactivated_at }}</dd>
                         <dt>Deactivation reason</dt><dd>{{ user.deactivated_reason }}</dd>
                     {% endif %}
-
-                    <dt>---</dt><dd>------------------</dd>
-
                     <dt>Last profile update at</dt><dd>{{ user.updated }}</dd>
                     <dt>Last logged-in at</dt><dd>{{ user.last_login }}</dd>
 
@@ -65,26 +64,9 @@
             </div>
             <div class="tab-pane" id="auth{{ user.uuid }}">
                 <dl class="dl-horizontal well">
-                    <dt>Unused</dt><dd>
-                        {% for ap in user.get_available_auth_providers %}
-                            {{ ap.module }},
-                        {% empty %}
-                            None
-                        {% endfor %}
-                    </dd>
-                    <dt>Enabled</dt><dd>
-                        {% for ap in user.get_enabled_auth_providers %}
-                            {{ ap.module }},
-                        {% empty %}
-                            None
-                        {% endfor %}
-                    <dt>Disabled</dt><dd>
-                        {% for ap in user.get_disabled_auth_providers %}
-                            {{ ap.module }},
-                        {% empty %}
-                            None
-                        {% endfor %}
-                    </dd>
+                    <dt>Unused</dt><dd>{{ user|show_auth_providers:"available" }}</dd>
+                    <dt>Enabled</dt><dd>{{ user|show_auth_providers:"enabled" }}</dd>
+                    <dt>Disabled</dt><dd>{{ user|show_auth_providers:"disabled" }}</dd>
                 </dl>
             </div>
         </div> <!-- <div class="tab-content"> -->

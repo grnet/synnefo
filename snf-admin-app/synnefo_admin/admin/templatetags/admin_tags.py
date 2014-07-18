@@ -296,6 +296,17 @@ def get_project_stats(project):
 
 
 @register.filter
+def show_auth_providers(user, category):
+    """Show auth providers for a user."""
+    func = getattr(user, "get_%s_auth_providers" % category)
+    providers = [prov.module for prov in func()]
+    if providers:
+        return ", ".join(providers)
+    else:
+        return "None"
+
+
+@register.filter
 def can_apply(action, item):
     """Return if action can apply on item."""
     if action.name == "Send e-mail" and action.target != 'user':

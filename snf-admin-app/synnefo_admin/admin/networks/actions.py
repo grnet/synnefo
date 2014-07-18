@@ -83,9 +83,9 @@ def generate_actions():
                                        #c=check_network_action('UNDRAIN'),
                                        karma='neutral',)
 
-    actions['delete'] = NetworkAction(name='Delete', f=networks.delete,
-                                      c=check_network_action('DESTROY'),
-                                      karma='bad', caution_level='dangerous',)
+    actions['destroy'] = NetworkAction(name='Destroy', f=networks.delete,
+                                       c=check_network_action('DESTROY'),
+                                       karma='bad', caution_level='dangerous',)
 
     actions['reassign'] = NetworkAction(name='Reassign to project', f=noop,
                                         karma='neutral',

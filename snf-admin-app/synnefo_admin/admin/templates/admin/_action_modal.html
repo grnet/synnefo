@@ -32,10 +32,10 @@
                 </div>
                 {# If we are in a details view, then the number of items is just one, so we can get rid of the plural #}
                 <div class="summary">
-                    <p>You have choosen to <em class="elem lowercase">{{ action.name }}</em> the following <em class="num elem"></em> user{% if view_type == 'list' %}s{% endif %}:
+                    <p>You have chosen to <em class="elem lowercase">{{ action.name }}</em> the following <em class="num elem"></em> user{% if view_type == 'list' %}s{% endif %}:
                 {% else %}
                 <div class="summary">
-                    <p>You have choosen to <em class="elem lowercase">{{ action.name }}</em> the following <em class="num elem"></em> {{action.target}}{% if view_type == 'list' %}s{% endif %}:
+                    <p>You have chosen to <em class="elem lowercase">{{ action.name }}</em> the following <em class="num elem"></em> {{action.target}}{% if view_type == 'list' %}s{% endif %}:
                 {% endif %}
                         <a data-error="no-selected" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="There are no selected items to complete this action."></a>
                     </p>

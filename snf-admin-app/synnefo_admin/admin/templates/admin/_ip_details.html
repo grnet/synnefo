@@ -14,9 +14,6 @@
         </span>
         <span class="rt">
             <span class="label">ID: {{ip.pk}}</span>
-            {% if ip.floating_ip %}
-            <span class="label">FLOATING</span>
-            {% endif %}
             <span class="label">IPv{{ ip.ipversion }}</span>
         </span>
     </h4>

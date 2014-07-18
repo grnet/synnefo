@@ -55,8 +55,8 @@ def generate_actions():
     """
     actions = OrderedDict()
 
-    actions['delete'] = IPAction(name='Delete', f=ips.delete_floating_ip,
-                                 karma='bad', caution_level='dangerous',)
+    actions['destroy'] = IPAction(name='Destroy', f=ips.delete_floating_ip,
+                                  karma='bad', caution_level='dangerous',)
 
     actions['reassign'] = IPAction(name='Reassign to project', f=noop,
                                    karma='neutral', caution_level='dangerous',)

@@ -5,7 +5,9 @@
 @import "filters";
 @import "modals";
 @import "tables";
-@import "nav";
+
+
+/* Layout  & general stuff */
 
 html, body {
 	height: 100%;
@@ -23,63 +25,22 @@ body {
     max-width: 960px;
 }
 
-.info-block h3 .badge {   font-size: 0.8em; padding: 5px 8px; background-color:#659CEF;}
-.object-anchor {height:2px; }
+.info {
+	overflow: auto;
+}
 
-/* new styles olga */
-
-
- 
-.dropdown-menu li > a:hover, 
-.dropdown-menu .active > a, 
-.dropdown-menu .active > a:hover { background-color: $gray-lighter; } 
-
-.object-details-content     { display:none; }
-.account .object-details-content{ display:block; }
-
-.tab-content .dl-horizontal   { margin:0; }
-.tab-content .dl-horizontal dd {
+.dl-horizontal dd, dt,
+.tooltip-inner{
     word-wrap: break-word;
 }
-
-.label-success, 
-.badge-success          { background-color:#8BBA00 }
-.badge-important        { background-color: #F81A23; }
-.badge-info           { background-color:#659CEF }
-.show-hide-tabs         { margin:2em 0; }
-.toggle .badge          { font-size:14px; padding:5px 9px; }
-.toggle .badge:hover      { cursor:pointer;  }
-.show-hide-tabs .badge      { background-color:#8BBA00; }
-.show-hide-tabs .badge:hover  { background-color:#789B0F }
-.show-hide-all .badge     { background-color:#8BBA00; }
-.show-hide-all .badge:hover   { background-color:#789B0F }
-
-h4 .badge.arrow           { padding:6px 9px 2px; background:url(../img/glyphicons-halflings.png) 160px 43px transparent;}
-h4.expanded .badge        { background-position: 185px 43px}
-
-
-h4 i              { margin-top: 4px; margin-right: 10px;}
-.container-fluid        { margin-left:auto; margin-right:auto; margin-top:0; /*max-width:960px;*/ }
-h3.info             { cursor:default; color:#2956B2; text-align:center; font-size:16px; margin-bottom:0;}
-
-
-a.disabled {
+.disabled {
 	cursor: default !important;
-}
-/* All checkboxes */
-
-.checkbox {
-	margin: 0;
-}
-.checkbox label {
-	margin-bottom: 0;
 }
 
 
 /* Home */
 
 .app-list {
-	margin: auto;
 	position: relative;
 	text-align: center;
 	top: 30%;
@@ -101,49 +62,85 @@ a.disabled {
 	}
 }
 
-
-/* Area that includes all the info and */
-
-.info {
-	overflow: auto;
-	border-color: $blue-light-extra;
-}
-
-.info-fixed {
-	overflow: hidden;
-	margin-left: 200px;
-}
-
-a:not([disabled]):hover {
-	cursor: pointer;
-}
-
-.account-action.form-btn {
-		display: inline-block;
+.nav-simple {
+	padding: $nav-side-padding;
+	border-bottom: 1px solid white;
+	.header {
 		float: left;
-		margin-left: 10px;
+		line-height: 40px;
+		font-size: 26px;
+        img {
+            max-height: 50px;
+        }
+	}
+	.login-info {
+        float: right;
+        position: relative;
+        line-height: 40px;
+        font-size: 16px;
+        .dropdown { 
+            display: inline;
+            &:hover {
+                &>a {
+                    background: lighten($hover-nav-color, 10%); 
+                }
+            }
+            &> a {
+                color: #fff;
+                display: inline-block;
+                padding: 0 10px;
+            }
+        }
+        .dropdown-menu {
+            left: auto;
+            right: 0;
+            top: 27px;
+        }
+    }
 }
 
-.buttons-list {
-		list-style: none;
+/* Navigation */
+
+.navbar-default {
+    border: 0 none;
+    z-index: 1040;
+    .home-icon {
+        padding: 0;
+        height: $menu-height;
+        width: $menu-height;
+        text-align: center;
+        line-height: $menu-height;
+        img {
+            max-height: $menu-height;
+        }
+    }
+
 }
 
-.buttons-list li {
-		display: inline-block;
-		float: left;
-		margin-left: 10px;
+.sub-nav {
+    top: $menu-height;
+    min-height: inherit;
+    .nav {
+        >li>a {
+            padding-top: 8px;
+            padding-bottom: 8px;
+        }
+    }
+}
+.dropdown-menu {
+    overflow-y: auto;
 }
 
-.checkbox-column {
-	position: relative;
+.nav .dropdown:hover > ul.dropdown-menu, 
+.nav-simple .dropdown:hover > ul.dropdown-menu {
+	display: block;
 }
 
-.container-demo, .chart {
-	height: 400px;
-	width: 100%;
-	margin: 0 auto 40px;
-    display: none;
-}
+
+
+
+
+/* More */
 
 svg>text:last-child {
 	display: none;
@@ -165,41 +162,28 @@ svg>text:last-child {
 .with-shift *::-moz-selection {
 	background: transparent;
 }
-
-.warning-duplicate {
-	font-size: 0.95em;
-	font-style: italic;
-}
-
-
-/* updated olga */
-
 .tab-content {
 	background: $gray-light;
 	padding: 20px;
 	.well {
 		border-color: $gray-light;
+        margin-bottom: 0;
 	}
 }
 
-
-.content-seperator {
-	display: none;
-}
-
-
 .selection-indicator {
-	margin-right: 6px;
 	cursor: pointer;
-    padding: 0 6px;
+    padding: 6px 12px 6px 6px;
 }
+
+/* Notification area */
 
 .notify {
 	// display: none;
 	padding: 30px 10px 15px;
 	width: 100%;
 	position: fixed;
-	bottom: 0px;
+	bottom: 0;
 	background: $brand-primary;
     color: $snf_reverse-text-color;
     .container>*:not(:last-child) {
@@ -227,10 +211,6 @@ svg>text:last-child {
 	.pending {
 		color: $brand-warning;
 	}
-	em {
-		font-style: normal;
-		font-weight: bold;
-	}
 	.warning {
 		font-style: italic;
 		font-weight: bold;
@@ -247,8 +227,6 @@ svg>text:last-child {
     }
 	.dl-horizontal {
         margin-left: 21px;
-		// width: 900px;
-		// margin: auto;
 		dt{
 			width: 80px;
             vertical-align: top;
@@ -269,12 +247,12 @@ svg>text:last-child {
 	text-transform:lowercase;
 }
 
-.book-icon {
-	// margin-right: 10px;
-	font-size: 20px;
-	vertical-align: sub;
+.shortcuts-btn {
+    span {
+        font-size: 20px;
+        vertical-align: sub;
+    }
 }
-
 
 .shortcuts {
 	.key {
@@ -286,10 +264,9 @@ svg>text:last-child {
 	}
 }
 
-body>.popover {
-	// same as .info-block>.popover
+.popover {
 	max-width: none;
-	color: black;
+    color: $snf_reverse-text-color;
 	margin-bottom: 20px;
 	h2 {
 		text-align: center;
@@ -301,16 +278,7 @@ body>.popover {
 		overflow: visible;
 	}
 }
-.dl-horizontal {
-    dt, dd {
-        word-wrap: break-word;
-    }
-}
 
-.tooltip-inner {
-    word-wrap: break-word;
-
-}
 .sign-out span {
     margin-right: 10px;
     vertical-align: middle;

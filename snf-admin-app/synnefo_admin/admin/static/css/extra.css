@@ -2262,67 +2262,72 @@ Extra-button is used to show total selected rows
   padding: 0;
 }
 
-/* line 17, ../sass/_details.scss */
+/* line 16, ../sass/_details.scss */
+.object-anchor {
+  height: 2px;
+}
+
+/* line 19, ../sass/_details.scss */
 .object-details h4 {
   font-size: 14px;
   letter-spacing: 1px;
 }
-/* line 20, ../sass/_details.scss */
+/* line 22, ../sass/_details.scss */
 .object-details h4 .lt {
   display: block;
   float: left;
   max-width: 60%;
   word-wrap: break-word;
 }
-/* line 26, ../sass/_details.scss */
+/* line 28, ../sass/_details.scss */
 .object-details h4 .rt {
   padding-top: 5px;
   display: block;
   overflow: hidden;
 }
-/* line 31, ../sass/_details.scss */
+/* line 33, ../sass/_details.scss */
 .object-details h4 .arrow {
   position: relative;
   padding: 0 8px;
 }
-/* line 34, ../sass/_details.scss */
+/* line 36, ../sass/_details.scss */
 .object-details h4 .arrow:hover {
   top: 2px;
   cursor: pointer;
 }
-/* line 39, ../sass/_details.scss */
+/* line 41, ../sass/_details.scss */
 .object-details h4 .label {
   float: right;
   margin-left: 15px;
   margin-bottom: 10px;
 }
-/* line 43, ../sass/_details.scss */
+/* line 45, ../sass/_details.scss */
 .object-details h4 .label.important {
   font-weight: bold;
 }
-/* line 47, ../sass/_details.scss */
+/* line 49, ../sass/_details.scss */
 .object-details h4 em {
   float: none;
 }
-/* line 49, ../sass/_details.scss */
+/* line 51, ../sass/_details.scss */
 .object-details h4 em.os-info {
   float: right;
   position: relative;
   bottom: 3px;
 }
-/* line 53, ../sass/_details.scss */
+/* line 55, ../sass/_details.scss */
 .object-details h4 em.os-info img {
   height: 26px;
   margin-right: 5px;
 }
-/* line 60, ../sass/_details.scss */
+/* line 62, ../sass/_details.scss */
 .object-details h3 {
   font-size: 18px;
   margin: 0 0 1em;
   font-weight: 400;
   line-height: 35px;
 }
-/* line 65, ../sass/_details.scss */
+/* line 67, ../sass/_details.scss */
 .object-details h3 em {
   margin-left: 10px;
   font-size: 14px;
@@ -2333,13 +2338,13 @@ Extra-button is used to show total selected rows
   max-width: 50%;
   vertical-align: top;
 }
-/* line 73, ../sass/_details.scss */
+/* line 75, ../sass/_details.scss */
 .object-details h3 span[class^="snf-details"] {
   float: left;
   margin-right: 8px;
   font-size: 35px;
 }
-/* line 78, ../sass/_details.scss */
+/* line 80, ../sass/_details.scss */
 .object-details h3 .popover-dismiss {
   display: inline-block;
   width: 24px;
@@ -2356,52 +2361,52 @@ Extra-button is used to show total selected rows
   margin-left: 10px;
   color: #eeeeee;
 }
-/* line 88, ../sass/_details.scss */
+/* line 90, ../sass/_details.scss */
 .object-details h3 .popover-dismiss:hover {
   background: #686868;
 }
-/* line 93, ../sass/_details.scss */
+/* line 95, ../sass/_details.scss */
 .object-details h3 .popover .popover-content {
   font-size: 12px;
   color: #303030;
   line-height: 130%;
 }
-/* line 100, ../sass/_details.scss */
+/* line 102, ../sass/_details.scss */
 .object-details .icon-link {
   margin-right: 10px;
 }
-/* line 103, ../sass/_details.scss */
+/* line 105, ../sass/_details.scss */
 .object-details p {
   margin: 10px 20px;
   font-style: italic;
 }
-/* line 108, ../sass/_details.scss */
+/* line 110, ../sass/_details.scss */
 .object-details .length {
   margin-left: 6px;
   border: 0 none;
   font-style: italic;
 }
-/* line 112, ../sass/_details.scss */
+/* line 114, ../sass/_details.scss */
 .object-details .length::before {
   content: '( ';
 }
-/* line 115, ../sass/_details.scss */
+/* line 117, ../sass/_details.scss */
 .object-details .length::after {
   content: ' )';
 }
-/* line 119, ../sass/_details.scss */
+/* line 121, ../sass/_details.scss */
 .object-details > .object-details {
   margin-left: -20px;
   margin-right: -20px;
   padding: 12px 20px;
 }
 
-/* line 127, ../sass/_details.scss */
+/* line 129, ../sass/_details.scss */
 .object-details-content .nav-tabs > li a {
   opacity: 0.7;
   color: white;
 }
-/* line 131, ../sass/_details.scss */
+/* line 133, ../sass/_details.scss */
 .object-details-content .nav-tabs > li.active > a {
   opacity: 1;
   border-color: transparent;
@@ -2409,7 +2414,7 @@ Extra-button is used to show total selected rows
   color: white;
   border-radius: 0;
 }
-/* line 138, ../sass/_details.scss */
+/* line 140, ../sass/_details.scss */
 .object-details-content .nav-tabs > li:not(.active) > a:hover {
   opacity: 1;
   color: white;
@@ -2417,23 +2422,23 @@ Extra-button is used to show total selected rows
   background: transparent;
 }
 
-/* line 146, ../sass/_details.scss */
+/* line 148, ../sass/_details.scss */
 .tab-pane {
   overflow: auto;
 }
 
-/* line 150, ../sass/_details.scss */
+/* line 152, ../sass/_details.scss */
 .parts-separator {
   border-top: 2px solid #818181;
   padding-top: 1em;
 }
-/* line 153, ../sass/_details.scss */
+/* line 155, ../sass/_details.scss */
 .parts-separator h2 {
   font-size: 24px;
   margin-bottom: 2em;
   padding-top: 1em;
 }
-/* line 157, ../sass/_details.scss */
+/* line 159, ../sass/_details.scss */
 .parts-separator h2 em {
   max-width: 50%;
   display: inline-block;
@@ -2443,44 +2448,45 @@ Extra-button is used to show total selected rows
   vertical-align: top;
 }
 
-/* line 168, ../sass/_details.scss */
+/* line 170, ../sass/_details.scss */
 .part-two > .object-details {
   border-bottom: 2px solid #818181;
   background: #383838;
   padding: 14px 20px;
 }
-/* line 172, ../sass/_details.scss */
+/* line 174, ../sass/_details.scss */
 .part-two > .object-details .object-details {
   padding: 5px 20px;
 }
-/* line 174, ../sass/_details.scss */
+/* line 176, ../sass/_details.scss */
 .part-two > .object-details .object-details:hover {
   background: #3d3d3d;
 }
-/* line 179, ../sass/_details.scss */
+/* line 181, ../sass/_details.scss */
 .part-two > .object-details .custom-btn span {
   padding: 5px;
 }
-/* line 184, ../sass/_details.scss */
+/* line 186, ../sass/_details.scss */
 .part-two .object-details-content {
+  display: none;
   padding: 0 35px;
 }
 
-/* line 216, ../sass/_details.scss */
+/* line 219, ../sass/_details.scss */
 .show-hide-all span.snf-font-arrow-up {
   display: none;
   padding: 0;
 }
-/* line 221, ../sass/_details.scss */
+/* line 224, ../sass/_details.scss */
 .show-hide-all span.snf-font-arrow-down {
   display: inline;
   padding: 0;
 }
-/* line 227, ../sass/_details.scss */
+/* line 230, ../sass/_details.scss */
 .show-hide-all.open .snf-font-arrow-up {
   display: inline;
 }
-/* line 230, ../sass/_details.scss */
+/* line 233, ../sass/_details.scss */
 .show-hide-all.open .snf-font-arrow-down {
   display: none;
 }
@@ -2529,61 +2535,61 @@ Extra-button is used to show total selected rows
   color: #303030;
   background: transparent;
   font-weight: normal;
+  margin: 0;
 }
-/* line 40, ../sass/_filters.scss */
+/* line 41, ../sass/_filters.scss */
 .filter .dropdown-menu {
   margin: 0;
 }
-/* line 43, ../sass/_filters.scss */
+/* line 44, ../sass/_filters.scss */
 .filter input {
   border: 0 none;
   background: transparent;
   height: 30px;
-  line-height: 1.3;
+  line-height: 30px;
   padding: 0 5px;
   font-weight: normal;
-  border-radius: 0;
 }
 
-/* line 58, ../sass/_filters.scss */
+/* line 57, ../sass/_filters.scss */
 .filter-dropdown .dropdown > a .selected-value {
   margin-left: 4px;
 }
-/* line 61, ../sass/_filters.scss */
+/* line 60, ../sass/_filters.scss */
 .filter-dropdown .dropdown > a .arrow {
   font-weight: bold;
 }
-/* line 66, ../sass/_filters.scss */
+/* line 65, ../sass/_filters.scss */
 .filter-dropdown .dropdown.open a {
   text-decoration: none;
   color: #222222;
 }
-/* line 71, ../sass/_filters.scss */
+/* line 70, ../sass/_filters.scss */
 .filter-dropdown .dropdown a {
   color: #303030;
 }
-/* line 74, ../sass/_filters.scss */
+/* line 73, ../sass/_filters.scss */
 .filter-dropdown .dropdown .dropdown-menu {
   width: auto;
 }
-/* line 76, ../sass/_filters.scss */
+/* line 75, ../sass/_filters.scss */
 .filter-dropdown .dropdown .dropdown-menu a {
   padding-left: 12px;
   padding-right: 12px;
 }
-/* line 77, ../sass/_filters.scss */
+/* line 76, ../sass/_filters.scss */
 .filter-dropdown .dropdown .dropdown-menu a span {
   margin-right: 6px;
 }
 
-/* line 89, ../sass/_filters.scss */
+/* line 86, ../sass/_filters.scss */
 body input:not(.subject):focus {
   border-color: transparent;
   -webkit-box-shadow: none;
   box-shadow: none;
 }
 
-/* line 95, ../sass/_filters.scss */
+/* line 91, ../sass/_filters.scss */
 .filters.subnav-fixed {
   top: 50px;
 }
@@ -2786,35 +2792,35 @@ p.progress-area {
   display: none;
 }
 
-/* line 205, ../sass/_modals.scss */
-.table-selected td:last-child {
+/* line 206, ../sass/_modals.scss */
+.modal .table-selected td:last-child {
   position: relative;
   padding-right: 36px;
 }
-/* line 209, ../sass/_modals.scss */
-.table-selected tr:nth-child(2n) {
+/* line 210, ../sass/_modals.scss */
+.modal .table-selected tr:nth-child(2n) {
   background: #f2f2f2;
 }
-/* line 213, ../sass/_modals.scss */
-.table-selected tr a {
+/* line 214, ../sass/_modals.scss */
+.modal .table-selected tr a {
   font-weight: bold;
 }
-/* line 217, ../sass/_modals.scss */
-.table-selected tr:hover {
+/* line 218, ../sass/_modals.scss */
+.modal .table-selected tr:hover {
   background: #d9d9d9;
 }
-/* line 219, ../sass/_modals.scss */
-.table-selected tr:hover a {
+/* line 220, ../sass/_modals.scss */
+.modal .table-selected tr:hover a {
   color: red;
 }
-/* line 224, ../sass/_modals.scss */
-.table-selected .remove {
+/* line 225, ../sass/_modals.scss */
+.modal .table-selected .remove {
   position: absolute;
   right: 14px;
   color: transparent;
 }
-/* line 228, ../sass/_modals.scss */
-.table-selected .remove:hover {
+/* line 229, ../sass/_modals.scss */
+.modal .table-selected .remove:hover {
   text-decoration: none;
 }
 
@@ -3057,260 +3063,51 @@ table.dataTable.no-footer {
   max-width: 150px;
 }
 
-/* line 1, ../sass/_nav.scss */
-.navbar-default {
-  border: 0 none;
-  z-index: 1040;
-}
-/* line 4, ../sass/_nav.scss */
-.navbar-default .home-icon {
-  padding: 0;
-  height: 50px;
-  width: 50px;
-  text-align: center;
-  line-height: 50px;
-}
-/* line 10, ../sass/_nav.scss */
-.navbar-default .home-icon img {
-  max-height: 50px;
-}
-
-/* line 17, ../sass/_nav.scss */
-.sub-nav {
-  top: 50px;
-  min-height: inherit;
-}
-/* line 21, ../sass/_nav.scss */
-.sub-nav .nav > li > a {
-  padding-top: 8px;
-  padding-bottom: 8px;
-}
-
-/* line 27, ../sass/_nav.scss */
-.dropdown-menu {
-  overflow-y: auto;
-}
-
-/* line 32, ../sass/_nav.scss */
-.nav .dropdown:hover > ul.dropdown-menu,
-.nav-simple .dropdown:hover > ul.dropdown-menu {
-  display: block;
-}
-
-/* line 37, ../sass/_nav.scss */
-.nav-simple {
-  padding: 20px;
-  border-bottom: 1px solid white;
-}
-/* line 40, ../sass/_nav.scss */
-.nav-simple .header {
-  float: left;
-  line-height: 40px;
-  font-size: 26px;
-}
-/* line 44, ../sass/_nav.scss */
-.nav-simple .header img {
-  max-height: 50px;
-}
-/* line 48, ../sass/_nav.scss */
-.nav-simple .login-info {
-  float: right;
-  position: relative;
-  line-height: 40px;
-  font-size: 16px;
-}
-/* line 53, ../sass/_nav.scss */
-.nav-simple .login-info .dropdown {
-  display: inline;
-}
-/* line 56, ../sass/_nav.scss */
-.nav-simple .login-info .dropdown:hover > a {
-  background: #4d4d4d;
-}
-/* line 60, ../sass/_nav.scss */
-.nav-simple .login-info .dropdown > a {
-  color: #fff;
-  display: inline-block;
-  padding: 0 10px;
-}
-/* line 66, ../sass/_nav.scss */
-.nav-simple .login-info .dropdown-menu {
-  left: auto;
-  right: 0;
-  top: 27px;
-}
-
-/* line 10, ../sass/extra.scss */
+/* Layout  & general stuff */
+/* line 12, ../sass/extra.scss */
 html, body {
   height: 100%;
 }
 
-/* line 14, ../sass/extra.scss */
+/* line 16, ../sass/extra.scss */
 body {
   padding-top: 100px;
 }
 
-/* line 18, ../sass/extra.scss */
+/* line 20, ../sass/extra.scss */
 .container-solid {
   min-width: 1050px !important;
 }
 
-/* line 22, ../sass/extra.scss */
+/* line 24, ../sass/extra.scss */
 .container:not(.container-solid) {
   max-width: 960px;
 }
 
-/* line 26, ../sass/extra.scss */
-.info-block h3 .badge {
-  font-size: 0.8em;
-  padding: 5px 8px;
-  background-color: #659CEF;
+/* line 28, ../sass/extra.scss */
+.info {
+  overflow: auto;
 }
 
-/* line 27, ../sass/extra.scss */
-.object-anchor {
-  height: 2px;
-}
-
-/* new styles olga */
-/* line 35, ../sass/extra.scss */
-.dropdown-menu li > a:hover,
-.dropdown-menu .active > a,
-.dropdown-menu .active > a:hover {
-  background-color: #d9d9d9;
-}
-
-/* line 37, ../sass/extra.scss */
-.object-details-content {
-  display: none;
-}
-
-/* line 38, ../sass/extra.scss */
-.account .object-details-content {
-  display: block;
-}
-
-/* line 40, ../sass/extra.scss */
-.tab-content .dl-horizontal {
-  margin: 0;
-}
-
-/* line 41, ../sass/extra.scss */
-.tab-content .dl-horizontal dd {
+/* line 33, ../sass/extra.scss */
+.dl-horizontal dd, dt,
+.tooltip-inner {
   word-wrap: break-word;
 }
 
-/* line 46, ../sass/extra.scss */
-.label-success,
-.badge-success {
-  background-color: #8bba00;
-}
-
-/* line 47, ../sass/extra.scss */
-.badge-important {
-  background-color: #F81A23;
-}
-
-/* line 48, ../sass/extra.scss */
-.badge-info {
-  background-color: #659cef;
-}
-
-/* line 49, ../sass/extra.scss */
-.show-hide-tabs {
-  margin: 2em 0;
-}
-
-/* line 50, ../sass/extra.scss */
-.toggle .badge {
-  font-size: 14px;
-  padding: 5px 9px;
-}
-
-/* line 51, ../sass/extra.scss */
-.toggle .badge:hover {
-  cursor: pointer;
-}
-
-/* line 52, ../sass/extra.scss */
-.show-hide-tabs .badge {
-  background-color: #8BBA00;
-}
-
-/* line 53, ../sass/extra.scss */
-.show-hide-tabs .badge:hover {
-  background-color: #789b0f;
-}
-
-/* line 54, ../sass/extra.scss */
-.show-hide-all .badge {
-  background-color: #8BBA00;
-}
-
-/* line 55, ../sass/extra.scss */
-.show-hide-all .badge:hover {
-  background-color: #789b0f;
-}
-
-/* line 57, ../sass/extra.scss */
-h4 .badge.arrow {
-  padding: 6px 9px 2px;
-  background: url(../img/glyphicons-halflings.png) 160px 43px transparent;
-}
-
-/* line 58, ../sass/extra.scss */
-h4.expanded .badge {
-  background-position: 185px 43px;
-}
-
-/* line 61, ../sass/extra.scss */
-h4 i {
-  margin-top: 4px;
-  margin-right: 10px;
-}
-
-/* line 62, ../sass/extra.scss */
-.container-fluid {
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 0;
-  /*max-width:960px;*/
-}
-
-/* line 63, ../sass/extra.scss */
-h3.info {
-  cursor: default;
-  color: #2956B2;
-  text-align: center;
-  font-size: 16px;
-  margin-bottom: 0;
-}
-
-/* line 66, ../sass/extra.scss */
-a.disabled {
+/* line 36, ../sass/extra.scss */
+.disabled {
   cursor: default !important;
 }
 
-/* All checkboxes */
-/* line 71, ../sass/extra.scss */
-.checkbox {
-  margin: 0;
-}
-
-/* line 74, ../sass/extra.scss */
-.checkbox label {
-  margin-bottom: 0;
-}
-
 /* Home */
-/* line 81, ../sass/extra.scss */
+/* line 43, ../sass/extra.scss */
 .app-list {
-  margin: auto;
   position: relative;
   text-align: center;
   top: 30%;
 }
-/* line 86, ../sass/extra.scss */
+/* line 47, ../sass/extra.scss */
 .app-list a {
   width: 210px;
   font-size: 24px;
@@ -3347,215 +3144,234 @@ a.disabled {
 .app-list a:hover span {
   border-color: white;
 }
-/* line 92, ../sass/extra.scss */
+/* line 53, ../sass/extra.scss */
 .app-list a.disabled {
   opacity: 0.5;
   border-color: #ccc;
 }
-/* line 96, ../sass/extra.scss */
+/* line 57, ../sass/extra.scss */
 .app-list a.disabled:hover span {
   border-color: transparent;
 }
 
-/* Area that includes all the info and */
-/* line 107, ../sass/extra.scss */
-.info {
-  overflow: auto;
-  border-color: #afc6d6;
+/* line 65, ../sass/extra.scss */
+.nav-simple {
+  padding: 20px;
+  border-bottom: 1px solid white;
 }
-
-/* line 112, ../sass/extra.scss */
-.info-fixed {
-  overflow: hidden;
-  margin-left: 200px;
-}
-
-/* line 117, ../sass/extra.scss */
-a:not([disabled]):hover {
-  cursor: pointer;
-}
-
-/* line 121, ../sass/extra.scss */
-.account-action.form-btn {
-  display: inline-block;
+/* line 68, ../sass/extra.scss */
+.nav-simple .header {
   float: left;
-  margin-left: 10px;
+  line-height: 40px;
+  font-size: 26px;
 }
-
-/* line 127, ../sass/extra.scss */
-.buttons-list {
-  list-style: none;
+/* line 72, ../sass/extra.scss */
+.nav-simple .header img {
+  max-height: 50px;
 }
-
-/* line 131, ../sass/extra.scss */
-.buttons-list li {
-  display: inline-block;
-  float: left;
-  margin-left: 10px;
-}
-
-/* line 137, ../sass/extra.scss */
-.checkbox-column {
+/* line 76, ../sass/extra.scss */
+.nav-simple .login-info {
+  float: right;
   position: relative;
+  line-height: 40px;
+  font-size: 16px;
+}
+/* line 81, ../sass/extra.scss */
+.nav-simple .login-info .dropdown {
+  display: inline;
+}
+/* line 84, ../sass/extra.scss */
+.nav-simple .login-info .dropdown:hover > a {
+  background: #4d4d4d;
+}
+/* line 88, ../sass/extra.scss */
+.nav-simple .login-info .dropdown > a {
+  color: #fff;
+  display: inline-block;
+  padding: 0 10px;
+}
+/* line 94, ../sass/extra.scss */
+.nav-simple .login-info .dropdown-menu {
+  left: auto;
+  right: 0;
+  top: 27px;
 }
 
-/* line 141, ../sass/extra.scss */
-.container-demo, .chart {
-  height: 400px;
-  width: 100%;
-  margin: 0 auto 40px;
-  display: none;
+/* Navigation */
+/* line 104, ../sass/extra.scss */
+.navbar-default {
+  border: 0 none;
+  z-index: 1040;
+}
+/* line 107, ../sass/extra.scss */
+.navbar-default .home-icon {
+  padding: 0;
+  height: 50px;
+  width: 50px;
+  text-align: center;
+  line-height: 50px;
+}
+/* line 113, ../sass/extra.scss */
+.navbar-default .home-icon img {
+  max-height: 50px;
 }
 
-/* line 148, ../sass/extra.scss */
+/* line 120, ../sass/extra.scss */
+.sub-nav {
+  top: 50px;
+  min-height: inherit;
+}
+/* line 124, ../sass/extra.scss */
+.sub-nav .nav > li > a {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+/* line 130, ../sass/extra.scss */
+.dropdown-menu {
+  overflow-y: auto;
+}
+
+/* line 135, ../sass/extra.scss */
+.nav .dropdown:hover > ul.dropdown-menu,
+.nav-simple .dropdown:hover > ul.dropdown-menu {
+  display: block;
+}
+
+/* More */
+/* line 145, ../sass/extra.scss */
 svg > text:last-child {
   display: none;
 }
 
-/* line 152, ../sass/extra.scss */
+/* line 149, ../sass/extra.scss */
 .dropdown .arrow {
   margin-left: 6px;
   vertical-align: middle;
 }
 
-/* line 157, ../sass/extra.scss */
+/* line 154, ../sass/extra.scss */
 .hidden-row {
   display: none;
 }
 
-/* line 161, ../sass/extra.scss */
+/* line 158, ../sass/extra.scss */
 .with-shift *::selection {
   background-color: transparent;
 }
 
-/* line 165, ../sass/extra.scss */
+/* line 162, ../sass/extra.scss */
 .with-shift *::-moz-selection {
   background: transparent;
 }
 
-/* line 169, ../sass/extra.scss */
-.warning-duplicate {
-  font-size: 0.95em;
-  font-style: italic;
-}
-
-/* updated olga */
-/* line 177, ../sass/extra.scss */
+/* line 165, ../sass/extra.scss */
 .tab-content {
   background: #4e4e4e;
   padding: 20px;
 }
-/* line 180, ../sass/extra.scss */
+/* line 168, ../sass/extra.scss */
 .tab-content .well {
   border-color: #4e4e4e;
+  margin-bottom: 0;
 }
 
-/* line 186, ../sass/extra.scss */
-.content-seperator {
-  display: none;
-}
-
-/* line 191, ../sass/extra.scss */
+/* line 174, ../sass/extra.scss */
 .selection-indicator {
-  margin-right: 6px;
   cursor: pointer;
-  padding: 0 6px;
+  padding: 6px 12px 6px 6px;
 }
 
-/* line 197, ../sass/extra.scss */
+/* Notification area */
+/* line 181, ../sass/extra.scss */
 .notify {
   padding: 30px 10px 15px;
   width: 100%;
   position: fixed;
-  bottom: 0px;
+  bottom: 0;
   background: white;
   color: #303030;
 }
-/* line 205, ../sass/extra.scss */
+/* line 189, ../sass/extra.scss */
 .notify .container > *:not(:last-child) {
   margin-bottom: 16px;
 }
-/* line 208, ../sass/extra.scss */
+/* line 192, ../sass/extra.scss */
 .notify .remove-icon {
   color: transparent;
   margin-left: 20px;
   font-weight: bold;
 }
-/* line 214, ../sass/extra.scss */
+/* line 198, ../sass/extra.scss */
 .notify .container > *:hover .remove-icon {
   color: #d9534f;
 }
-/* line 218, ../sass/extra.scss */
+/* line 202, ../sass/extra.scss */
 .notify .state-icon {
   margin-right: 10px;
 }
-/* line 221, ../sass/extra.scss */
+/* line 205, ../sass/extra.scss */
 .notify .success {
   color: #449d44;
 }
-/* line 224, ../sass/extra.scss */
+/* line 208, ../sass/extra.scss */
 .notify .error {
   color: #d9534f;
 }
-/* line 227, ../sass/extra.scss */
+/* line 211, ../sass/extra.scss */
 .notify .pending {
   color: #f0ad4e;
 }
-/* line 230, ../sass/extra.scss */
-.notify em {
-  font-style: normal;
-  font-weight: bold;
-}
-/* line 234, ../sass/extra.scss */
+/* line 214, ../sass/extra.scss */
 .notify .warning {
   font-style: italic;
   font-weight: bold;
   color: #4e4e4e;
 }
-/* line 239, ../sass/extra.scss */
+/* line 219, ../sass/extra.scss */
 .notify .close-notify {
   position: absolute;
   right: 20px;
   top: 20px;
   color: #303030;
 }
-/* line 244, ../sass/extra.scss */
+/* line 224, ../sass/extra.scss */
 .notify .close-notify:hover {
   color: #222222;
 }
-/* line 248, ../sass/extra.scss */
+/* line 228, ../sass/extra.scss */
 .notify .dl-horizontal {
   margin-left: 21px;
 }
-/* line 252, ../sass/extra.scss */
+/* line 230, ../sass/extra.scss */
 .notify .dl-horizontal dt {
   width: 80px;
   vertical-align: top;
   text-align: left;
 }
-/* line 256, ../sass/extra.scss */
+/* line 234, ../sass/extra.scss */
 .notify .dl-horizontal dt span {
   font-size: 20px;
   vertical-align: text-bottom;
   margin-right: 10px;
 }
-/* line 262, ../sass/extra.scss */
+/* line 240, ../sass/extra.scss */
 .notify .dl-horizontal dd {
   margin-left: 80px;
 }
 
-/* line 268, ../sass/extra.scss */
+/* line 246, ../sass/extra.scss */
 .lowercase {
   text-transform: lowercase;
 }
 
-/* line 272, ../sass/extra.scss */
-.book-icon {
+/* line 251, ../sass/extra.scss */
+.shortcuts-btn span {
   font-size: 20px;
   vertical-align: sub;
 }
 
-/* line 280, ../sass/extra.scss */
+/* line 258, ../sass/extra.scss */
 .shortcuts .key {
   padding: 2px 9px;
   font-style: normal;
@@ -3564,35 +3380,25 @@ svg > text:last-child {
   border-radius: 6px;
 }
 
-/* line 289, ../sass/extra.scss */
-body > .popover {
+/* line 267, ../sass/extra.scss */
+.popover {
   max-width: none;
-  color: black;
+  color: #303030;
   margin-bottom: 20px;
 }
-/* line 294, ../sass/extra.scss */
-body > .popover h2 {
+/* line 271, ../sass/extra.scss */
+.popover h2 {
   text-align: center;
   font-size: 1.2em;
   font-weight: bold;
 }
-/* line 299, ../sass/extra.scss */
-body > .popover dt {
+/* line 276, ../sass/extra.scss */
+.popover dt {
   margin-bottom: 8px;
   overflow: visible;
 }
 
-/* line 305, ../sass/extra.scss */
-.dl-horizontal dt, .dl-horizontal dd {
-  word-wrap: break-word;
-}
-
-/* line 310, ../sass/extra.scss */
-.tooltip-inner {
-  word-wrap: break-word;
-}
-
-/* line 314, ../sass/extra.scss */
+/* line 282, ../sass/extra.scss */
 .sign-out span {
   margin-right: 10px;
   vertical-align: middle;

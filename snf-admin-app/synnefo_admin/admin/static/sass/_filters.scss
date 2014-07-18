@@ -36,6 +36,7 @@
         color: $gray-dark;
         background: transparent;
         font-weight: normal;
+        margin: 0;
     }
     .dropdown-menu {
         margin: 0;
@@ -44,13 +45,11 @@
         border: 0 none;
         background: transparent;
         height: $filter-height;
-        line-height: 1.3;
+        line-height: $filter-height;
         padding: 0 5px;
         font-weight: normal;
-        border-radius: 0;
     }
 }
-
 
 .filter-dropdown {
 	.dropdown {
@@ -84,13 +83,10 @@
 	}
 }
 
-
-
 body input:not(.subject):focus {
 	border-color: transparent;
     @include box-shadow(none);
 }
-
 
 .filters.subnav-fixed {
 	top: $navbar-height;

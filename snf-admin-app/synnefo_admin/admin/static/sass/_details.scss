@@ -13,6 +13,8 @@
     }
 }
 
+.object-anchor {height:2px; }
+
 .object-details {
 	h4 {
         font-size: 14px;
@@ -182,6 +184,7 @@
         }
     }
     .object-details-content {
+        display: none;
         padding: 0 $details-title-height;
     }
     

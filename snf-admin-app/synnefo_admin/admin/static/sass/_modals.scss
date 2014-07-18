@@ -201,32 +201,34 @@ p.progress-area {
 	display: none;
 }
 
-.table-selected {
-	td:last-child {
-		position: relative;
-		padding-right: 36px;
-	}
-    tr:nth-child(2n){
-        background: darken(#fff, 5%);
-    }
-    tr {
-        a {
-            font-weight: bold;
+.modal {
+    .table-selected {
+        td:last-child {
+            position: relative;
+            padding-right: 36px;
+        }
+        tr:nth-child(2n){
+            background: darken(#fff, 5%);
+        }
+        tr {
+            a {
+                font-weight: bold;
+            }
+        }
+        tr:hover {
+            background: $gray-lighter;
+            a {
+                color: red;
+            }
+        }
+        
+        .remove {
+            position: absolute;
+            right: 14px;
+            color: transparent;
+            &:hover {
+                text-decoration: none;
+            }
         }
     }
-	tr:hover {
-        background: $gray-lighter;
-		a {
-			color: red;
-		}
-	}
-    
-	.remove {
-		position: absolute;
-		right: 14px;
-		color: transparent;
-		&:hover {
-			text-decoration: none;
-		}
-	}
 }

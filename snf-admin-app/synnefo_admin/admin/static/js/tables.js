@@ -824,7 +824,6 @@ $(document).ready(function() {
 		updateCounter('.selected-num');
 	});
 
-
 	function drawModal(modalID) {
 		var $tableBody = $(modalID).find('.table-selected tbody');
 		var modalType = $(modalID).data('type');
@@ -839,7 +838,7 @@ $(document).ready(function() {
 		var count = 0;
 		// var $idsInput = $(modalID).find('.modal-footer form input[name="ids"]');
 		var idsArray = [];
-		var warningMsg = '<p class="warning-duplicate">Duplicate accounts have been detected</p>';
+		var warningMsg = '<p class="warning-duplicate"><em>Duplicate accounts have been detected</em></p>';
 		var warningInserted = false;
 		$tableBody.empty();
 		if(modalType === "contact") {

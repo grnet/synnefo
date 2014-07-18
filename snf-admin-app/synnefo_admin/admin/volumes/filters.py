@@ -29,8 +29,35 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import (filter_owner_name, filter_id,
-                                       filter_vm_id)
+from synnefo_admin.admin.queries_common import (query, model_filter,
+                                                get_model_field)
+
+
+@model_filter
+def filter_volume(queryset, queries):
+    q = query("volume", queries)
+    return queryset.filter(q)
+
+
+@model_filter
+def filter_user(queryset, queries):
+    q = query("user", queries)
+    ids = get_model_field("user", q, 'uuid')
+    return queryset.filter(userid__in=ids)
+
+
+@model_filter
+def filter_vm(queryset, queries):
+    q = query("vm", queries)
+    ids = get_model_field("vm", q, 'volumes__id')
+    return queryset.filter(id__in=ids)
+
+
+@model_filter
+def filter_project(queryset, queries):
+    q = query("project", queries)
+    ids = get_model_field("project", q, 'uuid')
+    return queryset.filter(project__in=ids)
 
 
 class VolumeFilterSet(django_filters.FilterSet):
@@ -40,20 +67,14 @@ class VolumeFilterSet(django_filters.FilterSet):
     This filter collection is based on django-filter's FilterSet.
     """
 
-    volumeid = django_filters.CharFilter(label='Volume ID',
-                                         lookup_type='icontains',
-                                         action=filter_id('id'))
-    name = django_filters.CharFilter(label='Name', lookup_type='icontains')
-    owner_name = django_filters.CharFilter(label='Owner Name',
-                                           action=filter_owner_name)
-    userid = django_filters.CharFilter(label='Owner UUID',
-                                       lookup_type='icontains')
+    volume = django_filters.CharFilter(label='Volume', action=filter_volume)
+    user = django_filters.CharFilter(label='OF User', action=filter_user)
+    vm = django_filters.CharFilter(label='OF VM', action=filter_vm)
+    project = django_filters.CharFilter(label='OF Project',
+                                        action=filter_project)
     status = django_filters.MultipleChoiceFilter(
         label='Status', name='status', choices=Volume.STATUS_VALUES)
-    machineid = django_filters.CharFilter(label='VM ID',
-                                          action=filter_vm_id('machine__id'))
 
     class Meta:
         model = Volume
-        fields = ('volumeid', 'name', 'status', 'description', 'owner_name',
-                  'userid', 'machineid')
+        fields = ('volume', 'status', 'user', 'vm', 'project')

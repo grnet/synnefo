@@ -16,14 +16,16 @@
 import logging
 import re
 from collections import OrderedDict
+import itertools
 
-from operator import or_
+from operator import or_, and_
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Group
 from django.template import Context, Template
+from django.db.models import Q
 
 from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
                                NetworkInterface, IPAddress)
@@ -33,14 +35,13 @@ from astakos.im import user_logic as users
 from astakos.im.user_utils import send_plain as send_email
 from astakos.im import auth_providers
 
-from synnefo.util import units
+from synnefo_admin.admin.queries_common import (query, model_filter,
+                                                get_model_field)
 
 from eztables.views import DatatablesView
 
 import django_filters
-from django.db.models import Q
 
-from synnefo_admin.admin.utils import filter_name
 from .utils import get_groups
 
 choice2query = {
@@ -52,6 +53,49 @@ choice2query = {
 
 
 auth_providers = [(key, '_') for key in auth_providers.PROVIDERS.iterkeys()]
+
+
+@model_filter
+def filter_user(queryset, queries):
+    q = query("user", queries)
+    return queryset.filter(q)
+
+
+@model_filter
+def filter_vm(queryset, queries):
+    q = query("vm", queries)
+    ids = get_model_field("vm", q, 'userid')
+    return queryset.filter(uuid__in=ids)
+
+
+@model_filter
+def filter_volume(queryset, queries):
+    q = query("volume", queries)
+    ids = get_model_field("volume", q, 'userid')
+    return queryset.filter(uuid__in=ids)
+
+
+@model_filter
+def filter_network(queryset, queries):
+    q = query("network", queries)
+    ids = get_model_field("network", q, 'userid')
+    return queryset.filter(uuid__in=ids)
+
+
+@model_filter
+def filter_ip(queryset, queries):
+    q = query("ip", queries)
+    ids = get_model_field("ip", q, 'userid')
+    return queryset.filter(uuid__in=ids)
+
+
+@model_filter
+def filter_project(queryset, queries):
+    q = query("project", queries)
+    member_ids = Project.objects.filter(q).values('members__uuid')
+    owner_ids = Project.objects.filter(q).values('owner__uuid')
+    qor = Q(uuid__in=member_ids) | Q(uuid__in=owner_ids)
+    return queryset.filter(qor)
 
 
 def filter_has_auth_providers(queryset, choices):
@@ -112,10 +156,15 @@ class UserFilterSet(django_filters.FilterSet):
     This filter collection is based on django-filter's FilterSet.
     """
 
-    uuid = django_filters.CharFilter(label='UUID', lookup_type='icontains',)
-    email = django_filters.CharFilter(label='E-mail address',
-                                      lookup_type='icontains',)
-    name = django_filters.CharFilter(label='Name', action=filter_name,)
+    user = django_filters.CharFilter(label='User', action=filter_user)
+    vm = django_filters.CharFilter(label='HAS VM', action=filter_vm)
+    volume = django_filters.CharFilter(label='HAS Volume',
+                                       action=filter_volume)
+    network = django_filters.CharFilter(label='HAS Network',
+                                        action=filter_network)
+    ip = django_filters.CharFilter(label='HAS IP', action=filter_ip)
+    proj = django_filters.CharFilter(label='IN Project',
+                                     action=filter_project)
     status = django_filters.MultipleChoiceFilter(
         label='Status', action=filter_status, choices=choice2query.keys())
     groups = django_filters.MultipleChoiceFilter(
@@ -127,8 +176,8 @@ class UserFilterSet(django_filters.FilterSet):
         label='HAS NOT Auth Providers', action=filter_has_not_auth_providers,
         choices=auth_providers)
 
-
     class Meta:
         model = AstakosUser
-        fields = ('uuid', 'email', 'name', 'status', 'groups',
-                  'has_auth_providers', 'has_not_auth_providers')
+        fields = ('user', 'status', 'groups', 'has_auth_providers',
+                  'has_not_auth_providers', 'vm', 'volume', 'network', 'ip',
+                  'proj')

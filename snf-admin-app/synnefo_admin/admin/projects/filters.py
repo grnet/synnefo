@@ -46,6 +46,50 @@ from synnefo_admin.admin.utils import is_resource_useful, filter_id
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
+from synnefo_admin.admin.queries_common import (query, model_filter,
+                                                get_model_field)
+
+
+@model_filter
+def filter_project(queryset, queries):
+    q = query("project", queries)
+    return queryset.filter(q)
+
+
+@model_filter
+def filter_user(queryset, queries):
+    q = query("user", queries)
+    ids = get_model_field("user", q, 'uuid')
+    qor = Q(members__uuid__in=ids) | Q(owner__uuid__in=ids)
+    return queryset.filter(qor)
+
+
+@model_filter
+def filter_vm(queryset, queries):
+    q = query("vm", queries)
+    ids = get_model_field("vm", q, 'project')
+    return queryset.filter(uuid__in=ids)
+
+
+@model_filter
+def filter_volume(queryset, queries):
+    q = query("volume", queries)
+    ids = get_model_field("volume", q, 'project')
+    return queryset.filter(uuid__in=ids)
+
+
+@model_filter
+def filter_network(queryset, queries):
+    q = query("network", queries)
+    ids = get_model_field("network", q, 'project')
+    return queryset.filter(uuid__in=ids)
+
+
+@model_filter
+def filter_ip(queryset, queries):
+    q = query("ip", queries)
+    ids = get_model_field("ip", q, 'project')
+    return queryset.filter(uuid__in=ids)
 
 
 def get_status_choices():
@@ -76,15 +120,18 @@ class ProjectFilterSet(django_filters.FilterSet):
     This filter collection is based on django-filter's FilterSet.
     """
 
-    id = django_filters.CharFilter(label='Project ID', action=filter_id('id'))
-    realname = django_filters.CharFilter(label='Name', lookup_type='icontains')
-    uuid = django_filters.CharFilter(label='UUID', lookup_type='icontains')
-    description = django_filters.CharFilter(label='Description',
-                                            lookup_type='icontains')
+    project = django_filters.CharFilter(label='Project', action=filter_project)
+    user = django_filters.CharFilter(label='OF User', action=filter_user)
+    vm = django_filters.CharFilter(label='HAS VM', action=filter_vm)
+    volume = django_filters.CharFilter(label='HAS Volume',
+                                       action=filter_volume)
+    net = django_filters.CharFilter(label='HAS Network', action=filter_network)
+    ip = django_filters.CharFilter(label='HAS IP', action=filter_ip)
     status = django_filters.MultipleChoiceFilter(
         label='Status', action=filter_status, choices=get_status_choices())
     is_base = django_filters.BooleanFilter(label='System')
 
     class Meta:
         model = Project
-        fields = ['id', 'uuid', 'realname', 'description', 'is_base']
+        fields = ('project', 'status', 'is_base', 'user', 'vm', 'volume',
+                  'net', 'ip',)

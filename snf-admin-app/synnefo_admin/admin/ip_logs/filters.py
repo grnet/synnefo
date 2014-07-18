@@ -30,45 +30,51 @@ from astakos.im.models import AstakosUser, Project
 from eztables.views import DatatablesView
 import django_filters
 
-from synnefo_admin.admin.utils import (filter_owner_name, filter_owner_email,
-                                       filter_id, filter_vm_id)
+from synnefo_admin.admin.queries_common import (query, model_filter,
+                                                get_model_field)
 
 
-def filter_user_name(queryset, query):
-    if not query:
-        return queryset
-    qs = VirtualMachine.objects.all()
-    server_ids = filter_owner_name(qs, query).values('pk')
-    return queryset.filter(server_id__in=server_ids).distinct()
+@model_filter
+def filter_user(queryset, queries):
+    q = query("user", queries)
+    user_ids = get_model_field("user", q, 'uuid')
+    vm_ids = VirtualMachine.objects.filter(userid__in=user_ids)
+    return queryset.filter(server_id__in=vm_ids)
 
 
-def filter_user_email(queryset, query):
-    if not query:
-        return queryset
-    qs = VirtualMachine.objects.all()
-    server_ids = filter_owner_email(qs, query).values('pk')
-    return queryset.filter(server_id__in=server_ids).distinct()
+@model_filter
+def filter_vm(queryset, queries):
+    q = query("vm", queries)
+    ids = get_model_field("vm", q, 'id')
+    return queryset.filter(server_id__in=ids)
+
+
+@model_filter
+def filter_network(queryset, queries):
+    q = query("network", queries)
+    ids = get_model_field("network", q, 'id')
+    return queryset.filter(network_id__in=ids)
+
+
+@model_filter
+def filter_ip(queryset, queries):
+    q = query("ip", queries)
+    return queryset.filter(q)
 
 
 class IPLogFilterSet(django_filters.FilterSet):
 
-    """A collection of filters for volumes.
+    """A collection of filters for ip log.
 
     This filter collection is based on django-filter's FilterSet.
     """
 
-    address = django_filters.CharFilter(label='Address',
-                                        lookup_type='icontains')
-    server_id = django_filters.CharFilter(label='VM ID',
-                                          action=filter_vm_id('server_id'))
-    network_id = django_filters.CharFilter(label='Network ID',
-                                           action=filter_id('network_id'))
-    user_name = django_filters.CharFilter(label='Owner Name',
-                                          action=filter_user_name)
-    user_email = django_filters.CharFilter(label='Owner Email',
-                                           action=filter_user_email)
+    user = django_filters.CharFilter(label='OF User', action=filter_user)
+    vm = django_filters.CharFilter(label='OF VM', action=filter_vm)
+    net = django_filters.CharFilter(label='OF Network', action=filter_network)
+    ip = django_filters.CharFilter(label='OF IP', action=filter_ip)
+    active = django_filters.BooleanFilter(label='Active')
 
     class Meta:
         model = IPAddressLog
-        fields = ('address', 'server_id', 'network_id', 'user_name',
-                  'user_email')
+        fields = ('user', 'vm', 'net', 'ip', 'active')

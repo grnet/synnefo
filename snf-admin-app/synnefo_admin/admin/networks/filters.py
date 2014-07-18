@@ -34,27 +34,60 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import filter_owner_name, filter_id
+from synnefo_admin.admin.queries_common import (query, model_filter,
+                                                get_model_field)
+
+
+@model_filter
+def filter_network(queryset, queries):
+    q = query("network", queries)
+    return queryset.filter(q)
+
+
+@model_filter
+def filter_user(queryset, queries):
+    q = query("user", queries)
+    ids = get_model_field("user", q, 'uuid')
+    return queryset.filter(userid__in=ids)
+
+
+@model_filter
+def filter_vm(queryset, queries):
+    q = query("vm", queries)
+    ids = get_model_field("vm", q, 'id')
+    return queryset.filter(machines__id__in=ids)
+
+
+@model_filter
+def filter_ip(queryset, queries):
+    q = query("ip", queries)
+    ids = get_model_field("ip", q, 'nic__network__id')
+    return queryset.filter(id__in=ids)
+
+
+@model_filter
+def filter_project(queryset, queries):
+    q = query("project", queries)
+    ids = get_model_field("project", q, 'uuid')
+    return queryset.filter(project__in=ids)
 
 
 class NetworkFilterSet(django_filters.FilterSet):
 
-    """A collection of filters for VMs.
+    """A collection of filters for networks.
 
     This filter collection is based on django-filter's FilterSet.
     """
 
-    networkid = django_filters.NumberFilter(label='Network ID',
-                                            action=filter_id('id'))
-    name = django_filters.CharFilter(label='Name', lookup_type='icontains')
+    network = django_filters.CharFilter(label='Network', action=filter_network)
+    user = django_filters.CharFilter(label='OF User', action=filter_user)
+    vm = django_filters.CharFilter(label='HAS VM', action=filter_vm)
+    ip = django_filters.CharFilter(label='HAS IP', action=filter_ip)
+    proj = django_filters.CharFilter(label='OF Project', action=filter_project)
     state = django_filters.MultipleChoiceFilter(
         label='Status', name='state', choices=Network.OPER_STATES)
-    owner_name = django_filters.CharFilter(label='Owner Name',
-                                           action=filter_owner_name)
-    userid = django_filters.CharFilter(label='Owner UUID',
-                                       lookup_type='icontains')
 
     class Meta:
         model = Network
-        fields = ('networkid', 'name', 'state', 'public', 'drained',
-                  'owner_name', 'userid',)
+        fields = ('network', 'state', 'public', 'drained', 'user', 'vm', 'ip',
+                  'proj')

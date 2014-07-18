@@ -65,6 +65,10 @@ def check_user_action(action):
     return lambda u: check(u, action)
 
 
+def verify(user):
+    return users.verify(user, verification_code=user.verification_code)
+
+
 def generate_actions():
     """Create a list of actions on users.
 
@@ -88,7 +92,7 @@ def generate_actions():
                                    c=check_user_action("REJECT"),
                                    karma='bad', caution_level='dangerous',)
 
-    actions['verify'] = UserAction(name='Verify', f=users.verify,
+    actions['verify'] = UserAction(name='Verify', f=verify,
                                    c=check_user_action("VERIFY"),
                                    karma='good',)
 

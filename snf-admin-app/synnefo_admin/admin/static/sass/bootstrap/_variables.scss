@@ -29,13 +29,13 @@ $brand-danger:          #d9534f !default;
 // ## Settings for some of the most global styles.
 
 //** Background color for `<body>`.
-$body-bg:               $snf_body-bg;
+$body-bg:               $snf_gray-dark;
 //** Global text color on `<body>`.
-$text-color:            $snf_text-color;
-$reverse-text-color:    $snf_reverse-text-color;
+$text-color:            #fff;
+$reverse-text-color:    $snf_gray-dark;
 
 //** Global textual link color.
-$link-color:            $snf_link-color;
+$link-color:            $ciel;
 //** Link hover color set via `darken()` function.
 $link-hover-color:      lighten($link-color, 13%) !default;
 
@@ -166,7 +166,7 @@ $btn-danger-color:               #fff !default;
 $btn-danger-bg:                  $brand-danger !default;
 $btn-danger-border:              darken($btn-danger-bg, 5%) !default;
 
-$btn-link-disabled-color:        $gray-light !default;
+$btn-link-disabled-color:        $snf_gray-light !default;
 
 
 //== Forms
@@ -331,7 +331,7 @@ $container-lg:                 $container-large-desktop !default;
 //##
 
 // Basics of a navbar
-$navbar-height:                    $menu-height;
+$navbar-height:                    50px;
 $navbar-margin-bottom:             $line-height-computed !default;
 $navbar-border-radius:             $border-radius-base !default;
 $navbar-padding-horizontal:        0;
@@ -343,10 +343,10 @@ $navbar-default-bg:                $total-black;
 $navbar-default-border:            inherit;
 
 // Navbar links
-$navbar-default-link-color:                $snf_text-color;
-$navbar-default-link-hover-color:          $snf_text-color;
+$navbar-default-link-color:                $text-color;
+$navbar-default-link-hover-color:          $text-color;
 $navbar-default-link-hover-bg:             $hover-nav-color;
-$navbar-default-link-active-color:         $snf_reverse-text-color;
+$navbar-default-link-active-color:         $reverse-text-color;
 $navbar-default-link-active-bg:            white;
 $navbar-default-link-disabled-color:       #ccc !default;
 $navbar-default-link-disabled-bg:          transparent !default;
@@ -364,13 +364,13 @@ $navbar-default-toggle-border-color:       #ddd !default;
 
 // Inverted navbar
 // Reset inverted navbar basics
-$navbar-inverse-color:                      $snf_text-color;
+$navbar-inverse-color:                      $text-color;
 $navbar-inverse-bg:                         $gray-light;
 $navbar-inverse-border:                     transparent;
 
 // Inverted navbar links
-$navbar-inverse-link-color:                 $snf_text-color;
-$navbar-inverse-link-hover-color:           $snf_reverse-text-color;
+$navbar-inverse-link-color:                 $text-color;
+$navbar-inverse-link-hover-color:           $reverse-text-color;
 $navbar-inverse-link-hover-bg:              $gray-lighter;
 $navbar-inverse-link-active-color:          white;
 $navbar-inverse-link-active-bg:             darken($navbar-inverse-bg, 10%) !default;

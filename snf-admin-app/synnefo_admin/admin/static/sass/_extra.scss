@@ -1,11 +1,3 @@
-@import "settings";
-
-@import "bars-btns";
-@import "details";
-@import "filters";
-@import "modals";
-@import "tables";
-
 
 /* Layout  & general stuff */
 
@@ -51,8 +43,7 @@ body {
 		@include outline-btn($padding:12px 10px);
 		opacity: 1;
         &.disabled {
-            opacity: 0.5;
-            border-color: #ccc;
+            border-color: lighten($btn-link-disabled-color,15%);
             &:hover {
                 span {
                     border-color: transparent;
@@ -106,19 +97,19 @@ body {
     z-index: 1040;
     .home-icon {
         padding: 0;
-        height: $menu-height;
-        width: $menu-height;
+        height: $navbar-height;
+        width: $navbar-height;
         text-align: center;
-        line-height: $menu-height;
+        line-height: $navbar-height;
         img {
-            max-height: $menu-height;
+            max-height: $navbar-height;
         }
     }
 
 }
 
 .sub-nav {
-    top: $menu-height;
+    top: $navbar-height;
     min-height: inherit;
     .nav {
         >li>a {
@@ -185,7 +176,7 @@ svg>text:last-child {
 	position: fixed;
 	bottom: 0;
 	background: $brand-primary;
-    color: $snf_reverse-text-color;
+    color: $reverse-text-color;
     .container>*:not(:last-child) {
 			margin-bottom: 16px;
 	}
@@ -266,7 +257,7 @@ svg>text:last-child {
 
 .popover {
 	max-width: none;
-    color: $snf_reverse-text-color;
+    color: $reverse-text-color;
 	margin-bottom: 20px;
 	h2 {
 		text-align: center;

@@ -1,6 +1,3 @@
-@import "bootstrap/mixins";
-@import "bootstrap/variables";
-
 table thead th {
     white-space: nowrap;
 }
@@ -104,17 +101,6 @@ div.dataTables_length {
         margin-left: 4px;
         vertical-align: baseline;
     }
-}
-
-
-// if we replace bootwatch with the corresponding sass file this should be @import .btn-primary
-.container .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-    background-image: -webkit-linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
-    background-image: linear-gradient(#6d94bf, #446e9b 50%, #3e648d);
-    background-repeat: no-repeat;
-    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ff6d94bf', endColorstr='#ff3e648d', GradientType=0);
-    filter: none;
-    border: 1px solid #345578;
 }
 
 table.dataTable tbody tr {

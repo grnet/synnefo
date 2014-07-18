@@ -1,5 +1,4 @@
-@import "settings";
-
+$default-btn-padding: 8px;
 // ====== BUTTONS ====== //
 // All buttons imply a structure <a><span>button</span></a>
 
@@ -73,26 +72,6 @@
 	}
 }
 
-/*
-Disabled buttons are transparent with light gray border
-and light gray font colors
-*/
-
-body .container .custom-btn.disabled,
-body .container .outline-btn.disabled,
-body .container .line-btn.disabled {
-	background-color: transparent;
-	border-color: $almost-white;
-	opacity: 0.7;
-	color: $almost-white;
-	span {
-
-	}
-	&:hover {
-		opacity: 0.7;
-	}
-}
-
 
 .line-btn {
 	@include line-btn();
@@ -136,6 +115,23 @@ body .container .line-btn.disabled {
 	&[data-caution="dangerous"][data-karma="bad"], &[data-caution="dangerous"][data-karma="neutral"] {
 		background-color: $red-intense;
 		border-color: $red-intense;
+	}
+}
+
+/*
+Disabled buttons are transparent with light gray border
+and light gray font colors
+*/
+
+body .container .custom-btn.disabled,
+body .container .outline-btn.disabled,
+body .container .line-btn.disabled {
+	background-color: transparent;
+	border-color: $almost-white;
+	opacity: 0.7;
+	color: $almost-white;
+	&:hover {
+		opacity: 0.7;
 	}
 }
 
@@ -239,7 +235,6 @@ Extra-button is used to show total selected rows
 }
 
 .actions-per-item {
-    padding-left: $details-title-height;
 	.custom-btn {
 		margin: 10px 10px 10px 0;
 	}

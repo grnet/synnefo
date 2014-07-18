@@ -117,9 +117,9 @@ def do_action(request, op, id):
     actions = generate_actions()
 
     if op == 'contact':
-        actions[op].f(group, request.POST['text'])
+        actions[op].apply(group, request.POST['text'])
     else:
-        actions[op].f(group)
+        actions[op].apply(group)
 
 
 def catalog(request):

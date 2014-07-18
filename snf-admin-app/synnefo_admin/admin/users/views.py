@@ -177,12 +177,12 @@ def do_action(request, op, id):
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'reject':
-        actions[op].f(user, 'Rejected by the admin')
+        actions[op].apply(user, 'Rejected by the admin')
     elif op == 'contact':
         subject, body = render_email(request.POST, user)
-        actions[op].f(user, subject, template_name=None, text=body)
+        actions[op].apply(user, subject, template_name=None, text=body)
     else:
-        actions[op].f(user)
+        actions[op].apply(user)
 
 
 def catalog(request):

@@ -79,6 +79,17 @@ class AdminAction(object):
             res = True
         return res
 
+    def apply(self, t, *args, **kwargs):
+        """Apply an action to a target.
+
+        This function will ensure that the requested action can apply to a
+        target before actually applying it.
+        """
+        if self.can_apply(t):
+            return self.f(t, *args, **kwargs)
+        else:
+            raise AdminActionCannotApply
+
     def is_user_allowed(self, user):
         """Check if a user can author an action."""
         groups = get_user_groups(user)
@@ -102,6 +113,13 @@ class AdminActionUnknown(Exception):
 class AdminActionNotImplemented(Exception):
 
     """Exception when an action is not implemented."""
+
+    pass
+
+
+class AdminActionCannotApply(Exception):
+
+    """Exception when an action cannot apply to a target."""
 
     pass
 

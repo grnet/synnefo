@@ -165,12 +165,12 @@ def do_action(request, op, id):
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'reboot':
-        actions[op].f(vm, "SOFT")
+        actions[op].apply(vm, "SOFT")
     elif op == 'contact':
         subject, body = render_email(request.POST, user)
-        actions[op].f(user, subject, template_name=None, text=body)
+        actions[op].apply(user, subject, template_name=None, text=body)
     else:
-        actions[op].f(vm)
+        actions[op].apply(vm)
 
 
 @has_permission_or_403(cached_actions)

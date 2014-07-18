@@ -142,9 +142,9 @@ def do_action(request, op, id):
     actions = generate_actions()
 
     if op == 'contact':
-        actions[op].f(auth_provider, request.POST['text'])
+        actions[op].apply(auth_provider, request.POST['text'])
     else:
-        actions[op].f(auth_provider)
+        actions[op].apply(auth_provider)
 
 
 def catalog(request):

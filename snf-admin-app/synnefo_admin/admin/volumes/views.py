@@ -157,9 +157,9 @@ def do_action(request, op, id):
 
     if op == 'contact':
         subject, body = render_email(request.POST, user)
-        actions[op].f(user, subject, template_name=None, text=body)
+        actions[op].apply(user, subject, template_name=None, text=body)
     else:
-        actions[op].f(volume)
+        actions[op].apply(volume)
 
 
 def catalog(request):

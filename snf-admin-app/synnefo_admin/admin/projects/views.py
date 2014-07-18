@@ -152,7 +152,7 @@ class ProjectJSONView(AdminJSONView):
         extra_dict['uuid'] = {
             'display_name': "UUID",
             'value': inst.uuid,
-            'visible': False,
+            'visible': True,
         }
 
         if not inst.is_base:
@@ -212,13 +212,13 @@ def do_action(request, op, id):
 
     if op == 'contact':
         subject, body = render_email(request.POST, user)
-        actions[op].f(user, subject, template_name=None, text=body)
+        actions[op].apply(user, subject, template_name=None, text=body)
     elif op == 'approve':
-        actions[op].f(project.last_application.id)
+        actions[op].apply(project.last_application.id)
     elif op == 'deny':
-        actions[op].f(project.last_application.id)
+        actions[op].apply(project.last_application.id)
     else:
-        actions[op].f(project.id)
+        actions[op].apply(project.id)
 
 
 def catalog(request):

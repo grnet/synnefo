@@ -319,13 +319,13 @@ def admin_actions(request):
     admin_log(request, json=request.REQUEST)
     status = 200
     response = {
-        'result': "All actions finished successfully",
+        'result': "All actions finished successfully.",
         'error_ids': [],
     }
 
     if request.method != "POST":
         status = 405
-        response['result'] = "Only POST is allowed"
+        response['result'] = "Only POST is allowed."
 
     #logging.info("This is the request %s", request.body)
     objs = json.loads(request.body)
@@ -366,6 +366,13 @@ def admin_actions(request):
         except actions.AdminActionNotImplemented:
             status = 501
             response['result'] = "You have requested an unimplemented action."
+            break
+        except actions.AdminActionCannotApply:
+            status = 403
+            response['result'] = """
+                You have requested an action that cannot apply to a target.
+                """
+            response['error_ids'].append(id)
             break
 
     if hasattr(mod, 'wait_action'):

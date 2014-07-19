@@ -70,10 +70,10 @@ DEFAULT_ADMIN_RBAC = {
     }, 'network': {
         'drain': [ADMIN_GROUP],
         'undrain': [ADMIN_GROUP],
-        'delete': [ADMIN_GROUP],
+        'destroy': [ADMIN_GROUP],
         'contact': [ADMIN_HELPDESK_GROUP, ADMIN_GROUP],
     }, 'ip': {
-        'delete': [ADMIN_GROUP],
+        'destroy': [ADMIN_GROUP],
         'contact': [ADMIN_HELPDESK_GROUP, ADMIN_GROUP],
     }, 'project': {
         'approve': [ADMIN_GROUP],

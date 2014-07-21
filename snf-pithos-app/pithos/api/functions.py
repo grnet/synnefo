@@ -46,7 +46,8 @@ from pithos.api import settings
 
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
-    VersionNotExists, ContainerExists, InvalidHash, IllegalOperationError)
+    VersionNotExists, ContainerExists, InvalidHash, IllegalOperationError,
+    InconsistentContentSize)
 
 from pithos.backends.filter import parse_filters
 
@@ -1096,6 +1097,8 @@ def object_write(request, v_account, v_container, v_object):
         )
     except IllegalOperationError, e:
         raise faults.Forbidden(e[0])
+    except InconsistentContentSize, e:
+        raise faults.BadRequest(e[0])
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except IndexError, e:
@@ -1159,6 +1162,8 @@ def object_write_form(request, v_account, v_container, v_object):
         )
     except IllegalOperationError, e:
         faults.Forbidden(e[0])
+    except InconsistentContentSize, e:
+        raise faults.BadRequest(e[0])
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:
@@ -1484,6 +1489,8 @@ def object_update(request, v_account, v_container, v_object):
         )
     except IllegalOperationError, e:
         raise faults.Forbidden(e[0])
+    except InconsistentContentSize, e:
+        raise faults.BadRequest(e[0])
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:

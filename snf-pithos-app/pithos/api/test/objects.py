@@ -836,6 +836,30 @@ class ObjectPut(PithosAPITest):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.content, data)
 
+        # inconsistent size; too small
+        d = json.loads(hashmap)
+        d['bytes'] = len(data) - 1
+        r = self.put('%s?hashmap=' % url, data=json.dumps(d))
+        self.assertEqual(r.status_code, 400)
+
+        # inconsistent size; too big
+        d = json.loads(hashmap)
+        d['bytes'] = 2 * d['block_size'] + 1
+        r = self.put('%s?hashmap=' % url, data=json.dumps(d))
+        self.assertEqual(r.status_code, 400)
+
+        # extremely big size
+        d = json.loads(hashmap)
+        d['bytes'] = 45390000000000000000000000000000000000
+        r = self.put('%s?hashmap=' % url, data=json.dumps(d))
+        self.assertEqual(r.status_code, 400)
+
+        # negative size
+        d = json.loads(hashmap)
+        d['bytes'] = -1
+        r = self.put('%s?hashmap=' % url, data=json.dumps(d))
+        self.assertEqual(r.status_code, 400)
+
         r = self.put('%s?hashmap=' % url, data='not json')
         self.assertEqual(r.status_code, 400)
 

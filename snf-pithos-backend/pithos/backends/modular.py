@@ -39,7 +39,7 @@ from pithos.backends.base import (
     DEFAULT_CONTAINER_VERSIONING, NotAllowedError, QuotaError,
     BaseBackend, AccountExists, ContainerExists, AccountNotEmpty,
     ContainerNotEmpty, ItemNotExists, VersionNotExists,
-    InvalidHash, IllegalOperationError)
+    InvalidHash, IllegalOperationError, InconsistentContentSize)
 
 
 class DisabledAstakosClient(object):
@@ -1326,6 +1326,11 @@ class ModularBackend(BaseBackend):
                               replace_meta=False, permissions=None):
         """Create/update an object's hashmap and return the new version."""
 
+        if not self._size_is_consistent(size, hashmap):
+            raise InconsistentContentSize(
+                'The object\'s size does not match '
+                'with the object\'s hashmap length')
+
         try:
             path, node = self._lookup_object(account, container, name,
                                              lock_container=True)
@@ -2385,3 +2390,19 @@ class ModularBackend(BaseBackend):
             return binascii.unhexlify(hash)
         except TypeError:
             raise InvalidHash(hash)
+
+    def _size_is_consistent(self, size, hashmap):
+        if size < 0:
+            return False
+        elif size == 0:
+            if hashmap and hashmap != [self.empty_string_hash]:
+                return False
+        else:
+            if size % self.block_size == 0:
+                block_num = size / self.block_size
+            else:
+                block_num = size / self.block_size + 1
+            if block_num != len(hashmap):
+               return False
+        return True
+

@@ -58,6 +58,9 @@ class VersionNotExists(IndexError):
 class InvalidHash(TypeError):
     pass
 
+class InconsistentContentSize(ValueError):
+    pass
+
 
 class BaseBackend(object):
     """Abstract backend class.

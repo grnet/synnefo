@@ -81,17 +81,20 @@
         }
         .popover-dismiss {
             display: inline-block;
-            @include circle(24px,$snf_gray-light);
+            @include circle(18px,$snf_gray-light);
             text-align: center;
             font-weight: bold;
             vertical-align: middle;
-            line-height: 24px;
+            line-height: 18px;
+            font-size: 16px;
+            vertical-align: super;
             cursor: pointer;
             margin-left:10px;
-            color: $almost-white;
+            color: lighten($snf_gray-light, 20%);
             &:hover,
             &:focus{
                 background: lighten($snf_gray-light, 10%);
+                color: $almost-white;
             }
         }
         .popover {

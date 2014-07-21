@@ -148,7 +148,7 @@ $('.main .object-details h4 .arrow').trigger('click')
 			}
 		}
 		if(completeAction) {
-			snf.modals.performAction($modal, $notificationArea, snf.modals.html.reloadTable, 0, countAction);
+			snf.modals.performAction($modal, $notificationArea, snf.modals.html.notifyRefreshPage, 0, countAction);
 			snf.modals.resetInputs($modal);
 			snf.modals.resetErrors($modal);
 			resetItemInfo($modal);

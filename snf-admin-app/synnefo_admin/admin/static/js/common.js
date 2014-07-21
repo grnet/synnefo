@@ -29,7 +29,7 @@ snf = {
 					var pendingMsg = _.template(snf.modals.html.notifyPending, ({logID: logID, actionName: actionName, removeBtn: snf.modals.html.removeLogLine, itemsCount: itemsCount}));
 					if($notificationArea.find('.warning').length === 0) {
 						$notificationArea.find('.container').append(pendingMsg);
-						$notificationArea.find('.container').append(snf.modals.html.notifyRefreshPage);
+						$notificationArea.find('.container').append(warningMsg);
 					}
 					else {
 						$notificationArea.find('.warning').before(pendingMsg);
@@ -124,7 +124,10 @@ snf = {
 			notifyErrorReason: '<dt>Reason:</dt><dd><%= description %></dd>',
 			notifyErrorIDs: '<dt>IDs:</dt><dd><%= ids %></dd>',
 			notifyRefreshPage: '<p class="warning">The data of the page maybe out of date. Refresh it, to update them.</p>',
-			notifyReloadTable: '<p class="warning">The data of the table maybe out of date.<a class="snf-refresh-outline reload-table reload-btn" title="reload table"></a></p>'
+			notifyReloadTable: '<p class="warning">The data of the table maybe out of date.<a class="snf-refresh-outline reload-table reload-btn" title="reload table"></a></p>',
+			warningDuplicates: '<p class="warning-duplicate">Duplicate accounts have been detected</p>',
+			commonRow:  '<tr data-itemid=<%= itemID %> <% if(hidden) { %> class="hidden-row" <% } %> ><td class="item-name"><%= itemName %></td><td class="item-id"><%= itemID %></td><td class="owner-name"><%= ownerName %></td><td class="owner-email"><div class="wrap"><a class="remove" title="Remove item from selection">X</a><%= ownerEmail %></div></td></tr>',
+			contactRow: '<tr <% if(showAssociations) { %> title="related with: <%= associations %>" <% } %> data-itemid=<%= itemID %> <% if(hidden) { %> class="hidden-row" <% } %> ><td class="full-name"><%= fullName %></td><td class="email"><div class="wrap"><a class="remove" title="Remove item from selection">X</a><%= email %></div></td></tr>',
 		}
 	},
 	tables: {
@@ -136,7 +139,7 @@ snf = {
 			clearSelected: '<a href="" id="clear-all" class="disabled deselect line-btn" data-karma="neutral" data-caution="warning" data-toggle="modal" data-target="#clear-all-warning"><span class="snf-font-remove"></span><span>Clear All</span></a>',
 			toggleNotifications: '',
 			showTips: '',
-			trimedCell: '<span title="click to see"><span data-container="body" data-toggle="popover" data-placement="bottom" data-content="<%= data %>"><%= trimmedData %>>...</span></span>',
+			trimedCell: '<span title="click to see"><span data-container="body" data-toggle="popover" data-placement="bottom" data-content="<%= data %>"><%= trimmedData %>...</span></span>',
 			checkboxCell: '<span class="snf-font-admin snf-checkbox-<%= state %> selection-indicator"></span><%= content %>',
 			summary: '<a title="Show summary" href="#" class="summary-expand expand-area"><span class="snf-font-admin snf-angle-down"></span></a><dl class="info-summary dl-horizontal"><%= list %></dl>',
 			summaryLine: '<dt><%= key %></dt><dd><%= value %></dd>',
@@ -190,7 +193,6 @@ $(document).ready(function(){
 
 	$notificationArea.on('click', '.remove-log', function(e) {
 		e.preventDefault();
-		console.log($(this));
 		var $log = $(this).closest('.log');
 		$log.fadeOut('slow', function() {
 			$log.remove();

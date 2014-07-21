@@ -778,7 +778,7 @@ $(document).ready(function() {
 		}
 		if(completeAction) {
 			$('[data-toggle="popover"]').popover('hide');
-			snf.modals.performAction($modal, $notificationArea, snf.modals.html.reloadTable, selected.items.length, countAction);
+			snf.modals.performAction($modal, $notificationArea, snf.modals.html.notifyReloadTable, selected.items.length, countAction);
 			snf.modals.resetErrors($modal);
 			snf.modals.resetInputs($modal);
 			removeWarningDupl($modal);
@@ -824,9 +824,11 @@ $(document).ready(function() {
 		updateCounter('.selected-num');
 	});
 
+
 	function drawModal(modalID) {
 		var $tableBody = $(modalID).find('.table-selected tbody');
-		var modalType = $(modalID).data('type');
+		var modalType = $(modalID).attr('data-type');
+		var itemType = $(modalID).attr('data-item');
 		var $counter = $(modalID).find('.num');
 		var rowsNum = selected.items.length;
 		var $actionBtn = $(modalID).find('.apply-action');
@@ -836,54 +838,43 @@ $(document).ready(function() {
 		var unique = true;
 		var uniqueProp = '';
 		var count = 0;
-		// var $idsInput = $(modalID).find('.modal-footer form input[name="ids"]');
 		var idsArray = [];
-		var warningMsg = '<p class="warning-duplicate"><em>Duplicate accounts have been detected</em></p>';
+		var warningMsg = snf.modals.html.warningDuplicates;
 		var warningInserted = false;
+		var associations = {};
+		var $btn = $(modalID).find('.toggle-more');
 		$tableBody.empty();
 		if(modalType === "contact") {
-			uniqueProp = 'contact_id'
-			var templateRow = '<tr title="" data-itemid=""><td class="full-name"></td><td class="email"><div class="wrap"><a class="remove" title="Remove item from selection">X</a>{{email}}</div></td></tr>';
+			uniqueProp = 'contact_id';
 			for(var i=0; i<rowsNum; i++) {
-				for(var j = 0; j<i; j++) {
-					if(selected.items[i][uniqueProp] === selected.items[j][uniqueProp]) {
-						unique = false;
-						break;
-					}
-				}
-				if(unique === true) {
-					idsArray.push(selected.items[i][uniqueProp]);
-					currentRow = templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].id+'"');
-					currentRow = currentRow.replace('title=""', 'title="related with: '+selected.items[i].item_name+'"')
-					currentRow = currentRow.replace('<td class="full-name"></td>', '<td class="full-name">'+selected.items[i].contact_name+'</td>');
-					currentRow = currentRow.replace('{{email}}', selected.items[i].contact_email);
-					if(i >= maxVisible)
-						currentRow = currentRow.replace('<tr', '<tr class="hidden-row"');
-					htmlRows += currentRow;
+				var currContactID = selected.items[i][uniqueProp];
+				if(associations[currContactID] === undefined) {
+					associations[currContactID] = [selected.items[i]['item_name']];
 				}
 				else {
-					htmlRows = htmlRows.replace('" data-itemid="' + selected.items[i].id + '"', ', '+selected.items[i].item_name+'" data-itemid="' + selected.items[i].id+'"');
-					if(!warningInserted) {
-						$tableBody.closest('table').before(warningMsg);
-						warningInserted = true;
-					}
+					selected.items[i]['notFirst'] = true; // not the first item with the current contact_id
+					associations[currContactID].push(selected.items[i]['item_name']);
+				}
+				if(!warningInserted && selected.items[i]['notFirst']) {
+					$tableBody.closest('table').before(warningMsg);
+					warningInserted = true;
+				}
+			}
+			for(var i=0; i<rowsNum; i++) {
+				console.log(i)
+				if (!selected.items[i]['notFirst']) {
+					idsArray.push(selected.items[i][uniqueProp]);
+					currentRow = _.template(snf.modals.html.contactRow, {itemID: selected.items[i].id, showAssociations: (itemType !== 'user'), associations: associations[selected.items[i][uniqueProp]].toString().replace(/\,/gi, ', '), fullName: selected.items[i].contact_name, email: selected.items[i].contact_email, hidden: (i >=maxVisible)})
+					htmlRows += currentRow;
 				}
 			}
 		}
 
-
 		else {
 			uniqueProp = 'id';
-			var templateRow = '<tr data-itemid=""><td class="item-name"></td><td class="item-id"></td><td class="owner-name"></td><td class="owner-email"><div class="wrap"><a class="remove" title="Remove item from selection">X</a>{{email}}</div></td></tr>';
 			for(var i=0; i<rowsNum; i++) {
 				idsArray.push(selected.items[i][uniqueProp]);
-				currentRow =templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].id+'"')
-				currentRow = currentRow.replace('<td class="item-name"></td>', '<td class="item-name">'+selected.items[i].item_name+'</td>');
-				currentRow = currentRow.replace('<td class="item-id"></td>', '<td class="item-id">'+selected.items[i].id+'</td>');
-				currentRow = currentRow.replace('<td class="owner-name"></td>', '<td class="owner-name">'+selected.items[i].contact_name+'</td>');
-				currentRow = currentRow.replace('{{email}}', selected.items[i].contact_email);
-				if(i >= maxVisible)
-					currentRow = currentRow.replace('<tr', '<tr class="hidden-row"');
+				currentRow = _.template(snf.modals.html.commonRow, {itemID: selected.items[i].id, itemName: selected.items[i].item_name, ownerEmail: selected.items[i].contact_email, ownerName: selected.items[i].contact_name, hidden: (i >=maxVisible)})
 				htmlRows += currentRow;
 			}
 		}
@@ -892,12 +883,12 @@ $(document).ready(function() {
 		updateCounter($counter, idsArray.length); // ***
 		
 		if(idsArray.length >= maxVisible) {
-			var $btn = $(modalID).find('.toggle-more');
-			// rowsNum = idsArray.length;
-
 			$btn.css('display', 'block');
-
-					}
+		}
+		else {
+			$btn.css('display', 'none');
+		}
+		delete associations;
 	};
 
 	$('.modal .toggle-more').click( function() {
@@ -1005,7 +996,6 @@ $(document).ready(function() {
 					else {
 						if($li.siblings('.active').length >0) {
 							arrayFilter(filters, key, value, true);
-							console.log(filters[key])
 							$(this).closest(filterEl).find('.selected-value').text(filters[key].toString().replace(/\,/gi, ', '))
 						}
 						// deselect the only selection that the user made before

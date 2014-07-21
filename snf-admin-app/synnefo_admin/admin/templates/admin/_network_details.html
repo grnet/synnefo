@@ -5,13 +5,7 @@
 <div class="network-details object-details {{ rowcls }}" data-id="{{network.pk}}"
     data-type="{{type}}">
     <h4 class="clearfix">
-        <span class="lt">
-            {% if type != main_type %}
-            <a href="{% url admin-details type network.pk %}" class="snf-search icon-link" title="Details for {{ network|repr }}"></a>
-            {% endif %}
-            <span class="title">{{ network|repr }}</span>
-		    <span class="arrow  snf-angle-down"></span>
-		</span>
+        {% include "admin/_details_h4_lt.html" %}
         <span class="rt">
 	        {{ network|object_status_label|safe }}
 		    <span class="label">ID: {{ network.pk }}</span>

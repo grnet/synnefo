@@ -11,7 +11,8 @@ table th {
     .snf-search {
         opacity: 0.7;
         font-size: 15px;
-        &:hover {
+        &:hover, 
+        &:focus{
             opacity: 1;
         }
     }
@@ -46,7 +47,8 @@ table th {
         padding-right: 8px;
         background-color: $link-color;
         color: #fff;
-        &:hover {
+        &:hover,
+        &:focus{
             text-decoration: none;
             background-color: $link-hover-color;
         }
@@ -155,7 +157,9 @@ table.dataTable.no-footer {
     padding: 0 1em;
 }
 
-.container .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+.container .dataTables_wrapper .dataTables_paginate .paginate_button:hover,
+.container .dataTables_wrapper .dataTables_paginate .paginate_button:focus,
+{
     background: $gray-dark;
     border-color: white;
 }
@@ -165,6 +169,7 @@ table.dataTable.no-footer {
 }
 
 .dataTables_wrapper .dataTables_paginate .paginate_button.current, 
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:focus,
 .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
     background: white;
     border: transparent;

@@ -33,9 +33,11 @@
         .arrow {
 		    position: relative;
             padding: 0 8px;
-		    &:hover {
+		    &:hover,
+            &:focus{
 			    top: 2px;
 			    cursor: pointer;
+                outline: 0 none;
 		    }
 	    }
        .label{
@@ -87,7 +89,8 @@
             cursor: pointer;
             margin-left:10px;
             color: $almost-white;
-            &:hover {
+            &:hover,
+            &:focus{
                 background: lighten($snf_gray-light, 10%);
             }
         }
@@ -137,7 +140,9 @@
 		color: white;
 		border-radius: 0;
 	}
-	&:not(.active)>a:hover {
+	
+    &:not(.active)>a:hover,
+    &:not(.active)>a:focus{
 		opacity: 1;
 		color: white;
 		border-color: transparent;
@@ -173,7 +178,8 @@
 		padding:14px 20px;
 		.object-details {
 			padding: 5px 20px;
-            &:hover {
+            &:hover,
+            &:focus{
                 background: lighten($body-bg, 5%);
             }
 		}

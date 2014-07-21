@@ -75,7 +75,8 @@ p.progress-area {
 	.custom-btn {
 		color: white;
 		opacity: 0.9;
-		&:hover {
+		&:hover,
+        &:focus{
 			opacity: 1;
 		}
 	}
@@ -182,7 +183,8 @@ p.progress-area {
 	// right: 8px;
 	top: 6px;
 	display: none;
-	&:hover {
+	&:hover,
+    &:focus{
 		color: red;
 		// color:#A80A0A;
 		text-decoration: none;
@@ -215,7 +217,8 @@ p.progress-area {
                 font-weight: bold;
             }
         }
-        tr:hover {
+        tr:hover,
+        tr:focus{
             background: $gray-lighter;
             a {
                 color: red;
@@ -226,7 +229,7 @@ p.progress-area {
             position: absolute;
             right: 14px;
             color: transparent;
-            &:hover {
+            &:hover{
                 text-decoration: none;
             }
         }

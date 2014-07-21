@@ -12,7 +12,8 @@ $default-btn-padding: 8px;
 		line-height: 100%;
 		padding: $padding;
 	}
-	&:hover {
+	&:hover,
+    &:focus{
 		text-decoration: none;
 		opacity: 1;
 	}
@@ -36,7 +37,8 @@ $default-btn-padding: 8px;
 		border: 1px solid transparent;
         width: 100%;
 	}
-	&:hover {
+	&:hover,
+    &:focus{
 		span {
 			border-color: $color;
 		}
@@ -53,7 +55,8 @@ $default-btn-padding: 8px;
 		border: 1px solid transparent;
 		background: transparent;
 	}
-	&:hover {
+	&:hover,
+    &:focus{
 		span {
 			color: $secondary-link-color;
 		}
@@ -66,7 +69,8 @@ $default-btn-padding: 8px;
 	background-color: $color;
 	border-bottom: 2px solid $color; 
 	color: #fff;
-	&:hover {
+	&:hover,
+    &:focus{
 		color: #fff;
 		border-bottom-color: $almost-white;
 	}
@@ -130,7 +134,8 @@ body .container .line-btn.disabled {
 	border-color: $almost-white;
 	opacity: 0.7;
 	color: $almost-white;
-	&:hover {
+	&:hover,
+    &:focus{
 		opacity: 0.7;
 	}
 }

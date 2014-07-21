@@ -44,7 +44,8 @@ body {
 		opacity: 1;
         &.disabled {
             border-color: lighten($btn-link-disabled-color,15%);
-            &:hover {
+            &:hover,
+            &:focus{
                 span {
                     border-color: transparent;
                 }
@@ -71,7 +72,8 @@ body {
         font-size: 16px;
         .dropdown { 
             display: inline;
-            &:hover {
+            &:hover,
+            &:focus{
                 &>a {
                     background: lighten($hover-nav-color, 10%); 
                 }
@@ -212,7 +214,8 @@ svg>text:last-child {
         right: 20px;
         top: 20px;
         color: $gray-dark;
-        &:hover {
+        &:hover,
+        &:focus{
             color: $total-black;
         }
     }

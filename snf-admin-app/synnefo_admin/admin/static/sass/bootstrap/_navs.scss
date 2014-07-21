@@ -86,7 +86,10 @@
       line-height: $line-height-base;
       border: 1px solid transparent;
       border-radius: $border-radius-base $border-radius-base 0 0;
-      &:hover {
+      &:hover, 
+      &:focus{
+        background: inherit;
+        color: inherit;
         border-color: $nav-tabs-link-hover-border-color $nav-tabs-link-hover-border-color $nav-tabs-border-color;
       }
     }

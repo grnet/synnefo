@@ -10,7 +10,7 @@
       <a href="{% url admin-details type vm.pk %}" class="snf-search icon-link" title="Details for {{ vm|repr }}"></a>
     {% endif %}
         <span class="title">{{ vm|repr }}</span>
-        <span class="arrow  snf-angle-down"></span>
+        <span class="arrow  snf-angle-down"  role="button" tabindex="0"></span>
     </span>
     <span class="rt">
         {% if vm.suspended %}

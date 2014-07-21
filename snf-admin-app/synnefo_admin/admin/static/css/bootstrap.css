@@ -416,9 +416,7 @@ a:hover, a:focus {
 }
 /* line 58, ../sass/bootstrap/_scaffolding.scss */
 a:focus {
-  outline: thin dotted;
-  outline: 5px auto -webkit-focus-ring-color;
-  outline-offset: -2px;
+  outline: 0 none;
 }
 
 /* line 69, ../sass/bootstrap/_scaffolding.scss */
@@ -2410,9 +2408,7 @@ select[size] {
 input[type="file"]:focus,
 input[type="radio"]:focus,
 input[type="checkbox"]:focus {
-  outline: thin dotted;
-  outline: 5px auto -webkit-focus-ring-color;
-  outline-offset: -2px;
+  outline: 0 none;
 }
 
 /* line 83, ../sass/bootstrap/_forms.scss */
@@ -2855,9 +2851,7 @@ select[multiple].input-lg,
 }
 /* line 25, ../sass/bootstrap/_buttons.scss */
 .btn:focus, .btn:active:focus, .btn.active:focus {
-  outline: thin dotted;
-  outline: 5px auto -webkit-focus-ring-color;
-  outline-offset: -2px;
+  outline: 0 none;
 }
 /* line 31, ../sass/bootstrap/_buttons.scss */
 .btn:hover, .btn:focus {
@@ -4847,87 +4841,89 @@ input[type="button"].btn-block {
   border: 1px solid transparent;
   border-radius: 0 0 0 0;
 }
-/* line 89, ../sass/bootstrap/_navs.scss */
-.nav-tabs > li > a:hover {
-  border-color: #d9d9d9 #d9d9d9 inherit;
+/* line 90, ../sass/bootstrap/_navs.scss */
+.nav-tabs > li > a:hover, .nav-tabs > li > a:focus {
+  background: inherit;
+  color: inherit;
+  border-color: inherit inherit inherit;
 }
-/* line 98, ../sass/bootstrap/_navs.scss */
+/* line 101, ../sass/bootstrap/_navs.scss */
 .nav-tabs > li.active > a, .nav-tabs > li.active > a:hover, .nav-tabs > li.active > a:focus {
-  color: #555555;
-  background-color: #303030;
-  border: 1px solid #dddddd;
+  color: inherit;
+  background-color: inherit;
+  border: 1px solid inherit;
   border-bottom-color: transparent;
   cursor: default;
 }
 
-/* line 118, ../sass/bootstrap/_navs.scss */
+/* line 121, ../sass/bootstrap/_navs.scss */
 .nav-pills > li {
   float: left;
 }
-/* line 122, ../sass/bootstrap/_navs.scss */
+/* line 125, ../sass/bootstrap/_navs.scss */
 .nav-pills > li > a {
   border-radius: 0;
 }
-/* line 125, ../sass/bootstrap/_navs.scss */
+/* line 128, ../sass/bootstrap/_navs.scss */
 .nav-pills > li + li {
   margin-left: 2px;
 }
-/* line 133, ../sass/bootstrap/_navs.scss */
+/* line 136, ../sass/bootstrap/_navs.scss */
 .nav-pills > li.active > a, .nav-pills > li.active > a:hover, .nav-pills > li.active > a:focus {
   color: white;
   background-color: white;
 }
 
-/* line 144, ../sass/bootstrap/_navs.scss */
+/* line 147, ../sass/bootstrap/_navs.scss */
 .nav-stacked > li {
   float: none;
 }
-/* line 146, ../sass/bootstrap/_navs.scss */
+/* line 149, ../sass/bootstrap/_navs.scss */
 .nav-stacked > li + li {
   margin-top: 2px;
   margin-left: 0;
 }
 
-/* line 160, ../sass/bootstrap/_navs.scss */
+/* line 163, ../sass/bootstrap/_navs.scss */
 .nav-justified, .nav-tabs.nav-justified {
   width: 100%;
 }
-/* line 163, ../sass/bootstrap/_navs.scss */
+/* line 166, ../sass/bootstrap/_navs.scss */
 .nav-justified > li, .nav-tabs.nav-justified > li {
   float: none;
 }
-/* line 165, ../sass/bootstrap/_navs.scss */
+/* line 168, ../sass/bootstrap/_navs.scss */
 .nav-justified > li > a, .nav-tabs.nav-justified > li > a {
   text-align: center;
   margin-bottom: 5px;
 }
-/* line 171, ../sass/bootstrap/_navs.scss */
+/* line 174, ../sass/bootstrap/_navs.scss */
 .nav-justified > .dropdown .dropdown-menu {
   top: auto;
   left: auto;
 }
 @media (min-width: 768px) {
-  /* line 177, ../sass/bootstrap/_navs.scss */
+  /* line 180, ../sass/bootstrap/_navs.scss */
   .nav-justified > li, .nav-tabs.nav-justified > li {
     display: table-cell;
     width: 1%;
   }
-  /* line 180, ../sass/bootstrap/_navs.scss */
+  /* line 183, ../sass/bootstrap/_navs.scss */
   .nav-justified > li > a, .nav-tabs.nav-justified > li > a {
     margin-bottom: 0;
   }
 }
 
-/* line 190, ../sass/bootstrap/_navs.scss */
+/* line 193, ../sass/bootstrap/_navs.scss */
 .nav-tabs-justified, .nav-tabs.nav-justified {
   border-bottom: 0;
 }
-/* line 193, ../sass/bootstrap/_navs.scss */
+/* line 196, ../sass/bootstrap/_navs.scss */
 .nav-tabs-justified > li > a, .nav-tabs.nav-justified > li > a {
   margin-right: 0;
   border-radius: 0;
 }
-/* line 201, ../sass/bootstrap/_navs.scss */
+/* line 204, ../sass/bootstrap/_navs.scss */
 .nav-tabs-justified > .active > a, .nav-tabs.nav-justified > .active > a,
 .nav-tabs-justified > .active > a:hover,
 .nav-tabs.nav-justified > .active > a:hover,
@@ -4936,12 +4932,12 @@ input[type="button"].btn-block {
   border: 1px solid #dddddd;
 }
 @media (min-width: 768px) {
-  /* line 206, ../sass/bootstrap/_navs.scss */
+  /* line 209, ../sass/bootstrap/_navs.scss */
   .nav-tabs-justified > li > a, .nav-tabs.nav-justified > li > a {
     border-bottom: 1px solid #dddddd;
     border-radius: 0 0 0 0;
   }
-  /* line 212, ../sass/bootstrap/_navs.scss */
+  /* line 215, ../sass/bootstrap/_navs.scss */
   .nav-tabs-justified > .active > a, .nav-tabs.nav-justified > .active > a,
   .nav-tabs-justified > .active > a:hover,
   .nav-tabs.nav-justified > .active > a:hover,
@@ -4951,16 +4947,16 @@ input[type="button"].btn-block {
   }
 }
 
-/* line 224, ../sass/bootstrap/_navs.scss */
+/* line 227, ../sass/bootstrap/_navs.scss */
 .tab-content > .tab-pane {
   display: none;
 }
-/* line 227, ../sass/bootstrap/_navs.scss */
+/* line 230, ../sass/bootstrap/_navs.scss */
 .tab-content > .active {
   display: block;
 }
 
-/* line 237, ../sass/bootstrap/_navs.scss */
+/* line 240, ../sass/bootstrap/_navs.scss */
 .nav-tabs .dropdown-menu {
   margin-top: -1px;
   border-top-right-radius: 0;

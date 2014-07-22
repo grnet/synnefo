@@ -22,6 +22,7 @@ Settings for the snf-admin-app.
 # Process Admin settings
 
 from django.conf import settings
+from collections import OrderedDict
 
 ADMIN_ENABLED = getattr(settings, 'ADMIN_ENABLED', True)
 
@@ -31,6 +32,20 @@ ADMIN_MEDIA_URL = getattr(settings, 'ADMIN_MEDIA_URL',
 AUTH_COOKIE_NAME = getattr(settings, 'ADMIN_AUTH_COOKIE_NAME',
                            getattr(settings, 'UI_AUTH_COOKIE_NAME',
                                    '_pithos2_a'))
+
+# An ordered dictionary with the enabled admin model views.
+DEFAULT_ADMIN_VIEWS = OrderedDict()
+DEFAULT_ADMIN_VIEWS['user'] = {'label': 'Users'}
+DEFAULT_ADMIN_VIEWS['vm'] = {'label': 'VMs'}
+DEFAULT_ADMIN_VIEWS['network'] = {'label': 'Networks'}
+DEFAULT_ADMIN_VIEWS['ip'] = {'label': 'IPs'}
+DEFAULT_ADMIN_VIEWS['ip_log'] = {'label': 'IP History'}
+DEFAULT_ADMIN_VIEWS['project'] = {'label': 'Projects'}
+DEFAULT_ADMIN_VIEWS['group'] = {'label': 'User Groups'}
+#DEFAULT_ADMIN_VIEWS['auth_provider'] = {'label': 'User Auth Providers'}
+
+ADMIN_VIEWS = getattr(settings, 'ADMIN_VIEWS',
+                                DEFAULT_ADMIN_VIEWS)
 
 # Check if the user has defined his/her own values for the following three
 # groups.

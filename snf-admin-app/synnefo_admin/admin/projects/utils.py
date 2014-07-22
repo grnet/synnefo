@@ -125,9 +125,9 @@ def get_project_quota_category(inst, category):
     for p in policies:
         r = p.resource
         # Get human-readable (resource name, member capacity) tuple
-        if "member":
+        if category == "member":
             resource_list.append((r.report_desc, p.display_member_capacity()))
-        elif "limit":
+        elif category == "limit":
             resource_list.append((r.report_desc, p.display_project_capacity()))
 
     return resource_list

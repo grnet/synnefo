@@ -15,3 +15,4 @@
 
 # flake8: noqa
 from synnefo_admin.admin.tests.views import *
+from synnefo_admin.admin.tests.projects import *

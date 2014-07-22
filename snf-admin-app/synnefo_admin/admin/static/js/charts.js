@@ -285,6 +285,7 @@ function statusPerProviderReversed(data) {
     }
 
     $('#provider-status-reversed').highcharts({
+        colors: ['#5cb85c', '#058DC7', '#f0ad4e', '#DDDF00', '#24CBE5', '#64E572','#FF9655', '#FFF263', '#6AF9C4'],
         chart: {
             type: 'column'
         },

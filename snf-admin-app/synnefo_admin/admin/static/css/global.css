@@ -3142,49 +3142,51 @@ body {
 /* line 45, ../sass/_extra.scss */
 .app-list a.disabled {
   border-color: #747474;
+  color: gray;
 }
-/* line 49, ../sass/_extra.scss */
+/* line 50, ../sass/_extra.scss */
 .app-list a.disabled:hover span, .app-list a.disabled:focus span {
   border-color: transparent;
 }
 
-/* line 57, ../sass/_extra.scss */
+/* line 58, ../sass/_extra.scss */
 .nav-simple {
   padding: 20px;
   border-bottom: 1px solid white;
 }
-/* line 60, ../sass/_extra.scss */
+/* line 61, ../sass/_extra.scss */
 .nav-simple .header {
   float: left;
   line-height: 40px;
   font-size: 26px;
 }
-/* line 64, ../sass/_extra.scss */
+/* line 65, ../sass/_extra.scss */
 .nav-simple .header img {
   max-height: 50px;
 }
-/* line 68, ../sass/_extra.scss */
+/* line 69, ../sass/_extra.scss */
 .nav-simple .login-info {
   float: right;
   position: relative;
   line-height: 40px;
   font-size: 16px;
 }
-/* line 73, ../sass/_extra.scss */
-.nav-simple .login-info .dropdown {
+/* line 74, ../sass/_extra.scss */
+.nav-simple .login-info .has-dropdown {
   display: inline;
+  position: relative;
 }
-/* line 77, ../sass/_extra.scss */
-.nav-simple .login-info .dropdown:hover > a, .nav-simple .login-info .dropdown:focus > a {
+/* line 79, ../sass/_extra.scss */
+.nav-simple .login-info .has-dropdown:hover > a, .nav-simple .login-info .has-dropdown:focus > a {
   background: #4d4d4d;
 }
-/* line 81, ../sass/_extra.scss */
-.nav-simple .login-info .dropdown > a {
+/* line 83, ../sass/_extra.scss */
+.nav-simple .login-info .has-dropdown > a {
   color: #fff;
   display: inline-block;
   padding: 0 10px;
 }
-/* line 87, ../sass/_extra.scss */
+/* line 89, ../sass/_extra.scss */
 .nav-simple .login-info .dropdown-menu {
   left: auto;
   right: 0;
@@ -3192,12 +3194,12 @@ body {
 }
 
 /* Navigation */
-/* line 97, ../sass/_extra.scss */
+/* line 99, ../sass/_extra.scss */
 .navbar-default {
   border: 0 none;
   z-index: 1040;
 }
-/* line 100, ../sass/_extra.scss */
+/* line 102, ../sass/_extra.scss */
 .navbar-default .home-icon {
   padding: 0;
   height: 50px;
@@ -3205,79 +3207,79 @@ body {
   text-align: center;
   line-height: 50px;
 }
-/* line 106, ../sass/_extra.scss */
+/* line 108, ../sass/_extra.scss */
 .navbar-default .home-icon img {
   max-height: 50px;
 }
 
-/* line 113, ../sass/_extra.scss */
+/* line 115, ../sass/_extra.scss */
 .sub-nav {
   top: 50px;
   min-height: inherit;
 }
-/* line 117, ../sass/_extra.scss */
+/* line 119, ../sass/_extra.scss */
 .sub-nav .nav > li > a {
   padding-top: 8px;
   padding-bottom: 8px;
 }
 
-/* line 123, ../sass/_extra.scss */
+/* line 125, ../sass/_extra.scss */
 .dropdown-menu {
   overflow-y: auto;
 }
 
-/* line 128, ../sass/_extra.scss */
-.nav .dropdown:hover > ul.dropdown-menu,
-.nav-simple .dropdown:hover > ul.dropdown-menu {
+/* line 130, ../sass/_extra.scss */
+.nav .has-dropdown:hover > ul.dropdown-menu,
+.nav-simple .has-dropdown:hover > ul.dropdown-menu {
   display: block;
 }
 
 /* More */
-/* line 138, ../sass/_extra.scss */
+/* line 140, ../sass/_extra.scss */
 svg > text:last-child {
   display: none;
 }
 
-/* line 142, ../sass/_extra.scss */
-.dropdown .arrow {
+/* line 144, ../sass/_extra.scss */
+.has-dropdown .arrow {
   margin-left: 6px;
   vertical-align: middle;
 }
 
-/* line 147, ../sass/_extra.scss */
+/* line 149, ../sass/_extra.scss */
 .hidden-row {
   display: none;
 }
 
-/* line 151, ../sass/_extra.scss */
+/* line 153, ../sass/_extra.scss */
 .with-shift *::selection {
   background-color: transparent;
 }
 
-/* line 155, ../sass/_extra.scss */
+/* line 157, ../sass/_extra.scss */
 .with-shift *::-moz-selection {
   background: transparent;
 }
 
-/* line 158, ../sass/_extra.scss */
+/* line 160, ../sass/_extra.scss */
 .tab-content {
   background: #4e4e4e;
   padding: 20px;
 }
-/* line 161, ../sass/_extra.scss */
+/* line 163, ../sass/_extra.scss */
 .tab-content .well {
   border-color: #4e4e4e;
   margin-bottom: 0;
 }
 
-/* line 167, ../sass/_extra.scss */
+/* line 169, ../sass/_extra.scss */
 .selection-indicator {
   cursor: pointer;
   padding: 6px 12px 6px 6px;
 }
 
 /* Notification area */
-/* line 174, ../sass/_extra.scss */
+/* line 176, ../sass/_extra.scss */
 .notify {
   padding: 30px 10px 15px;
   width: 100%;
@@ -3286,86 +3288,86 @@ svg > text:last-child {
   background: white;
   color: #303030;
 }
-/* line 182, ../sass/_extra.scss */
+/* line 184, ../sass/_extra.scss */
 .notify .container > *:not(:last-child) {
   margin-bottom: 16px;
 }
-/* line 185, ../sass/_extra.scss */
+/* line 187, ../sass/_extra.scss */
 .notify .remove-icon {
   color: transparent;
   margin-left: 20px;
   font-weight: bold;
 }
-/* line 191, ../sass/_extra.scss */
+/* line 193, ../sass/_extra.scss */
 .notify .container > *:hover .remove-icon {
   color: #d9534f;
 }
-/* line 195, ../sass/_extra.scss */
+/* line 197, ../sass/_extra.scss */
 .notify .state-icon {
   margin-right: 10px;
 }
-/* line 198, ../sass/_extra.scss */
+/* line 200, ../sass/_extra.scss */
 .notify .success {
   color: #449d44;
 }
-/* line 201, ../sass/_extra.scss */
+/* line 203, ../sass/_extra.scss */
 .notify .error {
   color: #d9534f;
 }
-/* line 204, ../sass/_extra.scss */
+/* line 206, ../sass/_extra.scss */
 .notify .pending {
   color: #f0ad4e;
 }
-/* line 207, ../sass/_extra.scss */
+/* line 209, ../sass/_extra.scss */
 .notify .warning {
   font-style: italic;
   font-weight: bold;
   color: #4e4e4e;
 }
-/* line 212, ../sass/_extra.scss */
+/* line 214, ../sass/_extra.scss */
 .notify .close-notify {
   position: absolute;
   right: 20px;
   top: 20px;
   color: #303030;
 }
-/* line 218, ../sass/_extra.scss */
+/* line 220, ../sass/_extra.scss */
 .notify .close-notify:hover, .notify .close-notify:focus {
   color: #222222;
 }
-/* line 222, ../sass/_extra.scss */
+/* line 224, ../sass/_extra.scss */
 .notify .dl-horizontal {
   margin-left: 21px;
 }
-/* line 224, ../sass/_extra.scss */
+/* line 226, ../sass/_extra.scss */
 .notify .dl-horizontal dt {
   width: 80px;
   vertical-align: top;
   text-align: left;
 }
-/* line 228, ../sass/_extra.scss */
+/* line 230, ../sass/_extra.scss */
 .notify .dl-horizontal dt span {
   font-size: 20px;
   vertical-align: text-bottom;
   margin-right: 10px;
 }
-/* line 234, ../sass/_extra.scss */
+/* line 236, ../sass/_extra.scss */
 .notify .dl-horizontal dd {
   margin-left: 80px;
 }
 
-/* line 240, ../sass/_extra.scss */
+/* line 242, ../sass/_extra.scss */
 .lowercase {
   text-transform: lowercase;
 }
 
-/* line 245, ../sass/_extra.scss */
+/* line 247, ../sass/_extra.scss */
 .shortcuts-btn span {
   font-size: 20px;
   vertical-align: sub;
 }
 
-/* line 252, ../sass/_extra.scss */
+/* line 254, ../sass/_extra.scss */
 .shortcuts .key {
   padding: 2px 9px;
   font-style: normal;
@@ -3374,25 +3376,25 @@ svg > text:last-child {
   border-radius: 6px;
 }
 
-/* line 261, ../sass/_extra.scss */
+/* line 263, ../sass/_extra.scss */
 .popover {
   max-width: none;
   color: #303030;
   margin-bottom: 20px;
 }
-/* line 265, ../sass/_extra.scss */
+/* line 267, ../sass/_extra.scss */
 .popover h2 {
   text-align: center;
   font-size: 1.2em;
   font-weight: bold;
 }
-/* line 270, ../sass/_extra.scss */
+/* line 272, ../sass/_extra.scss */
 .popover dt {
   margin-bottom: 8px;
   overflow: visible;
 }
 
-/* line 276, ../sass/_extra.scss */
+/* line 278, ../sass/_extra.scss */
 .sign-out span {
   margin-right: 10px;
   vertical-align: middle;

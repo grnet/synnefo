@@ -5341,166 +5341,171 @@ input[type="button"].btn-block {
   color: white;
   background-color: #333333;
 }
-/* line 413, ../sass/bootstrap/_navbar.scss */
+/* line 411, ../sass/bootstrap/_navbar.scss */
+.navbar-default .navbar-nav > .has-dropdown:hover > a:first-child {
+  color: white;
+  background-color: #333333;
+}
+/* line 419, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-nav > .active > a, .navbar-default .navbar-nav > .active > a:hover, .navbar-default .navbar-nav > .active > a:focus {
   color: #303030;
   background-color: white;
 }
-/* line 421, ../sass/bootstrap/_navbar.scss */
+/* line 427, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-nav > .disabled > a, .navbar-default .navbar-nav > .disabled > a:hover, .navbar-default .navbar-nav > .disabled > a:focus {
   color: #cccccc;
   background-color: transparent;
 }
-/* line 428, ../sass/bootstrap/_navbar.scss */
+/* line 434, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-toggle {
   border-color: #dddddd;
 }
-/* line 431, ../sass/bootstrap/_navbar.scss */
+/* line 437, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-toggle:hover, .navbar-default .navbar-toggle:focus {
   background-color: #dddddd;
 }
-/* line 434, ../sass/bootstrap/_navbar.scss */
+/* line 440, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-toggle .icon-bar {
   background-color: #888888;
 }
-/* line 440, ../sass/bootstrap/_navbar.scss */
+/* line 446, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-collapse,
 .navbar-default .navbar-form {
   border-color: inherit;
 }
-/* line 450, ../sass/bootstrap/_navbar.scss */
+/* line 456, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-nav > .open > a, .navbar-default .navbar-nav > .open > a:hover, .navbar-default .navbar-nav > .open > a:focus {
   background-color: white;
   color: #303030;
 }
 @media (max-width: 767px) {
-  /* line 459, ../sass/bootstrap/_navbar.scss */
+  /* line 465, ../sass/bootstrap/_navbar.scss */
   .navbar-default .navbar-nav .open .dropdown-menu > li > a {
     color: white;
   }
-  /* line 462, ../sass/bootstrap/_navbar.scss */
+  /* line 468, ../sass/bootstrap/_navbar.scss */
   .navbar-default .navbar-nav .open .dropdown-menu > li > a:hover, .navbar-default .navbar-nav .open .dropdown-menu > li > a:focus {
     color: white;
     background-color: #333333;
   }
-  /* line 470, ../sass/bootstrap/_navbar.scss */
+  /* line 476, ../sass/bootstrap/_navbar.scss */
   .navbar-default .navbar-nav .open .dropdown-menu > .active > a, .navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover, .navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {
     color: #303030;
     background-color: white;
   }
-  /* line 478, ../sass/bootstrap/_navbar.scss */
+  /* line 484, ../sass/bootstrap/_navbar.scss */
   .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a, .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a:hover, .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a:focus {
     color: #cccccc;
     background-color: transparent;
   }
 }
-/* line 492, ../sass/bootstrap/_navbar.scss */
+/* line 498, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-link {
   color: white;
 }
-/* line 494, ../sass/bootstrap/_navbar.scss */
+/* line 500, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-link:hover {
   color: white;
 }
 
-/* line 503, ../sass/bootstrap/_navbar.scss */
+/* line 509, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse {
   background-color: #4e4e4e;
   border-color: transparent;
 }
-/* line 507, ../sass/bootstrap/_navbar.scss */
+/* line 513, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-brand {
   color: white;
 }
-/* line 510, ../sass/bootstrap/_navbar.scss */
+/* line 516, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-brand:hover, .navbar-inverse .navbar-brand:focus {
   color: white;
   background-color: transparent;
 }
-/* line 516, ../sass/bootstrap/_navbar.scss */
+/* line 522, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-text {
   color: white;
 }
-/* line 521, ../sass/bootstrap/_navbar.scss */
+/* line 527, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-nav > li > a {
   color: white;
 }
-/* line 525, ../sass/bootstrap/_navbar.scss */
+/* line 531, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-nav > li > a:hover, .navbar-inverse .navbar-nav > li > a:focus {
   color: #303030;
   background-color: #d9d9d9;
 }
-/* line 531, ../sass/bootstrap/_navbar.scss */
-.navbar-inverse .navbar-nav > li.dropdown:hover > a:first-child {
+/* line 537, ../sass/bootstrap/_navbar.scss */
+.navbar-inverse .navbar-nav > li.has-dropdown:hover > a:first-child {
   color: #303030;
   background-color: #d9d9d9;
 }
-/* line 539, ../sass/bootstrap/_navbar.scss */
+/* line 545, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-nav > .active > a, .navbar-inverse .navbar-nav > .active > a:hover, .navbar-inverse .navbar-nav > .active > a:focus {
   color: white;
   background-color: #353535;
 }
-/* line 547, ../sass/bootstrap/_navbar.scss */
+/* line 553, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-nav > .disabled > a, .navbar-inverse .navbar-nav > .disabled > a:hover, .navbar-inverse .navbar-nav > .disabled > a:focus {
   color: #444444;
   background-color: transparent;
 }
-/* line 555, ../sass/bootstrap/_navbar.scss */
+/* line 561, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-toggle {
   border-color: #333333;
 }
-/* line 558, ../sass/bootstrap/_navbar.scss */
+/* line 564, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-toggle:hover, .navbar-inverse .navbar-toggle:focus {
   background-color: #333333;
 }
-/* line 561, ../sass/bootstrap/_navbar.scss */
+/* line 567, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-toggle .icon-bar {
   background-color: white;
 }
-/* line 567, ../sass/bootstrap/_navbar.scss */
+/* line 573, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-collapse,
 .navbar-inverse .navbar-form {
   border-color: #3c3c3c;
 }
-/* line 576, ../sass/bootstrap/_navbar.scss */
+/* line 582, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-nav > .open > a, .navbar-inverse .navbar-nav > .open > a:hover, .navbar-inverse .navbar-nav > .open > a:focus {
   background-color: #353535;
   color: white;
 }
 @media (max-width: 767px) {
-  /* line 585, ../sass/bootstrap/_navbar.scss */
+  /* line 591, ../sass/bootstrap/_navbar.scss */
   .navbar-inverse .navbar-nav .open .dropdown-menu > .dropdown-header {
     border-color: transparent;
   }
-  /* line 588, ../sass/bootstrap/_navbar.scss */
+  /* line 594, ../sass/bootstrap/_navbar.scss */
   .navbar-inverse .navbar-nav .open .dropdown-menu .divider {
     background-color: transparent;
   }
-  /* line 591, ../sass/bootstrap/_navbar.scss */
+  /* line 597, ../sass/bootstrap/_navbar.scss */
   .navbar-inverse .navbar-nav .open .dropdown-menu > li > a {
     color: white;
   }
-  /* line 594, ../sass/bootstrap/_navbar.scss */
+  /* line 600, ../sass/bootstrap/_navbar.scss */
   .navbar-inverse .navbar-nav .open .dropdown-menu > li > a:hover, .navbar-inverse .navbar-nav .open .dropdown-menu > li > a:focus {
     color: #303030;
     background-color: #d9d9d9;
   }
-  /* line 602, ../sass/bootstrap/_navbar.scss */
+  /* line 608, ../sass/bootstrap/_navbar.scss */
   .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a, .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a:hover, .navbar-inverse .navbar-nav .open .dropdown-menu > .active > a:focus {
     color: white;
     background-color: #353535;
   }
-  /* line 610, ../sass/bootstrap/_navbar.scss */
+  /* line 616, ../sass/bootstrap/_navbar.scss */
   .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a, .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a:hover, .navbar-inverse .navbar-nav .open .dropdown-menu > .disabled > a:focus {
     color: #444444;
     background-color: transparent;
   }
 }
-/* line 619, ../sass/bootstrap/_navbar.scss */
+/* line 625, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-link {
   color: white;
 }
-/* line 621, ../sass/bootstrap/_navbar.scss */
+/* line 627, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-link:hover {
   color: #303030;
 }

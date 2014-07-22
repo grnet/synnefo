@@ -22,8 +22,8 @@
       {% if item_type == view or main_type == view %}class="active"{% endif %}
       ><a href="{% url admin-list view %}">{{ view_dict.label }}</a></li>
       {% endfor %}
-        <li class="dropdown">
-          <a href="#"  data-toggle="dropdown">Reports
+        <li class="has-dropdown">
+          <a href="#">Reports
           <span class="snf-angle-down arrow"></span></a>
           <ul class="dropdown-menu align-left">
             <li><a href="{% url admin-charts %}">Charts</a></li>
@@ -32,8 +32,8 @@
       </ul>
 
       <ul class="nav navbar-nav navbar-right">
-          <li class="dropdown">
-            <a href="" data-toggle="dropdown">
+          <li class="has-dropdown">
+            <a href="">
                 {{ user.access.user.name }}
               <span class="snf-angle-down arrow"></span>
             </a>

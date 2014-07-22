@@ -44,6 +44,7 @@ body {
 		opacity: 1;
         &.disabled {
             border-color: lighten($btn-link-disabled-color,15%);
+            color: darken(#fff, 50%);
             &:hover,
             &:focus{
                 span {
@@ -70,8 +71,9 @@ body {
         position: relative;
         line-height: 40px;
         font-size: 16px;
-        .dropdown { 
+        .has-dropdown { 
             display: inline;
+            position: relative;
             &:hover,
             &:focus{
                 &>a {
@@ -124,8 +126,8 @@ body {
     overflow-y: auto;
 }
 
-.nav .dropdown:hover > ul.dropdown-menu, 
-.nav-simple .dropdown:hover > ul.dropdown-menu {
+.nav .has-dropdown:hover > ul.dropdown-menu, 
+.nav-simple .has-dropdown:hover > ul.dropdown-menu {
 	display: block;
 }
 
@@ -139,7 +141,7 @@ svg>text:last-child {
 	display: none;
 }
 
-.dropdown .arrow {
+.has-dropdown .arrow {
 	margin-left: 6px;
 	vertical-align: middle;
 }

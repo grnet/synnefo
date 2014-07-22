@@ -407,6 +407,12 @@
         background-color: $navbar-default-link-hover-bg;
       }
     }
+    > .has-dropdown:hover {
+       >a:first-child {
+            color: $navbar-default-link-hover-color;
+            background-color: $navbar-default-link-hover-bg;
+        }
+    }
     > .active > a {
       &,
       &:hover,
@@ -527,7 +533,7 @@
         background-color: $navbar-inverse-link-hover-bg;
       }
     }
-    > li.dropdown:hover {
+    > li.has-dropdown:hover {
         >a:first-child {
                 color: $navbar-inverse-link-hover-color;
                 background-color: $navbar-inverse-link-hover-bg;

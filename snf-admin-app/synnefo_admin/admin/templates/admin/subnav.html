@@ -7,8 +7,8 @@
         </li>
     {% for association in associations_list %}
     {% if association.items %}
-      <li class="dropdown">
-      <a href="#" data-toggle="dropdown">
+      <li class="has-dropdown">
+      <a href="#">
           {{ association.type|display_list_type }}
           <span class="snf-angle-down arrow"></span>
         </a>

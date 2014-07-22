@@ -4,6 +4,7 @@ os.environ['SYNNEFO_SETTINGS_DIR'] = '/etc/synnefo-test-settings'
 from synnefo.settings import *
 
 DEBUG = False
+TEMPLATE_DEBUG = False
 TEST = True
 
 CACHE_BACKEND = os.environ.get('SNF_TEST_CACHE_BACKEND', 'locmem://')
@@ -29,7 +30,10 @@ SNF_TEST_PITHOS_UPDATE_MD5 = bool(int(os.environ.get(
     'SNF_TEST_PITHOS_UPDATE_MD5', False)))
 SNF_TEST_PITHOS_SQLITE_MODULE = bool(int(os.environ.get(
     'SNF_TEST_PITHOS_SQLITE_MODULE', False)))
-
+PASSWORD_HASHERS = (
+    os.environ.get('SNF_TEST_PASSWORD_HASHERS',
+                   'django.contrib.auth.hashers.MD5PasswordHasher'),
+)
 
 # override default database
 if SNF_TEST_USE_POSTGRES:

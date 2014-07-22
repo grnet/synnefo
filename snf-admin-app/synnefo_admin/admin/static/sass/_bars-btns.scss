@@ -245,6 +245,9 @@ Extra-button is used to show total selected rows
 	}
 }
 .charts {
+    .chart {
+        display: none;
+    }
     .well {
         padding-left: 140px;
     }

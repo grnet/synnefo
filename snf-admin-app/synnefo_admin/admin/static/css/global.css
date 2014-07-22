@@ -212,14 +212,18 @@ Extra-button is used to show total selected rows
 }
 
 /* line 248, ../sass/_bars-btns.scss */
+.charts .chart {
+  display: none;
+}
+/* line 251, ../sass/_bars-btns.scss */
 .charts .well {
   padding-left: 140px;
 }
-/* line 251, ../sass/_bars-btns.scss */
+/* line 254, ../sass/_bars-btns.scss */
 .charts .sidebar {
   position: fixed;
 }
-/* line 254, ../sass/_bars-btns.scss */
+/* line 257, ../sass/_bars-btns.scss */
 .charts .sidebar a {
   margin-bottom: 1em;
   display: inline-block;
@@ -254,7 +258,7 @@ Extra-button is used to show total selected rows
 .charts .sidebar a:hover span, .charts .sidebar a:focus span {
   border-color: white;
 }
-/* line 259, ../sass/_bars-btns.scss */
+/* line 262, ../sass/_bars-btns.scss */
 .charts .sidebar a.active {
   display: inline-block;
   text-align: center;
@@ -290,7 +294,7 @@ Extra-button is used to show total selected rows
   color: white;
 }
 
-/* line 266, ../sass/_bars-btns.scss */
+/* line 269, ../sass/_bars-btns.scss */
 .notify .reload-btn {
   padding: 0 4px;
   font-size: 18px;

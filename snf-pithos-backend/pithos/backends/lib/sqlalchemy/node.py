@@ -142,6 +142,7 @@ def create_tables(engine):
 
     versions = Table('versions', metadata, *columns, mysql_engine='InnoDB')
     Index('idx_versions_node_mtime', versions.c.node, versions.c.mtime)
+    Index('idx_versions_node', versions.c.node)
     Index('idx_versions_node_uuid', versions.c.uuid)
 
     #create attributes table

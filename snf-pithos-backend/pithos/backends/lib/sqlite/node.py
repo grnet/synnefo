@@ -143,6 +143,8 @@ class Node(DBWorker):
                             on delete cascade ) """)
         execute(""" create index if not exists idx_versions_node_mtime
                     on versions(node, mtime) """)
+        execute(""" create index if not exists idx_versions_node
+                    on versions(node) """)
         execute(""" create index if not exists idx_versions_node_uuid
                     on versions(uuid) """)
 

@@ -488,6 +488,7 @@ class SignApprovalTermsForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(SignApprovalTermsForm, self).__init__(*args, **kwargs)
+        self.fields['has_signed_terms'].label = _("I agree with the terms")
 
     def clean_has_signed_terms(self):
         has_signed_terms = self.cleaned_data['has_signed_terms']

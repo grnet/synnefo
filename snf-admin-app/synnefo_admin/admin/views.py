@@ -108,28 +108,6 @@ def get_token_from_cookie(request, cookiename):
 
 ### Security functions
 
-def token_check(func):
-    """
-    Mimic csrf security check using user auth token.
-    """
-    def wrapper(request, *args, **kwargs):
-        if not hasattr(request, 'user'):
-            raise PermissionDenied
-
-        token = request.POST.get('token', None)
-        if token:
-            try:
-                req_token = request.user["access"]["token"]["id"]
-                if token == req_token:
-                    return func(request, *args, **kwargs)
-            except KeyError:
-                pass
-
-        raise PermissionDenied
-
-    return wrapper
-
-
 def admin_user_required(func, permitted_groups=ADMIN_PERMITTED_GROUPS):
     """
     Django view wrapper that checks if identified request user has admin
@@ -199,6 +177,7 @@ default_dict = {
 
 @admin_user_required
 def logout(request):
+    """Logout view."""
     admin_log(request)
     auth_token = request.user['access']['token']['id']
     ac = astakosclient.AstakosClient(auth_token, settings.ASTAKOS_AUTH_URL,
@@ -218,7 +197,7 @@ def home(request):
 
 @admin_user_required
 def charts(request):
-    """Dummy view for charts."""
+    """Charts view."""
     admin_log(request)
     return direct_to_template(request, "admin/charts.html",
                               extra_context=default_dict)
@@ -226,6 +205,11 @@ def charts(request):
 
 @admin_user_required
 def stats_component(request, component):
+    """Mirror public stats view for cyclades/astakos.
+
+    This stats view will import the get_public_stats function of
+    cyclades/astakos and return its results to the caller.
+    """
     admin_log(request, component=component)
     data = {}
     status = 200
@@ -241,6 +225,11 @@ def stats_component(request, component):
 
 @admin_user_required
 def stats_component_details(request, component):
+    """Mirror detailed stats view for cyclades/astakos.
+
+    This stats view will import the get_astakos/cyclades_stats function and
+    return its results to the caller.
+    """
     admin_log(request, component=component)
     data = {}
     status = 200

@@ -59,7 +59,6 @@ templates = {
     'details': 'admin/user_details.html',
 }
 
-
 class UserJSONView(AdminJSONView):
     model = AstakosUser
     fields = ('email', 'first_name', 'last_name', 'is_active',

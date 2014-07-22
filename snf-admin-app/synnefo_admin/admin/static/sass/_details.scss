@@ -5,6 +5,14 @@
 	h4 .title{
 		font-size: 24px;
 	}
+    span[class^="snf-details"] {
+        float: left;
+        margin-right: 8px;
+        font-size: $details-title-height;
+    }
+    .lt{
+        line-height: $details-title-height;
+    }
     .rt {
         padding-top:5px;
     }
@@ -77,7 +85,9 @@
         span[class^="snf-details"] {
             float: left;
             margin-right: 8px;
-            font-size: $details-title-height;
+            font-size: $details-title-height - 10px;
+            height: $details-title-height;
+            line-height: $details-title-height;
         }
         .popover-dismiss {
             display: inline-block;

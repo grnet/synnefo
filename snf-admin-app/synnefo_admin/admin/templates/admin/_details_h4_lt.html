@@ -2,6 +2,8 @@
 <span class="lt">
     {% if type != main_type %}
     <a href="{% url admin-details type item|id %}" class="snf-search icon-link" title="Details for {{ item|repr }}"></a>
+    {% else %}
+    <span class="snf-details-{{type}}"></span>
     {% endif %}
     <span class="title">{{ item|repr }}</span>
     <span class="arrow snf-angle-down"  role="button" tabindex="0"></span>

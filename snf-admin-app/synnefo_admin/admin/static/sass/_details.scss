@@ -176,7 +176,7 @@
         padding-top: 1em;
         em {
             max-width: 50%;
-            display: inline-block;
+            display: inline;
             @include text-overflow();
             vertical-align: top;
 

@@ -2457,7 +2457,7 @@ Extra-button is used to show total selected rows
 /* line 177, ../sass/_details.scss */
 .parts-separator h2 em {
   max-width: 50%;
-  display: inline-block;
+  display: inline;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

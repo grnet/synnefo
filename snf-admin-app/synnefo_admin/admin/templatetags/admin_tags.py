@@ -212,8 +212,8 @@ def id(item):
 
 
 @register.filter
-def ip_exists(addr):
-    return iplog_utils.ip_exists(addr)
+def ip_href(inst):
+    return iplog_utils.get_ip_details_href(inst)
 
 
 @register.filter

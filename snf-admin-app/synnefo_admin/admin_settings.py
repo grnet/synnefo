@@ -37,6 +37,7 @@ AUTH_COOKIE_NAME = getattr(settings, 'ADMIN_AUTH_COOKIE_NAME',
 DEFAULT_ADMIN_VIEWS = OrderedDict()
 DEFAULT_ADMIN_VIEWS['user'] = {'label': 'Users'}
 DEFAULT_ADMIN_VIEWS['vm'] = {'label': 'VMs'}
+DEFAULT_ADMIN_VIEWS['volume'] = {'label': 'Volumes'}
 DEFAULT_ADMIN_VIEWS['network'] = {'label': 'Networks'}
 DEFAULT_ADMIN_VIEWS['ip'] = {'label': 'IPs'}
 DEFAULT_ADMIN_VIEWS['ip_log'] = {'label': 'IP History'}

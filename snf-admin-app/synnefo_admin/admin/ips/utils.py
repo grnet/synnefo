@@ -39,22 +39,23 @@ def get_ip_or_404(query):
         return IPAddress.objects.get(address=query)
     except ObjectDoesNotExist:
         pass
-    except MultipleObjectsReturned as e:
-        raise AdminHttp404("Hm, interesting:" + e.message)
+    except MultipleObjectsReturned:
+        raise AdminHttp404("""Hm, that's interesting. There are more than one
+                           entries for this address: %s""" % query)
 
     try:
         return IPAddress.objects.get(pk=int(query))
     except (ObjectDoesNotExist, ValueError):
         # Check the IPAddressLog and inform the user that the IP existed at
         # sometime.
-        msg = "No IP was found that matches this query: %s\n"
+        msg = "No IP was found that matches this query: %s" % query
         try:
             if IPAddressLog.objects.filter(address=query).exists():
-                msg += """However, this IP existed in the past. Check the "IP
-                History" tab for more details"""
+                msg = """This IP was deleted. Check the "IP History" tab for
+                more details."""
         except ObjectDoesNotExist:
             pass
-        raise AdminHttp404(msg % query)
+        raise AdminHttp404(msg)
 
 
 def get_contact_email(inst):

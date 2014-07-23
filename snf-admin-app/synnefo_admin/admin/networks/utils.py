@@ -19,6 +19,7 @@ import re
 from collections import OrderedDict
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.http import Http404
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
@@ -32,13 +33,18 @@ from astakos.im.models import AstakosUser, Project
 from eztables.views import DatatablesView
 import django_filters
 
+from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
 from synnefo_admin.admin.utils import filter_owner_name, create_details_href
 
 
-def get_network(query):
-    return Network.objects.get(pk=int(query))
+def get_network_or_404(query):
+    try:
+        return Network.objects.get(pk=int(query))
+    except (ObjectDoesNotExist, ValueError):
+        raise AdminHttp404(
+            "No Network was found that matches this query: %s\n" % query)
 
 
 def get_contact_email(inst):

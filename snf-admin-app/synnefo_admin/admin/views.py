@@ -40,6 +40,7 @@ from astakos.im import settings as astakos_settings
 from astakos.admin import stats as astakos_stats
 from synnefo.admin import stats as cyclades_stats
 
+from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin_settings import (ADMIN_MEDIA_URL, AUTH_COOKIE_NAME,
                                           ADMIN_PERMITTED_GROUPS,
                                           ADMIN_ENABLED, ADMIN_VIEWS)
@@ -55,7 +56,9 @@ JSON_MIMETYPE = "application/json"
 
 logger = logging.getLogger(__name__)
 
+
 ### Helper functions
+
 
 def get_view_module(view_type):
     """Import module for model view.
@@ -76,7 +79,7 @@ def get_view_module_or_404(view_type):
     """Try to import a view module or raise 404."""
     mod = get_view_module(view_type)
     if not mod:
-        raise Http404
+        raise AdminHttp404("No category found with this name: %s" % view_type)
     return mod
 
 
@@ -108,6 +111,7 @@ def get_token_from_cookie(request, cookiename):
 
 ### Security functions
 
+
 def admin_user_required(func, permitted_groups=ADMIN_PERMITTED_GROUPS):
     """
     Django view wrapper that checks if identified request user has admin
@@ -115,6 +119,7 @@ def admin_user_required(func, permitted_groups=ADMIN_PERMITTED_GROUPS):
     """
     def wrapper(request, *args, **kwargs):
         if not admin_settings.ADMIN_ENABLED:
+            # we must never raise an AdminHttp404 exception here.
             raise Http404
 
         token = get_token_from_cookie(request, AUTH_COOKIE_NAME)

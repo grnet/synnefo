@@ -30,11 +30,11 @@ from astakos.im.models import AstakosUser, Project
 
 import django_filters
 
+from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
 from synnefo_admin.admin.utils import get_actions, render_email
-from synnefo_admin.admin.users.utils import get_user
 from synnefo_admin.admin.tables import AdminJSONView
 
 from .utils import (get_user_details_href, get_ip_details_href,
@@ -94,7 +94,7 @@ class IPLogJSONView(AdminJSONView):
 
 
 def catalog(request):
-    """List view for Cyclades ips."""
+    """List view for Cyclades ip log."""
     context = {}
     context['action_dict'] = None
     context['filter_dict'] = IPLogFilterSet().filters.itervalues()
@@ -103,3 +103,8 @@ def catalog(request):
     context['item_type'] = 'ip_log'
 
     return context
+
+
+def details(request, query):
+    """Details view for Cyclades ip history."""
+    raise AdminHttp404("There are no details for any entry of the IP History")

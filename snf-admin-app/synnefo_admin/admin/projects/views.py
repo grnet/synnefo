@@ -47,7 +47,7 @@ from synnefo_admin.admin.utils import (is_resource_useful, get_actions,
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
-from synnefo_admin.admin.users.utils import get_user
+from synnefo_admin.admin.users.utils import get_user_or_404
 from synnefo_admin.admin.tables import AdminJSONView
 from synnefo_admin.admin.associations import (
     UserAssociation, QuotaAssociation, VMAssociation, VolumeAssociation,
@@ -57,7 +57,7 @@ from synnefo_admin.admin.associations import (
 from .filters import ProjectFilterSet
 from .actions import cached_actions
 from .utils import (get_contact_id, get_contact_name, get_contact_email,
-                    get_project, display_project_usage_horizontally,
+                    get_project_or_404, display_project_usage_horizontally,
                     display_member_quota_horizontally,
                     display_project_limit_horizontally)
 
@@ -205,9 +205,9 @@ class ProjectJSONView(AdminJSONView):
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     if op == "contact":
-        user = get_user(id)
+        user = get_user_or_404(id)
     else:
-        project = get_project(id)
+        project = get_project_or_404(id)
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'contact':
@@ -235,7 +235,7 @@ def catalog(request):
 
 def details(request, query):
     """Details view for Astakos projects."""
-    project = get_project(query)
+    project = get_project_or_404(query)
     associations = []
 
     user_list = project.members.all()

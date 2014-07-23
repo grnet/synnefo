@@ -18,6 +18,8 @@ import logging
 from collections import OrderedDict
 
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import Http404
 
 from synnefo.db.models import Volume
 from astakos.im.user_utils import send_plain as send_email
@@ -27,13 +29,18 @@ from eztables.views import DatatablesView
 
 import django_filters
 
+from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
 from synnefo_admin.admin.utils import filter_owner_name, create_details_href
 
 
-def get_volume(query):
-    return Volume.objects.get(pk=int(query))
+def get_volume_or_404(query):
+    try:
+        return Volume.objects.get(pk=int(query))
+    except (ObjectDoesNotExist, ValueError):
+        raise AdminHttp404(
+            "No Volume was found that matches this query: %s\n" % query)
 
 
 def get_user_details_href(volume):

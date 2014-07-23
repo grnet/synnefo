@@ -40,6 +40,7 @@ from eztables.views import DatatablesView
 import django_filters
 from django.db.models import Q
 
+from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.utils import (get_resource, is_resource_useful,
                                        create_details_href)
 
@@ -51,23 +52,29 @@ def get_groups():
     return [(group['name'], '') for group in groups]
 
 
-def get_user(query):
+def get_user_or_404(query):
     """Get AstakosUser from query.
 
-    The query can either be a user email or a UUID.
+    The query can either be a user email, UUID or ID.
     """
-    is_uuid = UUID_SEARCH_REGEX.match(query)
-
+    # Get by UUID
     try:
-        if is_uuid:
-            user = AstakosUser.objects.get(uuid=query)
-        else:
-            user = AstakosUser.objects.get(email=query)
+        return AstakosUser.objects.get(uuid=query)
     except ObjectDoesNotExist:
-        logging.error("Failed to resolve '%s' into account" % query)
-        return None
+        pass
 
-    return user
+    # Get by Email
+    try:
+        return AstakosUser.objects.get(email=query)
+    except ObjectDoesNotExist:
+        pass
+
+    # Get by ID
+    try:
+        return AstakosUser.objects.get(id=int(query))
+    except (ObjectDoesNotExist, ValueError):
+        raise AdminHttp404(
+            "No User was found that matches this query: %s\n" % query)
 
 
 def get_quotas(user):

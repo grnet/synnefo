@@ -20,6 +20,8 @@ from collections import OrderedDict
 from operator import or_
 
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ObjectDoesNotExist
+from django.http import Http404
 from django.db.models import Q
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
@@ -33,13 +35,18 @@ from eztables.views import DatatablesView
 
 import django_filters
 
+from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
 from synnefo_admin.admin.utils import create_details_href
 
 
-def get_vm(query):
-    return VirtualMachine.objects.get(pk=int(query))
+def get_vm_or_404(query):
+    try:
+        return VirtualMachine.objects.get(pk=int(query))
+    except (ObjectDoesNotExist, ValueError):
+        raise AdminHttp404(
+            "No VM was found that matches this query: %s\n" % query)
 
 
 def get_flavor_info(vm):

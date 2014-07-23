@@ -49,7 +49,7 @@ from synnefo_admin.admin.associations import (
     NetworkAssociation, NicAssociation, IPAssociation, IPLogAssociation,
     ProjectAssociation)
 
-from .utils import (get_user, get_quotas, get_user_groups,
+from .utils import (get_user_or_404, get_quotas, get_user_groups,
                     get_enabled_providers, get_suspended_vms, )
 from .actions import cached_actions
 from .filters import UserFilterSet
@@ -172,7 +172,7 @@ class UserJSONView(AdminJSONView):
 @has_permission_or_403(cached_actions)
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
-    user = get_user(id)
+    user = get_user_or_404(id)
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'reject':
@@ -199,7 +199,7 @@ def catalog(request):
 
 def details(request, query):
     """Details view for Astakos users."""
-    user = get_user(query)
+    user = get_user_or_404(query)
     associations = []
     lim = admin_settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
 

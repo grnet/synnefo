@@ -20,6 +20,7 @@ from collections import OrderedDict
 from operator import itemgetter
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.http import Http404
 from django.conf import settings
 from django.core.urlresolvers import reverse
 
@@ -42,6 +43,7 @@ from synnefo.util import units
 import django_filters
 from django.db.models import Q
 
+from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.utils import get_resource, is_resource_useful
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
@@ -57,12 +59,19 @@ def get_actual_owner(inst):
         return None
 
 
-def get_project(query):
+def get_project_or_404(query):
+    # Get by UUID
     try:
-        project = Project.objects.get(id=query)
-    except Exception:
-        project = Project.objects.get(uuid=query)
-    return project
+        return Project.objects.get(uuid=query)
+    except ObjectDoesNotExist:
+        pass
+
+    # Get by ID
+    try:
+        return Project.objects.get(id=query)
+    except (ObjectDoesNotExist, ValueError):
+        raise AdminHttp404(
+            "No Project was found that matches this query: %s\n" % query)
 
 
 def get_contact_email(inst):

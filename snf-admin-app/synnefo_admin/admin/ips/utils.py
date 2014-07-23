@@ -18,26 +18,43 @@ import logging
 import re
 from collections import OrderedDict
 
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 from django.conf import settings
 from django.core.urlresolvers import reverse
+from django.http import Http404
 
-from synnefo.db.models import IPAddress
+from synnefo.db.models import IPAddress, IPAddressLog
 from synnefo.logic import ips
 from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
 
 from eztables.views import DatatablesView
 
+from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.utils import create_details_href
 
 
-def get_ip(query):
-    if query.isdigit():
-        ip = IPAddress.objects.get(pk=int(query))
-    else:
-        ip = IPAddress.objects.get(address=query)
-    return ip
+def get_ip_or_404(query):
+    try:
+        return IPAddress.objects.get(address=query)
+    except ObjectDoesNotExist:
+        pass
+    except MultipleObjectsReturned as e:
+        raise AdminHttp404("Hm, interesting:" + e.message)
+
+    try:
+        return IPAddress.objects.get(pk=int(query))
+    except (ObjectDoesNotExist, ValueError):
+        # Check the IPAddressLog and inform the user that the IP existed at
+        # sometime.
+        msg = "No IP was found that matches this query: %s\n"
+        try:
+            if IPAddressLog.objects.filter(address=query).exists():
+                msg += """However, this IP existed in the past. Check the "IP
+                History" tab for more details"""
+        except ObjectDoesNotExist:
+            pass
+        raise AdminHttp404(msg % query)
 
 
 def get_contact_email(inst):

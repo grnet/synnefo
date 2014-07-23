@@ -41,14 +41,14 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
 from synnefo_admin.admin.utils import get_actions, render_email
-from synnefo_admin.admin.users.utils import get_user
+from synnefo_admin.admin.users.utils import get_user_or_404
 from synnefo_admin.admin.tables import AdminJSONView
 from synnefo_admin.admin.associations import (
     UserAssociation, QuotaAssociation, VMAssociation, VolumeAssociation,
     NetworkAssociation, NicAssociation, IPAssociation, IPLogAssociation,
     ProjectAssociation)
 
-from .utils import get_flavor_info, get_vm, get_user_details_href
+from .utils import get_flavor_info, get_vm_or_404, get_user_details_href
 from .filters import VMFilterSet
 from .actions import cached_actions
 
@@ -159,9 +159,9 @@ class VMJSONView(AdminJSONView):
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     if op == "contact":
-        user = get_user(id)
+        user = get_user_or_404(id)
     else:
-        vm = get_vm(id)
+        vm = get_vm_or_404(id)
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'reboot':
@@ -188,7 +188,7 @@ def wait_action(request, op, id):
         terminal_state.append("DESTROYED")
 
     while True:
-        vm = get_vm(id)
+        vm = get_vm_or_404(id)
         if vm.operstate in terminal_state:
             break
         time.sleep(1)
@@ -209,7 +209,7 @@ def catalog(request):
 
 def details(request, query):
     """Details view for Astakos users."""
-    vm = get_vm(query)
+    vm = get_vm_or_404(query)
     associations = []
     lim = admin_settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
 

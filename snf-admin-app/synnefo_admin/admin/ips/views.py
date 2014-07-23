@@ -34,7 +34,7 @@ from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
 from synnefo_admin.admin.utils import get_actions, render_email
-from synnefo_admin.admin.users.utils import get_user
+from synnefo_admin.admin.users.utils import get_user_or_404
 from synnefo_admin.admin.tables import AdminJSONView
 from synnefo_admin.admin.associations import (
     UserAssociation, QuotaAssociation, VMAssociation, VolumeAssociation,
@@ -43,7 +43,7 @@ from synnefo_admin.admin.associations import (
     SimpleNicAssociation)
 
 from .utils import (get_contact_email, get_contact_name, get_user_details_href,
-                    get_ip, get_network_details_href)
+                    get_ip_or_404, get_network_details_href)
 from .actions import cached_actions
 from .filters import IPFilterSet
 
@@ -154,7 +154,7 @@ class IPJSONView(AdminJSONView):
 def do_action(request, op, id):
     """Apply the requested action on the specified ip."""
     if op == "contact":
-        user = get_user(id)
+        user = get_user_or_404(id)
     else:
         ip = IPAddress.objects.get(id=id)
     actions = get_permitted_actions(cached_actions, request.user)
@@ -180,7 +180,7 @@ def catalog(request):
 
 def details(request, query):
     """Details view for Astakos users."""
-    ip = get_ip(query)
+    ip = get_ip_or_404(query)
     associations = []
     lim = admin_settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
 

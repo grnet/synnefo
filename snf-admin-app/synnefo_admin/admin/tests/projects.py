@@ -15,58 +15,25 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #import logging
-import unittest
-
 from astakos.im.models import Project, Resource
-from astakos.im.tests.projects import ProjectAPITest
-from astakos.im.functions import approve_application
 
 from synnefo_admin.admin.projects.utils import get_project_quota_category
+from .common import AdminTestCase
 
 
-class TestAdminProjects(ProjectAPITest):
+class TestAdminProjects(AdminTestCase):
 
-    # Override the test_projects function of ProjectAPITest class so that it
-    # doesn't get called.
-    @unittest.skip("Skipping test of child class")
-    def test_projects(self):
-        pass
+    """Test suite for project-related tests."""
 
     def test_quota(self):
-        # Do necessary initializations before carrying on with the actual test.
-
-        # Create a simple project.
-        h_owner = {"HTTP_X_AUTH_TOKEN": self.user1.auth_token}
-
-        app1 = {"name": "test.pr",
-                "description": u"δεσκρίπτιον",
-                "end_date": "2013-5-5T20:20:20Z",
-                "join_policy": "auto",
-                "max_members": 5,
-                "resources": {u"σέρβις1.ρίσορς11": {
-                    "project_capacity": 1024,
-                    "member_capacity": 512}}
-                }
-        status, body = self.create(app1, h_owner)
-
-        # Ensure that the project application has been created.
-        self.assertEqual(status, 201)
-        project_id = body["id"]
-        app_id = body["application"]
-
-        # Approve the application.
-        project = approve_application(app_id, project_id)
-        self.assertIsNotNone(project)
-
-        # The actual test begins here
-
+        """Test if project quota are measured properly."""
         # Get the reported description of the resource.
         resource = Resource.objects.get(name=u"σέρβις1.ρίσορς11")
         desc = resource.report_desc
 
         # Get the member and project quota.
-        member_quota = get_project_quota_category(project, "member")
-        project_quota = get_project_quota_category(project, "limit")
+        member_quota = get_project_quota_category(self.project, "member")
+        project_quota = get_project_quota_category(self.project, "limit")
 
         # Compare them to the ones in the application.
         self.assertEqual(member_quota, [(desc, '512')])

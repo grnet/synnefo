@@ -13,122 +13,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#import logging
+import logging
 import mock
-import functools
 import unittest
 
 import django.test
 from django.conf import settings
-from django.http import Http404
 from django.core.urlresolvers import reverse
 
+from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin import views
 from synnefo_admin import admin_settings
 
-
-USER1 = "5edcb5aa-1111-4146-a8ed-2b6287824353"
-USER2 = "5edcb5aa-2222-4146-a8ed-2b6287824353"
-
-USERS_UUIDS = {}
-USERS_UUIDS[USER1] = {'displayname': 'testuser@test.com'}
-USERS_UUIDS[USER2] = {'displayname': 'testuser2@test.com'}
-
-USERS_DISPLAYNAMES = dict(map(lambda k: (k[1]['displayname'], {'uuid': k[0]}),
-                          USERS_UUIDS.iteritems()))
-
-
-def for_all_views(views=admin_settings.ADMIN_VIEWS.keys()):
-    """Decorator that runs a test for all the specified views."""
-    def decorator(func):
-        @functools.wraps(func)
-        def wrapper(self, *args, **kwargs):
-            for view in views:
-                self.current_view = view
-                func(self, *args, **kwargs)
-        return wrapper
-    return decorator
-
-
-class AstakosClientMock():
-
-    """Mock class for astakosclient."""
-
-    def __init__(*args, **kwargs):
-        pass
-
-    def get_username(self, uuid):
-        try:
-            return USERS_UUIDS.get(uuid)['displayname']
-        except TypeError:
-            return None
-
-    def get_uuid(self, display_name):
-        try:
-            return USERS_DISPLAYNAMES.get(display_name)['uuid']
-        except TypeError:
-            return None
-
-
-class AuthClient(django.test.Client):
-
-    """Mock class for Django AuthClient."""
-
-    def request(self, **request):
-        """Fill the HTTP_X_AUTH_TOKEN parameter with user token."""
-        token = request.pop('user_token', '0000')
-        if token:
-            request['HTTP_X_AUTH_TOKEN'] = token
-        return super(AuthClient, self).request(**request)
-
-
-def get_user_mock(request, *args, **kwargs):
-    """Mock function that fills an HTTP request.
-
-    Return a different request based on the provided token. The '0000' token
-    will return a request for an unauthorized user, while the '0001' token will
-    return a request for an admin user.
-    """
-    request.user_uniq = None
-    request.user = None
-    if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0000':
-        request.user_uniq = 'test'
-        request.user = {"access": {
-                        "token": {
-                            "expires": "2013-06-19T15:23:59.975572+00:00",
-                            "id": "0000",
-                            "tenant": {
-                                "id": "test",
-                                "name": "Firstname Lastname"
-                                }
-                            },
-                        "serviceCatalog": [],
-                        "user": {
-                            "roles_links": [],
-                            "id": "test",
-                            "roles": [{"id": 1, "name": "default"}],
-                            "name": "Firstname Lastname"}}
-                        }
-
-    if request.META.get('HTTP_X_AUTH_TOKEN', None) == '0001':
-        request.user_uniq = 'test'
-        request.user = {"access": {
-                        "token": {
-                            "expires": "2013-06-19T15:23:59.975572+00:00",
-                            "id": "0001",
-                            "tenant": {
-                                "id": "test",
-                                "name": "Firstname Lastname"
-                                }
-                            },
-                        "serviceCatalog": [],
-                        "user": {
-                            "roles_links": [],
-                            "id": "test",
-                            "roles": [{"id": 1, "name": "default"},
-                                      {"id": 2, "name": "admin"}],
-                            "name": "Firstname Lastname"}}
-                        }
+from .common import (for_all_views, AuthClient, get_user_mock,
+                     AstakosClientMock, gibberish)
 
 
 class TestAdminViewsUnit(unittest.TestCase):
@@ -146,10 +44,15 @@ class TestAdminViewsUnit(unittest.TestCase):
 
     def test_import_module_fail(self):
         """Test if importing malformed view modules fails properly."""
-        with self.assertRaises(Http404):
-            views.get_view_module_or_404('asdgasdgasdg')
-        with self.assertRaises(Http404):
-            views.get_json_view_or_404('sdgasdgsdagsadg')
+        gib = gibberish()
+        with self.assertRaises(AdminHttp404) as cm1:
+            views.get_view_module_or_404(gib)
+        with self.assertRaises(AdminHttp404) as cm2:
+            views.get_json_view_or_404(gib)
+        self.assertEqual(cm1.exception.message,
+                         "No category found with this name: %s" % gib)
+        self.assertEqual(cm2.exception.message,
+                         "No category found with this name: %s" % gib)
 
 
 @mock.patch("astakosclient.AstakosClient", new=AstakosClientMock)

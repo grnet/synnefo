@@ -182,6 +182,7 @@ setup(
         'synnefo': [
             'default_settings = synnefo_admin.app_settings.default',
             'web_apps = synnefo_admin.app_settings:installed_apps',
+            'web_middleware = synnefo_admin.app_settings:middleware_classes',
             'urls = synnefo_admin.urls:urlpatterns',
             'web_static = synnefo_admin.app_settings:static_files'
         ]

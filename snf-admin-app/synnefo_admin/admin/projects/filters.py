@@ -42,7 +42,7 @@ from synnefo.util import units
 import django_filters
 from django.db.models import Q
 
-from synnefo_admin.admin.utils import is_resource_useful, filter_id
+from synnefo_admin.admin.utils import is_resource_useful
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)

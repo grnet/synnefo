@@ -60,12 +60,12 @@ def get_ip_or_404(query):
 
 def get_contact_email(inst):
     if inst.userid:
-        return AstakosUser.objects.get(uuid=inst.userid).email,
+        return AstakosUser.objects.get(uuid=inst.userid).email
 
 
 def get_contact_name(inst):
     if inst.userid:
-        return AstakosUser.objects.get(uuid=inst.userid).realname,
+        return AstakosUser.objects.get(uuid=inst.userid).realname
 
 
 def get_user_details_href(ip):

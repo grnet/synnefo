@@ -155,6 +155,7 @@ $(document).ready(function(){
 		e.preventDefault();
 	});
 
+    
 	$("[data-toggle=popover]").click(function(e) {
 		e.preventDefault();
 	});
@@ -207,4 +208,8 @@ $(document).ready(function(){
 
 	snf.modals.defaultEmailSubj = $('.modal[data-type="contact"]').find('.subject').val();
 	snf.modals.defaultEmailBody = $('.modal[data-type="contact"]').find('.email-content').val();
+
+    $('.disabled').click(function(e){
+        e.preventDefault();
+    });
 });

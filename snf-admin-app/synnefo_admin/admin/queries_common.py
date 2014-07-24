@@ -97,6 +97,14 @@ def model_filter(func):
     return wrapper
 
 
+def malicious(field):
+    """Check if query searches in private fields."""
+    if 'token' in field or 'password' in field:
+        return True
+    else:
+        False
+
+
 def update_queries(**queries):
     """Extract nested queries from a single query.
 
@@ -113,7 +121,9 @@ def update_queries(**queries):
             value = nested_query[1]
             if value:
                 del new_queries[key]
-                new_queries[field] = value
+                # Do not filter sensitive data.
+                if not malicious(field):
+                    new_queries[field] = value
     return new_queries
 
 
@@ -128,7 +138,7 @@ def query_list(*qobjects, **default_queries):
     ql = list(qobjects)
     ql += [Q(**{"%s__%s" % (field, lookup_type): value})
            for field, value in queries.iteritems()]
-    return ql
+    return ql if ql else [Q()]
 
 
 def query_or(*qobjects, **queries):

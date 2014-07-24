@@ -144,6 +144,8 @@ def create_tables(engine):
     Index('idx_versions_node_mtime', versions.c.node, versions.c.mtime)
     Index('idx_versions_node', versions.c.node)
     Index('idx_versions_node_uuid', versions.c.uuid)
+    Index('idx_versions_serial_cluster_n2', versions.c.serial,
+          versions.c.cluster, postgresql_where=versions.c.cluster != 2)
 
     #create attributes table
     columns = []
@@ -738,10 +740,13 @@ class Node(DBWorker):
                         and_(self.versions.c.mtime < before,
                              self.versions.c.node == v.c.node))
         else:
+            d2 = select([self.nodes.c.node, self.nodes.c.latest_version],
+                        self.nodes.c.path.like(self.escape_like(path) + '%',
+                                            escape=ESCAPE_CHAR)).cte("d2")
             inner_join = \
-                self.versions.join(self.nodes, onclause=
+                self.versions.join(d2, onclause=
                                    self.versions.c.serial ==
-                                   self.nodes.c.latest_version)
+                                   d2.c.latest_version)
             s = select([func.count(self.versions.c.serial),
                        func.sum(self.versions.c.size),
                        func.max(self.versions.c.mtime)],
@@ -755,8 +760,7 @@ class Node(DBWorker):
                         v.c.cluster != except_cluster,
                         v.c.node.in_(c2)))
         else:
-            s = s.where(and_(self.versions.c.cluster != except_cluster,
-                        self.versions.c.node.in_(c2)))
+            s = s.where(and_(self.versions.c.cluster != except_cluster))
 
         rp = self.conn.execute(s)
         r = rp.fetchone()

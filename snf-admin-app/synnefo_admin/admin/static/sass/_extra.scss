@@ -20,6 +20,10 @@ body {
     max-width: 960px;
 }
 
+h1,h2,h3,h4 {
+    word-wrap: break-word;
+}
+
 .info {
 	overflow: auto;
 }
@@ -34,11 +38,10 @@ body {
 
 
 /* Home */
-
 .app-list {
 	position: relative;
 	text-align: center;
-	top: 30%;
+	padding-top: 100px;
 	a {
 		width: 210px;
 		font-size: 24px;

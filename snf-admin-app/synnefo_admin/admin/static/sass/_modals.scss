@@ -205,9 +205,13 @@ p.progress-area {
 
 .modal {
     .table-selected {
+        th,td {
+            word-break: break-word; 
+        }
         td:last-child {
-            position: relative;
-            padding-right: 36px;
+            .wrap {
+                padding-right: 36px;
+            }
         }
         tr:nth-child(2n){
             background: darken(#fff, 5%);
@@ -230,6 +234,7 @@ p.progress-area {
             right: 14px;
             color: transparent;
             &:hover{
+                cursor: pointer;
                 text-decoration: none;
             }
         }

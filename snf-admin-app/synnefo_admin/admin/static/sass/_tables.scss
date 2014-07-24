@@ -7,6 +7,10 @@ table th {
     vertical-align: top;
 }
 
+table .wrap {
+    position: relative;
+}
+
 .table-items {
     .snf-search {
         opacity: 0.7;

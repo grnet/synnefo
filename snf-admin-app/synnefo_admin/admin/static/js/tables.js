@@ -843,7 +843,7 @@ $(document).ready(function() {
 		$tableBody.empty();
 		if(modalType === "contact") {
 			uniqueProp = 'contact_id'
-			var templateRow = '<tr title="" data-itemid=""><td class="full-name"></td><td class="email"><a class="remove" title="Remove item from selection">X</a></td></tr>';
+			var templateRow = '<tr title="" data-itemid=""><td class="full-name"></td><td class="email"><div class="wrap"><a class="remove" title="Remove item from selection">X</a>{{email}}</div></td></tr>';
 			for(var i=0; i<rowsNum; i++) {
 				for(var j = 0; j<i; j++) {
 					if(selected.items[i][uniqueProp] === selected.items[j][uniqueProp]) {
@@ -856,7 +856,7 @@ $(document).ready(function() {
 					currentRow = templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].id+'"');
 					currentRow = currentRow.replace('title=""', 'title="related with: '+selected.items[i].item_name+'"')
 					currentRow = currentRow.replace('<td class="full-name"></td>', '<td class="full-name">'+selected.items[i].contact_name+'</td>');
-					currentRow = currentRow.replace('<td class="email"><', '<td class="email">'+selected.items[i].contact_email+'<');
+					currentRow = currentRow.replace('{{email}}', selected.items[i].contact_email);
 					if(i >= maxVisible)
 						currentRow = currentRow.replace('<tr', '<tr class="hidden-row"');
 					htmlRows += currentRow;
@@ -874,14 +874,14 @@ $(document).ready(function() {
 
 		else {
 			uniqueProp = 'id';
-			var templateRow = '<tr data-itemid=""><td class="item-name"></td><td class="item-id"></td><td class="owner-name"></td><td class="owner-email"><a class="remove" title="Remove item from selection">X</a></td></tr>';
+			var templateRow = '<tr data-itemid=""><td class="item-name"></td><td class="item-id"></td><td class="owner-name"></td><td class="owner-email"><div class="wrap"><a class="remove" title="Remove item from selection">X</a>{{email}}</div></td></tr>';
 			for(var i=0; i<rowsNum; i++) {
 				idsArray.push(selected.items[i][uniqueProp]);
 				currentRow =templateRow.replace('data-itemid=""', 'data-itemid="'+selected.items[i].id+'"')
 				currentRow = currentRow.replace('<td class="item-name"></td>', '<td class="item-name">'+selected.items[i].item_name+'</td>');
 				currentRow = currentRow.replace('<td class="item-id"></td>', '<td class="item-id">'+selected.items[i].id+'</td>');
 				currentRow = currentRow.replace('<td class="owner-name"></td>', '<td class="owner-name">'+selected.items[i].contact_name+'</td>');
-				currentRow = currentRow.replace('<td class="owner-email"><', '<td class="owner-email">'+selected.items[i].contact_email+'<');
+				currentRow = currentRow.replace('{{email}}', selected.items[i].contact_email);
 				if(i >= maxVisible)
 					currentRow = currentRow.replace('<tr', '<tr class="hidden-row"');
 				htmlRows += currentRow;

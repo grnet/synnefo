@@ -37,7 +37,6 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import filter_owner_name, filter_vm_id
 from synnefo_admin.admin.queries_common import (query, model_filter,
                                                 get_model_field)
 

@@ -32,7 +32,7 @@ import django_filters
 from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import filter_owner_name, create_details_href
+from synnefo_admin.admin.utils import create_details_href
 
 
 def get_volume_or_404(query):

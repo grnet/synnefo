@@ -29,6 +29,7 @@ from django.conf import settings
 from synnefo_admin import admin_settings
 from synnefo.util import units
 from astakos.im.models import AstakosUser, Resource
+from synnefo.db.models import Network
 
 from .actions import get_allowed_actions, get_permitted_actions
 logger = logging.getLogger(__name__)
@@ -74,109 +75,6 @@ def is_resource_useful(resource, limit):
     if limit == 0 or not resource.uplimit or displayed_limit == 'inf':
         return False
     return True
-
-
-def filter_name(queryset, search):
-    """Filter by name using keywords.
-
-    Since there is no single name field, we will search both in first_name,
-    last_name fields.
-    """
-    fields = ['first_name', 'last_name']
-    for term in search.split():
-        criterions = (Q(**{'%s__icontains' % field: term}) for field in fields)
-        qor = reduce(or_, criterions)
-        queryset = queryset.filter(qor)
-    return queryset
-
-
-def flatten(l):
-    return [item for sublist in l for item in sublist]
-
-
-def filter_owner_name(queryset, search):
-    """Filter by first name / last name of the owner.
-
-    This filter is a bit tricky, so an explanation is due.
-
-    The main purpose of the filter is to:
-    a) Use the `filter_name` function of `users` module to find all
-       the users whose name matches the search query.
-    b) Use the UUIDs of the filtered users to retrieve all the entities that
-       belong to them.
-
-    What we should have in mind is that the (a) query can be a rather expensive
-    one. However, the main issue here is the (b) query. For this query, a
-    naive approach would be to use Q objects like so:
-
-        Q(userid=1ae43...) | Q(userid=23bc...) | Q(userid=7be8...) | ...
-
-    Straightforward as it may be, Django will not optimize the above expression
-    into one operation but will query the database recursively. In practice, if
-    the first query hasn't narrowed down the users to less than a thousand,
-    this query will surely blow the stack of the database thread.
-
-    Given that all Q objects refer to the same database field, we can bypass
-    them and use the "__in" operator.  With "__in" we can pass a list of values
-    (uuids in our case) as a filter argument. Moreover, we can simplify things
-    a bit more by passing the queryset of (a) as the argument of "__in".  In
-    Postgres, this will create a subquery, which nullifies the need to evaluate
-    the results of (a) in memory and then pass them to (b).
-
-    Warning: Querying a database using a subquery for another database has not
-    been tested yet.
-    """
-    # Leave if no name has been given
-    if not search:
-        return queryset
-    # Find all the users that match the requested search term
-    users = filter_name(AstakosUser.objects.all(), search).\
-        values_list('uuid')
-    users = flatten(users)
-    # Get the related entities with the UUIDs of these users
-    return queryset.filter(userid__in=users).distinct()
-
-
-def filter_email(queryset, search):
-    """Filter by email."""
-    queryset = queryset.filter(email__icontains=search)
-    return queryset
-
-
-def filter_owner_email(queryset, search):
-    # Leave if no name has been given
-    if not search:
-        return queryset
-    # Find all the users that match the requested search term
-    users = filter_email(AstakosUser.objects.all(), search).\
-        values_list('uuid')
-    users = flatten(users)
-    # Get the related entities with the UUIDs of these users
-    return queryset.filter(userid__in=users).distinct()
-
-
-def filter_id(field):
-    def _filter_id(qs, query):
-        if not query:
-            return qs
-        return qs.filter(**{"%s__icontains" % field: int(query)})
-
-    return _filter_id
-
-
-def filter_vm_id(field):
-    def _filter_vm_id(qs, query):
-        query = str(query)
-        lookup_type = 'contains'
-        prefix = settings.BACKEND_PREFIX_ID
-        if query.startswith(prefix):
-            query = query.replace(prefix, '')
-            lookup_type = 'startswith'
-        if not query.isdigit():
-            return qs
-        return qs.filter(**{"%s__%s" % (field, lookup_type): int(query)})
-
-    return _filter_vm_id
 
 
 def get_actions(target, user=None, inst=None):
@@ -251,6 +149,16 @@ def create_details_href(type, name, id):
     return href
 
 
+def _filter_public_ip_log(qs):
+    network_ids = Network.objects.filter(public=True).values('id')
+    return qs.filter(network_id__in=network_ids)
+
+
+def filter_public_ip_log(assoc):
+    if assoc.type == 'ip_log':
+        assoc.qs = _filter_public_ip_log(assoc.qs)
+
+
 def filter_distinct(assoc):
     if hasattr(assoc, 'qs'):
         assoc.qs = assoc.qs.distinct()
@@ -270,6 +178,12 @@ def exclude_deleted(assoc):
     assoc.deleted = assoc.total - assoc.qs.count()
 
 
+def order_by_newest(assoc):
+    ord = getattr(assoc, 'order_by', None)
+    if ord:
+        assoc.qs = assoc.qs.order_by(ord)
+
+
 def limit_shown(assoc):
     limit = admin_settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
     assoc.items = assoc.items[:limit]
@@ -279,6 +193,8 @@ def limit_shown(assoc):
 def customize_details_context(context):
     """Perform generic customizations on the detail context."""
     for assoc in context['associations_list']:
+        filter_public_ip_log(assoc)
         filter_distinct(assoc)
         exclude_deleted(assoc)
+        order_by_newest(assoc)
         limit_shown(assoc)

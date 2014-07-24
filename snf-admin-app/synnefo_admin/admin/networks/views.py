@@ -181,7 +181,6 @@ def details(request, query):
     """Details view for Astakos users."""
     network = get_network_or_404(query)
     associations = []
-    lim = admin_settings.ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY
 
     vm_list = network.machines.all()
     associations.append(VMAssociation(request, vm_list,))
@@ -198,16 +197,8 @@ def details(request, query):
     project_list = Project.objects.filter(uuid=network.project)
     associations.append(ProjectAssociation(request, project_list,))
 
-    ip_log_list = IPAddressLog.objects.filter(network_id=network.pk)\
-        .order_by("allocated_at")
-    total = ip_log_list.count()
-    ip_log_list = ip_log_list[:lim]
-
-    for ipaddr in ip_log_list:
-        ipaddr.vm = VirtualMachine.objects.get(id=ipaddr.server_id)
-        ipaddr.network = network
-        ipaddr.user = AstakosUser.objects.get(uuid=ipaddr.vm.userid)
-    associations.append(IPLogAssociation(request, ip_log_list, total=total))
+    ip_log_list = IPAddressLog.objects.filter(network_id=network.pk)
+    associations.append(IPLogAssociation(request, ip_log_list))
 
     context = {
         'main_item': network,

@@ -59,6 +59,7 @@ templates = {
     'details': 'admin/user_details.html',
 }
 
+
 class UserJSONView(AdminJSONView):
     model = AstakosUser
     fields = ('email', 'first_name', 'last_name', 'is_active',
@@ -228,17 +229,9 @@ def details(request, query):
     ip_list = IPAddress.objects.filter(userid=user.uuid)
     associations.append(IPAssociation(request, ip_list))
 
-    vm_ids = VirtualMachine.objects.filter(userid=user.uuid).values('pk')
-    ip_log_list = IPAddressLog.objects.filter(server_id__in=vm_ids).\
-        order_by("allocated_at")
-    total = ip_log_list.count()
-    ip_log_list = ip_log_list[:lim]
-
-    for ipaddr in ip_log_list:
-        ipaddr.vm = VirtualMachine.objects.get(id=ipaddr.server_id)
-        ipaddr.network = Network.objects.get(id=ipaddr.network_id)
-        ipaddr.user = user
-    associations.append(IPLogAssociation(request, ip_log_list, total=total))
+    vm_ids = VirtualMachine.objects.filter(userid=user.uuid).values('id')
+    ip_log_list = IPAddressLog.objects.filter(server_id__in=vm_ids)
+    associations.append(IPLogAssociation(request, ip_log_list))
 
     context = {
         'main_item': user,

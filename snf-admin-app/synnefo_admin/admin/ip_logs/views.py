@@ -34,7 +34,8 @@ from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
-from synnefo_admin.admin.utils import get_actions, render_email
+from synnefo_admin.admin.utils import (get_actions, render_email,
+                                       _filter_public_ip_log)
 from synnefo_admin.admin.tables import AdminJSONView
 
 from .utils import (get_user_details_href, get_ip_details_href,
@@ -52,6 +53,13 @@ class IPLogJSONView(AdminJSONView):
     fields = ('address', 'server_id', 'network_id', 'allocated_at',
               'released_at', 'active',)
     filters = IPLogFilterSet
+
+    # This is a rather hackish method of plugging ourselves after
+    # get_queryset()
+    def set_object_list(self):
+        """Show logs only for public IPs."""
+        self.qs = _filter_public_ip_log(self.qs)
+        return AdminJSONView.set_object_list(self)
 
     def format_data_row(self, row):
         row = list(row)

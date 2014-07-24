@@ -217,6 +217,21 @@ def ip_href(inst):
 
 
 @register.filter
+def vm_href(inst):
+    return iplog_utils.get_vm_details_href(inst)
+
+
+@register.filter
+def network_href(inst):
+    return iplog_utils.get_network_details_href(inst)
+
+
+@register.filter
+def user_href(inst):
+    return iplog_utils.get_user_details_href(inst)
+
+
+@register.filter
 def repr(item):
     """Return the string representation of an item.
 

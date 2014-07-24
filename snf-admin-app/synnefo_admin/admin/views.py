@@ -171,7 +171,7 @@ default_dict = {
             'support': astakos_settings.CONTACT_EMAIL}).replace('\n\n\n', '\n'),
         'legend': {
             'Full name': "{{ full_name }}",
-            'First name': "{{ firstname }}",
+            'First name': "{{ first_name }}",
             'Last name': "{{ last_name }}",
             'Email': "{{ email }}",
         }

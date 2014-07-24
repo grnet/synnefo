@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 from django.test import TestCase
 from astakos.im.user_logic import (validate_user_action, verify, accept,
                                    activate, deactivate, reject,
@@ -68,7 +67,7 @@ class TestUserActions(TestCase):
 
     def test_accept(self):
         """Test acceptance logic."""
-        # Verify the user first
+        # Verify the user first.
         res = verify(self.user1, self.user1.verification_code)
         self.assertFalse(res.is_error())
 
@@ -119,18 +118,41 @@ class TestUserActions(TestCase):
         # Check if reason has been registered.
         self.assertEqual(self.user1.rejected_reason, "Because")
 
-        # We cannot reject twice
+        # We cannot reject twice.
         ok, _ = validate_user_action(self.user1, "REJECT")
         self.assertFalse(ok)
         res = reject(self.user1, reason="Because")
         self.assertTrue(res.is_error())
         self.assertEqual(len(mail.outbox), 0)
 
+        # We cannot deactivate a rejected user.
+        ok, _ = validate_user_action(self.user1, "DEACTIVATE")
+        self.assertFalse(ok)
+        res = deactivate(self.user1)
+        self.assertTrue(res.is_error())
+
+        # We can, however, accept a rejected user.
+        ok, msg = validate_user_action(self.user1, "ACCEPT")
+        self.assertTrue(ok)
+
+        # Test if accept action works on rejected users.
+        res = accept(self.user1)
+        self.assertFalse(res.is_error())
+        self.assertEqual(len(mail.outbox), 1)
+
     def test_reactivation(self):
         """Test activation/deactivation logic."""
-        # Verify and accept the user first.
+        # Verify the user.
         res = verify(self.user1, self.user1.verification_code)
         self.assertFalse(res.is_error())
+
+        # We cannot deactivate an unmoderated user.
+        ok, _ = validate_user_action(self.user1, "DEACTIVATE")
+        self.assertFalse(ok)
+        res = deactivate(self.user1)
+        self.assertTrue(res.is_error())
+
+        # Accept the user.
         res = accept(self.user1)
         self.assertFalse(res.is_error())
 
@@ -173,7 +195,7 @@ class TestUserActions(TestCase):
 
     def test_verification_mail(self):
         """Test if verification mails are sent correctly."""
-        # Check if we can send a verification mail to an unverified user
+        # Check if we can send a verification mail to an unverified user.
         ok, _ = validate_user_action(self.user1, "SEND_VERIFICATION_MAIL")
         self.assertTrue(ok)
         send_verification_mail(self.user1)
@@ -185,3 +207,14 @@ class TestUserActions(TestCase):
         body = mail.outbox[0].body
         self.assertIn(self.user1.realname, body)
         self.assertIn(self.user1.verification_code, body)
+
+        # Verify the user.
+        res = verify(self.user1, self.user1.verification_code)
+        self.assertFalse(res.is_error())
+
+        # Check if we are prevented from sending a verification mail.
+        ok, _ = validate_user_action(self.user1, "SEND_VERIFICATION_MAIL")
+        self.assertFalse(ok)
+        with self.assertRaises(Exception) as cm:
+            send_verification_mail(self.user1)
+        self.assertEqual(cm.exception.message, "User email already verified.")

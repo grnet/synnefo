@@ -16,10 +16,10 @@
     </h4>
     <div class="network-details-content object-details-content">
         <ul class="nav nav-tabs">
-		    <li class="active"><a href="#details{{ network.pk }}" data-toggle="tab">Details</a></li>
+		    <li class="active"><a href="#network-details{{ network.pk }}" data-toggle="tab">Details</a></li>
         </ul>
          <div class="tab-content">
-			<div class="tab-pane active" id="details{{ network.pk }}">
+			<div class="tab-pane active" id="network-details{{ network.pk }}">
 				<dl class="dl-horizontal well">
 		            <dt>ID</dt><dd>{{ network.pk }}</dd>
 		            <dt>Name</dt><dd>{{ network.name|default:"-" }}</dd>

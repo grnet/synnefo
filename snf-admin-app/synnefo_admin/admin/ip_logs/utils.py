@@ -35,7 +35,7 @@ from synnefo_admin.admin.utils import create_details_href
 def get_ip_details_href(ip_log):
     addr = ip_log.address
     try:
-        ip = IPAddress.objects.get(address=addr, floating_ip=True)
+        ip = IPAddress.objects.get(address=addr, network__public=True)
         return create_details_href('ip', addr, ip.id)
     except ObjectDoesNotExist:
         return addr

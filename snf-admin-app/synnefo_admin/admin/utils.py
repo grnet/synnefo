@@ -157,6 +157,7 @@ def _filter_public_ip_log(qs):
 def filter_public_ip_log(assoc):
     if assoc.type == 'ip_log':
         assoc.qs = _filter_public_ip_log(assoc.qs)
+        assoc.total = assoc.count_total()
 
 
 def filter_distinct(assoc):

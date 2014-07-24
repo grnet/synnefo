@@ -5,7 +5,7 @@ $default-btn-padding: 8px;
 @mixin default-btn($padding: $default-btn-padding) {
 	display: inline-block;
 	text-align: center;
-	opacity: 0.7;
+	opacity: 1;
 	span {
 		display: inline-block;
 		height: 100%;
@@ -15,7 +15,7 @@ $default-btn-padding: 8px;
 	&:hover,
     &:focus{
 		text-decoration: none;
-		opacity: 1;
+		opacity: 0.85;
 	}
     // span[class^="snf-font"] {
     //     display: inline;

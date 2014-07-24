@@ -14,72 +14,73 @@
   </head>
 
   <body>
-    {% block nav-bar %}
-    <div class="navbar navbar-default navbar-fixed-top">
-      <ul class="nav navbar-nav navbar-left">
-          <li><a href="{% url admin-home %}" title="Homepage" class="home-icon"><img src="{{ BRANDING_IMAGE_MEDIA_URL }}cloudbar_home.png" alt="S" /></a></li>
-      {% for view, view_dict in views.items %}
-      <li
-      {% if item_type == view or main_type == view %}class="active"{% endif %}
-      ><a href="{% url admin-list view %}">{{ view_dict.label }}</a></li>
-      {% endfor %}
-        <li class="has-dropdown">
-          <a href="#">Reports
-          <span class="snf-angle-down arrow"></span></a>
-          <ul class="dropdown-menu align-left">
-            <li><a href="{% url admin-charts %}">Charts</a></li>
+    <div class="wrapper">
+        {% block nav-bar %}
+        <div class="navbar navbar-default navbar-fixed-top">
+          <ul class="nav navbar-nav navbar-left">
+              <li><a href="{% url admin-home %}" title="Homepage" class="home-icon"><img src="{{ BRANDING_IMAGE_MEDIA_URL }}cloudbar_home.png" alt="S" /></a></li>
+          {% for view, view_dict in views.items %}
+          <li
+          {% if item_type == view or main_type == view %}class="active"{% endif %}
+          ><a href="{% url admin-list view %}">{{ view_dict.label }}</a></li>
+          {% endfor %}
+            <li class="has-dropdown">
+              <a href="#">Reports
+              <span class="snf-angle-down arrow"></span></a>
+              <ul class="dropdown-menu align-left">
+                <li><a href="{% url admin-charts %}">Charts</a></li>
+              </ul>
+            </li>
           </ul>
-        </li>
-      </ul>
 
-      <ul class="nav navbar-nav navbar-right">
-          <li class="has-dropdown">
-            <a href="">
-                {{ user.access.user.name }}
-              <span class="snf-angle-down arrow"></span>
-            </a>
-            <ul class="dropdown-menu align-right">
-              <li>
-                <a href="{% url admin-logout %}" class="sign-out"><span class="snf-sign-out"></span>Sign Out</a>
-              </li>
+          <ul class="nav navbar-nav navbar-right">
+              <li class="has-dropdown">
+                <a href="">
+                    {{ user.access.user.name }}
+                  <span class="snf-angle-down arrow"></span>
+                </a>
+                <ul class="dropdown-menu align-right">
+                  <li>
+                    <a href="{% url admin-logout %}" class="sign-out"><span class="snf-sign-out"></span>Sign Out</a>
+                  </li>
+                </ul>
             </ul>
-        </ul>
-    </div> <!-- /nav-main -->
-    {% endblock nav-bar %}
+        </div> <!-- /nav-main -->
+        {% endblock nav-bar %}
 
-    {% block subnav-bar %}
-    {% endblock subnav-bar %}
+        {% block subnav-bar %}
+        {% endblock subnav-bar %}
 
-    {% if messages %}
-    <div class="messages">
-      {% for message in messages %}
-      <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
-        <button class="close" data-dismiss="alert">×</button>
-        {{ message }}
-      </div>
-      {% endfor %}
+        {% if messages %}
+        <div class="messages">
+          {% for message in messages %}
+          <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+            <button class="close" data-dismiss="alert">×</button>
+            {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block main-area %}
+        <div class="container container-solid">
+          {% block content %}
+          {% endblock %}
+        </div>
+        {% endblock main-area %}
+        <div class="notify">
+          <a href="" class="close-notify close-notifications" title="Close notification area"><span class="snf-remove"></span></a>
+          <div class="container">
+          </div>
+        </div>
+        <script src="{{ MEDIA_URL }}admin/js/jquery.js"></script>
+        <script src="{{ MEDIA_URL }}admin/js/bootstrap.js"></script>
+        <script src="{{ MEDIA_URL }}admin/js/underscore.js"></script>
+
+        {% block custom-javascript %}
+        {% endblock %}
+
+        <script src="{{ MEDIA_URL }}admin/js/common.js"></script>
     </div>
-    {% endif %}
-
-    {% block main-area %}
-    <div class="container container-solid">
-      {% block content %}
-      {% endblock %}
-    </div>
-    {% endblock main-area %}
-    <div class="notify">
-      <a href="" class="close-notify close-notifications" title="Close notification area"><span class="snf-remove"></span></a>
-      <div class="container">
-      </div>
-    </div>
-    <script src="{{ MEDIA_URL }}admin/js/jquery.js"></script>
-    <script src="{{ MEDIA_URL }}admin/js/bootstrap.js"></script>
-    <script src="{{ MEDIA_URL }}admin/js/underscore.js"></script>
-
-    {% block custom-javascript %}
-    {% endblock %}
-
-    <script src="{{ MEDIA_URL }}admin/js/common.js"></script>
-
   </body>
 </html>

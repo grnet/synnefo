@@ -2,7 +2,7 @@
 .line-btn {
   display: inline-block;
   text-align: center;
-  opacity: 0.7;
+  opacity: 1;
   background-color: #222222;
   border-bottom: 2px solid #222222;
   color: #fff;
@@ -17,7 +17,7 @@
 /* line 16, ../sass/_bars-btns.scss */
 .line-btn:hover, .line-btn:focus {
   text-decoration: none;
-  opacity: 1;
+  opacity: 0.85;
 }
 /* line 25, ../sass/_bars-btns.scss */
 .line-btn .snf-font-remove {
@@ -33,7 +33,7 @@
 .custom-btn {
   display: inline-block;
   text-align: center;
-  opacity: 0.7;
+  opacity: 1;
   border: 1px solid #3c96e0;
   color: white;
   background-color: #3c96e0;
@@ -48,7 +48,7 @@
 /* line 16, ../sass/_bars-btns.scss */
 .custom-btn:hover, .custom-btn:focus {
   text-decoration: none;
-  opacity: 1;
+  opacity: 0.85;
 }
 /* line 25, ../sass/_bars-btns.scss */
 .custom-btn .snf-font-remove {
@@ -228,7 +228,7 @@ Extra-button is used to show total selected rows
   margin-bottom: 1em;
   display: inline-block;
   text-align: center;
-  opacity: 0.7;
+  opacity: 1;
   border: 1px solid white;
   color: white;
   display: block;
@@ -243,7 +243,7 @@ Extra-button is used to show total selected rows
 /* line 16, ../sass/_bars-btns.scss */
 .charts .sidebar a:hover, .charts .sidebar a:focus {
   text-decoration: none;
-  opacity: 1;
+  opacity: 0.85;
 }
 /* line 25, ../sass/_bars-btns.scss */
 .charts .sidebar a .snf-font-remove {
@@ -262,7 +262,7 @@ Extra-button is used to show total selected rows
 .charts .sidebar a.active {
   display: inline-block;
   text-align: center;
-  opacity: 0.7;
+  opacity: 1;
   border: 1px solid #3c96e0;
   color: white;
   background-color: #3c96e0;
@@ -278,7 +278,7 @@ Extra-button is used to show total selected rows
 /* line 16, ../sass/_bars-btns.scss */
 .charts .sidebar a.active:hover, .charts .sidebar a.active:focus {
   text-decoration: none;
-  opacity: 1;
+  opacity: 0.85;
 }
 /* line 25, ../sass/_bars-btns.scss */
 .charts .sidebar a.active .snf-font-remove {
@@ -3095,46 +3095,51 @@ body {
 }
 
 /* line 12, ../sass/_extra.scss */
+.wrapper {
+  padding-bottom: 50px;
+}
+
+/* line 15, ../sass/_extra.scss */
 .container-solid {
   min-width: 1050px !important;
 }
 
-/* line 16, ../sass/_extra.scss */
+/* line 19, ../sass/_extra.scss */
 .container:not(.container-solid) {
   max-width: 960px;
 }
 
-/* line 20, ../sass/_extra.scss */
+/* line 23, ../sass/_extra.scss */
 .info {
   overflow: auto;
 }
 
-/* line 25, ../sass/_extra.scss */
+/* line 28, ../sass/_extra.scss */
 .dl-horizontal dd, dt,
 .tooltip-inner {
   word-wrap: break-word;
 }
 
-/* line 28, ../sass/_extra.scss */
+/* line 31, ../sass/_extra.scss */
 .disabled {
   cursor: default !important;
 }
 
 /* Home */
-/* line 35, ../sass/_extra.scss */
+/* line 38, ../sass/_extra.scss */
 .app-list {
   position: relative;
   text-align: center;
   top: 30%;
 }
-/* line 39, ../sass/_extra.scss */
+/* line 42, ../sass/_extra.scss */
 .app-list a {
   width: 210px;
   font-size: 24px;
   margin: 0 20px;
   display: inline-block;
   text-align: center;
-  opacity: 0.7;
+  opacity: 1;
   border: 1px solid white;
   color: white;
   opacity: 1;
@@ -3149,7 +3154,7 @@ body {
 /* line 16, ../sass/_bars-btns.scss */
 .app-list a:hover, .app-list a:focus {
   text-decoration: none;
-  opacity: 1;
+  opacity: 0.85;
 }
 /* line 25, ../sass/_bars-btns.scss */
 .app-list a .snf-font-remove {
@@ -3164,54 +3169,54 @@ body {
 .app-list a:hover span, .app-list a:focus span {
   border-color: white;
 }
-/* line 45, ../sass/_extra.scss */
+/* line 48, ../sass/_extra.scss */
 .app-list a.disabled {
   border-color: #747474;
   color: gray;
 }
-/* line 50, ../sass/_extra.scss */
+/* line 53, ../sass/_extra.scss */
 .app-list a.disabled:hover span, .app-list a.disabled:focus span {
   border-color: transparent;
 }
 
-/* line 58, ../sass/_extra.scss */
+/* line 61, ../sass/_extra.scss */
 .nav-simple {
   padding: 20px;
   border-bottom: 1px solid white;
 }
-/* line 61, ../sass/_extra.scss */
+/* line 64, ../sass/_extra.scss */
 .nav-simple .header {
   float: left;
   line-height: 40px;
   font-size: 26px;
 }
-/* line 65, ../sass/_extra.scss */
+/* line 68, ../sass/_extra.scss */
 .nav-simple .header img {
   max-height: 50px;
 }
-/* line 69, ../sass/_extra.scss */
+/* line 72, ../sass/_extra.scss */
 .nav-simple .login-info {
   float: right;
   position: relative;
   line-height: 40px;
   font-size: 16px;
 }
-/* line 74, ../sass/_extra.scss */
+/* line 77, ../sass/_extra.scss */
 .nav-simple .login-info .has-dropdown {
   display: inline;
   position: relative;
 }
-/* line 79, ../sass/_extra.scss */
+/* line 82, ../sass/_extra.scss */
 .nav-simple .login-info .has-dropdown:hover > a, .nav-simple .login-info .has-dropdown:focus > a {
   background: #4d4d4d;
 }
-/* line 83, ../sass/_extra.scss */
+/* line 86, ../sass/_extra.scss */
 .nav-simple .login-info .has-dropdown > a {
   color: #fff;
   display: inline-block;
   padding: 0 10px;
 }
-/* line 89, ../sass/_extra.scss */
+/* line 92, ../sass/_extra.scss */
 .nav-simple .login-info .dropdown-menu {
   left: auto;
   right: 0;
@@ -3219,12 +3224,12 @@ body {
 }
 
 /* Navigation */
-/* line 99, ../sass/_extra.scss */
+/* line 102, ../sass/_extra.scss */
 .navbar-default {
   border: 0 none;
   z-index: 1040;
 }
-/* line 102, ../sass/_extra.scss */
+/* line 105, ../sass/_extra.scss */
 .navbar-default .home-icon {
   padding: 0;
   height: 50px;
@@ -3232,79 +3237,79 @@ body {
   text-align: center;
   line-height: 50px;
 }
-/* line 108, ../sass/_extra.scss */
+/* line 111, ../sass/_extra.scss */
 .navbar-default .home-icon img {
   max-height: 50px;
 }
 
-/* line 115, ../sass/_extra.scss */
+/* line 118, ../sass/_extra.scss */
 .sub-nav {
   top: 50px;
   min-height: inherit;
 }
-/* line 119, ../sass/_extra.scss */
+/* line 122, ../sass/_extra.scss */
 .sub-nav .nav > li > a {
   padding-top: 8px;
   padding-bottom: 8px;
 }
 
-/* line 125, ../sass/_extra.scss */
+/* line 128, ../sass/_extra.scss */
 .dropdown-menu {
   overflow-y: auto;
 }
 
-/* line 130, ../sass/_extra.scss */
+/* line 133, ../sass/_extra.scss */
 .nav .has-dropdown:hover > ul.dropdown-menu,
 .nav-simple .has-dropdown:hover > ul.dropdown-menu {
   display: block;
 }
 
 /* More */
-/* line 140, ../sass/_extra.scss */
+/* line 143, ../sass/_extra.scss */
 svg > text:last-child {
   display: none;
 }
 
-/* line 144, ../sass/_extra.scss */
+/* line 147, ../sass/_extra.scss */
 .has-dropdown .arrow {
   margin-left: 6px;
   vertical-align: middle;
 }
 
-/* line 149, ../sass/_extra.scss */
+/* line 152, ../sass/_extra.scss */
 .hidden-row {
   display: none;
 }
 
-/* line 153, ../sass/_extra.scss */
+/* line 156, ../sass/_extra.scss */
 .with-shift *::selection {
   background-color: transparent;
 }
 
-/* line 157, ../sass/_extra.scss */
+/* line 160, ../sass/_extra.scss */
 .with-shift *::-moz-selection {
   background: transparent;
 }
 
-/* line 160, ../sass/_extra.scss */
+/* line 163, ../sass/_extra.scss */
 .tab-content {
   background: #4e4e4e;
   padding: 20px;
 }
-/* line 163, ../sass/_extra.scss */
+/* line 166, ../sass/_extra.scss */
 .tab-content .well {
   border-color: #4e4e4e;
   margin-bottom: 0;
 }
 
-/* line 169, ../sass/_extra.scss */
+/* line 172, ../sass/_extra.scss */
 .selection-indicator {
   cursor: pointer;
   padding: 6px 12px 6px 6px;
 }
 
 /* Notification area */
-/* line 176, ../sass/_extra.scss */
+/* line 179, ../sass/_extra.scss */
 .notify {
   padding: 30px 10px 15px;
   width: 100%;
@@ -3313,86 +3318,86 @@ svg > text:last-child {
   background: white;
   color: #303030;
 }
-/* line 184, ../sass/_extra.scss */
+/* line 187, ../sass/_extra.scss */
 .notify .container > *:not(:last-child) {
   margin-bottom: 16px;
 }
-/* line 187, ../sass/_extra.scss */
+/* line 190, ../sass/_extra.scss */
 .notify .remove-icon {
   color: transparent;
   margin-left: 20px;
   font-weight: bold;
 }
-/* line 193, ../sass/_extra.scss */
+/* line 196, ../sass/_extra.scss */
 .notify .container > *:hover .remove-icon {
   color: #d9534f;
 }
-/* line 197, ../sass/_extra.scss */
+/* line 200, ../sass/_extra.scss */
 .notify .state-icon {
   margin-right: 10px;
 }
-/* line 200, ../sass/_extra.scss */
+/* line 203, ../sass/_extra.scss */
 .notify .success {
   color: #449d44;
 }
-/* line 203, ../sass/_extra.scss */
+/* line 206, ../sass/_extra.scss */
 .notify .error {
   color: #d9534f;
 }
-/* line 206, ../sass/_extra.scss */
+/* line 209, ../sass/_extra.scss */
 .notify .pending {
   color: #f0ad4e;
 }
-/* line 209, ../sass/_extra.scss */
+/* line 212, ../sass/_extra.scss */
 .notify .warning {
   font-style: italic;
   font-weight: bold;
   color: #4e4e4e;
 }
-/* line 214, ../sass/_extra.scss */
+/* line 217, ../sass/_extra.scss */
 .notify .close-notify {
   position: absolute;
   right: 20px;
   top: 20px;
   color: #303030;
 }
-/* line 220, ../sass/_extra.scss */
+/* line 223, ../sass/_extra.scss */
 .notify .close-notify:hover, .notify .close-notify:focus {
   color: #222222;
 }
-/* line 224, ../sass/_extra.scss */
+/* line 227, ../sass/_extra.scss */
 .notify .dl-horizontal {
   margin-left: 21px;
 }
-/* line 226, ../sass/_extra.scss */
+/* line 229, ../sass/_extra.scss */
 .notify .dl-horizontal dt {
   width: 80px;
   vertical-align: top;
   text-align: left;
 }
-/* line 230, ../sass/_extra.scss */
+/* line 233, ../sass/_extra.scss */
 .notify .dl-horizontal dt span {
   font-size: 20px;
   vertical-align: text-bottom;
   margin-right: 10px;
 }
-/* line 236, ../sass/_extra.scss */
+/* line 239, ../sass/_extra.scss */
 .notify .dl-horizontal dd {
   margin-left: 80px;
 }
 
-/* line 242, ../sass/_extra.scss */
+/* line 245, ../sass/_extra.scss */
 .lowercase {
   text-transform: lowercase;
 }
 
-/* line 247, ../sass/_extra.scss */
+/* line 250, ../sass/_extra.scss */
 .shortcuts-btn span {
   font-size: 20px;
   vertical-align: sub;
 }
 
-/* line 254, ../sass/_extra.scss */
+/* line 257, ../sass/_extra.scss */
 .shortcuts .key {
   padding: 2px 9px;
   font-style: normal;
@@ -3401,25 +3406,25 @@ svg > text:last-child {
   border-radius: 6px;
 }
 
-/* line 263, ../sass/_extra.scss */
+/* line 266, ../sass/_extra.scss */
 .popover {
   max-width: none;
   color: #303030;
   margin-bottom: 20px;
 }
-/* line 267, ../sass/_extra.scss */
+/* line 270, ../sass/_extra.scss */
 .popover h2 {
   text-align: center;
   font-size: 1.2em;
   font-weight: bold;
 }
-/* line 272, ../sass/_extra.scss */
+/* line 275, ../sass/_extra.scss */
 .popover dt {
   margin-bottom: 8px;
   overflow: visible;
 }
 
-/* line 278, ../sass/_extra.scss */
+/* line 281, ../sass/_extra.scss */
 .sign-out span {
   margin-right: 10px;
   vertical-align: middle;

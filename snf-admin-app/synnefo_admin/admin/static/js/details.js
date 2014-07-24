@@ -165,7 +165,7 @@ $(window).resize(function(){
 })
 
 function setDropdownHeight() {
-    var mainNavH = $('.main-nav').height();
+    var mainNavH = $('.navbar-default').height();
     var subNavH = $('.sub-nav').height();
     var windowH = $(window).height();
     // 20 is the distance from the bottom of the page so that

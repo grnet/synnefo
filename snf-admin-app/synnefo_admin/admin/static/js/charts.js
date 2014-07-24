@@ -95,13 +95,6 @@ function infraUsage(data) {
             title: {
                 text: 'Usage percentage'
             },
-            stackLabels: {
-                enabled: true,
-                style: {
-                    fontWeight: 'bold',
-                    color: (Highcharts.theme && Highcharts.theme.textColor) || 'gray'
-                }
-            },
         },
         tooltip: {
             pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.human}</b> ({point.percentage:.0f}%)<br/>',
@@ -165,13 +158,6 @@ function resourceUsage(data, name) {
             min: 0,
             title: {
                 text: data['resources']['all'][name]['description'],
-            },
-            stackLabels: {
-                enabled: true,
-                style: {
-                    fontWeight: 'bold',
-                    color: (Highcharts.theme && Highcharts.theme.textColor) || 'gray'
-                }
             },
         },
         legend : {

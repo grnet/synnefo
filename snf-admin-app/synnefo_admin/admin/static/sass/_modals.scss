@@ -35,6 +35,9 @@ p.progress-area {
 		margin-top: 0;
 		font-weight: bold
 	}
+    textarea {
+        resize: vertical;
+    }
 
 	textarea, input {
 		width: 87%;

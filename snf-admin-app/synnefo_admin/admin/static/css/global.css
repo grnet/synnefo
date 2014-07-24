@@ -2646,104 +2646,108 @@ p.progress-area {
   margin-top: 0;
   font-weight: bold;
 }
-/* line 39, ../sass/_modals.scss */
+/* line 38, ../sass/_modals.scss */
+.modal textarea {
+  resize: vertical;
+}
+/* line 42, ../sass/_modals.scss */
 .modal textarea, .modal input {
   width: 87%;
   vertical-align: text-top;
   padding: 4px 8px;
 }
-/* line 43, ../sass/_modals.scss */
+/* line 46, ../sass/_modals.scss */
 .modal textarea.body, .modal input.body {
   min-height: 160px;
 }
-/* line 48, ../sass/_modals.scss */
+/* line 51, ../sass/_modals.scss */
 .modal label {
   margin-right: 6px;
   width: 70px;
   vertical-align: sub;
 }
-/* line 55, ../sass/_modals.scss */
+/* line 58, ../sass/_modals.scss */
 .modal .modal-body {
   background-color: white;
 }
-/* line 60, ../sass/_modals.scss */
+/* line 63, ../sass/_modals.scss */
 .modal .modal-footer {
   margin-top: 0;
 }
-/* line 62, ../sass/_modals.scss */
+/* line 65, ../sass/_modals.scss */
 .modal .modal-footer form {
   display: inline;
 }
-/* line 65, ../sass/_modals.scss */
+/* line 68, ../sass/_modals.scss */
 .modal .modal-footer .custom-btn:first-child {
   float: left;
   background-color: #303030;
   border-color: #303030;
 }
 
-/* line 75, ../sass/_modals.scss */
+/* line 78, ../sass/_modals.scss */
 .modal .custom-btn {
   color: white;
   opacity: 0.9;
 }
-/* line 79, ../sass/_modals.scss */
+/* line 82, ../sass/_modals.scss */
 .modal .custom-btn:hover, .modal .custom-btn:focus {
   opacity: 1;
 }
-/* line 84, ../sass/_modals.scss */
+/* line 87, ../sass/_modals.scss */
 .modal[data-karma="dark"] .elem {
   color: #4e4e4e;
 }
-/* line 89, ../sass/_modals.scss */
+/* line 92, ../sass/_modals.scss */
 .modal[data-karma="neutral"] .elem {
   color: #207dc9;
 }
-/* line 95, ../sass/_modals.scss */
+/* line 98, ../sass/_modals.scss */
 .modal[data-karma="good"] .elem {
   color: #007238;
 }
-/* line 103, ../sass/_modals.scss */
+/* line 106, ../sass/_modals.scss */
 .modal[data-karma="bad"] .elem {
   color: #a66b18;
 }
-/* line 110, ../sass/_modals.scss */
+/* line 113, ../sass/_modals.scss */
 .modal[data-caution="warning"][data-karma="good"] .elem, .modal[data-caution="warning"][data-karma="neutral"] .elem {
   color: #a66b18;
 }
-/* line 117, ../sass/_modals.scss */
+/* line 120, ../sass/_modals.scss */
 .modal[data-caution="dangerous"][data-karma="bad"] .elem, .modal[data-caution="dangerous"][data-karma="neutral"] .elem {
   color: #c21934;
 }
 
-/* line 124, ../sass/_modals.scss */
+/* line 127, ../sass/_modals.scss */
 .custom-btn[data-karma="dark"] {
   background-color: #222222;
   border-color: transparent;
 }
 
-/* line 129, ../sass/_modals.scss */
+/* line 132, ../sass/_modals.scss */
 .modal em {
   font-weight: bold;
   font-style: normal;
 }
-/* line 133, ../sass/_modals.scss */
+/* line 136, ../sass/_modals.scss */
 .modal .popover {
   z-index: 2000;
 }
-/* line 135, ../sass/_modals.scss */
+/* line 138, ../sass/_modals.scss */
 .modal .popover dl {
   color: black;
   font-weight: normal;
 }
-/* line 138, ../sass/_modals.scss */
+/* line 141, ../sass/_modals.scss */
 .modal .popover dl dt {
   width: 90px;
 }
-/* line 141, ../sass/_modals.scss */
+/* line 144, ../sass/_modals.scss */
 .modal .popover dl dd {
   margin-left: 110px;
 }
-/* line 145, ../sass/_modals.scss */
+/* line 148, ../sass/_modals.scss */
 .modal .popover h2 {
   font-size: 16px;
   color: #303030;
@@ -2751,33 +2755,33 @@ p.progress-area {
   text-align: center;
 }
 
-/* line 155, ../sass/_modals.scss */
+/* line 158, ../sass/_modals.scss */
 .modal-content {
   padding: 20px;
   color: #303030;
 }
-/* line 158, ../sass/_modals.scss */
+/* line 161, ../sass/_modals.scss */
 .modal-content .badge {
   background-color: transparent;
 }
 
-/* line 165, ../sass/_modals.scss */
+/* line 168, ../sass/_modals.scss */
 .instructions-icon {
   color: #3c96e0;
   font-size: 22px;
   margin-left: 78px;
 }
-/* line 169, ../sass/_modals.scss */
+/* line 172, ../sass/_modals.scss */
 .instructions-icon:hover {
   text-decoration: none;
 }
 
-/* line 174, ../sass/_modals.scss */
+/* line 177, ../sass/_modals.scss */
 .extra-info {
   margin-top: 10px;
 }
 
-/* line 178, ../sass/_modals.scss */
+/* line 181, ../sass/_modals.scss */
 .error-sign {
   color: red;
   font-size: 20px;
@@ -2786,61 +2790,61 @@ p.progress-area {
   top: 6px;
   display: none;
 }
-/* line 187, ../sass/_modals.scss */
+/* line 190, ../sass/_modals.scss */
 .error-sign:hover, .error-sign:focus {
   color: red;
   text-decoration: none;
 }
 
-/* line 194, ../sass/_modals.scss */
+/* line 197, ../sass/_modals.scss */
 .form-area {
   position: relative;
 }
 
-/* line 197, ../sass/_modals.scss */
+/* line 200, ../sass/_modals.scss */
 .form-subject {
   margin-bottom: 15px;
 }
 
-/* line 201, ../sass/_modals.scss */
+/* line 204, ../sass/_modals.scss */
 .toggle-more {
   margin-top: -16px;
   display: none;
 }
 
-/* line 208, ../sass/_modals.scss */
+/* line 211, ../sass/_modals.scss */
 .modal .table-selected th, .modal .table-selected td {
   word-break: break-word;
 }
-/* line 212, ../sass/_modals.scss */
+/* line 215, ../sass/_modals.scss */
 .modal .table-selected td:last-child .wrap {
   padding-right: 36px;
 }
-/* line 216, ../sass/_modals.scss */
+/* line 219, ../sass/_modals.scss */
 .modal .table-selected tr:nth-child(2n) {
   background: #f2f2f2;
 }
-/* line 220, ../sass/_modals.scss */
+/* line 223, ../sass/_modals.scss */
 .modal .table-selected tr a {
   font-weight: bold;
 }
-/* line 225, ../sass/_modals.scss */
+/* line 228, ../sass/_modals.scss */
 .modal .table-selected tr:hover,
 .modal .table-selected tr:focus {
   background: #d9d9d9;
 }
-/* line 227, ../sass/_modals.scss */
+/* line 230, ../sass/_modals.scss */
 .modal .table-selected tr:hover a,
 .modal .table-selected tr:focus a {
   color: red;
 }
-/* line 232, ../sass/_modals.scss */
+/* line 235, ../sass/_modals.scss */
 .modal .table-selected .remove {
   position: absolute;
   right: 14px;
   color: transparent;
 }
-/* line 236, ../sass/_modals.scss */
+/* line 239, ../sass/_modals.scss */
 .modal .table-selected .remove:hover {
   cursor: pointer;
   text-decoration: none;

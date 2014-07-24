@@ -9,6 +9,7 @@
         <span class="rt">
             <span class="label">{{ user.status_display|upper }}</span>
             <span class="label">UUID: {{ user.uuid }}</span>
+            <span class="label">UUID: {{ user.uuid }}</span>
             <span class="label">{{ user.email }}</span>
         </span>
     </h4>
@@ -22,6 +23,7 @@
         <div class="tab-content">
             <div class="tab-pane active" id="details{{ user.uuid }}">
                 <dl class="dl-horizontal well">
+                    <dt>ID</dt><dd>{{ user.id }}</dd>
                     <dt>UUID</dt><dd>{{ user.uuid }}</dd>
                     <dt>Name</dt><dd>{{ user.realname }}</dd>
                     <dt>Email</dt><dd>{{ user.email }}</dd>

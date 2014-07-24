@@ -62,7 +62,7 @@ templates = {
 
 class UserJSONView(AdminJSONView):
     model = AstakosUser
-    fields = ('email', 'first_name', 'last_name', 'is_active',
+    fields = ('id', 'email', 'first_name', 'last_name', 'is_active',
               'is_rejected', 'moderated', 'email_verified')
     filters = UserFilterSet
 
@@ -191,7 +191,7 @@ def catalog(request):
     context = {}
     context['action_dict'] = get_permitted_actions(cached_actions, request.user)
     context['filter_dict'] = UserFilterSet().filters.itervalues()
-    context['columns'] = ["E-mail", "First Name", "Last Name", "Active",
+    context['columns'] = ["ID", "E-mail", "First Name", "Last Name", "Active",
                           "Rejected", "Moderated", "Verified", ""]
     context['item_type'] = 'user'
 

@@ -70,7 +70,7 @@ def get_model_field(model, query, field):
     """
     model = model_dict[model]
     ids = model.objects.filter(query).values_list(field, flat=True)
-    return itertools.chain(ids)
+    return list(ids)
 
 
 def model_filter(func):

@@ -103,13 +103,18 @@ DEFAULT_ADMIN_RBAC = {
 }
 ADMIN_RBAC = getattr(settings, 'ADMIN_RBAC', DEFAULT_ADMIN_RBAC)
 
-# With this option, the user can define whether to show deleted items on the
+# With this option, the admin can define whether to show deleted items on the
 # details page of another item. Note that the details page of the deleted
 # item will be shown properly.
 ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS = getattr(
     settings, 'ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS', False)
 
-# With this option, the user can define the number of associated items that
+# With this option, the admin can define the number of associated items that
 # will be shown for each category, so as not to flood the page.
 ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY = getattr(
     settings, 'ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY', 50)
+
+# With this option, the admin can define the number of suspended VMs of a user
+# that will be shown in his/her table summary.
+ADMIN_LIMIT_SUSPENDED_VMS_IN_SUMMARY = getattr(
+    settings, 'ADMIN_LIMIT_SUSPENDED_VMS_IN_SUMMARY', 10)

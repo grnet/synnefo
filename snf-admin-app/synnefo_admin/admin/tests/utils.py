@@ -14,12 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
+#import logging
 
 from synnefo.db import models_factory as mf
 
 from synnefo_admin import admin_settings
 from synnefo_admin.admin import views
+from synnefo_admin.admin import utils
 from synnefo_admin.admin.exceptions import AdminHttp404
 from .common import for_all_views, AdminTestCase, gibberish
 
@@ -27,6 +28,13 @@ model_views = admin_settings.ADMIN_VIEWS.copy()
 # Remove the model views that do not have details
 model_views.pop('ip_log', None)
 model_views.pop('group', None)
+
+
+class MockUser(object):
+    realname = "Spider Jerusalem"
+    first_name = "Spider"
+    last_name = "Jerusalem"
+    email = "thetruth@thehole.com"
 
 
 class TestAdminUtils(AdminTestCase):
@@ -64,7 +72,6 @@ class TestAdminUtils(AdminTestCase):
         mod = views.get_view_module_or_404(self.current_view)
         self.assertIsNotNone(mod)
 
-        #logging.critical("View: %s", self.current_view)
         get_model_or_404 = getattr(mod, 'get_%s_or_404' % self.current_view,
                                    None)
         self.assertIsNotNone(get_model_or_404)
@@ -94,3 +101,37 @@ class TestAdminUtils(AdminTestCase):
             self.assertEqual(model, returned_model)
             with self.assertRaises(AdminHttp404):
                 get_model_or_404(gibberish(like='number'))
+
+    def test_render_email(self):
+        """Test if emails are rendered properly."""
+        user = MockUser()
+
+        # Test 1 - Check if reqular emails are returned properly
+        request = {
+            "subject": "Very confidential",
+            "text": "This is a very confidential mail",
+        }
+
+        subject, body = utils.render_email(request, user)
+        self.assertEqual(request["subject"], subject)
+        self.assertEqual(request["text"], body)
+
+        # Test 2 - Check if emails with parameters are formatted properly
+        subject = """Very confidential for {{ first_name }}
+        {{ last_name }} or {{ full_name }} ({{ email }})"""
+        body = """This is a very confidential mail for {{ first_name }}
+        {{ last_name }} or {{ full_name }} ({{ email }})"""
+
+        expected_subject = """Very confidential for Spider
+        Jerusalem or Spider Jerusalem (thetruth@thehole.com)"""
+        expected_body = """This is a very confidential mail for Spider
+        Jerusalem or Spider Jerusalem (thetruth@thehole.com)"""
+
+        request = {
+            "subject": subject,
+            "text": body,
+        }
+
+        subject, body = utils.render_email(request, user)
+        self.assertEqual(expected_subject, subject)
+        self.assertEqual(expected_body, body)

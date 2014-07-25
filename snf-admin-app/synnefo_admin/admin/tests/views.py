@@ -85,7 +85,7 @@ class TestAdminViewsIntegration(django.test.TestCase):
                             **kwargs)
         self.assertEqual(r.status_code, status)
 
-        r = self.client.get(reverse('admin-details', args=[view, 'dummy']),
+        r = self.client.get(reverse('admin-details', args=[view, gibberish()]),
                             *args, **kwargs)
         self.assertEqual(r.status_code, status)
 
@@ -103,7 +103,7 @@ class TestAdminViewsIntegration(django.test.TestCase):
 
         # admin is disabled
         r = self.client.get(reverse('admin-%s' % self.current_view,
-                                    args=['dummy']),
+                                    args=[gibberish()]),
                             user_token="0001")
         self.assertEqual(r.status_code, 404)
 

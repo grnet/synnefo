@@ -47,7 +47,7 @@ from pithos.api import settings
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
     VersionNotExists, ContainerExists, InvalidHash, IllegalOperationError,
-    InconsistentContentSize)
+    InconsistentContentSize, InvalidPolicy)
 
 from pithos.backends.filter import parse_filters
 
@@ -469,8 +469,8 @@ def container_create(request, v_account, v_container):
         ret = 201
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
-    except ValueError:
-        raise faults.BadRequest('Invalid policy header')
+    except InvalidPolicy, e:
+        raise faults.BadRequest(e.args[0])
     except ContainerExists:
         ret = 202
 
@@ -483,8 +483,8 @@ def container_create(request, v_account, v_container):
             raise faults.Forbidden('Not allowed')
         except ItemNotExists:
             raise faults.ItemNotFound('Container does not exist')
-        except ValueError:
-            raise faults.BadRequest('Invalid policy header')
+        except InvalidPolicy, e:
+            raise faults.BadRequest(e.args[0])
         except QuotaError, e:
             raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     if meta:
@@ -522,8 +522,8 @@ def container_update(request, v_account, v_container):
             raise faults.Forbidden('Not allowed')
         except ItemNotExists:
             raise faults.ItemNotFound('Container does not exist')
-        except ValueError:
-            raise faults.BadRequest('Invalid policy header')
+        except InvalidPolicy, e:
+            raise faults.BadRequest(e.args[0])
         except QuotaError, e:
             raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     if meta or replace:

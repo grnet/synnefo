@@ -62,6 +62,9 @@ class InvalidHash(TypeError):
 class InconsistentContentSize(ValueError):
     pass
 
+class InvalidPolicy(ValueError):
+    pass
+
 
 class LimitExceeded(Exception):
     pass
@@ -193,7 +196,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
 
-            ValueError: Invalid policy defined
+            InvalidPolicy: Invalid policy defined
         """
         return
 
@@ -305,7 +308,7 @@ class BaseBackend(object):
 
             ItemNotExists: Container does not exist
 
-            ValueError: Invalid policy defined
+            InvalidPolicy: Invalid policy defined
         """
         return
 
@@ -317,7 +320,7 @@ class BaseBackend(object):
 
             ContainerExists: Container already exists
 
-            ValueError: Invalid policy defined
+            InvalidPolicy: Invalid policy defined
         """
         return
 

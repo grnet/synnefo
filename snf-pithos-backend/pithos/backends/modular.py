@@ -40,7 +40,7 @@ from pithos.backends.base import (
     BaseBackend, AccountExists, ContainerExists, AccountNotEmpty,
     ContainerNotEmpty, ItemNotExists, VersionNotExists,
     InvalidHash, IllegalOperationError, InconsistentContentSize,
-    LimitExceeded)
+    LimitExceeded, InvalidPolicy)
 
 
 class DisabledAstakosClient(object):
@@ -2115,22 +2115,29 @@ class ModularBackend(BaseBackend):
     # Policy functions.
 
     def _check_project(self, value):
-        # raise ValueError('Bad quota source policy')
+        # raise InvalidPolicy('Bad quota source policy')
         pass
 
     def _check_policy(self, policy):
         for k, v in policy.iteritems():
             if k == QUOTA_POLICY:
-                q = int(v)  # May raise ValueError.
+                error_msg = ('The quota policy value '
+                             'should be a positive integer.')
+                try:
+                    q = int(v)  # May raise ValueError.
+                except ValueError:
+                    raise InvalidPolicy(error_msg)
                 if q < 0:
-                    raise ValueError
+                    raise InvalidPolicy(error_msg)
             elif k == VERSIONING_POLICY:
                 if v not in ['auto', 'none']:
-                    raise ValueError
+                    raise InvalidPolicy('The versioning policy value should '
+                                        'be either \'auto\' or \'none\'.')
             elif k == PROJECT:
                 self._check_project(v)
             else:
-                raise ValueError
+                raise InvalidPolicy('The only allowed policies are '
+                                    '\'quota\' or \'versioning\'.')
 
     def _get_default_policy(self, node=None, is_account_policy=True,
                             default_project=None):

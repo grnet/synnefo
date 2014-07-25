@@ -126,14 +126,18 @@ def render_email(request, user):
 
     then they will be rendered appropriately.
     """
-    subject = request['subject']
     c = Context({'full_name': user.realname,
                  'first_name': user.first_name,
                  'last_name': user.last_name,
                  'email': user.email, })
+
+    # Render the mail body
     t = Template(request['text'])
     body = t.render(c)
-    #logging.info("Subject is %s, body is %s", subject, body)
+
+    # Render the mail subject
+    t = Template(request['subject'])
+    subject = t.render(c)
     return subject, body
 
 

@@ -106,12 +106,15 @@ snf = {
 				}
 			})
 		},
-		defaultEmailSubj: undefined,
-		defaultEmailBody: undefined,
 		resetInputs: function(modal) {
 			var $modal = $(modal);
-			$modal.find('input[type=text]').val(snf.modals.defaultEmailSubj);
-			$modal.find('textarea').val(snf.modals.defaultEmailBody);
+			$modal.find('input').each(function() {
+				$(this).val(snf.modals[$(this).attr('name')]);
+			});
+
+			$modal.find('textarea').each(function() {
+				$(this).val(snf.modals[$(this).attr('name')]);
+			});
 		},
 		html: {
 			singleItemInfo: '<dl class="dl-horizontal info-list"><dt>Name:</dt><dd><%= name %></dd><dt>ID:</dt><dd><%= id %></dd><dl>',
@@ -208,8 +211,9 @@ $(document).ready(function(){
 		snf.modals.hideBottomModal($notificationArea);
 	});
 
-	snf.modals.defaultEmailSubj = $('.modal[data-type="contact"]').find('.subject').val();
-	snf.modals.defaultEmailBody = $('.modal[data-type="contact"]').find('.email-content').val();
+	snf.modals['subject'] = $('.modal[data-type="contact"]').find('input[name="subject"]').val();
+	snf.modals['text'] = $('.modal[data-type="contact"]').find('textarea[name="text"]').val();
+	snf.modals['sender'] = $('.modal[data-type="contact"]').find('input[name="subject"]').val();
 
     $('.disabled').click(function(e){
         e.preventDefault();

@@ -211,9 +211,12 @@ $(document).ready(function(){
 		snf.modals.hideBottomModal($notificationArea);
 	});
 
-	snf.modals['subject'] = $('.modal[data-type="contact"]').find('input[name="subject"]').val();
-	snf.modals['text'] = $('.modal[data-type="contact"]').find('textarea[name="text"]').val();
-	snf.modals['sender'] = $('.modal[data-type="contact"]').find('input[name="subject"]').val();
+	$('.modal[data-type="contact"]').find('input').each(function() {
+		snf.modals[$(this).attr('name')] = $(this).val()
+	});
+	$('.modal[data-type="contact"]').find('textarea').each(function() {
+		snf.modals[$(this).attr('name')] = $(this).val()
+	});
 
     $('.disabled').click(function(e){
         e.preventDefault();

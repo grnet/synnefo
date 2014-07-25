@@ -125,3 +125,23 @@ class TestAdminViewsIntegration(django.test.TestCase):
 
         # user not in admin group gets 403
         self.assertHttpStatusModelView(self.current_view, 403)
+
+    def test_404_in_model_views(self):
+        """Test if authorized users get 404 in invalid admin model views."""
+        # valid user in wrong model view gets 404
+        self.assertHttpStatusModelView(gibberish(), 404, user_token='0001')
+
+    @for_all_views(views=['stats-component', 'stats-component-details'])
+    def test_404_in_stats_views(self):
+        """Test if authorized users get 404 in invalid stats views."""
+        r = self.client.get(reverse('admin-%s' % self.current_view,
+                                    args=[gibberish()]),
+                            user_token="0001")
+        self.assertEqual(r.status_code, 404)
+
+    @for_all_views(views=['home', 'logout', 'charts', 'actions'])
+    def test_404_in_other_views(self):
+        """Test if authorized users get 404 in all othere views."""
+        r = self.client.get(reverse('admin-%s' % self.current_view) + '/' +
+                            gibberish(), user_token="0001")
+        self.assertEqual(r.status_code, 404)

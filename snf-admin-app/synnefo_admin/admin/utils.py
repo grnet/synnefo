@@ -50,7 +50,8 @@ def conditionally_gzip_page(func):
     """Decorator to gzip response of unpaginated json requests."""
     @functools.wraps(func)
     def wrapper(request, *args, **kwargs):
-        if request.REQUEST['iDisplayLength'] > 0:
+        display_length = getattr(request.REQUEST, 'iDisplayLength', None)
+        if not display_length or display_length > 0:
             return func(request, *args, **kwargs)
         else:
             return gzip_page(func)(request, *args, **kwargs)

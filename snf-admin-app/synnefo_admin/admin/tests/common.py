@@ -18,6 +18,7 @@ import functools
 import django.test
 import string
 import random
+import mock
 
 from astakos.im.tests.projects import ProjectAPITest
 from astakos.im.functions import approve_application
@@ -157,6 +158,8 @@ def get_user_mock(request, *args, **kwargs):
                         }
 
 
+@mock.patch("astakosclient.AstakosClient", new=AstakosClientMock)
+@mock.patch("snf_django.lib.astakos.get_user", new=get_user_mock)
 class AdminTestCase(ProjectAPITest):
 
     """Generic TestCase for admin tests.

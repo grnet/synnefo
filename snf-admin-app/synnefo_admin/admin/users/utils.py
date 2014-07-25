@@ -109,9 +109,9 @@ def get_quotas(user):
 
         for resource_name, resource in resource_dict.iteritems():
             # Chech if the resource is useful to display
-            limit = resource['limit']
+            project_limit = resource['project_limit']
             r = get_resource(resource_name)
-            if not is_resource_useful(r, limit):
+            if not is_resource_useful(r, project_limit):
                 continue
 
             usage = units.show(resource['usage'], r.unit)

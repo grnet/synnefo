@@ -40,6 +40,7 @@ from eztables.views import DatatablesView
 import django_filters
 from django.db.models import Q
 
+from synnefo_admin import admin_settings
 from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.utils import (get_resource, is_resource_useful,
                                        create_details_href)
@@ -136,9 +137,13 @@ def get_user_groups(user):
 
 
 def get_suspended_vms(user):
+    limit = admin_settings.ADMIN_LIMIT_SUSPENDED_VMS_IN_SUMMARY
     vms = VirtualMachine.objects.filter(userid=user.uuid, suspended=True)
-    if not vms:
+    count = vms.count()
+    if count == 0:
         return 'None'
 
-    urls = [create_details_href('vm', vm.name, vm.pk) for vm in vms]
+    urls = [create_details_href('vm', vm.name, vm.pk) for vm in vms[:limit]]
+    if count > limit:
+        urls.append('...')
     return ', '.join(urls)

@@ -15,8 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #import logging
+import unittest
+
+from django.core import mail
 
 from synnefo.db import models_factory as mf
+from astakos.im import settings as astakos_settings
+from snf_django.lib.api import faults
 
 from synnefo_admin import admin_settings
 from synnefo_admin.admin import views
@@ -31,15 +36,119 @@ model_views.pop('group', None)
 
 
 class MockUser(object):
-    realname = "Spider Jerusalem"
+    realname = log_display = "Spider Jerusalem"
     first_name = "Spider"
     last_name = "Jerusalem"
     email = "thetruth@thehole.com"
 
 
-class TestAdminUtils(AdminTestCase):
+class MockRequest(object):
 
-    """Test suite for admin utility functions."""
+    """Mock a Django request."""
+
+    def __init__(self, content):
+        self.POST = content
+
+    def update(self, content):
+        self.POST.update(content)
+
+
+class TestAdminUtilsUnit(unittest.TestCase):
+
+    """Unit test suite for admin utility functions."""
+
+    def test_render_email(self):
+        """Test if emails are rendered properly."""
+        user = MockUser()
+
+        # Test 1 - Check if reqular emails are returned properly
+        request = {
+            "subject": "Very confidential",
+            "text": "This is a very confidential mail",
+        }
+
+        subject, body = utils.render_email(user, request)
+        self.assertEqual(request["subject"], subject)
+        self.assertEqual(request["text"], body)
+
+        # Test 2 - Check if emails with parameters are formatted properly
+        subject = """Very confidential for {{ first_name }}
+        {{ last_name }} or {{ full_name }} ({{ email }})"""
+        body = """This is a very confidential mail for {{ first_name }}
+        {{ last_name }} or {{ full_name }} ({{ email }})"""
+
+        expected_subject = """Very confidential for Spider
+        Jerusalem or Spider Jerusalem (thetruth@thehole.com)"""
+        expected_body = """This is a very confidential mail for Spider
+        Jerusalem or Spider Jerusalem (thetruth@thehole.com)"""
+
+        request = {
+            "subject": subject,
+            "text": body,
+        }
+
+        subject, body = utils.render_email(user, request)
+        self.assertEqual(expected_subject, subject)
+        self.assertEqual(expected_body, body)
+
+    def test_send_admin_email(self):
+        """Test if send_admin_email works properly."""
+        def verify_sent_email(request, mail):
+            self.assertEqual(request.POST['subject'], mail.subject)
+            self.assertEqual(request.POST['text'], mail.body)
+            self.assertEqual(request.POST['sender'], mail.from_email)
+
+        user = MockUser()
+        default_sender = astakos_settings.SERVER_EMAIL
+
+        # Test 1 - Check if malformed contact request raises BadRequest:
+        #
+        # a) Request with no POST dictionary.
+        bad_request = {}
+
+        with self.assertRaises(faults.BadRequest) as cm:
+            utils.send_admin_email(user, bad_request)
+        self.assertEqual("Contact request does not have a POST dictionary.",
+                         cm.exception.message)
+
+        # b) Request with required fields missing.
+        bad_request = MockRequest({
+            "subject": 'Subject',
+            "sender": astakos_settings.SERVER_EMAIL,
+        })
+
+        with self.assertRaises(faults.BadRequest) as cm:
+            utils.send_admin_email(user, bad_request)
+        self.assertEqual(
+            "Contact request does not have the following fields: text",
+            cm.exception.message)
+
+        # Test 2 - Check if email from default sender is sent properly and that
+        # the default sender remains the same.
+        request = MockRequest({
+            "sender": astakos_settings.SERVER_EMAIL,
+            "subject": 'Subject',
+            "text": 'Body',
+        })
+
+        utils.send_admin_email(user, request)
+        self.assertEqual(len(mail.outbox), 1)
+        verify_sent_email(request, mail.outbox[0])
+        self.assertEqual(default_sender, astakos_settings.SERVER_EMAIL)
+
+        # Test 3 - Check if email from custom sender is sent properly and that
+        # the default sender remains the same.
+        request.update({"sender": 'admin@lemonparty.org'})
+
+        utils.send_admin_email(user, request)
+        self.assertEqual(len(mail.outbox), 2)
+        verify_sent_email(request, mail.outbox[1])
+        self.assertEqual(default_sender, astakos_settings.SERVER_EMAIL)
+
+
+class TestAdminUtilsIntegration(AdminTestCase):
+
+    """Integration test suite for admin utility functions."""
 
     def get_ip_or_404_helper(self, get_model_or_404):
         for ip_version in ['ipv4', 'ipv6']:
@@ -101,37 +210,3 @@ class TestAdminUtils(AdminTestCase):
             self.assertEqual(model, returned_model)
             with self.assertRaises(AdminHttp404):
                 get_model_or_404(gibberish(like='number'))
-
-    def test_render_email(self):
-        """Test if emails are rendered properly."""
-        user = MockUser()
-
-        # Test 1 - Check if reqular emails are returned properly
-        request = {
-            "subject": "Very confidential",
-            "text": "This is a very confidential mail",
-        }
-
-        subject, body = utils.render_email(request, user)
-        self.assertEqual(request["subject"], subject)
-        self.assertEqual(request["text"], body)
-
-        # Test 2 - Check if emails with parameters are formatted properly
-        subject = """Very confidential for {{ first_name }}
-        {{ last_name }} or {{ full_name }} ({{ email }})"""
-        body = """This is a very confidential mail for {{ first_name }}
-        {{ last_name }} or {{ full_name }} ({{ email }})"""
-
-        expected_subject = """Very confidential for Spider
-        Jerusalem or Spider Jerusalem (thetruth@thehole.com)"""
-        expected_body = """This is a very confidential mail for Spider
-        Jerusalem or Spider Jerusalem (thetruth@thehole.com)"""
-
-        request = {
-            "subject": subject,
-            "text": body,
-        }
-
-        subject, body = utils.render_email(request, user)
-        self.assertEqual(expected_subject, subject)
-        self.assertEqual(expected_body, body)

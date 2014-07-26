@@ -20,7 +20,6 @@ from collections import OrderedDict
 from django.core.urlresolvers import reverse
 
 from synnefo.db.models import Volume
-from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
 
 from eztables.views import DatatablesView
@@ -29,7 +28,7 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import update_actions_rbac
+from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
 
 
 class VolumeAction(AdminAction):
@@ -52,7 +51,7 @@ def generate_actions():
     """
     actions = OrderedDict()
 
-    actions['contact'] = VolumeAction(name='Send e-mail', f=send_email,)
+    actions['contact'] = VolumeAction(name='Send e-mail', f=send_admin_email,)
 
     update_actions_rbac(actions)
 

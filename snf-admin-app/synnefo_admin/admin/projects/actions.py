@@ -31,7 +31,6 @@ from astakos.im.models import (AstakosUser, Project, ProjectResourceGrant,
 from eztables.views import DatatablesView
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from astakos.im.user_utils import send_plain as send_email
 from astakos.im.functions import (validate_project_action, ProjectConflict,
                                   approve_application, deny_application,
                                   suspend, unsuspend, terminate, reinstate)
@@ -46,7 +45,7 @@ from synnefo_admin.admin.utils import is_resource_useful
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import update_actions_rbac
+from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
 
 
 class ProjectAction(AdminAction):
@@ -116,7 +115,7 @@ def generate_actions():
                                          c=check_project_action("REINSTATE"),
                                          karma='good', caution_level='warning',)
 
-    actions['contact'] = ProjectAction(name='Send e-mail', f=send_email,)
+    actions['contact'] = ProjectAction(name='Send e-mail', f=send_admin_email,)
 
     update_actions_rbac(actions)
 

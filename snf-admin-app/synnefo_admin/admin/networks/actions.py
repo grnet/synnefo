@@ -26,7 +26,6 @@ from synnefo.db.models import (Network, VirtualMachine, NetworkInterface,
                                IPAddress)
 from synnefo.logic.networks import validate_network_action
 from synnefo.logic import networks
-from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
 
 from eztables.views import DatatablesView
@@ -34,7 +33,7 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import update_actions_rbac
+from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
 
 
 class NetworkAction(AdminAction):
@@ -62,8 +61,10 @@ def undrain_network(network):
 
 def check_network_action(action):
     if action == "contact":
-        return lambda n: True if n.userid else False
-
+        # Contact action is allowed only on private networks. However, this
+        # function may get called with an AstakosUser as a target. In this
+        # case, we always confirm the action.
+        return lambda n: not getattr(n, 'public', False)
     else:
         return lambda n: validate_network_action(n, action)
 
@@ -95,7 +96,7 @@ def generate_actions():
                                             karma='neutral',
                                             caution_level='dangerous',)
 
-    actions['contact'] = NetworkAction(name='Send e-mail', f=send_email,
+    actions['contact'] = NetworkAction(name='Send e-mail', f=send_admin_email,
                                        c=check_network_action("contact"),)
 
     update_actions_rbac(actions)

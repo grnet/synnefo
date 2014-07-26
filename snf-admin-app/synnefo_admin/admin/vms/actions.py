@@ -24,7 +24,6 @@ from django.db.models import Q
 
 from synnefo.db.models import VirtualMachine, Network, IPAddressLog
 from astakos.im.models import AstakosUser, ProjectMembership, Project
-from astakos.im.user_utils import send_plain as send_email
 
 from synnefo.logic import servers as servers_backend
 from synnefo.logic.commands import validate_server_action
@@ -35,7 +34,7 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import update_actions_rbac
+from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
 
 
 class VMAction(AdminAction):
@@ -129,7 +128,7 @@ def generate_actions():
                                        karma='neutral',
                                        caution_level='dangerous',)
 
-    actions['contact'] = VMAction(name='Send e-mail', f=send_email,)
+    actions['contact'] = VMAction(name='Send e-mail', f=send_admin_email,)
 
     update_actions_rbac(actions)
 

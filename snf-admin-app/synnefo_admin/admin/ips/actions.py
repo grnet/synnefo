@@ -24,7 +24,6 @@ from django.core.urlresolvers import reverse
 
 from synnefo.db.models import IPAddress
 from synnefo.logic import ips
-from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
 
 from eztables.views import DatatablesView
@@ -32,7 +31,7 @@ import django_filters
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from synnefo_admin.admin.utils import update_actions_rbac
+from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
 
 
 class IPAction(AdminAction):
@@ -61,7 +60,7 @@ def generate_actions():
     actions['reassign'] = IPAction(name='Reassign to project', f=noop,
                                    karma='neutral', caution_level='dangerous',)
 
-    actions['contact'] = IPAction(name='Send e-mail', f=send_email,)
+    actions['contact'] = IPAction(name='Send e-mail', f=send_admin_email,)
 
     update_actions_rbac(actions)
 

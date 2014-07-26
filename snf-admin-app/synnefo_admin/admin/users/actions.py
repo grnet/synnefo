@@ -31,7 +31,6 @@ from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
 from astakos.im.models import AstakosUser, ProjectMembership, Project, Resource
 from astakos.im import user_logic as users
 
-from astakos.im.user_utils import send_plain as send_email
 
 from synnefo.util import units
 
@@ -41,7 +40,8 @@ import django_filters
 from django.db.models import Q
 
 from synnefo_admin.admin.actions import AdminAction, noop
-from synnefo_admin.admin.utils import update_actions_rbac
+from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
+
 
 class UserAction(AdminAction):
 
@@ -100,7 +100,7 @@ def generate_actions():
     #    name='Resend verification', f=users.send_verification_mail,
     #    karma='good', c=check_user_action("SEND_VERIFICATION_MAIL"),)
 
-    actions['contact'] = UserAction(name='Send e-mail', f=send_email,)
+    actions['contact'] = UserAction(name='Send e-mail', f=send_admin_email,)
 
     update_actions_rbac(actions)
 

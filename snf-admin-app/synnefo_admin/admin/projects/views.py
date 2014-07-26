@@ -30,7 +30,6 @@ from astakos.im.models import (AstakosUser, Project, ProjectResourceGrant,
 
 from synnefo_admin.admin.actions import (AdminAction, noop,
                                          has_permission_or_403)
-from astakos.im.user_utils import send_plain as send_email
 from astakos.im.functions import (validate_project_action, ProjectConflict,
                                   approve_application, deny_application,
                                   suspend, unsuspend, terminate, reinstate)
@@ -211,8 +210,7 @@ def do_action(request, op, id):
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'contact':
-        subject, body = render_email(request.POST, user)
-        actions[op].apply(user, subject, template_name=None, text=body)
+        actions[op].apply(user, request)
     elif op == 'approve':
         actions[op].apply(project.last_application.id)
     elif op == 'deny':

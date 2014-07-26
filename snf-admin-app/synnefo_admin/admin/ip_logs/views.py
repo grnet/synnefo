@@ -25,7 +25,6 @@ from django.utils.html import escape
 
 from synnefo.db.models import IPAddress, IPAddressLog, VirtualMachine, Network
 from synnefo.logic import ips
-from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
 
 import django_filters

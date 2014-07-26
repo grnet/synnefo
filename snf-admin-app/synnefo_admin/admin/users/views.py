@@ -30,8 +30,6 @@ from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
 from astakos.im.models import AstakosUser, ProjectMembership, Project, Resource
 from astakos.im import user_logic as users
 
-from astakos.im.user_utils import send_plain as send_email
-
 from synnefo.util import units
 
 import django_filters
@@ -41,8 +39,6 @@ from synnefo_admin import admin_settings
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
-from synnefo_admin.admin.utils import (get_actions, render_email,
-                                       create_details_href,)
 from synnefo_admin.admin.tables import AdminJSONView
 from synnefo_admin.admin.associations import (
     UserAssociation, QuotaAssociation, VMAssociation, VolumeAssociation,
@@ -179,8 +175,7 @@ def do_action(request, op, id):
     if op == 'reject':
         actions[op].apply(user, 'Rejected by the admin')
     elif op == 'contact':
-        subject, body = render_email(request.POST, user)
-        actions[op].apply(user, subject, template_name=None, text=body)
+        actions[op].apply(user, request)
     else:
         actions[op].apply(user)
 

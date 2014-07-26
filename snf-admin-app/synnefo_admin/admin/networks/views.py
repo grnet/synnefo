@@ -26,7 +26,6 @@ from synnefo.db.models import (Network, VirtualMachine, NetworkInterface,
                                IPAddress, IPAddressLog)
 from synnefo.logic.networks import validate_network_action
 from synnefo.logic import networks
-from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
 
 import django_filters
@@ -159,8 +158,7 @@ def do_action(request, op, id):
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'contact':
-        subject, body = render_email(request.POST, user)
-        actions[op].apply(user, subject, template_name=None, text=body)
+        actions[op].apply(user, request)
     else:
         actions[op].apply(network)
 

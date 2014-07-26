@@ -17,19 +17,20 @@ import functools
 import logging
 import inspect
 from importlib import import_module
-from operator import or_
 
-from django.db.models import Q
 from django.views.decorators.gzip import gzip_page
 from django.template import Context, Template
 from django.core.urlresolvers import reverse
 from django.utils.html import escape
-from django.conf import settings
+
+from astakos.im.models import Resource
+from synnefo.db.models import Network
+from synnefo.util import units
+from astakos.im.user_utils import send_plain as send_email
+from snf_django.lib.api import faults
 
 from synnefo_admin import admin_settings
-from synnefo.util import units
-from astakos.im.models import AstakosUser, Resource
-from synnefo.db.models import Network
+from astakos.im import settings as astakos_settings
 
 from .actions import get_allowed_actions, get_permitted_actions
 logger = logging.getLogger(__name__)
@@ -111,7 +112,45 @@ def update_actions_rbac(actions):
         action.allowed_groups = groups
 
 
-def render_email(request, user):
+def assert_valid_contact_request(request):
+    """Check if the request is a valid contact request.
+
+    In order to be a valid contact request, it should contain a POST dictionary
+    and the following fields: sender, subject, text. If any of the above are
+    missing, raise BadRequest with the appropriate message.
+    """
+    if not hasattr(request, 'POST'):
+        raise faults.BadRequest(
+            "Contact request does not have a POST dictionary.")
+
+    required_fields = ['sender', 'subject', 'text']
+    error_fields = set(required_fields) - set(request.POST.keys())
+
+    if error_fields:
+        error_fields = ', '.join(error_fields)
+        error_msg = "Contact request does not have the following fields: {}"
+        raise faults.BadRequest(error_msg.format(error_fields))
+
+
+class CustomSender(object):
+
+    """Context manager for setting and restoring the SERVER_EMAIL setting."""
+
+    def __init__(self, sender):
+        """Store the default and the provided sender."""
+        self.custom_sender = sender
+        self.default_sender = astakos_settings.SERVER_EMAIL
+
+    def __enter__(self):
+        """Use the provided sender as default."""
+        astakos_settings.SERVER_EMAIL = self.custom_sender
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Restore default sender."""
+        astakos_settings.SERVER_EMAIL = self.default_sender
+
+
+def render_email(user, request):
     """Render an email and return its subject and body.
 
     This function takes as arguments a QueryDict and a user. The user will
@@ -141,9 +180,18 @@ def render_email(request, user):
     return subject, body
 
 
+def send_admin_email(user, request):
+    """Use request to render an email and send it to a user."""
+    assert_valid_contact_request(request)
+    subject, body = render_email(user, request.POST)
+    sender = request.POST.get('sender')
+    with CustomSender(sender):
+        send_email(user, subject, template_name=None, text=body)
+
+
 def create_details_href(type, name, id):
+    """Create an href (name + url) for an item."""
     name = escape(name)
-    """Create an href (name + url) for the details page of an item."""
     url = reverse('admin-details', args=[type, id])
     if type == 'user':
         href = '<a href=%s>%s (%s)</a>' % (url, name, id)

@@ -164,6 +164,7 @@ default_dict = {
     'ADMIN_MEDIA_URL': ADMIN_MEDIA_URL,
     'UI_MEDIA_URL': UI_MEDIA_URL,
     'mail': {
+        'sender': astakos_settings.SERVER_EMAIL,
         'subject': sample_subject,
         'body': render_to_string('im/plain_email.txt', {
             'baseurl': astakos_settings.BASE_URL,
@@ -325,9 +326,9 @@ def admin_actions(request):
     for id in ids:
         try:
             mod.do_action(request, op, id)
-        except faults.BadRequest:
+        except faults.BadRequest as e:
             status = 400
-            response['result'] = "Bad request."
+            response['result'] = e.message
             response['error_ids'].append(id)
         except actions.AdminActionNotPermitted:
             status = 403

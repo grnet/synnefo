@@ -15,6 +15,7 @@ snf = {
 			var contactAction = (data.op === 'contact' ? true : false);
 
 			if(contactAction) {
+				data['sender'] = $modal.find('input[name="sender"]').val();
 				data['subject'] = $modal.find('input[name="subject"]').val();
 				data['text'] = $modal.find('textarea[name="text"]').val();
 			}

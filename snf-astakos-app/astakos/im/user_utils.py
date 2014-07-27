@@ -54,9 +54,10 @@ def invite(inviter, email, realname):
     inviter.save()
 
 
-def send_plain(user, subject=_(astakos_messages.PLAIN_EMAIL_SUBJECT),
+def send_plain(user, sender=settings.SERVER_EMAIL,
+               subject=_(astakos_messages.PLAIN_EMAIL_SUBJECT),
                template_name='im/plain_email.txt', text=None):
-    """Send mail to user with fully customizable subject and body.
+    """Send mail to user with fully customizable sender, subject and body.
 
     If the function is provided with a `template name`, then it will be used
     for rendering the mail. Any additional text should be provided in the
@@ -74,7 +75,7 @@ def send_plain(user, subject=_(astakos_messages.PLAIN_EMAIL_SUBJECT),
                                    'baseurl': settings.BASE_URL,
                                    'site_name': settings.SITENAME,
                                    'support': settings.CONTACT_EMAIL})
-    sender = settings.SERVER_EMAIL
+
     send_mail(subject, message, sender, [user.email],
               connection=get_connection())
     logger.info("Sent plain email to user: %s", user.log_display)

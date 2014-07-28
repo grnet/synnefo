@@ -3439,3 +3439,30 @@ svg > text:last-child {
   vertical-align: middle;
   font-size: 18px;
 }
+
+/* line 291, ../sass/_extra.scss */
+.stats section {
+  margin-bottom: 3em;
+}
+/* line 293, ../sass/_extra.scss */
+.stats section h3 {
+  margin-bottom: 1em;
+}
+/* line 295, ../sass/_extra.scss */
+.stats section h3 span {
+  margin-right: 0.5em;
+}
+/* line 299, ../sass/_extra.scss */
+.stats section .custom-btn {
+  float: left;
+  margin-right: 32px;
+}
+/* line 301, ../sass/_extra.scss */
+.stats section .custom-btn span {
+  padding-left: 0;
+}
+/* line 304, ../sass/_extra.scss */
+.stats section .custom-btn .snf-download-full {
+  padding-right: 0;
+  padding-left: 8px;
+}

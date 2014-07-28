@@ -1,11 +1,29 @@
 {% extends "admin/base.html" %}
 
 {% block content %}
-<div class="stats" id="stats"
-    data-astakos-stats={% url admin-stats-component 'astakos' %}
-    data-cyclades-stats=s{% url admin-stats-component 'cyclades' %}
-    data-astakos-stats-details={% url admin-stats-component-details 'astakos' %}
-    data-cyclades-stats-details={% url admin-stats-component-details 'cyclades' %}>
+<div class="container stats">
+<section class="clearfix">
+        <h3><span class="snf-user-full"></span>Astakos</h3>
+        <a href="{% url admin-stats-component 'astakos' %}" class="custom-btn" download="astakos-terse.json" type="application/json" title="Download terse Astakos statistics in JSON format" data-toggle="tooltip" data-placement="bottom">
+            <span class="snf-download-full"></span>
+            <span>Terse stats</span>
+        </a>
+        <a href="{% url admin-stats-component-details 'astakos' %}" class="custom-btn" download="astakos-details.json" type="application/json" title="Download detailed Astakos statistics in JSON format" data-toggle="tooltip" data-placement="bottom">
+            <span class="snf-download-full"></span>
+            <span>Detailed stats</span>
+        </a>
+    </section>
+    <section class="clearfix">
+        <h3><span class="snf-pc-full"></span>Cyclades</h3>
+        <a href="{% url admin-stats-component 'cyclades' %}" class="custom-btn" download="cyclades-terse.json" type="application/json" title="Download terse Cyclades statistics in JSON format" data-toggle="tooltip" data-placement="bottom">
+            <span class="snf-download-full"></span>
+            <span>Terse stats</span>
+        </a>
+        <a href="{% url admin-stats-component-details 'cyclades' %}" class="custom-btn" download="cyclades-details.json" type="application/json" title="Download detailed Cyclades statistics in JSON format" data-toggle="tooltip" data-placement="bottom">
+            <span class="snf-download-full"></span>
+            <span>Detailed stats</span>
+        </a>
+    </section>
 </div>
 {% endblock %}
 

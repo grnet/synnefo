@@ -29,11 +29,11 @@ class AdminAssociation(object):
 
         * actions: A dictionary with the permitted actions for *all* the items
         * total: How many items are in total
-        * deleted: How many items are deleted
+        * excluded: How many items are excluded
     """
 
     def __init__(self, request, items, type, actions=None, total=0,
-                 deleted=0, showing=0):
+                 excluded=0, showing=0):
         self.items = items
         self.type = type
 
@@ -49,7 +49,7 @@ class AdminAssociation(object):
         else:
             self.total = self.count_items()
 
-        self.deleted = deleted
+        self.excluded = excluded
         self.showing = total
 
     def count_items(self):
@@ -59,8 +59,8 @@ class AdminAssociation(object):
         return self.__unicode__()
 
     def __unicode__(self):
-        return (u"<%s association, total: %s, deleted: %s, showing: %s, items: %s>" %
-                (self.type.capitalize(), self.total, self.deleted,
+        return (u"<%s association, total: %s, excluded: %s, showing: %s, items: %s>" %
+                (self.type.capitalize(), self.total, self.excluded,
                  self.showing, self.items))
 
 
@@ -78,8 +78,8 @@ class AdminQuerySetAssociation(AdminAssociation):
         self.items = value
 
     def __unicode__(self):
-        return (u"<%s association, total: %s, deleted: %s, showing: %s, qs: %s>" %
-                (self.type.capitalize(), self.total, self.deleted,
+        return (u"<%s association, total: %s, excluded: %s, showing: %s, qs: %s>" %
+                (self.type.capitalize(), self.total, self.excluded,
                  self.showing, self.qs))
 
 

@@ -15,17 +15,17 @@
     <span class="snf-details-{{type}}"></span>
     {{ type|display_list_type }}
     <em> of '{{ main_item|repr }}'</em>
-    {% if association.deleted  or association.deleted|add:association.showing < association.total %}
+    {% if association.excluded  or association.excluded|add:association.showing < association.total %}
     <span   class="popover-dismiss" 
             data-html="true" 
             data-trigger="hover" 
             data-toggle="popover" 
             data-content="
-            {% if association.deleted %}
-            Excluding <b>{{ association.deleted }} deleted entries</b> from the results.
+            {% if association.excluded %}
+            Excluding <b>{{ association.excluded }} {{ association|present_excluded }}</b> from the results.
  <br>
             {% endif %}
-            {% if association.deleted|add:association.showing < association.total %}
+            {% if association.excluded|add:association.showing < association.total %}
             Showing <b>{{ association.showing }} out of {{ association.total }}</b> total entries.<br>
             {% endif %}
 To view all entries visit the {{ type|display_list_type }} tab in navigation."

@@ -107,7 +107,7 @@ class TestAdminViewsIntegration(django.test.TestCase):
                             user_token="0001")
         self.assertEqual(r.status_code, 404)
 
-    @for_all_views(views=['home', 'logout', 'charts', 'actions'])
+    @for_all_views(views=['home', 'logout', 'charts', 'stats', 'actions'])
     def test_enabled_setting_for_other_views(self):
         """Test if the ADMIN_ENABLED setting is respected by the rest views."""
         admin_settings.ADMIN_ENABLED = False
@@ -139,7 +139,7 @@ class TestAdminViewsIntegration(django.test.TestCase):
                             user_token="0001")
         self.assertEqual(r.status_code, 404)
 
-    @for_all_views(views=['home', 'logout', 'charts', 'actions'])
+    @for_all_views(views=['home', 'logout', 'charts', 'stats', 'actions'])
     def test_404_in_other_views(self):
         """Test if authorized users get 404 in all othere views."""
         r = self.client.get(reverse('admin-%s' % self.current_view) + '/' +

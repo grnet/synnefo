@@ -580,7 +580,6 @@ $(document).ready(function() {
 
 	/* It enables the btn (link) of the corresponding allowed action */
 	function enableActions(actionsObj, removeItemFlag) {
-		updateDisplaySelected();
 		var itemActionsL =selected.items.length;
 		var $actionBar = $('.actionbar');
 		var itemActions = {};

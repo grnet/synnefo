@@ -224,7 +224,9 @@ def custom_user_association(request, project):
     """Return either all associated project members or only the active ones."""
     if admin_settings.ADMIN_SHOW_ONLY_ACTIVE_PROJECT_MEMBERS:
         total = project.members.all().count()
-        user_list = project.members.accepted()
+        user_ids = project.projectmembership_set.actually_accepted().\
+            values("person__uuid")
+        user_list = AstakosUser.objects.filter(uuid__in=user_ids)
         return UserAssociation(request, user_list, total=total)
     else:
         return UserAssociation(request, project.members.all())

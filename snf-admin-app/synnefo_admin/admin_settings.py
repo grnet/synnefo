@@ -109,6 +109,11 @@ ADMIN_RBAC = getattr(settings, 'ADMIN_RBAC', DEFAULT_ADMIN_RBAC)
 ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS = getattr(
     settings, 'ADMIN_SHOW_DELETED_ASSOCIATED_ITEMS', False)
 
+# With this option, the admin can define whether to show users that do not
+# belong to an object, in the details of that object.
+ADMIN_SHOW_ONLY_ACTIVE_PROJECT_MEMBERS = getattr(
+    settings, 'ADMIN_SHOW_ONLY_ACTIVE_PROJECT_MEMBERS', True)
+
 # With this option, the admin can define the number of associated items that
 # will be shown for each category, so as not to flood the page.
 ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY = getattr(

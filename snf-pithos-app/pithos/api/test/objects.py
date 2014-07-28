@@ -898,11 +898,7 @@ class ObjectPut(PithosAPITest):
         oname = get_random_name()
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.put('%s?hashmap=&format=xml' % url, data=r.content)
-        self.assertEqual(r.status_code, 201)
-
-        r = self.get(url)
-        self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.content, data)
+        self.assertEqual(r.status_code, 400)
 
     def test_create_object_by_invalid_hashmap(self):
         cname = self.container

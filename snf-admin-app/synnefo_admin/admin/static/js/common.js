@@ -19,7 +19,6 @@ snf = {
 				data['subject'] = $modal.find('input[name="subject"]').val();
 				data['text'] = $modal.find('textarea[name="text"]').val();
 			}
-			console.log(data)
 			$.ajax({
 				url: url,
 				type: 'POST',
@@ -44,7 +43,6 @@ snf = {
 				snf.modals.showBottomModal($notificationArea);
 			},
 			error: function(jqXHR, statusText) {
-				console.log('jqXHR', jqXHR)
 				var htmlErrorSum =_.template(snf.modals.html.notifyErrorSum, ({actionName: actionName, removeBtn: snf.modals.html.removeLogLine, itemsCount: itemsCount}));
 				var htmlErrorReason, htmlErrorIDs, htmlError;
 				if(jqXHR.responseJSON === undefined) {
@@ -90,7 +88,6 @@ snf = {
 		showError: function(modal, errorSign) {
 			var $modal = $(modal);
 			var $errorMsg = $modal.find('*[data-error="'+errorSign+'"]');
-			console.log('*', $modal, $errorMsg)
 			$errorMsg.show();
 		},
 		resetErrors: function (modal) {
@@ -162,10 +159,10 @@ snf = {
 		html: {
 			singleItemInfo: '<dl class="dl-horizontal info-list"><dt>Name:</dt><dd><%= name %></dd><dt>ID:</dt><dd><%= id %></dd><dl>',
 			removeLogLine: '<a href="" class="remove-icon remove-log" title="Remove this line">X</a>',
-			notifyPending: '<p class="log" id="<%= logID %>"><span class="pending state-icon snf-font-admin snf-exclamation-sign"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> is <b class="pending">pending</b>.<%= removeBtn %></p>',
-			notifySuccess: '<p class="log"><span class="success state-icon snf-font-admin snf-ok"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> <b class="succeed">succeeded</b>.<%= removeBtn %></p>',
+			notifyPending: '<p class="log" id="<%= logID %>"><span class="pending state-icon snf-font-admin snf-exclamation-sign"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount==1) { %> for <%= itemsCount %> item <% } else if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> is <b class="pending">pending</b>.<%= removeBtn %></p>',
+			notifySuccess: '<p class="log"><span class="success state-icon snf-font-admin snf-ok"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount==1) { %> for <%= itemsCount %> item <% } else if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> <b class="succeed">succeeded</b>.<%= removeBtn %></p>',
 			notifyError: '<div class="log"><%= logInfo %></div>',
-			notifyErrorSum: '<p><span class="error state-icon snf-font-admin snf-remove"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> <b class="error">failed</b>.<%= removeBtn %></p>',
+			notifyErrorSum: '<p><span class="error state-icon snf-font-admin snf-remove"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount==1) { %> for <%= itemsCount %> item <% } else if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> <b class="error">failed</b>.<%= removeBtn %></p>',
 			notifyErrorDetails: '<dl class="dl-horizontal"><%= list %></dl>',
 			notifyErrorReason: '<dt>Reason:</dt><dd><%= description %></dd>',
 			notifyErrorIDs: '<dt>IDs:</dt><dd><%= ids %></dd>',

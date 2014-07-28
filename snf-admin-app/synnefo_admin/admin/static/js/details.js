@@ -40,7 +40,6 @@ $(document).ready(function(){
 		});
 		var $toggleAllBtn = $expandBtn.closest('.info-block.object-details').find('.show-hide-all');
 		if(allSameClass){
-			console.log('toggle all');
 			if($expandBtn.closest('h4').hasClass('expanded')){
 				$toggleAllBtn.addClass('open');
 				$toggleAllBtn.find('.txt').text(txt_all[1]);
@@ -137,7 +136,6 @@ $('.main .object-details h4 .arrow').trigger('click')
 			e.stopPropagation();
 		}
 		else {
-			console.log('hi')
 			snf.modals.performAction($modal, $notificationArea, snf.modals.html.notifyRefreshPage, 0, countAction);
 			snf.modals.resetInputs($modal);
 			snf.modals.resetErrors($modal);

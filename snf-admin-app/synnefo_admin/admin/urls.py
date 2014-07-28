@@ -40,6 +40,7 @@ urlpatterns = patterns(
     url(r'^$', 'home', name='admin-home'),
     url(r'^logout$', 'logout', name='admin-logout'),
     url(r'^charts$', 'charts', name='admin-charts'),
+    url(r'^stats$', 'stats', name='admin-stats'),
     url(r'^stats/detail/(?P<component>.*)$', 'stats_component_details',
         name='admin-stats-component-details'),
     url(r'^stats/(?P<component>.*)$', 'stats_component',

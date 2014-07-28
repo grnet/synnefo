@@ -202,6 +202,14 @@ def home(request):
 
 
 @admin_user_required
+def stats(request):
+    """Stats view."""
+    admin_log(request)
+    return direct_to_template(request, "admin/stats.html",
+                              extra_context=default_dict)
+
+
+@admin_user_required
 def charts(request):
     """Charts view."""
     admin_log(request)

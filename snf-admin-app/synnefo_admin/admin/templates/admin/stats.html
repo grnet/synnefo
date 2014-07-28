@@ -1,0 +1,16 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+<div class="stats" id="stats"
+    data-astakos-stats={% url admin-stats-component 'astakos' %}
+    data-cyclades-stats=s{% url admin-stats-component 'cyclades' %}
+    data-astakos-stats-details={% url admin-stats-component-details 'astakos' %}
+    data-cyclades-stats-details={% url admin-stats-component-details 'cyclades' %}>
+</div>
+{% endblock %}
+
+{% block custom-javascript %}
+{% endblock %}
+
+
+

@@ -70,7 +70,7 @@ templates = {
 class ProjectJSONView(AdminJSONView):
     model = Project
     fields = ('id', 'realname', '{owner__first_name} {owner__last_name}',
-              'state', 'creation_date', 'end_date')
+              'state', 'last_application__state', 'creation_date', 'end_date')
     filters = ProjectFilterSet
 
     def format_data_row(self, row):
@@ -78,10 +78,16 @@ class ProjectJSONView(AdminJSONView):
             row = list(row)
             if row[2] == "None None":
                 row[2] = "(not set)"
-            row[3] = (str(row[3]) + ' (' +
-                      Project.objects.get(id=row[0]).state_display() + ')')
-            row[4] = str(row[4].date())
+
+            project = Project.objects.get(id=row[0])
+            row[3] = (str(row[3]) + ' (' + project.state_display() + ')')
+
+            app = Project.objects.get(id=row[0]).last_application
+            if app:
+                row[4] = (str(row[4]) + ' (' + app.state_display() + ')')
+
             row[5] = str(row[5].date())
+            row[6] = str(row[6].date())
         return row
 
     def get_extra_data(self, qs):
@@ -224,8 +230,9 @@ def catalog(request):
     context = {}
     context['action_dict'] = get_permitted_actions(cached_actions, request.user)
     context['filter_dict'] = ProjectFilterSet().filters.itervalues()
-    context['columns'] = ["ID", "Name", "Owner Name", "Status",
-                          "Creation date", "End date", ""]
+    context['columns'] = ["ID", "Name", "Owner Name", "Project Status",
+                          "Application Status", "Creation date", "End date",
+                          ""]
     context['item_type'] = 'project'
 
     return context

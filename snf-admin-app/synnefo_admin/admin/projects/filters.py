@@ -13,39 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-import logging
-import re
-from collections import OrderedDict
-from operator import itemgetter
-
-from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
-from django.core.urlresolvers import reverse
-
-from synnefo.db.models import (VirtualMachine, Network, Volume,
-                               NetworkInterface, IPAddress)
-from astakos.im.models import (AstakosUser, Project, ProjectResourceGrant,
-                               Resource)
-
-from eztables.views import DatatablesView
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
-from astakos.im.user_utils import send_plain as send_email
-from astakos.im.functions import (validate_project_action, ProjectConflict,
-                                  approve_application, deny_application,
-                                  suspend, unsuspend, terminate, reinstate)
-from astakos.im.quotas import get_project_quota
-
-from synnefo.util import units
-
 import django_filters
+
 from django.db.models import Q
 
-from synnefo_admin.admin.utils import is_resource_useful
-
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
+from astakos.im.models import Project, ProjectApplication
 from synnefo_admin.admin.queries_common import (query, model_filter,
                                                 get_model_field)
 
@@ -92,24 +64,43 @@ def filter_ip(queryset, queries):
     return queryset.filter(uuid__in=ids)
 
 
-def get_status_choices():
+def get_project_status_choices():
     """Get all possible project statuses from Project model."""
     project_states = Project.O_STATE_DISPLAY.itervalues()
     return [(value.upper(), '_') for value in project_states]
+project_status_choices = get_project_status_choices()
 
 
-def filter_status(queryset, choices):
-    """Filter project status.
+def get_application_status_choices():
+    """Get all possible application statuses from ProjectApplication model."""
+    app_states = ProjectApplication.APPLICATION_STATE_DISPLAY.itervalues()
+    # There is a status with the name "Pending review". We only want to keep
+    # the "Pending" part.
+    return [(value.split()[0].upper(), '_') for value in app_states]
+application_status_choices = get_application_status_choices()
 
-    Filter by project and last application status.
-    """
+
+def filter_project_status(queryset, choices):
+    """Filter project status."""
     choices = choices or ()
-    if len(choices) == len(get_status_choices()):
+    if len(choices) == len(project_status_choices):
         return queryset
     q = Q()
     for c in choices:
         status = getattr(Project, 'O_%s' % c.upper())
-        q |= Q(last_application__state=status) | Q(state=status)
+        q |= Q(state=status)
+    return queryset.filter(q).distinct()
+
+
+def filter_application_status(queryset, choices):
+    """Filter application status."""
+    choices = choices or ()
+    if len(choices) == len(application_status_choices):
+        return queryset
+    q = Q()
+    for c in choices:
+        status = getattr(ProjectApplication, '%s' % c.upper())
+        q |= Q(last_application__state=status)
     return queryset.filter(q).distinct()
 
 
@@ -127,11 +118,15 @@ class ProjectFilterSet(django_filters.FilterSet):
                                        action=filter_volume)
     net = django_filters.CharFilter(label='HAS Network', action=filter_network)
     ip = django_filters.CharFilter(label='HAS IP', action=filter_ip)
-    status = django_filters.MultipleChoiceFilter(
-        label='Status', action=filter_status, choices=get_status_choices())
+    project_status = django_filters.MultipleChoiceFilter(
+        label='Project Status', action=filter_project_status,
+        choices=project_status_choices)
+    application_status = django_filters.MultipleChoiceFilter(
+        label='Application Status', action=filter_application_status,
+        choices=application_status_choices)
     is_base = django_filters.BooleanFilter(label='System')
 
     class Meta:
         model = Project
-        fields = ('project', 'status', 'is_base', 'user', 'vm', 'volume',
-                  'net', 'ip',)
+        fields = ('project', 'project_status', 'application_status', 'is_base',
+                  'user', 'vm', 'volume', 'net', 'ip',)

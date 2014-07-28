@@ -282,10 +282,13 @@ svg>text:last-child {
 	}
 }
 
-.sign-out span {
-    margin-right: 10px;
-    vertical-align: middle;
-    font-size: 18px;
+.sign-out {
+    text-align: right;
+    span {
+        margin-right: 10px;
+        vertical-align: middle;
+        font-size: 18px;
+    }
 }
 
 .stats {
@@ -308,5 +311,11 @@ svg>text:last-child {
             }
             margin-right: 32px;
         }
+    }
+}
+
+.navbar-right, .login-info {
+    .dropdown-menu {
+        min-width: 0;
     }
 }

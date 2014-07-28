@@ -3435,35 +3435,44 @@ svg > text:last-child {
 }
 
 /* line 285, ../sass/_extra.scss */
+.sign-out {
+  text-align: right;
+}
+/* line 287, ../sass/_extra.scss */
 .sign-out span {
   margin-right: 10px;
   vertical-align: middle;
   font-size: 18px;
 }
 
-/* line 292, ../sass/_extra.scss */
+/* line 295, ../sass/_extra.scss */
 .stats section {
   margin-bottom: 3em;
 }
-/* line 294, ../sass/_extra.scss */
+/* line 297, ../sass/_extra.scss */
 .stats section h3 {
   margin-bottom: 1em;
 }
-/* line 296, ../sass/_extra.scss */
+/* line 299, ../sass/_extra.scss */
 .stats section h3 span {
   margin-right: 0.5em;
 }
-/* line 300, ../sass/_extra.scss */
+/* line 303, ../sass/_extra.scss */
 .stats section .custom-btn {
   float: left;
   margin-right: 32px;
 }
-/* line 302, ../sass/_extra.scss */
+/* line 305, ../sass/_extra.scss */
 .stats section .custom-btn span {
   padding-left: 0;
 }
-/* line 305, ../sass/_extra.scss */
+/* line 308, ../sass/_extra.scss */
 .stats section .custom-btn .snf-download-full {
   padding-right: 0;
   padding-left: 8px;
+}
+
+/* line 318, ../sass/_extra.scss */
+.navbar-right .dropdown-menu, .login-info .dropdown-menu {
+  min-width: 0;
 }

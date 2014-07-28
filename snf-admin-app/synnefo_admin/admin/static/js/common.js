@@ -105,7 +105,49 @@ snf = {
 				if($.trim($inputArea.val())) {
 					$errorSign.hide();
 				}
-			})
+			});
+		},
+		checkEmail: function(modal, inputArea, errorSign) {
+			var $inputArea = $(inputArea);
+			var $errorSign = $(modal).find('*[data-error="'+errorSign+'"]');
+
+			$inputArea.keyup(function() {
+				if(snf.modals.validateEmail($inputArea.val())) {
+					$errorSign.hide();
+				}
+			});
+		},
+		validateEmail: function(email) {
+			var reg = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+		    return reg.test(email);
+		},
+		validateContactForm: function(modal) {
+			var $modal = $(modal);
+			var $emailSubj = $modal.find('*[name="subject"]');
+			var $emailBody = $modal.find('*[name="text"]');
+			var $emailSender = $modal.find('*[name="sender"]');
+			var noError = true;
+			if(!$.trim($emailSubj.val())) {
+				snf.modals.showError($modal, 'empty-subject');
+				snf.modals.checkInput($modal, $emailSubj, 'empty-subject');
+				noError = false;
+			}
+			if(!$.trim($emailBody.val())) {
+				snf.modals.showError($modal, 'empty-body')
+				snf.modals.checkInput($modal, $emailBody, 'empty-body');
+				noError = false;
+			}
+			if(!$.trim($emailSender.val())) {
+				snf.modals.showError($modal, 'empty-sender')
+				snf.modals.checkInput($modal, $emailSender, 'empty-sender');
+				noError = false;
+			}
+			if(!snf.modals.validateEmail($emailSender.val()) && $.trim($emailSender.val())) {
+				snf.modals.showError($modal, 'invalid-email')
+				snf.modals.checkEmail($modal, $emailSender, 'invalid-email');
+				noError = false;
+			}
+			return noError;
 		},
 		resetInputs: function(modal) {
 			var $modal = $(modal);
@@ -120,10 +162,10 @@ snf = {
 		html: {
 			singleItemInfo: '<dl class="dl-horizontal info-list"><dt>Name:</dt><dd><%= name %></dd><dt>ID:</dt><dd><%= id %></dd><dl>',
 			removeLogLine: '<a href="" class="remove-icon remove-log" title="Remove this line">X</a>',
-			notifyPending: '<p class="log" id="<%= logID %>"><span class="pending state-icon snf-font-admin snf-exclamation-sign"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount>0) { %> for <%= itemsCount %> <% } %> is <b class="pending">pending</b>.<%= removeBtn %></p>',
-			notifySuccess: '<p class="log"><span class="success state-icon snf-font-admin snf-ok"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount>0) { %> for <%= itemsCount %> <% } %> <b class="succeed">succeeded</b>.<%= removeBtn %></p>',
+			notifyPending: '<p class="log" id="<%= logID %>"><span class="pending state-icon snf-font-admin snf-exclamation-sign"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> is <b class="pending">pending</b>.<%= removeBtn %></p>',
+			notifySuccess: '<p class="log"><span class="success state-icon snf-font-admin snf-ok"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> <b class="succeed">succeeded</b>.<%= removeBtn %></p>',
 			notifyError: '<div class="log"><%= logInfo %></div>',
-			notifyErrorSum: '<p><span class="error state-icon snf-font-admin snf-remove"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount>0) { %> for <%= itemsCount %> <% } %> <b class="error">failed</b>.<%= removeBtn %></p>',
+			notifyErrorSum: '<p><span class="error state-icon snf-font-admin snf-remove"></span>Action <b>"<%= actionName %>"</b><% if (itemsCount>0) { %> for <%= itemsCount %> items <% } %> <b class="error">failed</b>.<%= removeBtn %></p>',
 			notifyErrorDetails: '<dl class="dl-horizontal"><%= list %></dl>',
 			notifyErrorReason: '<dt>Reason:</dt><dd><%= description %></dd>',
 			notifyErrorIDs: '<dt>IDs:</dt><dd><%= ids %></dd>',
@@ -212,10 +254,7 @@ $(document).ready(function(){
 		snf.modals.hideBottomModal($notificationArea);
 	});
 
-	$('.modal[data-type="contact"]').find('input').each(function() {
-		snf.modals[$(this).attr('name')] = $(this).val()
-	});
-	$('.modal[data-type="contact"]').find('textarea').each(function() {
+	$('.modal[data-type="contact"]').find('input, textarea').each(function() {
 		snf.modals[$(this).attr('name')] = $(this).val()
 	});
 

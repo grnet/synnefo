@@ -753,30 +753,20 @@ $(document).ready(function() {
 	var countAction = 0;
 	$('.modal .apply-action').click(function(e) {
 		var $modal = $(this).closest('.modal');
-		var completeAction = true;
+		var noError = true;
 		if(selected.items.length === 0) {
 			e.stopPropagation();
 			snf.modals.showError($modal, 'no-selected');
-			completeAction = false;
+			noError = false;
 		}
 		if($modal.attr('data-type') === 'contact') {
-			var $emailSubj = $modal.find('.subject');
-			var $emailCont = $modal.find('.email-content');
-			if(!$.trim($emailSubj.val())) {
-				e.stopPropagation();
-				snf.modals.showError($modal, 'empty-subject');
-				snf.modals.checkInput($modal, $emailSubj, 'empty-subject');
-				completeAction = false;
-			}
-			if(!$.trim($emailCont.val())) {
-				// e.preventDefault();
-				e.stopPropagation();
-				snf.modals.showError($modal, 'empty-body')
-				snf.modals.checkInput($modal, $emailCont, 'empty-body');
-				completeAction = false;
-			}
+			noError = snf.modals.validateContactForm($modal);
 		}
-		if(completeAction) {
+		if(!noError) {
+			e.preventDefault();
+			e.stopPropagation();
+		}
+		else {
 			$('[data-toggle="popover"]').popover('hide');
 			snf.modals.performAction($modal, $notificationArea, snf.modals.html.notifyReloadTable, selected.items.length, countAction);
 			snf.modals.resetErrors($modal);

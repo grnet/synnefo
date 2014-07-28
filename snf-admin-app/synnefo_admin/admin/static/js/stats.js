@@ -29,4 +29,18 @@ $(document).ready(function() {
 			 	}).appendTo("#stats");
 			});
 		}
+
+    $('.stats .custom-btn').click(function(e){
+        var url = $(this).attr('href');
+        var spinner = $(this).parents('section').find('.spinner');
+        spinner.show(); 
+        $.ajax({
+            url: url,
+            dataType: "json",
+            success: function(data){
+                spinner.hide();
+            },
+        })
+    });
+
 });

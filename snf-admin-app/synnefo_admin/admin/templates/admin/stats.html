@@ -12,6 +12,12 @@
             <span class="snf-download-full"></span>
             <span>Detailed stats</span>
         </a>
+        <div class="spinner">
+            <div class="bounce1"></div>
+            <div class="bounce2"></div>
+            <div class="bounce3"></div>
+            <em>Retrieving data</em>
+        </div>
     </section>
     <section class="clearfix">
         <h3><span class="snf-pc-full"></span>Cyclades</h3>
@@ -23,11 +29,19 @@
             <span class="snf-download-full"></span>
             <span>Detailed stats</span>
         </a>
+        <div class="spinner">
+            <div class="bounce1"></div>
+            <div class="bounce2"></div>
+            <div class="bounce3"></div>
+            <em>Retrieving data</em>
+        </div>
+
     </section>
 </div>
 {% endblock %}
 
 {% block custom-javascript %}
+<script src="{{ MEDIA_URL }}admin/js/stats.js"></script>
 {% endblock %}
 
 

@@ -311,6 +311,11 @@ svg>text:last-child {
             }
             margin-right: 32px;
         }
+        .spinner {
+            display: none;
+            float: left;
+            padding: 8px;
+        }
     }
 }
 

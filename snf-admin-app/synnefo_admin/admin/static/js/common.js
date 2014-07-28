@@ -39,31 +39,31 @@ snf = {
 				},
 				success: function(response, statusText, jqXHR) {
 					var successMsg = _.template(snf.modals.html.notifySuccess, ({actionName: actionName, removeBtn: snf.modals.html.removeLogLine, itemsCount: itemsCount}));
-				$notificationArea.find('#'+logID).replaceWith(successMsg);
-				snf.modals.showBottomModal($notificationArea);
-			},
-			error: function(jqXHR, statusText) {
-				var htmlErrorSum =_.template(snf.modals.html.notifyErrorSum, ({actionName: actionName, removeBtn: snf.modals.html.removeLogLine, itemsCount: itemsCount}));
-				var htmlErrorReason, htmlErrorIDs, htmlError;
-				if(jqXHR.responseJSON === undefined) {
-					htmlErrorReason = _.template(snf.modals.html.notifyErrorReason, {description: jqXHR.statusText+' (code: '+jqXHR.status+').'});
-					htmlErrorIDs = '';
-				}
-				else {
-					htmlErrorReason = _.template(snf.modals.html.notifyErrorReason, {descrition: jqXHR.responseJSON.result});
-					htmlErrorIDs = _.template(snf.modals.html.notifyErrorIDs, {ids: jqXHR.responseJSON.error_ids.toString().replace(/\,/gi, ', ')});
-				}
-				var logs = htmlErrorSum + _.template(snf.modals.html.notifyErrorDetails, {list: htmlErrorReason+htmlErrorIDs});
-				htmlError = _.template(snf.modals.html.notifyError, {logInfo: logs});
-				$notificationArea.find('#'+logID).replaceWith(htmlError);
-				if($notificationArea.find('.warning').length === 0) {
-					$notificationArea.find('.container').append(warningMsg);
-				}
+                    $notificationArea.find('#'+logID).replaceWith(successMsg);
+                    snf.modals.showBottomModal($notificationArea);
+                },
+                error: function(jqXHR, statusText) {
+                    var htmlErrorSum =_.template(snf.modals.html.notifyErrorSum, ({actionName: actionName, removeBtn: snf.modals.html.removeLogLine, itemsCount: itemsCount}));
+                    var htmlErrorReason, htmlErrorIDs, htmlError;
+                    if(jqXHR.responseJSON === undefined) {
+                        htmlErrorReason = _.template(snf.modals.html.notifyErrorReason, {description: jqXHR.statusText+' (code: '+jqXHR.status+').'});
+                        htmlErrorIDs = '';
+                    }
+                    else {
+                        htmlErrorReason = _.template(snf.modals.html.notifyErrorReason, {descrition: jqXHR.responseJSON.result});
+                        htmlErrorIDs = _.template(snf.modals.html.notifyErrorIDs, {ids: jqXHR.responseJSON.error_ids.toString().replace(/\,/gi, ', ')});
+                    }
+                    var logs = htmlErrorSum + _.template(snf.modals.html.notifyErrorDetails, {list: htmlErrorReason+htmlErrorIDs});
+                    htmlError = _.template(snf.modals.html.notifyError, {logInfo: logs});
+                    $notificationArea.find('#'+logID).replaceWith(htmlError);
+                    if($notificationArea.find('.warning').length === 0) {
+                        $notificationArea.find('.container').append(warningMsg);
+                    }
 
-				snf.modals.showBottomModal($notificationArea);
-			}
-		});
-	},
+                    snf.modals.showBottomModal($notificationArea);
+                }
+		    });
+	    },
 		showBottomModal: function($modal) {
 			var height = -$modal.outerHeight(true);
 				$modal.css('bottom', height)

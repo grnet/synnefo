@@ -338,3 +338,12 @@ def default_value(f):
     if 'NOT' in f.label:
         return 'None'
     return 'All'
+
+
+@register.filter
+def present_excluded(assoc):
+    """Present what are the excluded entries."""
+    if assoc.type == "user":
+        return "users that are not project members"
+    else:
+        return "deleted entries"

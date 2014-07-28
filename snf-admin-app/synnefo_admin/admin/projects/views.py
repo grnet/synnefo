@@ -14,35 +14,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import logging
-import re
 from collections import OrderedDict
-from operator import itemgetter
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.utils.html import escape
 
 from synnefo.db.models import (VirtualMachine, Network, Volume,
-                               NetworkInterface, IPAddress)
+                               IPAddress)
 from astakos.im.models import (AstakosUser, Project, ProjectResourceGrant,
                                Resource)
 
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
-from astakos.im.functions import (validate_project_action, ProjectConflict,
-                                  approve_application, deny_application,
-                                  suspend, unsuspend, terminate, reinstate)
-from astakos.im.quotas import get_project_quota
-
-from synnefo.util import units
-
-import django_filters
-from django.db.models import Q
-
-from synnefo_admin.admin.utils import (is_resource_useful, get_actions,
-                                       render_email)
-
+from synnefo_admin import admin_settings
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
@@ -238,13 +220,22 @@ def catalog(request):
     return context
 
 
+def custom_user_association(request, project):
+    """Return either all associated project members or only the active ones."""
+    if admin_settings.ADMIN_SHOW_ONLY_ACTIVE_PROJECT_MEMBERS:
+        total = project.members.all().count()
+        user_list = project.members.accepted()
+        return UserAssociation(request, user_list, total=total)
+    else:
+        return UserAssociation(request, project.members.all())
+
+
 def details(request, query):
     """Details view for Astakos projects."""
     project = get_project_or_404(query)
     associations = []
 
-    user_list = project.members.all()
-    associations.append(UserAssociation(request, user_list,))
+    associations.append(custom_user_association(request, project))
 
     vm_list = VirtualMachine.objects.filter(project=project.uuid)
     associations.append(VMAssociation(request, vm_list,))

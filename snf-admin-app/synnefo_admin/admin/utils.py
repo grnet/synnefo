@@ -229,7 +229,7 @@ def exclude_deleted(assoc):
     elif assoc.type == 'nic':
         assoc.qs = assoc.qs.exclude(machine__deleted=True)
 
-    assoc.deleted = assoc.total - assoc.qs.count()
+    assoc.excluded = assoc.total - assoc.qs.count()
 
 
 def order_by_newest(assoc):

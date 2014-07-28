@@ -2490,41 +2490,33 @@ Extra-button is used to show total selected rows
 /* line 145, ../sass/_details.scss */
 .object-details-content .nav-tabs > li a {
   opacity: 0.7;
-  color: white;
 }
-/* line 149, ../sass/_details.scss */
+/* line 148, ../sass/_details.scss */
 .object-details-content .nav-tabs > li.active > a {
   opacity: 1;
-  border-color: transparent;
-  background: #4e4e4e;
-  color: white;
-  border-radius: 0;
 }
-/* line 158, ../sass/_details.scss */
+/* line 153, ../sass/_details.scss */
 .object-details-content .nav-tabs > li:not(.active) > a:hover, .object-details-content .nav-tabs > li:not(.active) > a:focus {
   opacity: 1;
-  color: white;
-  border-color: transparent;
-  background: transparent;
 }
 
-/* line 166, ../sass/_details.scss */
+/* line 158, ../sass/_details.scss */
 .tab-pane {
   overflow: auto;
 }
 
-/* line 170, ../sass/_details.scss */
+/* line 162, ../sass/_details.scss */
 .parts-separator {
   border-top: 2px solid #818181;
   padding-top: 1em;
 }
-/* line 173, ../sass/_details.scss */
+/* line 165, ../sass/_details.scss */
 .parts-separator h2 {
   font-size: 24px;
   margin-bottom: 2em;
   padding-top: 1em;
 }
-/* line 177, ../sass/_details.scss */
+/* line 169, ../sass/_details.scss */
 .parts-separator h2 em {
   max-width: 50%;
   display: inline;
@@ -2534,45 +2526,45 @@ Extra-button is used to show total selected rows
   vertical-align: top;
 }
 
-/* line 188, ../sass/_details.scss */
+/* line 180, ../sass/_details.scss */
 .part-two > .object-details {
   border-bottom: 2px solid #818181;
   background: #383838;
   padding: 14px 20px;
 }
-/* line 192, ../sass/_details.scss */
+/* line 184, ../sass/_details.scss */
 .part-two > .object-details .object-details {
   padding: 5px 20px;
 }
-/* line 195, ../sass/_details.scss */
+/* line 187, ../sass/_details.scss */
 .part-two > .object-details .object-details:hover, .part-two > .object-details .object-details:focus {
   background: #3d3d3d;
 }
-/* line 200, ../sass/_details.scss */
+/* line 192, ../sass/_details.scss */
 .part-two > .object-details .custom-btn span {
   padding: 5px;
 }
-/* line 205, ../sass/_details.scss */
+/* line 197, ../sass/_details.scss */
 .part-two .object-details-content {
   display: none;
   padding: 0 35px;
 }
 
-/* line 238, ../sass/_details.scss */
+/* line 230, ../sass/_details.scss */
 .show-hide-all span.snf-font-arrow-up {
   display: none;
   padding: 0;
 }
-/* line 243, ../sass/_details.scss */
+/* line 235, ../sass/_details.scss */
 .show-hide-all span.snf-font-arrow-down {
   display: inline;
   padding: 0;
 }
-/* line 249, ../sass/_details.scss */
+/* line 241, ../sass/_details.scss */
 .show-hide-all.open .snf-font-arrow-up {
   display: inline;
 }
-/* line 252, ../sass/_details.scss */
+/* line 244, ../sass/_details.scss */
 .show-hide-all.open .snf-font-arrow-down {
   display: none;
 }
@@ -2604,7 +2596,7 @@ Extra-button is used to show total selected rows
   height: 30px;
   margin: 0 10px 10px 0;
   display: inline-block;
-  background: #fff;
+  background: white;
 }
 /* line 30, ../sass/_filters.scss */
 .filter .form-group {
@@ -2625,9 +2617,19 @@ Extra-button is used to show total selected rows
 }
 /* line 45, ../sass/_filters.scss */
 .filter .dropdown-menu {
+  background: white;
   margin: 0;
 }
 /* line 48, ../sass/_filters.scss */
+.filter .dropdown-menu > .active > a {
+  background: white;
+}
+/* line 51, ../sass/_filters.scss */
+.filter .dropdown-menu > li:hover > a {
+  background: white;
+  color: inherit;
+}
+/* line 56, ../sass/_filters.scss */
 .filter input {
   border: 0 none;
   background: transparent;
@@ -2635,47 +2637,48 @@ Extra-button is used to show total selected rows
   line-height: 30px;
   padding: 0 5px;
   font-weight: normal;
+  color: #303030;
 }
 
-/* line 61, ../sass/_filters.scss */
+/* line 70, ../sass/_filters.scss */
 .filter-dropdown .dropdown > a .selected-value {
   margin-left: 4px;
 }
-/* line 64, ../sass/_filters.scss */
+/* line 73, ../sass/_filters.scss */
 .filter-dropdown .dropdown > a .arrow {
   font-weight: bold;
 }
-/* line 69, ../sass/_filters.scss */
+/* line 78, ../sass/_filters.scss */
 .filter-dropdown .dropdown.open a {
   text-decoration: none;
-  color: #222222;
+  color: #303030;
 }
-/* line 74, ../sass/_filters.scss */
+/* line 83, ../sass/_filters.scss */
 .filter-dropdown .dropdown a {
   color: #303030;
 }
-/* line 77, ../sass/_filters.scss */
+/* line 86, ../sass/_filters.scss */
 .filter-dropdown .dropdown .dropdown-menu {
   width: auto;
 }
-/* line 79, ../sass/_filters.scss */
+/* line 88, ../sass/_filters.scss */
 .filter-dropdown .dropdown .dropdown-menu a {
   padding-left: 12px;
   padding-right: 12px;
 }
-/* line 80, ../sass/_filters.scss */
+/* line 89, ../sass/_filters.scss */
 .filter-dropdown .dropdown .dropdown-menu a span {
   margin-right: 6px;
 }
 
-/* line 90, ../sass/_filters.scss */
+/* line 99, ../sass/_filters.scss */
 body input:not(.subject):focus {
   border-color: transparent;
   -webkit-box-shadow: none;
   box-shadow: none;
 }
 
-/* line 95, ../sass/_filters.scss */
+/* line 104, ../sass/_filters.scss */
 .filters.subnav-fixed {
   top: 50px;
 }
@@ -3006,20 +3009,23 @@ table .wrap {
   border-bottom: 4px solid;
 }
 
-/* line 78, ../sass/_tables.scss */
-#table-items-total_filter input,
-#table-items-selected_filter input {
-  display: inline-block;
-  margin-left: 8px;
-  color: #303030;
-  outline: none;
-  padding: 5px;
-  border: 0 none;
-}
-/* line 86, ../sass/_tables.scss */
-#table-items-total_filter label,
-#table-items-selected_filter label {
+/* line 77, ../sass/_tables.scss */
+#table-items-selected_filter label,
+#table-items-total_filter label {
   color: white;
+}
+/* line 80, ../sass/_tables.scss */
+#table-items-selected_filter input,
+#table-items-total_filter input {
+  color: #303030;
+  background: white;
+  border: 0 none;
+  padding: 3px 5px;
+}
+/* line 85, ../sass/_tables.scss */
+#table-items-selected_filter input:focus,
+#table-items-total_filter input:focus {
+  outline: 0 none;
 }
 
 /* line 91, ../sass/_tables.scss */
@@ -3056,7 +3062,7 @@ table.dataTable tbody tr.even {
 table.dataTable thead th,
 table.dataTable thead td {
   border-bottom: 1px solid white;
-  border-top: 1px solid #707070;
+  border-top: 1px solid white;
 }
 
 /* line 124, ../sass/_tables.scss */
@@ -3066,8 +3072,8 @@ table.dataTable tbody tr:hover {
 
 /* line 127, ../sass/_tables.scss */
 table.dataTable tbody tr.selected {
-  background-color: #eeeeee;
-  color: #303030;
+  color: white;
+  background-color: #303030;
 }
 
 /* line 134, ../sass/_tables.scss */
@@ -3142,17 +3148,17 @@ table.dataTable.no-footer {
   position: fixed;
 }
 
-/* line 47, ../sass/_settings.scss */
+/* line 36, ../sass/_settings.scss */
 .ip_log tr td:nth-child(2), .ip_log tr th:nth-child(2) {
   word-break: break-word;
   max-width: 250px;
 }
-/* line 47, ../sass/_settings.scss */
+/* line 36, ../sass/_settings.scss */
 .ip_log tr td:nth-child(3), .ip_log tr th:nth-child(3) {
   word-break: break-word;
   max-width: 150px;
 }
-/* line 47, ../sass/_settings.scss */
+/* line 36, ../sass/_settings.scss */
 .ip_log tr td:nth-child(4), .ip_log tr th:nth-child(4) {
   word-break: break-word;
   max-width: 150px;
@@ -3383,11 +3389,11 @@ svg > text:last-child {
 /* line 174, ../sass/_extra.scss */
 .tab-content {
   background: #4e4e4e;
+  color: white;
   padding: 20px;
 }
-/* line 177, ../sass/_extra.scss */
+/* line 178, ../sass/_extra.scss */
 .tab-content .well {
-  border-color: #4e4e4e;
   margin-bottom: 0;
 }
 

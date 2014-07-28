@@ -402,7 +402,7 @@ textarea {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
-  color: #303030;
+  color: white;
 }
 
 /* line 49, ../sass/bootstrap/_scaffolding.scss */
@@ -2108,12 +2108,12 @@ th {
   padding: 10px;
   line-height: 1.42857;
   vertical-align: top;
-  border-top: 1px solid #dddddd;
+  border-top: 1px solid white;
 }
 /* line 35, ../sass/bootstrap/_tables.scss */
 .table > thead > tr > th {
   vertical-align: bottom;
-  border-bottom: 2px solid #dddddd;
+  border-bottom: 2px solid white;
 }
 /* line 45, ../sass/bootstrap/_tables.scss */
 .table > caption + thead > tr:first-child > th,
@@ -2126,7 +2126,7 @@ th {
 }
 /* line 51, ../sass/bootstrap/_tables.scss */
 .table > tbody + tbody {
-  border-top: 2px solid #dddddd;
+  border-top: 2px solid white;
 }
 /* line 56, ../sass/bootstrap/_tables.scss */
 .table .table {
@@ -2145,7 +2145,7 @@ th {
 
 /* line 82, ../sass/bootstrap/_tables.scss */
 .table-bordered {
-  border: 1px solid #dddddd;
+  border: 1px solid white;
 }
 /* line 89, ../sass/bootstrap/_tables.scss */
 .table-bordered > thead > tr > th,
@@ -2154,7 +2154,7 @@ th {
 .table-bordered > tbody > tr > td,
 .table-bordered > tfoot > tr > th,
 .table-bordered > tfoot > tr > td {
-  border: 1px solid #dddddd;
+  border: 1px solid white;
 }
 /* line 96, ../sass/bootstrap/_tables.scss */
 .table-bordered > thead > tr > th,
@@ -2297,7 +2297,7 @@ table th[class*="col-"] {
     overflow-y: hidden;
     overflow-x: scroll;
     -ms-overflow-style: -ms-autohiding-scrollbar;
-    border: 1px solid #dddddd;
+    border: 1px solid white;
     -webkit-overflow-scrolling: touch;
   }
   /* line 182, ../sass/bootstrap/_tables.scss */
@@ -4840,90 +4840,90 @@ input[type="button"].btn-block {
   line-height: 1.42857;
   border: 1px solid transparent;
   border-radius: 0 0 0 0;
+  color: white;
 }
-/* line 90, ../sass/bootstrap/_navs.scss */
+/* line 91, ../sass/bootstrap/_navs.scss */
 .nav-tabs > li > a:hover, .nav-tabs > li > a:focus {
   background: inherit;
-  color: inherit;
   border-color: inherit inherit inherit;
 }
-/* line 101, ../sass/bootstrap/_navs.scss */
+/* line 102, ../sass/bootstrap/_navs.scss */
 .nav-tabs > li.active > a, .nav-tabs > li.active > a:hover, .nav-tabs > li.active > a:focus {
-  color: inherit;
-  background-color: inherit;
+  color: white;
+  background-color: #4e4e4e;
   border: 1px solid inherit;
   border-bottom-color: transparent;
   cursor: default;
 }
 
-/* line 121, ../sass/bootstrap/_navs.scss */
+/* line 122, ../sass/bootstrap/_navs.scss */
 .nav-pills > li {
   float: left;
 }
-/* line 125, ../sass/bootstrap/_navs.scss */
+/* line 126, ../sass/bootstrap/_navs.scss */
 .nav-pills > li > a {
   border-radius: 0;
 }
-/* line 128, ../sass/bootstrap/_navs.scss */
+/* line 129, ../sass/bootstrap/_navs.scss */
 .nav-pills > li + li {
   margin-left: 2px;
 }
-/* line 136, ../sass/bootstrap/_navs.scss */
+/* line 137, ../sass/bootstrap/_navs.scss */
 .nav-pills > li.active > a, .nav-pills > li.active > a:hover, .nav-pills > li.active > a:focus {
   color: white;
   background-color: white;
 }
 
-/* line 147, ../sass/bootstrap/_navs.scss */
+/* line 148, ../sass/bootstrap/_navs.scss */
 .nav-stacked > li {
   float: none;
 }
-/* line 149, ../sass/bootstrap/_navs.scss */
+/* line 150, ../sass/bootstrap/_navs.scss */
 .nav-stacked > li + li {
   margin-top: 2px;
   margin-left: 0;
 }
 
-/* line 163, ../sass/bootstrap/_navs.scss */
+/* line 164, ../sass/bootstrap/_navs.scss */
 .nav-justified, .nav-tabs.nav-justified {
   width: 100%;
 }
-/* line 166, ../sass/bootstrap/_navs.scss */
+/* line 167, ../sass/bootstrap/_navs.scss */
 .nav-justified > li, .nav-tabs.nav-justified > li {
   float: none;
 }
-/* line 168, ../sass/bootstrap/_navs.scss */
+/* line 169, ../sass/bootstrap/_navs.scss */
 .nav-justified > li > a, .nav-tabs.nav-justified > li > a {
   text-align: center;
   margin-bottom: 5px;
 }
-/* line 174, ../sass/bootstrap/_navs.scss */
+/* line 175, ../sass/bootstrap/_navs.scss */
 .nav-justified > .dropdown .dropdown-menu {
   top: auto;
   left: auto;
 }
 @media (min-width: 768px) {
-  /* line 180, ../sass/bootstrap/_navs.scss */
+  /* line 181, ../sass/bootstrap/_navs.scss */
   .nav-justified > li, .nav-tabs.nav-justified > li {
     display: table-cell;
     width: 1%;
   }
-  /* line 183, ../sass/bootstrap/_navs.scss */
+  /* line 184, ../sass/bootstrap/_navs.scss */
   .nav-justified > li > a, .nav-tabs.nav-justified > li > a {
     margin-bottom: 0;
   }
 }
 
-/* line 193, ../sass/bootstrap/_navs.scss */
+/* line 194, ../sass/bootstrap/_navs.scss */
 .nav-tabs-justified, .nav-tabs.nav-justified {
   border-bottom: 0;
 }
-/* line 196, ../sass/bootstrap/_navs.scss */
+/* line 197, ../sass/bootstrap/_navs.scss */
 .nav-tabs-justified > li > a, .nav-tabs.nav-justified > li > a {
   margin-right: 0;
   border-radius: 0;
 }
-/* line 204, ../sass/bootstrap/_navs.scss */
+/* line 205, ../sass/bootstrap/_navs.scss */
 .nav-tabs-justified > .active > a, .nav-tabs.nav-justified > .active > a,
 .nav-tabs-justified > .active > a:hover,
 .nav-tabs.nav-justified > .active > a:hover,
@@ -4932,12 +4932,12 @@ input[type="button"].btn-block {
   border: 1px solid #dddddd;
 }
 @media (min-width: 768px) {
-  /* line 209, ../sass/bootstrap/_navs.scss */
+  /* line 210, ../sass/bootstrap/_navs.scss */
   .nav-tabs-justified > li > a, .nav-tabs.nav-justified > li > a {
     border-bottom: 1px solid #dddddd;
     border-radius: 0 0 0 0;
   }
-  /* line 215, ../sass/bootstrap/_navs.scss */
+  /* line 216, ../sass/bootstrap/_navs.scss */
   .nav-tabs-justified > .active > a, .nav-tabs.nav-justified > .active > a,
   .nav-tabs-justified > .active > a:hover,
   .nav-tabs.nav-justified > .active > a:hover,
@@ -4947,16 +4947,16 @@ input[type="button"].btn-block {
   }
 }
 
-/* line 227, ../sass/bootstrap/_navs.scss */
+/* line 228, ../sass/bootstrap/_navs.scss */
 .tab-content > .tab-pane {
   display: none;
 }
-/* line 230, ../sass/bootstrap/_navs.scss */
+/* line 231, ../sass/bootstrap/_navs.scss */
 .tab-content > .active {
   display: block;
 }
 
-/* line 240, ../sass/bootstrap/_navs.scss */
+/* line 241, ../sass/bootstrap/_navs.scss */
 .nav-tabs .dropdown-menu {
   margin-top: -1px;
   border-top-right-radius: 0;
@@ -6461,7 +6461,7 @@ a.list-group-item-danger.active, a.list-group-item-danger.active:hover, a.list-g
 /* line 140, ../sass/bootstrap/_panels.scss */
 .panel > .panel-body + .table,
 .panel > .panel-body + .table-responsive {
-  border-top: 1px solid #dddddd;
+  border-top: 1px solid white;
 }
 /* line 144, ../sass/bootstrap/_panels.scss */
 .panel > .table > tbody:first-child > tr:first-child th,

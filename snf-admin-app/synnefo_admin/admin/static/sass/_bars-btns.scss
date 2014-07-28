@@ -64,7 +64,7 @@ $default-btn-padding: 8px;
 }
 
 // Buttons with thick bottom border on hover
-@mixin line-btn($color:$total-black, $padding:$default-btn-padding) {
+@mixin line-btn($color:$primary-color, $padding:$default-btn-padding) {
 	@include default-btn($padding);
 	background-color: $color;
 	border-bottom: 2px solid $color; 

@@ -13,17 +13,6 @@ $red-intense:                   #E42A48;
 $orange-intense:                #D2881F;
 $almost-white:                  #eeeeee;
 $total-black:                   #222;
-$hover-nav-color:               #333;
-
-
-$secondary-link-color:          white;
-
-// Βutton colors
-
-$default-btn-color:             $blue-intense;
-$bad-karma-color:               $red-intense;
-$neutral-karma-color:           $orange-intense;
-$good-karma-color:              $green-intense;
 
 // Dimensions
 
@@ -52,3 +41,5 @@ $details-title-height:          35px;
 }
 
 @import "bootstrap/variables";
+//@import "palette1";
+//@import "theme1";

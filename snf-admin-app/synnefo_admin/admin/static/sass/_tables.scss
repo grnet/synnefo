@@ -72,19 +72,19 @@ table .wrap {
     border-bottom: 4px solid;
 }
 
-
-#table-items-total_filter,
-#table-items-selected_filter {
-    input {
-        display: inline-block;
-        margin-left: 8px;
-        color: $gray-dark;
-        outline: none;
-        padding: 5px;
-        border: 0 none;
-    }
+#table-items-selected_filter,
+#table-items-total_filter{
     label {
-        color: white;
+        color: $text-color;
+    }
+    input {
+        color: $reverse-text-color;
+        background: $filter-bg;
+        border: 0 none;
+        padding: 3px 5px;
+        &:focus {
+            outline: 0 none;
+        }
     }
 }
 
@@ -112,21 +112,21 @@ div.dataTables_length {
 table.dataTable tbody tr {
     background-color: inherit;
     &.even {
-        background-color: lighten($gray-dark, 5%); 
+        background-color: $table-zebra-row-bg; 
     }
 }
 
 table.dataTable thead th,
 table.dataTable thead td {
   border-bottom: 1px solid white;
-  border-top: 1px solid lighten($gray-dark, 25%);
+  border-top: 1px solid $table-border-color;
 }
 table.dataTable tbody tr:hover {
-    background-color: lighten($gray-dark, 12%);
+    background-color: lighten($table-zebra-row-bg, 7%);
 }
 table.dataTable tbody tr.selected {
-    background-color: $almost-white;
-    color: $gray-dark;
+    color: $table-selected-row-color;
+    background-color: $table-selected-row-bg;
 }
 
 
@@ -164,7 +164,7 @@ table.dataTable.no-footer {
 .container .dataTables_wrapper .dataTables_paginate .paginate_button:hover,
 .container .dataTables_wrapper .dataTables_paginate .paginate_button:focus,
 {
-    background: $gray-dark;
+    background: $table-selected-row-bg;
     border-color: white;
 }
 

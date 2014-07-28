@@ -144,22 +144,14 @@
 .object-details-content .nav-tabs>li {
 	a {
 		opacity: 0.7;
-		color: white;
 	}
 	&.active>a {
 		opacity: 1;
-		border-color: transparent;
-		background: $gray-light;
-		color: white;
-		border-radius: 0;
 	}
 	
     &:not(.active)>a:hover,
     &:not(.active)>a:focus{
 		opacity: 1;
-		color: white;
-		border-color: transparent;
-		background: transparent;
 	}
 }
 

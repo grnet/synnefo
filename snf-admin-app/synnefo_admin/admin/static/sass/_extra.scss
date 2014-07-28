@@ -172,10 +172,10 @@ svg>text:last-child {
 	background: transparent;
 }
 .tab-content {
-	background: $gray-light;
+	background: $tab-content-bg;
+    color: $tab-content-color;
 	padding: 20px;
 	.well {
-		border-color: $gray-light;
         margin-bottom: 0;
 	}
 }
@@ -232,7 +232,7 @@ svg>text:last-child {
         color: $gray-dark;
         &:hover,
         &:focus{
-            color: $total-black;
+            color: $primary-color;
         }
     }
 	.dl-horizontal {

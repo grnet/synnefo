@@ -56,14 +56,14 @@ $good-karma-color:      $green-intense;
 
 
 // Tables
-$table-selected-row-bg:     $gray-dark;
-$table-selected-row-color:  white;
-$table-zebra-row-bg:        lighten($gray-dark,5%);    
-$table-border-color:        white;
+$table-selected-row-bg:     $theme-red;
+$table-selected-row-color:  $theme-ciel;
+$table-zebra-row-bg:        $theme-blue;    
+$table-border-color:        $theme-yellow;
 
 
 // Filters
-$filter-bg:             #fff;
+$filter-bg:             $theme-ciel;
 $filter-font-color:     $reverse-text-color;
 $filter-active-bg:      #fff;
 $filter-hover-bg:       #fff;
@@ -347,12 +347,12 @@ $grid-float-breakpoint-max: ($grid-float-breakpoint - 1) !default;
 //## Define the maximum width of `.container` for different screen sizes.
 
 // Small screen / tablet
-$container-tablet:             ((780px + $grid-gutter-width)) !default;
+$container-tablet:             ((720px + $grid-gutter-width)) !default;
 //** For `$screen-sm-min` and up.
 $container-sm:                 $container-tablet !default;
 
 // Medium screen / desktop
-$container-desktop:            ((980px + $grid-gutter-width)) !default;
+$container-desktop:            ((940px + $grid-gutter-width)) !default;
 //** For `$screen-md-min` and up.
 $container-md:                 $container-desktop !default;
 

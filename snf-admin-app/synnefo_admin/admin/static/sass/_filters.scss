@@ -26,7 +26,7 @@ $filter-height: 30px;
     height: $filter-height;
     margin: 0 $filter-margin $filter-margin 0;
     display: inline-block;
-    background: #fff;
+    background: $filter-bg;
     .form-group {
         margin: 0;
         height: $filter-height;
@@ -37,13 +37,21 @@ $filter-height: 30px;
         line-height: $filter-height;
         border: 0 none;
         padding: 0 10px;
-        color: $gray-dark;
+        color: $filter-font-color;
         background: transparent;
         font-weight: normal;
         margin: 0;
     }
     .dropdown-menu {
+        background: $filter-bg;
         margin: 0;
+        > .active > a{
+            background: $filter-active-bg;
+        }
+        > li:hover >a {
+            background: $filter-hover-bg;
+            color: $filter-hover-color;
+        }
     }
     input {
         border: 0 none;
@@ -52,6 +60,7 @@ $filter-height: 30px;
         line-height: $filter-height;
         padding: 0 5px;
         font-weight: normal;
+        color: $filter-font-color;
     }
 }
 
@@ -68,11 +77,11 @@ $filter-height: 30px;
 		&.open {
 			a {
 				text-decoration: none;
-				color: $total-black;
+				color: $filter-font-color;
 			}
 		}
 		a {
-			color: $gray-dark;
+			color: $filter-font-color;
 		}
 		.dropdown-menu {
 			width: auto;

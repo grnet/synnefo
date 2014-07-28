@@ -730,6 +730,7 @@ $(document).ready(function() {
 	$('.modal .apply-action').click(function(e) {
 		var $modal = $(this).closest('.modal');
 		var noError = true;
+		var itemsNum = $modal.find('tbody tr').length;
 		if(selected.items.length === 0) {
 			e.stopPropagation();
 			snf.modals.showError($modal, 'no-selected');
@@ -744,7 +745,7 @@ $(document).ready(function() {
 		}
 		else {
 			$('[data-toggle="popover"]').popover('hide');
-			snf.modals.performAction($modal, $notificationArea, snf.modals.html.notifyReloadTable, selected.items.length, countAction);
+			snf.modals.performAction($modal, $notificationArea, snf.modals.html.notifyReloadTable, itemsNum, countAction);
 			snf.modals.resetErrors($modal);
 			snf.modals.resetInputs($modal);
 			removeWarningDupl($modal);
@@ -762,31 +763,24 @@ $(document).ready(function() {
 		var $num = $modal.find('.num');
 		var $tr = $(this).closest('tr');
 		var itemID = $tr.attr('data-itemid');
-		// uuidsArray has only the uuids of selected items, none of the other info
-		idsArray = [];
+		var idsArray = [];
 		deselectRow(itemID);
 		removeSelected(itemID);
 		removeItem(itemID);
-		var selectedNum = selected.items.length;
-		if($(this).closest('.modal').attr('data-type') === 'contact') {
-			for (var i=0; i< selectedNum; i++) {
-				idsArray.push(selected.items[i].contact_id);
-			}
-		}
-		else {
-			for (var i=0; i< selectedNum; i++){
-				idsArray.push(selected.items[i].id);
-			}
-		}
+		idsArray = $actionBtn.attr('data-ids').replace('[', '').replace(']', '').split(',');
+		var index = idsArray.indexOf(itemID);
+		idsArray.splice(index, 1);
+
 		$actionBtn.attr('data-ids','[' + idsArray + ']');
 		$tr.slideUp('slow', function() {
 			$(this).siblings('.hidden-row').first().css('display', 'table-row');
 			$(this).siblings('.hidden-row').first().removeClass('hidden-row');
 			if($(this).siblings('.hidden-row').length === 0) {
-				$modal.find('.toggle-more').hide(); // it would be better to be visible and disabled? ***
+				$modal.find('.toggle-more').hide();
 			}
+				$(this).remove();
 		});
-		$num.html(selectedNum); // should this use updateCounter?
+		$num.html(idsArray.length); // should this use updateCounter?
 		updateCounter('.selected-num');
 	});
 
@@ -829,7 +823,7 @@ $(document).ready(function() {
 			for(var i=0; i<rowsNum; i++) {
 				if (!selected.items[i]['notFirst']) {
 					idsArray.push(selected.items[i][uniqueProp]);
-					currentRow = _.template(snf.modals.html.contactRow, {itemID: selected.items[i].id, showAssociations: (itemType !== 'user'), associations: associations[selected.items[i][uniqueProp]].toString().replace(/\,/gi, ', '), fullName: selected.items[i].contact_name, email: selected.items[i].contact_email, hidden: (i >=maxVisible)})
+					currentRow = _.template(snf.modals.html.contactRow, {itemID: selected.items[i].contact_id, showAssociations: (itemType !== 'user'), associations: associations[selected.items[i][uniqueProp]].toString().replace(/\,/gi, ', '), fullName: selected.items[i].contact_name, email: selected.items[i].contact_email, hidden: (i >maxVisible)})
 					htmlRows += currentRow;
 				}
 			}

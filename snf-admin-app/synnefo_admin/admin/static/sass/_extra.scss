@@ -250,9 +250,10 @@ svg>text:last-child {
 }
 
 .shortcuts-btn {
-    span {
+    span.book-icon {
         font-size: 20px;
         vertical-align: sub;
+        padding: 0 8px 0 0 ;
     }
 }
 

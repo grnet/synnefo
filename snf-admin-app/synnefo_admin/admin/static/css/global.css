@@ -3401,12 +3401,13 @@ svg > text:last-child {
 }
 
 /* line 253, ../sass/_extra.scss */
-.shortcuts-btn span {
+.shortcuts-btn span.book-icon {
   font-size: 20px;
   vertical-align: sub;
+  padding: 0 8px 0 0;
 }
 
-/* line 260, ../sass/_extra.scss */
+/* line 261, ../sass/_extra.scss */
 .shortcuts .key {
   padding: 2px 9px;
   font-style: normal;
@@ -3415,53 +3416,53 @@ svg > text:last-child {
   border-radius: 6px;
 }
 
-/* line 269, ../sass/_extra.scss */
+/* line 270, ../sass/_extra.scss */
 .popover {
   max-width: none;
   color: #303030;
   margin-bottom: 20px;
 }
-/* line 273, ../sass/_extra.scss */
+/* line 274, ../sass/_extra.scss */
 .popover h2 {
   text-align: center;
   font-size: 1.2em;
   font-weight: bold;
 }
-/* line 278, ../sass/_extra.scss */
+/* line 279, ../sass/_extra.scss */
 .popover dt {
   margin-bottom: 8px;
   overflow: visible;
 }
 
-/* line 284, ../sass/_extra.scss */
+/* line 285, ../sass/_extra.scss */
 .sign-out span {
   margin-right: 10px;
   vertical-align: middle;
   font-size: 18px;
 }
 
-/* line 291, ../sass/_extra.scss */
+/* line 292, ../sass/_extra.scss */
 .stats section {
   margin-bottom: 3em;
 }
-/* line 293, ../sass/_extra.scss */
+/* line 294, ../sass/_extra.scss */
 .stats section h3 {
   margin-bottom: 1em;
 }
-/* line 295, ../sass/_extra.scss */
+/* line 296, ../sass/_extra.scss */
 .stats section h3 span {
   margin-right: 0.5em;
 }
-/* line 299, ../sass/_extra.scss */
+/* line 300, ../sass/_extra.scss */
 .stats section .custom-btn {
   float: left;
   margin-right: 32px;
 }
-/* line 301, ../sass/_extra.scss */
+/* line 302, ../sass/_extra.scss */
 .stats section .custom-btn span {
   padding-left: 0;
 }
-/* line 304, ../sass/_extra.scss */
+/* line 305, ../sass/_extra.scss */
 .stats section .custom-btn .snf-download-full {
   padding-right: 0;
   padding-left: 8px;

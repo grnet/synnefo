@@ -80,7 +80,7 @@ $(document).ready(function() {
 	var extraData;
 	// sets the classes of the btns that are used for navigation throw the pages (next, prev, 1, 2, 3...)
 	// $.fn.dataTableExt.oStdClasses.sPageButton = "btn btn-primary";
-	var maxCellChar = 30;
+	var maxCellChar = 18;
 	var tableDomID = '#table-items-total';
 	var tableSelectedDomID = '#table-items-selected'
 	var tableMassiveDomID = '#total-list'

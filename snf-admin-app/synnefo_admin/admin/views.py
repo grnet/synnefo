@@ -362,7 +362,8 @@ def admin_actions(request):
             response['error_ids'].append(id)
         except Exception as e:
             logging.exception("Uncaught exception")
-            raise e
+            status = 500
+            response['result'] = e.message
 
     if hasattr(mod, 'wait_action'):
         wait_ids = set(ids) - set(response['error_ids'])

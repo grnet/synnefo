@@ -60,11 +60,15 @@ def undrain_network(network):
 
 
 def check_network_action(action):
-    if action == "contact":
+    if action == "CONTACT":
         # Contact action is allowed only on private networks. However, this
         # function may get called with an AstakosUser as a target. In this
         # case, we always confirm the action.
         return lambda n: not getattr(n, 'public', False)
+    elif action == "DRAIN":
+        return lambda n: not n.drained
+    elif action == "UNDRAIN":
+        return lambda n: n.drained
     else:
         return lambda n: validate_network_action(n, action)
 
@@ -77,11 +81,11 @@ def generate_actions():
     actions = OrderedDict()
 
     actions['drain'] = NetworkAction(name='Drain', f=drain_network,
-                                     #c=check_network_action('DRAIN'),
+                                     c=check_network_action('DRAIN'),
                                      caution_level=True,)
 
     actions['undrain'] = NetworkAction(name='Undrain', f=undrain_network,
-                                       #c=check_network_action('UNDRAIN'),
+                                       c=check_network_action('UNDRAIN'),
                                        karma='neutral',)
 
     actions['destroy'] = NetworkAction(name='Destroy', f=networks.delete,
@@ -97,7 +101,7 @@ def generate_actions():
                                             caution_level='dangerous',)
 
     actions['contact'] = NetworkAction(name='Send e-mail', f=send_admin_email,
-                                       c=check_network_action("contact"),)
+                                       c=check_network_action("CONTACT"),)
 
     update_actions_rbac(actions)
 

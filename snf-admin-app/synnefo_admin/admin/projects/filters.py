@@ -33,7 +33,12 @@ def filter_user(queryset, queries):
     q = query("user", queries)
     ids = get_model_field("user", q, 'uuid')
     qor = Q(members__uuid__in=ids) | Q(owner__uuid__in=ids)
-    return queryset.filter(qor)
+    # BIG FAT FIXME: The below two lines in theory should not be necessary, but
+    # if they don't exist, the queryset will produce weird results with the
+    # addition of values list.
+    qs = queryset.select_related("owner__uuid").filter(qor)
+    len(qs)
+    return qs
 
 
 @model_filter

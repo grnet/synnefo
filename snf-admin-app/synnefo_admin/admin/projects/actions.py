@@ -67,7 +67,8 @@ def custom_check_suspend(project):
     if project.is_suspended:
         return False
     else:
-        return check_project_action("SUSPEND")
+        res, _ = validate_project_action(project, "SUSPEND")
+        return res
 
 
 def do_project_action(action):

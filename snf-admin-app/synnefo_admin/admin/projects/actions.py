@@ -30,7 +30,8 @@ from astakos.im.models import (AstakosUser, Project, ProjectResourceGrant,
 
 from eztables.views import DatatablesView
 from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
+                                         has_permission_or_403,
+                                         AdminActionCannotApply)
 from astakos.im.functions import (validate_project_action, ProjectConflict,
                                   approve_application, deny_application,
                                   suspend, unsuspend, terminate, reinstate)
@@ -61,7 +62,16 @@ class ProjectAction(AdminAction):
         AdminAction.__init__(self, name=name, target='project', f=f, **kwargs)
 
 
+# FIXME: This check should be done by astakos
+def custom_check_suspend(project):
+    if project.is_suspended:
+        return False
+    else:
+        return check_project_action("SUSPEND")
+
+
 def do_project_action(action):
+
     if action == 'approve':
         return lambda p: approve_application(p.last_application.id)
     elif action == 'deny':
@@ -110,7 +120,7 @@ def generate_actions():
 
     actions['suspend'] = ProjectAction(name='Suspend',
                                        f=do_project_action("suspend"),
-                                       c=check_project_action("SUSPEND"),
+                                       c=custom_check_suspend,
                                        karma='bad', caution_level='warning',)
 
     actions['unsuspend'] = ProjectAction(name='Unsuspend',

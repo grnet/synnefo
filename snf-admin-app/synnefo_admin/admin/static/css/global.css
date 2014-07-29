@@ -55,38 +55,115 @@
   }
 }
 
-/* line 80, ../sass/_bars-btns.scss */
+/*
+Disabled buttons are transparent with light gray border
+and light gray font colors
+*/
+/* line 115, ../sass/_bars-btns.scss */
 .line-btn {
   display: inline-block;
   text-align: center;
   opacity: 1;
   background-color: #222222;
   border-bottom: 2px solid #222222;
-  color: #fff;
+  color: white;
 }
-/* line 9, ../sass/_bars-btns.scss */
+/* line 29, ../sass/_bars-btns.scss */
 .line-btn span {
   display: inline-block;
   height: 100%;
   line-height: 100%;
   padding: 8px;
 }
-/* line 16, ../sass/_bars-btns.scss */
+/* line 36, ../sass/_bars-btns.scss */
 .line-btn:hover, .line-btn:focus {
   text-decoration: none;
   opacity: 0.85;
 }
-/* line 25, ../sass/_bars-btns.scss */
+/* line 45, ../sass/_bars-btns.scss */
 .line-btn .snf-font-remove {
   display: inline;
 }
-/* line 73, ../sass/_bars-btns.scss */
+/* line 48, ../sass/_bars-btns.scss */
+.line-btn.disabled {
+  background: transparent !important;
+  border-color: #818181 !important;
+  color: #818181 !important;
+}
+/* line 15, ../sass/_bars-btns.scss */
+.line-btn.disabled:hover, .line-btn.disabled:focus {
+  cursor: default;
+  opacity: 1;
+}
+/* line 18, ../sass/_bars-btns.scss */
+.line-btn.disabled:hover span, .line-btn.disabled:focus span {
+  color: #818181 !important;
+}
+/* line 109, ../sass/_bars-btns.scss */
 .line-btn:hover, .line-btn:focus {
-  color: #fff;
-  border-bottom-color: #eeeeee;
+  border-bottom-color: white;
+  color: white;
 }
 
-/* line 84, ../sass/_bars-btns.scss */
+/* line 119, ../sass/_bars-btns.scss */
+.outline-btn {
+  display: inline-block;
+  text-align: center;
+  opacity: 1;
+  border: 1px solid white;
+  color: white;
+}
+/* line 29, ../sass/_bars-btns.scss */
+.outline-btn span {
+  display: inline-block;
+  height: 100%;
+  line-height: 100%;
+  padding: 8px;
+}
+/* line 36, ../sass/_bars-btns.scss */
+.outline-btn:hover, .outline-btn:focus {
+  text-decoration: none;
+  opacity: 0.85;
+}
+/* line 45, ../sass/_bars-btns.scss */
+.outline-btn .snf-font-remove {
+  display: inline;
+}
+/* line 48, ../sass/_bars-btns.scss */
+.outline-btn.disabled {
+  background: transparent !important;
+  border-color: #818181 !important;
+  color: #818181 !important;
+}
+/* line 15, ../sass/_bars-btns.scss */
+.outline-btn.disabled:hover, .outline-btn.disabled:focus {
+  cursor: default;
+  opacity: 1;
+}
+/* line 18, ../sass/_bars-btns.scss */
+.outline-btn.disabled:hover span, .outline-btn.disabled:focus span {
+  color: #818181 !important;
+}
+/* line 59, ../sass/_bars-btns.scss */
+.outline-btn span {
+  border: 1px solid transparent;
+  width: 100%;
+}
+/* line 65, ../sass/_bars-btns.scss */
+.outline-btn:hover span, .outline-btn:focus span {
+  border-color: white;
+}
+/* line 69, ../sass/_bars-btns.scss */
+.outline-btn.disabled {
+  @inlcude disabled;
+  color: #818181;
+}
+/* line 74, ../sass/_bars-btns.scss */
+.outline-btn.disabled:hover span, .outline-btn.disabled:focus span {
+  border-color: transparent;
+}
+
+/* line 123, ../sass/_bars-btns.scss */
 .custom-btn {
   display: inline-block;
   text-align: center;
@@ -95,106 +172,114 @@
   color: white;
   background-color: #3c96e0;
 }
-/* line 9, ../sass/_bars-btns.scss */
+/* line 29, ../sass/_bars-btns.scss */
 .custom-btn span {
   display: inline-block;
   height: 100%;
   line-height: 100%;
   padding: 8px;
 }
-/* line 16, ../sass/_bars-btns.scss */
+/* line 36, ../sass/_bars-btns.scss */
 .custom-btn:hover, .custom-btn:focus {
   text-decoration: none;
   opacity: 0.85;
 }
-/* line 25, ../sass/_bars-btns.scss */
+/* line 45, ../sass/_bars-btns.scss */
 .custom-btn .snf-font-remove {
   display: inline;
 }
-/* line 54, ../sass/_bars-btns.scss */
+/* line 48, ../sass/_bars-btns.scss */
+.custom-btn.disabled {
+  background: transparent !important;
+  border-color: #818181 !important;
+  color: #818181 !important;
+}
+/* line 15, ../sass/_bars-btns.scss */
+.custom-btn.disabled:hover, .custom-btn.disabled:focus {
+  cursor: default;
+  opacity: 1;
+}
+/* line 18, ../sass/_bars-btns.scss */
+.custom-btn.disabled:hover span, .custom-btn.disabled:focus span {
+  color: #818181 !important;
+}
+/* line 87, ../sass/_bars-btns.scss */
 .custom-btn span {
   border: 1px solid transparent;
   background: transparent;
 }
-/* line 60, ../sass/_bars-btns.scss */
+/* line 93, ../sass/_bars-btns.scss */
 .custom-btn:hover span, .custom-btn:focus span {
   color: white;
 }
-/* line 100, ../sass/_bars-btns.scss */
+/* line 97, ../sass/_bars-btns.scss */
+.custom-btn.disabled {
+  background: transparent !important;
+  border-color: #818181 !important;
+  color: #818181 !important;
+}
+/* line 15, ../sass/_bars-btns.scss */
+.custom-btn.disabled:hover, .custom-btn.disabled:focus {
+  cursor: default;
+  opacity: 1;
+}
+/* line 18, ../sass/_bars-btns.scss */
+.custom-btn.disabled:hover span, .custom-btn.disabled:focus span {
+  color: #818181 !important;
+}
+/* line 125, ../sass/_bars-btns.scss */
 .custom-btn[data-karma="neutral"] {
   background-color: #3c96e0;
   border-color: #3c96e0;
 }
-/* line 104, ../sass/_bars-btns.scss */
+/* line 129, ../sass/_bars-btns.scss */
 .custom-btn[data-karma="good"] {
   background-color: #00a551;
   border-color: #00a551;
 }
-/* line 109, ../sass/_bars-btns.scss */
+/* line 134, ../sass/_bars-btns.scss */
 .custom-btn[data-karma="bad"] {
   background-color: #d2881f;
   border-color: #d2881f;
 }
-/* line 114, ../sass/_bars-btns.scss */
+/* line 139, ../sass/_bars-btns.scss */
 .custom-btn[data-caution="warning"][data-karma="good"], .custom-btn[data-caution="warning"][data-karma="neutral"] {
   background-color: #d2881f;
   border-color: #d2881f;
 }
-/* line 119, ../sass/_bars-btns.scss */
+/* line 144, ../sass/_bars-btns.scss */
 .custom-btn[data-caution="dangerous"][data-karma="bad"], .custom-btn[data-caution="dangerous"][data-karma="neutral"] {
   background-color: #e42a48;
   border-color: #e42a48;
 }
 
-/*
-Disabled buttons are transparent with light gray border
-and light gray font colors
-*/
-/* line 132, ../sass/_bars-btns.scss */
-body .container .custom-btn.disabled,
-body .container .outline-btn.disabled,
-body .container .line-btn.disabled {
-  background-color: transparent;
-  border-color: #eeeeee;
-  opacity: 0.7;
-  color: #eeeeee;
-}
-/* line 138, ../sass/_bars-btns.scss */
-body .container .custom-btn.disabled:hover, body .container .custom-btn.disabled:focus,
-body .container .outline-btn.disabled:hover,
-body .container .outline-btn.disabled:focus,
-body .container .line-btn.disabled:hover,
-body .container .line-btn.disabled:focus {
-  opacity: 0.7;
-}
-
 /* Sidebar */
-/* line 149, ../sass/_bars-btns.scss */
+/* line 156, ../sass/_bars-btns.scss */
 .sidebar {
   margin: 0 30px 0 0;
   width: 110px;
   height: auto;
   float: left;
 }
-/* line 154, ../sass/_bars-btns.scss */
+/* line 161, ../sass/_bars-btns.scss */
 .sidebar .btn-group-vertical {
   width: 100%;
 }
 @media (max-width: 1200px) {
-  /* line 149, ../sass/_bars-btns.scss */
+  /* line 156, ../sass/_bars-btns.scss */
   .sidebar {
     width: auto;
     margin: 20px auto;
     float: none;
   }
-  /* line 162, ../sass/_bars-btns.scss */
+  /* line 169, ../sass/_bars-btns.scss */
   .sidebar .btn-group-vertical a {
     margin-right: 10px;
     display: inline-block;
   }
 }
 
-/* line 170, ../sass/_bars-btns.scss */
+/* line 177, ../sass/_bars-btns.scss */
 .sidebar.sidebar-fixed {
   top: 80px;
   left: auto;
@@ -210,26 +295,26 @@ body .container .line-btn.disabled:focus {
 /*
 Positioning or customizing buttons
 */
-/* line 188, ../sass/_bars-btns.scss */
+/* line 195, ../sass/_bars-btns.scss */
 .sidebar .custom-btn {
   display: block;
   margin: 0 0 1em;
 }
-/* line 191, ../sass/_bars-btns.scss */
+/* line 198, ../sass/_bars-btns.scss */
 .sidebar .custom-btn span {
   padding: 8px;
 }
 
-/* line 197, ../sass/_bars-btns.scss */
+/* line 204, ../sass/_bars-btns.scss */
 body .custom-buttons {
   float: left;
   margin-right: 10px;
 }
-/* line 200, ../sass/_bars-btns.scss */
+/* line 207, ../sass/_bars-btns.scss */
 body .custom-buttons .line-btn {
   margin-right: 1em;
 }
-/* line 203, ../sass/_bars-btns.scss */
+/* line 210, ../sass/_bars-btns.scss */
 body .custom-buttons .disabled {
   display: none;
 }
@@ -237,11 +322,11 @@ body .custom-buttons .disabled {
 /*
 Extra-button is used to show total selected rows
 */
-/* line 221, ../sass/_bars-btns.scss */
+/* line 228, ../sass/_bars-btns.scss */
 .extra-btn span {
   display: inline-block;
 }
-/* line 224, ../sass/_bars-btns.scss */
+/* line 231, ../sass/_bars-btns.scss */
 .extra-btn .badge {
   background: transparent;
   line-height: 0.8;
@@ -250,50 +335,50 @@ Extra-button is used to show total selected rows
   font-weight: normal;
   font-size: 1em;
 }
-/* line 231, ../sass/_bars-btns.scss */
+/* line 238, ../sass/_bars-btns.scss */
 .extra-btn .badge::before {
   content: "(";
 }
-/* line 234, ../sass/_bars-btns.scss */
+/* line 241, ../sass/_bars-btns.scss */
 .extra-btn .badge::after {
   content: ")";
 }
 
-/* line 240, ../sass/_bars-btns.scss */
+/* line 247, ../sass/_bars-btns.scss */
 .show-hide-all {
   float: right;
 }
-/* line 242, ../sass/_bars-btns.scss */
+/* line 249, ../sass/_bars-btns.scss */
 .show-hide-all em {
   font-style: normal;
 }
-/* line 245, ../sass/_bars-btns.scss */
+/* line 252, ../sass/_bars-btns.scss */
 .show-hide-all.line-btn {
   padding: 8px;
 }
-/* line 247, ../sass/_bars-btns.scss */
+/* line 254, ../sass/_bars-btns.scss */
 .show-hide-all.line-btn span {
   display: inline;
 }
 
-/* line 254, ../sass/_bars-btns.scss */
+/* line 261, ../sass/_bars-btns.scss */
 .actions-per-item .custom-btn {
   margin: 10px 10px 10px 0;
 }
 
-/* line 259, ../sass/_bars-btns.scss */
+/* line 266, ../sass/_bars-btns.scss */
 .charts .chart {
   display: none;
 }
-/* line 262, ../sass/_bars-btns.scss */
+/* line 269, ../sass/_bars-btns.scss */
 .charts .well {
   padding-left: 140px;
 }
-/* line 265, ../sass/_bars-btns.scss */
+/* line 272, ../sass/_bars-btns.scss */
 .charts .sidebar {
   position: fixed;
 }
-/* line 268, ../sass/_bars-btns.scss */
+/* line 275, ../sass/_bars-btns.scss */
 .charts .sidebar a {
   margin-bottom: 1em;
   display: inline-block;
@@ -303,32 +388,56 @@ Extra-button is used to show total selected rows
   color: white;
   display: block;
 }
-/* line 9, ../sass/_bars-btns.scss */
+/* line 29, ../sass/_bars-btns.scss */
 .charts .sidebar a span {
   display: inline-block;
   height: 100%;
   line-height: 100%;
   padding: 8px;
 }
-/* line 16, ../sass/_bars-btns.scss */
+/* line 36, ../sass/_bars-btns.scss */
 .charts .sidebar a:hover, .charts .sidebar a:focus {
   text-decoration: none;
   opacity: 0.85;
 }
-/* line 25, ../sass/_bars-btns.scss */
+/* line 45, ../sass/_bars-btns.scss */
 .charts .sidebar a .snf-font-remove {
   display: inline;
 }
-/* line 36, ../sass/_bars-btns.scss */
+/* line 48, ../sass/_bars-btns.scss */
+.charts .sidebar a.disabled {
+  background: transparent !important;
+  border-color: #818181 !important;
+  color: #818181 !important;
+}
+/* line 15, ../sass/_bars-btns.scss */
+.charts .sidebar a.disabled:hover, .charts .sidebar a.disabled:focus {
+  cursor: default;
+  opacity: 1;
+}
+/* line 18, ../sass/_bars-btns.scss */
+.charts .sidebar a.disabled:hover span, .charts .sidebar a.disabled:focus span {
+  color: #818181 !important;
+}
+/* line 59, ../sass/_bars-btns.scss */
 .charts .sidebar a span {
   border: 1px solid transparent;
   width: 100%;
 }
-/* line 42, ../sass/_bars-btns.scss */
+/* line 65, ../sass/_bars-btns.scss */
 .charts .sidebar a:hover span, .charts .sidebar a:focus span {
   border-color: white;
 }
-/* line 273, ../sass/_bars-btns.scss */
+/* line 69, ../sass/_bars-btns.scss */
+.charts .sidebar a.disabled {
+  @inlcude disabled;
+  color: #818181;
+}
+/* line 74, ../sass/_bars-btns.scss */
+.charts .sidebar a.disabled:hover span, .charts .sidebar a.disabled:focus span {
+  border-color: transparent;
+}
+/* line 280, ../sass/_bars-btns.scss */
 .charts .sidebar a.active {
   display: inline-block;
   text-align: center;
@@ -338,33 +447,63 @@ Extra-button is used to show total selected rows
   background-color: #3c96e0;
   display: block;
 }
-/* line 9, ../sass/_bars-btns.scss */
+/* line 29, ../sass/_bars-btns.scss */
 .charts .sidebar a.active span {
   display: inline-block;
   height: 100%;
   line-height: 100%;
   padding: 8px;
 }
-/* line 16, ../sass/_bars-btns.scss */
+/* line 36, ../sass/_bars-btns.scss */
 .charts .sidebar a.active:hover, .charts .sidebar a.active:focus {
   text-decoration: none;
   opacity: 0.85;
 }
-/* line 25, ../sass/_bars-btns.scss */
+/* line 45, ../sass/_bars-btns.scss */
 .charts .sidebar a.active .snf-font-remove {
   display: inline;
 }
-/* line 54, ../sass/_bars-btns.scss */
+/* line 48, ../sass/_bars-btns.scss */
+.charts .sidebar a.active.disabled {
+  background: transparent !important;
+  border-color: #818181 !important;
+  color: #818181 !important;
+}
+/* line 15, ../sass/_bars-btns.scss */
+.charts .sidebar a.active.disabled:hover, .charts .sidebar a.active.disabled:focus {
+  cursor: default;
+  opacity: 1;
+}
+/* line 18, ../sass/_bars-btns.scss */
+.charts .sidebar a.active.disabled:hover span, .charts .sidebar a.active.disabled:focus span {
+  color: #818181 !important;
+}
+/* line 87, ../sass/_bars-btns.scss */
 .charts .sidebar a.active span {
   border: 1px solid transparent;
   background: transparent;
 }
-/* line 60, ../sass/_bars-btns.scss */
+/* line 93, ../sass/_bars-btns.scss */
 .charts .sidebar a.active:hover span, .charts .sidebar a.active:focus span {
   color: white;
 }
+/* line 97, ../sass/_bars-btns.scss */
+.charts .sidebar a.active.disabled {
+  background: transparent !important;
+  border-color: #818181 !important;
+  color: #818181 !important;
+}
+/* line 15, ../sass/_bars-btns.scss */
+.charts .sidebar a.active.disabled:hover, .charts .sidebar a.active.disabled:focus {
+  cursor: default;
+  opacity: 1;
+}
+/* line 18, ../sass/_bars-btns.scss */
+.charts .sidebar a.active.disabled:hover span, .charts .sidebar a.active.disabled:focus span {
+  color: #818181 !important;
+}
 
-/* line 280, ../sass/_bars-btns.scss */
+/* line 287, ../sass/_bars-btns.scss */
 .notify .reload-btn {
   padding: 0 4px;
   font-size: 18px;
@@ -3230,34 +3369,58 @@ h1, h2, h3, h4 {
   color: white;
   opacity: 1;
 }
-/* line 9, ../sass/_bars-btns.scss */
+/* line 29, ../sass/_bars-btns.scss */
 .app-list a span {
   display: inline-block;
   height: 100%;
   line-height: 100%;
   padding: 12px 10px;
 }
-/* line 16, ../sass/_bars-btns.scss */
+/* line 36, ../sass/_bars-btns.scss */
 .app-list a:hover, .app-list a:focus {
   text-decoration: none;
   opacity: 0.85;
 }
-/* line 25, ../sass/_bars-btns.scss */
+/* line 45, ../sass/_bars-btns.scss */
 .app-list a .snf-font-remove {
   display: inline;
 }
-/* line 36, ../sass/_bars-btns.scss */
+/* line 48, ../sass/_bars-btns.scss */
+.app-list a.disabled {
+  background: transparent !important;
+  border-color: #818181 !important;
+  color: #818181 !important;
+}
+/* line 15, ../sass/_bars-btns.scss */
+.app-list a.disabled:hover, .app-list a.disabled:focus {
+  cursor: default;
+  opacity: 1;
+}
+/* line 18, ../sass/_bars-btns.scss */
+.app-list a.disabled:hover span, .app-list a.disabled:focus span {
+  color: #818181 !important;
+}
+/* line 59, ../sass/_bars-btns.scss */
 .app-list a span {
   border: 1px solid transparent;
   width: 100%;
 }
-/* line 42, ../sass/_bars-btns.scss */
+/* line 65, ../sass/_bars-btns.scss */
 .app-list a:hover span, .app-list a:focus span {
   border-color: white;
 }
+/* line 69, ../sass/_bars-btns.scss */
+.app-list a.disabled {
+  @inlcude disabled;
+  color: #818181;
+}
+/* line 74, ../sass/_bars-btns.scss */
+.app-list a.disabled:hover span, .app-list a.disabled:focus span {
+  border-color: transparent;
+}
 /* line 52, ../sass/_extra.scss */
 .app-list a.disabled {
-  border-color: #747474;
+  border-color: #a7a7a7;
   color: gray;
 }
 /* line 57, ../sass/_extra.scss */
@@ -3298,7 +3461,7 @@ h1, h2, h3, h4 {
 }
 /* line 90, ../sass/_extra.scss */
 .nav-simple .login-info .has-dropdown > a {
-  color: #fff;
+  color: white;
   display: inline-block;
   padding: 0 10px;
 }

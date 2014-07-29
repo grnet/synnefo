@@ -54,6 +54,9 @@ $bad-karma-color:       $red-intense;
 $neutral-karma-color:   $orange-intense;
 $good-karma-color:      $green-intense;
 
+$btn-outline-color:     #fff;
+$btn-line-bg:           $total-black;
+$btn-line-border:       #fff;
 
 // Tables
 $table-selected-row-bg:     $gray-dark;
@@ -73,6 +76,11 @@ $filter-hover-color:    inherit;
 $tab-content-bg:        $gray-light;
 $tab-content-color:     #fff;
 
+
+$object-details-bg:     lighten($body-bg,3%);
+$object-details-border: $gray-light-extra;
+
+$object-details-row-hover-bg:      lighten($object-details-bg,2%);
 // ----- END OF EXTRA COLOR-RELATED SETIINGS
 
 
@@ -202,7 +210,8 @@ $btn-danger-color:               #fff !default;
 $btn-danger-bg:                  $brand-danger !default;
 $btn-danger-border:              darken($btn-danger-bg, 5%) !default;
 
-$btn-link-disabled-color:        $snf_gray-light !default;
+$btn-link-disabled-color:        lighten($snf_gray-light,20%);
+
 
 
 //== Forms
@@ -767,9 +776,9 @@ $well-border:                 inherit;
 //
 //##
 
-$badge-color:                 #fff !default;
+$badge-color:                 inherit;
 //** Linked badge text color on hover
-$badge-link-hover-color:      #fff !default;
+$badge-link-hover-color:      inherit;
 $badge-bg:                    $gray-light !default;
 
 //** Badge text color in active nav link

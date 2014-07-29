@@ -31,9 +31,9 @@ $secondary-color:       $snf_gray-dark;
 // ## Settings for some of the most global styles.
 
 //** Background color for `<body>`.
-$body-bg:               $secondary-color;
+$body-bg:               white;
 //** Global text color on `<body>`.
-$text-color:            #fff;
+$text-color:            #222;
 $reverse-text-color:    $secondary-color;
 
 //** Global textual link color.
@@ -54,24 +54,28 @@ $bad-karma-color:       $red-intense;
 $neutral-karma-color:   $orange-intense;
 $good-karma-color:      $green-intense;
 
+$btn-outline-color:     #fff;
+$btn-line-bg:           $gray-dark;
+$btn-line-border:       #fff;
 
 // Tables
-$table-selected-row-bg:     $theme-red;
-$table-selected-row-color:  $theme-ciel;
-$table-zebra-row-bg:        $theme-blue;    
-$table-border-color:        $theme-yellow;
+$table-selected-row-bg:     red;
+$table-selected-row-color:  blue;
+$table-zebra-row-bg:        orange;    
+$table-border-color:        pink;
 
 
 // Filters
-$filter-bg:             $theme-ciel;
+$filter-bg:             #fff;
 $filter-font-color:     $reverse-text-color;
 $filter-active-bg:      #fff;
 $filter-hover-bg:       #fff;
 $filter-hover-color:    inherit;
 
 // Tabs
-$tab-content-bg:        $gray-light;
+$tab-content-bg:        $theme-red;
 $tab-content-color:     #fff;
+
 
 // ----- END OF EXTRA COLOR-RELATED SETIINGS
 
@@ -202,7 +206,8 @@ $btn-danger-color:               #fff !default;
 $btn-danger-bg:                  $brand-danger !default;
 $btn-danger-border:              darken($btn-danger-bg, 5%) !default;
 
-$btn-link-disabled-color:        $snf_gray-light !default;
+$btn-link-disabled-color:        lighten($snf_gray-light,20%);
+
 
 
 //== Forms
@@ -347,12 +352,12 @@ $grid-float-breakpoint-max: ($grid-float-breakpoint - 1) !default;
 //## Define the maximum width of `.container` for different screen sizes.
 
 // Small screen / tablet
-$container-tablet:             ((720px + $grid-gutter-width)) !default;
+$container-tablet:             ((780px + $grid-gutter-width)) !default;
 //** For `$screen-sm-min` and up.
 $container-sm:                 $container-tablet !default;
 
 // Medium screen / desktop
-$container-desktop:            ((940px + $grid-gutter-width)) !default;
+$container-desktop:            ((980px + $grid-gutter-width)) !default;
 //** For `$screen-md-min` and up.
 $container-md:                 $container-desktop !default;
 
@@ -767,9 +772,9 @@ $well-border:                 inherit;
 //
 //##
 
-$badge-color:                 #fff !default;
+$badge-color:                 inherit;
 //** Linked badge text color on hover
-$badge-link-hover-color:      #fff !default;
+$badge-link-hover-color:      inherit;
 $badge-bg:                    $gray-light !default;
 
 //** Badge text color in active nav link

@@ -178,14 +178,14 @@
 
 .part-two {
 	&>.object-details {
-        border-bottom: 2px solid $gray-light-extra;		
-        background: lighten($body-bg, 3%);
+        border-bottom: 2px solid $object-details-border;		
+        background: $object-details-bg;
 		padding:14px 20px;
 		.object-details {
 			padding: 5px 20px;
             &:hover,
             &:focus{
-                background: lighten($body-bg, 5%);
+                background: $object-details-row-hover-bg;
             }
 		}
         .custom-btn {

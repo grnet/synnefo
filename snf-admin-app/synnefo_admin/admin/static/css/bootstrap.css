@@ -3122,7 +3122,7 @@ select[multiple].input-lg,
 }
 /* line 113, ../sass/bootstrap/_buttons.scss */
 .btn-link[disabled]:hover, .btn-link[disabled]:focus, fieldset[disabled] .btn-link:hover, fieldset[disabled] .btn-link:focus {
-  color: #4e4e4e;
+  color: #818181;
   text-decoration: none;
 }
 
@@ -5768,7 +5768,7 @@ input[type="button"].btn-block {
   padding: 3px 7px;
   font-size: 12px;
   font-weight: bold;
-  color: white;
+  color: inherit;
   line-height: 1;
   vertical-align: baseline;
   white-space: nowrap;
@@ -5793,7 +5793,7 @@ input[type="button"].btn-block {
 
 /* line 40, ../sass/bootstrap/_badges.scss */
 a.badge:hover, a.badge:focus {
-  color: white;
+  color: inherit;
   text-decoration: none;
   cursor: pointer;
 }

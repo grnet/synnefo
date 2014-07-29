@@ -64,7 +64,7 @@ h1,h2,h3,h4 {
 
 .nav-simple {
 	padding: $nav-side-padding;
-	border-bottom: 1px solid white;
+	border-bottom: 1px solid $text-color;
 	.header {
 		float: left;
 		line-height: 40px;
@@ -88,7 +88,7 @@ h1,h2,h3,h4 {
                 }
             }
             &> a {
-                color: #fff;
+                color: $text-color;
                 display: inline-block;
                 padding: 0 10px;
             }

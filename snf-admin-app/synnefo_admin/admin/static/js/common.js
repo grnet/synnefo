@@ -116,7 +116,17 @@ snf = {
 		},
 		validateEmail: function(email) {
 			var reg = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-		    return reg.test(email);
+            //For emails that are between these symbols:
+            //   '<': less than, '>': greater_than
+			var lt_gt_reg = /^\<(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))\>$/;
+
+            var chunks = email.split(" ");
+            if (chunks.length == 1) {
+		        return (reg.test(email) || lt_gt_reg.test(email))
+            } else {
+                chunk = chunks[chunks.length - 1];
+                return lt_gt_reg.test(chunk);
+            }
 		},
 		validateContactForm: function(modal) {
 			var $modal = $(modal);

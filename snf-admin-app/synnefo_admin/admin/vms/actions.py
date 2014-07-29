@@ -64,9 +64,9 @@ def vm_suspend_release(vm):
 
 def check_vm_action(action):
     if action == 'SUSPEND':
-        return lambda vm: not vm.suspended
+        return lambda vm: not vm.suspended and not vm.deleted
     elif action == 'UNSUSPEND':
-        return lambda vm: vm.suspended
+        return lambda vm: vm.suspended and not vm.deleted
     else:
         return lambda vm: validate_server_action(vm, action)
 

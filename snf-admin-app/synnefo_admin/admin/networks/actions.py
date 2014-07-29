@@ -66,9 +66,9 @@ def check_network_action(action):
         # case, we always confirm the action.
         return lambda n: not getattr(n, 'public', False)
     elif action == "DRAIN":
-        return lambda n: not n.drained
+        return lambda n: not n.drained and not n.deleted
     elif action == "UNDRAIN":
-        return lambda n: n.drained
+        return lambda n: n.drained and not n.deleted
     else:
         return lambda n: validate_network_action(n, action)
 

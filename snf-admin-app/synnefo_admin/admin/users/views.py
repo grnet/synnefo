@@ -47,7 +47,7 @@ from synnefo_admin.admin.associations import (
     ProjectAssociation)
 
 from .utils import (get_user_or_404, get_quotas, get_user_groups,
-                    get_enabled_providers, get_suspended_vms, )
+                    get_enabled_providers, get_suspended_vms, DefaultUrlConf)
 from .actions import cached_actions
 from .filters import UserFilterSet
 
@@ -141,13 +141,14 @@ class UserJSONView(AdminJSONView):
             'visible': True,
         }
 
-        #if (users.validate_user_action(inst, "ACCEPT") and
-        #        inst.verification_code):
-        #    extra_dict['activation_url'] = {
-        #        'display_name': "Activation URL",
-        #        'value': inst.get_activation_url(),
-        #        'visible': True,
-        #    }
+        if (users.validate_user_action(inst, "ACCEPT") and
+                inst.verification_code):
+            with DefaultUrlConf():
+                extra_dict['activation_url'] = {
+                    'display_name': "Activation URL",
+                    'value': inst.get_activation_url(),
+                    'visible': True,
+                }
 
         if inst.accepted_policy:
             extra_dict['moderation_policy'] = {
@@ -167,23 +168,6 @@ class UserJSONView(AdminJSONView):
         return extra_dict
 
 
-class NoneUrlConf(object):
-
-    """Context manager for setting and restoring the ROOT_URLCONF setting."""
-
-    def __init__(self):
-        """Store the default ROOT_URLCONF."""
-        self.saved_urlconf = settings.ROOT_URLCONF
-
-    def __enter__(self):
-        """Nullify ROOT_URLCONF."""
-        settings.ROOT_URLCONF = None
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        """Restore ROOT_URLCONF."""
-        settings.ROOT_URLCONF = self.saved_urlconf
-
-
 @has_permission_or_403(cached_actions)
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
@@ -195,7 +179,7 @@ def do_action(request, op, id):
     elif op == 'contact':
         actions[op].apply(user, request)
     else:
-        with NoneUrlConf():
+        with DefaultUrlConf():
             actions[op].apply(user)
 
 

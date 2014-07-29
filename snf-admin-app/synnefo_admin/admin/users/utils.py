@@ -24,6 +24,7 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Group
 from django.template import Context, Template
+from django.core.urlresolvers import set_urlconf
 
 from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
                                NetworkInterface, IPAddress)
@@ -46,6 +47,19 @@ from synnefo_admin.admin.utils import (get_resource, is_resource_useful,
                                        create_details_href)
 
 UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
+
+
+class DefaultUrlConf(object):
+
+    """Context manager for setting and restoring the ROOT_URLCONF setting."""
+
+    def __enter__(self):
+        """Use the default ROOT_URLCONF."""
+        set_urlconf("synnefo.webproject.urls")
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Restore ROOT_URLCONF."""
+        set_urlconf(None)
 
 
 def get_groups():

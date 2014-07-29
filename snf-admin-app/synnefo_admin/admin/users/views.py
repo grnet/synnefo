@@ -24,6 +24,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Group
 from django.utils.html import escape
+from django.conf import settings
 
 from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
                                NetworkInterface, IPAddress)
@@ -166,6 +167,23 @@ class UserJSONView(AdminJSONView):
         return extra_dict
 
 
+class NoneUrlConf(object):
+
+    """Context manager for setting and restoring the ROOT_URLCONF setting."""
+
+    def __init__(self):
+        """Store the default ROOT_URLCONF."""
+        self.saved_urlconf = settings.ROOT_URLCONF
+
+    def __enter__(self):
+        """Nullify ROOT_URLCONF."""
+        settings.ROOT_URLCONF = None
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Restore ROOT_URLCONF."""
+        settings.ROOT_URLCONF = self.saved_urlconf
+
+
 @has_permission_or_403(cached_actions)
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
@@ -177,7 +195,8 @@ def do_action(request, op, id):
     elif op == 'contact':
         actions[op].apply(user, request)
     else:
-        actions[op].apply(user)
+        with NoneUrlConf():
+            actions[op].apply(user)
 
 
 def catalog(request):

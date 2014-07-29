@@ -96,9 +96,9 @@ def generate_actions():
                                    c=check_user_action("VERIFY"),
                                    karma='good',)
 
-    #actions['resend_verification'] = UserAction(
-    #    name='Resend verification', f=users.send_verification_mail,
-    #    karma='good', c=check_user_action("SEND_VERIFICATION_MAIL"),)
+    actions['resend_verification'] = UserAction(
+        name='Resend verification', f=users.send_verification_mail,
+        karma='good', c=check_user_action("SEND_VERIFICATION_MAIL"),)
 
     actions['contact'] = UserAction(name='Send e-mail', f=send_admin_email,)
 

@@ -16,7 +16,8 @@ $(document).ready(function() {
 
 		function processScroll() {
 			var i, scrollTop = $win.scrollTop();
-			if(scrollTop >= navHeight+filtersHeight && !isFixed) {
+            var bigWin = $win.width() > 1200;
+			if(scrollTop >= navHeight+filtersHeight && !isFixed && bigWin) {
 				isFixed = 1;
 				$actionbar.addClass('fixed');
 				$actionbar.css('top', navHeight);
@@ -34,8 +35,22 @@ $(document).ready(function() {
 				}
 			}
 		}
-		processScroll();
-		$win.on('scroll', processScroll);
+
+        var s = $("#sticker");
+        var pos = s.position();
+
+        $(window).scroll(function() {
+            var windowpos = $(window).scrollTop();
+            // 80 the navbar fixed height
+            if (windowpos >= pos.top - 80) {
+                s.addClass("stick");
+            } else {
+                s.removeClass("stick");
+            }
+        });
+
+		//processScroll();
+		//$win.on('scroll', processScroll);
 	}
 
 	var $lastClicked = null;
@@ -85,6 +100,7 @@ $(document).ready(function() {
 	var tableSelectedDomID = '#table-items-selected'
 	var tableMassiveDomID = '#total-list'
 	table = $(tableDomID).DataTable({
+        "autoWidth": false,
 		"paging": true,
 		// "stateSave": true,
 		"processing": true,

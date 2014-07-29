@@ -983,13 +983,13 @@ pre code {
 @media (min-width: 768px) {
   /* line 10, ../sass/bootstrap/_grid.scss */
   .container {
-    width: 750px;
+    width: 810px;
   }
 }
 @media (min-width: 992px) {
   /* line 10, ../sass/bootstrap/_grid.scss */
   .container {
-    width: 970px;
+    width: 1010px;
   }
 }
 @media (min-width: 1200px) {

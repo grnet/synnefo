@@ -12,10 +12,11 @@ body {
 .wrapper {
     padding-bottom: 50px;
 }
+/*
 .container-solid{
     min-width: 1050px!important;
 }
-
+*/
 .container:not(.container-solid){
     max-width: 960px;
 }
@@ -105,6 +106,10 @@ h1,h2,h3,h4 {
 .navbar-default {
     border: 0 none;
     z-index: 1040;
+    margin: 0 auto;
+    .container-fluid {
+        padding: 0;
+    }
     .home-icon {
         padding: 0;
         height: $navbar-height;
@@ -113,6 +118,9 @@ h1,h2,h3,h4 {
         line-height: $navbar-height;
         img {
             max-height: $navbar-height;
+        }
+        &:hover {
+            background-color: $navbar-default-link-hover-bg;
         }
     }
 
@@ -250,10 +258,8 @@ svg>text:last-child {
 }
 
 .shortcuts-btn {
-    span.book-icon {
-        font-size: 20px;
-        vertical-align: sub;
-        padding: 0 8px 0 0 ;
+    .book-icon {
+        padding-right: 8px;
     }
 }
 
@@ -322,5 +328,13 @@ svg>text:last-child {
 .navbar-right, .login-info {
     .dropdown-menu {
         min-width: 0;
+    }
+}
+
+.stick {
+
+    @media (min-width: $screen-lg-min) {
+        position: fixed;
+        top: 2* $navbar-height;
     }
 }

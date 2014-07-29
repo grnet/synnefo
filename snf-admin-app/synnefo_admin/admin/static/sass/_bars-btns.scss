@@ -154,6 +154,17 @@ body .container .line-btn.disabled {
 	.btn-group-vertical {
 		width: 100%;
 	}
+    @media (max-width: $screen-lg-min) {
+        width: auto;
+        margin: 20px auto;
+        float: none;
+        .btn-group-vertical {
+            a {
+                margin-right: 10px;
+                display: inline-block;
+            }
+        }
+    }
 }
 
 .sidebar.sidebar-fixed {
@@ -270,5 +281,5 @@ Extra-button is used to show total selected rows
 	padding: 0 4px;
 	font-size: 18px;
 	vertical-align: middle;
-	color: blue;
+    cursor: pointer;
 }

@@ -1,11 +1,14 @@
 {% if action_dict %}
 <div class="sidebar actionbar">
-	<div class="btn-group-vertical">
-	{% for op, action in action_dict.items %}
-    <a href="" data-target="#{{action.target}}-{{ op }}" data-action="{{ op }}" data-toggle="modal" data-karma={{ action.karma }} data-caution="{{ action.caution_level }}" class="disabled custom-btn">
-	        <span>{{ action.name }}</span>
-        </a>
-    {% endfor %}
-	</div>
+    <div id="sticker">
+        <div class="btn-group-vertical">
+        {% for op, action in action_dict.items %}
+        <a href="" data-target="#{{action.target}}-{{ op }}" data-action="{{ op }}" data-toggle="modal" data-karma={{ action.karma }} data-caution="{{ action.caution_level }}" class="disabled custom-btn">
+                <span>{{ action.name }}</span>
+            </a>
+        {% endfor %}
+        </div>
+    </div>
+    &nbsp;
 </div>
 {% endif %}

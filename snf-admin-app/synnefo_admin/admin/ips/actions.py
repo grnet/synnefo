@@ -47,6 +47,14 @@ class IPAction(AdminAction):
         AdminAction.__init__(self, name=name, target='ip', f=f, **kwargs)
 
 
+# FIXME: This should be a function in cyclades
+def check_destroy_ip(ip):
+    """Check if we can destroy this IP."""
+    if not ip.floating_ip or ip.nic:
+        return False
+    return True
+
+
 def generate_actions():
     """Create a list of actions on ips.
 
@@ -54,7 +62,8 @@ def generate_actions():
     """
     actions = OrderedDict()
 
-    actions['destroy'] = IPAction(name='Destroy', f=ips.delete_floating_ip,
+    actions['destroy'] = IPAction(name='Destroy', c=check_destroy_ip,
+                                  f=ips.delete_floating_ip,
                                   karma='bad', caution_level='dangerous',)
 
     actions['reassign'] = IPAction(name='Reassign to project', f=noop,

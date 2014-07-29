@@ -193,8 +193,8 @@ svg>text:last-child {
 	width: 100%;
 	position: fixed;
 	bottom: 0;
-	background: $brand-primary;
-    color: $reverse-text-color;
+	background: $notify-bg;
+    color: $notify-color;
     .container>*:not(:last-child) {
 			margin-bottom: 16px;
 	}
@@ -229,7 +229,7 @@ svg>text:last-child {
         position: absolute;
         right: 20px;
         top: 20px;
-        color: $gray-dark;
+        color: $notify-close-color;
         &:hover,
         &:focus{
             color: $primary-color;

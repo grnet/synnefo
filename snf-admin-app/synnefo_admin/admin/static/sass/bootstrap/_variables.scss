@@ -81,6 +81,20 @@ $object-details-bg:     lighten($body-bg,3%);
 $object-details-border: $gray-light-extra;
 
 $object-details-row-hover-bg:      lighten($object-details-bg,2%);
+
+// Popover dismiss icon
+$popover-dismiss-bg:            $snf_gray-light;
+$popover-dismiss-color:         lighten($popover-dismiss-bg,20%);
+$popover-dismiss-bg-hover:      lighten($popover-dismiss-bg,10%);
+$popover-dismiss-color-hover:   $almost-white;
+
+$modal-text-color:      $reverse-text-color;
+
+// Notification area
+$notify-bg:             #fff;
+$notify-color:          $reverse-text-color;
+$notify-close-color:    $gray-dark;
+
 // ----- END OF EXTRA COLOR-RELATED SETIINGS
 
 

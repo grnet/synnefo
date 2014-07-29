@@ -2868,99 +2868,100 @@ p.progress-area {
   vertical-align: text-top;
   padding: 4px 8px;
   border: 1px solid #d9d9d9;
+  color: #303030;
 }
-/* line 47, ../sass/_modals.scss */
+/* line 48, ../sass/_modals.scss */
 .modal textarea.body, .modal input.body {
   min-height: 160px;
 }
-/* line 52, ../sass/_modals.scss */
+/* line 53, ../sass/_modals.scss */
 .modal label {
   margin-right: 6px;
   width: 70px;
   vertical-align: sub;
 }
-/* line 59, ../sass/_modals.scss */
+/* line 60, ../sass/_modals.scss */
 .modal .modal-body {
   background-color: white;
 }
-/* line 64, ../sass/_modals.scss */
+/* line 65, ../sass/_modals.scss */
 .modal .modal-footer {
   margin-top: 0;
 }
-/* line 66, ../sass/_modals.scss */
+/* line 67, ../sass/_modals.scss */
 .modal .modal-footer form {
   display: inline;
 }
-/* line 69, ../sass/_modals.scss */
+/* line 70, ../sass/_modals.scss */
 .modal .modal-footer .custom-btn:first-child {
   float: left;
   background-color: #303030;
   border-color: #303030;
 }
 
-/* line 79, ../sass/_modals.scss */
+/* line 80, ../sass/_modals.scss */
 .modal .custom-btn {
   color: white;
   opacity: 0.9;
 }
-/* line 83, ../sass/_modals.scss */
+/* line 84, ../sass/_modals.scss */
 .modal .custom-btn:hover, .modal .custom-btn:focus {
   opacity: 1;
 }
-/* line 88, ../sass/_modals.scss */
+/* line 89, ../sass/_modals.scss */
 .modal[data-karma="dark"] .elem {
   color: #4e4e4e;
 }
-/* line 93, ../sass/_modals.scss */
+/* line 94, ../sass/_modals.scss */
 .modal[data-karma="neutral"] .elem {
   color: #207dc9;
 }
-/* line 99, ../sass/_modals.scss */
+/* line 100, ../sass/_modals.scss */
 .modal[data-karma="good"] .elem {
   color: #007238;
 }
-/* line 107, ../sass/_modals.scss */
+/* line 108, ../sass/_modals.scss */
 .modal[data-karma="bad"] .elem {
   color: #a66b18;
 }
-/* line 114, ../sass/_modals.scss */
+/* line 115, ../sass/_modals.scss */
 .modal[data-caution="warning"][data-karma="good"] .elem, .modal[data-caution="warning"][data-karma="neutral"] .elem {
   color: #a66b18;
 }
-/* line 121, ../sass/_modals.scss */
+/* line 122, ../sass/_modals.scss */
 .modal[data-caution="dangerous"][data-karma="bad"] .elem, .modal[data-caution="dangerous"][data-karma="neutral"] .elem {
   color: #c21934;
 }
 
-/* line 128, ../sass/_modals.scss */
+/* line 129, ../sass/_modals.scss */
 .custom-btn[data-karma="dark"] {
   background-color: #222222;
   border-color: transparent;
 }
 
-/* line 133, ../sass/_modals.scss */
+/* line 134, ../sass/_modals.scss */
 .modal em {
   font-weight: bold;
   font-style: normal;
 }
-/* line 137, ../sass/_modals.scss */
+/* line 138, ../sass/_modals.scss */
 .modal .popover {
   z-index: 2000;
 }
-/* line 139, ../sass/_modals.scss */
+/* line 140, ../sass/_modals.scss */
 .modal .popover dl {
   color: black;
   font-weight: normal;
 }
-/* line 142, ../sass/_modals.scss */
+/* line 143, ../sass/_modals.scss */
 .modal .popover dl dt {
   width: 90px;
 }
-/* line 145, ../sass/_modals.scss */
+/* line 146, ../sass/_modals.scss */
 .modal .popover dl dd {
   margin-left: 110px;
 }
-/* line 149, ../sass/_modals.scss */
+/* line 150, ../sass/_modals.scss */
 .modal .popover h2 {
   font-size: 16px;
   color: #303030;
@@ -2968,33 +2969,33 @@ p.progress-area {
   text-align: center;
 }
 
-/* line 159, ../sass/_modals.scss */
+/* line 160, ../sass/_modals.scss */
 .modal-content {
   padding: 20px;
   color: #303030;
 }
-/* line 162, ../sass/_modals.scss */
+/* line 163, ../sass/_modals.scss */
 .modal-content .badge {
   background-color: transparent;
 }
 
-/* line 169, ../sass/_modals.scss */
+/* line 170, ../sass/_modals.scss */
 .instructions-icon {
   color: #3c96e0;
   font-size: 22px;
   margin-left: 78px;
 }
-/* line 173, ../sass/_modals.scss */
+/* line 174, ../sass/_modals.scss */
 .instructions-icon:hover {
   text-decoration: none;
 }
 
-/* line 178, ../sass/_modals.scss */
+/* line 179, ../sass/_modals.scss */
 .extra-info {
   margin-top: 10px;
 }
 
-/* line 182, ../sass/_modals.scss */
+/* line 183, ../sass/_modals.scss */
 .error-sign {
   color: red;
   font-size: 20px;
@@ -3003,61 +3004,61 @@ p.progress-area {
   top: 6px;
   display: none;
 }
-/* line 191, ../sass/_modals.scss */
+/* line 192, ../sass/_modals.scss */
 .error-sign:hover, .error-sign:focus {
   color: red;
   text-decoration: none;
 }
 
-/* line 198, ../sass/_modals.scss */
+/* line 199, ../sass/_modals.scss */
 .form-area {
   position: relative;
 }
 
-/* line 201, ../sass/_modals.scss */
+/* line 202, ../sass/_modals.scss */
 .form-subject {
   margin-bottom: 15px;
 }
 
-/* line 205, ../sass/_modals.scss */
+/* line 206, ../sass/_modals.scss */
 .toggle-more {
   margin-top: -16px;
   display: none;
 }
 
-/* line 212, ../sass/_modals.scss */
+/* line 213, ../sass/_modals.scss */
 .modal .table-selected th, .modal .table-selected td {
   word-break: break-word;
 }
-/* line 216, ../sass/_modals.scss */
+/* line 217, ../sass/_modals.scss */
 .modal .table-selected td:last-child .wrap {
   padding-right: 36px;
 }
-/* line 220, ../sass/_modals.scss */
+/* line 221, ../sass/_modals.scss */
 .modal .table-selected tr:nth-child(2n) {
   background: #f2f2f2;
 }
-/* line 224, ../sass/_modals.scss */
+/* line 225, ../sass/_modals.scss */
 .modal .table-selected tr a {
   font-weight: bold;
 }
-/* line 229, ../sass/_modals.scss */
+/* line 230, ../sass/_modals.scss */
 .modal .table-selected tr:hover,
 .modal .table-selected tr:focus {
   background: #d9d9d9;
 }
-/* line 231, ../sass/_modals.scss */
+/* line 232, ../sass/_modals.scss */
 .modal .table-selected tr:hover a,
 .modal .table-selected tr:focus a {
   color: red;
 }
-/* line 236, ../sass/_modals.scss */
+/* line 237, ../sass/_modals.scss */
 .modal .table-selected .remove {
   position: absolute;
   right: 14px;
   color: transparent;
 }
-/* line 240, ../sass/_modals.scss */
+/* line 241, ../sass/_modals.scss */
 .modal .table-selected .remove:hover {
   cursor: pointer;
   text-decoration: none;

@@ -44,6 +44,7 @@ p.progress-area {
 		vertical-align: text-top;
 		padding: 4px 8px;
         border: 1px solid $gray-lighter;
+        color: $modal-text-color;
 		&.body {
 			min-height: 160px;
 		}

@@ -91,7 +91,7 @@
         }
         .popover-dismiss {
             display: inline-block;
-            @include circle(18px,$snf_gray-light);
+            @include circle(18px,$popover-dismiss-bg);
             text-align: center;
             font-weight: bold;
             vertical-align: middle;
@@ -100,11 +100,11 @@
             vertical-align: super;
             cursor: pointer;
             margin-left:10px;
-            color: lighten($snf_gray-light, 20%);
+            color: $popover-dismiss-color;
             &:hover,
             &:focus{
-                background: lighten($snf_gray-light, 10%);
-                color: $almost-white;
+                background: $popover-dismiss-bg-hover;
+                color: $popover-dismiss-color-hover;
             }
         }
         .popover {

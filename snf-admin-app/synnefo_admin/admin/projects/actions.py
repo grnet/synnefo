@@ -61,6 +61,17 @@ class ProjectAction(AdminAction):
         AdminAction.__init__(self, name=name, target='project', f=f, **kwargs)
 
 
+def do_project_action(action):
+    if action == 'approve':
+        return lambda p: approve_application(p.last_application.id)
+    elif action == 'deny':
+        return lambda p: deny_application(p.last_application.id)
+    else:
+        # The action name is the same as the imported action. If the imported
+        # action name changes, then this code must change too.
+        return lambda p: globals()[action](p.id)
+
+
 def check_project_action(action):
     def check(p, action):
         res, _ = validate_project_action(p, action)
@@ -89,31 +100,35 @@ def generate_actions():
     """
     actions = OrderedDict()
 
-    actions['approve'] = ProjectAction(name='Approve', f=approve_application,
-                                       c=check_approve,
-                                       karma='good',)
+    actions['approve'] = ProjectAction(name='Approve',
+                                       f=do_project_action("approve"),
+                                       c=check_approve, karma='good',)
 
-    actions['deny'] = ProjectAction(name='Deny', f=deny_application,
-                                    c=check_deny, karma='bad',
-                                    caution_level='warning',)
+    actions['deny'] = ProjectAction(name='Deny',
+                                    f=do_project_action("deny"), c=check_deny,
+                                    karma='bad', caution_level='warning',)
 
-    actions['suspend'] = ProjectAction(name='Suspend', f=suspend,
+    actions['suspend'] = ProjectAction(name='Suspend',
+                                       f=do_project_action("suspend"),
                                        c=check_project_action("SUSPEND"),
                                        karma='bad', caution_level='warning',)
 
     actions['unsuspend'] = ProjectAction(name='Unsuspend',
-                                         f=unsuspend,
+                                         f=do_project_action("unsuspend"),
                                          c=check_project_action("UNSUSPEND"),
                                          karma='good', caution_level='warning',)
 
-    actions['terminate'] = ProjectAction(name='Terminate', f=terminate,
+    actions['terminate'] = ProjectAction(name='Terminate',
+                                         f=do_project_action("terminate"),
                                          c=check_project_action("TERMINATE"),
                                          karma='bad',
                                          caution_level='dangerous',)
 
-    actions['reinstate'] = ProjectAction(name='Reinstate', f=reinstate,
+    actions['reinstate'] = ProjectAction(name='Reinstate',
+                                         f=do_project_action("reinstate"),
                                          c=check_project_action("REINSTATE"),
-                                         karma='good', caution_level='warning',)
+                                         karma='good',
+                                         caution_level='warning',)
 
     actions['contact'] = ProjectAction(name='Send e-mail', f=send_admin_email,)
 

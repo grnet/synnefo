@@ -199,12 +199,8 @@ def do_action(request, op, id):
 
     if op == 'contact':
         actions[op].apply(user, request)
-    elif op == 'approve':
-        actions[op].apply(project.last_application.id)
-    elif op == 'deny':
-        actions[op].apply(project.last_application.id)
     else:
-        actions[op].apply(project.id)
+        actions[op].apply(project)
 
 
 def catalog(request):

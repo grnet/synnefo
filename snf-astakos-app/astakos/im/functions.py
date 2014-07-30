@@ -1068,6 +1068,10 @@ def validate_project_action(project, action, request_user=None, silent=True):
         if not ok:
             return fail("PROJECT CONFLICT", m)
 
+        if project.is_suspended:
+            m = _(astakos_messages.SUSPENDED_PROJECT) % project.uuid
+            return fail("PROJECT CONFLICT", m)
+
     elif action == "UNSUSPEND":
         ok = project_check_allowed(project, request_user, level=ADMIN_LEVEL,
                                    silent=silent)

@@ -209,6 +209,7 @@ UNIQUE_PROJECT_NAME_CONSTRAIN_ERR = (
     'The project name (as specified in its application\'s definition) must '
     'be unique among all active projects.')
 NOT_ALIVE_PROJECT = 'Project %s is not alive.'
+SUSPENDED_PROJECT = 'Project %s is suspended.'
 NOT_SUSPENDED_PROJECT = 'Project %s is not suspended.'
 NOT_TERMINATED_PROJECT = 'Project %s is not terminated.'
 BASE_NO_TERMINATE = "Cannot terminate: %s is a system project."

@@ -283,7 +283,7 @@ def details(request, type, id):
 
 
 @admin_user_required
-def catalog(request, type):
+def catalog(request, type='user'):
     """Admin-Interface generic list view."""
     admin_log(request, type=type)
 

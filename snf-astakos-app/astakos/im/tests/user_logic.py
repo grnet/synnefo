@@ -185,8 +185,6 @@ class TestUserActions(TestCase):
         for action in ("ACCEPT", "ACTIVATE", "REJECT"):
             with self.assertRaises(faults.NotAllowed) as cm:
                 validate_user_action(self.user1, action, silent=False)
-            self.assertEqual(cm.exception.message,
-                             "Action %s is not allowed." % action)
 
         # Check if BadRequest is raised for a malformed action name.
         with self.assertRaises(faults.BadRequest) as cm:

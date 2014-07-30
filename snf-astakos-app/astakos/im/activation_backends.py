@@ -188,76 +188,71 @@ class ActivationBackend(object):
             faults.NotAllowed: When the action cannot apply on a user.
             faults.BadRequest: When the action is unknown/malformed.
         """
-        def fail(e, msg):
+        def fail(e=Exception, msg=""):
             if silent:
                 return False, msg
-
-            if e == "NOT ALLOWED":
-                raise faults.NotAllowed("Action %s is not allowed." % action)
-            elif e == "BAD REQUEST":
-                raise faults.BadRequest("Unknown action: %s." % action)
             else:
-                raise Exception(e)
+                raise e(msg)
 
         if action == "VERIFY":
             if user.email_verified:
                 msg = _(astakos_messages.ACCOUNT_ALREADY_VERIFIED)
-                return fail("NOT ALLOWED", msg)
+                return fail(faults.NotAllowed, msg)
             if not (user.verification_code and
                     user.verification_code == verification_code):
                 msg = _(astakos_messages.VERIFICATION_FAILED)
-                return fail("NOT ALLOWED", msg)
+                return fail(faults.NotAllowed, msg)
 
         elif action == "ACCEPT":
             if user.moderated and not user.is_rejected:
                 msg = _(astakos_messages.ACCOUNT_ALREADY_MODERATED)
-                return fail("NOT ALLOWED", msg)
+                return fail(faults.NotAllowed, msg)
             if not user.email_verified:
                 msg = _(astakos_messages.ACCOUNT_NOT_VERIFIED)
-                return fail("NOT ALLOWED", msg)
+                return fail(faults.NotAllowed, msg)
 
         elif action == "ACTIVATE":
             if not user.email_verified:
                 msg = _(astakos_messages.ACCOUNT_NOT_VERIFIED)
-                return fail("NOT ALLOWED", msg)
+                return fail(faults.NotAllowed, msg)
             if not user.moderated:
                 msg = _(astakos_messages.ACCOUNT_NOT_MODERATED)
-                return fail("NOT ALLOWED", msg)
+                return fail(faults.NotAllowed, msg)
             if user.is_rejected:
                 msg = _(astakos_messages.ACCOUNT_REJECTED)
-                return fail("NOT ALLOWED", msg)
+                return fail(faults.NotAllowed, msg)
             if user.is_active:
                 msg = _(astakos_messages.ACCOUNT_ALREADY_ACTIVE)
-                return fail("NOT ALLOWED", msg)
+                return fail(faults.NotAllowed, msg)
 
         elif action == "DEACTIVATE":
             if not user.email_verified:
                 msg = _(astakos_messages.ACCOUNT_NOT_VERIFIED)
-                return fail("NOT ALLOWED", msg)
+                return fail(faults.NotAllowed, msg)
             if not user.moderated:
                 msg = _(astakos_messages.ACCOUNT_NOT_MODERATED)
-                return fail("NOT ALLOWED", msg)
+                return fail(faults.NotAllowed, msg)
             if user.is_rejected:
                 msg = _(astakos_messages.ACCOUNT_REJECTED)
-                return fail("NOT ALLOWED", msg)
+                return fail(faults.NotAllowed, msg)
 
         elif action == "REJECT":
             if user.moderated:
                 msg = _(astakos_messages.ACCOUNT_ALREADY_MODERATED)
-                return fail("NOT ALLOWED", msg)
+                return fail(faults.NotAllowed, msg)
             if user.is_active:
                 msg = _(astakos_messages.ACCOUNT_ALREADY_ACTIVE)
-                return fail("NOT ALLOWED", msg)
+                return fail(faults.NotAllowed, msg)
             if not user.email_verified:
                 msg = _(astakos_messages.ACCOUNT_NOT_VERIFIED)
-                return fail("NOT ALLOWED", msg)
+                return fail(faults.NotAllowed, msg)
 
         elif action == "SEND_VERIFICATION_MAIL":
             if user.email_verified:
-                return fail("NOT ALLOWED", None)
+                return fail(faults.NotAllowed)
 
         else:
-            return fail("BAD REQUEST", None)
+            return fail(faults.BadRequest, "Unknown action: {}.".format(action))
 
         return True, None
 

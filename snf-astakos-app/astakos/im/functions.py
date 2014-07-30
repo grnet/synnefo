@@ -1033,72 +1033,67 @@ def validate_project_action(project, action, request_user=None, silent=True):
                           project.
         faults.BadRequest: When the action is unknown/malformed.
     """
-    def fail(e, msg):
+    def fail(e=Exception, msg=""):
         if silent:
             return False, msg
-
-        if e == "PROJECT CONFLICT":
-            raise ProjectConflict(m)
-        elif e == "BAD REQUEST":
-            raise faults.BadRequest("Unknown action: %s." % action)
         else:
-            raise Exception(e)
+            raise e(msg)
 
     if action == "TERMINATE":
         ok = project_check_allowed(project, request_user, level=ADMIN_LEVEL,
                                    silent=silent)
         if not ok:
-            return fail("PROJECT CONFLICT", None)
+            return fail(ProjectConflict)
 
         ok, m = checkAlive(project, silent=silent)
         if not ok:
-            return fail("PROJECT CONFLICT", m)
+            return fail(ProjectConflict, m)
 
         if project.is_base:
             m = _(astakos_messages.BASE_NO_TERMINATE) % project.uuid
-            return fail("PROJECT CONFLICT", m)
+            return fail(ProjectConflict, m)
 
     elif action == "SUSPEND":
         ok = project_check_allowed(project, request_user, level=ADMIN_LEVEL,
                                    silent=silent)
         if not ok:
-            return fail("PROJECT CONFLICT", None)
+            return fail(ProjectConflict)
 
         ok, m = checkAlive(project, silent=silent)
         if not ok:
-            return fail("PROJECT CONFLICT", m)
+            return fail(ProjectConflict, m)
 
         if project.is_suspended:
             m = _(astakos_messages.SUSPENDED_PROJECT) % project.uuid
-            return fail("PROJECT CONFLICT", m)
+            return fail(ProjectConflict, m)
 
     elif action == "UNSUSPEND":
         ok = project_check_allowed(project, request_user, level=ADMIN_LEVEL,
                                    silent=silent)
         if not ok:
-            return fail("PROJECT CONFLICT", None)
+            return fail(ProjectConflict)
 
         if not project.is_suspended:
             m = _(astakos_messages.NOT_SUSPENDED_PROJECT) % project.uuid
-            return fail("PROJECT CONFLICT", m)
+            return fail(ProjectConflict, m)
 
     elif action == "REINSTATE":
         ok = project_check_allowed(project, request_user, level=ADMIN_LEVEL,
                                    silent=silent)
         if not ok:
-            return fail("PROJECT CONFLICT", None)
+            return fail(ProjectConflict)
 
         if not project.is_terminated:
             m = _(astakos_messages.NOT_TERMINATED_PROJECT) % project.uuid
-            return fail("PROJECT CONFLICT", m)
+            return fail(ProjectConflict, m)
 
         ok, m = check_conflicting_projects(project, project.realname,
                                            silent=silent)
         if not ok:
-            return fail("PROJECT CONFLICT", m)
+            return fail(ProjectConflict, m)
 
     else:
-        return fail("BAD REQUEST", m)
+        return fail(faults.BadRequest, "Unknown action: {}.".format(action))
 
     return True, None
 

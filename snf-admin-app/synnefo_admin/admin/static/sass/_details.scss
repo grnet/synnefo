@@ -110,7 +110,6 @@
         .popover {
             .popover-content {
                 font-size: 12px;
-                color: $reverse-text-color;
                 line-height: 130%;
             }
         }
@@ -160,7 +159,7 @@
 }
 
 .parts-separator {
-    border-top: 2px solid $gray-light-extra;
+    border-top: 2px solid $parts-separator-color;
     padding-top: 1em;
     h2 {
         font-size: 24px;

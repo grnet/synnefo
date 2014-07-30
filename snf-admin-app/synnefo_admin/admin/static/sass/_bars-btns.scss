@@ -107,6 +107,7 @@ and light gray font colors
 	color: $border;
 	&:hover,
     &:focus{
+        opacity:1;
 		border-bottom-color: $border;
         color: $border;
 	}

@@ -390,8 +390,8 @@ body {
   font-family: "Open Sans", sans-serif;
   font-size: 14px;
   line-height: 1.42857;
-  color: white;
-  background-color: #303030;
+  color: #222222;
+  background-color: white;
 }
 
 /* line 39, ../sass/bootstrap/_scaffolding.scss */
@@ -402,17 +402,17 @@ textarea {
   font-family: inherit;
   font-size: inherit;
   line-height: inherit;
-  color: white;
+  color: #222222;
 }
 
 /* line 49, ../sass/bootstrap/_scaffolding.scss */
 a {
-  color: #4d99d8;
+  color: #005b9a;
   text-decoration: none;
 }
 /* line 54, ../sass/bootstrap/_scaffolding.scss */
 a:hover, a:focus {
-  color: #83b8e4;
+  color: #ee5161;
 }
 /* line 58, ../sass/bootstrap/_scaffolding.scss */
 a:focus {
@@ -2108,12 +2108,12 @@ th {
   padding: 10px;
   line-height: 1.42857;
   vertical-align: top;
-  border-top: 1px solid white;
+  border-top: 1px solid #cccccc;
 }
 /* line 35, ../sass/bootstrap/_tables.scss */
 .table > thead > tr > th {
   vertical-align: bottom;
-  border-bottom: 2px solid white;
+  border-bottom: 2px solid #cccccc;
 }
 /* line 45, ../sass/bootstrap/_tables.scss */
 .table > caption + thead > tr:first-child > th,
@@ -2126,11 +2126,11 @@ th {
 }
 /* line 51, ../sass/bootstrap/_tables.scss */
 .table > tbody + tbody {
-  border-top: 2px solid white;
+  border-top: 2px solid #cccccc;
 }
 /* line 56, ../sass/bootstrap/_tables.scss */
 .table .table {
-  background-color: #303030;
+  background-color: white;
 }
 
 /* line 70, ../sass/bootstrap/_tables.scss */
@@ -2145,7 +2145,7 @@ th {
 
 /* line 82, ../sass/bootstrap/_tables.scss */
 .table-bordered {
-  border: 1px solid white;
+  border: 1px solid #cccccc;
 }
 /* line 89, ../sass/bootstrap/_tables.scss */
 .table-bordered > thead > tr > th,
@@ -2154,7 +2154,7 @@ th {
 .table-bordered > tbody > tr > td,
 .table-bordered > tfoot > tr > th,
 .table-bordered > tfoot > tr > td {
-  border: 1px solid white;
+  border: 1px solid #cccccc;
 }
 /* line 96, ../sass/bootstrap/_tables.scss */
 .table-bordered > thead > tr > th,
@@ -2297,7 +2297,7 @@ table th[class*="col-"] {
     overflow-y: hidden;
     overflow-x: scroll;
     -ms-overflow-style: -ms-autohiding-scrollbar;
-    border: 1px solid white;
+    border: 1px solid #cccccc;
     -webkit-overflow-scrolling: touch;
   }
   /* line 182, ../sass/bootstrap/_tables.scss */
@@ -2736,7 +2736,7 @@ select[multiple].input-lg,
   display: block;
   margin-top: 5px;
   margin-bottom: 10px;
-  color: white;
+  color: #626262;
 }
 
 @media (min-width: 768px) {
@@ -3099,7 +3099,7 @@ select[multiple].input-lg,
 
 /* line 85, ../sass/bootstrap/_buttons.scss */
 .btn-link {
-  color: #4d99d8;
+  color: #005b9a;
   font-weight: normal;
   cursor: pointer;
   border-radius: 0;
@@ -3116,7 +3116,7 @@ select[multiple].input-lg,
 }
 /* line 105, ../sass/bootstrap/_buttons.scss */
 .btn-link:hover, .btn-link:focus {
-  color: #83b8e4;
+  color: #ee5161;
   text-decoration: underline;
   background-color: transparent;
 }
@@ -4811,7 +4811,7 @@ input[type="button"].btn-block {
 /* line 48, ../sass/bootstrap/_navs.scss */
 .nav .open > a, .nav .open > a:hover, .nav .open > a:focus {
   background-color: #d9d9d9;
-  border-color: #4d99d8;
+  border-color: #005b9a;
 }
 /* line 59, ../sass/bootstrap/_navs.scss */
 .nav .nav-divider {
@@ -4827,7 +4827,7 @@ input[type="button"].btn-block {
 
 /* line 76, ../sass/bootstrap/_navs.scss */
 .nav-tabs {
-  border-bottom: 1px solid inherit;
+  border-bottom: 1px solid #e6e6e6;
 }
 /* line 78, ../sass/bootstrap/_navs.scss */
 .nav-tabs > li {
@@ -4840,17 +4840,17 @@ input[type="button"].btn-block {
   line-height: 1.42857;
   border: 1px solid transparent;
   border-radius: 0 0 0 0;
-  color: white;
+  color: #222222;
 }
 /* line 91, ../sass/bootstrap/_navs.scss */
 .nav-tabs > li > a:hover, .nav-tabs > li > a:focus {
   background: inherit;
-  border-color: inherit inherit inherit;
+  border-color: inherit inherit #e6e6e6;
 }
 /* line 102, ../sass/bootstrap/_navs.scss */
 .nav-tabs > li.active > a, .nav-tabs > li.active > a:hover, .nav-tabs > li.active > a:focus {
-  color: white;
-  background-color: #4e4e4e;
+  color: #222222;
+  background-color: #d9d9d9;
   border: 1px solid inherit;
   border-bottom-color: transparent;
   cursor: default;
@@ -5316,8 +5316,8 @@ input[type="button"].btn-block {
 
 /* line 383, ../sass/bootstrap/_navbar.scss */
 .navbar-default {
-  background-color: #222222;
-  border-color: inherit;
+  background-color: whitesmoke;
+  border-color: #e6e6e6;
 }
 /* line 387, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-brand {
@@ -5326,7 +5326,7 @@ input[type="button"].btn-block {
 /* line 390, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-brand:hover, .navbar-default .navbar-brand:focus {
   color: #e6e6e6;
-  background-color: transparent;
+  background-color: #008b44;
 }
 /* line 396, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-text {
@@ -5334,22 +5334,22 @@ input[type="button"].btn-block {
 }
 /* line 401, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-nav > li > a {
-  color: white;
+  color: #222222;
 }
 /* line 405, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-nav > li > a:hover, .navbar-default .navbar-nav > li > a:focus {
-  color: white;
-  background-color: #333333;
+  color: #222222;
+  background-color: #ededed;
 }
 /* line 411, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-nav > .has-dropdown:hover > a:first-child {
-  color: white;
-  background-color: #333333;
+  color: #222222;
+  background-color: #ededed;
 }
 /* line 419, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-nav > .active > a, .navbar-default .navbar-nav > .active > a:hover, .navbar-default .navbar-nav > .active > a:focus {
-  color: #303030;
-  background-color: white;
+  color: white;
+  background-color: #ee5161;
 }
 /* line 427, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-nav > .disabled > a, .navbar-default .navbar-nav > .disabled > a:hover, .navbar-default .navbar-nav > .disabled > a:focus {
@@ -5371,27 +5371,27 @@ input[type="button"].btn-block {
 /* line 446, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-collapse,
 .navbar-default .navbar-form {
-  border-color: inherit;
+  border-color: #e6e6e6;
 }
 /* line 456, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-nav > .open > a, .navbar-default .navbar-nav > .open > a:hover, .navbar-default .navbar-nav > .open > a:focus {
-  background-color: white;
-  color: #303030;
+  background-color: #ee5161;
+  color: white;
 }
 @media (max-width: 767px) {
   /* line 465, ../sass/bootstrap/_navbar.scss */
   .navbar-default .navbar-nav .open .dropdown-menu > li > a {
-    color: white;
+    color: #222222;
   }
   /* line 468, ../sass/bootstrap/_navbar.scss */
   .navbar-default .navbar-nav .open .dropdown-menu > li > a:hover, .navbar-default .navbar-nav .open .dropdown-menu > li > a:focus {
-    color: white;
-    background-color: #333333;
+    color: #222222;
+    background-color: #ededed;
   }
   /* line 476, ../sass/bootstrap/_navbar.scss */
   .navbar-default .navbar-nav .open .dropdown-menu > .active > a, .navbar-default .navbar-nav .open .dropdown-menu > .active > a:hover, .navbar-default .navbar-nav .open .dropdown-menu > .active > a:focus {
-    color: #303030;
-    background-color: white;
+    color: white;
+    background-color: #ee5161;
   }
   /* line 484, ../sass/bootstrap/_navbar.scss */
   .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a, .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a:hover, .navbar-default .navbar-nav .open .dropdown-menu > .disabled > a:focus {
@@ -5401,16 +5401,16 @@ input[type="button"].btn-block {
 }
 /* line 498, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-link {
-  color: white;
+  color: #222222;
 }
 /* line 500, ../sass/bootstrap/_navbar.scss */
 .navbar-default .navbar-link:hover {
-  color: white;
+  color: #222222;
 }
 
 /* line 509, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse {
-  background-color: #4e4e4e;
+  background-color: #cccccc;
   border-color: transparent;
 }
 /* line 513, ../sass/bootstrap/_navbar.scss */
@@ -5424,20 +5424,20 @@ input[type="button"].btn-block {
 }
 /* line 522, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-text {
-  color: white;
+  color: #222222;
 }
 /* line 527, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-nav > li > a {
-  color: white;
+  color: #222222;
 }
 /* line 531, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-nav > li > a:hover, .navbar-inverse .navbar-nav > li > a:focus {
-  color: #303030;
+  color: #222222;
   background-color: #d9d9d9;
 }
 /* line 537, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-nav > li.has-dropdown:hover > a:first-child {
-  color: #303030;
+  color: #222222;
   background-color: #d9d9d9;
 }
 /* line 545, ../sass/bootstrap/_navbar.scss */
@@ -5465,7 +5465,7 @@ input[type="button"].btn-block {
 /* line 573, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-collapse,
 .navbar-inverse .navbar-form {
-  border-color: #3c3c3c;
+  border-color: #bababa;
 }
 /* line 582, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-nav > .open > a, .navbar-inverse .navbar-nav > .open > a:hover, .navbar-inverse .navbar-nav > .open > a:focus {
@@ -5483,11 +5483,11 @@ input[type="button"].btn-block {
   }
   /* line 597, ../sass/bootstrap/_navbar.scss */
   .navbar-inverse .navbar-nav .open .dropdown-menu > li > a {
-    color: white;
+    color: #222222;
   }
   /* line 600, ../sass/bootstrap/_navbar.scss */
   .navbar-inverse .navbar-nav .open .dropdown-menu > li > a:hover, .navbar-inverse .navbar-nav .open .dropdown-menu > li > a:focus {
-    color: #303030;
+    color: #222222;
     background-color: #d9d9d9;
   }
   /* line 608, ../sass/bootstrap/_navbar.scss */
@@ -5503,11 +5503,11 @@ input[type="button"].btn-block {
 }
 /* line 625, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-link {
-  color: white;
+  color: #222222;
 }
 /* line 627, ../sass/bootstrap/_navbar.scss */
 .navbar-inverse .navbar-link:hover {
-  color: #303030;
+  color: #222222;
 }
 
 /* line 4, ../sass/bootstrap/_pagination.scss */
@@ -5678,12 +5678,12 @@ input[type="button"].btn-block {
   padding: .2em .6em .3em;
   font-size: 13px;
   line-height: 1;
-  color: #303030;
+  color: white;
   text-align: center;
   white-space: nowrap;
   vertical-align: baseline;
   border-radius: .25em;
-  background: #eeeeee;
+  background: #444444;
 }
 /* line 20, ../sass/bootstrap/_labels.scss */
 .label[href]:hover, .label[href]:focus {
@@ -5703,12 +5703,12 @@ input[type="button"].btn-block {
 
 /* line 42, ../sass/bootstrap/_labels.scss */
 .label-default {
-  background-color: #eeeeee;
+  background-color: #444444;
   color: white;
 }
 /* line 584, ../sass/bootstrap/_mixins.scss */
 .label-default[href]:hover, .label-default[href]:focus {
-  background-color: #d4d4d4;
+  background-color: #2b2b2b;
 }
 
 /* line 46, ../sass/bootstrap/_labels.scss */
@@ -5885,7 +5885,7 @@ a.list-group-item.active > .badge,
 a.thumbnail:hover,
 a.thumbnail:focus,
 a.thumbnail.active {
-  border-color: #4d99d8;
+  border-color: #005b9a;
 }
 
 /* line 9, ../sass/bootstrap/_alerts.scss */
@@ -6461,7 +6461,7 @@ a.list-group-item-danger.active, a.list-group-item-danger.active:hover, a.list-g
 /* line 140, ../sass/bootstrap/_panels.scss */
 .panel > .panel-body + .table,
 .panel > .panel-body + .table-responsive {
-  border-top: 1px solid white;
+  border-top: 1px solid #cccccc;
 }
 /* line 144, ../sass/bootstrap/_panels.scss */
 .panel > .table > tbody:first-child > tr:first-child th,

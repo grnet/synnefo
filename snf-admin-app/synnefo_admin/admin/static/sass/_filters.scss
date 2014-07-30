@@ -27,6 +27,7 @@ $filter-height: 30px;
     margin: 0 $filter-margin $filter-margin 0;
     display: inline-block;
     background: $filter-bg;
+    border: 1px solid $filter-border-color;
     .form-group {
         margin: 0;
         height: $filter-height;

@@ -10,12 +10,12 @@ $bootstrap-sass-asset-helper: (twbs-font-path("") != unquote('twbs-font-path("")
 //== Colors
 //
 //## Gray and brand colors for use across Bootstrap.
-
-$gray-darker:            lighten(#000, 13.5%) !default; // #222
-$gray-dark:              $snf_gray-dark;
-$gray:                   lighten(#000, 33.5%) !default; // #555
-$gray-light:             $snf_gray-light;
-$gray-lighter:           lighten(#000, 85%) !default; // #eee
+$synnefo-green:         #00a551;
+$gray-darker:           lighten(#000, 13.5%) !default; // #222
+$gray-dark:             $snf_gray-dark;
+$gray:                  lighten(#000, 33.5%) !default; // #555
+$gray-light:            $snf_gray-light;
+$gray-lighter:          lighten(#000, 85%) !default; // #eee
 
 $brand-primary:         #fff;
 $brand-success:         #5cb85c !default;
@@ -39,7 +39,7 @@ $reverse-text-color:    $secondary-color;
 //** Global textual link color.
 $link-color:            $ciel;
 //** Link hover color set via `darken()` function.
-$link-hover-color:      lighten($link-color, 13%) !default;
+$link-hover-color:      lighten($link-color, 13%);
 
 // ----- EXTRA COLOR-RELATED SETTINGS
 
@@ -62,20 +62,27 @@ $btn-line-border:       #fff;
 $table-selected-row-bg:     $gray-dark;
 $table-selected-row-color:  white;
 $table-zebra-row-bg:        lighten($gray-dark,5%);    
-$table-border-color:        white;
+$table-row-hover:           lighten($table-zebra-row-bg, 7%);
+$table-datatable-border-color:        white;
+$table-processing-bg:       $gray-light;
+$table-processing-color:    $text-color;
+$table-paginate-current-bg: #fff;
+$table-paginate-current-color:  $reverse-text-color;
+$table-selected-border:     gray;
 
 
 // Filters
-$filter-bg:             #fff;
+$filter-bg:             $almost-white;
 $filter-font-color:     $reverse-text-color;
-$filter-active-bg:      #fff;
-$filter-hover-bg:       #fff;
+$filter-active-bg:      $filter-bg;
+$filter-hover-bg:       $gray-lighter;
 $filter-hover-color:    inherit;
+$filter-border-color:   transparent;
 
 // Tabs
 $tab-content-bg:        $gray-light;
 $tab-content-color:     #fff;
-
+$tab-border:            inherit;
 
 $object-details-bg:     lighten($body-bg,3%);
 $object-details-border: $gray-light-extra;
@@ -88,6 +95,7 @@ $popover-dismiss-color:         lighten($popover-dismiss-bg,20%);
 $popover-dismiss-bg-hover:      lighten($popover-dismiss-bg,10%);
 $popover-dismiss-color-hover:   $almost-white;
 
+$popover-color:         $reverse-text-color;
 $modal-text-color:      $reverse-text-color;
 
 // Notification area
@@ -95,6 +103,7 @@ $notify-bg:             #fff;
 $notify-color:          $reverse-text-color;
 $notify-close-color:    $gray-dark;
 
+$parts-separator-color: $snf_gray-light;
 // ----- END OF EXTRA COLOR-RELATED SETIINGS
 
 
@@ -191,7 +200,7 @@ $table-bg-hover:                #f5f5f5 !default;
 $table-bg-active:               $table-bg-hover !default;
 
 //** Border color for table and cell borders.
-$table-border-color:            #ddd !default;
+$table-border-color:            #ddd;
 
 
 //== Buttons
@@ -405,15 +414,16 @@ $navbar-default-border:            inherit;
 $navbar-default-link-color:                $text-color;
 $navbar-default-link-hover-color:          $text-color;
 $navbar-default-link-hover-bg:             $hover-nav-color;
-$navbar-default-link-active-color:         $reverse-text-color;
-$navbar-default-link-active-bg:            white;
+$navbar-default-link-active-color:         #fff;
+$navbar-default-link-active-bg:            $theme-red;
 $navbar-default-link-disabled-color:       #ccc !default;
 $navbar-default-link-disabled-bg:          transparent !default;
 
 // Navbar brand label
 $navbar-default-brand-color:               $navbar-default-link-color !default;
 $navbar-default-brand-hover-color:         darken($navbar-default-brand-color, 10%) !default;
-$navbar-default-brand-hover-bg:            transparent !default;
+$navbar-default-brand-hover-bg:         darken($synnefo-green,5%);
+$navbar-default-brand-bg:               $synnefo-green;
 
 // Navbar toggle
 $navbar-default-toggle-hover-bg:           #ddd !default;
@@ -461,7 +471,7 @@ $nav-disabled-link-hover-color:             $gray-light !default;
 $nav-open-link-hover-color:                 #fff !default;
 
 //== Tabs
-$nav-tabs-border-color:                     inherit;
+$nav-tabs-border-color:                     transparent;
 
 $nav-tabs-link-hover-border-color:          inherit;
 
@@ -600,7 +610,7 @@ $popover-arrow-outer-fallback-color:  darken($popover-fallback-border-color, 20%
 //##
 
 //** Default label background color
-$label-default-bg:            $almost-white !default;
+$label-default-bg:            $almost-white;
 //** Primary label background color
 $label-primary-bg:            $brand-primary !default;
 //** Success label background color
@@ -615,7 +625,7 @@ $label-danger-bg:             $brand-danger !default;
 //** Default label text color
 $label-color:                 $gray-dark !default;
 //** Default text color of a linked label
-$label-link-hover-color:      #fff !default;
+$label-link-hover-color:      #fff;
 
 
 //== Modals

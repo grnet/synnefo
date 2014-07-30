@@ -11,6 +11,7 @@ $bootstrap-sass-asset-helper: (twbs-font-path("") != unquote('twbs-font-path("")
 //
 //## Gray and brand colors for use across Bootstrap.
 
+$synnefo-green:         #00a551;
 $gray-darker:            lighten(#000, 13.5%) !default; // #222
 $gray-dark:              $snf_gray-dark;
 $gray:                   lighten(#000, 33.5%) !default; // #555
@@ -31,19 +32,18 @@ $secondary-color:       $snf_gray-dark;
 // ## Settings for some of the most global styles.
 
 //** Background color for `<body>`.
-$body-bg:               white;
+$body-bg:               #fff;
 //** Global text color on `<body>`.
-$text-color:            #222;
-$reverse-text-color:    $secondary-color;
+$text-color:            $theme-black;
+$reverse-text-color:    #fff;
 
 //** Global textual link color.
-$link-color:            $ciel;
-//** Link hover color set via `darken()` function.
-$link-hover-color:      lighten($link-color, 13%) !default;
+$link-color:            $theme-blue;
+$link-hover-color:      $theme-red;
 
 // ----- EXTRA COLOR-RELATED SETTINGS
 
-$hover-nav-color:       #333;
+$hover-nav-color:       darken($theme-gray-light,3%);
 
 
 $secondary-link-color:  white;
@@ -54,29 +54,57 @@ $bad-karma-color:       $red-intense;
 $neutral-karma-color:   $orange-intense;
 $good-karma-color:      $green-intense;
 
-$btn-outline-color:     #fff;
-$btn-line-bg:           $gray-dark;
-$btn-line-border:       #fff;
+$btn-outline-color:     $total-black;
+$btn-line-bg:           $theme-border-light;
+$btn-line-border:       $total-black;
 
 // Tables
-$table-selected-row-bg:     red;
-$table-selected-row-color:  blue;
-$table-zebra-row-bg:        orange;    
-$table-border-color:        pink;
+$table-selected-row-bg:     $theme-gray-medium;
+$table-selected-row-color:  $text-color;
+$table-zebra-row-bg:        $theme-gray-light;    
+$table-row-hover:           lighten($theme-gray-medium,8%);
+$table-datatable-border-color:        $theme-border-light;
+$table-processing-bg:       $theme-yellow;
+$table-processing-color:    $reverse-text-color;
+$table-paginate-current-bg: $theme-gray-medium;
+$table-paginate-current-color:  $text-color;
+$table-selected-border:     $theme-border-light;
 
 
 // Filters
-$filter-bg:             #fff;
-$filter-font-color:     $reverse-text-color;
-$filter-active-bg:      #fff;
-$filter-hover-bg:       #fff;
+$filter-bg:             $theme-gray-light;
+$filter-font-color:     $text-color;
+$filter-active-bg:      darken($filter-bg,10%);
+$filter-hover-bg:       darken($filter-bg,5%);
 $filter-hover-color:    inherit;
+$filter-border-color:   $theme-gray-medium;
 
 // Tabs
-$tab-content-bg:        $theme-red;
-$tab-content-color:     #fff;
+$tab-content-bg:        lighten($theme-gray-medium,5%);
+$tab-content-color:     $text-color;
+$tab-border:            $theme-border-light;
 
 
+$object-details-bg:     $theme-gray-light;
+$object-details-border: $theme-border-light;
+
+$object-details-row-hover-bg:      darken($object-details-bg,4%);
+
+// Popover dismiss icon
+$popover-dismiss-bg:            $theme-gray-medium;
+$popover-dismiss-color:         lighten($popover-dismiss-bg,20%);
+$popover-dismiss-bg-hover:      darken($popover-dismiss-bg,10%);
+$popover-dismiss-color-hover:   $almost-white;
+
+$popover-color:         $text-color;
+$modal-text-color:      $text-color;
+
+// Notification area
+$notify-bg:             $theme-gray-dark;
+$notify-color:          $reverse-text-color;
+$notify-close-color:    #fff;
+
+$parts-separator-color: $theme-border-light;
 // ----- END OF EXTRA COLOR-RELATED SETIINGS
 
 
@@ -173,7 +201,8 @@ $table-bg-hover:                #f5f5f5 !default;
 $table-bg-active:               $table-bg-hover !default;
 
 //** Border color for table and cell borders.
-$table-border-color:            #ddd !default;
+$table-border-color:            $theme-gray-medium;
+
 
 
 //== Buttons
@@ -380,22 +409,23 @@ $navbar-padding-vertical:          (($navbar-height - $line-height-computed) / 2
 $navbar-collapse-max-height:       340px !default;
 
 $navbar-default-color:             #777 !default;
-$navbar-default-bg:                $primary-color;
-$navbar-default-border:            inherit;
+$navbar-default-bg:                $theme-gray-light;
+$navbar-default-border:            $theme-border-light;
 
 // Navbar links
 $navbar-default-link-color:                $text-color;
 $navbar-default-link-hover-color:          $text-color;
 $navbar-default-link-hover-bg:             $hover-nav-color;
 $navbar-default-link-active-color:         $reverse-text-color;
-$navbar-default-link-active-bg:            white;
+$navbar-default-link-active-bg:            $theme-red;
 $navbar-default-link-disabled-color:       #ccc !default;
 $navbar-default-link-disabled-bg:          transparent !default;
 
 // Navbar brand label
 $navbar-default-brand-color:               $navbar-default-link-color !default;
 $navbar-default-brand-hover-color:         darken($navbar-default-brand-color, 10%) !default;
-$navbar-default-brand-hover-bg:            transparent !default;
+$navbar-default-brand-hover-bg:         darken($synnefo-green,5%);
+$navbar-default-brand-bg:               $synnefo-green;
 
 // Navbar toggle
 $navbar-default-toggle-hover-bg:           #ddd !default;
@@ -406,12 +436,12 @@ $navbar-default-toggle-border-color:       #ddd !default;
 // Inverted navbar
 // Reset inverted navbar basics
 $navbar-inverse-color:                      $text-color;
-$navbar-inverse-bg:                         $gray-light;
+$navbar-inverse-bg:                         $theme-gray-medium;
 $navbar-inverse-border:                     transparent;
 
 // Inverted navbar links
 $navbar-inverse-link-color:                 $text-color;
-$navbar-inverse-link-hover-color:           $reverse-text-color;
+$navbar-inverse-link-hover-color:           $text-color;
 $navbar-inverse-link-hover-bg:              $gray-lighter;
 $navbar-inverse-link-active-color:          white;
 $navbar-inverse-link-active-bg:             darken($navbar-inverse-bg, 10%) !default;
@@ -443,7 +473,7 @@ $nav-disabled-link-hover-color:             $gray-light !default;
 $nav-open-link-hover-color:                 #fff !default;
 
 //== Tabs
-$nav-tabs-border-color:                     inherit;
+$nav-tabs-border-color:                     $theme-border-light;
 
 $nav-tabs-link-hover-border-color:          inherit;
 
@@ -582,9 +612,9 @@ $popover-arrow-outer-fallback-color:  darken($popover-fallback-border-color, 20%
 //##
 
 //** Default label background color
-$label-default-bg:            $almost-white !default;
+$label-default-bg:            $theme-gray-dark;
 //** Primary label background color
-$label-primary-bg:            $brand-primary !default;
+$label-primary-bg:            $brand-primay !default;
 //** Success label background color
 $label-success-bg:            $brand-success !default;
 //** Info label background color
@@ -595,7 +625,7 @@ $label-warning-bg:            $brand-warning !default;
 $label-danger-bg:             $brand-danger !default;
 
 //** Default label text color
-$label-color:                 $gray-dark !default;
+$label-color:                 #fff;
 //** Default text color of a linked label
 $label-link-hover-color:      #fff !default;
 

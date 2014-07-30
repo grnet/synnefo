@@ -104,7 +104,8 @@ h1,h2,h3,h4 {
 /* Navigation */
 
 .navbar-default {
-    border: 0 none;
+    border:0 none;
+    border-bottom: 1px solid $navbar-default-border;
     z-index: 1040;
     margin: 0 auto;
     .container-fluid {
@@ -116,11 +117,10 @@ h1,h2,h3,h4 {
         width: $navbar-height;
         text-align: center;
         line-height: $navbar-height;
+        font-size: 2px;
+        background: $navbar-default-brand-bg;
         img {
             max-height: $navbar-height;
-        }
-        &:hover {
-            background-color: $navbar-default-link-hover-bg;
         }
     }
 
@@ -175,6 +175,7 @@ svg>text:last-child {
 	background: $tab-content-bg;
     color: $tab-content-color;
 	padding: 20px;
+    border: 0 none;
 	.well {
         margin-bottom: 0;
 	}
@@ -223,7 +224,6 @@ svg>text:last-child {
 	.warning {
 		font-style: italic;
 		font-weight: bold;
-		color: $gray-light;
 	}
 	.close-notify {
         position: absolute;
@@ -232,7 +232,7 @@ svg>text:last-child {
         color: $notify-close-color;
         &:hover,
         &:focus{
-            color: $primary-color;
+            color: inherit;
         }
     }
 	.dl-horizontal {
@@ -275,7 +275,7 @@ svg>text:last-child {
 
 .popover {
 	max-width: none;
-    color: $reverse-text-color;
+    color: $popover-color;
 	margin-bottom: 20px;
 	h2 {
 		text-align: center;

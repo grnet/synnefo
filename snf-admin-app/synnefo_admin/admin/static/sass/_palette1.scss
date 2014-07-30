@@ -3,5 +3,10 @@ $theme-ciel:            #00ADF1;
 $theme-tyrquoise:       #16C0B2;
 $theme-yellow:          #FFA914;
 $theme-red:             #EE5161;
+$theme-gray-light:      #f5f5f5;
+$theme-black:           #222;
+$theme-gray-medium:     #ccc;
+$theme-gray-dark:       #444;
 
 
+$theme-border-light:          lighten($theme-gray-medium,10%);

@@ -23,12 +23,9 @@ from django.utils.html import escape
 from synnefo.db.models import Volume, VirtualMachine
 from astakos.im.models import AstakosUser, Project
 
-import django_filters
-
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
-from synnefo_admin.admin.utils import get_actions, render_email
 from synnefo_admin.admin.users.utils import get_user_or_404
 from synnefo_admin.admin.tables import AdminJSONView
 from synnefo_admin.admin.associations import (
@@ -49,14 +46,16 @@ templates = {
 
 class VolumeJSONView(AdminJSONView):
     model = Volume
-    fields = ('id', 'name', 'status', 'created', 'machine__pk',)
+    fields = ('id', 'name', 'status', 'size', 'volume_type__disk_template',
+              'machine__pk', 'created', 'updated')
     filters = VolumeFilterSet
 
     def format_data_row(self, row):
         row = list(row)
         if not row[1]:
             row[1] = "(not set)"
-        row[3] = row[3].strftime("%Y-%m-%d %H:%M")
+        row[6] = row[6].strftime("%Y-%m-%d %H:%M")
+        row[7] = row[7].strftime("%Y-%m-%d %H:%M")
         return row
 
     def get_extra_data(self, qs):
@@ -166,8 +165,8 @@ def catalog(request):
     context = {}
     context['action_dict'] = get_permitted_actions(cached_actions, request.user)
     context['filter_dict'] = VolumeFilterSet().filters.itervalues()
-    context['columns'] = ["ID", "Name", "Status", "Creation date",
-                          "VM ID", ""]
+    context['columns'] = ["ID", "Name", "Status", "Size (GB)", "Disk template",
+                          "VM ID", "Created at", "Updated at", ""]
     context['item_type'] = 'volume'
 
     return context

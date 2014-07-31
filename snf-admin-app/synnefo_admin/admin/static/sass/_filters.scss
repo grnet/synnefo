@@ -97,11 +97,6 @@ $filter-height: 30px;
 	}
 }
 
-body input:not(.subject):focus {
-	border-color: transparent;
-    @include box-shadow(none);
-}
-
 .filters.subnav-fixed {
 	top: $navbar-height;
 }

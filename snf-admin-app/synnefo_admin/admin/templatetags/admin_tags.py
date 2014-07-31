@@ -373,3 +373,9 @@ def label_to_icon(filter_name, filter_label):
         label = filter_label
     return label
 
+@register.filter
+def show_more_exception_message(assoc):
+    """Show an extra message for an instance in the popover for "Show More"."""
+    if assoc.type == "user":
+        return """</br>Alternatively, you may consult the "Members" tab of the
+    project."""

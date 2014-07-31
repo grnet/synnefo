@@ -14,33 +14,15 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import re
-from collections import OrderedDict
-import itertools
+import django_filters
 
-from operator import or_, and_
-
-from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
-from django.core.urlresolvers import reverse
-from django.contrib.auth.models import Group
-from django.template import Context, Template
 from django.db.models import Q
 
-from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
-                               NetworkInterface, IPAddress)
-from astakos.im.models import AstakosUser, ProjectMembership, Project, Resource
-from astakos.im import user_logic as users
-
-from astakos.im.user_utils import send_plain as send_email
+from astakos.im.models import AstakosUser, Project
 from astakos.im import auth_providers
 
 from synnefo_admin.admin.queries_common import (query, model_filter,
                                                 get_model_field)
-
-from eztables.views import DatatablesView
-
-import django_filters
 
 from .utils import get_groups
 

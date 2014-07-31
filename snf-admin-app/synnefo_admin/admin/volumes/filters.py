@@ -15,22 +15,34 @@
 
 
 import logging
-from collections import OrderedDict
 
-from django.core.urlresolvers import reverse
+from django.core.cache import cache
+from django.db.models import Q
 
 from synnefo.db.models import Volume
-from astakos.im.user_utils import send_plain as send_email
-from astakos.im.models import AstakosUser, Project
-
-from eztables.views import DatatablesView
 
 import django_filters
 
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
 from synnefo_admin.admin.queries_common import (query, model_filter,
                                                 get_model_field)
+
+
+def get_disk_template_choices():
+    # Check if the choices exist in the cache.
+    dt_choices = cache.get('dt_choices')
+    if dt_choices:
+        return dt_choices
+
+    # Recreate them if they don't.
+    dt_choices = cache.get('dt_choices')
+    dt_field = "volume_type__disk_template"
+    dts = Volume.objects.order_by(dt_field).\
+        values_list("{}".format(dt_field), flat=True).distinct()
+    dt_choices = [(dt, '_') for dt in dts]
+
+    # Store them in cache for 5 minutes and return them to the caller.
+    cache.set('dt_choices', dt_choices, 300)
+    return dt_choices
 
 
 @model_filter
@@ -60,6 +72,17 @@ def filter_project(queryset, queries):
     return queryset.filter(project__in=ids)
 
 
+def filter_disk_template(queryset, choices):
+    choices = choices or ()
+    dt_choices = get_disk_template_choices()
+    if len(choices) == len(dt_choices):
+        return queryset
+    q = Q()
+    for c in choices:
+        q |= Q(volume_type__disk_template=c)
+    return queryset.filter(q)
+
+
 class VolumeFilterSet(django_filters.FilterSet):
 
     """A collection of filters for volumes.
@@ -74,7 +97,13 @@ class VolumeFilterSet(django_filters.FilterSet):
                                         action=filter_project)
     status = django_filters.MultipleChoiceFilter(
         label='Status', name='status', choices=Volume.STATUS_VALUES)
+    disk_template = django_filters.MultipleChoiceFilter(
+        label="Disk template", choices=get_disk_template_choices(),
+        action=filter_disk_template)
+    source = django_filters.CharFilter(label="Soure image", name="source",
+                                       lookup_type='icontains')
 
     class Meta:
         model = Volume
-        fields = ('volume', 'status', 'user', 'vm', 'project')
+        fields = ('volume', 'status', 'disk_template', 'index', 'source',
+                  'user', 'vm', 'project')

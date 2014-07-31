@@ -4,10 +4,14 @@
     <meta charset="utf-8">
     <link rel="shortcut icon" href="{{ BRANDING_FAVICON_URL }}" />
     <title>{{BRANDING_SERVICE_NAME}} admin</title>
-    <link href="{{ ADMIN_MEDIA_URL }}css/bootstrap.css" rel="stylesheet">
     <link href="{{ ADMIN_MEDIA_URL }}css/icon-fonts.css" rel="stylesheet">
     <link href="{{ ADMIN_MEDIA_URL }}css/jquery.dataTables.css" rel="stylesheet">
-    <link href="{{ ADMIN_MEDIA_URL }}css/global.css" rel="stylesheet">
+
+    {% if request.COOKIES.theme == 'light' %}
+    <link href="{{ ADMIN_MEDIA_URL }}css/main-light.css" rel="stylesheet">
+    {% else  %}
+    <link href="{{ ADMIN_MEDIA_URL }}css/main.css" rel="stylesheet">
+    {% endif %}
     <!--
     <link href="{{ ADMIN_MEDIA_URL }}css/ie7.css" rel="stylesheet"> -->
     <link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,700italic,400,700,300,600' rel='stylesheet' type='text/css'>
@@ -85,12 +89,19 @@
           {% endblock %}
         </div>
         {% endblock main-area %}
+
         <div class="notify">
           <a href="" class="close-notify close-notifications" title="Close notification area"><span class="snf-remove"></span></a>
-          <div class="container">
-          </div>
-        </div>
-        <script src="{{ MEDIA_URL }}admin/js/jquery.js"></script>
+          <div class="container"></div>
+        </div><!-- /notify -->
+        
+        <div class="themes">
+          <a href="" id="toggle-theme">Toggle theme</a>
+        </div><!-- /themes -->
+
+    </div>
+           <script src="{{ MEDIA_URL }}admin/js/jquery.js"></script>
+        <script src="{{ MEDIA_URL }}admin/js/jquery.cookie.js"></script>
         <script src="{{ MEDIA_URL }}admin/js/bootstrap.js"></script>
         <script src="{{ MEDIA_URL }}admin/js/underscore.js"></script>
 
@@ -98,6 +109,6 @@
         {% endblock %}
 
         <script src="{{ MEDIA_URL }}admin/js/common.js"></script>
-    </div>
+
   </body>
 </html>

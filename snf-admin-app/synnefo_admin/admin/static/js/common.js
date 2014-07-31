@@ -268,4 +268,10 @@ $(document).ready(function(){
     $('.disabled').click(function(e){
         e.preventDefault();
     });
+    // toggle themes
+    $('#toggle-theme').click(function(e) {
+        var newC = ( $.cookie('theme') == 'light' )? 'dark': 'light';
+        $.cookie('theme', newC , {expires: 365});
+    });
+
 });

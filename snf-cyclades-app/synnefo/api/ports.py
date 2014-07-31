@@ -231,6 +231,10 @@ def delete_port(request, port_id):
                                                    deleted=False).exists():
         raise faults.Forbidden("Cannot disconnect from public network.")
 
+    vm = port.machine
+    if vm is not None and vm.suspended:
+        raise faults.Forbidden("Administratively Suspended VM.")
+
     servers.delete_port(port)
     return HttpResponse(status=204)
 

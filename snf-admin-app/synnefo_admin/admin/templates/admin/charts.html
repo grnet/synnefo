@@ -1,5 +1,13 @@
 {% extends "admin/base.html" %}
 
+{% block nav-reports %}
+class="has-dropdown active"
+{% endblock %}
+
+{% block nav-charts %}
+class="active"
+{% endblock %}
+
 {% block content %}
 <div class="charts" id="charts"
     data-astakos-stats={% url admin-stats-component-details 'astakos' %}
@@ -24,7 +32,6 @@
     <div id="images" class="chart" data-chart="images"></div>
 </div>
 </div>
-
 {% endblock %}
 
 {% block custom-javascript %}

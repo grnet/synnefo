@@ -41,12 +41,12 @@
                         {% if item_type == view or main_type == view %}class="active"{% endif %}
                         ><a href="{% url admin-list view %}">{{ view_dict.label }}</a></li>
                         {% endfor %}
-                        <li class="has-dropdown">
+                        <li {% block nav-reports %}class="has-dropdown"{% endblock %}>
                             <a href="#">Reports
                             <span class="snf-angle-down arrow"></span></a>
                             <ul class="dropdown-menu align-left">
-                                <li><a href="{% url admin-stats %}">Stats</a></li>
-                                <li><a href="{% url admin-charts %}">Charts</a></li>
+                                <li {% block nav-stats %}{%  endblock %}><a href="{% url admin-stats %}">Stats</a></li>
+                                <li {% block nav-charts %}{%  endblock %}><a href="{% url admin-charts %}">Charts</a></li>
                             </ul>
                         </li>
                     </ul>

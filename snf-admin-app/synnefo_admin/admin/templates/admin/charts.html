@@ -30,7 +30,9 @@
 {% block custom-javascript %}
 <script src="{{ MEDIA_URL }}admin/js/highstock.src.js"></script>
 <script src="{{ MEDIA_URL }}admin/js/Highcharts_drilldown.src.js"></script>
+{% if request.COOKIES.theme == 'dark' %}
 <script src="{{ MEDIA_URL }}admin/js/HighchartsDarkTheme.js"></script>
+{% endif %}
 <script src="{{ MEDIA_URL }}admin/js/charts.js"></script>
 <script src="{{ MEDIA_URL }}admin/js/charts_common.js"></script>
 {% endblock %}

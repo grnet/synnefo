@@ -8,6 +8,9 @@
         {% include "admin/_details_h4_lt.html" %}
         <span class="rt">
             <span class="label">ID: {{ip.pk}}</span>
+            {% if ip.in_use %}
+            <span class="label">VM ID: {{ ip.nic.machine.pk }}</span>
+            {% endif %}
             <span class="label">IPv{{ ip.ipversion }}</span>
         </span>
     </h4>

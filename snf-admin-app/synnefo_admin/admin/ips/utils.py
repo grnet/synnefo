@@ -76,6 +76,14 @@ def get_user_details_href(ip):
         return "-"
 
 
+def get_vm_details_href(ip):
+    if ip.in_use():
+        vm = ip.nic.machine
+        return create_details_href('vm', vm.name, vm.pk)
+    else:
+        return "-"
+
+
 def get_network_details_href(ip):
     if ip.in_use():
         network = ip.nic.network

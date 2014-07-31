@@ -42,7 +42,8 @@ from synnefo_admin.admin.associations import (
     SimpleNicAssociation)
 
 from .utils import (get_contact_email, get_contact_name, get_user_details_href,
-                    get_ip_or_404, get_network_details_href)
+                    get_ip_or_404, get_network_details_href,
+                    get_vm_details_href)
 from .actions import cached_actions
 from .filters import IPFilterSet
 
@@ -130,6 +131,16 @@ class IPJSONView(AdminJSONView):
             'value': get_user_details_href(inst),
             'visible': True,
         }
+        extra_dict['vm_info'] = {
+            'display_name': "VM",
+            'value': get_vm_details_href(inst),
+            'visible': True,
+        }
+        extra_dict['network_info'] = {
+            'display_name': "Network info",
+            'value': get_network_details_href(inst),
+            'visible': True,
+        }
         extra_dict['updated'] = {
             'display_name': "Update date",
             'value': inst.updated.strftime("%Y-%m-%d %H:%M"),
@@ -138,11 +149,6 @@ class IPJSONView(AdminJSONView):
         extra_dict['in_use'] = {
             'display_name': "Currently in Use",
             'value': inst.in_use(),
-            'visible': True,
-        }
-        extra_dict['network_info'] = {
-            'display_name': "Network info",
-            'value': get_network_details_href(inst),
             'visible': True,
         }
 

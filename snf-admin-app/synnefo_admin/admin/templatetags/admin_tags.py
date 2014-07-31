@@ -346,3 +346,30 @@ def present_excluded(assoc):
         return "users that are not project members"
     else:
         return "deleted entries"
+
+
+FILTER_NAME_ICON_MAP = {
+        'vm': 'snf-pc-full',
+        'user': 'snf-user-full',
+        'vol': 'snf-volume-full',
+        'volume': 'snf-volume-full',
+        'net': 'snf-network-full',
+        'network': 'snf-network-full',
+        'proj': 'snf-clipboard-h',
+        'project': 'snf-clipboard-h',
+}
+
+
+@register.filter
+def label_to_icon(filter_name, filter_label):
+    """
+    Return a span icon based on the filter name
+    If no icon is found, return filter label
+    """
+    icon_cls = FILTER_NAME_ICON_MAP.get(filter_name)
+    if icon_cls:
+        label =  '<span class="%s"></span>' % icon_cls
+    else:
+        label = filter_label
+    return label
+

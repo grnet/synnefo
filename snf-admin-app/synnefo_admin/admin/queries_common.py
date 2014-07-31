@@ -15,25 +15,13 @@
 
 import functools
 import logging
-import itertools
 from operator import or_, and_
 
 from django.db.models import Q
 from django.core.exceptions import FieldError
 from django.conf import settings
 
-from synnefo.db.models import VirtualMachine, Volume, Network, IPAddress
-from astakos.im.models import AstakosUser, Project
-
-"""A mapping between model names and Django models."""
-model_dict = {
-    "user": AstakosUser,
-    "vm": VirtualMachine,
-    "volume": Volume,
-    "network": Network,
-    "ip": IPAddress,
-    "project": Project,
-}
+from synnefo_admin.admin.utils import model_dict
 
 
 def prefix_strip(query):
@@ -110,7 +98,8 @@ def update_queries(**queries):
 
     Check if the query is actually a nested query, by searching for the "="
     operator.
-    FIXME: This is not the best/cleaner/intuitive approach to do this."""
+    FIXME: This is not the best/cleaner/intuitive approach to do this.
+    """
     new_queries = queries.copy()
     for key, value in queries.iteritems():
         if isinstance(value, str) or isinstance(value, unicode):

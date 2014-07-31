@@ -2,10 +2,10 @@
 
 {% with ip_log=item %}
 <tr>
-    <td>{{ ip_log|ip_href|safe }}</td>
-    <td>{{ ip_log|vm_href|safe }}</td>
-    <td>{{ ip_log|network_href|safe }}</td>
-    <td>{{ ip_log|user_href|safe }}</td>
+    <td>{{ ip_log|details_url:"ip"|safe }}</td>
+    <td>{{ ip_log|details_url:"vm"|safe }}</td>
+    <td>{{ ip_log|details_url:"network"|safe }}</td>
+    <td>{{ ip_log|details_url:"user"|safe }}</td>
     <td>{{ ip_log.allocated_at }}</td>
     <td>{{ ip_log.released_at|default:"-" }}</td>
     <td>

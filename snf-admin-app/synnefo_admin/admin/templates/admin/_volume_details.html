@@ -9,6 +9,10 @@
         <span class="rt">
             {{ volume|object_status_label|safe }}
             <span class="label">ID: {{ volume.pk }}</span>
+            {% if volume.machine %}
+            <span class="label">VM ID: {{ volume.machine.pk }}</span>
+            {% endif %}
+
             <span class="label">{{ volume.size }} GB</span>
             <span class="label">{{ volume.type|repr }}</span>
         </span>
@@ -19,6 +23,7 @@
         <ul class="nav nav-tabs">
             <li class="active"><a href="#details{{ type }}{{ volume.pk }}" data-toggle="tab">Details</a></li>
             <li><a href="#type{{ type }}{{ volume.pk }}" data-toggle="tab">Type</a></li>
+            <li><a href="#source{{ type }}{{ volume.pk }}" data-toggle="tab">Source</a></li>
         </ul>
         <div class="tab-content">
             <div class="tab-pane active" id="details{{ type }}{{ volume.pk }}">
@@ -27,9 +32,16 @@
                     <dt>Name</dt><dd>{{ volume.name|default:"-" }}</dd>
                     <dt>Description</dt><dd>{{ volume.description|default:"-" }}</dd>
                     <dt>Size</dt><dd>{{ volume.size }} GB</dd>
+                    <dt>Index</dt><dd>{{ volume.index }}</dd>
 		            <dt>Created</dt><dd>{{ volume.created }} ({{ volume.created|timesince }} ago)</dd>
 		            <dt>Updated</dt><dd>{{ volume.updated }} ({{ volume.created|timesince }} ago)</dd>
                     <dt>Snapshot counter</dt><dd>{{ volume.snapshot_counter }}</dd>
+                    <dt>User</dt><dd>{{ volume|details_url:"user"|safe }}</dd>
+                    <dt>Project</dt><dd>{{ volume|details_url:"project"|safe }}</dd>
+                    {% if volume.machine %}
+                        <dt>VM</dt><dd>{{ volume|details_url:"vm"|safe }}</dd>
+                    {% endif %}
+
                 </dl>
             </div>
             <div class="tab-pane" id="type{{ type }}{{ volume.pk }}">
@@ -38,6 +50,13 @@
                     <dt>Disk template</dt><dd>{{ volume.volume_type.disk_template|default:"-" }}</dd>
                     <dt>Provider</dt><dd>{{ volume.volume_type.provider|default:"-" }}</dd>
                     <dt>Deleted</dt><dd>{{ volume.volume_type.deleted }}</dd>
+                </dl>
+            </div>
+            <div class="tab-pane" id="source{{ type }}{{ volume.pk }}">
+                <dl class="dl-horizontal well">
+                    <dt>Source image</dt><dd>{{ volume.source }}</dd>
+                    <dt>Source version</dt><dd>{{ volume.source_version|default:"-" }}</dd>
+                    <dt>Origin</dt><dd>{{ volume.origin }}</dd>
                 </dl>
             </div>
         </div> <!-- <div class="tab-content"> -->

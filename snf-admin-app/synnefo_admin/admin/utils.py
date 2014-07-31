@@ -24,7 +24,10 @@ from django.core.urlresolvers import reverse
 from django.utils.html import escape
 
 from astakos.im.models import Resource
-from synnefo.db.models import Network
+from synnefo.db.models import (VirtualMachine, Volume, Network, IPAddress,
+                               IPAddressLog)
+from astakos.im.models import AstakosUser, Project
+
 from synnefo.util import units
 from astakos.im.user_utils import send_plain as send_email
 from snf_django.lib.api import faults
@@ -34,6 +37,27 @@ from astakos.im import settings as astakos_settings
 
 from .actions import get_allowed_actions, get_permitted_actions
 logger = logging.getLogger(__name__)
+
+
+"""A mapping between model names and Django models."""
+model_dict = {
+    "user": AstakosUser,
+    "vm": VirtualMachine,
+    "volume": Volume,
+    "network": Network,
+    "ip": IPAddress,
+    "ip_log": IPAddressLog,
+    "project": Project,
+}
+
+
+def __reverse_model_dict():
+    """Create the a model dict with the class names as keys."""
+    reversed_model_dict = {}
+    for key, value in model_dict.iteritems():
+        reversed_model_dict[value.__name__] = key
+    return reversed_model_dict
+reversed_model_dict = __reverse_model_dict()
 
 
 def admin_log(request, *argc, **kwargs):

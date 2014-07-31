@@ -31,13 +31,13 @@ from importlib import import_module
 from collections import OrderedDict
 from django import template
 import logging
-logger = logging.getLogger(__name__)
 
 import django_filters
 
 import synnefo_admin.admin.projects.utils as project_utils
 import synnefo_admin.admin.users.utils as user_utils
 import synnefo_admin.admin.ip_logs.utils as iplog_utils
+from synnefo_admin.admin import utils
 mod = import_module('astakos.im.management.commands.project-show')
 
 register = template.Library()
@@ -211,24 +211,23 @@ def id(item):
     return item.pk
 
 
-@register.filter
-def ip_href(inst):
-    return iplog_utils.get_ip_details_href(inst)
+@register.filter()
+def details_url(inst, target):
+    """Get a url for the details of an instance's field."""
+    # Get the class name of the instance.
+    inst_cls_name = inst.__class__.__name__
 
+    # Use it to import the utils module for classes of that type.
+    inst_cls_name = inst.__class__.__name__
+    inst_type = utils.reversed_model_dict[inst_cls_name]
+    mod = import_module("synnefo_admin.admin.{}s.utils".format(inst_type))
 
-@register.filter
-def vm_href(inst):
-    return iplog_utils.get_vm_details_href(inst)
-
-
-@register.filter
-def network_href(inst):
-    return iplog_utils.get_network_details_href(inst)
-
-
-@register.filter
-def user_href(inst):
-    return iplog_utils.get_user_details_href(inst)
+    # Call the details_href function for the provided target.
+    func = getattr(mod, "get_{}_details_href".format(target), None)
+    if func:
+        return func(inst)
+    else:
+        raise Exception("Wrong target name: {}".format(target))
 
 
 @register.filter

@@ -15,23 +15,13 @@
 
 
 import logging
-from collections import OrderedDict
 
-from django.core.urlresolvers import reverse
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import Http404
 
 from synnefo.db.models import Volume
-from astakos.im.user_utils import send_plain as send_email
 from astakos.im.models import AstakosUser, Project
 
-from eztables.views import DatatablesView
-
-import django_filters
-
 from synnefo_admin.admin.exceptions import AdminHttp404
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
 from synnefo_admin.admin.utils import create_details_href
 
 
@@ -46,6 +36,11 @@ def get_volume_or_404(query):
 def get_user_details_href(volume):
     user = AstakosUser.objects.get(uuid=volume.userid)
     return create_details_href('user', user.realname, user.email)
+
+
+def get_project_details_href(volume):
+    project = Project.objects.get(uuid=volume.project)
+    return create_details_href('project', project.realname, project.id)
 
 
 def get_vm_details_href(volume):

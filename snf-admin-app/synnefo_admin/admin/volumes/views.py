@@ -34,7 +34,7 @@ from synnefo_admin.admin.associations import (
     ProjectAssociation)
 
 from .utils import (get_volume_or_404, get_user_details_href,
-                    get_vm_details_href)
+                    get_vm_details_href, get_project_details_href)
 from .actions import cached_actions
 from .filters import VolumeFilterSet
 
@@ -120,9 +120,36 @@ class VolumeJSONView(AdminJSONView):
 
     def add_verbose_data(self, inst):
         extra_dict = OrderedDict()
+        extra_dict['description'] = {
+            'display_name': "Description",
+            'value': escape(inst.description) or "(not set)",
+            'visible': True,
+        }
+        sv = inst.source_version
+        source_version = " (v{})".format(sv) if sv else ""
+        extra_dict['source'] = {
+            'display_name': "Source Image",
+            'value': inst.source + source_version,
+            'visible': True,
+        }
+        extra_dict['origin'] = {
+            'display_name': "Origin",
+            'value': inst.origin,
+            'visible': True,
+        }
+        extra_dict['index'] = {
+            'display_name': "Index",
+            'value': inst.index,
+            'visible': True,
+        }
         extra_dict['user_info'] = {
             'display_name': "User",
             'value': get_user_details_href(inst),
+            'visible': True,
+        }
+        extra_dict['project_info'] = {
+            'display_name': "Project",
+            'value': get_project_details_href(inst),
             'visible': True,
         }
         if inst.machine:
@@ -131,17 +158,6 @@ class VolumeJSONView(AdminJSONView):
                 'value': get_vm_details_href(inst),
                 'visible': True,
             }
-        extra_dict['description'] = {
-            'display_name': "Description",
-            'value': escape(inst.description) or "(not set)",
-            'visible': True,
-        }
-        extra_dict['updated'] = {
-            'display_name': "Update time",
-            'value': inst.updated.strftime("%Y-%m-%d %H:%M"),
-            'visible': True,
-        }
-
         return extra_dict
 
 

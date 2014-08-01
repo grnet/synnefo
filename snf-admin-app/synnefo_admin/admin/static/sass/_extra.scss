@@ -224,7 +224,7 @@ svg>text:last-child {
 	.pending {
 		color: $brand-warning;
 	}
-	.warning {
+	.warning, .no-notifications {
 		font-style: italic;
 		font-weight: bold;
 	}

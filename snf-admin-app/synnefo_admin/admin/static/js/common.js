@@ -26,10 +26,10 @@ snf = {
 				contentType: 'application/json',
 				timeout: 100000,
 				beforeSend: function(jqXHR, settings) {
+					$('.no-notifications:not(.hidden)').addClass('hidden');
 					var pendingMsg = _.template(snf.modals.html.notifyPending, ({logID: logID, actionName: actionName, removeBtn: snf.modals.html.removeLogLine, itemsCount: itemsCount}));
 					if($notificationArea.find('.warning').length === 0) {
 						$notificationArea.find('.container').append(pendingMsg);
-						$notificationArea.find('.container').append(warningMsg);
 					}
 					else {
 						$notificationArea.find('.warning').before(pendingMsg);
@@ -39,6 +39,9 @@ snf = {
 				},
 				success: function(response, statusText, jqXHR) {
 					var successMsg = _.template(snf.modals.html.notifySuccess, ({actionName: actionName, removeBtn: snf.modals.html.removeLogLine, itemsCount: itemsCount}));
+					if($notificationArea.find('.warning').length === 0) {
+						$notificationArea.find('.container').append(warningMsg);
+					}
                     $notificationArea.find('#'+logID).replaceWith(successMsg);
                     snf.modals.showBottomModal($notificationArea);
                 },
@@ -50,15 +53,16 @@ snf = {
                         htmlErrorIDs = '';
                     }
                     else {
-                        htmlErrorReason = _.template(snf.modals.html.notifyErrorReason, {descrition: jqXHR.responseJSON.result});
+
+                        htmlErrorReason = _.template(snf.modals.html.notifyErrorReason, {description: jqXHR.responseJSON.result});
                         htmlErrorIDs = _.template(snf.modals.html.notifyErrorIDs, {ids: jqXHR.responseJSON.error_ids.toString().replace(/\,/gi, ', ')});
                     }
                     var logs = htmlErrorSum + _.template(snf.modals.html.notifyErrorDetails, {list: htmlErrorReason+htmlErrorIDs});
                     htmlError = _.template(snf.modals.html.notifyError, {logInfo: logs});
-                    $notificationArea.find('#'+logID).replaceWith(htmlError);
                     if($notificationArea.find('.warning').length === 0) {
                         $notificationArea.find('.container').append(warningMsg);
                     }
+                    $notificationArea.find('#'+logID).replaceWith(htmlError);
 
                     snf.modals.showBottomModal($notificationArea);
                 }
@@ -74,6 +78,7 @@ snf = {
 			$modal.animate({'bottom': height}, 'slow', function() {
 				if($modal.find('.log').length === 0) {
 					$modal.find('.warning').remove();
+					$('.no-notifications').removeClass('hidden');
 				}
 			});
 		},

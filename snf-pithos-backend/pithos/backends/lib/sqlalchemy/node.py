@@ -1189,27 +1189,33 @@ class Node(DBWorker):
 
         v = self.versions.alias('v')
         if before != inf:
-            filtered = select([func.max(v.c.serial)],
-                              and_(v.c.mtime < before,
-                                   v.c.node == self.versions.c.node))
+            d4 = select([func.max(v.c.serial).label("vmax"),
+                         self.nodes.c.path]).where(v.c.mtime < before)
+            d4 = d4.where(self.nodes.c.latest_version == v.c.serial)
+            d4 = d4.where(and_(self.nodes.c.path > bindparam('start'),
+                               self.nodes.c.path < nextling))
+            d4 = d4.group_by(self.nodes.c.path).cte("d4")
             inner_join = \
-                self.nodes.join(self.versions,
-                                onclause=self.versions.c.serial == filtered)
+                d4.join(self.versions,
+                        onclause=self.versions.c.serial == d4.c.vmax)
         else:
-            filtered = select([self.nodes.c.latest_version])
-            filtered = filtered.where(self.nodes.c.node ==
-                                      self.versions.c.node
-                                      ).correlate(self.versions)
+            d4 = select([self.nodes.c.path,
+                         self.nodes.c.node,
+                         self.nodes.c.latest_version]).where(
+                         self.nodes.c.parent == parent)
+            d4 = d4.where(and_(self.nodes.c.path > bindparam('start'),
+                               self.nodes.c.path < nextling)).cte("d4")
+
             inner_join = \
-                self.nodes.join(self.versions,
-                                onclause=
-                                self.versions.c.serial == filtered)
+                d4.join(self.versions,
+                        onclause=
+                        self.versions.c.serial == d4.c.latest_version)
         if not all_props:
-            s = select([self.nodes.c.path,
+            s = select([d4.c.path,
                        self.versions.c.serial],
                        from_obj=[inner_join]).distinct()
         else:
-            s = select([self.nodes.c.path,
+            s = select([d4.c.path,
                        self.versions.c.serial, self.versions.c.node,
                        self.versions.c.hash,
                        self.versions.c.size, self.versions.c.type,
@@ -1225,22 +1231,16 @@ class Node(DBWorker):
                        from_obj=[inner_join]).distinct()
 
         s = s.where(self.versions.c.cluster != except_cluster)
-        s = s.where(self.versions.c.node.in_(select([self.nodes.c.node],
-                                             self.nodes.c.parent == parent)))
-
-        s = s.where(self.versions.c.node == self.nodes.c.node)
-        s = s.where(and_(self.nodes.c.path > bindparam('start'),
-                    self.nodes.c.path < nextling))
         conja = []
         conjb = []
         for path, match in pathq:
             if match == MATCH_PREFIX:
-                conja.append(self.nodes.c.path.like(self.escape_like(path) +
+                conja.append(d4.c.path.like(self.escape_like(path) +
                              '%', escape=ESCAPE_CHAR))
             elif match == MATCH_EXACT:
                 conjb.append(path)
         if conja or conjb:
-            s = s.where(or_(self.nodes.c.path.in_(conjb), *conja))
+            s = s.where(or_(d4.c.path.in_(conjb), *conja))
 
         if sizeq and len(sizeq) == 2:
             if sizeq[0]:
@@ -1280,7 +1280,7 @@ class Node(DBWorker):
                              self.attributes.c.value.op(o)(val)))
                     s = s.where(exists(subs))
 
-        s = s.order_by(self.nodes.c.path)
+        s = s.order_by(d4.c.path)
 
         if not delimiter:
             s = s.limit(limit)

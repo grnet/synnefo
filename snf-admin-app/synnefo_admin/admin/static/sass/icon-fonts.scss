@@ -71,9 +71,6 @@
 .snf-clipboard-i {
     @include font-icon('font-icons', "\69");
 }
-.snf-clipboard-j {
-    @include font-icon('font-icons', "\6a");
-}
 .snf-copy {
     @include font-icon('font-icons', "\6c");
 }
@@ -110,20 +107,11 @@
 .snf-wallet-full {
     @include font-icon('font-icons', "\78");
 }
-.snf-pig {
-    @include font-icon('font-icons', "\76");
-}
-.snf-bag {
-    @include font-icon('font-icons', "\77");
-}
 .snf-wallet-outline {
     @include font-icon('font-icons', "\79");
 }
 .snf-keyboard {
     @include font-icon('font-icons', "\7a");
-}
-.snf-book-1 {
-    @include font-icon('font-icons', "\41");
 }
 .snf-book-2 {
     @include font-icon('font-icons',  "\42");
@@ -131,11 +119,29 @@
 .snf-bell-1 {
     @include font-icon('font-icons',  "\43");
 }
-.snf-bell-2 {
+.snf-bulb {
+    @include font-icon('font-icons',  "\46");
+}
+.snf-sun-1 {
+    @include font-icon('font-icons',  "\47");
+}
+.snf-moon-1 {
+    @include font-icon('font-icons',  "\76");
+}
+.snf-sun-2-full {
+    @include font-icon('font-icons',  "\77");
+}
+.snf-sun-2-outline {
+    @include font-icon('font-icons',  "\6a");
+}
+.snf-moon-2-full:before {
     @include font-icon('font-icons',  "\44");
 }
-.snf-bell-3 {
+.snf-moon-2-outline {
     @include font-icon('font-icons',  "\45");
+}
+.snf-sun-3 {
+    @include font-icon('font-icons',  "\41");
 }
 .snf-eye {
     @include font-icon('snf-font', "\41");

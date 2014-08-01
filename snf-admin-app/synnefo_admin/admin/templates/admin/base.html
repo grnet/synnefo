@@ -7,10 +7,10 @@
     <link href="{{ ADMIN_MEDIA_URL }}css/icon-fonts.css" rel="stylesheet">
     <link href="{{ ADMIN_MEDIA_URL }}css/jquery.dataTables.css" rel="stylesheet">
 
-    {% if request.COOKIES.theme == 'light' %}
-    <link href="{{ ADMIN_MEDIA_URL }}css/main-light.css" rel="stylesheet">
-    {% else  %}
+    {% if request.COOKIES.theme == 'dark' %}
     <link href="{{ ADMIN_MEDIA_URL }}css/main.css" rel="stylesheet">
+    {% else  %}
+    <link href="{{ ADMIN_MEDIA_URL }}css/main-light.css" rel="stylesheet">
     {% endif %}
     <!--
     <link href="{{ ADMIN_MEDIA_URL }}css/ie7.css" rel="stylesheet"> -->
@@ -93,7 +93,7 @@
         {% endblock main-area %}
 
         <div class="themes">
-          <a href="" id="toggle-theme" class="line-btn" title="Change theme"><span class="snf-moon-1"></span></a>
+          <a href="" id="toggle-theme" class="line-btn" title="Change theme. This will refresh the page."><span class="snf-moon-1"></span></a>
         </div><!-- /themes -->
 
  

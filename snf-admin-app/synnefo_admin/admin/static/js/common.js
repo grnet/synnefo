@@ -291,7 +291,7 @@ $(document).ready(function(){
     
     // toggle themes
     $('#toggle-theme').click(function(e) {
-        var newC = ( $.cookie('theme') == 'light' )? 'dark': 'light';
+        var newC = ( $.cookie('theme') == 'dark' )? 'light': 'dark';
         $.cookie('theme', newC , {expires: 365, path: '/'});
     });
 

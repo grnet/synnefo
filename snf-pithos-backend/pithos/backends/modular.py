@@ -39,7 +39,8 @@ from pithos.backends.base import (
     DEFAULT_CONTAINER_VERSIONING, NotAllowedError, QuotaError,
     BaseBackend, AccountExists, ContainerExists, AccountNotEmpty,
     ContainerNotEmpty, ItemNotExists, VersionNotExists,
-    InvalidHash, IllegalOperationError, InconsistentContentSize)
+    InvalidHash, IllegalOperationError, InconsistentContentSize,
+    LimitExceeded)
 
 
 class DisabledAstakosClient(object):
@@ -530,6 +531,7 @@ class ModularBackend(BaseBackend):
     def put_account(self, user, account, policy=None):
         """Create a new account with the given name."""
 
+        self._check_account(account)
         policy = policy or {}
         self._can_write_account(user, account)
         node = self.node.node_lookup(account)
@@ -1832,6 +1834,8 @@ class ModularBackend(BaseBackend):
     def _lookup_account(self, account, create=True):
         node = self.node.node_lookup(account)
         if node is None and create:
+            self._check_account(account)
+
             node = self._put_path(
                 account, self.ROOTNODE, account,
                 update_statistics_ancestors_depth=-1)  # User is account.
@@ -2191,9 +2195,20 @@ class ModularBackend(BaseBackend):
 
     # Access control functions.
 
+    def _check_account(self, user):
+        if user is not None and len(user) > 256:
+            raise LimitExceeded('User identifier should be at most '
+                                '256 characters long.')
+
     def _check_groups(self, groups):
-        # raise ValueError('Bad characters in groups')
-        pass
+        for k, members in groups.iteritems():
+            if len(k) > 256:
+                raise LimitExceeded('Group names should be at most '
+                                    '256 characters long.')
+            for m in members:
+                if len(m) > 256:
+                    raise LimitExceeded('Group members should be at most '
+                                        '256 characters long.')
 
     def _check_permissions(self, path, permissions):
         # raise ValueError('Bad characters in permissions')

@@ -58,7 +58,12 @@ class VersionNotExists(IndexError):
 class InvalidHash(TypeError):
     pass
 
+
 class InconsistentContentSize(ValueError):
+    pass
+
+
+class LimitExceeded(Exception):
     pass
 
 

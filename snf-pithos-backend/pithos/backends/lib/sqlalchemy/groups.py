@@ -92,7 +92,7 @@ class Groups(DBWorker):
         ins = self.groups.insert()
         values = list({'owner': owner,
                        'name': group,
-                       'member': m} for m in members)
+                       'member': m} for m in sorted(list(members)))
         self.conn.execute(ins, values)
 
     def group_remove(self, owner, group, member):

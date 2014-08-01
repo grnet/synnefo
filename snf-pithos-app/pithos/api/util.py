@@ -58,7 +58,8 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
 from pithos.api.resources import resources
 from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
-                                  VersionNotExists, IllegalOperationError)
+                                  VersionNotExists, IllegalOperationError,
+                                  LimitExceeded)
 
 from synnefo.lib import join_urls
 
@@ -137,7 +138,7 @@ def get_account_headers(request):
         n = k[16:].lower()
         if '-' in n or '_' in n:
             raise faults.BadRequest('Bad characters in group name')
-        groups[n] = v.replace(' ', '').split(',')
+        groups[n] = set(v.replace(' ', '').split(','))
         while '' in groups[n]:
             groups[n].remove('')
     return meta, groups
@@ -1116,6 +1117,8 @@ def api_method(http_method=None, token_required=True, user_required=True,
 
                 success_status = True
                 return response
+            except LimitExceeded, le:
+                raise faults.BadRequest(le.args[0])
             finally:
                 # Always close PithosBackend connection
                 if getattr(request, "backend", None) is not None:

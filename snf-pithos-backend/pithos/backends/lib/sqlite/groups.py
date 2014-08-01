@@ -62,7 +62,8 @@ class Groups(DBWorker):
 
         q = ("insert or ignore into groups (owner, name, member) "
              "values (?, ?, ?)")
-        self.executemany(q, ((owner, group, member) for member in members))
+        self.executemany(q, ((owner, group, member) for member in
+                             sorted(list(members))))
 
     def group_remove(self, owner, group, member):
         """Remove a member from a group."""

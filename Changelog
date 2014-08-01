@@ -112,11 +112,56 @@ Astakos
 Cyclades
 --------
 
-* Add support for snf-vncauthproxy 1.6 (configurable VNC console types)
-* Add setting `CYCLADES_VM_MAX_METADATA` to limit the maximum number of Virtual
-  Machine metadata items
+* Introduce Volumes and Snapshots:
+  * Implement 'cyclades_volumes' service, containing the /volumes, /types,
+    and /snapshots API endpoints under '/volumes/v2.0'.
+  * Implement `snf-manage volume-{create, list, show, modify, inspect, remove}'
+    management commands for handling of volumes.
+  * Implement `snf-manage snapshot-{create, list, show, modify}` management
+    commands for handling of snapshots.
+  * Implement 'volume-type-{create, list, modify, show, remove}` management
+    commands for handling of volume types.
+  * Add new settings:
+    * GANETI_MAX_DISKS_PER_INSTANCE: Maximum number of disks that each Ganeti
+      instance can have.
+    * CYCLADES_VOLUME_MAX_SIZE: The maximum allowed size (in GB) for Cyclades
+      volumes.
+    * CYCLADES_SNAPSHOTS_ENABLED: Enable/Disable the snapshots feature
+      altogether at the API level.
+* Integrate Cyclades resources with Astakos projects.
+  * Extend API calls that create resources with the 'project' attribute
+    in order to assign resources to the specified project.
+  * Implement API calls for reassigning resources to a new project.
+  * Export the project that a resource belongs in the 'tenant_id' API
+	  attribute.
+
+* Add support for snf-vncauthproxy 1.6 (configurable VNC console types).
+* Add support for more types of VM console:
+  * Modify the current 'console' action to support VNC WebSockets (requires
+    snf-vncauthproxy=1.6).
+  * Add support for the three OpenStack Compute console actions
+		(VNC, RDP, Spice). RDP and Spice are currently not implemented.
+
+* Update Cyclades to work with Pithos with integrated Archipelago v2
+  mapfiles.
+* Include functionality for checking the status of the Cyclades update path,
+	which includes Ganeti, AMQP, snf-ganeti-eventd and snf-dispatcher. This
+	functionality is implemented as part of the snf-dispatcher and can be used
+	by passing the '--status-check' option.
+* Add setting `CYCLADES_VM_MAX_METADATA` to limit the maximum number of
+  metadata per vm.
 * Add setting `CYCLADES_VOLUME_MAX_METADATA` to limit the maximum number of
-  Volume metadata items
+  metadata per volume..
+* Use common -u/--user option to specify the UUID or email of the user, for
+  all management commands.
+* Store basic information about images that have been used to create servers,
+	in order to preserve this information even if images are deleted from
+	Pithos.
+* Update 'backend-list' command to not count the free IPs from networks that
+  are drained.
+* Fix the'network-inspect' command to not contain externally reserved IPs
+  in th number of available IPs.
+* Fix various minor bugs.
 
 Cyclades UI
 -----------

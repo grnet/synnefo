@@ -107,6 +107,7 @@ def setup_synnefo():
     setup_role(constants.ASTAKOS)
     setup_role(constants.PITHOS)
     setup_role(constants.CYCLADES)
+    setup_role(constants.ADMIN)
     setup_role(constants.CMS)
 
     setup_cluster()

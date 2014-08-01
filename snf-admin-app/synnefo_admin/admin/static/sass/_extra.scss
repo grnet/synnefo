@@ -341,7 +341,7 @@ svg>text:last-child {
 
 
 .themes {
-    position: absolute;
-    left: 0;
-    bottom: 0;
+    position: fixed;
+    left: 10px;
+    bottom: 10px;
 }

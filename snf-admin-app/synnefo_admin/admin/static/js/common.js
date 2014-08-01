@@ -203,8 +203,23 @@ snf = {
 	ajaxdelay: 400
 };
 
+function setThemeIcon() {
+    var span = $('#toggle-theme').find('span');
+    var c = $.cookie('theme');
+    if ( c == 'dark') {
+        span.addClass('snf-sun-2-full');
+        span.removeClass('snf-moon-1');
+   } else {
+        span.addClass('snf-moon-1');
+        span.removeClass('snf-sun-2-full');
+    }
+}
+
+
 
 $(document).ready(function(){
+
+    setThemeIcon();
 	var $notificationArea = $('.notify');
 	$notificationArea.css('bottom', -$notificationArea.outerHeight(true))
 	$('.error-sign').click(function(e) {
@@ -268,6 +283,7 @@ $(document).ready(function(){
     $('.disabled').click(function(e){
         e.preventDefault();
     });
+    
     // toggle themes
     $('#toggle-theme').click(function(e) {
         var newC = ( $.cookie('theme') == 'light' )? 'dark': 'light';

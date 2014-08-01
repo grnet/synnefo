@@ -28,6 +28,7 @@ import datetime
 
 import django.utils.simplejson as json
 
+
 class AccountHead(PithosAPITest):
     def test_get_account_meta(self):
         cnames = ['apples', 'bananas', 'kiwis', 'oranges', 'pears']
@@ -153,7 +154,7 @@ class AccountGet(PithosAPITest):
         _time.sleep(2)
 
         self.create_container()
-        
+
         url = join_urls(self.pithos_path, self.user)
         r = self.get('%s?until=%s' % (url, until))
         self.assertEqual(r.status_code, 200)
@@ -163,7 +164,6 @@ class AccountGet(PithosAPITest):
         self.assertEqual(containers,
                          ['apples', 'bananas', 'kiwis', 'oranges', 'pears'])
 
-        
         r = self.get('%s?until=%s&format=json' % (url, until))
         self.assertEqual(r.status_code, 200)
         try:
@@ -171,7 +171,7 @@ class AccountGet(PithosAPITest):
         except:
             self.fail('json format expected')
         self.assertEqual([c['name'] for c in containers],
-                         ['apples', 'bananas', 'kiwis', 'oranges', 'pears']) 
+                         ['apples', 'bananas', 'kiwis', 'oranges', 'pears'])
 
     def test_list_shared(self):
         # upload and publish object

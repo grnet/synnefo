@@ -121,7 +121,7 @@ DEFAULT_MAPFILE_PREFIX = 'snf_file_'
 
 logger = logging.getLogger(__name__)
 
-_propnames = ('serial', 'node',  'hash', 'size', 'type', 'source', 'mtime',
+_propnames = ('serial', 'node', 'hash', 'size', 'type', 'source', 'mtime',
               'muser', 'uuid', 'checksum', 'cluster', 'available',
               'map_check_timestamp', 'mapfile', 'is_snapshot')
 _props = lambda props: OrderedDict((props[i], i) for i in range(len(props)))
@@ -2418,6 +2418,5 @@ class ModularBackend(BaseBackend):
             else:
                 block_num = size / self.block_size + 1
             if block_num != len(hashmap):
-               return False
+                return False
         return True
-

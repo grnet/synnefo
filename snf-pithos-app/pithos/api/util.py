@@ -55,7 +55,6 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BASE_HOST, UPDATE_MD5, VIEW_PREFIX,
                                  OAUTH2_CLIENT_CREDENTIALS, UNSAFE_DOMAIN)
 
-from pithos.api.resources import resources
 from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists, IllegalOperationError,
@@ -749,8 +748,8 @@ def socket_read_iterator(request, length=0, blocksize=4096):
             try:
                 chunk_length = int(chunk_length, 16)
             except Exception:
+                # TODO: Change to something more appropriate.
                 raise faults.BadRequest('Bad chunk size')
-                                 # TODO: Change to something more appropriate.
             # Check if done.
             if chunk_length == 0:
                 if len(data) > 0:
@@ -985,6 +984,7 @@ def put_object_block(request, hashmap, data, offset, is_snapshot):
     else:
         hashmap.append(request.backend.put_block(('\x00' * bo) + data[:bl]))
     return bl  # Return ammount of data written.
+
 
 def hashmap_md5(backend, hashmap, size):
     """Produce the MD5 sum from the data in the hashmap."""

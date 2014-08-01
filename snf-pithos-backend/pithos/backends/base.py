@@ -237,7 +237,8 @@ class BaseBackend(object):
         """
         return []
 
-    def get_container_meta(self, user, account, container, domain=None, until=None,
+    def get_container_meta(self, user, account, container, domain=None,
+                           until=None,
                            include_user_defined=True):
         """Return a dictionary with the container metadata for the domain.
 

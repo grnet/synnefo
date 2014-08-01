@@ -151,7 +151,7 @@ Cyclades
 * Add setting `CYCLADES_VM_MAX_METADATA` to limit the maximum number of
   metadata per vm.
 * Add setting `CYCLADES_VOLUME_MAX_METADATA` to limit the maximum number of
-  metadata per volume..
+  metadata per volume.
 * Use common -u/--user option to specify the UUID or email of the user, for
   all management commands.
 * Store basic information about images that have been used to create servers,

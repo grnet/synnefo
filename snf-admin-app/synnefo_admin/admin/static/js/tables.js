@@ -36,19 +36,7 @@ $(document).ready(function() {
 			}
 		}
 
-        var s = $("#sticker");
-        var pos = s.position();
-
-        $(window).scroll(function() {
-            var windowpos = $(window).scrollTop();
-            // 80 the navbar fixed height
-            if (windowpos >= pos.top - 80) {
-                s.addClass("stick");
-            } else {
-                s.removeClass("stick");
-            }
-        });
-
+        sticker(); 
 		//processScroll();
 		//$win.on('scroll', processScroll);
 	}

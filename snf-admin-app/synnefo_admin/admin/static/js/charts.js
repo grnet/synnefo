@@ -598,3 +598,8 @@ function imagesStats(data) {
             }]
         });
 }
+
+
+$(document).ready(function() {
+    sticker();
+});

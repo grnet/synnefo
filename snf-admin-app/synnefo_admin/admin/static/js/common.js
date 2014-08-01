@@ -220,6 +220,24 @@ function setThemeIcon() {
     }
 }
 
+function sticker() {
+    if ($("#sticker").length>0) {
+        var s = $("#sticker");
+    } else {
+        return;
+    }
+    var pos = s.position();
+
+    $(window).scroll(function() {
+        var windowpos = $(window).scrollTop();
+        // 80 the navbar fixed height
+        if (windowpos >= pos.top - 80) {
+            s.addClass("stick");
+        } else {
+            s.removeClass("stick");
+        }
+    });
+}
 
 
 $(document).ready(function(){

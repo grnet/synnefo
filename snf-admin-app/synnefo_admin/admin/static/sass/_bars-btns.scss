@@ -267,20 +267,21 @@ Extra-button is used to show total selected rows
     .chart {
         display: none;
     }
-    .well {
-        padding-left: 140px;
-    }
     .sidebar {
-        position: fixed;
-
         a {
-            margin-bottom: 1em;
             @include outline-btn();
             display: block;
+            margin: 20px auto;
         }
         a.active {
             @include custom-btn();
             display: block;
+        }
+        @media (max-width: $screen-lg-min) {
+            a, a.active {
+                margin-right: 10px;
+                display: inline-block;
+            }
         }
     }
 }

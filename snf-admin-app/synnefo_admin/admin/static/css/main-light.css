@@ -5133,115 +5133,114 @@ Extra-button is used to show total selected rows
 /* line 267, ../sass/_bars-btns.scss */
 .charts .chart {
   display: none; }
-/* line 270, ../sass/_bars-btns.scss */
-.charts .well {
-  padding-left: 140px; }
-/* line 273, ../sass/_bars-btns.scss */
-.charts .sidebar {
-  position: fixed; }
-  /* line 276, ../sass/_bars-btns.scss */
-  .charts .sidebar a {
-    margin-bottom: 1em;
+/* line 271, ../sass/_bars-btns.scss */
+.charts .sidebar a {
+  display: inline-block;
+  text-align: center;
+  opacity: 1;
+  border: 1px solid #222222;
+  color: #222222;
+  display: block;
+  margin: 20px auto; }
+  /* line 29, ../sass/_bars-btns.scss */
+  .charts .sidebar a span {
     display: inline-block;
-    text-align: center;
-    opacity: 1;
-    border: 1px solid #222222;
-    color: #222222;
-    display: block; }
-    /* line 29, ../sass/_bars-btns.scss */
-    .charts .sidebar a span {
-      display: inline-block;
-      height: 100%;
-      line-height: 100%;
-      padding: 8px; }
-    /* line 36, ../sass/_bars-btns.scss */
-    .charts .sidebar a:hover, .charts .sidebar a:focus {
-      text-decoration: none;
-      opacity: 0.85; }
-    /* line 45, ../sass/_bars-btns.scss */
-    .charts .sidebar a .snf-font-remove {
-      display: inline; }
-    /* line 48, ../sass/_bars-btns.scss */
-    .charts .sidebar a.disabled {
-      background: transparent !important;
-      border-color: #818181 !important;
-      color: #818181 !important; }
-      /* line 15, ../sass/_bars-btns.scss */
-      .charts .sidebar a.disabled:hover, .charts .sidebar a.disabled:focus {
-        cursor: default;
-        opacity: 1; }
-        /* line 18, ../sass/_bars-btns.scss */
-        .charts .sidebar a.disabled:hover span, .charts .sidebar a.disabled:focus span {
-          color: #818181 !important; }
-    /* line 59, ../sass/_bars-btns.scss */
-    .charts .sidebar a span {
-      border: 1px solid transparent;
-      width: 100%; }
-    /* line 65, ../sass/_bars-btns.scss */
-    .charts .sidebar a:hover span, .charts .sidebar a:focus span {
-      border-color: #222222; }
-    /* line 69, ../sass/_bars-btns.scss */
-    .charts .sidebar a.disabled {
-      @inlcude disabled;
-      color: #818181; }
-      /* line 74, ../sass/_bars-btns.scss */
+    height: 100%;
+    line-height: 100%;
+    padding: 8px; }
+  /* line 36, ../sass/_bars-btns.scss */
+  .charts .sidebar a:hover, .charts .sidebar a:focus {
+    text-decoration: none;
+    opacity: 0.85; }
+  /* line 45, ../sass/_bars-btns.scss */
+  .charts .sidebar a .snf-font-remove {
+    display: inline; }
+  /* line 48, ../sass/_bars-btns.scss */
+  .charts .sidebar a.disabled {
+    background: transparent !important;
+    border-color: #818181 !important;
+    color: #818181 !important; }
+    /* line 15, ../sass/_bars-btns.scss */
+    .charts .sidebar a.disabled:hover, .charts .sidebar a.disabled:focus {
+      cursor: default;
+      opacity: 1; }
+      /* line 18, ../sass/_bars-btns.scss */
       .charts .sidebar a.disabled:hover span, .charts .sidebar a.disabled:focus span {
-        border-color: transparent; }
-  /* line 281, ../sass/_bars-btns.scss */
-  .charts .sidebar a.active {
+        color: #818181 !important; }
+  /* line 59, ../sass/_bars-btns.scss */
+  .charts .sidebar a span {
+    border: 1px solid transparent;
+    width: 100%; }
+  /* line 65, ../sass/_bars-btns.scss */
+  .charts .sidebar a:hover span, .charts .sidebar a:focus span {
+    border-color: #222222; }
+  /* line 69, ../sass/_bars-btns.scss */
+  .charts .sidebar a.disabled {
+    @inlcude disabled;
+    color: #818181; }
+    /* line 74, ../sass/_bars-btns.scss */
+    .charts .sidebar a.disabled:hover span, .charts .sidebar a.disabled:focus span {
+      border-color: transparent; }
+/* line 276, ../sass/_bars-btns.scss */
+.charts .sidebar a.active {
+  display: inline-block;
+  text-align: center;
+  opacity: 1;
+  border: 1px solid #3c96e0;
+  color: white;
+  background-color: #3c96e0;
+  display: block; }
+  /* line 29, ../sass/_bars-btns.scss */
+  .charts .sidebar a.active span {
     display: inline-block;
-    text-align: center;
-    opacity: 1;
-    border: 1px solid #3c96e0;
-    color: white;
-    background-color: #3c96e0;
-    display: block; }
-    /* line 29, ../sass/_bars-btns.scss */
-    .charts .sidebar a.active span {
-      display: inline-block;
-      height: 100%;
-      line-height: 100%;
-      padding: 8px; }
-    /* line 36, ../sass/_bars-btns.scss */
-    .charts .sidebar a.active:hover, .charts .sidebar a.active:focus {
-      text-decoration: none;
-      opacity: 0.85; }
-    /* line 45, ../sass/_bars-btns.scss */
-    .charts .sidebar a.active .snf-font-remove {
-      display: inline; }
-    /* line 48, ../sass/_bars-btns.scss */
-    .charts .sidebar a.active.disabled {
-      background: transparent !important;
-      border-color: #818181 !important;
-      color: #818181 !important; }
-      /* line 15, ../sass/_bars-btns.scss */
-      .charts .sidebar a.active.disabled:hover, .charts .sidebar a.active.disabled:focus {
-        cursor: default;
-        opacity: 1; }
-        /* line 18, ../sass/_bars-btns.scss */
-        .charts .sidebar a.active.disabled:hover span, .charts .sidebar a.active.disabled:focus span {
-          color: #818181 !important; }
-    /* line 87, ../sass/_bars-btns.scss */
-    .charts .sidebar a.active span {
-      border: 1px solid transparent;
-      background: transparent; }
-    /* line 93, ../sass/_bars-btns.scss */
-    .charts .sidebar a.active:hover span, .charts .sidebar a.active:focus span {
-      color: white; }
-    /* line 97, ../sass/_bars-btns.scss */
-    .charts .sidebar a.active.disabled {
-      background: transparent !important;
-      border-color: #818181 !important;
-      color: #818181 !important; }
-      /* line 15, ../sass/_bars-btns.scss */
-      .charts .sidebar a.active.disabled:hover, .charts .sidebar a.active.disabled:focus {
-        cursor: default;
-        opacity: 1; }
-        /* line 18, ../sass/_bars-btns.scss */
-        .charts .sidebar a.active.disabled:hover span, .charts .sidebar a.active.disabled:focus span {
-          color: #818181 !important; }
+    height: 100%;
+    line-height: 100%;
+    padding: 8px; }
+  /* line 36, ../sass/_bars-btns.scss */
+  .charts .sidebar a.active:hover, .charts .sidebar a.active:focus {
+    text-decoration: none;
+    opacity: 0.85; }
+  /* line 45, ../sass/_bars-btns.scss */
+  .charts .sidebar a.active .snf-font-remove {
+    display: inline; }
+  /* line 48, ../sass/_bars-btns.scss */
+  .charts .sidebar a.active.disabled {
+    background: transparent !important;
+    border-color: #818181 !important;
+    color: #818181 !important; }
+    /* line 15, ../sass/_bars-btns.scss */
+    .charts .sidebar a.active.disabled:hover, .charts .sidebar a.active.disabled:focus {
+      cursor: default;
+      opacity: 1; }
+      /* line 18, ../sass/_bars-btns.scss */
+      .charts .sidebar a.active.disabled:hover span, .charts .sidebar a.active.disabled:focus span {
+        color: #818181 !important; }
+  /* line 87, ../sass/_bars-btns.scss */
+  .charts .sidebar a.active span {
+    border: 1px solid transparent;
+    background: transparent; }
+  /* line 93, ../sass/_bars-btns.scss */
+  .charts .sidebar a.active:hover span, .charts .sidebar a.active:focus span {
+    color: white; }
+  /* line 97, ../sass/_bars-btns.scss */
+  .charts .sidebar a.active.disabled {
+    background: transparent !important;
+    border-color: #818181 !important;
+    color: #818181 !important; }
+    /* line 15, ../sass/_bars-btns.scss */
+    .charts .sidebar a.active.disabled:hover, .charts .sidebar a.active.disabled:focus {
+      cursor: default;
+      opacity: 1; }
+      /* line 18, ../sass/_bars-btns.scss */
+      .charts .sidebar a.active.disabled:hover span, .charts .sidebar a.active.disabled:focus span {
+        color: #818181 !important; }
+@media (max-width: 1200px) {
+  /* line 281, ../sass/_bars-btns.scss */
+  .charts .sidebar a, .charts .sidebar a.active {
+    margin-right: 10px;
+    display: inline-block; } }
 
-/* line 288, ../sass/_bars-btns.scss */
+/* line 289, ../sass/_bars-btns.scss */
 .notify .reload-btn {
   padding: 0 4px;
   font-size: 18px;

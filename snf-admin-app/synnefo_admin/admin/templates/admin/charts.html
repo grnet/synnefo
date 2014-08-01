@@ -13,14 +13,16 @@ class="active"
     data-astakos-stats={% url admin-stats-component-details 'astakos' %}
     data-cyclades-stats={% url admin-stats-component-details 'cyclades' %}>
 <div class="sidebar actionbar">
-    <a href="" data-chart="resource-usage" class="active"><span>Resource Usage</span></a>
-    <a href="" data-chart="temp"><span>User status and providers</span></a>
-    <a href="" data-chart="vm-status"><span>VM status</span></a>
-    <a href="" data-chart="ip-status"><span>IP status</span></a>
-    <a href="" data-chart="disk-templates"><span>Disk templates</span></a>
-    <a href="" data-chart="images"><span>Images</span></a>
+    <div id="sticker">
+        <a href="" data-chart="resource-usage" class="active"><span>Resource Usage</span></a>
+        <a href="" data-chart="temp"><span>User status and providers</span></a>
+        <a href="" data-chart="vm-status"><span>VM status</span></a>
+        <a href="" data-chart="ip-status"><span>IP status</span></a>
+        <a href="" data-chart="disk-templates"><span>Disk templates</span></a>
+        <a href="" data-chart="images"><span>Images</span></a>
+    </div>
 </div>
-<div class="well">
+<div class="info well">
     <div id="infra-usage" class="chart" data-chart="resource-usage"></div>
     <div id="resource-usage" class="chart" data-chart="resource-usage"></div>
     <div id="provider-status" class="chart" data-chart="temp"></div>

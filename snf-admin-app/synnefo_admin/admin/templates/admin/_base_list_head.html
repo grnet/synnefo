@@ -35,7 +35,7 @@
     {% endif %}
 </h3>
 
-{% if type == 'ip_log' %}
+{% if type == 'ip_log' and association.items|length > 0 %}
 <table class="table ip_log">
     <thead>
         <tr>

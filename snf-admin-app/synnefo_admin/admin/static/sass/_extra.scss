@@ -344,10 +344,10 @@ svg>text:last-child {
 }
 
 .stick {
-
     @media (min-width: $screen-lg-min) {
         position: fixed;
         top: 2* $navbar-height;
+        width: inherit;
     }
 }
 

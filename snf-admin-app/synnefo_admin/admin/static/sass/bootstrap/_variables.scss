@@ -59,8 +59,8 @@ $btn-line-bg:           $total-black;
 $btn-line-border:       #fff;
 
 // Tables
-$table-selected-row-bg:     $gray-dark;
-$table-selected-row-color:  white;
+$table-selected-row-bg:     $almost-white;
+$table-selected-row-color:  $reverse-text-color;
 $table-zebra-row-bg:        lighten($gray-dark,5%);    
 $table-row-hover:           lighten($table-zebra-row-bg, 7%);
 $table-datatable-border-color:        white;

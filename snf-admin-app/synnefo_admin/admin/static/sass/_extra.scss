@@ -135,6 +135,9 @@ h1,h2,h3,h4 {
             padding-bottom: 8px;
         }
     }
+    @media (max-width: $grid-float-breakpoint) {
+        display: none;
+    }
 }
 .dropdown-menu {
     overflow-y: auto;

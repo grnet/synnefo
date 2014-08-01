@@ -64,13 +64,14 @@
                             </ul>
                         </li>
                     </ul>
-                    {% block subnav-bar %}
-                    {% endblock subnav-bar %}
-
                </div> <!-- /collapse -->
             </div> <!-- /container-fluid -->
 
         </div> <!-- /nav-main -->
+        {% block subnav-bar %}
+        {% endblock subnav-bar %}
+
+
         {% endblock nav-bar %}
 
         {% if messages %}

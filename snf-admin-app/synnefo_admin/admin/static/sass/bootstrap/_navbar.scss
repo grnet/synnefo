@@ -407,7 +407,7 @@
         background-color: $navbar-default-link-hover-bg;
       }
     }
-    > .has-dropdown:hover {
+    > .has-dropdown:not(.active):hover {
        >a:first-child {
             color: $navbar-default-link-hover-color;
             background-color: $navbar-default-link-hover-bg;

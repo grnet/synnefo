@@ -3,8 +3,7 @@
   src: url("../fonts/font-icons.eot?hm0cup");
   src: url("../fonts/font-icons.eot?#iefixhm0cup") format("embedded-opentype"), url("../fonts/font-icons.woff?hm0cup") format("woff"), url("../fonts/font-icons.ttf?hm0cup") format("truetype"), url("../fonts/font-icons.svg?hm0cup#font-icons") format("svg");
   font-weight: normal;
-  font-style: normal;
-}
+  font-style: normal; }
 
 /* Font with kpal icons */
 @font-face {
@@ -12,8 +11,7 @@
   src: url("../fonts/snf-font.eot");
   src: url("../fonts/snf-font.eot?#iefix") format("embedded-opentype"), url("../fonts/snf-font.woff") format("woff"), url("../fonts/snf-font.ttf") format("truetype"), url("../fonts/snf-font.svg#snf-font") format("svg");
   font-weight: normal;
-  font-style: normal;
-}
+  font-style: normal; }
 
 /* line 47, ../sass/icon-fonts.scss */
 .snf-ok {
@@ -26,12 +24,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-ok:before {
-  content: "\61";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-ok:before {
+    content: "\61"; }
 
 /* line 50, ../sass/icon-fonts.scss */
 .snf-remove {
@@ -44,12 +40,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-remove:before {
-  content: "\62";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-remove:before {
+    content: "\62"; }
 
 /* line 53, ../sass/icon-fonts.scss */
 .snf-envelope {
@@ -62,12 +56,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-envelope:before {
-  content: "\63";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-envelope:before {
+    content: "\63"; }
 
 /* line 56, ../sass/icon-fonts.scss */
 .snf-envelope-alt {
@@ -80,12 +72,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-envelope-alt:before {
-  content: "\64";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-envelope-alt:before {
+    content: "\64"; }
 
 /* line 59, ../sass/icon-fonts.scss */
 .snf-angle-up {
@@ -98,12 +88,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-angle-up:before {
-  content: "\65";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-angle-up:before {
+    content: "\65"; }
 
 /* line 62, ../sass/icon-fonts.scss */
 .snf-angle-down {
@@ -116,12 +104,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-angle-down:before {
-  content: "\66";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-angle-down:before {
+    content: "\66"; }
 
 /* line 65, ../sass/icon-fonts.scss */
 .snf-exclamation-sign {
@@ -134,12 +120,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-exclamation-sign:before {
-  content: "\67";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-exclamation-sign:before {
+    content: "\67"; }
 
 /* line 68, ../sass/icon-fonts.scss */
 .snf-clipboard-h {
@@ -152,12 +136,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-clipboard-h:before {
-  content: "\68";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-clipboard-h:before {
+    content: "\68"; }
 
 /* line 71, ../sass/icon-fonts.scss */
 .snf-clipboard-i {
@@ -170,12 +152,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-clipboard-i:before {
-  content: "\69";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-clipboard-i:before {
+    content: "\69"; }
 
 /* line 74, ../sass/icon-fonts.scss */
 .snf-copy {
@@ -188,12 +168,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-copy:before {
-  content: "\6c";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-copy:before {
+    content: "\6c"; }
 
 /* line 77, ../sass/icon-fonts.scss */
 .snf-search {
@@ -206,12 +184,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-search:before {
-  content: "\6d";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-search:before {
+    content: "\6d"; }
 
 /* line 80, ../sass/icon-fonts.scss */
 .snf-sign-out {
@@ -224,12 +200,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-sign-out:before {
-  content: "\6e";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-sign-out:before {
+    content: "\6e"; }
 
 /* line 83, ../sass/icon-fonts.scss */
 .snf-archive {
@@ -242,12 +216,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-archive:before {
-  content: "\6b";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-archive:before {
+    content: "\6b"; }
 
 /* line 86, ../sass/icon-fonts.scss */
 .snf-checkbox-checked {
@@ -260,12 +232,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-checkbox-checked:before {
-  content: "\6f";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-checkbox-checked:before {
+    content: "\6f"; }
 
 /* line 89, ../sass/icon-fonts.scss */
 .snf-checkbox-unchecked {
@@ -278,12 +248,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-checkbox-unchecked:before {
-  content: "\70";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-checkbox-unchecked:before {
+    content: "\70"; }
 
 /* line 92, ../sass/icon-fonts.scss */
 .snf-radio-checked {
@@ -296,12 +264,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-radio-checked:before {
-  content: "\71";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-radio-checked:before {
+    content: "\71"; }
 
 /* line 95, ../sass/icon-fonts.scss */
 .snf-radio-unchecked {
@@ -314,12 +280,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-radio-unchecked:before {
-  content: "\72";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-radio-unchecked:before {
+    content: "\72"; }
 
 /* line 98, ../sass/icon-fonts.scss */
 .snf-info {
@@ -332,12 +296,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-info:before {
-  content: "\73";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-info:before {
+    content: "\73"; }
 
 /* line 101, ../sass/icon-fonts.scss */
 .snf-user-outline {
@@ -350,12 +312,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-user-outline:before {
-  content: "\75";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-user-outline:before {
+    content: "\75"; }
 
 /* line 104, ../sass/icon-fonts.scss */
 .snf-user-full {
@@ -368,12 +328,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-user-full:before {
-  content: "\74";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-user-full:before {
+    content: "\74"; }
 
 /* line 107, ../sass/icon-fonts.scss */
 .snf-wallet-full {
@@ -386,12 +344,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-wallet-full:before {
-  content: "\78";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-wallet-full:before {
+    content: "\78"; }
 
 /* line 110, ../sass/icon-fonts.scss */
 .snf-wallet-outline {
@@ -404,12 +360,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-wallet-outline:before {
-  content: "\79";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-wallet-outline:before {
+    content: "\79"; }
 
 /* line 113, ../sass/icon-fonts.scss */
 .snf-keyboard {
@@ -422,12 +376,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-keyboard:before {
-  content: "\7a";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-keyboard:before {
+    content: "\7a"; }
 
 /* line 116, ../sass/icon-fonts.scss */
 .snf-book-2 {
@@ -440,12 +392,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-book-2:before {
-  content: "\42";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-book-2:before {
+    content: "\42"; }
 
 /* line 119, ../sass/icon-fonts.scss */
 .snf-bell-1 {
@@ -458,12 +408,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-bell-1:before {
-  content: "\43";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-bell-1:before {
+    content: "\43"; }
 
 /* line 122, ../sass/icon-fonts.scss */
 .snf-bulb {
@@ -476,12 +424,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-bulb:before {
-  content: "\46";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-bulb:before {
+    content: "\46"; }
 
 /* line 125, ../sass/icon-fonts.scss */
 .snf-sun-1 {
@@ -494,12 +440,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-sun-1:before {
-  content: "\47";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-sun-1:before {
+    content: "\47"; }
 
 /* line 128, ../sass/icon-fonts.scss */
 .snf-moon-1 {
@@ -512,12 +456,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-moon-1:before {
-  content: "\76";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-moon-1:before {
+    content: "\76"; }
 
 /* line 131, ../sass/icon-fonts.scss */
 .snf-sun-2-full {
@@ -530,12 +472,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-sun-2-full:before {
-  content: "\77";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-sun-2-full:before {
+    content: "\77"; }
 
 /* line 134, ../sass/icon-fonts.scss */
 .snf-sun-2-outline {
@@ -548,12 +488,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-sun-2-outline:before {
-  content: "\6a";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-sun-2-outline:before {
+    content: "\6a"; }
 
 /* line 137, ../sass/icon-fonts.scss */
 .snf-moon-2-full:before {
@@ -566,12 +504,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-moon-2-full:before:before {
-  content: "\44";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-moon-2-full:before:before {
+    content: "\44"; }
 
 /* line 140, ../sass/icon-fonts.scss */
 .snf-moon-2-outline {
@@ -584,12 +520,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-moon-2-outline:before {
-  content: "\45";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-moon-2-outline:before {
+    content: "\45"; }
 
 /* line 143, ../sass/icon-fonts.scss */
 .snf-sun-3 {
@@ -602,12 +536,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-sun-3:before {
-  content: "\41";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-sun-3:before {
+    content: "\41"; }
 
 /* line 146, ../sass/icon-fonts.scss */
 .snf-eye {
@@ -620,12 +552,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-eye:before {
-  content: "\41";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-eye:before {
+    content: "\41"; }
 
 /* line 149, ../sass/icon-fonts.scss */
 .snf-radio-checked {
@@ -638,12 +568,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-radio-checked:before {
-  content: "\42";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-radio-checked:before {
+    content: "\42"; }
 
 /* line 152, ../sass/icon-fonts.scss */
 .snf-radio-unchecked {
@@ -656,12 +584,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-radio-unchecked:before {
-  content: "\43";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-radio-unchecked:before {
+    content: "\43"; }
 
 /* line 155, ../sass/icon-fonts.scss */
 .snf-close {
@@ -674,12 +600,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-close:before {
-  content: "\44";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-close:before {
+    content: "\44"; }
 
 /* line 158, ../sass/icon-fonts.scss */
 .snf-www {
@@ -692,12 +616,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-www:before {
-  content: "\49";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-www:before {
+    content: "\49"; }
 
 /* line 161, ../sass/icon-fonts.scss */
 .snf-arrow-up {
@@ -710,12 +632,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-arrow-up:before {
-  content: "\4c";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-arrow-up:before {
+    content: "\4c"; }
 
 /* line 164, ../sass/icon-fonts.scss */
 .snf-arrow-down {
@@ -728,12 +648,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-arrow-down:before {
-  content: "\4d";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-arrow-down:before {
+    content: "\4d"; }
 
 /* line 167, ../sass/icon-fonts.scss */
 .snf-checkbox-unchecked {
@@ -746,12 +664,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-checkbox-unchecked:before {
-  content: "\61";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-checkbox-unchecked:before {
+    content: "\61"; }
 
 /* line 170, ../sass/icon-fonts.scss */
 .snf-checkbox-checked {
@@ -764,12 +680,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-checkbox-checked:before {
-  content: "\62";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-checkbox-checked:before {
+    content: "\62"; }
 
 /* line 173, ../sass/icon-fonts.scss */
 .snf-cancel-circled {
@@ -782,12 +696,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-cancel-circled:before {
-  content: "\63";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-cancel-circled:before {
+    content: "\63"; }
 
 /* line 176, ../sass/icon-fonts.scss */
 .snf-search {
@@ -800,12 +712,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-search:before {
-  content: "\64";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-search:before {
+    content: "\64"; }
 
 /* line 179, ../sass/icon-fonts.scss */
 .snf-twitter-logo {
@@ -818,12 +728,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-twitter-logo:before {
-  content: "\67";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-twitter-logo:before {
+    content: "\67"; }
 
 /* line 182, ../sass/icon-fonts.scss */
 .snf-ok {
@@ -836,12 +744,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-ok:before {
-  content: "\68";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-ok:before {
+    content: "\68"; }
 
 /* line 185, ../sass/icon-fonts.scss */
 .snf-switch {
@@ -854,12 +760,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-switch:before {
-  content: "\69";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-switch:before {
+    content: "\69"; }
 
 /* line 188, ../sass/icon-fonts.scss */
 .snf-ban-circle {
@@ -872,12 +776,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-ban-circle:before {
-  content: "\6a";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-ban-circle:before {
+    content: "\6a"; }
 
 /* line 191, ../sass/icon-fonts.scss */
 .snf-ok-sign {
@@ -890,12 +792,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-ok-sign:before {
-  content: "\6c";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-ok-sign:before {
+    content: "\6c"; }
 
 /* line 194, ../sass/icon-fonts.scss */
 .snf-minus-sign {
@@ -908,12 +808,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-minus-sign:before {
-  content: "\6e";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-minus-sign:before {
+    content: "\6e"; }
 
 /* line 197, ../sass/icon-fonts.scss */
 .snf-edit {
@@ -926,12 +824,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-edit:before {
-  content: "\71";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-edit:before {
+    content: "\71"; }
 
 /* line 200, ../sass/icon-fonts.scss */
 .snf-listview {
@@ -944,12 +840,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-listview:before {
-  content: "\73";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-listview:before {
+    content: "\73"; }
 
 /* line 203, ../sass/icon-fonts.scss */
 .snf-gridview {
@@ -962,12 +856,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-gridview:before {
-  content: "\74";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-gridview:before {
+    content: "\74"; }
 
 /* line 206, ../sass/icon-fonts.scss */
 .snf-dashboard-outline {
@@ -980,12 +872,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-dashboard-outline:before {
-  content: "\7a";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-dashboard-outline:before {
+    content: "\7a"; }
 
 /* line 209, ../sass/icon-fonts.scss */
 .snf-pithos-outline {
@@ -998,12 +888,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-pithos-outline:before {
-  content: "\79";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-pithos-outline:before {
+    content: "\79"; }
 
 /* line 212, ../sass/icon-fonts.scss */
 .snf-info-full {
@@ -1016,12 +904,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-info-full:before {
-  content: "\70";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-info-full:before {
+    content: "\70"; }
 
 /* line 215, ../sass/icon-fonts.scss */
 .snf-volume-create-full {
@@ -1034,12 +920,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-volume-create-full:before {
-  content: "\36";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-volume-create-full:before {
+    content: "\36"; }
 
 /* line 218, ../sass/icon-fonts.scss */
 .snf-image-full {
@@ -1052,12 +936,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-image-full:before {
-  content: "\51";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-image-full:before {
+    content: "\51"; }
 
 /* line 221, ../sass/icon-fonts.scss */
 .snf-pc-create-full {
@@ -1070,12 +952,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-pc-create-full:before {
-  content: "\53";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-pc-create-full:before {
+    content: "\53"; }
 
 /* line 224, ../sass/icon-fonts.scss */
 .snf-network-create-outline {
@@ -1088,12 +968,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-network-create-outline:before {
-  content: "\54";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-network-create-outline:before {
+    content: "\54"; }
 
 /* line 227, ../sass/icon-fonts.scss */
 .snf-network-create-full {
@@ -1106,12 +984,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-network-create-full:before {
-  content: "\55";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-network-create-full:before {
+    content: "\55"; }
 
 /* line 230, ../sass/icon-fonts.scss */
 .snf-ram-outline {
@@ -1124,12 +1000,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-ram-outline:before {
-  content: "\4a";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-ram-outline:before {
+    content: "\4a"; }
 
 /* line 233, ../sass/icon-fonts.scss */
 .snf-nic-outline {
@@ -1142,12 +1016,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-nic-outline:before {
-  content: "\50";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-nic-outline:before {
+    content: "\50"; }
 
 /* line 236, ../sass/icon-fonts.scss */
 .snf-ram-full {
@@ -1160,12 +1032,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-ram-full:before {
-  content: "\52";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-ram-full:before {
+    content: "\52"; }
 
 /* line 239, ../sass/icon-fonts.scss */
 .snf-nic-full {
@@ -1178,12 +1048,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-nic-full:before {
-  content: "\72";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-nic-full:before {
+    content: "\72"; }
 
 /* line 242, ../sass/icon-fonts.scss */
 .snf-network-broken-1-full {
@@ -1196,12 +1064,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-network-broken-1-full:before {
-  content: "\56";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-network-broken-1-full:before {
+    content: "\56"; }
 
 /* line 245, ../sass/icon-fonts.scss */
 .snf-network-broken-2-full {
@@ -1214,12 +1080,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-network-broken-2-full:before {
-  content: "\57";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-network-broken-2-full:before {
+    content: "\57"; }
 
 /* line 248, ../sass/icon-fonts.scss */
 .snf-pc-broken-full {
@@ -1232,12 +1096,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-pc-broken-full:before {
-  content: "\58";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-pc-broken-full:before {
+    content: "\58"; }
 
 /* line 251, ../sass/icon-fonts.scss */
 .snf-pc-reboot-full {
@@ -1250,12 +1112,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-pc-reboot-full:before {
-  content: "\59";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-pc-reboot-full:before {
+    content: "\59"; }
 
 /* line 254, ../sass/icon-fonts.scss */
 .snf-pc-switch-full {
@@ -1268,12 +1128,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-pc-switch-full:before {
-  content: "\5a";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-pc-switch-full:before {
+    content: "\5a"; }
 
 /* line 257, ../sass/icon-fonts.scss */
 .snf-key-full {
@@ -1286,12 +1144,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-key-full:before {
-  content: "\31";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-key-full:before {
+    content: "\31"; }
 
 /* line 260, ../sass/icon-fonts.scss */
 .snf-router-full {
@@ -1304,12 +1160,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-router-full:before {
-  content: "\32";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-router-full:before {
+    content: "\32"; }
 
 /* line 263, ../sass/icon-fonts.scss */
 .snf-chip-full {
@@ -1322,12 +1176,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-chip-full:before {
-  content: "\33";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-chip-full:before {
+    content: "\33"; }
 
 /* line 266, ../sass/icon-fonts.scss */
 .snf-plus-full {
@@ -1340,12 +1192,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-plus-full:before {
-  content: "\34";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-plus-full:before {
+    content: "\34"; }
 
 /* line 269, ../sass/icon-fonts.scss */
 .snf-snapshot-full {
@@ -1358,12 +1208,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-snapshot-full:before {
-  content: "\4e";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-snapshot-full:before {
+    content: "\4e"; }
 
 /* line 272, ../sass/icon-fonts.scss */
 .snf-pithos-full {
@@ -1376,12 +1224,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-pithos-full:before {
-  content: "\35";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-pithos-full:before {
+    content: "\35"; }
 
 /* line 275, ../sass/icon-fonts.scss */
 .snf-volume-full {
@@ -1394,12 +1240,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-volume-full:before {
-  content: "\4f";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-volume-full:before {
+    content: "\4f"; }
 
 /* line 278, ../sass/icon-fonts.scss */
 .snf-network-full {
@@ -1412,12 +1256,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-network-full:before {
-  content: "\4b";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-network-full:before {
+    content: "\4b"; }
 
 /* line 281, ../sass/icon-fonts.scss */
 .snf-pc-full {
@@ -1430,12 +1272,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-pc-full:before {
-  content: "\78";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-pc-full:before {
+    content: "\78"; }
 
 /* line 284, ../sass/icon-fonts.scss */
 .snf-network-broken-1-outline {
@@ -1448,12 +1288,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-network-broken-1-outline:before {
-  content: "\37";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-network-broken-1-outline:before {
+    content: "\37"; }
 
 /* line 287, ../sass/icon-fonts.scss */
 .snf-network-broken-2-outline {
@@ -1466,12 +1304,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-network-broken-2-outline:before {
-  content: "\38";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-network-broken-2-outline:before {
+    content: "\38"; }
 
 /* line 290, ../sass/icon-fonts.scss */
 .snf-pc-broken-outline {
@@ -1484,12 +1320,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-pc-broken-outline:before {
-  content: "\39";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-pc-broken-outline:before {
+    content: "\39"; }
 
 /* line 293, ../sass/icon-fonts.scss */
 .snf-volume-broken-outline {
@@ -1502,12 +1336,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-volume-broken-outline:before {
-  content: "\30";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-volume-broken-outline:before {
+    content: "\30"; }
 
 /* line 296, ../sass/icon-fonts.scss */
 .snf-pc-reboot-outline {
@@ -1520,12 +1352,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-pc-reboot-outline:before {
-  content: "\21";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-pc-reboot-outline:before {
+    content: "\21"; }
 
 /* line 299, ../sass/icon-fonts.scss */
 .snf-pc-switch-outline {
@@ -1538,12 +1368,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-pc-switch-outline:before {
-  content: "\40";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-pc-switch-outline:before {
+    content: "\40"; }
 
 /* line 302, ../sass/icon-fonts.scss */
 .snf-key-outline {
@@ -1556,12 +1384,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-key-outline:before {
-  content: "\23";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-key-outline:before {
+    content: "\23"; }
 
 /* line 305, ../sass/icon-fonts.scss */
 .snf-router-outline {
@@ -1574,12 +1400,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-router-outline:before {
-  content: "\48";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-router-outline:before {
+    content: "\48"; }
 
 /* line 308, ../sass/icon-fonts.scss */
 .snf-chip-outline {
@@ -1592,12 +1416,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-chip-outline:before {
-  content: "\45";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-chip-outline:before {
+    content: "\45"; }
 
 /* line 311, ../sass/icon-fonts.scss */
 .snf-image-outline {
@@ -1610,12 +1432,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-image-outline:before {
-  content: "\66";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-image-outline:before {
+    content: "\66"; }
 
 /* line 314, ../sass/icon-fonts.scss */
 .snf-plus-outline {
@@ -1628,12 +1448,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-plus-outline:before {
-  content: "\6d";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-plus-outline:before {
+    content: "\6d"; }
 
 /* line 317, ../sass/icon-fonts.scss */
 .snf-snapshot-outline {
@@ -1646,12 +1464,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-snapshot-outline:before {
-  content: "\65";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-snapshot-outline:before {
+    content: "\65"; }
 
 /* line 320, ../sass/icon-fonts.scss */
 .snf-volume-outline {
@@ -1664,12 +1480,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-volume-outline:before {
-  content: "\75";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-volume-outline:before {
+    content: "\75"; }
 
 /* line 323, ../sass/icon-fonts.scss */
 .snf-network-outline {
@@ -1682,12 +1496,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-network-outline:before {
-  content: "\76";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-network-outline:before {
+    content: "\76"; }
 
 /* line 326, ../sass/icon-fonts.scss */
 .snf-pc-outline {
@@ -1700,12 +1512,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-pc-outline:before {
-  content: "\77";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-pc-outline:before {
+    content: "\77"; }
 
 /* line 329, ../sass/icon-fonts.scss */
 .snf-info-outline {
@@ -1718,12 +1528,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-info-outline:before {
-  content: "\6f";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-info-outline:before {
+    content: "\6f"; }
 
 /* line 332, ../sass/icon-fonts.scss */
 .snf-thunder-full {
@@ -1736,12 +1544,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-thunder-full:before {
-  content: "\6b";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-thunder-full:before {
+    content: "\6b"; }
 
 /* line 335, ../sass/icon-fonts.scss */
 .snf-lock-closed-full {
@@ -1754,12 +1560,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-lock-closed-full:before {
-  content: "\46";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-lock-closed-full:before {
+    content: "\46"; }
 
 /* line 338, ../sass/icon-fonts.scss */
 .snf-lock-open-full {
@@ -1772,12 +1576,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-lock-open-full:before {
-  content: "\47";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-lock-open-full:before {
+    content: "\47"; }
 
 /* line 342, ../sass/icon-fonts.scss */
 .snf-link-outline {
@@ -1790,12 +1592,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-link-outline:before {
-  content: "\26";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-link-outline:before {
+    content: "\26"; }
 
 /* line 345, ../sass/icon-fonts.scss */
 .snf-refresh-outline {
@@ -1808,12 +1608,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-refresh-outline:before {
-  content: "\29";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-refresh-outline:before {
+    content: "\29"; }
 
 /* line 348, ../sass/icon-fonts.scss */
 .snf-download-full {
@@ -1826,12 +1624,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-download-full:before {
-  content: "\25";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-download-full:before {
+    content: "\25"; }
 
 /* line 351, ../sass/icon-fonts.scss */
 .snf-person-outline {
@@ -1844,12 +1640,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-person-outline:before {
-  content: "\2a";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-person-outline:before {
+    content: "\2a"; }
 
 /* line 354, ../sass/icon-fonts.scss */
 .snf-upload-full {
@@ -1862,12 +1656,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-upload-full:before {
-  content: "\28";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-upload-full:before {
+    content: "\28"; }
 
 /* line 357, ../sass/icon-fonts.scss */
 .snf-arrow-right-small-full {
@@ -1880,12 +1672,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-arrow-right-small-full:before {
-  content: "\2d";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-arrow-right-small-full:before {
+    content: "\2d"; }
 
 /* line 360, ../sass/icon-fonts.scss */
 .snf-copy-outline {
@@ -1898,12 +1688,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-copy-outline:before {
-  content: "\3f";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-copy-outline:before {
+    content: "\3f"; }
 
 /* line 363, ../sass/icon-fonts.scss */
 .snf-copy-full {
@@ -1916,12 +1704,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-copy-full:before {
-  content: "\22";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-copy-full:before {
+    content: "\22"; }
 
 /* line 366, ../sass/icon-fonts.scss */
 .snf-arrow-left-small-full {
@@ -1934,12 +1720,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-arrow-left-small-full:before {
-  content: "\5f";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-arrow-left-small-full:before {
+    content: "\5f"; }
 
 /* line 369, ../sass/icon-fonts.scss */
 .snf-trash-full {
@@ -1952,12 +1736,10 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-trash-full:before {
-  content: "\3d";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-trash-full:before {
+    content: "\3d"; }
 
 /* line 372, ../sass/icon-fonts.scss */
 .snf-trash-outline {
@@ -1970,9 +1752,7 @@
   line-height: 1;
   /* Better Font Rendering =========== */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-/* line 41, ../sass/icon-fonts.scss */
-.snf-trash-outline:before {
-  content: "\24";
-}
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-trash-outline:before {
+    content: "\24"; }

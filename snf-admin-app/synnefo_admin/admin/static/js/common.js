@@ -312,5 +312,11 @@ $(document).ready(function(){
         var newC = ( $.cookie('theme') == 'dark' )? 'light': 'dark';
         $.cookie('theme', newC , {expires: 365, path: '/'});
     });
+    
+    $('a').click(function(e){
+        if ($(this).data('noclick')) {
+            e.preventDefault();
+        }
+    });
 
 });

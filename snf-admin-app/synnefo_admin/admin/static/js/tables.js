@@ -184,9 +184,17 @@ $(document).ready(function() {
 	else {
 		$("div.custom-buttons:not(.bottom)").html(snf.tables.html.reloadTable);
 	}
+
 	$('.container').on('click', '.reload-table', function(e) {
 		e.preventDefault();
 		$(tableDomID).dataTable().api().ajax.reload();
+	});
+	$('.notify').on('click', '.clear-reload', function(e) {
+		e.preventDefault();
+		console.log('hi')
+		resetAll(tableDomID);
+		$(tableDomID).dataTable().api().ajax.reload();
+
 	})
 
 

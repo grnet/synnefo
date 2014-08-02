@@ -150,6 +150,18 @@ def create_tables(engine):
     Index('idx_versions_node_uuid', versions.c.uuid)
     Index('idx_versions_serial_cluster_n2', versions.c.serial,
           versions.c.cluster, postgresql_where=versions.c.cluster != 2)
+    Index('idx_versions_node_cluster0', versions.c.node,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 0)
+    Index('idx_versions_node_cluster1', versions.c.node,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 1)
+    Index('idx_versions_node_cluster2', versions.c.node,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 2)
+    Index('idx_versions_serial_cluster0', versions.c.serial,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 0)
+    Index('idx_versions_serial_cluster1', versions.c.serial,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 1)
+    Index('idx_versions_serial_cluster2', versions.c.serial,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 2)
 
     #create attributes table
     columns = []

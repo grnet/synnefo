@@ -162,7 +162,23 @@ def create_tables(engine):
     attributes = Table('attributes', metadata, *columns, mysql_engine='InnoDB')
     Index('idx_attributes_domain', attributes.c.domain)
     Index('idx_attributes_serial_node', attributes.c.serial, attributes.c.node)
-
+    Index('idx_attributes_node', attributes.c.node)
+    Index('idx_attributes_islatest_domain_plankton', attributes.c.is_latest,
+          attributes.c.domain, postgresql_where=and_(
+              attributes.c.is_latest == True,
+              attributes.c.domain == "plankton"))
+    Index('idx_attributes_key_domain_plankton', attributes.c.key,
+          attributes.c.domain, postgresql_where=\
+          attributes.c.domain == "plankton")
+    Index('idx_attributes_key_domain_pithos', attributes.c.key,
+          attributes.c.domain, postgresql_where=\
+          attributes.c.domain == "pithos")
+    Index('idx_attributes_serial_domain_pithos', attributes.c.serial,
+          attributes.c.domain, postgresql_where=\
+          attributes.c.domain == "pithos")
+    Index('idx_attributes_serial_domain_plankton', attributes.c.serial,
+          attributes.c.domain, postgresql_where=\
+          attributes.c.domain == "plankton")
 
     # TODO: handle backends not supporting sequences
     mapfile_seq = Sequence('mapfile_seq', metadata=metadata)

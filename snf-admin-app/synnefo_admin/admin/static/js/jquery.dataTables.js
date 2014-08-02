@@ -3395,6 +3395,7 @@
 	{
 		if ( settings.oFeatures.bProcessing ) {
 			$(settings.aanFeatures.r).css( 'display', show ? 'block' : 'none' );
+			$(settings.nTable).css( 'opacity', show ? '0.4' : '1' );
 		}
 	
 		_fnCallbackFire( settings, null, 'processing', [settings, show] );

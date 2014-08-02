@@ -91,6 +91,10 @@ def create_tables(engine):
     Index('idx_nodes_path', nodes.c.path, unique=True)
     Index('idx_nodes_parent', nodes.c.parent)
     Index('idx_latest_version', nodes.c.latest_version)
+    Index('idx_nodes_parent0', nodes.c.parent,
+          postgresql_where=nodes.c.parent == 0)
+    Index('idx_nodes_parent0_path', nodes.c.parent, nodes.c.path,
+          postgresql_where=nodes.c.parent == 0)
 
     #create policy table
     columns = []

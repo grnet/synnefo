@@ -216,8 +216,8 @@ def send_admin_email(user, request):
     assert_valid_contact_request(request)
     subject, body = render_email(user, request.POST)
     sender = request.POST.get('sender')
-    with CustomSender(sender):
-        send_email(user, subject, template_name=None, text=body)
+    send_email(user, sender=sender, subject=subject, template_name=None,
+               text=body)
 
 
 def create_details_href(type, name, id):

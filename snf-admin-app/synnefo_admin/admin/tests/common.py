@@ -181,13 +181,14 @@ class AdminTestCase(ProjectAPITest):
 
         app1 = {"name": "test.pr",
                 "description": u"δεσκρίπτιον",
-                "end_date": "2013-5-5T20:20:20Z",
+                "end_date": "2113-5-5T20:20:20Z",
                 "join_policy": "auto",
                 "max_members": 5,
                 "resources": {u"σέρβις1.ρίσορς11": {
                     "project_capacity": 1024,
                     "member_capacity": 512}}
                 }
+
         status, body = self.create(app1, h_owner)
 
         # Ensure that the project application has been created.

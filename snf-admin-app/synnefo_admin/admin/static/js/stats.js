@@ -32,6 +32,15 @@ $(document).ready(function() {
 
     $('.stats .custom-btn').click(function(e){
         var url = $(this).attr('href');
+        var download = $(this).attr('download');
+        var d = new Date();
+        var month = d.getMonth()+1;
+        var day = d.getDate();
+        var output = '_' + d.getFullYear() + '_' +
+                ((''+month).length<2 ? '0' : '') + month + '_' +
+                    ((''+day).length<2 ? '0' : '') + day;
+        var fName = download + output;
+        $(this).attr('download', fName);
         var spinner = $(this).parents('section').find('.spinner');
         spinner.show(); 
         $.ajax({

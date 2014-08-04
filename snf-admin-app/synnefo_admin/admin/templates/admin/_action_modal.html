@@ -13,20 +13,20 @@
                     <label>From:</label>
                     <input type="text" name="sender" class="sender"
                     form="contactForm" value="{{mail.sender}}" />
-                    <a data-error="empty-sender" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="Missing the sender address of the e-mail."></a>
-                    <a data-error="invalid-email" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="Invalid e-mail address."></a>
+                    <a data-error="empty-sender" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Missing the sender address of the e-mail."></a>
+                    <a data-error="invalid-email" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Invalid e-mail address."></a>
                 </div>
                 </br>
                 <div class="form-subject form-area">
                     <label>Subject:</label>
                     <input type="text" name="subject" class="subject"
                     form="contactForm" value="{{mail.subject}}" />
-                    <a data-error="empty-subject" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="Missing the subject of the e-mail."></a>
+                    <a data-error="empty-subject" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Missing the subject of the e-mail."></a>
                 </div>
                 <div class="form-body form-area">
                     <label>Body:</label>
                     <textarea name="text" form="contactForm" class="email-content body">{{ mail.body }}</textarea>
-                    <a data-error="empty-body" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" title="Missing the body of the e-mail."></a>
+                    <a data-error="empty-body"  data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" rel="tooltip" data-content="Missing the body of the e-mail."></a>
                     <div class="extra-info">
                         <a href="" class="snf-info instructions-icon" data-container="#{{action.target}}-{{ op }}" data-toggle="popover" data-html="true" data-placement="right" data-content="
                         <h2>Legend</h2>
@@ -45,7 +45,7 @@
                 <div class="summary">
                     <p>You have chosen to <em class="elem lowercase">{{ action.name }}</em> the following <em class="num elem"></em> {{action.target}}{% if view_type == 'list' %}s{% endif %}:
                 {% endif %}
-                        <a data-error="no-selected" class="error-sign snf-exclamation-sign" href="#" title="There are no selected items to complete this action." rel="tooltip"></a>
+                        <a data-error="no-selected" data-toggle="popover" data-trigger="hover" class="error-sign snf-exclamation-sign" href="#" data-content="There are no selected items to complete this action." rel="tooltip"></a>
                     </p>
                     {% if view_type == "list" %}
                     <table class="table-selected table table-bordered">

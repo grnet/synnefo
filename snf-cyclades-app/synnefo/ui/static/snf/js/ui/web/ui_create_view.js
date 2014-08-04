@@ -167,7 +167,8 @@
                 }
                 this.hide();
             }, this));
-
+            
+            var self = this;
             _.bindAll(this, "handle_vm_added");
             storage.vms.bind("add", this.handle_vm_added);
             this.password.val("");
@@ -185,6 +186,7 @@
             }
             
             this.clip = new snf.util.ClipHelper(this.copy, this.pass);
+
         },
 
         onClose: function() {
@@ -204,6 +206,11 @@
         show: function(pass, vm_id) {
             this.pass = pass;
             this.vm_id = vm_id;
+            var self = this;
+            this.password.unbind("click").click(function() {
+                self.password.selectRange(0);
+            });
+
             views.VMCreationPasswordView.__super__.show.apply(this, arguments);
         }
     })

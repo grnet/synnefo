@@ -501,6 +501,7 @@
         view_id: "create_volume_view",
         content_selector: "#createvolume-overlay-content",
         title: "Create new disk",
+        min_quota: min_volume_quota,
         
         setup_step_views: function() {
             this.steps[1] = new views.CreateVolumeImageStepView(this);

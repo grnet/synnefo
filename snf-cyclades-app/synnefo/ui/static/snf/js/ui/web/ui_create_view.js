@@ -1844,6 +1844,7 @@
 
         subtitle: false,
         title: "Create new machine",
+        min_quota: min_vm_quota,
 
         initialize: function(options) {
             views.VMCreateView.__super__.initialize.apply(this);
@@ -1890,12 +1891,12 @@
         get_available_project: function() {
           var project = undefined;
           var user_project = synnefo.storage.projects.get_user_project();
-          if (user_project && user_project.quotas.can_fit(min_vm_quota)) {
+          if (user_project && user_project.quotas.can_fit(this.min_quota)) {
             project = user_project;
           }
           if (!project) {
             synnefo.storage.projects.each(function(p) {
-              if (p.quotas.can_fit(min_vm_quota)) {
+              if (p.quotas.can_fit(this.min_quota)) {
                 project = p;
               }
             }, this);
@@ -1910,6 +1911,15 @@
           }
           this.project = project;
           if (trigger) { this.trigger("project:change", project)}
+          this.check_project_is_set();
+        },
+        
+        check_project_is_set: function() {
+          if (!this.project) { 
+            this.set_no_project();
+          } else {
+            this.unset_no_project();
+          }
         },
 
         init_handlers: function() {
@@ -2022,11 +2032,7 @@
         },
 
         update_layout: function() {
-            if (!this.project) { 
-              this.set_no_project();
-            } else {
-              this.unset_no_project();
-            }
+            this.check_project_is_set();
             this.show_step(this.current_step);
             this.current_view.update_layout();
         },
@@ -2042,7 +2048,8 @@
         },
 
         beforeOpen: function() {
-            this.set_project(this.get_available_project());
+            var project = this.get_available_project();
+            this.set_project(project);
             if (!this.skip_reset_on_next_open) {
                 this.submiting = false;
                 this.reset();
@@ -2122,7 +2129,7 @@
                 this.next_btn.hide();
                 this.submit_btn.show();
             } else {
-                this.next_btn.show();
+                this.check_project_is_set();
                 this.submit_btn.hide();
             }
         },

@@ -43,47 +43,94 @@ mod = import_module('astakos.im.management.commands.project-show')
 register = template.Library()
 
 
-VM_STATE_CSS_MAP = {
-        'BUILD': 'warning',
-        'PENDING': 'warning',
-        'ERROR': 'danger',
-        'STOPPED': 'info',
-        'STARTED': 'success',
-        'ACTIVE': 'success',
-        'DESTROYED': 'inverse'
+status_map = {}
+status_map['vm'] = {
+    'BUILD': 'warning',
+    'PENDING': 'warning',
+    'ERROR': 'danger',
+    'STOPPED': 'info',
+    'STARTED': 'success',
+    'ACTIVE': 'success',
+    'DESTROYED': 'inverse'
 }
+status_map['volume'] = {
+    'AVAILABLE': 'success',
+    'IN_USE': 'success',
+    'DELETING': 'warning',
+    'ERROR': 'danger',
+    'ERROR_DELETING': 'danger',
+    'ERROR_RESTORING': 'danger',
+}
+status_map['network'] = {
+    'ACTIVE': 'success',
+    'ERROR': 'danger',
+}
+status_map['project'] = {
+    'PENDING': 'warning',
+    'ACTIVE': 'success',
+    'DENIED': 'danger',
+    'DELETED': 'danger',
+    'SUSPENDED': 'warning',
+}
+status_map['application'] = status_map['project']
 
 
-@register.filter(name="object_status_label", is_safe=True)
-def object_status_label(vm_or_net):
-    """
-    Return a span label styled based on the vm current status
-    """
-    if hasattr(vm_or_net, 'operstate'):
-        state = vm_or_net.operstate
-    elif hasattr(vm_or_net, 'status'):
-        state = vm_or_net.status
+def get_status_from_instance(inst):
+    """Generic function to get the status of any instance."""
+    try:
+        return inst.state_display()
+    except AttributeError:
+        pass
+
+    try:
+        return inst.status_display
+    except AttributeError:
+        pass
+
+    try:
+        return inst.operstate
+    except AttributeError:
+        pass
+
+    try:
+        return inst.state
+    except AttributeError:
+        pass
+
+    return inst.status
+
+
+@register.filter(is_safe=True)
+def status_label(inst):
+    """Return a span label styled based on the instance's current status"""
+    inst_type = utils.get_type_from_instance(inst)
+    state = get_status_from_instance(inst).upper()
+    state_cls = 'info'
+
+    if inst_type == 'user':
+        if not inst.email_verified or not inst.moderated:
+            state_cls = 'warning'
+        elif inst.is_rejected:
+            state_cls = 'danger'
+        elif inst.is_active:
+            state_cls = 'success'
+        elif not inst.is_active:
+            state_cls = 'inverse'
     else:
-        state = vm_or_net.state
+        state_cls = status_map[inst_type].get(state, 'info')
 
-    state_cls = VM_STATE_CSS_MAP.get(state, 'info')
     label_cls = "label label-%s" % state_cls
 
-    deleted_label = ""
-    if vm_or_net.deleted:
-        deleted_label = '<span class="label label-danger">Deleted</span>'
-    return '%s\n<span class="%s">%s</span>' % (deleted_label, label_cls, state)
+    if inst_type in ["project", "application"]:
+        name = inst_type.capitalize() + " Status: "
+    else:
+        name = ""
 
-
-@register.filter(name="network_deleted_label", is_safe=True)
-def network_deleted_label(network):
-    """
-    Return a span label styled based on the vm current status
-    """
     deleted_label = ""
-    if network.deleted:
+    if getattr(inst, 'deleted', False):
         deleted_label = '<span class="label label-danger">Deleted</span>'
-    return deleted_label
+    return '%s\n<span class="%s">%s%s</span>' % (deleted_label, label_cls,
+                                                 name, state)
 
 
 @register.filter(name="get_os", is_safe=True)
@@ -214,12 +261,8 @@ def id(item):
 @register.filter()
 def details_url(inst, target):
     """Get a url for the details of an instance's field."""
-    # Get the class name of the instance.
-    inst_cls_name = inst.__class__.__name__
-
-    # Use it to import the utils module for classes of that type.
-    inst_cls_name = inst.__class__.__name__
-    inst_type = utils.reversed_model_dict[inst_cls_name]
+    # Get instance type and import the appropriate utilities module.
+    inst_type = utils.get_type_from_instance(inst)
     mod = import_module("synnefo_admin.admin.{}s.utils".format(inst_type))
 
     # Call the details_href function for the provided target.

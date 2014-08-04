@@ -26,7 +26,7 @@ from django.utils.html import escape
 from astakos.im.models import Resource
 from synnefo.db.models import (VirtualMachine, Volume, Network, IPAddress,
                                IPAddressLog)
-from astakos.im.models import AstakosUser, Project
+from astakos.im.models import AstakosUser, Project, ProjectApplication
 
 from synnefo.util import units
 from astakos.im.user_utils import send_plain as send_email
@@ -48,6 +48,7 @@ model_dict = {
     "ip": IPAddress,
     "ip_log": IPAddressLog,
     "project": Project,
+    "application": ProjectApplication,
 }
 
 
@@ -58,6 +59,12 @@ def __reverse_model_dict():
         reversed_model_dict[value.__name__] = key
     return reversed_model_dict
 reversed_model_dict = __reverse_model_dict()
+
+
+def get_type_from_instance(inst):
+    """Get the name for the instance class that is used in admin app."""
+    inst_cls_name = inst.__class__.__name__
+    return reversed_model_dict[inst_cls_name]
 
 
 def admin_log(request, *argc, **kwargs):

@@ -7,7 +7,10 @@
     <h4 class="clearfix">
         {% include "admin/_details_h4_lt.html" %}
         <span class="rt">
-            <span class="label">{{ project.state_display|upper }}</span>
+            {{ project|status_label|safe }}
+            {% if project.last_application %}
+               {{ project.last_application|status_label|safe }}
+            {% endif %}
             <span class="label">UUID: {{ project.uuid }}</span>
             {% if project.is_base %}
             <span class="label label-info">

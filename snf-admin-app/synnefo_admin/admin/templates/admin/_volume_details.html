@@ -7,7 +7,7 @@
     <h4 class="clearfix">
         {% include "admin/_details_h4_lt.html" %}
         <span class="rt">
-            {{ volume|object_status_label|safe }}
+            {{ volume|status_label|safe }}
             <span class="label">ID: {{ volume.pk }}</span>
             {% if volume.machine %}
             <span class="label">VM ID: {{ volume.machine.pk }}</span>

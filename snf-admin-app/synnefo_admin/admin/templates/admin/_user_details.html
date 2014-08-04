@@ -7,7 +7,7 @@
     <h4 class="clearfix">
         {% include "admin/_details_h4_lt.html" %}
         <span class="rt">
-            <span class="label">{{ user.status_display|upper }}</span>
+            {{ user|status_label|safe }}
             <span class="label">UUID: {{ user.uuid }}</span>
             <span class="label">{{ user.email }}</span>
         </span>

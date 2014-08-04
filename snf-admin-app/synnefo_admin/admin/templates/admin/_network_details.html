@@ -7,7 +7,7 @@
     <h4 class="clearfix">
         {% include "admin/_details_h4_lt.html" %}
         <span class="rt">
-	        {{ network|object_status_label|safe }}
+	        {{ network|status_label|safe }}
 		    <span class="label">ID: {{ network.pk }}</span>
             {% if network.public %}
                 <span class="label">PUBLIC</span>

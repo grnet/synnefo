@@ -10,7 +10,7 @@
         {% if vm.suspended %}
         <span class="label label-warning">SUSPENDED</span>
         {% endif %}
-        {{ vm|object_status_label|safe }}
+        {{ vm|status_label|safe }}
         <span class="label">ID: {{ vm.pk }}</span>
         <span class="label flavor">
           <span class="cpu">{{ vm.flavor.cpu }}x</span>

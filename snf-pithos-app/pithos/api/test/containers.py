@@ -157,6 +157,8 @@ class ContainerGet(PithosAPITest):
 
         cname = self.cnames[0]
         self.upload_object(cname)
+        oname = self.objects[cname].keys()[-1]
+        self.delete_object(cname, oname)
 
         url = join_urls(self.pithos_path, self.user, cname)
         r = self.get('%s?until=%s' % (url, until))

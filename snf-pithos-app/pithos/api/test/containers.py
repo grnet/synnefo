@@ -121,7 +121,7 @@ class ContainerHead(PithosAPITest):
                          len(objects))
         self.assertTrue('X-Container-Bytes-Used' in container_info)
         self.assertEqual(int(container_info['X-Container-Bytes-Used']),
-                         sum([len(data) for data in objects.values()]))
+                         sum([len(dt) for dt in objects.values()]))
         self.assertTrue('X-Container-Object-Meta' in container_info)
         self.assertEqual(
             sorted(container_info['X-Container-Object-Meta'].split(',')),

@@ -392,8 +392,18 @@ class AccountPost(PithosAPITest):
 
             meta.update(initial)
             account_meta = self.get_account_meta()
-            (self.assertTrue(k in account_meta) for k in meta.keys())
-            (self.assertEqual(account_meta[k], v) for k, v in meta.items())
+            self.assertEqual(account_meta, meta)
+
+            # test metadata limit
+            limit = pithos_settings.RESOURCE_MAX_METADATA
+            kwargs = dict(('HTTP_X_ACCOUNT_META_%s' % i, str(i))
+                          for i in range(limit - len(meta) + 1))
+            r = self.post('%s?update=' % url, **kwargs)
+            self.assertEqual(r.status_code, 400)
+
+            meta.update(initial)
+            account_meta = self.get_account_meta()
+            self.assertEqual(account_meta, meta)
 
     def test_reset_meta(self):
         url = join_urls(self.pithos_path, self.user)
@@ -413,6 +423,13 @@ class AccountPost(PithosAPITest):
             (self.assertEqual(account_meta[k], v) for k, v in new_meta.items())
 
             (self.assertTrue(k not in account_meta) for k in meta.keys())
+
+            # test metadata limit
+            limit = pithos_settings.RESOURCE_MAX_METADATA
+            kwargs = dict(('HTTP_X_ACCOUNT_META_%s' % i, str(i))
+                          for i in range(limit + 1))
+            r = self.post('%s?update=' % url, **kwargs)
+            self.assertEqual(r.status_code, 400)
 
     def test_delete_meta(self):
         url = join_urls(self.pithos_path, self.user)
@@ -457,6 +474,13 @@ class AccountPost(PithosAPITest):
     def test_set_account_groups(self):
         url = join_urls(self.pithos_path, self.user)
         with AssertMappingInvariant(self.get_account_meta):
+            limit = pithos_settings.ACC_MAX_GROUPS
+            # too many groups
+            kwargs = dict(('HTTP_X_ACCOUNT_GROUP_%s' % i, unicode(i))
+                          for i in range(limit + 1))
+            r = self.post('%s?update=' % url, **kwargs)
+            self.assertEqual(r.status_code, 400)
+
             pithosdevs = ['chazapis'] * 2
             r = self.post('%s?update=' % url,
                           HTTP_X_ACCOUNT_GROUP_PITHOSDEV=','.join(pithosdevs))
@@ -500,6 +524,11 @@ class AccountPost(PithosAPITest):
                              ','.join(sorted(pithosdevs)))
             self.assertEqual(account_groups['Clientsdev'],
                              ','.join(sorted(clientdevs)))
+
+            long_list = [unicode(i) for i in xrange(33)]
+            r = self.post('%s?update=' % url,
+                          HTTP_X_ACCOUNT_GROUP_TEST=','.join(long_list))
+            self.assertEqual(r.status_code, 400)
 
     def test_reset_account_groups(self):
         url = join_urls(self.pithos_path, self.user)

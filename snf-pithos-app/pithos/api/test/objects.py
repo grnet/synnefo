@@ -700,6 +700,16 @@ class ObjectPut(PithosAPITest):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.content, data)
 
+    def test_upload_limit_metadata(self):
+        cname = self.container
+        oname = get_random_name()
+        limit = pithos_settings.RESOURCE_MAX_METADATA
+        kwargs = dict(('HTTP_X_OBJECT_META_%s' % i, unicode(i)) for
+                      i in range(limit + 1))
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.put(url, content_type='application/octet-stream', **kwargs)
+        self.assertEqual(r.status_code, 400)
+
     def test_maximum_upload_size_exceeds(self):
         cname = self.container
         oname = get_random_name()
@@ -953,6 +963,19 @@ class ObjectPutCopy(PithosAPITest):
             self.assertTrue('X-Object-Hash' in r)
             self.assertEqual(r['X-Object-Hash'], self.etag)
 
+    def test_copy_limit_metadata(self):
+        with AssertMappingInvariant(self.get_object_info, self.container,
+                                    self.object):
+            # copy object
+            oname = get_random_name()
+            url = join_urls(self.pithos_path, self.user, self.container, oname)
+            limit = pithos_settings.RESOURCE_MAX_METADATA
+            kwargs = dict(('HTTP_X_OBJECT_META_%s' % i, unicode(i)) for
+                          i in range(limit + 1))
+            r = self.put(url, data='', HTTP_X_COPY_FROM='/%s/%s' % (
+                         self.container, self.object), **kwargs)
+            self.assertEqual(r.status_code, 400)
+
     def test_copy_from_different_container(self):
         cname = 'c2'
         self.create_container(cname)
@@ -1167,6 +1190,19 @@ class ObjectPutMove(PithosAPITest):
                         self.object)
         r = self.head(url)
         self.assertEqual(r.status_code, 404)
+
+    def test_move_limit_metadata(self):
+        with AssertMappingInvariant(self.get_object_info, self.container,
+                                    self.object):
+            # copy object
+            oname = get_random_name()
+            url = join_urls(self.pithos_path, self.user, self.container, oname)
+            limit = pithos_settings.RESOURCE_MAX_METADATA
+            kwargs = dict(('HTTP_X_OBJECT_META_%s' % i, unicode(i))
+                          for i in range(limit + 1))
+            r = self.put(url, data='', HTTP_X_MOVE_FROM='/%s/%s' % (
+                         self.container, self.object), **kwargs)
+            self.assertEqual(r.status_code, 400)
 
     @pithos_test_settings(API_LIST_LIMIT=10)
     def test_move_dir(self):
@@ -1390,6 +1426,21 @@ class ObjectCopy(PithosAPITest):
             self.assertTrue('X-Object-Hash' in r)
             self.assertEqual(r['X-Object-Hash'], self.etag)
 
+    def test_copy_limit_metadata(self):
+        with AssertMappingInvariant(self.get_object_info, self.container,
+                                    self.object):
+            oname = get_random_name()
+            # copy object
+            url = join_urls(self.pithos_path, self.user, self.container,
+                            self.object)
+            limit = pithos_settings.RESOURCE_MAX_METADATA
+            kwargs = dict(('HTTP_X_OBJECT_META_%s' % i, unicode(i))
+                          for i in range(limit + 1))
+            r = self.copy(url, HTTP_DESTINATION='/%s/%s' % (self.container,
+                                                            oname),
+                          **kwargs)
+            self.assertEqual(r.status_code, 400)
+
     @pithos_test_settings(API_LIST_LIMIT=10)
     def test_copy_dir_contents(self):
         folder = self.create_folder(self.container)[0]
@@ -1544,6 +1595,21 @@ class ObjectMove(PithosAPITest):
                         self.object)
         r = self.head(url)
         self.assertEqual(r.status_code, 404)
+
+    def test_move_limit_metadata(self):
+        with AssertMappingInvariant(self.get_object_info, self.container,
+                                    self.object):
+            oname = get_random_name()
+            # copy object
+            url = join_urls(self.pithos_path, self.user, self.container,
+                            self.object)
+            limit = pithos_settings.RESOURCE_MAX_METADATA
+            kwargs = dict(('HTTP_X_OBJECT_META_%s' % i, unicode(i))
+                          for i in range(limit + 1))
+            r = self.move(url, HTTP_DESTINATION='/%s/%s' % (self.container,
+                                                            oname),
+                          **kwargs)
+            self.assertEqual(r.status_code, 400)
 
     @pithos_test_settings(API_LIST_LIMIT=10)
     def test_move_dir_contents(self):
@@ -1717,6 +1783,13 @@ class ObjectPost(PithosAPITest):
             kwargs = dict(('HTTP_X_OBJECT_META_%s' % k, v) for
                           k, v in d.items())
             r = self.post(url, content_type='', **kwargs)
+            self.assertEqual(r.status_code, 400)
+
+            # test metadata limit
+            limit = pithos_settings.RESOURCE_MAX_METADATA
+            kwargs = dict(('HTTP_X_OBJECT_META_%s' % i, unicode(i))
+                          for i in range(limit - len(meta) + 1))
+            r = self.post('%s?update=' % url, content_type='', **kwargs)
             self.assertEqual(r.status_code, 400)
 
 #            # Check utf-8 meta

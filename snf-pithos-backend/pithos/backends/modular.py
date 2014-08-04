@@ -119,6 +119,10 @@ DEFAULT_MAP_CHECK_INTERVAL = 5  # set to 5 secs
 
 DEFAULT_MAPFILE_PREFIX = 'snf_file_'
 
+DEFAULT_RESOURCE_MAX_METADATA = 32
+DEFAULT_ACC_MAX_GROUPS = 32
+DEFAULT_ACC_MAX_GROUP_MEMBERS = 32
+
 logger = logging.getLogger(__name__)
 
 _propnames = ('serial', 'node', 'hash', 'size', 'type', 'source', 'mtime',
@@ -233,7 +237,10 @@ class ModularBackend(BaseBackend):
                  archipelago_conf_file=None,
                  xseg_pool_size=8,
                  map_check_interval=None,
-                 mapfile_prefix=None):
+                 mapfile_prefix=None,
+                 resource_max_metadata=None,
+                 acc_max_groups=None,
+                 acc_max_group_members=None):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
         block_module = block_module or DEFAULT_BLOCK_MODULE
@@ -252,13 +259,18 @@ class ModularBackend(BaseBackend):
             or DEFAULT_MAP_CHECK_INTERVAL
         mapfile_prefix = mapfile_prefix \
             or DEFAULT_MAPFILE_PREFIX
+        resource_max_metadata = resource_max_metadata\
+            or DEFAULT_RESOURCE_MAX_METADATA
+        acc_max_groups = acc_max_groups \
+            or DEFAULT_ACC_MAX_GROUPS
+        acc_max_group_members = acc_max_group_members\
+            or DEFAULT_ACC_MAX_GROUP_MEMBERS
 
         self.default_account_policy = {QUOTA_POLICY: account_quota_policy}
         self.default_container_policy = {
             QUOTA_POLICY: container_quota_policy,
             VERSIONING_POLICY: container_versioning_policy,
-            PROJECT: None
-        }
+            PROJECT: None}
         # queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
         # queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
 
@@ -266,12 +278,14 @@ class ModularBackend(BaseBackend):
                                     DEFAULT_PUBLIC_URL_SECURITY)
         self.public_url_alphabet = (public_url_alphabet or
                                     DEFAULT_PUBLIC_URL_ALPHABET)
-
         self.hash_algorithm = hash_algorithm
         self.block_size = block_size
         self.free_versioning = free_versioning
         self.map_check_interval = map_check_interval
         self.mapfile_prefix = mapfile_prefix
+        self.resource_max_metadata = resource_max_metadata
+        self.acc_max_groups = acc_max_groups
+        self.acc_max_group_members = acc_max_group_members
 
         def load_module(m):
             __import__(m)
@@ -463,7 +477,12 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def update_account_meta(self, user, account, domain, meta, replace=False):
-        """Update the metadata associated with the account for the domain."""
+        """Update the metadata associated with the account for the domain.
+
+           Raises:
+               NotAllowedError: Operation not permitted
+               LimitExceeded: if the metadata number exceeds the allowed limit.
+        """
 
         self._can_write_account(user, account)
         path, node = self._lookup_account(account, True)
@@ -484,18 +503,38 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def update_account_groups(self, user, account, groups, replace=False):
-        """Update the groups associated with the account."""
+        """Update the groups associated with the account.
 
+        Raises:
+            NotAllowedError: Operation not permitted
+            ValueError: Invalid data in groups
+            LimitExceeded: if the group number exceeds the allowed limit or
+                           a group name or a member  is too long.
+        """
+
+        # assert groups' validity before querying the db
+        self._check_groups(groups)
         self._can_write_account(user, account)
         self._lookup_account(account, True)
-        self._check_groups(groups)
-        if replace:
-            self.permissions.group_destroy(account)
-        for k, v in groups.iteritems():
-            if not replace:  # If not already deleted.
-                self.permissions.group_delete(account, k)
-            if v:
-                self.permissions.group_addmany(account, k, v)
+        if not replace:
+            existing = self.permissions.group_dict(account)
+            for k, v in groups.iteritems():
+                if v == '':
+                    existing.pop(k, None)
+                else:
+                    existing[k] = v
+                groups = existing
+
+        if len(groups) > self.acc_max_groups:
+            raise LimitExceeded('Pithos+ accounts cannot have more than %s '
+                                'groups' % self.acc_max_groups)
+        for k in groups:
+            if len(groups[k]) > self.acc_max_group_members:
+                raise LimitExceeded('Pithos+ groups cannot have more than %s '
+                                    'members' % self.acc_max_group_members)
+
+        self.permissions.group_destroy(account)
+        self.permissions.group_addmany(account, groups)
 
     @debug_method
     @backend_method
@@ -645,7 +684,13 @@ class ModularBackend(BaseBackend):
     @backend_method
     def update_container_meta(self, user, account, container, domain, meta,
                               replace=False):
-        """Update the metadata associated with the container for the domain."""
+        """Update the metadata associated with the container for the domain.
+
+           Raises:
+               NotAllowedError: Operation not permitted
+               ItemNotExists: Container does not exist
+               LimitExceeded: if the metadata number exceeds the allowed limit.
+        """
 
         self._can_write_container(user, account, container)
         path, node = self._lookup_container(account, container)
@@ -1026,7 +1071,13 @@ class ModularBackend(BaseBackend):
     @backend_method
     def update_object_meta(self, user, account, container, name, domain, meta,
                            replace=False):
-        """Update object metadata for a domain and return the new version."""
+        """Update object metadata for a domain and return the new version.
+
+           Raises:
+               NotAllowedError: Operation not permitted
+               ItemNotExists: Container/object does not exist
+               LimitExceeded: if the metadata number exceeds the allowed limit.
+        """
 
         self._can_write_object(user, account, container, name)
 
@@ -1304,7 +1355,8 @@ class ModularBackend(BaseBackend):
 
         :returns: the new object uuid
 
-        :raises: ItemNotExists, NotAllowedError, QuotaError, AstakosClientException
+        :raises: ItemNotExists, NotAllowedError, QuotaError,
+                 AstakosClientException, LimitExceeded
         """
 
         meta = meta or {}
@@ -1326,7 +1378,19 @@ class ModularBackend(BaseBackend):
     def update_object_hashmap(self, user, account, container, name, size, type,
                               hashmap, checksum, domain, meta=None,
                               replace_meta=False, permissions=None):
-        """Create/update an object's hashmap and return the new version."""
+        """Create/update an object's hashmap and return the new version.
+
+           Raises:
+               NotAllowedError: Operation not permitted
+
+               ItemNotExists: Container does not exist
+
+               ValueError: Invalid users/groups in permissions
+
+               QuotaError: Account or container quota exceeded
+
+               LimitExceeded: if the metadata number exceeds the allowed limit.
+        """
 
         if not self._size_is_consistent(size, hashmap):
             raise InconsistentContentSize(
@@ -1559,7 +1623,16 @@ class ModularBackend(BaseBackend):
                     dest_account, dest_container, dest_name, type, domain,
                     meta=None, replace_meta=False, permissions=None,
                     src_version=None, delimiter=None, listing_limit=None):
-        """Copy an object's data and metadata."""
+        """Copy an object's data and metadata.
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container/object does not exist
+            VersionNotExists: Version does not exist
+            ValueError: Invalid users/groups in permissions
+            QuotaError: Account or container quota exceeded
+            LimitExceeded: if the metadata number exceeds the allowed limit.
+        """
 
         meta = meta or {}
         dest_versions = self._copy_object(
@@ -2005,17 +2078,25 @@ class ModularBackend(BaseBackend):
 
     def _put_metadata_duplicate(self, src_version_id, dest_version_id, domain,
                                 node, meta, replace=False):
-        if src_version_id is not None:
-            self.node.attribute_copy(src_version_id, dest_version_id)
         if not replace:
-            self.node.attribute_del(dest_version_id, domain, (
-                k for k, v in meta.iteritems() if v == ''))
-            self.node.attribute_set(dest_version_id, domain, node, (
-                (k, v) for k, v in meta.iteritems() if v != ''))
-        else:
-            self.node.attribute_del(dest_version_id, domain)
-            self.node.attribute_set(dest_version_id, domain, node, ((
-                k, v) for k, v in meta.iteritems()))
+            if src_version_id is not None:
+                existing = dict(self.node.attribute_get(src_version_id,
+                                                        domain))
+            else:
+                existing = {}
+            for k, v in meta.iteritems():
+                if v == '':
+                    existing.pop(k, None)
+                else:
+                    existing[k] = v
+            meta = existing
+
+        if len(meta) > self.resource_max_metadata:
+            raise LimitExceeded('Pithos+ resources cannot have more than %s '
+                                'metadata items per domain' %
+                                self.resource_max_metadata)
+
+        self.node.attribute_set(dest_version_id, domain, node, meta)
 
     def _put_metadata(self, user, node, domain, meta, replace=False,
                       update_statistics_ancestors_depth=None):

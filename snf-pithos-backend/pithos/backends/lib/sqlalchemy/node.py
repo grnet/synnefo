@@ -1046,23 +1046,21 @@ class Node(DBWorker):
 
     def attribute_set(self, serial, domain, node, items, is_latest=True):
         """Set the attributes of the version specified by serial.
-           Receive attributes as an iterable of (key, value) pairs.
+           Receive attributes as a mapping object.
+
+           Raises: sqlalchemy.exc.IntegrityError
         """
-        #insert or replace
-        #TODO better upsert
-        for k, v in items:
-            s = self.attributes.update()
-            s = s.where(and_(self.attributes.c.serial == serial,
-                             self.attributes.c.domain == domain,
-                             self.attributes.c.key == k))
-            s = s.values(value=v)
-            rp = self.conn.execute(s)
-            rp.close()
-            if rp.rowcount == 0:
-                s = self.attributes.insert()
-                s = s.values(serial=serial, domain=domain, node=node,
-                             is_latest=is_latest, key=k, value=v)
-                self.conn.execute(s).close()
+
+        if not items:
+            return
+        s = self.attributes.insert()
+        values = [{'serial': serial,
+                   'domain': domain,
+                   'node': node,
+                   'is_latest': is_latest,
+                   'key': k,
+                   'value': v} for k, v in items.iteritems()]
+        self.conn.execute(s, values).close()
 
     def attribute_del(self, serial, domain, keys=()):
         """Delete attributes of the version specified by serial.
@@ -1071,13 +1069,11 @@ class Node(DBWorker):
         """
 
         if keys:
-            #TODO more efficient way to do this?
-            for key in keys:
-                s = self.attributes.delete()
-                s = s.where(and_(self.attributes.c.serial == serial,
-                                 self.attributes.c.domain == domain,
-                                 self.attributes.c.key == key))
-                self.conn.execute(s).close()
+            s = self.attributes.delete()
+            s = s.where(and_(self.attributes.c.serial == serial,
+                             self.attributes.c.domain == domain,
+                             self.attributes.c.key.in_(keys)))
+            self.conn.execute(s).close()
         else:
             s = self.attributes.delete()
             s = s.where(and_(self.attributes.c.serial == serial,

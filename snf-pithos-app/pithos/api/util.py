@@ -53,7 +53,9 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
                                  BASE_HOST, UPDATE_MD5, VIEW_PREFIX,
-                                 OAUTH2_CLIENT_CREDENTIALS, UNSAFE_DOMAIN)
+                                 OAUTH2_CLIENT_CREDENTIALS, UNSAFE_DOMAIN,
+                                 RESOURCE_MAX_METADATA, ACC_MAX_GROUPS,
+                                 ACC_MAX_GROUP_MEMBERS)
 
 from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
@@ -1042,7 +1044,10 @@ BACKEND_KWARGS = dict(
     archipelago_conf_file=BACKEND_ARCHIPELAGO_CONF,
     xseg_pool_size=BACKEND_XSEG_POOL_SIZE,
     map_check_interval=BACKEND_MAP_CHECK_INTERVAL,
-    mapfile_prefix=BACKEND_MAPFILE_PREFIX)
+    mapfile_prefix=BACKEND_MAPFILE_PREFIX,
+    resource_max_metadata=RESOURCE_MAX_METADATA,
+    acc_max_groups=ACC_MAX_GROUPS,
+    acc_max_group_members=ACC_MAX_GROUP_MEMBERS)
 
 _pithos_backend_pool = PithosBackendPool(size=BACKEND_POOL_SIZE,
                                          **BACKEND_KWARGS)

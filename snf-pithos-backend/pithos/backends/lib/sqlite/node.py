@@ -777,14 +777,16 @@ class Node(DBWorker):
 
     def attribute_set(self, serial, domain, node, items, is_latest=True):
         """Set the attributes of the version specified by serial.
-           Receive attributes as an iterable of (key, value) pairs.
+           Receive attributes as a mapping object.
         """
 
+        if not items:
+            return
         q = ("insert or replace into attributes "
              "(serial, domain, node, is_latest, key, value) "
              "values (?, ?, ?, ?, ?, ?)")
         self.executemany(q, ((serial, domain, node, is_latest, k, v) for
-                         k, v in items))
+                         k, v in items.iteritems()))
 
     def attribute_del(self, serial, domain, keys=()):
         """Delete attributes of the version specified by serial.
@@ -794,8 +796,9 @@ class Node(DBWorker):
 
         if keys:
             q = ("delete from attributes "
-                 "where serial = ? and domain = ? and key = ?")
-            self.executemany(q, ((serial, domain, key) for key in keys))
+                 "where serial = ? and domain = ? and key in (%s)" %
+                 ','.join(keys))
+            self.execute(q, (serial, domain))
         else:
             q = "delete from attributes where serial = ? and domain = ?"
             self.execute(q, (serial, domain))

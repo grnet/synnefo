@@ -87,7 +87,7 @@ def account_demux(request, v_account):
     if TRANSLATE_UUIDS:
         if not is_uuid(v_account):
             uuids = get_uuids([v_account])
-            if not uuids or not v_account in uuids:
+            if not uuids or v_account not in uuids:
                 return HttpResponse(status=404)
             v_account = uuids[v_account]
 
@@ -109,7 +109,7 @@ def container_demux(request, v_account, v_container):
     if TRANSLATE_UUIDS:
         if not is_uuid(v_account):
             uuids = get_uuids([v_account])
-            if not uuids or not v_account in uuids:
+            if not uuids or v_account not in uuids:
                 return HttpResponse(status=404)
             v_account = uuids[v_account]
 
@@ -139,7 +139,7 @@ def object_demux(request, v_account, v_container, v_object):
     if TRANSLATE_UUIDS:
         if not is_uuid(v_account):
             uuids = get_uuids([v_account])
-            if not uuids or not v_account in uuids:
+            if not uuids or v_account not in uuids:
                 return HttpResponse(status=404)
             v_account = uuids[v_account]
 
@@ -1114,6 +1114,7 @@ def object_write(request, v_account, v_container, v_object):
         raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     except InvalidHash, e:
         raise faults.BadRequest('Invalid hash: %s' % e)
+
     if not checksum and UPDATE_MD5:
         # Update the MD5 after the hashmap, as there may be missing hashes.
         checksum = hashmap_md5(request.backend, hashmap, size)
@@ -1499,6 +1500,7 @@ def object_update(request, v_account, v_container, v_object):
         raise faults.BadRequest('Invalid sharing header')
     except QuotaError, e:
         raise faults.RequestEntityTooLarge('Quota error: %s' % e)
+
     if public is not None:
         try:
             request.backend.update_object_public(request.user_uniq, v_account,

@@ -774,11 +774,11 @@ class Node(DBWorker):
         else:
             d2 = select([self.nodes.c.node, self.nodes.c.latest_version],
                         self.nodes.c.path.like(self.escape_like(path) + '%',
-                                            escape=ESCAPE_CHAR)).cte("d2")
+                                               escape=ESCAPE_CHAR)).cte("d2")
             inner_join = \
-                self.versions.join(d2, onclause=
-                                   self.versions.c.serial ==
-                                   d2.c.latest_version)
+                self.versions.join(d2,
+                                   onclause=(self.versions.c.serial ==
+                                             d2.c.latest_version))
             s = select([func.count(self.versions.c.serial),
                        func.sum(self.versions.c.size),
                        func.max(self.versions.c.mtime)],

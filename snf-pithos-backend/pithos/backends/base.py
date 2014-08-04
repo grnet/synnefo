@@ -62,6 +62,7 @@ class InvalidHash(TypeError):
 class InconsistentContentSize(ValueError):
     pass
 
+
 class InvalidPolicy(ValueError):
     pass
 

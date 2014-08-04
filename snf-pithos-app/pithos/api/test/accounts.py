@@ -384,7 +384,7 @@ class AccountPost(PithosAPITest):
         with AssertMappingInvariant(self.get_account_groups):
             initial = self.get_account_meta()
 
-            meta = {'test': 'tost', 'ping': 'pong'}
+            meta = {'Test': 'tost', 'Ping': 'pong'}
             kwargs = dict(('HTTP_X_ACCOUNT_META_%s' % k, str(v))
                           for k, v in meta.items())
             r = self.post('%s?update=' % url, **kwargs)

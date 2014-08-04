@@ -505,6 +505,7 @@ def copy_or_move_object(request, src_account, src_container, src_name,
         raise faults.BadRequest('Invalid sharing header')
     except QuotaError, e:
         raise faults.RequestEntityTooLarge('Quota error: %s' % e)
+
     if public is not None:
         try:
             request.backend.update_object_public(

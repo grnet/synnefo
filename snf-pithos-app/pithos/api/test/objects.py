@@ -354,10 +354,6 @@ class ObjectGet(PithosAPITest):
         oname, odata = self.upload_object(cname, length=512)[:-1]
         url = join_urls(self.pithos_path, self.user, cname, oname)
 
-        # TODO
-        #r = self.get(url, HTTP_RANGE='bytes=50-10')
-        #self.assertEqual(r.status_code, 416)
-
         offset = len(odata) + 1
         r = self.get(url, HTTP_RANGE='bytes=0-%s' % offset)
         self.assertEqual(r.status_code, 416)
@@ -878,7 +874,7 @@ class ObjectPut(PithosAPITest):
         r = self.put('%s?hashmap=' % url, data=hashmap)
         self.assertEqual(r.status_code, 400)
 
-        length = (block_size  - len(data) % block_size)
+        length = (block_size - len(data) % block_size)
         more_data = ''.join([data, get_random_data(length=length)])
         hashes = HashMap(block_size, block_hash)
         hashes.load(more_data)
@@ -1465,7 +1461,7 @@ class ObjectCopy(PithosAPITest):
 
         # share object for write with user
         url = join_urls(self.pithos_path, 'alice', cname, folder)
-        r = self.post(url, user='alice',  content_type='',
+        r = self.post(url, user='alice', content_type='',
                       HTTP_CONTENT_RANGE='bytes */*',
                       HTTP_X_OBJECT_SHARING='write=%s' % self.user)
         self.assertEqual(r.status_code, 202)
@@ -1662,7 +1658,7 @@ class ObjectMove(PithosAPITest):
 
         # share object for write with user
         url = join_urls(self.pithos_path, 'alice', cname, folder)
-        r = self.post(url, user='alice',  content_type='',
+        r = self.post(url, user='alice', content_type='',
                       HTTP_CONTENT_RANGE='bytes */*',
                       HTTP_X_OBJECT_SHARING='write=%s' % self.user)
         self.assertEqual(r.status_code, 202)
@@ -1780,7 +1776,7 @@ class ObjectPost(PithosAPITest):
             etag = md5_hash(updated_data)
         else:
             etag = merkle(updated_data)
-        #self.assertEqual(r['ETag'], etag)
+        self.assertEqual(r['ETag'], etag)
 
         # check modified object
         r = self.get(url)
@@ -1814,7 +1810,7 @@ class ObjectPost(PithosAPITest):
             etag = md5_hash(updated_data)
         else:
             etag = merkle(updated_data)
-        #self.assertEqual(r['ETag'], etag)
+        self.assertEqual(r['ETag'], etag)
 
         # check modified object
         r = self.get(url)
@@ -1937,7 +1933,7 @@ class ObjectPost(PithosAPITest):
         dest_meta = self.get_object_info(self.container, dest)
 
         self.assertEqual(source_data, dest_data)
-        #self.assertEqual(source_meta['ETag'], dest_meta['ETag'])
+        self.assertEqual(source_meta['ETag'], dest_meta['ETag'])
         self.assertEqual(source_meta['X-Object-Hash'],
                          dest_meta['X-Object-Hash'])
         self.assertTrue(
@@ -2120,22 +2116,22 @@ class ObjectPost(PithosAPITest):
         content = r.content
         self.assertEqual(content, d2 + d3[-1])
 
-    @skipIf(pithos_settings.BACKEND_DB_MODULE ==\
+    @skipIf(pithos_settings.BACKEND_DB_MODULE ==
             'pithos.backends.lib.sqlite',
-            "This test is only meaningfull for SQLAlchemy backend")
+            "This test is only meaningful for SQLAlchemy backend")
     def test_update_invalid_permissions(self):
         url = join_urls(self.pithos_path, self.user, self.container,
                         self.object)
         r = self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
-                      HTTP_X_OBJECT_SHARING='%s' % (257*'a'))
+                      HTTP_X_OBJECT_SHARING='%s' % (257 * 'a'))
         self.assertEqual(r.status_code, 400)
 
         r = self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
-                      HTTP_X_OBJECT_SHARING='read=%s' % (257*'a'))
+                      HTTP_X_OBJECT_SHARING='read=%s' % (257 * 'a'))
         self.assertEqual(r.status_code, 400)
 
         r = self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
-                      HTTP_X_OBJECT_SHARING='write=%s' % (257*'a'))
+                      HTTP_X_OBJECT_SHARING='write=%s' % (257 * 'a'))
         self.assertEqual(r.status_code, 400)
 
 

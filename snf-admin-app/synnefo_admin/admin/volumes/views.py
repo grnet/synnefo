@@ -125,18 +125,20 @@ class VolumeJSONView(AdminJSONView):
             'value': escape(inst.description) or "(not set)",
             'visible': True,
         }
-        sv = inst.source_version
-        source_version = " (v{})".format(sv) if sv else ""
-        extra_dict['source'] = {
-            'display_name': "Source Image",
-            'value': inst.source + source_version,
-            'visible': True,
-        }
-        extra_dict['origin'] = {
-            'display_name': "Origin",
-            'value': inst.origin,
-            'visible': True,
-        }
+        if inst.source:
+            sv = inst.source_version
+            source_version = " (v{})".format(sv) if sv else ""
+            extra_dict['source'] = {
+                'display_name': "Source Image",
+                'value': inst.source + source_version,
+                'visible': True,
+            }
+        if inst.origin:
+            extra_dict['origin'] = {
+                'display_name': "Origin",
+                'value': inst.origin,
+                'visible': True,
+            }
         extra_dict['index'] = {
             'display_name': "Index",
             'value': inst.index,

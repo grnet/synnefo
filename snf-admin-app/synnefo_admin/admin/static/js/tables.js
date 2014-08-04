@@ -514,18 +514,24 @@ $(document).ready(function() {
 	function clickSummary(row) {
 		$(row).find('td:last-child a.expand-area').click(function(e) {
 			e.preventDefault();
+        
 			var $summaryTd = $(this).closest('td');
 			var $btn = $summaryTd.find('.expand-area span');
 			var $summaryContent = $summaryTd.find('.info-summary');
 			
 			var summaryContentWidth = $summaryTd.closest('tr').width();
-			var summaryContPos = summaryContentWidth - $summaryTd.width() - parseInt($summaryContent.css('padding-left').replace("px", "")) + parseInt($summaryTd.css('padding-left').replace("px", ""));
+			var summaryContentHeight = $summaryTd.closest('tr').height() - parseInt($summaryTd.css('padding-top')) - $btn.height();
+			var summaryContPos = summaryContentWidth - $summaryTd.width()+ parseInt($summaryTd.css('padding-left'));
 
-			$summaryContent.css({
-				width: summaryContentWidth +'px',
-				right: summaryContPos +'px'
-			});
-			$btn.toggleClass('snf-angle-up snf-angle-down');
+            if ( $btn.hasClass('snf-angle-down')) {
+                $summaryContent.css({
+                    width: summaryContentWidth,
+                    right: summaryContPos,
+                    paddingTop: summaryContentHeight,
+                });
+            }
+		    
+            $btn.toggleClass('snf-angle-up snf-angle-down');
 			$summaryContent.stop().slideToggle(600, function() {
 				if ($summaryContent.is(':visible')) {
 					$btn.removeClass('snf-angle-down').addClass('snf-angle-up');    
@@ -534,7 +540,6 @@ $(document).ready(function() {
 					$btn.removeClass('snf-angle-up').addClass('snf-angle-down');
 				}
 			});
-
 		})
 	};
 

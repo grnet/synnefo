@@ -17,6 +17,7 @@
 from importlib import import_module
 from collections import OrderedDict
 from django import template
+from django.conf import settings
 import logging
 
 import django_filters
@@ -422,3 +423,14 @@ def show_more_exception_message(assoc):
     if assoc.type == "user":
         return """</br>Alternatively, you may consult the "Members" tab of the project."""
     return ""
+
+
+@register.simple_tag
+def min_dir():
+    """
+    Return minified files folder for production environment
+    """
+    if settings.DEBUG == False:
+        return 'min/'
+    else:
+        return ''

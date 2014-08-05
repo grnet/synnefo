@@ -2379,9 +2379,13 @@ class ModularBackend(BaseBackend):
     def _build_metadata(self, props, user_defined=None,
                         include_user_defined=True):
         if not props[self.AVAILABLE]:
-            self._update_available(props)
-            available = self.node.version_get_properties(
-                props[self.SERIAL], keys=('available',))[0]
+            try:
+                self._update_available(props)
+            except IllegalOperationError:
+                available = False
+            else:
+                available = self.node.version_get_properties(
+                    props[self.SERIAL], keys=('available',))[0]
         else:
             available = props[self.AVAILABLE]
         meta = {'bytes': props[self.SIZE],

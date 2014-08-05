@@ -16,6 +16,7 @@
 from pithos.backends.base import (IllegalOperationError, NotAllowedError,
                                   ItemNotExists)
 
+
 class TestSnapshotsMixin(object):
     def test_copy_snapshot(self):
         name = 'snf-snap-1-1'
@@ -95,7 +96,7 @@ class TestSnapshotsMixin(object):
         domain = 'plankton'
         self.b.update_object_meta(*t, domain=domain, meta={'foo': 'bar'})
         meta2 = self.b.get_object_meta(*t, domain=domain,
-                                      include_user_defined=True)
+                                       include_user_defined=True)
         self.assertTrue('available' in meta2)
         self.assertEqual(meta2['available'], False)
         self.assertTrue('mapfile' in meta2)
@@ -120,3 +121,27 @@ class TestSnapshotsMixin(object):
             self.assertEqual(meta['is_snapshot'], True)
         else:
             self.fail('Update snapshot should not be allowed')
+
+    def test_get_domain_objects(self):
+        name = 'snf-snap-1-1'
+        t = [self.account, self.account, 'snapshots', name]
+        mapfile = 'archip:%s' % name
+        uuid = self.b.register_object_map(*t,
+                                          domain='test',
+                                          size=100,
+                                          type='application/octet-stream',
+                                          mapfile=mapfile,
+                                          meta={'foo': 'bar'})
+        try:
+            objects = self.b.get_domain_objects(domain='test',
+                                                user=self.account)
+        except:
+            self.fail('It shouldn\'t have arrived here.')
+        else:
+            self.assertEqual(len(objects), 1)
+            path, meta, permissios = objects[0]
+            self.assertEqual(path, '/'.join(t[1:]))
+            self.assertTrue('uuid' in meta)
+            self.assertEqual(meta['uuid'], uuid)
+            self.assertTrue('available' in meta)
+            self.assertEqual(meta['available'], False)

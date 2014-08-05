@@ -18,9 +18,8 @@ from optparse import make_option
 from django.core.management.base import CommandError
 
 from snf_django.management.commands import SynnefoCommand
-from synnefo.management.common import convert_api_faults
+from synnefo.management import common
 from synnefo.logic import ips
-from synnefo.api import util
 
 
 class Command(SynnefoCommand):
@@ -42,7 +41,7 @@ class Command(SynnefoCommand):
             help='The owner of the floating IP'),
     )
 
-    @convert_api_faults
+    @common.convert_api_faults
     def handle(self, *args, **options):
         if args:
             raise CommandError("Command doesn't accept any arguments")
@@ -55,7 +54,8 @@ class Command(SynnefoCommand):
             raise CommandError("'user' is required for floating IP creation")
 
         if network_id is not None:
-            network = util.get_resource("network", network_id, for_update=True)
+            network = common.get_resource("network", network_id,
+                                          for_update=True)
             if network.deleted:
                 raise CommandError("Network '%s' is deleted" % network.id)
             if not network.floating_ip_pool:

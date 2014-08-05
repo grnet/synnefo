@@ -15,20 +15,9 @@
 
 
 import logging
-import re
-from collections import OrderedDict
-
-from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
-from django.core.urlresolvers import reverse
+import django_filters
 
 from synnefo.db.models import IPAddress
-from synnefo.logic import ips
-from astakos.im.user_utils import send_plain as send_email
-from astakos.im.models import AstakosUser, Project
-
-from eztables.views import DatatablesView
-import django_filters
 
 from synnefo_admin.admin.queries_common import (query, model_filter,
                                                 get_model_field)

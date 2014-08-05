@@ -15,39 +15,15 @@
 
 
 import logging
-import re
-from collections import OrderedDict
-from operator import itemgetter
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import Http404
-from django.conf import settings
-from django.core.urlresolvers import reverse
 
-from synnefo.db.models import (VirtualMachine, Network, Volume,
-                               NetworkInterface, IPAddress)
-from astakos.im.models import (AstakosUser, Project, ProjectResourceGrant,
-                               Resource)
-
-from eztables.views import DatatablesView
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
-from astakos.im.user_utils import send_plain as send_email
-from astakos.im.functions import (validate_project_action, ProjectConflict,
-                                  approve_application, deny_application,
-                                  suspend, unsuspend, terminate, reinstate)
+from astakos.im.models import Project
 from astakos.im.quotas import get_project_quota
 
 from synnefo.util import units
-
-import django_filters
-from django.db.models import Q
-
 from synnefo_admin.admin.exceptions import AdminHttp404
-from synnefo_admin.admin.utils import get_resource, is_resource_useful
-
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
+from synnefo_admin.admin.utils import is_resource_useful
 
 
 def get_actual_owner(inst):

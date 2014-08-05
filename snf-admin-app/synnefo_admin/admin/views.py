@@ -40,8 +40,7 @@ from synnefo.admin import stats as cyclades_stats
 
 from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin_settings import (ADMIN_MEDIA_URL, AUTH_COOKIE_NAME,
-                                          ADMIN_PERMITTED_GROUPS,
-                                          ADMIN_ENABLED, ADMIN_VIEWS)
+                                          ADMIN_PERMITTED_GROUPS, ADMIN_VIEWS)
 from synnefo_admin import admin_settings
 
 from synnefo_admin.admin import actions

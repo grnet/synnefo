@@ -14,39 +14,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import re
-from collections import OrderedDict
-
-from operator import or_
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
-from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Group
-from django.template import Context, Template
 from django.core.urlresolvers import set_urlconf
 
-from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
-                               NetworkInterface, IPAddress)
-from astakos.im.models import AstakosUser, ProjectMembership, Project, Resource
-from astakos.im import user_logic as users
+from synnefo.db.models import VirtualMachine
+from astakos.im.models import AstakosUser, Project
 
 from astakos.im.quotas import get_user_quotas
-from astakos.im.user_utils import send_plain as send_email
 
 from synnefo.util import units
-
-from eztables.views import DatatablesView
-
-import django_filters
-from django.db.models import Q
 
 from synnefo_admin import admin_settings
 from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.utils import (get_resource, is_resource_useful,
                                        create_details_href)
-
-UUID_SEARCH_REGEX = re.compile('([0-9a-z]{8}-([0-9a-z]{4}-){3}[0-9a-z]{12})')
 
 
 class DefaultUrlConf(object):

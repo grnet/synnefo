@@ -17,7 +17,6 @@
 import functools
 
 from snf_django.lib.api import faults
-from astakos.im.functions import ProjectConflict
 
 
 class AdminAction(object):

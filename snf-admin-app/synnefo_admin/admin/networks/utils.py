@@ -15,27 +15,13 @@
 
 
 import logging
-import re
-from collections import OrderedDict
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import Http404
-from django.conf import settings
-from django.core.urlresolvers import reverse
 
-from synnefo.db.models import (Network, VirtualMachine, NetworkInterface,
-                               IPAddress)
-from synnefo.logic.networks import validate_network_action
-from synnefo.logic import networks
-from astakos.im.user_utils import send_plain as send_email
-from astakos.im.models import AstakosUser, Project
-
-from eztables.views import DatatablesView
-import django_filters
+from astakos.im.models import AstakosUser
+from synnefo.db.models import Network
 
 from synnefo_admin.admin.exceptions import AdminHttp404
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
 from synnefo_admin.admin.utils import create_details_href
 
 

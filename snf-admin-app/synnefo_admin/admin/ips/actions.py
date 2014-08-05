@@ -15,22 +15,11 @@
 
 
 import logging
-import re
 from collections import OrderedDict
 
-from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
-from django.core.urlresolvers import reverse
-
-from synnefo.db.models import IPAddress
 from synnefo.logic import ips
-from astakos.im.models import AstakosUser, Project
 
-from eztables.views import DatatablesView
-import django_filters
-
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
+from synnefo_admin.admin.actions import AdminAction, noop
 from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
 
 
@@ -56,10 +45,7 @@ def check_destroy_ip(ip):
 
 
 def generate_actions():
-    """Create a list of actions on ips.
-
-    The actions are: activate/deactivate, accept/reject, verify, contact.
-    """
+    """Create a list of actions on ips."""
     actions = OrderedDict()
 
     actions['destroy'] = IPAction(name='Destroy', c=check_destroy_ip,

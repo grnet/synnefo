@@ -17,17 +17,7 @@
 import logging
 from collections import OrderedDict
 
-from django.core.urlresolvers import reverse
-
-from synnefo.db.models import Volume
-from astakos.im.models import AstakosUser, Project
-
-from eztables.views import DatatablesView
-
-import django_filters
-
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
+from synnefo_admin.admin.actions import AdminAction
 from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
 
 
@@ -45,10 +35,7 @@ class VolumeAction(AdminAction):
 
 
 def generate_actions():
-    """Create a list of actions on volumes.
-
-    The actions are: activate/deactivate, accept/reject, verify, contact.
-    """
+    """Create a list of actions on volumes."""
     actions = OrderedDict()
 
     actions['contact'] = VolumeAction(name='Send e-mail', f=send_admin_email,)

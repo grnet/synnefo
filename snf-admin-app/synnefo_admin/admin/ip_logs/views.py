@@ -15,26 +15,12 @@
 
 
 import logging
-import re
 from collections import OrderedDict
 
-from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
-from django.core.urlresolvers import reverse
-from django.utils.html import escape
-
-from synnefo.db.models import IPAddress, IPAddressLog, VirtualMachine, Network
-from synnefo.logic import ips
-from astakos.im.models import AstakosUser, Project
-
-import django_filters
+from synnefo.db.models import IPAddressLog
 
 from synnefo_admin.admin.exceptions import AdminHttp404
-from synnefo_admin.admin.actions import (has_permission_or_403,
-                                         get_allowed_actions,
-                                         get_permitted_actions,)
-from synnefo_admin.admin.utils import (get_actions, render_email,
-                                       _filter_public_ip_log)
+from synnefo_admin.admin.utils import _filter_public_ip_log
 from synnefo_admin.admin.tables import AdminJSONView
 
 from .utils import (get_user_details_href, get_ip_details_href,

@@ -15,24 +15,12 @@
 
 
 import logging
-import re
 from collections import OrderedDict
 
-from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
-from django.core.urlresolvers import reverse
-
-from synnefo.db.models import (Network, VirtualMachine, NetworkInterface,
-                               IPAddress)
 from synnefo.logic.networks import validate_network_action
 from synnefo.logic import networks
-from astakos.im.models import AstakosUser, Project
 
-from eztables.views import DatatablesView
-import django_filters
-
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
+from synnefo_admin.admin.actions import AdminAction, noop
 from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
 
 
@@ -74,10 +62,7 @@ def check_network_action(action):
 
 
 def generate_actions():
-    """Create a list of actions on networks.
-
-    The actions are: activate/deactivate, accept/reject, verify, contact.
-    """
+    """Create a list of actions on networks."""
     actions = OrderedDict()
 
     actions['drain'] = NetworkAction(name='Drain', f=drain_network,

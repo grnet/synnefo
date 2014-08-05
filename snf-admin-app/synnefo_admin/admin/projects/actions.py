@@ -15,37 +15,13 @@
 
 
 import logging
-import re
 from collections import OrderedDict
-from operator import itemgetter
 
-from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
-from django.core.urlresolvers import reverse
-
-from synnefo.db.models import (VirtualMachine, Network, Volume,
-                               NetworkInterface, IPAddress)
-from astakos.im.models import (AstakosUser, Project, ProjectResourceGrant,
-                               Resource)
-
-from eztables.views import DatatablesView
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403,
-                                         AdminActionCannotApply)
-from astakos.im.functions import (validate_project_action, ProjectConflict,
+from synnefo_admin.admin.actions import AdminAction
+from astakos.im.functions import (validate_project_action,
                                   approve_application, deny_application,
                                   suspend, unsuspend, terminate, reinstate)
-from astakos.im.quotas import get_project_quota
 
-from synnefo.util import units
-
-import django_filters
-from django.db.models import Q
-
-from synnefo_admin.admin.utils import is_resource_useful
-
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
 from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
 
 
@@ -127,7 +103,7 @@ def generate_actions():
     actions['unsuspend'] = ProjectAction(name='Unsuspend',
                                          f=do_project_action("unsuspend"),
                                          c=check_project_action("UNSUSPEND"),
-                                         karma='good', caution_level='warning',)
+                                         karma='good', caution_level='warning')
 
     actions['terminate'] = ProjectAction(name='Terminate',
                                          f=do_project_action("terminate"),

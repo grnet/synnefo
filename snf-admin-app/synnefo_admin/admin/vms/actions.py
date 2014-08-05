@@ -14,26 +14,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import re
 from collections import OrderedDict
-
-from operator import or_
-
-from django.core.urlresolvers import reverse
-from django.db.models import Q
-
-from synnefo.db.models import VirtualMachine, Network, IPAddressLog
-from astakos.im.models import AstakosUser, ProjectMembership, Project
 
 from synnefo.logic import servers as servers_backend
 from synnefo.logic.commands import validate_server_action
 
-from eztables.views import DatatablesView
-
-import django_filters
-
-from synnefo_admin.admin.actions import (AdminAction, noop,
-                                         has_permission_or_403)
+from synnefo_admin.admin.actions import (AdminAction, noop)
 from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
 
 

@@ -43,7 +43,7 @@ from pithos.api.settings import (UPDATE_MD5, TRANSLATE_UUIDS,
 
 from pithos.api import settings
 
-from pithos.backends.base import (
+from pithos.backends.exceptions import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
     VersionNotExists, ContainerExists, InvalidHash, IllegalOperationError,
     InconsistentContentSize, InvalidPolicy)

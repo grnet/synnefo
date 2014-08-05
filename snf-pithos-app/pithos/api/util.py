@@ -56,9 +56,10 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  ACC_MAX_GROUP_MEMBERS)
 
 from pithos.backends import connect_backend
-from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
-                                  VersionNotExists, IllegalOperationError,
-                                  LimitExceeded, BrokenSnapshot)
+from pithos.backends.exceptions import (NotAllowedError, QuotaError,
+                                        ItemNotExists, VersionNotExists,
+                                        IllegalOperationError, LimitExceeded,
+                                        BrokenSnapshot)
 
 from synnefo.lib import join_urls
 

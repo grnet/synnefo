@@ -13,10 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from .common import CommonMixin
-from .quota import TestQuotaMixin
-from .delete_by_uuid import TestDeleteByUUIDMixin
-from .snapshots import TestSnapshotsMixin
+from pithos.backends.test.common import CommonMixin
+from pithos.backends.test.quota import TestQuotaMixin
+from pithos.backends.test.delete_by_uuid import TestDeleteByUUIDMixin
+from pithos.backends.test.snapshots import TestSnapshotsMixin
 
 from sqlalchemy import create_engine
 

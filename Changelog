@@ -6,7 +6,7 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
-v0.15next
+v0.16
 =========
 
 Released: UNRELEASED
@@ -215,6 +215,17 @@ Pithos
 * Change default disposition type: If no disposition-type is
   specifically requested or an invalid value is passed, the disposition type
   is set to 'inline'.
+
+Admin
+-----
+
+* Introduce Administrator Dashboard, which provides the following:
+
+	* Graphic access to the details of various Synnefo entities (users, VMs,
+	  Projects).
+	* Intuitive filtering.
+	* Multiple actions and notifications.
+	* Charts and statistics generation.
 
 .. _Changelog-0.15.2:
 

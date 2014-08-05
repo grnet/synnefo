@@ -88,19 +88,19 @@ def create(userid, name, password, flavor, image_id, metadata={},
 
     try:
         is_system = (image["owner"] == settings.SYSTEM_IMAGES_OWNER)
-        Image.objects.get_or_create(uuid=image["id"],
-                                    version=image["version"],
-                                    owner=image["owner"],
-                                    name=image["name"],
-                                    location=image["location"],
-                                    mapfile=image["mapfile"],
-                                    is_public=image["is_public"],
-                                    is_snapshot=image["is_snapshot"],
-                                    is_system=is_system,
-                                    os=image["metadata"].get("OS", "unknown"),
-                                    osfamily=image["metadata"].get("OSFAMILY",
-                                                                   "unknown")
-                                    )
+        img, created = Image.objects.get_or_create(uuid=image["id"],
+                                                   version=image["version"])
+        if created:
+            img.owner = image["owner"],
+            img.name = image["name"],
+            img.location = image["location"],
+            img.mapfile = image["mapfile"],
+            img.is_public = image["is_public"],
+            img.is_snapshot = image["is_snapshot"],
+            img.is_system = is_system,
+            img.os = image["metadata"].get("OS", "unknown"),
+            img.osfamily = image["metadata"].get("OSFAMILY", "unknown")
+            img.save()
     except Exception as e:
         # Image info is not critical. Continue if it fails for any reason
         log.warning("Failed to store image info: %s", e)
@@ -726,7 +726,7 @@ def _port_for_request(user_id, network_dict):
         network = util.get_network(network_id, user_id, non_deleted=True)
         if network.public:
             if network.subnet4 is not None:
-                if not "fixed_ip" in network_dict:
+                if "fixed_ip" not in network_dict:
                     return create_public_ipv4_port(user_id, network)
                 elif address is None:
                     msg = "Cannot connect to public network"

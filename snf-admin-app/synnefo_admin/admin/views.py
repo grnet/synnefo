@@ -39,8 +39,6 @@ from astakos.admin import stats as astakos_stats
 from synnefo.admin import stats as cyclades_stats
 
 from synnefo_admin.admin.exceptions import AdminHttp404
-from synnefo_admin.admin_settings import (ADMIN_MEDIA_URL, AUTH_COOKIE_NAME,
-                                          ADMIN_PERMITTED_GROUPS, ADMIN_VIEWS)
 from synnefo_admin import admin_settings
 
 from synnefo_admin.admin import actions
@@ -63,7 +61,7 @@ def get_view_module(view_type):
     We will import only modules for views that are specified in the ADMIN_VIEWS
     setting.
     """
-    if view_type in ADMIN_VIEWS:
+    if view_type in admin_settings.ADMIN_VIEWS:
         try:
             # This module will not be reloaded again as it's probably cached.
             return import_module('synnefo_admin.admin.%ss.views' % view_type)
@@ -109,7 +107,8 @@ def get_token_from_cookie(request, cookiename):
 # Security functions ###
 
 
-def admin_user_required(func, permitted_groups=ADMIN_PERMITTED_GROUPS):
+def admin_user_required(func, permitted_groups=admin_settings.\
+                        ADMIN_PERMITTED_GROUPS):
     """
     Django view wrapper that checks if identified request user has admin
     permissions (exists in admin group)
@@ -119,7 +118,7 @@ def admin_user_required(func, permitted_groups=ADMIN_PERMITTED_GROUPS):
             # we must never raise an AdminHttp404 exception here.
             raise Http404
 
-        token = get_token_from_cookie(request, AUTH_COOKIE_NAME)
+        token = get_token_from_cookie(request, admin_settings.AUTH_COOKIE_NAME)
         astakos.get_user(request, settings.ASTAKOS_AUTH_URL,
                          fallback_token=token, logger=logger)
         if hasattr(request, 'user') and request.user:
@@ -158,7 +157,7 @@ def admin_user_required(func, permitted_groups=ADMIN_PERMITTED_GROUPS):
 # View functions ###
 
 default_dict = {
-    'ADMIN_MEDIA_URL': ADMIN_MEDIA_URL,
+    'ADMIN_MEDIA_URL': admin_settings.ADMIN_MEDIA_URL,
     'UI_MEDIA_URL': UI_MEDIA_URL,
     'mail': {
         'sender': astakos_settings.SERVER_EMAIL,
@@ -174,7 +173,7 @@ default_dict = {
             'Email': "{{ email }}",
         }
     },
-    'views': ADMIN_VIEWS,
+    'views': admin_settings.ADMIN_VIEWS,
 }
 
 

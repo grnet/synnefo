@@ -15,24 +15,17 @@
 
 
 import logging
-import re
 from collections import OrderedDict
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
 from django.utils.html import escape
 
-from synnefo.db.models import IPAddress, IPAddressLog, VirtualMachine, Network
-from synnefo.logic import ips
+from synnefo.db.models import IPAddress, IPAddressLog
 from astakos.im.models import AstakosUser, Project
 
-import django_filters
-
-from synnefo_admin import admin_settings
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
-from synnefo_admin.admin.utils import get_actions, render_email
 from synnefo_admin.admin.users.utils import get_user_or_404
 from synnefo_admin.admin.tables import AdminJSONView
 from synnefo_admin.admin.associations import (
@@ -173,7 +166,8 @@ def do_action(request, op, id):
 def catalog(request):
     """List view for Cyclades ips."""
     context = {}
-    context['action_dict'] = get_permitted_actions(cached_actions, request.user)
+    context['action_dict'] = get_permitted_actions(cached_actions,
+                                                   request.user)
     context['filter_dict'] = IPFilterSet().filters.itervalues()
     context['columns'] = ["ID", "Address", "Floating",
                           "Creation date", "User ID", ""]

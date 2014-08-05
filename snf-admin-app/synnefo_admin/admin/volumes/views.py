@@ -181,7 +181,8 @@ def do_action(request, op, id):
 def catalog(request):
     """List view for Cyclades volumes."""
     context = {}
-    context['action_dict'] = get_permitted_actions(cached_actions, request.user)
+    context['action_dict'] = get_permitted_actions(cached_actions,
+                                                   request.user)
     context['filter_dict'] = VolumeFilterSet().filters.itervalues()
     context['columns'] = ["ID", "Name", "Status", "Size (GB)", "Disk template",
                           "VM ID", "Created at", "Updated at", ""]

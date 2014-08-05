@@ -21,8 +21,7 @@ from django.utils.html import escape
 
 from synnefo.db.models import (VirtualMachine, Network, Volume,
                                IPAddress)
-from astakos.im.models import (AstakosUser, Project, ProjectResourceGrant,
-                               Resource)
+from astakos.im.models import AstakosUser, Project
 
 from synnefo_admin import admin_settings
 from synnefo_admin.admin.actions import (has_permission_or_403,
@@ -206,7 +205,8 @@ def do_action(request, op, id):
 def catalog(request):
     """List view for Cyclades projects."""
     context = {}
-    context['action_dict'] = get_permitted_actions(cached_actions, request.user)
+    context['action_dict'] = get_permitted_actions(cached_actions,
+                                                   request.user)
     context['filter_dict'] = ProjectFilterSet().filters.itervalues()
     context['columns'] = ["ID", "Name", "Owner Name", "Project Status",
                           "Application Status", "Creation date", "End date",

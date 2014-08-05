@@ -14,26 +14,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-logger = logging.getLogger(__name__)
-import re
 from collections import OrderedDict
 
-from operator import or_
-
-from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
-from django.contrib.auth.models import Group
 from django.utils.html import escape
-from django.conf import settings
 
 from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
                                NetworkInterface, IPAddress)
-from astakos.im.models import AstakosUser, ProjectMembership, Project, Resource
+from astakos.im.models import AstakosUser, Project
 from astakos.im import user_logic as users
 
-from synnefo.util import units
-
-import django_filters
 from django.db.models import Q
 
 from synnefo_admin import admin_settings
@@ -187,7 +177,8 @@ def catalog(request):
     """List view for Astakos users."""
 
     context = {}
-    context['action_dict'] = get_permitted_actions(cached_actions, request.user)
+    context['action_dict'] = get_permitted_actions(cached_actions,
+                                                   request.user)
     context['filter_dict'] = UserFilterSet().filters.itervalues()
     context['columns'] = ["ID", "E-mail", "First Name", "Last Name", "Active",
                           "Rejected", "Moderated", "Verified", ""]

@@ -15,31 +15,11 @@
 
 
 import logging
-import re
 from collections import OrderedDict
 
-from operator import or_
-
-from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
-from django.core.urlresolvers import reverse
-from django.contrib.auth.models import Group
-from django.template import Context, Template
-
-from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
-                               NetworkInterface, IPAddress)
-from astakos.im.models import AstakosUser, ProjectMembership, Project, Resource
 from astakos.im import user_logic as users
 
-
-from synnefo.util import units
-
-from eztables.views import DatatablesView
-
-import django_filters
-from django.db.models import Q
-
-from synnefo_admin.admin.actions import AdminAction, noop
+from synnefo_admin.admin.actions import AdminAction
 from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
 
 
@@ -58,8 +38,8 @@ class UserAction(AdminAction):
 
 def check_user_action(action):
     def check(u, action):
-        res, _ = users.validate_user_action(u, action, verification_code=\
-                                            u.verification_code)
+        res, _ = users.validate_user_action(
+            u, action, verification_code=u.verification_code)
         return res
 
     return lambda u: check(u, action)

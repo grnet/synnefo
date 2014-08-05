@@ -15,7 +15,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #import logging
-from astakos.im.models import Project, Resource
+from astakos.im.models import Resource
 
 from synnefo_admin.admin.projects.utils import get_project_quota_category
 from .common import AdminTestCase

@@ -14,28 +14,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import re
 from collections import OrderedDict
 import time
 
-from operator import or_
 
 from django.core.urlresolvers import reverse
-from django.db.models import Q
 from django.utils.html import escape
 
 from synnefo.db.models import (VirtualMachine, Network, IPAddressLog,
                                IPAddress)
-from astakos.im.models import AstakosUser, ProjectMembership, Project
+from astakos.im.models import AstakosUser, Project
 
-from synnefo.logic import servers as servers_backend
-from synnefo.logic.commands import validate_server_action
-from synnefo.management.common import wait_server_task
-
-
-import django_filters
-
-from synnefo_admin import admin_settings
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
@@ -196,7 +185,8 @@ def wait_action(request, op, id):
 def catalog(request):
     """List view for Cyclades VMs."""
     context = {}
-    context['action_dict'] = get_permitted_actions(cached_actions, request.user)
+    context['action_dict'] = get_permitted_actions(cached_actions,
+                                                   request.user)
     context['filter_dict'] = VMFilterSet().filters.itervalues()
     context['columns'] = ["ID", "Name", "State", "Suspended", ""]
     context['item_type'] = 'vm'

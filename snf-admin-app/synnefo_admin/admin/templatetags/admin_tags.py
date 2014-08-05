@@ -23,12 +23,10 @@ import django_filters
 
 import synnefo_admin.admin.projects.utils as project_utils
 import synnefo_admin.admin.users.utils as user_utils
-import synnefo_admin.admin.ip_logs.utils as iplog_utils
 from synnefo_admin.admin import utils
 mod = import_module('astakos.im.management.commands.project-show')
 
 register = template.Library()
-
 
 status_map = {}
 status_map['vm'] = {
@@ -379,14 +377,14 @@ def present_excluded(assoc):
 
 
 FILTER_NAME_ICON_MAP = {
-        'vm': 'snf-pc-full',
-        'user': 'snf-user-full',
-        'vol': 'snf-volume-full',
-        'volume': 'snf-volume-full',
-        'net': 'snf-network-full',
-        'network': 'snf-network-full',
-        'proj': 'snf-clipboard-h',
-        'project': 'snf-clipboard-h',
+    'vm': 'snf-pc-full',
+    'user': 'snf-user-full',
+    'vol': 'snf-volume-full',
+    'volume': 'snf-volume-full',
+    'net': 'snf-network-full',
+    'network': 'snf-network-full',
+    'proj': 'snf-clipboard-h',
+    'project': 'snf-clipboard-h',
 }
 
 
@@ -398,14 +396,15 @@ def label_to_icon(filter_name, filter_label):
     """
     icon_cls = FILTER_NAME_ICON_MAP.get(filter_name)
     if icon_cls:
-        label =  '<span class="%s"></span>' % icon_cls
+        label = '<span class="%s"></span>' % icon_cls
     else:
         label = filter_label
     return label
+
 
 @register.filter
 def show_more_exception_message(assoc):
     """Show an extra message for an instance in the popover for "Show More"."""
     if assoc.type == "user":
-        return """</br>Alternatively, you may consult the "Members" tab of the
-    project."""
+        return """
+</br>Alternatively, you may consult the "Members" tab of the project."""

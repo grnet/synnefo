@@ -4,4 +4,3 @@ urlpatterns = patterns(
     '',
     url(r'^admin/', include('synnefo_admin.admin.urls')),
 )
-

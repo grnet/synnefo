@@ -45,7 +45,8 @@ class AdminMiddleware(object):
         if not isinstance(exception, AdminHttp404):
             return
 
-        c = update_request_context(request, default_dict, msg=exception.message)
+        c = update_request_context(request, default_dict,
+                                   msg=exception.message)
         t = loader.get_template(ADMIN_404_TEMPLATE)
         response = t.render(c)
         return HttpResponseNotFound(response)

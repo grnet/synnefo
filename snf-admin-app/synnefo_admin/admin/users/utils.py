@@ -152,7 +152,8 @@ def get_user_groups(user):
 
 def get_suspended_vms(user):
     limit = admin_settings.ADMIN_LIMIT_SUSPENDED_VMS_IN_SUMMARY
-    vms = VirtualMachine.objects.filter(userid=user.uuid, suspended=True)
+    vms = VirtualMachine.objects.filter(userid=user.uuid, suspended=True).\
+        order_by('-id')
     count = vms.count()
     if count == 0:
         return 'None'

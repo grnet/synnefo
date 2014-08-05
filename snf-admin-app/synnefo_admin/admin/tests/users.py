@@ -37,8 +37,8 @@ class TestAdminUsers(AdminTestCase):
 
     def test_suspended_vms(self):
         """Test if suspended VMs for a user are displayed properly."""
-        # The VMs that will be shown at any time to the user will be between
-        # the ID 1134 and (1134 + limit).
+        # The VMs that will be shown at any time to the user are limited by the
+        # setting below.
         start = 1134
         end = start + admin_settings.ADMIN_LIMIT_SUSPENDED_VMS_IN_SUMMARY
 
@@ -56,21 +56,22 @@ class TestAdminUsers(AdminTestCase):
         self.assertEqual(vms, self.expected_href(start))
 
         # Test 3 - Assert that the hrefs are comma-separated when there are
-        # more than one suspended VMs.
+        # more than one suspended VMs, in descending ID order.
         #
         # Create one more VM, get the list of suspended VMs and split it.
-        mf.VirtualMachineFactory(userid=self.user.uuid, pk=start + 1,
+        mf.VirtualMachineFactory(userid=self.user.uuid, pk=(start + 1),
                                  name='Name{}'.format(start + 1),
                                  suspended=True)
         vms = get_suspended_vms(self.user).split(', ')
 
-        # Asssert that each element of the list is displayed properly.
-        for pk in range(start, start + 1):
-            i = pk - start
+        # Asssert that each element of the list (1135, 1134) is displayed
+        # properly.
+        for pk in reversed(xrange(start, start + 2)):
+            i = start + 1 - pk
             self.assertEqual(vms[i], self.expected_href(pk))
 
         # Test 4 - Assert that dots ('...') are printed when there are too
-        # many suspended VMs.
+        # many suspended VMs and that the older VMs are ommited.
         #
         # Create more VMs than the current limit and split them like before.
         for pk in range(start + 2, end + 1):
@@ -78,11 +79,12 @@ class TestAdminUsers(AdminTestCase):
                                      name='Name{}'.format(pk), suspended=True)
         vms = get_suspended_vms(self.user).split(', ')
 
-        # Asssert that each element of the list is displayed properly and that
-        # the last element is actually dots ('...').
-        for pk in range(start, end + 1):
-            i = pk - start
-            if pk == end:
+        # Asssert that each element of the list (1144...1135) is displayed
+        # properly and that the VM that was created first is ommited and
+        # replaced with dots ('...').
+        for pk in reversed(xrange(start, end + 1)):
+            i = end - pk
+            if pk == start:
                 self.assertEqual(vms[i], '...')
             else:
                 self.assertEqual(vms[i], self.expected_href(pk))

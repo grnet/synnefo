@@ -1141,15 +1141,16 @@ class Node(DBWorker):
         """
 
         props = ('n.path', 'v.serial', 'v.node', 'v.hash', 'v.size', 'v.type',
-                'v.source', 'v.mtime', 'v.muser', 'v.uuid', 'v.checksum',
-                'v.cluster', 'v.mapfile', 'v.is_snapshot')
-        cols = props + ['a.key', 'a.value']
+                 'v.source', 'v.mtime', 'v.muser', 'v.uuid', 'v.checksum',
+                 'v.cluster', 'v.available', 'v.map_check_timestamp',
+                 'v.mapfile', 'v.is_snapshot')
+        cols = list(props) + ['a.key', 'a.value']
         q = ("select %s from nodes n, versions v, attributes a "
              "where v.serial = a.serial and "
              "a.domain = ? and "
              "a.node = n.node and "
              "a.is_latest = 1 and "
-             "n.path in (%s)") % (cols, ','.join('?' for _ in paths))
+             "n.path in (%s)") % (','.join(cols), ','.join('?' for _ in paths))
         args = [domain]
         map(args.append, paths)
         if cluster is not None:

@@ -58,6 +58,7 @@ status_map['project'] = {
     'SUSPENDED': 'warning',
 }
 status_map['application'] = status_map['project']
+status_map['application']['APPROVED'] = 'success'
 
 
 def get_status_from_instance(inst):

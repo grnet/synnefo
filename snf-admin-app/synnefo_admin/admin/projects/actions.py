@@ -18,9 +18,7 @@ import logging
 from collections import OrderedDict
 
 from synnefo_admin.admin.actions import AdminAction
-from astakos.im.functions import (validate_project_action,
-                                  approve_application, deny_application,
-                                  suspend, unsuspend, terminate, reinstate)
+from astakos.im import functions as pactions
 
 from synnefo_admin.admin.utils import update_actions_rbac, send_admin_email
 
@@ -38,30 +36,22 @@ class ProjectAction(AdminAction):
         AdminAction.__init__(self, name=name, target='project', f=f, **kwargs)
 
 
-# FIXME: This check should be done by astakos
-def custom_check_suspend(project):
-    if project.is_suspended:
-        return False
-    else:
-        res, _ = validate_project_action(project, "SUSPEND")
-        return res
-
-
 def do_project_action(action):
 
     if action == 'approve':
-        return lambda p: approve_application(p.last_application.id)
+        return lambda p: pactions.approve_application(p.last_application.id)
     elif action == 'deny':
-        return lambda p: deny_application(p.last_application.id)
+        return lambda p: pactions.deny_application(p.last_application.id)
     else:
-        # The action name is the same as the imported action. If the imported
-        # action name changes, then this code must change too.
-        return lambda p: globals()[action](p.id)
+        # The action name should be the same as the function name in
+        # astakos.im.functions.
+        func = getattr(pactions, action)
+        return lambda p: func(p.id)
 
 
 def check_project_action(action):
     def check(p, action):
-        res, _ = validate_project_action(p, action)
+        res, _ = pactions.validate_project_action(p, action)
         return res
 
     return lambda p: check(p, action)
@@ -97,7 +87,7 @@ def generate_actions():
 
     actions['suspend'] = ProjectAction(name='Suspend',
                                        f=do_project_action("suspend"),
-                                       c=custom_check_suspend,
+                                       c=check_project_action("SUSPEND"),
                                        karma='bad', caution_level='warning',)
 
     actions['unsuspend'] = ProjectAction(name='Unsuspend',

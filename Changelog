@@ -157,6 +157,9 @@ Cyclades
 * Store basic information about images that have been used to create servers,
 	in order to preserve this information even if images are deleted from
 	Pithos.
+* Make 'snf-ganeti-eventd' tolerate failures when processing Ganeti jobs. The
+  daemon will not crash but continue to run in order to process jobs that can
+  be processed.
 * Update 'backend-list' command to not count the free IPs from networks that
   are drained.
 * Fix the'network-inspect' command to not contain externally reserved IPs

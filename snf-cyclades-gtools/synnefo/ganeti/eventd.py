@@ -530,7 +530,10 @@ def main():
 
         while True:    # loop forever
             # process the queue of events as explained above
-            notifier.process_events()
+            try:
+                notifier.process_events()
+            except StandardError:
+                logger.exception("Unhandled exception")
             if notifier.check_events():
                 # read notified events and enqeue them
                 notifier.read_events()

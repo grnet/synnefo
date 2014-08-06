@@ -739,17 +739,20 @@ class AstakosUser(User):
         provider.add_to_user()
 
     def get_resend_activation_url(self):
-        return reverse('send_activation', kwargs={'user_id': self.pk})
+        return reverse('send_activation', urlconf="synnefo.webproject.urls",
+                       kwargs={'user_id': self.pk})
 
     def get_activation_url(self, nxt=False):
-        url = "%s?auth=%s" % (reverse('astakos.im.views.activate'),
-                              quote(self.verification_code))
+        activate_url = reverse('astakos.im.views.activate',
+                               urlconf="synnefo.webproject.urls")
+        url = "%s?auth=%s" % (activate_url, quote(self.verification_code))
         if nxt:
             url += "&next=%s" % quote(nxt)
         return url
 
     def get_password_reset_url(self, token_generator=default_token_generator):
         return reverse('astakos.im.views.target.local.password_reset_confirm',
+                       urlconf="synnefo.webproject.urls",
                        kwargs={'uidb36': int_to_base36(self.id),
                                'token': token_generator.make_token(self)})
 
@@ -1156,6 +1159,7 @@ class EmailChange(models.Model):
 
     def get_url(self):
         return reverse('email_change_confirm',
+                       urlconf="synnefo.webproject.urls",
                        kwargs={'activation_key': self.activation_key})
 
     def activation_key_expired(self):

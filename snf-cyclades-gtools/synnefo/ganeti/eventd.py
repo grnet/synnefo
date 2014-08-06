@@ -306,14 +306,16 @@ class JobFileHandler(pyinotify.ProcessEvent):
                           "disks": get_field(input, "disks"),
                           "beparams": get_field(input, "beparams")}
         elif op_id == "OP_INSTANCE_SNAPSHOT":
-            job_fields = {"disks": get_field(input, "disks")}
-            reason = get_field(input, "reason")
-            snapshot_info = None
-            if isinstance(reason, list) and len(reason) > 0:
-                reason = reason[0]
-                if reason[0] == "gnt:user":
-                    snapshot_info = reason[1]
-            job_fields["disks"][0][1]["snapshot_info"] = snapshot_info
+            disks = get_field(input, "disks")
+            if disks:
+                reason = get_field(input, "reason")
+                snapshot_info = None
+                if isinstance(reason, list) and len(reason) > 0:
+                    reason = reason[0]
+                    if reason[0] == "gnt:user":
+                        snapshot_info = reason[1]
+                disks[0][1]["snapshot_info"] = snapshot_info
+                job_fields = {"disks": disks}
 
         msg = {"type": "ganeti-op-status",
                "instance": instances,

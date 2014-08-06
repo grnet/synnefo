@@ -117,16 +117,18 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
 
     """
     # See #1492, #1031, #1111 why this line has been removed
-    #if (opcode not in [x[0] for x in VirtualMachine.BACKEND_OPCODES] or
+    # if (opcode not in [x[0] for x in VirtualMachine.BACKEND_OPCODES] or
     if status not in [x[0] for x in BACKEND_STATUSES]:
         raise VirtualMachine.InvalidBackendMsgError(opcode, status)
 
     if opcode == "OP_INSTANCE_SNAPSHOT":
         for disk_id, disk_info in job_fields.get("disks", []):
-            snap_info = json.loads(disk_info["snapshot_info"])
-            snap_id = snap_info["snapshot_id"]
-            update_snapshot(snap_id, user_id=vm.userid, job_id=jobid,
-                            job_status=status, etime=etime)
+            snap_info = disk_info.get("snasphot_info", None)
+            if snap_info is not None:
+                snap_info = json.loads(snap_info)
+                snap_id = snap_info["snapshot_id"]
+                update_snapshot(snap_id, user_id=vm.userid, job_id=jobid,
+                                job_status=status, etime=etime)
         return
 
     vm.backendjobid = jobid

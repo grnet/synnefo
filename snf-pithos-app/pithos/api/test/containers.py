@@ -708,6 +708,14 @@ class ContainerGet(PithosAPITest):
             objects.remove('')
         self.assertTrue(objects, sorted(onames[2:]))
 
+        # list objects that satisfy the in-existence criteria
+        r = self.get('%s?meta=!Stock' % container_url)
+        self.assertEqual(r.status_code, 200)
+        objects = r.content.split('\n')
+        if '' in objects:
+            objects.remove('')
+            self.assertTrue(objects, sorted(onames[:2]))
+
         # test case insensitive existence criteria matching
         r = self.get('%s?meta=quality' % container_url)
         self.assertEqual(r.status_code, 200)

@@ -408,8 +408,11 @@ class ModularBackend(object):
         self._can_read_account(user, account)
         path, node = self._lookup_account(account, user == account)
         if user != account:
-            if until or (node is None):
-                raise NotAllowedError
+            if until:
+                raise NotAllowedError("Browsing other account's "
+                                      "history is not allowed")
+            if node is None:
+                raise NotAllowedError("Account does not exist")
         try:
             props = self._get_properties(node, until)
             mtime = props[self.MTIME]
@@ -432,8 +435,8 @@ class ModularBackend(object):
             if props is not None and include_user_defined:
                 if domain is None:
                     raise ValueError(
-                        'Domain argument is obligatory for getting '
-                        'user defined metadata')
+                        "Domain argument is obligatory for getting "
+                        "user defined metadata")
                 meta.update(
                     dict(self.node.attribute_get(props[self.SERIAL], domain)))
             if until is not None:
@@ -510,12 +513,12 @@ class ModularBackend(object):
                 groups = existing
 
         if len(groups) > self.acc_max_groups:
-            raise LimitExceeded('Pithos+ accounts cannot have more than %s '
-                                'groups' % self.acc_max_groups)
+            raise LimitExceeded("Pithos+ accounts cannot have more than %s "
+                                "groups" % self.acc_max_groups)
         for k in groups:
             if len(groups[k]) > self.acc_max_group_members:
-                raise LimitExceeded('Pithos+ groups cannot have more than %s '
-                                    'members' % self.acc_max_group_members)
+                raise LimitExceeded("Pithos+ groups cannot have more than %s "
+                                    "members" % self.acc_max_group_members)
 
         self.permissions.group_destroy(account)
         self.permissions.group_addmany(account, groups)
@@ -579,7 +582,7 @@ class ModularBackend(object):
         self._can_write_account(user, account)
         node = self.node.node_lookup(account)
         if node is not None:
-            raise AccountExists('Account already exists')
+            raise AccountExists("Account already exists")
         node = self._put_path(user, self.ROOTNODE, account,
                               update_statistics_ancestors_depth=-1)
         self._put_policy(node, policy, True, is_account_policy=True,
@@ -601,7 +604,7 @@ class ModularBackend(object):
             return
         if not self.node.node_remove(node,
                                      update_statistics_ancestors_depth=-1):
-            raise AccountNotEmpty('Account is not empty')
+            raise AccountNotEmpty("Account is not empty")
         self.permissions.group_destroy(account)
 
         # remove all the cached allowed paths
@@ -628,7 +631,8 @@ class ModularBackend(object):
         self._can_read_account(user, account)
         if user != account:
             if until:
-                raise NotAllowedError
+                raise NotAllowedError("Browsing other account's "
+                                      "history is not allowed")
             return self._allowed_containers(user, account)
         if shared or public:
             allowed = set()
@@ -658,7 +662,8 @@ class ModularBackend(object):
         allowed = []
         if user != account:
             if until:
-                raise NotAllowedError
+                raise NotAllowedError("Browsing other account's "
+                                      "history is not allowed")
         path, node = self._lookup_container(account, container)
         before = until if until is not None else inf
         allowed = self._get_formatted_paths(allowed)
@@ -687,7 +692,8 @@ class ModularBackend(object):
         self._can_read_container(user, account, container)
         if user != account:
             if until:
-                raise NotAllowedError
+                raise NotAllowedError("Accessing other account's "
+                                      "historical information is not allowed")
         path, node = self._lookup_container(account, container)
         props = self._get_properties(node, until)
         mtime = props[self.MTIME]
@@ -707,8 +713,8 @@ class ModularBackend(object):
             if include_user_defined:
                 if domain is None:
                     raise ValueError(
-                        'Domain argument is obligatory for getting '
-                        'user defined metadata')
+                        "Domain argument is obligatory for getting "
+                        "user defined metadata")
                 meta.update(
                     dict(self.node.attribute_get(props[self.SERIAL], domain)))
             if until is not None:
@@ -819,7 +825,7 @@ class ModularBackend(object):
         except NameError:
             pass
         else:
-            raise ContainerExists('Container already exists')
+            raise ContainerExists("Container already exists")
         path = '/'.join((account, container))
         node = self._put_path(
             user, self._lookup_account(account, True)[1], path,
@@ -863,7 +869,7 @@ class ModularBackend(object):
 
         if not delimiter:
             if self._get_statistics(node)[0] > 0:
-                raise ContainerNotEmpty('Container is not empty')
+                raise ContainerNotEmpty("Container is not empty")
             hashes, size, _ = self.node.node_purge_children(
                 node, inf, CLUSTER_HISTORY,
                 update_statistics_ancestors_depth=0)
@@ -918,7 +924,8 @@ class ModularBackend(object):
                       marker, limit, virtual, domain, keys, shared, until,
                       size_range, all_props, public):
         if user != account and until:
-            raise NotAllowedError
+            raise NotAllowedError("Browsing other account's "
+                                  "history is not allowed")
 
         objects = set()
         if shared and public:
@@ -993,7 +1000,8 @@ class ModularBackend(object):
         if user != account:
             allowed = self.permissions.access_list_paths(user, path)
             if not allowed:
-                raise NotAllowedError
+                raise NotAllowedError("Browsing other account's "
+                                      "history is not allowed")
         else:
             allowed = set()
             if shared:
@@ -1157,7 +1165,7 @@ class ModularBackend(object):
                 del_props = self.node.version_lookup(
                     node, inf, CLUSTER_DELETED)
                 if del_props is None:
-                    raise ItemNotExists('Object does not exist')
+                    raise ItemNotExists("Object does not exist")
                 modified = del_props[self.MTIME]
 
         meta = {}
@@ -1236,7 +1244,8 @@ class ModularBackend(object):
                 try:
                     allowed = access_objects[path]
                 except KeyError:
-                    raise NotAllowedError
+                    raise NotAllowedError("User does not have access "
+                                          "to path: %s" % path)
             access_dict, allowed = \
                 self.permissions.access_get_for_bulk(access_objects[path])
             nobject_permissions[name] = (self.ALLOWED[allowed], path,
@@ -1270,7 +1279,7 @@ class ModularBackend(object):
                                                user):
                 allowed = 'read'
             else:
-                raise NotAllowedError
+                raise NotAllowedError("User does not have access to the path")
         self._lookup_object(account, container, name)
         return (allowed,
                 permissions_path,
@@ -1292,14 +1301,15 @@ class ModularBackend(object):
         """
 
         if user != account:
-            raise NotAllowedError
+            raise NotAllowedError("Modifying other account's object "
+                                  "permissions is not allowed")
         path = self._lookup_object(account, container, name,
                                    lock_container=True)[0]
         self._check_permissions(path, permissions)
         try:
             self.permissions.access_set(path, permissions)
         except:
-            raise ValueError('Invalid users/groups in permissions')
+            raise ValueError("Invalid users/groups in permissions")
 
         # remove all the cached allowed paths
         # filtering out only those affected could be more expensive
@@ -1347,7 +1357,7 @@ class ModularBackend(object):
         """Checks if the object map exists and updates the database"""
 
         if props[self.AVAILABLE] == MAP_ERROR:
-            raise BrokenSnapshot('This Archipelago volume is broken.')
+            raise BrokenSnapshot("This Archipelago volume is broken.")
 
         if props[self.AVAILABLE] == MAP_UNAVAILABLE:
             if props[self.MAP_CHECK_TIMESTAMP]:
@@ -1426,7 +1436,8 @@ class ModularBackend(object):
                             force_mapfile=None, is_snapshot=False):
         available = available if available is not None else MAP_AVAILABLE
         if permissions is not None and user != account:
-            raise NotAllowedError
+            raise NotAllowedError("Modifying other account's "
+                                  "object content is not allowed")
         self._can_write_object(user, account, container, name)
         if permissions is not None:
             path = '/'.join((account, container, name))
@@ -1545,7 +1556,7 @@ class ModularBackend(object):
         uuid_ = self._validate_uuid(uuid)
         info = self.node.latest_uuid(uuid_, CLUSTER_NORMAL)
         if info is None:
-            raise NameError('No object found for this UUID.')
+            raise NameError("No object found for this UUID.")
         _, serial = info
         self.node.version_put_property(serial, 'available', state)
 
@@ -1571,8 +1582,8 @@ class ModularBackend(object):
 
         if not self._size_is_consistent(size, hashmap):
             raise InconsistentContentSize(
-                'The object\'s size does not match '
-                'with the object\'s hashmap length')
+                "The object's size does not match "
+                "with the object's hashmap length")
 
         try:
             path, node = self._lookup_object(account, container, name,
@@ -1683,8 +1694,8 @@ class ModularBackend(object):
             dest_account, dest_container, dest_name)  # New uuid.
 
         if is_copy and props[self.AVAILABLE] != MAP_AVAILABLE:
-            raise NotAllowedError('Copying objects not available in the '
-                                  'storage backend is forbidden.')
+            raise NotAllowedError("Copying objects not available in the "
+                                  "storage backend is forbidden.")
 
         src_mapfile = props[self.MAPFILE]
         force_mapfile = src_mapfile if not is_copy else None
@@ -1743,8 +1754,8 @@ class ModularBackend(object):
                 vdest_name = path.replace(prefix, dest_prefix, 1)
 
                 if is_copy and prop[self.AVAILABLE] != MAP_AVAILABLE:
-                    raise NotAllowedError('Copying objects not available in '
-                                          'the storage backend is forbidden.')
+                    raise NotAllowedError("Copying objects not available in "
+                                          "the storage backend is forbidden.")
 
                 src_mapfile = prop[self.MAPFILE]
                 force_mapfile = src_mapfile if not is_copy else None
@@ -1898,7 +1909,7 @@ class ModularBackend(object):
             return size
 
         if not self._exists(node):
-            raise ItemNotExists('Object is deleted.')
+            raise ItemNotExists("Object is deleted.")
 
         # keep reference to the mapfile
         # in case we will want to delete them in the future
@@ -1999,7 +2010,7 @@ class ModularBackend(object):
 
         info = self.node.latest_uuid(uuid, CLUSTER_NORMAL)
         if info is None:
-            raise NameError
+            raise NameError("No object found for this UUID.")
         path, serial = info
         account, container, name = path.split('/', 2)
         if check_permissions:
@@ -2025,7 +2036,7 @@ class ModularBackend(object):
         uuid_ = self._validate_uuid(uuid)
         info = self.node.latest_uuid(uuid_, CLUSTER_NORMAL)
         if info is None:
-            raise NameError('No object found for this UUID.')
+            raise NameError("No object found for this UUID.")
         path, serial = info
         account, container, name = path.split('/', 2)
         self._delete_object(user, account, container, name)
@@ -2042,7 +2053,7 @@ class ModularBackend(object):
 
         path = self.permissions.public_path(public)
         if path is None:
-            raise NameError
+            raise NameError("No object found associated with this public path")
         account, container, name = path.split('/', 2)
         self._can_read_object(user, account, container, name)
         return (account, container, name)
@@ -2057,7 +2068,7 @@ class ModularBackend(object):
         logger.debug("get_block: %s", hash)
         block = self.store.block_get_archipelago(hash)
         if not block:
-            raise ItemNotExists('Block does not exist')
+            raise ItemNotExists("Block does not exist")
         return block
 
     def put_block(self, data):
@@ -2090,11 +2101,11 @@ class ModularBackend(object):
 
     def _validate_uuid(self, uuid):
         if not isinstance(uuid, basestring):
-            raise ValueError('A string value is expected for UUID.')
+            raise ValueError("A string value is expected for UUID.")
         try:
             uuid = uuidlib.UUID(uuid)
         except:
-            raise ValueError('Invalid UUID value.')
+            raise ValueError("Invalid UUID value.")
         prefix = 'urn:uuid:'
         return uuid.urn[len(prefix):]
 
@@ -2132,7 +2143,7 @@ class ModularBackend(object):
         path = '/'.join((account, container))
         node = self.node.node_lookup(path, for_update)
         if node is None:
-            raise ItemNotExists('Container does not exist')
+            raise ItemNotExists("Container does not exist")
         return path, node
 
     def _lookup_object(self, account, container, name, lock_container=False):
@@ -2142,7 +2153,7 @@ class ModularBackend(object):
         path = '/'.join((account, container, name))
         node = self.node.node_lookup(path)
         if node is None:
-            raise ItemNotExists('Object does not exist')
+            raise ItemNotExists("Object does not exist")
         return path, node
 
     def _lookup_objects(self, paths):
@@ -2157,7 +2168,7 @@ class ModularBackend(object):
         if props is None and until is not None:
             props = self.node.version_lookup(node, before, CLUSTER_HISTORY)
         if props is None:
-            raise ItemNotExists('Path does not exist')
+            raise ItemNotExists("Path does not exist")
         return props
 
     def _get_statistics(self, node, until=None, compute=False):
@@ -2179,16 +2190,16 @@ class ModularBackend(object):
             props = self.node.version_lookup(node, inf, CLUSTER_NORMAL,
                                              keys=keys)
             if props is None:
-                raise ItemNotExists('Object does not exist')
+                raise ItemNotExists("Object does not exist")
         else:
             try:
                 version = int(version)
             except ValueError:
-                raise VersionNotExists('Version does not exist')
+                raise VersionNotExists("Version does not exist")
             props = self.node.version_get_properties(version, node=node,
                                                      keys=keys)
             if props is None or props[self.CLUSTER] == CLUSTER_DELETED:
-                raise VersionNotExists('Version does not exist')
+                raise VersionNotExists("Version does not exist")
         return props
 
     def _get_versions(self, nodes, keys=()):
@@ -2283,7 +2294,7 @@ class ModularBackend(object):
         except Exception, e:
             logger.exception(e)
             # TODO handle failures
-            raise ValueError
+            raise ValueError("New object version creation has been failed.")
 
         self.node.attribute_unset_is_latest(node, dest_version_id)
 
@@ -2305,8 +2316,8 @@ class ModularBackend(object):
             meta = existing
 
         if len(meta) > self.resource_max_metadata:
-            raise LimitExceeded('Pithos+ resources cannot have more than %s '
-                                'metadata items per domain' %
+            raise LimitExceeded("Pithos+ resources cannot have more than %s "
+                                "metadata items per domain" %
                                 self.resource_max_metadata)
 
         self.node.attribute_set(dest_version_id, domain, node, meta)
@@ -2382,14 +2393,14 @@ class ModularBackend(object):
     # Policy functions.
 
     def _check_project(self, value):
-        # raise InvalidPolicy('Bad quota source policy')
+        # raise InvalidPolicy("Bad quota source policy")
         pass
 
     def _check_policy(self, policy):
         for k, v in policy.iteritems():
             if k == QUOTA_POLICY:
-                error_msg = ('The quota policy value '
-                             'should be a positive integer.')
+                error_msg = ("The quota policy value "
+                             "should be a positive integer.")
                 try:
                     q = int(v)  # May raise ValueError.
                 except ValueError:
@@ -2398,13 +2409,13 @@ class ModularBackend(object):
                     raise InvalidPolicy(error_msg)
             elif k == VERSIONING_POLICY:
                 if v not in ['auto', 'none']:
-                    raise InvalidPolicy('The versioning policy value should '
-                                        'be either \'auto\' or \'none\'.')
+                    raise InvalidPolicy("The versioning policy value should "
+                                        "be either 'auto' or 'none'.")
             elif k == PROJECT:
                 self._check_project(v)
             else:
-                raise InvalidPolicy('The only allowed policies are '
-                                    '\'quota\' or \'versioning\'.')
+                raise InvalidPolicy("The only allowed policies are "
+                                    "'quota' or 'versioning'.")
 
     def _get_default_policy(self, node=None, is_account_policy=True,
                             default_project=None):
@@ -2471,21 +2482,21 @@ class ModularBackend(object):
 
     def _check_account(self, user):
         if user is not None and len(user) > 256:
-            raise LimitExceeded('User identifier should be at most '
-                                '256 characters long.')
+            raise LimitExceeded("User identifier should be at most "
+                                "256 characters long.")
 
     def _check_groups(self, groups):
         for k, members in groups.iteritems():
             if len(k) > 256:
-                raise LimitExceeded('Group names should be at most '
-                                    '256 characters long.')
+                raise LimitExceeded("Group names should be at most "
+                                    "256 characters long.")
             for m in members:
                 if len(m) > 256:
-                    raise LimitExceeded('Group members should be at most '
-                                        '256 characters long.')
+                    raise LimitExceeded("Group members should be at most "
+                                        "256 characters long.")
 
     def _check_permissions(self, path, permissions):
-        # raise ValueError('Bad characters in permissions')
+        # raise ValueError("Bad characters in permissions")
         pass
 
     def _get_formatted_paths(self, paths):
@@ -2563,23 +2574,27 @@ class ModularBackend(object):
     def _can_read_account(self, user, account):
         if user != account:
             if account not in self._allowed_accounts(user):
-                raise NotAllowedError
+                raise NotAllowedError("User does not have read "
+                                      "access to the account")
 
     @check_allowed_paths(action=1)
     def _can_write_account(self, user, account):
         if user != account:
-            raise NotAllowedError
+            raise NotAllowedError("User does not have write "
+                                  "access to the account")
 
     @check_allowed_paths(action=0)
     def _can_read_container(self, user, account, container):
         if user != account:
             if container not in self._allowed_containers(user, account):
-                raise NotAllowedError
+                raise NotAllowedError("User does not have read "
+                                      "access to the container")
 
     @check_allowed_paths(action=1)
     def _can_write_container(self, user, account, container):
         if user != account:
-            raise NotAllowedError
+            raise NotAllowedError("User does not have write "
+                                  "access to the container")
 
     def can_write_container(self, user, account, container):
         return self._can_write_container(user, account, container)
@@ -2587,27 +2602,29 @@ class ModularBackend(object):
     @check_allowed_paths(action=0)
     def _can_read_object(self, user, account, container, name):
         if user == account:
-            return True
+            return
         path = '/'.join((account, container, name))
         if self.permissions.public_get(path) is not None:
-            return True
+            return
         path = self._get_permissions_path(account, container, name)
         if not path:
-            raise NotAllowedError
+            raise NotAllowedError("User does not have access to the object")
         if (not self.permissions.access_check(path, self.READ, user) and not
                 self.permissions.access_check(path, self.WRITE, user)):
-            raise NotAllowedError
+            raise NotAllowedError("User does not have read access "
+                                  "to the object")
 
     @check_allowed_paths(action=1)
     def _can_write_object(self, user, account, container, name):
         if user == account:
-            return True
+            return
         path = '/'.join((account, container, name))
         path = self._get_permissions_path(account, container, name)
         if not path:
-            raise NotAllowedError
+            raise NotAllowedError("User does not have access to the object")
         if not self.permissions.access_check(path, self.WRITE, user):
-            raise NotAllowedError
+            raise NotAllowedError("User does not have write access "
+                                  "to the object")
 
     def _allowed_accounts(self, user):
         allow = set()
@@ -2690,7 +2707,7 @@ class ModularBackend(object):
         try:
             return binascii.unhexlify(hash)
         except TypeError:
-            raise InvalidHash(hash)
+            raise InvalidHash("Invalid hash: %s" % hash)
 
     def _size_is_consistent(self, size, hashmap):
         if size < 0:

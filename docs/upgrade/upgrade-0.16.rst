@@ -1,6 +1,15 @@
 Upgrade to Synnefo v0.16
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
+Introduction
+============
+
+Starting with version 0.16, we introduce Archipelago as the new storage backend
+for the Pithos Service. Archipelago will act as a storage abstraction layer
+between Pithos and NFS, RADOS or any other storage backend driver that Archipelago
+supports. In order to use the Pithos Service you must install Archipelago on the
+node that runs the Pithos workers.
+
 
 Upgrade Steps
 =============

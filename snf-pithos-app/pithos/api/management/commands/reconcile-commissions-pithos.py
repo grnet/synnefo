@@ -68,7 +68,7 @@ class Command(SynnefoCommand):
                     self.stdout.write('%s\n' % i)
 
                 b.commission_serials.delete_many(accepted)
-        except Exception, e:
+        except Exception as e:
             logger.exception(e)
             b.post_exec(False)
             raise CommandError(e)

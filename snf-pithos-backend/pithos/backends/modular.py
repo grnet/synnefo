@@ -2291,7 +2291,7 @@ class ModularBackend(object):
                 map_check_timestamp=src_map_check_timestamp,
                 mapfile=mapfile,
                 is_snapshot=src_is_snapshot)
-        except Exception, e:
+        except Exception as e:
             logger.exception(e)
             # TODO handle failures
             raise ValueError("New object version creation has been failed.")

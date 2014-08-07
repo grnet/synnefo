@@ -95,7 +95,7 @@ class ManageAccountsTests(unittest.TestCase):
                 try:
                     self.utils.backend.get_object_meta(
                         holder, account, container, object, 'pithos')
-                except Exception, e:
+                except Exception as e:
                     self.fail(e)
 
     def test_existing_accounts(self):
@@ -250,7 +250,7 @@ class ManageAccountsTests(unittest.TestCase):
         try:
             self.utils.backend.get_container_meta('account1', 'account1',
                                                   'container1', 'pithos')
-        except NameError, e:
+        except NameError as e:
             self.fail(e)
 
         expected = {'meta': meta,
@@ -292,7 +292,7 @@ class ManageAccountsTests(unittest.TestCase):
         try:
             self.utils.backend.get_container_meta('account1', 'account1',
                                                   'container1', 'pithos')
-        except NameError, e:
+        except NameError as e:
             self.fail(e)
 
         expected = {'meta': meta,
@@ -338,7 +338,7 @@ class ManageAccountsTests(unittest.TestCase):
         try:
             self.utils.backend.get_container_meta('account1', 'account1',
                                                   'container1', 'pithos')
-        except NameError, e:
+        except NameError as e:
             self.fail(e)
 
         expected = {'meta': meta,

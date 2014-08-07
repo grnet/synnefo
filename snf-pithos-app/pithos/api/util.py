@@ -24,6 +24,7 @@ from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import http_date, parse_etags
 from django.utils.encoding import smart_unicode, smart_str
+
 from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 from django.core.urlresolvers import reverse
@@ -59,7 +60,9 @@ from pithos.backends import connect_backend
 from pithos.backends.exceptions import (NotAllowedError, QuotaError,
                                         ItemNotExists, VersionNotExists,
                                         IllegalOperationError, LimitExceeded,
-                                        BrokenSnapshot)
+                                        BrokenSnapshot,
+                                        InconsistentContentSize, InvalidPolicy,
+                                        InvalidHash, ContainerNotEmpty)
 
 from synnefo.lib import join_urls
 
@@ -487,37 +490,23 @@ def copy_or_move_object(request, src_account, src_container, src_name,
         del(request.META['CONTENT_TYPE'])
     content_type, meta, permissions, public = get_object_headers(request)
     src_version = request.META.get('HTTP_X_SOURCE_VERSION')
-    try:
-        if move:
-            version_id = request.backend.move_object(
-                request.user_uniq, src_account, src_container, src_name,
-                dest_account, dest_container, dest_name,
-                content_type, 'pithos', meta, False, permissions, delimiter,
-                listing_limit=listing_limit)
-        else:
-            version_id = request.backend.copy_object(
-                request.user_uniq, src_account, src_container, src_name,
-                dest_account, dest_container, dest_name,
-                content_type, 'pithos', meta, False, permissions,
-                src_version, delimiter, listing_limit=listing_limit)
-    except NotAllowedError:
-        raise faults.Forbidden('Not allowed')
-    except (ItemNotExists, VersionNotExists):
-        raise faults.ItemNotFound('Container or object does not exist')
-    except ValueError:
-        raise faults.BadRequest('Invalid sharing header')
-    except QuotaError, e:
-        raise faults.RequestEntityTooLarge('Quota error: %s' % e)
+    if move:
+        version_id = request.backend.move_object(
+            request.user_uniq, src_account, src_container, src_name,
+            dest_account, dest_container, dest_name,
+            content_type, 'pithos', meta, False, permissions, delimiter,
+            listing_limit=listing_limit)
+    else:
+        version_id = request.backend.copy_object(
+            request.user_uniq, src_account, src_container, src_name,
+            dest_account, dest_container, dest_name,
+            content_type, 'pithos', meta, False, permissions,
+            src_version, delimiter, listing_limit=listing_limit)
 
     if public is not None:
-        try:
-            request.backend.update_object_public(
-                request.user_uniq, dest_account,
-                dest_container, dest_name, public)
-        except NotAllowedError:
-            raise faults.Forbidden('Not allowed')
-        except ItemNotExists:
-            raise faults.ItemNotFound('Object does not exist')
+        request.backend.update_object_public(
+            request.user_uniq, dest_account,
+            dest_container, dest_name, public)
     return version_id
 
 
@@ -669,7 +658,7 @@ def get_sharing(request):
             ret['write'] = [replace_permissions_displayname(
                 getattr(request, 'token', None), x)
                 for x in ret.get('write', [])]
-        except ItemNotExists, e:
+        except ItemNotExists as e:
             raise faults.BadRequest(
                 'Bad X-Object-Sharing header value: unknown account: %s' % e)
 
@@ -978,13 +967,10 @@ def put_object_block(request, hashmap, data, offset, is_snapshot):
     bo = offset % request.backend.block_size
     bl = min(len(data), request.backend.block_size - bo)
     if bi < len(hashmap):
-        try:
-            hashmap[bi] = request.backend.update_block(hashmap[bi],
-                                                       data[:bl],
-                                                       offset=bo,
-                                                       is_snapshot=is_snapshot)
-        except IllegalOperationError, e:
-            raise faults.Forbidden(e[0])
+        hashmap[bi] = request.backend.update_block(hashmap[bi],
+                                                    data[:bl],
+                                                    offset=bo,
+                                                    is_snapshot=is_snapshot)
     else:
         hashmap.append(request.backend.put_block(('\x00' * bo) + data[:bl]))
     return bl  # Return ammount of data written.
@@ -1121,10 +1107,21 @@ def api_method(http_method=None, token_required=True, user_required=True,
 
                 success_status = True
                 return response
-            except LimitExceeded, le:
+            except LimitExceeded as le:
                 raise faults.BadRequest(le.args[0])
-            except BrokenSnapshot, bs:
+            except BrokenSnapshot as bs:
                 raise faults.BadRequest(bs.args[0])
+            except (IllegalOperationError, NotAllowedError) as e:
+                raise faults.Forbidden(smart_str_(e))
+            except (InconsistentContentSize, InvalidPolicy, LimitExceeded,
+                    InvalidHash, ValueError) as e:
+                raise faults.BadRequest(smart_str_(e))
+            except (ItemNotExists, VersionNotExists) as e:
+                raise faults.ItemNotFound(smart_str_(e))
+            except ContainerNotEmpty as e:
+                raise faults.Conflict(smart_str_(e))
+            except QuotaError as e:
+                raise faults.RequestEntityTooLarge('Quota error: %s' % e)
             finally:
                 # Always close PithosBackend connection
                 if getattr(request, "backend", None) is not None:
@@ -1245,7 +1242,7 @@ def view_method():
                     parts[3] = urlencode(params)
                     redirect_uri = urlunsplit(parts)
                     return HttpResponseRedirect(redirect_uri)
-            except AstakosClientException, err:
+            except AstakosClientException as err:
                 logger.exception(err)
                 raise PermissionDenied
         return wrapper

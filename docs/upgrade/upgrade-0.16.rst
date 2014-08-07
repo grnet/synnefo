@@ -26,6 +26,9 @@ The upgrade to v0.16 consists in the following steps:
 
 5. Bring up all services.
 
+6. Add unique names to disks of all Ganeti instances
+
+
 .. warning::
 
     It is strongly suggested that you keep separate database backups
@@ -122,7 +125,6 @@ The upgrade to v0.16 consists in the following steps:
     cyclades-host$ snf-manage migrate
 
     pithos-host$ pithos-migrate upgrade head
-
 
 3. Inspect and adjust resource limits
 =====================================
@@ -228,3 +230,17 @@ After the upgrade is finished, we bring up all services:
     pithos.host   # service gunicorn start
 
     cyclades.host # service snf-dispatcher start
+
+
+6. Add unique names to disks of all Ganeti instances
+=====================================================
+
+Synnefo 0.16 introduces the Volume service which can handle multiple disks
+per Ganeti instance. Synnefo assigns a unique name to each Ganeti disk and
+refers to it by that unique name. After upgrading to v0.16, Synnefo must
+assign names to all existing disks. This can be easily performed with a helper
+script that is shipped with version 0.16:
+
+.. code-block:: console
+
+ cyclades.host$ /usr/lib/synnefo/tools/add_unique_name_to_disks

@@ -22,6 +22,7 @@ from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db import transaction
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import redirect
 from django.utils.translation import ugettext as _
@@ -35,16 +36,16 @@ from synnefo_branding import settings as branding_settings
 
 import astakos.im.messages as astakos_messages
 
-from astakos.im import activation_backends
+from astakos.im import activation_backends, user_logic
 from astakos.im.models import AstakosUser, ApprovalTerms, EmailChange, \
-    AstakosUserAuthProvider, PendingThirdPartyUser, Component
+    AstakosUserAuthProvider, PendingThirdPartyUser, Component, Project
 from astakos.im.util import get_context, prepare_response, get_query, \
     restrict_next
 from astakos.im.forms import LoginForm, InvitationForm, FeedbackForm, \
     SignApprovalTermsForm, EmailChangeForm
 from astakos.im.forms import ExtendedProfileForm as ProfileForm
 from synnefo.lib.services import get_public_endpoint
-from astakos.im.functions import send_feedback, logout as auth_logout, \
+from astakos.im.user_utils import send_feedback, logout as auth_logout, \
     invite as invite_func
 from astakos.im import settings
 from astakos.im import presentation
@@ -627,9 +628,7 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
         messages.error(request, message)
         return HttpResponseRedirect(reverse('index'))
 
-    backend = activation_backends.get_backend()
-    result = backend.handle_verification(user, token)
-    backend.send_result_notifications(result, user)
+    result = user_logic.verify(user, token, notify_user=True)
     next = settings.ACTIVATION_REDIRECT_URL or next or reverse('index')
     if user.is_active:
         response = prepare_response(request, user, next, renew=True)
@@ -806,8 +805,7 @@ def send_activation(request, user_id, template_name='im/login.html',
             messages.error(request,
                            _(astakos_messages.ACCOUNT_ALREADY_VERIFIED))
         else:
-            activation_backend = activation_backends.get_backend()
-            activation_backend.send_user_verification_email(u)
+            user_logic.send_verification_mail(u)
             messages.success(request, astakos_messages.ACTIVATION_SENT)
 
     return HttpResponseRedirect(reverse('index'))
@@ -820,12 +818,25 @@ def resource_usage(request):
 
     resources_meta = presentation.RESOURCES
 
+    # resolve uuids of projects the user consumes quota from
+    user = request.user
+    quota_filters = Q(usage_min__gt=0, limit__gt=0)
+    quota_uuids = map(lambda k: k[1],
+                      quotas.get_users_quotas_counters([user],
+                                                       flt=quota_filters)[0].keys(),)
+    # resolve uuids of projects the user is member to
     user_memberships = request.user.projectmembership_set.actually_accepted()
-    sources = [quotas.project_ref(m.project.uuid) for m in user_memberships]
-    user_quotas = quotas.get_user_quotas(request.user, sources=sources)
-    projects = [m.project for m in user_memberships]
+    membership_uuids = [m.project.uuid for m in user_memberships]
+
+    # merge uuids
+    uuids = set(quota_uuids + membership_uuids)
+    uuid_refs = map(quotas.project_ref, uuids)
+
+    user_quotas = quotas.get_user_quotas(request.user, sources=uuid_refs)
+    projects = Project.objects.filter(uuid__in=uuids)
     user_projects = projects_api.get_projects_details(projects)
     resource_catalog, resource_groups = _resources_catalog()
+
     if resource_catalog is False:
         # on fail resource_groups contains the result object
         result = resource_groups

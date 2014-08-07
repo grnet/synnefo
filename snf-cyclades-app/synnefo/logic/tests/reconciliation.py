@@ -235,7 +235,8 @@ class NetworkReconciliationTest(TestCase):
         mrapi().GetNetworks.return_value = [{"name": net1.backend_id,
                                              "group_list": [["default",
                                                              "bridged",
-                                                             "prv0"]],
+                                                             "prv0",
+                                                             "1"]],
                                              "network": net1.subnet4.cidr,
                                              "map": "....",
                                              "external_reservations": ""}]

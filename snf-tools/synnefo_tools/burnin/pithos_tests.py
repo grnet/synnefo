@@ -750,15 +750,25 @@ class PithosTestSuite(BurninTests):
 
         resp1 = pithos.get_object_info(obj)
         pithos.container = self.temp_containers[-2]
+
+        target_size_before = 0
+        for o in pithos.list_objects():
+            if o['name'] == obj + '_new':
+                target_size_before += o['bytes']
+                break
+
         pithos.move_object(
             src_container=self.temp_containers[-1],
             src_object=obj,
             dst_container=pithos.container,
             dst_object=obj + '_new')
         resp0 = pithos.get_object_info(obj + '_new')
+
         self.assertEqual(resp1['x-object-hash'], resp0['x-object-hash'])
         self.info('Cross container move is OK')
 
+        self._check_quotas(
+            {self._get_uuid(): [(QPITHOS, QREMOVE, target_size_before, None)]})
         pithos.container = self.temp_containers[-1]
         pithos.create_container(versioning='auto')
         pithos.upload_from_string(obj, 'first version')
@@ -1051,6 +1061,8 @@ class PithosTestSuite(BurninTests):
         resp = pithos.object_get(obj + '0')
         self.assertNotEqual(resp.headers['content-type'], 'text/x-python')
 
+        self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, 0, None)]})
+
         resp = pithos.object_move(
             obj + '0',
             destination='/%s/%s' % (pithos.container, obj),
@@ -1078,6 +1090,28 @@ class PithosTestSuite(BurninTests):
         resp = pithos.get_object_info(obj)
         self.assertTrue('x-object-public' in resp)
         self.info('Publish, format and source-version are OK')
+
+        f_name, f_size, old_size = None, None, None
+        for o in pithos.list_objects():
+            if o['name'] == obj:
+                old_size = o['bytes']
+                break
+        pithos.container = self.temp_containers[-1]
+        for o in pithos.list_objects():
+            if o['bytes']:
+                f_name, f_size = o['name'], o['bytes']
+                break;
+        resp = pithos.object_move(
+            f_name,
+            destination='/%s/%s' % (self.temp_containers[-2], obj))
+        pithos.container = self.temp_containers[-2]
+        for o in pithos.list_objects():
+            if o['name'] == obj:
+                self.assertEqual(f_size, o['bytes'])
+                break
+        self._check_quotas(
+            {self._get_uuid(): [(QPITHOS, QREMOVE, old_size, None)]})
+        self.info('Cross container MOVE is OK')
 
     def test_070_object_post(self):
         """Test object POST"""

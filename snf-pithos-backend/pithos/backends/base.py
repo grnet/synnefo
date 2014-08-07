@@ -59,6 +59,14 @@ class InvalidHash(TypeError):
     pass
 
 
+class InconsistentContentSize(ValueError):
+    pass
+
+
+class LimitExceeded(Exception):
+    pass
+
+
 class BaseBackend(object):
     """Abstract backend class.
 
@@ -229,7 +237,8 @@ class BaseBackend(object):
         """
         return []
 
-    def get_container_meta(self, user, account, container, domain=None, until=None,
+    def get_container_meta(self, user, account, container, domain=None,
+                           until=None,
                            include_user_defined=True):
         """Return a dictionary with the container metadata for the domain.
 
@@ -673,7 +682,7 @@ class BaseBackend(object):
         """Store a block and return the hash."""
         return 0
 
-    def update_block(self, hash, data, offset=0):
+    def update_block(self, hash, data, offset=0, is_snapshot=False):
         """Update a known block and return the hash.
 
         Raises:

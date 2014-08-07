@@ -33,11 +33,11 @@ class Command(SynnefoCommand):
             default=False,
             help="Show non-archived jobs concerning server."),
         make_option(
-            '--displayname',
+            '--display-mails',
             action='store_true',
-            dest='displayname',
+            dest='displaymails',
             default=False,
-            help="Display both uuid and display name"),
+            help="Display both uuid and email"),
     )
 
     def handle(self, *args, **options):
@@ -46,9 +46,9 @@ class Command(SynnefoCommand):
 
         vm = common.get_resource("server", args[0], for_update=True)
 
-        displayname = options['displayname']
+        display_mails = options['displaymails']
 
-        pprint.pprint_server(vm, display_mails=displayname, stdout=self.stdout)
+        pprint.pprint_server(vm, display_mails=display_mails, stdout=self.stdout)
         self.stdout.write("\n")
         pprint.pprint_server_nics(vm, stdout=self.stdout)
         self.stdout.write("\n")

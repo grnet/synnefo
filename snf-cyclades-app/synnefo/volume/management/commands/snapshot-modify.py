@@ -25,8 +25,8 @@ class Command(SynnefoCommand):
     help = "Modify a snapshot"
     option_list = SynnefoCommand.option_list + (
         make_option(
-            "--user_id",
-            dest="user_id",
+            "--user",
+            dest="user",
             default=None,
             help="UUID of the owner of the snapshot"),
         make_option(
@@ -47,12 +47,12 @@ class Command(SynnefoCommand):
             raise CommandError("Please provide a snapshot ID")
 
         snapshot_id = args[0]
-        user_id = self.options["user_id"]
-        name = self.options["name"]
-        description = self.options["description"]
+        userid = options["user"]
+        name = options["name"]
+        description = options["description"]
 
-        snapshot = util.get_snapshot(user_id, snapshot_id)
+        snapshot = util.get_snapshot(userid, snapshot_id)
 
-        snapshots.modify(snapshot, name=name, description=description)
+        snapshots.update(snapshot, name=name, description=description)
         self.stdout.write("Successfully updated snapshot %s\n"
-                          % snapshot)
+                          % snapshot_id)

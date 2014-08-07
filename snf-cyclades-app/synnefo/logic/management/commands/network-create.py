@@ -41,8 +41,8 @@ class Command(SynnefoCommand):
             dest='name',
             help="Name of the network"),
         make_option(
-            '--owner',
-            dest='owner',
+            '--user',
+            dest='user',
             help="The owner of the network"),
         make_option(
             '--subnet',
@@ -146,7 +146,7 @@ class Command(SynnefoCommand):
         link = options['link']
         mac_prefix = options['mac_prefix']
         tags = options['tags']
-        userid = options["owner"]
+        userid = options["user"]
         allocation_pools = options["allocation_pools"]
         floating_ip_pool = parse_bool(options["floating_ip_pool"])
         dhcp = parse_bool(options["dhcp"])
@@ -171,7 +171,7 @@ class Command(SynnefoCommand):
                                " subnet")
 
         if not (userid or public):
-            raise CommandError("'owner' is required for private networks")
+            raise CommandError("'user' is required for private networks")
 
         network = networks.create(userid=userid, name=name, flavor=flavor,
                                   public=public, mode=mode,

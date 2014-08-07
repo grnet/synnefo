@@ -14,19 +14,29 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+
+from functools import wraps
+
 from django import http
 from django.utils import simplejson as json
-from snf_django.lib import api
-from astakos.im import settings
+from django.forms.models import model_to_dict
+from django.core.validators import validate_email, ValidationError
 
+from snf_django.lib import api
+from snf_django.lib.api import faults
+
+from astakos.im import settings
 from astakos.admin import stats
+from astakos.im.models import AstakosUser, get_latest_terms
+from astakos.im.auth import make_local_user
 
 logger = logging.getLogger(__name__)
 
-PERMITTED_GROUPS = settings.ADMIN_STATS_PERMITTED_GROUPS
+STATS_PERMITTED_GROUPS = settings.ADMIN_STATS_PERMITTED_GROUPS
+
 try:
-    AUTH_URL = settings.astakos_services\
-        ["astakos_identity"]["endpoints"][0]["publicURL"]
+    AUTH_URL = settings.astakos_services \
+                ["astakos_identity"]["endpoints"][0]["publicURL"]
 except (IndexError, KeyError) as e:
     logger.error("Failed to load Astakos Auth URL: %s", e)
     AUTH_URL = None
@@ -44,9 +54,10 @@ def get_public_stats(request):
 @api.api_method(http_method='GET', user_required=True, token_required=True,
                 astakos_auth_url=AUTH_URL,
                 logger=logger, serializations=['json'])
-@api.user_in_groups(permitted_groups=PERMITTED_GROUPS,
+@api.user_in_groups(permitted_groups=STATS_PERMITTED_GROUPS,
                     logger=logger)
 def get_astakos_stats(request):
     _stats = stats.get_astakos_stats()
     data = json.dumps(_stats)
     return http.HttpResponse(data, status=200, content_type='application/json')
+

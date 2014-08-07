@@ -19,7 +19,7 @@ The present document is meant to be read alongside the OOS API documentation. Th
 
 Whatever marked as to be determined (**TBD**), should not be considered by implementors.
 
-More info about Pithos can be found here: https://code.grnet.gr/projects/pithos
+More info about Pithos can be found `here <pithos.html>`_.
 
 Document Revisions
 ^^^^^^^^^^^^^^^^^^
@@ -114,7 +114,7 @@ When done with logging in, the service's login URI should redirect to the URI pr
 
 If ``next`` request parameter is missing the call fails with BadRequest (400) response status.
 
-A user management service that implements a login URI according to these conventions is Astakos (https://code.grnet.gr/projects/astakos), by GRNET.
+A user management service that implements a login API call according to these conventions is `Astakos <astakos.html>`_, by GRNET.
 
 User feedback
 -------------
@@ -964,6 +964,7 @@ The ``X-Object-Sharing`` header may include either a ``read=...`` comma-separate
 Return Code                     Description
 ==============================  ==============================
 201 (Created)                   The object has been created
+403 (Forbidden)                 If ``X-Copy-From`` and the source object is not available in the storage backend.
 409 (Conflict)                  The object can not be created from the provided hashmap (a list of missing hashes will be included in the reply)
 411 (Length Required)           Missing ``Content-Length`` or ``Content-Type`` in the request
 413 (Request Entity Too Large)  Insufficient quota to complete the request
@@ -1015,6 +1016,7 @@ X-Object-Version            The object's new version
 Return Code                     Description
 ==============================  ==============================
 201 (Created)                   The object has been created
+403 (Forbidden)                 If the source object is not available in the storage backend.
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 ==============================  ==============================
 

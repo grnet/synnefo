@@ -28,7 +28,7 @@ from synnefo.logic import backend, ips, utils
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.db.models import (NetworkInterface, VirtualMachine,
                                VirtualMachineMetadata, IPAddressLog, Network,
-                               pooled_rapi_client)
+                               Image, pooled_rapi_client)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 from synnefo.logic import rapi
 from synnefo.volume.volumes import _create_volume
@@ -47,22 +47,67 @@ def create(userid, name, password, flavor, image_id, metadata={},
            personality=[], networks=None, use_backend=None, project=None,
            volumes=None):
 
-    # Get image information
-    # TODO: Image is not mandatory if disks are specified
+    utils.check_name_length(name, VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
+                            "Server name is too long")
+
+    # Get the image, if any, that is used for the first volume
+    vol_image_id = None
+    if volumes:
+        vol = volumes[0]
+        if vol["source_type"] in ["image", "snapshot"]:
+            vol_image_id = vol["source_uuid"]
+
+    # Check conflict between server's and volume's image
+    if image_id and vol_image_id and image_id != vol_image_id:
+        raise faults.BadRequest("The specified server's image is different"
+                                " from the the source of the first volume.")
+    elif vol_image_id and not image_id:
+        image_id = vol_image_id
+    elif not image_id:
+        raise faults.BadRequest("You need to specify either an image or a"
+                                " block device mapping.")
+
+    if len(metadata) > settings.CYCLADES_VM_MAX_METADATA:
+        raise faults.BadRequest("Virtual Machines cannot have more than %s "
+                                "metadata items" %
+                                settings.CYCLADES_VM_MAX_METADATA)
+    # Get image info
     image = util.get_image_dict(image_id, userid)
 
-    # Check that image fits into the disk
-    if int(image["size"]) > (flavor.disk << 30):
-        msg = ("Flavor's disk size '%s' is smaller than the image's"
-               "size '%s'" % (flavor.disk << 30, image["size"]))
-        raise faults.BadRequest(msg)
+    if not volumes:
+        # If no volumes are specified, we automatically create a volume with
+        # the size of the flavor and filled with the specified image.
+        volumes = [{"source_type": "image",
+                    "source_uuid": image_id,
+                    "size": flavor.disk,
+                    "delete_on_termination": True}]
+    assert(len(volumes) > 0), "Cannot create server without volumes"
+
+    if volumes[0]["source_type"] == "blank":
+        raise faults.BadRequest("Root volume cannot be blank")
+
+    try:
+        is_system = (image["owner"] == settings.SYSTEM_IMAGES_OWNER)
+        Image.objects.get_or_create(uuid=image["id"],
+                                    version=image["version"],
+                                    owner=image["owner"],
+                                    name=image["name"],
+                                    location=image["location"],
+                                    mapfile=image["mapfile"],
+                                    is_public=image["is_public"],
+                                    is_snapshot=image["is_snapshot"],
+                                    is_system=is_system,
+                                    os=image["metadata"].get("OS", "unknown"),
+                                    osfamily=image["metadata"].get("OSFAMILY",
+                                                                   "unknown")
+                                    )
+    except Exception as e:
+        # Image info is not critical. Continue if it fails for any reason
+        log.warning("Failed to store image info: %s", e)
 
     if use_backend is None:
         # Allocate server to a Ganeti backend
         use_backend = allocate_new_server(userid, flavor)
-
-    utils.check_name_length(name, VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
-                            "Server name is too long")
 
     # Create the ports for the server
     ports = create_instance_ports(userid, networks)
@@ -77,6 +122,7 @@ def create(userid, name, password, flavor, image_id, metadata={},
                                        userid=userid,
                                        project=project,
                                        imageid=image["id"],
+                                       image_version=image["version"],
                                        flavor=flavor,
                                        operstate="BUILD")
     log.info("Created entry in DB for VM '%s'", vm)
@@ -87,42 +133,32 @@ def create(userid, name, password, flavor, image_id, metadata={},
         port.index = index
         port.save()
 
-    # If no volumes are specified, we automatically create a volume with the
-    # size of the flavor and filled with the specified image.
-    if not volumes:
-        volumes = [{"source_type": "image",
-                    "source_uuid": image["id"],
-                    "size": flavor.disk,
-                    "delete_on_termination": True}]
-
-    assert(len(volumes) > 0), "Cannot create server without volumes"
-
-    if volumes[0]["source_type"] == "blank":
-        raise faults.BadRequest("Root volume cannot be blank")
-
+    # Create instance volumes
     server_vtype = flavor.volume_type
     server_volumes = []
     for index, vol_info in enumerate(volumes):
         if vol_info["source_type"] == "volume":
             uuid = vol_info["source_uuid"]
-            v = get_volume(userid, uuid, for_update=True,
+            v = get_volume(userid, uuid, for_update=True, non_deleted=True,
                            exception=faults.BadRequest)
             if v.volume_type_id != server_vtype.id:
                 msg = ("Volume '%s' has type '%s' while flavor's volume type"
-                       " is '%s'" % (v.volume_type_id, server_vtype.id))
+                       " is '%s'" % (v.id, v.volume_type_id, server_vtype.id))
                 raise faults.BadRequest(msg)
             if v.status != "AVAILABLE":
                 raise faults.BadRequest("Cannot use volume while it is in %s"
                                         " status" % v.status)
             v.delete_on_termination = vol_info["delete_on_termination"]
+            v.machine = vm
             v.index = index
             v.save()
         else:
             v = _create_volume(server=vm, user_id=userid,
-                               volume_type=server_vtype,
+                               volume_type=server_vtype, project=project,
                                index=index, **vol_info)
         server_volumes.append(v)
 
+    # Create instance metadata
     for key, val in metadata.items():
         utils.check_name_length(key, VirtualMachineMetadata.KEY_LENGTH,
                                 "Metadata key is too long")
@@ -168,9 +204,9 @@ def create_server(vm, nics, volumes, flavor, image, personality, password):
 
     # If the root volume has a provider, then inform snf-image to not fill
     # the volume with data
-    image_id = image["backend_id"]
+    image_id = image["pithosmap"]
     root_volume = volumes[0]
-    if root_volume.volume_type.provider is not None:
+    if root_volume.volume_type.provider in settings.GANETI_CLONE_PROVIDERS:
         image_id = "null"
 
     server_created.send(sender=vm, created_vm_params={
@@ -180,6 +216,7 @@ def create_server(vm, nics, volumes, flavor, image, personality, password):
         'img_personality': json.dumps(personality),
         'img_properties': json.dumps(image['metadata']),
     })
+
     # send job to Ganeti
     try:
         jobID = backend.create_instance(vm, nics, volumes, flavor, image)
@@ -190,6 +227,7 @@ def create_server(vm, nics, volumes, flavor, image, personality, password):
         vm.backendlogmsg = "Failed to send job to Ganeti."
         vm.save()
         vm.nics.all().update(state="ERROR")
+        vm.volumes.all().update(status="ERROR")
 
     # At this point the job is enqueued in the Ganeti backend
     vm.backendopcode = "OP_INSTANCE_CREATE"
@@ -263,11 +301,13 @@ def _resize(vm, flavor):
 
 @transaction.commit_on_success
 def reassign(vm, project):
+    commands.validate_server_action(vm, "REASSIGN")
     action_fields = {"to_project": project, "from_project": vm.project}
     log.info("Reassigning VM %s from project %s to %s",
              vm, vm.project, project)
     vm.project = project
     vm.save()
+    vm.volumes.filter(index=0, deleted=False).update(project=project)
     quotas.issue_and_accept_commission(vm, action="REASSIGN",
                                        action_fields=action_fields)
 
@@ -358,7 +398,7 @@ def console(vm, console_type):
 
     vnc_extra_opts = settings.CYCLADES_VNCAUTHPROXY_OPTS
     fwd = request_vnc_forwarding(sport, daddr, dport, password,
-                                 **vnc_extra_opts)
+                                 console_type=console_type, **vnc_extra_opts)
 
     if fwd['status'] != "OK":
         log.error("vncauthproxy returned error status: '%s'" % fwd)
@@ -371,7 +411,7 @@ def console(vm, console_type):
         raise faults.ServiceUnavailable('VNC Server settings changed.')
 
     console = {
-        'type': 'vnc',
+        'type': console_type,
         'host': getfqdn(),
         'port': fwd['source_port'],
         'password': password}

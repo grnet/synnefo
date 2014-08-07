@@ -168,7 +168,7 @@ def find_package_data(
 setup(
     name = 'snf-cyclades-app',
     version = VERSION,
-    license = 'BSD',
+    license = 'GNU GPLv3',
     url = 'http://www.synnefo.org/',
     description = SHORT_DESCRIPTION,
     classifiers = CLASSIFIERS,

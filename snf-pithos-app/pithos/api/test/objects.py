@@ -20,6 +20,7 @@ from binascii import hexlify
 from collections import defaultdict
 from urllib import quote, unquote
 from functools import partial
+from unittest import skipIf
 
 from pithos.api.test import (PithosAPITest, pithos_settings,
                              AssertMappingInvariant, AssertUUidInvariant,
@@ -124,7 +125,7 @@ class ObjectGet(PithosAPITest):
         m = p.match(content_disposition)
         self.assertTrue(m is not None)
         disposition_type = m.group(1)
-        self.assertEqual(disposition_type, 'attachment')
+        self.assertEqual(disposition_type, 'inline')
         filename = m.group(2)
         self.assertEqual(o, filename)
 
@@ -156,7 +157,7 @@ class ObjectGet(PithosAPITest):
         m = p.match(content_disposition)
         self.assertTrue(m is not None)
         disposition_type = m.group(1)
-        self.assertEqual(disposition_type, 'attachment')
+        self.assertEqual(disposition_type, 'inline')
         filename = m.group(2)
 
         user_defined_disposition = content_disposition.replace(
@@ -819,6 +820,7 @@ class ObjectPut(PithosAPITest):
     def test_create_object_by_hashmap(self):
         cname = self.container
         block_size = pithos_settings.BACKEND_BLOCK_SIZE
+        block_hash = pithos_settings.BACKEND_HASH_ALGORITHM
 
         # upload an object
         oname, data = self.upload_object(cname, length=block_size + 1)[:-1]
@@ -835,11 +837,35 @@ class ObjectPut(PithosAPITest):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.content, data)
 
+        # inconsistent size; too small
+        d = json.loads(hashmap)
+        d['bytes'] = len(data) - 1
+        r = self.put('%s?hashmap=' % url, data=json.dumps(d))
+        self.assertEqual(r.status_code, 400)
+
+        # inconsistent size; too big
+        d = json.loads(hashmap)
+        d['bytes'] = 2 * d['block_size'] + 1
+        r = self.put('%s?hashmap=' % url, data=json.dumps(d))
+        self.assertEqual(r.status_code, 400)
+
+        # extremely big size
+        d = json.loads(hashmap)
+        d['bytes'] = 45390000000000000000000000000000000000
+        r = self.put('%s?hashmap=' % url, data=json.dumps(d))
+        self.assertEqual(r.status_code, 400)
+
+        # negative size
+        d = json.loads(hashmap)
+        d['bytes'] = -1
+        r = self.put('%s?hashmap=' % url, data=json.dumps(d))
+        self.assertEqual(r.status_code, 400)
+
         r = self.put('%s?hashmap=' % url, data='not json')
         self.assertEqual(r.status_code, 400)
 
-        d = {"block_hash": "sha1",
-             "block_size": TEST_BLOCK_SIZE}
+        d = {"block_hash": block_hash,
+             "block_size": block_size}
         hashmap = json.dumps(d)
         r = self.put('%s?hashmap=' % url, data=hashmap)
         self.assertEqual(r.status_code, 400)
@@ -852,12 +878,12 @@ class ObjectPut(PithosAPITest):
         r = self.put('%s?hashmap=' % url, data=hashmap)
         self.assertEqual(r.status_code, 400)
 
-        length = random.randint(TEST_BLOCK_SIZE, 2 * TEST_BLOCK_SIZE)
-        data = get_random_data(length=length)
-        hashes = HashMap(TEST_BLOCK_SIZE, TEST_HASH_ALGORITHM)
-        hashes.load(data)
+        length = (block_size  - len(data) % block_size)
+        more_data = ''.join([data, get_random_data(length=length)])
+        hashes = HashMap(block_size, block_hash)
+        hashes.load(more_data)
         hexlified = [hexlify(h) for h in hashes]
-        d.update({"hashes": hexlified, "bytes": len(data)})
+        d.update({"hashes": hexlified, "bytes": len(more_data)})
         hashmap = json.dumps(d)
         r = self.put('%s?hashmap=' % url, data=hashmap)
         self.assertEqual(r.status_code, 409)
@@ -866,7 +892,7 @@ class ObjectPut(PithosAPITest):
         except:
             self.fail("shouldn't happen")
         else:
-            self.assertEqual(sorted(missing), sorted(hexlified))
+            self.assertEqual(missing, hexlified[-1:])
 
         r = self.get('%s?hashmap=&format=xml' % url)
         oname = get_random_name()
@@ -1801,7 +1827,7 @@ class ObjectPost(PithosAPITest):
         block_size = pithos_settings.BACKEND_BLOCK_SIZE
         oname, odata = self.upload_object(
             self.container, length=random.randint(
-                block_size + 1, 2 * block_size))[:2]
+                block_size + 2, 2 * block_size))[:2]
 
         length = len(odata)
         first_byte_pos = random.randint(1, block_size)
@@ -1935,7 +1961,7 @@ class ObjectPost(PithosAPITest):
         r = self.put(url, data=initial_data)
         self.assertEqual(r.status_code, 201)
 
-        offset = random.randint(0, source_length - 1)
+        offset = random.randint(0, source_length - 2)
         upto = random.randint(offset, source_length - 1)
         r = self.post(url,
                       HTTP_CONTENT_RANGE='bytes %s-%s/*' % (offset, upto),
@@ -2094,6 +2120,9 @@ class ObjectPost(PithosAPITest):
         content = r.content
         self.assertEqual(content, d2 + d3[-1])
 
+    @skipIf(pithos_settings.BACKEND_DB_MODULE ==\
+            'pithos.backends.lib.sqlite',
+            "This test is only meaningfull for SQLAlchemy backend")
     def test_update_invalid_permissions(self):
         url = join_urls(self.pithos_path, self.user, self.container,
                         self.object)

@@ -15,42 +15,249 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 {% load i18n %}
-
 <html>
-    <head>
-        <link rel="stylesheet" type="text/css" href="{{ SYNNEFO_CSS_URL }}main.css"/>
-        <title>{% trans "Console" %}</title>
-    </head>
-    <body>
-     <div id="wrapper" class="console">
-        <div class='console-info'>
-            <div class='machine-name'>
-                {% trans "machine" %}: {{machine|slice:":50"}}
-            </div>
-            <div class="host-ip">
-                {% trans "IP" %}: <span class="ip-version-label">v4</span><span class="ipv4-text ip">{{host_ip}}</span><span class="ip-version-label">v6</span><span class="ipv4-text ip">{{host_ip_v6}}</span>
+<head>
 
-            </div>
-        </div>
-        <div id='console-header'>
+    <title>{% trans "Console" %}</title>
+    <link rel="stylesheet" href="{{ UI_MEDIA_URL }}extra/noVNC/include/base.css">
+    <link rel="stylesheet" href="{{ UI_MEDIA_URL }}extra/noVNC/more/keyboard.css">
+    <link rel="stylesheet" type="text/css" href="{{ SYNNEFO_CSS_URL }}main.css"/>
+    <link rel="stylesheet" href="{{ UI_MEDIA_URL }}extra/noVNC/include/extra.css">
+   <meta charset="utf-8">
+
+    <!-- Always force latest IE rendering engine (even in intranet) & Chrome Frame
+                    Remove this if you use the .htaccess -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+
+    <!-- Apple iOS Safari settings -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- App Start Icon  -->
+    <link rel="apple-touch-startup-image" href="{{UI_MEDIA_URL}}extra/noVNC/images/screen_320x460.png" />
+    <!-- For iOS devices set the icon to use if user bookmarks app on their homescreen -->
+    <link rel="apple-touch-icon" href="{{UI_MEDIA_URL}}extra/noVNC/images/screen_57x57.png">
+    <!--
+    <link rel="apple-touch-icon-precomposed" href="{{UI_MEDIA_URL}}extra/noVNC/images/screen_57x57.png" />
+    -->
+    <!--
+    <script type='text/javascript'
+        src='http://getfirebug.com/releases/lite/1.2/firebug-lite-compressed.js'></script>
+    -->
+
+    <script type='text/javascript' src='{{UI_MEDIA_URL}}extra/noVNC/more/keyboard.js'></script>
+    <script type='text/javascript' src='{{UI_MEDIA_URL}}js/lib/jquery-1.7.2.js'></script>
+</head>
+
+<body class="console-body">
+    <div id="wrapper" class="console">
+        <div id='console-header' class="clearfix">
             <div class="console-header-logo">
                 <a href="/" title="{{ BRANDING_SERVICE_NAME }} Console ">
-                    <img src="{{ BRANDING_CONSOLE_LOGO_URL }}" alt="{{ BRANDING_SERVICE_NAME }}"/>    
+                    <img src="{{BRANDING_IMAGE_MEDIA_URL}}console_logo.png" alt="{{ BRANDING_SERVICE_NAME }}"/>
                 </a>
             </div>
-            <br/>
-            <div class="help-text">{% trans "This is a slow connection meant only for troubleshooting. For an optimal experience use the machine's Connect button on the main panel." %}</div>
+            <div class='console-info'>
+                <div class='machine-name'>
+                    {% trans "machine" %}: {{machine|slice:":50"}}
+                </div>
+                <div class="host-ip">
+                    {% if machine_hostname %}
+                    <span>{% trans "Hostname" %}: {{machine_hostname}}</span> 
+                    {% endif %}
+                </div>
+            </div>
         </div>
-        <div class="console-container">
-            <applet code="VncViewer.class" archive="{{ UI_MEDIA_URL }}extra/vncviewer/VncViewer.jar">
-                <param name="HOST" value="{{host}}"></param>
-                <param name="PORT" value="{{port}}"></param>
-                <param name="PASSWORD" value="{{password}}"></param>
-            </applet>
+    <div class="clearfix actions-bar">
+    <div id="noVNC-control-bar">
+        <div id="noVNC-menu-bar" style="display:none;">
         </div>
+
+
+        <!--noVNC Buttons-->
+        <div class="noVNC-buttons-right">
+            <input type="image" src="{{UI_MEDIA_URL}}extra/noVNC/images/ctrl.png" id="toggleCtrlButton" title="Toggle Ctrl" class="noVNC_status_button">
+            <input type="image" src="{{UI_MEDIA_URL}}extra/noVNC/images/alt.png" id="toggleAltButton" title="Toggle Alt" class="noVNC_status_button">
+            <input type="image" src="{{UI_MEDIA_URL}}extra/noVNC/images/drag.png"
+                id="noVNC_view_drag_button" class="noVNC_status_button"
+                title="Move/Drag Viewport">
+            <div id="noVNC_mobile_buttons">
+                               </div>
+
+            <input type="checkbox"
+                 id="noVNC_ctrl_box" class="noVNC_status_button"  
+                title="Send Ctrl"/><label id="ctrl_label">Ctrl</label>
+            <input type="checkbox"
+                 id="noVNC_alt_box" class="noVNC_status_button"  
+                title="Send Alt" /><label id="alt_label">Alt</label>
+
+            <!--<input type="checkbox"
+                 id="noVNC_shift_box" class="noVNC_status_button"  
+                title="Send Shift" /><label id="shift_label">Shift</label>-->
+                <input type="image" src="{{UI_MEDIA_URL}}extra/noVNC/images/mouse_none.png"
+                    id="noVNC_mouse_button0" class="noVNC_status_button">
+                <input type="image" src="{{UI_MEDIA_URL}}extra/noVNC/images/mouse_left.png"
+                    id="noVNC_mouse_button1" class="noVNC_status_button">
+                <input type="image" src="{{UI_MEDIA_URL}}extra/noVNC/images/mouse_middle.png"
+                    id="noVNC_mouse_button2" class="noVNC_status_button">
+                <input type="image" src="{{UI_MEDIA_URL}}extra/noVNC/images/mouse_right.png"
+                    id="noVNC_mouse_button4" class="noVNC_status_button">
+                <input type="image" src="{{UI_MEDIA_URL}}extra/noVNC/images/keyboard.png"
+                    id="showKeyboard" class="noVNC_status_button"
+                    value="Keyboard" title="Show Keyboard"/>
+
+                <input type="button"
+                  id="sendEnterButton" class="noVNC_status_button" value="Enter"                     title="Send Enter" />
+                <input type="email" autocapitalize="off" autocorrect="off"
+                    id="keyboardinput" class=""/>
+ 
+
+            <input id="keyboardText" type="text" value="" class="myKeyboardInput" size="4"/>
+            <input type="image" src="{{UI_MEDIA_URL}}extra/noVNC/images/ctrlaltdel.png"
+                 id="sendCtrlAltDelButton" class="noVNC_status_button"
+                title="Send Ctrl-Alt-Del" />
+            <input type="image" src="{{UI_MEDIA_URL}}extra/noVNC/images/clipboard.png"
+                id="clipboardButton" class="noVNC_status_button"
+                title="Clipboard" />
+            <input type="image" src="{{UI_MEDIA_URL}}extra/noVNC/images/settings.png"
+                id="settingsButton" class="noVNC_status_button"
+                title="Settings" />
+            <input type="image" src="{{UI_MEDIA_URL}}extra/noVNC/images/connect.png"
+                id="connectButton" class="noVNC_status_button"
+                title="Connect" />
+            <input type="image" src="{{UI_MEDIA_URL}}extra/noVNC/images/disconnect.png"
+                id="disconnectButton" class="noVNC_status_button"
+                title="Disconnect" />
+
+        </div>
+
+        <div id="noVNC_status">Loading</div>
+        <!-- Description Panel -->
+        <!-- Shown by default when hosted at for kanaka.github.com -->
+        <div id="noVNC_description" style="display:none;" class="">
+            noVNC is a browser based VNC client implemented using HTML5 Canvas
+            and WebSockets. You will either need a VNC server with WebSockets
+            support (such as <a href="http://libvncserver.sourceforge.net/">libvncserver</a>)
+            or you will need to use
+            <a href="https://github.com/kanaka/websockify">websockify</a>
+            to bridge between your browser and VNC server. See the noVNC
+            <a href="https://github.com/kanaka/noVNC">README</a>
+            and <a href="http://kanaka.github.com/noVNC">website</a>
+            for more information.
+            <br />
+            <input id="descriptionButton" type="button" value="Close">
+        </div>
+
+        <!-- Popup Status Panel -->
+        <div id="noVNC_popup_status_panel" class="">
+        </div>
+
+        <!-- Clipboard Panel -->
+        <div id="noVNC_clipboard" class="triangle-right top">
+            <textarea id="noVNC_clipboard_text" rows=5>
+            </textarea>
+            <br />
+            <input id="noVNC_clipboard_clear_button" type="button"
+                value="Clear">
+        </div>
+
+        <!-- Settings Panel -->
+        <div id="noVNC_settings" class="triangle-right top">
+            <span id="noVNC_settings_menu">
+                <ul>
+                    <li><input id="noVNC_encrypt" type="checkbox"> Encrypt</li>
+                    <li><input id="noVNC_true_color" type="checkbox" checked> True Color</li>
+                    <li><input id="noVNC_cursor" type="checkbox"> Local Cursor</li>
+                    <li><input id="noVNC_clip" type="checkbox"> Clip to Window</li>
+                    <li><input id="noVNC_shared" type="checkbox"> Shared Mode</li>
+                    <li><input id="noVNC_view_only" type="checkbox"> View Only</li>
+                    <li><input id="noVNC_connectTimeout" type="input"> Connect Timeout (s)</li>
+                    <li><input id="noVNC_path" type="input" value="websockify"> Path</li>
+                    <li><input id="noVNC_repeaterID" type="input" value=""> Repeater ID</li>
+                    <hr>
+                    <!-- Stylesheet selection dropdown -->
+                    <li><label><strong>Style: </strong>
+                        <select id="noVNC_stylesheet" name="vncStyle">
+                            <option value="default">default</option>
+                        </select></label>
+                    </li>
+
+                    <!-- Logging selection dropdown -->
+                    <li><label><strong>Logging: </strong>
+                        <select id="noVNC_logging" name="vncLogging">
+                        </select></label>
+                    </li>
+                    <hr>
+                    <li><input type="button" id="noVNC_apply" value="Apply"></li>
+                </ul>
+            </span>
+        </div>
+
+        <!-- Connection Panel -->
+        <div id="noVNC_controls" class="triangle-right top">
+            <ul>
+                <li><label><strong>Host: </strong><input id="noVNC_host" value="{{host}}" /></label></li>
+                <li><label><strong>Port: </strong><input id="noVNC_port" value={{port}} /></label></li>
+                <li><label><strong>Password: </strong><input id="noVNC_password" type="password" value="{{password}}" /></label></li>
+                <li><input id="noVNC_connect_button" type="button" value="Connect"></li>
+                <input type="hidden" id="noVNC_encrypt" value=true />
+            </ul>
+        </div>
+
+    </div> <!-- End of noVNC-control-bar -->
+</div> <!--End of clearfix div-->
+
+        <div class="help-text"><span><a href="" title="Close info">X</a>{% trans "This is a slow connection meant only for troubleshooting. For an optimal experience use the machine's Connect button on the main panel." %}</span></div>
+    <div id="noVNC_screen">
+        <div id="noVNC_screen_pad"></div>
+
+        <h1 id="noVNC_logo"><span>no</span><br />VNC</h1>
+
+        <!-- HTML5 Canvas -->
+        <div id="noVNC_container">
+            <canvas id="noVNC_canvas" width="640px" height="20px">
+                        Canvas not supported.
+            </canvas>
+        </div>
+
     </div>
-    <div class="console-footer">
-        {% include "footer.html" %}
+    <script>var MEDIA_URL = "{{ UI_MEDIA_URL }}";</script>
+    <script src="{{UI_MEDIA_URL}}extra/noVNC/include/util.js"></script>
+<script>
+        /*jslint white: false */
+        /*global window, $, Util, RFB, */
+        "use strict";
+
+        // Load supporting scripts
+        var scripts = ["webutil.js", "base64.js", "websock.js", "des.js", "input.js", "display.js",
+                   "jsunzip.js", "rfb.js", "ui.js"];
+        for (var i = 0; i < scripts.length; i++) {
+            scripts[i] = '{{ UI_MEDIA_URL }}extra/noVNC/include/' + scripts[i]
+        }
+        var INCLUDE_URI = '';
+        
+        window.onscriptsload = function () {
+            UI.load();
+            UI.updateSetting('encrypt', true);
+            UI.connect();
+        }
+        Util.load_scripts(scripts);
+
+        var keyboardEl = document.getElementById("keyboardText")
+        VKI_imageURI = "{{ UI_MEDIA_URL }}extra/noVNC/images/keyboard.png";
+        VKI_attach(keyboardEl);
+
+        $('.help-text a').click(function(e) {
+            e.preventDefault();
+            $('.help-text').slideUp({
+                'duration': 400,
+                'easing': 'linear',
+            });
+        });
+</script>
+
+
+
     </div>
-    </body>
+ </body>
 </html>

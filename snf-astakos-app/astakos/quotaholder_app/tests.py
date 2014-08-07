@@ -83,6 +83,12 @@ class QuotaholderTest(TestCase):
         with assertRaises(NoCommissionError):
             qh.get_commission(self.client, s1+1)
 
+        r = qh.get_quota()
+        self.assertEqual(r,
+                         {(holder, source, resource1): (limit1, 0, limit1/2),
+                          (holder, source, resource2): (limit2, 0, limit2),
+                          })
+
         # commission exceptions
 
         with assertRaises(NoCapacityError) as cm:

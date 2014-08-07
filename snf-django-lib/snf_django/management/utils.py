@@ -171,6 +171,14 @@ def filter_object_results(results, filters):
     return results
 
 
+def print_title(out, title, t_length):
+    if title is not None:
+        t_length = max(t_length, len(title))
+        out.write("-" * t_length + "\n")
+        out.write(title.center(t_length) + "\n")
+        out.write("-" * t_length + "\n")
+
+
 def pprint_table(out, table, headers=None, output_format='pretty',
                  separator=None, vertical=False, title=None):
     """Print a pretty, aligned string representation of table.
@@ -202,9 +210,12 @@ def pprint_table(out, table, headers=None, output_format='pretty',
         cw.writerows(table)
     elif output_format == "pretty":
         if vertical:
-            assert(len(table) == 1)
             row = table[0]
             max_key = max(map(len, headers))
+            max_val = max(map(len, row))
+            t_length = max_key + len(sep) + max_val
+            print_title(out, title, t_length)
+            assert(len(table) == 1)
             for row in table:
                 for (k, v) in zip(headers, row):
                     k = k.ljust(max_key)
@@ -215,11 +226,7 @@ def pprint_table(out, table, headers=None, output_format='pretty',
             widths = [max(map(len, col)) for col in zip(*(columns))]
 
             t_length = sum(widths) + len(sep) * (len(widths) - 1)
-            if title is not None:
-                t_length = max(t_length, len(title))
-                out.write("-" * t_length + "\n")
-                out.write(title.center(t_length) + "\n")
-                out.write("-" * t_length + "\n")
+            print_title(out, title, t_length)
             if headers:
                 # pretty print the headers
                 line = sep.join(v.rjust(w)

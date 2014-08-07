@@ -1,0 +1,11 @@
+{% extends "im/email.txt" %}
+
+{% block content %}
+Dear {{ user.realname }},
+
+{{ text }}
+
+If you did not sign up for this account you can ignore this email.
+{% endblock %}
+
+{% block note %} {% endblock%}

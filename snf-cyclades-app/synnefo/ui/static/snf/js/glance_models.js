@@ -1,5 +1,5 @@
 ;(function(root){
-    
+    var set = true;   
     // root
     var root = root;
     
@@ -17,8 +17,13 @@
     models.GlanceImage = snf.models.Image.extend({
         api_type: 'glance',
 
-        get_size: function() {
-            return this.get('size') / 1024 / 1024;
+        get_size: function(metric) {
+            if (metric == undefined) { metric = 'mb' }
+            var map = {
+                'mb': Math.pow(1024, 2),
+                'gb': Math.pow(1024, 3)
+            }
+            return this.get('size') / map[metric];
         },
 
         get_readable_size: function() {
@@ -46,6 +51,12 @@
           return this.get('is_snapshot');
         },
 
+
+        is_available: function() {
+          if (!this.is_snapshot()) { return true }
+          return this.get("status") === "AVAILABLE";
+        },
+
         display_size: function() {
             return this.get_readable_size();
         },
@@ -57,7 +68,7 @@
               } else {
                 return "";
               }
-            } catch(err) { console.log(err); return ''}
+            } catch(err) { console.error(err); return ''}
         }
         
     })
@@ -121,10 +132,11 @@
             }
 
             img = models.GlanceImages.__super__.parse_meta.call(this, img);
-            if (img.checksum && img.checksum.indexOf('arch') == 0) {
+            if (img.is_snapshot) {
               if (!img.OS) {
                 img.OS = 'snapshot';
               }
+              if (!img.metadata) { img.metadata = {}; }
               if (!img.metadata || !img.metadata.OS) {
                 img.metadata.OS = 'snapshot';
               }

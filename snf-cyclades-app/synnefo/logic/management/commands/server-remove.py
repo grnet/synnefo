@@ -35,7 +35,7 @@ class Command(RemoveCommand):
             default="True",
             choices=["True", "False"],
             metavar="True|False",
-            help="Wait for Ganeti job to complete."),
+            help="Wait for Ganeti job to complete. [Default: True]"),
     )
 
     @convert_api_faults

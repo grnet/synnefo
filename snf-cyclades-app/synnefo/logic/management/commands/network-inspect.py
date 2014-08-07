@@ -19,6 +19,7 @@ from django.core.management.base import CommandError
 
 from snf_django.management.commands import SynnefoCommand
 from synnefo.management import pprint, common
+from snf_django.management.utils import parse_bool
 
 
 class Command(SynnefoCommand):
@@ -27,25 +28,34 @@ class Command(SynnefoCommand):
 
     option_list = SynnefoCommand.option_list + (
         make_option(
-            '--displayname',
-            action='store_true',
-            dest='displayname',
+            "--display-mails",
+            action="store_true",
+            dest="displaymail",
             default=False,
-            help="Display both uuid and display name"),
-    )
+            help="Display both UUID and email"),
+        make_option(
+            "--backends",
+            dest="backends",
+            choices=["True", "False"],
+            metavar="True|False",
+            default="True",
+            help="Inspect state of network in all Ganeti backends")
+        )
 
     def handle(self, *args, **options):
         if len(args) != 1:
             raise CommandError("Please provide a network ID.")
 
         network = common.get_resource("network", args[0])
-        displayname = options['displayname']
+        display_mails = options["displaymail"]
 
-        pprint.pprint_network(network, display_mails=displayname,
+        pprint.pprint_network(network, display_mails=display_mails,
                               stdout=self.stdout)
         self.stdout.write("\n\n")
         pprint.pprint_network_subnets(network, stdout=self.stdout)
         self.stdout.write("\n\n")
         pprint.pprint_network_backends(network, stdout=self.stdout)
-        self.stdout.write("\n\n")
-        pprint.pprint_network_in_ganeti(network, stdout=self.stdout)
+        backends = parse_bool(options["backends"])
+        if backends:
+            self.stdout.write("\n\n")
+            pprint.pprint_network_in_ganeti(network, stdout=self.stdout)

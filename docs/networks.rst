@@ -453,7 +453,7 @@ that he can access the VPN. Then we run in Cyclades:
 
 .. code-block:: console
 
-   # snf-manage network-create --subnet=192.168.1.0/24 --gateway=192.168.1.0/24 --dhcp=True --flavor=CUSTOM --mode=bridged --link=br200 --mac-prefix=bb:00:44 --owner=user@grnet.gr --tags=nfdhcpd,vpn --name=vpn --backend-id=1
+   # snf-manage network-create --subnet=192.168.1.0/24 --gateway=192.168.1.0/24 --dhcp=True --flavor=CUSTOM --mode=bridged --link=br200 --mac-prefix=bb:00:44 --user=user@grnet.gr --tags=nfdhcpd,vpn --name=vpn --backend-id=1
 
    # snf-manage network-list
    id    name     flavor       owner              mac_prefix   dhcp    state         link  vms public IPv4 Subnet    IPv4 Gateway

@@ -326,17 +326,17 @@ Default quota
 `````````````
 
 Upon user creation, a special purpose user-specific project is automatically
-created in order to hold the base quota provided by the system. These *base*
+created in order to hold the quota provided by the system. These *system*
 projects are identified with the same UUID as the user.
 
 To inspect the quota that future users will receive by default through their
-base projects, check column ``base_default`` in::
+base projects, check column ``system_default`` in::
 
    # snf-manage resource-list
 
-You can modify the default base quota limit for all future users with::
+You can modify the default system quota limit for all future users with::
 
-   # snf-manage resource-modify <resource_name> --base-default <value>
+   # snf-manage resource-modify <resource_name> --system-default <value>
 
 Grant extra quota through projects
 ``````````````````````````````````
@@ -392,10 +392,10 @@ One can change the quota limits of an initialized project with::
 
    # snf-manage project-modify <project-uuid> --limit <resource_name> <member_limit> <project_limit>
 
-One can set base quota for all accepted users (that is, set limits for base
-project), with possible exceptions, with::
+One can set system quota for all accepted users (that is, set limits for system
+projects), with possible exceptions, with::
 
-   # snf-manage project-modify --all-base-projects --exclude <uuid1>,<uuid2> --limit ...
+   # snf-manage project-modify --all-system-projects --exclude <uuid1>,<uuid2> --limit ...
 
 Quota for a given resource are reported for all projects that the user is
 member in with::
@@ -828,7 +828,7 @@ delete the Cyclades Images but will leave the Pithos file as is (unregister).
 
 Apart from using `kamaki` to see and hangle the available images, the
 administrator can use `snf-manage image-list` and `snf-manage image-show`
-commands to list and inspect the available public images. Also, the `--user-id`
+commands to list and inspect the available public images. Also, the `--user`
 option can be used the see the images of a specific user.
 
 Virtual Servers
@@ -843,7 +843,7 @@ others, by a prefix in their names. This prefix is defined in
 
 Apart from handling Cyclades VM at the Ganeti level, the administrator can
 also use the `snf-manage server-*` commands. These command cover the most
-common tasks that are relative with VM handling. Below we describe come
+common tasks that are relative with VM handling. Below we describe some
 of them, but for more information you can use the `--help` option of all
 `snf-manage server-* commands`. These command cover the most
 
@@ -855,8 +855,8 @@ bypassing automatic VM allocation.
 
 .. code-block:: console
 
- $ snf-manage server-create --flavor-id=1 --image-id=fc0f6858-f962-42ce-bf9a-1345f89b3d5e \
-    --user-id=7cf4d078-67bf-424d-8ff2-8669eb4841ea --backend-id=2 \
+ $ snf-manage server-create --flavor=1 --image=fc0f6858-f962-42ce-bf9a-1345f89b3d5e \
+    --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea --backend-id=2 \
     --password='example_passw0rd' --name='test_vm'
 
 The above commnd will create a new VM for user
@@ -1060,14 +1060,14 @@ better understanding of these commands, refer to their help messages.
 
 Create a virtual private network for user
 `7cf4d078-67bf-424d-8ff2-8669eb4841ea` using the `PHYSICAL_VLAN` flavor, which
-means that the network will be uniquely assigned a phsyical VLAN. The network
+means that the network will be uniquely assigned a physical VLAN. The network
 is assigned an IPv4 subnet, described by it's CIDR and gateway. Also,
 the `--dhcp=True` option is used, to make `nfdhcpd` response to DHCP queries
 from VMs.
 
 .. code-block:: console
 
- $ snf-manage network-create --owner=7cf4d078-67bf-424d-8ff2-8669eb4841ea --name=prv_net-1 \
+ $ snf-manage network-create --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea --name=prv_net-1 \
     --subnet=192.168.2.0/24 --gateway=192.168.2.1 --dhcp=True --flavor=PHYSICAL_VLAN
 
 Inspect the state of the network in Cyclades DB and in all the Ganeti backends:
@@ -1138,14 +1138,14 @@ from `snf-manage` would look like this:
  ---------------------------------------------------------------------------------------------
   1  Internet       None  ACTIVE    True  10.2.1.0/24      10.2.1.1    False              True
 
- $ snf-manage floating-ip-create --owner=7cf4d078-67bf-424d-8ff2-8669eb4841ea --network=1
+ $ snf-manage floating-ip-create --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea --network=1
 
  $ snf-manage floating-ip-list --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea
  id   address       network                             user.uuid  server
  ------------------------------------------------------------------------
  38  10.2.1.2             1  7cf4d078-67bf-424d-8ff2-8669eb4841ea      42
 
- $ snf-manage port-create --owner=7cf4d078-67bf-424d-8ff2-8669eb4841ea --network=1 \
+ $ snf-manage port-create --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea --network=1 \
                           --ipv4-address=10.2.1.2 --floating-ip=38
 
  $ snf-manage port-list --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea
@@ -1513,7 +1513,7 @@ host and export the RRD directory to the snf-stats-app node via e.g. NFS.
 ``GRAPH_PREFIX`` is the directory where collectd stores the resulting
 stats graphs. You should create it manually, in case it doesn't exist.
 
-.. code-block::
+.. code-block:: console
 
     # mkdir /var/cache/snf-stats-app/
     # chown www-data:wwwdata /var/cache/snf-stats-app/
@@ -1525,6 +1525,7 @@ directory.
 
 snf-stats-app, based on the ``STATS_BASE_URL`` setting will export the
 following URL 'endpoints`:
+
  * CPU stats bar: ``STATS_BASE_URL``/v1.0/cpu-bar/<encrypted VM hostname>
  * Network stats bar: ``STATS_BASE_URL``/v1.0/net-bar/<encrypted VM hostname>
  * CPU stats daily graph: ``STATS_BASE_URL``/v1.0/cpu-ts/<encrypted VM hostname>
@@ -1534,7 +1535,7 @@ following URL 'endpoints`:
 
 You can verify that these endpoints are exported by issuing:
 
-.. code-block::
+.. code-block:: console
 
     # snf-manage show_urls
 
@@ -1542,6 +1543,7 @@ snf-cyclades-gtools configuration
 `````````````````````````````````
 
 To enable VM stats collecting, you will need to:
+
  * Install collectd on the every Ganeti (VM-capable) node.
  * Enable the Ganeti stats plugin in your collectd configuration. This can be
    achived by either copying the example collectd conf file that comes with
@@ -1663,7 +1665,7 @@ They are also available from our apt repository: ``apt.dev.grnet.gr``
  * `snf-cyclades-app <http://www.synnefo.org/docs/snf-cyclades-app/latest/index.html>`_
  * `snf-cyclades-gtools <http://www.synnefo.org/docs/snf-cyclades-gtools/latest/index.html>`_
  * `astakosclient <http://www.synnefo.org/docs/astakosclient/latest/index.html>`_
- * `snf-vncauthproxy <https://code.grnet.gr/projects/vncauthproxy>`_
+ * `snf-vncauthproxy <https://github.com/grnet/snf-vncauthproxy>`_
  * `snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html/>`_
  * `snf-image-creator <http://www.synnefo.org/docs/snf-image-creator/latest/index.html>`_
  * `snf-occi <http://www.synnefo.org/docs/snf-occi/latest/index.html>`_
@@ -2152,52 +2154,52 @@ description and a link to their content:
 
 * ``snf-astakos-app/astakos/im/templates/im/email.txt``
   Base email template. Contains a contact email and a “thank you” message.
-  (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/email.txt>`_)
+  (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/email.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/activation_email.txt`` Email sent to
   user that prompts  him/her to click on a link provided to activate the account.
-  Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/activation_email.txt>`_)
+  Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/activation_email.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/invitation.txt`` Email sent to an
   invited user. He/she has to click on a link provided to activate the account.
-  Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/invitation.txt>`_)
+  Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/invitation.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/switch_accounts_email.txt`` Email
   sent to user upon his/her request to associate this email address with a
   shibboleth account. He/she has to click on a link provided to activate the
-  association. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/switch_accounts_email.txt>`_)
+  association. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/switch_accounts_email.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/welcome_email.txt`` Email sent to
   inform the user that his/ her account has been activated. Extends “email.txt”
-  (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/welcome_email.txt>`_)
+  (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/welcome_email.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/registration/email_change_email.txt``
   Email sent to user when he/she has requested new email address assignment. The
   user has to click on a link provided to validate this action. Extends
-  “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/registration/email_change_email.txt>`_)
+  “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/registration/email_change_email.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/registration/password_email.txt`` Email
   sent for resetting password purpose. The user has to click on a link provided
-  to validate this action. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/registration/password_email.txt>`_)
+  to validate this action. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/registration/password_email.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt``
   Informs  the project owner that his/her project has been approved. Extends
-  “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt>`_)
+  “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_denial_notification.txt``
   Informs the project owner that his/her  project application has been denied
-  explaining the reasons. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_denial_notification.txt>`_)
+  explaining the reasons. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_denial_notification.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_change_notification.txt``
   An email is sent to a user containing information about his project membership
   (whether he has been accepted, rejected or removed). Extends “email.txt” (`Link
-  <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_change_notification.txt>`_)
+  <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_change_notification.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_enroll_notification.txt``
   Informs a user that he/she  has been enrolled to a project. Extends
-  “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_enroll_notification.txt>`_)
+  “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_enroll_notification.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_leave_request_notification.txt``
   An email is sent to the project owner to make him aware of a  user having
-  requested to leave his project. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_leave_request_notification.txt>`_)
+  requested to leave his project. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_leave_request_notification.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_request_notification.txt``
   An email is sent to the project owner to make him/her aware of a user having
-  requested to join  his project. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_request_notification.txt>`_)
+  requested to join  his project. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_request_notification.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_suspension_notification.txt``
   An email is sent to the project owner to make him/her aware of his/her project
-  having been suspended. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_suspension_notification.txt>`_)
+  having been suspended. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_suspension_notification.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_termination_notification.txt``
   An email is sent to the project owner to make him/her aware of his/her project
-  having been terminated. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_termination_notification.txt>`_)
+  having been terminated. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_termination_notification.txt>`_)
 
 .. warning:: Django templates language:
 
@@ -2701,6 +2703,7 @@ Changelog, NEWS
 ===============
 
 
+* v0.15.2 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.2>`
 * v0.15.1 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.1>`
 * v0.15 :ref:`Changelog <Changelog-0.15>`, :ref:`NEWS <NEWS-0.15>`
 * v0.14.10 :ref:`Changelog <Changelog-0.14.10>`, :ref:`NEWS <NEWS-0.14.10>`

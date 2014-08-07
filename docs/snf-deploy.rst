@@ -126,8 +126,14 @@ ConfigParser files under ``/etc/snf-deploy``.
 ``setups.conf``
 ---------------
 
-This file includes all coarse grain info for our available setups. Each
-section refers to a generic setup (synnefo, qa, etc) or a specific
+This file includes all coarse grain info for our available setups.
+
+We assing each of the roles described in the :ref:`introduction
+<snf-deploy>` to specific targets. The targets can be either nodes
+defined at ``nodes.conf`` or clusters defined at ``ganeti.conf``. Note
+that we refer to targets with their ID (node1, node2, ganeti1, etc).
+
+Each section refers to a generic setup (synnefo, qa, etc) or a specific
 ganeti cluster (ganeti1, ganeti2, etc.) Each section includes the
 corresponding role mappings. For example if the nameserver should be
 installed in node1, the NFS on node2, etc. Each generic setup has also
@@ -176,11 +182,6 @@ FIXME: example file here
 This file reflects the way Synnefo will be deployed on the nodes defined at
 ``nodes.conf``.
 
-The important section here is the roles. In this file we assing each of the
-roles described in the :ref:`introduction <snf-deploy>` to a specific node. The
-node is one of the nodes defined at ``nodes.conf``. Note that we refer to nodes
-with their ID (node1, node2, etc).
-
 Here we also define all credentials related to users needed by the various
 Synnefo services (database, RAPI, RabbitMQ) and the credentials of a test
 end-user (`snf-deploy` simulates a user signing up).
@@ -228,10 +229,10 @@ FIXME: example file here
 This file defines options that are relevant to the virtual cluster creation, if
 one chooses to create one.
 
-There is an option to define the URL of the Image that will be used as the host
-OS for the VMs of the virtual cluster. Also, options for defining an LVM space
-or a plain file to be used as a second disk. Finally, networking options to
-define where to bridge the virtual cluster.
+There is an option to define the disk size used for virtual cluster base
+image along with networking options to define where to bridge the
+virtual cluster and the network that the virtual hosts will reside.
+Please note that the nodes' IPs are defined in ``nodes.conf``.
 
 
 .. _vcluster:
@@ -248,39 +249,46 @@ will be deployed in the :ref:`next section <inst>`. If you want to deploy
 Synnefo on existing physical nodes, you should skip this section.
 
 The first thing you need to deploy a virtual cluster, is a Debian Base image,
-which will be used to spawn the VMs.
+which will be used to spawn the VMs. To create one using debootstrap
+use:
 
-FIXME: Find a way to provide this image.
+.. code-block:: console
+
+  snf-deploy image
+
+It will create one raw image file under `/var/lib/snf-deploy/vcluster`
+and another one which will be used as an extra disk for LVM. Note that
+for fast VM launching we use the snapshot feature of qemu and thus all
+VMs will use the same base image to spawn and all changes on the
+filesystem will not be saved.
 
 The virtual cluster can be created by running:
 
 .. code-block:: console
 
-   snf-deploy vcluster
+   snf-deploy vcluster --setup vc --vnc
 
-This will download the image from the URL defined at ``squeeze_image_url``
-(Pithos by default) and save it locally under ``/var/lib/snf-deploy/images``.
-
-TODO: mention related options: --img-dir, --extra-disk, --lvg, --os
 
 Afterwards it will add a bridge (defined with the ``bridge`` option inside
 ``vcluster.conf``), iptables to allow traffic from/to the cluster, and enable
-forwarding and NAT for the selected network subnet (defined inside
-``nodes.conf`` in the ``subnet`` option).
+forwarding and NAT for the selected network subnet.
 
 To complete the preparation, you need a DHCP server that will provide the
-selected hostnames and IPs to the cluster (defined under ``[ips]`` in
-``nodes.conf``).
+selected hostnames and IPs to the cluster (defined in ``nodes.conf``).
 
 It will launch a dnsmasq instance, acting only as DHCP server and listening
 only on the cluster's bridge.
 
 Finally it will launch all the needed KVM virtual machines, snapshotting the
-image we fetched before. Their taps will be connected with the already created
+image we created before. Their taps will be connected with the already created
 bridge and their primary interface will get the given address.
 
-Now that we have the nodes ready, we can move on and deploy Synnefo on them.
+Now that we have the nodes ready, we can move on and deploy Synnefo on them
+by running:
 
+.. code-block:: console
+
+   snf-deploy synnefo --setup vc
 
 .. _inst:
 
@@ -312,13 +320,25 @@ proceeding with the Synnefo installation.
 Synnefo deployment
 ------------------
 
-To install the Synnefo stack on the existing cluster run:
+To install the Synnefo stack in the same node (running snf-deploy) run:
 
 .. code-block:: console
 
-   snf-deploy synnefo -vvv
+   snf-deloy synnefo --autoconf
 
-This might take a while.
+This does not require any tweak of the configuration files.
+
+To install the Synnefo stack on an existing setup/infra (e.g. defined on synnefo
+section in `setups.conf`) run:
+
+.. code-block:: console
+
+   snf-deploy synnefo --setup synnefo
+
+Please note that this requires valid configuration files with regard to
+existing nodes (IP, hostnames, passwords, etc).
+
+The whole deployment might take a while.
 
 If this finishes without errors, check for successful installation by visiting
 from your local machine (make sure you have already setup your local
@@ -354,7 +374,7 @@ set True, run:
 
 .. code-block:: console
 
-   snf-deploy ganeti --cluster ganeti2 -vvv
+   snf-deploy setup --setup synnefo --cluster ganeti2 -vvv
 
 
 snf-deploy for Ganeti
@@ -365,7 +385,15 @@ by issuing:
 
 .. code-block:: console
 
-   snf-deploy ganeti --cluster ganeti3 -vvv
+   snf-deploy ganeti --setup ganeti -vvv
+
+
+It will install a nameserver, nfs server and a Ganeti cluster. To
+install a development node along with a Ganeti cluster ready for QA, run:
+
+.. code-block:: console
+
+   snf-deploy ganeti-qa --setup qa -vvv
 
 
 snf-deploy as a DevTool
@@ -379,7 +407,7 @@ option to ``True``. Then run:
 
 .. code-block:: console
 
-   snf-deploy run setup --setup SETUP --node nodeX \
+   snf-deploy setup --setup SETUP --node nodeX \
         --role ROLE --cluster CLUSTER
 
 to setup a specific role on a target node of a specific cluster and setup.
@@ -388,7 +416,7 @@ For instance, to add another node to an existing ganeti backend run:
 
 .. code-block:: console
 
-   snf-deploy run setup --node node5 --role vmc --cluster ganeti3
+   snf-deploy setup --node node5 --role vmc --cluster ganeti3 --setup synnefo
 
 `snf-deploy` keeps track of installed components per node in
 ``/var/lib/snf-deploy/snf_deploy_status``. If a deployment command

@@ -912,7 +912,7 @@ resource.
 
 .. code-block:: console
 
-    # snf-manage resource-modify cyclades.vm --base-default 2
+    # snf-manage resource-modify cyclades.vm --system-default 2
 
 Setting Resource Visibility
 ---------------------------
@@ -2123,7 +2123,7 @@ You can see everything has been setup correctly by running:
 
 Enable the new backend by running:
 
-.. code-block::
+.. code-block:: console
 
    $ snf-manage backend-modify --drained False 1
 
@@ -2291,7 +2291,7 @@ skipped.
 
 .. code-block:: console
 
-   node1 # snf-manage quota --sync
+   node1 # snf-manage quota-verify --sync
    node1 # snf-manage reconcile-resources-astakos --fix
    node2 # snf-manage reconcile-resources-pithos --fix
    node1 # snf-manage reconcile-resources-cyclades --fix

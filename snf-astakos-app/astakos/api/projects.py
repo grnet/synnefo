@@ -13,7 +13,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
+import operator
+
 from django.utils import simplejson as json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
@@ -32,7 +33,6 @@ from astakos.im.models import (
     AstakosUser, Project, ProjectApplication, ProjectMembership,
     ProjectResourceQuota, ProjectResourceGrant, ProjectLog,
     ProjectMembershipLog)
-import synnefo.util.date as date_util
 from synnefo.util import units
 
 
@@ -138,7 +138,7 @@ def get_projects_details(projects, request_user=None):
             "leave_policy": leave_policy,
             "max_members": project.limit_on_members_number,
             "private": project.private,
-            "base_project": project.is_base,
+            "system_project": project.is_base,
             "resources": resources,
             }
 
@@ -277,23 +277,30 @@ def get_projects(request):
 def _get_projects(query, mode="default", request_user=None):
     projects = Project.objects.filter(query)
 
+    filters = [Q()]
     if mode == "member":
         membs = request_user.projectmembership_set.\
             actually_accepted_and_active()
         memb_projects = membs.values_list("project", flat=True)
         is_memb = Q(id__in=memb_projects)
-        projects = projects.filter(is_memb)
-    elif mode == "default":
+        filters.append(is_memb)
+    elif mode in ["related", "default"]:
+        membs = request_user.projectmembership_set.any_accepted()
+        memb_projects = membs.values_list("project", flat=True)
+        is_memb = Q(id__in=memb_projects)
+        owned = Q(owner=request_user)
         if not request_user.is_project_admin():
-            membs = request_user.projectmembership_set.any_accepted()
-            memb_projects = membs.values_list("project", flat=True)
-            is_memb = Q(id__in=memb_projects)
-            owned = Q(owner=request_user)
-            active = (Q(state=Project.NORMAL) &
-                      Q(private=False))
-            projects = projects.filter(is_memb | owned | active)
+            filters.append(is_memb)
+            filters.append(owned)
+    elif mode in ["active", "default"]:
+        active = (Q(state=Project.NORMAL) & Q(private=False))
+        if not request_user.is_project_admin():
+            filters.append(active)
     else:
         raise faults.BadRequest("Unrecognized mode '%s'." % mode)
+
+    q = reduce(operator.or_, filters)
+    projects = projects.filter(q)
     return projects.select_related("last_application")
 
 
@@ -343,17 +350,6 @@ def modify_project(request, project_id):
     return submit_modification(app_data, user, project_id=project_id)
 
 
-def _get_date(d, key):
-    date_str = d.get(key)
-    if date_str is not None:
-        try:
-            return date_util.isoparse(date_str)
-        except:
-            raise faults.BadRequest("Invalid %s" % key)
-    else:
-        return None
-
-
 def _get_maybe_string(d, key, default=None):
     value = d.get(key)
     if value is not None and not isinstance(value, basestring):
@@ -372,21 +368,9 @@ def _get_maybe_boolean(d, key, default=None):
     return value
 
 
-DOMAIN_VALUE_REGEX = re.compile(
-    r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$',
-    re.IGNORECASE)
-
-
-def valid_project_name(name):
-    return DOMAIN_VALUE_REGEX.match(name) is not None
-
-
 def _parse_max_members(s):
     try:
-        max_members = units.parse(s)
-        if max_members < 0:
-            raise faults.BadRequest("Invalid max_members")
-        return max_members
+        return units.parse(s)
     except units.ParseError:
         raise faults.BadRequest("Invalid max_members")
 
@@ -406,9 +390,6 @@ def submit_new_project(app_data, user):
     except KeyError:
         raise faults.BadRequest("Name missing.")
 
-    if not valid_project_name(name):
-        raise faults.BadRequest("Project name should be in domain format")
-
     join_policy = app_data.get("join_policy", "moderated")
     try:
         join_policy = MEMBERSHIP_POLICY[join_policy]
@@ -421,8 +402,8 @@ def submit_new_project(app_data, user):
     except KeyError:
         raise faults.BadRequest("Invalid leave policy")
 
-    start_date = _get_date(app_data, "start_date")
-    end_date = _get_date(app_data, "end_date")
+    start_date = app_data.get("start_date")
+    end_date = app_data.get("end_date")
 
     if end_date is None:
         raise faults.BadRequest("Missing end date")
@@ -472,9 +453,6 @@ def submit_modification(app_data, user, project_id):
 
     name = app_data.get("name")
 
-    if name is not None and not valid_project_name(name):
-        raise faults.BadRequest("Project name should be in domain format")
-
     join_policy = app_data.get("join_policy")
     if join_policy is not None:
         try:
@@ -489,8 +467,8 @@ def submit_modification(app_data, user, project_id):
         except KeyError:
             raise faults.BadRequest("Invalid leave policy")
 
-    start_date = _get_date(app_data, "start_date")
-    end_date = _get_date(app_data, "end_date")
+    start_date = app_data.get("start_date")
+    end_date = app_data.get("end_date")
 
     max_members = app_data.get("max_members")
     if max_members is not None:

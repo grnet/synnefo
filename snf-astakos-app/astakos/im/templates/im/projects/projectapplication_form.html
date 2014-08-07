@@ -17,7 +17,7 @@
       
     {% csrf_token %}
 
-    <fieldset class="with-info" id="top">
+    <fieldset class="with-info {% if form.instance.is_base %}hidden-contents{% endif %}" id="top">
         <legend>
             {% block form_details_title %}1. PROJECT DETAILS{% endblock %}
             {% block form_details_description %}
@@ -37,16 +37,17 @@
         {% endif %}
         {% endfor %}
         {% endblock %}
-        
         {% for field in form %}
         {% with filter_fields=details_fields %}
             {% include "im/projects/_form_field.html" %}
         {% endwith %}
         {% endfor %}
-
+        <div class="system-warning">
+            <p>Project details of system projects cannot be modified.</p>
+        </div>
     </fieldset>
 
-    <fieldset class="with-info">
+    <fieldset class="with-info {% if object.is_base %}hidden-contents{% endif %}">
     	<legend>
     		2. MEMBERSHIP OPTIONS
 			<span class="info"> 
@@ -61,6 +62,9 @@
             {% include "im/projects/_form_field.html" %}
         {% endwith %}
         {% endfor %}
+        <div class="system-warning">
+            <p>Membership options of system projects cannot be modified.</p>
+        </div>
     </fieldset>
     
 

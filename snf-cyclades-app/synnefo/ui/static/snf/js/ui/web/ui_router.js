@@ -45,10 +45,9 @@
             "machines/single/details/:vm":      "vm_details_view",
             "machines/single/":                 "vms_single_view",
 
-            // network views
             "networks/":                        "networks_view",
-            // network views
             "ips/":                         	"ips_view",
+            "disks/":                         	"volumes_view",
             "public-keys/":                    	"public_keys_view",
             ":hash":                            "fallback"
         },
@@ -119,6 +118,11 @@
         ips_view: function() {
             this.navigate("ips/");
             ui.main.show_view("ips");
+        },
+        
+        volumes_view: function() {
+          this.navigate("disks/");
+          ui.main.show_view("volumes");
         },
 
         public_keys_view: function() {

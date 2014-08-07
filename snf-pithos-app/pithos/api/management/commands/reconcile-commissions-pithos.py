@@ -37,7 +37,7 @@ class Command(SynnefoCommand):
                     help="Fix unresolved commissions"),
     )
 
-    def handle_noargs(self, **options):
+    def handle(self, **options):
         b = get_backend()
         try:
             b.pre_exec()

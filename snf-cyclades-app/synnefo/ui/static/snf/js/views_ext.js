@@ -222,7 +222,11 @@
       quota_key: undefined,
       quota_limit_message: undefined,
       list_el_selector: '.items-list',
+      disabled_filter: function(m) { return false },
       init: function() {
+        if (this.options.disabled_filter) {
+            this.disabled_filter = this.options.disabled_filter;
+        }
         var handlers = {};
         handlers[this.collection_name] = {
           'collection_change': ['update', 'sort'],
@@ -235,7 +239,6 @@
         this._model_views = {};
         this.list_el = $(this.$(".items-list").get(0));
         this.empty_el = $(this.$(".empty-list").get(0));
-        if (this._id) { debugger }
         if (this.create_view_cls) {
           this._create_view = new this.create_view_cls();
           this._create_view.parent_view = this;
@@ -255,17 +258,20 @@
                                       _.bind(this.update_quota, this));
           this.update_quota();
         }
+
       },
       
       update_quota: function() {
         var can_create = synnefo.storage.quotas.can_create(this.quota_key);
+        var msg = snf.config.limit_reached_msg;
         if (can_create) {
           this.create_button.removeClass("disabled");
-          this.create_button.attr("title", "");
+          snf.util.unset_tooltip(this.create_button);
         } else {
           this.create_button.addClass("disabled");
-          this.create_button.attr("title", 
-                                  this.quota_limit_message || "Quota limit reached")
+          snf.util.set_tooltip(this.create_button, 
+            this.quota_limit_message || msg,  
+            {tipClass: 'warning tooltip'});
         }
       },
       
@@ -307,9 +313,7 @@
           anim = true;
           this.place_in_parent(parent, el, model, index, anim);
         }
-        if (index != view.el.data('index')) {
-          this.place_in_parent(parent, el, model, index, false);
-        }
+        this.check_disabled(view);
       },
 
       handle_collection_change: function() {
@@ -318,6 +322,8 @@
 
       handle_model_add: function(model, collection, options) {
         this.add_model(model);
+        var view = this._model_views[model.id];
+        if (!view) { return }
         $(window).trigger("resize");
       },
 
@@ -349,22 +355,8 @@
       
       place_in_parent: function(parent, el, m, index, anim) {
         var place_func, place_func_context, position_found, exists;
-
-        _.each(parent.find(">.model-item"), function(el) {
-          var el = $(el);
-          var el_index = el.data('index');
-          if (!el_index || position_found) { return };
-          if (parseInt(el_index) < index) {
-            place_func = el.before;
-            place_func_context = el;
-            position_found = true;
-          }
-        });
-        
-        if (!position_found) {
-          place_func = parent.append;
-          place_func_context = parent;
-        }
+        place_func = parent.append;
+        place_func_context = parent;
 
         if (anim) {
           var self = this;
@@ -402,6 +394,34 @@
         var view = this.create_view(this.get_model_view_cls(m),
                                     model_view_options);
         this.add_model_view(view, m, index);
+        this.fix_sort();
+        this.check_disabled(view);
+      },
+    
+      update_disabled: function() {
+          _.each(this._model_views, function(v) {
+              this.check_disabled(v);
+          }, this);
+      },
+
+      check_disabled: function(view) {
+        var disabled = this.disabled_filter(view.model);
+        if (disabled) { 
+            view.disable && view.disable(disabled); 
+            if (_.isString(disabled)) {
+                var el = view.el;
+                var tooltip = {
+                    'tipClass': 'tooltip warning', 
+                    'position': 'center right',
+                    'offset': [0, -200]
+                };
+                snf.util.set_tooltip(el, disabled, tooltip);
+            }
+        } else {
+            var el = view.el;
+            snf.util.unset_tooltip(el);
+            view.enable && view.enable();
+        }
       },
 
       add_model_view: function(view, model, index) {
@@ -445,12 +465,14 @@
         $(window).trigger("resize");
         delete this._model_views[m.id];
         this.check_empty();
+        this.fix_sort();
       },
       
       bind_custom_view_handlers: function(view, model) {},
       unbind_custom_view_handlers: function(view, model) {},
       post_remove_model_view: function() {},
-
+    
+      post_update_models: function() {},
       update_models: function(m) {
         this.check_empty();
         this.collection.each(function(model, index) {
@@ -471,31 +493,62 @@
             model = {'id': model_id};
             this.remove_model(model);
           }
-        })
+        });
+
+        this.fix_sort();
+        this.post_update_models();
+      },
+        
+      _get_view_at_index: function(i) {
+          var found = undefined;
+          _.each(this._model_views, function(view) {
+              if (found) { return }
+              if (view.el.index() == i) { found = view }
+          });
+          return found;
+      },
+
+      fix_sort: function() {
+        var container_indexes = {};
+        this.collection.each(function(m, i) {
+            var view = this._model_views[m.id];
+            if (!view) { return }
+            var parent = view.el.parent().index();
+            if (!container_indexes[parent]) {
+                container_indexes[parent] = [];
+            }
+            container_indexes[parent].push(view.model.id);
+        }, this);
+
+        this.collection.each(function(m, i) {
+            var view = this._model_views[m.id];
+            if (!view) { return }
+            var indexes = container_indexes[view.el.parent().index()];
+            var model_index = indexes.indexOf(view.model.id);
+            var view_index = view.el.index();
+            if (model_index != view_index) {
+                view.el.parent().insertAt(view.el, model_index);
+            }
+        }, this);
       }
     });
 
     views.ext.CollectionSelectView = views.ext.CollectionView.extend({
       allow_multiple: false,
+      allow_empty: true,
       initialize: function(options) {
         views.ext.CollectionSelectView.__super__.initialize.apply(this, [options]);
-        this.allow_multiple = options.allow_multiple != undefined ? options.allow_multiple : this.allow_multiple;
-        this.current = options.current != undefined ? options.current : undefined;
+        this.allow_multiple = options.allow_multiple != undefined ? 
+                                options.allow_multiple : this.allow_multiple;
+        this.current = options.current != undefined ? 
+                          options.current : undefined;
+        this.allow_empty = options.allow_empty != undefined ? 
+                                options.allow_empty : this.allow_empty;
       },
 
-      select: function(model) {
-        if (!this.allow_multiple) {
-          this.deselect_all();
-        }
-        this._model_views[model.id].select();
-      },
-
-      deselect: function(model) {
-        this._model_views[model.id].deselect();
-      },
-
-      deselect_all: function(model) {
+      deselect_all: function(except_model) {
         _.each(this._model_views, function(view) {
+          if (view.model == except_model) { return }
           view.deselect();
         })
       },    
@@ -506,32 +559,53 @@
             return view.model
           }
         });
-        return _.filter(models, function(m) { return m });
+        var selected = _.filter(models, function(m) { return m });
+        return selected;
       },
-      
-      handle_click: function(view) {
-        if (!view.selected && !view.disabled) {
-          if (!this.allow_multiple) {
-            this.deselect_all();
-          }
-        }
+        
+      select_any: function() {
+          var selected = false;
+          _.each(this._model_views, function(v) { 
+            if (selected) { return }
+            if (!v.disabled) { v.select(); selected = v }
+          });
+          return selected;
       },
 
       post_add_model_view: function(view, model) {
-        view.bind('click', function() {
-          this.handle_click(view);
+        view.bind('deselected', function(view) {
+            var selected = this.get_selected();
+            if (!this.allow_empty && selected.length == 0) {
+                if (!view.disabled) {
+                    view.select();
+                } else {
+                    this.select_any();
+                }
+            }
         }, this);
 
         view.bind('selected', function(view) {
           if (this.current != view.model) {
-            this.current = view.model;
+            var selected = this.get_selected();
+            if (!this.allow_multiple && selected.length) {
+                this.deselect_all(view.model);
+            }
             this.trigger("change", this.get_selected());
           }
         }, this);
+
+        if (!this.allow_empty && !this.get_selected().length) {
+            view.select();
+        }
       },
 
       set_current: function(model) {
+        if (!this._model_views[model.id]) { return }
         this._model_views[model.id].select();
+      },
+
+      post_remove_model_view: function(view, model) {
+          if (view.selected) { view.disabled = true; view.deselect() }
       }
 
     });
@@ -644,6 +718,10 @@
     views.ModelRenameView = views.ext.ModelView.extend({
       tpl: '#rename-view-tpl',
       title_attr: 'name',
+        
+      display_name: function() {
+          return this.model.get(this.title_attr)
+      },
 
       init: function() {
         views.ModelRenameView.__super__.init.apply(this, arguments);
@@ -659,6 +737,10 @@
         if (this.model.get('rename_disabled')) {
           this.edit_btn.remove();
         }
+        
+        this.model.bind("change:"+this.title_attr, function() {
+            this.model.trigger("change:_rename_view");
+        }, this);
 
         this.value.dblclick(_.bind(function(e) {
           this.set_edit();
@@ -680,7 +762,7 @@
       set_edit: function() {
         if (this.model.get('rename_disabled')) { return }
         var self = this;
-        this.input.val(this.model.get('name'));
+        this.input.val(this.model.get(this.title_attr));
         window.setTimeout(function() {
           self.input.focus();
         }, 20);
@@ -704,6 +786,15 @@
 
     views.ext.SelectModelView = views.ext.ModelView.extend({
       can_deselect: true,
+      
+      disable: function() {
+          this.set_disabled();
+      },
+
+      enable: function() {
+          this.set_enabled();
+      },
+
       select: function() {
         if (!this.delegate_checked) {
           this.input.attr("checked", true);
@@ -776,6 +867,7 @@
 
       set_disabled: function() {
         this.disabled = true;
+        this.deselect();
         this.input.attr("disabled", true);
         this.item.addClass("disabled");
         this.item.attr("disabled", true);

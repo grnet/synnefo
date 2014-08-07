@@ -48,8 +48,8 @@ INSTALL_REQUIRES = [
 setup(
     name='snf-deploy',
     version=VERSION,
-    license='BSD',
-    url='http://code.grnet.gr/',
+    license='GNU GPLv3',
+    url='https://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
     long_description=SHORT_DESCRIPTION,
     classifiers=CLASSIFIERS,

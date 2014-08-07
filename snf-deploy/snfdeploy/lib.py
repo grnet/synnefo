@@ -22,6 +22,7 @@ import random
 import subprocess
 import imp
 import ast
+import string
 
 HEADER = '\033[95m'
 OKBLUE = '\033[94m'
@@ -179,3 +180,8 @@ def import_conf_file(filename, directory):
 
 def raddr(addr):
     return list(reversed(addr.replace("/", "-").split(".")))
+
+
+def create_passwd(length):
+    char_set = string.ascii_uppercase + string.digits + string.ascii_lowercase
+    return ''.join(random.sample(char_set, length))

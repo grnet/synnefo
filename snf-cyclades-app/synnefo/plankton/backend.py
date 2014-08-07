@@ -27,7 +27,6 @@ The Plankton attributes are the following:
   - owner: the file's account
   - properties: stored as user meta prefixed with PROPERTY_PREFIX
   - size: the 'bytes' meta
-  - status: stored as a system meta
   - store: is always 'pithos'
   - updated_at: the 'modified' meta
 """
@@ -47,6 +46,7 @@ from django.conf import settings
 from django.utils import importlib
 from django.utils.encoding import smart_unicode, smart_str
 from pithos.backends.base import NotAllowedError, VersionNotExists, QuotaError
+from pithos.backends.util import PithosBackendPool
 from snf_django.lib.api import faults
 
 Location = namedtuple("ObjectLocation", ["account", "container", "path"])
@@ -61,22 +61,27 @@ PROPERTY_PREFIX = 'property:'
 PLANKTON_META = ('container_format', 'disk_format', 'name',
                  'status', 'created_at', 'volume_id', 'description')
 
+SNAPSHOTS_CONTAINER = "snapshots"
+SNAPSHOTS_TYPE = "application/octet-stream"
+
 MAX_META_KEY_LENGTH = 128 - len(PLANKTON_DOMAIN) - len(PROPERTY_PREFIX)
 MAX_META_VALUE_LENGTH = 256
 
-
-from pithos.backends.util import PithosBackendPool
-_pithos_backend_pool = \
-    PithosBackendPool(
-        settings.PITHOS_BACKEND_POOL_SIZE,
-        astakos_auth_url=settings.ASTAKOS_AUTH_URL,
-        service_token=settings.CYCLADES_SERVICE_TOKEN,
-        astakosclient_poolsize=settings.CYCLADES_ASTAKOSCLIENT_POOLSIZE,
-        db_connection=settings.BACKEND_DB_CONNECTION,
-        block_path=settings.BACKEND_BLOCK_PATH)
+_pithos_backend_pool = None
 
 
 def get_pithos_backend():
+    global _pithos_backend_pool
+    if _pithos_backend_pool is None:
+        _pithos_backend_pool = PithosBackendPool(
+            settings.PITHOS_BACKEND_POOL_SIZE,
+            astakos_auth_url=settings.ASTAKOS_AUTH_URL,
+            service_token=settings.CYCLADES_SERVICE_TOKEN,
+            astakosclient_poolsize=settings.CYCLADES_ASTAKOSCLIENT_POOLSIZE,
+            db_connection=settings.BACKEND_DB_CONNECTION,
+            archipelago_conf_file=settings.PITHOS_BACKEND_ARCHIPELAGO_CONF,
+            xseg_pool_size=settings.PITHOS_BACKEND_XSEG_POOL_SIZE,
+            map_check_interval=settings.PITHOS_BACKEND_MAP_CHECK_INTERVAL)
     return _pithos_backend_pool.pool_get()
 
 
@@ -195,26 +200,30 @@ class PlanktonBackend(object):
         return self._get_image(uuid)
 
     def _update_metadata(self, uuid, location, metadata, replace=False):
-        _prefixed_metadata = self._prefix_metadata(metadata)
-        prefixed = {}
-        for k, v in _prefixed_metadata.items():
-            # Encode to UTF-8
-            k, v = smart_unicode(k), smart_unicode(v)
-            # Check the length of key/value
-            if len(k) > 128:
-                raise faults.BadRequest('Metadata keys should be less than %s'
-                                        ' characters' % MAX_META_KEY_LENGTH)
-            if len(v) > 256:
-                raise faults.BadRequest('Metadata values should be less than'
-                                        ' %scharacters.'
-                                        % MAX_META_VALUE_LENGTH)
-            prefixed[k] = v
+        prefixed = self._prefix_and_validate_metadata(metadata)
 
         account, container, path = location
         self.backend.update_object_meta(self.user, account, container, path,
                                         PLANKTON_DOMAIN, prefixed, replace)
         logger.debug("User '%s' updated image '%s', metadata: '%s'", self.user,
                      uuid, prefixed)
+
+    def _prefix_and_validate_metadata(self, metadata):
+        _prefixed_metadata = self._prefix_metadata(metadata)
+        prefixed = {}
+        for k, v in _prefixed_metadata.items():
+            # Encode to UTF-8
+            k, v = smart_unicode(k), smart_unicode(v)
+            # Check the length of key/value
+            if len(k) > MAX_META_KEY_LENGTH:
+                raise faults.BadRequest('Metadata keys should be less than %s'
+                                        ' characters' % MAX_META_KEY_LENGTH)
+            if len(v) > MAX_META_VALUE_LENGTH:
+                raise faults.BadRequest('Metadata values should be less than'
+                                        ' %s characters.'
+                                        % MAX_META_VALUE_LENGTH)
+            prefixed[k] = v
+        return prefixed
 
     def _get_raw_metadata(self, uuid, version=None, check_image=True):
         """Get info and metadata in Plankton doamin for the Pithos object.
@@ -257,7 +266,7 @@ class PlanktonBackend(object):
         location, _ = self._get_raw_metadata(uuid)
         permissions = self._get_raw_permissions(uuid, location)
         read = set(permissions.get("read", []))
-        if not user in read:
+        if user not in read:
             read.add(user)
             permissions["read"] = list(read)
             self._update_permissions(uuid, location, permissions)
@@ -372,9 +381,7 @@ class PlanktonBackend(object):
         meta.update(self._prefix_properties(properties))
         # Add extra metadata
         meta["name"] = name
-        meta["status"] = "AVAILABLE"
         meta['created_at'] = str(time())
-        #meta["is_snapshot"] = False
         self._update_metadata(uuid, location, metadata=meta, replace=False)
 
         logger.debug("User '%s' registered image '%s'('%s')", self.user,
@@ -442,12 +449,29 @@ class PlanktonBackend(object):
         return filter(lambda img: img["is_public"], images)
 
     # Snapshots
+    @handle_pithos_backend
+    def register_snapshot(self, name, mapfile, size, metadata):
+        metadata = self._prefix_and_validate_metadata(metadata)
+        snapshot_id = self.backend.register_object_map(
+            user=self.user,
+            account=self.user,
+            container=SNAPSHOTS_CONTAINER,
+            name=name,
+            mapfile=mapfile,
+            size=size,
+            domain=PLANKTON_DOMAIN,
+            type=SNAPSHOTS_TYPE,
+            meta=metadata,
+            replace_meta=True,
+            permissions=None)
+        return snapshot_id
+
     def list_snapshots(self, user=None):
         _snapshots = self.list_images()
         return [s for s in _snapshots if s["is_snapshot"]]
 
     @handle_pithos_backend
-    def get_snapshot(self, user, snapshot_uuid):
+    def get_snapshot(self, snapshot_uuid):
         snap = self._get_image(snapshot_uuid)
         if snap.get("is_snapshot", False) is False:
             raise faults.ItemNotFound("Snapshots '%s' does not exist" %
@@ -456,17 +480,7 @@ class PlanktonBackend(object):
 
     @handle_pithos_backend
     def delete_snapshot(self, snapshot_uuid):
-        account, container, path = self.backend.get_uuid(self.user,
-                                                         snapshot_uuid)
-        self.backend.delete_object(self.user, account, container, path)
-
-    @handle_pithos_backend
-    def update_status(self, image_uuid, status):
-        """Update status of snapshot"""
-        location, _ = self._get_raw_metadata(image_uuid)
-        properties = {"status": status.upper()}
-        self._update_metadata(image_uuid, location, properties, replace=False)
-        return self._get_image(image_uuid)
+        self.backend.delete_by_uuid(self.user, snapshot_uuid)
 
 
 def create_url(account, container, name):
@@ -496,13 +510,17 @@ def image_to_dict(location, metadata, permissions):
 
     image = {}
     image["id"] = metadata["uuid"]
-    image["mapfile"] = metadata["hash"]
+    image["mapfile"] = metadata["mapfile"]
     image["checksum"] = metadata["hash"]
     image["location"] = create_url(account, container, name)
     image["size"] = metadata["bytes"]
     image['owner'] = account
     image["store"] = u"pithos"
-    image["is_snapshot"] = metadata.pop(PLANKTON_PREFIX + "is_snapshot", False)
+    image["is_snapshot"] = metadata["is_snapshot"]
+    image["version"] = metadata["version"]
+
+    image["status"] = "AVAILABLE" if metadata.get("available") else "CREATING"
+
     # Permissions
     users = list(permissions.get("read", []))
     image["is_public"] = "*" in users
@@ -525,14 +543,13 @@ def image_to_dict(location, metadata, permissions):
             key = key.replace(PLANKTON_PREFIX, "")
             # Keep only those in plankton metadata
             if key in PLANKTON_META:
-                if key == "status":
-                    image["status"] = val.upper()
                 if key != "created_at":
                     # created timestamp is return in 'created_at' field
                     image[key] = val
             elif key.startswith(PROPERTY_PREFIX):
                 key = key.replace(PROPERTY_PREFIX, "")
                 properties[key] = val
+
     image["properties"] = properties
 
     return image

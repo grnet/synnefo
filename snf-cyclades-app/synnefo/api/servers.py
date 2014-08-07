@@ -20,6 +20,7 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
+from django.core.urlresolvers import reverse
 
 from snf_django.lib import api
 from snf_django.lib.api import faults, utils
@@ -49,11 +50,15 @@ urlpatterns = patterns(
 )
 
 VOLUME_SOURCE_TYPES = [
-    "snapshot",
     "image",
     "volume",
     "blank"
 ]
+
+if settings.CYCLADES_SNAPSHOTS_ENABLED:
+    # If snapshots are enabled, add 'snapshot' to the list of allowed sources
+    # for a new block device.
+    VOLUME_SOURCE_TYPES.append("snapshot")
 
 
 def demux(request):
@@ -529,7 +534,7 @@ def update_server_name(request, server_id):
                                required=True)
 
     vm = util.get_vm(server_id, request.user_uniq, for_update=True,
-                     non_suspended=True)
+                     non_suspended=True, non_deleted=True)
 
     servers.rename(vm, new_name=name)
 
@@ -549,13 +554,15 @@ def delete_server(request, server_id):
 
     log.info('delete_server %s', server_id)
     vm = util.get_vm(server_id, request.user_uniq, for_update=True,
-                     non_suspended=True)
+                     non_suspended=True, non_deleted=True)
     vm = servers.destroy(vm)
     return HttpResponse(status=204)
 
 
 # additional server actions
-ARBITRARY_ACTIONS = ['console', 'firewallProfile', 'reassign']
+ARBITRARY_ACTIONS = ['console', 'firewallProfile', 'reassign',
+                     'os-getVNCConsole', 'os-getRDPConsole',
+                     'os-getSPICEConsole']
 
 
 def key_to_action(key):
@@ -674,11 +681,26 @@ def update_metadata(request, server_id):
 
     req = utils.get_json_body(request)
     log.info('update_server_metadata %s %s', server_id, req)
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
+                     non_deleted=True)
     metadata = utils.get_attribute(req, "metadata", required=True,
                                    attr_type=dict)
 
+    if len(metadata) + len(vm.metadata.all()) - \
+       len(vm.metadata.all().filter(meta_key__in=metadata.keys())) > \
+       settings.CYCLADES_VM_MAX_METADATA:
+        raise faults.BadRequest("Virtual Machines cannot have more than %s "
+                                "metadata items" %
+                                settings.CYCLADES_VM_MAX_METADATA)
+
     for key, val in metadata.items():
+        if len(key) > VirtualMachineMetadata.KEY_LENGTH:
+            raise faults.BadRequest("Malformed Request. Metadata key is too"
+                                    " long")
+        if len(val) > VirtualMachineMetadata.VALUE_LENGTH:
+            raise faults.BadRequest("Malformed Request. Metadata value is too"
+                                    " long")
+
         if not isinstance(key, (basestring, int)) or\
            not isinstance(val, (basestring, int)):
             raise faults.BadRequest("Malformed Request. Invalid metadata.")
@@ -723,7 +745,8 @@ def create_metadata_item(request, server_id, key):
 
     req = utils.get_json_body(request)
     log.info('create_server_metadata_item %s %s %s', server_id, key, req)
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
+                     non_deleted=True)
     try:
         metadict = req['meta']
         assert isinstance(metadict, dict)
@@ -732,11 +755,27 @@ def create_metadata_item(request, server_id, key):
     except (KeyError, AssertionError):
         raise faults.BadRequest("Malformed request")
 
+    value = metadict[key]
+
+    # Check key, value length
+    if len(key) > VirtualMachineMetadata.KEY_LENGTH:
+        raise faults.BadRequest("Malformed Request. Metadata key is too long")
+    if len(value) > VirtualMachineMetadata.VALUE_LENGTH:
+        raise faults.BadRequest("Malformed Request. Metadata value is too"
+                                " long")
+
+    # Check number of metadata items
+    if vm.metadata.exclude(meta_key=key).count() == \
+       settings.CYCLADES_VM_MAX_METADATA:
+        raise faults.BadRequest("Virtual Machines cannot have more than %s"
+                                " metadata items" %
+                                settings.CYCLADES_VM_MAX_METADATA)
+
     meta, created = VirtualMachineMetadata.objects.get_or_create(
         meta_key=key,
         vm=vm)
 
-    meta.meta_value = metadict[key]
+    meta.meta_value = value
     meta.save()
     vm.save()
     d = {meta.meta_key: meta.meta_value}
@@ -757,7 +796,8 @@ def delete_metadata_item(request, server_id, key):
     #                       overLimit (413),
 
     log.info('delete_server_metadata_item %s %s', server_id, key)
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
+                     non_deleted=True)
     meta = util.get_vm_meta(vm, key)
     meta.delete()
     vm.save()
@@ -895,12 +935,101 @@ def resize(request, vm, args):
     #                       serverCapacityUnavailable (503),
     #                       overLimit (413),
     #                       resizeNotAllowed (403)
-    flavorRef = args.get("flavorRef")
-    if flavorRef is None:
+    flavor_id = args.get("flavorRef")
+    if flavor_id is None:
         raise faults.BadRequest("Missing 'flavorRef' attribute.")
-    flavor = util.get_flavor(flavor_id=flavorRef, include_deleted=False)
+    flavor = util.get_flavor(flavor_id=flavor_id, include_deleted=False)
     servers.resize(vm, flavor=flavor)
     return HttpResponse(status=202)
+
+
+@server_action('os-getSPICEConsole')
+def os_get_spice_console(request, vm, args):
+    # Normal Response Code: 200
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       buildInProgress (409),
+    #                       overLimit (413)
+
+    log.info('Get Spice console for VM %s: %s', vm, args)
+
+    raise faults.NotImplemented('Spice console not implemented')
+
+
+@server_action('os-getRDPConsole')
+def os_get_rdp_console(request, vm, args):
+    # Normal Response Code: 200
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       buildInProgress (409),
+    #                       overLimit (413)
+
+    log.info('Get RDP console for VM %s: %s', vm, args)
+
+    raise faults.NotImplemented('RDP console not implemented')
+
+
+machines_console_url = None
+
+
+@server_action('os-getVNCConsole')
+def os_get_vnc_console(request, vm, args):
+    # Normal Response Code: 200
+    # Error Response Codes: computeFault (400, 500),
+    #                       serviceUnavailable (503),
+    #                       unauthorized (401),
+    #                       badRequest (400),
+    #                       badMediaType(415),
+    #                       itemNotFound (404),
+    #                       buildInProgress (409),
+    #                       overLimit (413)
+
+    log.info('Get osVNC console for VM %s: %s', vm, args)
+
+    console_type = args.get('type')
+    if console_type is None:
+        raise faults.BadRequest("No console 'type' specified.")
+
+    supported_types = {'novnc': 'vnc-wss', 'xvpvnc': 'vnc'}
+    if console_type not in supported_types:
+        raise faults.BadRequest('Supported types: %s' %
+                                ', '.join(supported_types.keys()))
+
+    console_info = servers.console(vm, supported_types[console_type])
+
+    global machines_console_url
+    if machines_console_url is None:
+        machines_console_url = reverse('synnefo.ui.views.machines_console')
+
+    if console_type == 'novnc':
+        # Return the URL of the WebSocket noVNC client
+        url = settings.CYCLADES_BASE_URL + machines_console_url
+        url += '?host=%(host)s&port=%(port)s&password=%(password)s'
+    else:
+        # Return a URL to paste into a Java VNC client
+        # FIXME: VNC clients (and the TigerVNC Java applet) can't handle the
+        # password.
+        url = '%(host)s:%(port)s?password=%(password)s'
+
+    resp = {'type': console_type,
+            'url': url % console_info}
+
+    if request.serialization == 'xml':
+        mimetype = 'application/xml'
+        data = render_to_string('os-console.xml', {'console': resp})
+    else:
+        mimetype = 'application/json'
+        data = json.dumps({'console': resp})
+
+    return HttpResponse(data, mimetype=mimetype, status=200)
 
 
 @server_action('console')
@@ -920,8 +1049,12 @@ def get_console(request, vm, args):
     console_type = args.get("type")
     if console_type is None:
         raise faults.BadRequest("No console 'type' specified.")
-    elif console_type != "vnc":
-        raise faults.BadRequest("Console 'type' can only be 'vnc'.")
+
+    supported_types = ['vnc', 'vnc-ws', 'vnc-wss']
+    if console_type not in supported_types:
+        raise faults.BadRequest('Supported types: %s' %
+                                ', '.join(supported_types))
+
     console_info = servers.console(vm, console_type)
 
     if request.serialization == 'xml':
@@ -979,7 +1112,8 @@ def add(request, net, args):
     if not server_id:
         raise faults.BadRequest('Malformed Request.')
 
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
+                     for_update=True, non_deleted=True)
     servers.connect(vm, network=net)
     return HttpResponse(status=202)
 
@@ -1006,7 +1140,8 @@ def remove(request, net, args):
 
     nic = util.get_nic(nic_id=nic_id)
     server_id = nic.machine_id
-    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True)
+    vm = util.get_vm(server_id, request.user_uniq, non_suspended=True,
+                     for_update=True, non_deleted=True)
 
     servers.disconnect(vm, nic)
 
@@ -1066,8 +1201,8 @@ def get_volumes(request, server_id):
 def get_volume_info(request, server_id, volume_id):
     log.debug("get_volume_info server_id %s volume_id", server_id, volume_id)
     user_id = request.user_uniq
-    vm = util.get_vm(server_id, user_id)
-    volume = get_volume(user_id, volume_id, for_update=False,
+    vm = util.get_vm(server_id, user_id, for_update=False)
+    volume = get_volume(user_id, volume_id, for_update=False, non_deleted=True,
                         exception=faults.BadRequest)
     servers._check_attachment(vm, volume)
     attachment = volume_to_attachment(volume)
@@ -1080,13 +1215,13 @@ def attach_volume(request, server_id):
     req = utils.get_json_body(request)
     log.debug("attach_volume server_id %s request", server_id, req)
     user_id = request.user_uniq
-    vm = util.get_vm(server_id, user_id, for_update=True)
+    vm = util.get_vm(server_id, user_id, for_update=True, non_deleted=True)
 
     attachment_dict = api.utils.get_attribute(req, "volumeAttachment",
                                               required=True)
     # Get volume
     volume_id = api.utils.get_attribute(attachment_dict, "volumeId")
-    volume = get_volume(user_id, volume_id, for_update=True,
+    volume = get_volume(user_id, volume_id, for_update=True, non_deleted=True,
                         exception=faults.BadRequest)
     vm = server_attachments.attach_volume(vm, volume)
     attachment = volume_to_attachment(volume)
@@ -1099,8 +1234,8 @@ def attach_volume(request, server_id):
 def detach_volume(request, server_id, volume_id):
     log.debug("detach_volume server_id %s volume_id", server_id, volume_id)
     user_id = request.user_uniq
-    vm = util.get_vm(server_id, user_id)
-    volume = get_volume(user_id, volume_id, for_update=True,
+    vm = util.get_vm(server_id, user_id, for_update=True, non_deleted=True)
+    volume = get_volume(user_id, volume_id, for_update=True, non_deleted=True,
                         exception=faults.BadRequest)
     vm = server_attachments.detach_volume(vm, volume)
     # TODO: Check volume state, send job to detach volume

@@ -27,6 +27,11 @@ def find(f, seq):
     return NotFound
 
 
+def get_pending_apps(user):
+    return quotas.get_user_quotas(user)\
+        [user.base_project.uuid]['astakos.pending_app']['usage']
+
+
 class ProjectAPITest(TestCase):
 
     def setUp(self):
@@ -146,7 +151,7 @@ class ProjectAPITest(TestCase):
 
         app1 = {"name": "test.pr",
                 "description": u"δεσκρίπτιον",
-                "end_date": "2013-5-5T20:20:20Z",
+                "end_date": "2113-5-5T20:20:20Z",
                 "join_policy": "auto",
                 "max_members": 5,
                 "resources": {u"σέρβις1.ρίσορς11": {
@@ -214,7 +219,7 @@ class ProjectAPITest(TestCase):
         # Modify of uninitialized failed
         app2 = {"name": "test.pr",
                 "start_date": "2013-5-5T20:20:20Z",
-                "end_date": "2013-7-5T20:20:20Z",
+                "end_date": "2113-7-5T20:20:20Z",
                 "join_policy": "moderated",
                 "leave_policy": "auto",
                 "max_members": 3,
@@ -538,76 +543,129 @@ class ProjectAPITest(TestCase):
                         action, content_type="application/json", **h_owner)
         self.assertEqual(r.status_code, 400)
 
-        ap = {"owner": "nonex",
-              "join_policy": "nonex",
-              "leave_policy": "nonex",
-              "start_date": "nonex",
-              "homepage": {},
-              "max_members": -3,
-              "resources": [],
-              }
 
+        ap_base = {
+            "owner": self.user1.uuid,
+            "name": "domain.name",
+            "join_policy": "auto",
+            "leave_policy": "closed",
+            "start_date": "2113-01-01T0:0Z",
+            "end_date": "2114-01-01T0:0Z",
+            "max_members": 0,
+            "resources": {
+                u"σέρβις1.ρίσορς11": {
+                    "member_capacity": 512,
+                    "project_capacity": 1024}
+                },
+            }
+        status, body = self.create(ap_base, h_owner)
+        project_b_id = body["id"]
+        app_b_id = body["application"]
+        self.assertEqual(status, 201)
+
+        # Cancel
+        status = self.project_action(project_b_id, "cancel",
+                                     app_id=app_b_id, headers=h_owner)
+        self.assertEqual(status, 200)
+
+        ap = copy.deepcopy(ap_base)
+        ap["owner"] = "nonex"
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 400)
         self.assertEqual(body["badRequest"]["message"], "User does not exist.")
 
-        ap["owner"] = self.user1.uuid
+        ap = copy.deepcopy(ap_base)
+        ap.pop("name")
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 400)
 
-        ap["name"] = "some.name"
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["join_policy"] = "auto"
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["leave_policy"] = "closed"
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["start_date"] = "2013-01-01T0:0Z"
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["end_date"] = "2014-01-01T0:0Z"
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["max_members"] = 0
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["homepage"] = "a.stri.ng"
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["resources"] = {42: 42}
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["resources"] = {u"σέρβις1.ρίσορς11": {"member_capacity": 512}}
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 400)
-
-        ap["resources"] = {
-            u"σέρβις1.ρίσορς11": {
-                "member_capacity": 512,
-                "project_capacity": 1024}
-            }
-        status, body = self.create(ap, h_owner)
-        self.assertEqual(status, 201)
-
+        ap = copy.deepcopy(ap_base)
         ap["name"] = "non_domain_name"
         status, body = self.create(ap, h_owner)
         self.assertEqual(status, 400)
 
-        ap["name"] = "domain.name"
+        ap = copy.deepcopy(ap_base)
+        ap["name"] = 100 * "domain.name." + ".org"
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["join_policy"] = "nonex"
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["leave_policy"] = "nonex"
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap.pop("end_date")
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["end_date"] = "2000-01-01T0:0Z"
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["start_date"] = "nonex"
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["max_members"] = -3
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["max_members"] = 2**63
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["homepage"] = 100 * "huge"
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["resources"] = {42: 42}
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["resources"] = {u"σέρβις1.ρίσορς11": {"member_capacity": 512}}
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["resources"] = {u"σέρβις1.ρίσορς11": {"member_capacity": -512,
+                                                 "project_capacity": 256}}
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
+
+        ap = copy.deepcopy(ap_base)
+        ap["resources"] = {u"σέρβις1.ρίσορς11": {"member_capacity": 512,
+                                                 "project_capacity": 256}}
+        status, body = self.create(ap, h_owner)
+        self.assertEqual(status, 400)
 
         filters = {"state": "nonex"}
         r = client.get(reverse("api_projects"), filters, **h_owner)
         self.assertEqual(r.status_code, 400)
+
+        app = {"max_members": 33, "name": "new.name"}
+        status, body = self.modify(app, self.user1.uuid, h_owner)
+        self.assertEqual(status, 403)
+
+        app = {"max_members": 33, "name": "new.name"}
+        status, body = self.modify(app, self.user1.uuid, h_admin)
+        self.assertEqual(status, 409)
+
+        app = {"max_members": 33}
+        status, body = self.modify(app, self.user1.uuid, h_admin)
+        self.assertEqual(status, 201)
 
         # directly modify a base project
         with assertRaises(functions.ProjectBadRequest):
@@ -638,6 +696,40 @@ class ProjectAPITest(TestCase):
                                kwargs={"project_id": u"πρότζεκτ"}),
                        **h_owner)
         self.assertEqual(r.status_code, 404)
+
+        # Check pending app quota integrity
+        r = client.get(reverse("api_project",
+                               kwargs={"project_id": project_id}),
+                       **h_owner)
+        body = json.loads(r.content)
+        self.assertNotEqual(body['last_application']['state'], 'pending')
+
+        admin_pa0 = get_pending_apps(self.user2)
+        owner_pa0 = get_pending_apps(self.user1)
+
+        app = {"max_members": 11}
+        status, body = self.modify(app, project_id, h_admin)
+        self.assertEqual(status, 201)
+
+        admin_pa1 = get_pending_apps(self.user2)
+        owner_pa1 = get_pending_apps(self.user1)
+        self.assertEqual(admin_pa1, admin_pa0+1)
+        self.assertEqual(owner_pa1, owner_pa0)
+        status, body = self.modify(app, project_id, h_owner)
+        self.assertEqual(status, 201)
+
+        admin_pa2 = get_pending_apps(self.user2)
+        owner_pa2 = get_pending_apps(self.user1)
+        self.assertEqual(admin_pa2, admin_pa1-1)
+        self.assertEqual(owner_pa2, owner_pa1+1)
+
+        status, body = self.modify(app, project_id, h_owner)
+        self.assertEqual(status, 201)
+
+        admin_pa3 = get_pending_apps(self.user2)
+        owner_pa3 = get_pending_apps(self.user1)
+        self.assertEqual(admin_pa3, admin_pa2)
+        self.assertEqual(owner_pa3, owner_pa2)
 
 
 class TestProjects(TestCase):
@@ -703,7 +795,7 @@ class TestProjects(TestCase):
             'end_date': dto.strftime("%Y-%m-%d"),
             'member_join_policy': 2,
             'member_leave_policy': 1,
-            'limit_on_members_number': 5,
+            'limit_on_members_number_0': 5,
             'service1.resource_m_uplimit': 100,
             'is_selected_service1.resource': "1",
             'astakos.pending_app_m_uplimit': 100,
@@ -720,7 +812,7 @@ class TestProjects(TestCase):
         self.assertEqual(form.is_valid(), True)
 
     @im_settings(PROJECT_ADMINS=['uuid1'])
-    def no_test_applications(self):
+    def test_applications(self):
         # let user have 2 pending applications
 
         # TODO figure this out
@@ -747,13 +839,17 @@ class TestProjects(TestCase):
             'end_date': dto.strftime("%Y-%m-%d"),
             'member_join_policy': 2,
             'member_leave_policy': 1,
-            'service1.resource_m_uplimit': 100,
+            'limit_on_members_number_0': '5',
+            'service1.resource_m_uplimit': 10,
+            'service1.resource_p_uplimit': 100,
             'is_selected_service1.resource': "1",
             'user': self.user.pk
         }
         r = self.user_client.post(post_url, data=application_data, follow=True)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.context['form'].is_valid(), False)
+        form = r.context['form']
+        form.is_valid()
+        self.assertEqual(r.context['form'].is_valid(), True)
 
         application_data['limit_on_members_number'] = 5
         r = self.user_client.post(post_url, data=application_data, follow=True)
@@ -786,35 +882,45 @@ class TestProjects(TestCase):
 
         # login
         self.admin_client.get(reverse("edit_profile"))
+
         # admin approves
         r = self.admin_client.post(reverse('project_app_approve',
-                                           kwargs={'application_id': app1_id}),
+                                           kwargs={
+                                            'application_id': app1_id,
+                                            'project_uuid': app1.chain.uuid}),
                                    follow=True)
         self.assertEqual(r.status_code, 200)
-
-        Q_ACTIVE = Project.o_state_q(Project.O_ACTIVE)
-        self.assertEqual(Project.objects.filter(Q_ACTIVE).count(), 1)
+        self.assertEqual(Project.objects.filter(is_base=False,
+            state=Project.O_ACTIVE).count(), 1)
 
         # login
         self.member_client.get(reverse("edit_profile"))
         # cannot join project2 (not approved yet)
-        join_url = reverse("project_join", kwargs={'chain_id': project2_id})
+        join_url = reverse("project_join", kwargs={
+            'project_uuid': app2.chain.uuid})
         r = self.member_client.post(join_url, follow=True)
 
         # can join project1
         self.member_client.get(reverse("edit_profile"))
-        join_url = reverse("project_join", kwargs={'chain_id': project1_id})
+        join_url = reverse("project_join", kwargs={
+            'project_uuid': app1.chain.uuid})
         r = self.member_client.post(join_url, follow=True)
         self.assertEqual(r.status_code, 200)
 
-        memberships = ProjectMembership.objects.all()
+        memberships = ProjectMembership.objects.filter(project__is_base=False)
         self.assertEqual(len(memberships), 1)
         memb_id = memberships[0].id
 
         reject_member_url = reverse('project_reject_member',
-                                    kwargs={'memb_id': memb_id})
+                                    kwargs={
+                                        'project_uuid': app1.chain.uuid,
+                                        'memb_id': memb_id
+                                    })
         accept_member_url = reverse('project_accept_member',
-                                    kwargs={'memb_id': memb_id})
+                                    kwargs={
+                                        'memb_id': memb_id,
+                                        'project_uuid': app1.chain.uuid
+                                    })
 
         # only project owner is allowed to reject
         r = self.member_client.post(reject_member_url, follow=True)
@@ -823,38 +929,45 @@ class TestProjects(TestCase):
 
         # user (owns project) rejects membership
         r = self.user_client.post(reject_member_url, follow=True)
-        self.assertEqual(ProjectMembership.objects.any_accepted().count(), 0)
+        membs = ProjectMembership.objects.any_accepted().filter(
+            project__is_base=False)
+        self.assertEqual(membs.count(), 0)
 
         # user rejoins
         self.member_client.get(reverse("edit_profile"))
-        join_url = reverse("project_join", kwargs={'chain_id': project1_id})
+        join_url = reverse("project_join", kwargs={'project_uuid':
+                                                   app1.chain.uuid})
         r = self.member_client.post(join_url, follow=True)
         self.assertEqual(r.status_code, 200)
         self.assertEqual(ProjectMembership.objects.requested().count(), 1)
 
         # user (owns project) accepts membership
         r = self.user_client.post(accept_member_url, follow=True)
-        self.assertEqual(ProjectMembership.objects.any_accepted().count(), 1)
-        membership = ProjectMembership.objects.get()
+        self.assertEqual(membs.count(), 1)
+        membership = membs.get()
         self.assertEqual(membership.state, ProjectMembership.ACCEPTED)
 
-        user_quotas = quotas.get_users_quotas([self.member])
+        user_quotas = quotas.get_users_quotas([self.member]).get(
+            self.member.uuid).get(app1.chain.uuid)
         resource = 'service1.resource'
-        newlimit = user_quotas[self.member.uuid]['system'][resource]['limit']
-        # 100 from initial uplimit + 100 from project
-        self.assertEqual(newlimit, 200)
+        newlimit = user_quotas[resource]['limit']
+        self.assertEqual(newlimit, 10)
 
         remove_member_url = reverse('project_remove_member',
-                                    kwargs={'memb_id': membership.id})
+                                    kwargs={
+                                        'project_uuid': app1.chain.uuid,
+                                        'memb_id': membership.id
+                                    })
         r = self.user_client.post(remove_member_url, follow=True)
         self.assertEqual(r.status_code, 200)
 
-        user_quotas = quotas.get_users_quotas([self.member])
+        user_quotas = quotas.get_users_quotas([self.member]).get(
+            self.member.uuid).get(app1.chain.uuid)
         resource = 'service1.resource'
-        newlimit = user_quotas[self.member.uuid]['system'][resource]['limit']
-        # 200 - 100 from project
-        self.assertEqual(newlimit, 100)
+        newlimit = user_quotas[resource]['limit']
+        self.assertEqual(newlimit, 0)
 
+        # TODO: handy to be here, but should be moved to a separate test method
         # support email gets rendered in emails content
         for mail in get_mailbox('user@synnefo.org'):
             self.assertTrue(settings.CONTACT_EMAIL in

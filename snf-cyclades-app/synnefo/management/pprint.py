@@ -20,7 +20,6 @@ from snf_django.lib.astakos import UserCache
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_AUTH_URL)
 from synnefo.db.models import Backend, pooled_rapi_client
-from synnefo.db.pools import bitarray_to_map
 
 from synnefo.logic.rapi import GanetiApiError
 from synnefo.logic.reconciliation import (nics_from_instance,
@@ -37,12 +36,14 @@ def pprint_network(network, display_mails=False, stdout=None, title=None):
     ucache = UserCache(ASTAKOS_AUTH_URL, ASTAKOS_TOKEN)
     userid = network.userid
 
+    total_ips, free_ips = network.ip_count()
     db_network = OrderedDict([
         ("name", network.name),
         ("backend-name", network.backend_id),
         ("state", network.state),
         ("userid", userid),
-        ("username", ucache.get_name(userid) if display_mails else None),
+        ("username", ucache.get_name(userid) if (display_mails and userid is
+                                                 not None) else None),
         ("public", network.public),
         ("floating_ip_pool", network.floating_ip_pool),
         ("external_router", network.external_router),
@@ -53,7 +54,10 @@ def pprint_network(network, display_mails=False, stdout=None, title=None):
         ("mode", network.mode),
         ("deleted", network.deleted),
         ("tags", "), ".join(network.backend_tag)),
-        ("action", network.action)])
+        ("action", network.action),
+        ("free IPs", free_ips),
+        ("total IPs", total_ips),
+    ])
 
     pprint_table(stdout, db_network.items(), None, separator=" | ",
                  title=title)
@@ -143,11 +147,11 @@ def pprint_ippool(subnet, stdout=None, title=None):
 
     for pool in subnet.get_ip_pools():
         size = pool.pool_size
-        available = pool.available.count()
         info = OrderedDict([("First_IP", pool.return_start()),
                             ("Last_IP", pool.return_end()),
                             ("Size", size),
-                            ("Available", available)])
+                            ("Available", pool.count_available()),
+                            ("Reserved", pool.count_reserved())])
         pprint_table(stdout, info.items(), None, separator=" | ", title=None)
 
         reserved = [pool.index_to_value(index)
@@ -158,8 +162,7 @@ def pprint_ippool(subnet, stdout=None, title=None):
             stdout.write("\nExternally Reserved IPs:\n\n")
             stdout.write(", ".join(reserved) + "\n")
 
-        ip_sum = pool.available[:size] & pool.reserved[:size]
-        pprint_pool(None, bitarray_to_map(ip_sum), 80, stdout)
+        pprint_pool(None, pool.to_map(), 80, stdout)
         stdout.write("\n\n")
 
 
@@ -189,15 +192,20 @@ def pprint_pool(name, pool_map, step=80, stdout=None):
     stdout.write("\n")
 
 
-def pprint_port(port, stdout=None, title=None):
+def pprint_port(port, display_mails=False, stdout=None, title=None):
     if stdout is None:
         stdout = sys.stdout
     if title is None:
         title = "State of Port %s in DB" % port.id
+
+    ucache = UserCache(ASTAKOS_AUTH_URL, ASTAKOS_TOKEN)
+    userid = port.userid
+
     port = OrderedDict([
         ("id", port.id),
         ("name", port.name),
         ("userid", port.userid),
+        ("username", ucache.get_name(userid) if display_mails else None),
         ("server", port.machine_id),
         ("network", port.network_id),
         ("device_owner", port.device_owner),
@@ -410,6 +418,7 @@ def pprint_volume(volume, display_mails=False, stdout=None, title=None):
         ("disk_provider", volume_type.provider),
         ("server_id", volume.machine_id),
         ("userid", volume.userid),
+        ("project", volume.project),
         ("username", ucache.get_name(userid) if display_mails else None),
         ("index", volume.index),
         ("name", volume.name),

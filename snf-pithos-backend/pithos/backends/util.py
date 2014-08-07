@@ -24,8 +24,7 @@ USAGE_LIMIT = 500
 
 class PithosBackendPool(ObjectPool):
     def __init__(self, size=None, db_module=None, db_connection=None,
-                 block_module=None, block_path=None, block_umask=None,
-                 block_size=None, hash_algorithm=None,
+                 block_module=None, block_size=None, hash_algorithm=None,
                  queue_module=None, queue_hosts=None,
                  queue_exchange=None, free_versioning=True,
                  astakos_auth_url=None, service_token=None,
@@ -38,13 +37,12 @@ class PithosBackendPool(ObjectPool):
                  container_versioning_policy=None,
                  archipelago_conf_file=None,
                  xseg_pool_size=8,
-                 map_check_interval=None):
+                 map_check_interval=None,
+                 mapfile_prefix=None):
         super(PithosBackendPool, self).__init__(size=size)
         self.db_module = db_module
         self.db_connection = db_connection
         self.block_module = block_module
-        self.block_path = block_path
-        self.block_umask = block_umask
         self.block_size = block_size
         self.hash_algorithm = hash_algorithm
         self.queue_module = queue_module
@@ -63,14 +61,13 @@ class PithosBackendPool(ObjectPool):
         self.archipelago_conf_file = archipelago_conf_file
         self.xseg_pool_size = xseg_pool_size
         self.map_check_interval = map_check_interval
+        self.mapfile_prefix = mapfile_prefix
 
     def _pool_create(self):
         backend = connect_backend(
             db_module=self.db_module,
             db_connection=self.db_connection,
             block_module=self.block_module,
-            block_path=self.block_path,
-            block_umask=self.block_umask,
             block_size=self.block_size,
             hash_algorithm=self.hash_algorithm,
             queue_module=self.queue_module,
@@ -88,7 +85,8 @@ class PithosBackendPool(ObjectPool):
             container_versioning_policy=self.container_versioning_policy,
             archipelago_conf_file=self.archipelago_conf_file,
             xseg_pool_size=self.xseg_pool_size,
-            map_check_interval=self.map_check_interval)
+            map_check_interval=self.map_check_interval,
+            mapfile_prefix=self.mapfile_prefix)
 
         backend._real_close = backend.close
         backend.close = instancemethod(_pooled_backend_close, backend,

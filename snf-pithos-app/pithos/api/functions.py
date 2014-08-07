@@ -46,7 +46,8 @@ from pithos.api import settings
 
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
-    VersionNotExists, ContainerExists, InvalidHash, IllegalOperationError)
+    VersionNotExists, ContainerExists, InvalidHash, IllegalOperationError,
+    InconsistentContentSize)
 
 from pithos.backends.filter import parse_filters
 
@@ -925,7 +926,7 @@ def _object_read(request, v_account, v_container, v_object):
 
         try:
             for x in objects:
-                s, h = \
+                snap, s, h = \
                     request.backend.get_object_hashmap(
                         request.user_uniq, v_account, src_container, x[0],
                         x[1])
@@ -941,7 +942,7 @@ def _object_read(request, v_account, v_container, v_object):
             raise faults.Forbidden(str(e))
     else:
         try:
-            s, h = request.backend.get_object_hashmap(
+            snap, s, h = request.backend.get_object_hashmap(
                 request.user_uniq, v_account,
                 v_container, v_object, version)
             sizes.append(s)
@@ -1096,6 +1097,8 @@ def object_write(request, v_account, v_container, v_object):
         )
     except IllegalOperationError, e:
         raise faults.Forbidden(e[0])
+    except InconsistentContentSize, e:
+        raise faults.BadRequest(e[0])
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except IndexError, e:
@@ -1159,6 +1162,8 @@ def object_write_form(request, v_account, v_container, v_object):
         )
     except IllegalOperationError, e:
         faults.Forbidden(e[0])
+    except InconsistentContentSize, e:
+        raise faults.BadRequest(e[0])
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:
@@ -1344,7 +1349,7 @@ def object_update(request, v_account, v_container, v_object):
         raise faults.RangeNotSatisfiable('Invalid Content-Range header')
 
     try:
-        size, hashmap = \
+        is_snapshot, size, hashmap = \
             request.backend.get_object_hashmap(
                 request.user_uniq, v_account, v_container, v_object)
     except NotAllowedError:
@@ -1371,9 +1376,12 @@ def object_update(request, v_account, v_container, v_object):
 
         try:
             src_version = request.META.get('HTTP_X_SOURCE_VERSION')
-            src_size, src_hashmap = request.backend.get_object_hashmap(
-                request.user_uniq,
-                src_account, src_container, src_name, src_version)
+            src_is_snapshot, src_size, src_hashmap = \
+                request.backend.get_object_hashmap(request.user_uniq,
+                                                   src_account,
+                                                   src_container,
+                                                   src_name,
+                                                   src_version)
         except NotAllowedError:
             raise faults.Forbidden('Not allowed')
         except ItemNotExists:
@@ -1443,7 +1451,8 @@ def object_update(request, v_account, v_container, v_object):
                     data += request.backend.get_block(src_hashmap[sbi])
                 if length < request.backend.block_size:
                     data = data[:length]
-                bytes = put_object_block(request, hashmap, data, offset)
+                bytes = put_object_block(request, hashmap, data, offset,
+                                         is_snapshot=src_is_snapshot)
                 offset += bytes
                 data = data[bytes:]
                 length -= bytes
@@ -1456,11 +1465,13 @@ def object_update(request, v_account, v_container, v_object):
             # TODO: Raise 499 (Client Disconnect) if a length is defined
             #       and we stop before getting this much data.
             data += d
-            bytes = put_object_block(request, hashmap, data, offset)
+            bytes = put_object_block(request, hashmap, data, offset,
+                                     is_snapshot=is_snapshot)
             offset += bytes
             data = data[bytes:]
         if len(data) > 0:
-            bytes = put_object_block(request, hashmap, data, offset)
+            bytes = put_object_block(request, hashmap, data, offset,
+                                     is_snapshot=is_snapshot)
             offset += bytes
 
     if offset > size:
@@ -1478,6 +1489,8 @@ def object_update(request, v_account, v_container, v_object):
         )
     except IllegalOperationError, e:
         raise faults.Forbidden(e[0])
+    except InconsistentContentSize, e:
+        raise faults.BadRequest(e[0])
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:

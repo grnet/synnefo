@@ -34,8 +34,7 @@ from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 
 from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
-                                 BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
-                                 BACKEND_BLOCK_UMASK,
+                                 BACKEND_BLOCK_MODULE,
                                  BACKEND_QUEUE_MODULE, BACKEND_QUEUE_HOSTS,
                                  BACKEND_QUEUE_EXCHANGE,
                                  ASTAKOSCLIENT_POOLSIZE,
@@ -49,16 +48,17 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_ARCHIPELAGO_CONF,
                                  BACKEND_XSEG_POOL_SIZE,
                                  BACKEND_MAP_CHECK_INTERVAL,
+                                 BACKEND_MAPFILE_PREFIX,
                                  RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
                                  BASE_HOST, UPDATE_MD5, VIEW_PREFIX,
                                  OAUTH2_CLIENT_CREDENTIALS, UNSAFE_DOMAIN)
 
-from pithos.api.resources import resources
 from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
-                                  VersionNotExists, IllegalOperationError)
+                                  VersionNotExists, IllegalOperationError,
+                                  LimitExceeded)
 
 from synnefo.lib import join_urls
 
@@ -137,7 +137,7 @@ def get_account_headers(request):
         n = k[16:].lower()
         if '-' in n or '_' in n:
             raise faults.BadRequest('Bad characters in group name')
-        groups[n] = v.replace(' ', '').split(',')
+        groups[n] = set(v.replace(' ', '').split(','))
         while '' in groups[n]:
             groups[n].remove('')
     return meta, groups
@@ -256,7 +256,7 @@ def put_object_headers(response, meta, restricted=False, token=None,
         if user_defined and not valid_disposition_type:
             return
         if not valid_disposition_type:
-            disposition_type = 'attachment'
+            disposition_type = 'inline'
         response['Content-Disposition'] = smart_str('%s; filename="%s"' % (
             disposition_type, meta['name']), strings_only=True)
 
@@ -748,8 +748,8 @@ def socket_read_iterator(request, length=0, blocksize=4096):
             try:
                 chunk_length = int(chunk_length, 16)
             except Exception:
+                # TODO: Change to something more appropriate.
                 raise faults.BadRequest('Bad chunk size')
-                                 # TODO: Change to something more appropriate.
             # Check if done.
             if chunk_length == 0:
                 if len(data) > 0:
@@ -823,13 +823,14 @@ class ObjectWrapper(object):
     in each entry of the range list.
     """
 
-    def __init__(self, backend, ranges, sizes, hashmaps, boundary):
+    def __init__(self, backend, ranges, sizes, hashmaps, boundary, meta):
         self.backend = backend
         self.ranges = ranges
         self.sizes = sizes
         self.hashmaps = hashmaps
         self.boundary = boundary
         self.size = sum(self.sizes)
+        self.meta = meta
 
         self.file_index = 0
         self.block_index = 0
@@ -944,7 +945,8 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
         boundary = uuid.uuid4().hex
     else:
         boundary = ''
-    wrapper = ObjectWrapper(request.backend, ranges, sizes, hashmaps, boundary)
+    wrapper = ObjectWrapper(request.backend, ranges, sizes, hashmaps,
+                            boundary, meta)
     response = HttpResponse(wrapper, status=ret)
     put_object_headers(
         response, meta, restricted=public,
@@ -965,7 +967,7 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
     return response
 
 
-def put_object_block(request, hashmap, data, offset):
+def put_object_block(request, hashmap, data, offset, is_snapshot):
     """Put one block of data at the given offset."""
 
     bi = int(offset / request.backend.block_size)
@@ -974,7 +976,9 @@ def put_object_block(request, hashmap, data, offset):
     if bi < len(hashmap):
         try:
             hashmap[bi] = request.backend.update_block(hashmap[bi],
-                                                       data[:bl], bo)
+                                                       data[:bl],
+                                                       offset=bo,
+                                                       is_snapshot=is_snapshot)
         except IllegalOperationError, e:
             raise faults.Forbidden(e[0])
     else:
@@ -1019,8 +1023,6 @@ BACKEND_KWARGS = dict(
     db_module=BACKEND_DB_MODULE,
     db_connection=BACKEND_DB_CONNECTION,
     block_module=BACKEND_BLOCK_MODULE,
-    block_path=BACKEND_BLOCK_PATH,
-    block_umask=BACKEND_BLOCK_UMASK,
     block_size=BACKEND_BLOCK_SIZE,
     hash_algorithm=BACKEND_HASH_ALGORITHM,
     queue_module=BACKEND_QUEUE_MODULE,
@@ -1038,7 +1040,8 @@ BACKEND_KWARGS = dict(
     container_versioning_policy=BACKEND_VERSIONING,
     archipelago_conf_file=BACKEND_ARCHIPELAGO_CONF,
     xseg_pool_size=BACKEND_XSEG_POOL_SIZE,
-    map_check_interval=BACKEND_MAP_CHECK_INTERVAL)
+    map_check_interval=BACKEND_MAP_CHECK_INTERVAL,
+    mapfile_prefix=BACKEND_MAPFILE_PREFIX)
 
 _pithos_backend_pool = PithosBackendPool(size=BACKEND_POOL_SIZE,
                                          **BACKEND_KWARGS)
@@ -1114,6 +1117,8 @@ def api_method(http_method=None, token_required=True, user_required=True,
 
                 success_status = True
                 return response
+            except LimitExceeded, le:
+                raise faults.BadRequest(le.args[0])
             finally:
                 # Always close PithosBackend connection
                 if getattr(request, "backend", None) is not None:

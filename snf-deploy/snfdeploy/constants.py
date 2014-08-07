@@ -33,9 +33,33 @@ BACKEND = "backend"
 VALUE_OK = "ok"
 STATUS_FILE = "snf_deploy_status"
 
-DEFAULT_NODE = "node1"
-DEFAULT_CLUSTER = "ganeti1"
-DEFAULT_SETUP = "synnefo"
+DEFAULT_NODE = None
+DEFAULT_CLUSTER = None
+DEFAULT_SETUP = "auto"
+DUMMY_NODE = "dummy"
 
 CERT_OVERRIDE = "cert_override.txt"
 CERT_PATH = "/etc/ssl/certs/ssl-cert-snakeoil.pem"
+
+DEFAULT_PASSWD_LENGTH = 10
+
+DB_PASSWD = "synnefo_db_passwd"
+RAPI_PASSWD = "synnefo_rapi_passwd"
+MQ_PASSWD = "synnefo_rabbitmq_passwd"
+VNC_PASSWD = "synnefo_vnc_passwd"
+CYCLADES_SECRET = "cyclades_secret"
+OA2_SECRET = "oa2_secret"
+WEBPROJECT_SECRET = "webproject_secret"
+STATS_SECRET = "stats_secret"
+COLLECTD_SECRET = "collectd_secret"
+
+# This is used for generating random passwords
+# Omit VNC_PASSWD, because vncauthproxy-passwd cannot currently run
+# without interaction
+ALL_PASSWDS_AND_SECRETS = frozenset([
+    DB_PASSWD, RAPI_PASSWD, MQ_PASSWD,
+    CYCLADES_SECRET, OA2_SECRET, WEBPROJECT_SECRET, STATS_SECRET,
+    COLLECTD_SECRET
+    ])
+
+EXTERNAL_PUBLIC_DNS = "8.8.8.8"

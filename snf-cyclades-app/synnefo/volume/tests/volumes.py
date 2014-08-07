@@ -18,6 +18,7 @@ from snf_django.utils.testing import BaseAPITest, mocked_quotaholder
 from synnefo.db import models_factory as mf
 from synnefo.volume import volumes
 from snf_django.lib.api import faults
+from django.conf import settings
 from mock import patch
 from copy import deepcopy
 
@@ -49,6 +50,14 @@ class VolumesTest(BaseAPITest):
                           volumes.create,
                           **kwargs)
 
+        # Invalid size
+        kwargs = deepcopy(self.kwargs)
+        max_size = settings.CYCLADES_VOLUME_MAX_SIZE
+        kwargs["size"] = max_size + 1
+        self.assertRaises(faults.BadRequest,
+                          volumes.create,
+                          **kwargs)
+
         # Create server without source!
         mrapi().ModifyInstance.return_value = 42
         with mocked_quotaholder():
@@ -74,49 +83,57 @@ class VolumesTest(BaseAPITest):
         self.assertFalse("origin" in disk_info)
 
     def test_create_from_volume(self, mrapi):
-        # Check permissions
-        svol = mf.VolumeFactory(userid="other_user",
+        svol = mf.VolumeFactory(userid=self.userid, status="IN_USE",
                                 volume_type=self.vm.flavor.volume_type)
-        self.assertRaises(faults.BadRequest,
-                          volumes.create,
-                          source_volume_id=svol.id,
-                          **self.kwargs)
-        # Invalid volume status
-        svol = mf.VolumeFactory(userid=self.userid, status="CREATING",
-                                volume_type=self.vm.flavor.volume_type)
-        self.assertRaises(faults.BadRequest,
-                          volumes.create,
-                          source_volume_id=svol.id,
-                          **self.kwargs)
-        svol = mf.VolumeFactory(userid=self.userid, status="AVAILABLE",
-                                volume_type=self.vm.flavor.volume_type)
-        self.assertRaises(faults.BadRequest,
-                          volumes.create,
-                          source_volume_id=svol.id,
-                          **self.kwargs)
-
-        svol.status = "IN_USE"
-        svol.save()
-        mrapi().ModifyInstance.return_value = 42
         kwargs = deepcopy(self.kwargs)
         kwargs["size"] = svol.size
-        with mocked_quotaholder():
-            vol = volumes.create(source_volume_id=svol.id, **kwargs)
+        self.assertRaises(faults.BadRequest,
+                          volumes.create,
+                          source_volume_id=svol.id,
+                          **self.kwargs)
+        # # Check permissions
+        # svol = mf.VolumeFactory(userid="other_user",
+        #                         volume_type=self.vm.flavor.volume_type)
+        # self.assertRaises(faults.BadRequest,
+        #                   volumes.create,
+        #                   source_volume_id=svol.id,
+        #                   **self.kwargs)
+        # # Invalid volume status
+        # svol = mf.VolumeFactory(userid=self.userid, status="CREATING",
+        #                         volume_type=self.vm.flavor.volume_type)
+        # self.assertRaises(faults.BadRequest,
+        #                   volumes.create,
+        #                   source_volume_id=svol.id,
+        #                   **self.kwargs)
+        # svol = mf.VolumeFactory(userid=self.userid, status="AVAILABLE",
+        #                         volume_type=self.vm.flavor.volume_type)
+        # self.assertRaises(faults.BadRequest,
+        #                   volumes.create,
+        #                   source_volume_id=svol.id,
+        #                   **self.kwargs)
 
-        self.assertEqual(vol.size, svol.size)
-        self.assertEqual(vol.userid, self.userid)
-        self.assertEqual(vol.name, None)
-        self.assertEqual(vol.description, None)
-        self.assertEqual(vol.source, "volume:%s" % svol.id)
-        self.assertEqual(vol.origin, svol.backend_volume_uuid)
-        self.assertEqual(vol.volume_type, svol.volume_type)
+        # svol.status = "IN_USE"
+        # svol.save()
+        # mrapi().ModifyInstance.return_value = 42
+        # kwargs = deepcopy(self.kwargs)
+        # kwargs["size"] = svol.size
+        # with mocked_quotaholder():
+        #     vol = volumes.create(source_volume_id=svol.id, **kwargs)
 
-        name, args, kwargs = mrapi().ModifyInstance.mock_calls[0]
-        self.assertEqual(kwargs["instance"], self.vm.backend_vm_id)
-        disk_info = kwargs["disks"][0][2]
-        self.assertEqual(disk_info["size"], svol.size << 10)
-        self.assertEqual(disk_info["name"], vol.backend_volume_uuid)
-        self.assertEqual(disk_info["origin"], svol.backend_volume_uuid)
+        # self.assertEqual(vol.size, svol.size)
+        # self.assertEqual(vol.userid, self.userid)
+        # self.assertEqual(vol.name, None)
+        # self.assertEqual(vol.description, None)
+        # self.assertEqual(vol.source, "volume:%s" % svol.id)
+        # self.assertEqual(vol.origin, svol.backend_volume_uuid)
+        # self.assertEqual(vol.volume_type, svol.volume_type)
+
+        # name, args, kwargs = mrapi().ModifyInstance.mock_calls[0]
+        # self.assertEqual(kwargs["instance"], self.vm.backend_vm_id)
+        # disk_info = kwargs["disks"][0][2]
+        # self.assertEqual(disk_info["size"], svol.size << 10)
+        # self.assertEqual(disk_info["name"], vol.backend_volume_uuid)
+        # self.assertEqual(disk_info["origin"], svol.backend_volume_uuid)
 
     @patch("synnefo.plankton.backend.PlanktonBackend")
     def test_create_from_snapshot(self, mimage, mrapi):
@@ -133,6 +150,7 @@ class VolumesTest(BaseAPITest):
             'mapfile': 'snf-snapshot-43',
             'id': 12,
             'name': "test_image",
+            'version': 42,
             'size': 1242,
             'disk_format': 'diskdump',
             'status': 'AVAILABLE',
@@ -165,7 +183,7 @@ class VolumesTest(BaseAPITest):
                           volumes.delete,
                           vol)
 
-        vm = mf.VirtualMachineFactory()
+        vm = mf.VirtualMachineFactory(userid=vol.userid)
         # Also we cannot delete root volume
         vol.index = 0
         vol.machine = vm

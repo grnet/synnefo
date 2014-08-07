@@ -79,7 +79,7 @@ class Migration(DataMigration):
             'auth_token': ('django.db.models.fields.CharField', [], {'max_length': '64', 'unique': 'True', 'null': 'True', 'blank': 'True'}),
             'auth_token_created': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'auth_token_expires': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
-            'base_project': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'base_user'", 'to': "orm['im.Project']"}),
+            'base_project': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'base_user'", 'null': 'True', 'to': "orm['im.Project']"}),
             'date_signed_terms': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'deactivated_at': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'deactivated_reason': ('django.db.models.fields.TextField', [], {'default': 'None', 'null': 'True'}),

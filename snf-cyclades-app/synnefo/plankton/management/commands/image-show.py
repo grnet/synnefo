@@ -28,11 +28,17 @@ class Command(SynnefoCommand):
     help = "Display available information about an image"
     option_list = SynnefoCommand.option_list + (
         make_option(
-            '--user-id',
+            '--user',
             dest='userid',
             default=None,
             help="The UUID of the owner of the image. Required"
                  " if image is not public"),
+        make_option(
+            '--public',
+            dest='public',
+            default=False,
+            action="store_true",
+            help="Use this option if the image is public"),
     )
 
     @common.convert_api_faults
@@ -41,9 +47,18 @@ class Command(SynnefoCommand):
         if len(args) != 1:
             raise CommandError("Please provide an image ID")
         image_id = args[0]
-        #user_id = options["userid"]
+        user_id = options["userid"]
+        public = options["public"]
 
-        with PlanktonBackend(None) as backend:
-            image = backend.get_image(image_id)
+        if (user_id is None) and (public is False):
+            raise CommandError("'user' option or 'public' option is required")
+
+        try:
+            with PlanktonBackend(user_id) as backend:
+                image = backend.get_image(image_id)
+        except:
+            raise CommandError("An error occurred, verify that image or "
+                               "user ID are valid")
+
         utils.pprint_table(out=self.stdout, table=[image.values()],
                            headers=image.keys(), vertical=True)

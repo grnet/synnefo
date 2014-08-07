@@ -27,8 +27,9 @@ QuotaDict = lambda: defaultdict(lambda: defaultdict(dict))
 PROJECT_TAG = "project:"
 USER_TAG = "user:"
 
+
 def project_ref(value):
-    return  PROJECT_TAG + value
+    return PROJECT_TAG + value
 
 
 def get_project_ref(project):
@@ -114,7 +115,7 @@ def get_user_quotas(user, resources=None, sources=None):
     return quotas.get(user.uuid, {})
 
 
-def service_get_quotas(component, users=None):
+def service_get_quotas(component, users=None, sources=None):
     name_values = Service.objects.filter(
         component=component).values_list('name')
     service_names = [t for (t,) in name_values]
@@ -123,7 +124,10 @@ def service_get_quotas(component, users=None):
     astakosusers = AstakosUser.objects.verified()
     if users is not None:
         astakosusers = astakosusers.filter(uuid__in=users)
-    return get_users_quotas(astakosusers, resources=resource_names)
+    if sources is not None:
+        sources = [project_ref(s) for s in sources]
+    return get_users_quotas(astakosusers, resources=resource_names,
+                            sources=sources)
 
 
 def mk_limits_dict(counters):
@@ -198,14 +202,20 @@ def mk_project_provision(project, resource, quantity):
     return (holder, None, resource), quantity
 
 
-def _mk_provisions(holder, source, resource, quantity):
-    return [((holder, source, resource), quantity),
-            ((source, None, resource), quantity)]
+def _mk_provisions(values):
+    provisions = []
+    for (holder, source, resource, quantity) in values:
+        provisions += [((holder, source, resource), quantity),
+                       ((source, None, resource), quantity)]
+    return provisions
 
 
-def register_pending_apps(user, project, quantity, force=False):
-    provisions = _mk_provisions(get_user_ref(user), get_project_ref(project),
-                                PENDING_APP_RESOURCE, quantity)
+def register_pending_apps(triples, force=False):
+    values = [(get_user_ref(user), get_project_ref(project),
+               PENDING_APP_RESOURCE, quantity)
+              for (user, project, quantity) in triples]
+
+    provisions = _mk_provisions(values)
     try:
         s = qh.issue_commission(clientkey='astakos',
                                 force=force,
@@ -219,7 +229,7 @@ def register_pending_apps(user, project, quantity, force=False):
 
 def get_pending_app_quota(user):
     quota = get_user_quotas(user)
-    source = user.base_project.uuid
+    source = user.get_base_project().uuid
     return quota[source][PENDING_APP_RESOURCE]
 
 

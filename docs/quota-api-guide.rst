@@ -49,7 +49,7 @@ Quotas
 
 The system specifies user quotas for each available resource. Resources
 can be allocated from various sources. By default, users get resources
-from their user-specific `base projects', which are identified by the same
+from their user-specific `system projects', which are identified by the same
 uuid as the users. For each combination of user,
 source, and resource, the quota system keeps track of the maximum allowed
 value (limit) and the current actual usage. The former is controlled by
@@ -96,7 +96,7 @@ Status  Description
 .. code-block:: javascript
 
   {
-      "base_project_id": {
+      "system_project_id": {
           "cyclades.ram": {
               "usage": 536870912,
               "limit": 1073741824,
@@ -169,7 +169,7 @@ Status  Description
 
   {
       "1a6165d0-5020-4b6d-a4ad-83476632a584": {
-          "base_project_id": {
+          "system_project_id": {
               "cyclades.ram": {
                   "usage": 536870912,
                   "limit": 1073741824,
@@ -238,7 +238,7 @@ Status  Description
 .. code-block:: javascript
 
   {
-      "base_project_id": {
+      "system_project_id": {
           "cyclades.ram": {
               "project_usage": 536870912,
               "project_limit": 1073741824,
@@ -250,7 +250,7 @@ Status  Description
               "project_pending": 0
           }
       },
-      "base_project2_id": {
+      "system_project2_id": {
           "cyclades.ram": {
               "project_usage": 0,
               "project_limit": 1073741824,

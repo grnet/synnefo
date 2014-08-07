@@ -14,7 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from sqlalchemy import create_engine
-#from sqlalchemy.event import listen
 from sqlalchemy.pool import NullPool
 from sqlalchemy.interfaces import PoolListener
 

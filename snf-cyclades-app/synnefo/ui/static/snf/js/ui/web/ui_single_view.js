@@ -31,51 +31,96 @@
     // shortcuts
     var bb = root.Backbone;
     var hasKey = Object.prototype.hasOwnProperty;
-    
-    views.VMSinglePortListView = views.VMPortListView.extend({
-      
-      init: function() {
-        views.VMSinglePortListView.__super__.init.apply(this);
-        this.open = false;
-        this.vm_el = $(this.options.vm_view);
-        this.tags_toggler = this.vm_el.find(".tags-header");
-        this.tags_content = this.vm_el.find(".tags-content");
-        this.toggler = this.vm_el.find(".toggler-header.ips");
-        this.toggler_content = this.vm_el.find(".ips-content");
-        this.toggler_content.hide();
-        $(this.el).show();
         
-        var self = this;
-        this.toggler.click(function() {
-          var disabled = self.toggler.parent().find(".cont-toggler-wrapper").hasClass("disabled");
-          if (disabled) { return; }
-          self.toggle();
-        });
+    views.SingleListViewMixin = {
+        
+        toggler_id: 'ips',
 
-        this.tags_toggler.click(function() {
-          self.toggler.find(".toggler").removeClass("open");
-          var f = function() { self.hide(true) }
-          self.toggler_content.slideUp(f);
-        });
-      },
+        init_togglers: function() {
+            var self = this;
 
-      toggle: function() {
-        var self = this;
-        this.open = !this.open;
+            this._open = false;
+            this.vm_el = $(this.options.vm_view);
+            this.tags_toggler = this.vm_el.find(".tags-header");
+            this.tags_content = this.vm_el.find(".tags-content");
+            this.toggler = this.vm_el.find(
+                ".toggler-header." + this.toggler_id);
+            this.toggler_content = this.vm_el.find(
+                "."+this.toggler_id+"-content");
+            this.toggler_content.hide();
+            this.other_togglers = this.vm_el.find(".cont-toggler-wrapper");
 
-        if (this.open) {
-          this.show(true);
-          this.tags_toggler.find(".toggler").removeClass("open");
-          this.tags_content.slideUp();
-          this.toggler.find(".toggler").addClass("open");
-          this.toggler_content.removeClass(".hidden").slideDown();
-        } else {
-          this.toggler.find(".toggler").removeClass("open");
-          var f = function() { self.hide(true) }
-          this.toggler_content.removeClass(".hidden").slideUp();
+            $(this.el).show();
+            
+            this.other_togglers.click(function() {
+                var toggler = $(this);
+                if (!toggler.hasClass(self.toggler_id) && self._open) {
+                        self.toggle();
+                }
+            });
+
+            this.toggler.click(function() {
+                var disabled = self.toggler.parent().find(
+                    ".cont-toggler-wrapper").hasClass("disabled");
+                if (disabled) { return; }
+                self.toggle();
+            });
+
+            this.tags_toggler.click(function() {
+                self.toggler.find(".toggler").removeClass("open");
+                self.toggler_content.slideUp(f);
+                var f = function() { 
+                    self.hide(true);
+                }
+                self._open = false;
+            });
+        },
+
+        toggle: function() {
+            var self = this;
+            this._open = !this._open;
+
+            if (this._open) {
+                this.show(true);
+                this.tags_toggler.find(".toggler").removeClass("open");
+                this.tags_content.slideUp();
+                this.toggler.find(".toggler").addClass("open");
+                this.toggler_content.removeClass(".hidden").slideDown();
+            } else {
+                this.toggler.find(".toggler").removeClass("open");
+                var f = function() { self.hide(true) }
+                this.toggler_content.removeClass(".hidden").slideUp();
+            }
         }
-      }
-    });
+    };
+
+    views.VMSingleVolumesListView = views.VMVolumeListView.extend(_.extend({
+        init: function() {
+            views.VMSingleVolumesListView.__super__.init.apply(this);
+            this.init_togglers();
+        },
+
+        hide: function() {
+            views.VMSingleVolumesListView.__super__.init.apply(this);
+            this._open = false;
+        }
+    }, views.SingleListViewMixin, {
+        toggler_id: 'ips'                                                                     
+    }));
+
+    views.VMSinglePortListView = views.VMPortListView.extend(_.extend({
+        init: function() {
+            views.VMSinglePortListView.__super__.init.apply(this);
+            this.init_togglers();
+        },
+
+        hide: function() {
+            views.VMSingleVolumesListView.__super__.init.apply(this);
+            this._open = false;
+        }
+    }, views.SingleListViewMixin, {
+        toggler_id: 'volumes'                                                        
+    }));
 
     views.SingleDetailsView = views.VMDetailsView.extend({
     
@@ -235,6 +280,7 @@
             this.action_views = this.action_views || {};
             this.action_error_views = this.action_error_views || {};
             this.ports_views = this.ports_views || {};
+            this.volumes_views = this.volumes_views || {};
 
             //this.stats_views[vm.id] = new views.IconStatsView(vm, this);
 
@@ -248,6 +294,9 @@
 
             var ports_container = this.vm(vm).find(".ips-content");
             var ports_toggler = this.vm(vm).find(".toggler-header.ips");
+
+            var volumes_container = this.vm(vm).find(".volumes-content");
+            var volumes_toggler = this.vm(vm).find(".toggler-header.volumes");
             
             var ports_view = new views.VMSinglePortListView({
               vm_view: this.vm(vm),
@@ -258,14 +307,34 @@
             });
             this.ports_views[vm.id] = ports_view
             ports_view.show();
-            ports_view.el.hide();
             
+            var volumes_view = new views.VMSingleVolumesListView({
+              vm_view: this.vm(vm),
+              collection: vm.volumes, 
+              container: volumes_container,
+              parent: this,
+              truncate: 50
+            });
+            this.volumes_views[vm.id] = volumes_view;
+            volumes_view.show();
+
             if (storage.vms.models.length > 1) { this.vm(vm).hide(); };
         },
 
         post_update_vm: function(vm) {
+          if (vm.in_error_state()) {
+            var view = this.ports_views[vm.id];
+            view.toggler.find(".toggler").removeClass("open");
+            view.toggler_content.hide();
+            view.hide(true);
+            view.open = false;
+          }
         },
         
+        hide_vm: function(vm) {
+            this.vm(vm).hide();
+        },
+
         // vm specific event handlers
         set_vm_handlers: function(vm) {
         },
@@ -277,16 +346,14 @@
 
             this.$(".server-name").removeClass("column3-selected");
             
-            if (vm) {
-                this.vm(vm).show();
-            };
-
             _.each(storage.vms.models, function(vmo){
                 if (vm && (vm.id != vmo.id)) {
                     if (!hasKey.call(this._vm_els, vmo.id)) { return };
-                    this.vm(vmo).hide();
+                    this.hide_vm(vmo);
                 }
-            }, this)
+            }, this);
+
+            if (vm) { this.vm(vm).show(); };
 
             if (!vm) {
                 // empty list
@@ -336,7 +403,6 @@
         // called once after each vm has been updated
         update_layout: function() {
             this.update_current_vm();
-            fix_v6_addresses();
         },
 
         update_status_message: function(vm) {
@@ -370,8 +436,8 @@
               el.find(".project-name").text(_.truncate(project.get('name'), 20));
             }
             // truncate name
-            el.find(".machine-detail.name").text(util.truncate(vm.get("name"), 53));
-            el.find(".fqdn").text(vm.get("fqdn") || synnefo.config.no_fqdn_message);
+            el.find(".machine-detail.name").text(util.truncate(vm.get("name"), 45));
+            el.find(".fqdn").val(vm.get("fqdn") || synnefo.config.no_fqdn_message);
             // set the state (i18n ??)
             el.find(".state-label").text(STATE_TEXTS[vm.state()]);
             // set state class
@@ -440,6 +506,8 @@
         'START':            ['state', 'starting-state'],
         'CONNECT':          ['state', 'connecting-state'],
         'DISCONNECT':       ['state', 'disconnecting-state'],
+        'ATTACH_VOLUME':    ['state', 'connecting-state'],
+        'DETACH_VOLUME':    ['state', 'disconnecting-state'],
         'RESIZE':           ['state', 'rebooting-state']
     };
 

@@ -181,11 +181,6 @@
     synnefo.util.equalHeights = function() {
         var max_height = 0;
         var selectors = _.toArray(arguments);
-            
-        _.each(selectors, function(s){
-            console.log($(s).height());
-        })
-        // TODO: implement me
     }
 
     synnefo.util.ClipHelper = function(wrapper, text, settings) {
@@ -218,16 +213,27 @@
         return string.substring(0, len) + append;
     }
 
+    synnefo.util.PRACTICALLY_INFINITE = 9223372036854776000;
+
     synnefo.util.readablizeBytes = function(bytes, fix) {
         if (parseInt(bytes) == 0) { return '0 bytes' }
         if (fix === undefined) { fix = 2; }
+        bytes = parseInt(bytes);
+        if (bytes >= synnefo.util.PRACTICALLY_INFINITE) {
+            return 'Infinite';
+        }
         var s = ['bytes', 'kb', 'MB', 'GB', 'TB', 'PB'];
         var e = Math.floor(Math.log(bytes)/Math.log(1024));
-        return (bytes/Math.pow(1024, Math.floor(e))).toFixed(fix)+" "+s[e];
+        if (e > s.length) {
+            e = s.length - 1;
+        }
+        ret = (bytes/Math.pow(1024, Math.floor(e))).toFixed(fix)+" "+s[e];
+        return ret;
     }
     
 
-    synnefo.util.IP_REGEX = /(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/([0-9]|[1-2][0-9]|3[0-2]?)$/
+    synnefo.util.SUBNET_REGEX = /(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/([0-9]|[1-2][0-9]|3[0-2]?)$/;
+    synnefo.util.IP_REGEX = /(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
 
     synnefo.i18n.API_ERROR_MESSAGES = {
         'timeout': {
@@ -236,7 +242,10 @@
             'allow_report': false,
             'type': 'Network'
         },
-        
+        'limit_error': {
+            'title': 'API error',
+            'message': 'Not enough quota available to perform this action.'
+        },
         'error': {
             'title': 'API error',
             'message': null
@@ -267,6 +276,28 @@
         })
 
         return {del: removed, add: added};
+    }
+    
+    synnefo.util.set_tooltip = function(el, title, custom_params) {
+        if ($(el).data.tooltip) { return }
+        var base_params = {
+            'tipClass': 'tooltip',
+            'position': 'top center',
+            'offset': [-5, 0]
+        }
+        if (!custom_params) { custom_params = {}; }
+        var params = _.extend({}, base_params, custom_params);
+
+        if (title !== undefined)  {
+            $(el).attr("title", title);
+        }
+        
+        $(el).tooltip(params);
+    }
+
+    synnefo.util.unset_tooltip = function(el) {
+        $(el).attr("title", "");
+        $(el).tooltip("remove");
     }
 
     synnefo.util.open_window = function(url, name, opts) {
@@ -546,7 +577,7 @@
                 $.each(json_data, function(key, obj) {
                     code = obj.code;
                     details = obj.details;
-                    error_message = obj.message;
+                    error_message = obj.message ? obj.message : error_message;
                 })
             } else {
                 details = json_data;
@@ -655,6 +686,46 @@
         }
         return -1;
       };
+    }
+
+    $.fn.insertAt = function(elements, index){
+        var children = this.children();
+        if(index >= children.size()){
+            this.append(elements);
+            return this;
+        }
+        var before = children.eq(index);
+        $(elements).insertBefore(before);
+        return this;
+    };
+    
+    // https://gist.github.com/gid79/854708
+    var tooltip = $.fn.tooltip,
+        slice = Array.prototype.slice;
+ 
+    function removeTooltip($elements){
+        $elements.each(function(){
+            if (!$(this).data("tooltip")) { return }
+            var $element = $(this),
+                api = $element.data("tooltip"),
+                tip = api.getTip(),
+                trigger = api.getTrigger();
+            api.hide();
+            if( tip ){
+                tip.remove();
+            }
+            trigger.unbind('mouseenter mouseleave');
+            $element.removeData("tooltip");
+        });
+    }
+ 
+    $.fn.tooltip = function(p){
+        if( p === 'remove'){
+            removeTooltip(this);
+            return this;
+        } else {
+            return tooltip.apply(this, slice.call(arguments,0));
+        }
     }
 
 })(this);

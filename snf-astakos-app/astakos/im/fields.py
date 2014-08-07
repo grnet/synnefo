@@ -18,7 +18,12 @@ import re
 from django.utils.translation import ugettext as _
 from django.utils.encoding import smart_str
 from django.utils.encoding import force_unicode as force_text
+from django.utils.safestring import mark_safe
 from django import forms
+from django.forms import widgets
+from django.core import validators
+
+from synnefo.util import units
 
 
 class EmailValidator(object):
@@ -73,3 +78,107 @@ class EmailValidator(object):
 
 class EmailField(forms.EmailField):
     default_validators = [EmailValidator()]
+
+
+class CustomChoiceWidget(forms.MultiWidget):
+
+    def __init__(self, attrs=None, **kwargs):
+        _widgets = (
+            widgets.Select(attrs=attrs, **kwargs),
+            widgets.TextInput(attrs=attrs)
+        )
+        super(CustomChoiceWidget, self).__init__(_widgets, attrs)
+
+    def render(self, *args, **kwargs):
+        attrs = kwargs.get("attrs", {})
+        css_class = attrs.get("class", "") + " custom-select"
+        attrs['class'] = css_class
+        kwargs['attrs'] = attrs
+        out = super(CustomChoiceWidget, self).render(*args, **kwargs)
+        return mark_safe("""
+%(html)s
+<script>
+$(document).ready(function() {
+    var select = $("#%(id)s_0");
+    var input = $("#%(id)s_1");
+    input.hide();
+    var check_custom = function() {
+        var val = select.val();
+        if (val == "custom") {
+            input.show().focus();
+        } else {
+            input.hide().val('');
+        }
+    }
+    select.bind("change", check_custom);
+    check_custom();
+});
+</script>
+""" % ({
+    'id': attrs.get("id"),
+    'html': out
+}))
+
+    def decompress(self, value):
+        if not value:
+            return ['custom', '']
+        if value == 'Unlimited':
+            return ['Unlimited', '']
+
+        try:
+            value = int(value)
+        except ValueError:
+            return ['custom', value]
+
+        values = dict(self.choices).values()
+
+        if value in values:
+            return [str(value), '']
+        else:
+            return ['custom', str(value)]
+
+    def value_from_datadict(self, *args, **kwargs):
+        value = super(CustomChoiceWidget, self).value_from_datadict(*args,
+                                                                    **kwargs)
+        if value[0] == "custom":
+            return value[1]
+        return value[0]
+
+
+class InfiniteChoiceField(forms.ChoiceField):
+    """
+    A custom integer choice field which allows user to set a custom value.
+    """
+
+    INFINITE_VALUES = ['Unlimited']
+    widget = CustomChoiceWidget
+    default_validators=[validators.MinValueValidator(0)]
+
+    def _get_choices(self):
+        return self._choices
+
+    def _set_choices(self, value):
+        self._choices = self.widget.choices = \
+            self.widget.widgets[0].choices = \
+                list(value) + [("custom", "Other")]
+
+    choices = property(_get_choices, _set_choices)
+
+    def to_python(self, value):
+        """
+        Handle infinite values.
+        """
+        if value in self.INFINITE_VALUES:
+            value = units.PRACTICALLY_INFINITE
+        value = super(InfiniteChoiceField, self).to_python(value)
+        try:
+            value = int(str(value))
+        except (ValueError, TypeError):
+            raise forms.ValidationError(self.error_messages['invalid'])
+        return value
+
+    def validate(self, value):
+        try:
+            value = int(str(value))
+        except (ValueError, TypeError):
+            raise forms.ValidationError(self.error_messages['invalid'])

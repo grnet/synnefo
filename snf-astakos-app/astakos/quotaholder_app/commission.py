@@ -77,12 +77,10 @@ class Import(Operation):
                                   usage=usage_max)
 
         holding.usage_max = new_usage_max
-        holding.save()
 
     @classmethod
     def _finalize(cls, holding, quantity):
         holding.usage_min += quantity
-        holding.save()
 
 
 class Release(Operation):
@@ -104,12 +102,10 @@ class Release(Operation):
                                   usage=usage_min)
 
         holding.usage_min = new_usage_min
-        holding.save()
 
     @classmethod
     def _finalize(cls, holding, quantity):
         holding.usage_max -= quantity
-        holding.save()
 
 
 class Operations(object):

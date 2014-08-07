@@ -1,0 +1,220 @@
+{% load i18n %}
+
+<div id="createvolume-overlay-content" class="hidden create-wizard-overlay create-volume wizard-overlay-content">
+    <div class="steps-history clearfix">
+        <div class="steps-history-cont step1h current step-header" id="vm-create-step-history-1">
+            <div class="steps-history-step clearfix">
+                <span class="header-step step-1 clearfix">
+                    <span class="num">1<span class="subnum">/5</span></span>
+                    <span class="title">
+                        {% trans "Contents" %}
+                    </span>
+                    <div class="info">
+                        <span class="subtitle">
+                            {% trans "Select disk contents" %}
+                        </span>
+                        <span class="description">
+                            {% trans "Choose a source for the disk contents." %}
+                        </span>
+                    </div>
+                </span>
+            </div>
+        </div>
+        <div class="steps-history-cont step2h step-header" id="vm-create-step-history-2" >
+            <div class="steps-history-step clearfix">
+                <span class="header-step step-2 clearfix">
+                    <span class="num">2<span class="subnum">/5</span></span>
+                    <span class="title">
+                        {% trans "Size" %}
+                    </span>
+                    <div class="info">
+                        <span class="subtitle">
+                            {% trans "Select disk size" %}
+                        </span>
+                        <span class="description">
+                            {% trans "Set disk size and project" %}
+                        </span>
+                    </div>
+                </span>
+            </div>
+        </div>
+        <div class="steps-history-cont step3h step-header" id="vm-create-step-history-3" >
+            <div class="steps-history-step clearfix">
+                <span class="header-step step-3 clearfix">
+                    <span class="num">3<span class="subnum">/5</span></span>
+                    <span class="title">
+                        {% trans "Machine" %}
+                    </span>
+                    <div class="info">
+                        <span class="subtitle">
+                            {% trans "Select machine" %}
+                        </span>
+                        <span class="description">
+                            {% trans "Select machine to assign disk to" %}
+                        </span>
+                    </div>
+                </span>
+            </div>
+        </div>
+        <div class="steps-history-cont step4h step-header" id="vm-create-step-history-4" >
+            <div class="steps-history-step clearfix">
+                <span class="header-step step-4 clearfix">
+                    <span class="num">4<span class="subnum">/5</span></span>
+                    <span class="title">
+                        {% trans "Details" %}
+                    </span>
+                    <div class="info">
+                        <span class="subtitle">
+                            {% trans "Set disk details" %}
+                        </span>
+                        <span class="description">
+                            {% trans "Provide disk name and info" %}
+                        </span>
+                    </div>
+                </span>
+            </div>
+        </div>
+        <div class="steps-history-cont step5h last step-header" id="vm-create-step-history-5" >
+            <div class="steps-history-step clearfix">
+                <span class="header-step step-5 clearfix">
+                    <span class="num">5<span class="subnum">/5</span></span>
+                    <span class="title">
+                        {% trans "Confirm" %}
+                    </span>
+                    <div class="info">
+                        <span class="subtitle">
+                            {% trans "Confirm your settings" %}
+                        </span>
+                        <span class="description">
+                            {% trans "Confirm that the options you have selected are correct" %}
+                        </span>
+                    </div>
+                </span>
+            </div>
+        </div>
+    </div>
+    <div class="steps-container clearfix">
+        <div class="step-1 select-image wide create-step-cont clearfix">
+            <div class="clearfix step-header">
+            </div>
+            <div class="step-cont clearfix">
+            {% include "partials/wizard_images_step.html" %}
+            </div>
+        </div>
+
+        <div class="step-2 select-volume-details create-step-cont clearfix">
+            <div class="clearfix step-header">
+            </div>
+            <div class="step-cont clearfix">
+
+                <div class="project-select">
+                </div>
+
+                <div class="list-cont">
+                    <h4>{% trans "Size" %} </h4>
+                    <div class="clearfix slider-volume-size-cont">
+                        <input type="text" 
+                        class="size-slider" 
+                        data-slider-theme="volume" />
+                        <span class="metric">GB</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="step-3 select-volume-machine create-step-cont clearfix">
+            <div class="clearfix step-header">
+            </div>
+            <div class="step-cont clearfix">
+                <div class="rename">
+                    <div class="personalize-conts clearfix top">
+                        <h4>{% trans "Machine" %}</h4>
+                        <p class="desc">
+                        Select machine to connect disk to
+                        </p>
+                        <div class="vms-list">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="step-4 select-volume-details create-step-cont clearfix">
+            <div class="clearfix step-header">
+            </div>
+            <div class="step-cont clearfix">
+                <div class="rename">
+                    <div class="form-field">
+                        <h4><label for="volume-name">
+                            {% trans "Name" %}
+                        </label></h4>
+                        <input class="volume-name rename-field" name="volume-name" />
+                    </div>
+                    <div class="form-field volume-description">
+                        <h4><label for="volume-description">
+                            {% trans "Info" %}
+                        </label></h4>
+                        <textarea class="volume-info rename-field" name="volume-info"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="step-5 vm-confirm create-step-cont clearfix">
+            <div class="clearfix step-header">
+            </div>
+            <div class="step-cont clearfix">
+                <div class="rename">
+                    <div class="form-field">
+                        <h4>Disk name</h4>
+                        <h3 class="volume-name item-name">
+                        </h3>
+                    </div>
+
+                    <div class="confirm-conts clearfix">
+                        <div class="list-cont confirm-cont wide image">
+                            <h4>{% trans "Size" %}</h4>
+                            <ul class="confirm-params">
+                                <li class="param volume-size clearfix"></li>
+                            </ul>
+                            <h4>{% trans "Machine" %}</h4>
+                            <ul class="confirm-params">
+                                <li class="param volume-machine clearfix"></li>
+                            </ul>
+                            <h4>{% trans "Contents" %}</h4>
+                            <ul class="confirm-params">
+                                <li class="param image-name clearfix"></li>
+                            </ul>
+                        </div>
+                        <div class="list-cont confirm-cont wide info last">
+                            <h4>{% trans "Project" %}</h4>
+                            <ul class="confirm-params">
+                                <li class="param flavor-project clearfix">
+                                    <h4 class="project-name value"></h4>
+                                </li>
+                            </ul>
+                            <h4>{% trans "Info" %}</h4>
+                            <ul class="confirm-params">
+                                <li class="param volume-info clearfix"></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="image-warning clearfix">
+        <p>
+        {% blocktrans %}You have selected a user-provided Image, which is not
+        officially endorsed by {{ BRANDING_SERVICE_NAME }}. Please make sure it is from a
+        trustworthy source.{% endblocktrans %}
+        </p>
+        <span class="untrusted-image-confirm confirm">confirm</span>
+    </div>
+    <div class="create-controls clearfix">
+        <div class="form-action cancel">{% trans "cancel" %}</div>
+        <div class="form-action next">{% trans "next" %}</div>
+        <div class="no-project-notice">{% trans "No quotas available for image." %}</div>
+        <div class="form-action prev">{% trans "previous" %}</div>
+        <div class="form-action create submit hidden">{% trans "create disk" %}</div>
+    </div>
+</div>

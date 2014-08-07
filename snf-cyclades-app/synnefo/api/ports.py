@@ -45,7 +45,8 @@ def demux(request):
     elif request.method == 'POST':
         return create_port(request)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request, allowed_methods=['GET',
+                                                                    'POST'])
 
 
 def port_demux(request, port_id):
@@ -57,7 +58,9 @@ def port_demux(request, port_id):
     elif request.method == 'PUT':
         return update_port(request, port_id)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request, allowed_methods=['GET',
+                                                                    'DELETE',
+                                                                    'PUT'])
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)
@@ -227,6 +230,10 @@ def delete_port(request, port_id):
     if port.network.public and not port.ips.filter(floating_ip=True,
                                                    deleted=False).exists():
         raise faults.Forbidden("Cannot disconnect from public network.")
+
+    vm = port.machine
+    if vm is not None and vm.suspended:
+        raise faults.Forbidden("Administratively Suspended VM.")
 
     servers.delete_port(port)
     return HttpResponse(status=204)

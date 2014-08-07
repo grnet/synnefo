@@ -41,7 +41,7 @@ class Command(SynnefoCommand):
             default=None,
             help="Name of the port."),
         make_option(
-            "--owner",
+            "--user",
             dest="user_id",
             default=None,
             help="UUID of the owner of the Port."),
@@ -82,7 +82,7 @@ class Command(SynnefoCommand):
             default="True",
             choices=["True", "False"],
             metavar="True|False",
-            help="Wait for Ganeti jobs to complete."),
+            help="Wait for Ganeti jobs to complete. [Default: True]"),
     )
 
     @common.convert_api_faults

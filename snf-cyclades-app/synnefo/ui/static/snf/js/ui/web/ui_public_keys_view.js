@@ -308,12 +308,13 @@
       update_quota: function() {
         var quota = synnefo.config.userdata_keys_limit;
         var available = quota - this.collection.length;
-        if (available > 0) {
-          this.create_button.removeClass("disabled");
-          this.create_button.attr("title", this.quota_limit_message || "Quota limit reached")
-        } else {
+        if (!available) {
+          var msg = snf.config.limit_reached_msg;
+          snf.util.set_tooltip(this.create_button, this.quota_limit_message || msg, {tipClass: 'warning tooltip'});
           this.create_button.addClass("disabled");
-          this.create_button.attr("title", "");
+        } else {
+          snf.util.unset_tooltip(this.create_button);
+          this.create_button.removeClass("disabled");
         }
       }
     });

@@ -6,9 +6,6 @@
             <div class="machine-data-cont clearfix">
             <div class="suspended-notice">SUSPENDED</div>
             <div class="machine-data clearfix">
-                    <div class="project-name-cont">
-                      <span class="project-name"></span>
-                    </div>
             <div class="machine-info clearfix">
                 <div class="machine-connect">
                     <div class='connect-border' title='{% trans 'Connect to machine' %}'></div>
@@ -26,8 +23,11 @@
                                 </div>
                             </h5>
                         </div>
+                        <div class="project-name-cont">
+                            <span class="project-name"></span>
+                        </div>
                         <div class="machine-ips ip subtitle">
-                            <div class="fqdn"></div>
+                            <input class="fqdn reset" disabled />
                         </div>
                         <div class="build-progress subtitle">
                           <span class="message"></span>
@@ -38,9 +38,14 @@
                                 <span class="label">{% trans "info" %}</span>
                             </span>
                         </div>
+                        <div class="cont-toggler-wrapper volumes">
+                          <span class="info-header cont-toggler toggler">
+                            <span class="label">{% trans "disks" %}</span>
+                          </span>
+                        </div>
                         <div class="cont-toggler-wrapper ips">
                           <span class="info-header cont-toggler toggler">
-                            <span class="label">{% trans "IP addresses" %}</span>
+                            <span class="label">{% trans "IPs" %}</span>
                           </span>
                         </div>
                 </div>
@@ -140,13 +145,6 @@
                 </div>
                 <div class="action-container resize">
                     <a href="#" class="action-resize">{% trans "Resize" %}</a>
-                    <div class="confirm_single">
-                        <button class="yes">{% trans "Confirm" %}</button>
-                        <button class="no">X</button>
-                    </div>
-                </div>
-                <div class="action-container snapshot">
-                    <a href="#" class="action-snapshot">{% trans "Snapshot" %}</a>
                     <div class="confirm_single">
                         <button class="yes">{% trans "Confirm" %}</button>
                         <button class="no">X</button>

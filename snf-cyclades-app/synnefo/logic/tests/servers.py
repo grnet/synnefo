@@ -32,6 +32,9 @@ fixed_image.return_value = {'location': 'pithos://foo',
                             'mapfile': 'test_mapfile',
                             "id": 1,
                             "name": "test_image",
+                            "version": 42,
+                            "is_public": True,
+                            "owner": "user2",
                             "status": "AVAILABLE",
                             "size": 1024,
                             "is_snapshot": False,
@@ -101,7 +104,7 @@ class ServerCreationTest(TransactionTestCase):
         name, args, kwargs = mrapi().CreateInstance.mock_calls[-1]
         self.assertEqual(kwargs["disks"][0],
                          {"provider": "archipelago",
-                          "origin": "pithos:test_mapfile",
+                          "origin": "test_mapfile",
                           "name": vm.volumes.all()[0].backend_volume_uuid,
                           "foo": "mpaz",
                           "lala": "lolo",
@@ -277,3 +280,24 @@ class ServerCommandTest(TransactionTestCase):
             servers.reboot(vm)
             self.assertEqual(vm.task, "REBOOT")
             self.assertEqual(vm.task_job_id, 3)
+
+    def test_reassign_vm(self, mrapi):
+        volume = mfactory.VolumeFactory()
+        vm = volume.machine
+        another_project = "another_project"
+        with mocked_quotaholder():
+            servers.reassign(vm, another_project)
+            self.assertEqual(vm.project, another_project)
+            vol = vm.volumes.get(id=volume.id)
+            self.assertNotEqual(vol.project, another_project)
+
+        volume = mfactory.VolumeFactory()
+        volume.index = 0
+        volume.save()
+        vm = volume.machine
+        another_project = "another_project"
+        with mocked_quotaholder():
+            servers.reassign(vm, another_project)
+            self.assertEqual(vm.project, another_project)
+            vol = vm.volumes.get(id=volume.id)
+            self.assertEqual(vol.project, another_project)

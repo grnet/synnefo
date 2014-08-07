@@ -36,7 +36,7 @@ class Command(SynnefoCommand):
             metavar='NAME',
             help="Rename a network"),
         make_option(
-            '--userid',
+            '--user',
             dest='userid',
             help="Change the owner of the network."),
         make_option(
@@ -51,7 +51,7 @@ class Command(SynnefoCommand):
             metavar="True|False",
             choices=["True", "False"],
             help="Convert network to a floating IP pool. During this"
-                 " conversation the network will be created to all"
+                 " conversion the network will be created to all"
                  " available Ganeti backends."),
         make_option(
             '--add-reserved-ips',

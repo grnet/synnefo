@@ -69,7 +69,8 @@ def network_demux(request, network_id):
 @api.api_method(http_method='POST', user_required=True, logger=log)
 def network_action_demux(request, network_id):
     req = utils.get_json_body(request)
-    network = util.get_network(network_id, request.user_uniq, for_update=True)
+    network = util.get_network(network_id, request.user_uniq, for_update=True,
+                               non_deleted=True)
     action = req.keys()[0]
     try:
         f = NETWORK_ACTIONS[action]
@@ -151,7 +152,8 @@ def update_network(request, network_id):
                                       required=True)
     new_name = api.utils.get_attribute(network, "name", attr_type=basestring)
 
-    network = util.get_network(network_id, request.user_uniq, for_update=True)
+    network = util.get_network(network_id, request.user_uniq, for_update=True,
+                               non_deleted=True)
     if network.public:
         raise api.faults.Forbidden("Cannot rename the public network.")
     network = networks.rename(network, new_name)
@@ -162,7 +164,8 @@ def update_network(request, network_id):
 @transaction.commit_on_success
 def delete_network(request, network_id):
     log.info('delete_network %s', network_id)
-    network = util.get_network(network_id, request.user_uniq, for_update=True)
+    network = util.get_network(network_id, request.user_uniq, for_update=True,
+                               non_deleted=True)
     if network.public:
         raise api.faults.Forbidden("Cannot delete the public network.")
     networks.delete(network)

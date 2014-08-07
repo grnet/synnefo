@@ -27,13 +27,6 @@ class Command(SynnefoCommand):
 
     option_list = SynnefoCommand.option_list + (
         make_option(
-            '--wait',
-            dest='wait',
-            default="True",
-            choices=["True", "False"],
-            metavar="True|False",
-            help="Wait for Ganeti job to complete."),
-        make_option(
             "--name",
             dest="name",
             default=None,
@@ -58,7 +51,7 @@ class Command(SynnefoCommand):
 
         description = options.get("description")
         if description is None:
-            description = "Snapshot of Volume '%s" % volume.id
+            description = "Snapshot of Volume '%s'" % volume.id
 
         snapshot = snapshots.create(volume.userid,
                                     volume,

@@ -13,15 +13,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import time
+import re
 import os
 import sys
-import re
 import random
+import subprocess
+import ipaddr
 from snfdeploy import config
 from snfdeploy import context
+from snfdeploy import constants
 from snfdeploy.lib import check_pidfile, create_dir, get_default_route, \
-    random_mac
+    random_mac, get_netinfo
+
+
+def runcmd(cmd):
+    if config.dry_run:
+        print cmd
+    else:
+        os.system(cmd)
 
 
 def help():
@@ -44,27 +53,31 @@ Usage: snf-deploy vcluster
 def create_dnsmasq_files(ctx):
 
     print("Customize dnsmasq..")
-    out = config.dns_dir
 
-    hostsfile = open(out + "/dhcp-hostsfile", "w")
-    optsfile = open(out + "/dhcp-optsfile", "w")
-    conffile = open(out + "/conf-file", "w")
+    hosts = opts = conf = "\n"
+    hostsf = os.path.join(config.dns_dir, "dhcp-hostsfile")
+    optsf = os.path.join(config.dns_dir, "dhcp-optsfile")
+    conff = os.path.join(config.dns_dir, "conf-file")
 
-    for node in ctx.nodes:
+    for node in ctx.all_nodes:
         info = config.get_info(node=node)
+        if ipaddr.IPAddress(info.ip) not in config.net:
+            raise Exception("%s's IP outside vcluster's network." % node)
         # serve ip and name to nodes
-        hostsfile.write("%s,%s,%s,2m\n" % (info.mac, info.ip, info.name))
+        hosts += "%s,%s,%s,2m\n" % (info.mac, info.ip, info.name)
 
-    hostsfile.write("52:54:56:*:*:*,ignore\n")
+    hosts += "52:54:56:*:*:*,ignore\n"
 
-    # Netmask
-    optsfile.write("1,%s\n" % config.net.netmask)
-    # Gateway
-    optsfile.write("3,%s\n" % config.gateway)
-    # Namesevers
-    optsfile.write("6,%s\n" % "8.8.8.8")
+    opts = """
+# Netmask
+1,{0}
+# Gateway
+3,{1}
+# Nameservers
+6,{2}
+""".format(config.net.netmask, config.gateway, constants.EXTERNAL_PUBLIC_DNS)
 
-    dnsconf = """
+    conf = """
 user=dnsmasq
 bogus-priv
 no-poll
@@ -78,21 +91,32 @@ no-resolv
 port=0
 """.format(ctx.ns.ip)
 
-    dnsconf += """
+    conf += """
 # serve domain and search domain for resolv.conf
 domain={5}
 interface={0}
 dhcp-hostsfile={1}
 dhcp-optsfile={2}
 dhcp-range={0},{4},static,2m
-""".format(config.bridge, hostsfile.name, optsfile.name,
+""".format(config.bridge, hostsf, optsf,
            info.domain, config.net.network, info.domain)
 
-    conffile.write(dnsconf)
+    if config.dry_run:
+        print hostsf, hosts
+        print optsf, opts
+        print conff, conf
+    else:
+        hostsfile = open(hostsf, "w")
+        optsfile = open(optsf, "w")
+        conffile = open(conff, "w")
 
-    hostsfile.close()
-    optsfile.close()
-    conffile.close()
+        hostsfile.write(hosts)
+        optsfile.write(opts)
+        conffile.write(conf)
+
+        hostsfile.close()
+        optsfile.close()
+        conffile.close()
 
 
 def cleanup():
@@ -112,7 +136,7 @@ def cleanup():
     iptables -D FORWARD -i {2} -j ACCEPT
     iptables -D OUTPUT -o {2} -j ACCEPT
     """.format(config.subnet, get_default_route()[1], config.bridge)
-    os.system(cmd)
+    runcmd(cmd)
 
     print("Deleting bridge %s.." % config.bridge)
     cmd = """
@@ -122,7 +146,7 @@ def cleanup():
     sleep 1
     brctl delbr {0}
     """.format(config.bridge, config.gateway, config.net.prefixlen)
-    os.system(cmd)
+    runcmd(cmd)
 
 
 def network():
@@ -135,7 +159,7 @@ def network():
     ip link set promisc on dev {0}
     ip addr add {1}/{2} dev {0}
     """.format(config.bridge, config.gateway, config.net.prefixlen)
-    os.system(cmd)
+    runcmd(cmd)
 
     print("Activate NAT..")
     cmd = """
@@ -145,70 +169,66 @@ def network():
     iptables -I FORWARD 1 -i {2} -j ACCEPT
     iptables -I OUTPUT 1 -o {2} -j ACCEPT
     """.format(config.subnet, get_default_route()[1], config.bridge)
-    os.system(cmd)
+    runcmd(cmd)
 
 
 def image():
-    # FIXME: Create a clean wheezy image and use it for vcluster
-    if config.os == "ubuntu":
-        url = config.ubuntu_image_url
-    else:
-        url = config.squeeze_image_url
+    disk0 = os.path.join(config.vcluster_dir, "disk0")
+    disk1 = os.path.join(config.vcluster_dir, "disk1")
 
-    disk0 = "{0}/{1}.disk0".format(config.image_dir, config.os)
-    disk1 = "{0}/{1}.disk1".format(config.image_dir, config.os)
+    create_dir(config.vcluster_dir, False)
 
-    if url and not os.path.exists(disk0):
-        cmd = "wget {0} -O {1}".format(url, disk0)
-        os.system(cmd)
+    env = os.environ.copy()
+    env.update({
+        "DISK0": disk0,
+        "DISK0_SIZE": config.disk0_size,
+        "DISK1": disk1,
+        "DISK1_SIZE": config.disk1_size,
+        })
+    cmd = os.path.join(config.lib_dir, "mkimage.sh")
 
-    if config.create_extra_disk and not os.path.exists(disk1):
-        if config.lvg:
-            cmd = """
-lvcreate -L30G -n{0}.disk1 {1}
-""".format(config.os, config.lvg)
-            os.system(cmd)
-            cmd = """
-ln -s /dev/{0}/{1}.disk1 {2}
-""".format(config.lvg, config.os, disk1)
-            os.system(cmd)
-        else:
-            cmd = "dd if=/dev/zero of={0} bs=10M count=3000".format(disk1)
-            os.system(cmd)
+    subprocess.Popen([cmd], env=env)
 
 
 def cluster(ctx):
-    for node in ctx.nodes:
+    vms = []
+    for node in ctx.all_nodes:
         node_info = config.get_info(node=node)
-        _launch_vm(node_info.name, node_info.mac)
+        vnc = _launch_vm(node_info.name, node_info.mac)
+        vms.append((node_info, vnc))
 
-    # TODO: check if the cluster is up and running instead of sleeping 30 secs
-    time.sleep(30)
-    os.system("reset")
+    runcmd("reset")
+    for vm, port in vms:
+        if port:
+            vnc = "vncviewer %s:%s" % (get_netinfo()[0],  5900 + port)
+        else:
+            vnc = "no vnc"
+        print "%s: ssh root@%s or %s" % (vm.name, vm.ip, vnc)
 
 
 def _launch_vm(name, mac):
     check_pidfile("%s/%s.pid" % (config.run_dir, name))
 
+    disk0 = os.path.join(config.vcluster_dir, "disk0")
+    disk1 = os.path.join(config.vcluster_dir, "disk1")
+
     print("Launching cluster node {0}..".format(name))
     os.environ["BRIDGE"] = config.bridge
     if config.vnc:
-        graphics = "-vnc :{0}".format(random.randint(1, 1000))
+        random_vnc_port = random.randint(1, 1000)
+        graphics = "-vnc :{0}".format(random_vnc_port)
     else:
+        random_vnc_port = None
         graphics = "-nographic"
 
     disks = """ \
--drive file={0}/{1}.disk0,format=raw,if=none,id=drive0,snapshot=on \
+-drive file={0},format=raw,if=none,id=drive0,snapshot=on \
 -device virtio-blk-pci,drive=drive0,id=virtio-blk-pci.0 \
-""".format(config.image_dir, config.os)
-
-    if config.create_extra_disk:
-        disks += """ \
--drive file={0}/{1}.disk1,format=raw,if=none,id=drive1,snapshot=on \
+-drive file={1},format=raw,if=none,id=drive1,snapshot=on \
 -device virtio-blk-pci,drive=drive1,id=virtio-blk-pci.1 \
-""".format(config.image_dir, config.os)
+""".format(disk0, disk1)
 
-    ifup = config.lib_dir + "/ifup"
+    ifup = os.path.join(config.lib_dir, "ifup")
     nics = """ \
 -netdev tap,id=netdev0,script={0},downscript=no \
 -device virtio-net-pci,mac={1},netdev=netdev0,id=virtio-net-pci.0 \
@@ -218,30 +238,37 @@ def _launch_vm(name, mac):
 -device virtio-net-pci,mac={3},netdev=netdev2,id=virtio-net-pci.2 \
 """.format(ifup, mac, random_mac(), random_mac())
 
+    kernel = """ \
+--kernel /boot/vmlinuz-3.2.0-4-amd64 \
+--initrd /boot/initrd.img-3.2.0-4-amd64 \
+--append "root=/dev/vda1 ro console=ttyS0,38400" \
+"""
+
     cmd = """
 /usr/bin/kvm -name {0} -pidfile {1}/{0}.pid -balloon virtio -daemonize \
 -monitor unix:{1}/{0}.monitor,server,nowait -usbdevice tablet -boot c \
 {2} \
 {3} \
--m {4} -smp {5} {6} \
-""".format(name, config.run_dir, disks, nics, config.mem, config.smp, graphics)
-    print cmd
-    os.system(cmd)
+-m {4} -smp {5} {6} {7} \
+""".format(name, config.run_dir, disks, nics,
+           config.mem, config.smp, graphics, kernel)
+
+    runcmd(cmd)
+
+    return random_vnc_port
 
 
 def dnsmasq():
     check_pidfile(config.run_dir + "/dnsmasq.pid")
     cmd = "dnsmasq --pid-file={0}/dnsmasq.pid --conf-file={1}/conf-file"\
         .format(config.run_dir, config.dns_dir)
-    os.system(cmd)
+    runcmd(cmd)
 
 
 def launch():
     ctx = context.Context()
     assert len(ctx.clusters) == 1
-    assert ctx.cluster
-    assert ctx.nodes
-    image()
+    assert ctx.all_nodes
     network()
     create_dnsmasq_files(ctx)
     dnsmasq()

@@ -39,7 +39,7 @@ def update_md5(m):
         meta = backend.get_object_meta(
             account, account, container, name, 'pithos', version)
         if meta['checksum'] == '':
-            size, hashmap = backend.get_object_hashmap(
+            _, size, hashmap = backend.get_object_hashmap(
                 account, account, container, name, version)
             checksum = hashmap_md5(backend, hashmap, size)
             backend.update_object_checksum(

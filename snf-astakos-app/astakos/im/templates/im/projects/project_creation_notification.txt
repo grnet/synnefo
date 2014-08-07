@@ -1,21 +1,22 @@
 {% extends "im/email.txt" %}
 {% load filters %}
-  
+
 {% block content %}
-The following project application has been submitted:
+The following application for a new project has been submitted:
 
 Id:                             {{object.id}}
-Project:                        {{object.chain_id}}
-Name:                           {{object.name}}
+Project:                        {{object.chain.uuid}}
+Applicant:                      {{object.applicant}}
 Issue date:                     {{object.issue_date|date:"d/m/Y"}}
+
+Name:                           {{object.name}}
+Owner:                          {{object.owner}}
 Start date:                     {{object.start_date|date:"d/m/Y"}}
 End date:                       {{object.end_date|date:"d/m/Y"}}
 Member Join Policy:             {{object.member_join_policy_display}}
 Member Leave Policy:            {{object.member_leave_policy_display}}
-Owner:                          {{object.owner}}
-Applicant:                      {{object.applicant}}
-Maximum participant number:     {{object.limit_on_members_number}}
-Policies:
+Max members:                    {{object.limit_on_members_number|format_inf}}
+Quota limits:
 {% for rp in object.projectresourcegrant_set.all %}
     {{rp}}
 {% endfor %}

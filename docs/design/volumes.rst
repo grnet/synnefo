@@ -137,7 +137,6 @@ The following management commands will be implemented:
 * `volume-list`: List volumes
 * `volume-info`: Show volume details
 * `volume-inspect`: Inspect volume in DB and Ganeti
-* `volume-import`: Import a volume from an existing Ganeti disk
 
 
 The following commands will be extended:

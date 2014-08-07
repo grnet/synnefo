@@ -53,7 +53,13 @@ class Command(SynnefoCommand):
         if disk_template is None:
             raise CommandError("Please specify the disk template of the volume"
                                " type.")
-
+        if len(name) > VolumeType.NAME_LENGTH:
+            raise CommandError("Name of the volume type can't be more than %s"
+                               " characters." % VolumeType.NAME_LENGTH)
+        if len(disk_template) > VolumeType.DISK_TEMPLATE_LENGTH:
+            raise CommandError("Disk template of the volume type can't be more"
+                               " than %s characters." %
+                               VolumeType.DISK_TEMPLATE_LENGTH)
         try:
             vtype = VolumeType.objects.create(name=name,
                                               disk_template=disk_template)

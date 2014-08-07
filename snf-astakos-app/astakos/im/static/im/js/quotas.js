@@ -68,7 +68,9 @@ $(document).ready(function() {
 		
 		// get the hidden input field without the proxy
 		// and check the python form field
-	 	hidden_name = $(this).siblings('input[type="hidden"]').attr('name').replace("proxy_","");
+        var name = $(this).siblings('input[type="hidden"]').attr('name');
+        if (!name) { return }
+	 	var hidden_name = name.replace("proxy_","");
 	 	$("input[name='"+hidden_name+"']").val("1");  
 		
  		// prevent extra actions if it is checked		 
@@ -144,8 +146,12 @@ $(document).ready(function() {
 	 	hidden_name = $(this).attr('name').replace("_proxy","");
 	 	var hidden_input = $("input[name='"+hidden_name+"']");
 	 	
+        if (value.match(/^(inf|unlimited)/i)) { 
+            $(this).parents('.form-row').removeClass('with-errors');
+            hidden_input.val("Unlimited");
+            return;
+        }
 	 	if (value) {
-	 		 
 		 	// actions for humanize fields
 		 	if ($(this).hasClass('dehumanize')){
 		 		
@@ -160,8 +166,7 @@ $(document).ready(function() {
 		 			msg="Please enter an integer";
 		 		} else {
 		 			var num = parseInt(value);
-					if ( num == '0' ) { 
-						flag = 1 ; msg="This value can not be zero. Try something like 10GB, 2MB etc"
+					if ( num == '0' ) {
 					} else {
 						if ( value && !num ) { flag = 1 ; msg="Invalid format. Try something like 10GB, 2MB etc"}
 				 	
@@ -212,9 +217,11 @@ $(document).ready(function() {
 			 		$(this).parents('.form-row').find('.error-msg').html(msg);
 			 		bytes = value;
 			 		$(this).focus();
+                    $(this).data("not-valid", true);
 			 		
 			 		 
 			 	} else {
+                    $(this).data("not-valid", false);
 			 		$(this).parents('.form-row').removeClass('with-errors');
 			 	}
 			 	
@@ -225,20 +232,13 @@ $(document).ready(function() {
 		 	 
 		 	// validation actions for int fields
 		 	else {
-		 		var is_int = value.match (new RegExp('^[1-9][0-9]*$'));
+		 		var is_int = value.match (new RegExp('^[0-9][0-9]*$'));
 		 		if ( !is_int ){ 
 		 			$(this).parents('.form-row').find('.error-msg').html('Enter a positive integer');
 			 		$(this).parents('.form-row').addClass('with-errors');
 			 		 
 			 	} else {
-			 		if ( value == '0'){
-			 			$(this).parents('.form-row').find('.error-msg').html('Ensure this value is greater than or equal to 1');
-			 			$(this).parents('.form-row').addClass('with-errors');
-			 		}else {
-			 			$(this).parents('.form-row').removeClass('with-errors');
-			 		}
-			 		
-			 		
+                    $(this).parents('.form-row').removeClass('with-errors');
 			 	}
 			 	hidden_input.val(value);
 	
@@ -285,10 +285,17 @@ $(document).ready(function() {
 			if ( (field.hasClass('dehumanize')) && !($(this).parents('.form-row').hasClass('with-errors'))) {
 				// for dehumanize fields transform bytes to KB, MB, etc
 				// unless there is an error
-				field.val(bytesToSize2(value) || 0)
+                if (value.match(/^(inf|unlimited)/i)) { 
+                    field.val("Unlimited");
+                    field.data("value", "Unlimited");
+                } else {
+                    field.val(bytesToSize2(value) || 0);
+                    field.data("value", bytesToSize2(value) || 0);
+                }
 			} else {
 				// else just return the value
 				field.val(value);	
+                field.data("value", value);
 			}
 			var group_class = field.parents('div[class^="group"]').attr('class').replace('group ', '');
             
@@ -316,8 +323,6 @@ $(document).ready(function() {
 	});  
 	
 	
-	
-	
 	$('#group_create_form').submit(function(){
 		var flag = 0;		 
 		$('.quotas-form .group input[type="text"]').each(function() {
@@ -326,8 +331,6 @@ $(document).ready(function() {
 				flag = 1;
 			}
 		});
-		
-		console.info(flag);
 		
 		if (flag =='0') {
 			$('#icons').focus();
@@ -340,7 +343,7 @@ $(document).ready(function() {
 		}
 		 
 		
-		if ($('.not-visible .group .with-errors').length >0 ){
+		if ($('.not-visible .group .with-errors').length > 0 ){
 			//$('.not-visible .group .with-errors').first().find('input[type="text"]').focus();
 			 
 			return false;
@@ -362,6 +365,69 @@ $(document).ready(function() {
 	  $(this).parents('.with-errors').removeClass('strong-error');
 	   
 	});
-	
-	
+	  
+    // enforce uplimit updates
+	$('.quotas-form .quota input[type="text"]').trigger("keyup");
+
+
+    $('.resource-col input').each(function() {
+        if (!$(this).attr("name").indexOf("proxy")) { return }
+        if ($(this).hasClass("dehumanize")) {
+            var value = $(this).data("value");
+            $(this).data("value", bytesToSize2(value) || 0);
+        }
+    });
+
+    $('.resource-col input').bind("blur", function() {
+        var name = $(this).attr("name");
+        var initial_value = $(this).data("value");
+        var value = $(this).val();
+        var changed_value = $(this).data("changed-value");
+
+        if ((!changed_value && initial_value != value) || 
+                                                changed_value != value) {
+            $(this).data("changed", true);
+        } else {
+            $(this).data("changed", false);
+        }
+        
+        var replace_str = "m_uplimit_proxy";
+        if (name.indexOf("p_uplimit_proxy") >= 0) {
+            replace_str = "p_uplimit_proxy";
+        }
+
+        window.setTimeout((function() { 
+            return function() {
+                var get_el = function(id) {
+                    return $("input[name='"+name.replace(replace_str, id)+"']");
+                }
+
+                var member_proxy_el = get_el("m_uplimit_proxy");
+                var member_value_el = get_el("m_uplimit");
+                var project_proxy_el = get_el("p_uplimit_proxy");
+                var project_value_el = get_el("p_uplimit");
+                var members_el = $("input[name='limit_on_members_number']");
+
+                if (member_proxy_el.is(":focus") || 
+                                            project_proxy_el.is(":focus")) {
+                    return
+                }
+                
+                if (!member_proxy_el.val() && !project_proxy_el.val()) {
+                    return
+                }
+                
+                if (!member_proxy_el.val()) {
+                    if (project_proxy_el.data("not-valid")) {
+                        return
+                    }
+                    member_proxy_el.val(project_proxy_el.val());
+                    member_proxy_el.trigger("keyup");
+                    member_proxy_el.data("changed-value", 
+                                         project_proxy_el.val());
+                }
+
+        }})(replace_str), 100);
+
+    });
 });

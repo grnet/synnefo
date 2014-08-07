@@ -13,7 +13,9 @@ The upgrade to v0.16 consists in the following steps:
 
 3. Inspect and adjust resource limits.
 
-4. Bring up all services.
+4. Tweak Archipelago and Gunicorn settings on Pithos node
+
+5. Bring up all services.
 
 .. warning::
 
@@ -71,14 +73,19 @@ The upgrade to v0.16 consists in the following steps:
                             snf-branding \
                             snf-pithos-backend \
                             snf-pithos-app \
-                            snf-pithos-webclient
+                            snf-pithos-webclient \
+                            libxseg0 \
+                            python-xseg \
+                            python-archipelago \
+                            archipelago
 
     ganeti.node$ apt-get install \
                             python-objpool \
                             snf-common \
                             snf-cyclades-gtools \
                             snf-pithos-backend \
-                            snf-network
+                            snf-network \
+                            snf-image
 
 .. note::
 
@@ -159,7 +166,46 @@ increase their quota may end up overlimit on some resources of their system
 projects and will need to *reassign* some of their reserved resources to
 another project in order to overcome this restriction.
 
-4. Bring all services up
+
+4. Tweak Archipelago and Gunicorn settings on Pithos node
+=========================================================
+
+After installing Archipelago on Pithos node we need to adjust the configuration
+files according to our deployment needs.
+
+For Archipelago the configuration file is located on
+``/etc/archipelago/archipelago.conf``, where we need to adjust carefully at
+least six configuration options:
+
+* ``BLKTAP_ENABLED``: Must be set to false for the Pithos node, if the node does
+  not host VMs (a.k.a is not VM_CAPABLE)
+* ``USER``: The user that Archipelago will run as must be the same as the
+  Gunicorn user.
+* ``GROUP``: The group that Archipelago will run as must be the same as the
+  Gunicorn group.
+* ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
+  RAM. The default value is 2GB which in some situations might exceed your
+  machine's physical RAM.
+* ``archip_dir`` in ``blockerm`` section must be set to the directory that
+  Pithos mapfiles reside until now (e.g., ``/srv/pithos/data/maps``).
+  For RADOS installations the ``pool`` setting must be set to the RADOS pool
+  that Pithos mapfiles reside.
+* ``archip_dir`` in ``blockerb`` section must be set to the directory that
+  Pithos data blocks reside until now (e.g., ``/srv/pithos/data/blocks``).
+  For RADOS installations the ``pool`` setting must be set to the RADOS pool
+  that Pithos data blocks reside.
+
+For Gunicorn the configuration file is located on ``/etc/gunicorn.d/synnefo``
+where we need to change:
+
+* ``--worker-class=gevent`` to ``--worker-class=pithos.workers.gevent_archipelago.GeventArchipelagoWorker``
+
+and set:
+
+* ``--config=/etc/synnefo/pithos.conf.py``
+
+
+5. Bring all services up
 ========================
 
 After the upgrade is finished, we bring up all services:
@@ -168,6 +214,8 @@ After the upgrade is finished, we bring up all services:
 
     astakos.host  # service gunicorn start
     cyclades.host # service gunicorn start
+
+    pithos.host   # service archipelago start
     pithos.host   # service gunicorn start
 
     cyclades.host # service snf-dispatcher start

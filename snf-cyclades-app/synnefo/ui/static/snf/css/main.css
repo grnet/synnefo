@@ -6218,6 +6218,7 @@ table.list-machines .wave {
     padding: 6px;
     margin-bottom:1px;
     position: relative;
+    word-wrap: break-word;
 }
 
 .create-wizard-overlay .images-list .image-details img {

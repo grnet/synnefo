@@ -1221,12 +1221,18 @@ class Node(DBWorker):
 
         v = self.versions.alias('v')
         if before != inf:
+            d4_insub = select([self.nodes.c.node],
+                              self.nodes.c.parent==parent)
+            d4_insub = d4_insub.where(and_(
+                self.nodes.c.path > bindparam('start'),
+                self.nodes.c.path < nextling))
+
             d4 = select([func.max(v.c.serial).label("vmax"),
+                         v.c.node,
                          self.nodes.c.path]).where(v.c.mtime < before)
-            d4 = d4.where(self.nodes.c.latest_version == v.c.serial)
-            d4 = d4.where(and_(self.nodes.c.path > bindparam('start'),
-                               self.nodes.c.path < nextling))
-            d4 = d4.group_by(self.nodes.c.path).cte("d4")
+            d4 = d4.where(v.c.node.in_(d4_insub))
+            d4 = d4.where(v.c.node==self.nodes.c.node)
+            d4 = d4.group_by(v.c.node, self.nodes.c.path).cte("d4")
             inner_join = \
                 d4.join(self.versions,
                         onclause=self.versions.c.serial == d4.c.vmax)
@@ -1263,6 +1269,7 @@ class Node(DBWorker):
                        from_obj=[inner_join]).distinct()
 
         s = s.where(self.versions.c.cluster != except_cluster)
+        s = s.where(self.versions.c.node == d4.c.node)
         conja = []
         conjb = []
         for path, match in pathq:

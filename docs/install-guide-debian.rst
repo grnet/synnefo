@@ -25,13 +25,6 @@ guide and just stop after the "Testing of Pithos" section.
 Installation of Synnefo / Introduction
 ======================================
 
-We will install the services with the above list's order. The last three
-services will be installed in a single step (at the end), because at the moment
-they are contained in the same software component (Cyclades). Furthermore, we
-will install all services in the first physical node, except Pithos which will
-be installed in the second, due to a conflict between the snf-pithos-app and
-snf-cyclades-app component (scheduled to be fixed in the next version).
-
 For the rest of the documentation we will refer to the first physical node as
 "node1" and the second as "node2". We will also assume that their domain names
 are "node1.example.com" and "node2.example.com" and their public IPs are "203.0.113.1" and
@@ -94,6 +87,7 @@ General Synnefo dependencies
 		* ntp (NTP daemon)
 		* gevent
 		* dnsmasq (DNS server)
+		* Archipelago
 
 You can install apache2, postgresql, ntp and rabbitmq by running:
 
@@ -318,15 +312,14 @@ Pithos data directory setup
 
 As mentioned in the General Prerequisites section, there should be a directory
 called ``/srv/pithos`` visible by both nodes. We create and setup the ``data``
-directory inside it:
+directory inside it along with the ``maps`` and ``blocks`` subdirectories:
 
 .. code-block:: console
 
    # mkdir /srv/pithos
    # cd /srv/pithos
    # mkdir data
-   # chown www-data:www-data data
-   # chmod g+ws data
+   # mkdir -p data/{maps,blocks}
 
 This directory must be shared via `NFS <https://en.wikipedia.org/wiki/Network_File_System>`_.
 In order to do this, run:
@@ -347,6 +340,35 @@ Once done, run:
 
    # /etc/init.d/nfs-kernel-server restart
 
+Archipelago setup
+~~~~~~~~~~~~~~~~~
+
+To install Archipelago, run:
+
+.. code-block:: console
+
+   # apt-get install archipelago
+
+
+Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
+
+* ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
+  RAM. The default value is 2GB which in some situations might exceed your
+  machine's physical RAM.
+
+In section ``blockerb`` set:
+
+* ``archip_dir``: ``/srv/pithos/data/blocks``
+
+In section ``blockerm`` set:
+
+* ``archip_dir``: ``/srv/pithos/data/maps``
+
+Finally, restart Archipelago:
+
+.. code-block:: console
+
+   # /etc/init.d/archipelago restart
 
 DNS server setup
 ~~~~~~~~~~~~~~~~
@@ -417,6 +439,7 @@ General Synnefo dependencies
     * gevent
     * certificates
     * dnsmasq (DNS server)
+    * Archipelago
 
 You can install the above by running:
 
@@ -576,14 +599,15 @@ Copy the file ``/etc/gunicorn.d/synnefo.example`` to
 
 .. code-block:: console
 
-    # mv /etc/gunicorn.d/synnefo.example /etc/gunicorn.d/synnefo
+    # cp /etc/gunicorn.d/synnefo.example /etc/gunicorn.d/synnefo
 
 
 .. warning:: Do NOT start the server yet, because it won't find the
-    ``synnefo.settings`` module. Also, in case you are using ``/etc/hosts``
-    instead of a DNS to get the hostnames, change ``--worker-class=gevent`` to
-    ``--worker-class=sync``. We will start the server after successful
-    installation of Astakos. If the server is running::
+    ``synnefo.settings`` module. Also, change ``--worker-class=gevent`` to
+    ``--worker-class=pithos.workers.gevent_archipelago.GeventArchipelagoWorker``
+    and set ``--config=/etc/synnefo/pithos.conf.py``.
+    We will start the server after successful installation of Astakos.
+    If the server is running::
 
        # /etc/init.d/gunicorn stop
 
@@ -1036,6 +1060,35 @@ This package provides the standalone Pithos web client. The web client is the
 web UI for Pithos and will be accessible by clicking "Pithos" on the Astakos
 interface's cloudbar, at the top of the Astakos homepage.
 
+Installation of Archipelago on node 2
+=====================================
+
+To install Archipelago, run:
+
+.. code-block:: console
+
+   # apt-get install archipelago
+
+
+Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
+
+* ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
+  RAM. The default value is 2GB which in some situations might exceed your
+  machine's physical RAM.
+
+In section ``blockerb`` set:
+
+* ``archip_dir``: ``/srv/pithos/data/blocks``
+
+In section ``blockerm`` set:
+
+* ``archip_dir``: ``/srv/pithos/data/maps``
+
+Finally, restart Archipelago:
+
+.. code-block:: console
+
+   # /etc/init.d/archipelago restart
 
 .. _conf-pithos:
 
@@ -1055,10 +1108,11 @@ Copy the file ``/etc/gunicorn.d/synnefo.example`` to
 
 
 .. warning:: Do NOT start the server yet, because it won't find the
-    ``synnefo.settings`` module. Also, in case you are using ``/etc/hosts``
-    instead of a DNS to get the hostnames, change ``--worker-class=gevent`` to
-    ``--worker-class=sync``. We will start the server after successful
-    installation of Astakos. If the server is running::
+    ``synnefo.settings`` module. Also, change ``--worker-class=gevent`` to
+    ``--worker-class=pithos.workers.gevent_archipelago.GeventArchipelagoWorker``
+    and set ``--config=/etc/synnefo/pithos.conf.py``.
+    We will start the server after successful installation of Astakos.
+    If the server is running::
 
        # /etc/init.d/gunicorn stop
 
@@ -1080,7 +1134,6 @@ this options:
 
    PITHOS_BASE_URL = 'https://node2.example.com/pithos'
    PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
-   PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
 
    PITHOS_SERVICE_TOKEN = 'pithos_service_token22w'
 
@@ -1090,11 +1143,6 @@ find the Pithos backend database. Above we tell Pithos that its database is
 ``snf_pithos`` at node1 and to connect as user ``synnefo`` with password
 ``example_passw0rd``.  All those settings where setup during node1's "Database
 setup" section.
-
-The ``PITHOS_BACKEND_BLOCK_PATH`` option tells to the Pithos app where to find
-the Pithos backend data. Above we tell Pithos to store its data under
-``/srv/pithos/data``, which is visible by both nodes. We have already setup this
-directory at node1's "Pithos data directory setup" section.
 
 The ``ASTAKOS_AUTH_URL`` option informs the Pithos app where Astakos is.
 The Astakos service is used for user management (authentication, quotas, etc.)
@@ -1507,18 +1555,11 @@ Configuration
 ~~~~~~~~~~~~~
 snf-image supports native access to Images stored on Pithos. This means that
 it can talk directly to the Pithos backend, without the need of providing a
-public URL. More details, are described in the next section. For now, the only
-thing we need to do, is configure snf-image to access our Pithos backend.
-
-To do this, we need to set the corresponding variable in
-``/etc/default/snf-image``, to reflect our Pithos setup:
-
-.. code-block:: console
-
-    PITHOS_DATA="/srv/pithos/data"
+public URL. More details, are described in the next section.
 
 If you have installed your Ganeti cluster on different nodes than node1 and
-node2 make sure that ``/srv/pithos/data`` is visible by all of them.
+node2 make sure that ``/srv/pithos/data`` is visible by all of them and
+Archipelago is installed and configured properly.
 
 If you would like to use Images that are also/only stored locally, you need to
 save them under ``IMAGE_DIR``, however this guide targets Images stored only on

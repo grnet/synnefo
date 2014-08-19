@@ -137,7 +137,7 @@ def get_account_headers(request):
         n = k[16:].lower()
         if '-' in n or '_' in n:
             raise faults.BadRequest('Bad characters in group name')
-        groups[n] = set(v.replace(' ', '').split(','))
+        groups[n] = list(set(v.replace(' ', '').split(',')))
         while '' in groups[n]:
             groups[n].remove('')
     return meta, groups

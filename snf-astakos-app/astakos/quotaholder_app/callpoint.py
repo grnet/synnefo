@@ -136,13 +136,11 @@ def issue_commission(clientkey, provisions, name="", force=False):
     provisions = _merge_same_keys(provisions)
     keys = [key for (key, value) in provisions]
     holdings = _get_holdings_for_update(keys)
-    changed_holdings = {}
     try:
         for key, quantity in provisions:
             # Target
             try:
                 th = holdings[key]
-                changed_holdings[th.id] = th
             except KeyError:
                 m = ("There is no such holding %s" % unicode(key))
                 provision = _mkProvision(key, quantity)
@@ -159,10 +157,9 @@ def issue_commission(clientkey, provisions, name="", force=False):
             holdings[key] = th
             provisions_to_create.append((key, quantity))
     except QuotaholderError:
+        operations.revert()
         raise
 
-    Holding.objects.filter(id__in=changed_holdings.keys()).delete()
-    Holding.objects.bulk_create(changed_holdings.values())
     commission = Commission.objects.create(clientkey=clientkey,
                                            name=name,
                                            issue_datetime=datetime.now())
@@ -256,7 +253,6 @@ def resolve_pending_commissions(clientkey, accept_set=None, reject_set=None,
         accepted.append(serial) if accept else rejected.append(serial)
 
         ps = provisions.get(serial, [])
-        changed_holdings = {}
         provision_ids = []
         plog = []
         for pv in ps:
@@ -264,8 +260,6 @@ def resolve_pending_commissions(clientkey, accept_set=None, reject_set=None,
             h = holdings.get(key)
             if h is None:
                 raise CorruptedError("Corrupted provision '%s'" % key)
-
-            changed_holdings[h.id] = h
 
             provision_ids.append(pv.id)
             quantity = pv.quantity
@@ -279,8 +273,6 @@ def resolve_pending_commissions(clientkey, accept_set=None, reject_set=None,
             comm_reason = prefix + reason[-121:]
             plog.append(
                 _log_provision(commission, pv, h, log_datetime, comm_reason))
-        Holding.objects.filter(id__in=changed_holdings.keys()).delete()
-        Holding.objects.bulk_create(changed_holdings.values())
         Provision.objects.filter(id__in=provision_ids).delete()
         ProvisionLog.objects.bulk_create(plog)
         commission.delete()

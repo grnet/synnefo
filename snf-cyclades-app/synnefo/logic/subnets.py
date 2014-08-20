@@ -77,7 +77,7 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
         raise api.faults.BadRequest("Network has been deleted")
 
     if user_id != network.userid:
-        raise api.faults.Unauthorized("Unauthorized operation")
+        raise api.faults.Forbidden("Forbidden operation")
 
     if ipversion not in [4, 6]:
         raise api.faults.BadRequest("Malformed IP version type")
@@ -175,7 +175,7 @@ def update_subnet(sub_id, name, user_id):
         raise api.faults.ItemNotFound("Subnet not found")
 
     if user_id != subnet.network.userid:
-        raise api.faults.Unauthorized("Unauthorized operation")
+        raise api.faults.Forbidden("Forbidden operation")
 
     utils.check_name_length(name, Subnet.SUBNET_NAME_LENGTH, "Subnet name is "
                             " too long")

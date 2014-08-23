@@ -38,9 +38,9 @@ sys.path.append(path)
 # /etc/ganeti/share
 # Favor latest ganeti if found
 if os.path.exists(NEW_GANETI_PATH):
-  GANETI_PATH = NEW_GANETI_PATH
+    GANETI_PATH = NEW_GANETI_PATH
 else:
-  GANETI_PATH = OLD_GANETI_PATH
+    GANETI_PATH = OLD_GANETI_PATH
 
 sys.path.insert(0, GANETI_PATH)
 
@@ -396,8 +396,10 @@ class JobFileHandler(pyinotify.ProcessEvent):
         input = op.input
         op_id = input.OP_ID
         if op_id == "OP_TAGS_SET":
-            if op.status == "waiting" and input.tags and input.dry_run and\
-               input.kind == "cluster":
+            # NOTE: Check 'dry_run' after 'cluster' because networks and groups
+            # do not support the 'dry_run' option.
+            if (op.status == "waiting" and input.tags and
+                input.kind == "cluster" and input.dry_run):
                 # Special where a prefixed cluster tag operation in dry-run
                 # mode is used in order to trigger eventd to send a
                 # heartbeat message.

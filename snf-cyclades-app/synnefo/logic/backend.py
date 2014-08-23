@@ -311,7 +311,12 @@ def update_vm_nics(vm, nics, etime=None):
     @rtype: List of dictionaries
 
     """
-    ganeti_nics = parse_instance_nics(nics)
+    try:
+        ganeti_nics = parse_instance_nics(nics)
+    except Network.InvalidBackendIdError as e:
+        log.warning("Server %s is connected to unknown network %s"
+                    " Cannot reconcile server." % (vm.id, str(e)))
+        return []
     db_nics = dict([(nic.id, nic) for nic in vm.nics.select_related("network")
                                                     .prefetch_related("ips")])
 

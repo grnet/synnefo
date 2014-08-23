@@ -284,7 +284,12 @@ class BackendReconciler(object):
                                          created__lte=building_time) \
                                 .order_by("id")
         gnt_nics = gnt_server["nics"]
-        gnt_nics_parsed = backend_mod.parse_instance_nics(gnt_nics)
+        try:
+            gnt_nics_parsed = backend_mod.parse_instance_nics(gnt_nics)
+        except Network.InvalidBackendIdError as e:
+            self.log.warning("Server %s is connected to unknown network %s"
+                             " Cannot reconcile server." % (server_id, str(e)))
+            return
         nics_changed = len(db_nics) != len(gnt_nics)
         for db_nic, gnt_nic in zip(db_nics, sorted(gnt_nics_parsed.items())):
             gnt_nic_id, gnt_nic = gnt_nic

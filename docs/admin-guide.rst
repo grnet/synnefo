@@ -1872,7 +1872,7 @@ Name                          Description
 ============================  ===========================
 delete                        Remove an account from the Pithos DB
 export-quota                  Export account quota in a file
-list                          List existing/dublicate accounts
+list                          List existing/duplicate accounts
 merge                         Move an account contents in another account
 set-container-quota           Set container quota for all or a specific account
 ============================  ===========================

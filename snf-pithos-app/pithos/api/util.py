@@ -328,7 +328,8 @@ def retrieve_displaynames(token, uuids, return_dict=False, fail_silently=True):
     catalog = astakos.get_usernames(uuids) or {}
     missing = list(set(uuids) - set(catalog))
     if missing and not fail_silently:
-        raise ItemNotExists('Unknown displaynames: %s' % ', '.join(missing))
+        raise ItemNotExists('Unknown displaynames: %s' %
+                            ', '.join(map(smart_str, missing)))
     return catalog if return_dict else [catalog.get(i) for i in uuids]
 
 
@@ -353,7 +354,8 @@ def retrieve_uuids(token, displaynames, return_dict=False, fail_silently=True):
     catalog = astakos.get_uuids(displaynames) or {}
     missing = list(set(displaynames) - set(catalog))
     if missing and not fail_silently:
-        raise ItemNotExists('Unknown uuids: %s' % ', '.join(missing))
+        raise ItemNotExists('Unknown uuids: %s' %
+                            ', '.join(map(smart_str, missing)))
     return catalog if return_dict else [catalog.get(i) for i in displaynames]
 
 
@@ -1073,8 +1075,8 @@ def update_request_headers(request):
             v.decode('ascii')
             if '%' in k or '%' in v:
                 del(request.META[k])
-                request.META[unquote(k)] = smart_unicode(unquote(
-                    v), strings_only=True)
+                request.META[smart_unicode(unquote(k), strings_only=True)] = \
+                    smart_unicode(unquote(v), strings_only=True)
         except UnicodeDecodeError:
             raise faults.BadRequest('Bad character in headers.')
 

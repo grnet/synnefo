@@ -17,7 +17,6 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import parse_etags
-from django.utils.encoding import smart_str
 from django.views.decorators.csrf import csrf_exempt
 
 from astakosclient import AstakosClient
@@ -650,8 +649,7 @@ def object_list(request, v_account, v_container):
 
     keys = request.GET.get('meta')
     if keys:
-        keys = [smart_str(x.strip()) for x in keys.split(',')
-                if x.strip() != '']
+        keys = [x.strip() for x in keys.split(',') if x.strip() != '']
         included, excluded, opers = parse_filters(keys)
         keys = []
         keys += [format_header_key('X-Object-Meta-' + x) for x in included]

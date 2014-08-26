@@ -144,6 +144,7 @@ Package: python-astakosclient
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
 Provides: ${python:Provides}
+Recommends: python-simplejson
 XB-Python-Version: ${python:Versions}
 Description: Synnefo Astakos Client
  Python client for Astakos, the Synnefo identity management service.

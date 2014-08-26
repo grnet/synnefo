@@ -24,7 +24,11 @@ import hashlib
 from base64 import b64encode
 from copy import copy
 
-import simplejson
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
 from astakosclient.utils import \
     retry_dec, scheme_to_class, parse_request, check_input, join_urls
 from astakosclient.errors import \
@@ -300,7 +304,7 @@ class AstakosClient(object):
 
         try:
             if data:
-                return simplejson.loads(unicode(data))
+                return json.loads(unicode(data))
             else:
                 return None
         except Exception as err:

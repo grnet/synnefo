@@ -42,8 +42,11 @@ CLASSIFIERS = []
 # Package requirements
 INSTALL_REQUIRES = [
     "objpool>=0.3",
-    "simplejson"
 ]
+
+EXTRAS_REQUIRES = {
+    'SimpleJSON': ['simplejson'],
+}
 
 # Provided as an attribute, so you can append to these instead
 # of replicating them:
@@ -158,6 +161,7 @@ setup(
     zip_safe=False,
 
     install_requires=INSTALL_REQUIRES,
+    extras_require=EXTRAS_REQUIRES,
     tests_require=['mock'],
 
     entry_points={},

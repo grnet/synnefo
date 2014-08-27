@@ -674,7 +674,10 @@ class ModularBackend(BaseBackend):
     @backend_method
     def update_container_policy(self, user, account, container, policy,
                                 replace=False):
-        """Update the policy associated with the container."""
+        """Update the policy associated with the container.
+
+        Raises: AstakosClientException
+        """
 
         self._can_write_container(user, account, container)
         path, node = self._lookup_container(account, container)
@@ -688,12 +691,9 @@ class ModularBackend(BaseBackend):
                     user, account, container,
                     include_user_defined=False)['bytes']}
 
-            try:
+            if self.using_external_quotaholder:
                 serial = self.astakosclient.issue_resource_reassignment(
                     holder=account, provisions=provisions)
-            except BaseException, e:
-                raise QuotaError(e)
-            else:
                 self.serials.append(serial)
 
         self._put_policy(node, policy, replace, is_account_policy=False,
@@ -1304,7 +1304,7 @@ class ModularBackend(BaseBackend):
 
         :returns: the new object uuid
 
-        :raises: ItemNotExists, NotAllowedError, QuotaError
+        :raises: ItemNotExists, NotAllowedError, QuotaError, AstakosClientException
         """
 
         meta = meta or {}
@@ -2068,6 +2068,11 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def _report_size_change(self, user, account, size, source, details=None):
+        """Report quota modifications.
+
+        Raises: AstakosClientException
+        """
+
         details = details or {}
 
         if size == 0:
@@ -2083,16 +2088,12 @@ class ModularBackend(BaseBackend):
         if not self.using_external_quotaholder:
             return
 
-        try:
-            name = details['path'] if 'path' in details else ''
-            serial = self.astakosclient.issue_one_commission(
-                holder=account,
-                provisions={(source, 'pithos.diskspace'): size},
-                name=name)
-        except BaseException, e:
-            raise QuotaError(e)
-        else:
-            self.serials.append(serial)
+        name = details['path'] if 'path' in details else ''
+        serial = self.astakosclient.issue_one_commission(
+            holder=account,
+            provisions={(source, 'pithos.diskspace'): size},
+            name=name)
+        self.serials.append(serial)
 
     @debug_method
     @backend_method

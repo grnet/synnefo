@@ -19,7 +19,7 @@ from django.utils import simplejson as json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.db.models import Q
-from django.db import transaction
+from astakos.im import transaction
 
 from astakos.api.util import json_response
 

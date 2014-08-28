@@ -24,7 +24,8 @@ from urllib import quote
 from random import randint
 import os
 
-from django.db import models, transaction
+from django.db import models
+from astakos.im import transaction
 from django.contrib.auth.models import User, UserManager, Group, Permission
 from django.utils.translation import ugettext as _
 from django.db.models.signals import pre_save, post_save

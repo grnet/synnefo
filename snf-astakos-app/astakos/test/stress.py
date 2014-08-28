@@ -28,7 +28,7 @@ path = os.path.dirname(os.path.realpath(__file__))
 os.environ['SYNNEFO_SETTINGS_DIR'] = path + '/settings'
 os.environ['DJANGO_SETTINGS_MODULE'] = 'synnefo.settings'
 
-from django.db import transaction
+from astakos.im import transaction
 from astakos.im.models import AstakosUser
 from astakos.im.functions import ProjectError
 from astakos.im import auth

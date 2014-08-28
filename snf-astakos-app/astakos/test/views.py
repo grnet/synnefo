@@ -15,7 +15,7 @@
 
 from datetime import datetime, timedelta
 
-from django.db import transaction
+from astakos.im import transaction
 from astakos.im.models import AstakosUser, Project
 from astakos.im.functions import (join_project, leave_project,
                                   submit_application, approve_application,

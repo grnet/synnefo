@@ -33,20 +33,41 @@ AUTH_COOKIE_NAME = getattr(settings, 'ADMIN_AUTH_COOKIE_NAME',
                            getattr(settings, 'UI_AUTH_COOKIE_NAME',
                                    '_pithos2_a'))
 
-# An ordered dictionary with the enabled admin model views.
-DEFAULT_ADMIN_VIEWS = OrderedDict()
-DEFAULT_ADMIN_VIEWS['user'] = {'label': 'Users'}
-DEFAULT_ADMIN_VIEWS['vm'] = {'label': 'VMs'}
-DEFAULT_ADMIN_VIEWS['volume'] = {'label': 'Volumes'}
-DEFAULT_ADMIN_VIEWS['network'] = {'label': 'Networks'}
-DEFAULT_ADMIN_VIEWS['ip'] = {'label': 'IPs'}
-DEFAULT_ADMIN_VIEWS['ip_log'] = {'label': 'IP History'}
-DEFAULT_ADMIN_VIEWS['project'] = {'label': 'Projects'}
-DEFAULT_ADMIN_VIEWS['group'] = {'label': 'User Groups'}
-#DEFAULT_ADMIN_VIEWS['auth_provider'] = {'label': 'User Auth Providers'}
+# A dictionary with the enabled admin model views.
+DEFAULT_ADMIN_VIEWS = {
+    'user': {'label': 'Users'},
+    'vm': {'label': 'VMs'},
+    'volume': {'label': 'Volumes'},
+    'network': {'label': 'Networks'},
+    'ip': {'label': 'IPs'},
+    'ip_log': {'label': 'IP History'},
+    'project': {'label': 'Projects'},
+    'group': {'label': 'User Groups'},
+    #'auth_provider': {'label': 'User Auth Providers'},
+}
+# A list with the appropriate appearance order of the above views in the UI.
+DEFAULT_ADMIN_VIEWS_ORDER = ['user', 'vm', 'volume', 'network', 'ip', 'ip_log',
+                             'project', 'group']
 
-ADMIN_VIEWS = getattr(settings, 'ADMIN_VIEWS',
-                                DEFAULT_ADMIN_VIEWS)
+ADMIN_VIEWS = getattr(settings, 'ADMIN_VIEWS', DEFAULT_ADMIN_VIEWS)
+ADMIN_VIEWS_ORDER = getattr(settings, 'ADMIN_VIEWS_ORDER',
+                            DEFAULT_ADMIN_VIEWS_ORDER)
+
+
+# The following function combines the above settings into one ordered
+# dictionary.
+# Note: View names that don't exist in the ADMIN_VIEWS settings will silently
+# be ignored.
+def create_ordered_views():
+    """Combine ADMIN_VIEWS and ADMIN_VIEWS_ORDER to create an ordered dict."""
+    views = OrderedDict()
+
+    for view in ADMIN_VIEWS_ORDER:
+        if view in ADMIN_VIEWS:
+            views[view] = ADMIN_VIEWS[view]
+
+    return views
+ADMIN_VIEWS = create_ordered_views()
 
 # Check if the user has defined his/her own values for the following three
 # groups.

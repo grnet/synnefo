@@ -15,7 +15,7 @@
 
 import string
 from optparse import make_option
-from django.db import transaction
+from synnefo.db import transaction
 
 from synnefo.lib.ordereddict import OrderedDict
 from synnefo.quotas import util

@@ -15,7 +15,7 @@
 
 from itertools import ifilter
 from logging import getLogger
-from django.db import transaction
+from synnefo.db import transaction
 from django.http import HttpResponse
 from django.utils import simplejson as json
 from django.utils.encoding import smart_unicode

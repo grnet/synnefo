@@ -15,7 +15,7 @@
 
 import logging
 
-from django.db import transaction
+from synnefo.db import transaction
 from django.conf import settings
 from snf_django.lib.api import faults
 from synnefo.db.models import Volume, VolumeMetadata

@@ -45,7 +45,7 @@ import itertools
 import bitarray
 from datetime import datetime, timedelta
 
-from django.db import transaction
+from synnefo.db import transaction
 from synnefo.db.models import (Backend, VirtualMachine, Flavor,
                                pooled_rapi_client, Network,
                                BackendNetwork, BridgePoolTable,

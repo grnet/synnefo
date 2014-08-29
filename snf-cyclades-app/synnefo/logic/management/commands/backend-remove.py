@@ -20,7 +20,8 @@ from snf_django.management.commands import SynnefoCommand
 from synnefo.management import common
 from synnefo.logic import backend as backend_mod
 from synnefo.db.models import Backend
-from django.db import transaction, models
+from django.db import models
+from synnefo.db import transaction
 
 
 HELP_MSG = """\

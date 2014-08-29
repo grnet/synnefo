@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.utils import simplejson as json
-from django.db import transaction
+from synnefo.db import transaction
 
 from snf_django.lib.api import faults
 from synnefo.db.models import (QuotaHolderSerial, VirtualMachine, Network,

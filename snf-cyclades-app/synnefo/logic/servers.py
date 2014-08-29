@@ -18,7 +18,7 @@ import logging
 from datetime import datetime
 from socket import getfqdn
 from django import dispatch
-from django.db import transaction
+from synnefo.db import transaction
 from django.utils import simplejson as json
 
 from snf_django.lib.api import faults

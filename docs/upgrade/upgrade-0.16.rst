@@ -10,6 +10,38 @@ between Pithos and NFS, RADOS or any other storage backend driver that Archipela
 supports. In order to use the Pithos Service you must install Archipelago on the
 node that runs the Pithos workers.
 
+Until now the Pithos mapfile was a simple file containing a list of hashes that
+make up the stored file in a Pithos container. After this consolidation the Pithos
+mapfile had to be converted to an Archipelago mapfile. An Archipelago mapfile
+is an updated version of the Pithos mapfile, intended to supersede it.
+
+Each Archipelago mapfile begins with a header, in big endian format, as
+follows:
+
+::
+
+    struct ArchipelagoHeader {
+        uint32_t signature;
+        uint32_t version;
+        uint64_t size;
+        uint32_t blocksize;
+        uint32_t flags;
+        uint32_t epoch;
+    };
+
+* The first 4 bytes contain the characters 'A', 'M', 'F', '.'.
+* The next 4 bytes contain the format version used by the mapfile. Currently,
+  there has been two versions of the format, version 1 and version 2. Pithos
+  mapfiles wheren't following any specific mapfile header format until now.
+* The next 8 bytes contain the size, in bytes, of the file represented by the
+  mapfile.
+* The blocksize field gives the block size used by the storage backend.
+* The value of the flags field is a mask of flags used to denote access
+  permissions to and properties of this mapfile.
+* The epoch field is an index number used as a reference counter.
+
+The list of hashes that make up the stored file is saved now, directly after
+the mapfile header.
 
 Upgrade Steps
 =============

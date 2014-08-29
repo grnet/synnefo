@@ -251,17 +251,17 @@ def validate_subnet_params(subnet=None, gateway=None, subnet6=None,
 
         # Check that network size is allowed!
         prefixlen = network.prefixlen
-        if prefixlen > 29 or prefixlen <= settings.MAX_CIDR_BLOCK:
+        if prefixlen > 29 or prefixlen < settings.MAX_CIDR_BLOCK:
             raise faults.OverLimit(
                 message="Unsupported network size",
-                details="Netmask must be in range: (%s, 29]" %
+                details="Netmask must be in range: [%s, 29]" %
                 settings.MAX_CIDR_BLOCK)
         if gateway:  # Check that gateway belongs to network
             try:
                 gateway = ipaddr.IPv4Address(gateway)
             except ValueError:
                 raise faults.BadRequest("Invalid network IPv4 gateway")
-            if not gateway in network:
+            if gateway not in network:
                 raise faults.BadRequest("Invalid network IPv4 gateway")
 
     if subnet6:

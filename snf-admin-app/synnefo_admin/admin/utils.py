@@ -119,7 +119,7 @@ def get_actions(target, user=None, inst=None):
     if target in ['quota', 'nic', 'ip_log']:
         return None
 
-    mod = import_module('synnefo_admin.admin.%ss.actions' % target)
+    mod = import_module('synnefo_admin.admin.resources.%ss.actions' % target)
     actions = mod.cached_actions
     if inst:
         return get_allowed_actions(actions, inst, user)

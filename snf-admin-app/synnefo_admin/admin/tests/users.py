@@ -22,7 +22,7 @@ from astakos.im.functions import remove_membership, enroll_member
 from synnefo.db import models_factory as mf
 
 from synnefo_admin import admin_settings
-from synnefo_admin.admin.users.utils import get_suspended_vms, get_quotas
+from synnefo_admin.admin.resources.users.utils import get_suspended_vms, get_quotas
 from .common import AdminTestCase
 
 

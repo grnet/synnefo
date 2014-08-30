@@ -20,48 +20,47 @@ from collections import OrderedDict
 from django.core.urlresolvers import reverse
 from django.utils.html import escape
 
-from synnefo.db.models import (Network, NetworkInterface, IPAddress,
-                               IPAddressLog)
+from synnefo.db.models import IPAddress, IPAddressLog
 from astakos.im.models import AstakosUser, Project
 
 from synnefo_admin.admin.actions import (has_permission_or_403,
                                          get_allowed_actions,
                                          get_permitted_actions,)
-from synnefo_admin.admin.users.utils import get_user_or_404
+from synnefo_admin.admin.resources.users.utils import get_user_or_404
 from synnefo_admin.admin.tables import AdminJSONView
 from synnefo_admin.admin.associations import (
     UserAssociation, QuotaAssociation, VMAssociation, VolumeAssociation,
     NetworkAssociation, NicAssociation, IPAssociation, IPLogAssociation,
-    ProjectAssociation)
+    ProjectAssociation, SimpleVMAssociation, SimpleNetworkAssociation,
+    SimpleNicAssociation)
 
-from .filters import NetworkFilterSet
+from .utils import (get_contact_email, get_contact_name, get_user_details_href,
+                    get_ip_or_404, get_network_details_href,
+                    get_vm_details_href)
 from .actions import cached_actions
-from .utils import (get_contact_name, get_contact_email, get_network_or_404,
-                    get_user_details_href)
+from .filters import IPFilterSet
 
 
 templates = {
-    'list': 'admin/network_list.html',
-    'details': 'admin/network_details.html',
+    'list': 'admin/ip_list.html',
+    'details': 'admin/ip_details.html',
 }
 
 
-class NetworkJSONView(AdminJSONView):
-    model = Network
-    fields = ('pk', 'name', 'state', 'public', 'drained',)
-    filters = NetworkFilterSet
+class IPJSONView(AdminJSONView):
+    model = IPAddress
+    fields = ('pk', 'address', 'floating_ip', 'created', 'userid',)
+    filters = IPFilterSet
 
     def format_data_row(self, row):
-        if not row[1]:
-            row = list(row)
-            row[1] = "(not set)"
+        row = list(row)
+        row[3] = row[3].strftime("%Y-%m-%d %H:%M")
         return row
 
     def get_extra_data(self, qs):
         # FIXME: The `contact_name`, `contact_email` fields will cripple our db
         if self.form.cleaned_data['iDisplayLength'] < 0:
-            qs = qs.only('pk', 'name', 'state', 'public', 'drained', 'userid',
-                         'deleted')
+            qs = qs.only('pk', 'address', 'floating_ip', 'created', 'userid',)
         return [self.get_extra_data_row(row) for row in qs]
 
     def get_extra_data_row(self, inst):
@@ -83,12 +82,12 @@ class NetworkJSONView(AdminJSONView):
         }
         extra_dict['item_name'] = {
             'display_name': "Name",
-            'value': escape(inst.name),
+            'value': inst.address,
             'visible': False,
         }
         extra_dict['details_url'] = {
             'display_name': "Details",
-            'value': reverse('admin-details', args=['network', inst.pk]),
+            'value': reverse('admin-details', args=['ip', inst.pk]),
             'visible': True,
         }
         extra_dict['contact_id'] = {
@@ -107,12 +106,6 @@ class NetworkJSONView(AdminJSONView):
             'visible': False,
         }
 
-        extra_dict['user_info'] = {
-            'display_name': "User",
-            'value': get_user_details_href(inst),
-            'visible': True,
-        }
-
         if self.form.cleaned_data['iDisplayLength'] < 0:
             extra_dict['minimal'] = {
                 'display_name': "No summary available",
@@ -126,14 +119,29 @@ class NetworkJSONView(AdminJSONView):
 
     def add_verbose_data(self, inst):
         extra_dict = OrderedDict()
-        extra_dict['public'] = {
-            'display_name': "Public",
-            'value': inst.public,
+        extra_dict['user_info'] = {
+            'display_name': "User",
+            'value': get_user_details_href(inst),
+            'visible': True,
+        }
+        extra_dict['vm_info'] = {
+            'display_name': "VM",
+            'value': get_vm_details_href(inst),
+            'visible': True,
+        }
+        extra_dict['network_info'] = {
+            'display_name': "Network info",
+            'value': get_network_details_href(inst),
             'visible': True,
         }
         extra_dict['updated'] = {
-            'display_name': "Update time",
+            'display_name': "Update date",
             'value': inst.updated.strftime("%Y-%m-%d %H:%M"),
+            'visible': True,
+        }
+        extra_dict['in_use'] = {
+            'display_name': "Currently in Use",
+            'value': inst.in_use(),
             'visible': True,
         }
 
@@ -142,58 +150,58 @@ class NetworkJSONView(AdminJSONView):
 
 @has_permission_or_403(cached_actions)
 def do_action(request, op, id):
-    """Apply the requested action on the specified network."""
+    """Apply the requested action on the specified ip."""
     if op == "contact":
         user = get_user_or_404(id)
     else:
-        network = Network.objects.get(pk=id)
+        ip = IPAddress.objects.get(id=id)
     actions = get_permitted_actions(cached_actions, request.user)
 
     if op == 'contact':
         actions[op].apply(user, request)
     else:
-        actions[op].apply(network)
+        actions[op].apply(ip)
 
 
 def catalog(request):
-    """List view for Cyclades networks."""
+    """List view for Cyclades ips."""
     context = {}
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
-    context['filter_dict'] = NetworkFilterSet().filters.itervalues()
-    context['columns'] = ["ID", "Name", "Status", "Public",
-                          "Drained", ""]
-    context['item_type'] = 'network'
+    context['filter_dict'] = IPFilterSet().filters.itervalues()
+    context['columns'] = ["ID", "Address", "Floating",
+                          "Creation date", "User ID", ""]
+    context['item_type'] = 'ip'
 
     return context
 
 
 def details(request, query):
     """Details view for Astakos users."""
-    network = get_network_or_404(query)
+    ip = get_ip_or_404(query)
     associations = []
 
-    vm_list = network.machines.all()
-    associations.append(VMAssociation(request, vm_list,))
+    vm_list = [ip.nic.machine] if ip.in_use() else []
+    associations.append(SimpleVMAssociation(request, vm_list,))
 
-    nic_list = NetworkInterface.objects.filter(network=network)
-    associations.append(NicAssociation(request, nic_list,))
+    network_list = [ip.nic.network] if ip.in_use() else []
+    associations.append(SimpleNetworkAssociation(request, network_list,))
 
-    ip_list = IPAddress.objects.filter(network=network)
-    associations.append(IPAssociation(request, ip_list,))
+    nic_list = [ip.nic] if ip.in_use() else []
+    associations.append(SimpleNicAssociation(request, nic_list,))
 
-    user_list = AstakosUser.objects.filter(uuid=network.userid)
+    user_list = AstakosUser.objects.filter(uuid=ip.userid)
     associations.append(UserAssociation(request, user_list,))
 
-    project_list = Project.objects.filter(uuid=network.project)
+    project_list = Project.objects.filter(uuid=ip.project)
     associations.append(ProjectAssociation(request, project_list,))
 
-    ip_log_list = IPAddressLog.objects.filter(network_id=network.pk)
+    ip_log_list = IPAddressLog.objects.filter(address=ip.address)
     associations.append(IPLogAssociation(request, ip_log_list))
 
     context = {
-        'main_item': network,
-        'main_type': 'network',
+        'main_item': ip,
+        'main_type': 'ip',
         'action_dict': get_permitted_actions(cached_actions, request.user),
         'associations_list': associations,
     }

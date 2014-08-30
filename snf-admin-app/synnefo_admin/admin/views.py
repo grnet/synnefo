@@ -64,9 +64,9 @@ def get_view_module(view_type):
     if view_type in admin_settings.ADMIN_VIEWS:
         try:
             # This module will not be reloaded again as it's probably cached.
-            return import_module('synnefo_admin.admin.%ss.views' % view_type)
+            return import_module('synnefo_admin.admin.resources.%ss.views' % view_type)
         except ImportError:
-            return import_module('synnefo_admin.admin.%ss' % view_type)
+            return import_module('synnefo_admin.admin.resources.%ss' % view_type)
     return None
 
 

@@ -26,7 +26,8 @@ from django.contrib.auth.models import Group
 from synnefo_admin.admin.exceptions import AdminHttp404
 
 from eztables.views import DatatablesView
-from actions import AdminAction, AdminActionUnknown, AdminActionNotPermitted
+from synnefo_admin.admin.actions import (AdminAction, AdminActionUnknown,
+                                         AdminActionNotPermitted)
 
 templates = {
     'list': 'admin/group_list.html',

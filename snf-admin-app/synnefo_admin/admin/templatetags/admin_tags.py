@@ -21,8 +21,8 @@ import logging
 
 import django_filters
 
-import synnefo_admin.admin.projects.utils as project_utils
-import synnefo_admin.admin.users.utils as user_utils
+import synnefo_admin.admin.resources.projects.utils as project_utils
+import synnefo_admin.admin.resources.users.utils as user_utils
 from synnefo_admin.admin import utils
 mod = import_module('astakos.im.management.commands.project-show')
 
@@ -249,7 +249,7 @@ def details_url(inst, target):
     """Get a url for the details of an instance's field."""
     # Get instance type and import the appropriate utilities module.
     inst_type = utils.get_type_from_instance(inst)
-    mod = import_module("synnefo_admin.admin.{}s.utils".format(inst_type))
+    mod = import_module("synnefo_admin.admin.resources.{}s.utils".format(inst_type))
 
     # Call the details_href function for the provided target.
     func = getattr(mod, "get_{}_details_href".format(target), None)

@@ -38,7 +38,7 @@ from astakos.im import settings as astakos_settings
 from astakos.admin import stats as astakos_stats
 from synnefo.admin import stats as cyclades_stats
 
-from synnefo_admin.admin.exceptions import AdminHttp404
+from synnefo_admin.admin.exceptions import AdminHttp404, AdminHttp405
 from synnefo_admin import admin_settings
 
 from synnefo_admin.admin import actions
@@ -259,6 +259,11 @@ def json_list(request, type):
     """Return a class-based view based on the given type."""
     admin_log(request, type=type)
 
+    content_types = request.META.get("HTTP_ACCEPT", "")
+    if "application/json" not in content_types:
+        raise AdminHttp405("""\
+The JSON content of this page is for internal use.
+You cannot view it on your browser.""")
     view = get_json_view_or_404(type)
     return view(request)
 

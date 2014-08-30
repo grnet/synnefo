@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.http import Http404
+from django import http
 # Add the exceptions that are defined in actions.py in this file too, so that
 # all exceptions can exist under the same namespace.
 from synnefo_admin.admin.actions import (AdminActionNotPermitted,
@@ -22,8 +22,15 @@ from synnefo_admin.admin.actions import (AdminActionNotPermitted,
                                          AdminActionCannotApply)
 
 
-class AdminHttp404(Http404):
+class AdminHttp404(http.Http404):
 
     """404 Exception solely for admin pages."""
 
     pass
+
+
+class AdminHttp405(http.Http404):
+
+    """405 Exception solely for admin pages."""
+
+    status = 405

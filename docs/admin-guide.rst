@@ -1683,7 +1683,11 @@ administrator can specify the group that he/she wants in the
 Note that while any user that belongs to the `ADMIN_PERMITTED_GROUPS` has the
 same access to the administrator dashboard, the actions that are allowed for a
 group may differ. That's because Admin implements a Role-Based Access Control
-(RBAC) policy, which can be changed from the `ADMIN_RBAC` setting.
+(RBAC) policy, which can be changed from the `ADMIN_RBAC` setting. By default,
+users in the `ADMIN_READONLY_GROUP` cannot perform any actions. On the other
+hand, users in the `ADMIN_GROUP` can perform all actions.  In the middle of the
+spectrum is the `ADMIN_HELPDESK_GROUP`, which by default performs a small
+subset of reversible actions.
 
 Seting up Admin
 ---------------

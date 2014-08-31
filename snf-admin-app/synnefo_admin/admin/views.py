@@ -41,7 +41,7 @@ from synnefo.admin import stats as cyclades_stats
 from synnefo_admin.admin.exceptions import AdminHttp404, AdminHttp405
 from synnefo_admin import admin_settings
 
-from synnefo_admin.admin import actions
+from synnefo_admin.admin import exceptions
 from synnefo_admin.admin.utils import (conditionally_gzip_page,
                                        customize_details_context, admin_log)
 
@@ -337,7 +337,7 @@ def admin_actions(request):
             status = 400
             response['result'] = e.message
             response['error_ids'].append(id)
-        except actions.AdminActionNotPermitted:
+        except exceptions.AdminActionNotPermitted:
             status = 403
             response['result'] = "You are not allowed to do this operation."
             response['error_ids'].append(id)
@@ -345,15 +345,15 @@ def admin_actions(request):
             status = 403
             response['result'] = "You are not allowed to do this operation."
             response['error_ids'].append(id)
-        except actions.AdminActionUnknown:
+        except exceptions.AdminActionUnknown:
             status = 404
             response['result'] = "You have requested an unknown operation."
             break
-        except actions.AdminActionNotImplemented:
+        except exceptions.AdminActionNotImplemented:
             status = 501
             response['result'] = "You have requested an unimplemented action."
             break
-        except actions.AdminActionCannotApply:
+        except exceptions.AdminActionCannotApply:
             status = 400
             response['result'] = """
                 You have requested an action that cannot apply to a target.

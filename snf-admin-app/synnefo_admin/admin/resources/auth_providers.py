@@ -1,4 +1,3 @@
-import logging
 # Copyright (C) 2010-2014 GRNET S.A.
 #
 # This program is free software: you can redistribute it and/or modify
@@ -26,7 +25,7 @@ from astakos.im.models import AstakosUserAuthProvider
 from astakos.im.models import AstakosUser
 
 from eztables.views import DatatablesView
-from actions import AdminAction, AdminActionUnknown, AdminActionNotPermitted
+from actions import AdminAction
 
 templates = {
     'list': 'admin/auth_provider_list.html',

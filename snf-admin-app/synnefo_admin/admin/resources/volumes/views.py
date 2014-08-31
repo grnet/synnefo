@@ -162,6 +162,8 @@ class VolumeJSONView(AdminJSONView):
             }
         return extra_dict
 
+JSON_CLASS = VolumeJSONView
+
 
 @has_permission_or_403(cached_actions)
 def do_action(request, op, id):

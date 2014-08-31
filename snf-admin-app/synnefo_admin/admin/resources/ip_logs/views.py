@@ -86,6 +86,9 @@ class IPLogJSONView(AdminJSONView):
         return extra_dict
 
 
+JSON_CLASS = IPLogJSONView
+
+
 def catalog(request):
     """List view for Cyclades ip log."""
     context = {}

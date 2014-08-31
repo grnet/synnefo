@@ -92,6 +92,9 @@ class AstakosUserAuthProviderJSONView(DatatablesView):
         return extra_dict
 
 
+JSON_CLASS = AstakosUserAuthProviderJSONView
+
+
 class AstakosUserAuthProviderAction(AdminAction):
 
     """Class for actions on auth_providers. Derived from AdminAction.

@@ -42,6 +42,7 @@ from synnefo_admin.admin.exceptions import AdminHttp404, AdminHttp405
 from synnefo_admin import admin_settings
 
 from synnefo_admin.admin import exceptions
+from synnefo_admin.admin import tables
 from synnefo_admin.admin.utils import (conditionally_gzip_page,
                                        customize_details_context, admin_log)
 
@@ -79,12 +80,11 @@ def get_view_module_or_404(view_type):
 
 
 def get_json_view_or_404(view_type):
-    """Try to import a josn view or raise 404."""
+    """Try to import a json view or raise 404."""
     mod = get_view_module_or_404(view_type)
-    for key, cls in inspect.getmembers(mod, inspect.isclass):
-        if 'JSONView' in key and not key == 'AdminJSONView':
-            return cls.as_view()
-    logging.error("The %s view is probably broken.", view_type)
+    # We expect that the module has a JSON_CLASS attribute with the appropriate
+    # subclass of django-eztable's DatatablesView.
+    return mod.JSON_CLASS.as_view()
 
 
 def get_token_from_cookie(request, cookiename):

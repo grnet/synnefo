@@ -72,6 +72,9 @@ class GroupJSONView(DatatablesView):
         return extra_dict
 
 
+JSON_CLASS = GroupJSONView
+
+
 class GroupAction(AdminAction):
 
     """Class for actions on groups. Derived from AdminAction.

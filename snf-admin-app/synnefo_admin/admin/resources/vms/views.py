@@ -142,6 +142,9 @@ class VMJSONView(AdminJSONView):
         return extra_dict
 
 
+JSON_CLASS = VMJSONView
+
+
 @has_permission_or_403(cached_actions)
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""

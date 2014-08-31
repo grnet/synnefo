@@ -125,29 +125,18 @@ def admin_user_required(func, permitted_groups=admin_settings.\
             groups = request.user['access']['user']['roles']
             groups = [g["name"] for g in groups]
 
-            if not groups:
-                logger.info("Failed to access admin view. User: %r",
-                            request.user_uniq)
-                raise PermissionDenied
-
-            has_perm = False
-            for g in groups:
-                if g in permitted_groups:
-                    has_perm = True
-                    break
-
-            if not has_perm:
-                logger.info("Failed to access admin view %r. No valid "
-                            "admin group (%r) matches user groups (%r)",
-                            request.user_uniq, permitted_groups, groups)
+            if not set(groups) & set(permitted_groups):
+                logger.debug("Failed to access admin view %r. No valid admin "
+                             "group (%r) matches user groups (%r)",
+                             request.user_uniq, permitted_groups, groups)
                 raise PermissionDenied
         else:
-            logger.info("Failed to access admin view %r. No authenticated "
-                        "user found.", request.user_uniq)
-            logger.info("auth_url (%s)", settings.ASTAKOS_AUTH_URL)
+            logger.debug("Failed to access admin view %r. No authenticated "
+                         "user found.", request.user_uniq)
+            logger.debug("auth_url (%s)", settings.ASTAKOS_AUTH_URL)
             raise PermissionDenied
 
-        logging.info("User %s accessed admininterface view (%s)",
+        logging.debug("User %s accessed admininterface view (%s)",
                      request.user_uniq, request.path)
         return func(request, *args, **kwargs)
 

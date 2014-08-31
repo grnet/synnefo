@@ -75,7 +75,10 @@ def admin_log(request, *argc, **kwargs):
     for key, value in kwargs.iteritems():
         s += "%s: %s, " % (key.capitalize(), value)
 
-    logging.info(s)
+    if caller_name == "admin_actions":
+        logging.info(s)
+    else:
+        logging.debug(s)
 
 
 def conditionally_gzip_page(func):

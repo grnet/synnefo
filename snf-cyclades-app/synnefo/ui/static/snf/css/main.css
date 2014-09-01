@@ -6868,7 +6868,8 @@ input.has-errors {
 
 .icon .suspended-notice {
   right: 192px;
-  top: 54px;
+  top: 60px;
+  z-index: 500;
 }
 
 .suspended-notice {

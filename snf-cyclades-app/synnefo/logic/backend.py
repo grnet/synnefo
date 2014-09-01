@@ -808,6 +808,9 @@ def create_instance(vm, nics, volumes, flavor, image):
 
     kw["disks"] = disks
 
+    # --no-wait-for-sync option for DRBD disks
+    kw["wait_for_sync"] = settings.GANETI_DISKS_WAIT_FOR_SYNC
+
     kw['nics'] = [{"name": nic.backend_uuid,
                    "network": nic.network.backend_id,
                    "ip": nic.ipv4_address}
@@ -1216,6 +1219,7 @@ def attach_volume(vm, volume, depends=[]):
     kwargs = {
         "instance": vm.backend_vm_id,
         "disks": [("add", "-1", disk)],
+        "wait_for_sync": settings.GANETI_DISKS_WAIT_FOR_SYNC,
         "depends": depends,
     }
     if vm.backend.use_hotplug():

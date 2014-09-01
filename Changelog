@@ -164,6 +164,8 @@ Cyclades
   are drained.
 * Fix the'network-inspect' command to not contain externally reserved IPs
   in th number of available IPs.
+* Add `GANETI_DISKS_WAIT_FOR_SYNC` setting to decide whether Ganeti will
+  wait for the disk mirror to sync (`--no-wait-for-sync` Ganeti option).
 * Fix mishandling of `MAX_CIDR_BLOCK` setting. Allowed CIDR sizes
   changed from (MAX_CIDR_BLOCK, 29) to [MAX_CIDR_BLOCK, 29].
 * Fix various minor bugs.

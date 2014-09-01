@@ -1545,11 +1545,23 @@ able to access the Pithos database. This is why, we also install them on *all*
 VM-capable Ganeti nodes.
 
 .. warning::
-		snf-image uses ``curl`` for handling URLs. This means that it will
-		not  work out of the box if you try to use URLs served by servers which do
-		not have a valid certificate. In case you haven't followed the guide's
-		directions about the certificates, in order to circumvent this you should edit the file
-		``/etc/default/snf-image``. Change ``#CURL="curl"`` to ``CURL="curl -k"`` on every node.
+    snf-image uses ``curl`` for handling URLs. This means that it will
+    not  work out of the box if you try to use URLs served by servers which do
+    not have a valid certificate. In case you haven't followed the guide's
+    directions about the certificates, in order to circumvent this you should
+    edit the file ``/etc/default/snf-image``. Change ``# CURL="curl"`` to
+    ``CURL="curl -k"`` on every node.
+
+.. warning::
+    If you are using qemu-kvm from wheezy-backports, note that the official
+    2.1.0 version has a ACPI regression bug (see
+    `here <https://lists.nongnu.org/archive/html/qemu-devel/2014-08/msg03536.html>`_).
+    This bug has reached the
+    `Debian qemu-kvm 2.1+dfsg-2~bpo70+2 package <https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=759522>`_
+    found in wheezy-backports and is triggered by snf-image. Until a newer package is
+    out, you can workaround it by editing the file ``/etc/default/snf-image``
+    and changing ``# KVM="kvm"`` to ``KVM="qemu-system-x86_64 -enable-kvm -machine pc-i440fx-2.0,accel=kvm"``
+    on every node.
 
 Configuration
 ~~~~~~~~~~~~~

@@ -8,7 +8,9 @@ Starting with version 0.16, we introduce Archipelago as the new storage backend
 for the Pithos Service. Archipelago will act as a storage abstraction layer
 between Pithos and NFS, RADOS or any other storage backend driver that Archipelago
 supports. In order to use the Pithos Service you must install Archipelago on the
-node that runs the Pithos workers.
+node that runs the Pithos workers. Additionally, you must install snf-image
+version 0.16 on the Ganeti nodes since this is the first version that supports
+Archipelago.
 
 Until now the Pithos mapfile was a simple file containing a list of hashes that
 make up the stored file in a Pithos container. After this consolidation the Pithos
@@ -139,6 +141,14 @@ The upgrade to v0.16 consists in the following steps:
 
     Installing the packages will cause services to start. Make sure you bring
     them down again (at least ``gunicorn``, ``snf-dispatcher``)
+
+.. note::
+
+    If you are using qemu-kvm from wheezy-backports, note that qemu-kvm package
+    2.1+dfsg-2~bpo70+2 has a bug that is triggered by snf-image. Check
+    `snf-image installation <https://www.synnefo.org/docs/synnefo/latest/install-guide-debian.html#installation>`_ for
+    a workaround.
+
 
 2.2 Sync and migrate the database
 ---------------------------------

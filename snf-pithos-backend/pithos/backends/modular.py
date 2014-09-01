@@ -222,6 +222,7 @@ class ModularBackend(BaseBackend):
 
     Uses modules for SQL functions and storage.
     """
+    _class_version = 1
 
     def __init__(self, db_module=None, db_connection=None,
                  block_module=None, block_size=None, hash_algorithm=None,

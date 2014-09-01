@@ -37,7 +37,7 @@ from synnefo_admin.admin.associations import (
     ProjectAssociation)
 
 from .utils import (get_user_or_404, get_quotas, get_user_groups,
-                    get_enabled_providers, get_suspended_vms, DefaultUrlConf)
+                    get_enabled_providers, get_suspended_vms)
 from .actions import cached_actions
 from .filters import UserFilterSet
 
@@ -133,12 +133,11 @@ class UserJSONView(AdminJSONView):
 
         if (users.validate_user_action(inst, "ACCEPT") and
                 inst.verification_code):
-            with DefaultUrlConf():
-                extra_dict['activation_url'] = {
-                    'display_name': "Activation URL",
-                    'value': inst.get_activation_url(),
-                    'visible': True,
-                }
+            extra_dict['activation_url'] = {
+                'display_name': "Activation URL",
+                'value': inst.get_activation_url(),
+                'visible': True,
+            }
 
         if inst.accepted_policy:
             extra_dict['moderation_policy'] = {
@@ -172,8 +171,7 @@ def do_action(request, op, id):
     elif op == 'contact':
         actions[op].apply(user, request)
     else:
-        with DefaultUrlConf():
-            actions[op].apply(user)
+        actions[op].apply(user)
 
 
 def catalog(request):

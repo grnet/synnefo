@@ -17,7 +17,6 @@ import logging
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth.models import Group
-from django.core.urlresolvers import set_urlconf
 
 from synnefo.db.models import VirtualMachine
 from astakos.im.models import AstakosUser, Project
@@ -30,19 +29,6 @@ from synnefo_admin import admin_settings
 from synnefo_admin.admin.exceptions import AdminHttp404
 from synnefo_admin.admin.utils import (get_resource, is_resource_useful,
                                        create_details_href)
-
-
-class DefaultUrlConf(object):
-
-    """Context manager for setting and restoring the ROOT_URLCONF setting."""
-
-    def __enter__(self):
-        """Use the default ROOT_URLCONF."""
-        set_urlconf("synnefo.webproject.urls")
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        """Restore ROOT_URLCONF."""
-        set_urlconf(None)
 
 
 def get_groups():

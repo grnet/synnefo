@@ -17,7 +17,7 @@ from optparse import make_option
 from datetime import datetime
 
 from snf_django.management.commands import SynnefoCommand, CommandError
-from django.db import transaction
+from astakos.im import transaction
 from snf_django.utils import reconcile
 from snf_django.management.utils import pprint_table
 from astakos.im.models import Component, AstakosUser

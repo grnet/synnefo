@@ -13,23 +13,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from astakos.im import transaction
-from snf_django.management.commands import SynnefoCommand, CommandError
+"""
+Router for the Astakos/Cyclades app. It is used to specify which database will
+be used for each model.
+"""
 
-from astakos.im.auth import fix_superusers
+from snf_django.utils.db import select_db
 
 
-class Command(SynnefoCommand):
-    help = "Transform superusers created by syncdb into AstakosUser instances"
+class SynnefoRouter(object):
 
-    @transaction.commit_on_success
-    def handle(self, **options):
-        try:
-            fixed = fix_superusers()
-            count = len(fixed)
-            if count != 0:
-                self.stderr.write("Fixed %s superuser(s).\n" % count)
-            else:
-                self.stderr.write("No superuser needed a fix.\n")
-        except BaseException, e:
-            raise CommandError(e)
+    """Router for Astakos/Cyclades models."""
+
+    def db_for_read(self, model, **hints):
+        """Select db to read."""
+        app = model._meta.app_label
+        return select_db(app)
+
+    def db_for_write(self, model, **hints):
+        """Select db to write."""
+        app = model._meta.app_label
+        return select_db(app)
+
+    # The rest of the methods are ommited since relations and syncing should
+    # not affect the router.

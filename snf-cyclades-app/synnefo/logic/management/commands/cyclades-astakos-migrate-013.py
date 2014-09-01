@@ -20,7 +20,7 @@ import functools
 from optparse import make_option
 
 from django.core.management.base import NoArgsCommand, CommandError, BaseCommand
-from django.db import transaction
+from synnefo.db import transaction
 from django.conf import settings
 
 from synnefo.api.util import get_existing_users

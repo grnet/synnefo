@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-from django.db import transaction
+from synnefo.db import transaction
 from snf_django.lib.api import faults
 from synnefo.plankton.backend import PlanktonBackend
 from synnefo.logic import backend

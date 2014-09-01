@@ -18,7 +18,7 @@ from logging import getLogger
 from functools import wraps
 
 from django.conf import settings
-from django.db import transaction
+from synnefo.db import transaction
 from django.db.models import Q
 
 from snf_django.lib import api

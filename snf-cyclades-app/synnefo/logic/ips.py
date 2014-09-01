@@ -17,7 +17,7 @@ import logging
 import functools
 
 from snf_django.lib.api import faults
-from django.db import transaction
+from synnefo.db import transaction
 from synnefo import quotas
 from synnefo.db import pools
 from synnefo.db.models import (IPPoolTable, IPAddress, Network)

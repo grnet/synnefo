@@ -20,7 +20,7 @@ from django.contrib import messages
 from django.http import HttpResponseRedirect
 from django.core.urlresolvers import reverse
 from django.core.validators import ValidationError
-from django.db import transaction
+from astakos.im import transaction
 
 from astakos.im.models import PendingThirdPartyUser, AstakosUser
 from astakos.im.util import get_query, login_url

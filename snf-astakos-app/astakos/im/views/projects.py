@@ -28,7 +28,7 @@ from django.utils.translation import ugettext as _
 from django.views.generic.list_detail import object_list, object_detail
 from django.core.exceptions import PermissionDenied
 from django.views.decorators.http import require_http_methods
-from django.db import transaction
+from astakos.im import transaction
 from django.template import RequestContext
 from django.db.models import Q
 

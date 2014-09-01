@@ -27,7 +27,7 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
 from django.utils.encoding import smart_str
-from django.db import transaction
+from astakos.im import transaction
 from django.core import validators
 
 from synnefo.util import units

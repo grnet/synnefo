@@ -15,7 +15,7 @@
 
 from optparse import make_option
 
-from django.db import transaction
+from synnefo.db import transaction
 from django.core.management.base import CommandError
 
 from synnefo.management.common import (get_resource, convert_api_faults,

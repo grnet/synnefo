@@ -53,3 +53,9 @@ SYNNEFO_VERSION = get_component_version('common')
 # Footer message appears above Copyright message at the Compute templates
 # and the Dashboard UI. Accepts html tags
 FOOTER_EXTRA_MESSAGE = getattr(settings, 'BRANDING_FOOTER_EXTRA_MESSAGE', '')
+
+# The location of the css files that contain the font loading css code
+FONTS_CSS_URLS = getattr(settings, 'BRANDING_FONTS_CSS_URLS', [
+    '//fonts.googleapis.com/css?family=Open+Sans&subset=latin,greek-ext,greek',
+    '//fonts.googleapis.com/css?family=Ubuntu&subset=latin,greek'
+])

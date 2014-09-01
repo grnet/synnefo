@@ -1,5 +1,9 @@
+import json
+
 from django.utils.safestring import mark_safe
 from django.conf import settings
+
+from synnefo_branding import settings as branding_settings
 
 
 def cloudbar(request):
@@ -30,6 +34,8 @@ def cloudbar(request):
 
     """
 
+    BRANDING_CSS = getattr(branding_settings, 'FONTS_CSS_URLS', [])
+
     CB_ACTIVE = getattr(settings, 'CLOUDBAR_ACTIVE', True)
     CB_LOCATION = getattr(settings, 'CLOUDBAR_LOCATION')
     CB_COOKIE_NAME = getattr(settings, 'CLOUDBAR_COOKIE_NAME',
@@ -49,6 +55,8 @@ def cloudbar(request):
         var GET_MENU_URL = "%(menu_url)s";
         var CLOUDBAR_HEIGHT = '%(height)s';
 
+        var CLOUDBAR_EXTRA_CSS = %(branding_css)s;
+
         $(document).ready(function(){
             $.getScript(CLOUDBAR_LOCATION + 'cloudbar.js');
         });
@@ -67,7 +75,8 @@ def cloudbar(request):
        'services_url': CB_SERVICES_URL,
        'menu_url': CB_MENU_URL,
        'height': str(CB_HEIGHT),
-       'bg_color': CB_BGCOLOR}
+       'bg_color': CB_BGCOLOR,
+       'branding_css': json.dumps(BRANDING_CSS)}
 
     CB_CODE = mark_safe(CB_CODE)
 

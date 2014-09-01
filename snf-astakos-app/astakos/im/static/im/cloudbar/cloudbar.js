@@ -27,11 +27,16 @@ $(document).ready(function(){
     css.attr({rel:'stylesheet', type:'text/css', href:cssloc + 'cloudbar.css'});
     $("head").append(css);
     
-    // load fonts
-    var font_url = 'https://fonts.googleapis.com/css?family=Open+Sans:400,600,700&subset=latin,greek-ext,greek';
-    var css_font = $("<link />");
-    css_font.attr({rel:'stylesheet', type:'text/css', href:font_url});
-    $("head").append(css_font);
+    // load extra css
+    var extra_css = window.CLOUDBAR_EXTRA_CSS || [];
+    var css_tag = undefined;
+    var css_uri = undefined;
+    for (var i=0; i<extra_css.length; i++) {
+        css_uri = extra_css[i];
+        css_tag = $("<link />");
+        css_tag.attr({rel:'stylesheet', type:'text/css', href: css_uri});
+        $("head").append(css_tag);
+    }
 
     // load service specific css
     var SKIP_ADDITIONAL_CSS = window.SKIP_ADDITIONAL_CSS == undefined ? false : window.SKIP_ADDITIONAL_CSS;

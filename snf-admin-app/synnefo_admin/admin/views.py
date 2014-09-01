@@ -16,7 +16,6 @@
 import logging
 import json
 from importlib import import_module
-import inspect
 
 from django.views.generic.simple import direct_to_template
 from django.conf import settings
@@ -42,7 +41,6 @@ from synnefo_admin.admin.exceptions import AdminHttp404, AdminHttp405
 from synnefo_admin import admin_settings
 
 from synnefo_admin.admin import exceptions
-from synnefo_admin.admin import tables
 from synnefo_admin.admin.utils import (conditionally_gzip_page,
                                        customize_details_context, admin_log)
 
@@ -63,11 +61,8 @@ def get_view_module(view_type):
     setting.
     """
     if view_type in admin_settings.ADMIN_VIEWS:
-        try:
-            # This module will not be reloaded again as it's probably cached.
-            return import_module('synnefo_admin.admin.resources.%ss.views' % view_type)
-        except ImportError:
-            return import_module('synnefo_admin.admin.resources.%ss' % view_type)
+        # The modules will not be loaded per-call but only once.
+        return import_module('synnefo_admin.admin.resources.%ss.views' % view_type)
     return None
 
 
@@ -137,7 +132,7 @@ def admin_user_required(func, permitted_groups=admin_settings.\
             raise PermissionDenied
 
         logging.debug("User %s accessed admininterface view (%s)",
-                     request.user_uniq, request.path)
+                      request.user_uniq, request.path)
         return func(request, *args, **kwargs)
 
     return wrapper

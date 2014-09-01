@@ -12,20 +12,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
 
-import re
-from collections import OrderedDict
-
-from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
 from django.core.urlresolvers import reverse
 
 from astakos.im.models import AstakosUserAuthProvider
-from astakos.im.models import AstakosUser
-
-from eztables.views import DatatablesView
-from actions import AdminAction
+from synnefo_admin.admin.tables import AdminJSONView
 
 templates = {
     'list': 'admin/auth_provider_list.html',
@@ -33,19 +24,7 @@ templates = {
 }
 
 
-def get_allowed_actions(auth_provider):
-    """Get a list of actions that can apply to an auth_provider."""
-    allowed_actions = []
-    actions = generate_actions()
-
-    for key, action in actions.iteritems():
-        if action.can_apply(auth_provider):
-            allowed_actions.append(key)
-
-    return allowed_actions
-
-
-class AstakosUserAuthProviderJSONView(DatatablesView):
+class AstakosUserAuthProviderJSONView(AdminJSONView):
     model = AstakosUserAuthProvider
     fields = ('id', 'module', 'identifier', 'active', 'created')
 
@@ -55,7 +34,7 @@ class AstakosUserAuthProviderJSONView(DatatablesView):
         extra_dict = {
             'allowed_actions': {
                 'display_name': "",
-                'value': get_allowed_actions(inst),
+                'value': [],
                 'visible': False,
             }, 'id': {
                 'display_name': "ID",
@@ -95,47 +74,10 @@ class AstakosUserAuthProviderJSONView(DatatablesView):
 JSON_CLASS = AstakosUserAuthProviderJSONView
 
 
-class AstakosUserAuthProviderAction(AdminAction):
-
-    """Class for actions on auth_providers. Derived from AdminAction.
-
-    Pre-determined Attributes:
-        target:        auth_provider
-    """
-
-    def __init__(self, name, f, **kwargs):
-        """Initialize the class with provided values."""
-        AdminAction.__init__(self, name=name, target='auth_provider', f=f,
-                             **kwargs)
-
-
-def generate_actions():
-    """Create a list of actions on auth_providers.
-
-    The actions are: activate/deactivate, accept/reject, verify, contact.
-    """
-    actions = OrderedDict()
-
-    actions['contact'] = AstakosUserAuthProviderAction(name='Send e-mail',
-                                                       f=send_email)
-    return actions
-
-
-def do_action(request, op, id):
-    """Apply the requested action on the specified auth_provider."""
-    auth_provider = AstakosUserAuthProvider.objects.get(id=id)
-    actions = generate_actions()
-
-    if op == 'contact':
-        actions[op].apply(auth_provider, request.POST['text'])
-    else:
-        actions[op].apply(auth_provider)
-
-
 def catalog(request):
     """List view for Cyclades auth_providers."""
     context = {}
-    context['action_dict'] = generate_actions()
+    context['action_dict'] = {}
     context['columns'] = ["Name", "Identifier", "Active",
                           "Creation date", ""]
     context['item_type'] = 'auth_provider'

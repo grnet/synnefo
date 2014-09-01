@@ -13,20 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
-import logging
-import re
-from collections import OrderedDict
-
-from django.core.exceptions import ObjectDoesNotExist
-from django.conf import settings
-from django.core.urlresolvers import reverse
 from django.contrib.auth.models import Group
 
 from synnefo_admin.admin.exceptions import AdminHttp404
+from synnefo_admin.admin.tables import AdminJSONView
 
-from eztables.views import DatatablesView
-from synnefo_admin.admin.actions import AdminAction
 
 templates = {
     'list': 'admin/group_list.html',
@@ -34,19 +25,7 @@ templates = {
 }
 
 
-def get_allowed_actions(group):
-    """Get a list of actions that can apply to a group."""
-    allowed_actions = []
-    actions = generate_actions()
-
-    for key, action in actions.iteritems():
-        if action.can_apply(group):
-            allowed_actions.append(key)
-
-    return allowed_actions
-
-
-class GroupJSONView(DatatablesView):
+class GroupJSONView(AdminJSONView):
     model = Group
     fields = ('id', 'name')
 
@@ -56,7 +35,7 @@ class GroupJSONView(DatatablesView):
         extra_dict = {
             'allowed_actions': {
                 'display_name': "",
-                'value': get_allowed_actions(inst),
+                'value': [],
                 'visible': False,
             }, 'id': {
                 'display_name': "ID",
@@ -75,44 +54,14 @@ class GroupJSONView(DatatablesView):
 JSON_CLASS = GroupJSONView
 
 
-class GroupAction(AdminAction):
-
-    """Class for actions on groups. Derived from AdminAction.
-
-    Pre-determined Attributes:
-        target:        group
-    """
-
-    def __init__(self, name, f, **kwargs):
-        """Initialize the class with provided values."""
-        AdminAction.__init__(self, name=name, target='group', f=f, **kwargs)
-
-
-def generate_actions():
-    """Create a list of actions on groups.
-
-    Currently there are none
-    """
-    actions = OrderedDict()
-
-    return actions
-
-
 def do_action(request, op, id):
-    """Apply the requested action on the specified group."""
-    group = Group.objects.get(id=id)
-    actions = generate_actions()
-
-    if op == 'contact':
-        actions[op].apply(group, request.POST['text'])
-    else:
-        actions[op].apply(group)
+    raise AdminHttp404("There are no actions for Groups")
 
 
 def catalog(request):
     """List view for Cyclades groups."""
     context = {}
-    context['action_dict'] = generate_actions()
+    context['action_dict'] = {}
     context['columns'] = ["ID", "Name", ""]
     context['item_type'] = 'group'
 

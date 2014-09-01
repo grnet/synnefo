@@ -22,6 +22,7 @@ from django.utils.html import escape
 from synnefo.db.models import (VirtualMachine, Network, Volume,
                                IPAddress)
 from astakos.im.models import AstakosUser, Project
+from astakos.im import transaction
 
 from synnefo_admin import admin_settings
 from synnefo_admin.admin.actions import (has_permission_or_403,
@@ -191,6 +192,7 @@ JSON_CLASS = ProjectJSONView
 
 
 @has_permission_or_403(cached_actions)
+@transaction.commit_on_success
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     if op == "contact":

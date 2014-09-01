@@ -23,6 +23,7 @@ from synnefo.db.models import (VirtualMachine, Network, IPAddressLog, Volume,
                                NetworkInterface, IPAddress)
 from astakos.im.models import AstakosUser, Project
 from astakos.im import user_logic as users
+from astakos.im import transaction
 
 from django.db.models import Q
 
@@ -161,6 +162,7 @@ JSON_CLASS = UserJSONView
 
 
 @has_permission_or_403(cached_actions)
+@transaction.commit_on_success
 def do_action(request, op, id):
     """Apply the requested action on the specified user."""
     user = get_user_or_404(id)

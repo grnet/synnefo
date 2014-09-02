@@ -29,6 +29,7 @@ $(document).ready(function(){
     
     // load extra css
     var extra_css = window.CLOUDBAR_EXTRA_CSS || [];
+    if (window.CLOUDBAR_INCLUDE_FONTS === false) { extra_css = []; }
     var css_tag = undefined;
     var css_uri = undefined;
     for (var i=0; i<extra_css.length; i++) {

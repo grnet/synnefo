@@ -4,7 +4,7 @@ set -e
 runAstakosTests () {
     if [ -z "$astakos_tests" ]; then return; fi
 
-    export SYNNEFO_EXCLUDE_PACKAGES="snf-cyclades-app"
+    export SYNNEFO_EXCLUDE_PACKAGES="snf-cyclades-app snf-admin-app snf-pithos-app"
     CURRENT_COMPONENT=astakos
     createSnfManageTest $astakos_tests
     runTest
@@ -13,16 +13,25 @@ runAstakosTests () {
 runCycladesTests () {
     if [ -z "$cyclades_tests" ]; then return; fi
 
-    export SYNNEFO_EXCLUDE_PACKAGES="snf-pithos-app snf-astakos-app"
+    export SYNNEFO_EXCLUDE_PACKAGES="snf-pithos-app snf-astakos-app snf-admin-app"
     CURRENT_COMPONENT=synnefo
     createSnfManageTest $cyclades_tests
+    runTest
+}
+
+runAdminTests () {
+    if [ -z "$admin_tests" ]; then return; fi
+
+    export SYNNEFO_EXCLUDE_PACKAGES="snf-pithos-app"
+    CURRENT_COMPONENT=synnefo_admin
+    createSnfManageTest $admin_tests
     runTest
 }
 
 runPithosTests () {
     if [ -z "$pithos_tests" ]; then return; fi
 
-    export SYNNEFO_EXCLUDE_PACKAGES="snf-cyclades-app"
+    export SYNNEFO_EXCLUDE_PACKAGES="snf-cyclades-app snf-astakos-app"
     CURRENT_COMPONENT=pithos
     createSnfManageTest $pithos_tests
     runTest
@@ -118,7 +127,7 @@ extract_tests () {
                 append "${c}_tests" "$(eval "echo \$"${c}"_all_tests")"
                 return
             elif contains $1 "$c."; then
-                append "${c}_tests" $(echo $1 | sed -e 's/[a-z]*\.//g')
+                append "${c}_tests" $(echo $1 | sed -e 's/^[a-z]*\.//g')
                 return
             fi
         fi
@@ -131,12 +140,14 @@ export SYNNEFO_SETTINGS_DIR=/tmp/snf-test-settings
 
 astakos_all_tests="im quotaholder_app oa2"
 cyclades_all_tests="api db logic plankton quotas vmapi helpdesk userdata volume"
+admin_all_tests="admin"
 pithos_all_tests="api"
 astakosclient_all_tests="astakosclient"
-ALL_COMPONENTS="astakos cyclades pithos astakosclient"
+ALL_COMPONENTS="astakos cyclades admin pithos astakosclient"
 
 astakos_tests=""
 cyclades_tests=""
+admin_tests=""
 pithos_tests=""
 astakosclient_tests=""
 
@@ -170,6 +181,7 @@ echo "| Component     | Tests"
 echo "|---------------|----------------------------"
 echo "| Astakos       | $astakos_tests"
 echo "| Cyclades      | $cyclades_tests"
+echo "| Admin         | $admin_tests"
 echo "| Pithos        | $pithos_tests"
 echo "| Astakosclient | $astakosclient_tests"
 echo "|===============|============================"
@@ -183,5 +195,6 @@ fi
 # For each component, run the specified tests.
 runAstakosTests
 runCycladesTests
+runAdminTests
 runPithosTests
 runAstakosclientTests

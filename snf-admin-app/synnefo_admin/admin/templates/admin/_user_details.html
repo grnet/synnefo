@@ -1,0 +1,71 @@
+{% load admin_tags %}
+
+{% with user=item %}
+<div class="object-anchor" id="{{ type }}-{{user|id}}"></div>
+<div class="object-details {{ rowcls }}" data-id="{{user|id}}"
+    data-type="{{type}}">
+    <h4 class="clearfix">
+        {% include "admin/_details_h4_lt.html" %}
+        <span class="rt">
+            {{ user|status_label|safe }}
+            <span class="label">UUID: {{ user.uuid }}</span>
+            <span class="label">{{ user.email }}</span>
+        </span>
+    </h4>
+
+    <div class="object-details-content">
+        <ul class="nav nav-tabs">
+            <li class="active"><a href="#details{{ user.uuid }}" data-toggle="tab">Details</a></li>
+            <li><a href="#log{{ user.uuid }}" data-toggle="tab">Log</a></li>
+            <li><a href="#auth{{ user.uuid }}" data-toggle="tab">Auth Providers</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane active" id="details{{ user.uuid }}">
+                <dl class="dl-horizontal well">
+                    <dt>ID</dt><dd>{{ user.id }}</dd>
+                    <dt>UUID</dt><dd>{{ user.uuid }}</dd>
+                    <dt>Name</dt><dd>{{ user.realname }}</dd>
+                    <dt>Email</dt><dd>{{ user.email }}</dd>
+                    <dt>Status</dt><dd>{{ user.status_display|upper }}</dd>
+                    <dt>Groups</dt><dd>{{ user|get_groups }}</dd>
+                </dl>
+            </div>
+            <div class="tab-pane" id="log{{ user.uuid }}">
+                <dl class="dl-horizontal well">
+                    {% if user.date_signed_terms %}
+                        <dt>Signed terms at</dt><dd>{{ user.date_signed_terms }}</dd>
+                    {% endif %}
+                    {% if user.verified_at %}
+                        <dt>Verified at</dt><dd>{{ user.verified_at }}</dd>
+                    {% endif %}
+                    {% if user.activation_sent %}
+                        <dt>Activation sent at</dt><dd>{{ user.activation_sent }}</dd>
+                    {% endif %}
+                    {% if user.moderated_at %}
+                        <dt>Moderated at</dt><dd>{{ user.moderated_at }}</dd>
+                        <dt>Moderation policy</dt><dd>{{ user.accepted_policy }}</dd>
+                    {% endif %}
+                    {% if user.rejected_reason %}
+                        <dt>Rejection reason</dt><dd>{{ user.rejected_reason }}</dd>
+                    {% endif %}
+                    {% if user.deactivated_at %}
+                        <dt>Deactivated at</dt><dd>{{ user.deactivated_at }}</dd>
+                        <dt>Deactivation reason</dt><dd>{{ user.deactivated_reason }}</dd>
+                    {% endif %}
+                    <dt>Last profile update at</dt><dd>{{ user.updated }}</dd>
+                    <dt>Last logged-in at</dt><dd>{{ user.last_login }}</dd>
+
+                </dl>
+            </div>
+            <div class="tab-pane" id="auth{{ user.uuid }}">
+                <dl class="dl-horizontal well">
+                    <dt>Unused</dt><dd>{{ user|show_auth_providers:"available" }}</dd>
+                    <dt>Enabled</dt><dd>{{ user|show_auth_providers:"enabled" }}</dd>
+                    <dt>Disabled</dt><dd>{{ user|show_auth_providers:"disabled" }}</dd>
+                </dl>
+            </div>
+        </div> <!-- <div class="tab-content"> -->
+    </div> <!-- <div class="object-details-content"> -->
+    {% include "admin/action_list_horizontal.html" %}
+</div> <!-- <div class="object-details {{ rowcls }}"> -->
+{% endwith %}

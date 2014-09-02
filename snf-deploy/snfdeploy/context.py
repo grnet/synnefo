@@ -65,6 +65,7 @@ class Context(object):
         self.db = self._get(constants.DB)
         self.astakos = self._get(constants.ASTAKOS)
         self.cyclades = self._get(constants.CYCLADES)
+        self.admin = self._get(constants.ADMIN)
         self.pithos = self._get(constants.PITHOS)
         self.stats = self._get(constants.STATS)
         self.cms = self._get(constants.CMS)

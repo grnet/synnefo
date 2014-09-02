@@ -32,7 +32,8 @@ def select_db(app):
     if not routers or SYNNEFO_ROUTER not in settings.DATABASE_ROUTERS:
         return "default"
 
-    if app == "im" and ASTAKOS_DATABASE in settings.DATABASES:
+    if (app in ["im", "auth", "quotaholder_app"] and
+            ASTAKOS_DATABASE in settings.DATABASES):
         return ASTAKOS_DATABASE
     elif app == "db" and CYCLADES_DATABASE in settings.DATABASES:
         return CYCLADES_DATABASE

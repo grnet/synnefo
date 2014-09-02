@@ -7,6 +7,19 @@
  * (c) 2009-2014 Torstein Honsi
  *
  * License: www.highcharts.com/license
+ *
+//From shop.highsoft.com/faq/non-commercial (Retrieved at September 2, 2014):
+
+    //NON-COMMERCIAL REDISTRIBUTION.
+    //------------------------------
+
+    //You are allowed to distribute a Highsoft software product with
+    //non-commercial packages given that you fulfill two conditions:
+
+    //Emphasize to your users that a Highsoft software product is not free for
+    //commercial use. You can do this on your download page or when your users
+    //activate a Highsoft software product in your application.  Provide a link
+    //back to this web page in the same location.
  */
 
 // JSLint options:

@@ -46,7 +46,9 @@
                             <span class="snf-angle-down arrow"></span></a>
                             <ul class="dropdown-menu align-left">
                                 <li {% block nav-stats %}{%  endblock %}><a href="{% url admin-stats %}">Stats</a></li>
+                                {% if ADMIN_ENABLE_CHARTS %}
                                 <li {% block nav-charts %}{%  endblock %}><a href="{% url admin-charts %}">Charts</a></li>
+                                {% endif %}
                             </ul>
                         </li>
                     </ul>

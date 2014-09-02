@@ -33,6 +33,18 @@ AUTH_COOKIE_NAME = getattr(settings, 'ADMIN_AUTH_COOKIE_NAME',
                            getattr(settings, 'UI_AUTH_COOKIE_NAME',
                                    '_pithos2_a'))
 
+# This setting enables the charts presentation of Astakos/Cyclades resources.
+# The charting software that is used is Highcharts by HighSoft AS.
+#
+# Due to the licensing nature of Highcharts, it is disabled by default. You can
+# view the Highcharts license [1] and the accompanying FAQ [2], to decide
+# whether to enable it or not.
+#
+# [1]: www.highcharts.com/license, http://shop.highsoft.com/highcharts.html
+# [2]: http://shop.highsoft.com/highcharts.html,
+#      http://shop.highsoft.com/faq/non-commercial
+ADMIN_ENABLE_CHARTS = getattr(settings, 'ADMIN_ENABLE_CHARTS', False)
+
 # A dictionary with the enabled admin model views.
 DEFAULT_ADMIN_VIEWS = {
     'user': {'label': 'Users'},

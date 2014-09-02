@@ -1,9 +1,26 @@
-$(document).ready(function() {	
-	/**
-	 * Dark theme for Highcharts JS
-	 * @author Torstein Honsi
-	 */
+//@license Highcharts JS
 
+//License: www.highcharts.com/license, shop.highsoft.com/highcharts.html
+//Modified slightly for the use case of Synnefo.
+
+//From shop.highsoft.com/faq/non-commercial (Retrieved at September 2, 2014):
+
+    //NON-COMMERCIAL REDISTRIBUTION.
+    //------------------------------
+
+    //You are allowed to distribute a Highsoft software product with
+    //non-commercial packages given that you fulfill two conditions:
+
+    //Emphasize to your users that a Highsoft software product is not free for
+    //commercial use. You can do this on your download page or when your users
+    //activate a Highsoft software product in your application.  Provide a link
+    //back to this web page in the same location.
+
+/**
+ * Dark theme for Highcharts JS
+ * @author Torstein Honsi
+ */
+$(document).ready(function() {	
 	// Load the fonts
 	// Highcharts.createElement('link', {
 	//    href: 'http://fonts.googleapis.com/css?family=Unica+One',

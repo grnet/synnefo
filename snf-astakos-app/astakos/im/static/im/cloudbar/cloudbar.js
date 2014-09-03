@@ -19,12 +19,13 @@ $(document).ready(function(){
 
     var USER_DATA = window.CLOUDBAR_USER_DATA || {'user': 'Not logged in', 'logged_in': false};
     var COOKIE_NAME = window.CLOUDBAR_COOKIE_NAME || '_pithos2_a';
+    var VERSION = window.CLOUDBAR_VERSION || '';
 
     var cssloc = window.CLOUDBAR_LOCATION || "http://127.0.0.1:8989/";
     
     // load css
     var css = $("<link />");
-    css.attr({rel:'stylesheet', type:'text/css', href:cssloc + 'cloudbar.css'});
+    css.attr({rel:'stylesheet', type:'text/css', href:cssloc + 'cloudbar.css?'+VERSION});
     $("head").append(css);
     
     // load extra css

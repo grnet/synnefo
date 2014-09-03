@@ -144,7 +144,6 @@ $(document).ready(function(){
     equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
      
 	$('.cloudbar .profile .full>a').live('focus', function(e){
-		console.info('i just focused');
 		e.preventDefault();
         equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
    		$(this).siblings('ul').show();
@@ -156,7 +155,6 @@ $(document).ready(function(){
 	}); 
  
  	$('.cloudbar .profile ul li:last a').live('focusout', function(e){	
- 		console.info('i just focused out in style');
  		$(this).parents('ul').attr('style', '');
  		$(this).parents('ul').removeAttr('style');
  		equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));

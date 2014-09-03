@@ -149,3 +149,6 @@ ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY = getattr(
 # that will be shown in his/her table summary.
 ADMIN_LIMIT_SUSPENDED_VMS_IN_SUMMARY = getattr(
     settings, 'ADMIN_LIMIT_SUSPENDED_VMS_IN_SUMMARY', 10)
+
+# The sign that will indicate that a filter term concerns a model field.
+ADMIN_FIELD_SIGN = getattr(settings, 'ADMIN_FIELD_SIGN', '=')

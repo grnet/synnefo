@@ -93,7 +93,7 @@ def catalog(request):
     """List view for Cyclades ip log."""
     context = {}
     context['action_dict'] = None
-    context['filter_dict'] = IPLogFilterSet().filters.itervalues()
+    context['filter_dict'] = IPLogFilterSet().filters.values()
     context['columns'] = ["Address", "Server ID", "Network ID",
                           "Allocation date", "Release date", "Active", ""]
     context['item_type'] = 'ip_log'

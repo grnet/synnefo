@@ -212,7 +212,7 @@ def catalog(request):
     context = {}
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
-    context['filter_dict'] = ProjectFilterSet().filters.itervalues()
+    context['filter_dict'] = ProjectFilterSet().filters.values()
     context['columns'] = ["ID", "Name", "Owner Name", "Project Status",
                           "Application Status", "Creation date", "End date",
                           ""]

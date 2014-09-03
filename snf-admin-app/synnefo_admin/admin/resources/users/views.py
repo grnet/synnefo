@@ -182,7 +182,7 @@ def catalog(request):
     context = {}
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
-    context['filter_dict'] = UserFilterSet().filters.itervalues()
+    context['filter_dict'] = UserFilterSet().filters.values()
     context['columns'] = ["ID", "E-mail", "First Name", "Last Name", "Active",
                           "Rejected", "Moderated", "Verified", ""]
     context['item_type'] = 'user'

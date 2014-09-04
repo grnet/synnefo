@@ -357,3 +357,25 @@ svg>text:last-child {
     left: 10px;
     bottom: 10px;
 }
+
+.charts {
+    .info {
+        overflow: hidden;
+    }
+    h3 {
+        text-align: center;
+        margin-bottom: 1em;
+    }
+    .c3-axis {
+        fill: $text-color;
+    }
+    .c3 path, .c3 line {
+        stroke: $text-color;
+    }
+    .c3-legend-item text {
+        fill: $text-color;
+    }
+    .c3-tooltip {
+        color: #222;
+    }
+}

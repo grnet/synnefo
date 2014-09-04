@@ -61,9 +61,12 @@ class Command(SynnefoCommand):
         volume_type_ids = args[3].split(',')
         for vol_t_id in volume_type_ids:
             try:
+                vol_t_id = int(vol_t_id)
                 volume_types.append(VolumeType.objects.get(id=vol_t_id,
                                                            deleted=False))
-            except VolumeType.DoesNotExist:
+            except ValueError:
+                raise CommandError("Invalid volume type ID: '%s'" % vol_t_id)
+            except (VolumeType.DoesNotExist, ValueError):
                 raise CommandError("Volume type with ID '%s' does not exist."
                                    " Use 'snf-manage volume-type-list' to find"
                                    " out available volume types." % vol_t_id)

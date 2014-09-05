@@ -46,6 +46,7 @@ Architecture: all
 Depends: ${misc:Depends}, ${python:Depends},
   snf-common (= ${binary:Version}), snf-django-lib (= ${binary:Version}),
   snf-branding (= ${binary:Version}), snf-webproject (= ${binary:Version}),
+  snf-vncauthproxy (> 1.5),
   python-astakosclient (= ${binary:Version}),
   snf-pithos-backend (= ${binary:Version}),
   python-django-south (>= 0.7.3),

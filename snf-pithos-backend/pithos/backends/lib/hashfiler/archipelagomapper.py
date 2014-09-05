@@ -65,6 +65,7 @@ class ArchipelagoMapper(object):
         flags = req.get_flags()
         flags |= XF_ASSUMEV0
         req.set_flags(flags)
+        req.set_v0_size(size)
         req.submit()
         req.wait()
         ret = req.success()

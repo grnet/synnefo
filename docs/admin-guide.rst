@@ -650,27 +650,24 @@ Enabling this feature consists of the following steps:
 
 .. _select_pithos_storage:
 
-Select Pithos storage backend
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Pithos storage backend
+~~~~~~~~~~~~~~~~~~~~~~
 
-Starting from Synnefo 0.15.1 we introduce the ability to select or change the
-storage backend. If you have already enabled and configured RADOS as your
-secondary storage solution you can now explicitly select your storage
-backend being only RADOS.
+Starting from Synnefo version 0.16, we introduce Archipelago as the new storage
+backend. Archipelago will act as a storage abstraction layer between Pithos and
+NFS, RADOS or any other storage backend driver that Archipelago supports. For
+more information about backend drivers please check Archipelago documentation.
 
-A new variable has been introduced called PITHOS_BACKEND_STORAGE with
-possible values 'nfs' and 'rados', default value is 'nfs'.
-For those users that need to migrate from NFS to RADOS and have not enabled the
-dual mode of operation from the beginning of their installation, you can
-use a synchronization script that is provided in order to synchronize the data
-from NFS to Rados. The script can be found at
-`/usr/lib/pithos/tools/pithos-sync-rados.sh`.
+Since this version care must be taken when restarting Archipelago on a Pithos
+worker node. Pithos acts as an Archipelago peer and must be stopped first
+before trying to restart Archipelago for any reason.
 
-Since this version the dual mode of operation is not supported any more,
-meaning you will not be able to keep double Pithos objects anymore in NFS and
-RADOS.
-After installing v0.15.1 you will have to choose between the storage backend
-you want to use.
+If you need to restart Archipelago on a running Pithos worker follow the
+procedure below::
+
+    pithos-host$ /etc/init.d/gunicorn stop
+    pithos-host$ /etc/init.d/archipelago restart
+    pithos-host$ /etc/init.d/gunicorn start
 
 
 Compute/Network/Image Service (Cyclades)

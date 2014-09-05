@@ -252,7 +252,7 @@ _.extend(UsageView.prototype, {
     project_bar_el.css({width: usage.user_project_ratio + "%"});
 
     bar_value.text(usage.ratio+"%");
-    var left = usage.label_left + "%";
+    var left = usage.label_left;
     bar_value.css({left:left});
     bar_value.css({color:usage.label_color});
     el.removeClass("green yellow red");

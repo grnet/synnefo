@@ -2096,6 +2096,22 @@ settings. Check the `documentation
 <http://www.synnefo.org/docs/snf-vncauthproxy/latest/index.html>`_ of
 snf-vncauthproxy for more information.
 
+You should also provide snf-vncauthproxy with SSL certificates signed by a
+trusted CA. You can either copy them to `/var/lib/vncauthproxy/{cert,key}.pem`
+or inform vncauthproxy about the location of the certificates (via the
+`DAEMON_OPTS` setting in `/etc/default/vncauthproxy`).
+
+::
+
+    DAEMON_OPTS="--pid-file=$PIDFILE --cert-file=<path_to_cert> --key-file=<path_to_key>"
+
+Both files should be readable by the `vncauthproxy` user or group.
+
+.. note::
+
+    At the moment, the certificates should be issued to the FQDN of the
+    Cyclades worker.
+
 We have now finished with the basic Cyclades configuration.
 
 Database Initialization

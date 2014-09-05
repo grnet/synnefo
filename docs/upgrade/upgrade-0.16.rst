@@ -6,16 +6,16 @@ Introduction
 
 Starting with version 0.16, we introduce Archipelago as the new storage backend
 for the Pithos Service. Archipelago will act as a storage abstraction layer
-between Pithos and NFS, RADOS or any other storage backend driver that Archipelago
-supports. In order to use the Pithos Service you must install Archipelago on the
-node that runs the Pithos workers. Additionally, you must install snf-image
-version 0.16 on the Ganeti nodes since this is the first version that supports
-Archipelago.
+between Pithos and NFS, RADOS or any other storage backend driver that
+Archipelago supports. In order to use the Pithos Service you must install
+Archipelago on the node that runs the Pithos and Cyclades workers.
+Additionally, you must install snf-image version 0.16 on the Ganeti nodes since
+this is the first version that supports Archipelago.
 
 Until now the Pithos mapfile was a simple file containing a list of hashes that
-make up the stored file in a Pithos container. After this consolidation the Pithos
-mapfile had to be converted to an Archipelago mapfile. An Archipelago mapfile
-is an updated version of the Pithos mapfile, intended to supersede it.
+make up the stored file in a Pithos container. After this consolidation the
+Pithos mapfile had to be converted to an Archipelago mapfile. An Archipelago
+mapfile is an updated version of the Pithos mapfile, intended to supersede it.
 
 More info about the new mapfile you can find in Archipelago documentation.
 
@@ -23,7 +23,9 @@ More info about the new mapfile you can find in Archipelago documentation.
 Upgrade Steps
 =============
 
-The upgrade to v0.16 consists in the following steps:
+The upgrade to v0.16 consists of the following steps:
+
+0. Upgrade / Install Archipelago and snf-image.
 
 1. Bring down services and backup databases.
 
@@ -42,6 +44,24 @@ The upgrade to v0.16 consists in the following steps:
 
     It is strongly suggested that you keep separate database backups
     for each service after the completion of each step.
+
+
+0. Upgrade / Install Archipelago and snf-image
+==============================================
+
+If you have never used Archipelago before, make sure to install Archipelago 0.4
+on all Ganeti VM-capable nodes.
+
+If you're upgrading from Archipelago 0.3.5, make sure to upgrade Archipelago
+on all Ganeti nodes before starting the upgrade process. For more
+information, check the Archipelago
+`upgrade notes <https://www.synnefo.org/docs/archipelago/latest/upgrades/archipelago_upgrade_v04.rst>`_.
+
+Once you have Archipelago 0.4 up and running, you can install snf-image 0.16.
+
+At this point, you should also install Archipelago 0.4 on the Pithos and
+Cyclades workers.
+
 
 1. Bring web services down, backup databases
 ============================================
@@ -143,6 +163,33 @@ The upgrade to v0.16 consists in the following steps:
 
     pithos-host$ pithos-migrate upgrade head
 
+
+2.3 Configure snf-vncauthproxy
+------------------------------
+
+Synnefo 0.16 replaces the Java VNC client with an HTML5 Websocket client and
+the Cyclades UI will always request secure Websocket connections. You should,
+therefore, provide snf-vncauthproxy with SSL certificates signed by a trusted
+CA. You can either copy them to `/var/lib/vncauthproxy/{cert,key}.pem` or
+inform vncauthproxy about the location of the certificates (via the
+`DAEMON_OPTS` setting in `/etc/default/vncauthproxy`).
+
+::
+
+    DAEMON_OPTS="--pid-file=$PIDFILE --cert-file=<path_to_cert> --key-file=<path_to_key>"
+
+Both files should be readable by the `vncauthproxy` user or group.
+
+.. note::
+
+    At the moment, the certificates should be issued to the FQDN of the
+    Cyclades worker.
+
+For more information on how to setup snf-vncauthproxy check the
+snf-vncauthproxy `documentation <https://www.synnefo.org/docs/snf-vncauthproxy/latest/index.html#usage-with-synnefo>`_
+and `upgrade notes <https://www.synnefo.org/docs/snf-vncauthproxy/latest/upgrade/upgrade-1.6.html>`_.
+
+
 3. Inspect and adjust resource limits
 =====================================
 
@@ -198,8 +245,8 @@ another project in order to overcome this restriction.
 4. Tweak Archipelago and Gunicorn settings on Pithos node
 =========================================================
 
-After installing Archipelago on Pithos node we need to adjust the configuration
-files according to our deployment needs.
+After installing Archipelago on the  Pithos node we need to adjust the
+configuration files according to our deployment needs.
 
 For Archipelago the configuration file is located on
 ``/etc/archipelago/archipelago.conf``, where we need to adjust carefully at

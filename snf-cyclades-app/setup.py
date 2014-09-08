@@ -49,7 +49,7 @@ INSTALL_REQUIRES = [
     'puka',
     'python-daemon>=1.5.5, <1.6',
     'snf-common',
-    'vncauthproxy>1.4',
+    'vncauthproxy>1.5',
     'snf-pithos-backend',
     'lockfile>=0.8, <0.9',
     'ipaddr',

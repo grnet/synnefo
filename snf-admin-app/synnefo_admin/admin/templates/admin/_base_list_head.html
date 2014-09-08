@@ -1,0 +1,53 @@
+{% load admin_tags %}
+
+<div class="object-anchor" id="{{ type }}-area"></div>
+<div class="object-details info-block well {{ rowcls }}">
+{% if association.items|length > 0 and type != 'ip_log' %}
+<a href="#" class="show-hide-all line-btn">
+    <span class="snf-font-arrow-up"></span>
+    <span class="snf-font-arrow-down"></span>
+    <span class="txt">Collapse All </span>
+    <em>({{ association.items|length }})</em>
+
+</a>
+{% endif %}
+<h3>
+    <span class="snf-details-{{type}}"></span>
+    {{ type|display_list_type }}
+    <em> of '{{ main_item|repr }}'</em>
+    {% if association.excluded  or association.excluded|add:association.showing < association.total %}
+    <span   class="popover-dismiss" 
+            data-html="true" 
+            data-trigger="hover" 
+            data-toggle="popover" 
+            data-content="
+            {% if association.excluded %}
+            Excluding <b>{{ association.excluded }} {{ association|present_excluded }}</b> from the results.
+ <br>
+            {% endif %}
+            {% if association.excluded|add:association.showing < association.total %}
+            Showing <b>{{ association.showing }} out of {{ association.total }}</b> total entries.<br>
+            {% endif %}
+            To view all entries, visit the {{ type|display_list_type }} tab in navigation. {{ association|show_more_exception_message }}"
+            ">
+        !
+    </span>
+    {% endif %}
+</h3>
+
+{% if type == 'ip_log' and association.items|length > 0 %}
+<table class="table ip_log">
+    <thead>
+        <tr>
+            <th>IP</th>
+            <th>VM</th>
+            <th>Network</th>
+            <th>User</th>
+            <th>Attached date</th>
+            <th>Detached date</th>
+            <th>State</th>
+        </tr>
+    </thead>
+    <tbody>
+{% endif %}
+

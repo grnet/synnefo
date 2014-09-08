@@ -1,0 +1,56 @@
+{% extends "admin/base.html" %}
+
+{% block nav-reports %}
+class="has-dropdown active"
+{% endblock %}
+
+{% block nav-stats %}
+class="active"
+{% endblock %}
+
+{% block content %}
+<div class="container stats">
+<section class="clearfix">
+        <h3><span class="snf-user-full"></span>Astakos</h3>
+        <a href="{% url admin-stats-component 'astakos' %}" class="custom-btn" download="astakos-terse" type="application/json" title="Download terse Astakos statistics in JSON format" data-toggle="tooltip" data-placement="bottom">
+            <span class="snf-download-full"></span>
+            <span>Terse stats</span>
+        </a>
+        <a href="{% url admin-stats-component-details 'astakos' %}" class="custom-btn" download="astakos-details" type="application/json" title="Download detailed Astakos statistics in JSON format" data-toggle="tooltip" data-placement="bottom">
+            <span class="snf-download-full"></span>
+            <span>Detailed stats</span>
+        </a>
+        <div class="spinner">
+            <div class="bounce1"></div>
+            <div class="bounce2"></div>
+            <div class="bounce3"></div>
+            <em>Retrieving data</em>
+        </div>
+    </section>
+    <section class="clearfix">
+        <h3><span class="snf-pc-full"></span>Cyclades</h3>
+        <a href="{% url admin-stats-component 'cyclades' %}" class="custom-btn" download="cyclades-terse" type="application/json" title="Download terse Cyclades statistics in JSON format" data-toggle="tooltip" data-placement="bottom">
+            <span class="snf-download-full"></span>
+            <span>Terse stats</span>
+        </a>
+        <a href="{% url admin-stats-component-details 'cyclades' %}" class="custom-btn" download="cyclades-details" type="application/json" title="Download detailed Cyclades statistics in JSON format" data-toggle="tooltip" data-placement="bottom">
+            <span class="snf-download-full"></span>
+            <span>Detailed stats</span>
+        </a>
+        <div class="spinner">
+            <div class="bounce1"></div>
+            <div class="bounce2"></div>
+            <div class="bounce3"></div>
+            <em>Retrieving data</em>
+        </div>
+
+    </section>
+</div>
+{% endblock %}
+
+{% block custom-javascript %}
+<script src="{{ MEDIA_URL }}admin/js/stats.js"></script>
+{% endblock %}
+
+
+

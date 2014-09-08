@@ -19,7 +19,7 @@ from functools import wraps, partial
 
 from django.views.decorators.csrf import csrf_exempt
 from django import http
-from django.db import transaction
+from astakos.im import transaction
 from django.utils import simplejson as json
 from django.forms.models import model_to_dict
 from django.core.validators import validate_email, ValidationError

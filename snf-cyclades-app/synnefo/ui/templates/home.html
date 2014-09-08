@@ -8,12 +8,10 @@
     <!--<meta http-equiv="X-UA-Compatible" content="IE=7">-->
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     
-    {% if SYNNEFO_FONTS_BASE_URL %}
-    <link href="{{ SYNNEFO_FONTS_BASE_URL }}css?family=Ubuntu&subset=latin,greek" 
-          rel="stylesheet" type="text/css" >
-    <link href='{{ SYNNEFO_FONTS_BASE_URL }}css?family=Open+Sans&subset=latin,greek' 
-          rel='stylesheet' type='text/css'>
-    {% endif %}
+
+    {% for url in BRANDING_FONTS_CSS_URLS %}
+        <link href="{{ url }}" rel="stylesheet" type="text/css" >
+    {% endfor %}
 
     <link rel="shortcut icon" href="{{ BRANDING_FAVICON_URL }}" />
 
@@ -54,7 +52,7 @@
 
     <script src="{{ SYNNEFO_JS_LIB_URL}}underscore.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}underscore.string.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
-    <script src="{{ SYNNEFO_JS_LIB_URL}}rivets.conf.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}rivets.conf.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}backbone.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}json2.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}stacktrace.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
@@ -110,8 +108,10 @@
         });
         if (!tmp_auth_client.get_token()) { tmp_auth_client.redirect_to_login(); }
     </script>
+
     {{ CLOUDBAR_CODE }}
-    
+    <script>window.CLOUDBAR_INCLUDE_FONTS = false;</script>
+
     <script>
         // empty object for console to avoid errors in browsers that don't support it
         if (!window.console) {window.console = {}; window.console.log = window.console.info = window.console.debug =

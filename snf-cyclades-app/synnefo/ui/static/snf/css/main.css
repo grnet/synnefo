@@ -6218,6 +6218,7 @@ table.list-machines .wave {
     padding: 6px;
     margin-bottom:1px;
     position: relative;
+    word-wrap: break-word;
 }
 
 .create-wizard-overlay .images-list .image-details img {
@@ -6867,7 +6868,8 @@ input.has-errors {
 
 .icon .suspended-notice {
   right: 192px;
-  top: 54px;
+  top: 60px;
+  z-index: 500;
 }
 
 .suspended-notice {

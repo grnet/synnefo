@@ -27,8 +27,10 @@
   {% endblock page.favicons %}
 
   {% block page.css %}
-       
-      <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600,700&subset=latin,greek-ext,greek' rel='stylesheet' type='text/css'>
+
+      {% for url in BRANDING_FONTS_CSS_URLS %}
+        <link href="{{ url }}" rel="stylesheet" type="text/css" >
+      {% endfor %}
       <link rel="stylesheet" type="text/css" href="{{ IM_STATIC_URL }}css/global.css">
       <link rel="stylesheet" type="text/css" href="{{ IM_STATIC_URL }}css/print.css" media="print">
       <!--[if lte IE 7]>
@@ -78,6 +80,7 @@
 
     {% if CLOUDBAR_ACTIVE %}
         {{ CLOUDBAR_CODE }}
+        <script>window.CLOUDBAR_INCLUDE_FONTS = false;</script>
     {% endif %}
 </head>
 

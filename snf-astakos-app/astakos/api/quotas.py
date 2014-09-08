@@ -15,7 +15,7 @@
 
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
-from django.db import transaction
+from astakos.im import transaction
 
 from snf_django.lib import api
 from snf_django.lib.api.faults import BadRequest, ItemNotFound

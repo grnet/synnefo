@@ -155,6 +155,7 @@ Drafts
    Resource-pool projects design <design/resource-pool-projects>
    Volumes design <design/volumes>
    Volume Snapshots design <design/volume-snapshots>
+   Multi-DB transactions in Django <design/multi-db-transactions>
 
 
 Contact

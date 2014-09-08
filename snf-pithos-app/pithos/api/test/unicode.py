@@ -345,6 +345,15 @@ class TestUnicode(PithosAPITest):
         self.assertTrue('γκρουπ' in groups)
         self.assertEqual(groups['γκρουπ'], 'chazapis,διογένης')
 
+        headers = {'HTTP_X_ACCOUNT_GROUP_γκρουπ': 'διογένης'}
+        url = join_urls(self.pithos_path, self.user)
+        r = self.post('%s?update=' % url, **headers)
+        self.assertEqual(r.status_code, 202)
+
+        groups = self.get_account_groups()
+        self.assertTrue('γκρουπ' in groups)
+        self.assertEqual(groups['γκρουπ'], 'διογένης')
+
         # check read access
         self.create_container('φάκελος')
         odata = self.upload_object('φάκελος', 'ο1')[1]
@@ -388,6 +397,40 @@ class TestUnicode(PithosAPITest):
         r = self.get(url, user='διογένης')
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.content, odata + appended_data)
+
+        gname = ('a' * 256).capitalize()
+        headers = {'HTTP_X_ACCOUNT_GROUP_%s' % gname: 'β'}
+        url = join_urls(self.pithos_path, self.user)
+        r = self.post(url, **headers)
+        self.assertEqual(r.status_code, 202)
+
+        groups = self.get_account_groups()
+        self.assertTrue(gname in groups)
+        self.assertEqual(groups[gname], 'β')
+
+        gname = ('a' * 257).capitalize()
+        headers = {'HTTP_X_ACCOUNT_GROUP_%s' % gname: 'β'}
+        url = join_urls(self.pithos_path, self.user)
+        r = self.post(url, **headers)
+        self.assertEqual(r.status_code, 400)
+
+    def test_group_delete(self):
+        # create a group
+        headers = {'HTTP_X_ACCOUNT_GROUP_γκρουπ': 'chazapis,διογένης'}
+        url = join_urls(self.pithos_path, self.user)
+        r = self.post(url, **headers)
+        self.assertEqual(r.status_code, 202)
+
+        groups = self.get_account_groups()
+        self.assertTrue('γκρουπ' in groups)
+        self.assertEqual(groups['γκρουπ'], 'chazapis,διογένης')
+
+        headers = {'HTTP_X_ACCOUNT_GROUP_γκρουπ': ''}
+        r = self.post('%s?update=' % url, **headers)
+        self.assertEqual(r.status_code, 202)
+
+        groups = self.get_account_groups()
+        self.assertTrue('γκρουπ' not in groups)
 
     def test_manifestation(self):
         self.create_container('κουβάς')

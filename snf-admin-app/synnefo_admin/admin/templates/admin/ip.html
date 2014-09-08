@@ -1,0 +1,48 @@
+{% extends "admin/base.html" %}
+
+{% block extraheader %}
+<small>/ {{ search_query }}</small>
+{% endblock %}
+
+{% block content %}
+{% if ip_exists %}
+<h3>IP Address {{ search_query }}</h3>
+<table class="table table-striped table-sorted table-ip">
+<thead>
+  <tr>
+          <th><span> Server</span></th>
+          <th><span> Network </span></th>
+          <th><span> Allocated </span></th>
+          <th><span> Released </span></th>
+          <th><span> Account  </span></th>
+  </tr>
+</thead>
+<tbody>
+{% for ip in ips %}
+  <tr>
+          <td>
+              {% if ip.released_at %}
+                Server {{ ip.server_id }}
+              {% else %}
+              <a href="vm-{{ ip.server_id }}">Server {{ ip.server_id }}</a>
+              {% endif %}
+          </td>
+          <td> Network {{ ip.network_id }} </td>
+          <td> {{ ip.allocated_at|date:"r" }} </td>
+          <td>
+               {% if ip.released_at %}
+                  {{ ip.released_at|date:"r" }}
+               {% else %}
+                  -
+               {% endif %}
+          </td>
+          <td><a href="{{ ip.account }}">{{ ip.account }}</a></td>
+  </tr>
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+
+<p> IP Address <em>{{ search_query }}</em> has never been allocated to any server. </p>
+{% endif %}
+{% endblock %}

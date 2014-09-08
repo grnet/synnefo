@@ -1,0 +1,51 @@
+{% extends "admin/base.html" %}
+
+{% block nav-reports %}
+class="has-dropdown active"
+{% endblock %}
+
+{% block nav-charts %}
+class="active"
+{% endblock %}
+
+{% block content %}
+<div class="charts" id="charts"
+    data-astakos-stats={% url admin-stats-component-details 'astakos' %}
+    data-cyclades-stats={% url admin-stats-component-details 'cyclades' %}>
+<div class="sidebar actionbar">
+    <div id="sticker">
+        <a href="" data-chart="resource-usage" class="active"><span>Resource Usage</span></a>
+        <a href="" data-chart="temp"><span>User status and providers</span></a>
+        <a href="" data-chart="vm-status"><span>VM status</span></a>
+        <a href="" data-chart="ip-status"><span>IP status</span></a>
+        <a href="" data-chart="disk-templates"><span>Disk templates</span></a>
+        <a href="" data-chart="images"><span>Images</span></a>
+    </div>
+        &nbsp;
+</div>
+<div class="info well">
+    <div id="infra-usage" class="chart" data-chart="resource-usage"></div>
+    <div id="resource-usage" class="chart" data-chart="resource-usage"></div>
+    <div id="provider-status" class="chart" data-chart="temp"></div>
+    <div id="provider-status-reversed" class="chart" data-chart="temp"></div>
+    <div id="provider-exclusiveness" class="chart" data-chart="temp"></div>
+    <div id="server-status" class="chart" data-chart="vm-status"></div>
+    <div id="ip-pool-status" class="chart" data-chart="ip-status"></div>
+    <div id="disk-templates" class="chart" data-chart="disk-templates"></div>
+    <div id="images" class="chart" data-chart="images"></div>
+</div>
+</div>
+{% endblock %}
+
+{% block custom-javascript %}
+<script src="{{ MEDIA_URL }}admin/js/highstock.src.js"></script>
+<script src="{{ MEDIA_URL }}admin/js/Highcharts_drilldown.src.js"></script>
+{% if request.COOKIES.theme == 'dark' %}
+<script src="{{ MEDIA_URL }}admin/js/charts_theme.js"></script>
+{% endif %}
+<script src="{{ MEDIA_URL }}admin/js/charts.js"></script>
+<script src="{{ MEDIA_URL }}admin/js/charts_common.js"></script>
+{% endblock %}
+
+
+

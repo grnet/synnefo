@@ -155,7 +155,7 @@ def main(argv=None):
         'list', description="List existing accounts"
     )
     parser_list.add_argument(
-        '--dublicate', dest='only_duplicate', action="store_true",
+        '--duplicate', dest='only_duplicate', action="store_true",
         default=False, help="Display only case insensitive duplicate accounts."
     )
     parser_list.add_argument(

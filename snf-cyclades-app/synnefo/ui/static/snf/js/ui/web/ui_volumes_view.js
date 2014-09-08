@@ -246,10 +246,12 @@
             if (!this.parent.project) { return }
             var disk = this.parent.project.quotas.get("cyclades.disk");
             var available = disk.get("available");
+            var max_size = synnefo.config.volume_max_size;
             available = available / Math.pow(1024, 3);
             if (disk.infinite()) {
-                available = synnefo.config.volume_max_size;
+                available = max_size;
             }
+            if (available > max_size) { available = max_size; }
             this.set_slider_max(parseInt(available));
             this.update_layout();
         },
@@ -501,6 +503,7 @@
         view_id: "create_volume_view",
         content_selector: "#createvolume-overlay-content",
         title: "Create new disk",
+        min_quota: min_volume_quota,
         
         setup_step_views: function() {
             this.steps[1] = new views.CreateVolumeImageStepView(this);

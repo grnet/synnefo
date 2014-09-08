@@ -45,7 +45,8 @@ from urllib import quote, unquote
 from django.conf import settings
 from django.utils import importlib
 from django.utils.encoding import smart_unicode, smart_str
-from pithos.backends.base import NotAllowedError, VersionNotExists, QuotaError
+from pithos.backends.base import (NotAllowedError, VersionNotExists,
+                                  QuotaError, LimitExceeded)
 from pithos.backends.util import PithosBackendPool
 from snf_django.lib.api import faults
 
@@ -81,7 +82,8 @@ def get_pithos_backend():
             db_connection=settings.BACKEND_DB_CONNECTION,
             archipelago_conf_file=settings.PITHOS_BACKEND_ARCHIPELAGO_CONF,
             xseg_pool_size=settings.PITHOS_BACKEND_XSEG_POOL_SIZE,
-            map_check_interval=settings.PITHOS_BACKEND_MAP_CHECK_INTERVAL)
+            map_check_interval=settings.PITHOS_BACKEND_MAP_CHECK_INTERVAL,
+            resource_max_metadata=settings.PITHOS_RESOURCE_MAX_METADATA)
     return _pithos_backend_pool.pool_get()
 
 
@@ -105,6 +107,8 @@ def handle_pithos_backend(func):
             raise faults.BadRequest
         except QuotaError:
             raise faults.OverLimit
+        except LimitExceeded, e:
+            raise faults.BadRequest(e.args[0])
         else:
             commit = True
         finally:

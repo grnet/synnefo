@@ -1,0 +1,374 @@
+@font-face {
+	font-family: 'font-icons';
+	src:url('../fonts/font-icons.eot?hm0cup');
+	src:url('../fonts/font-icons.eot?#iefixhm0cup') format('embedded-opentype'),
+		url('../fonts/font-icons.woff?hm0cup') format('woff'),
+		url('../fonts/font-icons.ttf?hm0cup') format('truetype'),
+		url('../fonts/font-icons.svg?hm0cup#font-icons') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+
+/* Font with kpal icons */
+
+@font-face {
+	font-family: "snf-font";
+	src:url("../fonts/snf-font.eot");
+	src:url("../fonts/snf-font.eot?#iefix") format("embedded-opentype"),
+		url("../fonts/snf-font.woff") format("woff"),
+		url("../fonts/snf-font.ttf") format("truetype"),
+		url("../fonts/snf-font.svg#snf-font") format("svg");
+	font-weight: normal;
+	font-style: normal;
+}
+
+@mixin font-base($font-family){
+    font-family: $font-family;
+	speak: none;
+	font-style: normal;
+	font-weight: normal;
+	font-variant: normal;
+	text-transform: none;
+	line-height: 1;
+
+	/* Better Font Rendering =========== */
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+@mixin font-icon($font-family, $char) {
+    @include font-base($font-family);
+    &:before {
+        content: $char;
+    }
+}
+
+
+.snf-ok{
+    @include font-icon('font-icons',"\61");
+}
+.snf-remove {
+    @include font-icon('font-icons', "\62");
+}
+.snf-envelope {
+    @include font-icon('font-icons', "\63");
+}
+.snf-envelope-alt {
+    @include font-icon('font-icons', "\64");
+}
+.snf-angle-up {
+    @include font-icon('font-icons', "\65");
+}
+.snf-angle-down {
+    @include font-icon('font-icons', "\66");
+}
+.snf-exclamation-sign {
+    @include font-icon('font-icons', "\67");
+}
+.snf-clipboard-h {
+    @include font-icon('font-icons', "\68");
+}
+.snf-clipboard-i {
+    @include font-icon('font-icons', "\69");
+}
+.snf-copy {
+    @include font-icon('font-icons', "\6c");
+}
+.snf-search {
+    @include font-icon('font-icons', "\6d");
+}
+.snf-sign-out {
+    @include font-icon('font-icons', "\6e");
+}
+.snf-archive {
+    @include font-icon('font-icons', "\6b");
+}
+.snf-checkbox-checked {
+    @include font-icon('font-icons', "\6f");
+}
+.snf-checkbox-unchecked {
+    @include font-icon('font-icons', "\70");
+}
+.snf-radio-checked {
+    @include font-icon('font-icons', "\71");
+}
+.snf-radio-unchecked {
+    @include font-icon('font-icons', "\72");
+}
+.snf-info {
+    @include font-icon('font-icons', "\73");
+}
+.snf-user-outline {
+    @include font-icon('font-icons', "\75");
+}
+.snf-user-full {
+    @include font-icon('font-icons', "\74");
+}
+.snf-wallet-full {
+    @include font-icon('font-icons', "\78");
+}
+.snf-wallet-outline {
+    @include font-icon('font-icons', "\79");
+}
+.snf-keyboard {
+    @include font-icon('font-icons', "\7a");
+}
+.snf-book-2 {
+    @include font-icon('font-icons',  "\42");
+}
+.snf-bell-1 {
+    @include font-icon('font-icons',  "\43");
+}
+.snf-bulb {
+    @include font-icon('font-icons',  "\46");
+}
+.snf-sun-1 {
+    @include font-icon('font-icons',  "\47");
+}
+.snf-moon-1 {
+    @include font-icon('font-icons',  "\76");
+}
+.snf-sun-2-full {
+    @include font-icon('font-icons',  "\77");
+}
+.snf-sun-2-outline {
+    @include font-icon('font-icons',  "\6a");
+}
+.snf-moon-2-full:before {
+    @include font-icon('font-icons',  "\44");
+}
+.snf-moon-2-outline {
+    @include font-icon('font-icons',  "\45");
+}
+.snf-sun-3 {
+    @include font-icon('font-icons',  "\41");
+}
+.snf-eye {
+    @include font-icon('snf-font', "\41");
+}
+.snf-radio-checked {
+    @include font-icon('snf-font', "\42");
+}
+.snf-radio-unchecked {
+    @include font-icon('snf-font', "\43");
+}
+.snf-close {
+    @include font-icon('snf-font', "\44");
+}
+.snf-www {
+    @include font-icon('snf-font', "\49");
+}
+.snf-arrow-up {
+    @include font-icon('snf-font', "\4c");
+}
+.snf-arrow-down {
+    @include font-icon('snf-font', "\4d");
+}
+.snf-checkbox-unchecked {
+    @include font-icon('snf-font', "\61");
+}
+.snf-checkbox-checked {
+    @include font-icon('snf-font', "\62");
+}
+.snf-cancel-circled {
+    @include font-icon('snf-font', "\63");
+}
+.snf-search {
+    @include font-icon('snf-font', "\64");
+}
+.snf-twitter-logo {
+    @include font-icon('snf-font', "\67");
+}
+.snf-ok {
+    @include font-icon('snf-font', "\68");
+}
+.snf-switch {
+    @include font-icon('snf-font', "\69");
+}
+.snf-ban-circle {
+    @include font-icon('snf-font', "\6a");
+}
+.snf-ok-sign {
+    @include font-icon('snf-font', "\6c");
+}
+.snf-minus-sign {
+    @include font-icon('snf-font', "\6e");
+}
+.snf-edit {
+    @include font-icon('snf-font', "\71");
+}
+.snf-listview {
+    @include font-icon('snf-font', "\73");
+}
+.snf-gridview {
+    @include font-icon('snf-font', "\74");
+}
+.snf-dashboard-outline {
+    @include font-icon('snf-font', "\7a");
+}
+.snf-pithos-outline {
+    @include font-icon('snf-font', "\79");
+}
+.snf-info-full {
+    @include font-icon('snf-font', "\70");
+}
+.snf-volume-create-full {
+    @include font-icon('snf-font', "\36");
+}
+.snf-image-full {
+    @include font-icon('snf-font', "\51");
+}
+.snf-pc-create-full {
+    @include font-icon('snf-font', "\53");
+}
+.snf-network-create-outline {
+    @include font-icon('snf-font', "\54");
+}
+.snf-network-create-full {
+    @include font-icon('snf-font', "\55");
+}
+.snf-ram-outline {
+    @include font-icon('snf-font', "\4a");
+}
+.snf-nic-outline {
+    @include font-icon('snf-font', "\50");
+}
+.snf-ram-full {
+    @include font-icon('snf-font', "\52");
+}
+.snf-nic-full {
+    @include font-icon('snf-font', "\72");
+}
+.snf-network-broken-1-full {
+    @include font-icon('snf-font', "\56");
+}
+.snf-network-broken-2-full {
+    @include font-icon('snf-font', "\57");
+}
+.snf-pc-broken-full {
+    @include font-icon('snf-font', "\58");
+}
+.snf-pc-reboot-full {
+    @include font-icon('snf-font', "\59");
+}
+.snf-pc-switch-full {
+    @include font-icon('snf-font', "\5a");
+}
+.snf-key-full {
+    @include font-icon('snf-font', "\31");
+}
+.snf-router-full {
+    @include font-icon('snf-font', "\32");
+}
+.snf-chip-full {
+    @include font-icon('snf-font', "\33");
+}
+.snf-plus-full {
+    @include font-icon('snf-font', "\34");
+}
+.snf-snapshot-full {
+    @include font-icon('snf-font', "\4e");
+}
+.snf-pithos-full {
+    @include font-icon('snf-font', "\35");
+}
+.snf-volume-full {
+    @include font-icon('snf-font', "\4f");
+}
+.snf-network-full {
+    @include font-icon('snf-font', "\4b");
+}
+.snf-pc-full {
+    @include font-icon('snf-font', "\78");
+}
+.snf-network-broken-1-outline {
+    @include font-icon('snf-font', "\37");
+}
+.snf-network-broken-2-outline {
+    @include font-icon('snf-font', "\38");
+}
+.snf-pc-broken-outline {
+    @include font-icon('snf-font', "\39");
+}
+.snf-volume-broken-outline {
+    @include font-icon('snf-font', "\30");
+}
+.snf-pc-reboot-outline {
+    @include font-icon('snf-font', "\21");
+}
+.snf-pc-switch-outline {
+    @include font-icon('snf-font', "\40");
+}
+.snf-key-outline {
+    @include font-icon('snf-font', "\23");
+}
+.snf-router-outline {
+    @include font-icon('snf-font', "\48");
+}
+.snf-chip-outline {
+    @include font-icon('snf-font', "\45");
+}
+.snf-image-outline {
+    @include font-icon('snf-font', "\66");
+}
+.snf-plus-outline {
+    @include font-icon('snf-font', "\6d");
+}
+.snf-snapshot-outline {
+    @include font-icon('snf-font', "\65");
+}
+.snf-volume-outline {
+    @include font-icon('snf-font', "\75");
+}
+.snf-network-outline {
+    @include font-icon('snf-font', "\76");
+}
+.snf-pc-outline {
+    @include font-icon('snf-font', "\77");
+}
+.snf-info-outline {
+    @include font-icon('snf-font', "\6f");
+}
+.snf-thunder-full {
+    @include font-icon('snf-font', "\6b");
+}
+.snf-lock-closed-full {
+    @include font-icon('snf-font', "\46");
+}
+.snf-lock-open-full {
+    @include font-icon('snf-font', "\47");
+}
+
+.snf-link-outline {
+    @include font-icon('snf-font', "\26");
+}
+.snf-refresh-outline {
+    @include font-icon('snf-font', "\29");
+}
+.snf-download-full {
+    @include font-icon('snf-font', "\25");
+}
+.snf-person-outline {
+    @include font-icon('snf-font', "\2a");
+}
+.snf-upload-full {
+    @include font-icon('snf-font', "\28");
+}
+.snf-arrow-right-small-full {
+    @include font-icon('snf-font', "\2d");
+}
+.snf-copy-outline {
+    @include font-icon('snf-font', "\3f");
+}
+.snf-copy-full {
+    @include font-icon('snf-font', "\22");
+}
+.snf-arrow-left-small-full {
+    @include font-icon('snf-font', "\5f");
+}
+.snf-trash-full {
+    @include font-icon('snf-font', "\3d");
+}
+.snf-trash-outline {
+    @include font-icon('snf-font', "\24");
+}

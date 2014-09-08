@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from django.conf import settings
-from django.db import transaction
+from synnefo.db import transaction
 from django.utils import simplejson as json
 from datetime import datetime, timedelta
 
@@ -117,16 +117,18 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
 
     """
     # See #1492, #1031, #1111 why this line has been removed
-    #if (opcode not in [x[0] for x in VirtualMachine.BACKEND_OPCODES] or
+    # if (opcode not in [x[0] for x in VirtualMachine.BACKEND_OPCODES] or
     if status not in [x[0] for x in BACKEND_STATUSES]:
         raise VirtualMachine.InvalidBackendMsgError(opcode, status)
 
     if opcode == "OP_INSTANCE_SNAPSHOT":
         for disk_id, disk_info in job_fields.get("disks", []):
-            snap_info = json.loads(disk_info["snapshot_info"])
-            snap_id = snap_info["snapshot_id"]
-            update_snapshot(snap_id, user_id=vm.userid, job_id=jobid,
-                            job_status=status, etime=etime)
+            snap_info = disk_info.get("snasphot_info", None)
+            if snap_info is not None:
+                snap_info = json.loads(snap_info)
+                snap_id = snap_info["snapshot_id"]
+                update_snapshot(snap_id, user_id=vm.userid, job_id=jobid,
+                                job_status=status, etime=etime)
         return
 
     vm.backendjobid = jobid
@@ -309,7 +311,12 @@ def update_vm_nics(vm, nics, etime=None):
     @rtype: List of dictionaries
 
     """
-    ganeti_nics = parse_instance_nics(nics)
+    try:
+        ganeti_nics = parse_instance_nics(nics)
+    except Network.InvalidBackendIdError as e:
+        log.warning("Server %s is connected to unknown network %s"
+                    " Cannot reconcile server." % (vm.id, str(e)))
+        return []
     db_nics = dict([(nic.id, nic) for nic in vm.nics.select_related("network")
                                                     .prefetch_related("ips")])
 
@@ -792,6 +799,7 @@ def create_instance(vm, nics, volumes, flavor, image):
             disk["provider"] = provider
             if provider in settings.GANETI_CLONE_PROVIDERS:
                 disk["origin"] = volume.origin
+                disk["origin_size"] = volume.origin_size
             extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
                                         .get(provider)
             if extra_disk_params is not None:
@@ -799,6 +807,9 @@ def create_instance(vm, nics, volumes, flavor, image):
         disks.append(disk)
 
     kw["disks"] = disks
+
+    # --no-wait-for-sync option for DRBD disks
+    kw["wait_for_sync"] = settings.GANETI_DISKS_WAIT_FOR_SYNC
 
     kw['nics'] = [{"name": nic.backend_uuid,
                    "network": nic.network.backend_id,
@@ -1198,6 +1209,7 @@ def attach_volume(vm, volume, depends=[]):
 
     if volume.origin is not None:
         disk["origin"] = volume.origin
+        disk["origin_size"] = volume.origin_size
 
     extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
                                 .get(disk_provider)
@@ -1207,6 +1219,7 @@ def attach_volume(vm, volume, depends=[]):
     kwargs = {
         "instance": vm.backend_vm_id,
         "disks": [("add", "-1", disk)],
+        "wait_for_sync": settings.GANETI_DISKS_WAIT_FOR_SYNC,
         "depends": depends,
     }
     if vm.backend.use_hotplug():

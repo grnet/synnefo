@@ -16,7 +16,7 @@
 from django.conf import settings
 from django.conf.urls import patterns
 
-from django.db import transaction
+from synnefo.db import transaction
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
@@ -590,7 +590,11 @@ def demux_server_action(request, server_id):
     vm = util.get_vm(server_id, request.user_uniq, for_update=True,
                      non_deleted=True, non_suspended=True)
 
-    action = req.keys()[0]
+    try:
+        action = req.keys()[0]
+    except IndexError:
+        raise faults.BadRequest("Malformed Request.")
+
     if not isinstance(action, basestring):
         raise faults.BadRequest("Malformed Request. Invalid action.")
 

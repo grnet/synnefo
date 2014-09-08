@@ -91,6 +91,10 @@ def create_tables(engine):
     Index('idx_nodes_path', nodes.c.path, unique=True)
     Index('idx_nodes_parent', nodes.c.parent)
     Index('idx_latest_version', nodes.c.latest_version)
+    Index('idx_nodes_parent0', nodes.c.parent,
+          postgresql_where=nodes.c.parent == 0)
+    Index('idx_nodes_parent0_path', nodes.c.parent, nodes.c.path,
+          postgresql_where=nodes.c.parent == 0)
 
     #create policy table
     columns = []
@@ -146,6 +150,18 @@ def create_tables(engine):
     Index('idx_versions_node_uuid', versions.c.uuid)
     Index('idx_versions_serial_cluster_n2', versions.c.serial,
           versions.c.cluster, postgresql_where=versions.c.cluster != 2)
+    Index('idx_versions_node_cluster0', versions.c.node,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 0)
+    Index('idx_versions_node_cluster1', versions.c.node,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 1)
+    Index('idx_versions_node_cluster2', versions.c.node,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 2)
+    Index('idx_versions_serial_cluster0', versions.c.serial,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 0)
+    Index('idx_versions_serial_cluster1', versions.c.serial,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 1)
+    Index('idx_versions_serial_cluster2', versions.c.serial,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 2)
 
     #create attributes table
     columns = []
@@ -162,7 +178,23 @@ def create_tables(engine):
     attributes = Table('attributes', metadata, *columns, mysql_engine='InnoDB')
     Index('idx_attributes_domain', attributes.c.domain)
     Index('idx_attributes_serial_node', attributes.c.serial, attributes.c.node)
-
+    Index('idx_attributes_node', attributes.c.node)
+    Index('idx_attributes_islatest_domain_plankton', attributes.c.is_latest,
+          attributes.c.domain, postgresql_where=and_(
+              attributes.c.is_latest == True,
+              attributes.c.domain == "plankton"))
+    Index('idx_attributes_key_domain_plankton', attributes.c.key,
+          attributes.c.domain, postgresql_where=\
+          attributes.c.domain == "plankton")
+    Index('idx_attributes_key_domain_pithos', attributes.c.key,
+          attributes.c.domain, postgresql_where=\
+          attributes.c.domain == "pithos")
+    Index('idx_attributes_serial_domain_pithos', attributes.c.serial,
+          attributes.c.domain, postgresql_where=\
+          attributes.c.domain == "pithos")
+    Index('idx_attributes_serial_domain_plankton', attributes.c.serial,
+          attributes.c.domain, postgresql_where=\
+          attributes.c.domain == "plankton")
 
     # TODO: handle backends not supporting sequences
     mapfile_seq = Sequence('mapfile_seq', metadata=metadata)
@@ -742,11 +774,11 @@ class Node(DBWorker):
         else:
             d2 = select([self.nodes.c.node, self.nodes.c.latest_version],
                         self.nodes.c.path.like(self.escape_like(path) + '%',
-                                            escape=ESCAPE_CHAR)).cte("d2")
+                                               escape=ESCAPE_CHAR)).cte("d2")
             inner_join = \
-                self.versions.join(d2, onclause=
-                                   self.versions.c.serial ==
-                                   d2.c.latest_version)
+                self.versions.join(d2,
+                                   onclause=(self.versions.c.serial ==
+                                             d2.c.latest_version))
             s = select([func.count(self.versions.c.serial),
                        func.sum(self.versions.c.size),
                        func.max(self.versions.c.mtime)],
@@ -1014,23 +1046,21 @@ class Node(DBWorker):
 
     def attribute_set(self, serial, domain, node, items, is_latest=True):
         """Set the attributes of the version specified by serial.
-           Receive attributes as an iterable of (key, value) pairs.
+           Receive attributes as a mapping object.
+
+           Raises: sqlalchemy.exc.IntegrityError
         """
-        #insert or replace
-        #TODO better upsert
-        for k, v in items:
-            s = self.attributes.update()
-            s = s.where(and_(self.attributes.c.serial == serial,
-                             self.attributes.c.domain == domain,
-                             self.attributes.c.key == k))
-            s = s.values(value=v)
-            rp = self.conn.execute(s)
-            rp.close()
-            if rp.rowcount == 0:
-                s = self.attributes.insert()
-                s = s.values(serial=serial, domain=domain, node=node,
-                             is_latest=is_latest, key=k, value=v)
-                self.conn.execute(s).close()
+
+        if not items:
+            return
+        s = self.attributes.insert()
+        values = [{'serial': serial,
+                   'domain': domain,
+                   'node': node,
+                   'is_latest': is_latest,
+                   'key': k,
+                   'value': v} for k, v in items.iteritems()]
+        self.conn.execute(s, values).close()
 
     def attribute_del(self, serial, domain, keys=()):
         """Delete attributes of the version specified by serial.
@@ -1039,13 +1069,11 @@ class Node(DBWorker):
         """
 
         if keys:
-            #TODO more efficient way to do this?
-            for key in keys:
-                s = self.attributes.delete()
-                s = s.where(and_(self.attributes.c.serial == serial,
-                                 self.attributes.c.domain == domain,
-                                 self.attributes.c.key == key))
-                self.conn.execute(s).close()
+            s = self.attributes.delete()
+            s = s.where(and_(self.attributes.c.serial == serial,
+                             self.attributes.c.domain == domain,
+                             self.attributes.c.key.in_(keys)))
+            self.conn.execute(s).close()
         else:
             s = self.attributes.delete()
             s = s.where(and_(self.attributes.c.serial == serial,
@@ -1189,27 +1217,39 @@ class Node(DBWorker):
 
         v = self.versions.alias('v')
         if before != inf:
-            filtered = select([func.max(v.c.serial)],
-                              and_(v.c.mtime < before,
-                                   v.c.node == self.versions.c.node))
+            d4_insub = select([self.nodes.c.node],
+                              self.nodes.c.parent==parent)
+            d4_insub = d4_insub.where(and_(
+                self.nodes.c.path > bindparam('start'),
+                self.nodes.c.path < nextling))
+
+            d4 = select([func.max(v.c.serial).label("vmax"),
+                         v.c.node,
+                         self.nodes.c.path]).where(v.c.mtime < before)
+            d4 = d4.where(v.c.node.in_(d4_insub))
+            d4 = d4.where(v.c.node==self.nodes.c.node)
+            d4 = d4.group_by(v.c.node, self.nodes.c.path).cte("d4")
             inner_join = \
-                self.nodes.join(self.versions,
-                                onclause=self.versions.c.serial == filtered)
+                d4.join(self.versions,
+                        onclause=self.versions.c.serial == d4.c.vmax)
         else:
-            filtered = select([self.nodes.c.latest_version])
-            filtered = filtered.where(self.nodes.c.node ==
-                                      self.versions.c.node
-                                      ).correlate(self.versions)
+            d4 = select([self.nodes.c.path,
+                         self.nodes.c.node,
+                         self.nodes.c.latest_version]).where(
+                         self.nodes.c.parent == parent)
+            d4 = d4.where(and_(self.nodes.c.path > bindparam('start'),
+                               self.nodes.c.path < nextling)).cte("d4")
+
             inner_join = \
-                self.nodes.join(self.versions,
-                                onclause=
-                                self.versions.c.serial == filtered)
+                d4.join(self.versions,
+                        onclause=
+                        self.versions.c.serial == d4.c.latest_version)
         if not all_props:
-            s = select([self.nodes.c.path,
+            s = select([d4.c.path,
                        self.versions.c.serial],
                        from_obj=[inner_join]).distinct()
         else:
-            s = select([self.nodes.c.path,
+            s = select([d4.c.path,
                        self.versions.c.serial, self.versions.c.node,
                        self.versions.c.hash,
                        self.versions.c.size, self.versions.c.type,
@@ -1225,22 +1265,17 @@ class Node(DBWorker):
                        from_obj=[inner_join]).distinct()
 
         s = s.where(self.versions.c.cluster != except_cluster)
-        s = s.where(self.versions.c.node.in_(select([self.nodes.c.node],
-                                             self.nodes.c.parent == parent)))
-
-        s = s.where(self.versions.c.node == self.nodes.c.node)
-        s = s.where(and_(self.nodes.c.path > bindparam('start'),
-                    self.nodes.c.path < nextling))
+        s = s.where(self.versions.c.node == d4.c.node)
         conja = []
         conjb = []
         for path, match in pathq:
             if match == MATCH_PREFIX:
-                conja.append(self.nodes.c.path.like(self.escape_like(path) +
+                conja.append(d4.c.path.like(self.escape_like(path) +
                              '%', escape=ESCAPE_CHAR))
             elif match == MATCH_EXACT:
                 conjb.append(path)
         if conja or conjb:
-            s = s.where(or_(self.nodes.c.path.in_(conjb), *conja))
+            s = s.where(or_(d4.c.path.in_(conjb), *conja))
 
         if sizeq and len(sizeq) == 2:
             if sizeq[0]:
@@ -1280,7 +1315,7 @@ class Node(DBWorker):
                              self.attributes.c.value.op(o)(val)))
                     s = s.where(exists(subs))
 
-        s = s.order_by(self.nodes.c.path)
+        s = s.order_by(d4.c.path)
 
         if not delimiter:
             s = s.limit(limit)

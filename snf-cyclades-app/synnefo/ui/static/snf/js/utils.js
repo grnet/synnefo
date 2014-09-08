@@ -632,39 +632,30 @@
 
 
     $.fn.setCursorPosition = function(pos) {
-        if ($(this).get(0).setSelectionRange) {
-          $(this).get(0).setSelectionRange(pos, pos);
-        } else if ($(this).get(0).createTextRange) {
-          var range = $(this).get(0).createTextRange();
-          range.collapse(true);
-          range.moveEnd('character', pos);
-          range.moveStart('character', pos);
-          range.select();
-        }
+        $(this).selectRange(pos, pos);
+    }
+
+    $.fn.selectRange = function(from, to) {
+        try {
+            if (to == undefined) {
+                to = $(this).val().length;
+            }
+            if ($(this).get(0).setSelectionRange) {
+              $(this).get(0).setSelectionRange(from, to);
+            } else if ($(this).get(0).createTextRange) {
+              var range = $(this).get(0).createTextRange();
+              range.collapse(true);
+              range.moveEnd('character', to);
+              range.moveStart('character', from);
+              range.select();
+            }
+        } catch(err) {}
     }
 
     // trim prototype for IE
     if(typeof String.prototype.trim !== 'function') {
         String.prototype.trim = function() {
             return this.replace(/^\s+|\s+$/g, '');
-        }
-    }
-
-    // http://stackoverflow.com/questions/499126/jquery-set-cursor-position-in-text-area 
-    $.fn.setCursorPosition = function(pos) {
-        // not all browsers support setSelectionRange
-        // put it in try/catch, fallback to no text selection
-        try {
-            if ($(this).get(0).setSelectionRange) {
-              $(this).get(0).setSelectionRange(pos, pos);
-            } else if ($(this).get(0).createTextRange) {
-              var range = $(this).get(0).createTextRange();
-              range.collapse(true);
-              range.moveEnd('character', pos);
-              range.moveStart('character', pos);
-              range.select();
-            }
-        } catch (err) {
         }
     }
 

@@ -24,6 +24,7 @@ _ROLE_MAP = {
     constants.MQ: components.MQ,
     constants.ASTAKOS: components.Astakos,
     constants.CYCLADES: components.Cyclades,
+    constants.ADMIN: components.Admin,
     constants.PITHOS: components.Pithos,
     constants.CMS: components.CMS,
     constants.STATS: components.Stats,

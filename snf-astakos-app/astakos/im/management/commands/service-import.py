@@ -15,7 +15,7 @@
 
 from optparse import make_option
 
-from django.db import transaction
+from astakos.im import transaction
 from snf_django.management.commands import SynnefoCommand, CommandError
 from django.utils import simplejson as json
 

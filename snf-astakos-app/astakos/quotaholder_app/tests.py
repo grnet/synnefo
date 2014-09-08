@@ -138,6 +138,7 @@ class QuotaholderTest(TestCase):
         r = qh.get_pending_commissions(clientkey=self.client)
         self.assertEqual(len(r), 1)
         serial = r[0]
+        self.assertEqual(serial, s1)
         r = qh.resolve_pending_commission(self.client, serial)
         self.assertEqual(r, True)
         r = qh.get_pending_commissions(clientkey=self.client)
@@ -150,6 +151,13 @@ class QuotaholderTest(TestCase):
                   (holder, source, resource2): (limit2, limit2, limit2),
                   }
         self.assertEqual(r, quotas)
+
+        logs = models.ProvisionLog.objects.filter(serial=serial)
+        self.assertEqual(len(logs), 2)
+        log1 = filter(lambda p: p.resource == resource1
+                      and p.delta_quantity == limit1/2
+                      and p.usage_min == limit1/2, logs)
+        self.assertEqual(len(log1), 1)
 
         # resolve commissions
 

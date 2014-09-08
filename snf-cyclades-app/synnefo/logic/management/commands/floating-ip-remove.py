@@ -15,7 +15,7 @@
 
 #from optparse import make_option
 
-from django.db import transaction
+from synnefo.db import transaction
 from django.core.management.base import CommandError
 from snf_django.management.commands import RemoveCommand
 from synnefo.management import common

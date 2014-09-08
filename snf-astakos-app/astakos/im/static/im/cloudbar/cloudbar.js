@@ -19,19 +19,26 @@ $(document).ready(function(){
 
     var USER_DATA = window.CLOUDBAR_USER_DATA || {'user': 'Not logged in', 'logged_in': false};
     var COOKIE_NAME = window.CLOUDBAR_COOKIE_NAME || '_pithos2_a';
+    var VERSION = window.CLOUDBAR_VERSION || '';
 
     var cssloc = window.CLOUDBAR_LOCATION || "http://127.0.0.1:8989/";
     
     // load css
     var css = $("<link />");
-    css.attr({rel:'stylesheet', type:'text/css', href:cssloc + 'cloudbar.css'});
+    css.attr({rel:'stylesheet', type:'text/css', href:cssloc + 'cloudbar.css?'+VERSION});
     $("head").append(css);
     
-    // load fonts
-    var font_url = 'https://fonts.googleapis.com/css?family=Open+Sans:400,600,700&subset=latin,greek-ext,greek';
-    var css_font = $("<link />");
-    css_font.attr({rel:'stylesheet', type:'text/css', href:font_url});
-    $("head").append(css_font);
+    // load extra css
+    var extra_css = window.CLOUDBAR_EXTRA_CSS || [];
+    if (window.CLOUDBAR_INCLUDE_FONTS === false) { extra_css = []; }
+    var css_tag = undefined;
+    var css_uri = undefined;
+    for (var i=0; i<extra_css.length; i++) {
+        css_uri = extra_css[i];
+        css_tag = $("<link />");
+        css_tag.attr({rel:'stylesheet', type:'text/css', href: css_uri});
+        $("head").append(css_tag);
+    }
 
     // load service specific css
     var SKIP_ADDITIONAL_CSS = window.SKIP_ADDITIONAL_CSS == undefined ? false : window.SKIP_ADDITIONAL_CSS;
@@ -138,7 +145,6 @@ $(document).ready(function(){
     equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
      
 	$('.cloudbar .profile .full>a').live('focus', function(e){
-		console.info('i just focused');
 		e.preventDefault();
         equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));
    		$(this).siblings('ul').show();
@@ -150,7 +156,6 @@ $(document).ready(function(){
 	}); 
  
  	$('.cloudbar .profile ul li:last a').live('focusout', function(e){	
- 		console.info('i just focused out in style');
  		$(this).parents('ul').attr('style', '');
  		$(this).parents('ul').removeAttr('style');
  		equalWidths ( $('.cloudbar .profile ul'), $('.cloudbar .profile'));

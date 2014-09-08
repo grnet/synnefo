@@ -9,6 +9,8 @@ share/
 build/
 include/
 !snf-cyclades-app/synnefo/ui/static/snf/extra/noVNC/include/
+_sass/
+.sass-cache/
 *.pt.py
 *.installed.cfg
 *.sqlite
@@ -21,7 +23,7 @@ selenium-server-standalone-2.0b2.jar
 .settings/
 settings.d/*-local.conf
 *.egg-info
-dist
+#dist
 _build
 .coverage
 
@@ -32,6 +34,7 @@ pithos/data
 */synnefo/versions/*.py
 */pithos/*/version.py
 !*/synnefo/versions/__init__.py
+snf-admin-app/synnefo_admin/version.py
 snf-astakos-app/astakos/version.py
 snf-tools/synnefo_tools/version.py
 snf-quotaholder-app/quotaholder_django/version.py

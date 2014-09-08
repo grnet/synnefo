@@ -18,7 +18,7 @@ from logging import getLogger
 from functools import wraps
 
 from django.conf import settings
-from django.db import transaction
+from synnefo.db import transaction
 from django.db.models import Q
 
 from snf_django.lib import api
@@ -77,7 +77,7 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
         raise api.faults.BadRequest("Network has been deleted")
 
     if user_id != network.userid:
-        raise api.faults.Unauthorized("Unauthorized operation")
+        raise api.faults.Forbidden("Forbidden operation")
 
     if ipversion not in [4, 6]:
         raise api.faults.BadRequest("Malformed IP version type")
@@ -175,7 +175,7 @@ def update_subnet(sub_id, name, user_id):
         raise api.faults.ItemNotFound("Subnet not found")
 
     if user_id != subnet.network.userid:
-        raise api.faults.Unauthorized("Unauthorized operation")
+        raise api.faults.Forbidden("Forbidden operation")
 
     utils.check_name_length(name, Subnet.SUBNET_NAME_LENGTH, "Subnet name is "
                             " too long")
@@ -251,17 +251,17 @@ def validate_subnet_params(subnet=None, gateway=None, subnet6=None,
 
         # Check that network size is allowed!
         prefixlen = network.prefixlen
-        if prefixlen > 29 or prefixlen <= settings.MAX_CIDR_BLOCK:
+        if prefixlen > 29 or prefixlen < settings.MAX_CIDR_BLOCK:
             raise faults.OverLimit(
                 message="Unsupported network size",
-                details="Netmask must be in range: (%s, 29]" %
+                details="Netmask must be in range: [%s, 29]" %
                 settings.MAX_CIDR_BLOCK)
         if gateway:  # Check that gateway belongs to network
             try:
                 gateway = ipaddr.IPv4Address(gateway)
             except ValueError:
                 raise faults.BadRequest("Invalid network IPv4 gateway")
-            if not gateway in network:
+            if gateway not in network:
                 raise faults.BadRequest("Invalid network IPv4 gateway")
 
     if subnet6:

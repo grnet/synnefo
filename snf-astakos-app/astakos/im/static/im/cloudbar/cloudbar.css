@@ -14,6 +14,7 @@ div.cloudbar li 								{font-family:'Open Sans',sans-serif !important; letter-s
 
 .cloudbar .wrapper                              { width:auto; padding:0;}			
 .cloudbar a                                     { color:#fff; text-decoration:none;}
+.cloudbar a img                                 { border: 0 none; }
 .cloudbar .profile                              { float:right; background:#3582AC; min-width:190px; padding:0; text-align:right;  }
 .cloudbar .profile:hover						{ background:#5A97B8; }
 .cloudbar .profile a                            { text-decoration:none; color:#fff; display:block; width:100%;}

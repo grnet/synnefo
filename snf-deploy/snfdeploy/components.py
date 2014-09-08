@@ -80,6 +80,7 @@ def update_admin(fn):
         cl.DB = DB(node=ctx.db.node, ctx=ctx)
         cl.ASTAKOS = Astakos(node=ctx.astakos.node, ctx=ctx)
         cl.CYCLADES = Cyclades(node=ctx.cyclades.node, ctx=ctx)
+        cl.ADMIN = Admin(node=ctx.admin.node, ctx=ctx)
         cl.CLIENT = Client(node=ctx.client.node, ctx=ctx)
         return fn(*args, **kwargs)
     return wrapper
@@ -1535,6 +1536,68 @@ class VNC(base.Component):
             ]
 
 
+class Admin(base.Component):
+    REQUIRED_PACKAGES = [
+        "python-django-eztables",
+        "snf-admin-app"
+        ]
+
+    alias = constants.ADMIN
+    service = constants.ADMIN
+
+    def required_components(self):
+        return [
+            HW, SSH, DNS, APT,
+            Apache, Gunicorn, Common, Webproject,
+            ]
+
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+        self.DB.allow_db_access()
+        self.DB.restart()
+
+    @base.run_cmds
+    @update_admin
+    def prepare(self):
+        f = "/etc/synnefo/astakos.conf"
+        self.ASTAKOS.get(f, "/tmp/astakos.conf")
+        self.put("/tmp/astakos.conf", f)
+        f = "/etc/synnefo/cyclades.conf"
+        self.CYCLADES.get(f, "/tmp/cyclades.conf")
+        self.put("/tmp/cyclades.conf", f)
+        return []
+
+    def _configure(self):
+        return [
+            ("/etc/synnefo/admin.conf", {}, {})
+            ]
+
+    @base.run_cmds
+    def initialize(self):
+        return [
+            "snf-manage group-add admin"
+            ]
+
+    @base.run_cmds
+    def restart(self):
+        return [
+            "/etc/init.d/gunicorn restart"
+            ]
+
+    @base.run_cmds
+    def make_user_admin_user(self):
+        user_id = context.user_id
+        return [
+            "snf-manage user-modify %s --add-group=admin" % user_id
+            ]
+
+    @update_admin
+    @cert_override
+    def admin_post(self):
+        pass
+
+
 class Kamaki(base.Component):
     REQUIRED_PACKAGES = [
         "python-progress",
@@ -1546,6 +1609,7 @@ class Kamaki(base.Component):
         self.ASTAKOS.add_user()
         self.ASTAKOS.activate_user()
         self.DB.get_user_info_from_db(config.user_email)
+        self.ADMIN.make_user_admin_user()
 
     @base.run_cmds
     def initialize(self):
@@ -1674,7 +1738,7 @@ class Archip(base.Component):
     REQUIRED_PACKAGES = [
         "librados2",
         "blktap-dkms",
-        "blktap-utils",
+        "blktap-archipelago-utils",
         "archipelago",
         "archipelago-dbg",
         "archipelago-rados",

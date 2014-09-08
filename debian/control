@@ -46,6 +46,7 @@ Architecture: all
 Depends: ${misc:Depends}, ${python:Depends},
   snf-common (= ${binary:Version}), snf-django-lib (= ${binary:Version}),
   snf-branding (= ${binary:Version}), snf-webproject (= ${binary:Version}),
+  snf-vncauthproxy (> 1.5),
   python-astakosclient (= ${binary:Version}),
   snf-pithos-backend (= ${binary:Version}),
   python-django-south (>= 0.7.3),
@@ -74,6 +75,24 @@ Description: Synnefo tools to interact with Ganeti
   * snf-ganeti-eventd, a daemon who watches the Ganeti job queue
   * snf-progress-monitor, a utility to monitor image deployment and
     produce notifications to the Synnefo queue
+
+Package: snf-admin-app
+Architecture: all
+Depends: ${misc:Depends}, ${python:Depends},
+  snf-cyclades-app (= ${binary:Version}), snf-astakos-app (= ${binary:Version}),
+  snf-common (= ${binary:Version}), snf-django-lib (= ${binary:Version}),
+  snf-branding (= ${binary:Version}), snf-webproject (= ${binary:Version}),
+  python-astakosclient (= ${binary:Version}), django-filter (>= 0.5.3),
+  python-django-eztables (= 0.3.3-1~snf~0.2)
+Provides: ${python:Provides}
+Recommends: snf-webproject
+XB-Python-Version: ${python:Versions}
+Description: Admin Dashboard package
+ Admin is the Synnefo componenent that provides to trusted users with:
+  * The ability to manage and view various different Synnefo entities such as
+    users, VMs, projects etc.
+  * Automatic generation of charts and statistics using data from the
+    Astakos/Cyclades stats.
 
 Package: snf-astakos-app
 Architecture: all
@@ -144,6 +163,7 @@ Package: python-astakosclient
 Architecture: all
 Depends: ${misc:Depends}, ${python:Depends}
 Provides: ${python:Provides}
+Recommends: python-simplejson
 XB-Python-Version: ${python:Versions}
 Description: Synnefo Astakos Client
  Python client for Astakos, the Synnefo identity management service.

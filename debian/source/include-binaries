@@ -39,6 +39,9 @@ docs/images/synnefo-logo.png.old
 ./snf-astakos-app/astakos/im/static/im/images/sound_lg.png
 ./snf-astakos-app/astakos/im/static/im/images/sound_g.png
 ./snf-astakos-app/astakos/im/static/im/images/accounts-logo.png
+./snf-admin-app/synnefo_admin/admin/static/img/roughcloth.png
+./snf-admin-app/synnefo_admin/admin/static/img/glyphicons-halflings-white.png
+./snf-admin-app/synnefo_admin/admin/static/img/glyphicons-halflings.png
 ./snf-cyclades-app/synnefo/helpdesk/static/img/roughcloth.png
 ./snf-cyclades-app/synnefo/helpdesk/static/img/glyphicons-halflings-white.png
 ./snf-cyclades-app/synnefo/helpdesk/static/img/glyphicons-halflings.png

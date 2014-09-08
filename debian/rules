@@ -14,6 +14,7 @@ PACKAGES = \
 	snf-common \
 	snf-branding \
 	snf-cyclades-app \
+	snf-admin-app \
 	snf-cyclades-gtools \
 	snf-webproject \
 	snf-pithos-app \

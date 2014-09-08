@@ -1738,7 +1738,7 @@ class Archip(base.Component):
     REQUIRED_PACKAGES = [
         "librados2",
         "blktap-dkms",
-        "blktap-utils",
+        "blktap-archipelago-utils",
         "archipelago",
         "archipelago-dbg",
         "archipelago-rados",

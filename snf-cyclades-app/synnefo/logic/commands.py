@@ -16,7 +16,7 @@
 import logging
 
 from functools import wraps
-from django.db import transaction
+from synnefo.db import transaction
 
 from django.conf import settings
 from snf_django.lib.api import faults
@@ -31,7 +31,7 @@ def validate_server_action(vm, action):
     if vm.deleted:
         raise faults.BadRequest("Server '%s' has been deleted." % vm.id)
 
-    # Destroyin a server should always be permitted
+    # Destroying a server should always be permitted
     if action == "DESTROY":
         return
 
@@ -39,9 +39,13 @@ def validate_server_action(vm, action):
     pending_action = vm.task
     if pending_action:
         if pending_action == "BUILD":
-            raise faults.BuildInProgress("Server '%s' is being build." % vm.id)
+            raise faults.BuildInProgress("Server '%s' is being built." % vm.id)
         raise faults.BadRequest("Cannot perform '%s' action while there is a"
                                 " pending '%s'." % (action, pending_action))
+
+    # Reassigning is permitted in any state
+    if action == "REASSIGN":
+        return
 
     # Check if action can be performed to VM's operstate
     operstate = vm.operstate
@@ -49,7 +53,7 @@ def validate_server_action(vm, action):
         raise faults.BadRequest("Cannot perform '%s' action while server is"
                                 " in 'ERROR' state." % action)
     elif operstate == "BUILD" and action != "BUILD":
-        raise faults.BuildInProgress("Server '%s' is being build." % vm.id)
+        raise faults.BuildInProgress("Server '%s' is being built." % vm.id)
     elif (action == "START" and operstate != "STOPPED") or\
          (action == "STOP" and operstate != "STARTED") or\
          (action == "RESIZE" and operstate != "STOPPED") or\
@@ -99,6 +103,10 @@ def server_command(action, action_fields=None):
 
             # XXX: Special case for server creation!
             if action == "BUILD":
+                serial = vm.serial
+                serial.pending = False
+                serial.accept = True
+                serial.save()
                 # Perform a commit, because the VirtualMachine must be saved to
                 # DB before the OP_INSTANCE_CREATE job in enqueued in Ganeti.
                 # Otherwise, messages will arrive from snf-dispatcher about
@@ -107,26 +115,24 @@ def server_command(action, action_fields=None):
                 # After committing the locks are released. Refetch the instance
                 # to guarantee x-lock.
                 vm = VirtualMachine.objects.select_for_update().get(id=vm.id)
-
-            # Send the job to Ganeti and get the associated jobID
-            try:
-                job_id = func(vm, *args, **kwargs)
-            except Exception as e:
-                if vm.serial is not None:
-                    # Since the job never reached Ganeti, reject the commission
-                    log.debug("Rejecting commission: '%s', could not perform"
-                              " action '%s': %s" % (vm.serial,  action, e))
-                    transaction.rollback()
-                    quotas.reject_resource_serial(vm)
-                    transaction.commit()
-                raise
-
-            if action == "BUILD" and vm.serial is not None:
                 # XXX: Special case for server creation: we must accept the
                 # commission because the VM has been stored in DB. Also, if
                 # communication with Ganeti fails, the job will never reach
                 # Ganeti, and the commission will never be resolved.
                 quotas.accept_resource_serial(vm)
+
+            # Send the job to Ganeti and get the associated jobID
+            try:
+                job_id = func(vm, *args, **kwargs)
+            except Exception as e:
+                if vm.serial is not None and action != "BUILD":
+                    # Since the job never reached Ganeti, reject the commission
+                    log.debug("Rejecting commission: '%s', could not perform"
+                              " action '%s': %s" % (vm.serial,  action, e))
+                    transaction.rollback()
+                    quotas.reject_serial(vm.serial)
+                    transaction.commit()
+                raise
 
             log.info("user: %s, vm: %s, action: %s, job_id: %s, serial: %s",
                      user_id, vm.id, action, job_id, vm.serial)

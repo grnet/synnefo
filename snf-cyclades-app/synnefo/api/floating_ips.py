@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.conf.urls.defaults import patterns
-from django.db import transaction
+from synnefo.db import transaction
 from django.http import HttpResponse
 from django.utils import simplejson as json
 

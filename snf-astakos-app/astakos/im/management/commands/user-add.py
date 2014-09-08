@@ -15,7 +15,7 @@
 
 from optparse import make_option
 
-from django.db import transaction
+from astakos.im import transaction
 from snf_django.management.commands import SynnefoCommand, CommandError
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
@@ -55,8 +55,7 @@ class Command(SynnefoCommand):
         if len(args) != 3:
             raise CommandError("Invalid number of arguments")
 
-        email, first_name, last_name = map(lambda arg: arg.decode('utf8'),
-                                           args[:3])
+        email, first_name, last_name = args[:3]
 
         password = options['password'] or \
             AstakosUser.objects.make_random_password()

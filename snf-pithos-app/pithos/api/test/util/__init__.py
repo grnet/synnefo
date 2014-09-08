@@ -19,11 +19,10 @@
 import re
 import hashlib
 import random
+import string
 
 from binascii import hexlify
 from StringIO import StringIO
-
-from pithos.backends.random_word import get_random_word
 
 from pithos.api import settings as pithos_settings
 
@@ -73,7 +72,7 @@ def get_random_data(length=None):
     length = length or random.randint(
         pithos_settings.BACKEND_BLOCK_SIZE,
         2 * pithos_settings.BACKEND_BLOCK_SIZE)
-    return get_random_word(length)[:length]
+    return "".join([random.choice(string.letters) for i in xrange(length)])
 
 
 def get_random_name(length=8):

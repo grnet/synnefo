@@ -66,6 +66,18 @@ Usage: setup --node NODE [--role ROLE | --method METHOD --component COMPONENT]
       --component COMPONENT (one of the subcomponents)
 
   """
+
+    elif "run" in cmds:
+        print """
+Usage: setup --setup SETUP | --target-nodes NODE1,NODE2... --cmd "some cmd"
+
+    Run a specific bash command on the requested nodes
+
+      --target-nodes NODES  Comma separated nodes definded in nodes.conf
+      --setup SETUP         Target all nodes in SETUP defined in setups.conf
+      --cmd CMD             The bash command to be executed
+  """
+
     else:
         print """
 Usage: snf-deploy [-h] [-c CONFDIR] [-t TEMPLATE_DIR] [-s STATE_DIR]
@@ -79,6 +91,7 @@ Usage: snf-deploy [-h] [-c CONFDIR] [-t TEMPLATE_DIR] [-s STATE_DIR]
   The command can be either of:
 
       packages    Download synnefo packages and stores them locally
+      image       Create a debian base image for vcluster
       vcluster    Create a local virtual cluster with KVM, dnsmasq, and NAT
       cleanup     Cleanup the local virtual cluster
       test        Print the configuration
@@ -86,6 +99,7 @@ Usage: snf-deploy [-h] [-c CONFDIR] [-t TEMPLATE_DIR] [-s STATE_DIR]
       keygen      Create ssh and ddns keys
       ganeti      Deploy a Ganeti cluster on the requested setup
       ganeti-qa   Deploy a Ganeti QA cluster on the requested cluster
+      run         Run a specific bash command on the target nodes
       help        Display a help message for the following command
 
   """
@@ -121,10 +135,7 @@ def fabcommand(args, actions):
 # ".format(args.confdir, env.packages, env.templates, args.cluster_name,
 #          env.lib, args.autoconf, args.disable_colors, args.key_inject)
 
-    fabfile.setup_env(args)
     with settings(hide(*lhide), show(*lshow)):
-        print " ".join(actions)
-        print settings
         for a in actions:
             fn = getattr(fabfile, a)
             execute(fn)
@@ -189,6 +200,10 @@ def parse_options():
                         default=True, action="store_false",
                         help="Whether to inject ssh key pairs to hosts")
 
+    parser.add_argument("--pass-gen", dest="passgen",
+                        default=False, action="store_true",
+                        help="Whether to create random passwords")
+
     # backend related options
     parser.add_argument("--cluster", dest="cluster",
                         default=constants.DEFAULT_CLUSTER,
@@ -215,11 +230,19 @@ def parse_options():
                         default=constants.DEFAULT_SETUP,
                         help="The target setup")
 
+    parser.add_argument("--cmd", dest="cmd",
+                        default="date",
+                        help="The command to run on target nodes")
+
+    parser.add_argument("--target-nodes", dest="target_nodes",
+                        default=None,
+                        help="The target nodes to run cmd")
+
     # available commands
     parser.add_argument("command", type=str,
-                        choices=["packages", "vcluster", "cleanup",
+                        choices=["packages", "vcluster", "cleanup", "image",
                                  "setup", "test", "synnefo", "keygen",
-                                 "ganeti", "ganeti-qa", "help"],
+                                 "ganeti", "ganeti-qa", "help", "run"],
                         help="Run on of the supported deployment commands")
 
     # available actions for the run command
@@ -247,6 +270,9 @@ def get_actions(*args):
         ],
         "setup": [
             "setup",
+        ],
+        "run": [
+            "run",
         ],
 
     }
@@ -333,8 +359,8 @@ def main():
     args = parse_options()
 
     config.init(args)
-    context.init(args)
     status.init()
+    context.init(args)
 
     create_dir(config.run_dir, False)
     create_dir(config.dns_dir, False)
@@ -360,19 +386,30 @@ def main():
 
     if args.command == "test":
         config.print_config()
+        return 0
+
+    if args.command == "image":
+        vcluster.image()
+        return 0
 
     if args.command == "cleanup":
         vcluster.cleanup()
+        return 0
 
     if args.command == "packages":
         create_dir(config.package_dir, True)
         get_packages()
+        return 0
 
     if args.command == "vcluster":
+        status.reset()
+        vcluster.cleanup()
         vcluster.launch()
+        return 0
 
     if args.command == "help":
         print_help_msg(args.cmds)
+        return 0
 
     actions = get_actions(args.command)
     fabcommand(args, actions)

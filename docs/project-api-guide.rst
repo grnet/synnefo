@@ -91,7 +91,7 @@ Status  Description
       "leave_policy": "auto" | "moderated" | "closed",
       "max_members": int,
       "private": boolean,
-      "base_project": boolean,
+      "system_project": boolean,
       "resources": {"cyclades.vm": {"project_capacity": int,
                                     "member_capacity": int
                                    }

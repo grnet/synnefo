@@ -232,7 +232,6 @@ def pprint_clusters(clusters, stdout, detail=True):
                    "CPUs", "RAM (used/total)", "Disk (used/total)")
         pprint_table(stdout, node_table, headers, separator=" | ",
                      title="Statistics per node for backend %s" % cluster_name)
-        stdout.write("\n")
 
     total_table = (
         ("Backend", t_backend_cnt),
@@ -261,8 +260,11 @@ def pprint_clusters(clusters, stdout, detail=True):
         ("V/P total disk", ("%.2f%%" % (100 * t_vdisk / t_dtotal)
                             if t_dtotal != 0 else "-")),
     )
-    pprint_table(stdout, total_table, headers=None, separator=" | ",
-                 title="Statistics for all backends")
+
+    if len(clusters) > 1:
+        stdout.write("\n")
+        pprint_table(stdout, total_table, headers=None, separator=" | ",
+                     title="Statistics for all backends")
 
 
 def pprint_servers(servers, stdout):

@@ -42,8 +42,11 @@ CLASSIFIERS = []
 # Package requirements
 INSTALL_REQUIRES = [
     "objpool>=0.3",
-    "simplejson"
 ]
+
+EXTRAS_REQUIRES = {
+    'SimpleJSON': ['simplejson'],
+}
 
 # Provided as an attribute, so you can append to these instead
 # of replicating them:
@@ -141,7 +144,7 @@ def find_package_data(
 setup(
     name='astakosclient',
     version=VERSION,
-    license='BSD',
+    license='GNU GPLv3',
     url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
     classifiers=CLASSIFIERS,
@@ -158,6 +161,7 @@ setup(
     zip_safe=False,
 
     install_requires=INSTALL_REQUIRES,
+    extras_require=EXTRAS_REQUIRES,
     tests_require=['mock'],
 
     entry_points={},

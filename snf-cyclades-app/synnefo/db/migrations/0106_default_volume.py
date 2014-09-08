@@ -9,20 +9,26 @@ class Migration(DataMigration):
     def forwards(self, orm):
         "Write your forwards methods here."
         # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
-        for vm in orm.VirtualMachine.objects.filter(deleted=False):
-            vm.volumes.create(index=0,
-                              name="root volume",
-                              description="root volume",
-                              userid=vm.userid,
-                              size=vm.flavor.disk,
-                              disk_template=vm.flavor.disk_template,
+        vms = orm.VirtualMachine.objects.filter(deleted=False)\
+                                        .values("id", "userid",
+                                                "flavor__disk",
+                                                "flavor__disk_template")
+        volumes = [orm.Volume(machine_id=vm["id"],
+                              name="boot volume",
+                              description="boot volume",
+                              userid=vm["userid"],
+                              index=0,
+                              size=vm["flavor__disk"],
+                              disk_template=vm["flavor__disk_template"],
                               delete_on_termination=True,
                               deleted=False,
                               status="IN_USE")
+                   for vm in vms]
+        orm.Volume.objects.bulk_create(volumes)
 
     def backwards(self, orm):
         "Write your backwards methods here."
-        pass
+        orm.Volume.objects.filter(index=0).delete()
 
     models = {
         'db.backend': {

@@ -1488,7 +1488,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     return self._SendRequest(HTTP_POST, "/%s/networks" % GANETI_RAPI_VERSION,
                              query, body)
 
-  def ConnectNetwork(self, network_name, group_name, mode, link,
+  def ConnectNetwork(self, network_name, group_name, mode, link, vlan="",
                      conflicts_check=False, depends=None, dry_run=False):
     """Connects a Network to a NodeGroup with the given netparams
 
@@ -1497,6 +1497,10 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       "group_name": group_name,
       "network_mode": mode,
       "network_link": link,
+      # This will be needed only if synnefo supports networks based on ovs.
+      # Note that adding this here will break
+      # compatibility with Ganeti versions older than 2.10
+      # "network_vlan": vlan,
       "conflicts_check": conflicts_check,
       }
 

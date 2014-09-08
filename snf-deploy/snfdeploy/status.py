@@ -18,26 +18,68 @@ import os
 import sys
 from snfdeploy import constants
 from snfdeploy import config
+from snfdeploy import filelocker
+from snfdeploy.lib import create_passwd
 
 status = sys.modules[__name__]
 
 
-def check(ip, component_class):
+def _lock_read_write(fn):
+    def wrapper(*args, **kwargs):
+        with filelocker.lock(status.lockfile, filelocker.LOCK_EX):
+            status.cfg.read(status.statusfile)
+            ret = fn(*args, **kwargs)
+            if config.force or not config.dry_run:
+                with open(status.statusfile, 'wb') as configfile:
+                    status.cfg.write(configfile)
+        return ret
+    return wrapper
+
+
+def _create_section(section):
+    if not status.cfg.has_section(section):
+        status.cfg.add_section(section)
+
+
+@_lock_read_write
+def _check(section, option):
     try:
-        return status.cfg.get(ip, component_class.__name__, True)
+        return status.cfg.get(section, option, True)
     except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
         return None
 
 
-def update(ip, component_class, stat):
-    if not status.cfg.has_section(ip):
-        status.cfg.add_section(ip)
-    status.cfg.set(ip, component_class.__name__, stat)
+@_lock_read_write
+def _update(section, option, value):
+    _create_section(section)
+    status.cfg.set(section, option, value)
 
 
-def write():
-    with open(status.statusfile, 'wb') as configfile:
-        status.cfg.write(configfile)
+def get_passwd(setup, target):
+    passwd = _check(setup, target)
+    if not passwd:
+        passwd = create_passwd(constants.DEFAULT_PASSWD_LENGTH)
+        _update(setup, target, passwd)
+    return passwd
+
+
+def update(component):
+    section = component.node.ip
+    option = component.__class__.__name__
+    _update(section, option, constants.VALUE_OK)
+
+
+def check(component):
+    section = component.node.ip
+    option = component.__class__.__name__
+    return _check(section,  option)
+
+
+def reset():
+    try:
+        os.remove(status.statusfile)
+    except OSError:
+        pass
 
 
 def init():
@@ -45,4 +87,4 @@ def init():
     status.cfg = ConfigParser.ConfigParser()
     status.cfg.optionxform = str
     status.statusfile = os.path.join(config.state_dir, constants.STATUS_FILE)
-    status.cfg.read(status.statusfile)
+    status.lockfile = "%s.lock" % status.statusfile

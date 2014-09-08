@@ -16,8 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from unittest import skipIf
+
 from pithos.api.test import (PithosAPITest, AssertMappingInvariant,
-                             DATE_FORMATS)
+                             DATE_FORMATS, pithos_settings)
 
 from synnefo.lib import join_urls
 
@@ -25,6 +27,7 @@ import time as _time
 import datetime
 
 import django.utils.simplejson as json
+
 
 class AccountHead(PithosAPITest):
     def test_get_account_meta(self):
@@ -151,7 +154,7 @@ class AccountGet(PithosAPITest):
         _time.sleep(2)
 
         self.create_container()
-        
+
         url = join_urls(self.pithos_path, self.user)
         r = self.get('%s?until=%s' % (url, until))
         self.assertEqual(r.status_code, 200)
@@ -161,7 +164,6 @@ class AccountGet(PithosAPITest):
         self.assertEqual(containers,
                          ['apples', 'bananas', 'kiwis', 'oranges', 'pears'])
 
-        
         r = self.get('%s?until=%s&format=json' % (url, until))
         self.assertEqual(r.status_code, 200)
         try:
@@ -169,7 +171,7 @@ class AccountGet(PithosAPITest):
         except:
             self.fail('json format expected')
         self.assertEqual([c['name'] for c in containers],
-                         ['apples', 'bananas', 'kiwis', 'oranges', 'pears']) 
+                         ['apples', 'bananas', 'kiwis', 'oranges', 'pears'])
 
     def test_list_shared(self):
         # upload and publish object
@@ -382,7 +384,7 @@ class AccountPost(PithosAPITest):
         with AssertMappingInvariant(self.get_account_groups):
             initial = self.get_account_meta()
 
-            meta = {'test': 'tost', 'ping': 'pong'}
+            meta = {'Test': 'tost', 'Ping': 'pong'}
             kwargs = dict(('HTTP_X_ACCOUNT_META_%s' % k, str(v))
                           for k, v in meta.items())
             r = self.post('%s?update=' % url, **kwargs)
@@ -390,8 +392,18 @@ class AccountPost(PithosAPITest):
 
             meta.update(initial)
             account_meta = self.get_account_meta()
-            (self.assertTrue(k in account_meta) for k in meta.keys())
-            (self.assertEqual(account_meta[k], v) for k, v in meta.items())
+            self.assertEqual(account_meta, meta)
+
+            # test metadata limit
+            limit = pithos_settings.RESOURCE_MAX_METADATA
+            kwargs = dict(('HTTP_X_ACCOUNT_META_%s' % i, str(i))
+                          for i in range(limit - len(meta) + 1))
+            r = self.post('%s?update=' % url, **kwargs)
+            self.assertEqual(r.status_code, 400)
+
+            meta.update(initial)
+            account_meta = self.get_account_meta()
+            self.assertEqual(account_meta, meta)
 
     def test_reset_meta(self):
         url = join_urls(self.pithos_path, self.user)
@@ -412,6 +424,13 @@ class AccountPost(PithosAPITest):
 
             (self.assertTrue(k not in account_meta) for k in meta.keys())
 
+            # test metadata limit
+            limit = pithos_settings.RESOURCE_MAX_METADATA
+            kwargs = dict(('HTTP_X_ACCOUNT_META_%s' % i, str(i))
+                          for i in range(limit + 1))
+            r = self.post('%s?update=' % url, **kwargs)
+            self.assertEqual(r.status_code, 400)
+
     def test_delete_meta(self):
         url = join_urls(self.pithos_path, self.user)
         with AssertMappingInvariant(self.get_account_groups):
@@ -427,14 +446,54 @@ class AccountPost(PithosAPITest):
 
             (self.assertTrue(k not in account_meta) for k in meta.keys())
 
+    @skipIf(pithos_settings.BACKEND_DB_MODULE ==
+            'pithos.backends.lib.sqlite',
+            "This test is only meaningful for SQLAlchemy backend")
+    def test_set_account_groups_limit_exceed(self):
+        url = join_urls(self.pithos_path, self.user)
+
+        # too long group name
+        headers = {'HTTP_X_ACCOUNT_GROUP_%s' % ('a' * 257): 'chazapis'}
+        r = self.post('%s?update=' % url, ** headers)
+        self.assertEqual(r.status_code, 400)
+
+        # too long group member name
+        r = self.post('%s?update=' % url,
+                      HTTP_X_ACCOUNT_GROUP_PITHOSDEV='%s' % 'a' * 257)
+        self.assertEqual(r.status_code, 400)
+
+        # too long owner
+        other_user = 'a' * 257
+        url = join_urls(self.pithos_path, other_user)
+        pithosdevs = ['verigak', 'gtsouk', 'chazapis']
+        r = self.post('%s?update=' % url,
+                      user=other_user,
+                      HTTP_X_ACCOUNT_GROUP_PITHOSDEV=','.join(pithosdevs))
+        self.assertEqual(r.status_code, 400)
+
     def test_set_account_groups(self):
         url = join_urls(self.pithos_path, self.user)
         with AssertMappingInvariant(self.get_account_meta):
+            limit = pithos_settings.ACC_MAX_GROUPS
+            # too many groups
+            kwargs = dict(('HTTP_X_ACCOUNT_GROUP_%s' % i, unicode(i))
+                          for i in range(limit + 1))
+            r = self.post('%s?update=' % url, **kwargs)
+            self.assertEqual(r.status_code, 400)
+
+            pithosdevs = ['chazapis'] * 2
+            r = self.post('%s?update=' % url,
+                          HTTP_X_ACCOUNT_GROUP_PITHOSDEV=','.join(pithosdevs))
+            self.assertEqual(r.status_code, 202)
+            account_groups = self.get_account_groups()
+            self.assertTrue('Pithosdev' in self.get_account_groups())
+            self.assertEqual(account_groups['Pithosdev'],
+                             'chazapis')
+
             pithosdevs = ['verigak', 'gtsouk', 'chazapis']
             r = self.post('%s?update=' % url,
                           HTTP_X_ACCOUNT_GROUP_PITHOSDEV=','.join(pithosdevs))
             self.assertEqual(r.status_code, 202)
-
             account_groups = self.get_account_groups()
             self.assertTrue('Pithosdev' in self.get_account_groups())
             self.assertEqual(account_groups['Pithosdev'],
@@ -465,6 +524,11 @@ class AccountPost(PithosAPITest):
                              ','.join(sorted(pithosdevs)))
             self.assertEqual(account_groups['Clientsdev'],
                              ','.join(sorted(clientdevs)))
+
+            long_list = [unicode(i) for i in xrange(33)]
+            r = self.post('%s?update=' % url,
+                          HTTP_X_ACCOUNT_GROUP_TEST=','.join(long_list))
+            self.assertEqual(r.status_code, 400)
 
     def test_reset_account_groups(self):
         url = join_urls(self.pithos_path, self.user)

@@ -25,7 +25,7 @@ class Command(SynnefoCommand):
     help = "List public snapshots or snapshots available to a user."
     option_list = SynnefoCommand.option_list + (
         make_option(
-            '--user-id',
+            '--user',
             dest='userid',
             default=None,
             help="List all snapshots available to that user."

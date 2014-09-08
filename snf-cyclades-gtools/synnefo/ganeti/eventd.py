@@ -23,6 +23,9 @@ A daemon to monitor the Ganeti job queue and publish job progress
 and Ganeti VM state notifications to the ganeti exchange
 """
 
+OLD_GANETI_PATH = "/usr/share/ganeti"
+NEW_GANETI_PATH = "/etc/ganeti/share"
+
 import sys
 import os
 path = os.path.normpath(os.path.join(os.getcwd(), '..'))
@@ -31,7 +34,22 @@ sys.path.append(path)
 # a private module under '/usr/share/ganeti'. Add this directory to path
 # in order to be able to import ganeti. Also, add it to the start of path
 # to allow conflicts with Ganeti RAPI client.
-sys.path.insert(0, "/usr/share/ganeti")
+# Since Ganeti 2.10 the python module is installed (linked) under
+# /etc/ganeti/share
+# Favor latest ganeti if found
+if os.path.exists(NEW_GANETI_PATH):
+    GANETI_PATH = NEW_GANETI_PATH
+else:
+    GANETI_PATH = OLD_GANETI_PATH
+
+sys.path.insert(0, GANETI_PATH)
+
+try:
+    import ganeti
+except ImportError:
+    raise Exception("Cannot import ganeti module. Please check if installed"
+                    " under %s for 2.8 or under %s for 2.10 or later." %
+                    (OLD_GANETI_PATH, NEW_GANETI_PATH))
 
 import json
 import logging
@@ -288,15 +306,16 @@ class JobFileHandler(pyinotify.ProcessEvent):
                           "disks": get_field(input, "disks"),
                           "beparams": get_field(input, "beparams")}
         elif op_id == "OP_INSTANCE_SNAPSHOT":
-            job_fields = {"disks": get_field(input, "disks")}
-            reason = get_field(input, "reason")
-            snapshot_info = None
-            if isinstance(reason, list) and len(reason) > 0:
-                reason = reason[0]
-                if reason[0] == "gnt:user":
-                    snapshot_info = reason[1]
-            self.logger.critical("LALALL %s", job_fields["disks"][0])
-            job_fields["disks"][0][1]["snapshot_info"] = snapshot_info
+            disks = get_field(input, "disks")
+            if disks:
+                reason = get_field(input, "reason")
+                snapshot_info = None
+                if isinstance(reason, list) and len(reason) > 0:
+                    reason = reason[0]
+                    if reason[0] == "gnt:user":
+                        snapshot_info = reason[1]
+                disks[0][1]["snapshot_info"] = snapshot_info
+                job_fields = {"disks": disks}
 
         msg = {"type": "ganeti-op-status",
                "instance": instances,
@@ -377,8 +396,10 @@ class JobFileHandler(pyinotify.ProcessEvent):
         input = op.input
         op_id = input.OP_ID
         if op_id == "OP_TAGS_SET":
-            if op.status == "waiting" and input.tags and input.dry_run and\
-               input.kind == "cluster":
+            # NOTE: Check 'dry_run' after 'cluster' because networks and groups
+            # do not support the 'dry_run' option.
+            if (op.status == "waiting" and input.tags and
+                input.kind == "cluster" and input.dry_run):
                 # Special where a prefixed cluster tag operation in dry-run
                 # mode is used in order to trigger eventd to send a
                 # heartbeat message.
@@ -511,7 +532,10 @@ def main():
 
         while True:    # loop forever
             # process the queue of events as explained above
-            notifier.process_events()
+            try:
+                notifier.process_events()
+            except StandardError:
+                logger.exception("Unhandled exception")
             if notifier.check_events():
                 # read notified events and enqeue them
                 notifier.read_events()

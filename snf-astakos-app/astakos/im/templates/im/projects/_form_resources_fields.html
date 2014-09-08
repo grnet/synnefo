@@ -7,13 +7,13 @@
       <input type="{{ type }}" 
              id="id_{{resource}}_m_uplimit" 
              name="{{resource}}_m_uplimit"  
-          {% if value %}value="{{value}}"{% endif %} />
+          {% if value %}value="{{value|inf_display}}"{% endif %} />
     {% endwith %}
     {% with value=object|get_project_resource_grant_value:resource %}
       <input type="{{ type }}" 
              id="id_{{resource}}_p_uplimit" 
              name="{{resource}}_p_uplimit"  
-          {% if value %}value="{{value}}"{% endif %} />
+          {% if value %}value="{{value|inf_display}}"{% endif %} />
     {% endwith %}
     {% endwith %}
   {% endfor %}

@@ -7,15 +7,11 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
-        # Changing field 'AstakosUser.base_project'
-        db.alter_column('im_astakosuser', 'base_project_id', self.gf('django.db.models.fields.related.ForeignKey')(default=None, to=orm['im.Project']))
+        pass
 
 
     def backwards(self, orm):
-        
-        # Changing field 'AstakosUser.base_project'
-        db.alter_column('im_astakosuser', 'base_project_id', self.gf('django.db.models.fields.related.ForeignKey')(null=True, to=orm['im.Project']))
+        pass
 
 
     models = {
@@ -76,7 +72,7 @@ class Migration(SchemaMigration):
             'auth_token': ('django.db.models.fields.CharField', [], {'max_length': '64', 'unique': 'True', 'null': 'True', 'blank': 'True'}),
             'auth_token_created': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
             'auth_token_expires': ('django.db.models.fields.DateTimeField', [], {'null': 'True'}),
-            'base_project': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'base_user'", 'to': "orm['im.Project']"}),
+            'base_project': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'base_user'", 'null': 'True', 'to': "orm['im.Project']"}),
             'date_signed_terms': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'deactivated_at': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'deactivated_reason': ('django.db.models.fields.TextField', [], {'default': 'None', 'null': 'True'}),

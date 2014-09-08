@@ -75,9 +75,8 @@ class Command(SynnefoCommand):
                     update_public_meta(public, kv)
 
             if options['hashmap']:
-                _, kv['hashmap'] = b.get_object_hashmap(account, account,
-                                                        container, name,
-                                                        options['obj_version'])
+                _, size, kv['hashmap'] = b.get_object_hashmap(
+                    account, account, container, name, options['obj_version'])
 
             utils.pprint_table(self.stdout, [kv.values()], kv.keys(),
                                options["output_format"], vertical=True)

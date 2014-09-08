@@ -54,18 +54,18 @@ class Command(SynnefoCommand):
                  " hosts the VM. Use snf-manage backend-list to"
                  " find out available backends."),
         make_option(
-            "--user-id",
+            "--user",
             dest="user_id",
             help="Unique identifier of the owner of the server"),
         make_option(
-            "--image-id",
+            "--image",
             dest="image_id",
             default=None,
             help="Unique identifier of the image."
                  " Use snf-manage image-list to find out"
                  " available images."),
         make_option(
-            "--flavor-id",
+            "--flavor",
             dest="flavor_id",
             help="Unique identifier of the flavor"
                  " Use snf-manage flavor-list to find out"
@@ -80,7 +80,7 @@ class Command(SynnefoCommand):
                  " Synnefo.")
     )
 
-    REQUIRED = ("user-id", "backend-id", "image-id", "flavor-id")
+    REQUIRED = ("user", "backend-id", "image", "flavor")
 
     def handle(self, *args, **options):
         if len(args) < 1:

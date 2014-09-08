@@ -106,9 +106,6 @@ UI_SYNNEFO_JS_LIB_URL = \
             "UI_SYNNEFO_JS_LIB_URL", UI_SYNNEFO_JS_URL + "lib/")
 UI_SYNNEFO_JS_WEB_URL = \
     getattr(settings, "UI_SYNNEFO_JS_WEB_URL", UI_SYNNEFO_JS_URL + "ui/web/")
-UI_SYNNEFO_FONTS_BASE_URL = \
-    getattr(settings,
-            "UI_FONTS_BASE_URL", "//fonts.googleapis.com/")
 
 # extensions
 ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
@@ -151,6 +148,9 @@ DEFAULT_HOTPLUG_ENABLED = getattr(settings, "CYCLADES_GANETI_USE_HOTPLUG",
 HOTPLUG_ENABLED = getattr(settings, "UI_HOTPLUG_ENABLED",
                           DEFAULT_HOTPLUG_ENABLED)
 
+VOLUME_MAX_SIZE = getattr(settings, "CYCLADES_VOLUME_MAX_SIZE", 200);
+SNAPSHOTS_ENABLED = getattr(settings, "UI_SNAPSHOTS_ENABLED", True);
+
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
     current_template = template_path + name + '.html'
@@ -159,7 +159,6 @@ def template(name, request, context):
         'UI_MEDIA_URL': UI_MEDIA_URL,
         'SYNNEFO_JS_URL': UI_SYNNEFO_JS_URL,
         'SYNNEFO_JS_LIB_URL': UI_SYNNEFO_JS_LIB_URL,
-        'SYNNEFO_FONTS_BASE_URL': UI_SYNNEFO_FONTS_BASE_URL,
         'SYNNEFO_JS_WEB_URL': UI_SYNNEFO_JS_WEB_URL,
         'SYNNEFO_IMAGES_URL': UI_SYNNEFO_IMAGES_URL,
         'SYNNEFO_CSS_URL': UI_SYNNEFO_CSS_URL,
@@ -228,7 +227,9 @@ def home(request):
         'group_public_networks': json.dumps(GROUP_PUBLIC_NETWORKS),
         'hotplug_enabled': json.dumps(HOTPLUG_ENABLED),
         'diagnostics_update_interval': json.dumps(DIAGNOSTICS_UPDATE_INTERVAL),
-        'no_fqdn_message': json.dumps(NO_FQDN_MESSAGE)
+        'no_fqdn_message': json.dumps(NO_FQDN_MESSAGE),
+        'volume_max_size': json.dumps(VOLUME_MAX_SIZE),
+        'snapshots_enabled': json.dumps(SNAPSHOTS_ENABLED)
     }
     return template('home', request, context)
 
@@ -239,11 +240,9 @@ def machines_console(request):
     port = request.GET.get('port', '')
     password = request.GET.get('password', '')
     machine = request.GET.get('machine', '')
-    host_ip = request.GET.get('host_ip', '')
-    host_ip_v6 = request.GET.get('host_ip_v6', '')
+    machine_hostname = request.GET.get('machine_hostname', '')
     context = {'host': host, 'port': port, 'password': password,
-               'machine': machine, 'host_ip': host_ip,
-               'host_ip_v6': host_ip_v6}
+               'machine': machine, 'machine_hostname': machine_hostname}
     return template('machines_console', request, context)
 
 

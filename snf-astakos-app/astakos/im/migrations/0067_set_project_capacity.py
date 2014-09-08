@@ -6,6 +6,7 @@ from django.db import models
 
 APPROVED = 1
 ACTUALLY_ACCEPTED = [1, 5]
+MAX = 2**63 - 1
 
 
 class Migration(DataMigration):
@@ -26,7 +27,7 @@ class Migration(DataMigration):
                                           state__in=ACTUALLY_ACCEPTED).count()
                     max_members = max(2 * members, 1)
 
-            project_capacity = max_members * grant.member_capacity
+            project_capacity = min(max_members * grant.member_capacity, MAX)
             new_grant = orm.ProjectResourceGrant(
                 resource=grant.resource,
                 project_application=grant.project_application,

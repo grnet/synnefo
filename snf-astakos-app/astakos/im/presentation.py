@@ -20,7 +20,7 @@ RESOURCES = {
     'groups': {
         'compute': {
             'help_text': ('Compute resources '
-                          '(amount of VMs, CPUs, RAM, System disk) '),
+                          '(amount of VMs, CPUs, RAM, Hard disk) '),
             'is_abbreviation': False,
             'report_desc': '',
             'verbose_name': 'compute',
@@ -43,34 +43,46 @@ RESOURCES = {
         'pithos.diskspace': {
             'help_text': ('This is the space on Pithos for storing files '
                           'and VM Images. '),
-            'help_text_input_each': ('This is the total amount of space on '
+            'help_text_input_each': ('This is the maximum amount of space on '
                                      'Pithos that will be granted to each '
                                      'user of this Project '),
+            'help_text_input_total': ('This is the total amount of space on '
+                                      'Pithos that will be granted for use '
+                                      'across all users of this Project '),
             'is_abbreviation': False,
-            'report_desc': 'Storage Space',
+            'report_desc': 'File Storage Space',
             'placeholder': 'eg. 10GB',
-            'verbose_name': 'Storage Space',
+            'verbose_name': 'File Storage Space',
             'group': 'storage'
         },
         'cyclades.disk': {
-            'help_text': ('This is the System Disk that the VMs have that '
+            'help_text': ('This is the Hard Disk that the VMs have that '
                           'run the OS '),
-            'help_text_input_each': ("This is the total amount of System Disk "
+            'help_text_input_each': ("This is the maximum amount of System "
+                                     "Disk "
                                      "that will be granted to each user of "
                                      "this Project (this refers to the total "
-                                     "System Disk of all VMs, not each VM's "
-                                     "System Disk)  "),
+                                     "Hard Disk of all VMs, not each VM's "
+                                     "Hard Disk)"),
+            'help_text_input_total': ("This is the total amount of System "
+                                      "Disk that will be granted across all "
+                                      "users of this Project (this refers to "
+                                      "the total Hard Disk of all VMs, not "
+                                      "each VM's Hard Disk)"),
             'is_abbreviation': False,
-            'report_desc': 'System Disk',
+            'report_desc': 'Hard Disk Storage',
             'placeholder': 'eg. 5GB, 2GB etc',
-            'verbose_name': 'System Disk',
+            'verbose_name': 'Hard Disk Storage',
             'group': 'compute'
         },
         'cyclades.total_ram': {
             'help_text': 'RAM used by VMs ',
-            'help_text_input_each': ('This is the total amount of RAM that '
+            'help_text_input_each': ('This is the maximum amount of RAM that '
                                      'will be granted to each user of this '
                                      'Project (on all VMs)  '),
+            'help_text_input_total': ('This is the total amount of RAM that '
+                                      'will be granted across all users of '
+                                      'this Project (on all VMs)'),
             'is_abbreviation': True,
             'report_desc': 'Total RAM',
             'placeholder': 'eg. 4GB',
@@ -80,9 +92,12 @@ RESOURCES = {
         },
         'cyclades.ram': {
             'help_text': 'RAM used by active VMs ',
-            'help_text_input_each': ('This is the total amount of RAM that '
+            'help_text_input_each': ('This is the maximum amount of RAM that '
                                      'will be granted to each user of this '
                                      'Project (on all active VMs)  '),
+            'help_text_input_total': ('This is the total amount of RAM that '
+                                      'will be granted across all users of '
+                                      'this Project (on all active VMs)'),
             'is_abbreviation': False,
             'report_desc': 'RAM',
             'placeholder': 'eg. 4GB',
@@ -92,9 +107,12 @@ RESOURCES = {
         },
         'cyclades.total_cpu': {
             'help_text': 'CPUs used by VMs ',
-            'help_text_input_each': ('This is the total number of CPUs that '
+            'help_text_input_each': ('This is the maximum number of CPUs that '
                                      'will be granted to each user of this '
-                                     'Project (on all VMs)  '),
+                                     'Project (on all VMs)'),
+            'help_text_input_total': ('This is the total number of CPUs that '
+                                      'will be granted across all users of '
+                                      'this Project (on all VMs)'),
             'is_abbreviation': True,
             'report_desc': 'Total CPUs',
             'placeholder': 'eg. 1',
@@ -104,9 +122,12 @@ RESOURCES = {
         },
         'cyclades.cpu': {
             'help_text': 'CPUs used by active VMs ',
-            'help_text_input_each': ('This is the total number of CPUs that '
+            'help_text_input_each': ('This is the maximum number of CPUs that '
                                      'will be granted to each user of this '
                                      'Project (on all active VMs)  '),
+            'help_text_input_total': ('This is the total number of CPUs that '
+                                      'will be granted across all users '
+                                      'of this Project (on all active VMs)  '),
             'is_abbreviation': False,
             'report_desc': 'CPUs',
             'placeholder': 'eg. 1',
@@ -117,9 +138,12 @@ RESOURCES = {
         'cyclades.vm': {
             'help_text': ('These are the VMs one can create on the '
                           'Cyclades UI '),
-            'help_text_input_each': ('This is the total number of VMs that '
+            'help_text_input_each': ('This is the maximum number of VMs that '
                                      'will be granted to each user of this '
                                      'Project '),
+            'help_text_input_total': ('This is the total number of VMs that '
+                                      'will be granted across all users '
+                                      'of this Project in total'),
             'is_abbreviation': True,
             'report_desc': 'Virtual Machines',
             'placeholder': 'eg. 2',
@@ -130,9 +154,12 @@ RESOURCES = {
         'cyclades.network.private': {
             'help_text': ('These are the Private Networks one can create on '
                           'the Cyclades UI. '),
-            'help_text_input_each': ('This is the total number of Private '
+            'help_text_input_each': ('This is the maximum number of Private '
                                      'Networks that will be granted to each '
                                      'user of this Project '),
+            'help_text_input_total': ('This is the total number of Private '
+                                      'Networks that will be granted across '
+                                      'all users of this Project'),
             'is_abbreviation': False,
             'report_desc': 'Private Networks',
             'placeholder': 'eg. 1',
@@ -143,9 +170,12 @@ RESOURCES = {
         'cyclades.floating_ip': {
             'help_text': ('These are the Public (Floating) IPs one can '
                           'reserve on the Cyclades UI. '),
-            'help_text_input_each': ('This is the total number of Public '
+            'help_text_input_each': ('This is the maximum number of Public '
                                      '(Floating) IPs that will be granted to '
                                      'each user of this Project '),
+            'help_text_input_total': ('This is the number of Public '
+                                      '(Floating) IPs that will be granted '
+                                      'across all users of this Project'),
             'is_abbreviation': False,
             'report_desc': 'Public (Floating) IPs',
             'placeholder': 'eg. 1',
@@ -155,8 +185,11 @@ RESOURCES = {
         },
         'astakos.pending_app': {
             'help_text': ('Pending project applications limit'),
-            'help_text_input_each': ('Total pending project applications user '
-                                     'is allowed to create'),
+            'help_text_input_each': ('Maximum pending project applications '
+                                     'user is allowed to create'),
+            'help_text_input_total': ('Total pending project applications '
+                                      ' project users are allowed to create '
+                                      ' in total'),
             'is_abbreviation': False,
             'report_desc': 'Pending Project Applications',
             'placeholder': 'eg. 2',
@@ -259,4 +292,10 @@ PROJECT_MEMBER_LEAVE_POLICIES = {
     1: 'automatically accepted',
     2: 'owner accepts',
     3: 'closed',
+}
+
+USAGE_TAG_MAP = {
+    0: 'green',
+    33: 'yellow',
+    66: 'red'
 }

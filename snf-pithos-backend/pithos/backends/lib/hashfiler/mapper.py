@@ -25,19 +25,13 @@ class Mapper(object):
     def __init__(self, **params):
         self.archip_map = ArchipelagoMapper(**params)
 
-    def map_retr(self, maphash, blkoff=0, nr=100000000000000):
+    def map_retr(self, maphash, size):
         """Return as a list, part of the hashes map of an object
            at the given block offset.
            By default, return the whole hashes map.
         """
-        return self.archip_map.map_retr(maphash, blkoff, nr)
+        return self.archip_map.map_retr(maphash, size)
 
-    def map_retr_archipelago(self, maphash, size):
-        """Return as a list the hashes map of an Archipelago
-        Volume.
-        """
-        return self.archip_map.map_retr_archipelago(maphash, size)
-
-    def map_stor(self, maphash, hashes=(), blkoff=0, create=1):
+    def map_stor(self, maphash, hashes, size, blocksize):
         """Store hashes in the given hashes map."""
-        self.archip_map.map_stor(maphash, hashes, blkoff, create)
+        self.archip_map.map_stor(maphash, hashes, size, blocksize)

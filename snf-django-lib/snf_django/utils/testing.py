@@ -194,6 +194,12 @@ def mocked_quotaholder(success=True):
                     "rejected": args[1],
                     }
         astakos.return_value.resolve_commissions.side_effect = resolve_mock
+
+        def reassign(*args, **kwargs):
+            v = len(
+                astakos.return_value.issue_resource_reassignment.mock_calls)
+            return v + serial
+        astakos.return_value.issue_resource_reassignment.side_effect = reassign
         yield astakos.return_value
 
 

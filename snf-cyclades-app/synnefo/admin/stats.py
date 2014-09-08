@@ -19,11 +19,12 @@ import datetime
 from collections import defaultdict  # , OrderedDict
 from copy import copy
 from django.conf import settings
+from django.db import connection
 from django.db.models import Count, Sum
 
 from snf_django.lib.astakos import UserCache
 from synnefo.plankton.backend import PlanktonBackend
-from synnefo.db.models import (VirtualMachine, Network, Backend,
+from synnefo.db.models import (VirtualMachine, Network, Backend, VolumeType,
                                pooled_rapi_client, Flavor)
 
 
@@ -70,7 +71,7 @@ def _get_cluster_stats(bend):
             "offline": node["offline"],
             "vm_capable": node["vm_capable"],
             "instances": node["pinst_cnt"],
-            "cpu": node["ctotal"],
+            "cpu": (node["ctotal"] or 0),
             "ram": {
                 "total": (node["mtotal"] or 0) << 20,
                 "free": (node["mfree"] or 0) << 20
@@ -101,12 +102,12 @@ def _get_total_servers(backend=None):
 
 
 def get_server_stats(backend=None):
-    servers = VirtualMachine.objects.select_related("flavor")\
+    servers = VirtualMachine.objects.select_related("flavor__volume_type")\
                                     .filter(deleted=False)
     if backend is not None:
         servers = servers.filter(backend=backend)
-    disk_templates = Flavor.objects.values_list("disk_template", flat=True)\
-                                   .distinct()
+    disk_templates = \
+        VolumeType.objects.values_list("disk_template", flat=True).distinct()
 
     # Initialize stats
     server_stats = defaultdict(dict)
@@ -126,7 +127,7 @@ def get_server_stats(backend=None):
             state = "stopped"
 
         flavor = s.flavor
-        disk_template = flavor.disk_template
+        disk_template = flavor.volume_type.disk_template
         server_stats[state]["count"] += 1
         server_stats[state]["cpu"][flavor.cpu] += 1
         server_stats[state]["ram"][flavor.ram << 20] += 1
@@ -170,19 +171,25 @@ def get_ip_pool_stats():
     return ip_stats
 
 
+IMAGES_QUERY = """
+SELECT is_system, osfamily, os, count(vm.id)
+FROM db_virtualmachine as vm LEFT OUTER JOIN db_image as img
+ON img.uuid = vm.imageid AND img.version = vm.image_version
+WHERE vm.deleted=false
+GROUP BY is_system, osfamily, os
+"""
+
 def get_image_stats(backend=None):
-    total_servers = _get_total_servers(backend=backend)
-    active_servers = total_servers.filter(deleted=False)
-
-    active_servers_images = active_servers.values("imageid", "userid")\
-                                          .annotate(number=Count("imageid"))
-
-    image_cache = ImageCache()
-    image_stats = defaultdict(int)
-    for result in active_servers_images:
-        imageid = image_cache.get_image(result["imageid"], result["userid"])
-        image_stats[imageid] += result["number"]
-    return dict(image_stats)
+    cursor = connection.cursor()
+    cursor.execute(IMAGES_QUERY)
+    images = cursor.fetchall()
+    images_stats = {}
+    for image in images:
+        owner = "system" if image[0] else "user"
+        osfamily = image[1] or "unknown"
+        os = image[2] or "unknown"
+        images_stats["%s:%s:%s" % (owner, osfamily, os)] = image[3]
+    return images_stats
 
 
 class ImageCache(object):

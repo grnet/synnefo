@@ -28,8 +28,9 @@ from django.utils.translation import ugettext as _
 from django.views.generic.list_detail import object_list, object_detail
 from django.core.exceptions import PermissionDenied
 from django.views.decorators.http import require_http_methods
-from django.db import transaction
+from astakos.im import transaction
 from django.template import RequestContext
+from django.db.models import Q
 
 import astakos.im.messages as astakos_messages
 
@@ -43,7 +44,8 @@ from astakos.im.functions import check_pending_app_quota, accept_membership, \
     join_project, enroll_member, can_join_request, can_leave_request, \
     get_related_project_id, approve_application, \
     deny_application, cancel_application, dismiss_application, ProjectError, \
-    can_cancel_join_request
+    can_cancel_join_request, app_check_allowed, project_check_allowed, \
+    ProjectForbidden
 from astakos.im import settings
 from astakos.im.util import redirect_back
 from astakos.im.views.util import render_response, _create_object, \
@@ -60,6 +62,17 @@ logger = logging.getLogger(__name__)
 
 def no_transaction(func):
     return func
+
+
+def handles_project_errors(func):
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except ProjectForbidden:
+            raise PermissionDenied
+    return wrapper
 
 
 def project_view(get=True, post=False, transaction=False):
@@ -81,7 +94,8 @@ def project_view(get=True, post=False, transaction=False):
                     cookie_fix(
                         valid_astakos_user_required(
                             transaction_method(
-                                func)))))
+                                handles_project_errors(func))))))
+
     return wrapper
 
 
@@ -94,12 +108,24 @@ def how_it_works(request):
 @project_view()
 def project_list(request, template_name="im/projects/project_list.html"):
     query = api.make_project_query({})
-    projects = api._get_projects(query, request_user=request.user)
+    show_base = request.GET.get('show_base', False)
+
+    # exclude base projects by default for admin users
+    if not show_base and request.user.is_project_admin():
+        query = query & ~Q(Q(is_base=True) & \
+                          ~Q(realname="system:%s" % request.user.uuid))
+
+    query = query & ~Q(state=Project.DELETED)
+    mode = "default"
+    if not request.user.is_project_admin():
+        mode = "related"
+
+    projects = api._get_projects(query, mode=mode, request_user=request.user)
 
     table = None
     if projects.count():
         table = get_user_projects_table(projects, user=request.user,
-                                        prefix="my_projects_")
+                                        prefix="my_projects_", request=request)
 
     context = {'is_search': False, 'table': table}
     return object_list(request, projects, template_name=template_name,
@@ -207,18 +233,21 @@ def project_or_app_detail(request, project_uuid, app_id=None):
     application = None
     if app_id:
         application = get_object_or_404(ProjectApplication, id=app_id)
+        app_check_allowed(application, request.user)
         if request.method == "POST":
             raise PermissionDenied
 
-    if project.state in [Project.O_PENDING] and not application:
+    if project.state in [Project.O_PENDING] and not application and \
+       project.last_application:
         return redirect(reverse('project_app',
                                 args=(project.uuid,
                                       project.last_application.id,)))
 
     members = project.projectmembership_set
 
-    # handle members
-    if request.method == 'POST':
+    # handle members form submission
+    if request.method == 'POST' and not application:
+        project_check_allowed(project, request.user)
         addmembers_form = AddProjectMembersForm(
             request.POST,
             project_id=project.pk,
@@ -246,11 +275,24 @@ def project_or_app_detail(request, project_uuid, app_id=None):
     RequestConfig(request, paginate=paginate).configure(members_table)
 
     user = request.user
+    owns_base = False
+    if project and project.is_base and \
+                           project.realname == "system:%s" % request.user.uuid:
+        owns_base = True
     is_project_admin = user.is_project_admin()
     is_owner = user.owns_project(project)
+    is_applicant = False
+    last_pending_app = project.last_pending_application()
+    if last_pending_app:
+        is_applicant = last_pending_app and \
+                last_pending_app.applicant.pk == user.pk
 
     if not (is_owner or is_project_admin) and \
             not user.non_owner_can_view(project):
+        m = _(astakos_messages.NOT_ALLOWED)
+        raise PermissionDenied(m)
+
+    if project and project.is_base and not (owns_base or is_project_admin):
         m = _(astakos_messages.NOT_ALLOWED)
         raise PermissionDenied(m)
 
@@ -259,8 +301,8 @@ def project_or_app_detail(request, project_uuid, app_id=None):
     mem_display = user.membership_display(project) if project else None
     can_join_req = can_join_request(project, user) if project else False
     can_leave_req = can_leave_request(project, user) if project else False
-    can_cancel_req = can_cancel_join_request(project, user) if project else \
-        False
+    can_cancel_req = \
+            can_cancel_join_request(project, user) if project else False
 
     is_modification = application.is_modification() if application else False
 
@@ -271,9 +313,14 @@ def project_or_app_detail(request, project_uuid, app_id=None):
     if application:
         queryset = ProjectApplication.objects.select_related()
         object_id = application.pk
+        is_applicant = application.applicant.pk == user.pk
         resources_set = application.resource_set
-        project_resources_set = project.resource_set
         template_name = "im/projects/project_application_detail.html"
+
+    display_usage = False
+    if (owns_base or is_owner or membership or is_project_admin) \
+                                                               and not app_id:
+        display_usage = True
 
     return object_detail(
         request,
@@ -284,6 +331,7 @@ def project_or_app_detail(request, project_uuid, app_id=None):
             'project': project,
             'application': application,
             'is_application': bool(application),
+            'display_usage': display_usage,
             'is_modification': is_modification,
             'addmembers_form': addmembers_form,
             'approved_members_count': approved_members_count,
@@ -291,6 +339,7 @@ def project_or_app_detail(request, project_uuid, app_id=None):
             'members_table': members_table,
             'owner_mode': is_owner,
             'admin_mode': is_project_admin,
+            'applicant_mode': is_applicant,
             'mem_display': mem_display,
             'membership_id': membership_id,
             'can_join_request': can_join_req,
@@ -326,14 +375,9 @@ def project_search(request):
     if q is None:
         projects = Project.objects.none()
     else:
-        accepted = request.user.projectmembership_set.filter(
-            state__in=ProjectMembership.ACCEPTED_STATES).values_list(
-            'project', flat=True)
-
-        projects = Project.objects.search_by_name(q)
-        projects = projects.filter(state=Project.NORMAL)
-        projects = projects.exclude(id__in=accepted).select_related(
-            'application', 'application__owner', 'application__applicant')
+        query = ~Q(state=Project.DELETED)
+        projects = api._get_projects(query, mode="active",
+                                     request_user=request.user)
 
     table = get_user_projects_table(projects, user=request.user,
                                     prefix="my_projects_")
@@ -541,6 +585,7 @@ def project_members_action(request, project_uuid, action=None, redirect_to='',
 
     user = request.user
     if not user.owns_project(project) and not user.is_project_admin():
+        messages.error(request, astakos_messages.NOT_ALLOWED)
         return redirect(reverse('index'))
 
     logger.info("Member(s) action from %s (project: %r, action: %s, "

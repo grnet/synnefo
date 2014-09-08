@@ -1,0 +1,19 @@
+{% load admin_tags %}
+
+{% with ip_log=item %}
+<tr>
+    <td>{{ ip_log|details_url:"ip"|safe }}</td>
+    <td>{{ ip_log|details_url:"vm"|safe }}</td>
+    <td>{{ ip_log|details_url:"network"|safe }}</td>
+    <td>{{ ip_log|details_url:"user"|safe }}</td>
+    <td>{{ ip_log.allocated_at }}</td>
+    <td>{{ ip_log.released_at|default:"-" }}</td>
+    <td>
+        {% if ip_log.active %}
+        <span class="label label-success">In Use</span>
+        {% else %}
+        Free
+        {% endif %}
+    </td>
+</tr>
+{% endwith %}

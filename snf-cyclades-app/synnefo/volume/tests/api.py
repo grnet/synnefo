@@ -143,6 +143,9 @@ class VolumeAPITest(BaseAPITest):
                                  'name': 'test_image',
                                  'size': 1024,
                                  'is_snapshot': True,
+                                 'is_public': True,
+                                 'version': 42,
+                                 'owner': 'user',
                                  'status': 'AVAILABLE',
                                  'disk_format': 'diskdump'}
         data["snapshot_id"] = 1
@@ -175,6 +178,9 @@ class VolumeAPITest(BaseAPITest):
                               'size': 1024,
                               'is_snapshot': False,
                               'is_image': False,
+                              'is_public': True,
+                              'owner': 'user',
+                              'version': 42,
                               'status': 'AVAILABLE',
                               'disk_format': 'diskdump'}
         data["imageRef"] = 2

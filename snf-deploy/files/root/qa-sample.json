@@ -39,7 +39,7 @@
   "cluster-init-args": [],
 
   "# Network interface for master role": null,
-  "master-netdev": "%CLUSTER_NETDEV",
+  "master-netdev": "%CLUSTER_NETDEV%",
 
   "# Default network interface parameters": null,
   "default-nicparams": {
@@ -88,23 +88,23 @@
   "# Regular expression to ignore existing tags": null,
   "ignore-tags-re": null,
 
-  %NODES",
+  "nodes": %NODES%,
 
   "instances": [
     {
-      "name": "xen-test-inst1.vm.%DOMAIN%",
+      "name": "xen-test-inst1.%DOMAIN%",
 
       "# Static MAC address": null,
       "#nic.mac/0": "AA:00:00:11:11:11"
     },
     {
-      "name": "xen-test-inst2.vm.%DOMAIN%",
+      "name": "xen-test-inst2.%DOMAIN%",
 
       "# Static MAC address": null,
       "#nic.mac/0": "AA:00:00:22:22:22"
     },
     {
-      "name": "xen-test-inst3.vm.%DOMAIN%",
+      "name": "xen-test-inst3.%DOMAIN%",
 
       "# Static MAC address": null,
       "#nic.mac/0": "AA:00:00:22:22:22"

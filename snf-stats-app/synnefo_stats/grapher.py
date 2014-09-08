@@ -234,7 +234,10 @@ available_graph_types = {'cpu-bar': draw_cpu_bar,
 @api_method(http_method='GET', token_required=False, user_required=False,
             format_allowed=False, logger=log)
 def grapher(request, graph_type, hostname):
-    hostname = decrypt(smart_str(hostname))
+    try:
+        hostname = decrypt(smart_str(hostname))
+    except (ValueError, TypeError):
+        raise faults.BadRequest("Invalid encrypted virtual server name")
     fname = smart_str(os.path.join(settings.RRD_PREFIX, hostname))
     if not os.path.isdir(fname):
         raise faults.ItemNotFound('No such instance')

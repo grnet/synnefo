@@ -1,0 +1,36 @@
+{% extends "admin/base.html" %}
+
+{% block nav-bar %}
+<div class="nav-simple navbar-fixed-top">
+	<span class="header">
+    {% if BRANDING_ADMIN_LOGO_URL %}
+    <img src="{{ BRANDING_ADMIN_LOGO_URL }}" alt="{{ BRANDING_SERVICE_NAME }} Admin Panel" />
+    {% else %}
+        Synnefo Admin Panel
+    {% endif %}
+    </span>
+	<div class="login-info">Welcome,
+		<div class="has-dropdown" >
+            <a href="" data-noclick="true">{{ user.access.user.name }}
+			<span class="snf-angle-down arrow"></span>
+			</a>
+			<ul class="dropdown-menu align-right">
+				<li>
+					<a href="{% url admin-logout %}"  class="sign-out">
+						<span class="snf-sign-out"></span>
+						Sign Out
+					</a>
+				</li>
+			</ul>
+		</div>
+	</div>
+</div>
+{% endblock %}
+
+{% block main-area %}
+<div class="app-list">
+    <a href="" data-toggle="tooltip" data-placement="bottom" title="Under construction" class="disabled"><span>Infrastructure</span></a>
+    <a href="{% url admin-list 'user' %}"><span>Service</span></a>
+</div>
+
+{% endblock main-area%}

@@ -2,7 +2,7 @@ README
 ======
 
 Pithos is a file storage service, built by GRNET using Django (https://www.djangoproject.com/).
-Learn more about Pithos at: http://code.grnet.gr/projects/pithos
+Learn more about Pithos at: https://www.synnefo.org/docs/synnefo/latest/pithos.html
 
 Consult COPYRIGHT for licensing information.
 

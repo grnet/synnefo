@@ -24,7 +24,11 @@ the astakos client library
 
 import re
 import sys
-import simplejson
+
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 import astakosclient
 from astakosclient import AstakosClient
@@ -271,10 +275,10 @@ def _req_tokens(conn, method, url, **kwargs):
 
     if 'body' in kwargs:
         # Return endpoints with authenticate info
-        return ("", simplejson.dumps(endpoints_with_info), 200)
+        return ("", json.dumps(endpoints_with_info), 200)
     else:
         # Return endpoints without authenticate info
-        return ("", simplejson.dumps(endpoints), 200)
+        return ("", json.dumps(endpoints), 200)
 
 
 def _req_catalogs(conn, method, url, **kwargs):
@@ -291,7 +295,7 @@ def _req_catalogs(conn, method, url, **kwargs):
         return _request_status_401(conn, method, url, **kwargs)
 
     # Return
-    body = simplejson.loads(kwargs['body'])
+    body = json.loads(kwargs['body'])
     if 'uuids' in body:
         # Return uuid_catalog
         uuids = body['uuids']
@@ -308,7 +312,7 @@ def _req_catalogs(conn, method, url, **kwargs):
         return_catalog = {"displayname_catalog": catalogs, "uuid_catalog": {}}
     else:
         return_catalog = {"displayname_catalog": {}, "uuid_catalog": {}}
-    return ("", simplejson.dumps(return_catalog), 200)
+    return ("", json.dumps(return_catalog), 200)
 
 
 def _req_resources(conn, method, url, **kwargs):
@@ -322,7 +326,7 @@ def _req_resources(conn, method, url, **kwargs):
         return _request_status_400(conn, method, url, **kwargs)
 
     # Return
-    return ("", simplejson.dumps(resources), 200)
+    return ("", json.dumps(resources), 200)
 
 
 def _req_quotas(conn, method, url, **kwargs):
@@ -339,7 +343,7 @@ def _req_quotas(conn, method, url, **kwargs):
         return _request_status_401(conn, method, url, **kwargs)
 
     # Return
-    return ("", simplejson.dumps(quotas), 200)
+    return ("", json.dumps(quotas), 200)
 
 
 def _req_commission(conn, method, url, **kwargs):
@@ -357,22 +361,22 @@ def _req_commission(conn, method, url, **kwargs):
     if method == "POST":
         if 'body' not in kwargs:
             return _request_status_400(conn, method, url, **kwargs)
-        body = simplejson.loads(unicode(kwargs['body']))
+        body = json.loads(unicode(kwargs['body']))
         if re.match('/?'+api_commissions+'$', url) is not None:
             # Issue Commission
             # Check if we have enough resources to give
             if body['provisions'][1]['quantity'] > 420000000:
-                return ("", simplejson.dumps(commission_failure_response), 413)
+                return ("", json.dumps(commission_failure_response), 413)
             else:
                 return \
-                    ("", simplejson.dumps(commission_successful_response), 200)
+                    ("", json.dumps(commission_successful_response), 200)
         else:
             # Issue commission action
             serial = url.split('/')[3]
             if serial == "action":
                 # Resolve multiple actions
                 if body == resolve_commissions_req:
-                    return ("", simplejson.dumps(resolve_commissions_rep), 200)
+                    return ("", json.dumps(resolve_commissions_rep), 200)
                 else:
                     return _request_status_400(conn, method, url, **kwargs)
             else:
@@ -388,12 +392,12 @@ def _req_commission(conn, method, url, **kwargs):
     elif method == "GET":
         if re.match('/?'+api_commissions+'$', url) is not None:
             # Return pending commission
-            return ("", simplejson.dumps(pending_commissions), 200)
+            return ("", json.dumps(pending_commissions), 200)
         else:
             # Return commissions's description
             serial = re.sub('/?' + api_commissions, '', url)[1:]
             if serial == str(57):
-                return ("", simplejson.dumps(commission_description), 200)
+                return ("", json.dumps(commission_description), 200)
             else:
                 return _request_status_404(conn, method, url, **kwargs)
     else:
@@ -793,7 +797,8 @@ class TestCommissions(unittest.TestCase):
             client = AstakosClient(token['id'], auth_url)
             response = client.issue_one_commission(
                 "c02f315b-7d84-45bc-a383-552a3f97d2ad",
-                "system", {"cyclades.vm": 1, "cyclades.ram": 30000})
+                {("system", "cyclades.vm"): 1,
+                 ("system", "cyclades.ram"): 30000})
         except Exception as err:
             self.fail("Shouldn't have raised Exception %s" % err)
         self.assertEqual(response, commission_successful_response['serial'])

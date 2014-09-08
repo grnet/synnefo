@@ -43,9 +43,7 @@ Package source
 --------------
 
 The source for component :ref:`snf-cyclades-gtools <snf-cyclades-gtools>`
-lives under ``snf-cyclades-gtools/`` at ``git://code.grnet.gr/git/synnefo``,
-also accessible at
-`code.grnet.gr <https://code.grnet.gr/projects/synnefo/repository/revisions/master/show/snf-cyclades-gtools>`_.
+lives under ``snf-cyclades-gtools/`` at ``https://github.com/grnet/synnefo``.
 
 Package installation
 --------------------
@@ -77,7 +75,7 @@ Hook
 ****
 The hook needs to be enabled for phases ``post-{add,modify,reboot,start,stop}``
 by *symlinking* in
-``/etc/ganeti/hooks/instance-{add,modify,reboot,start,stop}-post.d`` 
+``/etc/ganeti/hooks/instance-{add,modify,reboot,start,stop}-post.d``
 on :ref:`GANETI-MASTER <GANETI_MASTER>`, e.g.:
 
 .. code-block:: console

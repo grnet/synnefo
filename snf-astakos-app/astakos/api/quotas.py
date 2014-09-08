@@ -15,7 +15,7 @@
 
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
-from django.db import transaction
+from astakos.im import transaction
 
 from snf_django.lib import api
 from snf_django.lib.api.faults import BadRequest, ItemNotFound
@@ -58,12 +58,15 @@ def quotas(request):
 @api.api_method(http_method='GET', token_required=True, user_required=False)
 @component_from_token
 def service_quotas(request):
-    user = request.GET.get('user')
-    users = [user] if user is not None else None
-    result = service_get_quotas(request.component_instance, users=users)
+    userstr = request.GET.get('user')
+    users = userstr.split(",") if userstr is not None else None
+    projectstr = request.GET.get('project')
+    projects = projectstr.split(",") if projectstr is not None else None
+    result = service_get_quotas(request.component_instance, users=users,
+                                sources=projects)
 
-    if user is not None and result == {}:
-        raise ItemNotFound("No such user '%s'" % user)
+    if userstr is not None and result == {}:
+        raise ItemNotFound("No user with UUID '%s'" % userstr)
 
     return json_response(result)
 
@@ -71,13 +74,13 @@ def service_quotas(request):
 @api.api_method(http_method='GET', token_required=True, user_required=False)
 @component_from_token
 def service_project_quotas(request):
-    project = request.GET.get('project')
-    projects = [project] if project is not None else None
+    projectstr = request.GET.get('project')
+    projects = projectstr.split(',') if projectstr is not None else None
     result = service_get_project_quotas(request.component_instance,
                                         projects=projects)
 
-    if project is not None and result == {}:
-        raise ItemNotFound("No such project '%s'" % project)
+    if projectstr is not None and result == {}:
+        raise ItemNotFound("No project with UUID '%s'" % projectstr)
 
     return json_response(result)
 

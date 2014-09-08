@@ -38,7 +38,7 @@ class Command(SynnefoCommand):
 
     """
     option_list = SynnefoCommand.option_list + (
-        make_option("--userid", dest="userid",
+        make_option("--user", dest="userid",
                     default=None,
                     help="Reconcile resources only for this user"),
         make_option("--project",
@@ -54,7 +54,7 @@ class Command(SynnefoCommand):
                          "the Pithos quota, independently of their value.")
     )
 
-    def handle_noargs(self, **options):
+    def handle(self, **options):
         write = self.stdout.write
         try:
             backend.pre_exec()

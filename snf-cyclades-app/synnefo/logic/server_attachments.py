@@ -65,7 +65,7 @@ def _attach_volume(vm, volume):
              volume.machine_id, jobid)
     volume.backendjobid = jobid
     volume.machine = vm
-    if volume.status == "AVAILALBE":
+    if volume.status == "AVAILABLE":
         volume.status = "ATTACHING"
     else:
         volume.status = "CREATING"

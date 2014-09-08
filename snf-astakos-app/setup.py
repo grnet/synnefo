@@ -42,7 +42,7 @@ CLASSIFIERS = [
     'Operating System :: OS Independent',
     'Programming Language :: Python',
     'Topic :: Utilities',
-    'License :: OSI Approved :: BSD License',
+    'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
 ]
 
 # Package requirements
@@ -164,7 +164,7 @@ def find_package_data(
 setup(
     name='snf-astakos-app',
     version=VERSION,
-    license='BSD',
+    license='GNU GPLv3',
     url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
     classifiers=CLASSIFIERS,

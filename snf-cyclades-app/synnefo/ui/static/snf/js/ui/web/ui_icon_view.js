@@ -61,7 +61,7 @@
                     var action = "undefined";
                     try {
                         action = _.last(args).error_params.extra_details['Action'];
-                    } catch (err) {console.log(err)};
+                    } catch (err) {console.error(err)};
                     
                     this.error.find(".action").text(action);
                     this.error.show();
@@ -117,10 +117,16 @@
             this.view = view;
             this.vm_view = this.view.vm(vm);
             
-            this.info_toggle = $(".cont-toggler-wrapper.info .toggler", this.vm_view);
-            this.ips_toggle = $(".cont-toggler-wrapper.ips .toggler", this.vm_view);
+            this.info_toggle = $(".cont-toggler-wrapper.info .toggler", 
+                                 this.vm_view);
+            this.ips_toggle = $(".cont-toggler-wrapper.ips .toggler", 
+                                this.vm_view);
+            this.volumes_toggle = $(".cont-toggler-wrapper.volumes .toggler", 
+                                    this.vm_view);
             this.info_el = $("div.info-content.vm-info", this.vm_view);
             this.ips_el = $("div.info-content.ips", this.vm_view);
+            this.volumes_el = $("div.info-content.volumes", this.vm_view);
+
             this.label = $(".label", this.vm_view);
 
             this.set_handlers();
@@ -130,46 +136,83 @@
             this.info_toggle.click(_.bind(function(){
                 this.ips_el.slideUp();
                 this.ips_toggle.removeClass("open");
+                this.volumes_el.slideUp();
+                this.volumes_toggle.removeClass("open");
 
                 this.info_el.slideToggle();
-                this.view.vm(this.vm).toggleClass("light-background");
+                var vm_view = this.view.vm(this.vm);
 
                 if (this.info_toggle.hasClass("open")) {
                     this.info_toggle.removeClass("open");
                     this.vm.stop_stats_update();
+                    vm_view.removeClass("light-background");
                 } else {
                     this.info_toggle.addClass("open");
                     this.view.details_views[this.vm.id].update_layout();
                     this.view.tags_views[this.vm.id].update_layout();
                     this.view.stats_views[this.vm.id].update_layout();
+                    vm_view.addClass("light-background");
                 }
                 
                 var self = this;
-                window.setTimeout(function() {$(self.view).trigger("resize")}, 300);
+                window.setTimeout(function() {
+                  $(self.view).trigger("resize")
+                }, 300);
             }, this));
 
-            this.ips_toggle.click(_.bind(function(){
-                if(this.ips_toggle.parent().hasClass("disabled")) {
+            this.volumes_toggle.click(_.bind(function(){
+                if(this.volumes_toggle.parent().hasClass("disabled")) {
                   return;
                 }
                 this.info_el.slideUp();
                 this.info_toggle.removeClass("open");
+                this.ips_el.slideUp();
+                this.ips_toggle.removeClass("open");
+                var vm_view = this.view.vm(this.vm);
+
+                this.volumes_el.slideToggle();
+                var self = this;
+                if (this.volumes_toggle.hasClass("open")) {
+                    this.volumes_toggle.removeClass("open");
+                    vm_view.removeClass("light-background");
+                } else {
+                    this.volumes_toggle.addClass("open");
+                    vm_view.addClass("light-background");
+                }
+                window.setTimeout(function() {
+                  $(self.view).trigger("resize")
+                }, 300);
+            }, this));
+
+
+            this.ips_toggle.click(_.bind(function(){
+                if(this.ips_toggle.parent().hasClass("disabled")) { return; }
+                this.info_el.slideUp();
+                this.info_toggle.removeClass("open");
+                this.volumes_el.slideUp();
+                this.volumes_toggle.removeClass("open");
+
+                var vm_view = this.view.vm(this.vm);
 
                 this.ips_el.slideToggle();
-                this.view.vm(this.vm).toggleClass("light-background");
                 var self = this;
                 if (this.ips_toggle.hasClass("open")) {
                     this.ips_toggle.removeClass("open");
+                    vm_view.removeClass("light-background");
                 } else {
                     this.ips_toggle.addClass("open");
+                    vm_view.addClass("light-background");
                 }
-                window.setTimeout(function() {$(self.view).trigger("resize")}, 300);
+                window.setTimeout(function() {
+                  $(self.view).trigger("resize")
+                }, 300);
             }, this));
-
+            
             this.vm_view.find(".stats-report").click(_.bind(function(e){
                 e.preventDefault();
                 snf.ui.main.show_vm_details(this.vm);
-            }, this)).attr("href", "#machines/single/details/{0}".format(this.vm.id));
+            }, this)).attr("href", 
+                           "#machines/single/details/{0}".format(this.vm.id));
         }
     
     })
@@ -281,10 +324,10 @@
         },
 
         submit: function() {
-            var value = _(self.$('input').val()).trim();
+            var value = _(this.$('input').val()).trim();
             if (value == "") { return };
             this.renaming = false;
-            this.vm.rename(self.$('input').val());
+            this.vm.rename(this.$('input').val());
             this.update_layout();
         }
     });
@@ -726,7 +769,6 @@
         // stuff to do when a new vm has been created.
         // - create vm subviews
         post_add: function(vm) {
-            // rename views index
             this.rename_views = this.rename_views || {};
             this.stats_views = this.stats_views || {};
             this.connect_views = this.connect_views || {};
@@ -736,8 +778,11 @@
             this.action_error_views = this.action_error_views || {};
             this.action_views = this.action_views || {};
             this.ports_views = this.ports_views || {};
+            this.volumes_views = this.volumes_views || {};
 
-            this.action_views[vm.id] = new views.VMActionsView(vm, this, this.vm(vm), this.hide_actions);
+            this.action_views[vm.id] = new views.VMActionsView(
+                vm, this, this.vm(vm), this.hide_actions);
+
             this.rename_views[vm.id] = new views.IconRenameView(vm, this);
             this.stats_views[vm.id] = new views.VMStatsView(vm, this, {el:'.vm-stats'});
             this.connect_views[vm.id] = new views.IconVMConnectView(vm, this);
@@ -751,9 +796,19 @@
               container: ports_container,
               parent: this
             });
-            this.ports_views[vm.id] = ports_view
+            this.ports_views[vm.id] = ports_view;
             ports_view.show();
             ports_view.el.hide();
+
+            var volumes_container = this.vm(vm).find(".machine-data");
+            var volumes_view = new views.VMVolumeListView({
+              collection: vm.volumes,
+              container: ports_container,
+              parent: this
+            });
+            this.volumes_views[vm.id] = volumes_view;
+            volumes_view.show();
+            volumes_view.el.hide();
 
             this.info_views[vm.id] = new views.IconInfoView(vm, this);
         },
@@ -773,10 +828,7 @@
             $(window).trigger("resize");
         },
         
-        // generic stuff to do on each view update
-        // called once after each vm has been updated
         update_layout: function() {
-            // TODO: why do we do this ??
             if (storage.vms.models.length > 0) {
                 this.$(".running").removeClass("disabled");
             } else {
@@ -788,7 +840,6 @@
             // FIXME: code from old js api
             this.$("div.separator").show();
             this.$("div.machine-container:last-child").find("div.separator").hide();
-            fix_v6_addresses();
         },
   
         update_status_message: function(vm) {
@@ -818,17 +869,24 @@
             var el = this.vm(vm);
             var project = vm.get('project')
             if (project) {
-              el.find(".project-name").text(_.truncate(project.get('name'), 20));
+              el.find(".project-name").text(
+                 "[" +  _.truncate(project.get('name'), 20) + "]"
+              );
             }
             // truncate name
-            el.find("span.name").text(util.truncate(vm.get("name"), 40));
+            el.find("span.name").text(util.truncate(vm.get("name"), 37));
 
-            el.find('.fqdn').text(vm.get('fqdn') || synnefo.config.no_fqdn_message);
+            el.find('.fqdn').val(
+                vm.get('fqdn') || synnefo.config.no_fqdn_message);
             el.find("div.status").text(STATE_TEXTS[vm.state()]);
             // set state class
-            el.find("div.state").removeClass().addClass(views.IconView.STATE_CLASSES[vm.state()].join(" "));
+            var cls = views.IconView.STATE_CLASSES[vm.state()] || ['state'];
+            el.find("div.state").removeClass().addClass(cls.join(" "));
             // os icon
-            el.find("div.logo").css({'background-image': "url(" + this.get_vm_icon_path(vm, "medium") + ")"});
+            el.find("div.logo").css({
+                'background-image': "url(" + 
+                    this.get_vm_icon_path(vm, "medium") + ")"
+            });
             
             el.removeClass("connectable");
             if (vm.is_connectable()) {
@@ -841,7 +899,8 @@
             this.update_status_message(vm);
 
             icon_state = vm.is_active() ? "on" : "off";
-            set_machine_os_image(el, "icon", icon_state, this.get_vm_icon_os(vm));
+            set_machine_os_image(el, "icon", icon_state, 
+                                 this.get_vm_icon_os(vm));
             
             // update subviews
             this.rename_views[vm.id].update_layout();
@@ -900,6 +959,8 @@
         'START':            ['state', 'starting-state'],
         'CONNECT':          ['state', 'connecting-state'],
         'DISCONNECT':       ['state', 'disconnecting-state'],
+        'ATTACH_VOLUME':    ['state', 'connecting-state'],
+        'DETACH_VOLUME':    ['state', 'disconnecting-state'],
         'RESIZE':           ['state', 'rebooting-state']
     };
 

@@ -43,9 +43,9 @@ class Migration(DataMigration):
             uuid=user.uuid,
             last_application=None,
             owner=None,
-            realname=("base:" + user.uuid),
+            realname=("system:" + user.uuid),
             homepage="",
-            description=("base project for user " + user.username),
+            description=("system project for user " + user.username),
             end_date=(datetime.datetime.now() + relativedelta(years=100)),
             member_join_policy=CLOSED_POLICY,
             member_leave_policy=CLOSED_POLICY,
@@ -72,13 +72,10 @@ class Migration(DataMigration):
         self.new_membership(orm, project, user)
 
     def forwards(self, orm):
-        users = orm.AstakosUser.objects.all()
-        for user in users:
-            self.make_base_project(orm, user)
-
         acc_users = orm.AstakosUser.objects.filter(moderated=True,
                                                    is_rejected=False)
         for user in acc_users:
+            self.make_base_project(orm, user)
             self.enable_base_project(orm, user)
 
     def backwards(self, orm):

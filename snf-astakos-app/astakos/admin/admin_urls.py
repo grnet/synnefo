@@ -13,10 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.conf.urls import url, patterns
+from django.conf.urls import url, patterns, include
+from django.http import Http404
 
 from astakos.admin import views
-from django.http import Http404
 
 
 def index(request):

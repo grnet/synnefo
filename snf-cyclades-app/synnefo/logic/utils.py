@@ -144,7 +144,9 @@ TASK_STATE_FROM_ACTION = {
     "DESTROY": "DESTROYING",
     "RESIZE": "RESIZING",
     "CONNECT": "CONNECTING",
-    "DISCONNECT": "DISCONNECTING"}
+    "DISCONNECT": "DISCONNECTING",
+    "ATTACH_VOLUME": "ATTACHING_VOLUME",
+    "DETACH_VOLUME": "DETACHING_VOLUME"}
 
 
 def get_task_state(vm):
@@ -187,6 +189,8 @@ def get_action_from_opcode(opcode, job_fields):
                     return "ATTACH_VOLUME"
                 elif disk_action == "remove":
                     return "DETACH_VOLUME"
+                elif disk_action == "modify":
+                    return "MODIFY_VOLUME"
                 else:
                     return None
             except:

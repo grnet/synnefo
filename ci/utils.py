@@ -720,6 +720,11 @@ class SynnefoCI(object):
             # targets.
             m = re.search("github.com/([^/]+)/([^/]+)/pull/(\d+)",
                           pull_request)
+            if m is None:
+                self.logger.error("Couldn't find a valid GitHub pull request"
+                                  " URL")
+                sys.exit(1)
+
             group = m.group(1)
             repo = m.group(2)
             pull_number = m.group(3)
@@ -786,7 +791,7 @@ class SynnefoCI(object):
         else:
             # Clone Synnefo from remote repo
             self.logger.debug("Clone synnefo from %s" % synnefo_repo)
-            self._git_clone(synnefo_repo)
+            self._git_clone(synnefo_repo, directory="synnefo")
 
         # Checkout the desired synnefo_branch
         self.logger.debug("Checkout \"%s\" branch/commit" % synnefo_branch)
@@ -823,7 +828,7 @@ class SynnefoCI(object):
         # Clone pithos-webclient from remote repo
         self.logger.debug("Clone pithos-webclient from %s" %
                           pithos_webclient_repo)
-        self._git_clone(pithos_webclient_repo)
+        self._git_clone(pithos_webclient_repo, directory="pithos-web-client")
 
         # Track all pithos-webclient branches
         cmd = """
@@ -868,7 +873,7 @@ class SynnefoCI(object):
         """.format(pithos_webclient_branch)
         _run(cmd, False)
 
-    def _git_clone(self, repo):
+    def _git_clone(self, repo, directory=""):
         """Clone repo to remote server
 
         Currently clonning from code.grnet.gr can fail unexpectedly.
@@ -878,7 +883,7 @@ class SynnefoCI(object):
         cloned = False
         for i in range(1, 11):
             try:
-                _run("git clone %s" % repo, False)
+                _run("git clone %s %s" % (repo, directory), False)
                 cloned = True
                 break
             except BaseException:
@@ -1005,7 +1010,6 @@ class SynnefoCI(object):
         self.logger.debug("Change password in nodes.conf file")
         cmd = """
         sed -i 's/^password =.*/password = {0}/' /etc/snf-deploy/nodes.conf
-        sed -i 's/12345/{0}/' /etc/snf-deploy/nodes.conf
         """.format(fabric.env.password)
         _run(cmd, False)
 

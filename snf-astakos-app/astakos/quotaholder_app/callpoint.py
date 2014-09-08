@@ -156,7 +156,6 @@ def issue_commission(clientkey, provisions, name="", force=False):
 
             holdings[key] = th
             provisions_to_create.append((key, quantity))
-
     except QuotaholderError:
         operations.revert()
         raise
@@ -164,12 +163,14 @@ def issue_commission(clientkey, provisions, name="", force=False):
     commission = Commission.objects.create(clientkey=clientkey,
                                            name=name,
                                            issue_datetime=datetime.now())
+    ps = []
     for (holder, source, resource), quantity in provisions_to_create:
-        Provision.objects.create(serial=commission,
-                                 holder=holder,
-                                 source=source,
-                                 resource=resource,
-                                 quantity=quantity)
+        ps.append(Provision(serial=commission,
+                            holder=holder,
+                            source=source,
+                            resource=resource,
+                            quantity=quantity))
+    Provision.objects.bulk_create(ps)
 
     return commission.serial
 
@@ -191,7 +192,7 @@ def _log_provision(commission, provision, holding, log_datetime, reason):
         'reason':              reason,
     }
 
-    ProvisionLog.objects.create(**kwargs)
+    return ProvisionLog(**kwargs)
 
 
 def _get_commissions_for_update(clientkey, serials):
@@ -252,12 +253,15 @@ def resolve_pending_commissions(clientkey, accept_set=None, reject_set=None,
         accepted.append(serial) if accept else rejected.append(serial)
 
         ps = provisions.get(serial, [])
+        provision_ids = []
+        plog = []
         for pv in ps:
             key = pv.holding_key()
             h = holdings.get(key)
             if h is None:
-                raise CorruptedError("Corrupted provision")
+                raise CorruptedError("Corrupted provision '%s'" % key)
 
+            provision_ids.append(pv.id)
             quantity = pv.quantity
             action = finalize if accept else undo
             if quantity >= 0:
@@ -267,8 +271,10 @@ def resolve_pending_commissions(clientkey, accept_set=None, reject_set=None,
 
             prefix = 'ACCEPT:' if accept else 'REJECT:'
             comm_reason = prefix + reason[-121:]
-            _log_provision(commission, pv, h, log_datetime, comm_reason)
-            pv.delete()
+            plog.append(
+                _log_provision(commission, pv, h, log_datetime, comm_reason))
+        Provision.objects.filter(id__in=provision_ids).delete()
+        ProvisionLog.objects.bulk_create(plog)
         commission.delete()
     return accepted, rejected, notFound, conflicting
 

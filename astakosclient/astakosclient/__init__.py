@@ -24,7 +24,11 @@ import hashlib
 from base64 import b64encode
 from copy import copy
 
-import simplejson
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
 from astakosclient.utils import \
     retry_dec, scheme_to_class, parse_request, check_input, join_urls
 from astakosclient.errors import \
@@ -300,7 +304,7 @@ class AstakosClient(object):
 
         try:
             if data:
-                return simplejson.loads(unicode(data))
+                return json.loads(unicode(data))
             else:
                 return None
         except Exception as err:
@@ -522,40 +526,57 @@ class AstakosClient(object):
         """
         return self._call_astakos(self.api_quotas)
 
+    def _join_if_list(self, val):
+        return ','.join(map(str, val)) if isinstance(val, list) else val
+
     # ----------------------------------
     # do a GET to ``API_SERVICE_QUOTAS``
-    def service_get_quotas(self, user=None):
+    def service_get_quotas(self, user=None, project_id=None, project=None):
         """Get all quotas for resources associated with the service
 
         Keyword arguments:
-        user    -- optionally, the uuid of a specific user
+        user    -- optionally, the uuid of a specific user, or a list thereof
+        project_id -- optionally, the uuid of a specific project, or a list
+                   thereof
+        project -- backwards compatibility (replaced by "project_id")
 
         In case of success return a dict of dicts of dicts with current quotas
         for all users, or of a specified user, if user argument is set.
         Otherwise raise an AstakosClientException
 
         """
+        project_id = project if project_id is None else project_id
         query = self.api_service_quotas
+        filters = {}
         if user is not None:
-            query += "?user=" + user
+            filters['user'] = self._join_if_list(user)
+        if project_id is not None:
+            filters['project'] = self._join_if_list(project_id)
+        if filters:
+            query += "?" + urllib.urlencode(filters)
         return self._call_astakos(query)
 
     # ----------------------------------
     # do a GET to ``API_SERVICE_PROJECT_QUOTAS``
-    def service_get_project_quotas(self, project=None):
+    def service_get_project_quotas(self, project_id=None, project=None):
         """Get all project quotas for resources associated with the service
 
         Keyword arguments:
-        project    -- optionally, the uuid of a specific project
+        project    -- optionally, the uuid of a specific project, or a list
+                      thereof
 
         In case of success return a dict of dicts with current quotas
-        for all projects, or of a specified project, if project argument is set.
-        Otherwise raise an AstakosClientException
+        for all projects, or of a specified project, if project argument is
+        set. Otherwise raise an AstakosClientException
 
         """
+        project_id = project if project_id is None else project_id
         query = self.api_service_project_quotas
-        if project is not None:
-            query += "?project=" + project
+        filters = {}
+        if project_id is not None:
+            filters['project'] = self._join_if_list(project_id)
+        if filters:
+            query += "?" + urllib.urlencode(filters)
         return self._call_astakos(query)
 
     # ----------------------------------
@@ -642,14 +663,13 @@ class AstakosClient(object):
 
         return self._issue_commission(request)
 
-    def issue_one_commission(self, holder, source, provisions,
+    def issue_one_commission(self, holder, provisions,
                              name="", force=False, auto_accept=False):
         """Issue one commission (with specific holder and source)
 
         keyword arguments:
         holder      -- user's id (string)
-        source      -- commission's source (ex system) (string)
-        provisions  -- resources with their quantity (dict from string to int)
+        provisions  -- (source, resource) mapping to quantity
         name        -- description of the commission (string)
         force       -- force this commission (boolean)
         auto_accept -- auto accept this commission (boolean)
@@ -659,8 +679,7 @@ class AstakosClient(object):
 
         """
         check_input("issue_one_commission", self.logger,
-                    holder=holder, source=source,
-                    provisions=provisions)
+                    holder=holder, provisions=provisions)
 
         request = {}
         request["force"] = force
@@ -668,7 +687,7 @@ class AstakosClient(object):
         request["name"] = name
         try:
             request["provisions"] = []
-            for resource, quantity in provisions.iteritems():
+            for (source, resource), quantity in provisions.iteritems():
                 ps = self.mk_provisions(holder, source, resource, quantity)
                 request["provisions"].extend(ps)
         except Exception as err:
@@ -677,8 +696,7 @@ class AstakosClient(object):
 
         return self._issue_commission(request)
 
-    def issue_resource_reassignment(self, holder, from_source,
-                                    to_source, provisions, name="",
+    def issue_resource_reassignment(self, holder, provisions, name="",
                                     force=False, auto_accept=False):
         """Change resource assignment to another project
         """
@@ -690,7 +708,8 @@ class AstakosClient(object):
 
         try:
             request["provisions"] = []
-            for resource, quantity in provisions.iteritems():
+            for key, quantity in provisions.iteritems():
+                (from_source, to_source, resource) = key
                 ps = self.mk_provisions(
                     holder, from_source, resource, -quantity)
                 ps += self.mk_provisions(holder, to_source, resource, quantity)
@@ -897,25 +916,27 @@ class AstakosClient(object):
         path = join_urls(path, "action")
         req_headers = {'content-type': 'application/json'}
         req_body = parse_request({action: {
-                    "reasons": reason,
-                    "app_id": app_id}}, self.logger)
+            "reasons": reason,
+            "app_id": app_id}}, self.logger)
         return self._call_astakos(path, headers=req_headers,
                                   body=req_body, method="POST")
 
     # -------------------------------
     # do a GET to ``API_MEMBERSHIPS``
-    def get_memberships(self, project=None):
+    def get_memberships(self, project_id=None, project=None):
         """Retrieve all accessible memberships
 
         Arguments:
-        project -- filter by project (optional)
+        project_id -- filter by project (optional)
+        project    -- backwards compatibility
 
         In case of success, return a list of membership descriptions.
         """
+        project_id = project if project_id is None else project_id
         req_headers = {'content-type': 'application/json'}
         filters = {}
-        if project is not None:
-            filters["project"] = project
+        if project_id is not None:
+            filters["project"] = project_id
         path = self.api_memberships
         if filters:
             path += '?' + urllib.urlencode(filters)

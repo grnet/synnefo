@@ -19,33 +19,22 @@ from datetime import datetime
 from optparse import make_option
 
 from django.core import management
-from django.db import transaction
+from astakos.im import transaction
 from snf_django.management.commands import SynnefoCommand, CommandError
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
 from astakos.im.models import AstakosUser
-from astakos.im import activation_backends
 from ._common import (remove_user_permission, add_user_permission, is_uuid)
-
-activation_backend = activation_backends.get_backend()
+from astakos.im import user_logic as user_action
 
 
 class Command(SynnefoCommand):
-    args = "<user ID> (or --all)"
+    args = "<user ID>"
     help = "Modify a user's attributes"
 
     option_list = SynnefoCommand.option_list + (
-        make_option('--all',
-                    action='store_true',
-                    default=False,
-                    help=("Operate on all users. Currently only setting "
-                          "base quota is supported in this mode. Can be "
-                          "combined with `--exclude'.")),
-        make_option('--exclude',
-                    help=("If `--all' is given, exclude users given as a "
-                          "list of uuids: uuid1,uuid2,uuid3")),
         make_option('--invitations',
                     dest='invitations',
                     metavar='NUM',
@@ -138,18 +127,8 @@ class Command(SynnefoCommand):
 
     @transaction.commit_on_success
     def handle(self, *args, **options):
-        if options['all']:
-            if not args:
-                return self.handle_all_users(*args, **options)
-            else:
-                raise CommandError("Please provide a user ID or --all")
-
         if len(args) != 1:
-            raise CommandError("Please provide a user ID or --all")
-
-        if options["exclude"] is not None:
-            m = "Option --exclude is meaningful only combined with --all."
-            raise CommandError(m)
+            raise CommandError("Please provide a user ID")
 
         if args[0].isdigit():
             try:
@@ -166,7 +145,12 @@ class Command(SynnefoCommand):
             raise CommandError(("Invalid user identification: "
                                 "you should provide a valid user ID "
                                 "or a valid user UUID"))
+        try:
+            self.apply_actions(user, options)
+        except BaseException as e:
+            raise CommandError(e)
 
+    def apply_actions(self, user, options):
         if options.get('admin'):
             user.is_superuser = True
         elif options.get('noadmin'):
@@ -174,21 +158,14 @@ class Command(SynnefoCommand):
 
         if options.get('reject'):
             reject_reason = options.get('reject_reason', None)
-            res = activation_backend.handle_moderation(
-                user,
-                accept=False,
-                reject_reason=reject_reason)
-            activation_backend.send_result_notifications(res, user)
+            res = user_action.reject(user, reject_reason)
             if res.is_error():
                 self.stderr.write("Failed to reject: %s\n" % res.message)
             else:
                 self.stderr.write("Account rejected\n")
 
         if options.get('verify'):
-            res = activation_backend.handle_verification(
-                user,
-                user.verification_code)
-            #activation_backend.send_result_notifications(res, user)
+            res = user_action.verify(user, user.verification_code)
             if res.is_error():
                 self.stderr.write("Failed to verify: %s\n" % res.message)
             else:
@@ -196,24 +173,22 @@ class Command(SynnefoCommand):
                                   % res.status_display())
 
         if options.get('accept'):
-            res = activation_backend.handle_moderation(user, accept=True)
-            activation_backend.send_result_notifications(res, user)
+            res = user_action.accept(user)
             if res.is_error():
                 self.stderr.write("Failed to accept: %s\n" % res.message)
             else:
                 self.stderr.write("Account accepted and activated\n")
 
         if options.get('active'):
-            res = activation_backend.activate_user(user)
+            res = user_action.activate(user)
             if res.is_error():
                 self.stderr.write("Failed to activate: %s\n" % res.message)
             else:
                 self.stderr.write("Account %s activated\n" % user.username)
 
         elif options.get('inactive'):
-            res = activation_backend.deactivate_user(
-                user,
-                reason=options.get('inactive_reason', None))
+            inactive_reason = options.get('inactive_reason', None)
+            res = user_action.deactivate(user, inactive_reason)
             if res.is_error():
                 self.stderr.write("Failed to deactivate: %s\n" % res.message)
             else:
@@ -312,7 +287,9 @@ class Command(SynnefoCommand):
             if not force:
                 self.stdout.write("About to delete user %s. " % user.uuid)
                 self.confirm()
+
             user.delete()
+            user.base_project and user.base_project.delete()
 
         # Change users email address
         newemail = options.get('set-email', None)
@@ -340,6 +317,3 @@ class Command(SynnefoCommand):
         if string.lower(response) not in ['y', 'yes']:
             self.stderr.write("Aborted.\n")
             exit()
-
-    def handle_all_users(self, *args, **options):
-        pass

@@ -1,0 +1,7 @@
+{% load admin_tags %}
+<div class="filters filters-area">
+ <!-- use it to center it (sort of) -->
+    {% for filter in filter_dict %}
+        {% include filter|get_filter_template %}
+    {% endfor %}
+</div>

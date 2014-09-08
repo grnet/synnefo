@@ -27,12 +27,12 @@ class Command(SynnefoCommand):
     help = "Modify a resource's quota defaults and boolean flags."
 
     option_list = SynnefoCommand.option_list + (
-        make_option('--base-default',
+        make_option('--system-default',
                     metavar='<limit>',
-                    help="Specify default quota for base projects"),
+                    help="Specify default quota for system projects"),
         make_option('--project-default',
                     metavar='<limit>',
-                    help="Specify default quota for non-base projects"),
+                    help="Specify default quota for non-system projects"),
         make_option('--unit-style',
                     default='mb',
                     help=("Specify display unit for resource values "
@@ -52,7 +52,7 @@ class Command(SynnefoCommand):
         resource = self.get_resource(resource_name)
 
         actions = {
-            'base_default': self.change_base_default,
+            'system_default': self.change_base_default,
             'project_default': self.change_project_default,
             'api_visible': self.set_api_visible,
             'ui_visible': self.set_ui_visible,

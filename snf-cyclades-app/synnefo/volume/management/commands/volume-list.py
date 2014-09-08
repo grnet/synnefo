@@ -46,7 +46,7 @@ class Command(ListCommand):
         "status": ("status", "The status of the volume"),
         "created": ("created", "The date the server was created"),
         "deleted": ("deleted", "Whether the server is deleted or not"),
-        "volume_type": ("volume_type", "ID of volume's type"),
+        "volume_type": ("volume_type_id", "ID of volume's type"),
         "disk_template": ("volume_type.disk_template",
                           "The disk template of the volume")
     }

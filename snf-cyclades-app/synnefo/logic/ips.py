@@ -14,13 +14,72 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import functools
 
 from snf_django.lib.api import faults
-from django.db import transaction
+from synnefo.db import transaction
 from synnefo import quotas
 from synnefo.db import pools
 from synnefo.db.models import (IPPoolTable, IPAddress, Network)
 log = logging.getLogger(__name__)
+
+
+def validate_ip_action(ip, action, silent=True):
+    """Check if an action can apply on an IP address.
+
+    Arguments:
+        ip: The target IP address.
+        action: The name of the action (in capital letters).
+        silent: If set to True, suppress exceptions.
+
+    Returns:
+        A `(success, message)` tuple. `success` is a boolean value that
+        shows if the action can apply on an IP, and `message` explains
+        why the action cannot apply on an IP.
+
+        If an action can apply on an IP, this function will always return
+        `(True, None)`.
+
+    Exceptions:
+        faults.Conflict: When the action cannot apply on an ip due to a
+                         conflict.
+        faults.BadRequest: When the action is unknown/malformed.
+    """
+    def fail(e=Exception, msg=""):
+        if silent:
+            return False, msg
+        else:
+            raise e(msg)
+
+    if action == "DELETE":
+        if ip.nic:
+            # This is safe, you also need for_update to attach floating IP to
+            # instance.
+            server = ip.nic.machine
+            if server is None:
+                msg = ("IP '%s' is used by port '%s'" % (ip.id, ip.nic_id))
+            else:
+                msg = ("IP '%s' is used by server '%s'" %
+                       (ip.id, ip.nic.machine_id))
+            return fail(faults.Conflict, msg)
+    elif action == "REASSIGN":
+        pass
+    else:
+        return fail(faults.BadRequest, "Unknown action: {}.".format(action))
+
+    return True, None
+
+
+def ip_command(action):
+    """Common wrapper for IP commands."""
+    def decorator(func):
+        @functools.wraps(func)
+        @transaction.commit_on_success()
+        def wrapper(ip, *args, **kwargs):
+            validate_ip_action(ip, action, silent=False)
+            return func(ip, *args, **kwargs)
+        return wrapper
+    return decorator
 
 
 def allocate_ip_from_pools(pool_rows, userid, address=None, floating_ip=False):
@@ -91,7 +150,6 @@ def allocate_public_ip(userid, floating_ip=False, backend=None, networks=None):
     be used.
 
     """
-
     ip_pool_rows = IPPoolTable.objects.select_for_update()\
         .prefetch_related("subnet__network")\
         .filter(subnet__deleted=False)\
@@ -183,20 +241,8 @@ def get_free_floating_ip(userid, network=None):
     raise faults.Conflict(msg)
 
 
-@transaction.commit_on_success
+@ip_command("DELETE")
 def delete_floating_ip(floating_ip):
-    if floating_ip.nic:
-        # This is safe, you also need for_update to attach floating IP to
-        # instance.
-        server = floating_ip.nic.machine
-        if server is None:
-            msg = ("Floating IP '%s' is used by port '%s'" %
-                   (floating_ip.id, floating_ip.nic_id))
-        else:
-            msg = ("Floating IP '%s' is used by server '%s'" %
-                   (floating_ip.id, floating_ip.nic.machine_id))
-        raise faults.Conflict(msg)
-
     # Lock network to prevent deadlock
     Network.objects.select_for_update().get(id=floating_ip.network_id)
 
@@ -214,7 +260,7 @@ def delete_floating_ip(floating_ip):
     floating_ip.delete()
 
 
-@transaction.commit_on_success
+@ip_command("REASSIGN")
 def reassign_floating_ip(floating_ip, project):
     action_fields = {"to_project": project,
                      "from_project": floating_ip.project}

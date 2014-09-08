@@ -19,7 +19,7 @@ The present document is meant to be read alongside the OOS API documentation. Th
 
 Whatever marked as to be determined (**TBD**), should not be considered by implementors.
 
-More info about Pithos can be found here: https://code.grnet.gr/projects/pithos
+More info about Pithos can be found `here <pithos.html>`_.
 
 Document Revisions
 ^^^^^^^^^^^^^^^^^^
@@ -27,6 +27,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.16 (Aug 06, 2014)        Enforce resource and group limitations
 0.15 (Apr 03, 2014)        Allow only JSON format in uploads using hashmaps.
 0.15 (Feb 01, 2014)        Optionally enforce a specific content disposition type.
 0.14 (Jun 18, 2013)        Forbidden response for public listing by non path owners.
@@ -114,7 +115,7 @@ When done with logging in, the service's login URI should redirect to the URI pr
 
 If ``next`` request parameter is missing the call fails with BadRequest (400) response status.
 
-A user management service that implements a login URI according to these conventions is Astakos (https://code.grnet.gr/projects/astakos), by GRNET.
+A user management service that implements a login API call according to these conventions is `Astakos <astakos.html>`_, by GRNET.
 
 User feedback
 -------------
@@ -466,6 +467,7 @@ To create a group, include an ``X-Account-Group-*`` header with the name in the 
 Return Code       Description
 ================  ===============================
 202 (Accepted)    The request has been accepted
+400 (Bad Request) The metadata exceed in number the allowed account metadata or the groups exceed in number the allowed groups or the group members exceed in number the allowed group members
 ================  ===============================
 
 
@@ -713,6 +715,7 @@ To upload blocks of data to the container, set ``Content-Type`` to ``application
 Return Code                     Description
 ==============================  ===============================
 202 (Accepted)                  The request has been accepted
+400 (Bad Request)               The metadata exceed in number the allowed container metadata
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 ==============================  ===============================
 
@@ -964,6 +967,7 @@ The ``X-Object-Sharing`` header may include either a ``read=...`` comma-separate
 Return Code                     Description
 ==============================  ==============================
 201 (Created)                   The object has been created
+403 (Forbidden)                 If ``X-Copy-From`` and the source object is not available in the storage backend.
 409 (Conflict)                  The object can not be created from the provided hashmap (a list of missing hashes will be included in the reply)
 411 (Length Required)           Missing ``Content-Length`` or ``Content-Type`` in the request
 413 (Request Entity Too Large)  Insufficient quota to complete the request
@@ -1015,6 +1019,8 @@ X-Object-Version            The object's new version
 Return Code                     Description
 ==============================  ==============================
 201 (Created)                   The object has been created
+400 (Bad Request)               The metadata exceed in number the allowed object metadata
+403 (Forbidden)                 If the source object is not available in the storage backend.
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 ==============================  ==============================
 
@@ -1092,7 +1098,7 @@ Return Code                     Description
 ==============================  ==============================
 202 (Accepted)                  The request has been accepted (not a data update)
 204 (No Content)                The request succeeded (data updated)
-400 (Bad Request)               Invalid ``X-Object-Sharing`` or ``X-Object-Bytes`` header or missing ``Content-Range`` header or invalid source object or source object length is smaller than range length or ``Content-Length`` does not match range length
+400 (Bad Request)               Invalid ``X-Object-Sharing`` or ``X-Object-Bytes`` header or missing ``Content-Range`` header or invalid source object or source object length is smaller than range length or ``Content-Length`` does not match range length or the metadata exceed in number the allowed object metadata
 411 (Length Required)           Missing ``Content-Length`` in the request
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 416 (Range Not Satisfiable)     The supplied range is invalid

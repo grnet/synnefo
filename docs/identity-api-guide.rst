@@ -126,9 +126,6 @@ Return Code                 Description
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
 
-.. warning:: The service is also available under ``/feedback``.
-     It  will be removed in the next version.
-
 Get User catalogs
 ^^^^^^^^^^^^^^^^^
 
@@ -179,9 +176,6 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired or invalid user token
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
-
-.. warning:: The service is also available under ``/user_catalogs``.
-     It  will be removed in the next version.
 
 Service API Operations
 ----------------------
@@ -242,9 +236,6 @@ Return Code                 Description
 401 (Unauthorized)          Missing or expired or invalid service token
 500 (Internal Server Error) The request cannot be completed because of an internal error
 =========================== =====================
-
-.. warning:: The service is also available under ``/service/api/user_catalogs``.
-     It  will be removed in the next version.
 
 Tokens API Operations
 ----------------------

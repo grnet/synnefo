@@ -119,14 +119,16 @@ class UpdateDBTest(TestCase):
         self.assertEqual(db_vm.operstate, 'STARTED')
 
     def test_remove(self, client):
-        vm = mfactory.VirtualMachineFactory()
+        vm = mfactory.VirtualMachineFactory(flavor__cpu=1, flavor__ram=128)
+        mfactory.VolumeFactory(userid=vm.userid, machine=vm, size=1)
+        mfactory.VolumeFactory(userid=vm.userid, machine=vm, size=3)
         # Also create a NIC
         ip = mfactory.IPv4AddressFactory(nic__machine=vm)
         nic = ip.nic
         nic.network.get_ip_pools()[0].reserve(nic.ipv4_address)
         msg = self.create_msg(operation='OP_INSTANCE_REMOVE',
                               instance=vm.backend_vm_id)
-        with mocked_quotaholder():
+        with mocked_quotaholder() as m:
             update_db(client, msg)
         self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
@@ -135,6 +137,17 @@ class UpdateDBTest(TestCase):
         # Check that nics are deleted
         self.assertFalse(db_vm.nics.all())
         self.assertTrue(nic.network.get_ip_pools()[0].is_available(ip.address))
+        # Check that volumes are deleted
+        self.assertFalse(db_vm.volumes.filter(deleted=False))
+        # Check quotas
+        name, args, kwargs = m.mock_calls[0]
+        for (userid, res), value in args[1].items():
+            if res == 'cyclades.disk':
+                self.assertEqual(value, -4 << 30)
+            elif res == 'cyclades.cpu':
+                self.assertEqual(value, -1)
+            elif res == 'cyclades.ram':
+                self.assertEqual(value, -128 << 20)
         vm2 = mfactory.VirtualMachineFactory()
         fp1 = mfactory.IPv4AddressFactory(nic__machine=vm2, floating_ip=True,
                                           network__floating_ip_pool=True)

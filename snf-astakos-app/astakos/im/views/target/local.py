@@ -114,6 +114,8 @@ def login(request, on_failure='im/login.html'):
     provider = user.get_auth_provider('local')
     messages.success(request, provider.get_login_success_msg)
     response.set_cookie('astakos_last_login_method', 'local')
+    provider.update_last_login_at()
+
     return response
 
 

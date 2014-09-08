@@ -44,7 +44,8 @@ def demux(request):
     elif request.method == 'POST':
         return create_subnet(request)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request, allowed_methods=['GET',
+                                                                    'POST'])
 
 
 def subnet_demux(request, sub_id):
@@ -55,7 +56,9 @@ def subnet_demux(request, sub_id):
     elif request.method == 'PUT':
         return update_subnet(request, sub_id)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request, allowed_methods=['GET',
+                                                                    'DELETE',
+                                                                    'PUT'])
 
 
 @api.api_method(http_method='GET', user_required=True, logger=log)

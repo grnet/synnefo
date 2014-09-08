@@ -17,7 +17,7 @@ from optparse import make_option
 from datetime import datetime
 
 from snf_django.management.commands import SynnefoCommand, CommandError
-from django.db import transaction
+from astakos.im import transaction
 from snf_django.utils import reconcile
 from snf_django.management.utils import pprint_table
 from astakos.im.models import Component, AstakosUser
@@ -36,7 +36,7 @@ class Command(SynnefoCommand):
     """
 
     option_list = SynnefoCommand.option_list + (
-        make_option("--userid", dest="userid",
+        make_option("--user", dest="userid",
                     default=None,
                     help="Reconcile resources only for this user"),
         make_option("--project",

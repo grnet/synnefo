@@ -38,7 +38,9 @@ def public_demux(request, v_public):
     elif request.method == 'GET':
         return public_read(request, v_public)
     else:
-        return api.api_method_not_allowed(request)
+        return api.api_method_not_allowed(request,
+                                          allowed_methods=['HEAD',
+                                                           'GET'])
 
 
 @api_method(http_method="HEAD", token_required=False, user_required=False,
@@ -122,17 +124,17 @@ def public_read(request, v_public):
 
         try:
             for x in objects:
-                s, h = request.backend.get_object_hashmap(request.user_uniq,
-                                                          v_account,
-                                                          src_container,
-                                                          x[0], x[1])
+                _, s, h = request.backend.get_object_hashmap(request.user_uniq,
+                                                             v_account,
+                                                             src_container,
+                                                             x[0], x[1])
                 sizes.append(s)
                 hashmaps.append(h)
         except:
             raise faults.ItemNotFound('Object does not exist')
     else:
         try:
-            s, h = request.backend.get_object_hashmap(
+            _, s, h = request.backend.get_object_hashmap(
                 request.user_uniq, v_account,
                 v_container, v_object)
             sizes.append(s)

@@ -92,6 +92,7 @@ class Command(SynnefoCommand):
                     ('active', user.is_active),
                     ('username', user.username),
                     ('activation_sent_date', user.activation_sent),
+                    ('last_login_details', user.last_login_info_display),
                 ])
 
             if get_latest_terms():

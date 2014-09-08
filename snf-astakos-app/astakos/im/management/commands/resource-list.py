@@ -36,7 +36,7 @@ class Command(ListCommand):
         "service_type": ("service_type", "Service type"),
         "service_origin": ("service_origin", "Service"),
         "unit": ("unit", "Unit of measurement"),
-        "base_default": ("limit_with_unit", "Base project default quota"),
+        "system_default": ("limit_with_unit", "System project default quota"),
         "project_default": ("project_limit_with_unit",
                             "Project default quota"),
         "description": ("desc", "Description"),
@@ -46,7 +46,7 @@ class Command(ListCommand):
                        "Resource accessibility through the UI"),
     }
 
-    fields = ["id", "name", "base_default", "project_default",
+    fields = ["id", "name", "system_default", "project_default",
               "api_visible", "ui_visible"]
 
     def handle_args(self, *args, **options):

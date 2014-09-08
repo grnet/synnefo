@@ -81,20 +81,27 @@ class Psycopg2ConnectionPool(ObjectPool):
         log.info("CREATED: got connection %s from psycopg2", conn)
         return PooledConnection(self, conn)
 
-    def _pool_verify_execute(pooledconn):
-        try:
-            cursor = pooledconn.cursor()
-            cursor.execute("SELECT 1")
-        except psycopg2.Error:
-            # The connection has died.
-            pooledconn.close()
-            return False
-        return True
-
     def _pool_verify(self, conn):
-        if select((conn.fileno(),), (), (), 0)[0]:
+        try:
+            # Make sure that the connection is alive before using the fd
+            res = conn.poll()
+            if res == psycopg2.extensions.POLL_ERROR:
+                raise psycopg2.Error
+
+            # There shouldn't be any data available to read. If there is,
+            # remove the connection from the pool
+            if select((conn.fileno(),), (), (), 0)[0]:
+                raise psycopg2.Error
+            return True
+        except psycopg2.Error:
+            # Since we're not going to be putting the psycopg2 connection
+            # back into the pool, close it uncoditionally.
+            log.info("VERIFY: Detected dead connection")
+            try:
+                conn.close()
+            except:
+                pass
             return False
-        return True
 
     def _pool_cleanup(self, pooledconn):
         log.debug("CLEANING, conn = %d", id(pooledconn))

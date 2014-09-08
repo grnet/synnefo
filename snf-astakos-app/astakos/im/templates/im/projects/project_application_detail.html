@@ -5,7 +5,10 @@
 {% if is_modification %}
 <a class="back-to-action" href="{% url project_detail project.uuid %}">&lt; back to project</a>
 {% endif %}
-{{ project.realname|upper }}
+{{ project|project_name_for_user:request.user }}
+{% if is_modification %}
+<span class="prefix"> MODIFICATION</span>
+{% endif %}
 {% endblock %}
 
 {% block object.actions %}
@@ -14,7 +17,7 @@
 
 {% block object.status %}
 {% if project.is_initialized %}
-PROJECT MODIFICATION {{ object.state_display|upper}}
+{{ object.state_display|upper}}
 {% else %}
 PROJECT APPLICATION {{ object.state_display|upper}}
 {% endif %}
@@ -38,11 +41,21 @@ PROJECT APPLICATION {{ object.state_display|upper}}
 <dd>
 {{ application|display_modification_param:"description" }}&nbsp;
 </dd>
+
+{% if owner_mode or admin_mode and not is_modification %}
+<dt>Creation date</dt>
+<dd>{{project.creation_date|date:"d/m/Y"}}&nbsp;</dd>
+{% endif %}
+
 <dt>End Date</dt>
 <dd>{{ application|display_date_modification_param:"end_date,d/m/Y" }}&nbsp;</dd>
 <dt>Owner</dt>
 {% if admin_mode %}
+{% if owner_mode %}
+<dd>{{ application|display_modification_param:"owner,owner_owner" }}&nbsp;</dd>
+{% else %}
 <dd>{{ application|display_modification_param:"owner,owner_admin" }}&nbsp;</dd>
+{% endif %}
 {% else %}
 {% if owner_mode %}
 <dd>{{ application|display_modification_param:"owner,owner_owner" }}&nbsp;</dd>
@@ -50,6 +63,10 @@ PROJECT APPLICATION {{ object.state_display|upper}}
 <dd>{{ application|display_modification_param:"owner,owner" }}&nbsp;</dd>
 {% endif %}
 {% endif %}
+
+<dt>Applicant</dt>
+<dd>{{ application.applicant }}</dd>
+
 </dl>
 </div>
 <div class="full-dotted">
@@ -66,7 +83,7 @@ PROJECT APPLICATION {{ object.state_display|upper}}
 {% block page.members %}{% endblock %}
 {% block page.resources_heading %}
 {% if is_modification %}
-MODIFIED RESOURCES (per user / total)
+MODIFIED RESOURCES
 {% else %}
 {{ block.super }}
 {% endif %}

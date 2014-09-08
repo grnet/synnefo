@@ -26,7 +26,7 @@ from snf_django.lib.api import faults
 from snf_django.lib.api.utils import isoformat
 
 from astakos.im.forms import FeedbackForm
-from astakos.im.functions import send_feedback as send_feedback_func
+from astakos.im.user_utils import send_feedback as send_feedback_func
 
 import logging
 logger = logging.getLogger(__name__)

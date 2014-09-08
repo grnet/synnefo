@@ -27,19 +27,20 @@ from django.contrib.auth.tokens import default_token_generator
 from django.core.urlresolvers import reverse
 from django.utils.safestring import mark_safe
 from django.utils.encoding import smart_str
-from django.db import transaction
+from astakos.im import transaction
 from django.core import validators
 
 from synnefo.util import units
 from synnefo_branding.utils import render_to_string
 from synnefo.lib import join_urls
-from astakos.im.fields import EmailField
+from astakos.im.fields import EmailField, InfiniteChoiceField
 from astakos.im.models import AstakosUser, EmailChange, Invitation, Resource, \
     PendingThirdPartyUser, get_latest_terms, ProjectApplication, Project
 from astakos.im import presentation
 from astakos.im.widgets import DummyWidget, RecaptchaWidget
-from astakos.im.functions import send_change_email, submit_application, \
+from astakos.im.functions import submit_application, \
     accept_membership_project_checks, ProjectError
+from astakos.im.user_utils import send_change_email
 
 from astakos.im.util import reserved_verified_email, model_to_dict
 from astakos.im import auth_providers
@@ -55,6 +56,9 @@ import re
 
 logger = logging.getLogger(__name__)
 
+BASE_PROJECT_NAME_REGEX = re.compile(
+    r'^system:[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-'
+     '[a-f0-9]{12}$')
 DOMAIN_VALUE_REGEX = re.compile(
     r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$',
     re.IGNORECASE)
@@ -484,6 +488,7 @@ class SignApprovalTermsForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(SignApprovalTermsForm, self).__init__(*args, **kwargs)
+        self.fields['has_signed_terms'].label = _("I agree with the terms")
 
     def clean_has_signed_terms(self):
         has_signed_terms = self.cleaned_data['has_signed_terms']
@@ -588,6 +593,10 @@ app_name_validator = validators.RegexValidator(
     DOMAIN_VALUE_REGEX,
     _(astakos_messages.DOMAIN_VALUE_ERR),
     'invalid')
+base_app_name_validator = validators.RegexValidator(
+    BASE_PROJECT_NAME_REGEX,
+    _(astakos_messages.BASE_PROJECT_NAME_ERR),
+    'invalid')
 app_name_help = _("""
         The project's name should be in a domain format.
         The domain shouldn't neccessarily exist in the real
@@ -641,7 +650,7 @@ leave_policy_label = _("Leaving policy")
 app_member_leave_policy_help = _("""
         Select how new members can leave the project.""")
 
-max_members_label = _("Maximum member count")
+max_members_label = _("Max members")
 max_members_help = _("""
         Specify the maximum number of members this project may have,
         including the owner. Beyond this number, no new members
@@ -701,10 +710,11 @@ class ProjectApplicationForm(forms.ModelForm):
         coerce=int,
         choices=leave_policies)
 
-    limit_on_members_number = forms.IntegerField(
+    limit_on_members_number = InfiniteChoiceField(
+        choices=settings.PROJECT_MEMBERS_LIMIT_CHOICES,
         label=max_members_label,
         help_text=max_members_help,
-        min_value=0,
+        initial="Unlimited",
         required=True)
 
     class Meta:
@@ -723,6 +733,19 @@ class ProjectApplicationForm(forms.ModelForm):
             policies = presentation.PROJECT_MEMBER_JOIN_POLICIES.copy()
             policies.pop(3)
             self.fields['member_join_policy'].choices = policies.iteritems()
+        else:
+            if instance.is_base:
+                name_field = self.fields['name']
+                name_field.validators = [base_app_name_validator]
+            if self.initial['limit_on_members_number'] == \
+                                                    units.PRACTICALLY_INFINITE:
+                self.initial['limit_on_members_number'] = 'Unlimited'
+
+    def clean_limit_on_members_number(self):
+        value = self.cleaned_data.get('limit_on_members_number')
+        if value in ["inf", "Unlimited"]:
+            return units.PRACTICALLY_INFINITE
+        return value
 
     def clean_start_date(self):
         start_date = self.cleaned_data.get('start_date')
@@ -767,19 +790,52 @@ class ProjectApplicationForm(forms.ModelForm):
         append = policies.append
         resource_indexes = {}
         include_diffs = False
+        is_new = self.instance and self.instance.id is None
 
         existing_policies = []
-        if self.instance and self.instance.pk:
+        existing_data = {}
+
+        # normalize to single values dict
+        data = dict()
+        for key, value in self.data.iteritems():
+            data[key] = value
+
+        if not is_new:
+            # User may have emptied some fields. Empty values are not handled
+            # below. Fill data as if user typed "0" in field, but only
+            # for resources which exist in application project and have
+            # non-zero capacity (either for member or project).
             include_diffs = True
             existing_policies = self.instance.resource_set
+            append_groups = set()
+            for policy in existing_policies:
+                cap_set = max(policy.project_capacity, policy.member_capacity)
 
-        for name, value in self.data.iteritems():
+                if not policy.resource.ui_visible:
+                    continue
+
+                rname = policy.resource.name
+                group = policy.resource.group
+                existing_data["%s_p_uplimit" % rname] = "0"
+                existing_data["%s_m_uplimit" % rname] = "0"
+                append_groups.add(group)
+
+            for key, value in existing_data.iteritems():
+                if not key in data or data.get(key, '') == '':
+                    data[key] = value
+            for group in append_groups:
+                data["is_selected_%s" % group] = "1"
+
+        for name, value in data.iteritems():
+
             if not value:
                 continue
 
             if name.endswith('_uplimit'):
                 is_project_limit = name.endswith('_p_uplimit')
                 suffix = '_p_uplimit' if is_project_limit else '_m_uplimit'
+                if value == 'inf' or value == 'Unlimited':
+                    value = units.PRACTICALLY_INFINITE
                 uplimit = value
                 prefix, _suffix = name.split(suffix)
 
@@ -790,7 +846,7 @@ class ProjectApplicationForm(forms.ModelForm):
                                                 resource.name)
 
                 # keep only resource limits for selected resource groups
-                if self.data.get('is_selected_%s' % \
+                if data.get('is_selected_%s' % \
                                      resource.group, "0") == "1":
                     if not resource.ui_visible:
                         raise forms.ValidationError("Invalid resource %s" %
@@ -803,7 +859,10 @@ class ProjectApplicationForm(forms.ModelForm):
                         raise forms.ValidationError(m)
 
                     display = units.show(uplimit, resource.unit)
-                    existing = resource_indexes.get(prefix)
+                    if display == "inf":
+                        display = "Unlimited"
+
+                    handled = resource_indexes.get(prefix)
 
                     diff_data = None
                     if include_diffs:
@@ -816,14 +875,30 @@ class ProjectApplicationForm(forms.ModelForm):
 
                             if pval != uplimit:
                                 diff = pval - uplimit
+
+                                diff_display = units.show(abs(diff),
+                                                          resource.unit,
+                                                          inf="Unlimited")
+                                diff_is_inf = False
+                                prev_is_inf = False
+                                if uplimit == units.PRACTICALLY_INFINITE:
+                                    diff_display = "Unlimited"
+                                    diff_is_inf = True
+                                if pval == units.PRACTICALLY_INFINITE:
+                                    diff_display = "Unlimited"
+                                    prev_is_inf = True
+
+                                prev_display = units.show(pval, resource.unit,
+                                                          inf="Unlimited")
+
                                 diff_data = {
                                     'prev': pval,
-                                    'prev_display': units.show(pval,
-                                                               resource.unit),
+                                    'prev_display': prev_display,
                                     'diff': diff,
-                                    'diff_display': units.show(abs(diff),
-                                                               resource.unit),
+                                    'diff_display': diff_display,
                                     'increased': diff < 0,
+                                    'diff_is_inf': diff_is_inf,
+                                    'prev_is_inf': prev_is_inf,
                                     'operator': '+' if diff < 0 else '-'
                                 }
 
@@ -838,7 +913,7 @@ class ProjectApplicationForm(forms.ModelForm):
                         if diff_data:
                             d.update(dict(resource=prefix, p_diff=diff_data))
 
-                        if not existing:
+                        if not handled:
                             d.update(dict(resource=prefix, m_uplimit=0,
                                       display_m_uplimit=units.show(0,
                                            resource.unit)))
@@ -849,14 +924,14 @@ class ProjectApplicationForm(forms.ModelForm):
                         if diff_data:
                             d.update(dict(resource=prefix, m_diff=diff_data))
 
-                        if not existing:
+                        if not handled:
                             d.update(dict(resource=prefix, p_uplimit=0,
                                       display_p_uplimit=units.show(0,
                                            resource.unit)))
 
                     if resource_indexes.get(prefix, None) is not None:
                         # already included in policies
-                        existing.update(d)
+                        handled.update(d)
                     else:
                         # keep track of resource dicts
                         append(d)
@@ -898,8 +973,16 @@ class ProjectApplicationForm(forms.ModelForm):
         else:
             data['project_id'] = self.instance.chain.id if not is_new else None
 
-        user_uuid = self.user.uuid if is_new else self.instance.owner.uuid
-        data['owner'] = AstakosUser.objects.get(uuid=user_uuid)
+        owner_uuid = None
+        if self.instance.owner:
+            owner_uuid = self.instance.owner.uuid
+
+        user_uuid = self.user.uuid if is_new else owner_uuid
+        try:
+            object_owner = AstakosUser.objects.get(uuid=user_uuid)
+            data['owner'] = object_owner
+        except AstakosUser.DoesNotExist:
+            pass
 
         exclude_keys = ['owner', 'comments', 'project_id', 'start_date']
 
@@ -925,8 +1008,11 @@ class ProjectApplicationForm(forms.ModelForm):
         if data.get('end_date', None):
             data['end_date'] = date_util.isoformat(data.get('end_date'))
 
-        if 'limit_on_members_number' in data:
+        limit = data.get('limit_on_members_number', None)
+        if limit:
             data['max_members'] = data.get('limit_on_members_number')
+        else:
+            data['max_members'] = units.PRACTICALLY_INFINITE
 
         data['request_user'] = self.user
         if 'owner' in data:

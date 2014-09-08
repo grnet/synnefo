@@ -16,6 +16,11 @@ POLL_LIMIT = 3600
 # Astakos groups that have access to '/admin' views.
 ADMIN_STATS_PERMITTED_GROUPS = ["admin-stats"]
 
+# Enable/Disable the snapshots feature altogether at the API level.
+# If set to False, Cyclades will not expose the '/snapshots' API URL
+# of the 'volume' app.
+CYCLADES_SNAPSHOTS_ENABLED = True
+
 #
 # Network Configuration
 #
@@ -166,3 +171,12 @@ CYCLADES_VNCAUTHPROXY_OPTS = {
     'ca_cert': None,
     'strict': False,
 }
+
+# The maximum allowed size(GB) for a Cyclades Volume
+CYCLADES_VOLUME_MAX_SIZE = 200
+
+# The maximum allowed metadata items for a Cyclades Volume
+CYCLADES_VOLUME_MAX_METADATA = 10
+
+# The maximmum allowed metadata items for a Cyclades Virtual Machine
+CYCLADES_VM_MAX_METADATA = 10

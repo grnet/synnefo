@@ -196,3 +196,17 @@ BACKEND_XSEG_POOL_SIZE = getattr(settings, 'PITHOS_BACKEND_XSEG_POOL_SIZE', 8)
 # The maximum interval (in seconds) for consequent backend object map checks
 BACKEND_MAP_CHECK_INTERVAL = getattr(settings,
                                      'PITHOS_BACKEND_MAP_CHECK_INTERVAL', 5)
+
+# The archipelago mapfile prefix (it should not exceed 15 characters)
+# WARNING: Once set it should not be changed
+BACKEND_MAPFILE_PREFIX = getattr(settings,
+                                 'PITHOS_BACKEND_MAPFILE_PREFIX', 'snf_file_')
+
+# The maximum allowed metadata items per domain for a Pithos+ resource
+RESOURCE_MAX_METADATA = getattr(settings, 'PITHOS_RESOURCE_MAX_METADATA', 32)
+
+# The maximum allowed groups for a Pithos+ account.
+ACC_MAX_GROUPS = getattr(settings, 'PITHOS_ACC_MAX_GROUPS', 32)
+
+# The maximum allowed group members per group.
+ACC_MAX_GROUP_MEMBERS = getattr(settings, 'PITHOS_ACC_MAX_GROUP_MEMBERS', 32)

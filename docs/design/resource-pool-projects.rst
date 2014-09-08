@@ -40,7 +40,7 @@ cannot exceed the former. A limit on the number of members allowed is still
 enforced.
 
 Projects will be the sole source of resources. Current base quota offered to
-users by the system will be expressed in terms of special-purpose *base*
+users by the system will be expressed in terms of special-purpose *system*
 projects. Due to the central role that projects now acquire, we will alter
 the project schema to facilitate project creation and modification without
 the extra overhead of submitting and approving applications.
@@ -90,29 +90,31 @@ Deallocation is always allowed as long as usage does not fall below zero.
 Counters with zero usage and limit could by garbage collected by Astakos, if
 needed.
 
-Base projects
--------------
+System projects
+---------------
 
 For reasons of uniformity, we replace the base quota mechanism with projects.
-In a similar vein to OpenStack tenants, we define new user-specific *base*
+In a similar vein to OpenStack tenants, we define new user-specific *system*
 projects to account for the base quota for each user. These projects should
 be clearly associated with a single user, restrict join/leave actions and
-specify the quota granted by the system. When a new user is created,
-their base project will be automatically created and linked back to the user.
-User activation will trigger project activation, granting the default resource
-quota. Base projects will have no owner, marked thusly as `system' projects.
-The administrator can, following the usual project logic, alter quota by
-modifying the project. Users cannot apply for modification of their base
-projects.
+specify the quota granted by the system. When a user is accepted, their system
+project will be automatically created, activated, and linked back to the user,
+granting the default resource quota. These projects will have no owner, marked
+thusly as `system' projects. The administrator can, following the usual
+project logic, alter quota by modifying the project. Users cannot apply for
+modification of their system projects.
 
-Projects will, from now on, be identified by a UUID. Base projects will
+Projects will, from now on, be identified by a UUID. System projects will
 receive the same UUID as the user itself. ProjectID, which appears above in
-the Quotaholder entries, refers to the project UUID.
+the Quotaholder entries, refers to the project UUID. When a system project is
+created for a user, there is a slight probability the user's UUID is already
+in use by another project; in this case one can only delete the user and
+create a new one in its place.
 
 Base quota will be expressed both in terms of a project-level and a
 member-level limit. This will result in two operationally equivalent
 Quotaholder counters, as in the following example. In the future, we could
-admit third-party users to a user's base project; in that case, those
+admit third-party users to a user's system project; in that case, those
 counters would differ.
 
 ::
@@ -125,23 +127,23 @@ counters would differ.
 Private projects
 ----------------
 
-Since the introduction of base projects will explode the number of total
+Since the introduction of system projects will explode the number of total
 projects, we will need to control their visibility. We add a new flag
 *private* in project definitions. A private project can only be accessed by
-its owner and members and not be advertized in the UI. Base projects are
+its owner and members and not be advertized in the UI. System projects are
 marked as private.
 
 Decouple projects from applications
 -----------------------------------
 
-Base projects do not fit well in the current project/application scheme,
+System projects do not fit well in the current project/application scheme,
 because no user has applied for them. Moveover, we would like to easily
 modify project properties, particularly quota limits, without the need to
 apply for an application for each project and then approve it.
 
 We will decouple projects from applications by incorporating the project
 definition into the project object rather than relying on an application.
-The system will directly make a new (base) project upon user creation and a
+The system will directly make a new (system) project upon user creation and a
 privileged user will be able to modify an existing project by directly
 modifying it. An unprivileged user will still need to make an application.
 
@@ -169,7 +171,7 @@ System default quota and resource registration
 Each resource registered in the system is assigned a default quota limit.
 A newly-activated user is given these limits as their base quota. This is
 till now done by copying the default limits as user's entries in
-AstakosUserQuota. Default limits will from now on be copied into the base
+AstakosUserQuota. Default limits will from now on be copied into the system
 project's resource definitions.
 
 Conventional projects are created through a project application, which
@@ -182,7 +184,7 @@ one specifying the default base quota, in order to fill in missing limits
 for conventional projects. It will be controled by a new option
 ``--project-default`` of command ``resource-modify``.
 
-When a project is activated, either directly in the case of base projects
+When a project is activated, either directly in the case of system projects
 or through the approval of a project application, limits for resources not
 specified are automatically completed by consulting the appropriate
 skeleton.
@@ -237,7 +239,7 @@ In Cyclades, each VM, floating IP, or other distinct resource should be
 linked to a project. Pithos should link containers to projects.
 
 Astakos will handle its own resource ``astakos.pending_app`` in a special
-way: it will always be charged at the user's base project.
+way: it will always be charged at the user's system project.
 
 Resource reassignment
 ---------------------
@@ -356,7 +358,7 @@ All service API calls that create resources can specify the project where
 they will be attributed.
 
 In cyclades, ``POST /servers`` (likewise for networks and floating IPs) will
-receive an extra argument ``project``. If it is missing, the user's base
+receive an extra argument ``project``. If it is missing, the user's system
 project will be assumed. In calls detailing a resource (e.g., ``GET
 /servers/<server_id>``), the field ``tenant_id`` will contain the
 project id.
@@ -399,7 +401,7 @@ User interface
 
 User quota will be presented per project, including the aggregate activity
 of other project members: the Resource Usage page will include a drop-down
-menu with all relevant projects. By default, user's base project will
+menu with all relevant projects. By default, user's system project will
 be assumed. When choosing a project, usage for all resources will be
 presented for the given project in the following style::
 
@@ -462,7 +464,7 @@ Currently, the administrator can change the user base quota with:
 ``snf-manage user-modify <id> --base-quota <resource> <capacity>``.
 This will be removed in favor of the ``project-modify`` command, so that all
 quota are handled in a uniform way. Similar to ``user-modify --all``,
-``project-modify`` will get options ``--all-base-projects`` to
+``project-modify`` will get options ``--all-system-projects`` to
 allow updating base quota in bulk.
 
 Migration steps
@@ -475,24 +477,24 @@ Existing projects need to be converted to resource-pool ones. The following
 steps must be taken in Astakos:
   * compute project-level limits for each resource as
     max_members * member-level limit
-  * create base projects based on base quota for each user
+  * create system projects based on base quota for each user
   * make Quotaholder entries for projects and user/project pairs
-  * assign all current usage to the base projects (both project
+  * assign all current usage to the system projects (both project
     and user/project entries)
   * set usage for all other entries to zero
 
 Cyclades and Pithos should initialize their project attribute on each resource
-with the user's base project, that is, the same UUID as the resource owner.
+with the user's system project, that is, the same UUID as the resource owner.
 
 Initial resource reassignment
 -----------------------------
 
-Once migration has finished, users will be off-quota on their base project,
+Once migration has finished, users will be off-quota on their system project,
 if they had used additional quota from projects. To alleviate this
 situation, each service can attempt to reassign resources to other projects,
 following this strategy:
   * consult Astakos for projects and quota for a given user
   * select resources that can fit in another project
-  * issue a commission to decrease usage of the base project and likewise
+  * issue a commission to decrease usage of the system project and likewise
     increase usage of the available project
   * record the new ProjectUUID for the reassigned resources

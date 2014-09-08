@@ -1,5 +1,5 @@
 {% extends "im/email.txt" %}
 
 {% block content %}
-Your terminated project ({{object.name}}) has been reinstated.
+Your terminated project {{object.realname}} has been reinstated.
 {% endblock content %}

@@ -55,6 +55,26 @@ class TestPublic(PithosAPITest):
 
         p = re.compile('(attachment|inline); filename="(.+)"')
 
+        r = self.delete(public)
+        self.assertEqual(r.status_code, 405)
+        self.assertEqual(sorted(r['Allow'].split(',')),  ['GET', 'HEAD'])
+
+        r = self.post(public)
+        self.assertEqual(r.status_code, 405)
+        self.assertEqual(sorted(r['Allow'].split(',')),  ['GET', 'HEAD'])
+
+        r = self.put(public)
+        self.assertEqual(r.status_code, 405)
+        self.assertEqual(sorted(r['Allow'].split(',')),  ['GET', 'HEAD'])
+
+        r = self.copy(public)
+        self.assertEqual(r.status_code, 405)
+        self.assertEqual(sorted(r['Allow'].split(',')),  ['GET', 'HEAD'])
+
+        r = self.move(public)
+        self.assertEqual(r.status_code, 405)
+        self.assertEqual(sorted(r['Allow'].split(',')),  ['GET', 'HEAD'])
+
         r = self.get(public, user='user2', token=None)
         self.assertEqual(r.status_code, 200)
         self.assertTrue('X-Object-Public' not in r)
@@ -63,7 +83,7 @@ class TestPublic(PithosAPITest):
         m = p.match(content_disposition)
         self.assertTrue(m is not None)
         disposition_type = m.group(1)
-        self.assertEqual(disposition_type, 'attachment')
+        self.assertEqual(disposition_type, 'inline')
         filename = m.group(2)
         self.assertEqual(oname, filename)
 
@@ -99,7 +119,7 @@ class TestPublic(PithosAPITest):
         m = p.match(content_disposition)
         self.assertTrue(m is not None)
         disposition_type = m.group(1)
-        self.assertEqual(disposition_type, 'attachment')
+        self.assertEqual(disposition_type, 'inline')
         filename = m.group(2)
         self.assertEqual(oname, filename)
 

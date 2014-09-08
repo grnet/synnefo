@@ -13,11 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from django.conf import settings
-from django.db import transaction
+from synnefo.db import transaction
 from django.utils import simplejson as json
 from datetime import datetime, timedelta
 
-from synnefo.db.models import (VirtualMachine, Network,
+from synnefo.db.models import (VirtualMachine, Network, Volume,
                                BackendNetwork, BACKEND_STATUSES,
                                pooled_rapi_client, VirtualMachineDiagnostic,
                                Flavor, IPAddress, IPAddressLog)
@@ -26,7 +26,6 @@ from synnefo import quotas
 from synnefo.api.util import release_resource
 from synnefo.util.mac2eui64 import mac2eui64
 from synnefo.logic import rapi
-from synnefo import volume
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -118,16 +117,18 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
 
     """
     # See #1492, #1031, #1111 why this line has been removed
-    #if (opcode not in [x[0] for x in VirtualMachine.BACKEND_OPCODES] or
+    # if (opcode not in [x[0] for x in VirtualMachine.BACKEND_OPCODES] or
     if status not in [x[0] for x in BACKEND_STATUSES]:
         raise VirtualMachine.InvalidBackendMsgError(opcode, status)
 
     if opcode == "OP_INSTANCE_SNAPSHOT":
         for disk_id, disk_info in job_fields.get("disks", []):
-            snap_info = json.loads(disk_info["snapshot_info"])
-            snap_id = snap_info["snapshot_id"]
-            update_snapshot(snap_id, user_id=vm.userid, job_id=jobid,
-                            job_status=status, etime=etime)
+            snap_info = disk_info.get("snasphot_info", None)
+            if snap_info is not None:
+                snap_info = json.loads(snap_info)
+                snap_id = snap_info["snapshot_id"]
+                update_snapshot(snap_id, user_id=vm.userid, job_id=jobid,
+                                job_status=status, etime=etime)
         return
 
     vm.backendjobid = jobid
@@ -174,6 +175,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
             disk_changes = update_vm_disks(vm, disks, etime)
             job_fields["disks"] = disk_changes
 
+    vm_deleted = False
     # Special case: if OP_INSTANCE_CREATE fails --> ERROR
     if opcode == 'OP_INSTANCE_CREATE' and status in (rapi.JOB_STATUS_CANCELED,
                                                      rapi.JOB_STATUS_ERROR):
@@ -188,9 +190,7 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
         # See ticket #799 for all the details.
         if (status == rapi.JOB_STATUS_SUCCESS or
            (status == rapi.JOB_STATUS_ERROR and not vm_exists_in_backend(vm))):
-            # server has been deleted, so delete the server's attachments
-            vm.volumes.all().update(deleted=True, status="DELETED",
-                                    machine=None)
+            vm_deleted = True
             for nic in vm.nics.all():
                 # but first release the IP
                 remove_nic_ips(nic)
@@ -211,6 +211,9 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
 
     # Update VM's state and flavor after handling of quotas, since computation
     # of quotas depends on these attributes
+    if vm_deleted:
+        vm.volumes.filter(deleted=False).update(deleted=True, status="DELETED",
+                                                machine=None)
     if new_operstate is not None:
         vm.operstate = new_operstate
     if new_flavor is not None:
@@ -308,7 +311,12 @@ def update_vm_nics(vm, nics, etime=None):
     @rtype: List of dictionaries
 
     """
-    ganeti_nics = parse_instance_nics(nics)
+    try:
+        ganeti_nics = parse_instance_nics(nics)
+    except Network.InvalidBackendIdError as e:
+        log.warning("Server %s is connected to unknown network %s"
+                    " Cannot reconcile server." % (vm.id, str(e)))
+        return []
     db_nics = dict([(nic.id, nic) for nic in vm.nics.select_related("network")
                                                     .prefetch_related("ips")])
 
@@ -464,29 +472,45 @@ def update_vm_disks(vm, disks, etime=None):
     db_disks = dict([(disk.id, disk)
                      for disk in vm.volumes.filter(deleted=False)])
 
+    db_keys = set(db_disks.keys())
+    gnt_keys = set(gnt_disks.keys())
+    skip_db_stale = False
+
     changes = []
-    for disk_name in set(db_disks.keys()) | set(gnt_disks.keys()):
-        db_disk = db_disks.get(disk_name)
-        gnt_disk = gnt_disks.get(disk_name)
-        if gnt_disk is None:
-            # Disk exists in DB but not in Ganeti
-            if disk_is_stale(vm, disk):
-                log.debug("Removing stale disk '%s'" % db_disk)
-                db_disk.status = "DELETED"
-                db_disk.deleted = True
-                db_disk.save()
-                changes.append(("remove", db_disk, {}))
-            else:
-                log.info("disk '%s' is still being created" % db_disk)
-        elif db_disk is None:
-            # Disk exists in Ganeti but not in DB
-            # TODO: Automatically import disk!
-            msg = ("disk/%s of VM %s does not exist in DB! Cannot"
-                   " automatically fix this issue!" % (disk_name, vm))
-            log.error(msg)
+
+    # Disks that exist in Ganeti but not in DB
+    for disk_name in (gnt_keys - db_keys):
+        gnt_disk = gnt_disks[disk_name]
+        if ((disk_name.startswith(UNKNOWN_DISK_PREFIX)) and
+           (len(db_keys - gnt_keys) > 0)):
+            log.warning("Ganeti disk '%s' of VM '%s' does not exist in DB,"
+                        " while there are stale DB volumes. Cannot"
+                        " automatically fix this issue.", disk_name, vm)
+            skip_db_stale = True
+        else:
+            log.warning("Automatically adopting unknown disk '%s' of"
+                        " instance '%s'", disk_name, vm)
+            adopt_instance_disk(vm, gnt_disk)
+
+    # Disks that exist in DB but not in Ganeti
+    for disk_name in (db_keys - gnt_keys):
+        db_disk = db_disks[disk_name]
+        if db_disk.status != "DELETING" and skip_db_stale:
             continue
-        elif not disks_are_equal(db_disk, gnt_disk):
-            # Disk has changed
+        if disk_is_stale(vm, disk):
+            log.debug("Removing stale disk '%s'", db_disk)
+            db_disk.status = "DELETED"
+            db_disk.deleted = True
+            db_disk.save()
+            changes.append(("remove", db_disk, {}))
+        else:
+            log.info("disk '%s' is still being created" % db_disk)
+
+    # Disks that exist both in DB and in Ganeti
+    for disk_name in (db_keys & gnt_keys):
+        db_disk = db_disks[disk_name]
+        gnt_disk = gnt_disks[disk_name]
+        if not disks_are_equal(db_disk, gnt_disk):  # Modified Disk
             if gnt_disk["size"] != db_disk.size:
                 # Size of the disk has changed! TODO: Fix flavor!
                 size_delta = gnt_disk["size"] - db_disk.size
@@ -522,18 +546,44 @@ def parse_instance_disks(gnt_disks):
         disk_info = {
             'index': index,
             'size': gnt_disk["size"] >> 10,  # Size in GB
+            'uuid': gnt_disk['uuid'],
             'status': "IN_USE"}
 
         disks.append((disk_id, disk_info))
     return dict(disks)
 
 
+def adopt_instance_disk(server, gnt_disk):
+    """Create a new Cyclades Volume by adopting an existing Ganeti Disk."""
+    disk_uuid = gnt_disk["uuid"]
+    disk_size = gnt_disk["size"]
+    disk_index = gnt_disk.get("index", 0)
+    vol = Volume.objects.create(userid=server.userid,
+                                project=server.project,
+                                size=disk_size,
+                                volume_type=server.flavor.volume_type,
+                                name="",
+                                machine=server,
+                                description=None,
+                                delete_on_termination=True,
+                                source="blank",
+                                source_version=None,
+                                origin=None,
+                                index=disk_index,
+                                status="CREATING")
+
+    with pooled_rapi_client(server) as c:
+        jobid = c.ModifyInstance(instance=server.backend_vm_id,
+                                 disks=[("modify", disk_uuid,
+                                         {"name": vol.backend_volume_uuid})])
+    log.info("Adopting disk '%s' of instance '%s' to volume '%s'. jobid: %s",
+             disk_uuid, server, vol, jobid)
+    return vol
+
+
 def update_snapshot(snap_id, user_id, job_id, job_status, etime):
     """Update a snapshot based on result of a Ganeti job."""
-    if job_status in rapi.JOB_STATUS_FINALIZED:
-        status = rapi.JOB_STATUS_SUCCESS and "AVAILABLE" or "ERROR"
-        log.debug("Updating status of snapshot '%s' to '%s'", snap_id, status)
-        volume.util.update_snapshot_status(snap_id, user_id, status=status)
+    return
 
 
 @transaction.commit_on_success
@@ -747,7 +797,9 @@ def create_instance(vm, nics, volumes, flavor, image):
         provider = volume.volume_type.provider
         if provider is not None:
             disk["provider"] = provider
-            disk["origin"] = volume.origin
+            if provider in settings.GANETI_CLONE_PROVIDERS:
+                disk["origin"] = volume.origin
+                disk["origin_size"] = volume.origin_size
             extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
                                         .get(provider)
             if extra_disk_params is not None:
@@ -755,6 +807,9 @@ def create_instance(vm, nics, volumes, flavor, image):
         disks.append(disk)
 
     kw["disks"] = disks
+
+    # --no-wait-for-sync option for DRBD disks
+    kw["wait_for_sync"] = settings.GANETI_DISKS_WAIT_FOR_SYNC
 
     kw['nics'] = [{"name": nic.backend_uuid,
                    "network": nic.network.backend_id,
@@ -788,7 +843,7 @@ def create_instance(vm, nics, volumes, flavor, image):
     kw['osparams'] = {
         'config_url': vm.config_url,
         # Store image id and format to Ganeti
-        'img_id': image['backend_id'],
+        'img_id': image['pithosmap'],
         'img_format': image['format']}
 
     # Use opportunistic locking
@@ -1029,7 +1084,7 @@ def connect_network(network, backend, depends=[], group=None):
         for group in groups:
             job_id = client.ConnectNetwork(network.backend_id, group,
                                            network.mode, network.link,
-                                           conflicts_check,
+                                           conflicts_check=conflicts_check,
                                            depends=depends)
             job_ids.append(job_id)
     return job_ids
@@ -1154,10 +1209,17 @@ def attach_volume(vm, volume, depends=[]):
 
     if volume.origin is not None:
         disk["origin"] = volume.origin
+        disk["origin_size"] = volume.origin_size
+
+    extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
+                                .get(disk_provider)
+    if extra_disk_params is not None:
+        disk.update(extra_disk_params)
 
     kwargs = {
         "instance": vm.backend_vm_id,
         "disks": [("add", "-1", disk)],
+        "wait_for_sync": settings.GANETI_DISKS_WAIT_FOR_SYNC,
         "depends": depends,
     }
     if vm.backend.use_hotplug():

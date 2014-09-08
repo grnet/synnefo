@@ -49,7 +49,7 @@ INSTALL_REQUIRES = [
     'puka',
     'python-daemon>=1.5.5, <1.6',
     'snf-common',
-    'vncauthproxy>1.4',
+    'vncauthproxy>1.5',
     'snf-pithos-backend',
     'lockfile>=0.8, <0.9',
     'ipaddr',
@@ -168,7 +168,7 @@ def find_package_data(
 setup(
     name = 'snf-cyclades-app',
     version = VERSION,
-    license = 'BSD',
+    license = 'GNU GPLv3',
     url = 'http://www.synnefo.org/',
     description = SHORT_DESCRIPTION,
     classifiers = CLASSIFIERS,

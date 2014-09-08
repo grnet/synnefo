@@ -103,7 +103,10 @@ class PlanktonTest(BaseAPITest):
 
         backend().get_object_meta.return_value = {"uuid": "1234-1234-1234",
                                                   "bytes": 42,
-                                                  "hash": "unique_hash"}
+                                                  "is_snapshot": True,
+                                                  "hash": "unique_mapfile",
+                                                  "is_snapshot": True,
+                                                  "mapfile": "unique_mapfile"}
         headers = deepcopy(required)
         headers["HTTP_X_IMAGE_META_SIZE"] = "foo"
         response = self.post(IMAGES_URL, **headers)
@@ -132,10 +135,15 @@ class PlanktonTest(BaseAPITest):
         backend().get_object_meta.side_effect = \
             [{"uuid": "1234-1234-1234",
               "bytes": 42,
-              "hash": "unique_hash"},
+              "is_snapshot": True,
+              "hash": "unique_mapfile",
+              "mapfile": "unique_mapfile"},
              {"uuid": "1234-1234-1234",
               "bytes": 42,
-              "hash": "unique_hash",
+              "mapfile": "unique_mapfile",
+              "is_snapshot": True,
+              "hash": "unique_mapfile",
+              "version": 42,
               'version_timestamp': Decimal('1392487853.863673'),
               "plankton:name": u"TestImage\u2602",
               "plankton:container_format": "bare",
@@ -152,7 +160,7 @@ class PlanktonTest(BaseAPITest):
         self.assertEqual(response["x-image-meta-is-public"], "False")
         self.assertEqual(response["x-image-meta-owner"], "4321-4321")
         self.assertEqual(response["x-image-meta-size"], "42")
-        self.assertEqual(response["x-image-meta-checksum"], "unique_hash")
+        self.assertEqual(response["x-image-meta-checksum"], "unique_mapfile")
         self.assertEqual(urllib.unquote(response["x-image-meta-name"]),
                          u"TestImage\u2602".encode("utf-8"))
         self.assertEqual(response["x-image-meta-container-format"], "bare")
@@ -166,10 +174,15 @@ class PlanktonTest(BaseAPITest):
         backend().get_object_meta.side_effect = \
             [{"uuid": "1234-1234-1234",
               "bytes": 42,
-              "hash": "unique_hash"},
+              "is_snapshot": True,
+              "hash": "unique_mapfile",
+              "mapfile": "unique_mapfile"},
              {"uuid": "1234-1234-1234",
               "bytes": 42,
-              "hash": "unique_hash",
+              "is_snapshot": True,
+              "hash": "unique_mapfile",
+              "mapfile": "unique_mapfile",
+              "version": 42,
               'version_timestamp': Decimal('1392487853.863673'),
               "plankton:name": u"TestImage\u2602",
               "plankton:container_format": "bare",
@@ -250,7 +263,10 @@ class PlanktonTest(BaseAPITest):
         backend().get_object_meta.return_value = \
             {"uuid": "img_uuid",
              "bytes": 42,
-             "hash": "unique_hash",
+             "is_snapshot": True,
+             "hash": "unique_mapfile",
+             "mapfile": "unique_mapfile",
+             "version": 42,
              'version_timestamp': Decimal('1392487853.863673'),
              "plankton:name": u"TestImage\u2602",
              "plankton:container_format": "bare",
@@ -268,7 +284,7 @@ class PlanktonTest(BaseAPITest):
         self.assertEqual(response["x-image-meta-is-public"], "True")
         self.assertEqual(response["x-image-meta-owner"], "img_owner")
         self.assertEqual(response["x-image-meta-size"], "42")
-        self.assertEqual(response["x-image-meta-checksum"], "unique_hash")
+        self.assertEqual(response["x-image-meta-checksum"], "unique_mapfile")
         self.assertEqual(urllib.unquote(response["x-image-meta-name"]),
                          u"TestImage\u2602".encode("utf-8"))
         self.assertEqual(response["x-image-meta-container-format"], "bare")

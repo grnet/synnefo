@@ -43,7 +43,8 @@ INSTALL_REQUIRES = [
     'snf-common',
     'SQLAlchemy>=0.6.3, <=0.7.8',
     'alembic>=0.3.4, <0.4',
-    'objpool>=0.3'
+    'objpool>=0.3',
+    'archipelago'
 ]
 
 EXTRAS_REQUIRES = {
@@ -149,7 +150,7 @@ def find_package_data(
 setup(
     name='snf-pithos-backend',
     version=VERSION,
-    license='BSD',
+    license='GNU GPLv3',
     url='http://www.synnefo.org/',
     description=SHORT_DESCRIPTION,
     classifiers=CLASSIFIERS,

@@ -17,7 +17,9 @@
 #
 # Provides automated tests for db module
 
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
+from django.db import transaction as django_transaction
+from django.conf import settings
 
 # Import pool tests
 from synnefo.db.pools.tests import *
@@ -25,6 +27,7 @@ from synnefo.db.models import *
 
 from synnefo.db import models_factory as mfact
 from synnefo.db.pools import IPPool, EmptyPool
+from synnefo.db import transaction as cyclades_transaction
 
 from django.db import IntegrityError
 from django.core.exceptions import MultipleObjectsReturned
@@ -249,3 +252,55 @@ class AESTest(TestCase):
             '91490231234814234812348913289481294812398421893489'
         self.assertRaises(ValueError, aes.encrypt_db_charfield, 'la')
         aes.SECRET_ENCRYPTION_KEY = old
+
+
+class TransactionException(Exception):
+
+    """A dummy exception specifically for the transaction tests."""
+
+    pass
+
+
+class TransactionTest(TransactionTestCase):
+
+    """Check if cyclades transactions work properly.
+
+    TODO: Add multi-db tests.
+    """
+
+    def good_transaction(self):
+        mfact.VirtualMachineFactory()
+
+    def bad_transaction(self):
+        self.good_transaction()
+        raise TransactionException
+
+    def test_good_transaction(self):
+        django_transaction.commit_on_success(self.good_transaction)()
+        self.assertEqual(VirtualMachine.objects.count(), 1)
+
+    def test_bad_transaction(self):
+        with self.assertRaises(TransactionException):
+            django_transaction.commit_on_success(self.bad_transaction)()
+        self.assertEqual(VirtualMachine.objects.count(), 0)
+
+    def test_good_transaction_custom_decorator(self):
+        cyclades_transaction.commit_on_success(self.good_transaction)()
+        self.assertEqual(VirtualMachine.objects.count(), 1)
+
+    def test_bad_transaction_custom_decorator(self):
+        with self.assertRaises(TransactionException):
+            cyclades_transaction.commit_on_success(self.bad_transaction)()
+        self.assertEqual(VirtualMachine.objects.count(), 0)
+
+    def test_bad_transaction_custom_decorator_incorrect_dbs(self):
+        settings.DATABASES['cyclades'] = settings.DATABASES['default']
+        with self.assertRaises(TransactionException):
+            cyclades_transaction.commit_on_success(self.bad_transaction)()
+        self.assertEqual(VirtualMachine.objects.count(), 0)
+        settings.DATABASES.pop("cyclades")
+
+    def test_bad_transaction_custom_decorator_using(self):
+        with self.assertRaises(TransactionException):
+            cyclades_transaction.commit_on_success(using="default")(self.bad_transaction)()
+        self.assertEqual(VirtualMachine.objects.count(), 0)

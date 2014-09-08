@@ -5,27 +5,25 @@
     <div class="create-form">
         <p class="info"></p>
         <form>
-          <div class="col-fields bordered clearfix">
-            <div class="form-field">
-                <label for="network-create-name">Project</label>
-                <select class="project-select"></select>
+          <div class="col-fields clearfix">
+            <div class="form-field projects-list project-select">
             </div>
           </div>
           <div class="col-fields bordered clearfix">
             <div class="form-field">
-                <label for="network-create-name">Network name:</label>
+                <label for="network-create-name">Network name</label>
                 <input type="text" class="network-create-name" name="network-create-name" id="network-create-name" />
             </div>
             <div class="form-field right-field">
-                <label for="network-create-type">Network type:</label>
+                <label for="network-create-type">Network type</label>
               <select id="network-create-type">
               </select>
             </div>
           </div>
           <div class="col-fields clearfix bordered">
             <div class="form-field fixpos">
-                <label for="network-create-dhcp">Assign IP addresses automatically:</label>
-                <input type="checkbox" class="use-dhcp" name="network-create-dhcp"
+                <label for="network-create-dhcp">Assign IP addresses automatically</label>
+                <input type="checkbox" class="use-dhcp" id="network-create-dhcp" name="network-create-dhcp"
                   id="network-create-dhcp" checked />
                   <p class="description noborder fields-desc">
                   If you enable DHCP on the private network,
@@ -36,16 +34,32 @@
             </p>
             </div>
             <div id="network-create-dhcp-fields">
-              <div class="form-field fixpos">
-                <label for="network-type">Network subnet:</label>
-                <select id="network-create-subnet">
-                  <option selected class="auto" value="auto">Auto</option>
-                  <option value="custom" class="manual">Manual...</option>
-                </select>
+              <div class="clearfix">
+                <div class="form-field fixpos">
+                    <label for="network-create-subnet">Subnet</label>
+                    <select id="network-create-subnet">
+                    <option selected class="auto" value="auto">Auto</option>
+                    <option value="custom" class="manual">Manual...</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label class="hidden" for="network-create-subnet-custom">Custom subnet</label>
+                    <input type="text" id="network-create-subnet-custom" placeholder="e.g. 192.168.0.1/24"/>
+                </div>
               </div>
-              <div class="form-field">
-                <label class="hidden" for="network-custom-subnet">Custom subnet:</label>
-                <input type="text" id="network-create-subnet-custom"/>
+              <div class="clearfix">
+                <div class="form-field fixpos">
+                    <label for="network-create-gateway">Gateway</label>
+                    <select id="network-create-gateway">
+                    <option selected class="auto" value="auto">Auto</option>
+                    <option value="custom" class="manual">Manual...</option>
+                    <option value="none">None</option>
+                    </select>
+                </div>
+                <div class="form-field">
+                    <label class="hidden" for="network-create-gateway-custom">Custom gateway</label>
+                    <input type="text" id="network-create-gateway-custom" placeholder="e.g. 192.168.0.1"/>
+                </div>
               </div>
             </div>
           </div>
@@ -181,16 +195,16 @@
   <div class="clearfix">
     <div class="main-content clearfix" style="position: relative">
       <div class="main-content-inner clearfix">
-        <div class="project-name-cont" 
-          data-rv-on-click="view.show_reassign_view"
-          data-rv-show="model.tenant_id">
-            <span class="project-name" data-rv-text="model.project.name|truncate 20"></span>
-        </div>
         <img class="logo" data-rv-src="model.is_public|get_network_icon" />
         <div class="entry">
           <div data-rv-show="model" 
             data-rv-model-view="model|ModelRenameView">
           </div>
+            <div class="project-name-cont" 
+            data-rv-on-click="view.show_reassign_view"
+            data-rv-show="model.tenant_id">
+                <span class="project-name" data-rv-text="model.project.name|truncate 20|in_brackets"></span>
+            </div>
           <div class="toggler-wrap clearfix network-ports-toggler">
             <div class="cont-toggler">
               <span class="label machines-label">
@@ -275,7 +289,10 @@
     <div class="checkbox">
       <input type="checkbox" data-rv-data-id="model.id" />
     </div>
-    <div class="name" data-rv-text="model.floating_ip_address"></div>
+    <div class="name">
+      <span data-rv-text="model.floating_ip_address"></span>
+      <span class="project-name" data-rv-text="model.project.name|truncate 30"></span>
+    </div>
   </div>
 </div>
 
@@ -285,11 +302,11 @@
     </div>
     <div class="create model-item select-item floating-ip clearfix">
       <span class="empty-list hidden" style="padding-left:0;">
-        {% trans "No ip addresses available" %} 
+          {% trans "No IP addresses available" %} 
       </span>
       <a href="#">create new...</a>
       <span class="loading">creating...</span>
-      <span class="no-available hidden">{% trans "No IPs available" %}</span>
+      <span class="no-available hidden">{% trans "No IP addresses available" %}</span>
     </div>
   </div>
 </div>

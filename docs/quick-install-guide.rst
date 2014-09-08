@@ -70,32 +70,64 @@ stack.
 
 If the following ends without errors, you have successfully installed Synnefo.
 
+NOTE: All the passwords and secrets used during installation are
+hardcoded in `/etc/snf-deploy/synnefo.conf`. You can change them before
+starting the installation process. If you want snf-deploy create random
+passwords use the ``--pass-gen`` option. The generated passwords will be
+kept in the `/var/lib/snf-deploy/snf_deploy_status` file.
+
+.. _access-synnefo:
+
 Accessing the Synnefo installation
 ==================================
 
 Remote access
 -------------
 
-If you want to access the Synnefo installation from a remote machine, please
-first set your nameservers accordingly by adding the following line as your
-first nameserver in ``/etc/resolv.conf``:
+If you want to access the Synnefo installation from a remote machine, you can
+either:
 
-.. code-block:: console
+* Set your nameservers accordingly by adding the following line as your
+  first nameserver in ``/etc/resolv.conf``:
 
-   nameserver <IP>
+  .. code-block:: console
 
-The <IP> is the public IP of the machine that you deployed Synnefo on, and want
-to access.
+     nameserver <IP>
 
-Then open a browser and point to:
+  The **<IP>** is the public IP of the machine that you deployed Synnefo on,
+  and want to access. Note that ``/etc/resolv.conf`` can be overwritten by
+  other programs (``Network Manager``, ``dhclient``) and you may therefore lose
+  this line. Depending on your system, you may need to disable writes to
+  ``/etc/resolv.conf`` or prepend the nameservers in the
+  ``/etc/dhclient.conf``.
+
+* Add the IP of your Synnefo installation in your ``/etc/hosts`` file:
+
+  .. code-block:: console
+
+      <IP> synnefo.live
+      <IP> accounts.synnefo.live
+      <IP> compute.synnefo.live
+      <IP> pithos.synnefo.live
+
+
+Then open a browser and point it to:
 
 `https://astakos.synnefo.live/astakos/ui/login`
 
 Local access
 ------------
 
-If you want to access the installation from the same machine it runs on, just
-open a browser and point to:
+If you want to access the installation from the same machine it runs on, you
+must connect graphically to the machine first. A simple way is to use SSH with
+X-forwarding:
+
+.. code-block:: console
+
+   $ ssh <user>@<hostname> -YC
+
+where **<user>** is your username and **<hostname>** is the IP/hostname of your
+machine. Then, run ``iceweasel`` or ``chromium`` and in the address bar write:
 
 `https://astakos.synnefo.live/astakos/ui/login`
 

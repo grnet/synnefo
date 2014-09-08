@@ -35,7 +35,7 @@ class Command(SynnefoCommand):
     help = "Create a new Subnet." + HELP_MSG
 
     option_list = SynnefoCommand.option_list + (
-        make_option("--network-id", dest="network_id",
+        make_option("--network", dest="network_id",
                     help="Specify the Network to attach the subnet. To get the"
                          " networks of a user, use snf-manage network-list"),
         make_option("--cidr", dest="cidr",
@@ -81,7 +81,7 @@ class Command(SynnefoCommand):
         cidr = options["cidr"]
 
         if not network_id:
-            raise CommandError("network-id is mandatory")
+            raise CommandError("network is mandatory")
         if not cidr:
             raise CommandError("cidr is mandatory")
 

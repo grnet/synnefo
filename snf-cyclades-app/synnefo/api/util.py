@@ -67,7 +67,7 @@ def random_password():
     """Generates a random password
 
     We generate a windows compliant password: it must contain at least
-    one charachter from each of the groups: upper case, lower case, digits.
+    one character from each of the groups: upper case, lower case, digits.
     """
 
     pool = lowercase + uppercase + digits
@@ -149,7 +149,10 @@ def get_image(image_id, user_id):
     """Return an Image instance or raise ItemNotFound."""
 
     with PlanktonBackend(user_id) as backend:
-        return backend.get_image(image_id)
+        try:
+            return backend.get_image(image_id)
+        except faults.ItemNotFound:
+            raise faults.ItemNotFound("Image '%s' not found" % image_id)
 
 
 def get_image_dict(image_id, user_id):
@@ -157,23 +160,17 @@ def get_image_dict(image_id, user_id):
     img = get_image(image_id, user_id)
     image["id"] = img["id"]
     image["name"] = img["name"]
-    image["format"] = img["disk_format"]
     image["location"] = img["location"]
     image["is_snapshot"] = img["is_snapshot"]
+    image["is_public"] = img["is_public"]
     image["status"] = img["status"]
+    image["owner"] = img["owner"]
+    image["format"] = img["disk_format"]
+    image["version"] = img["version"]
+
     size = image["size"] = img["size"]
-
-    mapfile = img["mapfile"]
-    if mapfile.startswith("archip:"):
-        _, unprefixed_mapfile, = mapfile.split("archip:")
-        mapfile = unprefixed_mapfile
-    else:
-        unprefixed_mapfile = mapfile
-        mapfile = "pithos:" + mapfile
-
-    image["backend_id"] = PITHOSMAP_PREFIX + "/".join([unprefixed_mapfile,
-                                                       str(size)])
-    image["mapfile"] = mapfile
+    mapfile = image["mapfile"] = img["mapfile"]
+    image["pithosmap"] = PITHOSMAP_PREFIX + "/".join([mapfile, str(size)])
 
     properties = img.get("properties", {})
     image["metadata"] = dict((key.upper(), val)

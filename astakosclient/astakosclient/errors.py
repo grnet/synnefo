@@ -20,13 +20,21 @@ Astakos Client Exceptions
 
 class AstakosClientException(Exception):
     """Base AstakosClientException Class"""
-    def __init__(self, message='', details='', status=500):
+    def __init__(self, message='', details='', status=500, errobject=None):
         self.message = message
         self.details = details
+        self.errobject = errobject
         if not hasattr(self, 'status'):
             self.status = status
         super(AstakosClientException,
               self).__init__(self.message, self.details, self.status)
+
+
+class ConnectionError(AstakosClientException):
+    """Connection failed"""
+    def __init__(self, errobject):
+        super(ConnectionError, self).__init__(
+            message=str(errobject), errobject=errobject)
 
 
 class BadValue(AstakosClientException):

@@ -33,7 +33,8 @@ from astakosclient.utils import \
     retry_dec, scheme_to_class, parse_request, check_input, join_urls
 from astakosclient.errors import \
     AstakosClientException, Unauthorized, BadRequest, NotFound, Forbidden, \
-    NoUserName, NoUUID, BadValue, QuotaLimit, InvalidResponse, NoEndpoints
+    NoUserName, NoUUID, BadValue, QuotaLimit, InvalidResponse, NoEndpoints, \
+    ConnectionError
 
 
 # --------------------------------------------------------------------
@@ -287,7 +288,7 @@ class AstakosClient(object):
                     status=status, message=message, data=data)
         except Exception as err:
             self.logger.error("Failed to send request: %s" % repr(err))
-            raise AstakosClientException(str(err))
+            raise ConnectionError(err)
 
         # Return
         self.logger.debug("Request returned with status %s" % status)

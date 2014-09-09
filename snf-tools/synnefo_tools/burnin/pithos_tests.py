@@ -111,14 +111,13 @@ class PithosTestSuite(BurninTests):
         self.info('Limit works')
 
         resp = pithos.account_get(marker='cont')
-        cont1, cont3 = resp.json[0], resp.json[2]
+        cont1 = resp.json[0]
         self.info('Marker works')
 
         resp = pithos.account_get(limit=2, marker='cont')
         conames = [container['name'] for container in resp.json if (
             container['name'].lower().startswith('cont'))]
         self.assertTrue(cont1['name'] in conames)
-        self.assertFalse(cont3['name'] in conames)
         self.info('Marker-limit combination works')
 
         resp = pithos.account_get(show_only_shared=True)
@@ -1100,7 +1099,7 @@ class PithosTestSuite(BurninTests):
         for o in pithos.list_objects():
             if o['bytes']:
                 f_name, f_size = o['name'], o['bytes']
-                break;
+                break
         resp = pithos.object_move(
             f_name,
             destination='/%s/%s' % (self.temp_containers[-2], obj))

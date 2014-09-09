@@ -98,6 +98,23 @@ class CycladesTests(BurninTests):
                    opmsg, int(time.time()) - start_time)
         self.fail("time out")
 
+    def _try_once(self, opmsg, check_fun, should_fail=False):
+        """Try to perform an action once"""
+        assert callable(check_fun), "Not a function"
+        ret_value = None
+        failed = False
+        try:
+            ret_value = check_fun()
+        except Retry:
+            failed = True
+
+        if failed and not should_fail:
+            self.error("Operation `%s' failed", opmsg)
+        elif not failed and should_fail:
+            self.error("Operation `%s' should have failed", opmsg)
+        else:
+            return ret_value
+
     def _get_list_of_servers(self, detail=False):
         """Get (detailed) list of servers"""
         if detail:
@@ -348,7 +365,7 @@ class CycladesTests(BurninTests):
                 self.info(msg, version, network['id'], addr)
         return addrs
 
-    def _insist_on_ping(self, ip_addr, version=4):
+    def _insist_on_ping(self, ip_addr, version=4, should_fail=False):
         """Test server responds to a single IPv4 of IPv6 ping"""
         def check_fun():
             """Ping to server"""
@@ -365,7 +382,10 @@ class CycladesTests(BurninTests):
         opmsg = "Sent IPv%s ping requests to %s"
         self.info(opmsg, version, ip_addr)
         opmsg = opmsg % (version, ip_addr)
-        self._try_until_timeout_expires(opmsg, check_fun)
+        if should_fail:
+            self._try_once(opmsg, check_fun, should_fail=True)
+        else:
+            self._try_until_timeout_expires(opmsg, check_fun)
 
     def _image_is(self, image, osfamily):
         """Return true if the image is of `osfamily'"""
@@ -446,7 +466,7 @@ class CycladesTests(BurninTests):
             {project_id: [(QNET, QADD, 1, None)]}
         self._check_quotas(changes)
 
-        #Test if the right name is assigned
+        # Test if the right name is assigned
         self.assertEqual(network['name'], name)
         self.assertEqual(network['tenant_id'], project_id)
 

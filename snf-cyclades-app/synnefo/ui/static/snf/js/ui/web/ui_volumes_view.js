@@ -84,9 +84,6 @@
         initialize: function() {
             views.CreateVolumeImageStepView.__super__.initialize.apply(this, arguments);
             this.$(".other-types-cont").removeClass("hidden");
-            var images = this.$(".image-types-cont");
-            var snapshots = this.$(".snapshot-types-cont");
-            images.appendTo(snapshots.parent());
 
             this.empty_image = new synnefo.glance.models.GlanceImage();
             this.empty_image.set({
@@ -95,8 +92,6 @@
                 size: 0,
                 description: "Empty disk"
             });
-            delete this.type_selections['system'];
-            this.type_selections_order.splice(0, 1);
             this.create_types_selection_options();
             this.create_snapshot_types_selection_options();
         },

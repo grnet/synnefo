@@ -23,7 +23,7 @@ from sqlalchemy import (Table, Integer, BigInteger, DECIMAL, Boolean,
 from sqlalchemy.schema import Index, Sequence
 from sqlalchemy.sql import (func, and_, or_, not_, select, bindparam, exists,
                             functions)
-from sqlalchemy.sql.expression import true, literal
+from sqlalchemy.sql.expression import true, literal, type_coerce
 from sqlalchemy.exc import NoSuchTableError, IntegrityError
 
 from dbworker import DBWorker, ESCAPE_CHAR
@@ -826,9 +826,8 @@ class Node(DBWorker):
         if size == 0:
             mapfile = None
         elif mapfile is None:
-            mapfile = functions.concat(literal(self.mapfile_prefix),
-                                       functions.next_value(self.mapfile_seq))
-
+            mapfile = literal(self.mapfile_prefix) + \
+                type_coerce(functions.next_value(self.mapfile_seq), String)
         s = self.versions.insert().returning(self.versions.c.serial,
                                              self.versions.c.mtime,
                                              self.versions.c.mapfile)

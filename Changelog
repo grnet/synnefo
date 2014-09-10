@@ -21,6 +21,12 @@ Admin
   * The ``ADMIN_BASE_URL`` setting should be adjusted in every node that Admin
     is installed.
 
+UI
+--
+
+* Remove UI_SNAPSHOTS_ENABLED setting. UI now uses CYCLADES_SNAPSHOTS_ENABLED 
+  setting to resolve whether or not snapshot functionality should be enabled.
+
 
 v0.16rc1
 ========

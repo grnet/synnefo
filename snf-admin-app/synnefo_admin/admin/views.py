@@ -42,7 +42,8 @@ from synnefo_admin import admin_settings
 
 from synnefo_admin.admin import exceptions
 from synnefo_admin.admin.utils import (conditionally_gzip_page,
-                                       customize_details_context, admin_log)
+                                       customize_details_context, admin_log,
+                                       default_view)
 
 from synnefo.ui.views import UI_MEDIA_URL
 
@@ -68,6 +69,9 @@ def get_view_module(view_type):
 
 def get_view_module_or_404(view_type):
     """Try to import a view module or raise 404."""
+    if not view_type:
+        raise AdminHttp404("No category provided.")
+
     mod = get_view_module(view_type)
     if not mod:
         raise AdminHttp404("No category found with this name: %s" % view_type)
@@ -268,7 +272,7 @@ def details(request, type, id):
 
 
 @admin_user_required
-def catalog(request, type='user'):
+def catalog(request, type=default_view()):
     """Admin-Interface generic list view."""
     admin_log(request, type=type)
 

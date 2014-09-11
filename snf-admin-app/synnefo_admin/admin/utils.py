@@ -52,6 +52,12 @@ model_dict = {
 }
 
 
+def default_view():
+    """Return the first registered view based on ADMIN_VIEWS_ORDER."""
+    if admin_settings.ADMIN_VIEWS_ORDER:
+        return admin_settings.ADMIN_VIEWS_ORDER[0]
+
+
 def __reverse_model_dict():
     """Create the a model dict with the class names as keys."""
     reversed_model_dict = {}

@@ -23,8 +23,13 @@ Settings for the snf-admin-app.
 
 from django.conf import settings
 from collections import OrderedDict
+from synnefo.lib import parse_base_url
 
 ADMIN_ENABLED = getattr(settings, 'ADMIN_ENABLED', True)
+
+BASE_URL = getattr(settings, 'ADMIN_BASE_URL',
+                   'https://admin.example.synnefo.org/admin/')
+BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
 
 ADMIN_MEDIA_URL = getattr(settings, 'ADMIN_MEDIA_URL',
                           settings.MEDIA_URL + 'admin/')

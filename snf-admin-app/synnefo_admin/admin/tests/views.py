@@ -31,7 +31,7 @@ from .common import (for_all_views, AuthClient, get_user_mock,
 
 class TestAdminViewsUnit(unittest.TestCase):
 
-    """Unit tests for admin views."""
+    """Unit tests for Admin views."""
 
     @for_all_views()
     def test_import_module_success(self):
@@ -141,7 +141,7 @@ class TestAdminViewsIntegration(django.test.TestCase):
 
     @for_all_views(views=['home', 'logout', 'charts', 'stats', 'actions'])
     def test_404_in_other_views(self):
-        """Test if authorized users get 404 in all othere views."""
+        """Test if authorized users get 404 in all other views."""
         r = self.client.get(reverse('admin-%s' % self.current_view) + '/' +
                             gibberish(), user_token="0001")
         self.assertEqual(r.status_code, 404)

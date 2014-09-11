@@ -21,6 +21,7 @@ This is the burnin class that tests the Pithos functionality
 
 """
 
+import itertools
 import os
 import random
 import tempfile
@@ -28,7 +29,7 @@ from datetime import datetime
 from tempfile import NamedTemporaryFile
 
 from synnefo_tools.burnin.common import BurninTests, Proper, \
-    QPITHOS, QADD, QREMOVE
+    QPITHOS, QADD, QREMOVE, MB
 from kamaki.clients import ClientError
 
 
@@ -854,6 +855,47 @@ class PithosTestSuite(BurninTests):
             # Compare results
             self.info("Comparing contents with the uploaded file")
             self.assertEqual(contents, "This is a temp file")
+
+    def test_056_upload_files(self):
+        """Test uploading a number of txt files to Pithos"""
+        self.info('Simple call uploads %d new objects' % self.obj_upload_num)
+        pithos = self.clients.pithos
+
+        size_change = 0
+        min_size = self.obj_upload_min_size
+        max_size = self.obj_upload_max_size
+
+        hashes = {}
+        open_files = []
+        uuid = self._get_uuid()
+        usage = self.quotas[uuid]['pithos.diskspace']['usage']
+        limit = pithos.get_container_limit()
+        for i, size in enumerate(random.sample(range(min_size, max_size),
+                                               self.obj_upload_num)):
+            assert usage + size_change + size <= limit, \
+                'Not enough quotas to upload files.'
+            named_file = self._create_file(size)
+            self.info('Created file %s of %s MB' % (named_file.name, float(size) / MB))
+            name = named_file.name.split('/')[-1]
+            hashes[name] = named_file.hash
+            open_files.append(dict(obj=name, f=named_file))
+            size_change += size
+        pithos.async_run(pithos.upload_object, open_files)
+        self._check_quotas({self._get_uuid():
+                            [(QPITHOS, QADD, size_change, None)]})
+
+        r = pithos.container_get()
+        self.info("Comparing hashes with the uploaded files")
+        for name, hash_ in hashes.iteritems():
+            try:
+                o = itertools.ifilter(lambda o: o['name'] == name,
+                                      r.json).next()
+                assert o['x_object_hash'] == hash_, \
+                    'Inconsistent hash for object: %s' % name
+            except StopIteration:
+                raise AssertionError('Object %s not found in the server' %
+                                     name)
+        self.info('Bulk upload is OK')
 
     def test_060_object_copy(self):
         """Test object COPY"""

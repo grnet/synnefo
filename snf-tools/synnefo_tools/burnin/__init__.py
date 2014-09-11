@@ -177,6 +177,21 @@ def parse_arguments(args):
         "--temp-directory", action="store",
         default="/tmp/", dest="temp_directory",
         help="Directory to use for saving temporary files")
+    parser.add_option(
+        "--obj-upload-num", action="store",
+        type="int", default=2, dest="obj_upload_num",
+        help="Set the number of objects to massively be uploaded "
+             "(default: 2)")
+    parser.add_option(
+        "--obj-upload-min-size", action="store",
+        type="int", default=10 * common.MB, dest="obj_upload_min_size",
+        help="Set the min size of the object to massively be uploaded "
+             "(default: 10MB)")
+    parser.add_option(
+        "--obj-upload-max-size", action="store",
+        type="int", default=20 * common.MB, dest="obj_upload_max_size",
+        help="Set the max size of the objects to massively be uploaded "
+             "(default: 20MB)")
 
     (opts, args) = parser.parse_args(args)
 

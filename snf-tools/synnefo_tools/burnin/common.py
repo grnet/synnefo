@@ -18,6 +18,7 @@ Common utils for burnin tests
 
 """
 
+import hashlib
 import re
 import shutil
 import unittest
@@ -27,6 +28,8 @@ import traceback
 from tempfile import NamedTemporaryFile
 from os import urandom
 from string import ascii_letters
+from StringIO import StringIO
+from binascii import hexlify
 
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
 from kamaki.clients.astakos import AstakosClient, parse_endpoints
@@ -196,6 +199,58 @@ class Proper(object):
         self.val = value
 
 
+def file_read_iterator(fp, size=1024):
+    while True:
+        data = fp.read(size)
+        if not data:
+            break
+        yield data
+
+
+class HashMap(list):
+
+    def __init__(self, blocksize, blockhash):
+        super(HashMap, self).__init__()
+        self.blocksize = blocksize
+        self.blockhash = blockhash
+
+    def _hash_raw(self, v):
+        h = hashlib.new(self.blockhash)
+        h.update(v)
+        return h.digest()
+
+    def _hash_block(self, v):
+        return self._hash_raw(v.rstrip('\x00'))
+
+    def hash(self):
+        if len(self) == 0:
+            return self._hash_raw('')
+        if len(self) == 1:
+            return self.__getitem__(0)
+
+        h = list(self)
+        s = 2
+        while s < len(h):
+            s = s * 2
+        h += [('\x00' * len(h[0]))] * (s - len(h))
+        while len(h) > 1:
+            h = [self._hash_raw(h[x] + h[x + 1]) for x in range(0, len(h), 2)]
+        return h[0]
+
+    def load(self, data):
+        self.size = 0
+        fp = StringIO(data)
+        for block in file_read_iterator(fp, self.blocksize):
+            self.append(self._hash_block(block))
+            self.size += len(block)
+
+
+def merkle(data, blocksize, blockhash):
+    hashes = HashMap(blocksize, blockhash)
+    hashes.load(data)
+    return hexlify(hashes.hash())
+
+
 # --------------------------------------------------------------------
 # BurninTests class
 # pylint: disable=too-many-public-methods
@@ -331,6 +386,33 @@ class BurninTests(unittest.TestCase):
             named_file.flush()
         named_file.seek(0)
         return named_file
+
+    def _create_file(self, size):
+        """Create a file and compute its merkle hash"""
+
+        tmp_file = NamedTemporaryFile()
+        self.debug('\tCreate file %s  ' % tmp_file.name)
+        meta = self.clients.pithos.get_container_info()
+        block_size = int(meta['x-container-block-size'])
+        block_hash_algorithm = meta['x-container-block-hash']
+        num_of_blocks = size / block_size
+        hashmap = HashMap(block_size, block_hash_algorithm)
+        s = 0
+        for i in range(num_of_blocks):
+            seg = urandom(block_size)
+            tmp_file.write(seg)
+            hashmap.load(seg)
+            s += len(seg)
+        else:
+            rest = size - s
+            if rest:
+                seg = urandom(rest)
+                tmp_file.write(seg)
+                hashmap.load(seg)
+                s += len(seg)
+        tmp_file.seek(0)
+        tmp_file.hash = hexlify(hashmap.hash())
+        return tmp_file
 
     def _create_boring_file(self, num_of_blocks):
         """Create a file with some blocks being the same"""
@@ -637,6 +719,15 @@ class BurninTests(unittest.TestCase):
             project_info = self.clients.astakos.get_project(puuid)
             return project_info['name']
 
+    def _get_merkle_hash(self, data):
+        self.clients.pithos._assert_account()
+        meta = self.clients.pithos.get_container_info()
+        block_size = int(meta['x-container-block-size'])
+        block_hash_algorithm = meta['x-container-block-hash']
+        hashes = HashMap(block_size, block_hash_algorithm)
+        hashes.load(data)
+        return hexlify(hashes.hash())
+
 
 # --------------------------------------------------------------------
 # Initialize Burnin
@@ -670,6 +761,9 @@ def initialize(opts, testsuites, stale_testsuites):
     BurninTests.failfast = opts.failfast
     BurninTests.run_id = SNF_TEST_PREFIX + \
         datetime.datetime.strftime(curr_time, "%Y%m%d%H%M%S")
+    BurninTests.obj_upload_num = opts.obj_upload_num
+    BurninTests.obj_upload_min_size = opts.obj_upload_min_size
+    BurninTests.obj_upload_max_size = opts.obj_upload_max_size
 
     # Choose tests to run
     if opts.show_stale:

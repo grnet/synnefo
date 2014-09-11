@@ -756,6 +756,22 @@ class Node(DBWorker):
             self.nodes_set_latest_version(node, props[0])
         return hash, size
 
+
+    def attribute_get_domains(self, serial, node=None):
+        q = ("select distinct domain from attributes "
+             "where serial = ? ")
+        args = [serial]
+        if node is not None:
+            q += ("and node = ?")
+            args += [node]
+        else:
+            q += ("and node = "
+                  "(select node from versions where serial = ?)")
+            args += [serial]
+        execute = self.execute
+        execute(q, args)
+        return [d[0] for d in self.fetchall()]
+
     def attribute_get(self, serial, domain, keys=()):
         """Return a list of (key, value) pairs of the specific version.
 

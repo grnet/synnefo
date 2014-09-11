@@ -1087,6 +1087,8 @@ class ModularBackend(BaseBackend):
         src_version_id, dest_version_id = self._put_metadata(
             user, node, domain, meta, replace,
             update_statistics_ancestors_depth=1)
+        self._copy_metadata(src_version_id, dest_version_id, node,
+                            exclude_domain=domain, src_node=node)
         self._apply_versioning(account, container, src_version_id,
                                update_statistics_ancestors_depth=1)
         return dest_version_id
@@ -1242,6 +1244,21 @@ class ModularBackend(BaseBackend):
         return props[self.IS_SNAPSHOT], props[self.SIZE], \
             self._get_object_hashmap(props, update_available=True)
 
+    def _copy_metadata(self, src_version, dest_version, dest_node,
+                       exclude_domain, src_node=None):
+        domains = self.node.attribute_get_domains(src_version,
+                                                  node=src_node)
+        try:
+            domains.remove(exclude_domain)
+        except ValueError: # domain is not in the list
+            pass
+
+        for d in domains:
+            existing = dict(self.node.attribute_get(src_version, d))
+            self._put_metadata_duplicate(
+                src_version, dest_version, d, dest_node, meta=existing,
+                replace=True)
+
     def _update_object_hash(self, user, account, container, name, size, type,
                             hash, checksum, domain, meta, replace_meta,
                             permissions, src_node=None, src_version_id=None,
@@ -1272,6 +1289,8 @@ class ModularBackend(BaseBackend):
         # Handle meta.
         if src_version_id is None:
             src_version_id = pre_version_id
+        self._copy_metadata(src_version_id, dest_version_id, node,
+                            exclude_domain=domain, src_node=src_node)
         self._put_metadata_duplicate(
             src_version_id, dest_version_id, domain, node, meta, replace_meta)
 

@@ -1020,6 +1020,17 @@ class Node(DBWorker):
 
         return hash, size
 
+    def attribute_get_domains(self, serial, node=None):
+        node = node or select([self.versions.c.node],
+                              self.versions.c.serial == serial)
+        s = select([self.attributes.c.domain],
+                   and_(self.attributes.c.serial == serial,
+                        self.attributes.c.node == node)).distinct()
+        r = self.conn.execute(s)
+        l = r.fetchall()
+        r.close()
+        return [d[0] for d in l]
+
     def attribute_get(self, serial, domain, keys=()):
         """Return a list of (key, value) pairs of the specific version.
 

@@ -8,6 +8,20 @@ repository and have aligned versions.
 
 .. _Changelog-0.16:
 
+v0.16rc2
+========
+
+Released:
+
+Admin
+-----
+
+* Define the Admin node URL and path with the ``ADMIN_BASE_URL`` setting
+
+  * The ``ADMIN_BASE_URL`` setting should be adjusted in every node that Admin
+    is installed.
+
+
 v0.16rc1
 ========
 

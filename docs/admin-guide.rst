@@ -1662,43 +1662,51 @@ from the Astakos/Cyclades stats.
 Access and permissions
 ----------------------
 
-The Admin dashboard can be accessed by default from the `/admin/` URL. Since
-there is no login form, the user must login on Astakos first and then visit the
-above URL. Access will be granted only to users that belong to a predefined
-list of Astakos groups. By default, there are three group categories that
-are mapped 1-to-1 to Astakos groups:
+The Admin dashboard can be accessed by default from the ``ADMIN_BASE_URL`` URL.
+Since there is no login form, the user must login on Astakos first and then
+visit the above URL. Access will be granted only to users that belong to a
+predefined list of Astakos groups. By default, there are three group categories
+that are mapped 1-to-1 to Astakos groups:
 
 * ADMIN_READONLY_GROUP: 'admin-readonly'
 * ADMIN_HELPDESK_GROUP: 'helpdesk'
 * ADMIN_GROUP:          'admin'
 
-The group categories can be changed using the `ADMIN_PERMITTED_GROUPS` setting.
-In order to change the Astakos group that a category corresponds to, the
-administrator can specify the group that he/she wants in the
-`ADMIN_READONLY_GROUP`, `ADMIN_HELPDESK_GROUP` or `ADMIN_GROUP` settings.
+The group categories can be changed using the ``ADMIN_PERMITTED_GROUPS``
+setting.  In order to change the Astakos group that a category corresponds to,
+the administrator can specify the group that he/she wants in the
+``ADMIN_READONLY_GROUP``, ``ADMIN_HELPDESK_GROUP`` or ``ADMIN_GROUP`` settings.
 
-Note that while any user that belongs to the `ADMIN_PERMITTED_GROUPS` has the
+Note that while any user that belongs to the ``ADMIN_PERMITTED_GROUPS`` has the
 same access to the administrator dashboard, the actions that are allowed for a
 group may differ. That's because Admin implements a Role-Based Access Control
-(RBAC) policy, which can be changed from the `ADMIN_RBAC` setting. By default,
-users in the `ADMIN_READONLY_GROUP` cannot perform any actions. On the other
-hand, users in the `ADMIN_GROUP` can perform all actions.  In the middle of the
-spectrum is the `ADMIN_HELPDESK_GROUP`, which by default performs a small
-subset of reversible actions.
+(RBAC) policy, which can be changed from the ``ADMIN_RBAC`` setting. By
+default, users in the ``ADMIN_READONLY_GROUP`` cannot perform any actions. On
+the other hand, users in the ``ADMIN_GROUP`` can perform all actions.  In the
+middle of the spectrum is the ``ADMIN_HELPDESK_GROUP``, which by default
+performs a small subset of reversible actions.
 
 Seting up Admin
 ---------------
 
 Admin is bundled by default with a list of sane settings. The most important
-one, `ADMIN_ENABLED`, is set to `True` and defines whether Admin will be used
-or not. Therefore, the administrator only needs to create the necessary Astakos
-groups and add trusted users in them. The following example will create an
-admin group and will add a user in it:
+one, ``ADMIN_ENABLED``, is set to ``True`` and defines whether Admin will be used
+or not.
+
+The administrator simply has to create the necessary Astakos groups and
+add trusted users in them. The following example will create an admin group and
+will add a user in it:
 
 .. code-block:: console
 
  snf-manage group-add admin
  snf-manage user-modify --add-group=admin <user_id>
+
+Finally, the administrator must edit the ``20-snf-admin-app-general.conf``
+settings file, uncomment the ``ADMIN_BASE_URL`` setting and assign the
+appropriate URL to it. In most cases, this URL will be the top-level URL of the
+Admin node, with the optional addition of an extra path (e.g. ``/admin``) in
+order to distinguish it from different components.
 
 That's all that is required for a single-node setup. For a multi-node setup,
 please consult the following section:
@@ -1712,22 +1720,18 @@ settings of their nodes. As a result, when installing Admin in a node, the
 Astakos and Cyclades packages will also be installed.
 
 In order to disable the Astakos/Cyclades API in the Admin node, the
-administrator can add the following line in `99-local.conf`:
-
-.. code-block:: console
-
-    ROOT_URLCONF="synnefo_admin.admin.urls"
-
-As a result, Admin will be accessible by this URL: `<Admin_Node_URL>/`. If the
-administrator wishes to use the default URL (`<Admin_Node_URL>/admin/`), then
-the following line must be added instead.
+administrator can add the following line in ``99-locals.conf`` (you can create
+it if doesn't exist):
 
 .. code-block:: console
 
     ROOT_URLCONF="synnefo_admin.urls"
 
+Note that the above change does not interfere the with the ``ADMIN_BASE_URL``,
+which will be used normally.
+
 Furthermore, if Astakos and Cyclades have separate databases, then they must be
-defined in the `DATABASES` setting of `10-snf-webproject-database.conf`. An
+defined in the ``DATABASES`` setting of ``10-snf-webproject-database.conf``. An
 example setup is the following:
 
 .. code-block:: console
@@ -1754,16 +1758,16 @@ example setup is the following:
     DATABASE_ROUTERS = ['snf_django.utils.routers.SynnefoRouter']
 
 You may notice that there are three databases instead of two. That's because
-Django requires that every `DATABASES` setting has a *default* database. In our
-case, we suggest that you use as default the Cyclades database. Finally, you
-must not forget to add the `DATABASE_ROUTERS` setting in the above example that
-must always be used in multi-db setups.
+Django requires that every ``DATABASES`` setting has a *default* database. In
+our case, we suggest that you use as default the Cyclades database. Finally,
+you must not forget to add the ``DATABASE_ROUTERS`` setting in the above
+example that must always be used in multi-db setups.
 
 Disabling Admin
 ---------------
 
-The easiest way to disable the Admin Dashboard is to set the `ADMIN_ENABLED`
-setting to `False`.
+The easiest way to disable the Admin Dashboard is to set the ``ADMIN_ENABLED``
+setting to ``False``.
 
 
 List of all Synnefo components

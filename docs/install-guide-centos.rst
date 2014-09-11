@@ -2512,5 +2512,51 @@ to state 'Running' and you will be able to use it. Click 'Console' to connect
 through VNC out of band, or click on the machine's icon to connect directly via
 SSH or RDP (for windows machines).
 
+
+Installation of Admin on node1
+==============================
+
+This section describes the installation of Admin. Admin is a Synnefo component
+that provides to trusted users the ability to manage and view various different
+Synnefo entities such as users, VMs, projects etc.
+
+We will install Admin on node1. To do so, we install the corresponding
+package by running on node1 the following command:
+
+.. code-block:: console
+
+   # apt-get install snf-admin-app
+
+Once the package is installed, we must configure the ``ADMIN_BASE_URL``
+setting. This setting is located in the ``20-snf-admin-app-general.conf``
+settings file. Uncomment it and assign the following URL to it:
+
+    ``https://node1.example.com/admin``
+
+Now, we can proceed with testing Admin.
+
+Testing of Admin
+================
+
+In order to test the Admin Dashboard, we need a user that belongs to the
+`admin` group. We will use the user that was created in `Testing of Astakos`_
+section:
+
+.. code-block:: console
+
+    root@node1:~ # snf-manage group-add admin
+    root@node1:~ # snf-manage user-modify 1 --add-group=admin
+
+Then, you need to login to the Astakos node by visiting the following URL:
+
+    ``https://node1.example.com/astakos``
+
+Once you login successfully, you can access the Admin Dashboard from this URL:
+
+    ``https://node1.example.com/admin``
+
+This should redirect you to the **Users** table, where there should be an entry
+with this user.
+
 Congratulations. You have successfully installed the whole Synnefo stack and
 connected all components.

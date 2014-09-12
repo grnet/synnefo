@@ -424,6 +424,7 @@ class PlanktonBackend(object):
 
         images = []
         for (location, metadata, permissions) in _images:
+            print metadata
             location = Location(*location.split("/", 2))
             images.append(image_to_dict(location, metadata, permissions))
 
@@ -485,6 +486,14 @@ class PlanktonBackend(object):
     @handle_pithos_backend
     def delete_snapshot(self, snapshot_uuid):
         self.backend.delete_by_uuid(self.user, snapshot_uuid)
+
+    @handle_pithos_backend
+    def update_status(self, image_uuid, status):
+        """Update status of snapshot"""
+        location, _ = self._get_raw_metadata(image_uuid)
+        properties = {"status": status.upper()}
+        self._update_metadata(image_uuid, location, properties, replace=False)
+        return self._get_image(image_uuid)
 
 
 def create_url(account, container, name):

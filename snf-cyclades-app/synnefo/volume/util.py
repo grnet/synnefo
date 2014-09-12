@@ -103,3 +103,8 @@ def volume_to_links(volume_id):
 def snapshot_to_links(snapshot_id):
     href = join_urls(SNAPSHOTS_URL, str(snapshot_id))
     return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
+
+
+def update_snapshot_status(snapshot_id, user_id, status):
+    with backend.PlanktonBackend(user_id) as b:
+        return b.update_status(snapshot_id, status=status)

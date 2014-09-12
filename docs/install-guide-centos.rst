@@ -3,6 +3,13 @@
 Administrator's Installation Guide (on CentOS 6.5)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. warning::
+
+    Currently, we don't provide packages for release candidate versions of
+    Synnefo for CentOS 6.5. Please consult the docs for `Synnefo 0.15.2
+    <https://www.synnefo.org/docs/synnefo/0.15.2/index.html>`_
+    instead.
+
 This is the Administrator's installation guide on CentOS 6.5.
 
 It describes how to install the whole Synnefo stack on two (2) physical nodes,

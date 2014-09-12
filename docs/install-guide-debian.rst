@@ -556,6 +556,36 @@ Copy the certificate you created before on node1 (`ca.crt`) under the directory
 
 to update the records.
 
+Installation of Archipelago
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To install Archipelago, run:
+
+.. code-block:: console
+
+   # apt-get install archipelago
+
+
+Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
+
+* ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
+  RAM. The default value is 2GB which in some situations might exceed your
+  machine's physical RAM.
+
+In section ``blockerb`` set:
+
+* ``archip_dir``: ``/srv/pithos/data/blocks``
+
+In section ``blockerm`` set:
+
+* ``archip_dir``: ``/srv/pithos/data/maps``
+
+Finally, restart Archipelago:
+
+.. code-block:: console
+
+   # /etc/init.d/archipelago restart
+
 
 DNS Setup
 ~~~~~~~~~
@@ -1059,36 +1089,6 @@ Now, install the pithos web interface:
 This package provides the standalone Pithos web client. The web client is the
 web UI for Pithos and will be accessible by clicking "Pithos" on the Astakos
 interface's cloudbar, at the top of the Astakos homepage.
-
-Installation of Archipelago on node 2
-=====================================
-
-To install Archipelago, run:
-
-.. code-block:: console
-
-   # apt-get install archipelago
-
-
-Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
-
-* ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
-  RAM. The default value is 2GB which in some situations might exceed your
-  machine's physical RAM.
-
-In section ``blockerb`` set:
-
-* ``archip_dir``: ``/srv/pithos/data/blocks``
-
-In section ``blockerm`` set:
-
-* ``archip_dir``: ``/srv/pithos/data/maps``
-
-Finally, restart Archipelago:
-
-.. code-block:: console
-
-   # /etc/init.d/archipelago restart
 
 .. _conf-pithos:
 

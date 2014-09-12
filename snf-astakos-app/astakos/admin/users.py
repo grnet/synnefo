@@ -15,28 +15,13 @@
 
 import logging
 
-from functools import wraps
-
-from django import http
-from django.utils import simplejson as json
-from django.forms.models import model_to_dict
-from django.core.validators import validate_email, ValidationError
-
-from snf_django.lib import api
-from snf_django.lib.api import faults
-
 from astakos.im import settings
-from astakos.admin import stats
-from astakos.im.models import AstakosUser, get_latest_terms
-from astakos.im.auth import make_local_user
 
 logger = logging.getLogger(__name__)
 
 try:
-    AUTH_URL = settings.astakos_services \
-                ["astakos_identity"]["endpoints"][0]["publicURL"]
+    AUTH_URL = settings.astakos_services[
+        "astakos_identity"]["endpoints"][0]["publicURL"]
 except (IndexError, KeyError) as e:
     logger.error("Failed to load Astakos Auth URL: %s", e)
     AUTH_URL = None
-
-

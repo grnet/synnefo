@@ -102,7 +102,7 @@ def create(user_id, volume, name, description, metadata, force=False):
                    " %s size." % units.show(size, "bytes", "gb"))
             raise faults.OverLimit(msg)
 
-    backend.snapshot_instance(volume.machine,
+    backend.snapshot_instance(volume.machine, volume,
                               snapshot_name=mapfile,
                               snapshot_id=snapshot_id)
 

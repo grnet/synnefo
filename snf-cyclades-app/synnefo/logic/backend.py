@@ -481,7 +481,7 @@ def update_vm_disks(vm, disks, etime=None):
     # Disks that exist in Ganeti but not in DB
     for disk_name in (gnt_keys - db_keys):
         gnt_disk = gnt_disks[disk_name]
-        if ((disk_name.startswith(UNKNOWN_DISK_PREFIX)) and
+        if ((str(disk_name).startswith(UNKNOWN_DISK_PREFIX)) and
            (len(db_keys - gnt_keys) > 0)):
             log.warning("Ganeti disk '%s' of VM '%s' does not exist in DB,"
                         " while there are stale DB volumes. Cannot"
@@ -744,8 +744,8 @@ def process_create_progress(vm, etime, progress):
     # successful creation gets processed before the 'ganeti-create-progress'
     # message? [vkoukis]
     #
-    #if not vm.operstate == 'BUILD':
-    #    raise VirtualMachine.IllegalState("VM is not in building state")
+    # if not vm.operstate == 'BUILD':
+    #     raise VirtualMachine.IllegalState("VM is not in building state")
 
     vm.buildpercentage = percentage
     vm.backendtime = etime
@@ -831,7 +831,7 @@ def create_instance(vm, nics, volumes, flavor, image):
 
     # Do not specific a node explicitly, have
     # Ganeti use an iallocator instead
-    #kw['pnode'] = rapi.GetNodes()[0]
+    # kw['pnode'] = rapi.GetNodes()[0]
 
     kw['dry_run'] = settings.TEST
 
@@ -1027,7 +1027,7 @@ def _create_network(network, backend):
     gateway = None
     gateway6 = None
     for _subnet in network.subnets.all():
-        if _subnet.dhcp and not "nfdhcpd" in tags:
+        if _subnet.dhcp and "nfdhcpd" not in tags:
             tags.append("nfdhcpd")
         if _subnet.ipversion == 4:
             subnet = _subnet.cidr
@@ -1350,9 +1350,9 @@ def update_backend_disk_templates(backend):
     backend.save()
 
 
-##
-## Synchronized operations for reconciliation
-##
+#
+# Synchronized operations for reconciliation
+#
 
 
 def create_network_synced(network, backend):

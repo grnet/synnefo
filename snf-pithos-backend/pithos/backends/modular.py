@@ -1430,7 +1430,7 @@ class ModularBackend(BaseBackend):
             user, account, container, name, size, type, hexlified, checksum,
             domain, meta, replace_meta, permissions, is_snapshot=False)
         if size != 0:
-            self.store.map_put(mapfile, map_, size, self.block_size)
+            self.store.map_put(mapfile, hashmap, size, self.block_size)
         return dest_version_id, hexlified
 
     @debug_method
@@ -1530,7 +1530,6 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError("Copy is not permitted: failed to get "
                                       "source object's mapfile: %s" %
                                       src_mapfile)
-            hashmap = map(self._unhexlify_hash, hashmap)
             self.store.map_put(dest_mapfile, hashmap, size, self.block_size)
 
         dest_versions.append(dest_version_id)
@@ -1594,7 +1593,6 @@ class ModularBackend(BaseBackend):
                         raise NotAllowedError(
                             "Copy is not permitted: failed to get "
                             "source object's mapfile: %s" % src_mapfile)
-                    hashmap = map(self._unhexlify_hash, hashmap)
                     self.store.map_put(dest_mapfile, hashmap, size,
                                        self.block_size)
 

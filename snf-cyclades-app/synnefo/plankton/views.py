@@ -26,7 +26,8 @@ from django.utils.encoding import (smart_unicode, smart_str,
 
 from snf_django.lib import api
 from snf_django.lib.api import faults
-from synnefo.plankton.backend import PlanktonBackend
+from synnefo.plankton.backend import (PlanktonBackend, OBJECT_AVAILABLE,
+                                      OBJECT_UNAVAILABLE, OBJECT_ERROR)
 from synnefo.plankton.backend import split_url
 
 
@@ -73,9 +74,10 @@ log = getLogger('synnefo.plankton')
 
 
 API_STATUS_FROM_IMAGE_STATUS = {
-    "CREATING": "SAVING",
-    "AVAILABLE": "AVAILABLE",
-    "DELETED": "DELETED"}
+    OBJECT_AVAILABLE: "AVAILABLE",
+    OBJECT_UNAVAILABLE: "SAVING",
+    OBJECT_ERROR: "ERROR",
+    "DELETED": "DELETED"}  # Unused status
 
 
 def _create_image_response(image):

@@ -26,6 +26,9 @@ from synnefo import quotas
 from synnefo.api.util import release_resource
 from synnefo.util.mac2eui64 import mac2eui64
 from synnefo.logic import rapi
+from synnefo import volume
+from synnefo.plankton.backend import (OBJECT_AVAILABLE, OBJECT_UNAVAILABLE,
+                                      OBJECT_ERROR)
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -123,12 +126,15 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
 
     if opcode == "OP_INSTANCE_SNAPSHOT":
         for disk_id, disk_info in job_fields.get("disks", []):
-            snap_info = disk_info.get("snasphot_info", None)
-            if snap_info is not None:
-                snap_info = json.loads(snap_info)
-                snap_id = snap_info["snapshot_id"]
-                update_snapshot(snap_id, user_id=vm.userid, job_id=jobid,
+            snapshot_info = disk_info.get("snapshot_info", None)
+            if snapshot_info is not None:
+                snapshot_info = json.loads(snapshot_info)
+                snapshot_id = snapshot_info["snapshot_id"]
+                update_snapshot(snapshot_id, user_id=vm.userid, job_id=jobid,
                                 job_status=status, etime=etime)
+            else:
+                log.warning("Snapshot job '%s' for instance '%s' contains"
+                            " no info for the created snapshot.", jobid, vm)
         return
 
     vm.backendjobid = jobid
@@ -581,9 +587,27 @@ def adopt_instance_disk(server, gnt_disk):
     return vol
 
 
-def update_snapshot(snap_id, user_id, job_id, job_status, etime):
-    """Update a snapshot based on result of a Ganeti job."""
-    return
+def update_snapshot(snapshot_id, user_id, job_id, job_status, etime):
+    """Update a snapshot based on the result of the Ganeti job.
+
+    Update the status of the snapshot in the Pithos DB. This is required to
+    be performed by Cyclades, since Pithos has no way to know whether the
+    Ganeti job that will create the snapshot has been completed or not.
+
+    """
+    if job_status in rapi.JOB_STATUS_FINALIZED:
+        if (job_status == rapi.JOB_STATUS_SUCCESS):
+            state = OBJECT_AVAILABLE
+        else:
+            state = OBJECT_ERROR
+    else:
+        state = OBJECT_UNAVAILABLE
+        # Snapshot will already be in unavailable state. No need to update.
+        return
+
+    log.debug("Updating state of snapshot '%s' to '%s'", snapshot_id,
+              state)
+    volume.util.update_snapshot_state(snapshot_id, user_id, state=state)
 
 
 @transaction.commit_on_success

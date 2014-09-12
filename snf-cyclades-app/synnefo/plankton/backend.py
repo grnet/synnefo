@@ -46,7 +46,8 @@ from django.conf import settings
 from django.utils import importlib
 from django.utils.encoding import smart_unicode, smart_str
 from pithos.backends.base import (NotAllowedError, VersionNotExists,
-                                  QuotaError, LimitExceeded)
+                                  QuotaError, LimitExceeded,
+                                  MAP_AVAILABLE, MAP_UNAVAILABLE, MAP_ERROR)
 from pithos.backends.util import PithosBackendPool
 from snf_django.lib.api import faults
 
@@ -115,6 +116,20 @@ def handle_pithos_backend(func):
             backend.post_exec(commit)
         return ret
     return wrapper
+
+
+OBJECT_AVAILABLE = "AVAILABLE"
+OBJECT_UNAVAILABLE = "UNAVAILABLE"
+OBJECT_ERROR = "ERROR"
+OBJECT_DELETED = "DELETED"
+
+MAP_TO_OBJ_STATES = {
+    MAP_AVAILABLE: OBJECT_AVAILABLE,
+    MAP_UNAVAILABLE: OBJECT_UNAVAILABLE,
+    MAP_ERROR: OBJECT_ERROR
+}
+
+OBJ_TO_MAP_STATES = dict([(v, k) for k, v in MAP_TO_OBJ_STATES.items()])
 
 
 class PlanktonBackend(object):
@@ -486,6 +501,11 @@ class PlanktonBackend(object):
     def delete_snapshot(self, snapshot_uuid):
         self.backend.delete_by_uuid(self.user, snapshot_uuid)
 
+    @handle_pithos_backend
+    def update_snapshot_state(self, snapshot_id, state):
+        state = OBJ_TO_MAP_STATES[state]
+        self.backend.update_object_status(snapshot_id, state=state)
+
 
 def create_url(account, container, name):
     """Create a Pithos URL from the object info"""
@@ -523,7 +543,8 @@ def image_to_dict(location, metadata, permissions):
     image["is_snapshot"] = metadata["is_snapshot"]
     image["version"] = metadata["version"]
 
-    image["status"] = "AVAILABLE" if metadata.get("available") else "CREATING"
+    image["status"] = MAP_TO_OBJ_STATES.get(metadata.get("available"),
+                                            "UNKNOWN")
 
     # Permissions
     users = list(permissions.get("read", []))

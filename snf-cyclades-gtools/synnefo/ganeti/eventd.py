@@ -306,15 +306,24 @@ class JobFileHandler(pyinotify.ProcessEvent):
                           "disks": get_field(input, "disks"),
                           "beparams": get_field(input, "beparams")}
         elif op_id == "OP_INSTANCE_SNAPSHOT":
+            # Cyclades store the UUID of the snapshot as the 'reason' attribute
+            # of the Ganeti job in order to be able to update the status of
+            # the snapshot based on the result of the Ganeti job. Parse this
+            # attribute and include it in the msg.
+            # NOTE: This will fill the 'snapshot_info' attribute only for the
+            # first disk, but this is ok because Cyclades do not issue jobs to
+            # create snapshots of many disks.
             disks = get_field(input, "disks")
             if disks:
                 reason = get_field(input, "reason")
                 snapshot_info = None
-                if isinstance(reason, list) and len(reason) > 0:
+                try:
                     reason = reason[0]
-                    if reason[0] == "gnt:user":
-                        snapshot_info = reason[1]
-                disks[0][1]["snapshot_info"] = snapshot_info
+                    assert (reason[0] == "gnt:user")
+                    snapshot_info = reason[1]
+                    disks[0][1]["snapshot_info"] = snapshot_info
+                except:
+                    self.logger.warning("Malformed snapshot job '%s'", job_id)
                 job_fields = {"disks": disks}
 
         msg = {"type": "ganeti-op-status",

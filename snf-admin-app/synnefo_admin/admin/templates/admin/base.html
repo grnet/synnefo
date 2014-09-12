@@ -37,7 +37,6 @@
                     <a href="{% url admin-home %}" title="Homepage" class="navbar-brand home-icon"><img src="{{ BRANDING_IMAGE_MEDIA_URL }}cloudbar_home.png" alt="S" /></a>
                 </div>
 
-               
                 <div class="collapse navbar-collapse" id="navbar-collapse-1">
                     <ul class="nav navbar-nav navbar-left">
                         {% for view, view_dict in views.items %}
@@ -50,9 +49,7 @@
                             <span class="snf-angle-down arrow"></span></a>
                             <ul class="dropdown-menu align-left">
                                 <li {% block nav-stats %}{%  endblock %}><a href="{% url admin-stats %}">Stats</a></li>
-                                {% if ADMIN_ENABLE_CHARTS %}
                                 <li {% block nav-charts %}{%  endblock %}><a href="{% url admin-charts %}">Charts</a></li>
-                                {% endif %}
                             </ul>
                         </li>
                     </ul>

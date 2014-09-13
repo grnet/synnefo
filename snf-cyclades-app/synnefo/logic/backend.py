@@ -26,7 +26,6 @@ from synnefo import quotas
 from synnefo.api.util import release_resource
 from synnefo.util.mac2eui64 import mac2eui64
 from synnefo.logic import rapi
-from synnefo import volume
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -584,13 +583,7 @@ def adopt_instance_disk(server, gnt_disk):
 
 def update_snapshot(snap_id, user_id, job_id, job_status, etime):
     """Update a snapshot based on result of a Ganeti job."""
-    if job_status in rapi.JOB_STATUS_FINALIZED:
-        if (job_status == rapi.JOB_STATUS_SUCCESS):
-            status = "AVAILABLE"
-        else:
-            status = "ERROR"
-        log.debug("Updating status of snapshot '%s' to '%s'", snap_id, status)
-        volume.util.update_snapshot_status(snap_id, user_id, status=status)
+    return
 
 
 @transaction.commit_on_success

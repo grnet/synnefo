@@ -1765,17 +1765,6 @@ Disabling Admin
 The easiest way to disable the Admin Dashboard is to set the `ADMIN_ENABLED`
 setting to `False`.
 
-Enabling Charts
----------------
-
-In order to enable the "Charts" view in the "Reports" tab, you must set the
-`ADMIN_ENABLE_CHARTS` setting to `True`. The charting software that is used is
-Highcharts by HighSoft AS.
-
-Due to the licensing nature of Highcharts, charts are disabled by default. You
-can view the Highcharts license [#f1]_ and the accompanying FAQ [#f2]_, to
-decide whether to enable them or not.
-
 
 List of all Synnefo components
 ==============================
@@ -2845,9 +2834,3 @@ Changelog, NEWS
 * v0.14.2 :ref:`Changelog <Changelog-0.14.2>`, :ref:`NEWS <NEWS-0.14.2>`
 * v0.14 :ref:`Changelog <Changelog-0.14>`, :ref:`NEWS <NEWS-0.14>`
 * v0.13 :ref:`Changelog <Changelog-0.13>`, :ref:`NEWS <NEWS-0.13>`
-
-
-.. rubric:: Footnotes
-
-.. [#f1] www.highcharts.com/license, http://shop.highsoft.com/highcharts.html
-.. [#f2] http://shop.highsoft.com/highcharts.html, http://shop.highsoft.com/faq/non-commercial

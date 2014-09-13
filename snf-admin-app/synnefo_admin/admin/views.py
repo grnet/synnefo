@@ -143,7 +143,6 @@ def admin_user_required(func, permitted_groups=admin_settings.\
 default_dict = {
     'ADMIN_MEDIA_URL': admin_settings.ADMIN_MEDIA_URL,
     'UI_MEDIA_URL': UI_MEDIA_URL,
-    'ADMIN_ENABLE_CHARTS': admin_settings.ADMIN_ENABLE_CHARTS,
     'mail': {
         'sender': astakos_settings.SERVER_EMAIL,
         'subject': sample_subject,
@@ -193,10 +192,6 @@ def stats(request):
 @admin_user_required
 def charts(request):
     """Charts view."""
-    if not admin_settings.ADMIN_ENABLE_CHARTS:
-        raise AdminHttp404("The charting functionality has been disabled.\n"
-                           "For more information, please consult the Synnefo "
-                           "settings.")
     admin_log(request)
     return direct_to_template(request, "admin/charts.html",
                               extra_context=default_dict)

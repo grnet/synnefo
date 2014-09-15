@@ -103,7 +103,7 @@ and light gray font colors
 @mixin line-btn($color:$btn-line-bg, $padding:$default-btn-padding, $border:$btn-line-border ) {
 	@include default-btn($padding);
 	background-color: $color;
-	border-bottom: 2px solid $color; 
+	border-bottom: 2px solid $color;
 	color: $border;
 	&:hover,
     &:focus{
@@ -148,6 +148,42 @@ and light gray font colors
 	}
 }
 
+.search-btn {
+	@include line-btn();
+	position: relative;
+	top: -2px;
+	margin-left: 20px;
+	span {
+		padding: 7px;
+	}
+    cursor: pointer;
+}
+
+.search-mode-btn {
+	float: right;
+	line-height: 30px;
+	&:hover {
+		cursor: pointer;
+	}
+}
+
+.instructions .line-btn {
+    padding: 8px 9px;
+    span {
+        padding: 0 4px;
+    }
+    &:hover {
+        .arrow {
+        font-weight: bold;
+        }
+    }
+    &.open:hover {
+        border-bottom-color: transparent;
+    }
+    .arrow {
+        vertical-align: middle;
+    }
+}
 
 // ====== STUFF ====== //
 
@@ -198,12 +234,12 @@ body .custom-buttons {
 	.disabled {
 		display: none;
 	}
-    .snf-font-reload {
-        @extend .snf-refresh-outline;
-    }
-    .snf-font-remove {
-        @extend .snf-remove;
-    }
+	.snf-font-reload {
+		@extend .snf-refresh-outline;
+	}
+	.snf-font-remove {
+		@extend .snf-remove;
+	}
 }
 
 
@@ -212,7 +248,9 @@ body .custom-buttons {
 Extra-button is used to show total selected rows
 */
 
-.extra-btn {
+body .custom-buttons .extra-btn {
+    float: right;
+    margin-right: 0;
     span {
         display: inline-block;
     }
@@ -279,3 +317,81 @@ Extra-button is used to show total selected rows
 	vertical-align: middle;
     cursor: pointer;
 }
+
+/* Switch in filters */
+
+.onoffswitch {
+	display: inline-block;
+	float: right;
+    position: relative;
+    width: 134px;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select: none;
+}
+.onoffswitch-checkbox {
+    display: none;
+}
+.onoffswitch-label {
+    display: block;
+    overflow: hidden;
+    cursor: pointer;
+    /*border: 2px solid #F7EFEF;*/
+    border-radius: 20px;
+}
+.onoffswitch-inner {
+    display: block; width: 200%; margin-left: -100%;
+    -moz-transition: margin 0.3s ease-in 0s;
+    -webkit-transition: margin 0.3s ease-in 0s;
+    -o-transition: margin 0.3s ease-in 0s;
+    transition: margin 0.3s ease-in 0s;
+}
+.onoffswitch-inner:before, .onoffswitch-inner:after {
+    display: block;
+    float: left;
+    width: 50%;
+    height: 30px;
+    padding: 0;
+    line-height: 30px;
+    font-size: 12px;
+    color: white;
+    font-family: Trebuchet, Arial, sans-serif;
+    font-weight: normal;
+    -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box;
+}
+.onoffswitch-inner:before {
+    content: "Standard View";
+    padding-left: 10px;
+    background-color: $btn-line-bg;
+    color: $btn-line-border;
+}
+.onoffswitch-inner:after {
+    content: "Compact View";
+    padding-right: 10px;
+    background-color: $btn-line-bg;
+    color: $btn-line-border;
+    text-align: right;
+}
+.onoffswitch-switch {
+    display: block;
+    width: 19px;
+    margin: 6px;
+    background: $btn-line-border;
+    border: 2px solid #F7EFEF;
+    border-radius: 20px;
+    position: absolute;
+    top: 0;
+    bottom: 4px;
+    right: 103px;
+    -moz-transition: all 0.3s ease-in 0s;
+    -webkit-transition: all 0.3s ease-in 0s;
+    -o-transition: all 0.3s ease-in 0s;
+    transition: all 0.3s ease-in 0s;
+}
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-inner {
+    margin-left: 0;
+}
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-switch {
+    right: 0px;
+}
+

@@ -6,7 +6,9 @@ $ciel:                          #4d99d8;
 $blue-light:                    #B2CAE9;
 $blue-light-extra:              #AFC6D6;
 $blue-intense:                  #3C96E0;
-$gray-light-extra:              lighten($snf_gray-light, 20%);
+$gray-light-extra-1:            lighten($snf_gray-light, 20%);
+$gray-light-extra-2:            #dddddd;
+$gray-light-extra-3:            #f5f5f5; // whitesmoke
 $green-intense:                 #00a551;
 $green-intense-extra:           darken($green-intense, 10%);
 $red-intense:                   #E42A48;

@@ -263,8 +263,10 @@ class ImagesTestSuite(BurninTests):
         """Clean up"""
         if cls.temp_image_name is not None:
             try:
-                cls.clients.pithos.container = "burnin-images"
-                cls.clients.pithos.del_object(cls.temp_image_name)
+                for container in ["burnin-images", "burnin-images-backup"]:
+                    cls.clients.pithos.container = container
+                    cls.clients.pithos.del_object(cls.temp_image_name)
+                    cls.clients.pithos.purge_container(container)
             except ClientError:
                 pass
 

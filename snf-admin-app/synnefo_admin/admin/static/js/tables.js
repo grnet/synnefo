@@ -5,40 +5,10 @@ $(document).ready(function() {
 		var $actionbar = $('.actionbar');
 
 	if($actionbar.length > 0) {
-		var $infoBlock = $('.info-block'),
-			infoBlockMarg = $infoBlock.css('marginRight'),
-			actionbarTop = $actionbar.offset().top,
-			actionBarWidth = $actionbar.outerWidth(true),
-			$win = $(window),
-			isFixed = 0,
-			navHeight = $('.main-nav').outerHeight(true),
-			filtersHeight = $('.filters').outerHeight();
-
-		function processScroll() {
-			var i, scrollTop = $win.scrollTop();
-            var bigWin = $win.width() > 1200;
-			if(scrollTop >= navHeight+filtersHeight && !isFixed && bigWin) {
-				isFixed = 1;
-				$actionbar.addClass('fixed');
-				$actionbar.css('top', navHeight);
-				if(!$infoBlock.hasClass('.fixed-arround')) {
-					$infoBlock.addClass('fixed-arround');
-					$infoBlock.css('marginLeft', actionBarWidth);
-				}
-			}
-			else if(scrollTop <= navHeight+filtersHeight && isFixed){
-				isFixed = 0;
-				$actionbar.removeClass('fixed');
-				if($infoBlock.hasClass('fixed-arround')) {
-					$infoBlock.removeClass('fixed-arround');
-					$infoBlock.css('marginLeft', infoBlockMarg);
-				}
-			}
-		}
-
-        sticker(); 
-		//processScroll();
-		//$win.on('scroll', processScroll);
+        sticker();
+	}
+	else {
+		$('.compact-view').addClass('no-margin-left');
 	}
 
 	var $lastClicked = null;
@@ -88,8 +58,9 @@ $(document).ready(function() {
 	var tableSelectedDomID = '#table-items-selected'
 	var tableMassiveDomID = '#total-list'
 	table = $(tableDomID).DataTable({
-        "autoWidth": false,
+		"autoWidth": false,
 		"paging": true,
+		"searching": false,
 		// "stateSave": true,
 		"processing": true,
 		"serverSide": serverside,
@@ -99,7 +70,7 @@ $(document).ready(function() {
 
 				var prefix = 'sSearch_';
 
-				if(!$.isEmptyObject(filters)) {
+				if(!_.isEmpty(filters)) {
 					for (var prop in filters) {
 						data[prefix+prop] = filters[prop];
 					}
@@ -179,7 +150,6 @@ $(document).ready(function() {
 	});
 	$('.notify').on('click', '.clear-reload', function(e) {
 		e.preventDefault();
-		console.log('hi')
 		resetAll(tableDomID);
 		$(tableDomID).dataTable().api().ajax.reload();
 
@@ -189,7 +159,7 @@ $(document).ready(function() {
 	function isSelected() {
 		var tableLength = table.rows()[0].length;
 		var selectedL = selected.items.length;
-		if(selectedL !== 0 && tableLength !== 0) { // ***
+		if(selectedL !== 0 && tableLength !== 0) {
 			var dataLength = table.row(0).data().length
 			var extraIndex = dataLength - 1;
 			for(var j = 0; j<tableLength; j++) { // index of rows start from zero
@@ -235,7 +205,7 @@ $(document).ready(function() {
 							var rowL = rowsArray.length;
 							var extraCol = rowsArray[0].length; //last column
 							for (var i=0; i<rowL; i++) {
-								rowsArray[i][extraCol] = response.extra[i] // ***
+								rowsArray[i][extraCol] = response.extra[i];
 							}
 						}
 						return response.aaData;
@@ -748,12 +718,12 @@ $(document).ready(function() {
 		var noError = true;
 		var itemsNum = $modal.find('tbody tr').length;
 		if(selected.items.length === 0) {
-			e.stopPropagation();
 			snf.modals.showError($modal, 'no-selected');
 			noError = false;
 		}
 		if($modal.attr('data-type') === 'contact') {
-			noError = snf.modals.validateContactForm($modal);
+			var validForm = snf.modals.validateContactForm($modal);
+			noError = noError && validForm;
 		}
 		if(!noError) {
 			e.preventDefault();
@@ -855,8 +825,8 @@ $(document).ready(function() {
 		}
 		$tableBody.append(htmlRows); // should change
 		$actionBtn.attr('data-ids','['+idsArray+']');
-		updateCounter($counter, idsArray.length); // ***
-		
+		updateCounter($counter, idsArray.length);
+
 		if(idsArray.length >= maxVisible) {
 			$btn.css('display', 'block');
 		}
@@ -905,6 +875,12 @@ $(document).ready(function() {
 	 /* Filters */
 
 	var filters = {};
+	$('.filter:not(.hidden)').first().find('input').focus();
+
+	//var filtersHeightTotal = $('.filters').css('height');
+	$('.filters').css('min-height', '60px');
+
+	/* Standard View Functionality */
 
 	function dropdownSelect(filterEl) {
 		var $dropdownList = $(filterEl).find('.choices');
@@ -999,7 +975,7 @@ $(document).ready(function() {
 			}
 		}
 		else {
-			if(filters[key].lenght === 1) {
+			if(filters[key].lenght === 1) { // to be checked
 				delete filters[key];
 			}
 			else {
@@ -1015,7 +991,7 @@ $(document).ready(function() {
 
 		$input.keyup(function(e) {
 			// if enter or space is pressed do nothing
-			if(e.which !== '32' && e.which !== '13') {
+			if(e.which !== 32 && e.which !== 13) {
 				var key, value;
 				key = $(this).data('filter');
 				value = $.trim($(this).val());
@@ -1024,7 +1000,6 @@ $(document).ready(function() {
 				if (filters[key] === '') {
 					delete filters[key];
 				}
-
 				if(snf.timer === 0) {
 					snf.timer = 1;
 					setTimeout(function() {
@@ -1038,5 +1013,305 @@ $(document).ready(function() {
 
 	textFilter('.filter-text');
 	dropdownSelect('.filters .filter-dropdown .dropdown');
-});
 
+
+	/* Change Filters' View */
+
+	$('.search-mode input').click(function(e) {
+		e.stopPropagation();
+		var $visFilters = $(this).closest('.search-mode').siblings('.filter:not(invisible)');
+		var $invisFilters = $(this).closest('.search-mode').siblings('.filter.invisible');
+
+		$visFilters.addClass('invisible').hide();
+		if($invisFilters.hasClass('compact-view')) {
+			$invisFilters.fadeIn(300).css('display', 'inline');
+		}
+		else {
+			$invisFilters.fadeIn(300).css('display', 'inline-block');
+		}
+		$invisFilters.each(function() {
+			$(this).removeClass('invisible');
+		});
+		$(this).closest('.search-mode').siblings('.filter:not(.invisible)').first().find('input').focus();
+		if(!$('.compact-view').hasClass('invisible')) {
+			standardToCompact();
+		}
+	});
+
+	/* Tranfer the search terms of standard view to compact view */
+	function standardToCompact() {
+		var $advFilt = $('.filters').find('input[data-filter=compact-view]');
+		var updated = true;
+		hideFilterError();
+		$advFilt.val(filtersToString());
+	};
+
+	function filtersToString() {
+		var text = '';
+		var newTerm;
+		for(var prop in filters) {
+			if(filtersInfo[prop] === 'text') {
+				newTerm = prop + ': ' + filters[prop];
+				if(text.length == 0) {
+					text = newTerm;
+				}
+				else {
+					text = text + ' ' + newTerm;
+				}
+			}
+			else {
+				newTerm = prop + ': ' + filters[prop].toString();
+				if(text.length === 0) {
+					text = newTerm;
+				}
+				else {
+					text = text + ' ' + newTerm;
+				}
+			}
+		}
+
+		return text;
+	};
+	/* Compact View Functionality */
+
+	$('.filters .compact-view').keyup(function(e) {
+		if(e.which === 13) {
+			$('.exec-search').trigger('click');
+		}
+	});
+
+	$('.filters .toggle-instructions').click(function (e) {
+		e.preventDefault();
+		var that = this;
+		$(this).find('.arrow').toggleClass('snf-angle-up snf-angle-down');
+		if(!$(this).hasClass('open')) {
+			$(this).addClass('open')
+		}
+		$(this).siblings('.content').stop().slideToggle(function() {
+			if($(that).hasClass('open') && $(this).css('display') === 'none') {
+				$(that).removeClass('open');
+			}
+		});
+	})
+
+	var filtersInfo = {};
+	var tempFilters = {};
+	var filtersResetValue = {};
+	var filtersValidValues = {};
+
+	/* Extract keys and values for filtersInfo, filtersResetValue, filtersValidValues the standard view */
+	$('.filters').find('.filter:not(.compact-view)').each(function(index) {
+		var key = $(this).find('*[data-filter]').attr('data-filter');
+		var type; // possible values: 'singe-choice', 'multi-choice', 'text'
+		var resetValue;
+		if($(this).find('*[data-filter]').hasClass('dropdown')) {
+			type = ($(this).closest('.filter-dropdown').hasClass('filter-boolean')? 'single-choice' : 'multi-choice');
+			resetValue = $(this).find('li.reset').text().toUpperCase();
+			filtersResetValue[key] = resetValue;
+			filtersValidValues[key] = [];
+			$(this).find('li:not(.divider)').each(function() {
+				filtersValidValues[key].push($(this).text().toUpperCase());
+			});
+		}
+		else {
+			type = 'text';
+		}
+		filtersInfo[key] = type;
+	});
+
+	$('.exec-search').click(function(e) {
+		e.preventDefault();
+		tempFilters = {};
+		var text = $(this).siblings('.form-group').find('input').val().trim();
+		hideFilterError();
+		if(text.length > 0) {
+			var terms = text.split(' ');
+			var key = 'unknown', value;
+			var termsL = terms.length;
+			var keyIndex;
+			var lastkey;
+			var filterType;
+			var isKey = false;
+			for(var i=0; i<termsL; i++) {
+				terms[i] = terms[i].trim();
+				for(var prop in filtersInfo) {
+					if(terms[i].substring(0, prop.length+1).toUpperCase() === prop.toUpperCase() + ':') {
+						key = prop;
+						value = terms[i].substring(prop.length + 1).trim();
+						isKey = true;
+						break;
+					}
+				}
+				if(!isKey) {
+					value = terms[i];
+				}
+
+				if(!tempFilters[key]) {
+					tempFilters[key] = value;
+				}
+				else if(value.length > 0) {
+					tempFilters[key] = tempFilters[key] + ' ' + value;
+				}
+				isKey = false;
+			}
+		}
+
+		if(!_.isEmpty(tempFilters)) {
+			for(var filter in tempFilters) {
+				for(var prop in filtersInfo) {
+					if(prop === filter && (filtersInfo[prop] === 'single-choice' || filtersInfo[prop] === 'multi-choice')) {
+						tempFilters[filter] = tempFilters[filter].replace(/\s*,\s*/g ,',').split(',');
+						break;
+					}
+				}
+			}
+		}
+		compactToStandard();
+	});
+
+	function compactToStandard() {
+		var $filters = $('.filters');
+		var $choicesLi;
+		var valuesL;
+		var validValues = [];
+		var valid = true;
+		var temp;
+		if(_.isEmpty(tempFilters) && !_.isEmpty(filters)) {
+			filters = {};
+			$(tableDomID).dataTable().api().ajax.reload();
+		}
+		else {
+			if(tempFilters['unknown']) {
+				showFilterError(tempFilters['unknown']);
+				valid = false;
+			}
+			for(var prop in tempFilters) {
+				if(prop !== 'unknown') {
+					temp = checkValues(prop);
+					if(valid) {
+						valid = temp;
+					}
+				}
+			}
+		}
+		// execution
+		if(valid) {
+			resetBasicFilters();
+			execFiltering();
+		}
+	};
+
+	function checkValues(key) {
+		var wrongTerm;
+		var isWrong = false;
+		if(filtersInfo[key] === 'text') {
+			if(tempFilters[key] === '') {
+				isWrong = true;
+			}
+		}
+		else if(!isWrong) {
+			var valuesUpperCased = $.map(tempFilters[key], function(item, index) {
+				return item.toUpperCase();
+			});
+			var valuesL = valuesUpperCased.length;
+			for(var i=0; i<valuesL; i++) {
+				if(filtersValidValues[key].indexOf(valuesUpperCased[i]) === -1) {
+					isWrong = true;
+					break;
+				}
+			}
+			if(!isWrong) {
+				if(valuesUpperCased.indexOf(filtersResetValue[key])!==-1 && tempFilters[key].length>1) {
+					isWrong = true;
+				}
+				else if(filtersInfo[key] === 'single-choice' && tempFilters[key].length > 1) {
+					isWrong = true;
+				}
+			}
+		}
+		if(isWrong) {
+			wrongTerm = key + ': ' + tempFilters[key].toString();
+			showFilterError(wrongTerm);
+			delete tempFilters[key];
+		}
+		return !isWrong;
+	};
+
+	function execFiltering() {
+		var $choicesLi, valuesL;
+		var $filters = $('.filters')
+		for(var prop in tempFilters) {
+			if(prop !== 'unknown') {
+				if(filtersInfo[prop] === 'text'){
+					$filters.find('input[data-filter="' + prop + '"]').val(tempFilters[prop]);
+					$filters.find('input[data-filter="' + prop + '"]').trigger('keyup');
+				}
+				else {
+					$choicesLi = $filters.find('*[data-filter="' + prop + '"] .choices').find('li');
+					valuesL = tempFilters[prop].length;
+					for(var i=0; i<valuesL; i++) { // for each filter
+						$choicesLi.each(function() {
+							if(tempFilters[prop][i].toUpperCase() === $(this).text().toUpperCase()) {
+								if(!$(this).hasClass('active'))	{
+									$(this).find('a').trigger('click');
+								}
+							}
+						});
+					}
+				}
+			}
+		}
+	};
+
+	function showFilterError(wrongTerm) {
+		var msg, addition, prevMsg;
+		$errorDescr = $('.compact-view').find('.error-description');
+		$errorSign = $('.compact-view').find('.error-sign');
+		if($errorDescr.text() === '') {
+			msg = 'Invalid search: "' + wrongTerm + '" is not valid.';
+		}
+		else {
+			prevMsg = $errorDescr.text();
+			addition =  ', "' + wrongTerm + '" are not valid.';
+			msg = prevMsg.replace('term:', 'terms:');
+			msg = msg.replace(' are not valid.', addition);
+			msg = msg.replace(' is not valid.', addition);
+		}
+		$errorDescr.text(msg);
+		$errorSign.css('opacity', 1)
+	};
+
+	function hideFilterError() {
+		$('.compact-view').find('.error-sign').css('opacity', 0);
+		$('.compact-view').find('.error-description').text('');
+	};
+
+	function resetBasicFilters() {
+		$('.filters .filter-dropdown:not(.filter-boolean) li:not(.reset)').each(function() {
+			if($(this).hasClass('active')) {
+				$(this).find('a').trigger('click');
+			}
+		});
+		$('.filters .filter-dropdown:not(.filter-boolean) li.reset').each(function() {
+			if(!$(this).hasClass('active')) {
+				$(this).find('a').trigger('click');
+			}
+		});
+
+		$('.filters .filter-dropdown.filter-boolean li.reset').each(function() {
+			if(!$(this).hasClass('active')) {
+				$(this).find('a').trigger('click');
+			}
+		});
+
+		$('.filters .filter-text').find('input').each(function() {
+			if($(this).val().length !== 0) {
+				$(this).val('');
+				$(this).trigger('keyup')
+			}
+		});
+	};
+
+
+
+});

@@ -20,9 +20,13 @@ Astakos Client utility module
 from httplib import HTTPConnection, HTTPSConnection
 from contextlib import closing
 
-import simplejson
 from objpool.http import PooledHTTPConnection
 from astakosclient.errors import AstakosClientException, BadValue
+
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 
 def retry_dec(func):
@@ -81,7 +85,7 @@ def scheme_to_class(scheme, use_pool, pool_size):
 def parse_request(request, logger):
     """Parse request with simplejson to convert it to string"""
     try:
-        return simplejson.dumps(request)
+        return json.dumps(request)
     except Exception as err:
         msg = "Cannot parse request \"%s\" with simplejson: %s" \
               % (request, str(err))

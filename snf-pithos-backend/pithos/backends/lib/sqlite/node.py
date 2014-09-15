@@ -19,6 +19,7 @@ from itertools import groupby
 
 from dbworker import DBWorker
 
+from pithos.backends.base import MAP_AVAILABLE
 from pithos.backends.filter import parse_filters
 
 
@@ -133,7 +134,7 @@ class Node(DBWorker):
                             uuid       text    not null default '',
                             checksum   text    not null default '',
                             cluster    integer not null default 0,
-                            available   boolean not null default true,
+                            available   integer not null default 1,
                             map_check_timestamp integer,
                             mapfile     text,
                             is_snapshot   boolean not null default false,
@@ -573,7 +574,7 @@ class Node(DBWorker):
     def version_create(self, node, hash, size, type, source, muser, uuid,
                        checksum, cluster=0,
                        update_statistics_ancestors_depth=None,
-                       available=True, map_check_timestamp=None,
+                       available=MAP_AVAILABLE, map_check_timestamp=None,
                        mapfile=True, is_snapshot=False):
         """Create a new version from the given properties.
            Return the (serial, mtime, mapfile) of the new version.

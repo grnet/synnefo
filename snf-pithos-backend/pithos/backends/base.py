@@ -18,6 +18,7 @@ DEFAULT_ACCOUNT_QUOTA = 0  # No quota.
 DEFAULT_CONTAINER_QUOTA = 0  # No quota.
 DEFAULT_CONTAINER_VERSIONING = 'auto'
 
+(MAP_ERROR, MAP_UNAVAILABLE, MAP_AVAILABLE) = range(-1, 2)
 
 class NotAllowedError(Exception):
     pass
@@ -70,6 +71,9 @@ class InvalidPolicy(ValueError):
 class LimitExceeded(Exception):
     pass
 
+
+class BrokenSnapshot(Exception):
+    pass
 
 class BaseBackend(object):
     """Abstract backend class.

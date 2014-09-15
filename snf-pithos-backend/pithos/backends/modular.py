@@ -40,7 +40,8 @@ from pithos.backends.base import (
     BaseBackend, AccountExists, ContainerExists, AccountNotEmpty,
     ContainerNotEmpty, ItemNotExists, VersionNotExists,
     InvalidHash, IllegalOperationError, InconsistentContentSize,
-    LimitExceeded, InvalidPolicy)
+    LimitExceeded, InvalidPolicy, BrokenSnapshot,
+    MAP_ERROR, MAP_UNAVAILABLE, MAP_AVAILABLE)
 
 
 class DisabledAstakosClient(object):
@@ -1024,7 +1025,7 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version)
         if version is None:
-            if not props[self.AVAILABLE]:
+            if props[self.AVAILABLE] == MAP_UNAVAILABLE:
                 try:
                     self._update_available(props)
                 except IllegalOperationError:
@@ -1196,7 +1197,10 @@ class ModularBackend(BaseBackend):
     def _update_available(self, props):
         """Checks if the object map exists and updates the database"""
 
-        if not props[self.AVAILABLE]:
+        if props[self.AVAILABLE] == MAP_ERROR:
+            raise BrokenSnapshot('This Archipelago volume is broken.')
+
+        if props[self.AVAILABLE] == MAP_UNAVAILABLE:
             if props[self.MAP_CHECK_TIMESTAMP]:
                 elapsed_time = time() - float(props[self.MAP_CHECK_TIMESTAMP])
                 if elapsed_time < self.map_check_interval:
@@ -1217,7 +1221,7 @@ class ModularBackend(BaseBackend):
                 'Unable to retrieve Archipelago volume hashmap')
         else:  # map exists
             self.node.version_put_property(props[self.SERIAL],
-                                           'available', True)
+                                           'available', MAP_AVAILABLE)
             self.node.version_put_property(props[self.SERIAL],
                                            'map_check_timestamp', time())
             return hashmap
@@ -1263,8 +1267,9 @@ class ModularBackend(BaseBackend):
                             hash, checksum, domain, meta, replace_meta,
                             permissions, src_node=None, src_version_id=None,
                             is_copy=False, report_size_change=True,
-                            available=True, keep_available=False,
+                            available=None, keep_available=False,
                             force_mapfile=None, is_snapshot=False):
+        available = available if available is not None else MAP_AVAILABLE
         if permissions is not None and user != account:
             raise NotAllowedError
         self._can_write_object(user, account, container, name)
@@ -1389,10 +1394,23 @@ class ModularBackend(BaseBackend):
             self.lock_container_path = False
         dest_version_id, _, mapfile = self._update_object_hash(
             user, account, container, name, size, type, mapfile, checksum,
-            domain, meta, replace_meta, permissions, available=False,
+            domain, meta, replace_meta, permissions, available=MAP_UNAVAILABLE,
             force_mapfile=mapfile, is_snapshot=True)
         return self.node.version_get_properties(dest_version_id,
                                                 keys=('uuid',))[0]
+
+    @debug_method
+    @backend_method
+    def update_object_status(self, uuid, state):
+        assert state in (MAP_ERROR,
+                         MAP_UNAVAILABLE,
+                         MAP_AVAILABLE), 'Invalid mapfile state'
+        uuid_ = self._validate_uuid(uuid)
+        info = self.node.latest_uuid(uuid_, CLUSTER_NORMAL)
+        if info is None:
+            raise NameError('No object found for this UUID.')
+        _, serial = info
+        self.node.version_put_property(serial, 'available', state)
 
     @debug_method
     def update_object_hashmap(self, user, account, container, name, size, type,
@@ -1525,7 +1543,7 @@ class ModularBackend(BaseBackend):
         is_copy = not is_move and (src_account, src_container, src_name) != (
             dest_account, dest_container, dest_name)  # New uuid.
 
-        if is_copy and not props[self.AVAILABLE]:
+        if is_copy and props[self.AVAILABLE] != MAP_AVAILABLE:
             raise NotAllowedError('Copying objects not available in the '
                                   'storage backend is forbidden.')
 
@@ -1585,7 +1603,7 @@ class ModularBackend(BaseBackend):
                     delimiter) else dest_name
                 vdest_name = path.replace(prefix, dest_prefix, 1)
 
-                if is_copy and not prop[self.AVAILABLE]:
+                if is_copy and prop[self.AVAILABLE] != MAP_AVAILABLE:
                     raise NotAllowedError('Copying objects not available in '
                                           'the storage backend is forbidden.')
 
@@ -2004,7 +2022,7 @@ class ModularBackend(BaseBackend):
                                type=None, hash=None, checksum=None,
                                cluster=CLUSTER_NORMAL, is_copy=False,
                                update_statistics_ancestors_depth=None,
-                               available=True, keep_available=True,
+                               available=None, keep_available=True,
                                keep_src_mapfile=False,
                                force_mapfile=None,
                                is_snapshot=False):
@@ -2021,7 +2039,7 @@ class ModularBackend(BaseBackend):
 
         :raises ValueError: if it failed to create the new version
         """
-
+        available = available if available is not None else MAP_AVAILABLE
         props = self.node.version_lookup(
             node if src_node is None else src_node, inf, CLUSTER_NORMAL,
             keys=_propnames)
@@ -2478,11 +2496,11 @@ class ModularBackend(BaseBackend):
 
     def _build_metadata(self, props, user_defined=None,
                         include_user_defined=True):
-        if not props[self.AVAILABLE]:
+        if props[self.AVAILABLE] == MAP_UNAVAILABLE:
             try:
                 self._update_available(props)
             except IllegalOperationError:
-                available = False
+                available = MAP_UNAVAILABLE
             else:
                 available = self.node.version_get_properties(
                     props[self.SERIAL], keys=('available',))[0]

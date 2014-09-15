@@ -28,6 +28,7 @@ from sqlalchemy.exc import NoSuchTableError, IntegrityError
 
 from dbworker import DBWorker, ESCAPE_CHAR
 
+from pithos.backends.base import MAP_AVAILABLE
 from pithos.backends.filter import parse_filters
 
 DEFAULT_DISKSPACE_RESOURCE = 'pithos.diskspace'
@@ -137,7 +138,7 @@ def create_tables(engine):
     columns.append(Column('uuid', String(64), nullable=False, default=''))
     columns.append(Column('checksum', String(256), nullable=False, default=''))
     columns.append(Column('cluster', Integer, nullable=False, default=0))
-    columns.append(Column('available', Boolean, nullable=False, default=True))
+    columns.append(Column('available', Integer, nullable=False, default=1))
     columns.append(Column('map_check_timestamp', DECIMAL(precision=16,
                                                          scale=6)))
     columns.append(Column('mapfile', String(256)))
@@ -811,7 +812,7 @@ class Node(DBWorker):
     def version_create(self, node, hash, size, type, source, muser, uuid,
                        checksum, cluster=0,
                        update_statistics_ancestors_depth=None,
-                       available=True, map_check_timestamp=None,
+                       available=MAP_AVAILABLE, map_check_timestamp=None,
                        mapfile=None, is_snapshot=False):
         """Create a new version from the given properties.
            Return the (serial, mtime, mapfile) of the new version.

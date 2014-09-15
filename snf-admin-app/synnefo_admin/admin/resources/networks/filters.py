@@ -64,7 +64,7 @@ class NetworkFilterSet(django_filters.FilterSet):
     This filter collection is based on django-filter's FilterSet.
     """
 
-    network = django_filters.CharFilter(label='Network', action=filter_network)
+    net = django_filters.CharFilter(label='Network', action=filter_network)
     user = django_filters.CharFilter(label='OF User', action=filter_user)
     vm = django_filters.CharFilter(label='HAS VM', action=filter_vm)
     ip = django_filters.CharFilter(label='HAS IP', action=filter_ip)
@@ -74,5 +74,5 @@ class NetworkFilterSet(django_filters.FilterSet):
 
     class Meta:
         model = Network
-        fields = ('network', 'state', 'public', 'drained', 'user', 'vm', 'ip',
+        fields = ('net', 'state', 'public', 'drained', 'user', 'vm', 'ip',
                   'proj')

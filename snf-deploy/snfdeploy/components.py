@@ -1569,8 +1569,11 @@ class Admin(base.Component):
         return []
 
     def _configure(self):
+        r1 = {
+            "ADMIN": self.ctx.admin.cname,
+        }
         return [
-            ("/etc/synnefo/admin.conf", {}, {})
+            ("/etc/synnefo/admin.conf", r1, {})
             ]
 
     @base.run_cmds

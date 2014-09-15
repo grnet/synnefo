@@ -2,9 +2,12 @@
 
 {% block content %}
 
-    {% block filter-list %}
-        {% include "admin/filter_list.html" %}
-    {% endblock filter-list %}
+    {# Show the filter list only in views that have filters #}
+    {% if filter_dict %}
+        {% block filter-list %}
+            {% include "admin/filter_list.html" %}
+        {% endblock filter-list %}
+    {% endif %}
 
     {% block action-list %}
         {% include "admin/action_list_vertical.html" %}

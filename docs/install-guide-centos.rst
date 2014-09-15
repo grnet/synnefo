@@ -342,7 +342,7 @@ To install Archipelago, run:
 
 .. code-block:: console
 
-   # apt-get install archipelago
+   # yum install archipelago
 
 
 Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
@@ -1046,7 +1046,7 @@ To install Archipelago, run:
 
 .. code-block:: console
 
-   # apt-get install archipelago
+   # yum install archipelago
 
 
 Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
@@ -2532,7 +2532,7 @@ package by running on node1 the following command:
 
 .. code-block:: console
 
-   # apt-get install snf-admin-app
+   # yum install snf-admin-app
 
 Once the package is installed, we must configure the ``ADMIN_BASE_URL``
 setting. This setting is located in the ``20-snf-admin-app-general.conf``

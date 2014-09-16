@@ -1228,6 +1228,23 @@ like this:
      ),
     }
 
+
+As of version 0.16 Pithos is backed by Archipelago. Pithos integrates with
+Archipelago via a shared memory segment that is used to communicate with the
+various Archipelago components. For more information regarding the Archipelago
+internal architecture consult with the `Archipelago administrator's guide
+<https://www.synnefo.org/docs/archipelago/latest/admin-guide.html>`_
+
+At the moment, Archipelago runs with root permissions. To enable Pithos
+integration with Archipelago, the Pithos gunicorn process needs elevated
+permissions too. Otherwise, Pithos will fail to join the shared memory segment.
+So, the default  ``www-data`` user/group configuration of the gunicorn worker
+will not work. You should change the corresponding values on
+``/etc/gunicorn.d/synnefo`` to ``root``.
+
+Please note that the above limitation will be lifted on the next version of
+Archipelago.
+
 Stamp Database Revision
 -----------------------
 
@@ -2153,6 +2170,17 @@ Both files should be readable by the `vncauthproxy` user or group.
     Cyclades worker.
 
 We have now finished with the basic Cyclades configuration.
+
+Gunicorn worker
+---------------
+
+Cyclades uses Pithos backend library to access and store system and
+user-provided images and snapshots. As stated on the Pithos gunicorn
+configuration, currently the gunicorn worker that integrates with Pithos and as
+a result with Archipelago must run as ``root``. You must change the default
+``www-data`` user/group configuration of the gunicorn worker config to ``root``.
+The config file should be located at ``/etc/gunicorn.d/synnefo``.
+
 
 Database Initialization
 -----------------------

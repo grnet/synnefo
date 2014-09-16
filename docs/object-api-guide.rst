@@ -95,27 +95,13 @@ Revision                   Description
 Pithos Users and Authentication
 -------------------------------
 
-In Pithos, each user is uniquely identified by a token. All API requests require a token and each token is internally resolved to an account string. The API uses the account string to identify the user's own files, thus whether a request is local or cross-account.
+In Pithos, all API requests require a token and each token is internally resolved to an account identifier. The API uses the account identifier to decide the files the user is eligible to access.
 
-Pithos does not keep a user database. For development and testing purposes, user identifiers and their corresponding tokens can be defined in the settings file. However, Pithos is designed with an external authentication service in mind. This service must handle the details of validating user credentials and communicate with Pithos via a middleware software component that, given a token, fills in the internal request account variable.
+Pithos is designed with an external authentication service in mind. This service must handle the details of validating user credentials and communicate with Pithos via a middleware software component that, given a token, fills in the internal request account variable.
 
-Client software using Pithos, if not already knowing a user's identifier and token, should forward to the ``/login`` URI. The Pithos server, depending on its configuration will redirect to the appropriate login page.
+Client software using Pithos, if not already knowing a user's identifier and authentication token, should forward to the appropriate login service.
 
-The login URI accepts the following parameters:
-
-======================  =========================
-Request Parameter Name  Value
-======================  =========================
-next                    The URI to redirect to when the process is finished
-renew                   Force token renewal (no value parameter)
-force                   Force logout current user (no value parameter)
-======================  =========================
-
-When done with logging in, the service's login URI should redirect to the URI provided with ``next``, adding the ``token`` parameters which contains authentication token.
-
-If ``next`` request parameter is missing the call fails with BadRequest (400) response status.
-
-A user management service that implements a login API call according to these conventions is `Astakos <astakos.html>`_, by GRNET.
+Such a login API call following to above conventions is the `Weblogin <weblogin-api-guide.html>`_, implemented inside `Astakos <astakos.html>`_.
 
 User feedback
 -------------
@@ -463,12 +449,12 @@ No reply content/headers.
 The operation will overwrite all user defined metadata, except if ``update`` is defined.
 To create a group, include an ``X-Account-Group-*`` header with the name in the key and a comma separated list of user identifiers in the value. If no ``X-Account-Group-*`` header is present, no changes will be applied to groups. The ``update`` parameter also applies to groups. To delete a specific group, use ``update`` and an empty header value.
 
-================  ===============================
-Return Code       Description
-================  ===============================
-202 (Accepted)    The request has been accepted
-400 (Bad Request) The metadata exceed in number the allowed account metadata or the groups exceed in number the allowed groups or the group members exceed in number the allowed group members
-================  ===============================
+=================  ===============================
+Return Code        Description
+=================  ===============================
+202 (Accepted)     The request has been accepted
+400 (Bad Request)  The metadata exceed in number the allowed account metadata or the groups exceed in number the allowed groups or the group members exceed in number the allowed group members
+=================  ===============================
 
 
 Container Level

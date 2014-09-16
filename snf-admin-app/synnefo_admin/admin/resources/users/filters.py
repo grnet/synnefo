@@ -140,13 +140,10 @@ class UserFilterSet(django_filters.FilterSet):
 
     user = django_filters.CharFilter(label='User', action=filter_user)
     vm = django_filters.CharFilter(label='HAS VM', action=filter_vm)
-    volume = django_filters.CharFilter(label='HAS Volume',
-                                       action=filter_volume)
-    network = django_filters.CharFilter(label='HAS Network',
-                                        action=filter_network)
+    vol = django_filters.CharFilter(label='HAS Volume', action=filter_volume)
+    net = django_filters.CharFilter(label='HAS Network', action=filter_network)
     ip = django_filters.CharFilter(label='HAS IP', action=filter_ip)
-    proj = django_filters.CharFilter(label='IN Project',
-                                     action=filter_project)
+    proj = django_filters.CharFilter(label='IN Project', action=filter_project)
     status = django_filters.MultipleChoiceFilter(
         label='Status', action=filter_status, choices=choice2query.keys())
     groups = django_filters.MultipleChoiceFilter(
@@ -161,5 +158,4 @@ class UserFilterSet(django_filters.FilterSet):
     class Meta:
         model = AstakosUser
         fields = ('user', 'status', 'groups', 'has_auth_providers',
-                  'has_not_auth_providers', 'vm', 'volume', 'network', 'ip',
-                  'proj')
+                  'has_not_auth_providers', 'vm', 'vol', 'net', 'ip', 'proj')

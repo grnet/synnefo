@@ -203,11 +203,8 @@ def get_details_template(type):
 
 
 @register.filter
-def get_filter_template(filter):
-    """Get the correct flter template according to the filter type.
-
-    This only works for filters that are instances of django-filter's Filter.
-    """
+def get_filter_type(filter):
+    """Get the flter type according to the filter class."""
     if isinstance(filter, django_filters.NumberFilter):
         type = "number"
     elif isinstance(filter, django_filters.CharFilter):
@@ -220,8 +217,24 @@ def get_filter_template(filter):
         type = "multichoice"
     else:
         raise Exception("Unknown filter type: %s", filter)
+    return type
+
+
+@register.filter
+def get_filter_template(filter):
+    """Get the correct flter template according to the filter type.
+
+    This only works for filters that are instances of django-filter's Filter.
+    """
+    type = get_filter_type(filter)
     template = 'admin/filter_' + type + '.html'
     return template
+
+
+@register.filter
+def choices(filter):
+    """Return an iterator with the available choices for a filter."""
+    return [choice for choice, _ in filter.field.choices]
 
 
 @register.filter
@@ -399,7 +412,7 @@ def label_to_icon(filter_name, filter_label):
     if icon_cls:
         label = '<span class="%s"></span>' % icon_cls
     else:
-        label = filter_label
+        label = filter_label + ":"
     return label
 
 

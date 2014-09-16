@@ -116,11 +116,10 @@ class ProjectFilterSet(django_filters.FilterSet):
     This filter collection is based on django-filter's FilterSet.
     """
 
-    project = django_filters.CharFilter(label='Project', action=filter_project)
+    proj = django_filters.CharFilter(label='Project', action=filter_project)
     user = django_filters.CharFilter(label='OF User', action=filter_user)
     vm = django_filters.CharFilter(label='HAS VM', action=filter_vm)
-    volume = django_filters.CharFilter(label='HAS Volume',
-                                       action=filter_volume)
+    vol = django_filters.CharFilter(label='HAS Volume', action=filter_volume)
     net = django_filters.CharFilter(label='HAS Network', action=filter_network)
     ip = django_filters.CharFilter(label='HAS IP', action=filter_ip)
     project_status = django_filters.MultipleChoiceFilter(
@@ -133,5 +132,5 @@ class ProjectFilterSet(django_filters.FilterSet):
 
     class Meta:
         model = Project
-        fields = ('project', 'project_status', 'application_status', 'is_base',
-                  'user', 'vm', 'volume', 'net', 'ip',)
+        fields = ('proj', 'project_status', 'application_status', 'is_base',
+                  'user', 'vm', 'vol', 'net', 'ip',)

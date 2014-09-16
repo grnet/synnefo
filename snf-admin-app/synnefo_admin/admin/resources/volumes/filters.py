@@ -83,6 +83,12 @@ def filter_disk_template(queryset, choices):
     return queryset.filter(q)
 
 
+def filter_index(queryset, query):
+    if not query.isdigit():
+        return queryset.none()
+    return queryset.filter(index=query)
+
+
 class VolumeFilterSet(django_filters.FilterSet):
 
     """A collection of filters for volumes.
@@ -90,20 +96,20 @@ class VolumeFilterSet(django_filters.FilterSet):
     This filter collection is based on django-filter's FilterSet.
     """
 
-    volume = django_filters.CharFilter(label='Volume', action=filter_volume)
+    vol = django_filters.CharFilter(label='Volume', action=filter_volume)
     user = django_filters.CharFilter(label='OF User', action=filter_user)
     vm = django_filters.CharFilter(label='OF VM', action=filter_vm)
-    project = django_filters.CharFilter(label='OF Project',
-                                        action=filter_project)
+    proj = django_filters.CharFilter(label='OF Project', action=filter_project)
     status = django_filters.MultipleChoiceFilter(
         label='Status', name='status', choices=Volume.STATUS_VALUES)
     disk_template = django_filters.MultipleChoiceFilter(
         label="Disk template", choices=get_disk_template_choices(),
         action=filter_disk_template)
+    index = django_filters.CharFilter(label="Index", action=filter_index)
     source = django_filters.CharFilter(label="Soure image", name="source",
                                        lookup_type='icontains')
 
     class Meta:
         model = Volume
-        fields = ('volume', 'status', 'disk_template', 'index', 'source',
-                  'user', 'vm', 'project')
+        fields = ('vol', 'status', 'disk_template', 'index', 'source',
+                  'user', 'vm', 'proj')

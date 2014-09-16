@@ -20,10 +20,12 @@ Astakos Client Exceptions
 
 class AstakosClientException(Exception):
     """Base AstakosClientException Class"""
-    def __init__(self, message='', details='', status=500, errobject=None):
+    def __init__(self, message='', details='', status=500,
+                 response=None, errobject=None):
         self.message = message
         self.details = details
         self.errobject = errobject
+        self.response = response
         if not hasattr(self, 'status'):
             self.status = status
         super(AstakosClientException,
@@ -46,8 +48,6 @@ class BadValue(AstakosClientException):
 
 class InvalidResponse(AstakosClientException):
     """Return simplejson parse Exception as AstakosClient one"""
-    def __init__(self, message, details):
-        super(InvalidResponse, self).__init__(message, details)
 
 
 class BadRequest(AstakosClientException):

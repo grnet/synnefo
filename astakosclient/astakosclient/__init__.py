@@ -245,7 +245,7 @@ class AstakosClient(object):
         hashed_token.update(self.token)
         self.logger.debug(
             "Make a %s request to %s, using token with hash %s, "
-            "with headers %s and body %s",
+            "with headers %r and body %r",
             method, request_path, hashed_token.hexdigest(), headers,
             body if log_body else "(not logged)")
 
@@ -287,11 +287,11 @@ class AstakosClient(object):
                 self.log_response = dict(
                     status=status, message=message, data=data)
         except Exception as err:
-            self.logger.error("Failed to send request: %s" % repr(err))
+            self.logger.error("Failed to send request: %r", err)
             raise ConnectionError(err)
 
         # Return
-        self.logger.debug("Request returned with status %s" % status)
+        self.logger.debug("Request returned with status %s", status)
         if status == 400:
             raise BadRequest(message, data)
         elif status == 401:
@@ -309,7 +309,7 @@ class AstakosClient(object):
             else:
                 return None
         except Exception as err:
-            msg = "Cannot parse response \"%s\" with simplejson: %s"
+            msg = "Cannot parse response \"%r\" with simplejson: %s"
             self.logger.error(msg % (data, str(err)))
             raise InvalidResponse(str(err), data)
 
@@ -325,7 +325,7 @@ class AstakosClient(object):
         if "uuid_catalog" in data:
             return data.get("uuid_catalog")
         else:
-            msg = "_uuid_catalog request returned %s. No uuid_catalog found" \
+            msg = "_uuid_catalog request returned %r. No uuid_catalog found" \
                   % data
             self.logger.error(msg)
             raise AstakosClientException(msg)
@@ -376,7 +376,7 @@ class AstakosClient(object):
         if "displayname_catalog" in data:
             return data.get("displayname_catalog")
         else:
-            msg = "_displayname_catalog request returned %s. " \
+            msg = "_displayname_catalog request returned %r. " \
                   "No displayname_catalog found" % data
             self.logger.error(msg)
             raise AstakosClientException(msg)
@@ -608,7 +608,7 @@ class AstakosClient(object):
         if "serial" in response:
             return response['serial']
         else:
-            msg = "issue_commission_core request returned %s. " + \
+            msg = "issue_commission_core request returned %r. " + \
                   "No serial found" % response
             self.logger.error(msg)
             raise AstakosClientException(msg)

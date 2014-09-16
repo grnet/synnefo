@@ -549,11 +549,12 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_account(account, True)
         policy = self._get_policy(node, is_account_policy=True)
         if self.using_external_quotaholder:
+            policy[QUOTA_POLICY] = 0
             external_quota = self.astakosclient.service_get_quotas(
                 account)[account]
-            policy.update(dict(('%s-%s' % (QUOTA_POLICY, k),
-                                v['pithos.diskspace']['limit']) for k, v in
-                               external_quota.items()))
+            for k, v in external_quota.items():
+                policy['%s-%s' % (QUOTA_POLICY, k)] = v['pithos.diskspace']['limit']
+                policy[QUOTA_POLICY] += v['pithos.diskspace']['limit']
 
         return policy
 

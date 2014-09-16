@@ -215,7 +215,10 @@ class SynnefoCommand(BaseCommand):
         return parser
 
     def pprint_table(self, *args, **kwargs):
-        utils.pprint_table(self.stdout, *args, **kwargs)
+        return utils.pprint_table(self.stdout, *args, **kwargs)
+
+    def escape_ctrl_chars(self, *args, **kwargs):
+        return utils.escape_ctrl_chars(*args, **kwargs)
 
 
 class ListCommand(SynnefoCommand):

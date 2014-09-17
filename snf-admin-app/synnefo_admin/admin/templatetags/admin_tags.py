@@ -63,6 +63,7 @@ status_map['application'] = status_map['project']
 status_map['application']['APPROVED'] = 'success'
 
 
+@register.filter()
 def get_status_from_instance(inst):
     """Generic function to get the status of any instance."""
     try:

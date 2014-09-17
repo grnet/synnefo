@@ -22,3 +22,13 @@ output_style = :nested
 # preferred_syntax = :sass
 # and then run:
 # sass-convert -R --from scss --to sass sass scss && rm -rf sass && mv scss sass
+if environment == :development
+    line_comments = true
+    output_style = :nested
+end
+
+if environment == :production
+    line_comments = false
+    output_style = :compressed
+    css_dir = "css/min/"
+end 

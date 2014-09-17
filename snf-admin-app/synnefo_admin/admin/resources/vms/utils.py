@@ -33,8 +33,8 @@ def get_vm_or_404(query):
 
 
 def get_flavor_info(vm):
-    return ('CPU: ' + str(vm.flavor.cpu) + ', RAM: ' + str(vm.flavor.ram) +
-            ', Disk size: ' + str(vm.flavor.disk) + ', Disk template: ' +
+    return ('CPU: x' + str(vm.flavor.cpu) + ', RAM: ' + str(vm.flavor.ram) +
+            'MB, Disk size: ' + str(vm.flavor.disk) + 'GB, Disk template: ' +
             str(vm.flavor.volume_type.disk_template))
 
 

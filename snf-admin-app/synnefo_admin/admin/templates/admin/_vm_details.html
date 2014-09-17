@@ -39,10 +39,7 @@
           <dt>Suspended</dt><dd>{{ vm.suspended }}</dd>
           <dt>Deleted</dt><dd>{{ vm.deleted }}</dd>
           <dt>Image id</dt><dd>{{ vm.imageid }}</dd>
-          <dt>Flavor</dt><dd>{{ vm.flavor.cpu }},
-          {{ vm.flavor.disk }},
-          {{ vm.flavor.ram }},
-          {{ vm.flavor.disk_template }}</dd>
+          <dt>Flavor</dt><dd>{{ vm|flavor_info }}</dl>
         </dl>
       </div>
       <div class="tab-pane" id="metadata{{ vm.pk }}">

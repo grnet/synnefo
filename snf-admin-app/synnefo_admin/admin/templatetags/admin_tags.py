@@ -24,6 +24,7 @@ import django_filters
 
 import synnefo_admin.admin.resources.projects.utils as project_utils
 import synnefo_admin.admin.resources.users.utils as user_utils
+import synnefo_admin.admin.resources.vms.utils as vm_utils
 from synnefo_admin.admin import utils
 mod = import_module('astakos.im.management.commands.project-show')
 
@@ -126,6 +127,11 @@ def get_os(vm):
         return vm.metadata.filter(meta_key="OS").get().meta_value
     except:
         return "unknown"
+
+
+@register.filter
+def flavor_info(vm):
+    return vm_utils.get_flavor_info(vm)
 
 
 @register.filter(name="network_vms", is_safe=True)

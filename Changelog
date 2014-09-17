@@ -240,6 +240,9 @@ Cyclades UI
 Pithos
 ------
 
+* Backend modifications to enable/support snapshot creation.
+* Backend and API modifications to reflect the modifications in the resource
+  allocation mechanism via the accumulative projects with pool projects.
 * Change default disposition type: If no disposition-type is
   specifically requested or an invalid value is passed, the disposition type
   is set to 'inline'.

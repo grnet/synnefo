@@ -321,17 +321,18 @@ until                   Optional timestamp
 
 Cross-user requests are not allowed to use ``until`` and only include the account modification date in the reply.
 
-==========================  =====================
-Reply Header Name           Value
-==========================  =====================
-X-Account-Container-Count   The total number of containers
-X-Account-Bytes-Used        The total number of bytes stored
-X-Account-Until-Timestamp   The last account modification date until the timestamp provided
-X-Account-Group-*           Optional user defined groups
-X-Account-Policy-Quota      Account quota limit
-X-Account-Meta-*            Optional user defined metadata
-Last-Modified               The last account modification date (regardless of ``until``)
-==========================  =====================
+=====================================  =====================
+Reply Header Name                      Value
+=====================================  =====================
+X-Account-Container-Count              The total number of containers
+X-Account-Bytes-Used                   The total number of bytes stored
+X-Account-Until-Timestamp              The last account modification date until the timestamp provided
+X-Account-Group-*                      Optional user defined groups
+X-Account-Policy-Quota-<project_uuid>  Project quota limit (This header is repeated for each project the user is enrolled and allocates Pithos disk space. All the accounts have a default project whose UUID is the account's UUID. More details about the quota allocation can be found in `Resource-pool projects <design/resource-pool-projects.html>`_ section)
+X-Account-Policy-Quota                 The summary of all the project quota limits
+X-Account-Meta-*                       Optional user defined metadata
+Last-Modified                          The last account modification date (regardless of ``until``)
+=====================================  =====================
 
 |
 

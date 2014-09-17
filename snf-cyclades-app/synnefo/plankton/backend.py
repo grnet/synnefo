@@ -559,6 +559,9 @@ def image_to_dict(location, metadata, permissions):
         image["deleted_at"] = image["updated_at"]
     else:
         image["deleted_at"] = ""
+    # Ganeti ID and job ID to be used for snapshot reconciliation
+    image["backend_info"] = metadata.pop(PLANKTON_PREFIX + "backend_info",
+                                         None)
 
     properties = {}
     for key, val in metadata.items():

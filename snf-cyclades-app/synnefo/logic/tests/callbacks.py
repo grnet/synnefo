@@ -37,7 +37,7 @@ from time import time
 import json
 
 
-## Test Callbacks
+# Test Callbacks
 @patch('synnefo.lib.amqp.AMQPClient')
 class UpdateDBTest(TestCase):
     def create_msg(self, **kwargs):
@@ -313,6 +313,40 @@ class UpdateDBTest(TestCase):
         with mocked_quotaholder():
             update_db(client, msg)
         self.assertTrue(client.basic_reject.called)
+
+    @patch("synnefo.plankton.backend.get_pithos_backend")
+    def test_error_snapshot(self, pithos_backend, client):
+        vm = mfactory.VirtualMachineFactory()
+        disks = [
+            (0, {"snapshot_info": json.dumps({"snapshot_id":
+                                              "test_snapshot_id"})})
+        ]
+        msg = self.create_msg(operation='OP_INSTANCE_SNAPSHOT',
+                              instance=vm.backend_vm_id,
+                              job_fields={'disks': disks},
+                              status="running")
+        update_db(client, msg)
+        self.assertEqual(pithos_backend().update_object_status.mock_calls, [])
+
+        msg = self.create_msg(operation='OP_INSTANCE_SNAPSHOT',
+                              instance=vm.backend_vm_id,
+                              job_fields={'disks': disks},
+                              event_time=split_time(time()),
+                              status="error")
+        update_db(client, msg)
+
+        pithos_backend().update_object_status\
+                        .assert_called_once_with("test_snapshot_id", state=-1)
+
+        pithos_backend.reset_mock()
+        msg = self.create_msg(operation='OP_INSTANCE_SNAPSHOT',
+                              instance=vm.backend_vm_id,
+                              job_fields={'disks': disks},
+                              event_time=split_time(time()),
+                              status="success")
+        update_db(client, msg)
+        pithos_backend().update_object_status\
+                        .assert_called_once_with("test_snapshot_id", state=1)
 
 
 @patch('synnefo.lib.amqp.AMQPClient')

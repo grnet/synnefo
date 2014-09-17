@@ -587,6 +587,16 @@ def adopt_instance_disk(server, gnt_disk):
     return vol
 
 
+def snapshot_state_from_job_status(job_status):
+    if job_status in rapi.JOB_STATUS_FINALIZED:
+        if (job_status == rapi.JOB_STATUS_SUCCESS):
+            return OBJECT_AVAILABLE
+        else:
+            return OBJECT_ERROR
+    else:
+        return OBJECT_UNAVAILABLE
+
+
 def update_snapshot(snapshot_id, user_id, job_id, job_status, etime):
     """Update a snapshot based on the result of the Ganeti job.
 
@@ -595,19 +605,12 @@ def update_snapshot(snapshot_id, user_id, job_id, job_status, etime):
     Ganeti job that will create the snapshot has been completed or not.
 
     """
-    if job_status in rapi.JOB_STATUS_FINALIZED:
-        if (job_status == rapi.JOB_STATUS_SUCCESS):
-            state = OBJECT_AVAILABLE
-        else:
-            state = OBJECT_ERROR
-    else:
-        state = OBJECT_UNAVAILABLE
-        # Snapshot will already be in unavailable state. No need to update.
-        return
 
-    log.debug("Updating state of snapshot '%s' to '%s'", snapshot_id,
-              state)
-    volume.util.update_snapshot_state(snapshot_id, user_id, state=state)
+    state = snapshot_state_from_job_status(job_status)
+    if state != OBJECT_UNAVAILABLE:
+        log.debug("Updating state of snapshot '%s' to '%s'", snapshot_id,
+                  state)
+        volume.util.update_snapshot_state(snapshot_id, user_id, state=state)
 
 
 @transaction.commit_on_success

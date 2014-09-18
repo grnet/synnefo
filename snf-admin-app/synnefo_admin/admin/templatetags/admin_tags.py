@@ -18,9 +18,15 @@ from importlib import import_module
 from collections import OrderedDict
 from django import template
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 import logging
 
 import django_filters
+
+from snf_django.lib.api import faults
+from synnefo.api.util import get_image
+from synnefo.lib.dict import SnfOrderedDict
+from synnefo.db.models import Image
 
 import synnefo_admin.admin.resources.projects.utils as project_utils
 import synnefo_admin.admin.resources.users.utils as user_utils
@@ -128,6 +134,39 @@ def get_os(vm):
         return vm.metadata.filter(meta_key="OS").get().meta_value
     except:
         return "unknown"
+
+
+@register.filter
+def image_info(vm):
+    """Retrieve Image details.
+
+    If the Image is deleted or no longer visible by the user, then provide
+    whatever information is stored by Cyclades.
+    """
+    # Use the same order of appearance for Plankton and Cyclades image info
+    order = ['name', 'id', 'owner', 'version', 'size', 'created_at',
+             'updated_at', 'deleted_at', 'is_public', 'is_snapshot',
+             'is_system', 'location', 'os', 'osfamily', 'properties']
+
+    # TODO: Add this code when deferred loading works.
+    # Try to retrieve Image info using Plankton.
+    #try:
+    #    image_info = get_image(vm.imageid, vm.userid)
+    #except faults.ItemNotFound:
+
+    # Check if Cyclades DB has any info about this Image.
+    try:
+        image_info = Image.objects.get(uuid=vm.imageid)
+    except ObjectDoesNotExist:
+        # If all else fails, gather whatever info are available from the
+        # VirtualMachine instance.
+        image_info = {
+            'id': vm.imageid,
+            'version': vm.image_version,
+            'os': get_os(vm),
+        }
+
+    return SnfOrderedDict(image_info, order, strict=False)
 
 
 @register.filter

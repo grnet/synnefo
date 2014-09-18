@@ -25,6 +25,7 @@
     <ul class="nav nav-tabs">
       <li class="active"><a href="#details{{ vm.pk }}" data-toggle="tab">Details</a></li>
       <li><a href="#metadata{{ vm.pk }}" data-toggle="tab">Metadata</a></li>
+      <li><a href="#image{{ vm.pk }}" data-toggle="tab">Image info</a></li>
       <li><a href="#backend{{ vm.pk }}" data-toggle="tab">Backend info</a></li>
       <li><a href="#network{{ vm.pk }}" data-toggle="tab">Network interfaces</a></li>
     </ul>
@@ -49,6 +50,27 @@
           {% empty %}
           <dt>No metadata</dt>
           {% endfor %}
+        </dl>
+      </div>
+      <div class="tab-pane" id="image{{ vm.pk }}">
+        <dl class="dl-horizontal well">
+            {% with image=vm|image_info %}
+                {# Iterate all image info fields and create dt/dd pairs #}
+                {% for field, value in image.items %}
+                    <dt>{{ field|title }}</dt><dd>
+
+                    {# The 'properties' field is a special case #}
+                    {% if field == "properties" %}
+                        {% for f, v in value.items %}
+                            <b>{{ f|title }}:</b> {{ v }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        {{ value|default:"-" }}
+                    {% endif %}
+
+                    </dd>
+                {% endfor %}
+            {% endwith %}
         </dl>
       </div>
       <div class="tab-pane" id="backend{{ vm.pk }}">

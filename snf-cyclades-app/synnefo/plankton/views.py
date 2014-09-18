@@ -197,8 +197,8 @@ def add_image(request):
         with PlanktonBackend(request.user_uniq) as backend:
             image = backend.register(name, location, params)
     else:
-        #f = StringIO(request.body)
-        #image = backend.put(name, f, params)
+        # f = StringIO(request.body)
+        # image = backend.put(name, f, params)
         return HttpResponse(status=501)     # Not Implemented
 
     if not image:
@@ -255,18 +255,6 @@ def get_image(request, image_id):
       * The implementation is very inefficient as it loads the whole image
         in memory.
     """
-
-    #image = backend.get_image(image_id)
-    #if not image:
-    #    return HttpResponseNotFound()
-    #
-    #response = _create_image_response(image)
-    #data = backend.get_data(image)
-    #response.content = data
-    #response['Content-Length'] = len(data)
-    #response['Content-Type'] = 'application/octet-stream'
-    #response['ETag'] = image['checksum']
-    #return response
     return HttpResponse(status=501)     # Not Implemented
 
 

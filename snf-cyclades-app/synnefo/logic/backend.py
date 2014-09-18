@@ -818,15 +818,15 @@ def create_instance(vm, nics, volumes, flavor, image):
 
     kw['disk_template'] = volumes[0].volume_type.template
     disks = []
-    for volume in volumes:
-        disk = {"name": volume.backend_volume_uuid,
-                "size": volume.size * 1024}
-        provider = volume.volume_type.provider
+    for vol in volumes:
+        disk = {"name": vol.backend_volume_uuid,
+                "size": vol.size * 1024}
+        provider = vol.volume_type.provider
         if provider is not None:
             disk["provider"] = provider
             if provider in settings.GANETI_CLONE_PROVIDERS:
-                disk["origin"] = volume.origin
-                disk["origin_size"] = volume.origin_size
+                disk["origin"] = vol.origin
+                disk["origin_size"] = vol.origin_size
             extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
                                         .get(provider)
             if extra_disk_params is not None:

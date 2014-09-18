@@ -179,7 +179,6 @@ class BackendReconciler(object):
             self.log.debug("Issued OP_INSTANCE_REMOVE for orphan servers.")
 
     def reconcile_unsynced_servers(self):
-        #log = self.log
         for server_id in self.db_servers_keys & self.gnt_servers_keys:
             db_server = self.db_servers[server_id]
             gnt_server = self.gnt_servers[server_id]
@@ -544,7 +543,6 @@ def nics_from_instance(i):
     # nics = zip(ips,macs,modes,networks,links)
     nics = zip(ips, names, macs, networks, indexes)
     nics = map(lambda x: dict(x), nics)
-    #nics = dict(enumerate(nics))
     tags = i["tags"]
     for tag in tags:
         t = tag.split(":")
@@ -566,7 +564,6 @@ def disks_from_instance(i):
     indexes = zip(itertools.repeat('index'), range(0, len(sizes)))
     disks = zip(sizes, names, uuids, indexes)
     disks = map(lambda x: dict(x), disks)
-    #disks = dict(enumerate(disks))
     return disks
 
 

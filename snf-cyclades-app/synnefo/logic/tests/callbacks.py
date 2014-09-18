@@ -653,7 +653,6 @@ class UpdateNetworkTest(TestCase):
                                   "remove_reserved_ips": ["10.0.0.10",
                                                           "10.0.0.20"]})
         update_network(client, msg)
-        #self.assertTrue(client.basic_ack.called)
         pool = network.get_ip_pools()[0]
         self.assertTrue(pool.is_reserved('10.0.0.10'))
         self.assertTrue(pool.is_reserved('10.0.0.20'))

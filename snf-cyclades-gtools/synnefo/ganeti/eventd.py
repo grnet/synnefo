@@ -45,7 +45,7 @@ else:
 sys.path.insert(0, GANETI_PATH)
 
 try:
-    import ganeti
+    import ganeti  # NOQA
 except ImportError:
     raise Exception("Cannot import ganeti module. Please check if installed"
                     " under %s for 2.8 or under %s for 2.10 or later." %
@@ -207,8 +207,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.op_handlers = {"INSTANCE": self.process_instance_op,
                             "NETWORK": self.process_network_op,
                             "CLUSTER": self.process_cluster_op,
-                            "TAGS": self.process_tag_op}
                             # "GROUP": self.process_group_op}
+                            "TAGS": self.process_tag_op}
 
     def process_IN_CLOSE_WRITE(self, event):
         self.process_IN_MOVED_TO(event)
@@ -408,7 +408,7 @@ class JobFileHandler(pyinotify.ProcessEvent):
             # NOTE: Check 'dry_run' after 'cluster' because networks and groups
             # do not support the 'dry_run' option.
             if (op.status == "waiting" and input.tags and
-                input.kind == "cluster" and input.dry_run):
+               input.kind == "cluster" and input.dry_run):
                 # Special where a prefixed cluster tag operation in dry-run
                 # mode is used in order to trigger eventd to send a
                 # heartbeat message.

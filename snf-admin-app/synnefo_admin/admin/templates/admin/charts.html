@@ -71,12 +71,6 @@ class="active"
 <!--Switch to c3.min at some point-->
 <script src="{{ ADMIN_MEDIA_URL }}js/c3.js"></script>
 
-
-<script src="{{ ADMIN_MEDIA_URL }}js/highstock.src.js"></script>
-<script src="{{ ADMIN_MEDIA_URL }}js/Highcharts_drilldown.src.js"></script>
-{% if request.COOKIES.theme == 'dark' %}
-<script src="{{ ADMIN_MEDIA_URL }}js/charts_theme.js"></script>
-{% endif %}
 <script src="{{ ADMIN_MEDIA_URL }}js/charts.js"></script>
 <script src="{{ ADMIN_MEDIA_URL }}js/charts_common.js"></script>
 {% endblock %}

@@ -13,6 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""
+This file can be used as ROOT_URLCONF for Admin-only installations. The Admin
+path (BASE_PATH) is constructed from the ADMIN_BASE_URL setting.
+"""
+
 from django.conf.urls import patterns, include
 from snf_django.utils.urls import extend_path_with_slash
 from snf_django.lib.api.utils import prefix_pattern

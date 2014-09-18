@@ -420,7 +420,8 @@ class PlanktonBackend(object):
         logger.debug("User '%s' unregistered image '%s'", self.user, uuid)
 
     # List functions
-    def _list_images(self, user=None, filters=None, params=None):
+    def _list_images(self, user=None, filters=None, params=None,
+                     check_permissions=True):
         filters = filters or {}
 
         # TODO: Use filters
@@ -434,8 +435,9 @@ class PlanktonBackend(object):
         #         size_range = (size_range[0], val)
         #     else:
         #         keys.append('%s = %s' % (PLANKTON_PREFIX + key, val))
-        _images = self.backend.get_domain_objects(domain=PLANKTON_DOMAIN,
-                                                  user=user)
+        _images = self.backend.get_domain_objects(
+            domain=PLANKTON_DOMAIN, user=user,
+            check_permissions=check_permissions)
 
         images = []
         for (location, metadata, permissions) in _images:
@@ -451,9 +453,10 @@ class PlanktonBackend(object):
         return images
 
     @handle_pithos_backend
-    def list_images(self, filters=None, params=None):
+    def list_images(self, filters=None, params=None, check_permissions=True):
         return self._list_images(user=self.user, filters=filters,
-                                 params=params)
+                                 params=params,
+                                 check_permissions=check_permissions)
 
     @handle_pithos_backend
     def list_shared_images(self, member, filters=None, params=None):
@@ -485,8 +488,8 @@ class PlanktonBackend(object):
             permissions=None)
         return snapshot_id
 
-    def list_snapshots(self, user=None):
-        _snapshots = self.list_images()
+    def list_snapshots(self, user=None, check_permissions=True):
+        _snapshots = self.list_images(check_permissions=check_permissions)
         return [s for s in _snapshots if s["is_snapshot"]]
 
     @handle_pithos_backend

@@ -35,14 +35,19 @@ class Command(SynnefoCommand):
 
     def handle(self, **options):
         user = options['userid']
+        check_perm = not (user is None)
 
         with PlanktonBackend(user) as backend:
-            snapshots = backend.list_snapshots(user)
+            print check_perm
+            snapshots = backend.list_snapshots(user,
+                                               check_permissions=check_perm)
 
-        headers = ("id", "name", "volume_id", "size", "mapfile", "status")
+        headers = ("id", "name", "volume_id", "size", "mapfile", "status",
+                   "owner", "is_public")
         table = []
         for snap in snapshots:
             fields = (snap["id"], snap["name"], snap["volume_id"],
-                      snap["size"], snap["mapfile"], snap["status"])
+                      snap["size"], snap["mapfile"], snap["status"],
+                      snap["owner"], snap["is_public"])
             table.append(fields)
         pprint_table(self.stdout, table, headers)

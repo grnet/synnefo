@@ -34,9 +34,10 @@ class Command(SynnefoCommand):
 
     def handle(self, **options):
         user = options['userid']
+        check_perm = not (user is None)
 
         with PlanktonBackend(user) as backend:
-            images = backend._list_images(user)
+            images = backend.list_images(user, check_permissions=check_perm)
             images.sort(key=lambda x: x['created_at'], reverse=True)
 
         headers = ("id", "name", "user.uuid", "public", "snapshot")

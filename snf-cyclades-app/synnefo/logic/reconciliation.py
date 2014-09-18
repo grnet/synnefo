@@ -379,8 +379,7 @@ class BackendReconciler(object):
         max_job_id = max(self.gnt_jobs.keys()) if self.gnt_jobs.keys() else 0
 
         with PlanktonBackend(None) as b:
-            # TODO: Currently this will return only public snapshots
-            snapshots = b.list_snapshots()
+            snapshots = b.list_snapshots(check_permissions=False)
         unavail_snapshots = [s for s in snapshots
                              if s["status"] == OBJECT_UNAVAILABLE]
 
@@ -408,7 +407,7 @@ class BackendReconciler(object):
                     state = OBJECT_ERROR
 
                 self.log.info("Snapshot '%s' is '%s' in Pithos DB but should"
-                              " be %s", uuid, snapshot["status"], state)
+                              " be '%s'", uuid, snapshot["status"], state)
                 if self.options["fix_unsynced_snapshots"]:
                     backend_mod.update_snapshot(uuid, snapshot["owner"],
                                                 job_id=-1,

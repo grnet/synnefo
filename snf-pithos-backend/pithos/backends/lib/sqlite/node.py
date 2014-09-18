@@ -1165,14 +1165,15 @@ class Node(DBWorker):
                  'v.cluster', 'v.available', 'v.map_check_timestamp',
                  'v.mapfile', 'v.is_snapshot')
         cols = list(props) + ['a.key', 'a.value']
+        args = [domain]
         q = ("select %s from nodes n, versions v, attributes a "
              "where v.serial = a.serial and "
              "a.domain = ? and "
              "a.node = n.node and "
-             "a.is_latest = 1 and "
-             "n.path in (%s)") % (','.join(cols), ','.join('?' for _ in paths))
-        args = [domain]
-        map(args.append, paths)
+             "a.is_latest = 1 ") % ','.join(cols)
+        if paths:
+            q += ("and path in (%s) " % ','.join('?' for _ in paths))
+            map(args.append, paths)
         if cluster is not None:
             q += "and v.cluster = ?"
             args += [cluster]

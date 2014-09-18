@@ -2481,11 +2481,14 @@ class ModularBackend(BaseBackend):
 
     @debug_method
     @backend_method
-    def get_domain_objects(self, domain, user=None):
-        allowed_paths = self.permissions.access_list_paths(
-            user, include_owned=user is not None, include_containers=False)
-        if not allowed_paths:
-            return []
+    def get_domain_objects(self, domain, user=None, check_permissions=True):
+        if check_permissions:
+            allowed_paths = self.permissions.access_list_paths(
+                user, include_owned=user is not None, include_containers=False)
+            if not allowed_paths:
+                return []
+        else:
+            allowed_paths = None
         obj_list = self.node.domain_object_list(
             domain, allowed_paths, CLUSTER_NORMAL)
         return [(path,

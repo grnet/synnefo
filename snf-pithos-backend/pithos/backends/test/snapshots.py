@@ -167,3 +167,27 @@ class TestSnapshotsMixin(object):
             self.assertEqual(meta['uuid'], uuid)
             self.assertTrue('available' in meta)
             self.assertEqual(meta['available'], MAP_UNAVAILABLE)
+
+        objects = self.b.get_domain_objects(domain='test', user='somebody_else', check_permissions=True)
+        self.assertEqual(objects, [])
+
+        objects = self.b.get_domain_objects(domain='test', user=None, check_permissions=True)
+        self.assertEqual(objects, [])
+
+        objects = self.b.get_domain_objects(domain='test', user=None, check_permissions=False)
+        self.assertEqual(len(objects), 1)
+        path, meta, permissios = objects[0]
+        self.assertEqual(path, '/'.join(t[1:]))
+        self.assertTrue('uuid' in meta)
+        self.assertEqual(meta['uuid'], uuid)
+        self.assertTrue('available' in meta)
+        self.assertEqual(meta['available'], MAP_UNAVAILABLE)
+
+        objects = self.b.get_domain_objects(domain='test', user='somebody_else', check_permissions=False)
+        self.assertEqual(len(objects), 1)
+        path, meta, permissios = objects[0]
+        self.assertEqual(path, '/'.join(t[1:]))
+        self.assertTrue('uuid' in meta)
+        self.assertEqual(meta['uuid'], uuid)
+        self.assertTrue('available' in meta)
+        self.assertEqual(meta['available'], MAP_UNAVAILABLE)

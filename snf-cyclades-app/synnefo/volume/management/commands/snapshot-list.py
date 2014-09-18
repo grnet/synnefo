@@ -35,10 +35,9 @@ class Command(SynnefoCommand):
 
     def handle(self, **options):
         user = options['userid']
-        check_perm = not (user is None)
+        check_perm = user is not None
 
         with PlanktonBackend(user) as backend:
-            print check_perm
             snapshots = backend.list_snapshots(user,
                                                check_permissions=check_perm)
 

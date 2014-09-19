@@ -22,7 +22,7 @@ Settings for the snf-admin-app.
 # Process Admin settings
 
 from django.conf import settings
-from collections import OrderedDict
+from synnefo.lib.dict import SnfOrderedDict
 from synnefo.lib import parse_base_url
 
 ADMIN_ENABLED = getattr(settings, 'ADMIN_ENABLED', True)
@@ -59,20 +59,10 @@ ADMIN_VIEWS_ORDER = getattr(settings, 'ADMIN_VIEWS_ORDER',
                             DEFAULT_ADMIN_VIEWS_ORDER)
 
 
-# The following function combines the above settings into one ordered
-# dictionary.
+# Combine the above settings into one ordered dictionary.
 # Note: View names that don't exist in the ADMIN_VIEWS settings will silently
 # be ignored.
-def create_ordered_views():
-    """Combine ADMIN_VIEWS and ADMIN_VIEWS_ORDER to create an ordered dict."""
-    views = OrderedDict()
-
-    for view in ADMIN_VIEWS_ORDER:
-        if view in ADMIN_VIEWS:
-            views[view] = ADMIN_VIEWS[view]
-
-    return views
-ADMIN_VIEWS = create_ordered_views()
+ADMIN_VIEWS = SnfOrderedDict(ADMIN_VIEWS, ADMIN_VIEWS_ORDER, strict=False)
 
 # Check if the user has defined his/her own values for the following three
 # groups.

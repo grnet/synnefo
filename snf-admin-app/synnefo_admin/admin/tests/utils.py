@@ -159,9 +159,13 @@ class TestAdminUtilsUnit(unittest.TestCase):
             reload_settings()
             self.assertEqual(utils.default_view(), None)
 
-        with override_settings(settings, ADMIN_VIEWS_ORDER=['one', 'two']):
+        with override_settings(settings, ADMIN_VIEWS_ORDER=['1', '2']):
             reload_settings()
-            self.assertEqual(utils.default_view(), 'one')
+            self.assertEqual(utils.default_view(), None)
+
+        with override_settings(settings, ADMIN_VIEWS_ORDER=['1', 'user', '3']):
+            reload_settings()
+            self.assertEqual(utils.default_view(), 'user')
 
         reload_settings()
 

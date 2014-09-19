@@ -1,18 +1,18 @@
 .. _cyclades:
 
-Compute/Network/Image Service (Cyclades)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Compute/Network/Image/Volume Service (Cyclades)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Cyclades is the Synnefo component that implements the Compute, Network, Image
 and Volume services. It exposes the associated OpenStack REST APIs: OpenStack
-Compute, Network, Glance and soon also Cinder. Cyclades is the part which
-manages multiple Ganeti clusters at the backend. Cyclades issues commands to a
-Ganeti cluster using Ganeti's Remote API (RAPI). The administrator can expand
-the infrastructure dynamically by adding new Ganeti clusters to reach
-datacenter scale. Cyclades knows nothing about low-level VM management
-operations, e.g., the handling of VM creations, migrations among physical
-nodes and node downtimes; the design and implementation of the
-end-user API is orthogonal to VM handling at the backend.
+Nova, Neutron, Glance and Cinder. Cyclades is the part which manages multiple
+Ganeti clusters at the backend. Cyclades issues commands to a Ganeti cluster
+using Ganeti's Remote API (RAPI). The administrator can expand the
+infrastructure dynamically by adding new Ganeti clusters to reach datacenter or
+multi-datacenter scale. Cyclades knows nothing about low-level VM management
+operations, e.g., the handling of VM creations, migrations among physical nodes
+and node downtimes; the design and implementation of the end-user API is
+orthogonal to VM handling at the backend.
 
 There are two distinct, asynchronous paths in the interaction between Synnefo
 and Ganeti. The `effect` path is activated in response to a user request;
@@ -26,8 +26,8 @@ Users have full control over their VMs: they can create new ones, start them,
 shutdown, reboot, and destroy them. For the configuration of their VMs they can
 select number of CPUs, size of RAM and system disk, and operating system from
 pre-defined Images including popular Linux distros (Debian, Ubuntu, CentOS,
-Fedora, Gentoo, Archlinux, OpenSuse), MS-Windows Server 2008 R2 and 2012 as
-well as FreeBSD.
+Fedora, Gentoo, Archlinux, OpenSuse, Oracle Linux), MS-Windows Server 2008 R2,
+2012 and 2012 R2, as well as BSD (FreeBSD, NetBSD, OpenBSD).
 
 The REST API for VM management, being OpenStack compatible, can interoperate
 with 3rd party tools and client libraries.

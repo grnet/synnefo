@@ -24,6 +24,9 @@ Synnefo has three main components which provide the corresponding services:
    Pithos: Object Storage service <pithos>
    Cyclades: Compute/Network/Image/Volume services <cyclades>
 
+It :ref:`unifies storage resources <unify>` (Objects/Volumes/Images/Snapshots)
+using Archipelago as the common storage substrate for all services.
+
 This is an overview of the Synnefo services:
 
 .. image:: images/synnefo-overview.png

@@ -125,7 +125,7 @@ fi
 if [ $changed -eq 1 ]; then
     echo 'Done with registering services and their resources.'
     echo 'Now run '
-    echo "  snf-manage resource-modify <resource_name> --base-default <limit>"
+    echo "  snf-manage resource-modify <resource_name> --system-default <limit>"
     echo 'to specify the default base quota for each resource provided by' \
         'the services.'
 fi

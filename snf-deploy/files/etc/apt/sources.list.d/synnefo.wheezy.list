@@ -1,5 +1,5 @@
-deb http://ftp.de.debian.org/debian wheezy main non-free contrib
-deb http://ftp.de.debian.org/debian wheezy-backports main non-free contrib
+deb http://ftp.de.debian.org/debian wheezy main
+deb http://ftp.de.debian.org/debian wheezy-backports main
 
 deb http://apt.dev.grnet.gr wheezy/
 deb http://apt.dev.grnet.gr unstable/

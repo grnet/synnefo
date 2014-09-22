@@ -77,10 +77,14 @@ def create(user_id, volume, name, description, metadata, force=False):
     # the server that the volume is attached
     metadata.update({"EXCLUDE_ALL_TASKS": "yes",
                      "description": description})
-    vm_metadata = dict(volume.machine.metadata
-                                     .filter(meta_key__in=["OS", "users"])
-                                     .values_list("meta_key", "meta_value"))
-    metadata.update(vm_metadata)
+    if volume.index == 0:
+        # Copy the metadata of the VM into the image properties only when the
+        # volume is the root volume of the VM.
+        vm_metadata = dict(volume.machine.metadata
+                                         .filter(meta_key__in=["OS", "users"])
+                                         .values_list("meta_key",
+                                                      "meta_value"))
+        metadata.update(vm_metadata)
 
     snapshot_properties = PlanktonBackend._prefix_properties(metadata)
     snapshot_metadata.update(snapshot_properties)

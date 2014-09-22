@@ -91,14 +91,14 @@ def create(userid, name, password, flavor, image_id, metadata={},
         img, created = Image.objects.get_or_create(uuid=image["id"],
                                                    version=image["version"])
         if created:
-            img.owner = image["owner"],
-            img.name = image["name"],
-            img.location = image["location"],
-            img.mapfile = image["mapfile"],
-            img.is_public = image["is_public"],
-            img.is_snapshot = image["is_snapshot"],
-            img.is_system = is_system,
-            img.os = image["metadata"].get("OS", "unknown"),
+            img.owner = image["owner"]
+            img.name = image["name"]
+            img.location = image["location"]
+            img.mapfile = image["mapfile"]
+            img.is_public = image["is_public"]
+            img.is_snapshot = image["is_snapshot"]
+            img.is_system = is_system
+            img.os = image["metadata"].get("OS", "unknown")
             img.osfamily = image["metadata"].get("OSFAMILY", "unknown")
             img.save()
     except Exception as e:

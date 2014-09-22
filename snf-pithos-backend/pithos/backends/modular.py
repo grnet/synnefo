@@ -1869,6 +1869,48 @@ class ModularBackend(BaseBackend):
 
     @debug_method
     @backend_method
+    def get_object_by_uuid(self, uuid, version=None, domain='pithos',
+                           user=None, check_permissions=True):
+        """Return information for the object identified by the specific UUID
+
+           Raises:
+               NameError: UUID or version was not found
+               NotAllowedError: if check_permissions is True and user has not
+                                access to the object
+               AssertionError: if check_permissions is True but user
+                               is provided
+        """
+        if user is not None and not check_permissions:
+            raise AssertionError('Inconsistent argument combination:'
+                                 'if user is provided '
+                                 'permission check should be enforced.')
+
+        uuid_ = self._validate_uuid(uuid)
+        if version is None:
+            props = self.node.latest_uuid(uuid_, CLUSTER_NORMAL)
+            if props is None:
+                raise NameError('No object found for this UUID.')
+            path, _ = props
+        else:
+            props = self.node.version_get_properties(version,
+                                                     keys=('uuid', 'node'))
+            if not props:
+                raise NameError('No such version was found.')
+            uuid_, node = props
+            assert uuid_ == uuid
+            _, path = self.node.node_get_properties(node)
+        account, container, name = path.split('/', 2)
+        if check_permissions:
+            self._can_read_object(user, account, container, name)
+        user_ = user if user is not None else account
+        meta = self.get_object_meta(user_, account, container, name,
+                                    domain=domain, version=version,
+                                    include_user_defined=True)
+        perms = self.permissions.access_get(path)
+        return meta, perms, path
+
+    @debug_method
+    @backend_method
     def get_public(self, user, public):
         """Return the (account, container, name) for the public id given."""
 

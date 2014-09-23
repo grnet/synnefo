@@ -1290,7 +1290,7 @@ externally reserved, to exclude from allocation.
 Quotas
 ~~~~~~
 
-The andling of quotas for Cyclades resources is powered by Astakos quota
+The handling of quotas for Cyclades resources is powered by Astakos quota
 mechanism. During registration of Cyclades service to Astakos, the Cyclades
 resources are also imported to Astakos for accounting and presentation.
 

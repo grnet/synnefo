@@ -338,6 +338,16 @@ You can modify the default system quota limit for all future users with::
 
    # snf-manage resource-modify <resource_name> --system-default <value>
 
+You can also control the default quota a new project offers to its members
+if a limit is not specified in the project application (`project default`).
+In particular, if a resource is not meant to be visible to the end user,
+then it's best to set its project default to infinite.
+
+.. code-block:: console
+
+    # snf-manage resource-modify cyclades.total_ram --project-default inf
+
+
 Grant extra quota through projects
 ``````````````````````````````````
 

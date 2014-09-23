@@ -908,15 +908,17 @@ Notice that in this installation astakos and cyclades are in node1 and pithos is
 Setting Default Base Quota for Resources
 ----------------------------------------
 
-We now have to specify the limit on resources that each user can employ
-(exempting resources offered by projects). When specifying storage or
-memory size limits you can append a unit to the value, i.e. 10240 MB,
-10 GB etc. Use the special value ``inf``, if you don't want to restrict a
-resource.
+All resources are registered with unlimited quota. We now have to restrict
+the limit on the resources we wish to control. We can set the default quota
+a new user is offered by the system (`system default`) with
 
 .. code-block:: console
 
-    # snf-manage resource-modify cyclades.vm --system-default 2
+    # snf-manage resource-modify <resource-name> --system-default <value>
+
+When specifying storage or memory size limits you can append a unit to the
+value, i.e. 10240 MB, 10 GB etc. Use the special value ``inf``, if you don't
+want to restrict a resource.
 
 Setting Resource Visibility
 ---------------------------

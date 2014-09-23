@@ -1359,7 +1359,7 @@ Cyclades Prerequisites
 Before proceeding with the Cyclades installation, make sure you have
 successfully set up Astakos and Pithos first, because Cyclades depends on
 them. If you don't have a working Astakos and Pithos installation yet, please
-return to the :ref:`top <install-guide-centos>` of this guide.
+return to the :ref:`top <install-guide-debian>` of this guide.
 
 Besides Astakos and Pithos, you will also need a number of additional working
 prerequisites, before you start the Cyclades installation.

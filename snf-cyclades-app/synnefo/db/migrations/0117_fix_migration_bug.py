@@ -8,14 +8,19 @@ class Migration(DataMigration):
 
     def forwards(self, orm):
         "Write your forwards methods here."
+        # This migration is the same as 0112. It run again to fix a bug that
+        # existed in migration 0112 in 0.16rc1.
+        networks = dict(orm.Network.objects.values_list("id", "subnet_ids"))
         n_subs = {}
         for (subnet_id, network_id) in orm.Subnet.objects.values_list("id", "network_id"):
-            subnet_ids = n_subs.setdefault(network_id, [])
-            subnet_ids.append(subnet_id)
+            if (network_id not in networks or
+                str(subnet_id) != str(networks[network_id])):
+               subnet_ids = n_subs.setdefault(network_id, [])
+               subnet_ids.append(subnet_id)
         for network_id, subnet_ids in n_subs.items():
             updated = orm.Network.objects.filter(id=network_id).update(subnet_ids=subnet_ids)
             assert(updated == 1)
-        # Note: Remember to use orm['appname.ModelName'] rather than "from appname.models..."
+
 
     def backwards(self, orm):
         "Write your backwards methods here."
@@ -68,14 +73,29 @@ class Migration(DataMigration):
             'size': ('django.db.models.fields.IntegerField', [], {})
         },
         'db.flavor': {
-            'Meta': {'unique_together': "(('cpu', 'ram', 'disk', 'disk_template'),)", 'object_name': 'Flavor'},
+            'Meta': {'unique_together': "(('cpu', 'ram', 'disk', 'volume_type'),)", 'object_name': 'Flavor'},
             'allow_create': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'cpu': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'disk': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
-            'disk_template': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'ram': ('django.db.models.fields.IntegerField', [], {'default': '0'})
+            'ram': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            'volume_type': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'flavors'", 'on_delete': 'models.PROTECT', 'to': "orm['db.VolumeType']"})
+        },
+        'db.image': {
+            'Meta': {'unique_together': "(('uuid', 'version'),)", 'object_name': 'Image'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'is_public': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'is_snapshot': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'is_system': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'location': ('django.db.models.fields.TextField', [], {}),
+            'mapfile': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
+            'os': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
+            'osfamily': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
+            'owner': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
+            'uuid': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
+            'version': ('django.db.models.fields.IntegerField', [], {})
         },
         'db.ipaddress': {
             'Meta': {'unique_together': "(('network', 'address', 'deleted'),)", 'object_name': 'IPAddress'},
@@ -87,7 +107,7 @@ class Migration(DataMigration):
             'ipversion': ('django.db.models.fields.IntegerField', [], {}),
             'network': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'ips'", 'on_delete': 'models.PROTECT', 'to': "orm['db.Network']"}),
             'nic': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'ips'", 'null': 'True', 'on_delete': 'models.SET_NULL', 'to': "orm['db.NetworkInterface']"}),
-            'project': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
+            'project': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'db_index': 'True'}),
             'serial': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'ips'", 'null': 'True', 'on_delete': 'models.SET_NULL', 'to': "orm['db.QuotaHolderSerial']"}),
             'subnet': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'ips'", 'on_delete': 'models.PROTECT', 'to': "orm['db.Subnet']"}),
             'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
@@ -137,7 +157,7 @@ class Migration(DataMigration):
             'machines': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['db.VirtualMachine']", 'through': "orm['db.NetworkInterface']", 'symmetrical': 'False'}),
             'mode': ('django.db.models.fields.CharField', [], {'max_length': '16', 'null': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
-            'project': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
+            'project': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'db_index': 'True'}),
             'public': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'db_index': 'True'}),
             'serial': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'network'", 'null': 'True', 'on_delete': 'models.SET_NULL', 'to': "orm['db.QuotaHolderSerial']"}),
             'state': ('django.db.models.fields.CharField', [], {'default': "'PENDING'", 'max_length': '32'}),
@@ -157,6 +177,7 @@ class Migration(DataMigration):
             'machine': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'nics'", 'null': 'True', 'on_delete': 'models.PROTECT', 'to': "orm['db.VirtualMachine']"}),
             'name': ('django.db.models.fields.CharField', [], {'default': "''", 'max_length': '128', 'null': 'True'}),
             'network': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'nics'", 'on_delete': 'models.PROTECT', 'to': "orm['db.Network']"}),
+            'public': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'security_groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['db.SecurityGroup']", 'null': 'True', 'symmetrical': 'False'}),
             'state': ('django.db.models.fields.CharField', [], {'default': "'ACTIVE'", 'max_length': '32'}),
             'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
@@ -207,10 +228,11 @@ class Migration(DataMigration):
             'flavor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['db.Flavor']", 'on_delete': 'models.PROTECT'}),
             'hostid': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'image_version': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
             'imageid': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
             'operstate': ('django.db.models.fields.CharField', [], {'default': "'BUILD'", 'max_length': '30'}),
-            'project': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
+            'project': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'db_index': 'True'}),
             'serial': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'virtual_machine'", 'null': 'True', 'on_delete': 'models.SET_NULL', 'to': "orm['db.QuotaHolderSerial']"}),
             'suspended': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'task': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True'}),
@@ -235,6 +257,43 @@ class Migration(DataMigration):
             'meta_key': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
             'meta_value': ('django.db.models.fields.CharField', [], {'max_length': '500'}),
             'vm': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'metadata'", 'to': "orm['db.VirtualMachine']"})
+        },
+        'db.volume': {
+            'Meta': {'object_name': 'Volume'},
+            'backendjobid': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True'}),
+            'created': ('django.db.models.fields.DateTimeField', [], {'auto_now_add': 'True', 'blank': 'True'}),
+            'delete_on_termination': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'db_index': 'True'}),
+            'description': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'index': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
+            'machine': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'volumes'", 'null': 'True', 'to': "orm['db.VirtualMachine']"}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True'}),
+            'origin': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True'}),
+            'project': ('django.db.models.fields.CharField', [], {'max_length': '255', 'null': 'True', 'db_index': 'True'}),
+            'serial': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'volume'", 'null': 'True', 'on_delete': 'models.SET_NULL', 'to': "orm['db.QuotaHolderSerial']"}),
+            'size': ('django.db.models.fields.IntegerField', [], {}),
+            'snapshot_counter': ('django.db.models.fields.PositiveIntegerField', [], {'default': '0'}),
+            'source': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True'}),
+            'source_version': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
+            'status': ('django.db.models.fields.CharField', [], {'default': "'CREATING'", 'max_length': '64'}),
+            'updated': ('django.db.models.fields.DateTimeField', [], {'auto_now': 'True', 'blank': 'True'}),
+            'userid': ('django.db.models.fields.CharField', [], {'max_length': '100', 'db_index': 'True'}),
+            'volume_type': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'volumes'", 'on_delete': 'models.PROTECT', 'to': "orm['db.VolumeType']"})
+        },
+        'db.volumemetadata': {
+            'Meta': {'unique_together': "(('volume', 'key'),)", 'object_name': 'VolumeMetadata'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'key': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
+            'value': ('django.db.models.fields.CharField', [], {'max_length': '255'}),
+            'volume': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'metadata'", 'to': "orm['db.Volume']"})
+        },
+        'db.volumetype': {
+            'Meta': {'object_name': 'VolumeType'},
+            'deleted': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'disk_template': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '255'})
         }
     }
 

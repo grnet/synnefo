@@ -277,6 +277,42 @@ class CycladesTests(BurninTests):
         opmsg = opmsg % (server['name'], server['id'], new_status)
         self._try_until_timeout_expires(opmsg, check_fun)
 
+    def _insist_on_snapshot_transition(self, snapshot,
+                                       curr_statuses, new_status):
+        """Insist on snapshot transiting from curr_statuses to new_status"""
+        def check_fun():
+            """Check snapstho status"""
+            snap = \
+                self.clients.block_storage.get_snapshot_details(snapshot['id'])
+            if snap['status'] in curr_statuses:
+                raise Retry()
+            elif snap['status'] == new_status:
+                return
+            else:
+                msg = "Snapshot \"%s\" with id %s went to unexpected status %s"
+                self.error(msg, snapshot['display_name'],
+                           snapshot['id'], snap['status'])
+        opmsg = "Waiting for snapshot \"%s\" with id %s to become %s"
+        self.info(opmsg, snapshot['display_name'], snapshot['id'], new_status)
+        opmsg = opmsg % (snapshot['display_name'], snapshot['id'], new_status)
+        self._try_until_timeout_expires(opmsg, check_fun)
+
+    def _insist_on_snapshot_deletion(self, snapshot_id):
+        """Insist on snapshot deletion"""
+        def check_fun():
+            """Check snapshot details"""
+            try:
+                self.clients.block_storage.get_snapshot_details(snapshot_id)
+            except ClientError as err:
+                if err.status != 404:
+                    raise
+            else:
+                raise Retry()
+        opmsg = "Waiting for snapshot %s to be deleted"
+        self.info(opmsg, snapshot_id)
+        opmsg = opmsg % snapshot_id
+        self._try_until_timeout_expires(opmsg, check_fun)
+
     def _insist_on_network_transition(self, network,
                                       curr_statuses, new_status):
         """Insist on network transiting from curr_statuses to new_status"""

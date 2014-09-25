@@ -32,10 +32,11 @@ from StringIO import StringIO
 from binascii import hexlify
 
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
-from kamaki.clients.astakos import AstakosClient, parse_endpoints
+from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients.pithos import PithosClient
 from kamaki.clients.image import ImageClient
+from kamaki.clients.blockstorage import BlockStorageClient
 
 from synnefo_tools.burnin.logger import Log
 
@@ -152,33 +153,36 @@ class Clients(object):
         self.astakos = AstakosClient(self.auth_url, self.token)
         self.astakos.CONNECTION_RETRY_LIMIT = self.retry
 
-        endpoints = self.astakos.authenticate()
-
-        self.compute_url = _get_endpoint_url(endpoints, "compute")
+        self.compute_url = self.astakos.get_endpoint_url(
+            ComputeClient.service_type)
         self.compute = ComputeClient(self.compute_url, self.token)
         self.compute.CONNECTION_RETRY_LIMIT = self.retry
 
-        self.cyclades = CycladesClient(self.compute_url, self.token)
+        self.cyclades_url = self.astakos.get_endpoint_url(
+            CycladesClient.service_type)
+        self.cyclades = CycladesClient(self.cyclades_url, self.token)
         self.cyclades.CONNECTION_RETRY_LIMIT = self.retry
 
-        self.network_url = _get_endpoint_url(endpoints, "network")
+        self.block_storage_url = self.astakos.get_endpoint_url(
+            BlockStorageClient.service_type)
+        self.block_storage = BlockStorageClient(self.block_storage_url,
+                                                self.token)
+        self.block_storage.CONNECTION_RETRY_LIMIT = self.retry
+
+        self.network_url = self.astakos.get_endpoint_url(
+            CycladesNetworkClient.service_type)
         self.network = CycladesNetworkClient(self.network_url, self.token)
         self.network.CONNECTION_RETRY_LIMIT = self.retry
 
-        self.pithos_url = _get_endpoint_url(endpoints, "object-store")
+        self.pithos_url = self.astakos.get_endpoint_url(
+            PithosClient.service_type)
         self.pithos = PithosClient(self.pithos_url, self.token)
         self.pithos.CONNECTION_RETRY_LIMIT = self.retry
 
-        self.image_url = _get_endpoint_url(endpoints, "image")
+        self.image_url = self.astakos.get_endpoint_url(
+            ImageClient.service_type)
         self.image = ImageClient(self.image_url, self.token)
         self.image.CONNECTION_RETRY_LIMIT = self.retry
-
-
-def _get_endpoint_url(endpoints, endpoint_type):
-    """Get the publicURL for the specified endpoint"""
-
-    service_catalog = parse_endpoints(endpoints, ep_type=endpoint_type)
-    return service_catalog[0]['endpoints'][0]['publicURL']
 
 
 class Proper(object):

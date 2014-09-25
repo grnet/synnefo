@@ -261,12 +261,11 @@ class ImagesTestSuite(BurninTests):
     @classmethod
     def tearDownClass(cls):  # noqa
         """Clean up"""
-        if cls.temp_image_name is not None:
+        for container in ["burnin-images", "burnin-images-backup"]:
+            cls.clients.pithos.container = container
             try:
-                for container in ["burnin-images", "burnin-images-backup"]:
-                    cls.clients.pithos.container = container
-                    cls.clients.pithos.del_object(cls.temp_image_name)
-                    cls.clients.pithos.purge_container(container)
+                cls.clients.pithos.del_container(delimiter='/')
+                cls.clients.pithos.purge_container(container)
             except ClientError:
                 pass
 

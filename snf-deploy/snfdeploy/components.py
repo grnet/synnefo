@@ -1613,6 +1613,23 @@ class Kamaki(base.Component):
         self.ADMIN.make_user_admin_user()
 
     @base.run_cmds
+    def prepare(self):
+        cmd = """
+cat >> /etc/ca-certificates.conf <<EOF
+
+# Deploy local certificate
+local.org/snakeoil.crt
+EOF
+"""
+        return [
+            "mkdir -p /usr/share/ca-certificates/local.org",
+            "cp /etc/ssl/certs/ssl-cert-snakeoil.pem \
+                /usr/share/ca-certificates/local.org/snakeoil.crt",
+            cmd,
+            "update-ca-certificates",
+            ]
+
+    @base.run_cmds
     def initialize(self):
         url = "https://%s/astakos/identity/v2.0" % self.ctx.astakos.cname
         token = context.user_auth_token

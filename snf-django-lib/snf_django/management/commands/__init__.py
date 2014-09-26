@@ -382,8 +382,11 @@ class ListCommand(SynnefoCommand):
 
         # --filter-by option
         if options["filter_by"]:
-            filters, excludes = \
-                utils.parse_queryset_filters(options["filter_by"])
+            try:
+                filters, excludes = \
+                    utils.parse_queryset_filters(options["filter_by"])
+            except ValueError as e:
+                raise CommandError(e)
         else:
             filters, excludes = ({}, {})
 

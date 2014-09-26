@@ -127,7 +127,11 @@ def parse_queryset_filters(filters):
                 filter_dict[key + new_op] = parse_bool(val, strict=False)
                 break
         else:
-            raise ValueError("Unknown filter expression: %s" % filter_str)
+            msg = (("Invalid filter-by expression '%s'."
+                    " Filters must be of the form \"key `operator` value\"."
+                    " Available operators: "
+                    + ",".join([k for k, v in OP_MAP])) % filter_str)
+            raise ValueError(msg)
 
     return (filter_dict, exclude_dict)
 

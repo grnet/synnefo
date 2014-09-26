@@ -5,14 +5,14 @@
     <meta charset="utf-8">
     <link rel="shortcut icon" href="{{ BRANDING_FAVICON_URL }}" />
     <title>{{BRANDING_SERVICE_NAME}} admin</title>
-    <link href="{{ ADMIN_MEDIA_URL }}css/icon-fonts.css" rel="stylesheet">
+    <link href="{{ ADMIN_MEDIA_URL }}{% min_prefix %}css/icon-fonts.css" rel="stylesheet">
     <!-- There is no minified version of jquery.dataTables.css in DataTables 1.10.0 -->
     <link href="{{ ADMIN_MEDIA_URL }}css/jquery.dataTables.css" rel="stylesheet">
 
     {% if request.COOKIES.theme == 'dark' %}
-    <link href="{{ ADMIN_MEDIA_URL }}css/{% min_dir %}main.css" rel="stylesheet">
+    <link href="{{ ADMIN_MEDIA_URL }}{% min_prefix %}css/main.css" rel="stylesheet">
     {% else  %}
-    <link href="{{ ADMIN_MEDIA_URL }}css/{% min_dir %}main-light.css" rel="stylesheet">
+    <link href="{{ ADMIN_MEDIA_URL }}{% min_prefix %}css/main-light.css" rel="stylesheet">
     {% endif %}
     <!--
     <link href="{{ ADMIN_MEDIA_URL }}css/ie7.css" rel="stylesheet"> -->

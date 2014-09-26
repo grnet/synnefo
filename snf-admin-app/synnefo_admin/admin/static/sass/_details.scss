@@ -180,8 +180,9 @@
         border-bottom: 2px solid $object-details-border;		
         background: $object-details-bg;
 		padding:14px 20px;
-		.object-details {
-			padding: 5px 20px;
+        overflow-x: auto;
+        .object-details {
+            padding: 5px 20px;
             &:hover,
             &:focus{
                 background: $object-details-row-hover-bg;

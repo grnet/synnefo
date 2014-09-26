@@ -472,11 +472,11 @@ def show_more_exception_message(assoc):
 
 
 @register.simple_tag
-def min_dir():
+def min_prefix():
     """
     Return minified files folder for production environment
     """
     if settings.DEBUG == False:
-        return 'min/'
+        return 'min-'
     else:
         return ''

@@ -486,14 +486,15 @@ $(document).ready(function() {
 			e.preventDefault();
         
 			var $summaryTd = $(this).closest('td');
-			var $btn = $summaryTd.find('.expand-area span');
+			var $btn = $summaryTd.find('.expand-area');
+			var $btnIcon = $btn.find('span');
 			var $summaryContent = $summaryTd.find('.info-summary');
 			
 			var summaryContentWidth = $summaryTd.closest('tr').width();
-			var summaryContentHeight = $summaryTd.closest('tr').height() - parseInt($summaryTd.css('padding-top')) - $btn.height();
+			var summaryContentHeight = $summaryTd.closest('tr').height() - parseInt($summaryTd.css('padding-top')) - $btn.height()- parseInt($summaryTd.css('padding-bottom')) ;
 			var summaryContPos = summaryContentWidth - $summaryTd.width()+ parseInt($summaryTd.css('padding-left'));
 
-            if ( $btn.hasClass('snf-angle-down')) {
+            if ( $btnIcon.hasClass('snf-angle-down')) {
                 $summaryContent.css({
                     width: summaryContentWidth,
                     right: summaryContPos,
@@ -501,13 +502,13 @@ $(document).ready(function() {
                 });
             }
 		    
-            $btn.toggleClass('snf-angle-up snf-angle-down');
+            $btnIcon.toggleClass('snf-angle-up snf-angle-down');
 			$summaryContent.stop().slideToggle(600, function() {
 				if ($summaryContent.is(':visible')) {
-					$btn.removeClass('snf-angle-down').addClass('snf-angle-up');    
+					$btnIcon.removeClass('snf-angle-down').addClass('snf-angle-up');    
 				}
 				else {
-					$btn.removeClass('snf-angle-up').addClass('snf-angle-down');
+					$btnIcon.removeClass('snf-angle-up').addClass('snf-angle-down');
 				}
 			});
 		})

@@ -21,6 +21,7 @@ from datetime import datetime
 from synnefo.lib.ordereddict import OrderedDict
 
 from django.core.urlresolvers import reverse, NoReverseMatch
+from django.utils.encoding import smart_unicode
 from django.utils.translation import ugettext as _
 from django.contrib.auth.models import Group
 from django import template
@@ -311,7 +312,8 @@ class AuthProvider(object):
                 if override_in_settings is not None:
                     msg = override_in_settings
                 try:
-                    self.message_tpls_compiled[key] = msg.format(**params)
+                    tpl = smart_unicode(msg)
+                    self.message_tpls_compiled[key] = tpl.format(**params)
                     params.update(self.message_tpls_compiled)
                 except KeyError, e:
                     continue

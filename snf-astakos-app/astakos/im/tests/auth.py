@@ -1287,6 +1287,12 @@ class TestAuthProvidersAPI(TestCase):
         self.assertEqual(provider.get_not_active_msg,
                          "'Academic login' is disabled.")
 
+        user = get_local_user(u'kpap@s\u1e6bbynnefo.org')
+        provider = auth_providers.get_provider('shibboleth', user, u'kpap@s\u1e6bynnefo.org')
+        self.assertEqual(provider.get_method_details_msg, u'Account: kpap@s\u1e6bynnefo.org')
+        self.assertEqual(provider.get_username_msg, u'kpap@s\u1e6bynnefo.org')
+
+
     @im_settings(IM_MODULES=['local', 'shibboleth'])
     @shibboleth_settings(LIMIT_POLICY=2)
     def test_templates(self):

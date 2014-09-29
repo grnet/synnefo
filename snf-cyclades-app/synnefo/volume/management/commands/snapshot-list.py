@@ -22,15 +22,19 @@ from synnefo.plankton.backend import PlanktonBackend
 
 
 class Command(SynnefoCommand):
-    help = "List public snapshots or snapshots available to a user."
+    help = "List snapshots."
     option_list = SynnefoCommand.option_list + (
         make_option(
             '--user',
             dest='userid',
             default=None,
-            help="List all snapshots available to that user."
-                 " If no user is specified, only public snapshots"
-                 " are displayed."),
+            help="List only snapshots that are available to this user."),
+        make_option(
+            '--public',
+            dest='public',
+            action="store_true",
+            default=False,
+            help="List only public snapshots."),
     )
 
     def handle(self, **options):
@@ -40,6 +44,8 @@ class Command(SynnefoCommand):
         with PlanktonBackend(user) as backend:
             snapshots = backend.list_snapshots(user,
                                                check_permissions=check_perm)
+            if options['public']:
+                snapshots = filter(lambda x: x['is_public'], snapshots)
 
         headers = ("id", "name", "volume_id", "size", "mapfile", "status",
                    "owner", "is_public")

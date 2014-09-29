@@ -24,8 +24,24 @@ Admin
 UI
 --
 
-* Remove UI_SNAPSHOTS_ENABLED setting. UI now uses CYCLADES_SNAPSHOTS_ENABLED 
+* Remove UI_SNAPSHOTS_ENABLED setting. UI now uses CYCLADES_SNAPSHOTS_ENABLED
   setting to resolve whether or not snapshot functionality should be enabled.
+
+Cyclades
+--------
+
+* Make snf-dispatcher update status of snapshots when Ganeti job fails.
+* Implement reconciliation for stale snapshots.
+
+Pithos
+------
+
+* Restore PostgreSQL 8.4 compatibility.
+
+Tools
+-----
+
+* Extend snf-burnin to include testing of snapshots.
 
 
 v0.16rc1

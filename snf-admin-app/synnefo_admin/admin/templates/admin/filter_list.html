@@ -1,0 +1,18 @@
+{% load admin_tags %}
+<div class="filters filters-area">
+	<a class="onoffswitch search-mode">
+    <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox" id="myonoffswitch" checked>
+    <label class="onoffswitch-label" for="myonoffswitch">
+        <span class="onoffswitch-inner"></span>
+        <span class="onoffswitch-switch"></span>
+    </label>
+</a>
+	<!-- <a class="search-mode search-mode-btn">Compact View</a> -->
+	<!-- use it to center it (sort of) -->
+	{% for filter in filter_dict %}
+		{% include filter|get_filter_template %}
+	{% endfor %}
+
+    {% include "admin/filter_compact.html" %}
+</div>
+

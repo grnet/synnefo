@@ -19,6 +19,7 @@ from itertools import groupby
 
 from dbworker import DBWorker
 
+from pithos.backends.base import MAP_AVAILABLE
 from pithos.backends.filter import parse_filters
 
 
@@ -133,7 +134,7 @@ class Node(DBWorker):
                             uuid       text    not null default '',
                             checksum   text    not null default '',
                             cluster    integer not null default 0,
-                            available   boolean not null default true,
+                            available   integer not null default 1,
                             map_check_timestamp integer,
                             mapfile     text,
                             is_snapshot   boolean not null default false,
@@ -573,7 +574,7 @@ class Node(DBWorker):
     def version_create(self, node, hash, size, type, source, muser, uuid,
                        checksum, cluster=0,
                        update_statistics_ancestors_depth=None,
-                       available=True, map_check_timestamp=None,
+                       available=MAP_AVAILABLE, map_check_timestamp=None,
                        mapfile=True, is_snapshot=False):
         """Create a new version from the given properties.
            Return the (serial, mtime, mapfile) of the new version.
@@ -756,6 +757,22 @@ class Node(DBWorker):
             self.nodes_set_latest_version(node, props[0])
         return hash, size
 
+
+    def attribute_get_domains(self, serial, node=None):
+        q = ("select distinct domain from attributes "
+             "where serial = ? ")
+        args = [serial]
+        if node is not None:
+            q += ("and node = ?")
+            args += [node]
+        else:
+            q += ("and node = "
+                  "(select node from versions where serial = ?)")
+            args += [serial]
+        execute = self.execute
+        execute(q, args)
+        return [d[0] for d in self.fetchall()]
+
     def attribute_get(self, serial, domain, keys=()):
         """Return a list of (key, value) pairs of the specific version.
 
@@ -777,14 +794,16 @@ class Node(DBWorker):
 
     def attribute_set(self, serial, domain, node, items, is_latest=True):
         """Set the attributes of the version specified by serial.
-           Receive attributes as an iterable of (key, value) pairs.
+           Receive attributes as a mapping object.
         """
 
+        if not items:
+            return
         q = ("insert or replace into attributes "
              "(serial, domain, node, is_latest, key, value) "
              "values (?, ?, ?, ?, ?, ?)")
         self.executemany(q, ((serial, domain, node, is_latest, k, v) for
-                         k, v in items))
+                         k, v in items.iteritems()))
 
     def attribute_del(self, serial, domain, keys=()):
         """Delete attributes of the version specified by serial.
@@ -794,8 +813,9 @@ class Node(DBWorker):
 
         if keys:
             q = ("delete from attributes "
-                 "where serial = ? and domain = ? and key = ?")
-            self.executemany(q, ((serial, domain, key) for key in keys))
+                 "where serial = ? and domain = ? and key in (%s)" %
+                 ','.join(keys))
+            self.execute(q, (serial, domain))
         else:
             q = "delete from attributes where serial = ? and domain = ?"
             self.execute(q, (serial, domain))
@@ -1141,17 +1161,19 @@ class Node(DBWorker):
         """
 
         props = ('n.path', 'v.serial', 'v.node', 'v.hash', 'v.size', 'v.type',
-                'v.source', 'v.mtime', 'v.muser', 'v.uuid', 'v.checksum',
-                'v.cluster', 'v.mapfile', 'v.is_snapshot')
-        cols = props + ['a.key', 'a.value']
+                 'v.source', 'v.mtime', 'v.muser', 'v.uuid', 'v.checksum',
+                 'v.cluster', 'v.available', 'v.map_check_timestamp',
+                 'v.mapfile', 'v.is_snapshot')
+        cols = list(props) + ['a.key', 'a.value']
+        args = [domain]
         q = ("select %s from nodes n, versions v, attributes a "
              "where v.serial = a.serial and "
              "a.domain = ? and "
              "a.node = n.node and "
-             "a.is_latest = 1 and "
-             "n.path in (%s)") % (cols, ','.join('?' for _ in paths))
-        args = [domain]
-        map(args.append, paths)
+             "a.is_latest = 1 ") % ','.join(cols)
+        if paths:
+            q += ("and path in (%s) " % ','.join('?' for _ in paths))
+            map(args.append, paths)
         if cluster is not None:
             q += "and v.cluster = ?"
             args += [cluster]

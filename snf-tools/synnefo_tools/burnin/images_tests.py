@@ -188,6 +188,59 @@ class ImagesTestSuite(BurninTests):
         self.assertEqual(found_img['name'], uni_name)
         self.info("Image registered with id %s", found_img['id'])
 
+        self.info("Checking if image is listed "
+                  "under the specific container in pithos")
+        self._set_pithos_account(self._get_uuid())
+        pithos = self.clients.pithos
+        pithos.container = 'burnin-images'
+        self.assertTrue(self.temp_image_name in (
+            o['name'] for o in pithos.list_objects()))
+
+        self.info("Checking copying image to "
+                  "another pithos container.")
+        pithos.container = other_container = 'burnin-images-backup'
+        pithos.create_container()
+        pithos.copy_object(
+            src_container='burnin-images',
+            src_object=self.temp_image_name,
+            dst_container=other_container,
+            dst_object='%s_copy' % self.temp_image_name)
+
+        # Verify quotas
+        file_size = os.path.getsize(self.temp_image_file)
+        changes = \
+            {self._get_uuid(): [(QPITHOS, QADD, file_size, None)]}
+        self._check_quotas(changes)
+
+        self.info("Checking copied image "
+                  "is listed among the images.")
+        images = self._get_list_of_images(detail=True)
+        locations = [i['location'] for i in images]
+        location2 = "pithos://" + self._get_uuid() + \
+            "/burnin-images-backup/" + '%s_copy' % self.temp_image_name
+        self.assertTrue(location2 in locations)
+
+        self.info("Set image metadata in the pithos domain")
+        pithos.set_object_meta('%s_copy' % self.temp_image_name,
+                {'foo': 'bar'})
+
+        self.info("Checking copied image "
+                  "is still listed among the images.")
+        images = self._get_list_of_images(detail=True)
+        locations = [i['location'] for i in images]
+        location2 = "pithos://" + self._get_uuid() + \
+            "/burnin-images-backup/" + '%s_copy' % self.temp_image_name
+        self.assertTrue(location2 in locations)
+
+        # delete copied object
+        self.clients.pithos.del_object('%s_copy' % self.temp_image_name)
+
+        # Verify quotas
+        file_size = os.path.getsize(self.temp_image_file)
+        changes = \
+            {self._get_uuid(): [(QPITHOS, QREMOVE, file_size, None)]}
+        self._check_quotas(changes)
+
     def test_010_cleanup_image(self):
         """Remove uploaded image from Pithos"""
         # Remove uploaded image
@@ -208,10 +261,11 @@ class ImagesTestSuite(BurninTests):
     @classmethod
     def tearDownClass(cls):  # noqa
         """Clean up"""
-        if cls.temp_image_name is not None:
+        for container in ["burnin-images", "burnin-images-backup"]:
+            cls.clients.pithos.container = container
             try:
-                cls.clients.pithos.container = "burnin-images"
-                cls.clients.pithos.del_object(cls.temp_image_name)
+                cls.clients.pithos.del_container(delimiter='/')
+                cls.clients.pithos.purge_container(container)
             except ClientError:
                 pass
 

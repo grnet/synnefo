@@ -2052,9 +2052,11 @@
             var url = getUrl.call(this) + "/" + id;
             this.api_call(this.path + "/" + id, "read", {_options:{async:false, skip_api_error:true}}, undefined, 
             _.bind(function() {
-                this.add({id:id, cpu:"Unknown", ram:"Unknown", disk:"Unknown", name: "Unknown", status:"DELETED"})
+                this.add({id:id, cpu:"Unknown", ram:"Unknown", disk:"Unknown", disk_template: "Unknown", name: "Unknown", status:"DELETED"})
             }, this), _.bind(function(flv) {
                 if (!flv.flavor.status) { flv.flavor.status = "DELETED" };
+                flv.flavor.cpu = flv.flavor['vcpus'];
+                flv.flavor.disk_template = flv.flavor['SNF:disk_template'];
                 this.add(flv.flavor);
             }, this));
         },

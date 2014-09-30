@@ -52,6 +52,18 @@ following Synnefo specific (proprietary) API:
 
     Resource and Quota API <quota-api-guide.rst>
 
+Weblogin Service API (Astakos)
+==============================
+
+The Weblogin Service is implemented inside Astakos and have the
+following Synnefo API:
+
+.. toctree::
+    :maxdepth: 2
+
+    Weblogin API <weblogin-api-guide.rst>
+
+
 Project Service API
 ===================
 

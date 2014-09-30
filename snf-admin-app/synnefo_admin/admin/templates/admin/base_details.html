@@ -1,0 +1,99 @@
+{% extends "admin/base.html" %}
+{% load admin_tags %}
+
+{% block subnav-bar %}
+    {% include "admin/subnav.html" %}
+{% endblock subnav-bar %}
+
+{% block main-area%}
+
+<div class="container part-one">
+
+    {% block main-item-details %}
+
+        {# Start of the decoration of main item #}
+        {% block main-item-head %}
+            {% include "admin/_base_main_item_head.html" %}
+        {% endblock %}
+
+        {# This is the section for the item for which we hare requested details #}
+        {% block main-item %}
+            {% include main_type|get_details_template with item=main_item type=main_type %}
+        {% endblock %}
+
+        {# End of the decoration of main item #}
+        {% block main-item-tail %}
+            {% include "admin/_base_main_item_tail.html" %}
+        {% endblock %}
+
+    {% endblock %}
+
+</div>
+
+<div class="parts-separator">
+    <h2>
+        <div class="container">
+        Associations for <em title="{{ main_item|repr }}" data-toggle="tooltip" data-placement="bottom">'{{ main_item|repr }}'</em> :
+        </div>    
+    </h2>
+</div>
+
+<div class="container part-two">
+
+    {# This is a list of associations for this item #}
+    {% block item-associations-list %}
+        {% for association in associations_list %}
+        {% with type=association.type %}
+
+            {# Seperator for the start of the list #}
+            {% block item-list-head %}
+                {% include "admin/_base_list_head.html" %}
+            {% endblock item-list-head %}
+
+            {# This is an item list for each association #}
+            {% block item-list %}
+                {% for item in association.items %}
+
+	                <!-- {% cycle 'row1' 'row2' as rowcls %}  -->
+                    {# Details for an item in the list #}
+                    {% block item-details %}
+                        {% include type|get_details_template with action_dict=association.actions%}
+                    {% endblock item-details %}
+                {% empty %}
+                    <p>No items in the list</p>
+                {% endfor %}
+            {% endblock item-list %}
+
+            {# Seperator for the end of the list #}
+            {% block item-list-tail %}
+                {% include "admin/_base_list_tail.html" %}
+            {% endblock item-list-tail %}
+
+        {% endwith %}
+        {% empty %}
+        <p>No associations for this item</p>
+        {% endfor %}
+    {% endblock item-associations-list %}
+    <div class="custom-buttons bottom">
+        <a href="" id="toggle-notifications" title="Open/Close notifications" class="select line-btn" data-karma="neutral" data-caution="none">
+            <span class="snf-bell-1"></span>
+        </a>
+        <a href="" class="line-btn shortcuts-btn">
+            <span data-container="body" data-toggle="popover" data-html="true" data-placement="right" data-content='{% include "admin/tips.html" %}'>
+	            <i class="snf-book-2 book-icon"></i>
+	            Tips and Tricks
+            </span>
+	    </a>
+    </div>
+
+    <!-- Modals -->
+    {% block action-modals %}
+        {% include "admin/action_modal_list.html" %}
+    {% endblock action-modals %}
+</div>
+{% endblock main-area%}
+
+{% block custom-javascript %}
+<script src="{{ MEDIA_URL }}admin/js/details.js"></script>
+{% endblock %}
+

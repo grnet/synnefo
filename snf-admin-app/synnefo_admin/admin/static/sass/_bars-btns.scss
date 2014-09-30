@@ -1,0 +1,397 @@
+$default-btn-padding: 8px;
+// ====== BUTTONS ====== //
+// All buttons imply a structure <a><span>button</span></a>
+
+/*
+Disabled buttons are transparent with light gray border
+and light gray font colors
+*/
+
+@mixin disabled() {
+    background: transparent!important;
+    border-color: $btn-link-disabled-color!important;
+    color: $btn-link-disabled-color!important;
+	&:hover,
+    &:focus{
+        cursor: default;
+		opacity: 1;
+        span {
+            color: $btn-link-disabled-color!important;
+        }
+	}
+}
+
+// All buttons extend default-btn
+@mixin default-btn($padding: $default-btn-padding) {
+	display: inline-block;
+	text-align: center;
+	opacity: 1;
+	span {
+		display: inline-block;
+		height: 100%;
+		line-height: 100%;
+		padding: $padding;
+	}
+	&:hover,
+    &:focus{
+		text-decoration: none;
+		opacity: 0.85;
+	}
+    // span[class^="snf-font"] {
+    //     display: inline;
+    // }
+
+    // temporary
+	.snf-font-remove {
+		display: inline;
+	}
+    &.disabled {
+        @include disabled;
+    }
+}
+
+
+// Transparent buttons with thin $color border that get thicker on hover
+@mixin outline-btn($color:$btn-outline-color, $background:inherit, $padding:$default-btn-padding) {
+	@include default-btn($padding);
+	border: 1px solid $color;
+	color: $color;
+	span {
+		border: 1px solid transparent;
+        width: 100%;
+	}
+	&:hover,
+    &:focus{
+		span {
+			border-color: $color;
+		}
+	}
+    &.disabled {
+        @inlcude disabled;
+        color: $btn-link-disabled-color;
+        &:hover,
+        &:focus {
+            span {
+                border-color: transparent;
+            }
+        }
+    }
+}
+
+// Normal button with background-color and white font color
+@mixin custom-btn($color:$default-btn-color, $padding:$default-btn-padding) {
+	@include default-btn($padding);
+	border: 1px solid $color;
+	color: $secondary-link-color;
+    background-color: $color;
+	span {
+		border: 1px solid transparent;
+		background: transparent;
+	}
+	&:hover,
+    &:focus{
+		span {
+			color: $secondary-link-color;
+		}
+	}
+    &.disabled {
+        @include disabled;
+    }
+}
+
+// Buttons with thick bottom border on hover
+@mixin line-btn($color:$btn-line-bg, $padding:$default-btn-padding, $border:$btn-line-border ) {
+	@include default-btn($padding);
+	background-color: $color;
+	border-bottom: 2px solid $color;
+	color: $border;
+	&:hover,
+    &:focus{
+        opacity:1;
+		border-bottom-color: $border;
+        color: $border;
+	}
+}
+
+.line-btn {
+	@include line-btn();
+}
+
+.outline-btn {
+	@include outline-btn();
+}
+
+.custom-btn {
+	@include custom-btn();
+	&[data-karma="neutral"] {
+		background-color: $blue-intense;
+		border-color: $blue-intense;
+	}
+	&[data-karma="good"] {
+		background-color: $green-intense;
+		border-color: $green-intense;
+	}
+
+	&[data-karma="bad"] {
+		background-color: $orange-intense;
+		border-color: $orange-intense;
+	}
+
+	&[data-caution="warning"][data-karma="good"], &[data-caution="warning"][data-karma="neutral"] {
+		background-color: $orange-intense;
+		border-color: $orange-intense;
+	}
+
+	&[data-caution="dangerous"][data-karma="bad"], &[data-caution="dangerous"][data-karma="neutral"] {
+		background-color: $red-intense;
+		border-color: $red-intense;
+	}
+}
+
+.search-btn {
+	@include line-btn();
+	position: relative;
+	top: -2px;
+	margin-left: 20px;
+	span {
+		padding: 7px;
+	}
+    cursor: pointer;
+}
+
+.search-mode-btn {
+	float: right;
+	line-height: 30px;
+	&:hover {
+		cursor: pointer;
+	}
+}
+
+.instructions .line-btn {
+    padding: 8px 9px;
+    span {
+        padding: 0 4px;
+    }
+    &:hover {
+        .arrow {
+        font-weight: bold;
+        }
+    }
+    &.open:hover {
+        border-bottom-color: transparent;
+    }
+    .arrow {
+        vertical-align: middle;
+    }
+}
+
+// ====== STUFF ====== //
+
+
+/* Sidebar */
+
+.sidebar {
+	margin: 0 30px 0 0;
+	width: $sidebar-width;
+	height: auto;
+	float: left;
+	.btn-group-vertical {
+		width: 100%;
+	}
+    @media (max-width: $screen-lg-min) {
+        width: auto;
+        margin: 20px auto;
+        float: none;
+        .btn-group-vertical {
+            a {
+                margin-right: 10px;
+                display: inline-block;
+            }
+        }
+    }
+}
+
+/*
+Positioning or customizing buttons
+*/
+
+.sidebar  {
+	.custom-btn {
+		display: block;
+		margin: 0 0 1em;
+		span {
+			padding: 8px;
+		}
+	}
+}
+
+body .custom-buttons {
+	float: left;
+	margin-right: 10px;
+	.line-btn {
+		margin-right: 1em;
+	}
+	.disabled {
+		display: none;
+	}
+	.snf-font-reload {
+		@extend .snf-refresh-outline;
+	}
+	.snf-font-remove {
+		@extend .snf-remove;
+	}
+}
+
+
+
+/*
+Extra-button is used to show total selected rows
+*/
+
+body .custom-buttons .extra-btn {
+    float: right;
+    margin-right: 0;
+    span {
+        display: inline-block;
+    }
+	.badge {
+		background: transparent;
+		line-height: 0.8;
+		display: inline;
+		padding: 0 5px 0 0;
+        font-weight: normal;
+        font-size: 1em;
+		&::before {
+			content: "("
+		}
+		&::after {
+			content: ")"
+		}
+	}
+}
+
+.show-hide-all {
+	float:right;
+    em {
+        font-style: normal;
+    }
+    &.line-btn {
+        padding: $default-btn-padding;
+        span {
+            display:inline;
+        }
+    }
+}
+
+.actions-per-item {
+	.custom-btn {
+		margin: 10px 10px 10px 0;
+	}
+}
+.charts {
+    .chart {
+        display: none;
+    }
+    .sidebar {
+        a {
+            @include outline-btn();
+            display: block;
+            margin: 20px auto;
+        }
+        a.active {
+            @include custom-btn();
+            display: block;
+        }
+        @media (max-width: $screen-lg-min) {
+            a, a.active {
+                margin-right: 10px;
+                display: inline-block;
+            }
+        }
+    }
+}
+
+.notify .reload-btn {
+	padding: 0 4px;
+	font-size: 18px;
+	vertical-align: middle;
+    cursor: pointer;
+}
+
+/* Switch in filters */
+
+.onoffswitch {
+	display: inline-block;
+	float: right;
+    position: relative;
+    width: 134px;
+    -webkit-user-select:none;
+    -moz-user-select:none;
+    -ms-user-select: none;
+}
+.onoffswitch-checkbox {
+    display: none;
+}
+.onoffswitch-label {
+    display: block;
+    overflow: hidden;
+    cursor: pointer;
+    /*border: 2px solid #F7EFEF;*/
+    border-radius: 20px;
+}
+.onoffswitch-inner {
+    display: block; width: 200%; margin-left: -100%;
+    -moz-transition: margin 0.3s ease-in 0s;
+    -webkit-transition: margin 0.3s ease-in 0s;
+    -o-transition: margin 0.3s ease-in 0s;
+    transition: margin 0.3s ease-in 0s;
+}
+.onoffswitch-inner:before, .onoffswitch-inner:after {
+    display: block;
+    float: left;
+    width: 50%;
+    height: 30px;
+    padding: 0;
+    line-height: 30px;
+    font-size: 12px;
+    color: white;
+    font-family: Trebuchet, Arial, sans-serif;
+    font-weight: normal;
+    -moz-box-sizing: border-box; -webkit-box-sizing: border-box; box-sizing: border-box;
+}
+.onoffswitch-inner:before {
+    content: "Standard View";
+    padding-left: 10px;
+    background-color: $btn-line-bg;
+    color: $btn-line-border;
+}
+.onoffswitch-inner:after {
+    content: "Compact View";
+    padding-right: 10px;
+    background-color: $btn-line-bg;
+    color: $btn-line-border;
+    text-align: right;
+}
+.onoffswitch-switch {
+    display: block;
+    width: 19px;
+    margin: 6px;
+    background: $btn-line-border;
+    border: 2px solid #F7EFEF;
+    border-radius: 20px;
+    position: absolute;
+    top: 0;
+    bottom: 4px;
+    right: 103px;
+    -moz-transition: all 0.3s ease-in 0s;
+    -webkit-transition: all 0.3s ease-in 0s;
+    -o-transition: all 0.3s ease-in 0s;
+    transition: all 0.3s ease-in 0s;
+}
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-inner {
+    margin-left: 0;
+}
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-switch {
+    right: 0px;
+}
+

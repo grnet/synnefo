@@ -17,7 +17,7 @@ from optparse import make_option
 
 from django.db.models import Q
 from snf_django.management.commands import SynnefoCommand, CommandError
-from django.db import transaction
+from astakos.im import transaction
 from synnefo.util import units
 from astakos.im import functions
 from astakos.im import models

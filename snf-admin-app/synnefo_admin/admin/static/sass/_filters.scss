@@ -1,0 +1,171 @@
+$filter-margin: 10px;
+$filter-height: 30px;
+
+
+.filters-area {
+	margin-bottom: $navbar-height - $filter-margin;
+}
+
+.filters {
+	a:focus, input:focus {
+		outline: none;
+	}
+}
+
+.filters .badge {
+	margin-left: 6px;
+	opacity: 0.9;
+	padding: 2px 9px;
+}
+
+.filters ul.nav a {
+	padding-bottom: 10px;
+}
+
+.filter {
+    height: $filter-height;
+    margin: 0 $filter-margin $filter-margin 0;
+    display: inline-block;
+    background: $filter-bg;
+    border: 1px solid $filter-border-color;
+    .form-group {
+        margin: 0;
+        height: $filter-height;
+    }
+    label,
+    .dropdown{
+        height: $filter-height;
+        line-height: $filter-height;
+        border: 0 none;
+        padding: 0 10px;
+        color: $filter-font-color;
+        background: transparent;
+        font-weight: normal;
+        margin: 0;
+    }
+    .dropdown-menu {
+        background: $filter-bg;
+        margin: 0;
+        > .active > a{
+            background: $filter-active-bg;
+        }
+        > li:hover >a {
+            background: $filter-hover-bg;
+            color: $filter-hover-color;
+        }
+    }
+    input {
+        border: 0 none;
+        background: transparent;
+        height: $filter-height;
+        line-height: $filter-height;
+        padding: 0 5px;
+        font-weight: normal;
+        color: $filter-font-color;
+    }
+}
+
+.filter-dropdown {
+	.dropdown {
+		&>a {
+			.selected-value {
+				margin-left: 4px;
+			}
+			.arrow {
+				font-weight: bold;
+			}
+		}
+		&.open {
+			a {
+				text-decoration: none;
+				color: $filter-font-color;
+			}
+		}
+		a {
+			color: $filter-font-color;
+		}
+		.dropdown-menu {
+			width: auto;
+			a {
+				span {
+					margin-right: 6px;
+				}
+				padding-left: 12px;
+				padding-right: 12px;
+			}
+		}
+	}
+}
+
+.filters.subnav-fixed {
+	top: $navbar-height;
+}
+
+.input-with-btn {
+	border-width: 0px;
+	background-color: transparent;
+	input {
+		@media screen and (min-width: 400px) {
+			width: 200px;
+		}
+		@media screen and (min-width: 600px) {
+			width: 300px;
+		}
+		@media screen and (min-width: 800px) {
+			width: 500px;
+		}
+		@media screen and (min-width: 1000px) {
+			width: 700px;
+		}
+	}
+	.form-group {
+		display: inline-block;
+		background: $filter-bg;
+		border: 1px solid $filter-border-color;
+		margin-bottom: 0.6em;
+	}
+	.error-sign {
+		display: block;
+		opacity: 0;
+		position: static;
+		display: inline-block;
+		margin-right: 6px;
+		margin-left: 6;
+		vertical-align: bottom;
+	}
+	.form-group, .filter-error, .instructions {
+		margin-left: $sidebar-width + 30px;
+		@media (max-width: $screen-lg-min) {
+			margin: 0 $filter-margin $filter-margin 0;
+		}
+	}
+	&.no-margin-left .form-group, &.no-margin-left .filter-error, &.no-margin-left .instructions {
+		margin-left: 0;
+	}
+
+	.instructions {
+		margin-top: 0.6em;
+		* {
+			color: $btn-line-border;
+		}
+		.content-area {
+			display: none;
+			background: $btn-line-bg;
+			padding: 12px 13px 18px;
+			dt {
+				width: 200px;
+			}
+			dd {
+				margin-left: 220px;
+			}
+		}
+		.clarifications {
+			font-style: italic;
+		}
+	}
+
+}
+
+.filter.invisible {
+	display: none;
+}

@@ -1,0 +1,30 @@
+{% extends "admin/base.html" %}
+
+{% block content %}
+
+    {# Show the filter list only in views that have filters #}
+    {% if filter_dict %}
+        {% block filter-list %}
+            {% include "admin/filter_list.html" %}
+        {% endblock filter-list %}
+    {% endif %}
+
+    {% block action-list %}
+        {% include "admin/action_list_vertical.html" %}
+    {% endblock action-list %}
+
+    {% block table-area %}
+        {% include "admin/table.html" %}
+    {% endblock %}
+
+    <!-- Modals -->
+    {% block action-modals %}
+        {% include "admin/action_modal_list.html" %}
+    {% endblock action-modals %}
+
+{% endblock %}
+
+{% block custom-javascript %}
+<script src="{{ MEDIA_URL }}admin/js/jquery.dataTables.js"></script>
+<script src="{{ MEDIA_URL }}admin/js/tables.js"></script>
+{% endblock %}

@@ -1,0 +1,4 @@
+recursive-include synnefo_admin/admin/static *
+recursive-include synnefo_admin/docs/ *.rst
+
+include distribute_setup.py

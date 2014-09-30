@@ -67,7 +67,6 @@ def add_resource(resource_dict):
     except Resource.DoesNotExist:
         r = Resource(name=name,
                      uplimit=units.PRACTICALLY_INFINITE,
-                     project_default=units.PRACTICALLY_INFINITE,
                      service_type=service_type,
                      service_origin=service_origin)
         exists = False
@@ -75,6 +74,8 @@ def add_resource(resource_dict):
             value = resource_dict.get(field)
             if value is not None:
                 setattr(r, field, value)
+
+        r.project_default = 0 if r.api_visible else units.PRACTICALLY_INFINITE
 
     for field in main_fields:
         value = resource_dict.get(field)

@@ -84,9 +84,6 @@
         initialize: function() {
             views.CreateVolumeImageStepView.__super__.initialize.apply(this, arguments);
             this.$(".other-types-cont").removeClass("hidden");
-            var images = this.$(".image-types-cont");
-            var snapshots = this.$(".snapshot-types-cont");
-            images.appendTo(snapshots.parent());
 
             this.empty_image = new synnefo.glance.models.GlanceImage();
             this.empty_image.set({
@@ -95,8 +92,6 @@
                 size: 0,
                 description: "Empty disk"
             });
-            delete this.type_selections['system'];
-            this.type_selections_order.splice(0, 1);
             this.create_types_selection_options();
             this.create_snapshot_types_selection_options();
         },
@@ -246,10 +241,12 @@
             if (!this.parent.project) { return }
             var disk = this.parent.project.quotas.get("cyclades.disk");
             var available = disk.get("available");
+            var max_size = synnefo.config.volume_max_size;
             available = available / Math.pow(1024, 3);
             if (disk.infinite()) {
-                available = synnefo.config.volume_max_size;
+                available = max_size;
             }
+            if (available > max_size) { available = max_size; }
             this.set_slider_max(parseInt(available));
             this.update_layout();
         },
@@ -501,6 +498,7 @@
         view_id: "create_volume_view",
         content_selector: "#createvolume-overlay-content",
         title: "Create new disk",
+        min_quota: min_volume_quota,
         
         setup_step_views: function() {
             this.steps[1] = new views.CreateVolumeImageStepView(this);

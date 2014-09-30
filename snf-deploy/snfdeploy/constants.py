@@ -18,6 +18,7 @@ DB = "db"
 MQ = "mq"
 ASTAKOS = "astakos"
 CYCLADES = "cyclades"
+ADMIN = "admin"
 PITHOS = "pithos"
 CLIENT = "client"
 ROUTER = "router"
@@ -54,12 +55,10 @@ STATS_SECRET = "stats_secret"
 COLLECTD_SECRET = "collectd_secret"
 
 # This is used for generating random passwords
-# Omit VNC_PASSWD, because vncauthproxy-passwd cannot currently run
-# without interaction
 ALL_PASSWDS_AND_SECRETS = frozenset([
     DB_PASSWD, RAPI_PASSWD, MQ_PASSWD,
     CYCLADES_SECRET, OA2_SECRET, WEBPROJECT_SECRET, STATS_SECRET,
-    COLLECTD_SECRET
+    COLLECTD_SECRET, VNC_PASSWD
     ])
 
 EXTERNAL_PUBLIC_DNS = "8.8.8.8"

@@ -338,6 +338,16 @@ You can modify the default system quota limit for all future users with::
 
    # snf-manage resource-modify <resource_name> --system-default <value>
 
+You can also control the default quota a new project offers to its members
+if a limit is not specified in the project application (`project default`).
+In particular, if a resource is not meant to be visible to the end user,
+then it's best to set its project default to infinite.
+
+.. code-block:: console
+
+    # snf-manage resource-modify cyclades.total_ram --project-default inf
+
+
 Grant extra quota through projects
 ``````````````````````````````````
 
@@ -650,27 +660,24 @@ Enabling this feature consists of the following steps:
 
 .. _select_pithos_storage:
 
-Select Pithos storage backend
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Pithos storage backend
+~~~~~~~~~~~~~~~~~~~~~~
 
-Starting from Synnefo 0.15.1 we introduce the ability to select or change the
-storage backend. If you have already enabled and configured RADOS as your
-secondary storage solution you can now explicitly select your storage
-backend being only RADOS.
+Starting from Synnefo version 0.16, we introduce Archipelago as the new storage
+backend. Archipelago will act as a storage abstraction layer between Pithos and
+NFS, RADOS or any other storage backend driver that Archipelago supports. For
+more information about backend drivers please check Archipelago documentation.
 
-A new variable has been introduced called PITHOS_BACKEND_STORAGE with
-possible values 'nfs' and 'rados', default value is 'nfs'.
-For those users that need to migrate from NFS to RADOS and have not enabled the
-dual mode of operation from the beginning of their installation, you can
-use a synchronization script that is provided in order to synchronize the data
-from NFS to Rados. The script can be found at
-`/usr/lib/pithos/tools/pithos-sync-rados.sh`.
+Since this version care must be taken when restarting Archipelago on a Pithos
+worker node. Pithos acts as an Archipelago peer and must be stopped first
+before trying to restart Archipelago for any reason.
 
-Since this version the dual mode of operation is not supported any more,
-meaning you will not be able to keep double Pithos objects anymore in NFS and
-RADOS.
-After installing v0.15.1 you will have to choose between the storage backend
-you want to use.
+If you need to restart Archipelago on a running Pithos worker follow the
+procedure below::
+
+    pithos-host$ /etc/init.d/gunicorn stop
+    pithos-host$ /etc/init.d/archipelago restart
+    pithos-host$ /etc/init.d/gunicorn start
 
 
 Compute/Network/Image Service (Cyclades)
@@ -1293,7 +1300,7 @@ externally reserved, to exclude from allocation.
 Quotas
 ~~~~~~
 
-The andling of quotas for Cyclades resources is powered by Astakos quota
+The handling of quotas for Cyclades resources is powered by Astakos quota
 mechanism. During registration of Cyclades service to Astakos, the Cyclades
 resources are also imported to Astakos for accounting and presentation.
 
@@ -1651,6 +1658,128 @@ these messages and properly updates the state of the Cyclades DB. Subsequent
 requests to the Cyclades API, will retrieve the updated state from the DB.
 
 
+Admin Dashboard (Admin)
+=======================
+
+Introduction
+------------
+
+Admin is the Synnefo component that provides to trusted users the ability to
+manage and view various different Synnefo entities such as users, VMs, projects
+etc. Additionally, it automatically generates charts and statistics using data
+from the Astakos/Cyclades stats.
+
+Access and permissions
+----------------------
+
+The Admin dashboard can be accessed by default from the ``ADMIN_BASE_URL`` URL.
+Since there is no login form, the user must login on Astakos first and then
+visit the above URL. Access will be granted only to users that belong to a
+predefined list of Astakos groups. By default, there are three group categories
+that are mapped 1-to-1 to Astakos groups:
+
+* ADMIN_READONLY_GROUP: 'admin-readonly'
+* ADMIN_HELPDESK_GROUP: 'helpdesk'
+* ADMIN_GROUP:          'admin'
+
+The group categories can be changed using the ``ADMIN_PERMITTED_GROUPS``
+setting.  In order to change the Astakos group that a category corresponds to,
+the administrator can specify the group that he/she wants in the
+``ADMIN_READONLY_GROUP``, ``ADMIN_HELPDESK_GROUP`` or ``ADMIN_GROUP`` settings.
+
+Note that while any user that belongs to the ``ADMIN_PERMITTED_GROUPS`` has the
+same access to the administrator dashboard, the actions that are allowed for a
+group may differ. That's because Admin implements a Role-Based Access Control
+(RBAC) policy, which can be changed from the ``ADMIN_RBAC`` setting. By
+default, users in the ``ADMIN_READONLY_GROUP`` cannot perform any actions. On
+the other hand, users in the ``ADMIN_GROUP`` can perform all actions.  In the
+middle of the spectrum is the ``ADMIN_HELPDESK_GROUP``, which by default
+performs a small subset of reversible actions.
+
+Seting up Admin
+---------------
+
+Admin is bundled by default with a list of sane settings. The most important
+one, ``ADMIN_ENABLED``, is set to ``True`` and defines whether Admin will be used
+or not.
+
+The administrator simply has to create the necessary Astakos groups and
+add trusted users in them. The following example will create an admin group and
+will add a user in it:
+
+.. code-block:: console
+
+ snf-manage group-add admin
+ snf-manage user-modify --add-group=admin <user_id>
+
+Finally, the administrator must edit the ``20-snf-admin-app-general.conf``
+settings file, uncomment the ``ADMIN_BASE_URL`` setting and assign the
+appropriate URL to it. In most cases, this URL will be the top-level URL of the
+Admin node, with the optional addition of an extra path (e.g. ``/admin``) in
+order to distinguish it from different components.
+
+That's all that is required for a single-node setup. For a multi-node setup,
+please consult the following section:
+
+Multi-node Setup
+~~~~~~~~~~~~~~~~
+
+Admin by design does not use the Astakos/Cyclades API for any action. Instead,
+it requires direct access to the Astakos/Cyclades database as well as the
+settings of their nodes. As a result, when installing Admin in a node, the
+Astakos and Cyclades packages will also be installed.
+
+In order to disable the Astakos/Cyclades API in the Admin node, the
+administrator can add the following line in ``99-locals.conf`` (you can create
+it if doesn't exist):
+
+.. code-block:: console
+
+    ROOT_URLCONF="synnefo_admin.urls"
+
+Note that the above change does not interfere the with the ``ADMIN_BASE_URL``,
+which will be used normally.
+
+Furthermore, if Astakos and Cyclades have separate databases, then they must be
+defined in the ``DATABASES`` setting of ``10-snf-webproject-database.conf``. An
+example setup is the following:
+
+.. code-block:: console
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'snf_apps_cyclades',
+            'HOST': <Cyclades host>,
+            <...snip..>
+        }, 'cyclades': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'snf_apps_cyclades',
+            'HOST': <Cyclades host>,
+            <...snip..>
+        }, 'astakos': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'snf_apps_astakos',
+            'HOST': <Cyclades host>,
+            <...snip..>
+        }
+    }
+
+    DATABASE_ROUTERS = ['snf_django.utils.routers.SynnefoRouter']
+
+You may notice that there are three databases instead of two. That's because
+Django requires that every ``DATABASES`` setting has a *default* database. In
+our case, we suggest that you use as default the Cyclades database. Finally,
+you must not forget to add the ``DATABASE_ROUTERS`` setting in the above
+example that must always be used in multi-db setups.
+
+Disabling Admin
+---------------
+
+The easiest way to disable the Admin Dashboard is to set the ``ADMIN_ENABLED``
+setting to ``False``.
+
+
 List of all Synnefo components
 ==============================
 
@@ -1664,6 +1793,7 @@ They are also available from our apt repository: ``apt.dev.grnet.gr``
  * `snf-pithos-webclient <http://www.synnefo.org/docs/pithos-webclient/latest/index.html>`_
  * `snf-cyclades-app <http://www.synnefo.org/docs/snf-cyclades-app/latest/index.html>`_
  * `snf-cyclades-gtools <http://www.synnefo.org/docs/snf-cyclades-gtools/latest/index.html>`_
+ * `snf-admin-app <http://www.synnefo.org/docs/snf-admin-app/latest/index.html>`_
  * `astakosclient <http://www.synnefo.org/docs/astakosclient/latest/index.html>`_
  * `snf-vncauthproxy <https://github.com/grnet/snf-vncauthproxy>`_
  * `snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html/>`_
@@ -1872,7 +2002,7 @@ Name                          Description
 ============================  ===========================
 delete                        Remove an account from the Pithos DB
 export-quota                  Export account quota in a file
-list                          List existing/dublicate accounts
+list                          List existing/duplicate accounts
 merge                         Move an account contents in another account
 set-container-quota           Set container quota for all or a specific account
 ============================  ===========================
@@ -2703,6 +2833,7 @@ Changelog, NEWS
 ===============
 
 
+* v0.16 :ref:`Changelog <Changelog-0.16>`, :ref:`NEWS <NEWS-0.16>`
 * v0.15.2 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.2>`
 * v0.15.1 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.1>`
 * v0.15 :ref:`Changelog <Changelog-0.15>`, :ref:`NEWS <NEWS-0.15>`

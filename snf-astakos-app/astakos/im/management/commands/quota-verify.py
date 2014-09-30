@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from optparse import make_option
-from django.db import transaction
+from astakos.im import transaction
 
 from astakos.im.models import Project
 from astakos.im import quotas

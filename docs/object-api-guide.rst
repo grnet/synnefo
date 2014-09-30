@@ -27,6 +27,7 @@ Document Revisions
 =========================  ================================
 Revision                   Description
 =========================  ================================
+0.16 (Aug 06, 2014)        Enforce resource and group limitations
 0.15 (Apr 03, 2014)        Allow only JSON format in uploads using hashmaps.
 0.15 (Feb 01, 2014)        Optionally enforce a specific content disposition type.
 0.14 (Jun 18, 2013)        Forbidden response for public listing by non path owners.
@@ -94,27 +95,13 @@ Revision                   Description
 Pithos Users and Authentication
 -------------------------------
 
-In Pithos, each user is uniquely identified by a token. All API requests require a token and each token is internally resolved to an account string. The API uses the account string to identify the user's own files, thus whether a request is local or cross-account.
+In Pithos, all API requests require a token and each token is internally resolved to an account identifier. The API uses the account identifier to decide the files the user is eligible to access.
 
-Pithos does not keep a user database. For development and testing purposes, user identifiers and their corresponding tokens can be defined in the settings file. However, Pithos is designed with an external authentication service in mind. This service must handle the details of validating user credentials and communicate with Pithos via a middleware software component that, given a token, fills in the internal request account variable.
+Pithos is designed with an external authentication service in mind. This service must handle the details of validating user credentials and communicate with Pithos via a middleware software component that, given a token, fills in the internal request account variable.
 
-Client software using Pithos, if not already knowing a user's identifier and token, should forward to the ``/login`` URI. The Pithos server, depending on its configuration will redirect to the appropriate login page.
+Client software using Pithos, if not already knowing a user's identifier and authentication token, should forward to the appropriate login service.
 
-The login URI accepts the following parameters:
-
-======================  =========================
-Request Parameter Name  Value
-======================  =========================
-next                    The URI to redirect to when the process is finished
-renew                   Force token renewal (no value parameter)
-force                   Force logout current user (no value parameter)
-======================  =========================
-
-When done with logging in, the service's login URI should redirect to the URI provided with ``next``, adding the ``token`` parameters which contains authentication token.
-
-If ``next`` request parameter is missing the call fails with BadRequest (400) response status.
-
-A user management service that implements a login API call according to these conventions is `Astakos <astakos.html>`_, by GRNET.
+Such a login API call following to above conventions is the `Weblogin <weblogin-api-guide.html>`_, implemented inside `Astakos <astakos.html>`_.
 
 User feedback
 -------------
@@ -334,17 +321,18 @@ until                   Optional timestamp
 
 Cross-user requests are not allowed to use ``until`` and only include the account modification date in the reply.
 
-==========================  =====================
-Reply Header Name           Value
-==========================  =====================
-X-Account-Container-Count   The total number of containers
-X-Account-Bytes-Used        The total number of bytes stored
-X-Account-Until-Timestamp   The last account modification date until the timestamp provided
-X-Account-Group-*           Optional user defined groups
-X-Account-Policy-Quota      Account quota limit
-X-Account-Meta-*            Optional user defined metadata
-Last-Modified               The last account modification date (regardless of ``until``)
-==========================  =====================
+=====================================  =====================
+Reply Header Name                      Value
+=====================================  =====================
+X-Account-Container-Count              The total number of containers
+X-Account-Bytes-Used                   The total number of bytes stored
+X-Account-Until-Timestamp              The last account modification date until the timestamp provided
+X-Account-Group-*                      Optional user defined groups
+X-Account-Policy-Quota-<project_uuid>  Project quota limit (This header is repeated for each project the user is enrolled and allocates Pithos disk space. All the accounts have a default project whose UUID is the account's UUID. More details about the quota allocation can be found in `Resource-pool projects <design/resource-pool-projects.html>`_ section)
+X-Account-Policy-Quota                 The summary of all the project quota limits
+X-Account-Meta-*                       Optional user defined metadata
+Last-Modified                          The last account modification date (regardless of ``until``)
+=====================================  =====================
 
 |
 
@@ -462,11 +450,12 @@ No reply content/headers.
 The operation will overwrite all user defined metadata, except if ``update`` is defined.
 To create a group, include an ``X-Account-Group-*`` header with the name in the key and a comma separated list of user identifiers in the value. If no ``X-Account-Group-*`` header is present, no changes will be applied to groups. The ``update`` parameter also applies to groups. To delete a specific group, use ``update`` and an empty header value.
 
-================  ===============================
-Return Code       Description
-================  ===============================
-202 (Accepted)    The request has been accepted
-================  ===============================
+=================  ===============================
+Return Code        Description
+=================  ===============================
+202 (Accepted)     The request has been accepted
+400 (Bad Request)  The metadata exceed in number the allowed account metadata or the groups exceed in number the allowed groups or the group members exceed in number the allowed group members
+=================  ===============================
 
 
 Container Level
@@ -713,6 +702,7 @@ To upload blocks of data to the container, set ``Content-Type`` to ``application
 Return Code                     Description
 ==============================  ===============================
 202 (Accepted)                  The request has been accepted
+400 (Bad Request)               The metadata exceed in number the allowed container metadata
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 ==============================  ===============================
 
@@ -1016,6 +1006,7 @@ X-Object-Version            The object's new version
 Return Code                     Description
 ==============================  ==============================
 201 (Created)                   The object has been created
+400 (Bad Request)               The metadata exceed in number the allowed object metadata
 403 (Forbidden)                 If the source object is not available in the storage backend.
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 ==============================  ==============================
@@ -1094,7 +1085,7 @@ Return Code                     Description
 ==============================  ==============================
 202 (Accepted)                  The request has been accepted (not a data update)
 204 (No Content)                The request succeeded (data updated)
-400 (Bad Request)               Invalid ``X-Object-Sharing`` or ``X-Object-Bytes`` header or missing ``Content-Range`` header or invalid source object or source object length is smaller than range length or ``Content-Length`` does not match range length
+400 (Bad Request)               Invalid ``X-Object-Sharing`` or ``X-Object-Bytes`` header or missing ``Content-Range`` header or invalid source object or source object length is smaller than range length or ``Content-Length`` does not match range length or the metadata exceed in number the allowed object metadata
 411 (Length Required)           Missing ``Content-Length`` in the request
 413 (Request Entity Too Large)  Insufficient quota to complete the request
 416 (Range Not Satisfiable)     The supplied range is invalid

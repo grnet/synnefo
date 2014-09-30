@@ -1,19 +1,19 @@
 .. _pithos:
 
-File/Object Storage Service (Pithos)
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Object Storage Service (Pithos)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Overview
 ========
 
 Pithos is the Object/File Storage component of Synnefo. Users upload files on
 Pithos using either the Web UI, the command-line client, or native syncing
-clients. It is a thin layer mapping user-files to content-addressable blocks
-which are then stored on a storage backend. Files are split in blocks of fixed
-size, which are hashed independently to create a unique identifier for each
-block, so each file is represented by a sequence of block names (a
-hashmap). This way, Pithos provides deduplication of file data; blocks
-shared among files are only stored once.
+clients. It is a thin layer mapping user-files to underlying Archipelago
+virtual resources. Files are split in blocks of fixed size, which are hashed
+independently to create a unique identifier for each block, so each file is
+represented by a sequence of block names (a hashmap, essentially an Archipelago
+mapfile). This way, Pithos provides deduplication of file data; blocks shared
+among files are only stored once.
 
 The current implementation uses 4MB blocks hashed with SHA256. Content-based
 addressing also enables efficient two-way file syncing that can be used by all
@@ -28,16 +28,7 @@ download the modified ones.
 
 Pithos runs at the cloud layer and exposes the OpenStack Object Storage API to
 the outside world, with custom extensions for syncing. Any client speaking to
-OpenStack Swift can also be used to store objects in a Pithos deployment. The
-process of mapping user files to hashed objects is independent from the actual
-storage backend, which is selectable by the administrator using pluggable
-drivers. Currently, Pithos has drivers for two storage backends:
-
- * files on a shared filesystem, e.g., NFS, Lustre, GPFS or GlusterFS
- * objects on a Ceph/RADOS cluster.
-
-Whatever the storage backend, it is responsible for storing objects reliably,
-without any connection to the cloud APIs or to the hashing operations.
+OpenStack Swift can also be used to store objects in a Pithos deployment.
 
 
 OpenStack extensions
@@ -74,20 +65,15 @@ Pithos Design
 
 Pithos is built on a layered architecture. The Pithos server speaks HTTP with
 the outside world. The HTTP operations implement an extended OpenStack Object
-Storage API.  The back end is a library meant to be used by internal code and
-other front ends. For instance, the back end library, apart from being used in
-Pithos for implementing the OpenStack Object Storage API, is also used in our
-implementation of the OpenStack Image Service API. Moreover, the back end
-library allows specification of different namespaces for metadata, so that the
-same object can be viewed by different front end APIs with different sets of
-metadata. Hence the same object can be viewed as a file in Pithos, with one set
-of metadata, or as an image with a different set of metadata, in our
-implementation of the OpenStack Image Service.
-
-The data component provides storage of block and the information needed to
-retrieve them, while the metadata component is a database of nodes and
-permissions. At the current implementation, data is saved to the filesystem and
-metadata in an SQL database.
+Storage API. The backend is a library meant to be used by internal code and
+other front ends. For instance, the backend library, apart from being used in
+Pithos for implementing the OpenStack Object Storage API, is also used in
+Cyclades for the implementation of the OpenStack Image Service API. Moreover,
+the backend library allows specification of different namespaces for metadata,
+so that the same object can be viewed by different front end APIs with
+different sets of metadata. Hence the same object can be viewed as a file in
+Pithos, with one set of metadata, or as an image with a different set of
+metadata, in our implementation of the OpenStack Image Service.
 
 Block-based Storage for the Client
 ----------------------------------
@@ -154,7 +140,7 @@ the following operations:
 * If the preconditions are met, the API front end requests
   from the back end the object's hashmap (hashmaps are indexed by the
   full path).
-* The back end will read and return to the API front end the
+* The backend will read and return to the API front end the
   object's hashmap from the underlying storage.
 * Depending on the HTTP ``Range`` header, the 
   API front end asks from the back end the required blocks, giving
@@ -194,8 +180,8 @@ or create new blocks. At the end, the front end will save the updated hashmap.
 It is also possible to pass a parameter to HTTP ``POST`` to specify that the
 data will come from another object, instead of being uploaded by the client.
 
-Pithos Back End Nodes
----------------------
+Pithos Backend Nodes
+--------------------
 
 Pithos organizes entities in a tree hierarchy, with one tree node per path
 entry (see Figure). Nodes can be accounts, containers, and objects. A user may
@@ -216,8 +202,8 @@ node corresponds to a unique path, and we keep its parent in the
 account/container/object hierarchy (that is, all objects have a container as
 their parent).
 
-Pithos Back End Versions
-------------------------
+Pithos Backend Versions
+-----------------------
 
 For each object version we keep the root Merkle hash of the object it refers
 to, the size of the object, the last modification time and the user that
@@ -235,8 +221,8 @@ of their accounts. In effect, this also allows them to take their containers
 back in time. This is implemented conceptually by taking a vertical line in the
 Figure and presenting to the user the state on the left side of the line.
 
-Pithos Back End Permissions
----------------------------
+Pithos Backend Permissions
+--------------------------
 
 Pithos recognizes read and write permissions, which can be granted to
 individual users or groups of users. Groups as collections of users created at

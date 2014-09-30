@@ -38,14 +38,14 @@ sys.path.append(path)
 # /etc/ganeti/share
 # Favor latest ganeti if found
 if os.path.exists(NEW_GANETI_PATH):
-  GANETI_PATH = NEW_GANETI_PATH
+    GANETI_PATH = NEW_GANETI_PATH
 else:
-  GANETI_PATH = OLD_GANETI_PATH
+    GANETI_PATH = OLD_GANETI_PATH
 
 sys.path.insert(0, GANETI_PATH)
 
 try:
-    import ganeti
+    import ganeti  # NOQA
 except ImportError:
     raise Exception("Cannot import ganeti module. Please check if installed"
                     " under %s for 2.8 or under %s for 2.10 or later." %
@@ -207,8 +207,8 @@ class JobFileHandler(pyinotify.ProcessEvent):
         self.op_handlers = {"INSTANCE": self.process_instance_op,
                             "NETWORK": self.process_network_op,
                             "CLUSTER": self.process_cluster_op,
-                            "TAGS": self.process_tag_op}
                             # "GROUP": self.process_group_op}
+                            "TAGS": self.process_tag_op}
 
     def process_IN_CLOSE_WRITE(self, event):
         self.process_IN_MOVED_TO(event)
@@ -306,14 +306,25 @@ class JobFileHandler(pyinotify.ProcessEvent):
                           "disks": get_field(input, "disks"),
                           "beparams": get_field(input, "beparams")}
         elif op_id == "OP_INSTANCE_SNAPSHOT":
-            job_fields = {"disks": get_field(input, "disks")}
-            reason = get_field(input, "reason")
-            snapshot_info = None
-            if isinstance(reason, list) and len(reason) > 0:
-                reason = reason[0]
-                if reason[0] == "gnt:user":
+            # Cyclades store the UUID of the snapshot as the 'reason' attribute
+            # of the Ganeti job in order to be able to update the status of
+            # the snapshot based on the result of the Ganeti job. Parse this
+            # attribute and include it in the msg.
+            # NOTE: This will fill the 'snapshot_info' attribute only for the
+            # first disk, but this is ok because Cyclades do not issue jobs to
+            # create snapshots of many disks.
+            disks = get_field(input, "disks")
+            if disks:
+                reason = get_field(input, "reason")
+                snapshot_info = None
+                try:
+                    reason = reason[0]
+                    assert (reason[0] == "gnt:user")
                     snapshot_info = reason[1]
-            job_fields["disks"][0][1]["snapshot_info"] = snapshot_info
+                    disks[0][1]["snapshot_info"] = snapshot_info
+                except:
+                    self.logger.warning("Malformed snapshot job '%s'", job_id)
+                job_fields = {"disks": disks}
 
         msg = {"type": "ganeti-op-status",
                "instance": instances,
@@ -394,8 +405,10 @@ class JobFileHandler(pyinotify.ProcessEvent):
         input = op.input
         op_id = input.OP_ID
         if op_id == "OP_TAGS_SET":
-            if op.status == "waiting" and input.tags and input.dry_run and\
-               input.kind == "cluster":
+            # NOTE: Check 'dry_run' after 'cluster' because networks and groups
+            # do not support the 'dry_run' option.
+            if (op.status == "waiting" and input.tags and
+               input.kind == "cluster" and input.dry_run):
                 # Special where a prefixed cluster tag operation in dry-run
                 # mode is used in order to trigger eventd to send a
                 # heartbeat message.
@@ -528,7 +541,10 @@ def main():
 
         while True:    # loop forever
             # process the queue of events as explained above
-            notifier.process_events()
+            try:
+                notifier.process_events()
+            except StandardError:
+                logger.exception("Unhandled exception")
             if notifier.check_events():
                 # read notified events and enqeue them
                 notifier.read_events()

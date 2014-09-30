@@ -18,6 +18,7 @@ DEFAULT_ACCOUNT_QUOTA = 0  # No quota.
 DEFAULT_CONTAINER_QUOTA = 0  # No quota.
 DEFAULT_CONTAINER_VERSIONING = 'auto'
 
+(MAP_ERROR, MAP_UNAVAILABLE, MAP_AVAILABLE) = range(-1, 2)
 
 class NotAllowedError(Exception):
     pass
@@ -63,9 +64,16 @@ class InconsistentContentSize(ValueError):
     pass
 
 
+class InvalidPolicy(ValueError):
+    pass
+
+
 class LimitExceeded(Exception):
     pass
 
+
+class BrokenSnapshot(Exception):
+    pass
 
 class BaseBackend(object):
     """Abstract backend class.
@@ -143,6 +151,7 @@ class BaseBackend(object):
 
         Raises:
             NotAllowedError: Operation not permitted
+            LimitExceeded: if the metadata number exceeds the allowed limit.
         """
         return
 
@@ -161,6 +170,8 @@ class BaseBackend(object):
             NotAllowedError: Operation not permitted
 
             ValueError: Invalid data in groups
+
+            LimitExceeded: if the group number exceeds the allowed limit.
         """
         return
 
@@ -193,7 +204,7 @@ class BaseBackend(object):
         Raises:
             NotAllowedError: Operation not permitted
 
-            ValueError: Invalid policy defined
+            InvalidPolicy: Invalid policy defined
         """
         return
 
@@ -278,6 +289,8 @@ class BaseBackend(object):
             NotAllowedError: Operation not permitted
 
             ItemNotExists: Container does not exist
+
+            LimitExceeded: if the metadata number exceeds the allowed limit.
         """
         return
 
@@ -305,7 +318,7 @@ class BaseBackend(object):
 
             ItemNotExists: Container does not exist
 
-            ValueError: Invalid policy defined
+            InvalidPolicy: Invalid policy defined
         """
         return
 
@@ -317,7 +330,7 @@ class BaseBackend(object):
 
             ContainerExists: Container already exists
 
-            ValueError: Invalid policy defined
+            InvalidPolicy: Invalid policy defined
         """
         return
 
@@ -462,6 +475,8 @@ class BaseBackend(object):
             NotAllowedError: Operation not permitted
 
             ItemNotExists: Container/object does not exist
+
+            LimitExceeded: if the metadata number exceeds the allowed limit.
         """
         return ''
 
@@ -521,6 +536,45 @@ class BaseBackend(object):
         """
         return
 
+    def register_object_map(self, user, account, container, name, size, type,
+                            mapfile, checksum='', domain='pithos', meta=None,
+                            replace_meta=False, permissions=None):
+        """Register an object mapfile without providing any data.
+
+        Lock the container path, create a node pointing to the object path,
+        create a version pointing to the mapfile
+        and issue the size change in the quotaholder.
+
+        :param user: the user account which performs the action
+
+        :param account: the account under which the object resides
+
+        :param container: the container under which the object resides
+
+        :param name: the object name
+
+        :param size: the object size
+
+        :param type: the object mimetype
+
+        :param mapfile: the mapfile pointing to the object data
+
+        :param checkcum: the md5 checksum (optional)
+
+        :param domain: the object domain
+
+        :param meta: a dict with custom object metadata
+
+        :param replace_meta: replace existing metadata or not
+
+        :param permissions: a dict with the read and write object permissions
+
+        :returns: the new object uuid
+
+        :raises: ItemNotExists, NotAllowedError, QuotaError, LimitExceeded
+        """
+        return
+
     def get_object_hashmap(self, user, account, container, name, version=None):
         """Return the object's size and a list with partial hashes.
 
@@ -555,6 +609,8 @@ class BaseBackend(object):
             ValueError: Invalid users/groups in permissions
 
             QuotaError: Account or container quota exceeded
+
+            LimitExceeded: if the metadata number exceeds the allowed limit.
         """
         return ''
 
@@ -594,6 +650,8 @@ class BaseBackend(object):
             ValueError: Invalid users/groups in permissions
 
             QuotaError: Account or container quota exceeded
+
+            LimitExceeded: if the metadata number exceeds the allowed limit.
         """
         return ''
 

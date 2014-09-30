@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from functools import wraps
-from django.db import transaction
+from synnefo.db import transaction
 from django.conf import settings
 
 from snf_django.lib.api import faults

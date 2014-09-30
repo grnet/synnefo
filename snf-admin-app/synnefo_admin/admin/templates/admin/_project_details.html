@@ -1,0 +1,118 @@
+{% load admin_tags %}
+
+{% with project=item page='user' %}
+<div class="object-anchor" id="project-{{project.uuid}}"></div>
+<div class="object-details {{ rowcls }}" data-id="{{project.uuid}}"
+    data-type="{{type}}">
+    <h4 class="clearfix">
+        {% include "admin/_details_h4_lt.html" %}
+        <span class="rt">
+            {{ project|status_label|safe }}
+            {% if project.last_application %}
+               {{ project.last_application|status_label|safe }}
+            {% endif %}
+            <span class="label">UUID: {{ project.uuid }}</span>
+            {% if project.is_base %}
+            <span class="label label-info">
+                SYSTEM
+            {% else %}
+            <span class="label">
+                Members: {{ project.members_count }}
+            {% endif %}
+            </span>
+        </span>
+    </h4>
+    <div class="object-details-content">
+        <ul class="nav nav-tabs">
+            <li class="active"><a href="#prj-details{{ project.uuid }}" data-toggle="tab">Details</a></li>
+            <li><a href="#prj-members{{ project.uuid }}" data-toggle="tab">Members</a></li>
+            <li><a href="#prj-policies{{ project.uuid }}" data-toggle="tab">Member Policies</a></li>
+            <li><a href="#resources{{ project.uuid }}" data-toggle="tab">Resources</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane active" id="prj-details{{ project.uuid }}">
+                <dl class="dl-horizontal well">
+                    <dt>ID</dt><dd>{{ project.id }}</dd>
+                    <dt>UUID</dt><dd>{{ project.uuid }}</dd>
+                    <dt>Name</dt><dd>{{ project.realname|default:"(not set)" }}</dd>
+                    {% if not project.is_base %}
+                        <dt>Owner</dt><dd>{{ project.owner.realname|default:"(not set)" }}</dd>
+                        <dt>Homepage url</dt><dd>{{ project.homepage|default:"(not set)" }}</dd>
+                    {% endif %}
+                    <dt>Description</dt><dd>{{ project.description }}</dd>
+                    <dt>Creation date</dt><dd>{{ project.creation_date }}</dd>
+                    {% if not project.is_base %}
+                        <dt>End date</dt><dd>{{ project.end_date }}</dd>
+                    {% endif %}
+                    <dt>Project Status</dt><dd>{{ project|get_status_from_instance }}</dd>
+                    {% if project.last_application %}
+                        <dt>Application Status</dt><dd>{{ project.last_application|get_status_from_instance }}</dd>
+                    {% endif %}
+                </dl>
+            </div>
+            <div class="tab-pane" id="prj-members{{ project.uuid }}">
+		 		<table class="table">
+		            <thead>
+                        <tr>
+                            <td>UUID</td>
+                            <td>Name</td>
+                            <td>Status</td>
+                        </tr>
+		            </thead>
+		            <tbody>
+                        {% with members=project|get_project_members %}
+                        {% for m in members %}
+                            <tr>
+                                {% for val in m %}
+                                <td>{{ val }}</td>
+                                {% endfor %}
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan=3>No members available</td>
+                            </tr>
+		                {% endfor %}
+                        {% endwith %}
+		            </tbody>
+		        </table>
+            </div>
+            <div class="tab-pane" id="prj-policies{{ project.uuid }}">
+                <dl class="dl-horizontal well">
+                    <dt>Max members</dt><dd>{{ project.limit_on_members_number }}</dd>
+                    <dt>Current members</dt><dd>{{ project.members_count }}</dd>
+                    <dt>Join policy</dt><dd>{{ project.member_join_policy_display }}</dd>
+                    <dt>Leave policy</dt><dd>{{ project.member_leave_policy_display }}</dd>
+                </dl>
+            </div>
+
+            <div class="tab-pane" id="resources{{ project.uuid }}">
+		 		<table class="table">
+		            <thead>
+                        <tr>
+                            <th></th>
+                            {% if not project.is_base %}
+                            <th>Max per Member</th>
+                            {% endif %}
+                            <th>Max per Project</th>
+                            <th>Usage</th>
+                        </tr>
+		            </thead>
+		            <tbody>
+                        {% with stats=project|get_project_stats %}
+                            {% for resource_name, values in stats.items %}
+                            <tr>
+                                <td>{{ resource_name }}</td>
+                                {% for value in values %}
+                                <td>{{ value }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        {% endwith %}
+		            </tbody>
+		        </table>
+            </div>
+        </div>
+    </div>
+    {% include "admin/action_list_horizontal.html" %}
+</div>
+{% endwith %}

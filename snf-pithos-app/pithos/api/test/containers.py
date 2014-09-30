@@ -121,7 +121,7 @@ class ContainerHead(PithosAPITest):
                          len(objects))
         self.assertTrue('X-Container-Bytes-Used' in container_info)
         self.assertEqual(int(container_info['X-Container-Bytes-Used']),
-                         sum([len(data) for data in objects.values()]))
+                         sum([len(dt) for dt in objects.values()]))
         self.assertTrue('X-Container-Object-Meta' in container_info)
         self.assertEqual(
             sorted(container_info['X-Container-Object-Meta'].split(',')),
@@ -157,6 +157,8 @@ class ContainerGet(PithosAPITest):
 
         cname = self.cnames[0]
         self.upload_object(cname)
+        oname = self.objects[cname].keys()[-1]
+        self.delete_object(cname, oname)
 
         url = join_urls(self.pithos_path, self.user, cname)
         r = self.get('%s?until=%s' % (url, until))
@@ -706,6 +708,14 @@ class ContainerGet(PithosAPITest):
             objects.remove('')
         self.assertTrue(objects, sorted(onames[2:]))
 
+        # list objects that satisfy the in-existence criteria
+        r = self.get('%s?meta=!Stock' % container_url)
+        self.assertEqual(r.status_code, 200)
+        objects = r.content.split('\n')
+        if '' in objects:
+            objects.remove('')
+            self.assertTrue(objects, sorted(onames[:2]))
+
         # test case insensitive existence criteria matching
         r = self.get('%s?meta=quality' % container_url)
         self.assertEqual(r.status_code, 200)
@@ -881,6 +891,13 @@ class ContainerGet(PithosAPITest):
 
 class ContainerPut(PithosAPITest):
     def test_create(self):
+        # test metadata limit
+        limit = pithos_settings.RESOURCE_MAX_METADATA
+        too_many_meta = dict((i, i) for i in range(limit + 1))
+        _, r = self.create_container('c1', verify_status=False,
+                                     meta=too_many_meta)
+        self.assertEqual(r.status_code, 400)
+
         self.create_container('c1')
         self.list_containers()
         self.assertTrue('c1' in self.list_containers(format=None))
@@ -904,6 +921,13 @@ class ContainerPost(PithosAPITest):
             k = 'x-container-meta-%s' % k
             self.assertTrue(k in info)
             self.assertEqual(info[k], v)
+
+        # test metadata limit
+        limit = pithos_settings.RESOURCE_MAX_METADATA
+        too_many_meta = dict((i, i) for i in range(limit - len(meta) + 1))
+        r = self.update_container_meta(cname, too_many_meta,
+                                       verify_status=False)
+        self.assertEqual(r.status_code, 400)
 
     def test_quota(self):
         self.create_container('c1')

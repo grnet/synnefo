@@ -53,12 +53,14 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
                                  BASE_HOST, UPDATE_MD5, VIEW_PREFIX,
-                                 OAUTH2_CLIENT_CREDENTIALS, UNSAFE_DOMAIN)
+                                 OAUTH2_CLIENT_CREDENTIALS, UNSAFE_DOMAIN,
+                                 RESOURCE_MAX_METADATA, ACC_MAX_GROUPS,
+                                 ACC_MAX_GROUP_MEMBERS)
 
 from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists, IllegalOperationError,
-                                  LimitExceeded)
+                                  LimitExceeded, BrokenSnapshot)
 
 from synnefo.lib import join_urls
 
@@ -137,7 +139,7 @@ def get_account_headers(request):
         n = k[16:].lower()
         if '-' in n or '_' in n:
             raise faults.BadRequest('Bad characters in group name')
-        groups[n] = set(v.replace(' ', '').split(','))
+        groups[n] = list(set(v.replace(' ', '').split(',')))
         while '' in groups[n]:
             groups[n].remove('')
     return meta, groups
@@ -326,7 +328,8 @@ def retrieve_displaynames(token, uuids, return_dict=False, fail_silently=True):
     catalog = astakos.get_usernames(uuids) or {}
     missing = list(set(uuids) - set(catalog))
     if missing and not fail_silently:
-        raise ItemNotExists('Unknown displaynames: %s' % ', '.join(missing))
+        raise ItemNotExists('Unknown displaynames: %s' %
+                            ', '.join(map(smart_str, missing)))
     return catalog if return_dict else [catalog.get(i) for i in uuids]
 
 
@@ -351,7 +354,8 @@ def retrieve_uuids(token, displaynames, return_dict=False, fail_silently=True):
     catalog = astakos.get_uuids(displaynames) or {}
     missing = list(set(displaynames) - set(catalog))
     if missing and not fail_silently:
-        raise ItemNotExists('Unknown uuids: %s' % ', '.join(missing))
+        raise ItemNotExists('Unknown uuids: %s' %
+                            ', '.join(map(smart_str, missing)))
     return catalog if return_dict else [catalog.get(i) for i in displaynames]
 
 
@@ -505,6 +509,7 @@ def copy_or_move_object(request, src_account, src_container, src_name,
         raise faults.BadRequest('Invalid sharing header')
     except QuotaError, e:
         raise faults.RequestEntityTooLarge('Quota error: %s' % e)
+
     if public is not None:
         try:
             request.backend.update_object_public(
@@ -1041,7 +1046,10 @@ BACKEND_KWARGS = dict(
     archipelago_conf_file=BACKEND_ARCHIPELAGO_CONF,
     xseg_pool_size=BACKEND_XSEG_POOL_SIZE,
     map_check_interval=BACKEND_MAP_CHECK_INTERVAL,
-    mapfile_prefix=BACKEND_MAPFILE_PREFIX)
+    mapfile_prefix=BACKEND_MAPFILE_PREFIX,
+    resource_max_metadata=RESOURCE_MAX_METADATA,
+    acc_max_groups=ACC_MAX_GROUPS,
+    acc_max_group_members=ACC_MAX_GROUP_MEMBERS)
 
 _pithos_backend_pool = PithosBackendPool(size=BACKEND_POOL_SIZE,
                                          **BACKEND_KWARGS)
@@ -1067,8 +1075,8 @@ def update_request_headers(request):
             v.decode('ascii')
             if '%' in k or '%' in v:
                 del(request.META[k])
-                request.META[unquote(k)] = smart_unicode(unquote(
-                    v), strings_only=True)
+                request.META[smart_unicode(unquote(k), strings_only=True)] = \
+                    smart_unicode(unquote(v), strings_only=True)
         except UnicodeDecodeError:
             raise faults.BadRequest('Bad character in headers.')
 
@@ -1119,6 +1127,8 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 return response
             except LimitExceeded, le:
                 raise faults.BadRequest(le.args[0])
+            except BrokenSnapshot, bs:
+                raise faults.BadRequest(bs.args[0])
             finally:
                 # Always close PithosBackend connection
                 if getattr(request, "backend", None) is not None:

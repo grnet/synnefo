@@ -24,12 +24,18 @@ import hashlib
 from base64 import b64encode
 from copy import copy
 
-import simplejson
+try:
+    import simplejson as json
+except ImportError:
+    import json
+
 from astakosclient.utils import \
-    retry_dec, scheme_to_class, parse_request, check_input, join_urls
+    retry_dec, scheme_to_class, parse_request, check_input, join_urls, \
+    render_overlimit_exception
 from astakosclient.errors import \
     AstakosClientException, Unauthorized, BadRequest, NotFound, Forbidden, \
-    NoUserName, NoUUID, BadValue, QuotaLimit, InvalidResponse, NoEndpoints
+    NoUserName, NoUUID, BadValue, QuotaLimit, InvalidResponse, NoEndpoints, \
+    ConnectionError
 
 
 # --------------------------------------------------------------------
@@ -240,7 +246,7 @@ class AstakosClient(object):
         hashed_token.update(self.token)
         self.logger.debug(
             "Make a %s request to %s, using token with hash %s, "
-            "with headers %s and body %s",
+            "with headers %r and body %r",
             method, request_path, hashed_token.hexdigest(), headers,
             body if log_body else "(not logged)")
 
@@ -282,11 +288,11 @@ class AstakosClient(object):
                 self.log_response = dict(
                     status=status, message=message, data=data)
         except Exception as err:
-            self.logger.error("Failed to send request: %s" % repr(err))
-            raise AstakosClientException(str(err))
+            self.logger.error("Failed to send request: %r", err)
+            raise ConnectionError(err)
 
         # Return
-        self.logger.debug("Request returned with status %s" % status)
+        self.logger.debug("Request returned with status %s", status)
         if status == 400:
             raise BadRequest(message, data)
         elif status == 401:
@@ -296,17 +302,18 @@ class AstakosClient(object):
         elif status == 404:
             raise NotFound(message, data)
         elif status < 200 or status >= 300:
-            raise AstakosClientException(message, data, status)
+            raise AstakosClientException(
+                message=message, status=status, response=data)
 
         try:
             if data:
-                return simplejson.loads(unicode(data))
+                return json.loads(unicode(data))
             else:
                 return None
         except Exception as err:
-            msg = "Cannot parse response \"%s\" with simplejson: %s"
+            msg = "Cannot parse response \"%r\" with simplejson: %s"
             self.logger.error(msg % (data, str(err)))
-            raise InvalidResponse(str(err), data)
+            raise InvalidResponse(message=str(err), response=data)
 
     # ----------------------------------
     # do a POST to ``API_USERCATALOGS`` (or ``API_SERVICE_USERCATALOGS``)
@@ -320,10 +327,10 @@ class AstakosClient(object):
         if "uuid_catalog" in data:
             return data.get("uuid_catalog")
         else:
-            msg = "_uuid_catalog request returned %s. No uuid_catalog found" \
+            msg = "_uuid_catalog request returned %r. No uuid_catalog found" \
                   % data
             self.logger.error(msg)
-            raise AstakosClientException(msg)
+            raise AstakosClientException(message=msg, response=data)
 
     def get_usernames(self, uuids):
         """Return a uuid_catalog dictionary for the given uuids
@@ -371,10 +378,10 @@ class AstakosClient(object):
         if "displayname_catalog" in data:
             return data.get("displayname_catalog")
         else:
-            msg = "_displayname_catalog request returned %s. " \
+            msg = "_displayname_catalog request returned %r. " \
                   "No displayname_catalog found" % data
             self.logger.error(msg)
-            raise AstakosClientException(msg)
+            raise AstakosClientException(message=msg, response=data)
 
     def get_uuids(self, display_names):
         """Return a displayname_catalog for the given names
@@ -596,17 +603,27 @@ class AstakosClient(object):
                                           method="POST")
         except AstakosClientException as err:
             if err.status == 413:
-                raise QuotaLimit(err.message, err.details)
+                try:
+                    msg, details = render_overlimit_exception(
+                        err.response, self.logger)
+                except Exception as perr:
+                    self.logger.error("issue_commission request returned '413'"
+                                      " but response '%r' could not be parsed:"
+                                      " %s", err.response, str(perr))
+                    msg, details = err.message, ""
+                raise QuotaLimit(message=msg,
+                                 details=details,
+                                 response=err.response)
             else:
                 raise
 
         if "serial" in response:
             return response['serial']
         else:
-            msg = "issue_commission_core request returned %s. " + \
+            msg = "issue_commission_core request returned %r. " + \
                   "No serial found" % response
             self.logger.error(msg)
-            raise AstakosClientException(msg)
+            raise AstakosClientException(message=msg, response=response)
 
     def _mk_user_provision(self, holder, source, resource, quantity):
         holder = "user:" + holder

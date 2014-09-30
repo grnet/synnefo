@@ -546,23 +546,20 @@ class GanetiRapiClient(object): # pylint: disable=R0904
                              ("/%s/instances/%s/deactivate-disks" %
                               (GANETI_RAPI_VERSION, instance)), None, None)
 
-  def SnapshotInstance(self, instance, snapshot_name, dry_run=False,
-                       reason=None):
-    """Replaces disks on an instance.
+  def SnapshotInstance(self, instance, disks, dry_run=False, reason=None):
+    """Takes snapshot of instance's disks.
 
-    @type instance: str
-    @param instance: instance whose disks to replace
-    @type snapshot_name: str
-    @param snapshot_name: name of the new snapshot
+    More details for parameters can be found in the RAPI documentation.
 
+    @type instance: string
+    @param instance: Instance name
+    @type disks: list of tuples
+    @param disks: The disks to snapshot
     @rtype: string
     @return: job id
 
     """
-
-    body = {
-      "disks": [(0, {"snapshot_name": snapshot_name})],
-    }
+    body = {"disks": disks}
 
     query = []
     _AppendIf(query, reason, ("reason", reason))

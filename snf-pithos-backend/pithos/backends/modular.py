@@ -40,7 +40,8 @@ from pithos.backends.base import (
     BaseBackend, AccountExists, ContainerExists, AccountNotEmpty,
     ContainerNotEmpty, ItemNotExists, VersionNotExists,
     InvalidHash, IllegalOperationError, InconsistentContentSize,
-    LimitExceeded)
+    LimitExceeded, InvalidPolicy, BrokenSnapshot,
+    MAP_ERROR, MAP_UNAVAILABLE, MAP_AVAILABLE)
 
 
 class DisabledAstakosClient(object):
@@ -118,6 +119,10 @@ DEFAULT_DISKSPACE_RESOURCE = 'pithos.diskspace'
 DEFAULT_MAP_CHECK_INTERVAL = 5  # set to 5 secs
 
 DEFAULT_MAPFILE_PREFIX = 'snf_file_'
+
+DEFAULT_RESOURCE_MAX_METADATA = 32
+DEFAULT_ACC_MAX_GROUPS = 32
+DEFAULT_ACC_MAX_GROUP_MEMBERS = 32
 
 logger = logging.getLogger(__name__)
 
@@ -218,6 +223,7 @@ class ModularBackend(BaseBackend):
 
     Uses modules for SQL functions and storage.
     """
+    _class_version = 1
 
     def __init__(self, db_module=None, db_connection=None,
                  block_module=None, block_size=None, hash_algorithm=None,
@@ -233,7 +239,10 @@ class ModularBackend(BaseBackend):
                  archipelago_conf_file=None,
                  xseg_pool_size=8,
                  map_check_interval=None,
-                 mapfile_prefix=None):
+                 mapfile_prefix=None,
+                 resource_max_metadata=None,
+                 acc_max_groups=None,
+                 acc_max_group_members=None):
         db_module = db_module or DEFAULT_DB_MODULE
         db_connection = db_connection or DEFAULT_DB_CONNECTION
         block_module = block_module or DEFAULT_BLOCK_MODULE
@@ -252,13 +261,18 @@ class ModularBackend(BaseBackend):
             or DEFAULT_MAP_CHECK_INTERVAL
         mapfile_prefix = mapfile_prefix \
             or DEFAULT_MAPFILE_PREFIX
+        resource_max_metadata = resource_max_metadata\
+            or DEFAULT_RESOURCE_MAX_METADATA
+        acc_max_groups = acc_max_groups \
+            or DEFAULT_ACC_MAX_GROUPS
+        acc_max_group_members = acc_max_group_members\
+            or DEFAULT_ACC_MAX_GROUP_MEMBERS
 
         self.default_account_policy = {QUOTA_POLICY: account_quota_policy}
         self.default_container_policy = {
             QUOTA_POLICY: container_quota_policy,
             VERSIONING_POLICY: container_versioning_policy,
-            PROJECT: None
-        }
+            PROJECT: None}
         # queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
         # queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
 
@@ -266,12 +280,14 @@ class ModularBackend(BaseBackend):
                                     DEFAULT_PUBLIC_URL_SECURITY)
         self.public_url_alphabet = (public_url_alphabet or
                                     DEFAULT_PUBLIC_URL_ALPHABET)
-
         self.hash_algorithm = hash_algorithm
         self.block_size = block_size
         self.free_versioning = free_versioning
         self.map_check_interval = map_check_interval
         self.mapfile_prefix = mapfile_prefix
+        self.resource_max_metadata = resource_max_metadata
+        self.acc_max_groups = acc_max_groups
+        self.acc_max_group_members = acc_max_group_members
 
         def load_module(m):
             __import__(m)
@@ -463,7 +479,12 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def update_account_meta(self, user, account, domain, meta, replace=False):
-        """Update the metadata associated with the account for the domain."""
+        """Update the metadata associated with the account for the domain.
+
+           Raises:
+               NotAllowedError: Operation not permitted
+               LimitExceeded: if the metadata number exceeds the allowed limit.
+        """
 
         self._can_write_account(user, account)
         path, node = self._lookup_account(account, True)
@@ -484,18 +505,38 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def update_account_groups(self, user, account, groups, replace=False):
-        """Update the groups associated with the account."""
+        """Update the groups associated with the account.
 
+        Raises:
+            NotAllowedError: Operation not permitted
+            ValueError: Invalid data in groups
+            LimitExceeded: if the group number exceeds the allowed limit or
+                           a group name or a member  is too long.
+        """
+
+        # assert groups' validity before querying the db
+        self._check_groups(groups)
         self._can_write_account(user, account)
         self._lookup_account(account, True)
-        self._check_groups(groups)
-        if replace:
-            self.permissions.group_destroy(account)
-        for k, v in groups.iteritems():
-            if not replace:  # If not already deleted.
-                self.permissions.group_delete(account, k)
-            if v:
-                self.permissions.group_addmany(account, k, v)
+        if not replace:
+            existing = self.permissions.group_dict(account)
+            for k, v in groups.iteritems():
+                if v == '':
+                    existing.pop(k, None)
+                else:
+                    existing[k] = v
+                groups = existing
+
+        if len(groups) > self.acc_max_groups:
+            raise LimitExceeded('Pithos+ accounts cannot have more than %s '
+                                'groups' % self.acc_max_groups)
+        for k in groups:
+            if len(groups[k]) > self.acc_max_group_members:
+                raise LimitExceeded('Pithos+ groups cannot have more than %s '
+                                    'members' % self.acc_max_group_members)
+
+        self.permissions.group_destroy(account)
+        self.permissions.group_addmany(account, groups)
 
     @debug_method
     @backend_method
@@ -508,11 +549,12 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_account(account, True)
         policy = self._get_policy(node, is_account_policy=True)
         if self.using_external_quotaholder:
+            policy[QUOTA_POLICY] = 0
             external_quota = self.astakosclient.service_get_quotas(
                 account)[account]
-            policy.update(dict(('%s-%s' % (QUOTA_POLICY, k),
-                                v['pithos.diskspace']['limit']) for k, v in
-                               external_quota.items()))
+            for k, v in external_quota.items():
+                policy['%s-%s' % (QUOTA_POLICY, k)] = v['pithos.diskspace']['limit']
+                policy[QUOTA_POLICY] += v['pithos.diskspace']['limit']
 
         return policy
 
@@ -645,7 +687,13 @@ class ModularBackend(BaseBackend):
     @backend_method
     def update_container_meta(self, user, account, container, domain, meta,
                               replace=False):
-        """Update the metadata associated with the container for the domain."""
+        """Update the metadata associated with the container for the domain.
+
+           Raises:
+               NotAllowedError: Operation not permitted
+               ItemNotExists: Container does not exist
+               LimitExceeded: if the metadata number exceeds the allowed limit.
+        """
 
         self._can_write_container(user, account, container)
         path, node = self._lookup_container(account, container)
@@ -674,7 +722,10 @@ class ModularBackend(BaseBackend):
     @backend_method
     def update_container_policy(self, user, account, container, policy,
                                 replace=False):
-        """Update the policy associated with the container."""
+        """Update the policy associated with the container.
+
+        Raises: AstakosClientException
+        """
 
         self._can_write_container(user, account, container)
         path, node = self._lookup_container(account, container)
@@ -688,12 +739,9 @@ class ModularBackend(BaseBackend):
                     user, account, container,
                     include_user_defined=False)['bytes']}
 
-            try:
+            if self.using_external_quotaholder:
                 serial = self.astakosclient.issue_resource_reassignment(
                     holder=account, provisions=provisions)
-            except BaseException, e:
-                raise QuotaError(e)
-            else:
                 self.serials.append(serial)
 
         self._put_policy(node, policy, replace, is_account_policy=False,
@@ -978,7 +1026,7 @@ class ModularBackend(BaseBackend):
         path, node = self._lookup_object(account, container, name)
         props = self._get_version(node, version)
         if version is None:
-            if not props[self.AVAILABLE]:
+            if props[self.AVAILABLE] == MAP_UNAVAILABLE:
                 try:
                     self._update_available(props)
                 except IllegalOperationError:
@@ -1026,7 +1074,13 @@ class ModularBackend(BaseBackend):
     @backend_method
     def update_object_meta(self, user, account, container, name, domain, meta,
                            replace=False):
-        """Update object metadata for a domain and return the new version."""
+        """Update object metadata for a domain and return the new version.
+
+           Raises:
+               NotAllowedError: Operation not permitted
+               ItemNotExists: Container/object does not exist
+               LimitExceeded: if the metadata number exceeds the allowed limit.
+        """
 
         self._can_write_object(user, account, container, name)
 
@@ -1035,6 +1089,8 @@ class ModularBackend(BaseBackend):
         src_version_id, dest_version_id = self._put_metadata(
             user, node, domain, meta, replace,
             update_statistics_ancestors_depth=1)
+        self._copy_metadata(src_version_id, dest_version_id, node,
+                            exclude_domain=domain, src_node=node)
         self._apply_versioning(account, container, src_version_id,
                                update_statistics_ancestors_depth=1)
         return dest_version_id
@@ -1142,7 +1198,10 @@ class ModularBackend(BaseBackend):
     def _update_available(self, props):
         """Checks if the object map exists and updates the database"""
 
-        if not props[self.AVAILABLE]:
+        if props[self.AVAILABLE] == MAP_ERROR:
+            raise BrokenSnapshot('This Archipelago volume is broken.')
+
+        if props[self.AVAILABLE] == MAP_UNAVAILABLE:
             if props[self.MAP_CHECK_TIMESTAMP]:
                 elapsed_time = time() - float(props[self.MAP_CHECK_TIMESTAMP])
                 if elapsed_time < self.map_check_interval:
@@ -1163,7 +1222,7 @@ class ModularBackend(BaseBackend):
                 'Unable to retrieve Archipelago volume hashmap')
         else:  # map exists
             self.node.version_put_property(props[self.SERIAL],
-                                           'available', True)
+                                           'available', MAP_AVAILABLE)
             self.node.version_put_property(props[self.SERIAL],
                                            'map_check_timestamp', time())
             return hashmap
@@ -1190,12 +1249,28 @@ class ModularBackend(BaseBackend):
         return props[self.IS_SNAPSHOT], props[self.SIZE], \
             self._get_object_hashmap(props, update_available=True)
 
+    def _copy_metadata(self, src_version, dest_version, dest_node,
+                       exclude_domain, src_node=None):
+        domains = self.node.attribute_get_domains(src_version,
+                                                  node=src_node)
+        try:
+            domains.remove(exclude_domain)
+        except ValueError: # domain is not in the list
+            pass
+
+        for d in domains:
+            existing = dict(self.node.attribute_get(src_version, d))
+            self._put_metadata_duplicate(
+                src_version, dest_version, d, dest_node, meta=existing,
+                replace=True)
+
     def _update_object_hash(self, user, account, container, name, size, type,
                             hash, checksum, domain, meta, replace_meta,
                             permissions, src_node=None, src_version_id=None,
                             is_copy=False, report_size_change=True,
-                            available=True, keep_available=False,
+                            available=None, keep_available=False,
                             force_mapfile=None, is_snapshot=False):
+        available = available if available is not None else MAP_AVAILABLE
         if permissions is not None and user != account:
             raise NotAllowedError
         self._can_write_object(user, account, container, name)
@@ -1220,6 +1295,8 @@ class ModularBackend(BaseBackend):
         # Handle meta.
         if src_version_id is None:
             src_version_id = pre_version_id
+        self._copy_metadata(src_version_id, dest_version_id, node,
+                            exclude_domain=domain, src_node=src_node)
         self._put_metadata_duplicate(
             src_version_id, dest_version_id, domain, node, meta, replace_meta)
 
@@ -1304,7 +1381,8 @@ class ModularBackend(BaseBackend):
 
         :returns: the new object uuid
 
-        :raises: ItemNotExists, NotAllowedError, QuotaError
+        :raises: ItemNotExists, NotAllowedError, QuotaError,
+                 AstakosClientException, LimitExceeded
         """
 
         meta = meta or {}
@@ -1317,16 +1395,41 @@ class ModularBackend(BaseBackend):
             self.lock_container_path = False
         dest_version_id, _, mapfile = self._update_object_hash(
             user, account, container, name, size, type, mapfile, checksum,
-            domain, meta, replace_meta, permissions, available=False,
+            domain, meta, replace_meta, permissions, available=MAP_UNAVAILABLE,
             force_mapfile=mapfile, is_snapshot=True)
         return self.node.version_get_properties(dest_version_id,
                                                 keys=('uuid',))[0]
 
     @debug_method
+    @backend_method
+    def update_object_status(self, uuid, state):
+        assert state in (MAP_ERROR,
+                         MAP_UNAVAILABLE,
+                         MAP_AVAILABLE), 'Invalid mapfile state'
+        uuid_ = self._validate_uuid(uuid)
+        info = self.node.latest_uuid(uuid_, CLUSTER_NORMAL)
+        if info is None:
+            raise NameError('No object found for this UUID.')
+        _, serial = info
+        self.node.version_put_property(serial, 'available', state)
+
+    @debug_method
     def update_object_hashmap(self, user, account, container, name, size, type,
                               hashmap, checksum, domain, meta=None,
                               replace_meta=False, permissions=None):
-        """Create/update an object's hashmap and return the new version."""
+        """Create/update an object's hashmap and return the new version.
+
+           Raises:
+               NotAllowedError: Operation not permitted
+
+               ItemNotExists: Container does not exist
+
+               ValueError: Invalid users/groups in permissions
+
+               QuotaError: Account or container quota exceeded
+
+               LimitExceeded: if the metadata number exceeds the allowed limit.
+        """
 
         if not self._size_is_consistent(size, hashmap):
             raise InconsistentContentSize(
@@ -1365,7 +1468,7 @@ class ModularBackend(BaseBackend):
             user, account, container, name, size, type, hexlified, checksum,
             domain, meta, replace_meta, permissions, is_snapshot=False)
         if size != 0:
-            self.store.map_put(mapfile, map_, size, self.block_size)
+            self.store.map_put(mapfile, hashmap, size, self.block_size)
         return dest_version_id, hexlified
 
     @debug_method
@@ -1441,7 +1544,7 @@ class ModularBackend(BaseBackend):
         is_copy = not is_move and (src_account, src_container, src_name) != (
             dest_account, dest_container, dest_name)  # New uuid.
 
-        if is_copy and not props[self.AVAILABLE]:
+        if is_copy and props[self.AVAILABLE] != MAP_AVAILABLE:
             raise NotAllowedError('Copying objects not available in the '
                                   'storage backend is forbidden.')
 
@@ -1465,7 +1568,6 @@ class ModularBackend(BaseBackend):
                 raise NotAllowedError("Copy is not permitted: failed to get "
                                       "source object's mapfile: %s" %
                                       src_mapfile)
-            hashmap = map(self._unhexlify_hash, hashmap)
             self.store.map_put(dest_mapfile, hashmap, size, self.block_size)
 
         dest_versions.append(dest_version_id)
@@ -1502,7 +1604,7 @@ class ModularBackend(BaseBackend):
                     delimiter) else dest_name
                 vdest_name = path.replace(prefix, dest_prefix, 1)
 
-                if is_copy and not prop[self.AVAILABLE]:
+                if is_copy and prop[self.AVAILABLE] != MAP_AVAILABLE:
                     raise NotAllowedError('Copying objects not available in '
                                           'the storage backend is forbidden.')
 
@@ -1529,7 +1631,6 @@ class ModularBackend(BaseBackend):
                         raise NotAllowedError(
                             "Copy is not permitted: failed to get "
                             "source object's mapfile: %s" % src_mapfile)
-                    hashmap = map(self._unhexlify_hash, hashmap)
                     self.store.map_put(dest_mapfile, hashmap, size,
                                        self.block_size)
 
@@ -1559,7 +1660,16 @@ class ModularBackend(BaseBackend):
                     dest_account, dest_container, dest_name, type, domain,
                     meta=None, replace_meta=False, permissions=None,
                     src_version=None, delimiter=None, listing_limit=None):
-        """Copy an object's data and metadata."""
+        """Copy an object's data and metadata.
+
+        Raises:
+            NotAllowedError: Operation not permitted
+            ItemNotExists: Container/object does not exist
+            VersionNotExists: Version does not exist
+            ValueError: Invalid users/groups in permissions
+            QuotaError: Account or container quota exceeded
+            LimitExceeded: if the metadata number exceeds the allowed limit.
+        """
 
         meta = meta or {}
         dest_versions = self._copy_object(
@@ -1913,7 +2023,7 @@ class ModularBackend(BaseBackend):
                                type=None, hash=None, checksum=None,
                                cluster=CLUSTER_NORMAL, is_copy=False,
                                update_statistics_ancestors_depth=None,
-                               available=True, keep_available=True,
+                               available=None, keep_available=True,
                                keep_src_mapfile=False,
                                force_mapfile=None,
                                is_snapshot=False):
@@ -1930,7 +2040,7 @@ class ModularBackend(BaseBackend):
 
         :raises ValueError: if it failed to create the new version
         """
-
+        available = available if available is not None else MAP_AVAILABLE
         props = self.node.version_lookup(
             node if src_node is None else src_node, inf, CLUSTER_NORMAL,
             keys=_propnames)
@@ -2005,17 +2115,25 @@ class ModularBackend(BaseBackend):
 
     def _put_metadata_duplicate(self, src_version_id, dest_version_id, domain,
                                 node, meta, replace=False):
-        if src_version_id is not None:
-            self.node.attribute_copy(src_version_id, dest_version_id)
         if not replace:
-            self.node.attribute_del(dest_version_id, domain, (
-                k for k, v in meta.iteritems() if v == ''))
-            self.node.attribute_set(dest_version_id, domain, node, (
-                (k, v) for k, v in meta.iteritems() if v != ''))
-        else:
-            self.node.attribute_del(dest_version_id, domain)
-            self.node.attribute_set(dest_version_id, domain, node, ((
-                k, v) for k, v in meta.iteritems()))
+            if src_version_id is not None:
+                existing = dict(self.node.attribute_get(src_version_id,
+                                                        domain))
+            else:
+                existing = {}
+            for k, v in meta.iteritems():
+                if v == '':
+                    existing.pop(k, None)
+                else:
+                    existing[k] = v
+            meta = existing
+
+        if len(meta) > self.resource_max_metadata:
+            raise LimitExceeded('Pithos+ resources cannot have more than %s '
+                                'metadata items per domain' %
+                                self.resource_max_metadata)
+
+        self.node.attribute_set(dest_version_id, domain, node, meta)
 
     def _put_metadata(self, user, node, domain, meta, replace=False,
                       update_statistics_ancestors_depth=None):
@@ -2068,6 +2186,11 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def _report_size_change(self, user, account, size, source, details=None):
+        """Report quota modifications.
+
+        Raises: AstakosClientException
+        """
+
         details = details or {}
 
         if size == 0:
@@ -2083,16 +2206,12 @@ class ModularBackend(BaseBackend):
         if not self.using_external_quotaholder:
             return
 
-        try:
-            name = details['path'] if 'path' in details else ''
-            serial = self.astakosclient.issue_one_commission(
-                holder=account,
-                provisions={(source, 'pithos.diskspace'): size},
-                name=name)
-        except BaseException, e:
-            raise QuotaError(e)
-        else:
-            self.serials.append(serial)
+        name = details['path'] if 'path' in details else ''
+        serial = self.astakosclient.issue_one_commission(
+            holder=account,
+            provisions={(source, 'pithos.diskspace'): size},
+            name=name)
+        self.serials.append(serial)
 
     @debug_method
     @backend_method
@@ -2115,22 +2234,29 @@ class ModularBackend(BaseBackend):
     # Policy functions.
 
     def _check_project(self, value):
-        # raise ValueError('Bad quota source policy')
+        # raise InvalidPolicy('Bad quota source policy')
         pass
 
     def _check_policy(self, policy):
         for k, v in policy.iteritems():
             if k == QUOTA_POLICY:
-                q = int(v)  # May raise ValueError.
+                error_msg = ('The quota policy value '
+                             'should be a positive integer.')
+                try:
+                    q = int(v)  # May raise ValueError.
+                except ValueError:
+                    raise InvalidPolicy(error_msg)
                 if q < 0:
-                    raise ValueError
+                    raise InvalidPolicy(error_msg)
             elif k == VERSIONING_POLICY:
                 if v not in ['auto', 'none']:
-                    raise ValueError
+                    raise InvalidPolicy('The versioning policy value should '
+                                        'be either \'auto\' or \'none\'.')
             elif k == PROJECT:
                 self._check_project(v)
             else:
-                raise ValueError
+                raise InvalidPolicy('The only allowed policies are '
+                                    '\'quota\' or \'versioning\'.')
 
     def _get_default_policy(self, node=None, is_account_policy=True,
                             default_project=None):
@@ -2355,11 +2481,14 @@ class ModularBackend(BaseBackend):
 
     @debug_method
     @backend_method
-    def get_domain_objects(self, domain, user=None):
-        allowed_paths = self.permissions.access_list_paths(
-            user, include_owned=user is not None, include_containers=False)
-        if not allowed_paths:
-            return []
+    def get_domain_objects(self, domain, user=None, check_permissions=True):
+        if check_permissions:
+            allowed_paths = self.permissions.access_list_paths(
+                user, include_owned=user is not None, include_containers=False)
+            if not allowed_paths:
+                return []
+        else:
+            allowed_paths = None
         obj_list = self.node.domain_object_list(
             domain, allowed_paths, CLUSTER_NORMAL)
         return [(path,
@@ -2371,10 +2500,14 @@ class ModularBackend(BaseBackend):
 
     def _build_metadata(self, props, user_defined=None,
                         include_user_defined=True):
-        if not props[self.AVAILABLE]:
-            self._update_available(props)
-            available = self.node.version_get_properties(
-                props[self.SERIAL], keys=('available',))[0]
+        if props[self.AVAILABLE] == MAP_UNAVAILABLE:
+            try:
+                self._update_available(props)
+            except IllegalOperationError:
+                available = MAP_UNAVAILABLE
+            else:
+                available = self.node.version_get_properties(
+                    props[self.SERIAL], keys=('available',))[0]
         else:
             available = props[self.AVAILABLE]
         meta = {'bytes': props[self.SIZE],

@@ -30,6 +30,7 @@ from synnefo_tools.burnin.pithos_tests import PithosTestSuite
 from synnefo_tools.burnin.server_tests import ServerTestSuite
 from synnefo_tools.burnin.network_tests import NetworkTestSuite
 from synnefo_tools.burnin.projects_tests import QuotasTestSuite
+from synnefo_tools.burnin.snapshots import SnapshotsTestSuite
 from synnefo_tools.burnin.stale_tests import \
     StaleServersTestSuite, StaleFloatingIPsTestSuite, StaleNetworksTestSuite
 
@@ -44,6 +45,7 @@ TESTSUITES = [
     ServerTestSuite,
     NetworkTestSuite,
     QuotasTestSuite,
+    SnapshotsTestSuite
 ]
 TSUITES_NAMES = [tsuite.__name__ for tsuite in TESTSUITES]
 
@@ -177,6 +179,21 @@ def parse_arguments(args):
         "--temp-directory", action="store",
         default="/tmp/", dest="temp_directory",
         help="Directory to use for saving temporary files")
+    parser.add_option(
+        "--obj-upload-num", action="store",
+        type="int", default=2, dest="obj_upload_num",
+        help="Set the number of objects to massively be uploaded "
+             "(default: 2)")
+    parser.add_option(
+        "--obj-upload-min-size", action="store",
+        type="int", default=10 * common.MB, dest="obj_upload_min_size",
+        help="Set the min size of the object to massively be uploaded "
+             "(default: 10MB)")
+    parser.add_option(
+        "--obj-upload-max-size", action="store",
+        type="int", default=20 * common.MB, dest="obj_upload_max_size",
+        help="Set the max size of the objects to massively be uploaded "
+             "(default: 20MB)")
 
     (opts, args) = parser.parse_args(args)
 

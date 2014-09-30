@@ -18,6 +18,7 @@ from django.utils.encoding import smart_str
 
 import gd
 import os
+import os.path
 
 from cStringIO import StringIO
 
@@ -95,6 +96,8 @@ def draw_cpu_bar(fname, outfname=None):
 
 def draw_net_bar(fname, outfname=None):
     fname = os.path.join(fname, "interface", "if_octets-eth0.rrd")
+    if not os.path.isfile(fname):
+        raise faults.ItemNotFound("VM has no attached NICs")
 
     try:
         values = rrdtool.fetch(fname, "AVERAGE")[2][-20:]
@@ -151,9 +154,9 @@ def draw_cpu_ts(fname, outfname):
     outfname += "-cpu.png"
 
     rrdtool.graph(outfname, "-s", "-1d", "-e", "-20s",
-                  #"-t", "CPU usage",
+                  # "-t", "CPU usage",
                   "-v", "%",
-                  #"--lazy",
+                  # "--lazy",
                   "DEF:cpu=%s:value:AVERAGE" % fname,
                   "LINE1:cpu#00ff00:")
 
@@ -165,9 +168,9 @@ def draw_cpu_ts_w(fname, outfname):
     outfname += "-cpu-weekly.png"
 
     rrdtool.graph(outfname, "-s", "-1w", "-e", "-20s",
-                  #"-t", "CPU usage",
+                  # "-t", "CPU usage",
                   "-v", "%",
-                  #"--lazy",
+                  # "--lazy",
                   "DEF:cpu=%s:value:AVERAGE" % fname,
                   "LINE1:cpu#00ff00:")
 
@@ -177,6 +180,8 @@ def draw_cpu_ts_w(fname, outfname):
 def draw_net_ts(fname, outfname):
     fname = os.path.join(fname, "interface", "if_octets-eth0.rrd")
     outfname += "-net.png"
+    if not os.path.isfile(fname):
+        raise faults.ItemNotFound("VM has no attached NICs")
 
     rrdtool.graph(outfname, "-s", "-1d", "-e", "-20s",
                   "--units", "si",
@@ -197,6 +202,8 @@ def draw_net_ts(fname, outfname):
 def draw_net_ts_w(fname, outfname):
     fname = os.path.join(fname, "interface", "if_octets-eth0.rrd")
     outfname += "-net-weekly.png"
+    if not os.path.isfile(fname):
+        raise faults.ItemNotFound("VM has no attached NICs")
 
     rrdtool.graph(outfname, "-s", "-1w", "-e", "-20s",
                   "--units", "si",

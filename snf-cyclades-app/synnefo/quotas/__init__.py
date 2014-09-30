@@ -13,8 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.utils import simplejson as json
-from django.db import transaction
+from synnefo.db import transaction
 
 from snf_django.lib.api import faults
 from synnefo.db.models import (QuotaHolderSerial, VirtualMachine, Network,
@@ -67,7 +66,7 @@ class AstakosClientExceptionHandler(object):
     def __enter__(self):
         pass
 
-    def check_notFound(self):
+    def check_not_found(self):
         if not self.user or not self.projects:
             return
         try:
@@ -90,10 +89,9 @@ class AstakosClientExceptionHandler(object):
             if not isinstance(value, errors.AstakosClientException):
                 return False  # reraise
             if exc_type is errors.QuotaLimit:
-                msg, details = render_overlimit_exception(value)
-                raise faults.OverLimit(msg, details=details)
+                raise faults.OverLimit(value.message, details=value.details)
             if exc_type is errors.NotFound:
-                self.check_notFound()
+                self.check_not_found()
 
             log.exception("Unexpected error %s" % value.message)
             raise faults.InternalServerError("Unexpected error")
@@ -251,33 +249,6 @@ def get_quotaholder_pending():
     return pending_serials
 
 
-def render_overlimit_exception(e):
-    resource_name = {"vm": "Virtual Machine",
-                     "cpu": "CPU",
-                     "ram": "RAM",
-                     "network.private": "Private Network",
-                     "floating_ip": "Floating IP address"}
-    details = json.loads(e.details)
-    data = details['overLimit']['data']
-    usage = data["usage"]
-    limit = data["limit"]
-    available = limit - usage
-    provision = data['provision']
-    requested = provision['quantity']
-    resource = provision['resource']
-    res = resource.replace("cyclades.", "", 1)
-    try:
-        resource = resource_name[res]
-    except KeyError:
-        resource = res
-
-    msg = "Resource Limit Exceeded for your account."
-    details = "Limit for resource '%s' exceeded for your account."\
-              " Available: %s, Requested: %s"\
-              % (resource, available, requested)
-    return msg, details
-
-
 @transaction.commit_on_success
 def issue_and_accept_commission(resource, action="BUILD", action_fields=None):
     """Issue and accept a commission to Quotaholder.
@@ -393,7 +364,7 @@ def get_commission_info(resource, action, action_fields=None):
                             get_volume_size_delta(action, db_volume, info)
                 return resources
         else:
-            #["CONNECT", "DISCONNECT", "SET_FIREWALL_PROFILE"]:
+            # ["CONNECT", "DISCONNECT", "SET_FIREWALL_PROFILE"]:
             return None
     elif isinstance(resource, Network):
         resources = {(project, "cyclades.network.private"): 1}

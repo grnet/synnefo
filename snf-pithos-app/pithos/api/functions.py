@@ -17,7 +17,6 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import parse_etags
-from django.utils.encoding import smart_str
 from django.views.decorators.csrf import csrf_exempt
 
 from astakosclient import AstakosClient
@@ -47,7 +46,7 @@ from pithos.api import settings
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
     VersionNotExists, ContainerExists, InvalidHash, IllegalOperationError,
-    InconsistentContentSize)
+    InconsistentContentSize, InvalidPolicy)
 
 from pithos.backends.filter import parse_filters
 
@@ -87,7 +86,7 @@ def account_demux(request, v_account):
     if TRANSLATE_UUIDS:
         if not is_uuid(v_account):
             uuids = get_uuids([v_account])
-            if not uuids or not v_account in uuids:
+            if not uuids or v_account not in uuids:
                 return HttpResponse(status=404)
             v_account = uuids[v_account]
 
@@ -109,7 +108,7 @@ def container_demux(request, v_account, v_container):
     if TRANSLATE_UUIDS:
         if not is_uuid(v_account):
             uuids = get_uuids([v_account])
-            if not uuids or not v_account in uuids:
+            if not uuids or v_account not in uuids:
                 return HttpResponse(status=404)
             v_account = uuids[v_account]
 
@@ -139,7 +138,7 @@ def object_demux(request, v_account, v_container, v_object):
     if TRANSLATE_UUIDS:
         if not is_uuid(v_account):
             uuids = get_uuids([v_account])
-            if not uuids or not v_account in uuids:
+            if not uuids or v_account not in uuids:
                 return HttpResponse(status=404)
             v_account = uuids[v_account]
 
@@ -469,8 +468,8 @@ def container_create(request, v_account, v_container):
         ret = 201
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
-    except ValueError:
-        raise faults.BadRequest('Invalid policy header')
+    except InvalidPolicy, e:
+        raise faults.BadRequest(e.args[0])
     except ContainerExists:
         ret = 202
 
@@ -483,8 +482,8 @@ def container_create(request, v_account, v_container):
             raise faults.Forbidden('Not allowed')
         except ItemNotExists:
             raise faults.ItemNotFound('Container does not exist')
-        except ValueError:
-            raise faults.BadRequest('Invalid policy header')
+        except InvalidPolicy, e:
+            raise faults.BadRequest(e.args[0])
         except QuotaError, e:
             raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     if meta:
@@ -522,8 +521,8 @@ def container_update(request, v_account, v_container):
             raise faults.Forbidden('Not allowed')
         except ItemNotExists:
             raise faults.ItemNotFound('Container does not exist')
-        except ValueError:
-            raise faults.BadRequest('Invalid policy header')
+        except InvalidPolicy, e:
+            raise faults.BadRequest(e.args[0])
         except QuotaError, e:
             raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     if meta or replace:
@@ -650,8 +649,7 @@ def object_list(request, v_account, v_container):
 
     keys = request.GET.get('meta')
     if keys:
-        keys = [smart_str(x.strip()) for x in keys.split(',')
-                if x.strip() != '']
+        keys = [x.strip() for x in keys.split(',') if x.strip() != '']
         included, excluded, opers = parse_filters(keys)
         keys = []
         keys += [format_header_key('X-Object-Meta-' + x) for x in included]
@@ -1114,6 +1112,7 @@ def object_write(request, v_account, v_container, v_object):
         raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     except InvalidHash, e:
         raise faults.BadRequest('Invalid hash: %s' % e)
+
     if not checksum and UPDATE_MD5:
         # Update the MD5 after the hashmap, as there may be missing hashes.
         checksum = hashmap_md5(request.backend, hashmap, size)
@@ -1499,6 +1498,7 @@ def object_update(request, v_account, v_container, v_object):
         raise faults.BadRequest('Invalid sharing header')
     except QuotaError, e:
         raise faults.RequestEntityTooLarge('Quota error: %s' % e)
+
     if public is not None:
         try:
             request.backend.update_object_public(request.user_uniq, v_account,

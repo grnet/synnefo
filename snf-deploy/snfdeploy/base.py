@@ -201,7 +201,7 @@ apt-mark hold {1}
         info = config.get_package(package, self.node.os)
         if info in \
                 ["squeeze-backports", "squeeze", "stable",
-                 "testing", "unstable", "wheezy"]:
+                 "testing", "unstable", "wheezy", "wheezy-backports"]:
             apt_get += " -t %s %s " % (info, package)
         elif info:
             apt_get += " %s=%s " % (package, info)

@@ -1,0 +1,248 @@
+@import "icon-fonts";
+@import "bootstrap/mixins";
+.main {
+    margin:2em 0 5em;
+	h4 .title{
+		font-size: 24px;
+	}
+    span[class^="snf-details"] {
+        float: left;
+        margin-right: 8px;
+        font-size: $details-title-height;
+    }
+    .lt{
+        line-height: $details-title-height;
+    }
+    .rt {
+        padding-top:5px;
+    }
+    .actions-per-item {
+        padding: 0;
+    }
+}
+
+.object-anchor {height:2px; }
+
+.object-details {
+	h4 {
+        font-size: 14px;
+        letter-spacing: 1px;
+ 	    .lt{
+            display: block;
+            float: left;
+            max-width: 60%;
+            word-wrap: break-word;
+        }
+        .rt {
+            padding-top: 5px;
+            display: block;
+            overflow: hidden;
+        }
+        .arrow {
+		    position: relative;
+            padding: 0 8px;
+		    &:hover,
+            &:focus{
+			    top: 2px;
+			    cursor: pointer;
+                outline: 0 none;
+		    }
+	    }
+       .label{
+            float: right;
+            margin-left: 15px;
+            margin-bottom: 10px;
+            &.important {
+                font-weight: bold;
+            }
+        }
+        em {
+            float: none;
+            &.os-info {
+                float: right;
+                position: relative;
+                bottom: 3px;
+                img {
+                    height: 26px; // *** i think that is the size of all images temp use for preview
+                    margin-right: 5px;
+                }
+            }
+	    }
+	}
+	h3 {
+        font-size: 18px;
+		margin: 0 0 1em;
+        font-weight: 400;
+        line-height: $details-title-height;
+        em {
+            margin-left: 10px;
+            font-size: 14px;
+            display: inline-block;
+            @include text-overflow();
+            max-width: 50%;
+            vertical-align: top;
+        }
+        span[class^="snf-details"] {
+            float: left;
+            margin-right: 8px;
+            font-size: $details-title-height - 10px;
+            height: $details-title-height;
+            line-height: $details-title-height;
+        }
+        .popover-dismiss {
+            display: inline-block;
+            @include circle(18px,$popover-dismiss-bg);
+            text-align: center;
+            font-weight: bold;
+            vertical-align: middle;
+            line-height: 18px;
+            font-size: 16px;
+            vertical-align: super;
+            cursor: pointer;
+            margin-left:10px;
+            color: $popover-dismiss-color;
+            &:hover,
+            &:focus{
+                background: $popover-dismiss-bg-hover;
+                color: $popover-dismiss-color-hover;
+            }
+        }
+        .popover {
+            .popover-content {
+                font-size: 12px;
+                line-height: 130%;
+            }
+        }
+	}
+    .icon-link {
+        margin-right: 10px;
+    }
+	p {
+		margin: 10px 20px;
+		font-style: italic;
+	}
+
+	.length {
+		margin-left: 6px;
+		border: 0 none;
+		font-style: italic;
+		&::before {
+		    content: '( ';
+		}
+		&::after {
+		    content: ' )';
+		}
+	}
+	&>.object-details {
+		margin-left: -20px;
+		margin-right: -20px;
+		padding:12px 20px;
+	}
+}
+
+.object-details-content .nav-tabs>li {
+	a {
+		opacity: 0.7;
+	}
+	&.active>a {
+		opacity: 1;
+	}
+	
+    &:not(.active)>a:hover,
+    &:not(.active)>a:focus{
+		opacity: 1;
+	}
+}
+
+.tab-pane {
+	overflow: auto;
+}
+
+.parts-separator {
+    border-top: 2px solid $parts-separator-color;
+    padding-top: 1em;
+    h2 {
+        font-size: 24px;
+        margin-bottom: 2em;
+        padding-top: 1em;
+        em {
+            max-width: 50%;
+            display: inline;
+            @include text-overflow();
+            vertical-align: top;
+
+        }
+    }
+}
+
+.part-two {
+	&>.object-details {
+        border-bottom: 2px solid $object-details-border;		
+        background: $object-details-bg;
+		padding:14px 20px;
+        overflow-x: auto;
+        .object-details {
+            padding: 5px 20px;
+            &:hover,
+            &:focus{
+                background: $object-details-row-hover-bg;
+            }
+		}
+        .custom-btn {
+            span {
+                padding: 5px;
+            }
+        }
+    }
+    .object-details-content {
+        display: none;
+        padding: 0 $details-title-height;
+    }
+    
+}
+
+
+.snf-details-volume {
+    @extend .snf-volume-full;
+}
+
+.snf-details-vm {
+    @extend .snf-pc-full;
+}
+.snf-details-project {
+    @extend .snf-clipboard-h;
+}
+.snf-details-network {
+    @extend .snf-network-full;
+}
+.snf-details-quota {
+    @extend .snf-wallet-full;
+}
+
+.snf-details-nic {
+    @extend .snf-nic-full;
+}
+.snf-details-user {
+    @extend .snf-user-full;
+}
+
+.show-hide-all {
+    span.snf-font-arrow-up {
+        @extend .snf-arrow-up;
+        display: none;
+        padding: 0;
+    }
+    span.snf-font-arrow-down {
+        @extend .snf-arrow-down;
+        display: inline;
+        padding: 0;
+    }
+    &.open {
+        .snf-font-arrow-up {
+            display: inline;
+        } 
+        .snf-font-arrow-down {
+            display: none;
+        }
+    }
+}

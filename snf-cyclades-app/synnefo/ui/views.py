@@ -106,9 +106,6 @@ UI_SYNNEFO_JS_LIB_URL = \
             "UI_SYNNEFO_JS_LIB_URL", UI_SYNNEFO_JS_URL + "lib/")
 UI_SYNNEFO_JS_WEB_URL = \
     getattr(settings, "UI_SYNNEFO_JS_WEB_URL", UI_SYNNEFO_JS_URL + "ui/web/")
-UI_SYNNEFO_FONTS_BASE_URL = \
-    getattr(settings,
-            "UI_FONTS_BASE_URL", "//fonts.googleapis.com/")
 
 # extensions
 ENABLE_GLANCE = getattr(settings, 'UI_ENABLE_GLANCE', True)
@@ -151,8 +148,8 @@ DEFAULT_HOTPLUG_ENABLED = getattr(settings, "CYCLADES_GANETI_USE_HOTPLUG",
 HOTPLUG_ENABLED = getattr(settings, "UI_HOTPLUG_ENABLED",
                           DEFAULT_HOTPLUG_ENABLED)
 
-VOLUME_MAX_SIZE = getattr(settings, "CYCLADES_VOLUME_MAX_SIZE", 200);
-SNAPSHOTS_ENABLED = getattr(settings, "UI_SNAPSHOTS_ENABLED", True);
+VOLUME_MAX_SIZE = getattr(settings, "CYCLADES_VOLUME_MAX_SIZE", 200)
+SNAPSHOTS_ENABLED = getattr(settings, "CYCLADES_SNAPSHOTS_ENABLED", True)
 
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")
@@ -162,7 +159,6 @@ def template(name, request, context):
         'UI_MEDIA_URL': UI_MEDIA_URL,
         'SYNNEFO_JS_URL': UI_SYNNEFO_JS_URL,
         'SYNNEFO_JS_LIB_URL': UI_SYNNEFO_JS_LIB_URL,
-        'SYNNEFO_FONTS_BASE_URL': UI_SYNNEFO_FONTS_BASE_URL,
         'SYNNEFO_JS_WEB_URL': UI_SYNNEFO_JS_WEB_URL,
         'SYNNEFO_IMAGES_URL': UI_SYNNEFO_IMAGES_URL,
         'SYNNEFO_CSS_URL': UI_SYNNEFO_CSS_URL,

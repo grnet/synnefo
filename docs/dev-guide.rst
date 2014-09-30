@@ -241,3 +241,21 @@ Synnefo has two main testing endpoints:
       $ ./ci/tests.sh [--dry-run] component1[.test] component2[.test] ...
 
 
+Developer Guidelines
+~~~~~~~~~~~~~~~~~~~~
+
+* If you want to use transactions in your code, you **must NOT** use the
+  default Django transactions (see the :ref:`Synnefo transactions design doc
+  <multi-db-transactions>`). Depending on the models you want to edit, you must
+  import the corresponding transaction implementation. For Astakos models do:
+
+  .. code-block:: python
+
+     from astakos.im import transaction
+
+
+  while for Cyclades models do:
+
+  .. code-block:: python
+
+     from synnefo.db import transaction

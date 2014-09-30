@@ -23,71 +23,12 @@ USAGE_LIMIT = 500
 
 
 class PithosBackendPool(ObjectPool):
-    def __init__(self, size=None, db_module=None, db_connection=None,
-                 block_module=None, block_size=None, hash_algorithm=None,
-                 queue_module=None, queue_hosts=None,
-                 queue_exchange=None, free_versioning=True,
-                 astakos_auth_url=None, service_token=None,
-                 astakosclient_poolsize=None,
-                 block_params=None,
-                 public_url_security=None,
-                 public_url_alphabet=None,
-                 account_quota_policy=None,
-                 container_quota_policy=None,
-                 container_versioning_policy=None,
-                 archipelago_conf_file=None,
-                 xseg_pool_size=8,
-                 map_check_interval=None,
-                 mapfile_prefix=None):
+    def __init__(self, size=None, **kwargs):
         super(PithosBackendPool, self).__init__(size=size)
-        self.db_module = db_module
-        self.db_connection = db_connection
-        self.block_module = block_module
-        self.block_size = block_size
-        self.hash_algorithm = hash_algorithm
-        self.queue_module = queue_module
-        self.block_params = block_params
-        self.queue_hosts = queue_hosts
-        self.queue_exchange = queue_exchange
-        self.astakos_auth_url = astakos_auth_url
-        self.service_token = service_token
-        self.astakosclient_poolsize = astakosclient_poolsize
-        self.free_versioning = free_versioning
-        self.public_url_security = public_url_security
-        self.public_url_alphabet = public_url_alphabet
-        self.account_quota_policy = account_quota_policy
-        self.container_quota_policy = container_quota_policy
-        self.container_versioning_policy = container_versioning_policy
-        self.archipelago_conf_file = archipelago_conf_file
-        self.xseg_pool_size = xseg_pool_size
-        self.map_check_interval = map_check_interval
-        self.mapfile_prefix = mapfile_prefix
+        self.backend_kwargs = kwargs
 
     def _pool_create(self):
-        backend = connect_backend(
-            db_module=self.db_module,
-            db_connection=self.db_connection,
-            block_module=self.block_module,
-            block_size=self.block_size,
-            hash_algorithm=self.hash_algorithm,
-            queue_module=self.queue_module,
-            block_params=self.block_params,
-            queue_hosts=self.queue_hosts,
-            queue_exchange=self.queue_exchange,
-            astakos_auth_url=self.astakos_auth_url,
-            service_token=self.service_token,
-            astakosclient_poolsize=self.astakosclient_poolsize,
-            free_versioning=self.free_versioning,
-            public_url_security=self.public_url_security,
-            public_url_alphabet=self.public_url_alphabet,
-            account_quota_policy=self.account_quota_policy,
-            container_quota_policy=self.container_quota_policy,
-            container_versioning_policy=self.container_versioning_policy,
-            archipelago_conf_file=self.archipelago_conf_file,
-            xseg_pool_size=self.xseg_pool_size,
-            map_check_interval=self.map_check_interval,
-            mapfile_prefix=self.mapfile_prefix)
-
+        backend = connect_backend(**self.backend_kwargs)
         backend._real_close = backend.close
         backend.close = instancemethod(_pooled_backend_close, backend,
                                        type(backend))

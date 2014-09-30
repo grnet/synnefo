@@ -11,7 +11,7 @@ class Migration(DataMigration):
         n_subs = {}
         for (subnet_id, network_id) in orm.Subnet.objects.values_list("id", "network_id"):
             subnet_ids = n_subs.setdefault(network_id, [])
-            subnet_ids.append(network_id)
+            subnet_ids.append(subnet_id)
         for network_id, subnet_ids in n_subs.items():
             updated = orm.Network.objects.filter(id=network_id).update(subnet_ids=subnet_ids)
             assert(updated == 1)

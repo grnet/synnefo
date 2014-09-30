@@ -40,8 +40,9 @@ logger = logging.getLogger(__name__)
 @cookie_fix
 def login(request):
     """
-    If there is no ``next`` request parameter redirects to astakos index page
-    displaying an error message.
+    If there is no `next` request parameter returns 400 (BAD REQUEST).
+    Otherwise, if `next` request parameter is not among the allowed schemes,
+    returns 403 (Forbidden).
     If the request user is authenticated and has signed the approval terms,
     redirects to `next` request parameter. If not, redirects to approval terms
     in order to return back here after agreeing with the terms.

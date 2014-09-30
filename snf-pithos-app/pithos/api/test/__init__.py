@@ -161,11 +161,11 @@ class PithosTestClient(Client):
         """
         parsed = urlparse(path)
         r = {
-            'CONTENT_TYPE':    'text/html; charset=utf-8',
-            'PATH_INFO':       self._get_path(parsed),
-            'QUERY_STRING':    urlencode(data, doseq=True) or parsed[4],
+            'CONTENT_TYPE': 'text/html; charset=utf-8',
+            'PATH_INFO': self._get_path(parsed),
+            'QUERY_STRING': urlencode(data, doseq=True) or parsed[4],
             'REQUEST_METHOD': 'COPY',
-            'wsgi.input':      FakePayload('')
+            'wsgi.input': FakePayload('')
         }
         r.update(extra)
 
@@ -181,11 +181,11 @@ class PithosTestClient(Client):
         """
         parsed = urlparse(path)
         r = {
-            'CONTENT_TYPE':    'text/html; charset=utf-8',
-            'PATH_INFO':       self._get_path(parsed),
-            'QUERY_STRING':    urlencode(data, doseq=True) or parsed[4],
+            'CONTENT_TYPE': 'text/html; charset=utf-8',
+            'PATH_INFO': self._get_path(parsed),
+            'QUERY_STRING': urlencode(data, doseq=True) or parsed[4],
             'REQUEST_METHOD': 'MOVE',
-            'wsgi.input':      FakePayload('')
+            'wsgi.input': FakePayload('')
         }
         r.update(extra)
 
@@ -218,8 +218,7 @@ class PithosAPITest(TestCase):
             'astakosclient.AstakosClient.validate_token')
         mock_validate_token.return_value = {
             'access': {
-                'user': {'id': smart_unicode(self.user, encoding='utf-8')}}
-            }
+                'user': {'id': smart_unicode(self.user, encoding='utf-8')}}}
 
         # patch astakosclient.AstakosClient.get_token
         mock_get_token = self.create_patch(
@@ -357,8 +356,9 @@ class PithosAPITest(TestCase):
 
     def delete_account_meta(self, meta, user=None, verify_status=True):
         user = user or self.user
-        transform = lambda k: 'HTTP_%s' % k.replace('-', '_').upper()
-        kwargs = dict((transform(k), '') for k, v in meta.items())
+        transform = lambda k: 'HTTP_X_ACCOUNT_META_%s' %\
+            k.replace('-', '_').upper()
+        kwargs = dict((transform(k), '') for k in meta)
         url = join_urls(self.pithos_path, user)
         r = self.post('%s?update=' % url, user=user, **kwargs)
         if verify_status:
@@ -371,7 +371,10 @@ class PithosAPITest(TestCase):
     def delete_account_groups(self, groups, user=None, verify_status=True):
         user = user or self.user
         url = join_urls(self.pithos_path, user)
-        r = self.post('%s?update=' % url, user=user, **groups)
+        transform = lambda k: 'HTTP_X_ACCOUNT_GROUP_%s' %\
+            k.replace('-', '_').upper()
+        kwargs = dict((transform(k), '') for k in groups)
+        r = self.post('%s?update=' % url, user=user, **kwargs)
         if verify_status:
             self.assertEqual(r.status_code, 202)
         account_groups = self.get_account_groups()
@@ -491,11 +494,15 @@ class PithosAPITest(TestCase):
             self.assertEqual(r.status_code, 204)
         return r
 
-    def create_container(self, cname=None, user=None, verify_status=True):
+    def create_container(self, cname=None, user=None, verify_status=True,
+                         meta=None):
+        meta = meta or {}
         cname = cname or get_random_name()
         user = user or self.user
         url = join_urls(self.pithos_path, user, cname)
-        r = self.put(url, user=user, data='')
+        kwargs = dict(
+            ('HTTP_X_CONTAINER_META_%s' % k, str(v)) for k, v in meta.items())
+        r = self.put(url, user=user, data='', **kwargs)
         if verify_status:
             self.assertTrue(r.status_code in (202, 201))
         return cname, r

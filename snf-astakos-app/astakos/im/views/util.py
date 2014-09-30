@@ -26,7 +26,7 @@ from django.template import RequestContext, loader as template_loader
 from django.utils.translation import ugettext as _
 from django.views.generic.create_update import apply_extra_context, \
     get_model_and_form_class, lookup_object
-from django.db import transaction
+from astakos.im import transaction
 
 from synnefo.lib.ordereddict import OrderedDict
 

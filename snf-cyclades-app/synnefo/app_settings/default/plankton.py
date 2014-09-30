@@ -27,3 +27,6 @@ PITHOS_BACKEND_XSEG_POOL_SIZE = 8
 
 # The maximum interval (in seconds) for consequent backend object map checks
 PITHOS_BACKEND_MAP_CHECK_INTERVAL = 1
+
+#The maximum allowed number of image metadata
+PITHOS_RESOURCE_MAX_METADATA = 32

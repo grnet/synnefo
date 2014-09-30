@@ -22,7 +22,7 @@ from synnefo.management.common import get_resource
 from snf_django.management.commands import SynnefoCommand
 from snf_django.management.utils import parse_bool
 from synnefo.logic import networks, backend as backend_mod
-from django.db import transaction
+from synnefo.db import transaction
 
 
 class Command(SynnefoCommand):

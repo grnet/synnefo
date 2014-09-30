@@ -14,7 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from snf_django.management.commands import SynnefoCommand, CommandError
-from django.db import transaction
+from astakos.im import transaction
 from astakos.im.models import Component
 
 

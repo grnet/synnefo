@@ -21,7 +21,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.db import transaction
+from astakos.im import transaction
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import redirect

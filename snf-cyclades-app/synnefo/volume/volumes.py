@@ -15,7 +15,7 @@
 
 import logging
 
-from django.db import transaction
+from synnefo.db import transaction
 from django.conf import settings
 from snf_django.lib.api import faults
 from synnefo.db.models import Volume, VolumeMetadata
@@ -135,6 +135,7 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
         raise faults.BadRequest(msg)
 
     source_version = None
+    origin_size = None
     # TODO: Check Volume/Snapshot Status
     if source_type == "snapshot":
         source_snapshot = util.get_snapshot(user_id, source_uuid,
@@ -154,6 +155,7 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
                                     % (size << 30, source_snapshot["size"]))
         source_version = source_snapshot["version"]
         origin = source_snapshot["mapfile"]
+        origin_size = source_snapshot["size"]
     elif source_type == "image":
         source_image = util.get_image(user_id, source_uuid,
                                       exception=faults.BadRequest)
@@ -170,6 +172,7 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
         source = Volume.prefix_source(source_uuid, source_type="image")
         source_version = source_image["version"]
         origin = source_image["mapfile"]
+        origin_size = source_image["size"]
     elif source_type == "blank":
         if size is None:
             raise faults.BadRequest("Volume size is required")
@@ -207,6 +210,11 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
                                    origin=origin,
                                    index=index,
                                    status="CREATING")
+
+    # Store the size of the origin in the volume object but not in the DB.
+    # We will have to change this in order to support detachable volumes.
+    volume.origin_size = origin_size
+
     return volume
 
 

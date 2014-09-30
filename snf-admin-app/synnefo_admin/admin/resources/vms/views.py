@@ -190,7 +190,7 @@ def catalog(request):
     context = {}
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
-    context['filter_dict'] = VMFilterSet().filters.itervalues()
+    context['filter_dict'] = VMFilterSet().filters.values()
     context['columns'] = ["ID", "Name", "State", "Suspended", ""]
     context['item_type'] = 'vm'
 

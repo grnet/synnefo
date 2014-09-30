@@ -1,21 +1,27 @@
+{% load admin_tags %}
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8">
     <link rel="shortcut icon" href="{{ BRANDING_FAVICON_URL }}" />
     <title>{{BRANDING_SERVICE_NAME}} admin</title>
-    <link href="{{ ADMIN_MEDIA_URL }}css/icon-fonts.css" rel="stylesheet">
+    <link href="{{ ADMIN_MEDIA_URL }}{% min_prefix %}css/icon-fonts.css" rel="stylesheet">
+    <!-- There is no minified version of jquery.dataTables.css in DataTables 1.10.0 -->
     <link href="{{ ADMIN_MEDIA_URL }}css/jquery.dataTables.css" rel="stylesheet">
 
     {% if request.COOKIES.theme == 'dark' %}
-    <link href="{{ ADMIN_MEDIA_URL }}css/main.css" rel="stylesheet">
+    <link href="{{ ADMIN_MEDIA_URL }}{% min_prefix %}css/main.css" rel="stylesheet">
     {% else  %}
-    <link href="{{ ADMIN_MEDIA_URL }}css/main-light.css" rel="stylesheet">
+    <link href="{{ ADMIN_MEDIA_URL }}{% min_prefix %}css/main-light.css" rel="stylesheet">
     {% endif %}
     <!--
     <link href="{{ ADMIN_MEDIA_URL }}css/ie7.css" rel="stylesheet"> -->
     <link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,700italic,400,700,300,600' rel='stylesheet' type='text/css'>
   </head>
+
+    {% block custom-css %}
+    {% endblock %}
+
 
   <body>
     <div class="wrapper">
@@ -33,7 +39,6 @@
                     <a href="{% url admin-home %}" title="Homepage" class="navbar-brand home-icon"><img src="{{ BRANDING_IMAGE_MEDIA_URL }}cloudbar_home.png" alt="S" /></a>
                 </div>
 
-               
                 <div class="collapse navbar-collapse" id="navbar-collapse-1">
                     <ul class="nav navbar-nav navbar-left">
                         {% for view, view_dict in views.items %}
@@ -46,9 +51,7 @@
                             <span class="snf-angle-down arrow"></span></a>
                             <ul class="dropdown-menu align-left">
                                 <li {% block nav-stats %}{%  endblock %}><a href="{% url admin-stats %}">Stats</a></li>
-                                {% if ADMIN_ENABLE_CHARTS %}
                                 <li {% block nav-charts %}{%  endblock %}><a href="{% url admin-charts %}">Charts</a></li>
-                                {% endif %}
                             </ul>
                         </li>
                     </ul>

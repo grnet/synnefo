@@ -22,6 +22,8 @@
 
 from UserDict import DictMixin
 
+# FIXME: Deprecated since Python 2.7. This class must be removed in the next
+# Synnefo version.
 class OrderedDict(dict, DictMixin):
 
     def __init__(self, *args, **kwds):

@@ -20,9 +20,13 @@ Astakos Client utility module
 from httplib import HTTPConnection, HTTPSConnection
 from contextlib import closing
 
-import simplejson
 from objpool.http import PooledHTTPConnection
 from astakosclient.errors import AstakosClientException, BadValue
+
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 
 def retry_dec(func):
@@ -81,7 +85,7 @@ def scheme_to_class(scheme, use_pool, pool_size):
 def parse_request(request, logger):
     """Parse request with simplejson to convert it to string"""
     try:
-        return simplejson.dumps(request)
+        return json.dumps(request)
     except Exception as err:
         msg = "Cannot parse request \"%s\" with simplejson: %s" \
               % (request, str(err))
@@ -102,3 +106,35 @@ def check_input(function_name, logger, **kwargs):
 def join_urls(url_a, url_b):
     """Join_urls from synnefo.lib"""
     return url_a.rstrip("/") + "/" + url_b.lstrip("/")
+
+
+def render_overlimit_exception(response, logger):
+    """Render a human readable message for QuotaLimit Exception"""
+    resource_name = {
+        "cyclades.disk": "Disk",
+        "cyclades.vm": "Virtual Machine",
+        "cyclades.cpu": "CPU",
+        "cyclades.ram": "RAM",
+        "cyclades.floating_ip": "Floating IP address",
+        "cyclades.network.private": "Private Network",
+        "pithos.diskspace": "Storage space",
+        "astakos.pending_app": "Pending Applications"
+    }
+    response = json.loads(response)
+    data = response['overLimit']['data']
+    usage = data["usage"]
+    limit = data["limit"]
+    available = limit - usage
+    provision = data['provision']
+    requested = provision['quantity']
+    resource = provision['resource']
+    try:
+        resource = resource_name[resource]
+    except KeyError:
+        logger.error("Unknown resource name '%s'", resource)
+
+    msg = "Resource Limit Exceeded for your account."
+    details = "Limit for resource '%s' exceeded for your account."\
+              " Available: %s, Requested: %s"\
+              % (resource, available, requested)
+    return msg, details

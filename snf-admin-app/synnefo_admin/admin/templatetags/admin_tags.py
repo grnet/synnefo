@@ -17,12 +17,20 @@
 from importlib import import_module
 from collections import OrderedDict
 from django import template
+from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 import logging
 
 import django_filters
 
+from snf_django.lib.api import faults
+from synnefo.api.util import get_image
+from synnefo.lib.dict import SnfOrderedDict
+from synnefo.db.models import Image
+
 import synnefo_admin.admin.resources.projects.utils as project_utils
 import synnefo_admin.admin.resources.users.utils as user_utils
+import synnefo_admin.admin.resources.vms.utils as vm_utils
 from synnefo_admin.admin import utils
 mod = import_module('astakos.im.management.commands.project-show')
 
@@ -61,6 +69,7 @@ status_map['application'] = status_map['project']
 status_map['application']['APPROVED'] = 'success'
 
 
+@register.filter()
 def get_status_from_instance(inst):
     """Generic function to get the status of any instance."""
     try:
@@ -125,6 +134,44 @@ def get_os(vm):
         return vm.metadata.filter(meta_key="OS").get().meta_value
     except:
         return "unknown"
+
+
+@register.filter
+def image_info(vm):
+    """Retrieve Image details.
+
+    If the Image is deleted or no longer visible by the user, then provide
+    whatever information is stored by Cyclades.
+    """
+    # Use the same order of appearance for Plankton and Cyclades image info
+    order = ['name', 'id', 'owner', 'version', 'size', 'created_at',
+             'updated_at', 'deleted_at', 'is_public', 'is_snapshot',
+             'is_system', 'location', 'os', 'osfamily', 'properties']
+
+    # TODO: Add this code when deferred loading works.
+    # Try to retrieve Image info using Plankton.
+    #try:
+    #    image_info = get_image(vm.imageid, vm.userid)
+    #except faults.ItemNotFound:
+
+    # Check if Cyclades DB has any info about this Image.
+    try:
+        image_info = Image.objects.get(uuid=vm.imageid)
+    except ObjectDoesNotExist:
+        # If all else fails, gather whatever info are available from the
+        # VirtualMachine instance.
+        image_info = {
+            'id': vm.imageid,
+            'version': vm.image_version,
+            'os': get_os(vm),
+        }
+
+    return SnfOrderedDict(image_info, order, strict=False)
+
+
+@register.filter
+def flavor_info(vm):
+    return vm_utils.get_flavor_info(vm)
 
 
 @register.filter(name="network_vms", is_safe=True)
@@ -203,11 +250,8 @@ def get_details_template(type):
 
 
 @register.filter
-def get_filter_template(filter):
-    """Get the correct flter template according to the filter type.
-
-    This only works for filters that are instances of django-filter's Filter.
-    """
+def get_filter_type(filter):
+    """Get the flter type according to the filter class."""
     if isinstance(filter, django_filters.NumberFilter):
         type = "number"
     elif isinstance(filter, django_filters.CharFilter):
@@ -220,8 +264,24 @@ def get_filter_template(filter):
         type = "multichoice"
     else:
         raise Exception("Unknown filter type: %s", filter)
+    return type
+
+
+@register.filter
+def get_filter_template(filter):
+    """Get the correct flter template according to the filter type.
+
+    This only works for filters that are instances of django-filter's Filter.
+    """
+    type = get_filter_type(filter)
     template = 'admin/filter_' + type + '.html'
     return template
+
+
+@register.filter
+def choices(filter):
+    """Return an iterator with the available choices for a filter."""
+    return [choice for choice, _ in filter.field.choices]
 
 
 @register.filter
@@ -399,7 +459,7 @@ def label_to_icon(filter_name, filter_label):
     if icon_cls:
         label = '<span class="%s"></span>' % icon_cls
     else:
-        label = filter_label
+        label = filter_label + ":"
     return label
 
 
@@ -407,5 +467,16 @@ def label_to_icon(filter_name, filter_label):
 def show_more_exception_message(assoc):
     """Show an extra message for an instance in the popover for "Show More"."""
     if assoc.type == "user":
-        return """
-</br>Alternatively, you may consult the "Members" tab of the project."""
+        return """</br>Alternatively, you may consult the "Members" tab of the project."""
+    return ""
+
+
+@register.simple_tag
+def min_prefix():
+    """
+    Return minified files folder for production environment
+    """
+    if settings.DEBUG == False:
+        return 'min-'
+    else:
+        return ''

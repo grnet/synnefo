@@ -668,7 +668,7 @@ List all snapshots related to the user.
 URI                    Method Cyclades OS/Block Storage
 ====================== ====== ======== ==========
 ``/snapshots``         GET    ✔        ✔
-``/snapshotss/detail`` GET    ✔        ✔
+``/snapshots/detail``  GET    ✔        ✔
 ====================== ====== ======== ==========
 
 * Both requests return a list of snapshots. The first returns just ``id``,
@@ -727,18 +727,32 @@ The snapshot attributes are listed `here <#snapshot-ref>`_
         ],
         "id": "42",
         "display_name": "Snapshot One",
+        "status": "AVAILABLE",
+        "size": 2,
+        "display_description": null,
+        "created_at": "2014-05-19T19:52:04.949734",
+        "metadata": {},
+        "volume_id": "123",
+        "os-extended-snapshot-attribute:progress": "100%"
       }, {
         "links": [
           {
-            "href": "https://example.org/cyclades/v2/snapshots/42",
+            "href": "https://example.org/cyclades/v2/snapshots/43",
             "rel": "self"
           }, {
-            "href": "https://example.org/cyclades/v2/snapshots/42",
+            "href": "https://example.org/cyclades/v2/snapshots/43",
             "rel": "bookmark"
           }
         ],
-        "id": "42",
+        "id": "43",
         "display_name": "Snapshot Two",
+        "status": "AVAILABLE",
+        "size": 3,
+        "display_description": null,
+        "created_at": "2014-05-20T19:52:04.949734",
+        "metadata": {},
+        "volume_id": "124",
+        "os-extended-snapshot-attribute:progress": "100%"
       }
     ]
   }
@@ -763,7 +777,7 @@ The snapshot attributes are listed `here <#snapshot-ref>`_
         ],
         "id": "42",
         "display_name": "Snapshot One",
-        "status": "ACTIVE",
+        "status": "AVAILABLE",
         "size": 2,
         "display_description": null,
         "created_at": "2014-05-19T19:52:04.949734",
@@ -782,7 +796,7 @@ The snapshot attributes are listed `here <#snapshot-ref>`_
         ],
         "id": "43",
         "display_name": "Snapshot Two",
-        "status": "ACTIVE",
+        "status": "AVAILABLE",
         "size": 3,
         "display_description": null,
         "created_at": "2014-05-20T19:52:04.949734",
@@ -859,7 +873,7 @@ Snapshot attributes are explained `here <#snapshot-ref>`_
       ],
       "id": "42",
       "display_name": "Snapshot One",
-      "status": "ACTIVE",
+      "status": "AVAILABLE",
       "size": 2,
       "display_description": null,
       "created_at": "2014-05-19T19:52:04.949734",

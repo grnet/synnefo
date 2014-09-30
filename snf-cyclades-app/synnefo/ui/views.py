@@ -148,8 +148,8 @@ DEFAULT_HOTPLUG_ENABLED = getattr(settings, "CYCLADES_GANETI_USE_HOTPLUG",
 HOTPLUG_ENABLED = getattr(settings, "UI_HOTPLUG_ENABLED",
                           DEFAULT_HOTPLUG_ENABLED)
 
-VOLUME_MAX_SIZE = getattr(settings, "CYCLADES_VOLUME_MAX_SIZE", 200);
-SNAPSHOTS_ENABLED = getattr(settings, "UI_SNAPSHOTS_ENABLED", True);
+VOLUME_MAX_SIZE = getattr(settings, "CYCLADES_VOLUME_MAX_SIZE", 200)
+SNAPSHOTS_ENABLED = getattr(settings, "CYCLADES_SNAPSHOTS_ENABLED", True)
 
 def template(name, request, context):
     template_path = os.path.join(os.path.dirname(__file__), "templates/")

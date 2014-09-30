@@ -3,6 +3,13 @@
 Administrator's Installation Guide (on CentOS 6.5)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. warning::
+
+    Currently, we don't provide packages for release candidate versions of
+    Synnefo for CentOS 6.5. Please consult the docs for `Synnefo 0.15.2
+    <https://www.synnefo.org/docs/synnefo/0.15.2/index.html>`_
+    instead.
+
 This is the Administrator's installation guide on CentOS 6.5.
 
 It describes how to install the whole Synnefo stack on two (2) physical nodes,
@@ -335,7 +342,7 @@ To install Archipelago, run:
 
 .. code-block:: console
 
-   # apt-get install archipelago
+   # yum install archipelago
 
 
 Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
@@ -901,15 +908,17 @@ Notice that in this installation astakos and cyclades are in node1 and pithos is
 Setting Default Base Quota for Resources
 ----------------------------------------
 
-We now have to specify the limit on resources that each user can employ
-(exempting resources offered by projects). When specifying storage or
-memory size limits you can append a unit to the value, i.e. 10240 MB,
-10 GB etc. Use the special value ``inf``, if you don't want to restrict a
-resource.
+All resources are registered with unlimited quota. We now have to restrict
+the limit on the resources we wish to control. We can set the default quota
+a new user is offered by the system (`system default`) with
 
 .. code-block:: console
 
-    # snf-manage resource-modify --default-quota-interactive
+    # snf-manage resource-modify <resource-name> --system-default <value>
+
+When specifying storage or memory size limits you can append a unit to the
+value, i.e. 10240 MB, 10 GB etc. Use the special value ``inf``, if you don't
+want to restrict a resource.
 
 Setting Resource Visibility
 ---------------------------
@@ -1039,7 +1048,7 @@ To install Archipelago, run:
 
 .. code-block:: console
 
-   # apt-get install archipelago
+   # yum install archipelago
 
 
 Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
@@ -2511,6 +2520,52 @@ If everything was setup correctly, after a few minutes your new machine will go
 to state 'Running' and you will be able to use it. Click 'Console' to connect
 through VNC out of band, or click on the machine's icon to connect directly via
 SSH or RDP (for windows machines).
+
+
+Installation of Admin on node1
+==============================
+
+This section describes the installation of Admin. Admin is a Synnefo component
+that provides to trusted users the ability to manage and view various different
+Synnefo entities such as users, VMs, projects etc.
+
+We will install Admin on node1. To do so, we install the corresponding
+package by running on node1 the following command:
+
+.. code-block:: console
+
+   # yum install snf-admin-app
+
+Once the package is installed, we must configure the ``ADMIN_BASE_URL``
+setting. This setting is located in the ``20-snf-admin-app-general.conf``
+settings file. Uncomment it and assign the following URL to it:
+
+    ``https://node1.example.com/admin``
+
+Now, we can proceed with testing Admin.
+
+Testing of Admin
+================
+
+In order to test the Admin Dashboard, we need a user that belongs to the
+`admin` group. We will use the user that was created in `Testing of Astakos`_
+section:
+
+.. code-block:: console
+
+    root@node1:~ # snf-manage group-add admin
+    root@node1:~ # snf-manage user-modify 1 --add-group=admin
+
+Then, you need to login to the Astakos node by visiting the following URL:
+
+    ``https://node1.example.com/astakos``
+
+Once you login successfully, you can access the Admin Dashboard from this URL:
+
+    ``https://node1.example.com/admin``
+
+This should redirect you to the **Users** table, where there should be an entry
+with this user.
 
 Congratulations. You have successfully installed the whole Synnefo stack and
 connected all components.

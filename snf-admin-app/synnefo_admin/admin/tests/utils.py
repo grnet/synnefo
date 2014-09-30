@@ -14,14 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#import logging
 import unittest
+import sys
 
 from django.core import mail
+from django.conf import settings
 
 from synnefo.db import models_factory as mf
 from astakos.im import settings as astakos_settings
 from snf_django.lib.api import faults
+from snf_django.utils.testing import override_settings
 
 from synnefo_admin import admin_settings
 from synnefo_admin.admin import views
@@ -51,6 +53,11 @@ class MockRequest(object):
 
     def update(self, content):
         self.POST.update(content)
+
+
+def reload_settings():
+    """Reload admin settings after a Django setting has changed."""
+    reload(sys.modules['synnefo_admin.admin_settings'])
 
 
 class TestAdminUtilsUnit(unittest.TestCase):
@@ -144,6 +151,23 @@ class TestAdminUtilsUnit(unittest.TestCase):
         self.assertEqual(len(mail.outbox), 2)
         verify_sent_email(request, mail.outbox[1])
         self.assertEqual(default_sender, astakos_settings.SERVER_EMAIL)
+
+    def test_default_view(self):
+        """Test if the default_view() function works as expected."""
+        self.assertEqual(utils.default_view(), 'user')
+        with override_settings(settings, ADMIN_VIEWS_ORDER=[]):
+            reload_settings()
+            self.assertEqual(utils.default_view(), None)
+
+        with override_settings(settings, ADMIN_VIEWS_ORDER=['1', '2']):
+            reload_settings()
+            self.assertEqual(utils.default_view(), None)
+
+        with override_settings(settings, ADMIN_VIEWS_ORDER=['1', 'user', '3']):
+            reload_settings()
+            self.assertEqual(utils.default_view(), 'user')
+
+        reload_settings()
 
 
 class TestAdminUtilsIntegration(AdminTestCase):

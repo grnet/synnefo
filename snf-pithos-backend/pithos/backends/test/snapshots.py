@@ -13,8 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import uuid as uuidlib
+
 from pithos.backends.base import (IllegalOperationError, NotAllowedError,
-                                  ItemNotExists)
+                                  ItemNotExists, BrokenSnapshot,
+                                  MAP_ERROR, MAP_UNAVAILABLE, MAP_AVAILABLE)
 
 
 class TestSnapshotsMixin(object):
@@ -28,7 +31,7 @@ class TestSnapshotsMixin(object):
 
         meta = self.b.get_object_meta(*t, include_user_defined=False)
         self.assertTrue('available' in meta)
-        self.assertEqual(meta['available'], False)
+        self.assertEqual(meta['available'], MAP_UNAVAILABLE)
         self.assertTrue('mapfile' in meta)
         self.assertEqual(meta['mapfile'], mapfile)
         self.assertTrue('is_snapshot' in meta)
@@ -48,6 +51,25 @@ class TestSnapshotsMixin(object):
         self.assertTrue(meta['mapfile'] == meta2['mapfile'])
         self.assertTrue('is_snapshot' in meta2)
         self.assertEqual(meta['is_snapshot'], meta2['is_snapshot'])
+        self.assertTrue('uuid' in meta2)
+        uuid = meta2['uuid']
+
+        self.assertRaises(AssertionError, self.b.update_object_status, uuid, 'invalid_state')
+        self.assertRaises(NameError, self.b.update_object_status, str(uuidlib.uuid4()), -1)
+
+        self.b.update_object_status(uuid, MAP_ERROR)
+
+        meta3 = self.b.get_object_meta(*t, include_user_defined=False)
+        self.assertTrue('available' in meta3)
+        self.assertEqual(meta3['available'], MAP_ERROR)
+
+        self.assertRaises(BrokenSnapshot, self.b.get_object_hashmap, *t)
+
+        self.b.update_object_status(uuid, MAP_AVAILABLE)
+
+        meta4 = self.b.get_object_meta(*t, include_user_defined=False)
+        self.assertTrue('available' in meta4)
+        self.assertEqual(meta4['available'], MAP_AVAILABLE)
 
     def test_move_snapshot(self):
         name = 'snf-snap-2-1'
@@ -59,7 +81,7 @@ class TestSnapshotsMixin(object):
 
         meta = self.b.get_object_meta(*t, include_user_defined=False)
         self.assertTrue('available' in meta)
-        self.assertEqual(meta['available'], False)
+        self.assertEqual(meta['available'], MAP_UNAVAILABLE)
         self.assertTrue('mapfile' in meta)
         self.assertEqual(meta['mapfile'], mapfile)
         self.assertTrue('is_snapshot' in meta)
@@ -87,7 +109,7 @@ class TestSnapshotsMixin(object):
                                    mapfile=mapfile)
         meta = self.b.get_object_meta(*t, include_user_defined=False)
         self.assertTrue('available' in meta)
-        self.assertEqual(meta['available'], False)
+        self.assertEqual(meta['available'], MAP_UNAVAILABLE)
         self.assertTrue('mapfile' in meta)
         self.assertEqual(meta['mapfile'], mapfile)
         self.assertTrue('is_snapshot' in meta)
@@ -98,7 +120,7 @@ class TestSnapshotsMixin(object):
         meta2 = self.b.get_object_meta(*t, domain=domain,
                                        include_user_defined=True)
         self.assertTrue('available' in meta2)
-        self.assertEqual(meta2['available'], False)
+        self.assertEqual(meta2['available'], MAP_UNAVAILABLE)
         self.assertTrue('mapfile' in meta2)
         self.assertEqual(meta2['mapfile'], mapfile)
         self.assertTrue('is_snapshot' in meta2)
@@ -114,7 +136,7 @@ class TestSnapshotsMixin(object):
         except IllegalOperationError:
             meta = self.b.get_object_meta(*t, include_user_defined=False)
             self.assertTrue('available' in meta)
-            self.assertEqual(meta['available'], False)
+            self.assertEqual(meta['available'], MAP_UNAVAILABLE)
             self.assertTrue('mapfile' in meta)
             self.assertEqual(meta['mapfile'], mapfile)
             self.assertTrue('is_snapshot' in meta)
@@ -144,4 +166,28 @@ class TestSnapshotsMixin(object):
             self.assertTrue('uuid' in meta)
             self.assertEqual(meta['uuid'], uuid)
             self.assertTrue('available' in meta)
-            self.assertEqual(meta['available'], False)
+            self.assertEqual(meta['available'], MAP_UNAVAILABLE)
+
+        objects = self.b.get_domain_objects(domain='test', user='somebody_else', check_permissions=True)
+        self.assertEqual(objects, [])
+
+        objects = self.b.get_domain_objects(domain='test', user=None, check_permissions=True)
+        self.assertEqual(objects, [])
+
+        objects = self.b.get_domain_objects(domain='test', user=None, check_permissions=False)
+        self.assertEqual(len(objects), 1)
+        path, meta, permissios = objects[0]
+        self.assertEqual(path, '/'.join(t[1:]))
+        self.assertTrue('uuid' in meta)
+        self.assertEqual(meta['uuid'], uuid)
+        self.assertTrue('available' in meta)
+        self.assertEqual(meta['available'], MAP_UNAVAILABLE)
+
+        objects = self.b.get_domain_objects(domain='test', user='somebody_else', check_permissions=False)
+        self.assertEqual(len(objects), 1)
+        path, meta, permissios = objects[0]
+        self.assertEqual(path, '/'.join(t[1:]))
+        self.assertTrue('uuid' in meta)
+        self.assertEqual(meta['uuid'], uuid)
+        self.assertTrue('available' in meta)
+        self.assertEqual(meta['available'], MAP_UNAVAILABLE)

@@ -103,3 +103,14 @@ def volume_to_links(volume_id):
 def snapshot_to_links(snapshot_id):
     href = join_urls(SNAPSHOTS_URL, str(snapshot_id))
     return [{"rel": rel, "href": href} for rel in ("self", "bookmark")]
+
+
+def update_snapshot_state(snapshot_id, user_id, state):
+    """Update the state of a snapshot in Pithos.
+
+    Use PithosBackend in order to update the state of the snapshots in
+    Pithos DB.
+
+    """
+    with backend.PlanktonBackend(user_id) as b:
+        return b.update_snapshot_state(snapshot_id, state=state)

@@ -33,6 +33,8 @@
                     <dt>Description</dt><dd>{{ volume.description|default:"-" }}</dd>
                     <dt>Size</dt><dd>{{ volume.size }} GB</dd>
                     <dt>Index</dt><dd>{{ volume.index }}</dd>
+                    <dt>Status</dt><dd>{{ volume.status }}</dd>
+                    <dt>Deleted</dt><dd>{{ volume.deleted }}</dd>
 		            <dt>Created</dt><dd>{{ volume.created }} ({{ volume.created|timesince }} ago)</dd>
 		            <dt>Updated</dt><dd>{{ volume.updated }} ({{ volume.created|timesince }} ago)</dd>
                     <dt>Snapshot counter</dt><dd>{{ volume.snapshot_counter }}</dd>

@@ -8,10 +8,46 @@ repository and have aligned versions.
 
 .. _Changelog-0.16:
 
+v0.16rc2
+========
+
+Released: Tue Sep 30 10:39:13 EEST 2014
+
+Admin
+-----
+
+* Define the Admin node URL and path with the ``ADMIN_BASE_URL`` setting
+
+  * The ``ADMIN_BASE_URL`` setting should be adjusted in every node that Admin
+    is installed.
+
+UI
+--
+
+* Remove UI_SNAPSHOTS_ENABLED setting. UI now uses CYCLADES_SNAPSHOTS_ENABLED
+  setting to resolve whether or not snapshot functionality should be enabled.
+
+Cyclades
+--------
+
+* Make snf-dispatcher update status of snapshots when Ganeti job fails.
+* Implement reconciliation for stale snapshots.
+
+Pithos
+------
+
+* Restore PostgreSQL 8.4 compatibility.
+
+Tools
+-----
+
+* Extend snf-burnin to include testing of snapshots.
+
+
 v0.16rc1
 ========
 
-Released: Mon Sep  8 17:26:35 EEST 201
+Released: Mon Sep  8 17:26:35 EEST 2014
 
 Synnefo-wide
 ------------
@@ -220,6 +256,9 @@ Cyclades UI
 Pithos
 ------
 
+* Backend modifications to enable/support snapshot creation.
+* Backend and API modifications to reflect the modifications in the resource
+  allocation mechanism via the accumulative projects with pool projects.
 * Change default disposition type: If no disposition-type is
   specifically requested or an invalid value is passed, the disposition type
   is set to 'inline'.

@@ -30,6 +30,7 @@ class AdminAssociation(object):
         * actions: A dictionary with the permitted actions for *all* the items
         * total: How many items are in total
         * excluded: How many items are excluded
+        * showing: How many items are shown
     """
 
     def __init__(self, request, items, type, actions=None, total=0,

@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import logging
 import mock
 import unittest
 
@@ -31,7 +30,7 @@ from .common import (for_all_views, AuthClient, get_user_mock,
 
 class TestAdminViewsUnit(unittest.TestCase):
 
-    """Unit tests for admin views."""
+    """Unit tests for Admin views."""
 
     @for_all_views()
     def test_import_module_success(self):
@@ -44,14 +43,18 @@ class TestAdminViewsUnit(unittest.TestCase):
 
     def test_import_module_fail(self):
         """Test if importing malformed view modules fails properly."""
-        gib = gibberish()
         with self.assertRaises(AdminHttp404) as cm1:
-            views.get_view_module_or_404(gib)
+            views.get_view_module_or_404(None)
+        self.assertEqual(cm1.exception.message, "No category provided.")
+
+        gib = gibberish()
         with self.assertRaises(AdminHttp404) as cm2:
+            views.get_view_module_or_404(gib)
+        with self.assertRaises(AdminHttp404) as cm3:
             views.get_json_view_or_404(gib)
-        self.assertEqual(cm1.exception.message,
-                         "No category found with this name: %s" % gib)
         self.assertEqual(cm2.exception.message,
+                         "No category found with this name: %s" % gib)
+        self.assertEqual(cm3.exception.message,
                          "No category found with this name: %s" % gib)
 
 
@@ -107,7 +110,8 @@ class TestAdminViewsIntegration(django.test.TestCase):
                             user_token="0001")
         self.assertEqual(r.status_code, 404)
 
-    @for_all_views(views=['home', 'logout', 'charts', 'stats', 'actions'])
+    @for_all_views(views=['default', 'home', 'logout', 'charts', 'stats',
+                          'actions'])
     def test_enabled_setting_for_other_views(self):
         """Test if the ADMIN_ENABLED setting is respected by the rest views."""
         admin_settings.ADMIN_ENABLED = False
@@ -139,9 +143,10 @@ class TestAdminViewsIntegration(django.test.TestCase):
                             user_token="0001")
         self.assertEqual(r.status_code, 404)
 
-    @for_all_views(views=['home', 'logout', 'charts', 'stats', 'actions'])
+    @for_all_views(views=['default', 'home', 'logout', 'charts', 'stats',
+                          'actions'])
     def test_404_in_other_views(self):
-        """Test if authorized users get 404 in all othere views."""
+        """Test if authorized users get 404 in all other views."""
         r = self.client.get(reverse('admin-%s' % self.current_view) + '/' +
                             gibberish(), user_token="0001")
         self.assertEqual(r.status_code, 404)

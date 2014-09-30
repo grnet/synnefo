@@ -19,8 +19,8 @@ distribute_setup.use_setuptools()
 
 import os
 
-#from distutils.util import convert_path
-#from fnmatch import fnmatchcase
+# from distutils.util import convert_path
+# from fnmatch import fnmatchcase
 from setuptools import setup, find_packages
 
 HERE = os.path.abspath(os.path.normpath(os.path.dirname(__file__)))
@@ -42,7 +42,8 @@ INSTALL_REQUIRES = [
     "IPy",
     "paramiko",
     "vncauthproxy",
-    "kamaki >= 0.12.3"]
+    "kamaki >= 0.13rc3",
+]
 
 setup(
     name='snf-tools',

@@ -37,15 +37,16 @@ def smart_locale_str(s, errors='replace', **kwargs):
     return smart_str(s, encoding=encoding, errors=errors, **kwargs)
 
 
-def safe_string(s):
+def escape_ctrl_chars(s):
     """Escape control characters from unicode and string objects."""
-    if not isinstance(s, basestring):
-        return s
     if isinstance(s, unicode):
         return "".join(ch.encode("unicode_escape")
                        if unicodedata.category(ch)[0] == "C" else
                        ch for ch in s)
-    return s.encode("string_escape")
+    if isinstance(s, basestring):
+        return "".join([c if 31 < ord(c) < 127 else c.encode("string_escape")
+                        for c in s])
+    return s
 
 
 def parse_bool(value, strict=True):
@@ -126,7 +127,11 @@ def parse_queryset_filters(filters):
                 filter_dict[key + new_op] = parse_bool(val, strict=False)
                 break
         else:
-            raise ValueError("Unknown filter expression: %s" % filter_str)
+            msg = (("Invalid filter-by expression '%s'."
+                    " Filters must be of the form \"key `operator` value\"."
+                    " Available operators: "
+                    + ",".join([k for k, v in OP_MAP])) % filter_str)
+            raise ValueError(msg)
 
     return (filter_dict, exclude_dict)
 
@@ -196,6 +201,9 @@ def pprint_table(out, table, headers=None, output_format='pretty',
     if headers:
         headers = map(smart_unicode, headers)
     table = [map(smart_unicode, row) for row in table]
+
+    if output_format != "json":
+        table = [[escape_ctrl_chars(c) for c in row] for row in table]
 
     if output_format == "json":
         assert(headers is not None), "json output format requires headers"

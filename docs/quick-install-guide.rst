@@ -84,8 +84,10 @@ Accessing the Synnefo installation
 Remote access
 -------------
 
-If you want to access the Synnefo installation from a remote machine, you can
-either:
+If you want to access the Synnefo installation from a remote machine:
+
+Method 1: Modify DNS name resolution
+____________________________________
 
 * Set your nameservers accordingly by adding the following line as your
   first nameserver in ``/etc/resolv.conf``:
@@ -101,6 +103,9 @@ either:
   ``/etc/resolv.conf`` or prepend the nameservers in the
   ``/etc/dhclient.conf``.
 
+Method 2: Modify /etc/hosts
+___________________________
+
 * Add the IP of your Synnefo installation in your ``/etc/hosts`` file:
 
   .. code-block:: console
@@ -110,6 +115,42 @@ either:
       <IP> compute.synnefo.live
       <IP> pithos.synnefo.live
 
+ If you're using Windows the same settings can be applied on
+ ``C:\WINDOWS\SYSTEM32\DRIVERS\ETC\HOSTS``.
+
+Method 3: Use a SOCKS proxy (easier)
+____________________________________
+
+* Alternatively, you can setup a SOCKS proxy using the ssh client and instruct
+  your browser to use it. To setup a SOCKS proxy run:
+
+ .. code-block:: console
+
+    $ ssh -D localhost:9009 user@host
+
+ Now, you can either instruct your browser to tunnel all the traffic through
+ the SOCKS proxy or even better install a plugin like `Foxy Proxy
+ <https://addons.mozilla.org/en-US/firefox/addon/foxyproxy-standard/>`_ to fine
+ tune when to use the proxy or not.
+
+ In order to use the proxy globally in Firefox, go to
+ ``Edit->Preferences->Advanced->Network->Settings`` and set ``SOCKS host`` to
+ ``localhost`` and ``Port`` to ``9009``. Firefox by default doesn't use the
+ SOCKS proxy for domain name resolving. To enable this, type ``about:config`` in
+ the URL bar and change ``network.proxy.socks_remote_dns`` to ``true``.
+
+ For better control on which sites you view over the proxy, download FoxyProxy
+ and set a ``URL_Pattern`` to whitelist the ``synnefo.live`` domain. To do this
+ use the URL_Pattern ``*synnefo.live*`` and set FoxyProxy to run in the
+ ``Use proxies based on their pre-defined patterns and priorities`` mode.
+
+ FoxyProxy is also available for Chrome through the `Chrome Web Store
+ <https://chrome.google.com/webstore/detail/foxyproxy-standard/gcknhkkoolaabfmlnjonogaaifnjlfnp?hl=en>`_,
+ so a similar approach will work in Chrome also.
+
+ .. note::
+
+    Internet Explorer doesn't support SOCKS5 proxies.
 
 Then open a browser and point it to:
 

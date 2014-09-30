@@ -1,5 +1,9 @@
 {% extends "admin/base.html" %}
 
+{% block custom-css %}
+<link href="{{ ADMIN_MEDIA_URL }}css/c3.css" rel="stylesheet" type="text/css">
+{% endblock %}
+
 {% block nav-reports %}
 class="has-dropdown active"
 {% endblock %}
@@ -24,27 +28,51 @@ class="active"
         &nbsp;
 </div>
 <div class="info well">
-    <div id="infra-usage" class="chart" data-chart="resource-usage"></div>
+    <div id="infra-usage-wrap" class="chart" data-chart="resource-usage">
+        <h3>Infra usage</h3>
+        <div id="infra-usage"></div>
+    </div>
     <div id="resource-usage" class="chart" data-chart="resource-usage"></div>
-    <div id="provider-status" class="chart" data-chart="temp"></div>
-    <div id="provider-status-reversed" class="chart" data-chart="temp"></div>
-    <div id="provider-exclusiveness" class="chart" data-chart="temp"></div>
-    <div id="server-status" class="chart" data-chart="vm-status"></div>
-    <div id="ip-pool-status" class="chart" data-chart="ip-status"></div>
-    <div id="disk-templates" class="chart" data-chart="disk-templates"></div>
-    <div id="images" class="chart" data-chart="images"></div>
+    <div id="provider-status-wrap" class="chart" data-chart="temp">
+        <h3>Providers per user status<h3>
+        <div id="provider-status"></div>
+    </div>
+    <div id="provider-status-reversed-wrap" class="chart" data-chart="temp">
+        <h3>Status per user provider</h3>
+        <div id="provider-status-reversed"></div>
+    </div>
+    <div id="provider-exclusiveness-wrap" class="chart" data-chart="temp">
+        <h3>Provider exclusiveness</h3>
+        <div id="provider-exclusiveness"></div>
+    </div>
+    <div id="server-status-wrap" class="chart" data-chart="vm-status">
+        <h3>Server status</h3>
+        <div id="server-status"></div>
+    </div>
+    <div id="ip-pool-status-wrap" class="chart" data-chart="ip-status">
+        <h3>IP pool status</h3>
+        <div id="ip-pool-status"></div>
+    </div>
+    <div id="disk-templates-wrap" class="chart" data-chart="disk-templates">
+        <h3>Disk templates</h3>
+        <div id="disk-templates"></div>
+    </div>
+    <div id="images-wrap" class="chart" data-chart="images">
+        <h3>Images</h3>
+        <div id="images"></div>
+    </div>
 </div>
 </div>
 {% endblock %}
 
 {% block custom-javascript %}
-<script src="{{ MEDIA_URL }}admin/js/highstock.src.js"></script>
-<script src="{{ MEDIA_URL }}admin/js/Highcharts_drilldown.src.js"></script>
-{% if request.COOKIES.theme == 'dark' %}
-<script src="{{ MEDIA_URL }}admin/js/charts_theme.js"></script>
-{% endif %}
-<script src="{{ MEDIA_URL }}admin/js/charts.js"></script>
-<script src="{{ MEDIA_URL }}admin/js/charts_common.js"></script>
+<!-- Load d3.js and c3.js -->
+<script src="{{ ADMIN_MEDIA_URL }}js/d3.v3.min.js"></script>
+<!--Switch to c3.min at some point-->
+<script src="{{ ADMIN_MEDIA_URL }}js/c3.js"></script>
+
+<script src="{{ ADMIN_MEDIA_URL }}js/charts.js"></script>
+<script src="{{ ADMIN_MEDIA_URL }}js/charts_common.js"></script>
 {% endblock %}
 
 

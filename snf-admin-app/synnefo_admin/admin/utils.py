@@ -52,6 +52,14 @@ model_dict = {
 }
 
 
+def default_view():
+    """Return the first registered view based on ADMIN_VIEWS.
+
+    If the ADMIN_VIEWS dict is empty, return None.
+    """
+    return next(admin_settings.ADMIN_VIEWS.iterkeys(), None)
+
+
 def __reverse_model_dict():
     """Create the a model dict with the class names as keys."""
     reversed_model_dict = {}

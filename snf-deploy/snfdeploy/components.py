@@ -1515,19 +1515,17 @@ class VNC(base.Component):
 
     @base.run_cmds
     def prepare(self):
-        return ["mkdir -p /var/lib/vncauthproxy"]
-
-    def _configure(self):
+        user = config.synnefo_user
+        passwd = config.synnefo_vnc_passwd
+        outdir = "/var/lib/vncauthproxy"
+        users_file = "%s/users" % outdir
         return [
-            ("/var/lib/vncauthproxy/users", {}, {})
+            "mkdir -p %s" % outdir,
+            "cp /etc/ssl/certs/ssl-cert-snakeoil.pem %s/cert.pem" % outdir,
+            "cp /etc/ssl/private/ssl-cert-snakeoil.key %s/key.pem" % outdir,
+            "chown vncauthproxy:vncauthproxy %s/*.pem" % outdir,
+            "vncauthproxy-passwd -p %s %s %s" % (passwd, users_file, user)
             ]
-
-    @base.run_cmds
-    def initialize(self):
-        # user = config.synnefo_user
-        # passwd = config.synnefo_vnc_passwd
-        # TODO: run vncauthproxy-passwd
-        return []
 
     @base.run_cmds
     def restart(self):
@@ -1569,8 +1567,11 @@ class Admin(base.Component):
         return []
 
     def _configure(self):
+        r1 = {
+            "ADMIN": self.ctx.admin.cname,
+        }
         return [
-            ("/etc/synnefo/admin.conf", {}, {})
+            ("/etc/synnefo/admin.conf", r1, {})
             ]
 
     @base.run_cmds
@@ -1610,6 +1611,23 @@ class Kamaki(base.Component):
         self.ASTAKOS.activate_user()
         self.DB.get_user_info_from_db(config.user_email)
         self.ADMIN.make_user_admin_user()
+
+    @base.run_cmds
+    def prepare(self):
+        cmd = """
+cat >> /etc/ca-certificates.conf <<EOF
+
+# Deploy local certificate
+local.org/snakeoil.crt
+EOF
+"""
+        return [
+            "mkdir -p /usr/share/ca-certificates/local.org",
+            "cp /etc/ssl/certs/ssl-cert-snakeoil.pem \
+                /usr/share/ca-certificates/local.org/snakeoil.crt",
+            cmd,
+            "update-ca-certificates",
+            ]
 
     @base.run_cmds
     def initialize(self):

@@ -4,11 +4,11 @@ p.progress-area {
 }
 
 .in-progress .modal-body {
-	background-color: $gray-light-extra;
+	background-color: $gray-light-extra-1;
 	p.progress-area {
 		visibility: visible;
 	}
-	
+
 }
 
 .modal {
@@ -49,7 +49,7 @@ p.progress-area {
 			min-height: 160px;
 		}
 	}
-		
+
 	label {
 		// float: left;
 		margin-right: 6px;
@@ -102,7 +102,7 @@ p.progress-area {
 
 		}
 	}
-		
+
 
 	&[data-karma="bad"] {
 		.elem {
@@ -153,6 +153,9 @@ p.progress-area {
 			font-weight: bold;
 			text-align: center;
 		}
+	}
+	.popover-content {
+		min-width: 150px;
 	}
 
 }

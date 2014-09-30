@@ -13,9 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import datetime
-from django.conf import settings
 from django.db.models import Sum, Count
 
+from astakos.im import settings
 from astakos.im.models import AstakosUser, Resource
 from astakos.quotaholder_app.models import Holding
 
@@ -59,7 +59,7 @@ def get_astakos_stats():
         }
     stats["resources"]["all"] = resources_stats
 
-    for provider in settings.ASTAKOS_IM_MODULES:
+    for provider in settings.IM_MODULES:
         # Add provider
         stats["providers"].append(provider)
 

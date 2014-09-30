@@ -22,9 +22,14 @@ Settings for the snf-admin-app.
 # Process Admin settings
 
 from django.conf import settings
-from collections import OrderedDict
+from synnefo.lib.dict import SnfOrderedDict
+from synnefo.lib import parse_base_url
 
 ADMIN_ENABLED = getattr(settings, 'ADMIN_ENABLED', True)
+
+BASE_URL = getattr(settings, 'ADMIN_BASE_URL',
+                   'https://admin.example.synnefo.org/admin/')
+BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
 
 ADMIN_MEDIA_URL = getattr(settings, 'ADMIN_MEDIA_URL',
                           settings.MEDIA_URL + 'admin/')
@@ -32,18 +37,6 @@ ADMIN_MEDIA_URL = getattr(settings, 'ADMIN_MEDIA_URL',
 AUTH_COOKIE_NAME = getattr(settings, 'ADMIN_AUTH_COOKIE_NAME',
                            getattr(settings, 'UI_AUTH_COOKIE_NAME',
                                    '_pithos2_a'))
-
-# This setting enables the charts presentation of Astakos/Cyclades resources.
-# The charting software that is used is Highcharts by HighSoft AS.
-#
-# Due to the licensing nature of Highcharts, it is disabled by default. You can
-# view the Highcharts license [1] and the accompanying FAQ [2], to decide
-# whether to enable it or not.
-#
-# [1]: www.highcharts.com/license, http://shop.highsoft.com/highcharts.html
-# [2]: http://shop.highsoft.com/highcharts.html,
-#      http://shop.highsoft.com/faq/non-commercial
-ADMIN_ENABLE_CHARTS = getattr(settings, 'ADMIN_ENABLE_CHARTS', False)
 
 # A dictionary with the enabled admin model views.
 DEFAULT_ADMIN_VIEWS = {
@@ -66,20 +59,10 @@ ADMIN_VIEWS_ORDER = getattr(settings, 'ADMIN_VIEWS_ORDER',
                             DEFAULT_ADMIN_VIEWS_ORDER)
 
 
-# The following function combines the above settings into one ordered
-# dictionary.
+# Combine the above settings into one ordered dictionary.
 # Note: View names that don't exist in the ADMIN_VIEWS settings will silently
 # be ignored.
-def create_ordered_views():
-    """Combine ADMIN_VIEWS and ADMIN_VIEWS_ORDER to create an ordered dict."""
-    views = OrderedDict()
-
-    for view in ADMIN_VIEWS_ORDER:
-        if view in ADMIN_VIEWS:
-            views[view] = ADMIN_VIEWS[view]
-
-    return views
-ADMIN_VIEWS = create_ordered_views()
+ADMIN_VIEWS = SnfOrderedDict(ADMIN_VIEWS, ADMIN_VIEWS_ORDER, strict=False)
 
 # Check if the user has defined his/her own values for the following three
 # groups.
@@ -156,3 +139,6 @@ ADMIN_LIMIT_ASSOCIATED_ITEMS_PER_CATEGORY = getattr(
 # that will be shown in his/her table summary.
 ADMIN_LIMIT_SUSPENDED_VMS_IN_SUMMARY = getattr(
     settings, 'ADMIN_LIMIT_SUSPENDED_VMS_IN_SUMMARY', 10)
+
+# The sign that will indicate that a filter term concerns a model field.
+ADMIN_FIELD_SIGN = getattr(settings, 'ADMIN_FIELD_SIGN', '=')

@@ -171,7 +171,7 @@ def catalog(request):
     context = {}
     context['action_dict'] = get_permitted_actions(cached_actions,
                                                    request.user)
-    context['filter_dict'] = IPFilterSet().filters.itervalues()
+    context['filter_dict'] = IPFilterSet().filters.values()
     context['columns'] = ["ID", "Address", "Floating",
                           "Creation date", "User ID", ""]
     context['item_type'] = 'ip'

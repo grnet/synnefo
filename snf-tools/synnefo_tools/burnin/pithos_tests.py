@@ -21,6 +21,7 @@ This is the burnin class that tests the Pithos functionality
 
 """
 
+import itertools
 import os
 import random
 import tempfile
@@ -28,7 +29,7 @@ from datetime import datetime
 from tempfile import NamedTemporaryFile
 
 from synnefo_tools.burnin.common import BurninTests, Proper, \
-    QPITHOS, QADD, QREMOVE
+    QPITHOS, QADD, QREMOVE, MB
 from kamaki.clients import ClientError
 
 
@@ -53,6 +54,7 @@ class PithosTestSuite(BurninTests):
     now_unformated = Proper(value=datetime.utcnow())
     obj_metakey = Proper(value=None)
     large_file = Proper(value=None)
+    temp_local_files = Proper(value=[])
     uvalue = u'\u03c3\u03cd\u03bd\u03bd\u03b5\u03c6\u03bf'
 
     def test_005_account_head(self):
@@ -99,7 +101,7 @@ class PithosTestSuite(BurninTests):
 
         resp = pithos.list_containers()
         full_len = len(resp)
-        self.assertTrue(full_len > 2)
+        self.assertTrue(full_len >= 2)
         self.info('Normal use is OK')
 
         cnames = [c['name'] for c in resp]
@@ -111,14 +113,13 @@ class PithosTestSuite(BurninTests):
         self.info('Limit works')
 
         resp = pithos.account_get(marker='cont')
-        cont1, cont3 = resp.json[0], resp.json[2]
+        cont1 = resp.json[0]
         self.info('Marker works')
 
         resp = pithos.account_get(limit=2, marker='cont')
         conames = [container['name'] for container in resp.json if (
             container['name'].lower().startswith('cont'))]
         self.assertTrue(cont1['name'] in conames)
-        self.assertFalse(cont3['name'] in conames)
         self.info('Marker-limit combination works')
 
         resp = pithos.account_get(show_only_shared=True)
@@ -423,6 +424,9 @@ class PithosTestSuite(BurninTests):
         self.large_file = named_file
         self.info('Created file %s of 100 MB' % named_file.name)
 
+        # Add file to 'temp_local_files' for cleanup
+        self.temp_local_files.append(named_file.name)
+
         pithos.create_directory('dir')
         self.info('Upload the file ...')
         resp = pithos.upload_object('/dir/sample.file', named_file)
@@ -599,6 +603,8 @@ class PithosTestSuite(BurninTests):
         # Upload a boring file
         self.info('Create a boring file of 42 blocks...')
         bor_f = self._create_boring_file(42)
+        # Add file to 'temp_local_files' for cleanup
+        self.temp_local_files.append(bor_f.name)
         trg_fname = 'dir/uploaded.file'
         self.info('Now, upload the boring file as %s...' % trg_fname)
         pithos.upload_object(trg_fname, bor_f)
@@ -608,6 +614,8 @@ class PithosTestSuite(BurninTests):
         self._check_quotas({self._get_uuid(): [(QPITHOS, QADD, size, None)]})
 
         dnl_f = NamedTemporaryFile()
+        # Add file to 'temp_local_files' for cleanup
+        self.temp_local_files.append(dnl_f.name)
         self.info('Download boring file as %s' % dnl_f.name)
         pithos.download_object(trg_fname, dnl_f)
         self.info('File is downloaded')
@@ -820,6 +828,8 @@ class PithosTestSuite(BurninTests):
 
         oldf = pithos.get_object_info('sample.file')
         named_f = self._create_large_file(1024 * 10)
+        # Add file to 'temp_local_files' for cleanup
+        self.temp_local_files.append(named_f.name)
         pithos.upload_object('sample.file', named_f)
         resp = pithos.get_object_info('sample.file')
         self.assertEqual(int(resp['content-length']), 10240)
@@ -856,11 +866,62 @@ class PithosTestSuite(BurninTests):
             self.info("Comparing contents with the uploaded file")
             self.assertEqual(contents, "This is a temp file")
 
+    def test_056_upload_files(self):
+        """Test uploading a number of txt files to Pithos"""
+        self.info('Simple call uploads %d new objects' % self.obj_upload_num)
+        pithos = self.clients.pithos
+
+        size_change = 0
+        min_size = self.obj_upload_min_size
+        max_size = self.obj_upload_max_size
+
+        # Create a new container where we should upload the files
+        # This will be deleted in tear-down
+        self._create_pithos_container("burnin_big_files")
+        self._set_pithos_container("burnin_big_files")
+
+        hashes = {}
+        open_files = []
+        uuid = self._get_uuid()
+        usage = self.quotas[uuid]['pithos.diskspace']['usage']
+        limit = pithos.get_container_limit()
+        for i, size in enumerate(random.sample(range(min_size, max_size),
+                                               self.obj_upload_num)):
+            assert usage + size_change + size <= limit, \
+                'Not enough quotas to upload files.'
+            named_file = self._create_file(size)
+            # Delete temp file at tear-down
+            self.temp_local_files.append(named_file.name)
+            self.info('Created file %s of %s MB'
+                      % (named_file.name, float(size) / MB))
+            name = named_file.name.split('/')[-1]
+            hashes[name] = named_file.hash
+            open_files.append(dict(obj=name, f=named_file))
+            size_change += size
+        pithos.async_run(pithos.upload_object, open_files)
+        self._check_quotas({self._get_uuid():
+                            [(QPITHOS, QADD, size_change, None)]})
+
+        r = pithos.container_get()
+        self.info("Comparing hashes with the uploaded files")
+        for name, hash_ in hashes.iteritems():
+            try:
+                o = itertools.ifilter(lambda o: o['name'] == name,
+                                      r.json).next()
+                assert o['x_object_hash'] == hash_, \
+                    'Inconsistent hash for object: %s' % name
+            except StopIteration:
+                raise AssertionError('Object %s not found in the server' %
+                                     name)
+        self.info('Bulk upload is OK')
+
     def test_060_object_copy(self):
         """Test object COPY"""
         pithos = self.clients.pithos
         obj, trg = 'source.file2copy', 'copied.file'
         data = '{"key1":"val1", "key2":"val2"}'
+
+        self._set_pithos_container(self.temp_containers[-3])
 
         resp = pithos.object_put(
             obj,
@@ -913,7 +974,7 @@ class PithosTestSuite(BurninTests):
 
         resp = pithos.object_copy(
             obj,
-            destination='/%s/%s' % (self.temp_containers[-1], obj),
+            destination='/%s/%s' % (self.temp_containers[-2], obj),
             content_encoding='utf8',
             content_type='application/json')
         self.assertEqual(resp.status_code, 201)
@@ -925,7 +986,7 @@ class PithosTestSuite(BurninTests):
             {self._get_uuid(): [(QPITHOS, QADD, len(data), None)]})
 
         # Check ignore_content_type and content_type
-        pithos.container = self.temp_containers[-1]
+        pithos.container = self.temp_containers[-2]
         resp = pithos.object_get(obj)
         etag = resp.headers['etag']
         ctype = resp.headers['content-type']
@@ -1034,7 +1095,7 @@ class PithosTestSuite(BurninTests):
 
         resp = pithos.object_move(
             obj + '0',
-            destination='/%s/%s' % (self.temp_containers[-2], obj),
+            destination='/%s/%s' % (self.temp_containers[-3], obj),
             content_encoding='utf8',
             content_type='application/json',
             content_disposition='attachment; filename="fname.ext"')
@@ -1043,7 +1104,7 @@ class PithosTestSuite(BurninTests):
             resp.headers['content-type'],
             'application/json; charset=UTF-8')
 
-        pithos.container = self.temp_containers[-2]
+        pithos.container = self.temp_containers[-3]
         resp = pithos.object_get(obj)
         etag = resp.headers['etag']
         ctype = resp.headers['content-type']
@@ -1096,15 +1157,15 @@ class PithosTestSuite(BurninTests):
             if o['name'] == obj:
                 old_size = o['bytes']
                 break
-        pithos.container = self.temp_containers[-1]
+        pithos.container = self.temp_containers[-2]
         for o in pithos.list_objects():
             if o['bytes']:
                 f_name, f_size = o['name'], o['bytes']
-                break;
+                break
         resp = pithos.object_move(
             f_name,
-            destination='/%s/%s' % (self.temp_containers[-2], obj))
-        pithos.container = self.temp_containers[-2]
+            destination='/%s/%s' % (self.temp_containers[-3], obj))
+        pithos.container = self.temp_containers[-3]
         for o in pithos.list_objects():
             if o['name'] == obj:
                 self.assertEqual(f_size, o['bytes'])
@@ -1118,6 +1179,8 @@ class PithosTestSuite(BurninTests):
         pithos = self.clients.pithos
         obj = 'sample2post.file'
         newf = NamedTemporaryFile()
+        # Add file to 'temp_local_files' for cleanup
+        self.temp_local_files.append(newf.name)
         newf.writelines([
             'ello!\n',
             'This is a test line\n',
@@ -1222,7 +1285,7 @@ class PithosTestSuite(BurninTests):
         self.assertEqual(resp['content-type'], 'text/x-python')
         self.info('If-etag-match is OK')
 
-        pithos.container = self.temp_containers[-1]
+        pithos.container = self.temp_containers[-2]
         pithos.create_object(obj)
         resp = pithos.object_post(
             obj,
@@ -1230,7 +1293,7 @@ class PithosTestSuite(BurninTests):
             content_type='application/octet-srteam',
             content_length=5,
             content_range='bytes 1-5/*',
-            source_object='/%s/%s' % (self.temp_containers[-2], obj),
+            source_object='/%s/%s' % (self.temp_containers[-3], obj),
             source_account='thisAccountWillNeverExist@adminland.com',
             source_version=hello_version,
             data='12345',
@@ -1245,7 +1308,7 @@ class PithosTestSuite(BurninTests):
             content_type='application/octet-srteam',
             content_length=3,
             content_range='bytes 1-3/*',
-            source_object='/%s/%s' % (self.temp_containers[-2], obj),
+            source_object='/%s/%s' % (self.temp_containers[-3], obj),
             source_account=pithos.account,
             source_version=hello_version,
             data='123',
@@ -1349,4 +1412,10 @@ class PithosTestSuite(BurninTests):
                 pithos.del_container(delimiter='/')
                 pithos.purge_container(tcont)
             except ClientError:
+                pass
+        # Delete temporary files
+        for tfile in getattr(cls, 'temp_local_files', []):
+            try:
+                os.remove(tfile)
+            except OSError:
                 pass

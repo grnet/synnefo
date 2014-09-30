@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from binascii import hexlify
 import ctypes
 import ConfigParser
 import logging
@@ -92,12 +91,11 @@ class ArchipelagoMapper(object):
         self.ioctx_pool.pool_put(ioctx)
         return hashes
 
-
     def map_stor(self, maphash, hashes, size, block_size):
         """Store hashes in the given hashes map."""
         objects = list()
         for h in hashes:
-            objects.append({'name': hexlify(h), 'flags': XF_MAPFLAG_READONLY})
+            objects.append({'name': h, 'flags': XF_MAPFLAG_READONLY})
         ioctx = self.ioctx_pool.pool_get()
         req = Request.get_create_request(ioctx, self.mapperd_port,
                                          maphash,

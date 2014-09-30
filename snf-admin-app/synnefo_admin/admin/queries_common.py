@@ -22,6 +22,9 @@ from django.core.exceptions import FieldError
 from django.conf import settings
 
 from synnefo_admin.admin.utils import model_dict
+from synnefo_admin import admin_settings
+
+sign = admin_settings.ADMIN_FIELD_SIGN
 
 
 def prefix_strip(query):
@@ -66,12 +69,45 @@ def model_filter(func):
 
     The purpose of the decorator is to:
     a) Split the queries into multiple keywords (space/tab separated).
+    b) Concatenate terms that have the ADMIN_FIELD_SIGN ("=") between them.
     b) Ignore any empty queries.
     """
+    def process_terms(terms):
+        """Generic term processing.
+
+        This function does the following:
+        * Concatenate terms that have the admin_settings.ADMIN_FIELD_SIGN ("=")
+          between them. E.g. the following list:
+
+              ['first_name', '=', 'john', 'doe', 'last_name=', 'd']
+
+          becomes:
+
+              ['first_name=john', 'doe', 'last_name=d']
+        """
+        new_terms = []
+        cand = ''
+        for term in terms:
+            # Check if the current term can be concatenated with the previous
+            # (candidate) ones.
+            if term.startswith(sign) or cand.endswith(sign):
+                cand = cand + term
+                continue
+            # If the candidate cannot be concatenated with the current term,
+            # append it to the `new_terms` list.
+            if cand:
+                new_terms.append(cand)
+            cand = term
+        # Always append the last candidate, if valid
+        if cand:
+            new_terms.append(cand)
+        return new_terms
+
     @functools.wraps(func)
     def wrapper(queryset, query, *args, **kwargs):
-        if isinstance(query, str) or isinstance(query, unicode):
+        if isinstance(query, basestring):
             query = query.split()
+            query = process_terms(query)
 
         if query:
             try:
@@ -96,14 +132,14 @@ def malicious(field):
 def update_queries(**queries):
     """Extract nested queries from a single query.
 
-    Check if the query is actually a nested query, by searching for the "="
-    operator.
+    Check if the query is actually a nested query, by searching for the
+    admin_settings.ADMIN_FIELD_SIGN (commonly "=").
     FIXME: This is not the best/cleaner/intuitive approach to do this.
     """
     new_queries = queries.copy()
     for key, value in queries.iteritems():
         if isinstance(value, str) or isinstance(value, unicode):
-            nested_query = value.split('=', 1)
+            nested_query = value.split(sign, 1)
             if len(nested_query) == 1:
                 continue
             field = nested_query[0]

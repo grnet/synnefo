@@ -14,9 +14,10 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import simplejson as json
 from synnefo.db import transaction
 from snf_django.lib.api import faults
-from synnefo.plankton.backend import PlanktonBackend
+from synnefo.plankton.backend import PlanktonBackend, OBJECT_ERROR
 from synnefo.logic import backend
 from synnefo.volume import util
 from synnefo.util import units
@@ -76,10 +77,14 @@ def create(user_id, volume, name, description, metadata, force=False):
     # the server that the volume is attached
     metadata.update({"EXCLUDE_ALL_TASKS": "yes",
                      "description": description})
-    vm_metadata = dict(volume.machine.metadata
-                                     .filter(meta_key__in=["OS", "users"])
-                                     .values_list("meta_key", "meta_value"))
-    metadata.update(vm_metadata)
+    if volume.index == 0:
+        # Copy the metadata of the VM into the image properties only when the
+        # volume is the root volume of the VM.
+        vm_metadata = dict(volume.machine.metadata
+                                         .filter(meta_key__in=["OS", "users"])
+                                         .values_list("meta_key",
+                                                      "meta_value"))
+        metadata.update(vm_metadata)
 
     snapshot_properties = PlanktonBackend._prefix_properties(metadata)
     snapshot_metadata.update(snapshot_properties)
@@ -102,9 +107,22 @@ def create(user_id, volume, name, description, metadata, force=False):
                    " %s size." % units.show(size, "bytes", "gb"))
             raise faults.OverLimit(msg)
 
-    backend.snapshot_instance(volume.machine,
-                              snapshot_name=mapfile,
-                              snapshot_id=snapshot_id)
+        try:
+            job_id = backend.snapshot_instance(volume.machine, volume,
+                                               snapshot_name=mapfile,
+                                               snapshot_id=snapshot_id)
+        except:
+            # If failed to enqueue job to Ganeti, mark snapshot as ERROR
+            b.update_snapshot_state(snapshot_id, OBJECT_ERROR)
+
+        # Store the backend and job id as metadata in the snapshot in order
+        # to make reconciliation based on the Ganeti job possible.
+        backend_info = {
+            "ganeti_job_id": job_id,
+            "ganeti_backend_id": volume.machine.backend_id
+        }
+        metadata = {"backend_info": json.dumps(backend_info)}
+        b.update_metadata(snapshot_id, metadata)
 
     snapshot = util.get_snapshot(user_id, snapshot_id)
 

@@ -60,7 +60,7 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
 from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
                                   VersionNotExists, IllegalOperationError,
-                                  LimitExceeded)
+                                  LimitExceeded, BrokenSnapshot)
 
 from synnefo.lib import join_urls
 
@@ -1127,6 +1127,8 @@ def api_method(http_method=None, token_required=True, user_required=True,
                 return response
             except LimitExceeded, le:
                 raise faults.BadRequest(le.args[0])
+            except BrokenSnapshot, bs:
+                raise faults.BadRequest(bs.args[0])
             finally:
                 # Always close PithosBackend connection
                 if getattr(request, "backend", None) is not None:

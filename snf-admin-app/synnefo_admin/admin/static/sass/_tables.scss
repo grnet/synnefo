@@ -46,6 +46,8 @@ table .wrap {
         text-decoration: none;
     }
     .summary-expand {
+        position: relative;
+        z-index: 10;
         float: right;
         padding-left: 8px;
         padding-right: 8px;
@@ -58,10 +60,11 @@ table .wrap {
         }
     }
      dl {
-     position: relative;
-     padding: 8px;
-     display: none;
-     margin: 0;
+    z-index: 0;
+        position: relative;
+        padding: 8px;
+        display: none;
+        margin: 0;
     }
 }
 
@@ -189,6 +192,7 @@ table.dataTable.no-footer {
 
 .dataTables_wrapper > .custom-buttons {
     margin-bottom: 1em;
+    width: 100%;
 }
 
 .dataTables_wrapper .dataTables_processing {

@@ -29,6 +29,8 @@ from snf_django.lib.api import faults, utils
 from synnefo.volume import volumes, snapshots, util
 from synnefo.db.models import Volume, VolumeType, VolumeMetadata
 from synnefo.plankton import backend
+from synnefo.plankton.backend import (OBJECT_AVAILABLE, OBJECT_UNAVAILABLE,
+                                      OBJECT_ERROR)
 from synnefo.logic.utils import check_name_length
 
 log = getLogger('synnefo.volume')
@@ -63,12 +65,12 @@ def volume_to_dict(volume, detail=True):
             "delete_on_termination": volume.delete_on_termination,
             "user_id": volume.userid,
             "tenant_id": volume.project,
-            #"availabilit_zone": None,
-            #"bootable": None,
-            #"os-vol-tenant-attr:tenant_id": None,
-            #"os-vol-host-attr:host": None,
-            #"os-vol-mig-status-attr:name_id": None,
-            #"os-vol-mig-status-attr:migstat": None,
+            # "availabilit_zone": None,
+            # "bootable": None,
+            # "os-vol-tenant-attr:tenant_id": None,
+            # "os-vol-host-attr:host": None,
+            # "os-vol-mig-status-attr:name_id": None,
+            # "os-vol-mig-status-attr:migstat": None,
         }
         data.update(details)
     return data
@@ -246,8 +248,8 @@ def update_volume_metadata(request, volume_id, reset=False):
                              non_deleted=True)
     if reset:
         if len(meta_dict) > settings.CYCLADES_VOLUME_MAX_METADATA:
-            raise faults.BadRequest("Volumes cannot have more than %s metadata "
-                                    "items" %
+            raise faults.BadRequest("Volumes cannot have more than %s metadata"
+                                    " items" %
                                     settings.CYCLADES_VOLUME_MAX_METADATA)
 
         volume.metadata.all().delete()
@@ -303,9 +305,17 @@ def reassign_volume(request, volume_id, args):
     return HttpResponse(status=200)
 
 
+API_STATUS_FROM_IMAGE_STATUS = {
+    OBJECT_AVAILABLE: "AVAILABLE",
+    OBJECT_UNAVAILABLE: "CREATING",
+    OBJECT_ERROR: "ERROR",
+    "DELETED": "DELETED"}  # Unused status
+
+
 def snapshot_to_dict(snapshot, detail=True):
     owner = snapshot['owner']
-    status = snapshot['status']
+    status = snapshot.get('status', "unknown").upper()
+    status = API_STATUS_FROM_IMAGE_STATUS.get(status, "UNKNOWN")
     progress = "%s%%" % 100 if status == "AVAILABLE" else 0
 
     data = {
@@ -317,7 +327,7 @@ def snapshot_to_dict(snapshot, detail=True):
         "user_id": owner,
         "tenant_id": owner,
         "os-extended-snapshot-attribute:progress": progress,
-        #"os-extended-snapshot-attribute:project_id": project,
+        # "os-extended-snapshot-attribute:project_id": project,
         "created_at": utils.isoformat(date_parse(snapshot["created_at"])),
         "metadata": snapshot.get("metadata", {}),
         "volume_id": snapshot.get("volume_id"),

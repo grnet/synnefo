@@ -2,7 +2,6 @@
 
 # Set this to the root of your project when deployed:
 http_path = "/"
-css_dir = "css"
 sass_dir = "sass"
 images_dir = "images"
 javascripts_dir = "javascripts"
@@ -22,3 +21,14 @@ output_style = :nested
 # preferred_syntax = :sass
 # and then run:
 # sass-convert -R --from scss --to sass sass scss && rm -rf sass && mv scss sass
+if environment == :development
+    css_dir = "css"
+    line_comments = true
+    output_style = :nested
+end
+
+if environment == :production
+    css_dir = "min-css"
+    line_comments = false
+    output_style = :compressed
+end 

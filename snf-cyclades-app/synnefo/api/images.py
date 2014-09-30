@@ -86,10 +86,10 @@ def metadata_item_demux(request, image_id, key):
 
 
 API_STATUS_FROM_IMAGE_STATUS = {
-    "CREATING": "SAVING",
-    "AVAILABLE": "ACTIVE",
-    "ERROR": "ERROR",
-    "DELETED": "DELETED"}
+    backend.OBJECT_UNAVAILABLE: "SAVING",
+    backend.OBJECT_AVAILABLE: "ACTIVE",
+    backend.OBJECT_ERROR: "ERROR",
+    "DELETED": "DELETED"}  # Unused status
 
 
 def image_to_dict(image, detail=True):

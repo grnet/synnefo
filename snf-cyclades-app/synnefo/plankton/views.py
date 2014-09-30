@@ -26,7 +26,8 @@ from django.utils.encoding import (smart_unicode, smart_str,
 
 from snf_django.lib import api
 from snf_django.lib.api import faults
-from synnefo.plankton.backend import PlanktonBackend
+from synnefo.plankton.backend import (PlanktonBackend, OBJECT_AVAILABLE,
+                                      OBJECT_UNAVAILABLE, OBJECT_ERROR)
 from synnefo.plankton.backend import split_url
 
 
@@ -73,9 +74,10 @@ log = getLogger('synnefo.plankton')
 
 
 API_STATUS_FROM_IMAGE_STATUS = {
-    "CREATING": "SAVING",
-    "AVAILABLE": "AVAILABLE",
-    "DELETED": "DELETED"}
+    OBJECT_AVAILABLE: "AVAILABLE",
+    OBJECT_UNAVAILABLE: "SAVING",
+    OBJECT_ERROR: "ERROR",
+    "DELETED": "DELETED"}  # Unused status
 
 
 def _create_image_response(image):
@@ -195,8 +197,8 @@ def add_image(request):
         with PlanktonBackend(request.user_uniq) as backend:
             image = backend.register(name, location, params)
     else:
-        #f = StringIO(request.body)
-        #image = backend.put(name, f, params)
+        # f = StringIO(request.body)
+        # image = backend.put(name, f, params)
         return HttpResponse(status=501)     # Not Implemented
 
     if not image:
@@ -253,18 +255,6 @@ def get_image(request, image_id):
       * The implementation is very inefficient as it loads the whole image
         in memory.
     """
-
-    #image = backend.get_image(image_id)
-    #if not image:
-    #    return HttpResponseNotFound()
-    #
-    #response = _create_image_response(image)
-    #data = backend.get_data(image)
-    #response.content = data
-    #response['Content-Length'] = len(data)
-    #response['Content-Type'] = 'application/octet-stream'
-    #response['ETag'] = image['checksum']
-    #return response
     return HttpResponse(status=501)     # Not Implemented
 
 

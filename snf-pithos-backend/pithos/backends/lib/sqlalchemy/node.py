@@ -23,11 +23,12 @@ from sqlalchemy import (Table, Integer, BigInteger, DECIMAL, Boolean,
 from sqlalchemy.schema import Index, Sequence
 from sqlalchemy.sql import (func, and_, or_, not_, select, bindparam, exists,
                             functions)
-from sqlalchemy.sql.expression import true, literal
+from sqlalchemy.sql.expression import true, literal, type_coerce
 from sqlalchemy.exc import NoSuchTableError, IntegrityError
 
 from dbworker import DBWorker, ESCAPE_CHAR
 
+from pithos.backends.base import MAP_AVAILABLE
 from pithos.backends.filter import parse_filters
 
 DEFAULT_DISKSPACE_RESOURCE = 'pithos.diskspace'
@@ -137,7 +138,7 @@ def create_tables(engine):
     columns.append(Column('uuid', String(64), nullable=False, default=''))
     columns.append(Column('checksum', String(256), nullable=False, default=''))
     columns.append(Column('cluster', Integer, nullable=False, default=0))
-    columns.append(Column('available', Boolean, nullable=False, default=True))
+    columns.append(Column('available', Integer, nullable=False, default=1))
     columns.append(Column('map_check_timestamp', DECIMAL(precision=16,
                                                          scale=6)))
     columns.append(Column('mapfile', String(256)))
@@ -811,7 +812,7 @@ class Node(DBWorker):
     def version_create(self, node, hash, size, type, source, muser, uuid,
                        checksum, cluster=0,
                        update_statistics_ancestors_depth=None,
-                       available=True, map_check_timestamp=None,
+                       available=MAP_AVAILABLE, map_check_timestamp=None,
                        mapfile=None, is_snapshot=False):
         """Create a new version from the given properties.
            Return the (serial, mtime, mapfile) of the new version.
@@ -826,9 +827,8 @@ class Node(DBWorker):
         if size == 0:
             mapfile = None
         elif mapfile is None:
-            mapfile = functions.concat(literal(self.mapfile_prefix),
-                                       functions.next_value(self.mapfile_seq))
-
+            mapfile = literal(self.mapfile_prefix) + \
+                type_coerce(functions.next_value(self.mapfile_seq), String)
         s = self.versions.insert().returning(self.versions.c.serial,
                                              self.versions.c.mtime,
                                              self.versions.c.mapfile)
@@ -1020,6 +1020,17 @@ class Node(DBWorker):
             self.nodes_set_latest_version(node, serial)
 
         return hash, size
+
+    def attribute_get_domains(self, serial, node=None):
+        node = node or select([self.versions.c.node],
+                              self.versions.c.serial == serial)
+        s = select([self.attributes.c.domain],
+                   and_(self.attributes.c.serial == serial,
+                        self.attributes.c.node == node)).distinct()
+        r = self.conn.execute(s)
+        l = r.fetchall()
+        r.close()
+        return [d[0] for d in l]
 
     def attribute_get(self, serial, domain, keys=()):
         """Return a list of (key, value) pairs of the specific version.

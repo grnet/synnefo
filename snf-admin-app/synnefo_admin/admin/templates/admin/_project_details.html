@@ -44,6 +44,10 @@
                     {% if not project.is_base %}
                         <dt>End date</dt><dd>{{ project.end_date }}</dd>
                     {% endif %}
+                    <dt>Project Status</dt><dd>{{ project|get_status_from_instance }}</dd>
+                    {% if project.last_application %}
+                        <dt>Application Status</dt><dd>{{ project.last_application|get_status_from_instance }}</dd>
+                    {% endif %}
                 </dl>
             </div>
             <div class="tab-pane" id="prj-members{{ project.uuid }}">

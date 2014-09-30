@@ -1,9 +1,59 @@
-function humanize(value, unit) {
-    if (!unit) {
+String.prototype.capitalize = function() {
+        return this.charAt(0).toUpperCase() + this.slice(1);
+};
+
+
+String.prototype.sanitize = function() {
+    new_string = "";
+    for (var i = 0, len = this.length; i < len; i++) {
+        c = this.charAt(i);
+        if (/^[a-zA-Z0-9]$/.test(c)) {
+            new_string += c;
+        } else if (/^[\.\-\_\:\~\(\)\,\']$/.test(c)) {
+            new_string += c;
+        } else {
+            new_string += "_"; // replace it with a safe character
+        }
+    }
+    return new_string;
+};
+
+var chart_options = {
+    color: {
+        pattern: ['#68B3F0','#EEC04C','#FF6F90','#A9DDD9','#7474F1', '#8EBE6D', '#C77529', '#F53939', '#FAA330', '#AD57EE'],
+    }
+};
+
+// Shorten any value that is more than 100,000.
+// Its presentation will be as a number multiplied by a power of 10. The power
+// sign will be "^", if we wish to have non-html tags, else <sup></sup>.
+function shorten(value, non_html) {
+    if (value < 1000000)
         return value;
+
+    non_html = non_html || false;
+
+    var i = 0;
+    while (value > 10) {
+        value = value / 10;
+        i++;
     }
 
-    var units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'];
+    ret = value.toFixed(3) + ' x 10';
+    if (non_html) {
+        return ret + '^' + i.toString();
+    } else {
+        return ret + i.toString().sup();
+    }
+}
+
+
+function humanize(value, unit) {
+    if (!unit) {
+        return shorten(value);
+    }
+
+    var units = ['B', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
 
     var i = 0;
     while (value >= 1024) {
@@ -11,32 +61,236 @@ function humanize(value, unit) {
         value = value / 1024;
     }
 
-    return Math.floor(value) + ' ' + units[i];
+    return shorten(Math.round(value)) + ' ' + units[i];
 }
+
 
 function percentify(value, total) {
-    return Math.floor(100 * (value / total));
+    if (total === 0)
+        return 0;
+    return Math.round(100 * (value / total));
 }
 
-String.prototype.capitalize = function() {
-        return this.charAt(0).toUpperCase() + this.slice(1);
-}
 
-String.prototype.sanitize = function() {
-    new_string = ""
-    for (var i = 0, len = this.length; i < len; i++) {
-        c = this.charAt(i);
-        if (/^[a-zA-Z0-9]$/.test(c)) {
-            new_string += c;
-        } else if (/^[\.\-\_\:\~]$/.test(c)) {
-            new_string += c;
-        } else {
-            new_string += "_"; // replace it with a safe character
+// Decide whether a chart presents purely size data (storage, RAM etc.)
+function is_size_chart(units) {
+    if (!units) {
+        return false;
+    }
+
+    // If at least one unit in the list is null, then this is not a size chart.
+    for (var i = 0; i < units.length; i++) {
+        if (units[i] === null) {
+            return false;
         }
     }
-    return new_string;
+
+    return true;
 }
 
+
+// Convert all number elements of a given list to their logarithmic (base 10)
+// values.  Should a list contain another list, the calculations continue
+// recursively.
+function convert2log(list) {
+    for (var i = 0; i < list.length; i++) {
+        item = list[i];
+
+        if (Array.isArray(item))
+            item = convert2log(item);
+        else if (typeof item === 'string')
+            continue;
+        else
+            list[i] = Math.log(item) / Math.LN10;
+    }
+
+    return list;
+}
+
+
+function create_pie_chart(cols) {
+    var c3_opts = {
+        data: {
+            columns: cols,
+            type: 'pie',
+            labels: true,
+        },
+        color: {
+            pattern: chart_options.color.pattern,
+        },
+        //bindto: '#infra-usage',
+        tooltip: {
+            format: {
+                value: function (value, ratio, id, index) {
+                    var prc = ratio * 100;
+                    prc = prc.toFixed(1);
+                    return value + " (" + prc + "%)";
+                }
+            }
+        }
+    };
+
+    return c3_opts;
+}
+
+
+function create_bar_chart(cols, log_scale) {
+    // By default use natural scale for the Y-axis, unless if prompted
+    // otherwise.
+    log_scale = log_scale || false;
+
+    if (log_scale)
+        cols = convert2log(cols);
+
+    var c3_opts = {
+        data: {
+            x: 'x',
+            columns: cols,
+            type: 'bar',
+            labels: {
+                format: {
+                    y: d3.format("d")
+                },
+            },
+        },
+        color: {
+            pattern: chart_options.color.pattern,
+        },
+
+        //bindto: '#infra-usage',
+        axis: {
+            x: {
+                type: 'category', // this needed to load string x value
+                label: {
+                    //text: 'x-axis text',
+                    //position: 'outer-center',
+                },
+            },
+            y: {
+                label: {
+                    //text: 'Usage Percentage',
+                    //position: 'outer-middle',
+                },
+                tick: {
+                    format: d3.format('d')
+                }
+            }
+        },
+        grid: {
+            y: {
+                //show: true,
+                show: true,
+            }
+        },
+    };
+
+    // If the Y-axis uses a log scale, then convert its ticks and the data labels
+    // to natural numbers (10^x), in order to achieve the log effect. For more
+    // info on this trick, read here:
+    //
+    //      https://github.com/masayuki0812/c3/issues/252#issuecomment-47167150
+    //
+    if (log_scale) {
+        c3_opts.axis.y.tick.format = function(d) {
+            return Math.round(Math.pow(10, d)); };
+        c3_opts.data.labels = {
+            format: {
+                y: function(d) {
+                    return Math.round(Math.pow(10, d));
+                }
+            }
+        };
+    }
+
+    return c3_opts;
+}
+
+// The argument names for the arrays are "used" and "free", but they refer to
+// any two arrays whose item sum forms a total.
+function create_stacked_chart(categories, used, free, units) {
+    // Get the category names for the used and free arrays respectively.
+    var used_label = used[0];
+    var free_label = free[0];
+
+    // Add these category names in any array that derives from the above.
+    var used_prc = [used_label];
+    var free_prc = [free_label];
+    var used_human = [used_label];
+    var free_human = [free_label];
+    var unit = null;
+
+    for (var i = 1; i < used.length; i++)  {
+        var u = used[i];
+        var f = free[i];
+
+        if (units) {
+            unit = units[i - 1];
+        }
+
+        used_human.push(humanize(u, unit));
+        free_human.push(humanize(f, unit));
+        used_prc.push(percentify(u, u + f));
+        free_prc.push(percentify(f, u + f));
+    }
+
+    var c3_opts = create_bar_chart([categories, used, free]);
+
+    c3_opts.data.groups = [[used_label, free_label]];
+    c3_opts.tooltip = {
+        format: {
+            value: function (value, ratio, id, index) {
+                if (id == used_label) {
+                    return used_human[index + 1] + " (" + used_prc[index + 1] + "%)";
+                } else {
+                    return free_human[index + 1] + " (" + free_prc[index + 1] + "%)";
+                }
+            }
+        }
+    };
+    c3_opts._priv = {
+        'used_human': used_human,
+        'free_human': free_human,
+        'used_prc': used_prc,
+        'free_prc': free_prc,
+    };
+
+    //Convert the Y-axis and the data labels to size format.
+    size_format_fn = function (v) {
+        return humanize(v, units[0]);
+    };
+
+    //Shorten values in the Y-axis, if necessary.
+    num_format_fn = function (v) {
+        return shorten(v, true);
+    };
+
+    if (is_size_chart(units)) {
+        c3_opts.data.labels.format.y = size_format_fn;
+        c3_opts.axis.y.tick.format = size_format_fn;
+    } else {
+        c3_opts.data.labels.format.y = num_format_fn;
+        c3_opts.axis.y.tick.format = num_format_fn;
+    }
+
+    return c3_opts;
+}
+
+
+function create_usage_percentage_chart(categories, used, free, units) {
+    format_fn = function (d) {
+        return d + "%";
+    };
+
+    var c3_opts = create_stacked_chart(categories, used, free, units);
+    c3_opts.data.columns = [categories, c3_opts._priv.used_prc,
+        c3_opts._priv.free_prc];
+    c3_opts.axis.y.tick.format = format_fn;
+
+    return c3_opts;
+}
+
+
+//TODO: Wrap long data labels
 function infraUsage(data) {
     categories = {
         'astakos.pending_app': 'Project apps',
@@ -49,11 +303,12 @@ function infraUsage(data) {
         'pithos.diskspace': 'Storage space',
     };
 
-    var displayed_categories = [];
-    var used = [];
-    var free = [];
+    var displayed_categories = ['x'];
+    var used = ['Used'];
+    var free = ['Free'];
+    var units = [];
 
-    for (key in categories) {
+    for (var key in categories) {
         // why do we need it?
         if (!categories.hasOwnProperty(key)) {
             continue; // jumps over one iteration
@@ -61,544 +316,262 @@ function infraUsage(data) {
 
         displayed_categories.push(categories[key]);
 
-        resource = data['resources']['all'][key];
-        var u  = resource['used'];
-        var f  = resource['allocated'] - resource['used'];
-        var unit  = resource['unit'];
+        resource = data.resources.all[key];
+        var u = resource.used;
+        var f = resource.allocated - resource.used;
+        units.push(resource.unit);
 
-        var usedData = {
-            'y': u,
-            'human': humanize(u, unit),
-        };
-
-        var freeData = {
-            'y': f,
-            'human': humanize(f, unit),
-        };
-
-        used.push(usedData);
-        free.push(freeData);
+        used.push(u);
+        free.push(f);
     }
 
-    $('#infra-usage').highcharts({
-        chart: {
-            type: 'column'
-        },
-        title: {
-            text: 'Total resource usage'
-        },
-        xAxis: {
-            categories: displayed_categories
-        },
-        yAxis: {
-            min: 0,
-            title: {
-                text: 'Usage percentage'
-            },
-        },
-        tooltip: {
-            pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.human}</b> ({point.percentage:.0f}%)<br/>',
-            shared: true
-        },
-        plotOptions: {
-            column: {
-                stacking: 'percent'
-            }
-        },
-        series: [{
-            name: 'Free',
-            data: free,
-        }, {
-            name: 'Used',
-            data: used,
-        }]
-    });
+    c3_opts = create_usage_percentage_chart(displayed_categories, used, free,
+            units);
+    c3_opts.bindto = '#infra-usage';
+    c3_opts.axis.y.label.text = 'Usage Percentage';
+    c3_opts.axis.y.label.position = 'outer-middle';
+
+    var chart = c3.generate(c3_opts);
 }
 
-function resourceUsage(data, name) {
-    var domID = 'recource-'+name.replace(/\./gi, '_');
-    $('#resource-usage').append('<div id="'+domID+'"></div>')
 
-    var providers = data['providers'];
-    var used = [];
-    var free = [];
+function resourceUsage(data, name) {
+    var wrapDomID = 'resource-'+name.replace(/\./gi, '_')+'-wrap';
+    var domID = 'resource-'+name.replace(/\./gi, '_');
+    $('#resource-usage').append('<div id="'+wrapDomID+'"></div>');
+    var chartTitle = '<h3>'+name+' usage</h3>';
+    $('#'+wrapDomID).append(chartTitle);
+    $('#'+wrapDomID).append('<div id="'+domID+'"></div>');
+
+    var providers = data.providers.slice();
+    var used = ['Used'];
+    var free = ['Free'];
+    var units = [];
+    var provider = "";
 
     for (var i = 0; i < providers.length; i++)  {
         provider = providers[i];
 
-        resource = data['resources'][provider][name];
-        var u  = resource['used'];
-        var f  = resource['allocated'] - resource['used'];
-        var unit  = resource['unit'];
+        resource = data.resources[provider][name];
+        var u  = resource.used;
+        var f  = resource.allocated - resource.used;
+        units.push(resource.unit);
 
-        var usedData = {
-            'y': u,
-            'human': humanize(u, unit),
-        };
-
-        var freeData = {
-            'y': f,
-            'human': humanize(f, unit),
-        };
-
-        used.push(usedData);
-        free.push(freeData);
+        used.push(u);
+        free.push(f);
     }
-    $('#'+domID).highcharts({
-        chart: {
-            type: 'bar'
-        },
-        title: {
-            text: name + ' usage per provider'
-        },
-        xAxis: {
-            categories: providers
-        },
-        yAxis: {
-            min: 0,
-            title: {
-                text: data['resources']['all'][name]['description'],
-            },
-        },
-        legend : {
-            reversed: true,
-        },
-        tooltip: {
-            pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.human}</b><br/>',
-            shared: true
-        },
-        plotOptions: {
-            series: {
-                stacking: 'normal'
-            }
-        },
-        series: [{
-            name: 'Free',
-            data: free,
-        }, {
-            name: 'Used',
-            data: used,
-        }]
-    });
+    //Prepend x label
+    providers.unshift('x');
+
+    c3_opts = create_stacked_chart(providers, used, free, units);
+    c3_opts.bindto = '#'+domID;
+    c3_opts.axis.rotated = true;
+    c3_opts.axis.y.label.text = data.resources.all[name].description;
+    c3_opts.axis.y.label.position = 'outer-center';
+
+    var chart = c3.generate(c3_opts);
 }
 
 
 function statusPerProvider(data) {
+    var key = "";
+
+    // Create a list of lists. Each list will start with the name of the
+    // provider, as per c3's requirements.
     var providers = [];
-    // This for-in loop works this way only for JSON objects. Otherwise, we
-    // need to check if the key belongs to the object prototype.
-    for (key in data['users']) {
-        providers.push(key);
+    //This for-in loop works this way only for JSON objects. Otherwise, we
+    //need to check if the key belongs to the object prototype.
+    for (key in data.users) {
+        providers.push([key]);
     }
 
-    var statuses = [];
-    for (key in data['users']['all']) {
+    // Get list of user statuses (e.g. active, total, verified), and prepend it
+    // with an 'x' that is necessary for c3.
+    var statuses = ['x'];
+    for (key in data.users.all) {
         statuses.push(key);
     }
 
-    var provider_status_data = [];
-    for (var i = 0; i < providers.length; i++)  {
-        var provider = providers[i];
-        var status_array = [];
-
-        for (var j = 0; j < statuses.length; j++) {
-            var status = statuses[j];
-            status_array.push(data['users'][provider][status]);
+    // Fill each provider list with the number of users that have a certain
+    // status.
+    for (var i = 1; i < statuses.length; i++)  {
+        for (var j = 0; j < providers.length; j++)  {
+            var provider = providers[j][0];
+            var status = statuses[i];
+            providers[j].push(data.users[provider][status]);
         }
-
-        var statusData = {
-            name: provider,
-            data: status_array,
-        };
-
-        provider_status_data.push(statusData);
     }
 
-    $('#provider-status').highcharts({
-        chart: {
-            type: 'column'
-        },
-        title: {
-            text: 'User status per provider'
-        },
-        xAxis: {
-            categories: statuses
-        },
-        yAxis: {
-            //min: 0,
-            title: {
-                text: 'Users (log scale)'
-            },
-            type: 'logarithmic',
-        },
-        tooltip: {
-            pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>',
-            shared: true
-        },
-        series: provider_status_data
-    });
+    //Prepend the providers lists with the status categories.
+    providers.unshift(statuses);
+
+    // Create logarithmic bar chart.
+    var c3_opts = create_bar_chart(providers, true);
+    c3_opts.bindto = '#provider-status';
+    c3_opts.axis.y.label.text = 'Users (log scale)';
+    c3_opts.axis.y.label.position = 'outer-middle';
+    c3_opts.axis.x.label.text = 'Status categories';
+    c3_opts.axis.x.label.position = 'outer-center';
+
+    var chart = c3.generate(c3_opts);
 }
+
 
 function statusPerProviderReversed(data) {
-    var providers = [];
-    // This for-in loop works this way only for JSON objects. Otherwise, we
-    // need to check if the key belongs to the object prototype.
-    for (key in data['users']) {
+    var key = "";
+
+    // Get list of user statuses (e.g. active, total, verified), and prepend it
+    // with an 'x' that is necessary for c3.
+    var statuses = [];
+    for (key in data.users.all) {
+        statuses.push([key]);
+    }
+
+    // Create a list of lists. Each list will start with the name of the
+    // provider, as per c3's requirements.
+    var providers = ['x'];
+    //This for-in loop works this way only for JSON objects. Otherwise, we
+    //need to check if the key belongs to the object prototype.
+    for (key in data.users) {
         providers.push(key);
     }
 
-    var statuses = [];
-    for (key in data['users']['all']) {
-        statuses.push(key);
-    }
-
-    var provider_status_data_rev = [];
-    for (var i = 0; i < statuses.length; i++)  {
-        var status = statuses[i];
-        var providers_array = [];
-
-        for (var j = 0; j < providers.length; j++) {
-            var provider = providers[j];
-            providers_array.push(data['users'][provider][status]);
+    // Fill each provider list with the number of users that have a certain
+    // status.
+    for (var i = 1; i < providers.length; i++)  {
+        for (var j = 0; j < statuses.length; j++)  {
+            var status = statuses[j][0];
+            var provider = providers[i];
+            statuses[j].push(data.users[provider][status]);
         }
-
-        var statusData = {
-            name: status,
-            data: providers_array,
-        };
-
-        provider_status_data_rev.push(statusData);
     }
 
-    $('#provider-status-reversed').highcharts({
-        colors: ['#5cb85c', '#058DC7', '#f0ad4e', '#DDDF00', '#24CBE5', '#64E572','#FF9655', '#FFF263', '#6AF9C4'],
-        chart: {
-            type: 'column'
-        },
-        title: {
-            text: 'Providers per user status'
-        },
-        xAxis: {
-            categories: providers
-        },
-        yAxis: {
-            //min: 0,
-            title: {
-                text: 'Users (log scale)'
-            },
-            type: 'logarithmic',
-        },
-        tooltip: {
-            pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>',
-            shared: true
-        },
-        series: provider_status_data_rev
-    });
+    //Prepend the providers lists with the status categories.
+    statuses.unshift(providers);
+
+    // Create logarithmic bar chart.
+    var c3_opts = create_bar_chart(statuses, true);
+    c3_opts.bindto = '#provider-status-reversed';
+    c3_opts.axis.y.label.text = 'Users (log scale)';
+    c3_opts.axis.y.label.position = 'outer-middle';
+    c3_opts.axis.x.label.text = 'Providers';
+    c3_opts.axis.x.label.position = 'outer-center';
+
+    var chart = c3.generate(c3_opts);
 }
 
+
 function exclusiveProviders(data) {
-    providers = data['providers']
-    var excl = [];
-    var non_excl = [];
+    providers = data.providers.slice();
+    var excl = ['Exclusive'];
+    var non_excl = ['Non-exclusive'];
 
     for (var i = 0; i < providers.length; i++)  {
         var provider = providers[i];
-        var prov_data = data['users'][provider];
+        var prov_data = data.users[provider];
 
-        var e  = prov_data['exclusive'];
-        var ne  = prov_data['active'] - prov_data['exclusive'];
+        var e = prov_data.exclusive;
+        var ne = prov_data.active - prov_data.exclusive;
 
         excl.push(e);
         non_excl.push(ne);
     }
+    //Prepend x label
+    providers.unshift('x');
 
-    $('#provider-exclusiveness').highcharts({
-        chart: {
-            type: 'column'
-        },
-        title: {
-            text: 'Exclusive users per Provider'
-        },
-        xAxis: {
-            categories: providers
-        },
-        yAxis: {
-            min: 0,
-            title: {
-                text: 'Active users'
-            },
-            stackLabels: {
-                enabled: true,
-                style: {
-                    fontWeight: 'bold',
-                    color: (Highcharts.theme && Highcharts.theme.textColor) || 'gray'
-                }
-            },
-        },
-        tooltip: {
-            pointFormat: '<span style="color:{series.color}">{series.name}</span>: <b>{point.y}</b><br/>',
-            shared: true
-        },
-        plotOptions: {
-            series: {
-                stacking: 'normal'
-            }
-        },
-        series: [{
-            name: 'Exclusive',
-            data: excl,
-        }, {
-            name: 'Non-exclusive',
-            data: non_excl,
-        }]
-    });
+    c3_opts = create_stacked_chart(providers, excl, non_excl);
+    c3_opts.bindto = '#provider-exclusiveness';
+    c3_opts.axis.y.tick.format = d3.format("d");
+    c3_opts.axis.y.label.text = 'Active Users';
+    c3_opts.axis.y.label.position = 'outer-middle';
+    c3_opts.axis.x.label.text = 'Providers';
+    c3_opts.axis.x.label.position = 'outer-center';
+
+    var chart = c3.generate(c3_opts);
 }
+
 
 function serverStatus(data) {
-    var total_servers = 0;
-    var servers = data['servers'];
-    for (status in servers) {
-        total_servers += servers[status]['count'];
-    }
-
+    var servers = data.servers;
     var server_data = [];
-    for (status in data['servers']) {
-        var count = servers[status]['count'];
-        var statusData = {
-            name: status.capitalize(),
-            y: percentify(count, total_servers),
-            num: count,
-        }
+    var status = "";
 
-        if (status === 'started') {
-            statusData.sliced = true;
-            statusData.selected = true;
-        }
-
-        server_data.push(statusData);
+    for (status in data.servers) {
+        var count = servers[status].count;
+        server_data.push([status.capitalize(), count]);
     }
 
-    $('#server-status').highcharts({
-        chart: {
-                plotBackgroundColor: null,
-                plotBorderWidth: null,
-                plotShadow: false,
-                type: 'pie'
-            },
-            title: {
-                text: 'Servers Status'
-            },
-            tooltip: {
-                headerFormat: '<span>{point.key} Servers</span><br/>',
-                pointFormat: 'Number: {point.num}'
-            },
-            plotOptions: {
-                pie: {
-                    allowPointSelect: true,
-                    cursor: 'pointer',
-                    dataLabels: {
-                        enabled: true,
-                        format: '<b>{point.name}: {point.percentage:.1f} %</b>',
-                        style: {
-                            colors: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-                        }
-                    }
-                }
-            },
-            series: [{
-                name: 'Servers' ,
-                data: server_data
-            }]
-        });
+    var c3_opts = create_pie_chart(server_data);
+    c3_opts.bindto = "#server-status";
+    var chart = c3.generate(c3_opts);
 }
+
 
 function ipPoolStatus(data) {
-    var ip_pools = data['ip_pools'];
+    var ip_pools = data.ip_pools;
+    var status = "";
 
-    var total_ips = 0;
-    for (status in ip_pools) {
-        total_ips += ip_pools[status]['total'];
-    }
-
-    ip_data = [];
+    var ip_data = [];
     for (status in ip_pools) {
         var ip_sp = ip_pools[status];
-        var a = ip_sp['total'] - ip_sp['free'];
-        var f = ip_sp['free'];
-        var a_percent = percentify(a, total_ips);
-        var f_percent = percentify(f, total_ips);
+        var a = ip_sp.total - ip_sp.free;
+        var f = ip_sp.free;
 
-        var ipData = {
-            name: status.capitalize() + ' - Allocated',
-            y: a_percent,
-            num: a,
-        }
-        if (status === 'active') {
-            ipData.sliced = true;
-            ipData.selected = true;
-        }
-        ip_data.push(ipData);
-
-        var ipData = {
-            name: status.capitalize() + ' - Free',
-            y: f_percent,
-            num: f,
-        }
-        ip_data.push(ipData);
+        ip_data.push([status.capitalize() + ' - Allocated', a]);
+        ip_data.push([status.capitalize() + ' - Free', f]);
     }
 
-    $('#ip-pool-status').highcharts({
-        chart: {
-                plotBackgroundColor: null,
-                plotBorderWidth: null,
-                plotShadow: false,
-                type: 'pie'
-            },
-            title: {
-                text: 'IP Allocation Status'
-            },
-            tooltip: {
-                headerFormat: '<span>{point.key} IPs</span><br/>',
-                pointFormat: 'Number: {point.num}'
-            },
-            plotOptions: {
-                pie: {
-                    allowPointSelect: true,
-                    cursor: 'pointer',
-                    dataLabels: {
-                        enabled: true,
-                        format: '<b>{point.name}: {point.percentage:.1f} %</b>',
-                        style: {
-                            colors: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-                        }
-                    }
-                }
-            },
-            series: [{
-                name: 'IPs' ,
-                data: ip_data
-            }]
-        });
+    var c3_opts = create_pie_chart(ip_data);
+    c3_opts.bindto = "#ip-pool-status";
+
+    var chart = c3.generate(c3_opts);
 }
 
+
 function diskTemplates(data) {
-    var servers = data['servers'];
-    var total_disks = 0;
+    var servers = data.servers;
     var templates = {};
-    for (status in servers) {
-        var disks = servers[status]['disk'];
-        for (key in disks) {
+
+    for (var status in servers) {
+        var disks = servers[status].disk;
+        for (var key in disks) {
             if (!templates.hasOwnProperty(key)) {
                 templates[key] = 0;
             }
-            for (flavor in disks[key]) {
+            for (var flavor in disks[key]) {
                 templates[key] += disks[key][flavor];
-                total_disks += disks[key][flavor];
             }
         }
     }
 
-    var disk_data = []
-    for (t in templates) {
+    var disk_data = [];
+    for (var t in templates) {
         if (!templates.hasOwnProperty(t)) {
             continue;
         }
-        var diskData = {
-            name: t.capitalize(),
-            y: percentify(templates[t], total_disks),
-            num: templates[t],
-        }
-
-        disk_data.push(diskData);
+        disk_data.push([t.capitalize(), templates[t]]);
     }
 
-    $('#disk-templates').highcharts({
-        chart: {
-                plotBackgroundColor: null,
-                plotBorderWidth: null,
-                plotShadow: false,
-                type: 'pie'
-            },
-            title: {
-                text: 'Disk templates'
-            },
-            tooltip: {
-                headerFormat: '<span>{point.key} Template</span><br/>',
-                pointFormat: 'Number: {point.num}'
-            },
-            plotOptions: {
-                pie: {
-                    allowPointSelect: true,
-                    cursor: 'pointer',
-                    dataLabels: {
-                        enabled: true,
-                        format: '<b>{point.name}: {point.percentage:.1f} %</b>',
-                        style: {
-                            colors: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-                        }
-                    }
-                }
-            },
-            series: [{
-                name: 'Disk templates' ,
-                data: disk_data,
-            }]
-        });
+    var c3_opts = create_pie_chart(disk_data);
+    c3_opts.bindto = "#disk-templates";
+
+    var chart = c3.generate(c3_opts);
 }
+
 
 function imagesStats(data) {
-    var images = data['images'];
-    var total_images = 0;
-
-    for (i in images) {
-        total_images += images[i];
-    }
+    var images = data.images;
 
     var image_data = [];
-    for (i in images) {
-        var imageData = {
-            name: i.sanitize(), // Sanitize user input aggressively
-            y: percentify(images[i], total_images),
-            num: images[i],
-        }
-
-        image_data.push(imageData);
+    for (var i in images) {
+        image_data.push([i.sanitize(), images[i]]);
     }
 
-    $('#images').highcharts({
-        chart: {
-                plotBackgroundColor: null,
-                plotBorderWidth: null,
-                plotShadow: false,
-                type: 'pie'
-            },
-            title: {
-                text: 'VMs from Images'
-            },
-            tooltip: {
-                headerFormat: '<span>{point.key} Image</span><br/>',
-                pointFormat: 'Number: {point.num}'
-            },
-            plotOptions: {
-                pie: {
-                    allowPointSelect: true,
-                    cursor: 'pointer',
-                    dataLabels: {
-                        enabled: true,
-                        format: '<b>{point.name}: {point.percentage:.1f} %</b>',
-                        style: {
-                            colors: (Highcharts.theme && Highcharts.theme.contrastTextColor) || 'black'
-                        }
-                    }
-                }
-            },
-            series: [{
-                name: 'Images' ,
-                data: image_data,
-            }]
-        });
-}
+    var c3_opts = create_pie_chart(image_data);
+    c3_opts.bindto = "#images";
 
+    var chart = c3.generate(c3_opts);
+}
 
 $(document).ready(function() {
     sticker();

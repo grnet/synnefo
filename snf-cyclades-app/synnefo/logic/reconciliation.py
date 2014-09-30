@@ -43,6 +43,7 @@ from django.conf import settings
 import logging
 import itertools
 import bitarray
+import simplejson as json
 from datetime import datetime, timedelta
 
 from synnefo.db import transaction
@@ -53,6 +54,8 @@ from synnefo.db.models import (Backend, VirtualMachine, Flavor,
 from synnefo.db import pools
 from synnefo.logic import utils, rapi, backend as backend_mod
 from synnefo.lib.utils import merge_time
+from synnefo.plankton.backend import (PlanktonBackend, OBJECT_UNAVAILABLE,
+                                      OBJECT_ERROR)
 
 logger = logging.getLogger()
 logging.basicConfig()
@@ -95,6 +98,7 @@ class BackendReconciler(object):
         self.stale_servers = self.reconcile_stale_servers()
         self.orphan_servers = self.reconcile_orphan_servers()
         self.unsynced_servers = self.reconcile_unsynced_servers()
+        self.unsynced_snapshots = self.reconcile_unsynced_snapshots()
         self.close()
 
     def get_build_status(self, db_server):
@@ -175,7 +179,6 @@ class BackendReconciler(object):
             self.log.debug("Issued OP_INSTANCE_REMOVE for orphan servers.")
 
     def reconcile_unsynced_servers(self):
-        #log = self.log
         for server_id in self.db_servers_keys & self.gnt_servers_keys:
             db_server = self.db_servers[server_id]
             gnt_server = self.gnt_servers[server_id]
@@ -370,6 +373,48 @@ class BackendReconciler(object):
                 db_server.save()
                 self.log.info("Cleared pending task for server '%s", server_id)
 
+    def reconcile_unsynced_snapshots(self):
+        # Find the biggest ID of the retrieved Ganeti jobs. Reconciliation
+        # will be performed for IDs that are smaller from this.
+        max_job_id = max(self.gnt_jobs.keys()) if self.gnt_jobs.keys() else 0
+
+        with PlanktonBackend(None) as b:
+            snapshots = b.list_snapshots(check_permissions=False)
+        unavail_snapshots = [s for s in snapshots
+                             if s["status"] == OBJECT_UNAVAILABLE]
+
+        for snapshot in unavail_snapshots:
+            uuid = snapshot["id"]
+            backend_info = snapshot["backend_info"]
+            if backend_info is None:
+                self.log.warning("Cannot perform reconciliation for"
+                                 " snapshot '%s'. Not enough information.",
+                                 uuid)
+                continue
+            job_info = json.loads(backend_info)
+            backend_id = job_info["ganeti_backend_id"]
+            job_id = job_info["ganeti_job_id"]
+
+            if backend_id == self.backend.id and job_id <= max_job_id:
+                if job_id in self.gnt_jobs:
+                    job_status = self.gnt_jobs[job_id]["status"]
+                    state = \
+                        backend_mod.snapshot_state_from_job_status(job_status)
+                    if state == OBJECT_UNAVAILABLE:
+                        continue
+                else:
+                    # Snapshot in unavailable but no job exists
+                    state = OBJECT_ERROR
+
+                self.log.info("Snapshot '%s' is '%s' in Pithos DB but should"
+                              " be '%s'", uuid, snapshot["status"], state)
+                if self.options["fix_unsynced_snapshots"]:
+                    backend_mod.update_snapshot(uuid, snapshot["owner"],
+                                                job_id=-1,
+                                                job_status=job_status,
+                                                etime=self.event_time)
+                    self.log.info("Fixed state of snapshot '%s'.", uuid)
+
 
 NIC_MSG = ": %s\t".join(["ID", "State", "IP", "Network", "MAC", "Index",
                          "Firewall"]) + ": %s"
@@ -497,7 +542,6 @@ def nics_from_instance(i):
     # nics = zip(ips,macs,modes,networks,links)
     nics = zip(ips, names, macs, networks, indexes)
     nics = map(lambda x: dict(x), nics)
-    #nics = dict(enumerate(nics))
     tags = i["tags"]
     for tag in tags:
         t = tag.split(":")
@@ -519,7 +563,6 @@ def disks_from_instance(i):
     indexes = zip(itertools.repeat('index'), range(0, len(sizes)))
     disks = zip(sizes, names, uuids, indexes)
     disks = map(lambda x: dict(x), disks)
-    #disks = dict(enumerate(disks))
     return disks
 
 

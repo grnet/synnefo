@@ -45,6 +45,8 @@ class Command(SynnefoCommand):
         try:
             pool_id = int(args[0])
             pool_row = pool_table.objects.get(id=pool_id)
+        except IndexError:
+            raise CommandError("Please provide a pool ID")
         except (ValueError, pool_table.DoesNotExist):
             raise CommandError("Invalid pool ID")
 

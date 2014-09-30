@@ -21,22 +21,29 @@ from synnefo.plankton.backend import PlanktonBackend
 
 
 class Command(SynnefoCommand):
-    help = "List public images or images available to a user."
+    help = "List images."
     option_list = SynnefoCommand.option_list + (
         make_option(
             '--user',
             dest='userid',
             default=None,
-            help="List all images available to that user."
-                 " If no user is specified, only public images"
-                 " are displayed."),
+            help="List only images that are available to this user."),
+        make_option(
+            '--public',
+            dest='public',
+            action="store_true",
+            default=False,
+            help="List only public images."),
     )
 
     def handle(self, **options):
         user = options['userid']
+        check_perm = user is not None
 
         with PlanktonBackend(user) as backend:
-            images = backend._list_images(user)
+            images = backend.list_images(user, check_permissions=check_perm)
+            if options["public"]:
+                images = filter(lambda x: x['is_public'], images)
             images.sort(key=lambda x: x['created_at'], reverse=True)
 
         headers = ("id", "name", "user.uuid", "public", "snapshot")

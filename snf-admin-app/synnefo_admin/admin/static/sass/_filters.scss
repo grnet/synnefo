@@ -32,7 +32,7 @@ $filter-height: 30px;
         margin: 0;
         height: $filter-height;
     }
-    label, 
+    label,
     .dropdown{
         height: $filter-height;
         line-height: $filter-height;
@@ -99,4 +99,73 @@ $filter-height: 30px;
 
 .filters.subnav-fixed {
 	top: $navbar-height;
+}
+
+.input-with-btn {
+	border-width: 0px;
+	background-color: transparent;
+	input {
+		@media screen and (min-width: 400px) {
+			width: 200px;
+		}
+		@media screen and (min-width: 600px) {
+			width: 300px;
+		}
+		@media screen and (min-width: 800px) {
+			width: 500px;
+		}
+		@media screen and (min-width: 1000px) {
+			width: 700px;
+		}
+	}
+	.form-group {
+		display: inline-block;
+		background: $filter-bg;
+		border: 1px solid $filter-border-color;
+		margin-bottom: 0.6em;
+	}
+	.error-sign {
+		display: block;
+		opacity: 0;
+		position: static;
+		display: inline-block;
+		margin-right: 6px;
+		margin-left: 6;
+		vertical-align: bottom;
+	}
+	.form-group, .filter-error, .instructions {
+		margin-left: $sidebar-width + 30px;
+		@media (max-width: $screen-lg-min) {
+			margin: 0 $filter-margin $filter-margin 0;
+		}
+	}
+	&.no-margin-left .form-group, &.no-margin-left .filter-error, &.no-margin-left .instructions {
+		margin-left: 0;
+	}
+
+	.instructions {
+		margin-top: 0.6em;
+		* {
+			color: $btn-line-border;
+		}
+		.content-area {
+			display: none;
+			background: $btn-line-bg;
+			padding: 12px 13px 18px;
+			dt {
+				width: 200px;
+			}
+			dd {
+				margin-left: 220px;
+			}
+		}
+		.clarifications {
+			font-style: italic;
+		}
+	}
+
+}
+
+.filter.invisible {
+	display: none;
 }

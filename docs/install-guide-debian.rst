@@ -556,6 +556,36 @@ Copy the certificate you created before on node1 (`ca.crt`) under the directory
 
 to update the records.
 
+Installation of Archipelago
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To install Archipelago, run:
+
+.. code-block:: console
+
+   # apt-get install archipelago
+
+
+Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
+
+* ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
+  RAM. The default value is 2GB which in some situations might exceed your
+  machine's physical RAM.
+
+In section ``blockerb`` set:
+
+* ``archip_dir``: ``/srv/pithos/data/blocks``
+
+In section ``blockerm`` set:
+
+* ``archip_dir``: ``/srv/pithos/data/maps``
+
+Finally, restart Archipelago:
+
+.. code-block:: console
+
+   # /etc/init.d/archipelago restart
+
 
 DNS Setup
 ~~~~~~~~~
@@ -928,15 +958,17 @@ Notice that in this installation astakos and cyclades are in node1 and pithos is
 Setting Default Base Quota for Resources
 ----------------------------------------
 
-We now have to specify the limit on resources that each user can employ
-(exempting resources offered by projects). When specifying storage or
-memory size limits you can append a unit to the value, i.e. 10240 MB,
-10 GB etc. Use the special value ``inf``, if you don't want to restrict a
-resource.
+All resources are registered with unlimited quota. We now have to restrict
+the limit on the resources we wish to control. We can set the default quota
+a new user is offered by the system (`system default`) with
 
 .. code-block:: console
 
-    # snf-manage resource-modify cyclades.vm --system-default 2
+    # snf-manage resource-modify <resource-name> --system-default <value>
+
+When specifying storage or memory size limits you can append a unit to the
+value, i.e. 10240 MB, 10 GB etc. Use the special value ``inf``, if you don't
+want to restrict a resource.
 
 Setting Resource Visibility
 ---------------------------
@@ -1059,36 +1091,6 @@ Now, install the pithos web interface:
 This package provides the standalone Pithos web client. The web client is the
 web UI for Pithos and will be accessible by clicking "Pithos" on the Astakos
 interface's cloudbar, at the top of the Astakos homepage.
-
-Installation of Archipelago on node 2
-=====================================
-
-To install Archipelago, run:
-
-.. code-block:: console
-
-   # apt-get install archipelago
-
-
-Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
-
-* ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
-  RAM. The default value is 2GB which in some situations might exceed your
-  machine's physical RAM.
-
-In section ``blockerb`` set:
-
-* ``archip_dir``: ``/srv/pithos/data/blocks``
-
-In section ``blockerm`` set:
-
-* ``archip_dir``: ``/srv/pithos/data/maps``
-
-Finally, restart Archipelago:
-
-.. code-block:: console
-
-   # /etc/init.d/archipelago restart
 
 .. _conf-pithos:
 
@@ -1228,6 +1230,23 @@ like this:
      ),
     }
 
+
+As of version 0.16 Pithos is backed by Archipelago. Pithos integrates with
+Archipelago via a shared memory segment that is used to communicate with the
+various Archipelago components. For more information regarding the Archipelago
+internal architecture consult with the `Archipelago administrator's guide
+<https://www.synnefo.org/docs/archipelago/latest/admin-guide.html>`_
+
+At the moment, Archipelago runs with root permissions. To enable Pithos
+integration with Archipelago, the Pithos gunicorn process needs elevated
+permissions too. Otherwise, Pithos will fail to join the shared memory segment.
+So, the default  ``www-data`` user/group configuration of the gunicorn worker
+will not work. You should change the corresponding values on
+``/etc/gunicorn.d/synnefo`` to ``root``.
+
+Please note that the above limitation will be lifted on the next version of
+Archipelago.
+
 Stamp Database Revision
 -----------------------
 
@@ -1342,7 +1361,7 @@ Cyclades Prerequisites
 Before proceeding with the Cyclades installation, make sure you have
 successfully set up Astakos and Pithos first, because Cyclades depends on
 them. If you don't have a working Astakos and Pithos installation yet, please
-return to the :ref:`top <install-guide-centos>` of this guide.
+return to the :ref:`top <install-guide-debian>` of this guide.
 
 Besides Astakos and Pithos, you will also need a number of additional working
 prerequisites, before you start the Cyclades installation.
@@ -2154,6 +2173,17 @@ Both files should be readable by the `vncauthproxy` user or group.
 
 We have now finished with the basic Cyclades configuration.
 
+Gunicorn worker
+---------------
+
+Cyclades uses Pithos backend library to access and store system and
+user-provided images and snapshots. As stated on the Pithos gunicorn
+configuration, currently the gunicorn worker that integrates with Pithos and as
+a result with Archipelago must run as ``root``. You must change the default
+``www-data`` user/group configuration of the gunicorn worker config to ``root``.
+The config file should be located at ``/etc/gunicorn.d/synnefo``.
+
+
 Database Initialization
 -----------------------
 
@@ -2552,9 +2582,6 @@ to state 'Running' and you will be able to use it. Click 'Console' to connect
 through VNC out of band, or click on the machine's icon to connect directly via
 SSH or RDP (for windows machines).
 
-Congratulations. You have successfully installed the whole Synnefo stack and
-connected all components.
-
 
 Installation of Admin on node1
 ==============================
@@ -2570,7 +2597,13 @@ package by running on node1 the following command:
 
    # apt-get install snf-admin-app
 
-Once the package is installed, we are done. We can proceed with testing Admin.
+Once the package is installed, we must configure the ``ADMIN_BASE_URL``
+setting. This setting is located in the ``20-snf-admin-app-general.conf``
+settings file. Uncomment it and assign the following URL to it:
+
+    ``https://node1.example.com/admin``
+
+Now, we can proceed with testing Admin.
 
 Testing of Admin
 ================
@@ -2586,11 +2619,14 @@ section:
 
 Then, you need to login to the Astakos node by visiting the following URL:
 
-    ``http://node1.example.com/astakos``
+    ``https://node1.example.com/astakos``
 
 Once you login successfully, you can access the Admin Dashboard from this URL:
 
-    ``http://node1.example.com/admin/``
+    ``https://node1.example.com/admin``
 
 This should redirect you to the **Users** table, where there should be an entry
 with this user.
+
+Congratulations. You have successfully installed the whole Synnefo stack and
+connected all components.

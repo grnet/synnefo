@@ -46,7 +46,8 @@ from django.conf import settings
 from django.utils import importlib
 from django.utils.encoding import smart_unicode, smart_str
 from pithos.backends.base import (NotAllowedError, VersionNotExists,
-                                  QuotaError, LimitExceeded)
+                                  QuotaError, LimitExceeded,
+                                  MAP_AVAILABLE, MAP_UNAVAILABLE, MAP_ERROR)
 from pithos.backends.util import PithosBackendPool
 from snf_django.lib.api import faults
 
@@ -115,6 +116,20 @@ def handle_pithos_backend(func):
             backend.post_exec(commit)
         return ret
     return wrapper
+
+
+OBJECT_AVAILABLE = "AVAILABLE"
+OBJECT_UNAVAILABLE = "UNAVAILABLE"
+OBJECT_ERROR = "ERROR"
+OBJECT_DELETED = "DELETED"
+
+MAP_TO_OBJ_STATES = {
+    MAP_AVAILABLE: OBJECT_AVAILABLE,
+    MAP_UNAVAILABLE: OBJECT_UNAVAILABLE,
+    MAP_ERROR: OBJECT_ERROR
+}
+
+OBJ_TO_MAP_STATES = dict([(v, k) for k, v in MAP_TO_OBJ_STATES.items()])
 
 
 class PlanktonBackend(object):
@@ -405,7 +420,8 @@ class PlanktonBackend(object):
         logger.debug("User '%s' unregistered image '%s'", self.user, uuid)
 
     # List functions
-    def _list_images(self, user=None, filters=None, params=None):
+    def _list_images(self, user=None, filters=None, params=None,
+                     check_permissions=True):
         filters = filters or {}
 
         # TODO: Use filters
@@ -419,8 +435,9 @@ class PlanktonBackend(object):
         #         size_range = (size_range[0], val)
         #     else:
         #         keys.append('%s = %s' % (PLANKTON_PREFIX + key, val))
-        _images = self.backend.get_domain_objects(domain=PLANKTON_DOMAIN,
-                                                  user=user)
+        _images = self.backend.get_domain_objects(
+            domain=PLANKTON_DOMAIN, user=user,
+            check_permissions=check_permissions)
 
         images = []
         for (location, metadata, permissions) in _images:
@@ -436,9 +453,10 @@ class PlanktonBackend(object):
         return images
 
     @handle_pithos_backend
-    def list_images(self, filters=None, params=None):
+    def list_images(self, filters=None, params=None, check_permissions=True):
         return self._list_images(user=self.user, filters=filters,
-                                 params=params)
+                                 params=params,
+                                 check_permissions=check_permissions)
 
     @handle_pithos_backend
     def list_shared_images(self, member, filters=None, params=None):
@@ -470,8 +488,8 @@ class PlanktonBackend(object):
             permissions=None)
         return snapshot_id
 
-    def list_snapshots(self, user=None):
-        _snapshots = self.list_images()
+    def list_snapshots(self, user=None, check_permissions=True):
+        _snapshots = self.list_images(check_permissions=check_permissions)
         return [s for s in _snapshots if s["is_snapshot"]]
 
     @handle_pithos_backend
@@ -485,6 +503,11 @@ class PlanktonBackend(object):
     @handle_pithos_backend
     def delete_snapshot(self, snapshot_uuid):
         self.backend.delete_by_uuid(self.user, snapshot_uuid)
+
+    @handle_pithos_backend
+    def update_snapshot_state(self, snapshot_id, state):
+        state = OBJ_TO_MAP_STATES[state]
+        self.backend.update_object_status(snapshot_id, state=state)
 
 
 def create_url(account, container, name):
@@ -523,7 +546,8 @@ def image_to_dict(location, metadata, permissions):
     image["is_snapshot"] = metadata["is_snapshot"]
     image["version"] = metadata["version"]
 
-    image["status"] = "AVAILABLE" if metadata.get("available") else "CREATING"
+    image["status"] = MAP_TO_OBJ_STATES.get(metadata.get("available"),
+                                            "UNKNOWN")
 
     # Permissions
     users = list(permissions.get("read", []))
@@ -538,6 +562,9 @@ def image_to_dict(location, metadata, permissions):
         image["deleted_at"] = image["updated_at"]
     else:
         image["deleted_at"] = ""
+    # Ganeti ID and job ID to be used for snapshot reconciliation
+    image["backend_info"] = metadata.pop(PLANKTON_PREFIX + "backend_info",
+                                         None)
 
     properties = {}
     for key, val in metadata.items():

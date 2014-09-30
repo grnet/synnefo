@@ -26,6 +26,9 @@ from synnefo import quotas
 from synnefo.api.util import release_resource
 from synnefo.util.mac2eui64 import mac2eui64
 from synnefo.logic import rapi
+from synnefo import volume
+from synnefo.plankton.backend import (OBJECT_AVAILABLE, OBJECT_UNAVAILABLE,
+                                      OBJECT_ERROR)
 
 from logging import getLogger
 log = getLogger(__name__)
@@ -123,12 +126,15 @@ def process_op_status(vm, etime, jobid, opcode, status, logmsg, nics=None,
 
     if opcode == "OP_INSTANCE_SNAPSHOT":
         for disk_id, disk_info in job_fields.get("disks", []):
-            snap_info = disk_info.get("snasphot_info", None)
-            if snap_info is not None:
-                snap_info = json.loads(snap_info)
-                snap_id = snap_info["snapshot_id"]
-                update_snapshot(snap_id, user_id=vm.userid, job_id=jobid,
+            snapshot_info = disk_info.get("snapshot_info", None)
+            if snapshot_info is not None:
+                snapshot_info = json.loads(snapshot_info)
+                snapshot_id = snapshot_info["snapshot_id"]
+                update_snapshot(snapshot_id, user_id=vm.userid, job_id=jobid,
                                 job_status=status, etime=etime)
+            else:
+                log.warning("Snapshot job '%s' for instance '%s' contains"
+                            " no info for the created snapshot.", jobid, vm)
         return
 
     vm.backendjobid = jobid
@@ -481,7 +487,7 @@ def update_vm_disks(vm, disks, etime=None):
     # Disks that exist in Ganeti but not in DB
     for disk_name in (gnt_keys - db_keys):
         gnt_disk = gnt_disks[disk_name]
-        if ((disk_name.startswith(UNKNOWN_DISK_PREFIX)) and
+        if ((str(disk_name).startswith(UNKNOWN_DISK_PREFIX)) and
            (len(db_keys - gnt_keys) > 0)):
             log.warning("Ganeti disk '%s' of VM '%s' does not exist in DB,"
                         " while there are stale DB volumes. Cannot"
@@ -581,9 +587,30 @@ def adopt_instance_disk(server, gnt_disk):
     return vol
 
 
-def update_snapshot(snap_id, user_id, job_id, job_status, etime):
-    """Update a snapshot based on result of a Ganeti job."""
-    return
+def snapshot_state_from_job_status(job_status):
+    if job_status in rapi.JOB_STATUS_FINALIZED:
+        if (job_status == rapi.JOB_STATUS_SUCCESS):
+            return OBJECT_AVAILABLE
+        else:
+            return OBJECT_ERROR
+    else:
+        return OBJECT_UNAVAILABLE
+
+
+def update_snapshot(snapshot_id, user_id, job_id, job_status, etime):
+    """Update a snapshot based on the result of the Ganeti job.
+
+    Update the status of the snapshot in the Pithos DB. This is required to
+    be performed by Cyclades, since Pithos has no way to know whether the
+    Ganeti job that will create the snapshot has been completed or not.
+
+    """
+
+    state = snapshot_state_from_job_status(job_status)
+    if state != OBJECT_UNAVAILABLE:
+        log.debug("Updating state of snapshot '%s' to '%s'", snapshot_id,
+                  state)
+        volume.util.update_snapshot_state(snapshot_id, user_id, state=state)
 
 
 @transaction.commit_on_success
@@ -744,8 +771,8 @@ def process_create_progress(vm, etime, progress):
     # successful creation gets processed before the 'ganeti-create-progress'
     # message? [vkoukis]
     #
-    #if not vm.operstate == 'BUILD':
-    #    raise VirtualMachine.IllegalState("VM is not in building state")
+    # if not vm.operstate == 'BUILD':
+    #     raise VirtualMachine.IllegalState("VM is not in building state")
 
     vm.buildpercentage = percentage
     vm.backendtime = etime
@@ -791,15 +818,15 @@ def create_instance(vm, nics, volumes, flavor, image):
 
     kw['disk_template'] = volumes[0].volume_type.template
     disks = []
-    for volume in volumes:
-        disk = {"name": volume.backend_volume_uuid,
-                "size": volume.size * 1024}
-        provider = volume.volume_type.provider
+    for vol in volumes:
+        disk = {"name": vol.backend_volume_uuid,
+                "size": vol.size * 1024}
+        provider = vol.volume_type.provider
         if provider is not None:
             disk["provider"] = provider
             if provider in settings.GANETI_CLONE_PROVIDERS:
-                disk["origin"] = volume.origin
-                disk["origin_size"] = volume.origin_size
+                disk["origin"] = vol.origin
+                disk["origin_size"] = vol.origin_size
             extra_disk_params = settings.GANETI_DISK_PROVIDER_KWARGS\
                                         .get(provider)
             if extra_disk_params is not None:
@@ -831,7 +858,7 @@ def create_instance(vm, nics, volumes, flavor, image):
 
     # Do not specific a node explicitly, have
     # Ganeti use an iallocator instead
-    #kw['pnode'] = rapi.GetNodes()[0]
+    # kw['pnode'] = rapi.GetNodes()[0]
 
     kw['dry_run'] = settings.TEST
 
@@ -1027,7 +1054,7 @@ def _create_network(network, backend):
     gateway = None
     gateway6 = None
     for _subnet in network.subnets.all():
-        if _subnet.dhcp and not "nfdhcpd" in tags:
+        if _subnet.dhcp and "nfdhcpd" not in tags:
             tags.append("nfdhcpd")
         if _subnet.ipversion == 4:
             subnet = _subnet.cidr
@@ -1247,12 +1274,12 @@ def detach_volume(vm, volume, depends=[]):
         return client.ModifyInstance(**kwargs)
 
 
-def snapshot_instance(vm, snapshot_name, snapshot_id):
-    #volume = instance.volumes.all()[0]
+def snapshot_instance(vm, volume, snapshot_name, snapshot_id):
     reason = json.dumps({"snapshot_id": snapshot_id})
+    disks = [(volume.backend_volume_uuid, {"snapshot_name": snapshot_name})]
     with pooled_rapi_client(vm) as client:
         return client.SnapshotInstance(instance=vm.backend_vm_id,
-                                       snapshot_name=snapshot_name,
+                                       disks=disks,
                                        reason=reason)
 
 
@@ -1350,9 +1377,9 @@ def update_backend_disk_templates(backend):
     backend.save()
 
 
-##
-## Synchronized operations for reconciliation
-##
+#
+# Synchronized operations for reconciliation
+#
 
 
 def create_network_synced(network, backend):

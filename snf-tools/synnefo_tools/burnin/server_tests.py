@@ -163,8 +163,15 @@ class GeneratedServerTestSuite(CycladesTests):
         self._skip_if(not self.use_ipv6, "--no-ipv6 flag enabled")
         self._insist_on_ping(self.ipv6[0], version=6)
 
-    def test_011_attach_second_network(self):
-        """Attach a second public IP to our server"""
+    def test_011a_detach_from_network(self):
+        """Detach server from public network"""
+        self._disconnect_from_network(self.server)
+
+        # Test that server is unreachable
+        self._insist_on_ping(self.ipv4[0], should_fail=True)
+
+    def test_011b_attach_network(self):
+        """Re-Attach a public IP to our server"""
         floating_ip = self._create_floating_ip()
         self._create_port(floating_ip['floating_network_id'],
                           device_id=self.server['id'],
@@ -174,7 +181,7 @@ class GeneratedServerTestSuite(CycladesTests):
         server = self.clients.cyclades.get_server_details(self.server['id'])
         self.server = server
         self.ipv4 = self._get_ips(server, version=4)
-        self.assertEqual(len(self.ipv4), 2)
+        self.assertEqual(len(self.ipv4), 1)
 
         # Test new IPv4
         self.test_009_server_ping_ipv4()
@@ -203,13 +210,11 @@ class GeneratedServerTestSuite(CycladesTests):
         """Test SSH to server public IPv4 works, verify hostname"""
         self._skip_if(not self._image_is(self.use_image, "linux"),
                       "only valid for Linux servers")
-        hostname1 = self._insist_get_hostname_over_ssh(
+        hostname = self._insist_get_hostname_over_ssh(
             self.ipv4[0], self.username, self.password)
-        hostname2 = self._insist_get_hostname_over_ssh(
-            self.ipv4[1], self.username, self.password)
+
         # The hostname must be of the form 'prefix-id'
-        self.assertTrue(hostname1.endswith("-%d" % self.server['id']))
-        self.assertEqual(hostname1, hostname2)
+        self.assertTrue(hostname.endswith("-%d" % self.server['id']))
 
     def test_018_ssh_to_server_ipv6(self):
         """Test SSH to server public IPv6 works, verify hostname"""

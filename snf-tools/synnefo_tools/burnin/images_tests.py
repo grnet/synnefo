@@ -113,7 +113,8 @@ class ImagesTestSuite(BurninTests):
         """Test every system image has specific metadata defined"""
         keys = frozenset(["osfamily", "root_partition"])
         for i in self.system_images:
-            self.assertTrue(keys.issubset(i['properties'].keys()))
+            self.assertTrue(keys.issubset(i['properties'].keys()),
+                            "Failed in image with id '%s'" % i['id'])
 
     def test_007_download_image(self):
         """Download image from Pithos"""

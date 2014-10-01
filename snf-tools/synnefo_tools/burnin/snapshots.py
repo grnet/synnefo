@@ -71,7 +71,7 @@ class SnapshotsTestSuite(CycladesTests):
         self._insist_on_server_transition(server, ["BUILD"], "ACTIVE")
 
         volume_id = server['volumes'][0]
-        snapshot_name = 'snapshot_%s' % volume_id
+        snapshot_name = 'snf-burnin-snapshot_%s' % volume_id
         self.info("Creating snapshot with name '%s', for volume %s",
                   snapshot_name, volume_id)
         self.snapshot = self.clients.block_storage.create_snapshot(
@@ -216,9 +216,11 @@ class SnapshotsTestSuite(CycladesTests):
     def tearDownClass(cls):  # noqa
         """Clean up"""
         # Delete snapshot
-        if cls.snapshot is not None:
+        snapshots = [s for s in cls.clients.block_storage.list_snapshots()
+                     if s['display_name'].startswith("snf-burnin-")]
+        for snapshot in snapshots:
             try:
-                cls.clients.block_storage.delete_snapshot(cls.snapshot['id'])
+                cls.clients.block_storage.delete_snapshot(snapshot['id'])
             except ClientError:
                 pass
 

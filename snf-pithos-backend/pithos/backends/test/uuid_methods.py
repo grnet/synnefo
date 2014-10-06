@@ -34,7 +34,7 @@ class TestUUIDMixin(object):
         t = self.account, self.account, container, obj
         self.b.put_container(*t[:-1])
 
-        permissions = {'read': ['somebody_else']}
+        permissions = {'read': ['somebody']}
         self.upload_object(*t, permissions=permissions)
         self.b.update_object_meta(*t, domain='test1', meta={'domain': 'test1'})
         meta = self.b.get_object_meta(*t, include_user_defined=False)

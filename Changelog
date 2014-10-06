@@ -8,6 +8,17 @@ repository and have aligned versions.
 
 .. _Changelog-0.16:
 
+v0.16rc3
+========
+
+Released:
+
+Astakos
+-------
+
+* Explicitly specify the lists in which every notification will be sent.
+
+
 v0.16rc2
 ========
 

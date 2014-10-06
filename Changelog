@@ -18,6 +18,12 @@ Astakos
 
 * Explicitly specify the lists in which every notification will be sent.
 
+Cyclades
+--------
+
+* Remove stale '--public' and '--user' options from 'image-show' and
+  'snapshot-show' management commands.
+
 
 v0.16rc2
 ========

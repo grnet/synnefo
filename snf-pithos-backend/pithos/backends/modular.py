@@ -2525,12 +2525,28 @@ class ModularBackend(BaseBackend):
     @debug_method
     @backend_method
     def get_domain_objects(self, domain, user=None, check_permissions=True):
+        """List objects having metadata in the specific domain
+
+           If user is provided list only objects accessible to the user.
+           Otherwise list all the objects for the specific domain
+           ignoring permissions (check_permissions should be False)
+
+           Raises:
+               NotAllowedError: if check_permissions is True and user has not
+                                access to the object
+               AssertionError: if check_permissions is True but user
+                               is provided
+        """
         if check_permissions:
             allowed_paths = self.permissions.access_list_paths(
                 user, include_owned=user is not None, include_containers=False)
             if not allowed_paths:
                 return []
         else:
+            if user is not None:
+                raise AssertionError('Inconsistent argument combination:'
+                                     'if user is provided '
+                                     'permission check should be enforced.')
             allowed_paths = None
         obj_list = self.node.domain_object_list(
             domain, allowed_paths, CLUSTER_NORMAL)

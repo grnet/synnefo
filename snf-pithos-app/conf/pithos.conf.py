@@ -19,6 +19,7 @@ import os
 from pithos.workers import glue
 from multiprocessing import Lock
 
+SYNNEFO_UMASK=0o007
 
 def find_hole(WORKERS, FOLLOW_WORKERS):
     old_key = []
@@ -101,6 +102,8 @@ def resize_workers(no_workers):
 
 
 def post_fork(server, worker):
+    # set umask for the gunicorn worker
+    os.umask(SYNNEFO_UMASK)
     server.lock.acquire()
     if worker.worker_id <= server.num_workers:
         update_workers(worker.pid, worker.worker_id)

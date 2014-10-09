@@ -90,19 +90,12 @@ DEFAULT_DB_CONNECTION = 'sqlite:///backend.db'
 DEFAULT_BLOCK_MODULE = 'pithos.backends.lib.hashfiler'
 DEFAULT_BLOCK_SIZE = 4 * 1024 * 1024  # 4MB
 DEFAULT_HASH_ALGORITHM = 'sha256'
-# DEFAULT_QUEUE_MODULE = 'pithos.backends.lib.rabbitmq'
 DEFAULT_BLOCK_PARAMS = {'mappool': None, 'blockpool': None}
-# DEFAULT_QUEUE_HOSTS = '[amqp://guest:guest@localhost:5672]'
-# DEFAULT_QUEUE_EXCHANGE = 'pithos'
 DEFAULT_PUBLIC_URL_ALPHABET = ('0123456789'
                                'abcdefghijklmnopqrstuvwxyz'
                                'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
 DEFAULT_PUBLIC_URL_SECURITY = 16
 DEFAULT_ARCHIPELAGO_CONF_FILE = '/etc/archipelago/archipelago.conf'
-
-QUEUE_MESSAGE_KEY_PREFIX = 'pithos.%s'
-QUEUE_CLIENT_ID = 'pithos'
-QUEUE_INSTANCE_ID = '1'
 
 (CLUSTER_NORMAL, CLUSTER_HISTORY, CLUSTER_DELETED) = range(3)
 
@@ -227,7 +220,6 @@ class ModularBackend(BaseBackend):
 
     def __init__(self, db_module=None, db_connection=None,
                  block_module=None, block_size=None, hash_algorithm=None,
-                 queue_module=None, queue_hosts=None, queue_exchange=None,
                  astakos_auth_url=None, service_token=None,
                  astakosclient_poolsize=None,
                  free_versioning=True, block_params=None,
@@ -249,7 +241,6 @@ class ModularBackend(BaseBackend):
         block_params = block_params or DEFAULT_BLOCK_PARAMS
         block_size = block_size or DEFAULT_BLOCK_SIZE
         hash_algorithm = hash_algorithm or DEFAULT_HASH_ALGORITHM
-        # queue_module = queue_module or DEFAULT_QUEUE_MODULE
         account_quota_policy = account_quota_policy or DEFAULT_ACCOUNT_QUOTA
         container_quota_policy = container_quota_policy \
             or DEFAULT_CONTAINER_QUOTA
@@ -273,8 +264,6 @@ class ModularBackend(BaseBackend):
             QUOTA_POLICY: container_quota_policy,
             VERSIONING_POLICY: container_versioning_policy,
             PROJECT: None}
-        # queue_hosts = queue_hosts or DEFAULT_QUEUE_HOSTS
-        # queue_exchange = queue_exchange or DEFAULT_QUEUE_EXCHANGE
 
         self.public_url_security = (public_url_security or
                                     DEFAULT_PUBLIC_URL_SECURITY)
@@ -324,22 +313,6 @@ class ModularBackend(BaseBackend):
         params.update(self.block_params)
         self.store = self.block_module.Store(**params)
 
-        if queue_module and queue_hosts:
-            self.queue_module = load_module(queue_module)
-            params = {'hosts': queue_hosts,
-                      'exchange': queue_exchange,
-                      'client_id': QUEUE_CLIENT_ID}
-            self.queue = self.queue_module.Queue(**params)
-        else:
-            class NoQueue:
-                def send(self, *args):
-                    pass
-
-                def close(self):
-                    pass
-
-            self.queue = NoQueue()
-
         self.astakos_auth_url = astakos_auth_url
         self.service_token = service_token
 
@@ -355,7 +328,6 @@ class ModularBackend(BaseBackend):
                 pool_size=astakosclient_poolsize)
 
         self.serials = []
-        self.messages = []
 
         self._move_object = partial(self._copy_object, is_move=True)
 
@@ -379,10 +351,6 @@ class ModularBackend(BaseBackend):
 
     def post_exec(self, success_status=True):
         if success_status:
-            # send messages produced
-            for m in self.messages:
-                self.queue.send(*m)
-
             # register serials
             if self.serials:
                 self.commission_serials.insert_many(
@@ -414,7 +382,6 @@ class ModularBackend(BaseBackend):
 
     def close(self):
         self.wrapper.close()
-        self.queue.close()
 
     @property
     def using_external_quotaholder(self):
@@ -2199,9 +2166,6 @@ class ModularBackend(BaseBackend):
         account_node = self._lookup_account(account, True)[1]
         total = self._get_statistics(account_node, compute=True)[1]
         details.update({'user': user, 'total': total})
-        self.messages.append(
-            (QUEUE_MESSAGE_KEY_PREFIX % ('resource.diskspace',),
-             account, QUEUE_INSTANCE_ID, 'diskspace', float(size), details))
 
         if not self.using_external_quotaholder:
             return
@@ -2218,18 +2182,12 @@ class ModularBackend(BaseBackend):
     def _report_object_change(self, user, account, path, details=None):
         details = details or {}
         details.update({'user': user})
-        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('object',),
-                              account, QUEUE_INSTANCE_ID, 'object', path,
-                              details))
 
     @debug_method
     @backend_method
     def _report_sharing_change(self, user, account, path, details=None):
         details = details or {}
         details.update({'user': user})
-        self.messages.append((QUEUE_MESSAGE_KEY_PREFIX % ('sharing',),
-                              account, QUEUE_INSTANCE_ID, 'sharing', path,
-                              details))
 
     # Policy functions.
 

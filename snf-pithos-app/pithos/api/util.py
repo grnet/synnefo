@@ -35,8 +35,6 @@ from snf_django.lib.api import faults, utils
 
 from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_BLOCK_MODULE,
-                                 BACKEND_QUEUE_MODULE, BACKEND_QUEUE_HOSTS,
-                                 BACKEND_QUEUE_EXCHANGE,
                                  ASTAKOSCLIENT_POOLSIZE,
                                  SERVICE_TOKEN,
                                  ASTAKOS_AUTH_URL,
@@ -1030,9 +1028,6 @@ BACKEND_KWARGS = dict(
     block_module=BACKEND_BLOCK_MODULE,
     block_size=BACKEND_BLOCK_SIZE,
     hash_algorithm=BACKEND_HASH_ALGORITHM,
-    queue_module=BACKEND_QUEUE_MODULE,
-    queue_hosts=BACKEND_QUEUE_HOSTS,
-    queue_exchange=BACKEND_QUEUE_EXCHANGE,
     astakos_auth_url=ASTAKOS_AUTH_URL,
     service_token=SERVICE_TOKEN,
     astakosclient_poolsize=ASTAKOSCLIENT_POOLSIZE,

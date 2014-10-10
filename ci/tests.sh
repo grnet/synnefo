@@ -4,7 +4,7 @@ set -e
 runAstakosTests () {
     if [ -z "$astakos_tests" ]; then return; fi
 
-    export SYNNEFO_EXCLUDE_PACKAGES="snf-cyclades-app snf-admin-app snf-pithos-app"
+    export SYNNEFO_EXCLUDE_PACKAGES="snf-cyclades-app:snf-admin-app:snf-pithos-app"
     CURRENT_COMPONENT=astakos
     createSnfManageTest $astakos_tests
     runTest
@@ -13,7 +13,7 @@ runAstakosTests () {
 runCycladesTests () {
     if [ -z "$cyclades_tests" ]; then return; fi
 
-    export SYNNEFO_EXCLUDE_PACKAGES="snf-pithos-app snf-astakos-app snf-admin-app"
+    export SYNNEFO_EXCLUDE_PACKAGES="snf-pithos-app:snf-astakos-app:snf-admin-app"
     CURRENT_COMPONENT=synnefo
     createSnfManageTest $cyclades_tests
     runTest
@@ -31,7 +31,7 @@ runAdminTests () {
 runPithosTests () {
     if [ -z "$pithos_tests" ]; then return; fi
 
-    export SYNNEFO_EXCLUDE_PACKAGES="snf-cyclades-app snf-astakos-app"
+    export SYNNEFO_EXCLUDE_PACKAGES="snf-cyclades-app:snf-astakos-app:snf-admin-app"
     CURRENT_COMPONENT=pithos
     createSnfManageTest $pithos_tests
     runTest

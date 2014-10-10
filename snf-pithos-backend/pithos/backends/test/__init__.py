@@ -23,10 +23,12 @@ from sqlalchemy import create_engine
 import os
 import time
 
+
 class TestSQLAlchemyBackend(CommonMixin, TestDeleteByUUIDMixin,
                             TestQuotaMixin, TestSnapshotsMixin):
     db_module = 'pithos.backends.lib.sqlalchemy'
-    db_connection_str = '%(scheme)s://%(user)s:%(pwd)s@%(host)s:%(port)s/%(name)s'
+    db_connection_str = \
+        '%(scheme)s://%(user)s:%(pwd)s@%(host)s:%(port)s/%(name)s'
     scheme = os.environ.get('DB_SCHEME', 'postgres')
     user = os.environ.get('DB_USER', 'synnefo')
     pwd = os.environ.get('DB_PWD', 'example_passw0rd')
@@ -34,13 +36,14 @@ class TestSQLAlchemyBackend(CommonMixin, TestDeleteByUUIDMixin,
     port = os.environ.get('DB_PORT', 5432)
     name = 'test_pithos_backend'
     db_connection = db_connection_str % locals()
-    mapfile_prefix ='snf_test_pithos_backend_sqlalchemy_%s_' % time.time()
+    mapfile_prefix = 'snf_test_pithos_backend_sqlalchemy_%s_' % \
+        time.time()
 
     @classmethod
     def create_db(cls):
         db = cls.db_connection_str % {'scheme': cls.scheme, 'user': cls.user,
                                       'pwd': cls.pwd, 'host': cls.host,
-                                      'port':cls.port, 'name': 'template1'}
+                                      'port': cls.port, 'name': 'template1'}
         e = create_engine(db)
         c = e.connect()
         c.connection.connection.set_isolation_level(0)
@@ -51,18 +54,20 @@ class TestSQLAlchemyBackend(CommonMixin, TestDeleteByUUIDMixin,
     def destroy_db(cls):
         db = cls.db_connection_str % {'scheme': cls.scheme, 'user': cls.user,
                                       'pwd': cls.pwd, 'host': cls.host,
-                                      'port':cls.port, 'name': 'template1'}
+                                      'port': cls.port, 'name': 'template1'}
         e = create_engine(db)
         c = e.connect()
         c.connection.connection.set_isolation_level(0)
         c.execute('drop database %s' % cls.name)
         c.connection.connection.set_isolation_level(1)
 
+
 class TestSQLiteBackend(CommonMixin, TestDeleteByUUIDMixin, TestQuotaMixin,
                         TestSnapshotsMixin):
     db_module = 'pithos.backends.lib.sqlite'
     db_connection = location = '/tmp/test_pithos_backend.db'
-    mapfile_prefix ='snf_test_pithos_backend_sqlite_%s_' % time.time()
+    mapfile_prefix = 'snf_test_pithos_backend_sqlite_%s_' % \
+        time.time()
 
     @classmethod
     def create_db(cls):

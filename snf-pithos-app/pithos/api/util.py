@@ -167,7 +167,7 @@ def put_account_headers(response, meta, groups, policy):
         response[k] = v
     for k, v in policy.iteritems():
         response[smart_str_(format_header_key('X-Account-Policy-' + k))] = \
-                smart_str_(v)
+            smart_str_(v)
 
 
 def get_container_headers(request):
@@ -965,9 +965,9 @@ def put_object_block(request, hashmap, data, offset, is_snapshot):
     bl = min(len(data), request.backend.block_size - bo)
     if bi < len(hashmap):
         hashmap[bi] = request.backend.update_block(hashmap[bi],
-                                                    data[:bl],
-                                                    offset=bo,
-                                                    is_snapshot=is_snapshot)
+                                                   data[:bl],
+                                                   offset=bo,
+                                                   is_snapshot=is_snapshot)
     else:
         hashmap.append(request.backend.put_block(('\x00' * bo) + data[:bl]))
     return bl  # Return ammount of data written.
@@ -1055,7 +1055,7 @@ def update_request_headers(request):
             if '%' in k or '%' in v:
                 del(request.META[k])
                 request.META[smart_unicode_(unquote(k))] = \
-                        smart_unicode_(unquote(v))
+                    smart_unicode_(unquote(v))
         except UnicodeDecodeError:
             raise faults.BadRequest('Bad character in headers.')
 

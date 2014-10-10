@@ -914,7 +914,7 @@ class ModularBackend(object):
             self._report_size_change(
                 user, account, -freed_space, project, name='/'.join((account,
                                                                     container,
-                                                                     '')))
+                                                                    '')))
 
         # remove all the cached allowed paths
         # removing the specific path could be more expensive

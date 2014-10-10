@@ -182,20 +182,20 @@ def create_tables(engine):
     Index('idx_attributes_node', attributes.c.node)
     Index('idx_attributes_islatest_domain_plankton', attributes.c.is_latest,
           attributes.c.domain, postgresql_where=and_(
-              attributes.c.is_latest == True,
+              attributes.c.is_latest == true(),
               attributes.c.domain == "plankton"))
     Index('idx_attributes_key_domain_plankton', attributes.c.key,
-          attributes.c.domain, postgresql_where=\
-          attributes.c.domain == "plankton")
+          attributes.c.domain,
+          postgresql_where=attributes.c.domain == "plankton")
     Index('idx_attributes_key_domain_pithos', attributes.c.key,
-          attributes.c.domain, postgresql_where=\
-          attributes.c.domain == "pithos")
+          attributes.c.domain,
+          postgresql_where=attributes.c.domain == "pithos")
     Index('idx_attributes_serial_domain_pithos', attributes.c.serial,
-          attributes.c.domain, postgresql_where=\
-          attributes.c.domain == "pithos")
+          attributes.c.domain,
+          postgresql_where=attributes.c.domain == "pithos")
     Index('idx_attributes_serial_domain_plankton', attributes.c.serial,
-          attributes.c.domain, postgresql_where=\
-          attributes.c.domain == "plankton")
+          attributes.c.domain,
+          postgresql_where=attributes.c.domain == "plankton")
 
     # TODO: handle backends not supporting sequences
     mapfile_seq = Sequence('mapfile_seq', metadata=metadata)
@@ -1229,7 +1229,7 @@ class Node(DBWorker):
         v = self.versions.alias('v')
         if before != inf:
             d4_insub = select([self.nodes.c.node],
-                              self.nodes.c.parent==parent)
+                              self.nodes.c.parent == parent)
             d4_insub = d4_insub.where(and_(
                 self.nodes.c.path > bindparam('start'),
                 self.nodes.c.path < nextling))
@@ -1238,7 +1238,7 @@ class Node(DBWorker):
                          v.c.node,
                          self.nodes.c.path]).where(v.c.mtime < before)
             d4 = d4.where(v.c.node.in_(d4_insub))
-            d4 = d4.where(v.c.node==self.nodes.c.node)
+            d4 = d4.where(v.c.node == self.nodes.c.node)
             d4 = d4.group_by(v.c.node, self.nodes.c.path).cte("d4")
             inner_join = \
                 d4.join(self.versions,
@@ -1247,14 +1247,13 @@ class Node(DBWorker):
             d4 = select([self.nodes.c.path,
                          self.nodes.c.node,
                          self.nodes.c.latest_version]).where(
-                         self.nodes.c.parent == parent)
+                             self.nodes.c.parent == parent)
             d4 = d4.where(and_(self.nodes.c.path > bindparam('start'),
                                self.nodes.c.path < nextling)).cte("d4")
 
             inner_join = \
                 d4.join(self.versions,
-                        onclause=
-                        self.versions.c.serial == d4.c.latest_version)
+                        onclause=self.versions.c.serial == d4.c.latest_version)
         if not all_props:
             s = select([d4.c.path,
                        self.versions.c.serial],

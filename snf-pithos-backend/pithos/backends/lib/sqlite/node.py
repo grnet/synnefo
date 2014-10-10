@@ -757,7 +757,6 @@ class Node(DBWorker):
             self.nodes_set_latest_version(node, props[0])
         return hash, size
 
-
     def attribute_get_domains(self, serial, node=None):
         q = ("select distinct domain from attributes "
              "where serial = ? ")

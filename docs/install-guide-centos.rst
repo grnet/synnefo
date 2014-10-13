@@ -349,7 +349,9 @@ Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
 
 * ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
   RAM. The default value is 2GB which in some situations might exceed your
-  machine's physical RAM.
+  machine's physical RAM. Consult also with `Archipelago administrator's guide
+  <https://www.synnefo.org/docs/archipelago/latest/admin-guide.html>`_ for an
+  appropriate value.
 
 In section ``blockerb`` set:
 
@@ -375,7 +377,7 @@ In order to set up a dns server using dnsmasq do the following:
 
    # yum install dnsmasq
 
-Then edit your ``/etc/hosts/`` file as follows:
+Then edit your ``/etc/hosts`` file as follows:
 
 .. code-block:: console
 
@@ -583,11 +585,8 @@ Copy the file ``/etc/gunicorn.d/synnefo.example`` to
 
 
 .. warning:: Do NOT start the server yet, because it won't find the
-    ``synnefo.settings`` module. Also, change ``--worker-class=gevent`` to
-    ``--worker-class=pithos.workers.gevent_archipelago.GeventArchipelagoWorker``
-    and set ``--config=/etc/synnefo/pithos.conf.py``.
-    We will start the server after successful installation of Astakos.
-    If the server is running::
+    ``synnefo.settings`` module. Also set the Gunicorn config file to
+    ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py``.
 
        # service gunicorn stop
 
@@ -1058,7 +1057,9 @@ Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
 
 * ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
   RAM. The default value is 2GB which in some situations might exceed your
-  machine's physical RAM.
+  machine's physical RAM. Consult also with `Archipelago administrator's guide
+  <https://www.synnefo.org/docs/archipelago/latest/admin-guide.html>`_ for an
+  appropriate value.
 
 In section ``blockerb`` set:
 
@@ -1092,11 +1093,8 @@ Copy the file ``/etc/gunicorn.d/synnefo.example`` to
 
 
 .. warning:: Do NOT start the server yet, because it won't find the
-    ``synnefo.settings`` module. Also, change ``--worker-class=gevent`` to
-    ``--worker-class=pithos.workers.gevent_archipelago.GeventArchipelagoWorker``
-    and set ``--config=/etc/synnefo/pithos.conf.py``.
-    We will start the server after successful installation of Astakos.
-    If the server is running::
+    ``synnefo.settings`` module. Also set the Gunicorn config file to
+    ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py``.
 
        # service gunicorn stop
 

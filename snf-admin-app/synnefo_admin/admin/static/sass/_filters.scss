@@ -4,22 +4,24 @@ $filter-height: 30px;
 
 .filters-area {
 	margin-bottom: $navbar-height - $filter-margin;
-}
-
-.filters {
+	margin-left: $sidebar-width + 30px;
+		@media (max-width: $screen-lg-min) {
+			margin: 0 $filter-margin $filter-margin 0;
+		}
+	&.no-margin-left {
+		margin-left: 0;
+	}
 	a:focus, input:focus {
 		outline: none;
 	}
-}
-
-.filters .badge {
-	margin-left: 6px;
-	opacity: 0.9;
-	padding: 2px 9px;
-}
-
-.filters ul.nav a {
-	padding-bottom: 10px;
+	.badge {
+		margin-left: 6px;
+		opacity: 0.9;
+		padding: 2px 9px;
+	}
+	ul.nav a {
+		padding-bottom: 10px;
+	}
 }
 
 .filter {
@@ -42,31 +44,6 @@ $filter-height: 30px;
         background: transparent;
         font-weight: normal;
         margin: 0;
-    }
-    .dropdown-menu {
-        background: $filter-bg;
-        margin: 0;
-        > .active > a{
-            background: $filter-active-bg;
-        }
-        > li:hover >a {
-            background: $filter-hover-bg;
-            color: $filter-hover-color;
-        }
-    }
-    input {
-        border: 0 none;
-        background: transparent;
-        height: $filter-height;
-        line-height: $filter-height;
-        padding: 0 5px;
-        font-weight: normal;
-        color: $filter-font-color;
-    }
-}
-
-.filter-dropdown {
-	.dropdown {
 		&>a {
 			.selected-value {
 				margin-left: 4px;
@@ -84,26 +61,50 @@ $filter-height: 30px;
 		a {
 			color: $filter-font-color;
 		}
-		.dropdown-menu {
-			width: auto;
-			a {
-				span {
-					margin-right: 6px;
-				}
-				padding-left: 12px;
-				padding-right: 12px;
+    }
+    .dropdown-menu, .dropdown-list {
+        background: $filter-bg;
+        margin: 0;
+		width: auto;
+        > .active > a{
+            background: $filter-active-bg;
+        }
+        > li:hover >a {
+            background: $filter-hover-bg;
+            color: $filter-hover-color;
+        }
+		a {
+			span {
+				margin-right: 6px;
 			}
+			padding-left: 12px;
+			padding-right: 12px;
 		}
+    }
+    input {
+        border: 0 none;
+        background: transparent;
+        height: $filter-height;
+        line-height: $filter-height;
+        padding: 0 5px;
+        font-weight: normal;
+        color: $filter-font-color;
+    }
+    .dropdown-list > li > a {
+		display: block;
+		padding: 3px 20px;
+		clear: both;
+		font-weight: normal;
+		line-height: 1.42857;
+		color: #303030; // ?
+		white-space: nowrap;
 	}
-}
-
-.filters.subnav-fixed {
-	top: $navbar-height;
 }
 
 .input-with-btn {
 	border-width: 0px;
 	background-color: transparent;
+	display: inline;
 	input {
 		@media screen and (min-width: 400px) {
 			width: 200px;
@@ -124,23 +125,17 @@ $filter-height: 30px;
 		border: 1px solid $filter-border-color;
 		margin-bottom: 0.6em;
 	}
+	.filter-error {
+		word-wrap: break-word;
+	}
 	.error-sign {
 		display: block;
 		opacity: 0;
 		position: static;
 		display: inline-block;
 		margin-right: 6px;
-		margin-left: 6;
+		margin-left: 10px;
 		vertical-align: bottom;
-	}
-	.form-group, .filter-error, .instructions {
-		margin-left: $sidebar-width + 30px;
-		@media (max-width: $screen-lg-min) {
-			margin: 0 $filter-margin $filter-margin 0;
-		}
-	}
-	&.no-margin-left .form-group, &.no-margin-left .filter-error, &.no-margin-left .instructions {
-		margin-left: 0;
 	}
 
 	.instructions {
@@ -166,6 +161,55 @@ $filter-height: 30px;
 
 }
 
-.filter.invisible {
+.filter:not(.visible-filter):not(.visible-filter-fade) {
 	display: none;
+	opacity: 0;
+}
+
+.visible-filter-fade {
+	opacity: 1;
+	transition: opacity 0.5s;
+}
+
+.filters .filters-list {
+	border-radius: 15px;
+	background: $btn-line-bg;
+	border: 1px solid $filter-border-color-alt;
+	height: 28px;
+	&>a {
+		color: $btn-line-border;
+		line-height: 28px;
+		font-weight: bold;
+		padding: 8px 7px;
+		background: transparent;
+	}
+	.popover {
+		padding: 0;
+	}
+	.popover-content {
+		padding: 0;
+	}
+	.popover ul {
+		list-style: none;
+		padding: 5px 0px;
+		min-width: 160px;
+		li {
+			white-space: nowrap;
+			a {
+			color: $filter-font-color;
+			}
+			span {
+			margin-right: 10px;
+			}
+		}
+		.divider {
+			height: 1px;
+			margin: 9px 0;
+			overflow: hidden;
+			background-color: #e5e5e5;
+		}
+	}
+	.popover.bottom > .arrow:after {
+		border-bottom-color: $filter-bg;
+	}
 }

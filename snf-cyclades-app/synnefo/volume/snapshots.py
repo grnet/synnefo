@@ -114,6 +114,7 @@ def create(user_id, volume, name, description, metadata, force=False):
         except:
             # If failed to enqueue job to Ganeti, mark snapshot as ERROR
             b.update_snapshot_state(snapshot_id, OBJECT_ERROR)
+            raise
 
         # Store the backend and job id as metadata in the snapshot in order
         # to make reconciliation based on the Ganeti job possible.

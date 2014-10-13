@@ -14,104 +14,81 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import pickle
-import os
 from pithos.workers import glue
 from multiprocessing import Lock
+import mmap
+import pickle
+import os
 
 SYNNEFO_UMASK=0o007
 
-def find_hole(WORKERS, FOLLOW_WORKERS):
+def find_hole(workers, fworkers):
     old_key = []
     old_age = []
-    for key in FOLLOW_WORKERS:
-        if key not in WORKERS.keys():
-                old_age.append(FOLLOW_WORKERS[key])
+    for key in fworkers:
+        if key not in workers.keys():
+                old_age.append(fworkers[key])
                 old_key.append(key)
                 break
     if len(old_age) and len(old_key):
         for key in old_key:
-            del FOLLOW_WORKERS[key]
+            del fworkers[key]
         return old_age
     return old_age
 
 
-def follow_workers(pid, wid, WORKERS):
+def follow_workers(pid, wid, server):
     hole = None
-    if os.path.isfile('/dev/shm/wid'):
-        fd = open('/dev/shm/wid', 'rb')
-        f = pickle.load(fd)
-        hole = find_hole(WORKERS, f)
-        if len(hole) > 0:
-            k = {pid: int(hole[0])}
-        else:
-            k = {pid: wid}
-        f.update(k)
-        fd.close()
-        fd = open('/dev/shm/wid', 'wb')
-        pickle.dump(f, fd)
-        fd.close()
+    fd = server.state_fd
+    fd.seek(0)
+    f = pickle.load(fd)
+    hole = find_hole(server.WORKERS, f)
+    if len(hole) > 0:
+        k = {pid: int(hole[0])}
     else:
-        fd = open('/dev/shm/wid', 'wb')
-        pickle.dump({pid: wid}, fd)
-        fd.close()
+        k = {pid: wid}
+    f.update(k)
+    fd.seek(0)
+    pickle.dump(f, fd)
     return hole
 
 
-def allocate_wid(pid, wid, WORKERS):
+def allocate_wid(pid, wid, server):
     hole = None
-    hole = follow_workers(pid, wid, WORKERS)
+    hole = follow_workers(pid, wid, server)
     return hole
 
 
 def when_ready(server):
     server.lock = Lock()
+    server.state_fd = mmap.mmap(-1, 4096)
+    pickle.dump({}, server.state_fd)
 
 
-def update_workers(pid, wid):
-    if os.path.isfile('/dev/shm/wid'):
-        fd = open('/dev/shm/wid', 'rb')
-        f = pickle.load(fd)
-        for k, v in f.items():
-            if wid == v:
-                del f[k]
-                break
-        k = {pid: wid}
-        f.update(k)
-        fd.close()
-        fd = open('/dev/shm/wid', 'wb')
-        pickle.dump(f, fd)
-        fd.close()
-    else:
-        fd = open('/dev/shm/wid', 'wb')
-        pickle.dump({pid: wid}, fd)
-        fd.close()
-
-
-def resize_workers(no_workers):
-    if os.path.isfile('/dev/shm/wid'):
-        fd = open('/dev/shm/wid', 'rb')
-        f = pickle.load(fd)
-        for k, v in f.items():
-            if v > no_workers:
-                del f[k]
-        fd.close()
-        fd = open('/dev/shm/wid', 'wb')
-        pickle.dump(f, fd)
-        fd.close()
+def update_workers(pid, wid, server):
+    fd = server.state_fd
+    fd.seek(0)
+    f = pickle.load(fd)
+    for k, v in f.items():
+        if wid == v:
+            del f[k]
+            break
+    k = {pid: wid}
+    f.update(k)
+    fd.seek(0)
+    pickle.dump(f, fd)
 
 
 def post_fork(server, worker):
     # set umask for the gunicorn worker
     os.umask(SYNNEFO_UMASK)
     server.lock.acquire()
-    if worker.worker_id <= server.num_workers:
-        update_workers(worker.pid, worker.worker_id)
-        glue.WorkerGlue.setmap(worker.pid, worker.worker_id)
+    if server.worker_age <= server.num_workers:
+        update_workers(worker.pid, server.worker_age, server)
+        glue.WorkerGlue.setmap(worker.pid, server.worker_age)
     else:
-        wid = allocate_wid(worker.pid, worker.worker_id, server.WORKERS)
+        wid = allocate_wid(worker.pid, server.worker_age, server)
         glue.WorkerGlue.setmap(worker.pid, wid[0])
-    resize_workers(server.num_workers)
     server.lock.release()
 
 
@@ -121,4 +98,6 @@ def worker_exit(server, worker):
 
 
 def on_exit(server):
-    os.unlink('/dev/shm/wid')
+    server.state_fd.close()
+
+# vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4

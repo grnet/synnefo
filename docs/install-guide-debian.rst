@@ -391,7 +391,7 @@ In order to set up a dns server using dnsmasq do the following:
 
    # apt-get install dnsmasq
 
-Then edit your ``/etc/hosts/`` file as follows:
+Then edit your ``/etc/hosts`` file as follows:
 
 .. code-block:: console
 
@@ -671,12 +671,10 @@ Copy the file ``/etc/gunicorn.d/synnefo.example`` to
 
 .. warning:: Do NOT start the server yet, because it won't find the
     ``synnefo.settings`` module. We will start the server after successfully
-    installation of Astakos.  If the server is running::
+    installing of Astakos.  If the server is running::
        # /etc/init.d/gunicorn stop
 
-..    Also, change ``--worker-class=gevent`` to
-..    ``--worker-class=pithos.workers.gevent_archipelago.GeventArchipelagoWorker``
-..   and set ``--config=/etc/synnefo/pithos.conf.py``.
+..   Also set ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py``.
 
 
 Conf Files
@@ -1264,9 +1262,7 @@ In order to integrate with Archipelago, Pithos needs to be run as the group
 Archipelago runs as (defaults to ``archipelago``). So we should change the
 gunicorn's group to ``archipelago``.
 
-Furthermore, we have to change the ``--worker-class=gevent`` to
-``--worker-class=pithos.workers.gevent_archipelago.GeventArchipelagoWorker`` and
-set the ``--config=/etc/synnefo/pithos.conf.py`` option.
+Furthermore, we have to set the ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py`` option.
 
 .. Furthermore, add the ``--worker-class=gevent`` (or ``--worker-class=sync`` as
    mentioned above, depending on your setup) argument on your
@@ -1287,8 +1283,8 @@ The file should look something like this:
      'args': (
        '--bind=127.0.0.1:8080',
        '--workers=4',
-       '--worker-class=pithos.workers.gevent_archipelago.GeventArchipelagoWorker',
-       '--config=/etc/synnefo/pithos.conf.py',
+       '--worker-class=gevent',
+       '--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py',
        '--log-level=debug',
        '--timeout=43200'
      ),
@@ -2248,9 +2244,7 @@ We also need to adjust Pithos gunicorn configuration in order to integrate with
 Archipelago. The file, as mentioned above, is located at
 ``/etc/gunicorn.d/synnefo``.
 
-Furthermore, we have to change the ``--worker-class=gevent`` to
-``--worker-class=pithos.workers.gevent_archipelago.GeventArchipelagoWorker`` and
-set the ``--config=/etc/synnefo/pithos.conf.py`` option.
+Furthermore, we have to set the ``--config=/etc/synnefo/archipelago/archipelago.conf`` option.
 
 
 Database Initialization

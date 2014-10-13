@@ -10,7 +10,7 @@ between Pithos and NFS, RADOS or any other storage backend driver that
 Archipelago supports. In order to use the Pithos Service you must install
 Archipelago on the node that runs the Pithos and Cyclades workers.
 Additionally, you must install Archipelago on the Ganeti nodes and upgrade
-snf-image to version 0.16 since this is the first version that supports
+snf-image to version 0.16.2 since this is the first version that supports
 Archipelago.
 
 Until now the Pithos mapfile was a simple file containing a list of hashes that
@@ -30,17 +30,19 @@ The upgrade to v0.16 consists of the following steps:
 
 1. Install Archipelago on Pithos and Cyclades nodes
 
-2. Bring down services and backup databases.
+2. Upgrade snf-image 0.16
 
-3. Upgrade packages, migrate the databases and configure settings.
+3. Bring down services and backup databases.
 
-4. Inspect and adjust resource limits.
+4. Upgrade packages, migrate the databases and configure settings.
 
-5. Tweak Gunicorn settings on Pithos and Cyclades node
+5. Inspect and adjust resource limits.
 
-6. Bring up all services.
+6. Tweak Gunicorn settings on Pithos and Cyclades node
 
-7. Add unique names to disks of all Ganeti instances
+7. Bring up all services.
+
+8. Add unique names to disks of all Ganeti instances
 
 
 .. warning::
@@ -62,7 +64,7 @@ on all Ganeti VM-capable nodes. Please refer to the
 If you use an NFS-based setup, you must make sure the ``archip_dir``
 configuration option of all ``blockerm`` and ``blockerb`` peers point to the
 right Pithos NFS shares (e.g. ``/srv/pithos/data/maps``,
-``/srv/pithos/data/blocks`` repectively). You must also create and share a new
+``/srv/pithos/data/blocks`` respectively). You must also create and share a new
 directory named ``locks``. For now it can have the same permissions as the
 ``blocks`` or ``maps`` directories. We will adjust them on the following steps.
 Then you must make sure that this directory is configured properly on all
@@ -88,7 +90,7 @@ information, check the Archipelago
 If you use an NFS-based setup, you must make sure the 'archip_dir' configuration
 option of all ``blockerm`` and ``blockerb`` peers point to the right Pithos NFS
 shares (e.g. ``/srv/pithos/data/maps``, ``/srv/pithos/data/blocks``
-repectively). You can skip the ``locks`` dir for now and apply the relevant
+respectively). You can skip the ``locks`` dir for now and apply the relevant
 Archipelago upgrade step when appropriate.
 
 If you are using a RADOS-based setup, make sure that the relevant ``pool``
@@ -192,7 +194,9 @@ For NFS installations we need to adjust carefully the following options:
   host VMs (a.k.a is not VM_CAPABLE)
 * ``SEGMENT_SIZE``: Adjust shared memory segment size according to your
   machine's RAM. The default value is 2GB which in some situations might exceed
-  your machine's physical RAM.
+  your machine's physical RAM. Consult also with `Archipelago administrator's
+  guide <https://www.synnefo.org/docs/archipelago/latest/admin-guide.html>`_ for an
+  appropriate value.
 * ``archip_dir`` in ``blockerm`` section must be set to the directory that
   the Pithos mapfiles resided until now (e.g., ``/srv/pithos/data/maps``).
 * ``archip_dir`` in ``blockerb`` section must be set to the directory that
@@ -210,7 +214,9 @@ configuration. Then adjust carefully the following options
   host VMs (a.k.a is not VM_CAPABLE)
 * ``SEGMENT_SIZE``: Adjust shared memory segment size according to your
   machine's RAM. The default value is 2GB which in some situations might exceed
-  your machine's physical RAM.
+  your machine's physical RAM. Consult also with `Archipelago administrator's
+  guide <https://www.synnefo.org/docs/archipelago/latest/admin-guide.html>`_ for an
+  appropriate value.
 * The ``pool`` setting in ``blockerm`` must be set to the RADOS pool where
   Pithos mapfiles reside.
 * The ``pool`` setting in ``blockerb`` must be set to the RADOS pool where
@@ -230,10 +236,11 @@ After configuring Archipelago, you can safely start it on both nodes:
 2. Upgrade snf-image 0.16
 =========================
 
-Once you have Archipelago 0.4 up and running, you can install snf-image 0.16 on
-all Ganeti nodes. You should set the the ``PITHCAT_UMASK`` setting of snf-image
+Once you have Archipelago 0.4 up and running, you can install snf-image 0.16.2 on
+all Ganeti nodes. You should set the ``PITHCAT_UMASK`` setting of snf-image
 to ``007``. On the file ``/etc/default/snf-image`` uncomment or create the
 relevant setting and set its value.
+
 
 3. Bring web services down, backup databases
 ============================================
@@ -298,7 +305,7 @@ relevant setting and set its value.
 
 .. note::
 
-   Make sure `snf-webproject' has the same version with snf-common
+   Make sure ``snf-webproject`` has the same version with snf-common
 
 .. note::
 
@@ -421,9 +428,16 @@ where we need to change:
 
 On the Pithos and Cyclades node you also have to set the following:
 
-* ``--worker-class=gevent`` to ``--worker-class=pithos.workers.gevent_archipelago.GeventArchipelagoWorker``
+* ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py``
 
-* ``--config=/etc/synnefo/pithos.conf.py``
+
+.. warning::
+
+    If you have already installed Synnefo v0.16rc1 or v0.16rc2 you
+    should replace ``pithos.conf.py`` with ``gunicorn-archipelago.py`` located
+    under ``/etc/synnefo/gunicorn-hooks`` directory. Afterwards you
+    can freely delete  ``pithos.conf.py`` conf file.
+
 
 Then, on both nodes we must manually change group ownership of the following
 directories to the group specified above:

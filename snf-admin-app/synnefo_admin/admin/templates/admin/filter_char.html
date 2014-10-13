@@ -1,5 +1,5 @@
 {% load admin_tags %}
-<div class="filter filter-text filter-input">
+<div class="filter filter-text filter-input" data-filter="{{ filter.name }}">
 	<div class="form-group">
 		<label title="{{ filter.label }}">
             {% with label=filter.name|label_to_icon:filter.label %}

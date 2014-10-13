@@ -1,0 +1,16 @@
+{% load admin_tags %}
+<div class="filter filters-list visible-filter">
+		<a class="" id="select-filters" href="#" link-title="Available Filters" popover-content=
+	 		'<ul class="choices dropdown-list">
+				<li class="reset" data-filter-name="all-filters"><a href="#"><span class="snf-checkbox-unchecked"></span><span class="snf-checkbox-checked"></span>All</a></li>
+				<li class="divider"></li>
+				{% for filter in filter_dict %}
+				<li data-filter-name="{{ filter.name }}"><a href="#"><span class="snf-checkbox-unchecked"></span><span class="snf-checkbox-checked"></span>{{ filter.label }}</a></li>
+				{% endfor %}
+			</ul>'>
+			<span class="snf-filter"></span>
+		</a>
+</div>
+
+
+	

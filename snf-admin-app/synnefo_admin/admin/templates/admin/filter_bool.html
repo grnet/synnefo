@@ -1,15 +1,15 @@
-<div class="filter filter-dropdown filter-boolean">
-	<div class="dropdown" data-filter="{{ filter.name }}">
+<div class="filter filter-dropdown filter-boolean" data-filter="{{ filter.name }}">
+	<div class="dropdown">
 		<a class="" href="#" data-toggle="dropdown">
 			<span class="category">{{ filter.label }}:</span>
 			<span class="selected-value">-</span>
 			<span class="snf-angle-down arrow"></span>
 		</a>
 		<ul class="dropdown-menu choices">
-			<li class="active reset"><a href="#"><span class="selection-indicator snf-radio-checked"></span>-</a></li>
+			<li class="active reset"><a href="#"><span class="snf-radio-unchecked"></span><span class="snf-radio-checked"></span>-</a></li>
 			<li class="divider"></li>
-			<li><a href="#"><span class="selection-indicator snf-radio-unchecked"></span>True</a></li>
-			<li><a href="#"><span class="selection-indicator snf-radio-unchecked"></span>False</a></li>
+			<li><a href="#"><span class="snf-radio-unchecked"></span><span class="snf-radio-checked"></span>True</a></li>
+			<li><a href="#"><span class="snf-radio-unchecked"></span><span class="snf-radio-checked"></span>False</a></li>
 		</ul>
 	</div>
 </div>

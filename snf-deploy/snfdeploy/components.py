@@ -732,7 +732,6 @@ class Image(base.Component):
         replace = {
             "synnefo_user": config.synnefo_user,
             "synnefo_db_passwd": config.synnefo_db_passwd,
-            "pithos_dir": config.pithos_dir,
             "db_node": self.ctx.db.cname,
             "image_dir": config.images_dir,
             }
@@ -1222,9 +1221,6 @@ class NFS(base.Component):
             "mkdir -p %s" % config.images_dir,
             "mkdir -p %s" % config.ganeti_dir,
             "mkdir -p %s" % config.archip_dir,
-            "mkdir -p %s/data" % config.pithos_dir,
-            "chown www-data.www-data %s/data" % config.pithos_dir,
-            "chmod g+ws %s/data" % config.pithos_dir,
             "cd %s && mkdir {maps,blocks,locks}" % config.archip_dir,
             "cd %s && chown archipelago:archipelago {maps,blocks,locks}" % \
               config.archip_dir,
@@ -1289,7 +1285,6 @@ class Pithos(base.Component):
             "db_node": self.ctx.db.cname,
             "synnefo_user": config.synnefo_user,
             "synnefo_db_passwd": config.synnefo_db_passwd,
-            "pithos_dir": config.pithos_dir,
             "PITHOS_SERVICE_TOKEN": context.service_token,
             "oa2_secret": config.oa2_secret,
             }
@@ -1331,7 +1326,6 @@ class PithosBackend(base.Component):
             "db_node": self.ctx.db.cname,
             "synnefo_user": config.synnefo_user,
             "synnefo_db_passwd": config.synnefo_db_passwd,
-            "pithos_dir": config.pithos_dir,
             }
 
         return [
@@ -1440,7 +1434,6 @@ snf-manage network-create --subnet6={0} \
             "synnefo_user": config.synnefo_user,
             "synnefo_db_passwd": config.synnefo_db_passwd,
             "synnefo_rabbitmq_passwd": config.synnefo_rabbitmq_passwd,
-            "pithos_dir": config.pithos_dir,
             "common_bridge": config.common_bridge,
             "domain": self.node.domain,
             "CYCLADES_SERVICE_TOKEN": context.service_token,

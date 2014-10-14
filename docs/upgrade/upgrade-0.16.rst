@@ -450,6 +450,13 @@ directories to the group specified above:
     # chgrp archipelago /var/log/gunicorn/
     # chgrp -R archipelago /etc/synnefo/
 
+Also, on the Cyclades node we must set the group that ``snf-dispatcher`` will
+run to ``archipelago``, by setting the ``SNF_USER`` setting in
+``/etc/default/snf-dispatcher``:
+
+.. code-block:: console
+
+	SNF_USER="www-data:archipelago"
 
 7. Bring all services up
 ========================

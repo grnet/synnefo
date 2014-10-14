@@ -858,7 +858,7 @@ class Gunicorn(base.Component):
     @base.run_cmds
     def prepare(self):
         return [
-            "chown root.www-data /var/log/gunicorn",
+            "chown root:www-data /var/log/gunicorn",
             ]
 
     def _configure(self):
@@ -1221,11 +1221,15 @@ class NFS(base.Component):
             "mkdir -p %s" % config.shared_dir,
             "mkdir -p %s" % config.images_dir,
             "mkdir -p %s" % config.ganeti_dir,
+            "mkdir -p %s" % config.archip_dir,
             "mkdir -p %s/data" % config.pithos_dir,
-            "mkdir -p %s/blocks" % config.archip_dir,
-            "mkdir -p %s/maps" % config.archip_dir,
             "chown www-data.www-data %s/data" % config.pithos_dir,
             "chmod g+ws %s/data" % config.pithos_dir,
+            "cd %s && mkdir {maps,blocks,locks}" % config.archip_dir,
+            "cd %s && chown archipelago:archipelago {maps,blocks,locks}" % \
+              config.archip_dir,
+            "cd %s && chmod 770 {maps,blocks,locks}" % config.archip_dir,
+            "cd %s && chmod g+s {maps,blocks,locks}" % config.archip_dir,
             ]
 
     @base.run_cmds
@@ -1775,7 +1779,10 @@ class Archip(base.Component):
         return ["mkdir -p /etc/archipelago"]
 
     def _configure(self):
-        r1 = {"SEGMENT_SIZE": config.segment_size}
+        r1 = {
+            "SEGMENT_SIZE": config.segment_size,
+            "ARCHIP_DIR": config.archip_dir,
+            }
         return [
             ("/etc/archipelago/archipelago.conf", r1, {})
             ]
@@ -1792,7 +1799,12 @@ class ArchipSynnefo(base.Component):
 
     @base.run_cmds
     def prepare(self):
-        return ["mkdir -p /etc/synnefo/gunicorn-hooks"]
+        return [
+            "mkdir -p /etc/synnefo/gunicorn-hooks",
+            "chown -R root:archipelago /etc/synnefo",
+            "chown -R root:archipelago /var/log/gunicorn",
+            "chmod g+s /etc/synnefo/",
+            ]
 
     def _configure(self):
         r1 = {"HOST": self.node.fqdn}

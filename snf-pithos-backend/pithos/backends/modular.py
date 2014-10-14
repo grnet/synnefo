@@ -746,7 +746,7 @@ class ModularBackend(BaseBackend):
         project = self._get_project(node)
 
         if until is not None:
-            hashes, size, serials = self.node.node_purge_children(
+            hashes, size, _ = self.node.node_purge_children(
                 node, until, CLUSTER_HISTORY,
                 update_statistics_ancestors_depth=0)
             for h in hashes:
@@ -755,18 +755,13 @@ class ModularBackend(BaseBackend):
                                           update_statistics_ancestors_depth=0)
             if not self.free_versioning:
                 self._report_size_change(
-                    user, account, -size, project, {
-                        'action': 'container purge',
-                        'path': path,
-                        'versions': ','.join(str(i) for i in serials)
-                    }
-                )
+                    user, account, -size, project, name=path)
             return
 
         if not delimiter:
             if self._get_statistics(node)[0] > 0:
                 raise ContainerNotEmpty('Container is not empty')
-            hashes, size, serials = self.node.node_purge_children(
+            hashes, size, _ = self.node.node_purge_children(
                 node, inf, CLUSTER_HISTORY,
                 update_statistics_ancestors_depth=0)
             for h in hashes:
@@ -776,12 +771,7 @@ class ModularBackend(BaseBackend):
             self.node.node_remove(node, update_statistics_ancestors_depth=0)
             if not self.free_versioning:
                 self._report_size_change(
-                    user, account, -size, project, {
-                        'action': 'container purge',
-                        'path': path,
-                        'versions': ','.join(str(i) for i in serials)
-                    }
-                )
+                    user, account, -size, project, name=path)
         else:
             # remove only contents
             src_names = self._list_objects_no_limit(
@@ -791,7 +781,6 @@ class ModularBackend(BaseBackend):
                 listing_limit=listing_limit)
             paths = []
             freed_space = 0
-            dest_versions = []
             for t in src_names:
                 path = '/'.join((account, container, t[0]))
                 node = t[2]
@@ -806,21 +795,17 @@ class ModularBackend(BaseBackend):
                         cluster=CLUSTER_DELETED,
                         update_statistics_ancestors_depth=1,
                         keep_src_mapfile=True)
-                dest_versions.append(dest_version_id)
                 del_size = self._apply_versioning(
                     account, container, src_version_id,
                     update_statistics_ancestors_depth=1)
                 freed_space += del_size
-                self._report_object_change(
-                    user, account, path, details={'action': 'object delete'})
                 paths.append(path)
             self.permissions.access_clear_bulk(paths)
 
             self._report_size_change(
-                user, account, -freed_space, project, {
-                    'action': 'object delete',
-                    'path': '/'.join((account, container, '')),
-                    'versions': ','.join([str(id_) for id_ in dest_versions])})
+                user, account, -freed_space, project, name='/'.join((account,
+                                                                    container,
+                                                                     '')))
 
         # remove all the cached allowed paths
         # removing the specific path could be more expensive
@@ -1130,9 +1115,6 @@ class ModularBackend(BaseBackend):
             self.permissions.access_set(path, permissions)
         except:
             raise ValueError
-        else:
-            self._report_sharing_change(user, account, path, {'members':
-                                        self.permissions.access_members(path)})
 
         # remove all the cached allowed paths
         # filtering out only those affected could be more expensive
@@ -1297,18 +1279,10 @@ class ModularBackend(BaseBackend):
 
         if report_size_change:
             self._report_size_change(
-                user, account, size_delta, project,
-                {'action': 'object update', 'path': path,
-                 'versions': ','.join([str(dest_version_id)])})
+                user, account, size_delta, project, name=path)
         if permissions is not None:
             self.permissions.access_set(path, permissions)
-            self._report_sharing_change(
-                user, account, path,
-                {'members': self.permissions.access_members(path)})
 
-        self._report_object_change(
-            user, account, path,
-            details={'version': dest_version_id, 'action': 'object update'})
         return dest_version_id, size_delta, mapfile
 
     @debug_method
@@ -1614,11 +1588,7 @@ class ModularBackend(BaseBackend):
             dest_obj_path = '/'.join((dest_container_path, dest_name))
             size_delta = occupied_space - freed_space
             self._report_size_change(
-                user, dest_account, size_delta, dest_project,
-                details={'action': 'object move',
-                         'path': dest_obj_path,
-                         'versions': ','.join([str(id_) for id_ in
-                                               dest_versions])})
+                user, dest_account, size_delta, dest_project, name=dest_obj_path)
         return dest_versions
 
     @debug_method
@@ -1682,18 +1652,15 @@ class ModularBackend(BaseBackend):
                 return
             hashes = []
             size = 0
-            serials = []
-            h, s, v = self.node.node_purge(node, until, CLUSTER_NORMAL,
+            h, s, _ = self.node.node_purge(node, until, CLUSTER_NORMAL,
                                            update_statistics_ancestors_depth=1)
             hashes += h
             size += s
-            serials += v
-            h, s, v = self.node.node_purge(node, until, CLUSTER_HISTORY,
+            h, s, _ = self.node.node_purge(node, until, CLUSTER_HISTORY,
                                            update_statistics_ancestors_depth=1)
             hashes += h
             if not self.free_versioning:
                 size += s
-            serials += v
             for h in hashes:
                 self.store.map_delete(h)
             self.node.node_purge(node, until, CLUSTER_DELETED,
@@ -1703,12 +1670,7 @@ class ModularBackend(BaseBackend):
             except NameError:
                 self.permissions.access_clear(path)
             self._report_size_change(
-                user, account, -size, project, {
-                    'action': 'object purge',
-                    'path': path,
-                    'versions': ','.join(str(i) for i in serials)
-                }
-            )
+                user, account, -size, project, name=path)
             return size
 
         if not self._exists(node):
@@ -1724,9 +1686,6 @@ class ModularBackend(BaseBackend):
                                           update_statistics_ancestors_depth=1)
 
         freed_space = del_size
-        dest_versions = []
-        self._report_object_change(
-            user, account, path, details={'action': 'object delete'})
         self.permissions.access_clear(path)
 
         if delimiter:
@@ -1755,9 +1714,6 @@ class ModularBackend(BaseBackend):
                     account, container, src_version_id,
                     update_statistics_ancestors_depth=1)
                 freed_space += del_size
-                dest_versions.append(dest_version_id)
-                self._report_object_change(
-                    user, account, path, details={'action': 'object delete'})
                 paths.append(path)
             self.permissions.access_clear_bulk(paths)
 
@@ -1766,10 +1722,7 @@ class ModularBackend(BaseBackend):
             if delimiter:
                 path += '/'
             self._report_size_change(
-                user, account, -freed_space, project,
-                {'action': 'object delete',
-                 'path': path,
-                 'versions': ','.join([str(id_) for id_ in dest_versions])})
+                user, account, -freed_space, project, name=path)
 
         # remove all the cached allowed paths
         # removing the specific path could be more expensive
@@ -2152,42 +2105,23 @@ class ModularBackend(BaseBackend):
 
     @debug_method
     @backend_method
-    def _report_size_change(self, user, account, size, source, details=None):
+    def _report_size_change(self, user, account, size, source, name=''):
         """Report quota modifications.
 
         Raises: AstakosClientException
         """
 
-        details = details or {}
-
         if size == 0:
             return
-
-        account_node = self._lookup_account(account, True)[1]
-        total = self._get_statistics(account_node, compute=True)[1]
-        details.update({'user': user, 'total': total})
 
         if not self.using_external_quotaholder:
             return
 
-        name = details['path'] if 'path' in details else ''
         serial = self.astakosclient.issue_one_commission(
             holder=account,
             provisions={(source, 'pithos.diskspace'): size},
             name=name)
         self.serials.append(serial)
-
-    @debug_method
-    @backend_method
-    def _report_object_change(self, user, account, path, details=None):
-        details = details or {}
-        details.update({'user': user})
-
-    @debug_method
-    @backend_method
-    def _report_sharing_change(self, user, account, path, details=None):
-        details = details or {}
-        details.update({'user': user})
 
     # Policy functions.
 

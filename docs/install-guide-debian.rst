@@ -2244,7 +2244,7 @@ We also need to adjust Pithos gunicorn configuration in order to integrate with
 Archipelago. The file, as mentioned above, is located at
 ``/etc/gunicorn.d/synnefo``.
 
-Furthermore, we have to set the ``--config=/etc/synnefo/archipelago/archipelago.conf`` option.
+Furthermore, we have to set the ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py`` option.
 
 
 Database Initialization

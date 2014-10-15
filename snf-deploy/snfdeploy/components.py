@@ -757,6 +757,7 @@ class GTools(base.Component):
     def prepare(self):
         return [
             "sed -i 's/false/true/' /etc/default/snf-ganeti-eventd",
+            "chown -R root:archipelago /etc/synnefo/",
             ]
 
     def _configure(self):
@@ -1284,6 +1285,12 @@ class Pithos(base.Component):
             "snf-manage service-export-pithos > %s" % f
             ]
 
+    @base.run_cmds
+    def prepare(self):
+        return [
+            "chown -R root:archipelago /etc/synnefo/",
+            ]
+
     def _configure(self):
         r1 = {
             "ACCOUNTS": self.ctx.astakos.cname,
@@ -1429,7 +1436,10 @@ snf-manage network-create --subnet6={0} \
 
     @base.run_cmds
     def prepare(self):
-        return ["sed -i 's/false/true/' /etc/default/snf-dispatcher"]
+        return [
+            "sed -i 's/false/true/' /etc/default/snf-dispatcher",
+            "chown -R root:archipelago /etc/synnefo/",
+            ]
 
     def _configure(self):
         r1 = {
@@ -1567,7 +1577,9 @@ class Admin(base.Component):
         f = "/etc/synnefo/cyclades.conf"
         self.CYCLADES.get(f, "/tmp/cyclades.conf")
         self.put("/tmp/cyclades.conf", f)
-        return []
+        return [
+            "chown -R root:archipelago /etc/synnefo",
+            ]
 
     def _configure(self):
         r1 = {

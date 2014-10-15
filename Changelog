@@ -13,6 +13,13 @@ v0.16rc3
 
 Released:
 
+Synnefo-wide
+------------
+
+* Update upgrade notes and installation guide to conform with
+  Archipelago 0.16rc2.
+* Add Synnefo wide accessible gunicorn hooks for Archipelago.
+
 Astakos
 -------
 
@@ -23,6 +30,11 @@ Cyclades
 
 * Remove stale '--public' and '--user' options from 'image-show' and
   'snapshot-show' management commands.
+
+Pithos
+------
+
+* Remove custom Gunicorn worker.
 
 
 v0.16rc2

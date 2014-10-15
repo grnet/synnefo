@@ -1185,6 +1185,9 @@ EOF
 
         return [
             "mkdir -p %s" % config.shared_dir,
+            "addgroup --gid 200 archipelago",
+            "adduser --system --no-create-home \
+              --gecos 'Archipelago user' --gid 200 archipelago",
             fstab,
             ]
 
@@ -1221,6 +1224,9 @@ class NFS(base.Component):
             "mkdir -p %s" % config.images_dir,
             "mkdir -p %s" % config.ganeti_dir,
             "mkdir -p %s" % config.archip_dir,
+            "addgroup --gid 200 archipelago",
+            "adduser --system --no-create-home \
+              --gecos 'Archipelago user' --gid 200 archipelago",
             "cd %s && mkdir {maps,blocks,locks}" % config.archip_dir,
             "cd %s && chown archipelago:archipelago {maps,blocks,locks}" % \
               config.archip_dir,

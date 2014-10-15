@@ -579,7 +579,8 @@ class BurninTests(unittest.TestCase):
         su_uuid = self._get_uuid_of_system_user()
         my_uuid = self._get_uuid()
         ret_images = [i for i in images
-                      if i['owner'] == su_uuid or i['owner'] == my_uuid]
+                      if (i['owner'] == su_uuid or i['owner'] == my_uuid)
+                      and not i['is_snapshot']]
 
         return ret_images
 

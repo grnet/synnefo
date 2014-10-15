@@ -8,10 +8,11 @@
     </label>
 </a>
 	<!-- <a class="search-mode search-mode-btn">Compact View</a> -->
-	<!-- use it to center it (sort of) -->
-	{% for filter in filter_dict %}
-		{% include filter|get_filter_template %}
-	{% endfor %}
+    {% include "admin/filter_select_list.html" %}
+    <!-- use it to center it (sort of) -->
+    {% for filter in filter_dict %}
+        {% include filter|get_filter_template %}
+    {% endfor %}
 
     {% include "admin/filter_compact.html" %}
 </div>

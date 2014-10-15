@@ -150,9 +150,10 @@ class CycladesTests(BurninTests):
         else:
             networks = None
 
-        servername = "%s for %s" % (self.run_id, image['name'])
+        name = image.get('name', image.get('display_name', ''))
+        servername = "%s for %s" % (self.run_id, name)
         self.info("Creating a server with name %s", servername)
-        self.info("Using image %s with id %s", image['name'], image['id'])
+        self.info("Using image %s with id %s", name, image['id'])
         self.info("Using flavor %s with id %s", flavor['name'], flavor['id'])
         server = self.clients.cyclades.create_server(
             servername, flavor['id'], image['id'],

@@ -27,7 +27,66 @@ get_random_data = lambda length: get_random_word(length)[:length]
 get_random_name = partial(get_random_word, length=8)
 
 
-class TestDeleteByUUIDMixin(object):
+class TestUUIDMixin(object):
+    def test_get_object_by_uuid(self):
+        container = get_random_name()
+        obj = get_random_name()
+        t = self.account, self.account, container, obj
+        self.b.put_container(*t[:-1])
+
+        permissions = {'read': ['somebody']}
+        self.upload_object(*t, permissions=permissions)
+        self.b.update_object_meta(*t, domain='test1', meta={'domain': 'test1'})
+        meta = self.b.get_object_meta(*t, include_user_defined=False)
+        v1 = meta['version']
+
+        self.b.update_object_meta(*t, domain='test2', meta={'domain': 'test2'})
+        meta = self.b.get_object_meta(*t, include_user_defined=False)
+        uuid = meta['uuid']
+        v2 = meta['version']
+
+        meta, permissions_, path = self.b.get_object_by_uuid(
+            uuid, domain='test1', check_permissions=False)
+        self.assertTrue('domain' in meta)
+        self.assertEqual(meta['domain'], 'test1')
+        self.assertEqual(permissions_, permissions)
+        self.assertEqual(path, '/'.join(t[1:]))
+
+        meta, permissions_, path = self.b.get_object_by_uuid(
+            uuid, domain='test1', version=v2, check_permissions=False)
+        self.assertTrue('domain' in meta)
+        self.assertEqual(meta['domain'], 'test1')
+        self.assertEqual(permissions_, permissions)
+        self.assertEqual(path, '/'.join(t[1:]))
+
+        meta, permissions_, path = self.b.get_object_by_uuid(
+            uuid, domain='test2', version=v2, check_permissions=False)
+        self.assertTrue('domain' in meta)
+        self.assertEqual(meta['domain'], 'test2')
+        self.assertEqual(permissions_, permissions)
+        self.assertEqual(path, '/'.join(t[1:]))
+
+        meta, permissions_, path = self.b.get_object_by_uuid(
+            uuid, domain='test2', version=v1, check_permissions=False)
+        self.assertTrue('domain' not in meta)
+        self.assertEqual(permissions_, permissions)
+        self.assertEqual(path, '/'.join(t[1:]))
+
+        meta, permissions_, path = self.b.get_object_by_uuid(
+            uuid, domain='test1', user='somebody', check_permissions=True)
+        self.assertTrue('domain' in meta)
+        self.assertEqual(meta['domain'], 'test1')
+        self.assertEqual(permissions_, permissions)
+        self.assertEqual(path, '/'.join(t[1:]))
+
+        self.assertRaises(NotAllowedError,
+                          self.b.get_object_by_uuid, uuid, user='not_allowed',
+                          check_permissions=True)
+
+        self.assertRaises(AssertionError, self.b.get_object_by_uuid, uuid,
+                          domain='test1', user='somebody',
+                          check_permissions=False)
+
     def test_delete_by_uuid(self):
         self.assertRaises(ValueError, self.b.delete_by_uuid, self.account,
                           uuid=None)

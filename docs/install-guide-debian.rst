@@ -55,13 +55,13 @@ Update your list of packages and continue with the installation:
 
    # apt-get update
 
-You also need a shared directory visible by both nodes. Pithos will save all
-data inside this directory. By 'all data', we mean files, images, and Pithos
-specific mapping data. If you plan to upload more than one basic image, this
-directory should have at least 50GB of free space. During this guide, we will
-assume that node1 acts as an NFS server and serves the directory ``/srv/pithos``
-to node2 (be sure to set no_root_squash flag). Node2 has this directory
-mounted under ``/srv/pithos``, too.
+From version 0.16 Synnefo is backed by Archipelago and uses it to store all of
+its data. In this guide, we will use NFS as a storage backend for Archipelago.
+If you plan to upload more than one basic image, this directory should have at
+least 50GB of free space. During this guide, we will assume that node1 acts as
+an NFS server and serves the directory ``/srv/archip/`` to node2 (be sure to set
+no_root_squash flag). Node2 has this directory mounted under ``/srv/archip/``,
+too.
 
 Before starting the Synnefo installation, you will need basic third party
 software to be installed and configured on the physical nodes. We will describe
@@ -307,21 +307,62 @@ exchanges:
 We do not need to initialize the exchanges. This will be done automatically,
 during the Cyclades setup.
 
-Pithos data directory setup
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-As mentioned in the General Prerequisites section, there should be a directory
-called ``/srv/pithos`` visible by both nodes. We create and setup the ``data``
-directory inside it along with the ``maps`` and ``blocks`` subdirectories:
+
+Archipelago setup
+~~~~~~~~~~~~~~~~~
+
+To install Archipelago, run:
 
 .. code-block:: console
 
-   # mkdir /srv/pithos
-   # cd /srv/pithos
-   # mkdir data
-   # mkdir -p data/{maps,blocks}
+   root@node1:~ # apt-get install archipelago archipelago-ganeti
+   root@node1:~ # apt-get install blktap-archipelago-utils blktap-dkms
 
-This directory must be shared via `NFS <https://en.wikipedia.org/wiki/Network_File_System>`_.
+As mentioned in the General Prerequisites section, there should be a directory
+called ``/srv/archip/`` visible by both nodes. We create and setup the
+``blocks``, ``maps``, and ``locks`` directories inside it:
+
+.. code-block:: console
+
+   # mkdir /srv/archip/
+   # cd /srv/archip/
+   # mkdir -p {maps,blocks,locks}
+   # chown archipelago:archipelago {maps,blocks,locks}
+   # chmod 770 {maps,blocks,locks}
+   # chmod g+s {maps,blocks,locks}
+
+Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
+
+* ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
+  RAM. The default value is 2GB which in some situations might exceed your
+  machine's physical RAM. Consult also with `Archipelago administrator's guide
+  <https://www.synnefo.org/docs/archipelago/latest/admin-guide.html>`_ for an
+  appropriate value.
+
+Adjust the following settings of  ``blockerb`` and ``blockerm`` to point to
+their corresponding directories.
+
+In section ``blockerb`` set:
+
+* ``archip_dir``: ``/srv/archip/blocks``
+
+In section ``blockerm`` set:
+
+* ``archip_dir``: ``/srv/archip/maps``
+* ``lock_dir``: ``/srv/archip/locks``
+
+Finally, start Archipelago:
+
+.. code-block:: console
+
+   root@node1:~ # /etc/init.d/archipelago start
+
+
+NFS data directory setup
+~~~~~~~~~~~~~~~~~~~~~~~~
+The Archipelago directory must be shared via
+`NFS <https://en.wikipedia.org/wiki/Network_File_System>`_.
 In order to do this, run:
 
 .. code-block:: console
@@ -332,43 +373,13 @@ Now edit ``/etc/exports`` and add the following line:
 
 .. code-block:: console
 
-   /srv/pithos/ 203.0.113.2(rw,no_root_squash,sync,subtree_check)
+   /srv/archip/ 203.0.113.2(rw,no_root_squash,sync,subtree_check)
 
 Once done, run:
 
 .. code-block:: console
 
    # /etc/init.d/nfs-kernel-server restart
-
-Archipelago setup
-~~~~~~~~~~~~~~~~~
-
-To install Archipelago, run:
-
-.. code-block:: console
-
-   # apt-get install archipelago
-
-
-Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
-
-* ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
-  RAM. The default value is 2GB which in some situations might exceed your
-  machine's physical RAM.
-
-In section ``blockerb`` set:
-
-* ``archip_dir``: ``/srv/pithos/data/blocks``
-
-In section ``blockerm`` set:
-
-* ``archip_dir``: ``/srv/pithos/data/maps``
-
-Finally, restart Archipelago:
-
-.. code-block:: console
-
-   # /etc/init.d/archipelago restart
 
 DNS server setup
 ~~~~~~~~~~~~~~~~
@@ -380,7 +391,7 @@ In order to set up a dns server using dnsmasq do the following:
 
    # apt-get install dnsmasq
 
-Then edit your ``/etc/hosts/`` file as follows:
+Then edit your ``/etc/hosts`` file as follows:
 
 .. code-block:: console
 
@@ -439,6 +450,7 @@ General Synnefo dependencies
     * gevent
     * certificates
     * dnsmasq (DNS server)
+    * NFS directory mount
     * Archipelago
 
 You can install the above by running:
@@ -556,6 +568,7 @@ Copy the certificate you created before on node1 (`ca.crt`) under the directory
 
 to update the records.
 
+
 Installation of Archipelago
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -563,28 +576,51 @@ To install Archipelago, run:
 
 .. code-block:: console
 
-   # apt-get install archipelago
+   root@node2:~ # apt-get install archipelago archipelago-ganeti
+   root@node2:~ # apt-get install blktap-archipelago-utils blktap-dkms
 
+In order to configure Archipelago, the shared data directory must be set up.
+Make sure to mount the Archipelago directory after installing the Archipelago
+package.
+
+First install the package nfs-common by running:
+
+.. code-block:: console
+
+   root@node2:~ # apt-get install nfs-common
+
+Now create the directory /srv/archip/ and mount the remote directory to it:
+
+.. code-block:: console
+
+   root@node2:~ # mkdir /srv/archip/
+   root@node2:~ # mount -t nfs 203.0.113.1:/srv/archip/ /srv/archip/
 
 Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
 
 * ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
   RAM. The default value is 2GB which in some situations might exceed your
-  machine's physical RAM.
+  machine's physical RAM. Consult also with `Archipelago administrator's guide
+  <https://www.synnefo.org/docs/archipelago/latest/admin-guide.html>`_ for an
+  appropriate value.
+
+Adjust the following settings of  ``blockerb`` and ``blockerm`` to point to
+their corresponding directories.
 
 In section ``blockerb`` set:
 
-* ``archip_dir``: ``/srv/pithos/data/blocks``
+* ``archip_dir``: ``/srv/archip/blocks``
 
 In section ``blockerm`` set:
 
-* ``archip_dir``: ``/srv/pithos/data/maps``
+* ``archip_dir``: ``/srv/archip/maps``
+* ``lock_dir``: ``/srv/archip/locks``
 
-Finally, restart Archipelago:
+Finally, start Archipelago:
 
 .. code-block:: console
 
-   # /etc/init.d/archipelago restart
+   root@node2:~ # /etc/init.d/archipelago start
 
 
 DNS Setup
@@ -614,7 +650,8 @@ described previously), by running:
 
 .. code-block:: console
 
-   # apt-get install snf-astakos-app snf-pithos-backend
+   # apt-get install snf-astakos-app
+
 
 .. _conf-astakos:
 
@@ -633,13 +670,12 @@ Copy the file ``/etc/gunicorn.d/synnefo.example`` to
 
 
 .. warning:: Do NOT start the server yet, because it won't find the
-    ``synnefo.settings`` module. Also, change ``--worker-class=gevent`` to
-    ``--worker-class=pithos.workers.gevent_archipelago.GeventArchipelagoWorker``
-    and set ``--config=/etc/synnefo/pithos.conf.py``.
-    We will start the server after successful installation of Astakos.
-    If the server is running::
-
+    ``synnefo.settings`` module. We will start the server after successfully
+    installing of Astakos.  If the server is running::
        # /etc/init.d/gunicorn stop
+
+..   Also set ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py``.
+
 
 Conf Files
 ----------
@@ -746,18 +782,19 @@ notify administrators with a notice that a new account has just been verified.
 More specifically Astakos sends emails in the following cases
 
 - An email containing a verification link after each signup process.
-- An email to the people listed in ``ADMINS`` setting after each email
-  verification if ``ASTAKOS_MODERATION`` setting is ``True``. The email
-  notifies administrators that an additional action is required in order to
-  activate the user.
-- A welcome email to the user email and an admin notification to ``ADMINS``
-  right after each account activation.
-- Feedback messages submited from Astakos contact view and Astakos feedback
-  API endpoint are sent to contacts listed in ``HELPDESK`` setting.
-- Project application request notifications to people included in ``HELPDESK``
-  and ``MANAGERS`` settings.
+- An email to the people listed in ``ACCOUNT_NOTIFICATIONS_RECIPIENTS``
+  setting after each email verification if ``ASTAKOS_MODERATION`` setting is
+  ``True``. The email notifies administrators that an additional action is
+  required in order to activate the user.
+- A welcome email to the user email and a notification to
+  ``ACCOUNT_NOTIFICATIONS_RECIPIENTS`` right after each account activation.
+- Feedback messages submitted from Astakos contact view and Astakos feedback
+  API endpoint are sent to contacts listed in
+  ``FEEDBACK_NOTIFICATIONS_RECIPIENTS`` setting.
+- Project application request notifications to people included in
+  ``PROJECT_NOTIFICATIONS_RECIPIENTS`` setting.
 - Notifications after each project members action (join request, membership
-  accepted/declinde etc.) to project members or project owners.
+  accepted/declined etc.) to project members or project owners.
 
 Astakos uses the Django internal email delivering mechanism to send email
 notifications. A simple configuration, using an external smtp server to
@@ -794,11 +831,13 @@ Refer to
 `Django documentation <https://docs.djangoproject.com/en/1.4/topics/email/>`_
 for additional information on available email settings.
 
-As refered in the previous section, based on the operation that triggers
-an email notification, the recipients list differs. Specifically, for
-emails whose recipients include contacts from your service team
-(administrators, managers, helpdesk etc) synnefo provides the following
-settings located in ``00-snf-common-admins.conf``:
+As referred in the previous section, based on the operation that triggers an
+email notification, the recipients list differs. For convenience (and backward
+compatibility), Astakos defines three service teams (administrators, managers
+and helpdesk) and send the above notifications to these teams in a
+preconfigured way (ie. project notifications are sent to the members of
+managers and helpdesk teams). These settings are located in
+``00-snf-common-admins.conf``:
 
 .. code-block:: python
 
@@ -1110,11 +1149,8 @@ Copy the file ``/etc/gunicorn.d/synnefo.example`` to
 
 
 .. warning:: Do NOT start the server yet, because it won't find the
-    ``synnefo.settings`` module. Also, change ``--worker-class=gevent`` to
-    ``--worker-class=pithos.workers.gevent_archipelago.GeventArchipelagoWorker``
-    and set ``--config=/etc/synnefo/pithos.conf.py``.
-    We will start the server after successful installation of Astakos.
-    If the server is running::
+    ``synnefo.settings`` module.  We will start the server after successful
+    installation of Pithos.  If the server is running::
 
        # /etc/init.d/gunicorn stop
 
@@ -1206,10 +1242,33 @@ context. This means adding the following lines at the top of your
     from synnefo.lib.db.psyco_gevent import make_psycopg_green
     make_psycopg_green()
 
-Furthermore, add the ``--worker-class=gevent`` (or ``--worker-class=sync`` as
-mentioned above, depending on your setup) argument on your
-``/etc/gunicorn.d/synnefo`` configuration file. The file should look something
-like this:
+
+.. _conf-pithos-gunicorn:
+
+Pithos gunicorn configuration
+-----------------------------
+
+We also need to adjust Pithos gunicorn configuration in order to integrate with
+Archipelago. The file, as mentioned above, is located at
+``/etc/gunicorn.d/synnefo``.
+
+As of version 0.16 Pithos is backed by Archipelago. Pithos integrates with
+Archipelago via a shared memory segment that is used to communicate with the
+various Archipelago components. For more information regarding the Archipelago
+internal architecture consult with the `Archipelago administrator's guide
+<https://www.synnefo.org/docs/archipelago/latest/admin-guide.html>`_
+
+In order to integrate with Archipelago, Pithos needs to be run as the group
+Archipelago runs as (defaults to ``archipelago``). So we should change the
+gunicorn's group to ``archipelago``.
+
+Furthermore, we have to set the ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py`` option.
+
+.. Furthermore, add the ``--worker-class=gevent`` (or ``--worker-class=sync`` as
+   mentioned above, depending on your setup) argument on your
+   ``/etc/gunicorn.d/synnefo`` configuration file.
+
+The file should look something like this:
 
 .. code-block:: console
 
@@ -1220,32 +1279,23 @@ like this:
      },
      'working_dir': '/etc/synnefo',
      'user': 'www-data',
-     'group': 'www-data',
+     'group': 'archipelago',
      'args': (
        '--bind=127.0.0.1:8080',
        '--workers=4',
        '--worker-class=gevent',
+       '--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py',
        '--log-level=debug',
        '--timeout=43200'
      ),
     }
 
 
-As of version 0.16 Pithos is backed by Archipelago. Pithos integrates with
-Archipelago via a shared memory segment that is used to communicate with the
-various Archipelago components. For more information regarding the Archipelago
-internal architecture consult with the `Archipelago administrator's guide
-<https://www.synnefo.org/docs/archipelago/latest/admin-guide.html>`_
+Then, we must manually change group ownership of the following directories to
+the ``archipelago`` group:
 
-At the moment, Archipelago runs with root permissions. To enable Pithos
-integration with Archipelago, the Pithos gunicorn process needs elevated
-permissions too. Otherwise, Pithos will fail to join the shared memory segment.
-So, the default  ``www-data`` user/group configuration of the gunicorn worker
-will not work. You should change the corresponding values on
-``/etc/gunicorn.d/synnefo`` to ``root``.
-
-Please note that the above limitation will be lifted on the next version of
-Archipelago.
+* ``/var/log/gunicorn/`` directory
+* ``/etc/synnefo/`` directory and all the files inside it.
 
 Stamp Database Revision
 -----------------------
@@ -1261,22 +1311,6 @@ the migration history.
 .. code-block:: console
 
     root@node2:~ # pithos-migrate stamp head
-
-Mount the NFS directory
------------------------
-
-First install the package nfs-common by running:
-
-.. code-block:: console
-
-   root@node2:~ # apt-get install nfs-common
-
-now create the directory /srv/pithos/ and mount the remote directory to it:
-
-.. code-block:: console
-
-   root@node2:~ # mkdir /srv/pithos/
-   root@node2:~ # mount -t nfs 203.0.113.1:/srv/pithos/ /srv/pithos/
 
 Servers Initialization
 ----------------------
@@ -1563,6 +1597,11 @@ to handle image files stored on Pithos. It also needs `python-psycopg2` to be
 able to access the Pithos database. This is why, we also install them on *all*
 VM-capable Ganeti nodes.
 
+
+You must set the the ``PITHCAT_UMASK`` setting of snf-image to ``007``. On the
+file ``/etc/default/snf-image`` uncomment or create the relevant setting and set
+its value to ``007``.
+
 .. warning::
     snf-image uses ``curl`` for handling URLs. This means that it will
     not  work out of the box if you try to use URLs served by servers which do
@@ -1589,7 +1628,7 @@ it can talk directly to the Pithos backend, without the need of providing a
 public URL. More details, are described in the next section.
 
 If you have installed your Ganeti cluster on different nodes than node1 and
-node2 make sure that ``/srv/pithos/data`` is visible by all of them and
+node2 make sure that ``/srv/archip/`` is visible by all of them and
 Archipelago is installed and configured properly.
 
 If you would like to use Images that are also/only stored locally, you need to
@@ -1675,27 +1714,42 @@ for this image.
 
 To spawn a VM from a Pithos file, we need to know:
 
-    1) The hashmap of the file
+    1) The mapfile name of the file
     2) The size of the file
 
-If you uploaded the file with kamaki as described above, run:
+If you uploaded the file with kamaki as described above, run on the Astakos
+node:
 
 .. code-block:: console
 
-   # kamaki file info pithos:debian_base-6.0-x86_64.diskdump
+   # snf-manage user-list
 
-else, replace ``pithos`` and ``debian_base-6.0-x86_64.diskdump`` with the
+to get a list of users. Then run the following:
+
+.. code-block:: console
+
+   # snf-manage user-show 1
+
+where 1 is the id of the user that uploaded the image, as retrieved by the
+previous command. This will output the user's uuid (among others).
+
+Then on the Pithos node run the following:
+
+.. code-block:: console
+
+   # snf-manage file-show <user uuid> pithos debian_base-6.0-x86_64.diskdump
+
+Replace ``pithos`` and ``debian_base-6.0-x86_64.diskdump`` with the
 container and filename you used, when uploading the file.
-
-The hashmap is the field ``x-object-hash``, while the size of the file is the
-``content-length`` field, that ``kamaki file info`` command returns.
+This will output the following info (among others): the name of the pithos
+mapfile (``mapfile`` field) and the size of the image (``bytes`` field).
 
 Run on the :ref:`GANETI-MASTER's <GANETI_NODES>` (node1) command line:
 
 .. code-block:: console
 
    # gnt-instance add -o snf-image+default --os-parameters \
-                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id="pithosmap://<HashMap>/<Size>",img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
+                      img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id="pithosmap://<mapfile>/<Size>",img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \
                       -t plain --disk 0:size=2G --no-name-check --no-ip-check \
                       testvm1
 
@@ -2030,7 +2084,7 @@ package by running on node1:
 
 .. code-block:: console
 
-   # apt-get install snf-cyclades-app memcached python-memcache
+   # apt-get install snf-cyclades-app memcached python-memcache snf-pithos-backend
 
 If all packages install successfully, then Cyclades are installed and we
 proceed with their configuration.
@@ -2105,12 +2159,10 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-plankton.conf``:
 .. code-block:: console
 
    BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
-   BACKEND_BLOCK_PATH = '/srv/pithos/data/'
 
 In this file we configure the Image Service. ``BACKEND_DB_CONNECTION``
 denotes the Pithos database (where the Image files are stored). So we set that
-to point to our Pithos database. ``BACKEND_BLOCK_PATH`` denotes the actual
-Pithos data location.
+to point to our Pithos database.
 
 Edit ``/etc/synnefo/20-snf-cyclades-app-queues.conf``:
 
@@ -2173,15 +2225,26 @@ Both files should be readable by the `vncauthproxy` user or group.
 
 We have now finished with the basic Cyclades configuration.
 
-Gunicorn worker
----------------
+Gunicorn configuration
+----------------------
 
 Cyclades uses Pithos backend library to access and store system and
-user-provided images and snapshots. As stated on the Pithos gunicorn
-configuration, currently the gunicorn worker that integrates with Pithos and as
-a result with Archipelago must run as ``root``. You must change the default
-``www-data`` user/group configuration of the gunicorn worker config to ``root``.
-The config file should be located at ``/etc/gunicorn.d/synnefo``.
+user-provided images and snapshots. As stated on the
+:ref:`conf-pithos-gunicorn`, the gunicorn worker that integrates with Pithos
+needs to be run as the group Archipelago runs as (defaults to ``archipelago``).
+So we should change the gunicorn group for Cyclades gunicorn worker to
+``archipelago``. Then, we must manually change group ownership of the following
+directories to the ``archipelago`` group:
+
+* ``/var/log/gunicorn/`` directory
+* ``/etc/synnefo/`` directory and all the files inside it.
+
+
+We also need to adjust Pithos gunicorn configuration in order to integrate with
+Archipelago. The file, as mentioned above, is located at
+``/etc/gunicorn.d/synnefo``.
+
+Furthermore, we have to set the ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py`` option.
 
 
 Database Initialization
@@ -2390,7 +2453,7 @@ skipped.
 
 .. code-block:: console
 
-   node1 # snf-manage quota-verify --sync
+   node1 # snf-manage quota-verify --fix
    node1 # snf-manage reconcile-resources-astakos --fix
    node2 # snf-manage reconcile-resources-pithos --fix
    node1 # snf-manage reconcile-resources-cyclades --fix

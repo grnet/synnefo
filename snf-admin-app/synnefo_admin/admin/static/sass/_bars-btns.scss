@@ -168,7 +168,7 @@ and light gray font colors
 }
 
 .instructions .line-btn {
-    padding: 8px 9px;
+    padding: 8px 10px;
     span {
         padding: 0 4px;
     }
@@ -395,3 +395,37 @@ body .custom-buttons .extra-btn {
     right: 0px;
 }
 
+/* Clickable elements that change state */
+
+/* These are icon-fonts. We insert in html two icons (one for each state) */
+/* The icon with the false state is hidden and only the correct one is displayed */
+/* Which state is the correct it comes from the class of a parent element */
+
+li.active .snf-checkbox-unchecked, li.active .snf-radio-unchecked {
+    display: none;
+}
+li:not(.active) .snf-checkbox-checked, , li:not(.active) .snf-radio-checked {
+    display: none;
+}
+
+table.dataTable tbody tr.selected .snf-checkbox-unchecked{
+    display: none;
+}
+
+table.dataTable tbody tr:not(.selected) .snf-checkbox-checked {
+    display: none;
+}
+.show-hide-all.open .snf-font-arrow-down {
+    display: none;
+}
+.show-hide-all:not(.open) .snf-font-arrow-up {
+    display: none;
+}
+
+.instructions .line-btn.open .snf-angle-down {
+    display: none;
+}
+
+.instructions .line-btn:not(.open) .snf-angle-up {
+    display: none;
+}

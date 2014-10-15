@@ -28,6 +28,9 @@ def cpustats(data=None):
         vcpus = get_vcpus(pid)
         proc.close()
 
+        if vcpus == 0:
+            continue
+
         vl = collectd.Values(type="derive")
         vl.host = instance
         vl.plugin = "cpu"

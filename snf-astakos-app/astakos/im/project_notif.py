@@ -32,7 +32,6 @@ MEM_ENROLL_NOTIF = {
 }
 
 SENDER = settings.SERVER_EMAIL
-NOTIFY_RECIPIENTS = [e[1] for e in settings.MANAGERS + settings.HELPDESK]
 
 
 def membership_change_notify(project, user, action):
@@ -88,11 +87,11 @@ def membership_request_notify(project, requested_user, action):
 
 APPLICATION_DATA = {
     "submit_new": lambda a: (
-        NOTIFY_RECIPIENTS,
+        [e[1] for e in settings.PROJECT_CREATION_RECIPIENTS],
         _(messages.PROJECT_CREATION_SUBJECT) % a.chain.realname,
         "im/projects/project_creation_notification.txt"),
     "submit_modification": lambda a: (
-        NOTIFY_RECIPIENTS,
+        [e[1] for e in settings.PROJECT_MODIFICATION_RECIPIENTS],
         _(messages.PROJECT_MODIFICATION_SUBJECT) % a.chain.realname,
         "im/projects/project_modification_notification.txt"),
     "deny": lambda a: (

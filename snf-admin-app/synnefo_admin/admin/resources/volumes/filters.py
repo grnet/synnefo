@@ -73,6 +73,8 @@ def filter_project(queryset, queries):
 
 
 def filter_disk_template(queryset, choices):
+    if not query:
+        return queryset
     choices = choices or ()
     dt_choices = get_disk_template_choices()
     if len(choices) == len(dt_choices):
@@ -84,7 +86,9 @@ def filter_disk_template(queryset, choices):
 
 
 def filter_index(queryset, query):
-    if not query.isdigit():
+    if not query:
+        return queryset
+    elif not query.isdigit():
         return queryset.none()
     return queryset.filter(index=query)
 

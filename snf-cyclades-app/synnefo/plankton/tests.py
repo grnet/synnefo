@@ -128,27 +128,21 @@ class PlanktonTest(BaseAPITest):
         response = self.post(IMAGES_URL, **headers)
         self.assertBadRequest(response)
 
-        backend().get_uuid.return_value =\
-            ("4321-4321", u"\u2602", "foo")
-        backend().get_object_permissions.return_value = \
-            ("foo", "foo", {"read": []})
-        backend().get_object_meta.side_effect = \
-            [{"uuid": "1234-1234-1234",
-              "bytes": 42,
-              "is_snapshot": True,
-              "hash": "unique_mapfile",
-              "mapfile": "unique_mapfile"},
-             {"uuid": "1234-1234-1234",
-              "bytes": 42,
-              "mapfile": "unique_mapfile",
-              "is_snapshot": True,
-              "hash": "unique_mapfile",
-              "version": 42,
-              'version_timestamp': Decimal('1392487853.863673'),
-              "plankton:name": u"TestImage\u2602",
-              "plankton:container_format": "bare",
-              "plankton:disk_format": "diskdump",
-              "plankton:status": u"AVAILABLE"}]
+        backend().get_object_by_uuid.return_value = (
+            {"uuid": "1234-1234-1234",
+             "bytes": 42,
+             "mapfile": "unique_mapfile",
+             "is_snapshot": True,
+             "hash": "unique_mapfile",
+             "version": 42,
+             'version_timestamp': Decimal('1392487853.863673'),
+             "plankton:name": u"TestImage\u2602",
+             "plankton:container_format": "bare",
+             "plankton:disk_format": "diskdump",
+             "plankton:status": u"AVAILABLE"},
+            {"read": []},
+            u"4321-4321/\u2602/foo",
+        )
         headers = deepcopy(required)
         response = self.post(IMAGES_URL, **headers)
         self.assertSuccess(response)
@@ -171,23 +165,21 @@ class PlanktonTest(BaseAPITest):
                          "2014-02-15 18:10:53")
 
         # Extra headers,properties
-        backend().get_object_meta.side_effect = \
-            [{"uuid": "1234-1234-1234",
-              "bytes": 42,
-              "is_snapshot": True,
-              "hash": "unique_mapfile",
-              "mapfile": "unique_mapfile"},
-             {"uuid": "1234-1234-1234",
-              "bytes": 42,
-              "is_snapshot": True,
-              "hash": "unique_mapfile",
-              "mapfile": "unique_mapfile",
-              "version": 42,
-              'version_timestamp': Decimal('1392487853.863673'),
-              "plankton:name": u"TestImage\u2602",
-              "plankton:container_format": "bare",
-              "plankton:disk_format": "diskdump",
-              "plankton:status": u"AVAILABLE"}]
+        backend().get_object_by_uuid.return_value = (
+            {"uuid": "1234-1234-1234",
+             "bytes": 42,
+             "is_snapshot": True,
+             "hash": "unique_mapfile",
+             "mapfile": "unique_mapfile",
+             "version": 42,
+             'version_timestamp': Decimal('1392487853.863673'),
+             "plankton:name": u"TestImage\u2602",
+             "plankton:container_format": "bare",
+             "plankton:disk_format": "diskdump",
+             "plankton:status": u"AVAILABLE"},
+            {"read": []},
+            u"4321-4321/\u2602/foo",
+        )
         headers = deepcopy(required)
         headers["HTTP_X_IMAGE_META_IS_PUBLIC"] = True
         headers["HTTP_X_IMAGE_META_PROPERTY_KEY1"] = "val1"
@@ -200,10 +192,13 @@ class PlanktonTest(BaseAPITest):
         self.assertSuccess(response)
 
     def test_unregister_image(self, backend):
-        backend().get_uuid.return_value = ("img_owner", "images", "foo")
-        backend().get_object_meta.return_value = {"uuid": "img_uuid",
-                                                  "bytes": 42,
-                                                  "plankton:name": "test"}
+        backend().get_object_by_uuid.return_value = (
+            {"uuid": "img_uuid",
+             "bytes": 42,
+             "plankton:name": "test"},
+            {"read": []},
+            "img_owner/images/foo"
+        )
         response = self.delete(join_urls(IMAGES_URL, "img_uuid"))
         self.assertEqual(response.status_code, 204)
         backend().update_object_meta.assert_called_once_with(
@@ -213,12 +208,12 @@ class PlanktonTest(BaseAPITest):
         """Test adding/removing and replacing image members"""
         # Add user
         backend.reset_mock()
-        backend().get_uuid.return_value = ("img_owner", "images", "foo")
-        backend().get_object_permissions.return_value = \
-            ("foo", "foo", {"read": []})
-        backend().get_object_meta.return_value = {"uuid": "img_uuid",
-                                                  "bytes": 42,
-                                                  "plankton:name": "test"}
+        backend().get_object_by_uuid.return_value = (
+            {"uuid": "img_uuid",
+             "bytes": 42,
+             "plankton:name": "test"},
+            {"read": []},
+            "img_owner/images/foo")
         response = self.put(join_urls(IMAGES_URL, "img_uuid/members/user1"),
                             user="user1")
         self.assertSuccess(response)
@@ -227,8 +222,12 @@ class PlanktonTest(BaseAPITest):
 
         # Remove user
         backend().update_object_permissions.reset_mock()
-        backend().get_object_permissions.return_value = \
-            ("foo", "foo", {"read": ["user1"]})
+        backend().get_object_by_uuid.return_value = (
+            {"uuid": "img_uuid",
+             "bytes": 42,
+             "plankton:name": "test"},
+            {"read": ["user1"]},
+            "img_owner/images/foo")
         response = self.delete(join_urls(IMAGES_URL, "img_uuid/members/user1"),
                                user="user1")
         self.assertSuccess(response)
@@ -236,8 +235,12 @@ class PlanktonTest(BaseAPITest):
             "user1", "img_owner", "images", "foo", {"read": []})
 
         # Update users
-        backend().get_object_permissions.return_value = \
-            ("foo", "foo", {"read": ["user1", "user2", "user3"]})
+        backend().get_object_by_uuid.return_value = (
+            {"uuid": "img_uuid",
+             "bytes": 42,
+             "plankton:name": "test"},
+            {"read": ["user1", "user2", "user3"]},
+            "img_owner/images/foo")
         backend().update_object_permissions.reset_mock()
         response = self.put(join_urls(IMAGES_URL, "img_uuid/members"),
                             params=json.dumps({"memberships":
@@ -250,8 +253,13 @@ class PlanktonTest(BaseAPITest):
             "user1", "img_owner", "images", "foo", {"read": ["foo1", "foo2"]})
 
         # List users
-        backend().get_object_permissions.return_value = \
-            ("foo", "foo", {"read": ["user1", "user2", "user3"]})
+        backend().get_object_by_uuid.return_value = (
+            {"uuid": "img_uuid",
+             "bytes": 42,
+             "plankton:name": "test"},
+            {"read": ["user1", "user2", "user3"]},
+            "img_owner/images/foo",
+        )
         response = self.get(join_urls(IMAGES_URL, "img_uuid/members"))
         self.assertSuccess(response)
         res_members = [{"member_id": m, "can_share": False}
@@ -259,8 +267,7 @@ class PlanktonTest(BaseAPITest):
         self.assertEqual(json.loads(response.content)["members"], res_members)
 
     def test_metadata(self, backend):
-        backend().get_uuid.return_value = ("img_owner", "images", "foo")
-        backend().get_object_meta.return_value = \
+        backend().get_object_by_uuid.return_value = (
             {"uuid": "img_uuid",
              "bytes": 42,
              "is_snapshot": True,
@@ -271,13 +278,14 @@ class PlanktonTest(BaseAPITest):
              "plankton:name": u"TestImage\u2602",
              "plankton:container_format": "bare",
              "plankton:disk_format": "diskdump",
-             "plankton:status": u"AVAILABLE"}
-        backend().get_object_permissions.return_value = \
-            ("foo", "foo", {"read": ["*", "user1"]})
+             "plankton:status": u"AVAILABLE"},
+            {"read": ["*", "user1"]},
+            "img_owner/images/foo/foo1/foo2/foo3",
+        )
         response = self.head(join_urls(IMAGES_URL, "img_uuid2"))
         self.assertSuccess(response)
         self.assertEqual(response["x-image-meta-location"],
-                         "pithos://img_owner/images/foo")
+                         "pithos://img_owner/images/foo/foo1/foo2/foo3")
         self.assertEqual(response["x-image-meta-id"], "img_uuid")
         self.assertEqual(response["x-image-meta-status"], "AVAILABLE")
         self.assertEqual(response["x-image-meta-deleted-at"], "")
@@ -300,7 +308,8 @@ class PlanktonTest(BaseAPITest):
         response = self.put(join_urls(IMAGES_URL, "img_uuid"), **headers)
         self.assertSuccess(response)
         backend().update_object_permissions.assert_called_once_with(
-            "user", "img_owner", "images", "foo", {"read": ["user1"]})
+            "user", "img_owner", "images", "foo/foo1/foo2/foo3",
+            {"read": ["user1"]})
 
     def test_catch_wrong_api_paths(self, *args):
         response = self.get(join_urls(PLANKTON_URL, 'nonexistent'))

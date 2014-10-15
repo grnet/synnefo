@@ -732,7 +732,6 @@ class Image(base.Component):
         replace = {
             "synnefo_user": config.synnefo_user,
             "synnefo_db_passwd": config.synnefo_db_passwd,
-            "pithos_dir": config.pithos_dir,
             "db_node": self.ctx.db.cname,
             "image_dir": config.images_dir,
             }
@@ -758,6 +757,7 @@ class GTools(base.Component):
     def prepare(self):
         return [
             "sed -i 's/false/true/' /etc/default/snf-ganeti-eventd",
+            "chown -R root:archipelago /etc/synnefo/",
             ]
 
     def _configure(self):
@@ -858,7 +858,7 @@ class Gunicorn(base.Component):
     @base.run_cmds
     def prepare(self):
         return [
-            "chown root.www-data /var/log/gunicorn",
+            "chown root:www-data /var/log/gunicorn",
             ]
 
     def _configure(self):
@@ -1186,6 +1186,9 @@ EOF
 
         return [
             "mkdir -p %s" % config.shared_dir,
+            "addgroup --gid 200 archipelago",
+            "adduser --system --no-create-home \
+              --gecos 'Archipelago user' --gid 200 archipelago",
             fstab,
             ]
 
@@ -1221,11 +1224,15 @@ class NFS(base.Component):
             "mkdir -p %s" % config.shared_dir,
             "mkdir -p %s" % config.images_dir,
             "mkdir -p %s" % config.ganeti_dir,
-            "mkdir -p %s/data" % config.pithos_dir,
-            "mkdir -p %s/blocks" % config.archip_dir,
-            "mkdir -p %s/maps" % config.archip_dir,
-            "chown www-data.www-data %s/data" % config.pithos_dir,
-            "chmod g+ws %s/data" % config.pithos_dir,
+            "mkdir -p %s" % config.archip_dir,
+            "addgroup --gid 200 archipelago",
+            "adduser --system --no-create-home \
+              --gecos 'Archipelago user' --gid 200 archipelago",
+            "cd %s && mkdir {maps,blocks,locks}" % config.archip_dir,
+            "cd %s && chown archipelago:archipelago {maps,blocks,locks}" % \
+              config.archip_dir,
+            "cd %s && chmod 770 {maps,blocks,locks}" % config.archip_dir,
+            "cd %s && chmod g+s {maps,blocks,locks}" % config.archip_dir,
             ]
 
     @base.run_cmds
@@ -1278,6 +1285,12 @@ class Pithos(base.Component):
             "snf-manage service-export-pithos > %s" % f
             ]
 
+    @base.run_cmds
+    def prepare(self):
+        return [
+            "chown -R root:archipelago /etc/synnefo/",
+            ]
+
     def _configure(self):
         r1 = {
             "ACCOUNTS": self.ctx.astakos.cname,
@@ -1285,7 +1298,6 @@ class Pithos(base.Component):
             "db_node": self.ctx.db.cname,
             "synnefo_user": config.synnefo_user,
             "synnefo_db_passwd": config.synnefo_db_passwd,
-            "pithos_dir": config.pithos_dir,
             "PITHOS_SERVICE_TOKEN": context.service_token,
             "oa2_secret": config.oa2_secret,
             }
@@ -1327,7 +1339,6 @@ class PithosBackend(base.Component):
             "db_node": self.ctx.db.cname,
             "synnefo_user": config.synnefo_user,
             "synnefo_db_passwd": config.synnefo_db_passwd,
-            "pithos_dir": config.pithos_dir,
             }
 
         return [
@@ -1425,7 +1436,10 @@ snf-manage network-create --subnet6={0} \
 
     @base.run_cmds
     def prepare(self):
-        return ["sed -i 's/false/true/' /etc/default/snf-dispatcher"]
+        return [
+            "sed -i 's/false/true/' /etc/default/snf-dispatcher",
+            "chown -R root:archipelago /etc/synnefo/",
+            ]
 
     def _configure(self):
         r1 = {
@@ -1436,7 +1450,6 @@ snf-manage network-create --subnet6={0} \
             "synnefo_user": config.synnefo_user,
             "synnefo_db_passwd": config.synnefo_db_passwd,
             "synnefo_rabbitmq_passwd": config.synnefo_rabbitmq_passwd,
-            "pithos_dir": config.pithos_dir,
             "common_bridge": config.common_bridge,
             "domain": self.node.domain,
             "CYCLADES_SERVICE_TOKEN": context.service_token,
@@ -1564,7 +1577,9 @@ class Admin(base.Component):
         f = "/etc/synnefo/cyclades.conf"
         self.CYCLADES.get(f, "/tmp/cyclades.conf")
         self.put("/tmp/cyclades.conf", f)
-        return []
+        return [
+            "chown -R root:archipelago /etc/synnefo",
+            ]
 
     def _configure(self):
         r1 = {
@@ -1775,7 +1790,10 @@ class Archip(base.Component):
         return ["mkdir -p /etc/archipelago"]
 
     def _configure(self):
-        r1 = {"SEGMENT_SIZE": config.segment_size}
+        r1 = {
+            "SEGMENT_SIZE": config.segment_size,
+            "ARCHIP_DIR": config.archip_dir,
+            }
         return [
             ("/etc/archipelago/archipelago.conf", r1, {})
             ]
@@ -1790,12 +1808,21 @@ class Archip(base.Component):
 class ArchipSynnefo(base.Component):
     REQUIRED_PACKAGES = []
 
+    @base.run_cmds
+    def prepare(self):
+        return [
+            "mkdir -p /etc/synnefo/gunicorn-hooks",
+            "chown -R root:archipelago /etc/synnefo",
+            "chown -R root:archipelago /var/log/gunicorn",
+            "chmod g+s /etc/synnefo/",
+            ]
+
     def _configure(self):
         r1 = {"HOST": self.node.fqdn}
         return [
             ("/etc/gunicorn.d/synnefo-archip", r1,
              {"remote": "/etc/gunicorn.d/synnefo"}),
-            ("/etc/archipelago/pithos.conf.py", {}, {}),
+            ("/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py", {}, {}),
             ]
 
     @base.run_cmds

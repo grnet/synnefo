@@ -47,6 +47,10 @@ case "$1" in
         exit 1
       fi
 
+      if ! dpkg-statoverride --list /var/log/synnefo; then
+        dpkg-statoverride --update --add root synnefo 0775 /var/log/synnefo
+      fi
+
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

@@ -169,6 +169,22 @@ python /root/firefox_cert_override.py {0} {1}:443 >> {2}
 # provides node, cluster, and setup related info.
 
 class HW(base.Component):
+    @base.check_if_testing
+    def _configure(self):
+        r1 = {
+            "date": str(datetime.datetime.today()),
+            }
+        return [
+            ("/etc/sysctl.d/disable-ipv6.conf", r1, {})
+            ]
+
+    @base.run_cmds
+    @base.check_if_testing
+    def initialize(self):
+        return [
+            "sysctl -f /etc/sysctl.d/disable-ipv6.conf",
+            ]
+
     @base.run_cmds
     def test(self):
         return [

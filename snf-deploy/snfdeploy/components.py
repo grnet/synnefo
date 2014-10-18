@@ -740,7 +740,8 @@ class Image(base.Component):
         d = config.images_dir
         image = "debian_base.diskdump"
         return [
-            "test -e %s/%s || wget %s -O %s/%s" % (d, image, url, d, image),
+            "test -e /tmp/%s || wget -4 %s -O /tmp/%s" % (image, url, image),
+            "cp /tmp/%s %s/%s" % (image, d, image),
             "mv /etc/default/snf-image /etc/default/snf-image.orig",
             ]
 
@@ -1675,7 +1676,7 @@ EOF
         url = config.debian_base_url
         image = "debian_base.diskdump"
         return [
-            "test -e /tmp/%s || wget %s -O /tmp/%s" % (image, url, image)
+            "test -e /tmp/%s || wget -4 %s -O /tmp/%s" % (image, url, image)
             ]
 
     def _upload_image(self):

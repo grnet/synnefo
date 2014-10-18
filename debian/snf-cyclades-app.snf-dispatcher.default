@@ -10,7 +10,7 @@ VERBOSE=yes
 SNF_DSPTCH_ENABLE=false
 
 # user:group to run the snf-dispatcher as
-SNF_USER="www-data:archipelago"
+SNF_USER="synnefo:synnefo"
 
 # Options to be passed to snf-dispatcher daemon
 SNF_DSPTCH_OPTS=""

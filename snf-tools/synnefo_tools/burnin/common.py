@@ -31,11 +31,13 @@ from string import ascii_letters
 from StringIO import StringIO
 from binascii import hexlify
 
+from kamaki.cli import config as kamaki_config
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
 from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients.pithos import PithosClient
 from kamaki.clients.image import ImageClient
+from kamaki.clients.utils import https
 from kamaki.clients.blockstorage import BlockStorageClient
 
 from synnefo_tools.burnin.logger import Log
@@ -148,8 +150,32 @@ class Clients(object):
     image = None
     image_url = None
 
-    def initialize_clients(self):
+    def _kamaki_ssl(self, ignore_ssl=None):
+        """Patch kamaki to use the correct CA certificates
+
+        Read kamaki's config file and decide if we are going to use
+        CA certificates and patch kamaki clients accordingly.
+
+        """
+        config = kamaki_config.Config()
+        if ignore_ssl is None:
+            ignore_ssl = config.get("global", "ignore_ssl").lower() == "on"
+        ca_file = config.get("global", "ca_certs")
+
+        if ignore_ssl:
+            # Skip SSL verification
+            https.patch_ignore_ssl()
+        else:
+            # Use ca_certs path found in kamakirc
+            https.patch_with_certs(ca_file)
+
+    def initialize_clients(self, ignore_ssl=False):
         """Initialize all the Kamaki Clients"""
+
+        # Path kamaki for SSL verification
+        self._kamaki_ssl(ignore_ssl=ignore_ssl)
+
+        # Initialize kamaki Clients
         self.astakos = AstakosClient(self.auth_url, self.token)
         self.astakos.CONNECTION_RETRY_LIMIT = self.retry
 
@@ -262,6 +288,7 @@ class BurninTests(unittest.TestCase):
     """Common class that all burnin tests should implement"""
     clients = Clients()
     run_id = None
+    ignore_ssl = False
     use_ipv6 = None
     action_timeout = None
     action_warning = None
@@ -289,7 +316,7 @@ class BurninTests(unittest.TestCase):
     def test_000_clients_setup(self):
         """Initializing astakos/cyclades/pithos clients"""
         # Update class attributes
-        self.clients.initialize_clients()
+        self.clients.initialize_clients(ignore_ssl=self.ignore_ssl)
         self.info("Astakos auth url is %s", self.clients.auth_url)
         self.info("Cyclades url is %s", self.clients.compute_url)
         self.info("Network url is %s", self.clients.network_url)
@@ -754,6 +781,7 @@ def initialize(opts, testsuites, stale_testsuites):
     Clients.token = opts.token
 
     # Pass the rest options to BurninTests
+    BurninTests.ignore_ssl = opts.ignore_ssl
     BurninTests.use_ipv6 = opts.use_ipv6
     BurninTests.action_timeout = opts.action_timeout
     BurninTests.action_warning = opts.action_warning

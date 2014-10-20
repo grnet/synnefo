@@ -17,6 +17,7 @@ set -e
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
+PKGNAME=snf-common
 
 case "$1" in
     configure)
@@ -50,6 +51,18 @@ case "$1" in
       if ! dpkg-statoverride --list /var/log/synnefo; then
         dpkg-statoverride --update --add root synnefo 0775 /var/log/synnefo
       fi
+
+      if ! dpkg-statoverride --list /etc/synnefo; then
+        dpkg-statoverride --update --add root synnefo 2750 /etc/synnefo
+      fi
+
+      conf_files=$(dpkg-query -W -f='${Conffiles}' $PKGNAME | \
+        awk '/\/etc\/synnefo/ { print $1 }')
+      for f in $conf_files; do
+        if ! dpkg-statoverride --list $f; then
+          dpkg-statoverride --update --add root synnefo 0640 $f
+        fi
+      done
 
     ;;
 

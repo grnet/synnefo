@@ -1,5 +1,5 @@
 #!/bin/sh
-# postinst script for snf-cyclades-app
+# postinst script for snf-stats-app
 #
 # see: dh_installdeb(1)
 
@@ -17,13 +17,10 @@ set -e
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
-PKGNAME=snf-cyclades-app
+PKGNAME=snf-stats-app
 
 case "$1" in
     configure)
-
-        echo "Updating rc.d links... "
-        update-rc.d snf-dispatcher defaults
 
         conf_files=$(dpkg-query -W -f='${Conffiles}' $PKGNAME | \
           awk '/\/etc\/synnefo/ { print $1 }')

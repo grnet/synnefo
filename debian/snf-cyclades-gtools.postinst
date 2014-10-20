@@ -1,5 +1,5 @@
 #!/bin/sh
-# postinst script for snf-image-host
+# postinst script for snf-cyclades-gtools
 #
 # see: dh_installdeb(1)
 
@@ -17,11 +17,21 @@ set -e
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
+PKGNAME=snf-cyclades-gtools
 
 case "$1" in
     configure)
         echo "Updating rc.d links... "
         update-rc.d snf-ganeti-eventd defaults
+
+        conf_files=$(dpkg-query -W -f='${Conffiles}' $PKGNAME | \
+          awk '/\/etc\/synnefo/ { print $1 }')
+        for f in $conf_files; do
+          if ! dpkg-statoverride --list $f; then
+            dpkg-statoverride --update --add root synnefo 0640 $f
+          fi
+        done
+
     ;;
 
     abort-upgrade|abort-remove|abort-deconfigure)

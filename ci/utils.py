@@ -36,12 +36,15 @@ from kamaki.clients.astakos import AstakosClient, parse_endpoints
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
 from kamaki.clients.image import ImageClient
 from kamaki.clients.compute import ComputeClient
+from kamaki.clients.utils import https
 from kamaki.clients import ClientError
 import filelocker
 
 DEFAULT_CONFIG_FILE = "ci_wheezy.conf"
 # Is our terminal a colorful one?
 USE_COLORS = True
+# Ignore SSL verification
+IGNORE_SSL = False
 # UUID of owner of system images
 DEFAULT_SYSTEM_IMAGES_UUID = [
     "25ecced9-bf53-4145-91ee-cf47377e9fb2",  # production (okeanos.grnet.gr)
@@ -92,6 +95,26 @@ def _check_fabric(fun):
             self.fabric_installed = True
         return fun(self, *args, **kwargs)
     return wrapper
+
+
+def _kamaki_ssl(ignore_ssl=None):
+    """Patch kamaki to use the correct CA certificates
+
+    Read kamaki's config file and decide if we are going to use
+    CA certificates and patch kamaki clients accordingly.
+
+    """
+    config = kamaki_config.Config()
+    if ignore_ssl is None:
+        ignore_ssl = config.get("global", "ignore_ssl").lower() == "on"
+    ca_file = config.get("global", "ca_certs")
+
+    if ignore_ssl:
+        # Skip SSL verification
+        https.patch_ignore_ssl()
+    else:
+        # Use ca_certs path found in kamakirc
+        https.patch_with_certs(ca_file)
 
 
 def _check_kamaki(fun):
@@ -202,6 +225,9 @@ class SynnefoCI(object):
         Setup cyclades_client, image_client and compute_client
         """
 
+        # Patch kamaki for SSL verification
+        _kamaki_ssl(ignore_ssl=IGNORE_SSL)
+
         config = kamaki_config.Config()
         if self.kamaki_cloud is None:
             try:
@@ -215,7 +241,7 @@ class SynnefoCI(object):
         auth_url = config.get_cloud(self.kamaki_cloud, "url")
         self.logger.debug("Authentication URL is %s" % _green(auth_url))
         token = config.get_cloud(self.kamaki_cloud, "token")
-        #self.logger.debug("Token is %s" % _green(token))
+        # self.logger.debug("Token is %s" % _green(token))
 
         self.astakos_client = AstakosClient(auth_url, token)
         endpoints = self.astakos_client.authenticate()

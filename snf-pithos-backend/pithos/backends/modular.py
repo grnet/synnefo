@@ -520,7 +520,8 @@ class ModularBackend(BaseBackend):
             external_quota = self.astakosclient.service_get_quotas(
                 account)[account]
             for k, v in external_quota.items():
-                policy['%s-%s' % (QUOTA_POLICY, k)] = v['pithos.diskspace']['limit']
+                key = '%s-%s' % (QUOTA_POLICY, k)
+                policy[key] = v['pithos.diskspace']['limit']
                 policy[QUOTA_POLICY] += v['pithos.diskspace']['limit']
 
         return policy
@@ -1204,7 +1205,7 @@ class ModularBackend(BaseBackend):
                                                   node=src_node)
         try:
             domains.remove(exclude_domain)
-        except ValueError: # domain is not in the list
+        except ValueError:  # domain is not in the list
             pass
 
         for d in domains:
@@ -1588,7 +1589,8 @@ class ModularBackend(BaseBackend):
             dest_obj_path = '/'.join((dest_container_path, dest_name))
             size_delta = occupied_space - freed_space
             self._report_size_change(
-                user, dest_account, size_delta, dest_project, name=dest_obj_path)
+                user, dest_account, size_delta, dest_project,
+                name=dest_obj_path)
         return dest_versions
 
     @debug_method

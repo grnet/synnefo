@@ -1737,7 +1737,7 @@ it if doesn't exist):
 
     ROOT_URLCONF="synnefo_admin.urls"
 
-Note that the above change does not interfere the with the ``ADMIN_BASE_URL``,
+Note that the above change does not interfere with the ``ADMIN_BASE_URL``,
 which will be used normally.
 
 Furthermore, if Astakos and Cyclades have separate databases, then they must be
@@ -1760,7 +1760,7 @@ example setup is the following:
         }, 'astakos': {
             'ENGINE': 'django.db.backends.postgresql_psycopg2',
             'NAME': 'snf_apps_astakos',
-            'HOST': <Cyclades host>,
+            'HOST': <Astakos host>,
             <...snip..>
         }
     }
@@ -1806,10 +1806,10 @@ They are also available from our apt repository: ``apt.dev.grnet.gr``
 Synnefo management commands ("snf-manage")
 ==========================================
 
-Each Synnefo service, Astakos, Pithos and Cyclades are controlled by the
+Each Synnefo service, Astakos, Pithos and Cyclades is controlled by the
 administrator using the "snf-manage" admin tool. This tool is an extension of
 the Django command-line management utility. It is run on the host that runs
-each service and provides different types of commands depending the services
+each service and provides different types of commands depending on the services
 running on the host. If you are running more than one service on the same host
 "snf-manage" adds all the corresponding commands for each service dynamically,
 providing a unified admin environment.
@@ -1974,8 +1974,8 @@ Running:
 
    snf-component-register [<component_name>]
 
-automates the registration of the standard Synnefo components (astakos,
-cyclades, and pithos) in astakos database. It internally uses the script:
+automates the registration of the standard Synnefo components (Astakos,
+Cyclades, and Pithos) in Astakos database. It internally uses the script:
 
 .. code-block:: console
 
@@ -2013,7 +2013,7 @@ The "kamaki" API client
 
 To upload, register or modify an image you will need the **kamaki** tool.
 Before proceeding make sure that it is configured properly. Verify that
-*image.url*, *file.url*, *user.url* and *token* are set as needed:
+*url* and *token* are set as needed:
 
 .. code-block:: console
 
@@ -2420,7 +2420,7 @@ The RabbitMQ nodes that form the cluster, are declared to Synnefo through the
 `AMQP_HOSTS` setting. Each time a Synnefo component needs to connect to
 RabbitMQ, one of these nodes is chosen in a random way. The client that Synnefo
 uses to connect to RabbitMQ, handles connection failures transparently and
-tries to reconnect to a different node. As long as one of these nodes are up
+tries to reconnect to a different node. As long as one of these nodes is up
 and running, functionality of Synnefo should not be downgraded by the RabbitMQ
 node failures.
 

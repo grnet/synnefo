@@ -227,9 +227,9 @@ class ModularBackend(object):
     _class_version = 1
 
     def __init__(self,
-                 db_module=DEFAULT_DB_MODULE,
-                 db_connection=DEFAULT_DB_CONNECTION,
-                 block_module=DEFAULT_BLOCK_MODULE,
+                 db_module=None,
+                 db_connection=None,
+                 block_module=None,
                  block_size=DEFAULT_BLOCK_SIZE,
                  hash_algorithm=DEFAULT_HASH_ALGORITHM,
                  astakos_auth_url=None,
@@ -249,11 +249,27 @@ class ModularBackend(object):
                  resource_max_metadata=DEFAULT_RESOURCE_MAX_METADATA,
                  acc_max_groups=DEFAULT_ACC_MAX_GROUPS,
                  acc_max_group_members=DEFAULT_ACC_MAX_GROUP_MEMBERS):
+
+        not_nullable = ('block_size', 'hash_algorithm', 'block_params',
+                        'public_url_security', 'public_url_alphabet',
+                        'account_quota_policy', 'container_versioning_policy',
+                        'archipelago_conf_file', 'xseg_pool_size',
+                        'map_check_interval', 'mapfile_prefix',
+                        'resource_max_metadata', 'acc_max_groups',
+                        'acc_max_group_members')
+        for f in not_nullable:
+            if locals()[f] is None:
+                raise ValueError("Backend argument %s cannot be None" % f)
+
         self.default_account_policy = {QUOTA_POLICY: account_quota_policy}
         self.default_container_policy = {
             QUOTA_POLICY: container_quota_policy,
             VERSIONING_POLICY: container_versioning_policy,
             PROJECT: None}
+
+        db_module = db_module or DEFAULT_DB_MODULE
+        db_connection = db_connection or DEFAULT_DB_CONNECTION
+        block_module = block_module or DEFAULT_BLOCK_MODULE
 
         self.public_url_security = public_url_security
         self.public_url_alphabet = public_url_alphabet

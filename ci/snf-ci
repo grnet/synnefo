@@ -139,7 +139,7 @@ def main():  # pylint: disable=too-many-statements, too-many-branches
                       default=True, action="store_false",
                       help="Don't use colorful output messages.")
     parser.add_option("--ignore-ssl", "-k", dest="ignore_ssl",
-                      default=False, action="store_true",
+                      default=None, action="store_true",
                       help="Don't verify SSL certificates.")
 
     (options, args) = parser.parse_args()

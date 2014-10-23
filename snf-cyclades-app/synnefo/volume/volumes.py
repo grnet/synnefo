@@ -21,6 +21,7 @@ from snf_django.lib.api import faults
 from synnefo.db.models import Volume, VolumeMetadata
 from synnefo.volume import util
 from synnefo.logic import server_attachments, utils, commands
+from synnefo.plankton.backend import OBJECT_AVAILABLE
 from synnefo import quotas
 
 log = logging.getLogger(__name__)
@@ -141,7 +142,7 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
         source_snapshot = util.get_snapshot(user_id, source_uuid,
                                             exception=faults.BadRequest)
         snap_status = source_snapshot.get("status", "").upper()
-        if snap_status != "AVAILABLE":
+        if snap_status != OBJECT_AVAILABLE:
             raise faults.BadRequest("Cannot create volume from snapshot, while"
                                     " snapshot is in '%s' status" %
                                     snap_status)
@@ -160,7 +161,7 @@ def _create_volume(server, user_id, project, size, source_type, source_uuid,
         source_image = util.get_image(user_id, source_uuid,
                                       exception=faults.BadRequest)
         img_status = source_image.get("status", "").upper()
-        if img_status != "AVAILABLE":
+        if img_status != OBJECT_AVAILABLE:
             raise faults.BadRequest("Cannot create volume from image, while"
                                     " image is in '%s' status" % img_status)
         if size is None:

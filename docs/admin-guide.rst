@@ -21,6 +21,62 @@ all the interactions between them.
    :target: _images/synnefo-arch2.png
 
 
+Required system users and groups (synnefo, archipelago)
+=======================================================
+
+Since v0.16, Synnefo requires an Archipelago installation for the Pithos
+backend. Archipelago on the other hand, supports both NFS and RADOS as
+storage backends. This leads us to various components that have specific
+access rights.
+
+Synnefo ships its own configuration files under ``/etc/synnefo``. In
+order those files not to be compromised, they are owned by
+``root:synnefo`` with group read access (mode 640). Since Gunicorn,
+which serves Synnefo by default, needs read access to the configuration
+files and we don't want it to run as root, it must run with group
+``synnefo``.
+
+Cyclades and Pithos talk to Archipelago over some named pipes under
+``/dev/shm/posixfd``. This directory is created by Archipelago, owned by
+the user/group that Archipelago runs as, and at the same time it must be
+accessible by Gunicorn. Therefore we let Gunicorn run as ``synnefo``
+user and Archipelago as ``archipelago:synnefo`` (by default it rus as
+``archipelago:archipelago``). Beware that the ``synnefo`` user and
+group is created by snf-common package.
+
+Archipelago must have a storage backend to physically store blocks, maps
+and locks. This can be either an NFS or a RADOS cluster.
+
+NFS backing store
+-----------------
+In case of NFS, Archipelago must have permissions to write on the
+exported dirs. We choose to have ``/srv/archip`` exported with
+``blocks``, ``maps``, and ``locks`` subdirectories. They are owned by
+``archipelago:synnefo`` and have ``g+ws`` access permissions. So
+Archipelago will be able to read/write in these directories. We could
+have the whole NFS isolated from Synnefo (owned by
+``archipelago:archipelago`` with ``640`` access permissions) but we
+choose not to (e.g. some future extension could require access to the
+backing store directly from Synnefo).
+
+Due to NFS restrictions, all Archipelago nodes must have common uid for
+the ``archipelago`` user and common gid for the ``synnefo`` group. So
+before any Synnefo installation, we create them here in advance. We
+assume that ids 200 and 300 are available across all nodes.
+
+.. code-block:: console
+
+  # addgroup --system --gid 200 synnefo
+  # adduser --system --uid 200 --gid 200 --no-create-home \
+      --gecos Synnefo synnefo
+
+  # addgroup --system --gid 300 archipelago
+  # adduser --system --uid 300 --gid 300 --no-create-home \
+      --gecos Archipelago archipelago
+
+Normally the ``snf-common`` and ``archipelago`` packages are responsible
+for creating the required system users and groups.
+
 Identity Service (Astakos)
 ==========================
 

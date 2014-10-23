@@ -38,7 +38,7 @@ def list(args):
         if args.output_format != "json" and not args.headers:
             headers = None
         pprint_table(sys.stdout, table, headers, args.output_format)
-    except Exception, e:
+    except Exception as e:
         sys.stderr.write('%s\n' % e)
     finally:
         utils.cleanup()
@@ -59,7 +59,7 @@ def delete(args):
             utils.delete_account(
                 args.delete_account, only_stats=False, dry=args.dry
             )
-    except Exception, e:
+    except Exception as e:
         sys.stderr.write('%s\n' % e)
     finally:
         utils.cleanup()
@@ -83,7 +83,7 @@ def merge(args):
                 args.src_account, args.dest_account, only_stats=False,
                 dry=args.dry
             )
-    except Exception, e:
+    except Exception as e:
         sys.stderr.write('%s\n' % e)
     finally:
         utils.cleanup()
@@ -100,7 +100,7 @@ def export_quota(args):
         for uuid, capacity in d.iteritems():
             f.write(' '.join([uuid, 'pithos.diskspace', capacity]))
             f.write('\n')
-    except Exception, e:
+    except Exception as e:
         sys.stderr.write('%s\n' % e)
     finally:
         utils.cleanup()
@@ -130,7 +130,7 @@ def set_container_quota(args):
                     trans.rollback()
                 else:
                     trans.commit()
-            except Exception, e:
+            except Exception as e:
                 failed.append((account, e))
 
         map(update_container_policy, accounts)
@@ -139,7 +139,7 @@ def set_container_quota(args):
                 'Failed for the following accounts:\n'
             )
             pprint_table(sys.stdout, failed, headers=[])
-    except Exception, e:
+    except Exception as e:
         sys.stderr.write('%s\n' % e)
     finally:
         utils.cleanup()

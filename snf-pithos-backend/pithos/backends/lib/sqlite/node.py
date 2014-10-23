@@ -19,7 +19,7 @@ from itertools import groupby
 
 from dbworker import DBWorker
 
-from pithos.backends.base import MAP_AVAILABLE
+from pithos.backends.modular import MAP_AVAILABLE
 from pithos.backends.filter import parse_filters
 
 
@@ -756,7 +756,6 @@ class Node(DBWorker):
         if props:
             self.nodes_set_latest_version(node, props[0])
         return hash, size
-
 
     def attribute_get_domains(self, serial, node=None):
         q = ("select distinct domain from attributes "

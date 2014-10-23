@@ -13,18 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from functools import partial
+from pithos.backends.test.util import get_random_name
 
-from pithos.backends.base import NotAllowedError
-from pithos.backends.random_word import get_random_word
+from pithos.backends.exceptions import NotAllowedError
 
 import uuid as uuidlib
 
 
 serial = 0
-
-get_random_data = lambda length: get_random_word(length)[:length]
-get_random_name = partial(get_random_word, length=8)
 
 
 class TestDeleteByUUIDMixin(object):

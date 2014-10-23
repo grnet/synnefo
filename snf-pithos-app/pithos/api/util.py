@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from functools import wraps
+from functools import wraps, partial
 from datetime import datetime
 from urllib import quote, unquote, urlencode
 from urlparse import urlunsplit, urlsplit, parse_qsl
@@ -24,6 +24,9 @@ from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import http_date, parse_etags
 from django.utils.encoding import smart_unicode, smart_str
+smart_unicode_ = partial(smart_unicode, strings_only=True)
+smart_str_ = partial(smart_str, strings_only=True)
+
 from django.core.files.uploadhandler import FileUploadHandler
 from django.core.files.uploadedfile import UploadedFile
 from django.core.urlresolvers import reverse
@@ -56,9 +59,12 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  ACC_MAX_GROUP_MEMBERS)
 
 from pithos.backends import connect_backend
-from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
-                                  VersionNotExists, IllegalOperationError,
-                                  LimitExceeded, BrokenSnapshot)
+from pithos.backends.exceptions import (NotAllowedError, QuotaError,
+                                        ItemNotExists, VersionNotExists,
+                                        IllegalOperationError, LimitExceeded,
+                                        BrokenSnapshot,
+                                        InconsistentContentSize, InvalidPolicy,
+                                        InvalidHash, ContainerNotEmpty)
 
 from synnefo.lib import join_urls
 
@@ -150,19 +156,18 @@ def put_account_headers(response, meta, groups, policy):
         response['X-Account-Bytes-Used'] = meta['bytes']
     response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Account-Meta-')]:
-        response[smart_str(
-            k, strings_only=True)] = smart_str(meta[k], strings_only=True)
+        response[smart_str_(k)] = smart_str_(meta[k])
     if 'until_timestamp' in meta:
         response['X-Account-Until-Timestamp'] = http_date(
             int(meta['until_timestamp']))
     for k, v in groups.iteritems():
-        k = smart_str(k, strings_only=True)
+        k = smart_str_(k)
         k = format_header_key('X-Account-Group-' + k)
-        v = smart_str(','.join(v), strings_only=True)
+        v = smart_str_(','.join(v))
         response[k] = v
     for k, v in policy.iteritems():
-        response[smart_str(format_header_key('X-Account-Policy-' + k),
-                 strings_only=True)] = smart_str(v, strings_only=True)
+        response[smart_str_(format_header_key('X-Account-Policy-' + k))] = \
+            smart_str_(v)
 
 
 def get_container_headers(request):
@@ -181,9 +186,8 @@ def put_container_headers(request, response, meta, policy):
         response['X-Container-Bytes-Used'] = meta['bytes']
     response['Last-Modified'] = http_date(int(meta['modified']))
     for k in [x for x in meta.keys() if x.startswith('X-Container-Meta-')]:
-        response[smart_str(
-            k, strings_only=True)] = smart_str(meta[k], strings_only=True)
-    l = [smart_str(x, strings_only=True) for x in meta['object_meta']
+        response[smart_str_(k)] = smart_str_(meta[k])
+    l = [smart_str_(x) for x in meta['object_meta']
          if x.startswith('X-Object-Meta-')]
     response['X-Container-Object-Meta'] = ','.join([x[14:] for x in l])
     response['X-Container-Block-Size'] = request.backend.block_size
@@ -192,9 +196,8 @@ def put_container_headers(request, response, meta, policy):
         response['X-Container-Until-Timestamp'] = http_date(
             int(meta['until_timestamp']))
     for k, v in policy.iteritems():
-        response[smart_str(format_header_key('X-Container-Policy-' + k),
-                           strings_only=True)] = smart_str(v,
-                                                           strings_only=True)
+        response[smart_str_(format_header_key('X-Container-Policy-' + k))] = \
+            smart_str_(v)
 
 
 def get_object_headers(request):
@@ -232,24 +235,22 @@ def put_object_headers(response, meta, restricted=False, token=None,
         if TRANSLATE_UUIDS:
             meta['modified_by'] = \
                 retrieve_displayname(token, meta['modified_by'])
-        response['X-Object-Modified-By'] = smart_str(
-            meta['modified_by'], strings_only=True)
+        response['X-Object-Modified-By'] = smart_str_(meta['modified_by'])
         response['X-Object-Version'] = meta['version']
         response['X-Object-Version-Timestamp'] = http_date(
             int(meta['version_timestamp']))
         for k in [x for x in meta.keys() if x.startswith('X-Object-Meta-')]:
-            response[smart_str(
-                k, strings_only=True)] = smart_str(meta[k], strings_only=True)
+            response[smart_str_(k)] = smart_str_(meta[k])
         for k in (
             'Content-Encoding', 'Content-Disposition', 'X-Object-Manifest',
             'X-Object-Sharing', 'X-Object-Shared-By', 'X-Object-Allowed-To',
                 'X-Object-Public'):
             if k in meta:
-                response[k] = smart_str(meta[k], strings_only=True)
+                response[k] = smart_str_(meta[k])
     else:
         for k in ('Content-Encoding', 'Content-Disposition'):
             if k in meta:
-                response[k] = smart_str(meta[k], strings_only=True)
+                response[k] = smart_str_(meta[k])
     if include_content_disposition:
         user_defined = 'Content-Disposition' in response
         valid_disposition_type = disposition_type in ('inline', 'attachment')
@@ -257,8 +258,8 @@ def put_object_headers(response, meta, restricted=False, token=None,
             return
         if not valid_disposition_type:
             disposition_type = 'inline'
-        response['Content-Disposition'] = smart_str('%s; filename="%s"' % (
-            disposition_type, meta['name']), strings_only=True)
+        response['Content-Disposition'] = smart_str_('%s; filename="%s"' % (
+            disposition_type, meta['name']))
 
 
 def update_manifest_meta(request, v_account, meta):
@@ -486,37 +487,23 @@ def copy_or_move_object(request, src_account, src_container, src_name,
         del(request.META['CONTENT_TYPE'])
     content_type, meta, permissions, public = get_object_headers(request)
     src_version = request.META.get('HTTP_X_SOURCE_VERSION')
-    try:
-        if move:
-            version_id = request.backend.move_object(
-                request.user_uniq, src_account, src_container, src_name,
-                dest_account, dest_container, dest_name,
-                content_type, 'pithos', meta, False, permissions, delimiter,
-                listing_limit=listing_limit)
-        else:
-            version_id = request.backend.copy_object(
-                request.user_uniq, src_account, src_container, src_name,
-                dest_account, dest_container, dest_name,
-                content_type, 'pithos', meta, False, permissions,
-                src_version, delimiter, listing_limit=listing_limit)
-    except NotAllowedError:
-        raise faults.Forbidden('Not allowed')
-    except (ItemNotExists, VersionNotExists):
-        raise faults.ItemNotFound('Container or object does not exist')
-    except ValueError:
-        raise faults.BadRequest('Invalid sharing header')
-    except QuotaError, e:
-        raise faults.RequestEntityTooLarge('Quota error: %s' % e)
+    if move:
+        version_id = request.backend.move_object(
+            request.user_uniq, src_account, src_container, src_name,
+            dest_account, dest_container, dest_name,
+            content_type, 'pithos', meta, False, permissions, delimiter,
+            listing_limit=listing_limit)
+    else:
+        version_id = request.backend.copy_object(
+            request.user_uniq, src_account, src_container, src_name,
+            dest_account, dest_container, dest_name,
+            content_type, 'pithos', meta, False, permissions,
+            src_version, delimiter, listing_limit=listing_limit)
 
     if public is not None:
-        try:
-            request.backend.update_object_public(
-                request.user_uniq, dest_account,
-                dest_container, dest_name, public)
-        except NotAllowedError:
-            raise faults.Forbidden('Not allowed')
-        except ItemNotExists:
-            raise faults.ItemNotFound('Object does not exist')
+        request.backend.update_object_public(
+            request.user_uniq, dest_account,
+            dest_container, dest_name, public)
     return version_id
 
 
@@ -668,7 +655,7 @@ def get_sharing(request):
             ret['write'] = [replace_permissions_displayname(
                 getattr(request, 'token', None), x)
                 for x in ret.get('write', [])]
-        except ItemNotExists, e:
+        except ItemNotExists as e:
             raise faults.BadRequest(
                 'Bad X-Object-Sharing header value: unknown account: %s' % e)
 
@@ -977,13 +964,10 @@ def put_object_block(request, hashmap, data, offset, is_snapshot):
     bo = offset % request.backend.block_size
     bl = min(len(data), request.backend.block_size - bo)
     if bi < len(hashmap):
-        try:
-            hashmap[bi] = request.backend.update_block(hashmap[bi],
-                                                       data[:bl],
-                                                       offset=bo,
-                                                       is_snapshot=is_snapshot)
-        except IllegalOperationError, e:
-            raise faults.Forbidden(e[0])
+        hashmap[bi] = request.backend.update_block(hashmap[bi],
+                                                   data[:bl],
+                                                   offset=bo,
+                                                   is_snapshot=is_snapshot)
     else:
         hashmap.append(request.backend.put_block(('\x00' * bo) + data[:bl]))
     return bl  # Return ammount of data written.
@@ -1070,8 +1054,8 @@ def update_request_headers(request):
             v.decode('ascii')
             if '%' in k or '%' in v:
                 del(request.META[k])
-                request.META[smart_unicode(unquote(k), strings_only=True)] = \
-                    smart_unicode(unquote(v), strings_only=True)
+                request.META[smart_unicode_(unquote(k))] = \
+                    smart_unicode_(unquote(v))
         except UnicodeDecodeError:
             raise faults.BadRequest('Bad character in headers.')
 
@@ -1120,10 +1104,21 @@ def api_method(http_method=None, token_required=True, user_required=True,
 
                 success_status = True
                 return response
-            except LimitExceeded, le:
+            except LimitExceeded as le:
                 raise faults.BadRequest(le.args[0])
-            except BrokenSnapshot, bs:
+            except BrokenSnapshot as bs:
                 raise faults.BadRequest(bs.args[0])
+            except (IllegalOperationError, NotAllowedError) as e:
+                raise faults.Forbidden(smart_str_(e))
+            except (InconsistentContentSize, InvalidPolicy, LimitExceeded,
+                    InvalidHash, ValueError) as e:
+                raise faults.BadRequest(smart_str_(e))
+            except (ItemNotExists, VersionNotExists) as e:
+                raise faults.ItemNotFound(smart_str_(e))
+            except ContainerNotEmpty as e:
+                raise faults.Conflict(smart_str_(e))
+            except QuotaError as e:
+                raise faults.RequestEntityTooLarge('Quota error: %s' % e)
             finally:
                 # Always close PithosBackend connection
                 if getattr(request, "backend", None) is not None:
@@ -1244,7 +1239,7 @@ def view_method():
                     parts[3] = urlencode(params)
                     redirect_uri = urlunsplit(parts)
                     return HttpResponseRedirect(redirect_uri)
-            except AstakosClientException, err:
+            except AstakosClientException as err:
                 logger.exception(err)
                 raise PermissionDenied
         return wrapper

@@ -922,7 +922,7 @@ bypassing automatic VM allocation.
     --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea --backend-id=2 \
     --password='example_passw0rd' --name='test_vm'
 
-The above commnd will create a new VM for user
+The above command will create a new VM for user
 `7cf4d078-67bf-424d-8ff2-8669eb4841ea` in the Ganeti backend with ID 2. By
 default this command will issue a Ganeti job to create the VM
 (`OP_INSTANCE_CREATE`) and return. As in other commands, the `--wait=True`
@@ -1146,7 +1146,7 @@ subnet's IPv4 address allocation pool:
 
   $ snf-manage subnet-inspect <subnet_id>
 
-Connect a VM to the created private network. The port will be automatically
+Connect a VM to the created private network. The port will automatically
 be assigned an IPv4 address from one of the network's available IPs. This
 command will result in sending an `OP_INSTANCE_MODIFY` Ganeti command and
 attaching a NIC to the specified Ganeti instance.
@@ -1321,7 +1321,7 @@ As already mentioned Cyclades use a pool of Bridges that must correspond
 to Physical VLAN at the Ganeti level. A bridge from the pool is assigned to
 each network of flavor `PHYSICAL_VLAN`. Creation of this pool is done
 using `snf-manage pool-create` command. For example the following command
-will create a pool containing the brdiges from `prv1` to `prv21`.
+will create a pool containing the bridges from `prv1` to `prv21`.
 
 .. code-block:: console
 
@@ -1445,7 +1445,7 @@ Cyclades database may differ from the real state of VMs and networks in the
 Ganeti backends. The reconciliation process is designed to synchronize the
 state of the Cyclades DB with Ganeti. There are two management commands for
 reconciling VMs and Networks that will detect stale, orphans and out-of-sync
-VMs and networks. To fix detected inconsistencies, use the `--fix-all`.
+VMs and networks. To fix detected inconsistencies, use the `--fix-all` option.
 
 .. code-block:: console
 
@@ -1672,9 +1672,9 @@ snf-cyclades-gtools configuration
 
 To enable VM stats collecting, you will need to:
 
- * Install collectd on the every Ganeti (VM-capable) node.
+ * Install collectd on every Ganeti (VM-capable) node.
  * Enable the Ganeti stats plugin in your collectd configuration. This can be
-   achived by either copying the example collectd conf file that comes with
+   achieved by either copying the example collectd conf file that comes with
    snf-cyclades-gtools
    (``/usr/share/doc/snf-cyclades-gtools/examples/ganeti-stats-collectd.conf``)
    or by adding the following line to your existing (or default) collectd
@@ -1722,14 +1722,14 @@ fetch them when needed.
 Helpdesk
 --------
 
-Helpdesk application provides the ability to view the virtual servers and
+The Helpdesk application provides the ability to view the virtual servers and
 networks of all users, along with the ability to perform some basic actions
 like administratively suspending a server. You can perform look-ups by
 user UUID or email, by server ID (vm-$id) or by an IPv4 address.
 
 If you want to activate the helpdesk application you can set to `True` the
 `HELPDESK_ENABLED` setting. Access to helpdesk views (under
-`$BASE_URL/helpdesk`) is only to allowed to users that belong to Astakos
+`$BASE_URL/helpdesk`) is only allowed to users that belong to Astakos
 groups defined in the `HELPDESK_PERMITTED_GROUPS` setting, which by default
 contains the `helpdesk` group. For example, to allow <user_id>
 to access helpdesk view, you should run the following command in the Astakos

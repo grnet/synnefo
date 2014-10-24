@@ -18,6 +18,7 @@ set -e
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
+PKGNAME=snf-cyclades-gtools
 
 case "$1" in
     remove|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
@@ -26,6 +27,12 @@ case "$1" in
     purge)
         echo "Removing rc.d links..."
         update-rc.d snf-ganeti-eventd remove
+
+        conf_files=$(dpkg-query -W -f='${Conffiles}' $PKGNAME | awk '{print $1'})
+        for f in $conf_files; do
+          dpkg-statoverride --remove $f || test $? -eq 2
+        done
+
     ;;
 
     *)

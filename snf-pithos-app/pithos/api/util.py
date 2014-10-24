@@ -1132,7 +1132,7 @@ def restrict_to_host(host=None):
     """
     View decorator which restricts wrapped view to be accessed only under the
     host set. If an invalid host is identified and request HTTP method is one
-    of ``GET``, ``HOST``, the decorator will return a redirect response using a
+    of ``GET``, ``HEAD``, the decorator will return a redirect response using a
     clone of the request with host replaced to the one the restriction applies
     to.
 

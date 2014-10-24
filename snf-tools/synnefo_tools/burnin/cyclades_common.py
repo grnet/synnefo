@@ -22,6 +22,7 @@ had grown too much.
 
 import time
 import IPy
+import errno
 import base64
 import socket
 import random
@@ -470,17 +471,27 @@ class CycladesTests(BurninTests):
     def _check_file_through_ssh(self, hostip, username, password,
                                 remotepath, content):
         """Fetch file from server and compare contents"""
-        self.info("Fetching file %s from remote server", remotepath)
-        transport = paramiko.Transport((hostip, 22))
-        transport.connect(username=username, password=password)
-        with tempfile.NamedTemporaryFile() as ftmp:
-            sftp = paramiko.SFTPClient.from_transport(transport)
-            sftp.get(remotepath, ftmp.name)
-            sftp.close()
-            transport.close()
-            self.info("Comparing file contents")
-            remote_content = base64.b64encode(ftmp.read())
-            self.assertEqual(content, remote_content)
+        def check_fun():
+            """Fetch file"""
+            try:
+                transport = paramiko.Transport((hostip, 22))
+                transport.connect(username=username, password=password)
+                with tempfile.NamedTemporaryFile() as ftmp:
+                    sftp = paramiko.SFTPClient.from_transport(transport)
+                    sftp.get(remotepath, ftmp.name)
+                    sftp.close()
+                    transport.close()
+                    self.info("Comparing file contents")
+                    remote_content = base64.b64encode(ftmp.read())
+                    self.assertEqual(content, remote_content)
+            except socket.error as (err_no, err_str):
+                if err_no == errno.ECONNREFUSED:
+                    raise Retry()
+                else:
+                    raise
+        opmsg = "Fetching file %s from remote server" % remotepath
+        self.info(opmsg)
+        self._try_until_timeout_expires(opmsg, check_fun)
 
     # ----------------------------------
     # Networks

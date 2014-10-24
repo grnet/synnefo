@@ -1307,6 +1307,14 @@ class Pithos(base.Component):
             "snf-manage service-export-pithos > %s" % f
             ]
 
+    @base.run_cmds
+    def prepare(self):
+        return [
+            #FIXME: Workaround until snf-pithos-webclient creates conf
+            # files properly with root:synnefo
+            "chown root:synnefo /etc/synnefo/*snf-pithos-webclient*conf",
+            ]
+
     def _configure(self):
         r1 = {
             "ACCOUNTS": self.ctx.astakos.cname,

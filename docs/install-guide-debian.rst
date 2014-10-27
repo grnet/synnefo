@@ -2192,7 +2192,7 @@ Configure the vncauthproxy settings in
 
 .. code-block:: console
 
-    CYCLADES_VNCAUTHPROXY_OPTS = {
+    CYCLADES_VNCAUTHPROXY_OPTS = [{
         'auth_user': 'synnefo',
         'auth_password': 'secret_password',
         'server_address': '127.0.0.1',
@@ -2200,7 +2200,8 @@ Configure the vncauthproxy settings in
         'enable_ssl': False,
         'ca_cert': None,
         'strict': False,
-    }
+    }]
+
 
 Depending on your snf-vncauthproxy setup, you might want to tweak the above
 settings. Check the `documentation
@@ -2220,8 +2221,11 @@ Both files should be readable by the `vncauthproxy` user or group.
 
 .. note::
 
-    At the moment, the certificates should be issued to the FQDN of the
-    Cyclades worker.
+    When installing snf-vncauthproxy on the same node as Cyclades and using the
+    default settings for snf-vncauthproxy, the certificates should be issued to
+    the FQDN of the Cyclades worker. Refer to the :ref:`admin guide
+    <admin-guide-vnc>`, for more information on how to setup vncauthproxy on a
+    different host / interface.
 
 We have now finished with the basic Cyclades configuration.
 

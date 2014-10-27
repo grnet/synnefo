@@ -8,6 +8,19 @@ repository and have aligned versions.
 
 .. _Changelog-0.16:
 
+v0.16rc4
+========
+
+Released: UNRELEASED
+
+Cyclades
+--------
+
+* Change the ``CYCLADES_VNCAUTHPROXY_OPTS`` setting to a list of dictionaries
+  and support configurable vncauthproxy proxy addresses (added in
+  snf-vncauthproxy-1.6).
+
+
 v0.16rc3
 ========
 

@@ -357,8 +357,11 @@ Both files should be readable by the `vncauthproxy` user or group.
 
 .. note::
 
-    At the moment, the certificates should be issued to the FQDN of the
-    Cyclades worker.
+    When installing snf-vncauthproxy on the same node as Cyclades and using the
+    default settings for snf-vncauthproxy, the certificates should be issued to
+    the FQDN of the Cyclades worker. Refer to the :ref:`admin guide
+    <admin-guide-vnc>`, for more information on how to setup vncauthproxy on a
+    different host / interface.
 
 For more information on how to setup snf-vncauthproxy check the
 snf-vncauthproxy `documentation <https://www.synnefo.org/docs/snf-vncauthproxy/latest/index.html#usage-with-synnefo>`_

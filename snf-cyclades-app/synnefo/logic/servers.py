@@ -17,6 +17,7 @@ import logging
 
 from datetime import datetime
 from socket import getfqdn
+from random import choice
 from django import dispatch
 from synnefo.db import transaction
 from django.utils import simplejson as json
@@ -397,6 +398,11 @@ def console(vm, console_type):
     password = util.random_password()
 
     vnc_extra_opts = settings.CYCLADES_VNCAUTHPROXY_OPTS
+
+    # Maintain backwards compatibility with the dict setting
+    if isinstance(vnc_extra_opts, list):
+        vnc_extra_opts = choice(vnc_extra_opts)
+
     fwd = request_vnc_forwarding(sport, daddr, dport, password,
                                  console_type=console_type, **vnc_extra_opts)
 
@@ -410,9 +416,14 @@ def console(vm, console_type):
     if get_console_data(i) != console_data:
         raise faults.ServiceUnavailable('VNC Server settings changed.')
 
+    try:
+        host = fwd['proxy_address']
+    except KeyError:
+        host = getfqdn()
+
     console = {
         'type': console_type,
-        'host': getfqdn(),
+        'host': host,
         'port': fwd['source_port'],
         'password': password}
 

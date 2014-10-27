@@ -1439,6 +1439,71 @@ To fix detected inconsistencies, use the `--fix` option.
   $ snf-manage reconcile-pools
   $ snf-manage reconcile-pools --fix
 
+
+.. _admin-guide-vnc:
+
+snf-vncauthproxy configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Since ``snf-vncauthproxy-1.6`` and ``snf-cyclades-app-0.16``, it is possible
+to run snf-vncauthproxy on a separate node and have multiple snf-vncauthproxy
+instances / nodes, to serve clients.
+
+The ``CYCLADES_VNCAUTHPROXY_OPTS`` setting has become a list of dictionaries,
+each of which defines one snf-vncauthproxy instance. Each vncauthproxy should
+be properly configured to accept control connections by the Cylades host (via
+the ``--listen-address`` CLI parameter of snf-vncauthproxy) and VNC connections
+from clients (via the ``--proxy-listen-address`` CLI parameter.
+
+For a two-node vncauthproxy setup, the ``CYCLADES_VNCAUTHPROXY_OPTS`` would
+look like:
+
+.. code-block:: console
+
+    CYCLADES_VNCAUTHPROXY_OPTS = [
+       {
+        'auth_user': 'synnefo',
+        'auth_password': 'secret_password',
+        'server_address': 'node1.synnefo.live',
+        'server_port': 24999,
+        'enable_ssl': True,
+        'ca_cert': '/path/to/cacert',
+        'strict': True,
+       },
+       {
+        'auth_user': 'synnefo',
+        'auth_password': 'secret_password',
+        'server_address': 'node2.synnefo.live',
+        'server_port': 24999,
+        'enable_ssl': False,
+        'ca_cert': '/path/to/cacert',
+        'strict': True,
+       },
+    ]
+
+The ``server_address`` is the host / IP which Cyclades will use for the control
+connection, in order to set up the forwarding.
+
+The vncauthproxy ``DAEMON_OPTS`` option in ``/etc/default/vncauthproxy`` would
+look like:
+
+.. code-block:: console
+
+    DAEMON_OPTS="--pid-file=$PIDFILE --listen-address=node1.synnefo.live --proxy-listen-address=node1.synnefo.live"
+
+The ``--proxy-listen-address`` is the host / IP which clients (Web browsers /
+VNC clients) will use to connect to snf-vncauthproxy.
+
+In case that snf-vncauthproxy doesn't run on the same node as the Cyclades
+node, it is highly recommended to enable SSL on the control socket, using
+strict verification of the server certificate. The only caveat, for the time
+being, is that the same certificate, provided to snf-vncauthproxy, is used for
+both the control and the client connections. If the control and client host
+(``--listen-address`` and ``--proxy-listen-address`` parameters, respectively)
+differ, you should make sure to generate a certificate covering both (using the
+one as common name / CN, and specifying the other as a subject alternative
+name).
+
 .. _admin-guide-stats:
 
 VM stats collecting

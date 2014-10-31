@@ -1,0 +1,7 @@
+# x509v3 extenstions to add when creating the synnefo certificate
+# This is certificate and not a CA
+basicConstraints = CA:FALSE
+# The certificate is valid for the CN but also for other alternative names
+subjectAltName = DNS:%DOMAIN%,DNS:*.%DOMAIN%
+# The certificate will be used for server authentication (e.g. apache2)
+extendedKeyUsage = serverAuth

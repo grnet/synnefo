@@ -76,6 +76,7 @@ def update_admin(fn):
         ctx.admin_node = cl.node
         ctx.admin_fqdn = cl.fqdn
         cl.NS = NS(node=ctx.ns.node, ctx=ctx)
+        cl.CA = CA(node=ctx.ca.node, ctx=ctx)
         cl.NFS = NFS(node=ctx.nfs.node, ctx=ctx)
         cl.DB = DB(node=ctx.db.node, ctx=ctx)
         cl.ASTAKOS = Astakos(node=ctx.astakos.node, ctx=ctx)
@@ -561,6 +562,46 @@ class DRBD(base.Component):
         return [
             "modprobe -rv drbd || true",
             "modprobe -v drbd",
+            ]
+
+
+class CA(base.Component):
+    REQUIRED_PACKAGES = [
+        "openssl"
+        ]
+
+    alias = constants.CA
+    service = constants.CA
+
+    def required_components(self):
+        return [
+            HW, SSH, DNS, APT,
+            ]
+
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+
+    @base.run_cmds
+    def prepare(self):
+        return [
+            "mkdir -p /root/ca"
+            ]
+
+    def _configure(self):
+        r1 = {
+            "domain": self.node.domain,
+            }
+        return [
+            ("/root/create_root_ca.sh", {}, {"mode": 0755}),
+            ("/root/ca/ca-x509-extensions.cnf", r1, {}),
+            ("/root/ca/x509-extensions.cnf", r1, {}),
+            ]
+
+    @base.run_cmds
+    def initialize(self):
+        return [
+            "/root/create_root_ca.sh"
             ]
 
 

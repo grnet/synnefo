@@ -1590,6 +1590,18 @@ class VNC(base.Component):
         "snf-vncauthproxy"
         ]
 
+    alias = constants.VNC
+    service = constants.VNC
+
+    def required_components(self):
+        return [
+            HW, SSH, DNS, APT,
+            ]
+
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+
     @base.run_cmds
     def prepare(self):
         user = config.synnefo_user
@@ -1602,6 +1614,14 @@ class VNC(base.Component):
             "cp /etc/ssl/private/ssl-cert-snakeoil.key %s/key.pem" % outdir,
             "chown vncauthproxy:vncauthproxy %s/*.pem" % outdir,
             "vncauthproxy-passwd -p %s %s %s" % (passwd, users_file, user)
+            ]
+
+    def _configure(self):
+        r1 = {
+            "vnc": self.ctx.vnc.cname,
+        }
+        return [
+            ("/etc/default/vncauthproxy", r1, {})
             ]
 
     @base.run_cmds

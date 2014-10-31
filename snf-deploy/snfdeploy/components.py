@@ -1533,6 +1533,7 @@ snf-manage network-create --subnet6={0} \
             "CYCLADES_NODE_IP": self.ctx.cyclades.ip,
             "CYCLADES_SECRET": config.cyclades_secret,
             "SHARED_GANETI_DIR": config.ganeti_dir,
+            "VNC": self.ctx.vnc.cname,
             }
         return [
             ("/etc/synnefo/cyclades.conf", r1, {}),

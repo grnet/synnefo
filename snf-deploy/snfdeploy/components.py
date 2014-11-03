@@ -892,6 +892,15 @@ class Apache(base.Component):
         "python-openssl",
         ]
 
+    @update_admin
+    def admin_pre(self):
+        self.CA.get("/root/ca/cert.pem", "/tmp/cert.pem")
+        self.put("/tmp/cert.pem", "/etc/ssl/certs/synnefo.pem")
+        self.CA.get("/root/ca/key.pem", "/tmp/key.pem")
+        self.put("/tmp/key.pem", "/etc/ssl/private/synnefo.key")
+        self.CA.get("/root/ca/cacert.pem", "/tmp/cacert.pem")
+        self.put("/tmp/cacert.pem", "/etc/ssl/certs/synnefo_ca.pem")
+
     @base.run_cmds
     def prepare(self):
         return [
@@ -1601,6 +1610,11 @@ class VNC(base.Component):
     @update_admin
     def admin_pre(self):
         self.NS.update_ns()
+        self.run("mkdir -p /var/lib/vncauthproxy")
+        self.CA.get("/root/ca/cert.pem", "/tmp/cert.pem")
+        self.put("/tmp/cert.pem", "/var/lib/vncauthproxy/cert.pem")
+        self.CA.get("/root/ca/key.pem", "/tmp/key.pem")
+        self.put("/tmp/key.pem", "/var/lib/vncauthproxy/key.pem")
 
     @base.run_cmds
     def prepare(self):
@@ -1610,8 +1624,6 @@ class VNC(base.Component):
         users_file = "%s/users" % outdir
         return [
             "mkdir -p %s" % outdir,
-            "cp /etc/ssl/certs/ssl-cert-snakeoil.pem %s/cert.pem" % outdir,
-            "cp /etc/ssl/private/ssl-cert-snakeoil.key %s/key.pem" % outdir,
             "chown vncauthproxy:vncauthproxy %s/*.pem" % outdir,
             "vncauthproxy-passwd -p %s %s %s" % (passwd, users_file, user)
             ]
@@ -1703,6 +1715,9 @@ class Kamaki(base.Component):
         self.ASTAKOS.activate_user()
         self.DB.get_user_info_from_db(config.user_email)
         self.ADMIN.make_user_admin_user()
+        self.CA.get("/root/ca/cacert.pem", "/tmp/cacert.pem")
+        self.put("/tmp/cacert.pem",
+          "/usr/local/share/ca-certificates/Synnefo_Root_CA.crt")
 
     @base.run_cmds
     def prepare(self):
@@ -1711,12 +1726,15 @@ cat >> /etc/ca-certificates.conf <<EOF
 
 # Deploy local certificate
 local.org/snakeoil.crt
+local.org/synnefo.crt
 EOF
 """
         return [
             "mkdir -p /usr/share/ca-certificates/local.org",
             "cp /etc/ssl/certs/ssl-cert-snakeoil.pem \
                 /usr/share/ca-certificates/local.org/snakeoil.crt",
+            "cp /root/ca/cert.pem \
+              /usr/share/ca-certificates/local.org/synnefo.crt",
             cmd,
             "update-ca-certificates",
             ]
@@ -2103,11 +2121,21 @@ class Router(base.Component):
 class Firefox(base.Component):
     REQUIRED_PACKAGES = [
         "iceweasel",
+        "libnss3-tools",
         ]
+
+    @update_admin
+    def admin_pre(self):
+        self.CA.get("/root/ca/cacert.pem", "/tmp/cacert.pem")
+        self.put("/tmp/cacert.pem", "/tmp/Synnefo_Root_CA.crt")
 
     @base.run_cmds
     def initialize(self):
         f = constants.CERT_OVERRIDE
         return [
+            "echo 12345678 > /tmp/iceweasel_db_pass",
+            "certutil -N -d /etc/iceweasel/profile/ -f /tmp/iceweasel_db_pass",
+            "certutil -A -n synnefo -t TCu -d /etc/iceweasel/profile/ \
+              -i /tmp/Synnefo_Root_CA.crt",
             "cat /tmp/%s_* >> /etc/iceweasel/profile/%s" % (f, f)
             ]

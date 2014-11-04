@@ -12,5 +12,6 @@ CONFIG = {
    '--worker-class=gevent',
    # '--worker-class=sync',
    '--log-level=debug',
+   '--log-file=/var/log/synnefo/gunicorn.log',
  ),
 }

@@ -13,5 +13,6 @@ CONFIG = {
    '--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py',
    # '--worker-class=sync',
    '--log-level=debug',
+   '--log-file=/var/log/synnefo/gunicorn.log',
  ),
 }

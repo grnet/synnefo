@@ -120,26 +120,6 @@ def export_and_import_service(fn):
     return wrapper
 
 
-def cert_override(fn):
-    """ Create all needed entries for cert_override.txt file
-
-    Append them in a tmp file and upload them to client node
-
-    """
-    def wrapper(*args, **kwargs):
-        cl = args[0]
-        f = "/tmp/" + constants.CERT_OVERRIDE + "_" + cl.service
-        for domain in [cl.node.domain, cl.node.cname, cl.node.ip]:
-            cmd = """
-python /root/firefox_cert_override.py {0} {1}:443 >> {2}
-""".format(constants.CERT_PATH, domain, f)
-            cl.run(cmd)
-        cl.get(f, f + ".local")
-        cl.CLIENT.put(f + ".local", f)
-        return fn(*args, **kwargs)
-    return wrapper
-
-
 # ########################## Components ############################
 
 # A Component() gets initialized with an execution context that is a
@@ -1180,7 +1160,6 @@ class Astakos(base.Component):
 
     @update_admin
     @export_and_import_service
-    @cert_override
     def admin_post(self):
         self.set_astakos_default_quota()
 
@@ -1233,11 +1212,6 @@ class CMS(base.Component):
     @base.run_cmds
     def restart(self):
         return ["/etc/init.d/gunicorn restart"]
-
-    @update_admin
-    @cert_override
-    def admin_post(self):
-        pass
 
 
 class Mount(base.Component):
@@ -1397,7 +1371,6 @@ class Pithos(base.Component):
 
     @update_admin
     @export_and_import_service
-    @cert_override
     def admin_post(self):
         self.ASTAKOS.set_pithos_default_quota()
 
@@ -1529,8 +1502,6 @@ snf-manage network-create --subnet6={0} \
             "STATS": self.ctx.stats.cname,
             "STATS_SECRET": config.stats_secret,
             "SYNNEFO_VNC_PASSWD": config.synnefo_vnc_passwd,
-            # TODO: fix java issue with no signed jar
-            "CYCLADES_NODE_IP": self.ctx.cyclades.ip,
             "CYCLADES_SECRET": config.cyclades_secret,
             "SHARED_GANETI_DIR": config.ganeti_dir,
             "VNC": self.ctx.vnc.cname,
@@ -1589,7 +1560,6 @@ snf-manage volume-type-create --name {0} --disk-template {0}
 
     @update_admin
     @export_and_import_service
-    @cert_override
     def admin_post(self):
         self.create_flavors()
         self.ASTAKOS.set_cyclades_default_quota()
@@ -1698,12 +1668,6 @@ class Admin(base.Component):
             "snf-manage user-modify %s --add-group=admin" % user_id
             ]
 
-    @update_admin
-    @cert_override
-    def admin_post(self):
-        pass
-
-
 class Kamaki(base.Component):
     REQUIRED_PACKAGES = [
         "python-progress",
@@ -1722,21 +1686,7 @@ class Kamaki(base.Component):
 
     @base.run_cmds
     def prepare(self):
-        cmd = """
-cat >> /etc/ca-certificates.conf <<EOF
-
-# Deploy local certificate
-local.org/snakeoil.crt
-local.org/synnefo.crt
-EOF
-"""
         return [
-            "mkdir -p /usr/share/ca-certificates/local.org",
-            "cp /etc/ssl/certs/ssl-cert-snakeoil.pem \
-                /usr/share/ca-certificates/local.org/snakeoil.crt",
-            "cp /root/ca/cert.pem \
-              /usr/share/ca-certificates/local.org/synnefo.crt",
-            cmd,
             "update-ca-certificates",
             ]
 
@@ -2132,11 +2082,9 @@ class Firefox(base.Component):
 
     @base.run_cmds
     def initialize(self):
-        f = constants.CERT_OVERRIDE
         return [
             "echo 12345678 > /tmp/iceweasel_db_pass",
             "certutil -N -d /etc/iceweasel/profile/ -f /tmp/iceweasel_db_pass",
             "certutil -A -n synnefo -t TCu -d /etc/iceweasel/profile/ \
               -i /tmp/Synnefo_Root_CA.crt",
-            "cat /tmp/%s_* >> /etc/iceweasel/profile/%s" % (f, f)
             ]

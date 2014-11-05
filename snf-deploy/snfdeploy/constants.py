@@ -41,9 +41,6 @@ DEFAULT_CLUSTER = None
 DEFAULT_SETUP = "auto"
 DUMMY_NODE = "dummy"
 
-CERT_OVERRIDE = "cert_override.txt"
-CERT_PATH = "/etc/ssl/certs/ssl-cert-snakeoil.pem"
-
 DEFAULT_PASSWD_LENGTH = 10
 
 DB_PASSWD = "synnefo_db_passwd"

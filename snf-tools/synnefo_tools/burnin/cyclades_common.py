@@ -22,7 +22,6 @@ had grown too much.
 
 import time
 import IPy
-import errno
 import base64
 import socket
 import random
@@ -438,10 +437,8 @@ class CycladesTests(BurninTests):
         try:
             ssh.connect(hostip, username=username, password=password)
         except paramiko.SSHException as err:
-            if err.args[0] == "Error reading SSH protocol banner":
-                raise Retry()
-            else:
-                raise
+            self.warning("%s", err.message)
+            raise Retry()
         _, stdout, _ = ssh.exec_command(command)
         status = stdout.channel.recv_exit_status()
         output = stdout.readlines()
@@ -484,11 +481,9 @@ class CycladesTests(BurninTests):
                     self.info("Comparing file contents")
                     remote_content = base64.b64encode(ftmp.read())
                     self.assertEqual(content, remote_content)
-            except socket.error as (err_no, err_str):
-                if err_no == errno.ECONNREFUSED:
-                    raise Retry()
-                else:
-                    raise
+            except paramiko.SSHException as err:
+                self.warning("%s", err.message)
+                raise Retry()
         opmsg = "Fetching file %s from remote server" % remotepath
         self.info(opmsg)
         self._try_until_timeout_expires(opmsg, check_fun)

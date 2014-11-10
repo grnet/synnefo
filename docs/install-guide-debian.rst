@@ -1543,37 +1543,44 @@ Ganeti nodes:
 
    # apt-get install qemu-kvm
 
-It's time to install Ganeti. To be able to use hotplug (which will be part of
-the official Ganeti 2.10), we recommend using our Ganeti package version:
+It's time to install Ganeti. We recommend using our Ganeti package version:
 
-``2.8.4+snap1+b64v1+kvm2+ext1+lockfix1+ipfix1+ifdown1+backports5-1~wheezy``
+``2.10.7+snap1+b64v1+ext1+lockfix1+ifdown1+qmp1+bpo1-1~wheezy``
 
 Let's briefly explain each patch set:
 
-    * snap adds snapshot support for ext disk template
+    * snap extends snapshot support for the ext disk template (separate LU)
     * b64 saves networks' bitarrays in a more compact representation
-    * kvm adds migration_caps hypervisor param
     * ext
 
-      * exports logical id in hooks
       * allows arbitrary params to reach kvm command (i.e. cache overrides
         disk_cache hvparam, heads and secs define the disk's geometry)
 
     * lockfix is a workaround for Issue #621
-    * ipfix does not require IP if mode is routed (needed for IPv6 only NICs)
     * ifdown cleans up node's configuration upon instance migration/shutdown
-    * backports is a set of patches backported from stable-2.10
+    * qmp replace HMP with QMP commands during hotplug
+    * bpo is a set of patches backported from later branches
 
-      * Hotplug support
-      * Better networking support (NIC configuration scripts)
-      * Change IP pool to support NAT instances
-      * Change RAPI to accept depends body argument and shutdown_timeout
+      * Make name and uuid Disk attributes reach bdev (2.11)
+      * IDiskParams fixes (2.11)
+      * Proper support for the --cdrom option (2.12)
+      * Add migration capabilities as an hvparam (2.13)
+      * Convert hv_kvm to a package (2.12)
+      * Extend QMP support (2.12)
+      * Add access to IDiskParams (2.13)
+      * Support userspace access for ExtStorage (2.13)
+      * Allow NICs with routed mode and no IP (2.13)
+      * Add support for KVM multiqueue virtio-net (2.12)
+      * Support Snapshot() for the ExtStorage interface (2.13)
+      * Support disk hotplug even with chroot or SM (2.13)
+      * Some refactor wrt NICs at the HV level (2.12)
+
 
 To install Ganeti run:
 
 .. code-block:: console
 
-   # apt-get install snf-ganeti ganeti-htools ganeti-haskell ganeti2
+   # apt-get install snf-ganeti ganeti2
 
 Ganeti will make use of drbd. To enable this and make the configuration
 permanent you have to do the following :

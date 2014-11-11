@@ -18,6 +18,8 @@ This is the burnin class that tests the Snapshots functionality
 """
 
 import random
+import stat
+import base64
 
 from synnefo_tools.burnin.common import Proper, QPITHOS, QADD, QREMOVE, GB
 from synnefo_tools.burnin.cyclades_common import CycladesTests
@@ -30,9 +32,11 @@ class SnapshotsTestSuite(CycladesTests):
     """Test Snapshot functionality"""
     personality = Proper(value=None)
     account = Proper(value=None)
-    server = Proper(value=None)
+    servers = Proper(value=[])
     snapshot = Proper(value=None)
     tmp_container = Proper(value='burnin-snapshot-temp')
+    use_flavor = Proper(value=None)
+    personality = Proper(value=None)
 
     def test_001_submit_create_snapshot(self):
         """Create a server and take a snapshot"""
@@ -43,21 +47,31 @@ class SnapshotsTestSuite(CycladesTests):
              f['SNF:disk_template'].startswith('ext_archipelago')]
         self.assertGreater(len(archipelago_flavors), 0,
                            "No 'archipelago' disk template found")
-        use_flavor = random.choice(archipelago_flavors)
+        self.use_flavor = random.choice(archipelago_flavors)
+        if self._image_is(use_image, "linux"):
+            # Enforce personality test
+            self.info("Creating personality content to be used")
+            self.personality = [{
+                'path': "/root/test_inj_file",
+                'owner': "root",
+                'group': "root",
+                'mode': stat.S_IRUSR | stat.S_IWUSR,
+                'contents': base64.b64encode("This is a personality file")
+            }]
 
-        servername = "%s for snapshot" % self.run_id
-        self.info("Creating a server with name %s", servername)
         self.info("Using image %s with id %s",
                   use_image['name'], use_image['id'])
         self.info("Using flavor %s with id %s",
-                  use_flavor['name'], use_flavor['id'])
-        self.server = self._create_server(use_image,
-                                          use_flavor,
-                                          network=True)
-        self._insist_on_server_transition(self.server, ["BUILD"], "ACTIVE")
+                  self.use_flavor['name'], self.use_flavor['id'])
+        self.servers.append(self._create_server(use_image,
+                                                self.use_flavor,
+                                                personality=self.personality,
+                                                network=True))
+        server = self.servers[0]
+        self._insist_on_server_transition(server, ["BUILD"], "ACTIVE")
 
-        volume_id = self.server['volumes'][0]
-        snapshot_name = 'snapshot_%s' % volume_id
+        volume_id = server['volumes'][0]
+        snapshot_name = 'snf-burnin-snapshot_%s' % volume_id
         self.info("Creating snapshot with name '%s', for volume %s",
                   snapshot_name, volume_id)
         self.snapshot = self.clients.block_storage.create_snapshot(
@@ -161,7 +175,27 @@ class SnapshotsTestSuite(CycladesTests):
                               self.clients.block_storage.list_snapshots()]
         self.assertTrue(self.snapshot['id'] in uploaded_snapshots)
 
-    def test_005_delete_snapshot(self):
+    def test_005_spawn_vm_from_snapshot(self):
+        """Spawn a VM from the newly created snapshot"""
+        self.servers.append(self._create_server(
+            self.snapshot, self.use_flavor,
+            network=True))
+        server = self.servers[-1]
+        self._insist_on_server_transition(server, ["BUILD"], "ACTIVE")
+
+        server = self.clients.cyclades.get_server_details(
+            server['id'])
+        ipv4 = self._get_ips(server, version=4)
+        self.assertTrue(len(ipv4) >= 1)
+        self._insist_on_ping(ipv4[0], version=4)
+
+        # use initial server's password
+        for inj_file in (self.personality or ()):
+            self._check_file_through_ssh(
+                ipv4[0], inj_file['owner'], self.servers[0]['adminPass'],
+                inj_file['path'], inj_file['contents'])
+
+    def test_006_delete_snapshot(self):
         """Delete snapshot"""
         self.info('Delete snapshot')
         self.clients.block_storage.delete_snapshot(self.snapshot['id'])
@@ -174,16 +208,19 @@ class SnapshotsTestSuite(CycladesTests):
 
     def test_cleanup(self):
         """Cleanup created servers"""
-        self._disconnect_from_network(self.server)
-        self._delete_servers([self.server])
+        for s in self.servers:
+            self._disconnect_from_network(s)
+        self._delete_servers(self.servers)
 
     @classmethod
     def tearDownClass(cls):  # noqa
         """Clean up"""
         # Delete snapshot
-        if cls.snapshot is not None:
+        snapshots = [s for s in cls.clients.block_storage.list_snapshots()
+                     if s['display_name'].startswith("snf-burnin-")]
+        for snapshot in snapshots:
             try:
-                cls.clients.block_storage.delete_snapshot(cls.snapshot['id'])
+                cls.clients.block_storage.delete_snapshot(snapshot['id'])
             except ClientError:
                 pass
 

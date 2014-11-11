@@ -85,7 +85,6 @@
 IMAGE_DIR=%IMAGE_DIR%
 HELPER_SOFT_TIMEOUT=100
 PITHOS_DB=postgresql://%SYNNEFO_USER%:%SYNNEFO_DB_PASSWD%@%DB_NODE%:5432/snf_pithos
-PITHOS_DATA=%PITHOS_DIR%/data
 PROGRESS_MONITOR=snf-progress-monitor
 CURL="curl -k"
 KVM="qemu-system-x86_64 -enable-kvm -machine pc-i440fx-2.0,accel=kvm"

@@ -78,6 +78,8 @@ $filter-active-bg:      darken($filter-bg,10%);
 $filter-hover-bg:       darken($filter-bg,5%);
 $filter-hover-color:    inherit;
 $filter-border-color:   $theme-gray-medium;
+$filter-border-color-alt:   $theme-gray-medium;
+
 
 // Tabs
 $tab-content-bg:        lighten($theme-gray-medium,5%);

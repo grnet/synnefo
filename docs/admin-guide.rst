@@ -218,8 +218,8 @@ user in the following cases:
       :ref:`authentication methods policies <auth_methods_policies>`).
 
 If all of the above fail to trigger automatic activation, an email is sent to
-the persons listed in ``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings,
-notifing that there is a new user pending for moderation and that it's up to
+the persons listed in ``ACCOUNT_NOTIFICATIONS_RECIPIENTS`` setting,
+notifying that there is a new user pending for moderation and that it's up to
 the administrator to decide if the user should be activated. The UI also shows
 a corresponding 'pending moderation' message to the user. The administrator can
 activate a user using the ``snf-manage user-modify`` command:
@@ -234,7 +234,7 @@ activate a user using the ``snf-manage user-modify`` command:
 
 Once the activation process finishes, a greeting message is sent to the user
 email address and a notification for the activation to the persons listed in
-``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings. Once activated the user is
+``ACCOUNT_NOTIFICATIONS_RECIPIENTS`` setting. Once activated the user is
 able to login and access the Synnefo services.
 
 Additional authentication methods

@@ -349,7 +349,9 @@ Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
 
 * ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
   RAM. The default value is 2GB which in some situations might exceed your
-  machine's physical RAM.
+  machine's physical RAM. Consult also with `Archipelago administrator's guide
+  <https://www.synnefo.org/docs/archipelago/latest/admin-guide.html>`_ for an
+  appropriate value.
 
 In section ``blockerb`` set:
 
@@ -375,7 +377,7 @@ In order to set up a dns server using dnsmasq do the following:
 
    # yum install dnsmasq
 
-Then edit your ``/etc/hosts/`` file as follows:
+Then edit your ``/etc/hosts`` file as follows:
 
 .. code-block:: console
 
@@ -583,11 +585,8 @@ Copy the file ``/etc/gunicorn.d/synnefo.example`` to
 
 
 .. warning:: Do NOT start the server yet, because it won't find the
-    ``synnefo.settings`` module. Also, change ``--worker-class=gevent`` to
-    ``--worker-class=pithos.workers.gevent_archipelago.GeventArchipelagoWorker``
-    and set ``--config=/etc/synnefo/pithos.conf.py``.
-    We will start the server after successful installation of Astakos.
-    If the server is running::
+    ``synnefo.settings`` module. Also set the Gunicorn config file to
+    ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py``.
 
        # service gunicorn stop
 
@@ -696,18 +695,19 @@ notify administrators with a notice that a new account has just been verified.
 More specifically Astakos sends emails in the following cases
 
 - An email containing a verification link after each signup process.
-- An email to the people listed in ``ADMINS`` setting after each email
-  verification if ``ASTAKOS_MODERATION`` setting is ``True``. The email
-  notifies administrators that an additional action is required in order to
-  activate the user.
-- A welcome email to the user email and an admin notification to ``ADMINS``
-  right after each account activation.
-- Feedback messages submited from Astakos contact view and Astakos feedback
-  API endpoint are sent to contacts listed in ``HELPDESK`` setting.
-- Project application request notifications to people included in ``HELPDESK``
-  and ``MANAGERS`` settings.
+- An email to the people listed in ``ACCOUNT_NOTIFICATIONS_RECIPIENTS``
+  setting after each email verification if ``ASTAKOS_MODERATION`` setting is
+  ``True``. The email notifies administrators that an additional action is
+  required in order to activate the user.
+- A welcome email to the user email and a notification to
+  ``ACCOUNT_NOTIFICATIONS_RECIPIENTS`` right after each account activation.
+- Feedback messages submitted from Astakos contact view and Astakos feedback
+  API endpoint are sent to contacts listed in
+  ``FEEDBACK_NOTIFICATIONS_RECIPIENTS`` setting.
+- Project application request notifications to people included in
+  ``PROJECT_NOTIFICATIONS_RECIPIENTS`` setting.
 - Notifications after each project members action (join request, membership
-  accepted/declinde etc.) to project members or project owners.
+  accepted/declined etc.) to project members or project owners.
 
 Astakos uses the Django internal email delivering mechanism to send email
 notifications. A simple configuration, using an external smtp server to
@@ -744,11 +744,13 @@ Refer to
 `Django documentation <https://docs.djangoproject.com/en/1.4/topics/email/>`_
 for additional information on available email settings.
 
-As refered in the previous section, based on the operation that triggers
-an email notification, the recipients list differs. Specifically, for
-emails whose recipients include contacts from your service team
-(administrators, managers, helpdesk etc) Synnefo provides the following
-settings located in ``00-snf-common-admins.conf``:
+As referred in the previous section, based on the operation that triggers an
+email notification, the recipients list differs. For convenience (and backward
+compatibility), Astakos defines three service teams (administrators, managers
+and helpdesk) and send the above notifications to these teams in a
+preconfigured way (ie. project notifications are sent to the members of
+managers and helpdesk teams). These settings are located in
+``00-snf-common-admins.conf``:
 
 .. code-block:: python
 
@@ -1055,7 +1057,9 @@ Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
 
 * ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
   RAM. The default value is 2GB which in some situations might exceed your
-  machine's physical RAM.
+  machine's physical RAM. Consult also with `Archipelago administrator's guide
+  <https://www.synnefo.org/docs/archipelago/latest/admin-guide.html>`_ for an
+  appropriate value.
 
 In section ``blockerb`` set:
 
@@ -1089,11 +1093,8 @@ Copy the file ``/etc/gunicorn.d/synnefo.example`` to
 
 
 .. warning:: Do NOT start the server yet, because it won't find the
-    ``synnefo.settings`` module. Also, change ``--worker-class=gevent`` to
-    ``--worker-class=pithos.workers.gevent_archipelago.GeventArchipelagoWorker``
-    and set ``--config=/etc/synnefo/pithos.conf.py``.
-    We will start the server after successful installation of Astakos.
-    If the server is running::
+    ``synnefo.settings`` module. Also set the Gunicorn config file to
+    ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py``.
 
        # service gunicorn stop
 

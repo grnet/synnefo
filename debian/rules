@@ -47,12 +47,6 @@ override_dh_auto_install:
 	done
 	dh_install
 
-override_dh_fixperms:
-	dh_fixperms
-	chmod 0640 $(DESTDIR)/*/etc/synnefo/*
-	chmod 0750 $(DESTDIR)/*/etc/synnefo
-	chown -R root:www-data $(DESTDIR)/*/etc/synnefo
-
 override_dh_installinit:
 	dh_installinit --name=snf-ganeti-eventd --error-handler=true -- defaults 20 80 -i
 	dh_installinit --name=snf-dispatcher --error-handler=true -- defaults 20 80 -i

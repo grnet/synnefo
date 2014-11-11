@@ -101,62 +101,39 @@ def send_verification(user, template_name='im/activation_email.txt'):
     logger.info("Sent user verification email: %s", user.log_display)
 
 
-def _send_admin_notification(template_name,
-                             context=None,
-                             user=None,
-                             msg="",
-                             subject='alpha2 testing notification',):
-    """
-    Send notification email to settings.HELPDESK + settings.MANAGERS +
-    settings.ADMINS.
-    """
-    if context is None:
-        context = {}
-    if 'user' not in context:
-        context['user'] = user
-
-    message = render_to_string(template_name, context)
-    sender = settings.SERVER_EMAIL
-    recipient_list = [e[1] for e in settings.HELPDESK +
-                      settings.MANAGERS + settings.ADMINS]
-    send_mail(subject, message, sender, recipient_list,
-              connection=get_connection())
-    if user:
-        msg = 'Sent admin notification (%s) for user %s' % (msg,
-                                                            user.log_display)
-    else:
-        msg = 'Sent admin notification (%s)' % msg
-
-    logger.log(settings.LOGGING_LEVEL, msg)
-
-
 def send_account_pending_moderation_notification(
         user,
         template_name='im/account_pending_moderation_notification.txt'):
     """
-    Notify admins that a new user has verified his email address and moderation
-    step is required to activate his account.
+    Notify 'ACCOUNT_PENDING_MODERATION_RECIPIENTS' that a new user has verified
+    his email address and moderation step is required to activate his account.
     """
     subject = (_(astakos_messages.ACCOUNT_CREATION_SUBJECT) %
                {'user': user.email})
-    return _send_admin_notification(template_name, {}, subject=subject,
-                                    user=user, msg="account creation")
+    message = render_to_string(template_name, {'user': user})
+    sender = settings.SERVER_EMAIL
+    recipient_list = [e[1] for e in
+                      settings.ACCOUNT_PENDING_MODERATION_RECIPIENTS]
+    send_mail(subject, message, sender, recipient_list,
+              connection=get_connection())
+    msg = 'Sent admin notification (account creation) for user %s'
+    logger.log(settings.LOGGING_LEVEL, msg, user.log_display)
 
 
 def send_account_activated_notification(
         user,
         template_name='im/account_activated_notification.txt'):
     """
-    Send email to settings.HELPDESK + settings.MANAGERES + settings.ADMINS
-    lists to notify that a new account has been accepted and activated.
+    Send email to ACCOUNT_ACTIVATED_RECIPIENTS list to notify that a new
+    account has been accepted and activated.
     """
     message = render_to_string(
         template_name,
         {'user': user}
     )
     sender = settings.SERVER_EMAIL
-    recipient_list = [e[1] for e in settings.HELPDESK +
-                      settings.MANAGERS + settings.ADMINS]
+    recipient_list = [e[1] for e in
+                      settings.ACCOUNT_ACTIVATED_RECIPIENTS]
     send_mail(_(astakos_messages.HELPDESK_NOTIFICATION_EMAIL_SUBJECT) %
               {'user': user.email},
               message, sender, recipient_list, connection=get_connection())
@@ -210,9 +187,10 @@ def send_greeting(user, email_template_name='im/welcome_email.txt'):
 
 
 def send_feedback(msg, data, user, email_template_name='im/feedback_mail.txt'):
+    """Send feedback to FEEDBACK_RECIPIENTS list."""
     subject = _(astakos_messages.FEEDBACK_EMAIL_SUBJECT)
     from_email = settings.SERVER_EMAIL
-    recipient_list = [e[1] for e in settings.HELPDESK]
+    recipient_list = [e[1] for e in settings.FEEDBACK_NOTIFICATIONS_RECIPIENTS]
     content = render_to_string(email_template_name, {
         'message': msg,
         'data': data,

@@ -9,8 +9,8 @@ VERBOSE=yes
 # Run as a daemon? true/false
 SNF_DSPTCH_ENABLE=false
 
-# User to run the snf-dispatcher as
-SNF_USER="www-data"
+# user:group to run the snf-dispatcher as
+SNF_USER="synnefo:synnefo"
 
 # Options to be passed to snf-dispatcher daemon
 SNF_DSPTCH_OPTS=""

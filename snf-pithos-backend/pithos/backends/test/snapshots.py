@@ -54,8 +54,10 @@ class TestSnapshotsMixin(object):
         self.assertTrue('uuid' in meta2)
         uuid = meta2['uuid']
 
-        self.assertRaises(AssertionError, self.b.update_object_status, uuid, 'invalid_state')
-        self.assertRaises(NameError, self.b.update_object_status, str(uuidlib.uuid4()), -1)
+        self.assertRaises(AssertionError, self.b.update_object_status, uuid,
+                          'invalid_state')
+        self.assertRaises(NameError, self.b.update_object_status,
+                          str(uuidlib.uuid4()), -1)
 
         self.b.update_object_status(uuid, MAP_ERROR)
 
@@ -168,13 +170,17 @@ class TestSnapshotsMixin(object):
             self.assertTrue('available' in meta)
             self.assertEqual(meta['available'], MAP_UNAVAILABLE)
 
-        objects = self.b.get_domain_objects(domain='test', user='somebody_else', check_permissions=True)
+        objects = self.b.get_domain_objects(domain='test',
+                                            user='somebody_else',
+                                            check_permissions=True)
         self.assertEqual(objects, [])
 
-        objects = self.b.get_domain_objects(domain='test', user=None, check_permissions=True)
+        objects = self.b.get_domain_objects(domain='test', user=None,
+                                            check_permissions=True)
         self.assertEqual(objects, [])
 
-        objects = self.b.get_domain_objects(domain='test', user=None, check_permissions=False)
+        objects = self.b.get_domain_objects(domain='test', user=None,
+                                            check_permissions=False)
         self.assertEqual(len(objects), 1)
         path, meta, permissios = objects[0]
         self.assertEqual(path, '/'.join(t[1:]))
@@ -183,11 +189,8 @@ class TestSnapshotsMixin(object):
         self.assertTrue('available' in meta)
         self.assertEqual(meta['available'], MAP_UNAVAILABLE)
 
-        objects = self.b.get_domain_objects(domain='test', user='somebody_else', check_permissions=False)
-        self.assertEqual(len(objects), 1)
-        path, meta, permissios = objects[0]
-        self.assertEqual(path, '/'.join(t[1:]))
-        self.assertTrue('uuid' in meta)
-        self.assertEqual(meta['uuid'], uuid)
-        self.assertTrue('available' in meta)
-        self.assertEqual(meta['available'], MAP_UNAVAILABLE)
+        self.assertRaises(AssertionError,
+                          self.b.get_domain_objects,
+                          domain='test',
+                          user='somebody_else',
+                          check_permissions=False)

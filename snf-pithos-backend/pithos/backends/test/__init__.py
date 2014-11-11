@@ -15,7 +15,7 @@
 
 from .common import CommonMixin
 from .quota import TestQuotaMixin
-from .delete_by_uuid import TestDeleteByUUIDMixin
+from .uuid_methods import TestUUIDMixin
 from .snapshots import TestSnapshotsMixin
 
 from sqlalchemy import create_engine
@@ -23,7 +23,7 @@ from sqlalchemy import create_engine
 import os
 import time
 
-class TestSQLAlchemyBackend(CommonMixin, TestDeleteByUUIDMixin,
+class TestSQLAlchemyBackend(CommonMixin, TestUUIDMixin,
                             TestQuotaMixin, TestSnapshotsMixin):
     db_module = 'pithos.backends.lib.sqlalchemy'
     db_connection_str = '%(scheme)s://%(user)s:%(pwd)s@%(host)s:%(port)s/%(name)s'
@@ -58,7 +58,7 @@ class TestSQLAlchemyBackend(CommonMixin, TestDeleteByUUIDMixin,
         c.execute('drop database %s' % cls.name)
         c.connection.connection.set_isolation_level(1)
 
-class TestSQLiteBackend(CommonMixin, TestDeleteByUUIDMixin, TestQuotaMixin,
+class TestSQLiteBackend(CommonMixin, TestUUIDMixin, TestQuotaMixin,
                         TestSnapshotsMixin):
     db_module = 'pithos.backends.lib.sqlite'
     db_connection = location = '/tmp/test_pithos_backend.db'

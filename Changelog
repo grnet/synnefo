@@ -8,6 +8,35 @@ repository and have aligned versions.
 
 .. _Changelog-0.16:
 
+v0.16rc3
+========
+
+Released: Wed Oct 15 14:14:33 EEST 2014
+
+Synnefo-wide
+------------
+
+* Update upgrade notes and installation guide to conform with
+  Archipelago 0.16rc2.
+* Add Synnefo wide accessible gunicorn hooks for Archipelago.
+
+Astakos
+-------
+
+* Explicitly specify the lists in which every notification will be sent.
+
+Cyclades
+--------
+
+* Remove stale '--public' and '--user' options from 'image-show' and
+  'snapshot-show' management commands.
+
+Pithos
+------
+
+* Remove custom Gunicorn worker.
+
+
 v0.16rc2
 ========
 

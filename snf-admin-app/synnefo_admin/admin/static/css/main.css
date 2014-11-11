@@ -5093,7 +5093,7 @@ and light gray font colors
 
 /* line 170, ../sass/_bars-btns.scss */
 .instructions .line-btn {
-  padding: 8px 9px; }
+  padding: 8px 10px; }
   /* line 172, ../sass/_bars-btns.scss */
   .instructions .line-btn span {
     padding: 0 4px; }
@@ -5397,6 +5397,42 @@ body .custom-buttons .extra-btn {
 /* line 394, ../sass/_bars-btns.scss */
 .onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-switch {
   right: 0px; }
+
+/* Clickable elements that change state */
+/* These are icon-fonts. We insert in html two icons (one for each state) */
+/* The icon with the false state is hidden and only the correct one is displayed */
+/* Which state is the correct it comes from the class of a parent element */
+/* line 404, ../sass/_bars-btns.scss */
+li.active .snf-checkbox-unchecked, li.active .snf-radio-unchecked {
+  display: none; }
+
+/* line 407, ../sass/_bars-btns.scss */
+li:not(.active) .snf-checkbox-checked, li:not(.active) .snf-radio-checked {
+  display: none; }
+
+/* line 411, ../sass/_bars-btns.scss */
+table.dataTable tbody tr.selected .snf-checkbox-unchecked {
+  display: none; }
+
+/* line 415, ../sass/_bars-btns.scss */
+table.dataTable tbody tr:not(.selected) .snf-checkbox-checked {
+  display: none; }
+
+/* line 418, ../sass/_bars-btns.scss */
+.show-hide-all.open .snf-font-arrow-down {
+  display: none; }
+
+/* line 421, ../sass/_bars-btns.scss */
+.show-hide-all:not(.open) .snf-font-arrow-up {
+  display: none; }
+
+/* line 425, ../sass/_bars-btns.scss */
+.instructions .line-btn.open .snf-angle-down {
+  display: none; }
+
+/* line 429, ../sass/_bars-btns.scss */
+.instructions .line-btn:not(.open) .snf-angle-up {
+  display: none; }
 
 @font-face {
   font-family: 'font-icons';
@@ -5942,6 +5978,22 @@ body .custom-buttons .extra-btn {
     content: "\41"; }
 
 /* line 146, ../sass/icon-fonts.scss */
+.snf-filter {
+  font-family: "font-icons";
+  speak: none;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale; }
+  /* line 41, ../sass/icon-fonts.scss */
+  .snf-filter:before {
+    content: "\7b"; }
+
+/* line 149, ../sass/icon-fonts.scss */
 .snf-eye {
   font-family: "snf-font";
   speak: none;
@@ -5957,7 +6009,7 @@ body .custom-buttons .extra-btn {
   .snf-eye:before {
     content: "\41"; }
 
-/* line 149, ../sass/icon-fonts.scss */
+/* line 152, ../sass/icon-fonts.scss */
 .snf-radio-checked {
   font-family: "snf-font";
   speak: none;
@@ -5973,7 +6025,7 @@ body .custom-buttons .extra-btn {
   .snf-radio-checked:before {
     content: "\42"; }
 
-/* line 152, ../sass/icon-fonts.scss */
+/* line 155, ../sass/icon-fonts.scss */
 .snf-radio-unchecked {
   font-family: "snf-font";
   speak: none;
@@ -5989,7 +6041,7 @@ body .custom-buttons .extra-btn {
   .snf-radio-unchecked:before {
     content: "\43"; }
 
-/* line 155, ../sass/icon-fonts.scss */
+/* line 158, ../sass/icon-fonts.scss */
 .snf-close {
   font-family: "snf-font";
   speak: none;
@@ -6005,7 +6057,7 @@ body .custom-buttons .extra-btn {
   .snf-close:before {
     content: "\44"; }
 
-/* line 158, ../sass/icon-fonts.scss */
+/* line 161, ../sass/icon-fonts.scss */
 .snf-www {
   font-family: "snf-font";
   speak: none;
@@ -6021,7 +6073,7 @@ body .custom-buttons .extra-btn {
   .snf-www:before {
     content: "\49"; }
 
-/* line 161, ../sass/icon-fonts.scss */
+/* line 164, ../sass/icon-fonts.scss */
 .snf-arrow-up, .show-hide-all span.snf-font-arrow-up {
   font-family: "snf-font";
   speak: none;
@@ -6037,7 +6089,7 @@ body .custom-buttons .extra-btn {
   .snf-arrow-up:before, .show-hide-all span.snf-font-arrow-up:before {
     content: "\4c"; }
 
-/* line 164, ../sass/icon-fonts.scss */
+/* line 167, ../sass/icon-fonts.scss */
 .snf-arrow-down, .show-hide-all span.snf-font-arrow-down {
   font-family: "snf-font";
   speak: none;
@@ -6053,7 +6105,7 @@ body .custom-buttons .extra-btn {
   .snf-arrow-down:before, .show-hide-all span.snf-font-arrow-down:before {
     content: "\4d"; }
 
-/* line 167, ../sass/icon-fonts.scss */
+/* line 170, ../sass/icon-fonts.scss */
 .snf-checkbox-unchecked {
   font-family: "snf-font";
   speak: none;
@@ -6069,7 +6121,7 @@ body .custom-buttons .extra-btn {
   .snf-checkbox-unchecked:before {
     content: "\61"; }
 
-/* line 170, ../sass/icon-fonts.scss */
+/* line 173, ../sass/icon-fonts.scss */
 .snf-checkbox-checked {
   font-family: "snf-font";
   speak: none;
@@ -6085,7 +6137,7 @@ body .custom-buttons .extra-btn {
   .snf-checkbox-checked:before {
     content: "\62"; }
 
-/* line 173, ../sass/icon-fonts.scss */
+/* line 176, ../sass/icon-fonts.scss */
 .snf-cancel-circled {
   font-family: "snf-font";
   speak: none;
@@ -6101,7 +6153,7 @@ body .custom-buttons .extra-btn {
   .snf-cancel-circled:before {
     content: "\63"; }
 
-/* line 176, ../sass/icon-fonts.scss */
+/* line 179, ../sass/icon-fonts.scss */
 .snf-search {
   font-family: "snf-font";
   speak: none;
@@ -6117,7 +6169,7 @@ body .custom-buttons .extra-btn {
   .snf-search:before {
     content: "\64"; }
 
-/* line 179, ../sass/icon-fonts.scss */
+/* line 182, ../sass/icon-fonts.scss */
 .snf-twitter-logo {
   font-family: "snf-font";
   speak: none;
@@ -6133,7 +6185,7 @@ body .custom-buttons .extra-btn {
   .snf-twitter-logo:before {
     content: "\67"; }
 
-/* line 182, ../sass/icon-fonts.scss */
+/* line 185, ../sass/icon-fonts.scss */
 .snf-ok {
   font-family: "snf-font";
   speak: none;
@@ -6149,7 +6201,7 @@ body .custom-buttons .extra-btn {
   .snf-ok:before {
     content: "\68"; }
 
-/* line 185, ../sass/icon-fonts.scss */
+/* line 188, ../sass/icon-fonts.scss */
 .snf-switch {
   font-family: "snf-font";
   speak: none;
@@ -6165,7 +6217,7 @@ body .custom-buttons .extra-btn {
   .snf-switch:before {
     content: "\69"; }
 
-/* line 188, ../sass/icon-fonts.scss */
+/* line 191, ../sass/icon-fonts.scss */
 .snf-ban-circle {
   font-family: "snf-font";
   speak: none;
@@ -6181,7 +6233,7 @@ body .custom-buttons .extra-btn {
   .snf-ban-circle:before {
     content: "\6a"; }
 
-/* line 191, ../sass/icon-fonts.scss */
+/* line 194, ../sass/icon-fonts.scss */
 .snf-ok-sign {
   font-family: "snf-font";
   speak: none;
@@ -6197,7 +6249,7 @@ body .custom-buttons .extra-btn {
   .snf-ok-sign:before {
     content: "\6c"; }
 
-/* line 194, ../sass/icon-fonts.scss */
+/* line 197, ../sass/icon-fonts.scss */
 .snf-minus-sign {
   font-family: "snf-font";
   speak: none;
@@ -6213,7 +6265,7 @@ body .custom-buttons .extra-btn {
   .snf-minus-sign:before {
     content: "\6e"; }
 
-/* line 197, ../sass/icon-fonts.scss */
+/* line 200, ../sass/icon-fonts.scss */
 .snf-edit {
   font-family: "snf-font";
   speak: none;
@@ -6229,7 +6281,7 @@ body .custom-buttons .extra-btn {
   .snf-edit:before {
     content: "\71"; }
 
-/* line 200, ../sass/icon-fonts.scss */
+/* line 203, ../sass/icon-fonts.scss */
 .snf-listview {
   font-family: "snf-font";
   speak: none;
@@ -6245,7 +6297,7 @@ body .custom-buttons .extra-btn {
   .snf-listview:before {
     content: "\73"; }
 
-/* line 203, ../sass/icon-fonts.scss */
+/* line 206, ../sass/icon-fonts.scss */
 .snf-gridview {
   font-family: "snf-font";
   speak: none;
@@ -6261,7 +6313,7 @@ body .custom-buttons .extra-btn {
   .snf-gridview:before {
     content: "\74"; }
 
-/* line 206, ../sass/icon-fonts.scss */
+/* line 209, ../sass/icon-fonts.scss */
 .snf-dashboard-outline {
   font-family: "snf-font";
   speak: none;
@@ -6277,7 +6329,7 @@ body .custom-buttons .extra-btn {
   .snf-dashboard-outline:before {
     content: "\7a"; }
 
-/* line 209, ../sass/icon-fonts.scss */
+/* line 212, ../sass/icon-fonts.scss */
 .snf-pithos-outline {
   font-family: "snf-font";
   speak: none;
@@ -6293,7 +6345,7 @@ body .custom-buttons .extra-btn {
   .snf-pithos-outline:before {
     content: "\79"; }
 
-/* line 212, ../sass/icon-fonts.scss */
+/* line 215, ../sass/icon-fonts.scss */
 .snf-info-full {
   font-family: "snf-font";
   speak: none;
@@ -6309,7 +6361,7 @@ body .custom-buttons .extra-btn {
   .snf-info-full:before {
     content: "\70"; }
 
-/* line 215, ../sass/icon-fonts.scss */
+/* line 218, ../sass/icon-fonts.scss */
 .snf-volume-create-full {
   font-family: "snf-font";
   speak: none;
@@ -6325,7 +6377,7 @@ body .custom-buttons .extra-btn {
   .snf-volume-create-full:before {
     content: "\36"; }
 
-/* line 218, ../sass/icon-fonts.scss */
+/* line 221, ../sass/icon-fonts.scss */
 .snf-image-full {
   font-family: "snf-font";
   speak: none;
@@ -6341,7 +6393,7 @@ body .custom-buttons .extra-btn {
   .snf-image-full:before {
     content: "\51"; }
 
-/* line 221, ../sass/icon-fonts.scss */
+/* line 224, ../sass/icon-fonts.scss */
 .snf-pc-create-full {
   font-family: "snf-font";
   speak: none;
@@ -6357,7 +6409,7 @@ body .custom-buttons .extra-btn {
   .snf-pc-create-full:before {
     content: "\53"; }
 
-/* line 224, ../sass/icon-fonts.scss */
+/* line 227, ../sass/icon-fonts.scss */
 .snf-network-create-outline {
   font-family: "snf-font";
   speak: none;
@@ -6373,7 +6425,7 @@ body .custom-buttons .extra-btn {
   .snf-network-create-outline:before {
     content: "\54"; }
 
-/* line 227, ../sass/icon-fonts.scss */
+/* line 230, ../sass/icon-fonts.scss */
 .snf-network-create-full {
   font-family: "snf-font";
   speak: none;
@@ -6389,7 +6441,7 @@ body .custom-buttons .extra-btn {
   .snf-network-create-full:before {
     content: "\55"; }
 
-/* line 230, ../sass/icon-fonts.scss */
+/* line 233, ../sass/icon-fonts.scss */
 .snf-ram-outline {
   font-family: "snf-font";
   speak: none;
@@ -6405,7 +6457,7 @@ body .custom-buttons .extra-btn {
   .snf-ram-outline:before {
     content: "\4a"; }
 
-/* line 233, ../sass/icon-fonts.scss */
+/* line 236, ../sass/icon-fonts.scss */
 .snf-nic-outline {
   font-family: "snf-font";
   speak: none;
@@ -6421,7 +6473,7 @@ body .custom-buttons .extra-btn {
   .snf-nic-outline:before {
     content: "\50"; }
 
-/* line 236, ../sass/icon-fonts.scss */
+/* line 239, ../sass/icon-fonts.scss */
 .snf-ram-full {
   font-family: "snf-font";
   speak: none;
@@ -6437,7 +6489,7 @@ body .custom-buttons .extra-btn {
   .snf-ram-full:before {
     content: "\52"; }
 
-/* line 239, ../sass/icon-fonts.scss */
+/* line 242, ../sass/icon-fonts.scss */
 .snf-nic-full, .snf-details-nic {
   font-family: "snf-font";
   speak: none;
@@ -6453,7 +6505,7 @@ body .custom-buttons .extra-btn {
   .snf-nic-full:before, .snf-details-nic:before {
     content: "\72"; }
 
-/* line 242, ../sass/icon-fonts.scss */
+/* line 245, ../sass/icon-fonts.scss */
 .snf-network-broken-1-full {
   font-family: "snf-font";
   speak: none;
@@ -6469,7 +6521,7 @@ body .custom-buttons .extra-btn {
   .snf-network-broken-1-full:before {
     content: "\56"; }
 
-/* line 245, ../sass/icon-fonts.scss */
+/* line 248, ../sass/icon-fonts.scss */
 .snf-network-broken-2-full {
   font-family: "snf-font";
   speak: none;
@@ -6485,7 +6537,7 @@ body .custom-buttons .extra-btn {
   .snf-network-broken-2-full:before {
     content: "\57"; }
 
-/* line 248, ../sass/icon-fonts.scss */
+/* line 251, ../sass/icon-fonts.scss */
 .snf-pc-broken-full {
   font-family: "snf-font";
   speak: none;
@@ -6501,7 +6553,7 @@ body .custom-buttons .extra-btn {
   .snf-pc-broken-full:before {
     content: "\58"; }
 
-/* line 251, ../sass/icon-fonts.scss */
+/* line 254, ../sass/icon-fonts.scss */
 .snf-pc-reboot-full {
   font-family: "snf-font";
   speak: none;
@@ -6517,7 +6569,7 @@ body .custom-buttons .extra-btn {
   .snf-pc-reboot-full:before {
     content: "\59"; }
 
-/* line 254, ../sass/icon-fonts.scss */
+/* line 257, ../sass/icon-fonts.scss */
 .snf-pc-switch-full {
   font-family: "snf-font";
   speak: none;
@@ -6533,7 +6585,7 @@ body .custom-buttons .extra-btn {
   .snf-pc-switch-full:before {
     content: "\5a"; }
 
-/* line 257, ../sass/icon-fonts.scss */
+/* line 260, ../sass/icon-fonts.scss */
 .snf-key-full {
   font-family: "snf-font";
   speak: none;
@@ -6549,7 +6601,7 @@ body .custom-buttons .extra-btn {
   .snf-key-full:before {
     content: "\31"; }
 
-/* line 260, ../sass/icon-fonts.scss */
+/* line 263, ../sass/icon-fonts.scss */
 .snf-router-full {
   font-family: "snf-font";
   speak: none;
@@ -6565,7 +6617,7 @@ body .custom-buttons .extra-btn {
   .snf-router-full:before {
     content: "\32"; }
 
-/* line 263, ../sass/icon-fonts.scss */
+/* line 266, ../sass/icon-fonts.scss */
 .snf-chip-full {
   font-family: "snf-font";
   speak: none;
@@ -6581,7 +6633,7 @@ body .custom-buttons .extra-btn {
   .snf-chip-full:before {
     content: "\33"; }
 
-/* line 266, ../sass/icon-fonts.scss */
+/* line 269, ../sass/icon-fonts.scss */
 .snf-plus-full {
   font-family: "snf-font";
   speak: none;
@@ -6597,7 +6649,7 @@ body .custom-buttons .extra-btn {
   .snf-plus-full:before {
     content: "\34"; }
 
-/* line 269, ../sass/icon-fonts.scss */
+/* line 272, ../sass/icon-fonts.scss */
 .snf-snapshot-full {
   font-family: "snf-font";
   speak: none;
@@ -6613,7 +6665,7 @@ body .custom-buttons .extra-btn {
   .snf-snapshot-full:before {
     content: "\4e"; }
 
-/* line 272, ../sass/icon-fonts.scss */
+/* line 275, ../sass/icon-fonts.scss */
 .snf-pithos-full {
   font-family: "snf-font";
   speak: none;
@@ -6629,7 +6681,7 @@ body .custom-buttons .extra-btn {
   .snf-pithos-full:before {
     content: "\35"; }
 
-/* line 275, ../sass/icon-fonts.scss */
+/* line 278, ../sass/icon-fonts.scss */
 .snf-volume-full, .snf-details-volume {
   font-family: "snf-font";
   speak: none;
@@ -6645,7 +6697,7 @@ body .custom-buttons .extra-btn {
   .snf-volume-full:before, .snf-details-volume:before {
     content: "\4f"; }
 
-/* line 278, ../sass/icon-fonts.scss */
+/* line 281, ../sass/icon-fonts.scss */
 .snf-network-full, .snf-details-network {
   font-family: "snf-font";
   speak: none;
@@ -6661,7 +6713,7 @@ body .custom-buttons .extra-btn {
   .snf-network-full:before, .snf-details-network:before {
     content: "\4b"; }
 
-/* line 281, ../sass/icon-fonts.scss */
+/* line 284, ../sass/icon-fonts.scss */
 .snf-pc-full, .snf-details-vm {
   font-family: "snf-font";
   speak: none;
@@ -6677,7 +6729,7 @@ body .custom-buttons .extra-btn {
   .snf-pc-full:before, .snf-details-vm:before {
     content: "\78"; }
 
-/* line 284, ../sass/icon-fonts.scss */
+/* line 287, ../sass/icon-fonts.scss */
 .snf-network-broken-1-outline {
   font-family: "snf-font";
   speak: none;
@@ -6693,7 +6745,7 @@ body .custom-buttons .extra-btn {
   .snf-network-broken-1-outline:before {
     content: "\37"; }
 
-/* line 287, ../sass/icon-fonts.scss */
+/* line 290, ../sass/icon-fonts.scss */
 .snf-network-broken-2-outline {
   font-family: "snf-font";
   speak: none;
@@ -6709,7 +6761,7 @@ body .custom-buttons .extra-btn {
   .snf-network-broken-2-outline:before {
     content: "\38"; }
 
-/* line 290, ../sass/icon-fonts.scss */
+/* line 293, ../sass/icon-fonts.scss */
 .snf-pc-broken-outline {
   font-family: "snf-font";
   speak: none;
@@ -6725,7 +6777,7 @@ body .custom-buttons .extra-btn {
   .snf-pc-broken-outline:before {
     content: "\39"; }
 
-/* line 293, ../sass/icon-fonts.scss */
+/* line 296, ../sass/icon-fonts.scss */
 .snf-volume-broken-outline {
   font-family: "snf-font";
   speak: none;
@@ -6741,7 +6793,7 @@ body .custom-buttons .extra-btn {
   .snf-volume-broken-outline:before {
     content: "\30"; }
 
-/* line 296, ../sass/icon-fonts.scss */
+/* line 299, ../sass/icon-fonts.scss */
 .snf-pc-reboot-outline {
   font-family: "snf-font";
   speak: none;
@@ -6757,7 +6809,7 @@ body .custom-buttons .extra-btn {
   .snf-pc-reboot-outline:before {
     content: "\21"; }
 
-/* line 299, ../sass/icon-fonts.scss */
+/* line 302, ../sass/icon-fonts.scss */
 .snf-pc-switch-outline {
   font-family: "snf-font";
   speak: none;
@@ -6773,7 +6825,7 @@ body .custom-buttons .extra-btn {
   .snf-pc-switch-outline:before {
     content: "\40"; }
 
-/* line 302, ../sass/icon-fonts.scss */
+/* line 305, ../sass/icon-fonts.scss */
 .snf-key-outline {
   font-family: "snf-font";
   speak: none;
@@ -6789,7 +6841,7 @@ body .custom-buttons .extra-btn {
   .snf-key-outline:before {
     content: "\23"; }
 
-/* line 305, ../sass/icon-fonts.scss */
+/* line 308, ../sass/icon-fonts.scss */
 .snf-router-outline {
   font-family: "snf-font";
   speak: none;
@@ -6805,7 +6857,7 @@ body .custom-buttons .extra-btn {
   .snf-router-outline:before {
     content: "\48"; }
 
-/* line 308, ../sass/icon-fonts.scss */
+/* line 311, ../sass/icon-fonts.scss */
 .snf-chip-outline {
   font-family: "snf-font";
   speak: none;
@@ -6821,7 +6873,7 @@ body .custom-buttons .extra-btn {
   .snf-chip-outline:before {
     content: "\45"; }
 
-/* line 311, ../sass/icon-fonts.scss */
+/* line 314, ../sass/icon-fonts.scss */
 .snf-image-outline {
   font-family: "snf-font";
   speak: none;
@@ -6837,7 +6889,7 @@ body .custom-buttons .extra-btn {
   .snf-image-outline:before {
     content: "\66"; }
 
-/* line 314, ../sass/icon-fonts.scss */
+/* line 317, ../sass/icon-fonts.scss */
 .snf-plus-outline {
   font-family: "snf-font";
   speak: none;
@@ -6853,7 +6905,7 @@ body .custom-buttons .extra-btn {
   .snf-plus-outline:before {
     content: "\6d"; }
 
-/* line 317, ../sass/icon-fonts.scss */
+/* line 320, ../sass/icon-fonts.scss */
 .snf-snapshot-outline {
   font-family: "snf-font";
   speak: none;
@@ -6869,7 +6921,7 @@ body .custom-buttons .extra-btn {
   .snf-snapshot-outline:before {
     content: "\65"; }
 
-/* line 320, ../sass/icon-fonts.scss */
+/* line 323, ../sass/icon-fonts.scss */
 .snf-volume-outline {
   font-family: "snf-font";
   speak: none;
@@ -6885,7 +6937,7 @@ body .custom-buttons .extra-btn {
   .snf-volume-outline:before {
     content: "\75"; }
 
-/* line 323, ../sass/icon-fonts.scss */
+/* line 326, ../sass/icon-fonts.scss */
 .snf-network-outline {
   font-family: "snf-font";
   speak: none;
@@ -6901,7 +6953,7 @@ body .custom-buttons .extra-btn {
   .snf-network-outline:before {
     content: "\76"; }
 
-/* line 326, ../sass/icon-fonts.scss */
+/* line 329, ../sass/icon-fonts.scss */
 .snf-pc-outline {
   font-family: "snf-font";
   speak: none;
@@ -6917,7 +6969,7 @@ body .custom-buttons .extra-btn {
   .snf-pc-outline:before {
     content: "\77"; }
 
-/* line 329, ../sass/icon-fonts.scss */
+/* line 332, ../sass/icon-fonts.scss */
 .snf-info-outline {
   font-family: "snf-font";
   speak: none;
@@ -6933,7 +6985,7 @@ body .custom-buttons .extra-btn {
   .snf-info-outline:before {
     content: "\6f"; }
 
-/* line 332, ../sass/icon-fonts.scss */
+/* line 335, ../sass/icon-fonts.scss */
 .snf-thunder-full {
   font-family: "snf-font";
   speak: none;
@@ -6949,7 +7001,7 @@ body .custom-buttons .extra-btn {
   .snf-thunder-full:before {
     content: "\6b"; }
 
-/* line 335, ../sass/icon-fonts.scss */
+/* line 338, ../sass/icon-fonts.scss */
 .snf-lock-closed-full {
   font-family: "snf-font";
   speak: none;
@@ -6965,7 +7017,7 @@ body .custom-buttons .extra-btn {
   .snf-lock-closed-full:before {
     content: "\46"; }
 
-/* line 338, ../sass/icon-fonts.scss */
+/* line 341, ../sass/icon-fonts.scss */
 .snf-lock-open-full {
   font-family: "snf-font";
   speak: none;
@@ -6981,7 +7033,7 @@ body .custom-buttons .extra-btn {
   .snf-lock-open-full:before {
     content: "\47"; }
 
-/* line 342, ../sass/icon-fonts.scss */
+/* line 345, ../sass/icon-fonts.scss */
 .snf-link-outline {
   font-family: "snf-font";
   speak: none;
@@ -6997,7 +7049,7 @@ body .custom-buttons .extra-btn {
   .snf-link-outline:before {
     content: "\26"; }
 
-/* line 345, ../sass/icon-fonts.scss */
+/* line 348, ../sass/icon-fonts.scss */
 .snf-refresh-outline, body .custom-buttons .snf-font-reload {
   font-family: "snf-font";
   speak: none;
@@ -7013,7 +7065,7 @@ body .custom-buttons .extra-btn {
   .snf-refresh-outline:before, body .custom-buttons .snf-font-reload:before {
     content: "\29"; }
 
-/* line 348, ../sass/icon-fonts.scss */
+/* line 351, ../sass/icon-fonts.scss */
 .snf-download-full {
   font-family: "snf-font";
   speak: none;
@@ -7029,7 +7081,7 @@ body .custom-buttons .extra-btn {
   .snf-download-full:before {
     content: "\25"; }
 
-/* line 351, ../sass/icon-fonts.scss */
+/* line 354, ../sass/icon-fonts.scss */
 .snf-person-outline {
   font-family: "snf-font";
   speak: none;
@@ -7045,7 +7097,7 @@ body .custom-buttons .extra-btn {
   .snf-person-outline:before {
     content: "\2a"; }
 
-/* line 354, ../sass/icon-fonts.scss */
+/* line 357, ../sass/icon-fonts.scss */
 .snf-upload-full {
   font-family: "snf-font";
   speak: none;
@@ -7061,7 +7113,7 @@ body .custom-buttons .extra-btn {
   .snf-upload-full:before {
     content: "\28"; }
 
-/* line 357, ../sass/icon-fonts.scss */
+/* line 360, ../sass/icon-fonts.scss */
 .snf-arrow-right-small-full {
   font-family: "snf-font";
   speak: none;
@@ -7077,7 +7129,7 @@ body .custom-buttons .extra-btn {
   .snf-arrow-right-small-full:before {
     content: "\2d"; }
 
-/* line 360, ../sass/icon-fonts.scss */
+/* line 363, ../sass/icon-fonts.scss */
 .snf-copy-outline {
   font-family: "snf-font";
   speak: none;
@@ -7093,7 +7145,7 @@ body .custom-buttons .extra-btn {
   .snf-copy-outline:before {
     content: "\3f"; }
 
-/* line 363, ../sass/icon-fonts.scss */
+/* line 366, ../sass/icon-fonts.scss */
 .snf-copy-full {
   font-family: "snf-font";
   speak: none;
@@ -7109,7 +7161,7 @@ body .custom-buttons .extra-btn {
   .snf-copy-full:before {
     content: "\22"; }
 
-/* line 366, ../sass/icon-fonts.scss */
+/* line 369, ../sass/icon-fonts.scss */
 .snf-arrow-left-small-full {
   font-family: "snf-font";
   speak: none;
@@ -7125,7 +7177,7 @@ body .custom-buttons .extra-btn {
   .snf-arrow-left-small-full:before {
     content: "\5f"; }
 
-/* line 369, ../sass/icon-fonts.scss */
+/* line 372, ../sass/icon-fonts.scss */
 .snf-trash-full {
   font-family: "snf-font";
   speak: none;
@@ -7141,7 +7193,7 @@ body .custom-buttons .extra-btn {
   .snf-trash-full:before {
     content: "\3d"; }
 
-/* line 372, ../sass/icon-fonts.scss */
+/* line 375, ../sass/icon-fonts.scss */
 .snf-trash-outline {
   font-family: "snf-font";
   speak: none;
@@ -7353,49 +7405,46 @@ body .custom-buttons .extra-btn {
 
 /* line 230, ../sass/_details.scss */
 .show-hide-all span.snf-font-arrow-up {
-  display: none;
   padding: 0; }
-/* line 235, ../sass/_details.scss */
+/* line 234, ../sass/_details.scss */
 .show-hide-all span.snf-font-arrow-down {
-  display: inline;
   padding: 0; }
-/* line 241, ../sass/_details.scss */
-.show-hide-all.open .snf-font-arrow-up {
-  display: inline; }
-/* line 244, ../sass/_details.scss */
-.show-hide-all.open .snf-font-arrow-down {
-  display: none; }
 
 /* line 5, ../sass/_filters.scss */
 .filters-area {
-  margin-bottom: 40px; }
+  margin-bottom: 40px;
+  margin-left: 140px; }
+  @media (max-width: 1200px) {
+    /* line 5, ../sass/_filters.scss */
+    .filters-area {
+      margin: 0 10px 10px 0; } }
+  /* line 11, ../sass/_filters.scss */
+  .filters-area.no-margin-left {
+    margin-left: 0; }
+  /* line 14, ../sass/_filters.scss */
+  .filters-area a:focus, .filters-area input:focus {
+    outline: none; }
+  /* line 17, ../sass/_filters.scss */
+  .filters-area .badge {
+    margin-left: 6px;
+    opacity: 0.9;
+    padding: 2px 9px; }
+  /* line 22, ../sass/_filters.scss */
+  .filters-area ul.nav a {
+    padding-bottom: 10px; }
 
-/* line 10, ../sass/_filters.scss */
-.filters a:focus, .filters input:focus {
-  outline: none; }
-
-/* line 15, ../sass/_filters.scss */
-.filters .badge {
-  margin-left: 6px;
-  opacity: 0.9;
-  padding: 2px 9px; }
-
-/* line 21, ../sass/_filters.scss */
-.filters ul.nav a {
-  padding-bottom: 10px; }
-
-/* line 25, ../sass/_filters.scss */
+/* line 27, ../sass/_filters.scss */
 .filter {
   height: 30px;
   margin: 0 10px 10px 0;
   display: inline-block;
   background: #eeeeee;
   border: 1px solid transparent; }
-  /* line 31, ../sass/_filters.scss */
+  /* line 33, ../sass/_filters.scss */
   .filter .form-group {
     margin: 0;
     height: 30px; }
-  /* line 36, ../sass/_filters.scss */
+  /* line 38, ../sass/_filters.scss */
   .filter label,
   .filter .dropdown {
     height: 30px;
@@ -7406,18 +7455,43 @@ body .custom-buttons .extra-btn {
     background: transparent;
     font-weight: normal;
     margin: 0; }
-  /* line 46, ../sass/_filters.scss */
-  .filter .dropdown-menu {
+    /* line 48, ../sass/_filters.scss */
+    .filter label > a .selected-value,
+    .filter .dropdown > a .selected-value {
+      margin-left: 4px; }
+    /* line 51, ../sass/_filters.scss */
+    .filter label > a .arrow,
+    .filter .dropdown > a .arrow {
+      font-weight: bold; }
+    /* line 56, ../sass/_filters.scss */
+    .filter label.open a,
+    .filter .dropdown.open a {
+      text-decoration: none;
+      color: #303030; }
+    /* line 61, ../sass/_filters.scss */
+    .filter label a,
+    .filter .dropdown a {
+      color: #303030; }
+  /* line 65, ../sass/_filters.scss */
+  .filter .dropdown-menu, .filter .dropdown-list {
     background: #eeeeee;
-    margin: 0; }
-    /* line 49, ../sass/_filters.scss */
-    .filter .dropdown-menu > .active > a {
+    margin: 0;
+    width: auto; }
+    /* line 69, ../sass/_filters.scss */
+    .filter .dropdown-menu > .active > a, .filter .dropdown-list > .active > a {
       background: #eeeeee; }
-    /* line 52, ../sass/_filters.scss */
-    .filter .dropdown-menu > li:hover > a {
+    /* line 72, ../sass/_filters.scss */
+    .filter .dropdown-menu > li:hover > a, .filter .dropdown-list > li:hover > a {
       background: #d9d9d9;
       color: inherit; }
-  /* line 57, ../sass/_filters.scss */
+    /* line 76, ../sass/_filters.scss */
+    .filter .dropdown-menu a, .filter .dropdown-list a {
+      padding-left: 12px;
+      padding-right: 12px; }
+      /* line 77, ../sass/_filters.scss */
+      .filter .dropdown-menu a span, .filter .dropdown-list a span {
+        margin-right: 6px; }
+  /* line 84, ../sass/_filters.scss */
   .filter input {
     border: 0 none;
     background: transparent;
@@ -7426,104 +7500,128 @@ body .custom-buttons .extra-btn {
     padding: 0 5px;
     font-weight: normal;
     color: #303030; }
-
-/* line 71, ../sass/_filters.scss */
-.filter-dropdown .dropdown > a .selected-value {
-  margin-left: 4px; }
-/* line 74, ../sass/_filters.scss */
-.filter-dropdown .dropdown > a .arrow {
-  font-weight: bold; }
-/* line 79, ../sass/_filters.scss */
-.filter-dropdown .dropdown.open a {
-  text-decoration: none;
-  color: #303030; }
-/* line 84, ../sass/_filters.scss */
-.filter-dropdown .dropdown a {
-  color: #303030; }
-/* line 87, ../sass/_filters.scss */
-.filter-dropdown .dropdown .dropdown-menu {
-  width: auto; }
-  /* line 89, ../sass/_filters.scss */
-  .filter-dropdown .dropdown .dropdown-menu a {
-    padding-left: 12px;
-    padding-right: 12px; }
-    /* line 90, ../sass/_filters.scss */
-    .filter-dropdown .dropdown .dropdown-menu a span {
-      margin-right: 6px; }
-
-/* line 100, ../sass/_filters.scss */
-.filters.subnav-fixed {
-  top: 50px; }
+  /* line 93, ../sass/_filters.scss */
+  .filter .dropdown-list > li > a {
+    display: block;
+    padding: 3px 20px;
+    clear: both;
+    font-weight: normal;
+    line-height: 1.42857;
+    color: #303030;
+    white-space: nowrap; }
 
 /* line 104, ../sass/_filters.scss */
 .input-with-btn {
   border-width: 0px;
-  background-color: transparent; }
+  background-color: transparent;
+  display: inline; }
   @media screen and (min-width: 400px) {
-    /* line 107, ../sass/_filters.scss */
+    /* line 108, ../sass/_filters.scss */
     .input-with-btn input {
       width: 200px; } }
   @media screen and (min-width: 600px) {
-    /* line 107, ../sass/_filters.scss */
+    /* line 108, ../sass/_filters.scss */
     .input-with-btn input {
       width: 300px; } }
   @media screen and (min-width: 800px) {
-    /* line 107, ../sass/_filters.scss */
+    /* line 108, ../sass/_filters.scss */
     .input-with-btn input {
       width: 500px; } }
   @media screen and (min-width: 1000px) {
-    /* line 107, ../sass/_filters.scss */
+    /* line 108, ../sass/_filters.scss */
     .input-with-btn input {
       width: 700px; } }
-  /* line 121, ../sass/_filters.scss */
+  /* line 122, ../sass/_filters.scss */
   .input-with-btn .form-group {
     display: inline-block;
     background: #eeeeee;
     border: 1px solid transparent;
     margin-bottom: 0.6em; }
-  /* line 127, ../sass/_filters.scss */
+  /* line 128, ../sass/_filters.scss */
+  .input-with-btn .filter-error {
+    word-wrap: break-word; }
+  /* line 131, ../sass/_filters.scss */
   .input-with-btn .error-sign {
     display: block;
     opacity: 0;
     position: static;
     display: inline-block;
     margin-right: 6px;
-    margin-left: 6;
+    margin-left: 10px;
     vertical-align: bottom; }
-  /* line 136, ../sass/_filters.scss */
-  .input-with-btn .form-group, .input-with-btn .filter-error, .input-with-btn .instructions {
-    margin-left: 140px; }
-    @media (max-width: 1200px) {
-      /* line 136, ../sass/_filters.scss */
-      .input-with-btn .form-group, .input-with-btn .filter-error, .input-with-btn .instructions {
-        margin: 0 10px 10px 0; } }
-  /* line 142, ../sass/_filters.scss */
-  .input-with-btn.no-margin-left .form-group, .input-with-btn.no-margin-left .filter-error, .input-with-btn.no-margin-left .instructions {
-    margin-left: 0; }
-  /* line 146, ../sass/_filters.scss */
+  /* line 141, ../sass/_filters.scss */
   .input-with-btn .instructions {
     margin-top: 0.6em; }
-    /* line 148, ../sass/_filters.scss */
+    /* line 143, ../sass/_filters.scss */
     .input-with-btn .instructions * {
       color: white; }
-    /* line 151, ../sass/_filters.scss */
+    /* line 146, ../sass/_filters.scss */
     .input-with-btn .instructions .content-area {
       display: none;
       background: #222222;
       padding: 12px 13px 18px; }
-      /* line 155, ../sass/_filters.scss */
+      /* line 150, ../sass/_filters.scss */
       .input-with-btn .instructions .content-area dt {
         width: 200px; }
-      /* line 158, ../sass/_filters.scss */
+      /* line 153, ../sass/_filters.scss */
       .input-with-btn .instructions .content-area dd {
         margin-left: 220px; }
-    /* line 162, ../sass/_filters.scss */
+    /* line 157, ../sass/_filters.scss */
     .input-with-btn .instructions .clarifications {
       font-style: italic; }
 
+/* line 164, ../sass/_filters.scss */
+.filter:not(.visible-filter):not(.visible-filter-fade) {
+  display: none;
+  opacity: 0; }
+
 /* line 169, ../sass/_filters.scss */
-.filter.invisible {
-  display: none; }
+.visible-filter-fade {
+  opacity: 1;
+  transition: opacity 0.5s; }
+
+/* line 174, ../sass/_filters.scss */
+.filters .filters-list {
+  border-radius: 15px;
+  background: #222222;
+  border: 1px solid white;
+  height: 28px; }
+  /* line 179, ../sass/_filters.scss */
+  .filters .filters-list > a {
+    color: white;
+    line-height: 28px;
+    font-weight: bold;
+    padding: 8px 7px;
+    background: transparent; }
+  /* line 186, ../sass/_filters.scss */
+  .filters .filters-list .popover {
+    padding: 0; }
+  /* line 189, ../sass/_filters.scss */
+  .filters .filters-list .popover-content {
+    padding: 0; }
+  /* line 192, ../sass/_filters.scss */
+  .filters .filters-list .popover ul {
+    list-style: none;
+    padding: 5px 0px;
+    min-width: 160px; }
+    /* line 196, ../sass/_filters.scss */
+    .filters .filters-list .popover ul li {
+      white-space: nowrap; }
+      /* line 198, ../sass/_filters.scss */
+      .filters .filters-list .popover ul li a {
+        color: #303030; }
+      /* line 201, ../sass/_filters.scss */
+      .filters .filters-list .popover ul li span {
+        margin-right: 10px; }
+    /* line 205, ../sass/_filters.scss */
+    .filters .filters-list .popover ul .divider {
+      height: 1px;
+      margin: 9px 0;
+      overflow: hidden;
+      background-color: #e5e5e5; }
+  /* line 212, ../sass/_filters.scss */
+  .filters .filters-list .popover.bottom > .arrow:after {
+    border-bottom-color: #eeeeee; }
 
 /* line 1, ../sass/_modals.scss */
 p.progress-area {
@@ -7851,15 +7949,15 @@ table.dataTable tbody tr.selected {
   color: #303030;
   background-color: #eeeeee; }
 
-/* line 137, ../sass/_tables.scss */
+/* line 136, ../sass/_tables.scss */
 html body .dataTables_wrapper label {
   font-weight: normal; }
-/* line 141, ../sass/_tables.scss */
+/* line 140, ../sass/_tables.scss */
 html body .dataTables_wrapper table th.sorting, html body .dataTables_wrapper table th.sorting_asc, html body .dataTables_wrapper table th.sorting_desc {
   background-position: center left;
   padding-left: 22px; }
 
-/* line 151, ../sass/_tables.scss */
+/* line 150, ../sass/_tables.scss */
 .dataTables_wrapper .dataTables_length,
 .dataTables_wrapper .dataTables_info,
 .dataTables_wrapper .dataTables_paginate {
@@ -7868,32 +7966,32 @@ html body .dataTables_wrapper table th.sorting, html body .dataTables_wrapper ta
   color: white;
   line-height: 35px; }
 
-/* line 157, ../sass/_tables.scss */
+/* line 156, ../sass/_tables.scss */
 table.dataTable.no-footer {
   border-bottom: 1px solid #eeeeee;
   margin: 2em 0; }
 
-/* line 162, ../sass/_tables.scss */
+/* line 161, ../sass/_tables.scss */
 .dataTables_wrapper .dataTables_paginate .paginate_button {
   color: white !important;
   padding: 0 1em; }
 
-/* line 169, ../sass/_tables.scss */
+/* line 168, ../sass/_tables.scss */
 .container .dataTables_wrapper .dataTables_paginate .paginate_button:hover,
 .container .dataTables_wrapper .dataTables_paginate .paginate_button:focus {
   background: transparent;
   border-color: white;
   color: white !important; }
 
-/* line 175, ../sass/_tables.scss */
+/* line 174, ../sass/_tables.scss */
 .container .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
   border-color: transparent;
   color: #818181 !important; }
-  /* line 180, ../sass/_tables.scss */
+  /* line 179, ../sass/_tables.scss */
   .container .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover, .container .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:focus, .container .dataTables_wrapper .dataTables_paginate .paginate_button.disabled:active {
     color: #818181 !important; }
 
-/* line 187, ../sass/_tables.scss */
+/* line 186, ../sass/_tables.scss */
 .dataTables_wrapper .dataTables_paginate .paginate_button.current,
 .dataTables_wrapper .dataTables_paginate .paginate_button.current:focus,
 .dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
@@ -7901,12 +7999,12 @@ table.dataTable.no-footer {
   color: #303030 !important;
   border: transparent; }
 
-/* line 193, ../sass/_tables.scss */
+/* line 192, ../sass/_tables.scss */
 .dataTables_wrapper > .custom-buttons {
   margin-bottom: 1em;
   width: 100%; }
 
-/* line 198, ../sass/_tables.scss */
+/* line 197, ../sass/_tables.scss */
 .dataTables_wrapper .dataTables_processing {
   background: #4e4e4e;
   color: white;
@@ -7915,7 +8013,7 @@ table.dataTable.no-footer {
   box-shadow: inset 0 0 5px #888888;
   z-index: 1; }
 
-/* line 206, ../sass/_tables.scss */
+/* line 205, ../sass/_tables.scss */
 .fixed {
   position: fixed; }
 

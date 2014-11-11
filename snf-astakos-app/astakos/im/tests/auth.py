@@ -21,6 +21,10 @@ from astakos.im.tests.common import *
 
 ui_url = lambda url: '/' + astakos_settings.BASE_PATH + '/ui/%s' % url
 
+MANAGERS = (('Manager', 'manager@synnefo.org'),)
+HELPDESK = (('Helpdesk', 'helpdesk@synnefo.org'),)
+ADMINS = (('Admin', 'admin@synnefo.org'),)
+
 
 class ShibbolethTests(TestCase):
     """
@@ -435,7 +439,9 @@ class ShibbolethTests(TestCase):
 class TestLocal(TestCase):
 
     def setUp(self):
-        settings.ADMINS = (('admin', 'support@cloud.synnefo.org'),)
+        settings.ADMINS = ADMINS
+        settings.ACCOUNT_PENDING_MODERATION_RECIPIENTS = ADMINS
+        settings.ACCOUNT_ACTIVATED_RECIPIENTS = ADMINS
         settings.SERVER_EMAIL = 'no-reply@synnefo.org'
         self._orig_moderation = astakos_settings.MODERATION_ENABLED
         settings.ASTAKOS_MODERATION_ENABLED = True
@@ -482,7 +488,7 @@ class TestLocal(TestCase):
         self.assertFalse(user.is_active)
 
         # user (but not admin) gets notified
-        self.assertEqual(len(get_mailbox('support@cloud.synnefo.org')), 0)
+        self.assertEqual(len(get_mailbox('admin@synnefo.org')), 0)
         self.assertEqual(len(get_mailbox('kpap@synnefo.org')), 1)
         astakos_settings.MODERATION_ENABLED = True
 
@@ -520,7 +526,9 @@ class TestLocal(TestCase):
         form = forms.LocalUserCreationForm(data)
         self.assertFalse(form.is_valid())
 
-    @im_settings(HELPDESK=(('support', 'support@synnefo.org'),),
+    @im_settings(HELPDESK=HELPDESK,
+                 ACCOUNT_PENDING_MODERATION_RECIPIENTS=HELPDESK,
+                 ACCOUNT_ACTIVATED_RECIPIENTS=HELPDESK,
                  FORCE_PROFILE_UPDATE=False, MODERATION_ENABLED=True)
     def test_local_provider(self):
         self.helpdesk_email = astakos_settings.HELPDESK[0][1]
@@ -662,7 +670,7 @@ class TestLocal(TestCase):
         self.assertFalse(r.context['request'].user.is_authenticated())
         self.assertFalse(self.client.cookies.get('_pithos2_a').value)
 
-        #https://docs.djangoproject.com/en/dev/topics/testing/#persistent-state
+        # https://docs.djangoproject.com/en/dev/topics/testing/#persistent-state
         del self.client.cookies['_pithos2_a']
 
         # user can login
@@ -881,7 +889,9 @@ class TestAuthProviderViews(TestCase):
     @shibboleth_settings(CREATION_GROUPS_POLICY=['academic-login'],
                          AUTOMODERATE_POLICY=True)
     @im_settings(IM_MODULES=['shibboleth', 'local'], MODERATION_ENABLED=True,
-                 HELPDESK=(('support', 'support@synnefo.org'),),
+                 HELPDESK=HELPDESK,
+                 ACCOUNT_PENDING_MODERATION_RECIPIENTS=HELPDESK,
+                 ACCOUNT_ACTIVATED_RECIPIENTS=HELPDESK,
                  FORCE_PROFILE_UPDATE=False)
     def test_user(self):
         Profile = AuthProviderPolicyProfile
@@ -1344,12 +1354,13 @@ class TestActivationBackend(TestCase):
         self.assertEqual(user3.moderated, True)
         self.assertEqual(user3.accepted_policy, 'auth_provider_shibboleth')
 
-    @im_settings(MODERATION_ENABLED=False,
-                 MANAGERS=(('Manager',
-                            'manager@synnefo.org'),),
-                 HELPDESK=(('Helpdesk',
-                            'helpdesk@synnefo.org'),),
-                 ADMINS=(('Admin', 'admin@synnefo.org'), ))
+    @im_settings(
+        MODERATION_ENABLED=False,
+        MANAGERS=MANAGERS,
+        HELPDESK=HELPDESK,
+        ADMINS=ADMINS,
+        ACCOUNT_PENDING_MODERATION_RECIPIENTS=MANAGERS+HELPDESK+ADMINS,
+        ACCOUNT_ACTIVATED_RECIPIENTS=MANAGERS+HELPDESK+ADMINS)
     def test_without_moderation(self):
         backend = activation_backends.get_backend()
         form = backend.get_signup_form('local')
@@ -1397,12 +1408,13 @@ class TestActivationBackend(TestCase):
         self.assertEqual(user.email_verified, True)
         self.assertTrue(user.activation_sent)
 
-    @im_settings(MODERATION_ENABLED=True,
-                 MANAGERS=(('Manager',
-                            'manager@synnefo.org'),),
-                 HELPDESK=(('Helpdesk',
-                            'helpdesk@synnefo.org'),),
-                 ADMINS=(('Admin', 'admin@synnefo.org'), ))
+    @im_settings(
+        MODERATION_ENABLED=True,
+        MANAGERS=MANAGERS,
+        HELPDESK=HELPDESK,
+        ADMINS=ADMINS,
+        ACCOUNT_PENDING_MODERATION_RECIPIENTS=HELPDESK+MANAGERS+ADMINS,
+        ACCOUNT_ACTIVATED_RECIPIENTS=HELPDESK+MANAGERS+ADMINS)
     def test_with_moderation(self):
 
         backend = activation_backends.get_backend()
@@ -1534,7 +1546,7 @@ class TestWebloginRedirect(TestCase):
                          AstakosUser.objects.get().auth_token)
         # does not contain uuid
         # reverted for 0.14.2 to support old pithos desktop clients
-        #self.assertFalse('uuid' in params)
+        # self.assertFalse('uuid' in params)
 
         # invalid cases
         r = self.client.get(invalid_scheme, follow=True)

@@ -1,16 +1,16 @@
 {% load admin_tags %}
-<div class="filter filter-dropdown">
-	<div class="dropdown" data-filter="{{ filter.name }}">
+<div class="filter filter-dropdown" data-filter="{{ filter.name }}">
+	<div class="dropdown">
 		<a class="" href="#" data-toggle="dropdown">
 			<span class="category">{{ filter.label }}:</span>
             <span class="selected-value">{{ filter|default_value }}</span>
 			<span class="snf-angle-down arrow"></span>
 		</a>
 		<ul class="dropdown-menu choices">
-            <li class="active reset"><a href="#"><span class="selection-indicator snf-checkbox-checked"></span>{{ filter|default_value }}</a></li>
+            <li class="active reset"><a href="#"><span class="snf-checkbox-unchecked"></span><span class="snf-checkbox-checked"></span>{{ filter|default_value }}</a></li>
 			<li class="divider"></li>
 			{% for choice,_ in filter.field.choices %}
-			<li><a href="#"><span class="selection-indicator snf-checkbox-unchecked"></span>{{ choice }}</a></li>
+			<li><a href="#"><span class="snf-checkbox-unchecked"></span><span class="snf-checkbox-checked"></span>{{ choice }}</a></li>
 			{% endfor %}
 		</ul>
 	</div>

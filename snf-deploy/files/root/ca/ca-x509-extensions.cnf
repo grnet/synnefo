@@ -1,0 +1,9 @@
+# x509v3 extenstions to add when creating the root CA
+# This is a CA's root certificate
+basicConstraints = critical, CA:TRUE
+# The key of this certificate will be used for signing other certificates
+keyUsage = keyCertSign, cRLSign
+# Follow the guidelines in RFC3280
+subjectKeyIdentifier = hash
+# This certificate will be used for signing certificates with the following CN
+nameConstraints = permitted;DNS:%DOMAIN%

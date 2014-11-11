@@ -55,6 +55,39 @@ ADMINS = tuple(getattr(settings, 'ADMINS', ()))
 MANAGERS = tuple(getattr(settings, 'MANAGERS', ()))
 HELPDESK = tuple(getattr(settings, 'HELPDESK', ()))
 
+# For convenience, Astakos groups the notifications in three categories and
+# let the user define the recipients for these categories.
+# - ACCOUNT_NOTIFICATIONS_RECIPIENTS receive notifications for 'account pending
+#   moderation' and 'account activated' actions.
+# - FEEDBACK_NOTIFICATIONS_RECIPIENTS receive feedback notifications
+# - PROJECT_NOTIFICATIONS_RECIPIENTS receive notifications for 'project
+#   creation' and 'project modification' actions.
+ACCOUNT_NOTIFICATIONS_RECIPIENTS = tuple(set(tuple(
+    getattr(settings, 'ACCOUNT_NOTIFICATIONS_RECIPIENTS',
+            HELPDESK + MANAGERS + ADMINS))))
+FEEDBACK_NOTIFICATIONS_RECIPIENTS = tuple(set(tuple(
+    getattr(settings, 'FEEDBACK_NOTIFICATIONS_RECIPIENTS',
+            HELPDESK))))
+PROJECT_NOTIFICATIONS_RECIPIENTS = tuple(set(tuple(
+    getattr(settings, 'PROJECT_NOTIFICATIONS_RECIPIENTS',
+            HELPDESK + MANAGERS))))
+
+# Using the following settings, one can explicitly specify the recipients for a
+# specific notification. By default, these settings are not exposed to the
+# config file.
+ACCOUNT_PENDING_MODERATION_RECIPIENTS = tuple(set(tuple(
+    getattr(settings, 'ACCOUNT_PENDING_MODERATION_RECIPIENTS',
+            ACCOUNT_NOTIFICATIONS_RECIPIENTS))))
+ACCOUNT_ACTIVATED_RECIPIENTS = tuple(set(tuple(
+    getattr(settings, 'ACCOUNT_ACTIVATED_RECIPIENTS',
+            ACCOUNT_NOTIFICATIONS_RECIPIENTS))))
+PROJECT_CREATION_RECIPIENTS = tuple(set(tuple(
+    getattr(settings, 'PROJECT_CREATION_RECIPIENTS',
+            PROJECT_NOTIFICATIONS_RECIPIENTS))))
+PROJECT_MODIFICATION_RECIPIENTS = tuple(set(tuple(
+    getattr(settings, 'PROJECT_MODIFICATION_RECIPIENTS',
+            PROJECT_NOTIFICATIONS_RECIPIENTS))))
+
 CONTACT_EMAIL = settings.CONTACT_EMAIL
 SERVER_EMAIL = settings.SERVER_EMAIL
 SECRET_KEY = settings.SECRET_KEY
@@ -67,7 +100,7 @@ IM_MODULES = getattr(settings, 'ASTAKOS_IM_MODULES', ['local'])
 # Force user profile verification
 FORCE_PROFILE_UPDATE = getattr(settings, 'ASTAKOS_FORCE_PROFILE_UPDATE', False)
 
-#Enable invitations
+# Enable invitations
 INVITATIONS_ENABLED = getattr(settings, 'ASTAKOS_INVITATIONS_ENABLED', False)
 
 COOKIE_NAME = getattr(settings, 'ASTAKOS_COOKIE_NAME', '_pithos2_a')
@@ -246,9 +279,9 @@ _default_project_members_limit_choices = (
     ('100', '100')
 )
 
-PROJECT_MEMBERS_LIMIT_CHOICES = getattr(settings,
-                                 'ASTAKOS_PROJECT_MEMBERS_LIMIT_CHOICES',
-                                 _default_project_members_limit_choices)
+PROJECT_MEMBERS_LIMIT_CHOICES = getattr(
+    settings, 'ASTAKOS_PROJECT_MEMBERS_LIMIT_CHOICES',
+    _default_project_members_limit_choices)
 
 ADMIN_API_PERMITTED_GROUPS = getattr(settings,
                                      'ASTAKOS_ADMIN_API_PERMITTED_GROUPS',

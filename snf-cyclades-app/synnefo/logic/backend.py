@@ -995,7 +995,7 @@ def disk_is_stale(vm, disk, timeout=60):
 def nic_is_stale(vm, nic, timeout=60):
     """Check if a NIC is stale or exists in the Ganeti backend."""
     # First check the state of the NIC and if there is a pending CONNECT
-    if nic.state in ["BUILD", "DOWN"]:
+    if nic.state in ["BUILD", "DOWN", "ERROR"]:
         if datetime.now() < nic.created + timedelta(seconds=timeout):
             # Do not check for too recent NICs to avoid the time overhead
             return False

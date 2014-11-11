@@ -75,7 +75,7 @@ def create(user_id, volume, name, description, metadata, force=False):
     # that are being used for images. We set 'EXCLUDE_ALL_TASKS' to bypass
     # image customization. Also, we get some basic metadata for the volume from
     # the server that the volume is attached
-    metadata.update({"EXCLUDE_ALL_TASKS": "yes",
+    metadata.update({"exclude_all_tasks": "yes",
                      "description": description})
     if volume.index == 0:
         # Copy the metadata of the VM into the image properties only when the
@@ -114,6 +114,7 @@ def create(user_id, volume, name, description, metadata, force=False):
         except:
             # If failed to enqueue job to Ganeti, mark snapshot as ERROR
             b.update_snapshot_state(snapshot_id, OBJECT_ERROR)
+            raise
 
         # Store the backend and job id as metadata in the snapshot in order
         # to make reconciliation based on the Ganeti job possible.

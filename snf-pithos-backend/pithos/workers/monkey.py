@@ -20,7 +20,11 @@ from archipelago import common
 from archipelago.common import posixfd_signal_desc
 from ctypes import cast, POINTER
 import os
-from gevent import select
+
+try:
+    from gevent import select
+except ImportError:
+    import select
 
 
 def pithos_xseg_wait_signal_green(ctx, sd, timeout):

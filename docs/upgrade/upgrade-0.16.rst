@@ -9,8 +9,9 @@ for the Pithos Service. Archipelago will act as a storage abstraction layer
 between Pithos and NFS, RADOS or any other storage backend driver that
 Archipelago supports. In order to use the Pithos Service you must install
 Archipelago on the node that runs the Pithos and Cyclades workers.
-Additionally, you must install snf-image version 0.16 on the Ganeti nodes since
-this is the first version that supports Archipelago.
+Additionally, you must install Archipelago on the Ganeti nodes and upgrade
+snf-image to version 0.16.2 since this is the first version that supports
+Archipelago.
 
 Until now the Pithos mapfile was a simple file containing a list of hashes that
 make up the stored file in a Pithos container. After this consolidation the
@@ -20,24 +21,60 @@ mapfile is an updated version of the Pithos mapfile, intended to supersede it.
 More info about the new mapfile you can find in Archipelago documentation.
 
 
+Current state regarding ownerships and permissions
+==================================================
+
+In Synnefo v0.15, all Synnefo components run as ``www-data:www-data``. Also, in
+case Pithos is using the NFS backend store, the files in the shared directory
+are owned by ``www-data:www-data`` with ``0640`` permissions. Finally,
+Archipelago, if used, runs as ``root:root``.
+
+Synnefo v0.16 provides more flexibility regarding required users and
+permissions. Synnefo introduces a dedicated system user and group:
+``synnefo``. On the other hand, Archipelago v0.4 is able to run as an
+arbitrary user/group (defaults to ``archipelago:archipelago``).
+
+As already mentioned, in Synnefo v0.16, Archipelago is becoming the
+storage backend for Pithos, so we must guarantee that Pithos will have
+the right permissions to communicate with Archipelago. For this reason
+we run Archipelago with the ``synnefo`` group.
+
+Finally, in case NFS is used as a storage backend, we must also update
+the permissions and ownerships of all directories and files on the
+exported directory. Because this procedure may take a while in a production
+setup with many TB of data, these upgrade notes provide a detailed procedure
+in order to be able to perform the transition with minimum downtime.
+
+At the end of the day Synnefo (Cyclades, Pithos, Astakos, etc) will run
+as ``synnefo:synnefo`` while Archipelago will run as
+``archipelago:synnefo``. The NFS (if any) will be owned by
+``archipelago:synnefo`` with 2660 permissions.
+
+
 Upgrade Steps
 =============
 
 The upgrade to v0.16 consists of the following steps:
 
-0. Upgrade / Install Archipelago and snf-image.
+0. Upgrade snf-image on all Ganeti nodes
 
-1. Bring down services and backup databases.
+1. Setup Archipelago on all nodes
 
-2. Upgrade packages, migrate the databases and configure settings.
+2. Ensure intermediate state
 
-3. Inspect and adjust resource limits.
+3. Bring down services and backup databases
 
-4. Tweak Archipelago and Gunicorn settings on Pithos node
+4. Upgrade packages, migrate the databases and configure settings
 
-5. Bring up all services.
+5. Inspect and adjust resource limits
 
-6. Add unique names to disks of all Ganeti instances
+6. Tweak Gunicorn settings on Pithos and Cyclades node
+
+7. Bring up all services
+
+8. Finalize permissions
+
+9. Add unique names to disks of all Ganeti instances
 
 
 .. warning::
@@ -45,25 +82,166 @@ The upgrade to v0.16 consists of the following steps:
     It is strongly suggested that you keep separate database backups
     for each service after the completion of each step.
 
+0. Upgrade snf-image on all Ganeti nodes
+========================================
 
-0. Upgrade / Install Archipelago and snf-image
-==============================================
+On all Ganeti VM-capable nodes install the latest snf-image package (v0.16.3).
 
-If you have never used Archipelago before, make sure to install Archipelago 0.4
-on all Ganeti VM-capable nodes.
+.. code-block:: console
 
-If you're upgrading from Archipelago 0.3.5, make sure to upgrade Archipelago
-on all Ganeti nodes before starting the upgrade process. For more
-information, check the Archipelago
-`upgrade notes <https://www.synnefo.org/docs/archipelago/latest/upgrades/archipelago_upgrade_v04.rst>`_.
-
-Once you have Archipelago 0.4 up and running, you can install snf-image 0.16.
-
-At this point, you should also install Archipelago 0.4 on the Pithos and
-Cyclades workers.
+  # apt-get install snf-image
 
 
-1. Bring web services down, backup databases
+1. Setup Archipelago on all nodes
+==================================
+
+At this point, we will perform some intemediate migration steps in order to
+perform the upgrade procedure with minimum downtime. To achieve this, we will
+pass through an intermediate state where:
+
+* Pithos will run as ``www-data:synnefo``.
+* Archipelago will run as ``archipelago:synnefo``.
+* The NFS shared directory will be owned by ``www-data:synnefo`` with ``2660``
+  permissions.
+
+To ensure seamless transition we do the following:
+
+* **Create system users and groups in advance**
+
+  NFS expects the user and group ID of the owners of the exported directory
+  to be common across all nodes. So we need to guarantee that ID of ``archipelago``
+  user/group and ``synnefo`` group will be the same to all nodes.
+  So we modify the ``archipelago`` user and group and create the ``synnefo``
+  user (assuming that ids 200 and 300 are available everywhere), by running
+  the following commands to all nodes that have archipelago installed:
+
+  .. code-block:: console
+
+    # addgroup --system --gid 200 synnefo
+    # adduser --system --uid 200 --gid 200 --no-create-home \
+        --gecos Synnefo synnefo
+
+    # addgroup --system --gid 300 archipelago
+    # adduser --system --uid 300 --gid 300 --no-create-home \
+        --gecos Archipelago archipelago
+
+  Normally the ``snf-common`` and ``archipelago`` packages are responsible
+  for creating the required system users and groups.
+
+* **Upgrade/Install Archipelago**
+
+  Up until now Archipelago was optional. So, your setup, either has no
+  Archipelago installation or has Archipelago v0.3.5 installed and
+  configured in all VM-capable nodes. Depending on your case refer to:
+
+   * `Archipelago installation guide <https://www.synnefo.org/docs/archipelago/latest/install-guide.html>`_
+   * `Archipelago upgrade notes <https://www.synnefo.org/docs/archipelago/latest/upgrades/upgrade-0.4.html>`_
+
+  Archipelago does not start automatically after installation. Do not start it
+  manually until it is configured properly.
+
+* **Adjust Pithos umask setting**
+
+  On the Pithos node, edit the file
+  ``/etc/synnefo/20-snf-pithos-app-settings.conf`` and uncomment or add the
+  ``PITHOS_BACKEND_BLOCK_UMASK`` setting and set it to value ``0o007``.
+
+  Then perform a gunicorn restart on both nodes:
+
+  .. code-block:: console
+
+      # service gunicorn restart
+
+  This way, all files and directories created by Pithos will be writable by the
+  group that Pithos is running (i.e. ``www-data``).
+
+* **Change Pithos data group permissions**
+
+  Ensure that every file and folder under Pithos data directory has correct
+  permissions.
+
+  .. code-block:: console
+
+      # find /srv/pithos/data -type d -exec chmod g+rwxs '{}' \;
+      # find /srv/pithos/data -type f -exec chmod g+rw '{}' \;
+
+  This way, we prepare NFS to be fully accessible either via
+  the user or the group.
+
+* **Change gunicorn group**
+
+  On the Pithos node, edit the file ``/etc/gunicorn.d/synnefo`` and set
+  ``group`` to ``synnefo``. Then change the ownership of all
+  configuration and log files:
+
+  .. code-block:: console
+
+     # chgrp -R synnefo /etc/synnefo
+     # chgrp -R synnefo /var/log/synnefo
+     # /etc/init.d/gunicorn restart
+
+  This way, Pithos is able to access NFS via gunicorn user
+  (``www-data``). We prepare Pithos to be able to access the ``synnefo``
+  group.
+
+* **Change Pithos data group owner**
+
+  Make ``synnefo`` group the group owner of every file under the Pithos data
+  directory.
+
+  .. code-block:: console
+
+      # chgrp synnefo /srv/pithos/data
+      # find /srv/pithos/data -type d -exec chgrp synnefo '{}' \;
+      # find /srv/pithos/data -type f -exec chgrp synnefo '{}' \;
+
+  From now on, every file or directory created under the Pithos data directory
+  will belong to the ``synnefo`` group because of the directory SET_GUID bit
+  that we set on a previous step. Plus the ``synnefo`` group will have
+  full read/write access because of the adjusted Pithos umask setting.
+
+* **Make archipelago run as synnefo group**
+
+  Change the Archipelago configuration on all nodes, to run as
+  ``archipelago``:``synnefo``, since it no longer requires root
+  priviledges. For each Archipelago node:
+
+  * Stop Archipelago
+
+    .. code-block:: console
+
+      # archipelago stop
+
+  * Change the ``USER`` and ``GROUP`` configuration option to ``archipelago``
+    and ``synnefo`` respectively. The configuration file is located under
+    ``/etc/archipelago/archipelago.conf``
+
+  * Change the ownership of Archipelago log files:
+
+    .. code-block:: console
+
+      # chown -R archipelago:synnefo /var/log/archipelago
+
+  * Start Archipelago
+
+    .. code-block:: console
+
+      # archipelago start
+
+
+2. Ensure intermediate state
+============================
+
+Please verify that Pithos runs as ``www-data:synnefo`` and any file
+created in the exported directory will be owned by ``www-data:synnefo``
+with ``660`` permissions. Archipelago runs as ``archipelago:synnefo`` so it
+can access NFS via the ``synnefo`` group. NFS (``blocks``, ``maps``,
+``locks`` and all other subdirectories under ``/srv/pithos/data`` or
+``/srv/archip``) will be owned by ``www-data:synnefo`` with 2770
+permissions.
+
+
+3. Bring web services down, backup databases
 ============================================
 
 1. All web services must be brought down so that the database maintains a
@@ -78,10 +256,10 @@ Cyclades workers.
 3. Keep the database servers running during the migration process.
 
 
-2. Upgrade Synnefo and configure settings
+4. Upgrade Synnefo and configure settings
 =========================================
 
-2.1 Install the new versions of packages
+4.1 Install the new versions of packages
 ----------------------------------------
 
 ::
@@ -114,11 +292,7 @@ Cyclades workers.
                             snf-branding \
                             snf-pithos-backend \
                             snf-pithos-app \
-                            snf-pithos-webclient \
-                            libxseg0 \
-                            python-xseg \
-                            python-archipelago \
-                            archipelago
+                            snf-pithos-webclient
 
     ganeti.node$ apt-get install \
                             python-objpool \
@@ -130,7 +304,7 @@ Cyclades workers.
 
 .. note::
 
-   Make sure `snf-webproject' has the same version with snf-common
+   Make sure ``snf-webproject`` has the same version with snf-common
 
 .. note::
 
@@ -145,7 +319,7 @@ Cyclades workers.
     a workaround.
 
 
-2.2 Sync and migrate the database
+4.2 Sync and migrate the database
 ---------------------------------
 
 .. note::
@@ -164,7 +338,7 @@ Cyclades workers.
     pithos-host$ pithos-migrate upgrade head
 
 
-2.3 Configure snf-vncauthproxy
+4.3 Configure snf-vncauthproxy
 ------------------------------
 
 Synnefo 0.16 replaces the Java VNC client with an HTML5 Websocket client and
@@ -182,15 +356,19 @@ Both files should be readable by the `vncauthproxy` user or group.
 
 .. note::
 
-    At the moment, the certificates should be issued to the FQDN of the
-    Cyclades worker.
+    When installing snf-vncauthproxy on the same node as Cyclades and using the
+    default settings for snf-vncauthproxy, the certificates should be issued to
+    the FQDN of the Cyclades worker. Refer to the :ref:`admin guide
+    <admin-guide-vnc>`, for more information on how to setup vncauthproxy on a
+    different host / interface.
 
 For more information on how to setup snf-vncauthproxy check the
 snf-vncauthproxy `documentation <https://www.synnefo.org/docs/snf-vncauthproxy/latest/index.html#usage-with-synnefo>`_
 and `upgrade notes <https://www.synnefo.org/docs/snf-vncauthproxy/latest/upgrade/upgrade-1.6.html>`_.
 
 
-3. Inspect and adjust resource limits
+
+5. Inspect and adjust resource limits
 =====================================
 
 Synnefo 0.16 brings significant changes at the project mechanism. Projects
@@ -242,45 +420,51 @@ projects and will need to *reassign* some of their reserved resources to
 another project in order to overcome this restriction.
 
 
-4. Tweak Archipelago and Gunicorn settings on Pithos node
-=========================================================
+6. Tweak Gunicorn settings
+==========================
 
-After installing Archipelago on the  Pithos node we need to adjust the
-configuration files according to our deployment needs.
+First we make Gunicorn run as ``synnefo:synnefo``, by setting the
+``user`` and ``group`` option in Gunicorn configuration
+file (``/etc/gunicorn.d/synnefo``).
 
-For Archipelago the configuration file is located on
-``/etc/archipelago/archipelago.conf``, where we need to adjust carefully at
-least six configuration options:
+Also on the Pithos and Cyclades node you also have to set the following:
 
-* ``BLKTAP_ENABLED``: Must be set to false for the Pithos node, if the node does
-  not host VMs (a.k.a is not VM_CAPABLE)
-* ``USER``: The user that Archipelago will run as must be the same as the
-  Gunicorn user.
-* ``GROUP``: The group that Archipelago will run as must be the same as the
-  Gunicorn group.
-* ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
-  RAM. The default value is 2GB which in some situations might exceed your
-  machine's physical RAM.
-* ``archip_dir`` in ``blockerm`` section must be set to the directory that
-  Pithos mapfiles reside until now (e.g., ``/srv/pithos/data/maps``).
-  For RADOS installations the ``pool`` setting must be set to the RADOS pool
-  that Pithos mapfiles reside.
-* ``archip_dir`` in ``blockerb`` section must be set to the directory that
-  Pithos data blocks reside until now (e.g., ``/srv/pithos/data/blocks``).
-  For RADOS installations the ``pool`` setting must be set to the RADOS pool
-  that Pithos data blocks reside.
-
-For Gunicorn the configuration file is located on ``/etc/gunicorn.d/synnefo``
-where we need to change:
-
-* ``--worker-class=gevent`` to ``--worker-class=pithos.workers.gevent_archipelago.GeventArchipelagoWorker``
-
-and set:
-
-* ``--config=/etc/synnefo/pithos.conf.py``
+* ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py``
 
 
-5. Bring all services up
+.. warning::
+
+    If you have already installed Synnefo v0.16rc1 or v0.16rc2 you
+    should replace ``pithos.conf.py`` with ``gunicorn-archipelago.py`` located
+    under ``/etc/synnefo/gunicorn-hooks`` directory. Afterwards you
+    can freely delete  ``pithos.conf.py`` conf file.
+
+After setting the user/group that Gunicorn will run as, we must also make
+sure that configuration and log files are accessible:
+
+.. code-block:: console
+
+    # chgrp -R synnefo /etc/synnefo/
+    # chown -R synnefo:synnefo /var/log/synnefo/
+
+On the Cyclades node, the ``snf-dispatcher`` must run as
+``synnefo``:``synnefo``. In ``/etc/default/snf-dispatcher`` verify that
+``SNF_USER`` and ``SNF_DSPTCH_OPTS`` settings are:
+
+.. code-block:: console
+
+  SNF_USER="synnefo:synnefo"
+  SNF_DSPTCH_OPTS=""
+
+Finally, verify that snf-dispatcher can access its log file (e.g.
+``/var/log/synnefo/synnefo.log``):
+
+.. code-block:: console
+
+   # chown synnefo:synnefo /var/log/synnefo/dispatcher.log
+
+
+7. Bring all services up
 ========================
 
 After the upgrade is finished, we bring up all services:
@@ -290,13 +474,23 @@ After the upgrade is finished, we bring up all services:
     astakos.host  # service gunicorn start
     cyclades.host # service gunicorn start
 
-    pithos.host   # service archipelago start
     pithos.host   # service gunicorn start
 
     cyclades.host # service snf-dispatcher start
 
+8. Finalize permissions
+=======================
 
-6. Add unique names to disks of all Ganeti instances
+At this point, and while the services are running, we will finalize the
+permissions of existing directories and files in the NFS directory to match
+the user/group that Archipelago is running:
+
+.. code-block:: console
+
+  # chown -R archipelago:synnefo /srv/pithos/data
+
+
+9. Add unique names to disks of all Ganeti instances
 =====================================================
 
 Synnefo 0.16 introduces the Volume service which can handle multiple disks

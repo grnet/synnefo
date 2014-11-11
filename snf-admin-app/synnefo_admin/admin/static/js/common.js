@@ -1,4 +1,5 @@
 snf = {
+	filters: {},
 	modals: {
 		performAction: function(modal, notificationArea, warningMsg, itemsCount, countAction) {
 			var $modal = $(modal);
@@ -198,7 +199,7 @@ snf = {
 			toggleNotifications: '',
 			showTips: '',
 			trimedCell: '<span title="click to see"><span data-container="body" data-toggle="popover" data-placement="bottom" data-content="<%= data %>"><%= trimmedData %>...</span></span>',
-			checkboxCell: '<span class="snf-font-admin snf-checkbox-<%= state %> selection-indicator"></span><%= content %>',
+			checkboxCell: '<span class="snf-checkbox-unchecked selection-indicator select"></span><span class="snf-checkbox-checked selection-indicator select"></span><%= content %>',
 			summary: '<a title="Show summary" href="#" class="summary-expand expand-area"><span class="snf-font-admin snf-angle-down"></span></a><dl class="info-summary dl-horizontal"><%= list %></dl>',
 			summaryLine: '<dt><%= key %></dt><dd><%= value %></dd>',
 			detailsBtn: '<a title="Details" href="<%= url %>" class="details-link"><span class="snf-font-admin snf-search"></span></a>'
@@ -253,14 +254,17 @@ $(document).ready(function(){
 	$("[data-toggle=popover]").click(function(e) {
 		e.preventDefault();
 	});
+	$("#select-filters").click(function(e) {
+		e.preventDefault();
+	});
 	$("[data-toggle=popover]").popover();
 	$("[data-toggle=tooltip]").tooltip();
 
 	$('body').on('click', function (e) {
     //did not click a popover toggle or popover
-    if ($(e.target).data('toggle') !== 'popover'
-        && $(e.target).parents('.popover.in').length === 0) {
+    if ($(e.target).data('toggle') !== 'popover' && $(e.target).closest('a').attr('id') !== 'select-filters' && $(e.target).parents('.popover.in').length === 0) {
         $('[data-toggle="popover"]').popover('hide');
+        $('#select-filters').popover('hide');
     }
 });
 
@@ -318,5 +322,4 @@ $(document).ready(function(){
             e.preventDefault();
         }
     });
-
 });

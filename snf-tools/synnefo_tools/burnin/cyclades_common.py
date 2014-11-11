@@ -150,9 +150,10 @@ class CycladesTests(BurninTests):
         else:
             networks = None
 
-        servername = "%s for %s" % (self.run_id, image['name'])
+        name = image.get('name', image.get('display_name', ''))
+        servername = "%s for %s" % (self.run_id, name)
         self.info("Creating a server with name %s", servername)
-        self.info("Using image %s with id %s", image['name'], image['id'])
+        self.info("Using image %s with id %s", name, image['id'])
         self.info("Using flavor %s with id %s", flavor['name'], flavor['id'])
         server = self.clients.cyclades.create_server(
             servername, flavor['id'], image['id'],
@@ -436,10 +437,8 @@ class CycladesTests(BurninTests):
         try:
             ssh.connect(hostip, username=username, password=password)
         except paramiko.SSHException as err:
-            if err.args[0] == "Error reading SSH protocol banner":
-                raise Retry()
-            else:
-                raise
+            self.warning("%s", err.message)
+            raise Retry()
         _, stdout, _ = ssh.exec_command(command)
         status = stdout.channel.recv_exit_status()
         output = stdout.readlines()
@@ -469,17 +468,25 @@ class CycladesTests(BurninTests):
     def _check_file_through_ssh(self, hostip, username, password,
                                 remotepath, content):
         """Fetch file from server and compare contents"""
-        self.info("Fetching file %s from remote server", remotepath)
-        transport = paramiko.Transport((hostip, 22))
-        transport.connect(username=username, password=password)
-        with tempfile.NamedTemporaryFile() as ftmp:
-            sftp = paramiko.SFTPClient.from_transport(transport)
-            sftp.get(remotepath, ftmp.name)
-            sftp.close()
-            transport.close()
-            self.info("Comparing file contents")
-            remote_content = base64.b64encode(ftmp.read())
-            self.assertEqual(content, remote_content)
+        def check_fun():
+            """Fetch file"""
+            try:
+                transport = paramiko.Transport((hostip, 22))
+                transport.connect(username=username, password=password)
+                with tempfile.NamedTemporaryFile() as ftmp:
+                    sftp = paramiko.SFTPClient.from_transport(transport)
+                    sftp.get(remotepath, ftmp.name)
+                    sftp.close()
+                    transport.close()
+                    self.info("Comparing file contents")
+                    remote_content = base64.b64encode(ftmp.read())
+                    self.assertEqual(content, remote_content)
+            except paramiko.SSHException as err:
+                self.warning("%s", err.message)
+                raise Retry()
+        opmsg = "Fetching file %s from remote server" % remotepath
+        self.info(opmsg)
+        self._try_until_timeout_expires(opmsg, check_fun)
 
     # ----------------------------------
     # Networks

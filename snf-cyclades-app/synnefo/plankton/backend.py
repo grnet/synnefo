@@ -152,30 +152,30 @@ class PlanktonBackend(object):
         return False
 
     @handle_pithos_backend
-    def get_image(self, uuid):
-        return self._get_image(uuid)
+    def get_image(self, uuid, check_permissions=True):
+        return self._get_image(uuid, check_permissions=check_permissions)
 
-    def _get_image(self, uuid):
-        location, metadata = self._get_raw_metadata(uuid)
-        permissions = self._get_raw_permissions(uuid, location)
+    def _get_image(self, uuid, check_permissions=True):
+        location, metadata, permissions = \
+            self.get_pithos_object(uuid, check_permissions=check_permissions)
         return image_to_dict(location, metadata, permissions)
 
     @handle_pithos_backend
     def add_property(self, uuid, key, value):
-        location, _ = self._get_raw_metadata(uuid)
+        location, _m, _p = self.get_pithos_object(uuid)
         properties = self._prefix_properties({key: value})
         self._update_metadata(uuid, location, properties, replace=False)
 
     @handle_pithos_backend
     def remove_property(self, uuid, key):
-        location, _ = self._get_raw_metadata(uuid)
+        location, _m, _p = self.get_pithos_object(uuid)
         # Use empty string to delete a property
         properties = self._prefix_properties({key: ""})
         self._update_metadata(uuid, location, properties, replace=False)
 
     @handle_pithos_backend
     def update_properties(self, uuid, properties, replace=False):
-        location, _ = self._get_raw_metadata(uuid)
+        location, _, _p = self.get_pithos_object(uuid)
         properties = self._prefix_properties(properties)
         self._update_metadata(uuid, location, properties, replace=replace)
 
@@ -203,11 +203,18 @@ class PlanktonBackend(object):
 
     @handle_pithos_backend
     def update_metadata(self, uuid, metadata):
-        location, _ = self._get_raw_metadata(uuid)
+        location, _m, permissions = self.get_pithos_object(uuid)
 
         is_public = metadata.pop("is_public", None)
         if is_public is not None:
-            self._set_public(uuid, location, public=is_public)
+            assert(isinstance(is_public, bool))
+            read = set(permissions.get("read", []))
+            if is_public and "*" not in read:
+                read.add("*")
+            elif not is_public and "*" in read:
+                read.discard("*")
+            permissions["read"] = list(read)
+            self._update_permissions(uuid, location, permissions)
 
         # Each property is stored as a separate prefixed metadata
         meta = deepcopy(metadata)
@@ -244,46 +251,41 @@ class PlanktonBackend(object):
             prefixed[k] = v
         return prefixed
 
-    def _get_raw_metadata(self, uuid, version=None, check_image=True):
-        """Get info and metadata in Plankton doamin for the Pithos object.
+    def get_pithos_object(self, uuid, version=None, check_permissions=True,
+                          check_image=True):
+        """Get a Pithos object based on its UUID.
 
-        Return the location and the metadata of the Pithos object.
-        If 'check_image' is set, check that the Pithos object is a registered
-        Plankton Image.
+        If 'version' is not specified, the latest non-deleted version of this
+        object will be retrieved.
+        If 'check_permissions' is set to False, the Pithos backend will not
+        check if the user has permissions to access this object.
+        Finally, the 'check_image' option is used to check whether the Pithos
+        object is an image or not.
 
         """
-        # Convert uuid to location
-        account, container, path = self.backend.get_uuid(self.user, uuid)
-        try:
-            meta = self.backend.get_object_meta(self.user, account, container,
-                                                path, PLANKTON_DOMAIN, version)
-            meta["deleted"] = False
-        except NameError:
-            if version is not None:
-                raise
-            versions = self.backend.list_versions(self.user, account,
-                                                  container, path)
-            assert(versions), ("Object without versions: %s/%s/%s" %
-                               (account, container, path))
-            # Object was deleted, use the latest version
-            version, timestamp = versions[-1]
-            meta = self.backend.get_object_meta(self.user, account, container,
-                                                path, PLANKTON_DOMAIN, version)
-            meta["deleted"] = True
+        if check_permissions:
+            user = self.user
+        else:
+            user = None
+
+        meta, permissions, path = self.backend.get_object_by_uuid(
+            uuid=uuid, version=version, domain=PLANKTON_DOMAIN,
+            user=user, check_permissions=check_permissions)
+        account, container, path = path.split("/", 2)
+        location = Location(account, container, path)
 
         if check_image and PLANKTON_PREFIX + "name" not in meta:
             # Check that object is an image by checking if it has an Image name
             # in Plankton metadata
-            raise faults.ItemNotFound("Image '%s' does not exist." % uuid)
+            raise faults.ItemNotFound("Object '%s' does not exist." % uuid)
 
-        return Location(account, container, path), meta
+        return location, meta, permissions
 
     # Users and Permissions
     @handle_pithos_backend
     def add_user(self, uuid, user):
         assert(isinstance(user, basestring))
-        location, _ = self._get_raw_metadata(uuid)
-        permissions = self._get_raw_permissions(uuid, location)
+        location, _, permissions = self.get_pithos_object(uuid)
         read = set(permissions.get("read", []))
         if user not in read:
             read.add(user)
@@ -293,8 +295,7 @@ class PlanktonBackend(object):
     @handle_pithos_backend
     def remove_user(self, uuid, user):
         assert(isinstance(user, basestring))
-        location, _ = self._get_raw_metadata(uuid)
-        permissions = self._get_raw_permissions(uuid, location)
+        location, _, permissions = self.get_pithos_object(uuid)
         read = set(permissions.get("read", []))
         if user in read:
             read.remove(user)
@@ -304,8 +305,7 @@ class PlanktonBackend(object):
     @handle_pithos_backend
     def replace_users(self, uuid, users):
         assert(isinstance(users, list))
-        location, _ = self._get_raw_metadata(uuid)
-        permissions = self._get_raw_permissions(uuid, location)
+        location, _, permissions = self.get_pithos_object(uuid)
         read = set(permissions.get("read", []))
         if "*" in read:  # Retain public permissions
             users.append("*")
@@ -314,34 +314,8 @@ class PlanktonBackend(object):
 
     @handle_pithos_backend
     def list_users(self, uuid):
-        location, _ = self._get_raw_metadata(uuid)
-        permissions = self._get_raw_permissions(uuid, location)
+        location, _, permissions = self.get_pithos_object(uuid)
         return [user for user in permissions.get('read', []) if user != '*']
-
-    def _set_public(self, uuid, location, public):
-        permissions = self._get_raw_permissions(uuid, location)
-        assert(isinstance(public, bool))
-        read = set(permissions.get("read", []))
-        if public and "*" not in read:
-            read.add("*")
-        elif not public and "*" in read:
-            read.discard("*")
-        permissions["read"] = list(read)
-        self._update_permissions(uuid, location, permissions)
-        return permissions
-
-    def _get_raw_permissions(self, uuid, location):
-        account, container, path = location
-        _a, path, permissions = \
-            self.backend.get_object_permissions(self.user, account, container,
-                                                path)
-
-        if path is None and permissions != {}:
-            raise Exception("Database Inconsistency Error:"
-                            " Image '%s' got permissions from 'None' path." %
-                            uuid)
-
-        return permissions
 
     def _update_permissions(self, uuid, location, permissions):
         account, container, path = location
@@ -415,7 +389,7 @@ class PlanktonBackend(object):
         domain. The Pithos file is not deleted.
 
         """
-        location, _ = self._get_raw_metadata(uuid)
+        location, _m, _p = self.get_pithos_object(uuid)
         self._update_metadata(uuid, location, metadata={}, replace=True)
         logger.debug("User '%s' unregistered image '%s'", self.user, uuid)
 
@@ -493,8 +467,9 @@ class PlanktonBackend(object):
         return [s for s in _snapshots if s["is_snapshot"]]
 
     @handle_pithos_backend
-    def get_snapshot(self, snapshot_uuid):
-        snap = self._get_image(snapshot_uuid)
+    def get_snapshot(self, snapshot_uuid, check_permissions=True):
+        snap = self._get_image(snapshot_uuid,
+                               check_permissions=check_permissions)
         if snap.get("is_snapshot", False) is False:
             raise faults.ItemNotFound("Snapshots '%s' does not exist" %
                                       snapshot_uuid)

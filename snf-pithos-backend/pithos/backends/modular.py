@@ -2000,6 +2000,48 @@ class ModularBackend(object):
 
     @debug_method
     @backend_method
+    def get_object_by_uuid(self, uuid, version=None, domain='pithos',
+                           user=None, check_permissions=True):
+        """Return information for the object identified by the specific UUID
+
+           Raises:
+               NameError: UUID or version was not found
+               NotAllowedError: if check_permissions is True and user has not
+                                access to the object
+               AssertionError: if check_permissions is True but user
+                               is provided
+        """
+        if user is not None and not check_permissions:
+            raise AssertionError('Inconsistent argument combination:'
+                                 'if user is provided '
+                                 'permission check should be enforced.')
+
+        uuid_ = self._validate_uuid(uuid)
+        if version is None:
+            props = self.node.latest_uuid(uuid_, CLUSTER_NORMAL)
+            if props is None:
+                raise NameError('No object found for this UUID.')
+            path, _ = props
+        else:
+            props = self.node.version_get_properties(version,
+                                                     keys=('uuid', 'node'))
+            if not props:
+                raise NameError('No such version was found.')
+            uuid_, node = props
+            assert uuid_ == uuid
+            _, path = self.node.node_get_properties(node)
+        account, container, name = path.split('/', 2)
+        if check_permissions:
+            self._can_read_object(user, account, container, name)
+        user_ = user if user is not None else account
+        meta = self.get_object_meta(user_, account, container, name,
+                                    domain=domain, version=version,
+                                    include_user_defined=True)
+        perms = self.permissions.access_get(path)
+        return meta, perms, path
+
+    @debug_method
+    @backend_method
     def get_public(self, user, public):
         """Return the (account, container, name) for the public id given.
 
@@ -2604,10 +2646,17 @@ class ModularBackend(object):
     @debug_method
     @backend_method
     def get_domain_objects(self, domain, user=None, check_permissions=True):
-        """Return a list of tuples for objects under the domain.
+        """List objects having metadata in the specific domain
 
-        Parameters:
-            'user': return only objects accessible to the user.
+           If user is provided list only objects accessible to the user.
+           Otherwise list all the objects for the specific domain
+           ignoring permissions (check_permissions should be False)
+
+           Raises:
+               NotAllowedError: if check_permissions is True and user has not
+                                access to the object
+               AssertionError: if check_permissions is True but user
+                               is provided
         """
         if check_permissions:
             allowed_paths = self.permissions.access_list_paths(
@@ -2615,6 +2664,10 @@ class ModularBackend(object):
             if not allowed_paths:
                 return []
         else:
+            if user is not None:
+                raise AssertionError('Inconsistent argument combination:'
+                                     'if user is provided '
+                                     'permission check should be enforced.')
             allowed_paths = None
         obj_list = self.node.domain_object_list(
             domain, allowed_paths, CLUSTER_NORMAL)

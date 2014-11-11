@@ -26,6 +26,7 @@ HELP_MSG = """Create a new volume."""
 
 class Command(SynnefoCommand):
     help = HELP_MSG
+    umask = 0o007
 
     option_list = SynnefoCommand.option_list + (
         make_option(

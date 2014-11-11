@@ -1,5 +1,3 @@
-var mydata; // temp
-
 $(document).ready(function() {
 
 		var $actionbar = $('.actionbar');
@@ -8,7 +6,7 @@ $(document).ready(function() {
         sticker();
 	}
 	else {
-		$('.compact-view').addClass('no-margin-left');
+		$('.filters').addClass('no-margin-left');
 	}
 
 	var $lastClicked = null;
@@ -61,24 +59,22 @@ $(document).ready(function() {
 		"autoWidth": false,
 		"paging": true,
 		"searching": false,
-		// "stateSave": true,
+		"stateSave": true,
+		"stateDuration": 0,
 		"processing": true,
 		"serverSide": serverside,
 		"ajax": {
 			"url": url,
 			"data": function(data, callback, settings) {
-
 				var prefix = 'sSearch_';
 
-				if(!_.isEmpty(filters)) {
-					for (var prop in filters) {
-						data[prefix+prop] = filters[prop];
+				if(!_.isEmpty(snf.filters)) {
+					for (var prop in snf.filters) {
+						data[prefix+prop] = snf.filters[prop];
 					}
 				}
 			},
 			"dataSrc" : function(response) {
-				mydata = response;
-				extraData = response.extra;
 				if(response.aaData.length != 0) {
 					var rowsArray = response.aaData;
 					var rowL = rowsArray.length;
@@ -166,7 +162,6 @@ $(document).ready(function() {
 				for(var i = 0; i<selectedL; i++){
 					if (selected.items[i].id === table.row(j).data()[extraIndex].id.value) {
 						$(table.row(j).nodes()).addClass('selected');
-						$(table.row(j).nodes()).find('td:first-child .selection-indicator').addClass('snf-checkbox-checked').removeClass('snf-checkbox-unchecked');
 						break;
 					}
 				}
@@ -190,16 +185,14 @@ $(document).ready(function() {
 
 						var prefix = 'sSearch_';
 
-						if(!$.isEmptyObject(filters)) {
-							for (var prop in filters) {
-								data[prefix+prop] = filters[prop];
+						if(!$.isEmptyObject(snf.filters)) {
+							for (var prop in snf.filters) {
+								data[prefix+prop] = snf.filters[prop];
 							}
 						}
 					},
 
 					"dataSrc" : function(response) {
-						alldata = response;
-						extraData = response.extra;
 						if(response.aaData.length != 0) {
 							var rowsArray = response.aaData;
 							var rowL = rowsArray.length;
@@ -309,7 +302,6 @@ $(document).ready(function() {
 	/* Applies style that indicates that a row from the main table is not selected */
 	function deselectRow(itemID) {
 		table.row('#'+itemID).nodes().to$().removeClass('selected');
-		$(table.row('#'+itemID).nodes()).find('td:first-child .selection-indicator').addClass('snf-checkbox-unchecked').removeClass('snf-checkbox-checked');
 	}
 
 	function updateDisplaySelected() {
@@ -321,17 +313,15 @@ $(document).ready(function() {
 		}
 	}
 
-	$(tableSelectedDomID).on('click', 'tbody tr td:first-child .selection-indicator', function() {
+	$(tableSelectedDomID).on('click', 'tbody tr td:first-child .select', function() {
 		var $tr = $(this).closest('tr');
 		var column = $tr.find('td').length - 1;
 		var $trID = $tr.attr('id');
 		var selectedRow = tableSelected.row('#'+$trID);
 		var itemID = tableSelected.cell('#'+$trID, column).data().id.value;
-		$tr.find('td:first-child .selection-indicator').addClass('snf-checkbox-unchecked').removeClass('snf-checkbox-checked');
 		$tr.fadeOut('slow', function() {
 			selectedRow.remove().draw();
 			table.row('#'+itemID).nodes().to$().removeClass('selected');
-			$(table.row('#'+itemID).nodes()).find('td:first-child .selection-indicator').addClass('snf-checkbox-unchecked').removeClass('snf-checkbox-checked');
 			deselectRow(itemID)
 
 		});
@@ -342,7 +332,7 @@ $(document).ready(function() {
 	});
 
 
-	$(tableDomID).on('click', 'tbody tr .selection-indicator', function(e) {
+	$(tableDomID).on('click', 'tbody tr .select', function(e) {
 		$prevClicked = $lastClicked;
 		$lastClicked =  $(this).closest('tr');
 		if(!e.shiftKey) {
@@ -410,10 +400,8 @@ $(document).ready(function() {
 
 	function selectRow(row) {
 		var $row = $(row);
-		$row.find('td:first-child .selection-indicator').toggleClass('snf-checkbox-checked snf-checkbox-unchecked');
 		var infoRow = table.row($row).data();
-		var info = infoRow[infoRow.length - 1]
-		// var info = $(tableDomID).dataTable().api().cell($row.find('td:last-child')).data();
+		var info = infoRow[infoRow.length - 1];
 		if($row.hasClass('selected')) {
 			$row.removeClass('selected');
 			removeItem(info.id.value);
@@ -447,7 +435,7 @@ $(document).ready(function() {
 			data = _.template(snf.tables.html.trimedCell, {data: data, trimmedData: data.substring(0, maxCellChar)});
 		}
 		if($actionbar.length > 0)
-			return _.template(snf.tables.html.checkboxCell, {state: initState, content: data});
+			return _.template(snf.tables.html.checkboxCell, {content: data});
 		else
 			return data;
 	}
@@ -478,8 +466,8 @@ $(document).ready(function() {
 	function clickDetails(row) {
 		$(row).find('td:last-child a.details-link').click(function(e) {
 			e.stopPropagation();
-		})
-	}
+		});
+	};
 
 	function clickSummary(row) {
 		$(row).find('td:last-child a.expand-area').click(function(e) {
@@ -613,7 +601,7 @@ $(document).ready(function() {
 		removeSelected(true); //removes all selected items from the table of selected items
 		updateCounter('.selected-num');
 		enableActions(undefined, true);
-		$(table.rows('.selected').nodes()).find('td:first-child .selection-indicator').toggleClass('snf-checkbox-checked snf-checkbox-unchecked');
+		$(table.rows('.selected').nodes()).find('td:first-child .select').toggleClass('snf-checkbox-checked snf-checkbox-unchecked');
 		$(tableDomID).dataTable().api().rows('.selected').nodes().to$().removeClass('selected');
 
 		updateToggleAllSelect();
@@ -681,21 +669,22 @@ $(document).ready(function() {
 		else {
 			$clearAllBtn.removeClass('disabled');
 		}
-	}
+	};
 
 
-		/* Modals */
+	/* Modals */
 
 	function removeWarningDupl(modal) {
 		var $modal = $(modal);
 		$modal.find('.warning-duplicate').remove();
-	}
+	};
 
 	function resetToggleAllBtn(modal) {
 		var $modal = $(modal);
 		$modal.find('.toggle-more').removeClass('open').addClass('closed');
 		$modal.find('.toggle-more').find('span').text('Show all');
-	}
+	};
+
 	$('.modal .cancel').click(function(e) {
 		$('[data-toggle="popover"]').popover('hide');
 		var $modal = $(this).closest('.modal');
@@ -712,6 +701,7 @@ $(document).ready(function() {
 	$('.modal .clear-all-confirm').click(function() {
 		resetAll(tableDomID);
 	});
+
 	var $notificationArea = $('.notify');
 	var countAction = 0;
 	$('.modal .apply-action').click(function(e) {
@@ -858,8 +848,8 @@ $(document).ready(function() {
 	$('.toggle-selected').click(function (e) {
 		e.preventDefault();
 		var $label = $(this).find('.text');
-		var label1 = 'Show selected'
-		var label2 = 'Hide selected'
+		var label1 = 'Show selected';
+		var label2 = 'Hide selected';
 		$(this).toggleClass('open');
 		if($(this).hasClass('open')) {
 			$('#table-items-selected_wrapper').slideDown('slow', function() {
@@ -872,447 +862,4 @@ $(document).ready(function() {
 			});
 		}
 	});
-
-	 /* Filters */
-
-	var filters = {};
-	$('.filter:not(.hidden)').first().find('input').focus();
-
-	//var filtersHeightTotal = $('.filters').css('height');
-	$('.filters').css('min-height', '60px');
-
-	/* Standard View Functionality */
-
-	function dropdownSelect(filterEl) {
-		var $dropdownList = $(filterEl).find('.choices');
-
-		$dropdownList.find('li a').click(function(e) {
-			e.preventDefault();
-			var $li = $(this).closest('li');
-			var key = $(this).closest(filterEl).data('filter');
-			var value = $(this).text();
-			if($(this).closest('.filter-dropdown').hasClass('filter-boolean')) {
-				if($li.hasClass('reset')) {
-					delete filters[key];
-					$li.find('.selection-indicator').removeClass('snf-radio-unchecked').addClass('snf-radio-checked');
-					$li.addClass('active');
-					$li.siblings('.active').find('.selection-indicator').removeClass('snf-radio-checked').addClass('snf-radio-unchecked');
-					$li.siblings('.active').removeClass('active');
-					$(this).closest(filterEl).find('.selected-value').text(String(value));
-				}
-				else {
-					$li.toggleClass('active')
-					if($li.hasClass('active')) {
-						$li.find('.selection-indicator').removeClass('snf-radio-unchecked').addClass('snf-radio-checked');
-						$li.siblings('li').removeClass('active');
-						$li.siblings('li').find('.selection-indicator').removeClass('snf-radio-checked').addClass('snf-radio-unchecked');
-						$(this).closest(filterEl).find('.selected-value').text(value);
-						filters[key] = value;
-					}
-					else {
-						delete filters[key];
-						var resetLabel = $li.siblings('.reset').text();
-						$li.siblings('li.reset').addClass('active');
-						$li.siblings('li.reset').find('.selection-indicator').removeClass('snf-radio-unchecked').addClass('snf-radio-checked');
-						$(this).closest(filterEl).find('.selected-value').text(resetLabel);
-					}
-				}
-			}
-			// multichoice filter
-			else {
-				if($li.hasClass('reset')) {
-					delete filters[key];
-					$li.find('.selection-indicator').toggleClass('snf-checkbox-unchecked snf-checkbox-checked');
-					$li.addClass('active');
-
-					$li.siblings('.active').find('.selection-indicator').toggleClass('snf-checkbox-unchecked snf-checkbox-checked');
-					$li.siblings('.active').removeClass('active');
-					$(this).closest(filterEl).find('.selected-value').text(value);
-				}
-				else {
-					$li.toggleClass('active');
-					$li.find('.selection-indicator').toggleClass('snf-checkbox-unchecked snf-checkbox-checked');
-					if($li.hasClass('active')) {
-						$li.siblings('.reset').removeClass('active')
-						$li.siblings('.reset').find('.selection-indicator').removeClass('snf-checkbox-checked').addClass('snf-checkbox-unchecked');
-						if($li.siblings('.active').length > 0) {
-							arrayFilter(filters, key, value);
-							$(this).closest(filterEl).find('.selected-value').append(', '+value)
-						}
-						else {
-							$(this).closest(filterEl).find('.selected-value').text(value);
-							filters[key] = [value]
-						}
-					}
-					// deselect a choice
-					else {
-						if($li.siblings('.active').length >0) {
-							arrayFilter(filters, key, value, true);
-							$(this).closest(filterEl).find('.selected-value').text(filters[key].toString().replace(/\,/gi, ', '))
-						}
-						// deselect the only selection that the user made before
-						else {
-							delete filters[key];
-							var resetLabel = $li.siblings('.reset').text();
-							$li.siblings('li.reset').addClass('active');
-							$li.siblings('li.reset').find('.selection-indicator').removeClass('snf-checkbox-unchecked').addClass('snf-checkbox-checked');
-							$(this).closest(filterEl).find('.selected-value').text(resetLabel)
-
-						}
-					}
-				}
-			}
-			$(tableDomID).dataTable().api().ajax.reload();
-		});
-	};
-
-	function arrayFilter(filters, key, value, removeItem) {
-		var prefix = 'sSearch_';
-		if(!removeItem) {
-			for(var prop in filters) {
-				if(prop === key) {
-						filters[prop].push(value);
-				}
-			}
-		}
-		else {
-			if(filters[key].lenght === 1) { // to be checked
-				delete filters[key];
-			}
-			else {
-				var index = filters[key].indexOf(value);
-				filters[key].splice(index, 1);
-			}
-		}
-	};
-
-	function textFilter(extraSearch) {
-		snf.timer = 0;
-		var $input = $(extraSearch).find('input');
-
-		$input.keyup(function(e) {
-			// if enter or space is pressed do nothing
-			if(e.which !== 32 && e.which !== 13) {
-				var key, value;
-				key = $(this).data('filter');
-				value = $.trim($(this).val());
-
-				filters[key] = value;
-				if (filters[key] === '') {
-					delete filters[key];
-				}
-				if(snf.timer === 0) {
-					snf.timer = 1;
-					setTimeout(function() {
-						$(tableDomID).dataTable().api().ajax.reload();
-						snf.timer = 0;
-					}, snf.ajaxdelay)
-				}
-			}
-		})
-	};
-
-	textFilter('.filter-text');
-	dropdownSelect('.filters .filter-dropdown .dropdown');
-
-
-	/* Change Filters' View */
-
-	$('.search-mode input').click(function(e) {
-		e.stopPropagation();
-		var $visFilters = $(this).closest('.search-mode').siblings('.filter:not(invisible)');
-		var $invisFilters = $(this).closest('.search-mode').siblings('.filter.invisible');
-
-		$visFilters.addClass('invisible').hide();
-		if($invisFilters.hasClass('compact-view')) {
-			$invisFilters.fadeIn(300).css('display', 'inline');
-		}
-		else {
-			$invisFilters.fadeIn(300).css('display', 'inline-block');
-		}
-		$invisFilters.each(function() {
-			$(this).removeClass('invisible');
-		});
-		$(this).closest('.search-mode').siblings('.filter:not(.invisible)').first().find('input').focus();
-		if(!$('.compact-view').hasClass('invisible')) {
-			standardToCompact();
-		}
-	});
-
-	/* Tranfer the search terms of standard view to compact view */
-	function standardToCompact() {
-		var $advFilt = $('.filters').find('input[data-filter=compact-view]');
-		var updated = true;
-		hideFilterError();
-		$advFilt.val(filtersToString());
-	};
-
-	function filtersToString() {
-		var text = '';
-		var newTerm;
-		for(var prop in filters) {
-			if(filtersInfo[prop] === 'text') {
-				newTerm = prop + ': ' + filters[prop];
-				if(text.length == 0) {
-					text = newTerm;
-				}
-				else {
-					text = text + ' ' + newTerm;
-				}
-			}
-			else {
-				newTerm = prop + ': ' + filters[prop].toString();
-				if(text.length === 0) {
-					text = newTerm;
-				}
-				else {
-					text = text + ' ' + newTerm;
-				}
-			}
-		}
-
-		return text;
-	};
-	/* Compact View Functionality */
-
-	$('.filters .compact-view').keyup(function(e) {
-		if(e.which === 13) {
-			$('.exec-search').trigger('click');
-		}
-	});
-
-	$('.filters .toggle-instructions').click(function (e) {
-		e.preventDefault();
-		var that = this;
-		$(this).find('.arrow').toggleClass('snf-angle-up snf-angle-down');
-		if(!$(this).hasClass('open')) {
-			$(this).addClass('open')
-		}
-		$(this).siblings('.content').stop().slideToggle(function() {
-			if($(that).hasClass('open') && $(this).css('display') === 'none') {
-				$(that).removeClass('open');
-			}
-		});
-	})
-
-	var filtersInfo = {};
-	var tempFilters = {};
-	var filtersResetValue = {};
-	var filtersValidValues = {};
-
-	/* Extract keys and values for filtersInfo, filtersResetValue, filtersValidValues the standard view */
-	$('.filters').find('.filter:not(.compact-view)').each(function(index) {
-		var key = $(this).find('*[data-filter]').attr('data-filter');
-		var type; // possible values: 'singe-choice', 'multi-choice', 'text'
-		var resetValue;
-		if($(this).find('*[data-filter]').hasClass('dropdown')) {
-			type = ($(this).closest('.filter-dropdown').hasClass('filter-boolean')? 'single-choice' : 'multi-choice');
-			resetValue = $(this).find('li.reset').text().toUpperCase();
-			filtersResetValue[key] = resetValue;
-			filtersValidValues[key] = [];
-			$(this).find('li:not(.divider)').each(function() {
-				filtersValidValues[key].push($(this).text().toUpperCase());
-			});
-		}
-		else {
-			type = 'text';
-		}
-		filtersInfo[key] = type;
-	});
-
-	$('.exec-search').click(function(e) {
-		e.preventDefault();
-		tempFilters = {};
-		var text = $(this).siblings('.form-group').find('input').val().trim();
-		hideFilterError();
-		if(text.length > 0) {
-			var terms = text.split(' ');
-			var key = 'unknown', value;
-			var termsL = terms.length;
-			var keyIndex;
-			var lastkey;
-			var filterType;
-			var isKey = false;
-			for(var i=0; i<termsL; i++) {
-				terms[i] = terms[i].trim();
-				for(var prop in filtersInfo) {
-					if(terms[i].substring(0, prop.length+1).toUpperCase() === prop.toUpperCase() + ':') {
-						key = prop;
-						value = terms[i].substring(prop.length + 1).trim();
-						isKey = true;
-						break;
-					}
-				}
-				if(!isKey) {
-					value = terms[i];
-				}
-
-				if(!tempFilters[key]) {
-					tempFilters[key] = value;
-				}
-				else if(value.length > 0) {
-					tempFilters[key] = tempFilters[key] + ' ' + value;
-				}
-				isKey = false;
-			}
-		}
-
-		if(!_.isEmpty(tempFilters)) {
-			for(var filter in tempFilters) {
-				for(var prop in filtersInfo) {
-					if(prop === filter && (filtersInfo[prop] === 'single-choice' || filtersInfo[prop] === 'multi-choice')) {
-						tempFilters[filter] = tempFilters[filter].replace(/\s*,\s*/g ,',').split(',');
-						break;
-					}
-				}
-			}
-		}
-		compactToStandard();
-	});
-
-	function compactToStandard() {
-		var $filters = $('.filters');
-		var $choicesLi;
-		var valuesL;
-		var validValues = [];
-		var valid = true;
-		var temp;
-		if(_.isEmpty(tempFilters) && !_.isEmpty(filters)) {
-			filters = {};
-			$(tableDomID).dataTable().api().ajax.reload();
-		}
-		else {
-			if(tempFilters['unknown']) {
-				showFilterError(tempFilters['unknown']);
-				valid = false;
-			}
-			for(var prop in tempFilters) {
-				if(prop !== 'unknown') {
-					temp = checkValues(prop);
-					if(valid) {
-						valid = temp;
-					}
-				}
-			}
-		}
-		// execution
-		if(valid) {
-			resetBasicFilters();
-			execFiltering();
-		}
-	};
-
-	function checkValues(key) {
-		var wrongTerm;
-		var isWrong = false;
-		if(filtersInfo[key] === 'text') {
-			if(tempFilters[key] === '') {
-				isWrong = true;
-			}
-		}
-		else if(!isWrong) {
-			var valuesUpperCased = $.map(tempFilters[key], function(item, index) {
-				return item.toUpperCase();
-			});
-			var valuesL = valuesUpperCased.length;
-			for(var i=0; i<valuesL; i++) {
-				if(filtersValidValues[key].indexOf(valuesUpperCased[i]) === -1) {
-					isWrong = true;
-					break;
-				}
-			}
-			if(!isWrong) {
-				if(valuesUpperCased.indexOf(filtersResetValue[key])!==-1 && tempFilters[key].length>1) {
-					isWrong = true;
-				}
-				else if(filtersInfo[key] === 'single-choice' && tempFilters[key].length > 1) {
-					isWrong = true;
-				}
-			}
-		}
-		if(isWrong) {
-			wrongTerm = key + ': ' + tempFilters[key].toString();
-			showFilterError(wrongTerm);
-			delete tempFilters[key];
-		}
-		return !isWrong;
-	};
-
-	function execFiltering() {
-		var $choicesLi, valuesL;
-		var $filters = $('.filters')
-		for(var prop in tempFilters) {
-			if(prop !== 'unknown') {
-				if(filtersInfo[prop] === 'text'){
-					$filters.find('input[data-filter="' + prop + '"]').val(tempFilters[prop]);
-					$filters.find('input[data-filter="' + prop + '"]').trigger('keyup');
-				}
-				else {
-					$choicesLi = $filters.find('*[data-filter="' + prop + '"] .choices').find('li');
-					valuesL = tempFilters[prop].length;
-					for(var i=0; i<valuesL; i++) { // for each filter
-						$choicesLi.each(function() {
-							if(tempFilters[prop][i].toUpperCase() === $(this).text().toUpperCase()) {
-								if(!$(this).hasClass('active'))	{
-									$(this).find('a').trigger('click');
-								}
-							}
-						});
-					}
-				}
-			}
-		}
-	};
-
-	function showFilterError(wrongTerm) {
-		var msg, addition, prevMsg;
-		$errorDescr = $('.compact-view').find('.error-description');
-		$errorSign = $('.compact-view').find('.error-sign');
-		if($errorDescr.text() === '') {
-			msg = 'Invalid search: "' + wrongTerm + '" is not valid.';
-		}
-		else {
-			prevMsg = $errorDescr.text();
-			addition =  ', "' + wrongTerm + '" are not valid.';
-			msg = prevMsg.replace('term:', 'terms:');
-			msg = msg.replace(' are not valid.', addition);
-			msg = msg.replace(' is not valid.', addition);
-		}
-		$errorDescr.text(msg);
-		$errorSign.css('opacity', 1)
-	};
-
-	function hideFilterError() {
-		$('.compact-view').find('.error-sign').css('opacity', 0);
-		$('.compact-view').find('.error-description').text('');
-	};
-
-	function resetBasicFilters() {
-		$('.filters .filter-dropdown:not(.filter-boolean) li:not(.reset)').each(function() {
-			if($(this).hasClass('active')) {
-				$(this).find('a').trigger('click');
-			}
-		});
-		$('.filters .filter-dropdown:not(.filter-boolean) li.reset').each(function() {
-			if(!$(this).hasClass('active')) {
-				$(this).find('a').trigger('click');
-			}
-		});
-
-		$('.filters .filter-dropdown.filter-boolean li.reset').each(function() {
-			if(!$(this).hasClass('active')) {
-				$(this).find('a').trigger('click');
-			}
-		});
-
-		$('.filters .filter-text').find('input').each(function() {
-			if($(this).val().length !== 0) {
-				$(this).val('');
-				$(this).trigger('keyup')
-			}
-		});
-	};
-
-
-
 });

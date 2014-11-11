@@ -138,6 +138,9 @@ def main():  # pylint: disable=too-many-statements, too-many-branches
     parser.add_option("--no-colors", dest="use_colors",
                       default=True, action="store_false",
                       help="Don't use colorful output messages.")
+    parser.add_option("--ignore-ssl", "-k", dest="ignore_ssl",
+                      default=None, action="store_true",
+                      help="Don't verify SSL certificates.")
 
     (options, args) = parser.parse_args()
 
@@ -177,6 +180,7 @@ def main():  # pylint: disable=too-many-statements, too-many-branches
     # ----------------------------------
     # Initialize SynnefoCi
     utils.USE_COLORS = options.use_colors
+    utils.IGNORE_SSL = options.ignore_ssl
     config_file = options.config_file
     if config_file is not None:
         config_file = os.path.expanduser(config_file)

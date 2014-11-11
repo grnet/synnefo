@@ -60,12 +60,14 @@ class Context(object):
 
     def update_info(self):
         self.ns = self._get(constants.NS)
+        self.ca = self._get(constants.CA)
         self.nfs = self._get(constants.NFS)
         self.mq = self._get(constants.MQ)
         self.db = self._get(constants.DB)
         self.astakos = self._get(constants.ASTAKOS)
         self.cyclades = self._get(constants.CYCLADES)
         self.admin = self._get(constants.ADMIN)
+        self.vnc = self._get(constants.VNC)
         self.pithos = self._get(constants.PITHOS)
         self.stats = self._get(constants.STATS)
         self.cms = self._get(constants.CMS)

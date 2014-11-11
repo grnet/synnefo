@@ -88,6 +88,8 @@ application_status_choices = get_application_status_choices()
 def filter_project_status(queryset, choices):
     """Filter project status."""
     choices = choices or ()
+    if not choices:
+        return queryset
     if len(choices) == len(project_status_choices):
         return queryset
     q = Q()
@@ -100,6 +102,8 @@ def filter_project_status(queryset, choices):
 def filter_application_status(queryset, choices):
     """Filter application status."""
     choices = choices or ()
+    if not choices:
+        return queryset
     if len(choices) == len(application_status_choices):
         return queryset
     q = Q()

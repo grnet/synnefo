@@ -22,15 +22,15 @@ log = getLogger(__name__)
 
 
 def get_flavors(vtype):
-    return vtype.flavors.count()
+    return vtype.flavors.filter(deleted=False).count()
 
 
 def get_volumes(vtype):
-    return vtype.volumes.count()
+    return vtype.volumes.filter(deleted=False).count()
 
 
 def get_servers(vtype):
-    return vtype.servers.count()
+    return vtype.servers.filter(deleted=False).count()
 
 
 class Command(ListCommand):
@@ -40,8 +40,6 @@ class Command(ListCommand):
 
     object_class = VolumeType
     deleted_field = "deleted"
-    select_related = ["volume_type"]
-    prefetch_related = ["flavors", "volumes"]
 
     FIELDS = {
         "id": ("id", "ID"),

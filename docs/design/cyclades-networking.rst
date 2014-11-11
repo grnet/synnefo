@@ -10,7 +10,7 @@ Flavor, either an isolated Layer-2 broadcast domain or a Layer-3 network.
 Networks can either be private or public. Private networks are reserved for the
 user who created it, while public networks are created by the administrator and
 are visible to all users. Also, networks can be marked with the
-`--router:external` attribute to indicate that are external networks (public
+`--router:external` attribute to indicate they are external networks (public
 internet)
 
 Currently there are four available Networks Flavors:
@@ -23,7 +23,7 @@ Currently there are four available Networks Flavors:
   unique MAC prefix that is assigned to each network.
 
 The administrator can limit which networks can be created via API with the
-`API_ENABLED_NETOWRK_FLAVORS` setting.
+`API_ENABLED_NETWORK_FLAVORS` setting.
 
 The attributes for network objects are the following:
 
@@ -299,7 +299,7 @@ Finally, the request can contain the following optional attributes:
 
 Example request:
 
-.. code:: json
+.. code-block:: json
 
  {"port": {
      "name": "port1",

@@ -1,0 +1,213 @@
+table thead th {
+    white-space: nowrap;
+}
+
+table td, 
+table th {
+    vertical-align: top;
+}
+
+table .wrap {
+    position: relative;
+}
+
+.table-items {
+    .snf-search {
+        opacity: 0.7;
+        font-size: 15px;
+        &:hover, 
+        &:focus{
+            opacity: 1;
+        }
+    }
+    .login-method {
+        padding: 2px 16px 2px 0px;
+        text-align: center;
+    }
+
+    th .badge {
+        margin: 0 2px 0 4px;
+        display: inline;
+        padding-top: 2px;
+    }
+    td {
+        padding:8px 6px 0 6px;
+    }
+}
+
+
+
+.table-selected-main:not(.table-selected) td:last-child,
+.table-items:not(.table-selected) td:last-child{ // this is meant for summary td
+    max-width: 60px;
+    min-width: 60px;
+    padding: 8px 5px;
+    .details-link:hover {
+        text-decoration: none;
+    }
+    .summary-expand {
+        position: relative;
+        z-index: 10;
+        float: right;
+        padding-left: 8px;
+        padding-right: 8px;
+        background-color: $link-color;
+        color: #fff;
+        &:hover,
+        &:focus{
+            text-decoration: none;
+            background-color: $link-hover-color;
+        }
+    }
+     dl {
+    z-index: 0;
+        position: relative;
+        padding: 8px;
+        display: none;
+        margin: 0;
+    }
+}
+
+
+.table-items .headerSortUp span.caret {
+    border-top: 0;
+    border-bottom: 4px solid;
+}
+
+#table-items-selected_filter,
+#table-items-total_filter{
+    label {
+        color: $text-color;
+    }
+    input {
+        color: $filter-font-color;
+        background: $filter-bg;
+        border: 1px solid $filter-border-color;
+        padding: 3px 5px;
+        &:focus {
+            outline: 0 none;
+        }
+    }
+}
+
+#table-items-selected_wrapper {
+    padding: 10px;
+    border: 1px solid $table-selected-border;
+    margin-bottom: 20px;
+    display: none;
+}
+
+// datatables
+
+
+div.dataTables_length {
+    padding-left: 2em;
+    padding-top: 0.55em;
+    select {
+        width: 55px;
+        display: inline-block;
+        margin-left: 4px;
+        vertical-align: baseline;
+        color: #222;
+    }
+}
+
+table.dataTable tbody tr {
+    background-color: inherit;
+    &.even {
+        background-color: $table-zebra-row-bg; 
+    }
+}
+
+table.dataTable thead th,
+table.dataTable thead td {
+  border-bottom: 1px solid white;
+  border-top: 1px solid $table-datatable-border-color;
+}
+table.dataTable tbody tr:hover {
+    background-color: $table-row-hover;
+}
+table.dataTable tbody tr.selected {
+    color: $table-selected-row-color;
+    background-color: $table-selected-row-bg;
+}
+
+html body .dataTables_wrapper {
+    label {
+        font-weight: normal;
+    }
+    table {
+        th.sorting,  th.sorting_asc, th.sorting_desc{
+            background-position: center left;
+            padding-left: 22px;
+        }
+    }
+}
+
+
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_paginate {
+    padding-top: 0;
+    margin-bottom: 0.5em;
+    color: $text-color;
+    line-height: $datatabled-actions-height;
+}
+table.dataTable.no-footer {
+    border-bottom: 1px solid $almost-white;
+    margin: 2em 0;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: $text-color!important;
+    padding: 0 1em;
+}
+
+.container .dataTables_wrapper .dataTables_paginate .paginate_button:hover,
+.container .dataTables_wrapper .dataTables_paginate .paginate_button:focus,
+{
+    background: transparent;
+    border-color: $text-color;
+    color: $text-color!important;
+}
+
+.container .dataTables_wrapper .dataTables_paginate .paginate_button.disabled {
+    border-color: transparent;
+    color: $btn-link-disabled-color!important; 
+    &:hover,
+    &:focus,
+    &:active {
+        color: $btn-link-disabled-color!important; 
+    }
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current, 
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:focus,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    background: $table-paginate-current-bg;
+    color: $table-paginate-current-color!important;
+    border: transparent;
+}
+
+.dataTables_wrapper > .custom-buttons {
+    margin-bottom: 1em;
+    width: 100%;
+}
+
+.dataTables_wrapper .dataTables_processing {
+    background: $table-processing-bg;
+    color: $table-processing-color;
+    padding: 5px 10px;
+    @include box-shadow(inset 0 0 5px #888);
+    z-index: 1;
+}
+
+.fixed {
+    position: fixed;
+}
+
+.ip_log {
+    @include tdWrap(2, 250px);
+    @include tdWrap(3, 150px);
+    @include tdWrap(4, 150px);
+}

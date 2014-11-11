@@ -1,39 +1,21 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import string
 from optparse import make_option
-from django.db import transaction
+from synnefo.db import transaction
 
 from synnefo.lib.ordereddict import OrderedDict
 from synnefo.quotas import util
@@ -41,6 +23,7 @@ from synnefo.quotas import enforce
 from synnefo.quotas import errors
 from snf_django.management.commands import SynnefoCommand, CommandError
 from snf_django.management.utils import pprint_table
+from collections import defaultdict
 
 
 DEFAULT_RESOURCES = ["cyclades.cpu",
@@ -48,11 +31,17 @@ DEFAULT_RESOURCES = ["cyclades.cpu",
                      "cyclades.floating_ip",
                      ]
 
+DESTROY_RESOURCES = ["cyclades.vm",
+                     "cyclades.total_cpu",
+                     "cyclades.total_ram",
+                     ]
+
 
 class Command(SynnefoCommand):
     help = """Check and fix quota violations for Cyclades resources.
     """
-    option_list = SynnefoCommand.option_list + (
+
+    command_option_list = (
         make_option("--max-operations",
                     help="Limit operations per backend."),
         make_option("--users", dest="users",
@@ -60,6 +49,12 @@ class Command(SynnefoCommand):
                           "of users, e.g uuid1,uuid2")),
         make_option("--exclude-users",
                     help=("Exclude list of users from resource enforcement")),
+        make_option("--projects",
+                    help=("Enforce resources only for the specified list "
+                          "of projects, e.g uuid1,uuid2")),
+        make_option("--exclude-projects",
+                    help=("Exclude list of projects from resource enforcement")
+                    ),
         make_option("--resources",
                     help="Specify resources to check, default: %s" %
                     ",".join(DEFAULT_RESOURCES)),
@@ -74,6 +69,17 @@ class Command(SynnefoCommand):
                           "remove a vm")),
         make_option("--shutdown-timeout",
                     help="Force vm shutdown after given seconds."),
+        make_option("--remove-system-volumes",
+                    default=False,
+                    action="store_true",
+                    help=("Allow removal of system volumes. This will also "
+                          "remove the VM.")),
+        make_option("--cascade-remove",
+                    default=False,
+                    action="store_true",
+                    help=("Allow removal of a VM which has additional "
+                          "(non system) volumes attached. This will also "
+                          "remove these volumes")),
     )
 
     def confirm(self):
@@ -110,6 +116,7 @@ class Command(SynnefoCommand):
         write = self.stderr.write
         fix = options["fix"]
         force = options["force"]
+        handlers = self.get_handlers(options["resources"])
         maxops = options["max_operations"]
         if maxops is not None:
             try:
@@ -126,36 +133,101 @@ class Command(SynnefoCommand):
                 m = "Expected integer shutdown timeout."
                 raise CommandError(m)
 
-        users = options['users']
-        if users is not None:
-            users = users.split(',')
+        remove_system_volumes = options["remove_system_volumes"]
+        cascade_remove = options["cascade_remove"]
 
-        excluded = options['exclude_users']
-        excluded = set(excluded.split(',') if excluded is not None else [])
+        excluded_users = options['exclude_users']
+        excluded_users = set(excluded_users.split(',')
+                             if excluded_users is not None else [])
 
-        handlers = self.get_handlers(options["resources"])
+        users_to_check = options['users']
+        if users_to_check is not None:
+            users_to_check = list(set(users_to_check.split(',')) -
+                                  excluded_users)
+
         try:
-            qh_holdings = util.get_qh_users_holdings(users)
+            qh_holdings = util.get_qh_users_holdings(users_to_check)
         except errors.AstakosClientException as e:
             raise CommandError(e)
 
+        excluded_projects = options["exclude_projects"]
+        excluded_projects = set(excluded_projects.split(',')
+                                if excluded_projects is not None else [])
+
+        projects_to_check = options["projects"]
+        if projects_to_check is not None:
+            projects_to_check = list(set(projects_to_check.split(',')) -
+                                     excluded_projects)
+
+        try:
+            qh_project_holdings = util.get_qh_project_holdings(
+                projects_to_check)
+        except errors.AstakosClientException as e:
+            raise CommandError(e)
+
+        qh_project_holdings = sorted(qh_project_holdings.items())
         qh_holdings = sorted(qh_holdings.items())
         resources = set(h[0] for h in handlers)
         dangerous = bool(resources.difference(DEFAULT_RESOURCES))
 
+        self.stderr.write("Checking resources %s...\n" %
+                          ",".join(list(resources)))
+
+        hopts = {"cascade_remove": cascade_remove,
+                 "remove_system_volumes": remove_system_volumes,
+                 }
         opts = {"shutdown_timeout": shutdown_timeout}
         actions = {}
         overlimit = []
         viol_id = 0
+        remains = defaultdict(list)
+
+        if users_to_check is None:
+            for resource, handle_resource, resource_type in handlers:
+                if resource_type not in actions:
+                    actions[resource_type] = OrderedDict()
+                actual_resources = enforce.get_actual_resources(
+                    resource_type, projects=projects_to_check)
+                for project, project_quota in qh_project_holdings:
+                    if enforce.skip_check(project, projects_to_check,
+                                          excluded_projects):
+                        continue
+                    try:
+                        qh = util.transform_project_quotas(project_quota)
+                        qh_value, qh_limit, qh_pending = qh[resource]
+                    except KeyError:
+                        write("Resource '%s' does not exist in Quotaholder"
+                              " for project '%s'!\n" %
+                              (resource, project))
+                        continue
+                    if qh_pending:
+                        write("Pending commission for project '%s', "
+                              "resource '%s'. Skipping\n" %
+                              (project, resource))
+                        continue
+                    diff = qh_value - qh_limit
+                    if diff > 0:
+                        viol_id += 1
+                        overlimit.append((viol_id, "project", project, "",
+                                          resource, qh_limit, qh_value))
+                        relevant_resources = enforce.pick_project_resources(
+                            actual_resources[project], users=users_to_check,
+                            excluded_users=excluded_users)
+                        handle_resource(viol_id, resource, relevant_resources,
+                                        diff, actions, remains, options=hopts)
+
         for resource, handle_resource, resource_type in handlers:
             if resource_type not in actions:
                 actions[resource_type] = OrderedDict()
             actual_resources = enforce.get_actual_resources(resource_type,
-                                                            users)
+                                                            users_to_check)
             for user, user_quota in qh_holdings:
-                if user in excluded:
+                if enforce.skip_check(user, users_to_check, excluded_users):
                     continue
                 for source, source_quota in user_quota.iteritems():
+                    if enforce.skip_check(source, projects_to_check,
+                                          excluded_projects):
+                        continue
                     try:
                         qh = util.transform_quotas(source_quota)
                         qh_value, qh_limit, qh_pending = qh[resource]
@@ -172,17 +244,18 @@ class Command(SynnefoCommand):
                     diff = qh_value - qh_limit
                     if diff > 0:
                         viol_id += 1
-                        overlimit.append((viol_id, user, source, resource,
-                                          qh_limit, qh_value))
-                        relevant_resources = actual_resources[user]
+                        overlimit.append((viol_id, "user", user, source,
+                                          resource, qh_limit, qh_value))
+                        relevant_resources = actual_resources[source][user]
                         handle_resource(viol_id, resource, relevant_resources,
-                                        diff, actions)
+                                        diff, actions, remains, options=hopts)
 
         if not overlimit:
             write("No violations.\n")
             return
 
-        headers = ("#", "User", "Source", "Resource", "Limit", "Usage")
+        headers = ("#", "Type", "Holder", "Source", "Resource", "Limit",
+                   "Usage")
         pprint_table(self.stdout, overlimit, headers,
                      options["output_format"], title="Violations")
 
@@ -191,7 +264,7 @@ class Command(SynnefoCommand):
             if fix:
                 if dangerous and not force:
                     write("You are enforcing resources that may permanently "
-                          "remove a vm.\n")
+                          "remove a vm or volume.\n")
                     self.confirm()
                 write("Applying actions. Please wait...\n")
             title = "Applied Actions" if fix else "Suggested Actions"
@@ -202,3 +275,29 @@ class Command(SynnefoCommand):
                 headers += ("Result",)
             pprint_table(self.stdout, log, headers,
                          options["output_format"], title=title)
+
+        def explain(resource):
+            if resource == "cyclades.disk":
+                if not remove_system_volumes:
+                    return (", because this would need to remove system "
+                            "volumes; if you want to do so, use the "
+                            "--remove-system-volumes option:")
+                if not cascade_remove:
+                    return (", because this would trigger the removal of "
+                            "attached volumes, too; if you want to do "
+                            "so, use the --cascade-remove option:")
+            elif resource in DESTROY_RESOURCES:
+                if not cascade_remove:
+                    return (", because this would trigger the removal of "
+                            "attached volumes, too; if you want to do "
+                            "so, use the --cascade-remove option:")
+            return ":"
+
+        if remains:
+            self.stderr.write("\n")
+            for resource, viols in remains.iteritems():
+                self.stderr.write(
+                    "The following violations for resource '%s' "
+                    "could not be resolved%s\n"
+                    % (resource, explain(resource)))
+                self.stderr.write("  %s\n" % ",".join(map(str, viols)))

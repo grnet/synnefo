@@ -1,35 +1,17 @@
-// Copyright 2011 GRNET S.A. All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or
-// without modification, are permitted provided that the following
-// conditions are met:
-// 
-//   1. Redistributions of source code must retain the above
-//      copyright notice, this list of conditions and the following
-//      disclaimer.
-// 
-//   2. Redistributions in binary form must reproduce the above
-//      copyright notice, this list of conditions and the following
-//      disclaimer in the documentation and/or other materials
-//      provided with the distribution.
-// 
-// THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-// USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-// AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
-// 
-// The views and conclusions contained in the software and
-// documentation are those of the authors and should not be
-// interpreted as representing official policies, either expressed
-// or implied, of GRNET S.A.
+// Copyright (C) 2010-2014 GRNET S.A.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
 ;(function(root){
@@ -228,6 +210,23 @@
                 }
             });
 
+            this.init_ns("volumes", {
+                msg_tpl:"Your actions will affect 1 Volume.",
+                msg_tpl_plural:"{0} actions will affect {0} Volumes.",
+                actions_msg: {confirm: "Confirm all", cancel: "Cancel all"},
+                limit: 1,
+                cancel_all: function(actions, config) {
+                  _.each(actions, function(action, id) {
+                    action.model.actions.reset_pending();
+                  });
+                },
+                do_all: function(actions, config) {
+                  _.each(actions, function(action, id) {
+                    var action_method = "do_{0}".format(action.actions[0]);
+                    action.model[action_method].apply(action.model);
+                  });
+                }
+            });
 
             this.init_ns("keys", {
                 msg_tpl:"Your actions will affect 1 public key.",
@@ -303,6 +302,7 @@
             var ns_map = {
               'ips': storage.floating_ips,
               'keys': storage.keys,
+              'volumes': storage.volumes,
               'nets': storage.networks
             }
             _.each(ns_map, function(store, ns) {
@@ -329,6 +329,10 @@
             }
 
             if (type == "ips") {
+                actions[model.id] = {model: model, actions: action};
+            }
+
+            if (type == "volumes") {
                 actions[model.id] = {model: model, actions: action};
             }
 
@@ -473,36 +477,63 @@
                 self.title.text(self.parent.get_title());
             });
 
-            this.pane_view_selector.find("a#machines_view_link").click(_.bind(function(ev){
+            this.pane_view_selector.find("a#machines_view_link").click(
+              _.bind(function(ev){
                 ev.preventDefault();
                 this.router.vms_index();
-            }, this))
-            this.pane_view_selector.find("a#networks_view_link").click(_.bind(function(ev){
+              }, this)
+            );
+
+            this.pane_view_selector.find("a#networks_view_link").click(
+              _.bind(function(ev){
                 ev.preventDefault();
                 this.router.networks_view();
-            }, this))
-            this.pane_view_selector.find("a#ips_view_link").click(_.bind(function(ev){
+              }, this)
+            );
+
+            this.pane_view_selector.find("a#ips_view_link").click(
+              _.bind(function(ev){
                 ev.preventDefault();
                 this.router.ips_view();
-            }, this))
-            this.pane_view_selector.find("a#public_keys_view_link").click(_.bind(function(ev){
+              }, this)
+            );
+
+            this.machine_view_selector.find("a#volumes_view_list_link").click(
+              _.bind(function(ev){
+                ev.preventDefault();
+                this.router.volumes_view();
+              }, this)
+            );
+
+            this.pane_view_selector.find("a#public_keys_view_link").click(
+              _.bind(function(ev){
                 ev.preventDefault();
                 this.router.public_keys_view();
-            }, this))
+              }, this)
+            );
             
-            this.machine_view_selector.find("a#machines_view_icon_link").click(_.bind(function(ev){
+            this.machine_view_selector.find("a#machines_view_icon_link").click(
+              _.bind(function(ev){
                 ev.preventDefault();
                 var d = $.now();
                 this.router.vms_icon_view();
-            }, this))
-            this.machine_view_selector.find("a#machines_view_list_link").click(_.bind(function(ev){
+              }, this)
+            );
+
+            this.machine_view_selector.find("a#machines_view_list_link").click(
+              _.bind(function(ev){
                 ev.preventDefault();
                 this.router.vms_list_view();
-            }, this))
-            this.machine_view_selector.find("a#machines_view_single_link").click(_.bind(function(ev){
+              }, this)
+            );
+            
+            var selector = "a#machines_view_single_link"
+            this.machine_view_selector.find(selector).click(
+              _.bind(function(ev){
                 ev.preventDefault();
                 this.router.vms_single_view();
-            }, this))
+              }, this)
+            );
         },
 
         update_layout: function() {
@@ -537,6 +568,7 @@
             'icon': 'machines', 'single': 'machines', 
             'list': 'machines', 'networks': 'networks',
             'ips': 'IP addresses',
+            'volumes': 'disks',
             'public-keys': 'public keys'
         },
 
@@ -547,14 +579,16 @@
           1: 'list', 
           3: 'networks', 
           4: 'ips',
-          5: 'public-keys'
+          5: 'volumes',
+          6: 'public-keys'
         },
 
         views_pane_indexes: {
           0: 'single', 
           1: 'networks', 
           2: 'ips', 
-          3: 'public-keys'
+          3: 'volumes',
+          4: 'public-keys'
         },
 
         // views classes registry
@@ -564,15 +598,32 @@
             'list': views.ListView, 
             'networks': views.NetworksPaneView, 
             'ips': views.IpsPaneView,
+            'volumes': views.VolumesPaneView,
             'public-keys': views.PublicKeysPaneView
         },
 
         // view ids
-        views_ids: {'icon':0, 'single':2, 'list':1, 'networks':3, 'ips':4, 'public-keys': 5},
+        views_ids: {
+          'icon': 0, 
+          'single': 2, 
+          'list': 1, 
+          'networks': 3, 
+          'ips': 4, 
+          'volumes': 5,
+          'public-keys': 6
+        },
 
         // on which pane id each view exists
         // machine views (icon,single,list) are all on first pane
-        pane_ids: {'icon':0, 'single':0, 'list':0, 'networks':1, 'ips':2, 'public-keys': 3},
+        pane_ids: {
+          'icon': 0, 
+          'single': 0, 
+          'list': 0, 
+          'volumes': 1, 
+          'networks': 2, 
+          'ips': 3, 
+          'public-keys': 4
+        },
     
         initialize: function(show_view) {
             if (!show_view) { show_view = 'icon' };
@@ -695,7 +746,8 @@
         },
 
         init_overlays: function() {
-            this.create_vm_view = new views.CreateVMView();
+            this.create_vm_view = new views.VMCreateView();
+            this.create_snapshot_view = new views.SnapshotCreateView();
             this.api_info_view = new views.ApiInfoView();
             this.details_view = new views.DetailsView();
             this.suspended_view = new views.SuspendedVMView();
@@ -713,7 +765,7 @@
             $(".css-panes").show();
         },
         
-        items_to_load: 6,
+        items_to_load: 8,
         completed_items: 0,
         check_status: function(loaded) {
             this.completed_items++;
@@ -776,9 +828,11 @@
               'networks': storage.networks,
               'vms': storage.vms,
               'quotas': storage.quotas,
+              'projects': storage.projects,
               'ips': storage.floating_ips,
               'subnets': storage.subnets,
               'ports': storage.ports,
+              'volumes': storage.volumes,
               'keys': storage.keys
             }, function(col, name) {
               this.init_interval(name, col)
@@ -825,7 +879,6 @@
             this.loaded = true;
             
             // application start point
-
             this.check_empty();
             this.show_initial_view();
         },
@@ -836,6 +889,10 @@
             }
             this.error_view = new views.ErrorView();
             this.vm_resize_view = new views.VmResizeView();
+            this.vm_reassign_view = new views.VmReassignView();
+            this.ip_reassign_view = new views.IPReassignView();
+            this.network_reassign_view = new views.NetworkReassignView();
+            this.volume_reassign_view = new views.VolumeReassignView();
 
             // api request error handling
             synnefo.api.bind("error", _.bind(this.handle_api_error, this));
@@ -853,13 +910,6 @@
             
             // display loading message
             this.show_loading_view();
-            // sync load initial data
-            this.update_status("images", 0);
-            storage.images.fetch({refresh:true, update:false, success: function(){
-                self.update_status("images", 1);
-                self.check_status();
-                self.load_nets_and_vms();
-            }});
             this.update_status("flavors", 0);
             storage.flavors.fetch({refresh:true, update:false, success:function(){
                 self.update_status("flavors", 1);
@@ -869,12 +919,29 @@
             this.update_status("resources", 0);
             storage.resources.fetch({refresh:true, update:false, success: function(){
                 self.update_status("resources", 1);
-                self.update_status("quotas", 0);
+                self.update_status("projects", 0);
                 self.check_status();
-                storage.quotas.fetch({refresh:true, update:true, success: function() {
-                  self.update_status("quotas", 1);
-                  self.update_status("layout", 1);
-                  self.check_status()
+                storage.projects.fetch({refresh:true, update:true, success: function() {
+                  self.update_status("projects", 1);
+                  self.update_status("quotas", 0);
+                  self.check_status();
+                  storage.quotas.fetch({refresh:true, update:true, success: function() {
+                    self.update_status("quotas", 1);
+                    self.check_status();
+                    self.update_status("volumes", 0);
+                    storage.volumes.fetch({refresh:true, update:false, success: function(){
+                          self.update_status("volumes", 1);
+                          self.check_status();
+                    }});  
+
+                    // sync load initial data
+                    self.update_status("images", 0);
+                    storage.images.fetch({refresh:true, update:false, success: function(){
+                        self.update_status("images", 1);
+                        self.check_status();
+                        self.load_nets_and_vms();
+                    }});
+                  }});
                 }})
             }})
         },
@@ -927,21 +994,15 @@
         },
         
         update_create_buttons_status: function() {
-            var nets = storage.quotas.get('cyclades.network.private');
-            var vms = storage.quotas.get('cyclades.vm');
-            
-            if (!nets || !vms) { return }
-
-            if (!nets.can_consume()) {
-                $("#networks-pane a.createbutton").addClass("disabled");
+            var vms = storage.quotas.can_create('vm');
+            var create_button = $("#createcontainer #create"); 
+            var msg = snf.config.limit_reached_msg;
+            if (!vms) {
+                create_button.addClass("disabled");
+                snf.util.set_tooltip(create_button, msg, {tipClass: 'warning tooltip'});
             } else {
-                $("#networks-pane a.createbutton").removeClass("disabled");
-            }
-
-            if (!vms.can_consume()) {
-                $("#createcontainer #create").addClass("disabled");
-            } else {
-                $("#createcontainer #create").removeClass("disabled");
+                create_button.removeClass("disabled");
+                snf.util.unset_tooltip(create_button);
             }
         },
 

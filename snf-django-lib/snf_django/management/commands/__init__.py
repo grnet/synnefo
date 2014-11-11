@@ -1,47 +1,80 @@
-# Copyright 2012-2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from optparse import make_option
-
-from django.core.management.base import BaseCommand, CommandError
+import os
+import re
+import sys
+import datetime
+import logging
+from optparse import (make_option, OptionParser, OptionGroup,
+                      TitledHelpFormatter)
+from synnefo import settings
+from django.core.management.base import (BaseCommand,
+                                         CommandError as DjangoCommandError)
 from django.core.exceptions import FieldError
-
 from snf_django.management import utils
 from snf_django.lib.astakos import UserCache
+from snf_django.utils.line_logging import NewlineStreamHandler
 
 import distutils
 
 USER_EMAIL_FIELD = "user.email"
+LOGGER_EXCLUDE_COMMANDS = "-list$|-show$"
+
+
+class SynnefoOutputWrapper(object):
+    """Wrapper around stdout/stderr
+
+    This class replaces Django's 'OutputWrapper' which doesn't handle
+    logging to file.
+
+    Since 'BaseCommand' doesn't initialize the 'stdout' and 'stderr'
+    attributes at '__init__' but sets them only when it needs to,
+    this class has to be a descriptor.
+
+    We will use the old 'OutputWrapper' class for print to the screen and
+    a logger for logging to the file.
+
+    """
+    def __init__(self):
+        self.django_wrapper = None
+        self.logger = None
+
+    def __set__(self, obj, value):
+        self.django_wrapper = value
+
+    def __getattr__(self, name):
+        return getattr(self.django_wrapper, name)
+
+    def write(self, msg, *args, **kwargs):
+        if self.logger is not None:
+            self.logger.info(msg)
+        if self.django_wrapper is not None:
+            self.django_wrapper.write(msg, *args, **kwargs)
+
+
+class CommandError(DjangoCommandError):
+    def __str__(self):
+        return utils.smart_locale_str(self.message, errors='replace')
+
+
+class SynnefoCommandFormatter(TitledHelpFormatter):
+    def format_heading(self, heading):
+        if heading == "Options":
+            return ""
+        return "%s\n%s\n" % (heading, "=-"[self.level] * len(heading))
 
 
 class SynnefoCommand(BaseCommand):
@@ -55,6 +88,137 @@ class SynnefoCommand(BaseCommand):
             help="Select the output format: pretty [the default], json, "
                  "csv [comma-separated output]"),
     )
+
+    stdout = SynnefoOutputWrapper()
+    stderr = SynnefoOutputWrapper()
+
+    def run_from_argv(self, argv):
+        """Initialize loggers and convert arguments to unicode objects
+
+        Create a filename based on the timestamp, the running
+        command and the pid. Then create a new logger that will
+        write to this file and pass it to stdout and stderr
+        'SynnefoOutputWrapper' objects.
+
+        Modify all existing loggers to write to this file as well.
+
+        Commands that match the 'LOGGER_EXCLUE_COMMANDS' pattern will not be
+        logged (by default all *-list and *-show commands).
+
+        Also, convert command line arguments and options to unicode objects
+        using user's preferred encoding.
+
+        """
+        curr_time = datetime.datetime.now()
+        curr_time = datetime.datetime.strftime(curr_time, "%y%m%d%H%M%S")
+        command = argv[1]
+        pid = os.getpid()
+        fd = None
+        stream = None
+
+        exclude_commands = getattr(settings, "LOGGER_EXCLUDE_COMMANDS",
+                                   LOGGER_EXCLUDE_COMMANDS)
+        if re.search(exclude_commands, command) is None:
+            # The filename will be of the form time_command_pid.log
+            basename = "%s_%s_%s" % (curr_time, command, pid)
+            log_dir = os.path.join(settings.LOG_DIR, "commands")
+            # If log_dir is missing, create it
+            if not os.path.exists(log_dir):
+                os.makedirs(log_dir)
+            filename = os.path.join(log_dir, basename + ".log")
+
+            try:
+                fd = os.open(filename,
+                             os.O_RDWR | os.O_APPEND | os.O_CREAT,
+                             0600)
+                stream = os.fdopen(fd, 'a')
+
+                formatter = logging.Formatter(
+                    "%(asctime)s - %(levelname)s: %(message)s")
+                # Our file handler
+                # We need one handler without newline terminator
+                # for commnand-line's output (the programmer is
+                # responsible for formatting the output) and one
+                # FileHandler for the rest loggers.
+                # TODO: Replace 'NewlineStreamHandler' with pythons
+                # 'logging.StreamHandler' when python version >= 3.2
+                line_handler = NewlineStreamHandler(stream)
+                line_handler.terminator = ''
+                line_handler.setLevel(logging.DEBUG)
+                line_handler.setFormatter(formatter)
+
+                file_handler = logging.FileHandler(filename, mode='a')
+                file_handler.setLevel(logging.DEBUG)
+                file_handler.setFormatter(formatter)
+
+                # Change all loggers to use our new file_handler
+                all_loggers = logging.Logger.manager.loggerDict.keys()
+                for logger_name in all_loggers:
+                    logger = logging.getLogger(logger_name)
+                    logger.addHandler(file_handler)
+
+                # Create our new logger
+                logger = logging.getLogger(basename)
+                logger.setLevel(logging.DEBUG)
+                logger.propagate = False
+                logger.addHandler(line_handler)
+
+                # Write the command which is executed
+                header = "\n\tcommand: %s\n\tpid: %s\n" \
+                    % (" ".join(map(str, argv)), pid)
+                logger.info(header + "\n\nOutput:\n")
+
+                # Give the logger to our stdout, stderr objects
+                self.stdout.logger = logger
+                self.stderr.logger = logger
+            except OSError as err:
+                msg = ("Could not open file %s for write: %s\n"
+                       "Will not log this command's output\n") % (
+                    filename, err)
+                sys.stderr.write(msg)
+
+        argv = [utils.smart_locale_unicode(a) for a in argv]
+        super(SynnefoCommand, self).run_from_argv(argv)
+
+        if stream is not None:
+            stream.close()
+            fd = None
+        if fd is not None:
+            os.close(fd)
+
+    def create_parser(self, prog_name, subcommand):
+        parser = OptionParser(prog=prog_name, add_help_option=False,
+                              formatter=SynnefoCommandFormatter())
+
+        parser.set_usage(self.usage(subcommand))
+        parser.version = self.get_version()
+
+        # Handle Django's and common options
+        common_options = OptionGroup(parser, "Common Options")
+        common_options.add_option("-h", "--help", action="help",
+                                  help="show this help message and exit")
+
+        common_options.add_option("--version", action="version",
+                                  help="show program's version number and"
+                                       "  exit")
+        [common_options.add_option(o) for o in self.option_list]
+        if common_options.option_list:
+            parser.add_option_group(common_options)
+
+        # Handle command specific options
+        command_options = OptionGroup(parser, "Command Specific Options")
+        [command_options.add_option(o)
+         for o in getattr(self, "command_option_list", ())]
+        if command_options.option_list:
+            parser.add_option_group(command_options)
+
+        return parser
+
+    def pprint_table(self, *args, **kwargs):
+        return utils.pprint_table(self.stdout, *args, **kwargs)
+
+    def escape_ctrl_chars(self, *args, **kwargs):
+        return utils.escape_ctrl_chars(*args, **kwargs)
 
 
 class ListCommand(SynnefoCommand):
@@ -218,8 +382,11 @@ class ListCommand(SynnefoCommand):
 
         # --filter-by option
         if options["filter_by"]:
-            filters, excludes = \
-                utils.parse_queryset_filters(options["filter_by"])
+            try:
+                filters, excludes = \
+                    utils.parse_queryset_filters(options["filter_by"])
+            except ValueError as e:
+                raise CommandError(e)
         else:
             filters, excludes = ({}, {})
 
@@ -250,12 +417,13 @@ class ListCommand(SynnefoCommand):
 
         objects = self.object_class.objects
         try:
-            for sr in select_related:
-                objects = objects.select_related(sr)
-            for pr in prefetch_related:
-                objects = objects.prefetch_related(pr)
+            if select_related:
+                objects = objects.select_related(*select_related)
+            if prefetch_related:
+                objects = objects.prefetch_related(*prefetch_related)
             objects = objects.filter(**self.filters)
-            objects = objects.exclude(**self.excludes)
+            for key, value in self.excludes.iteritems():
+                objects = objects.exclude(**{key: value})
         except FieldError as e:
             raise CommandError(e)
         except Exception as e:
@@ -328,16 +496,17 @@ class ListCommand(SynnefoCommand):
                                    % f)
 
     def display_filters(self):
-        headers = ["Filter", "Description", "Help"]
+        headers = ["Filter", "Description"]
         table = []
         for field in self.object_class._meta.fields:
-            table.append((field.name, field.verbose_name, field.help_text))
+            table.append((field.name, field.verbose_name))
         utils.pprint_table(self.stdout, table, headers)
 
 
-class RemoveCommand(BaseCommand):
+class RemoveCommand(SynnefoCommand):
     help = "Generic remove command"
-    option_list = BaseCommand.option_list + (
+
+    command_option_list = (
         make_option(
             "-f", "--force",
             dest="force",

@@ -24,12 +24,14 @@
   ProxyPass        / http://localhost:8080/ retry=0
   ProxyPassReverse / http://localhost:8080/
 
-#  RewriteEngine On
+  RewriteEngine On
+  RewriteRule ^/$ /astakos/ui [PT,NE]
 #  RewriteRule ^/login(.*) /im/login/redirect\$1 [PT,NE]
 
   SSLEngine on
-  SSLCertificateFile    /etc/ssl/certs/ssl-cert-snakeoil.pem
-  SSLCertificateKeyFile /etc/ssl/private/ssl-cert-snakeoil.key
+  SSLCertificateFile    /etc/ssl/certs/synnefo.pem
+  SSLCertificateKeyFile /etc/ssl/private/synnefo.key
+  SSLCACertificateFile  /etc/ssl/certs/synnefo_ca.pem
 </VirtualHost>
 </IfModule>
 

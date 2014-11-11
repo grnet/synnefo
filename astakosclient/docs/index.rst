@@ -133,15 +133,26 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         It returns user's current quotas (as dict of dicts). In case of error
         it raises an AstakosClientException exception.
 
-    **service_get_quotas(**\ user=None\ **)**
+    **service_get_quotas(**\ user=None, project_id=None\ **)**
         It returns all users' current quotas for the resources associated with
         the service (as dict of dicts of dicts). Optionally, one can query the
-        quotas of a specific user with argument user=UUID. In case of error it
-        raises an AstakosClientException exception.
+        quotas of a specific user with argument user=UUID (or a list of UUID).
+        Likewise one can specify a project (or a list of projects). In case of
+        error it raises an AstakosClientException exception.
 
-    **issue_commission(**\ request\ **)**
-        Issue a commission. In case of success it returns commission's id
-        (int). Otherwise it raises an AstakosClientException exception.
+    **service_get_project_quotas(**\ project_id=None\ **)**
+        It returns all projects' current quotas for the resources
+        associated with the service (as dict of dicts).
+        Optionally, one can query the quotas of a specific project with
+        argument project_id=UUID (or a list of UUID). In case of error it raises an
+        AstakosClientException exception.
+
+    **issue_commission_generic(**\ user_provisions, project_provisions, name="", force=False, auto_accept=False\ **)**
+        Issue a commission. User provisions are specified as a dict from
+        (user, project, resource) to int; project provisions as a dict from
+        (project, resource) to int.
+        In case of success return commission's id (int).
+        Otherwise raise an AstakosClientException exception.
 
     **issue_one_commission(**\ holder, source, provisions, name="", force=False, auto_accept=False\ **)**
         Issue a commission. We have to specify the holder, the source and the
@@ -149,6 +160,9 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         the corresponding commission. In case of success it returns
         commission's id (int). Otherwise it raises an AstakosClientException
         exception.
+
+    **issue_resource_reassignment(**\ holder, provisions, name="", force=False, auto_accept=False\ **)**
+        Change resource assignment to another project
 
     **get_pending_commissions()**
         It returns the pending commissions (list of integers). In case of
@@ -176,7 +190,7 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
         rejected and which failed to resolved. Otherwise raise an
         AstakosClientException exception.
 
-    **get_projects(**\ name=None, state=None, owner=None\ **)**
+    **get_projects(**\ name=None, state=None, owner=None, mode=None\ **)**
         Retrieve all accessible projects
 
     **get_project(**\ project_id\ **)**
@@ -191,16 +205,10 @@ retry=0, use_pool=False, pool_size=8, logger=None\ **)**
     **project_action(**\ project_id, action, reason=""\ **)**
         Perform action on a project
 
-    **get_applications(**\ project=None\ **)**
-        Retrieve all accessible applications
+    **application_action(**\ project_id, app_id, action, reason=""\ **)**
+        Perform action on a project application
 
-    **get_application(**\ app_id\ **)**
-        Retrieve application description, if accessible
-
-    **application_action(**\ app_id, action, reason=""\ **)**
-        Perform action on an application
-
-    **get_memberships(**\ project=None\ **)**
+    **get_memberships(**\ project_id=None\ **)**
         Retrieve all accessible memberships
 
     **get_membership(**\ memb_id\ **)**

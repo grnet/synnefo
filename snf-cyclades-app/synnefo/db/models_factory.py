@@ -1,37 +1,20 @@
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import factory
+from factory.fuzzy import FuzzyChoice
 from synnefo.db import models
 from random import choice
 from string import letters, digits
@@ -60,13 +43,23 @@ def random_string(x):
     return ''.join([choice(digits + letters) for i in range(x)])
 
 
+class VolumeTypeFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.VolumeType
+    FACTORY_DJANGO_GET_OR_CREATE = ("disk_template",)
+    name = factory.Sequence(prefix_seq("vtype"))
+    disk_template = FuzzyChoice(
+        choices=["file", "plain", "drbd", "ext_archipelago"]
+    )
+    deleted = False
+
+
 class FlavorFactory(factory.DjangoModelFactory):
     FACTORY_FOR = models.Flavor
 
     cpu = factory.Sequence(lambda n: n + 2, type=int)
     ram = factory.Sequence(lambda n: n * 512, type=int)
-    disk = factory.Sequence(lambda n: n * 10, type=int)
-    disk_template = 'drbd'
+    disk = factory.Sequence(lambda n: n * 1, type=int)
+    volume_type = factory.SubFactory(VolumeTypeFactory)
     deleted = False
 
 
@@ -87,7 +80,7 @@ class BackendFactory(factory.DjangoModelFactory):
     pinst_cnt = 2
     ctotal = 80
 
-    disk_templates = ["file", "plain", "drbd"]
+    disk_templates = ["file", "plain", "drbd", "ext"]
 
 
 class DrainedBackend(BackendFactory):
@@ -110,6 +103,18 @@ class VirtualMachineFactory(factory.DjangoModelFactory):
     suspended = False
     #operstate = factory.Sequence(round_seq_first(FACTORY_FOR.OPER_STATES))
     operstate = "STARTED"
+    project = factory.LazyAttribute(lambda a: a.userid)
+
+
+class VolumeFactory(factory.DjangoModelFactory):
+    FACTORY_FOR = models.Volume
+    userid = factory.Sequence(user_seq())
+    size = factory.Sequence(lambda x: x, type=int)
+    name = factory.Sequence(lambda x: "volume-name-"+x, type=str)
+    machine = factory.SubFactory(VirtualMachineFactory,
+                                 userid=factory.SelfAttribute('..userid'))
+    volume_type = factory.SubFactory(VolumeTypeFactory)
+    project = factory.LazyAttribute(lambda a: a.userid)
 
 
 class DeletedVirtualMachine(VirtualMachineFactory):
@@ -159,6 +164,7 @@ class NetworkFactory(factory.DjangoModelFactory):
     public = False
     deleted = False
     state = "ACTIVE"
+    project = factory.LazyAttribute(lambda a: a.userid)
 
 
 class DeletedNetwork(NetworkFactory):
@@ -183,6 +189,7 @@ class NetworkInterfaceFactory(factory.DjangoModelFactory):
     index = factory.Sequence(lambda x: x, type=int)
     mac = factory.Sequence(lambda n: 'aa:{0}{0}:{0}{0}:aa:{0}{0}:{0}{0}'
                            .format(hex(int(n) % 15)[2:3]))
+    public = factory.LazyAttribute(lambda self: self.network.public)
     state = "ACTIVE"
     firewall_profile =\
         factory.Sequence(round_seq_first(FACTORY_FOR.FIREWALL_PROFILES))
@@ -237,6 +244,7 @@ class IPv4AddressFactory(factory.DjangoModelFactory):
     nic = factory.SubFactory(NetworkInterfaceFactory,
                              userid=factory.SelfAttribute('..userid'),
                              network=factory.SelfAttribute('..network'))
+    project = factory.LazyAttribute(lambda a: a.userid)
 
 
 class IPv6AddressFactory(IPv4AddressFactory):

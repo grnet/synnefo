@@ -1,35 +1,17 @@
-# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import uuid
 import logging
@@ -42,7 +24,8 @@ from urllib import quote
 from random import randint
 import os
 
-from django.db import models, transaction
+from django.db import models
+from astakos.im import transaction
 from django.contrib.auth.models import User, UserManager, Group, Permission
 from django.utils.translation import ugettext as _
 from django.db.models.signals import pre_save, post_save
@@ -64,7 +47,6 @@ from astakos.im import auth_providers as auth
 import astakos.im.messages as astakos_messages
 from synnefo.lib.ordereddict import OrderedDict
 
-from synnefo.util.text import uenc, udec
 from synnefo.util import units
 from astakos.im import presentation
 
@@ -72,6 +54,9 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_CONTENT_TYPE = None
 _content_type = None
+
+SYSTEM_PROJECT_NAME_TPL = getattr(astakos_settings, "SYSTEM_PROJECT_NAME_TPL",
+                                u"[system] %s")
 
 
 def get_content_type():
@@ -149,7 +134,7 @@ class Component(models.Model):
         msg = 'Token renewed for component %s'
         logger.log(astakos_settings.LOGGING_LEVEL, msg, self.name)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
     @classmethod
@@ -233,14 +218,15 @@ class Resource(models.Model):
     service_origin = models.CharField(max_length=255, db_index=True)
     unit = models.CharField(_('Unit'), null=True, max_length=255)
     uplimit = models.BigIntegerField(default=0)
+    project_default = models.BigIntegerField()
     ui_visible = models.BooleanField(default=True)
     api_visible = models.BooleanField(default=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return self.name
 
     def full_name(self):
-        return str(self)
+        return unicode(self)
 
     def get_info(self):
         return {'service': self.service_origin,
@@ -253,34 +239,41 @@ class Resource(models.Model):
     @property
     def group(self):
         default = self.name
-        return get_presentation(str(self)).get('group', default)
+        return get_presentation(unicode(self)).get('group', default)
 
     @property
     def help_text(self):
         default = "%s resource" % self.name
-        return get_presentation(str(self)).get('help_text', default)
+        return get_presentation(unicode(self)).get('help_text', default)
 
     @property
     def help_text_input_each(self):
         default = "%s resource" % self.name
-        return get_presentation(str(self)).get('help_text_input_each', default)
+        return get_presentation(unicode(self)).get(
+            'help_text_input_each', default)
+
+    @property
+    def help_text_input_total(self):
+        default = "%s resource" % self.name
+        key = 'help_text_input_total'
+        return get_presentation(str(self)).get(key, default)
 
     @property
     def is_abbreviation(self):
-        return get_presentation(str(self)).get('is_abbreviation', False)
+        return get_presentation(unicode(self)).get('is_abbreviation', False)
 
     @property
     def report_desc(self):
         default = "%s resource" % self.name
-        return get_presentation(str(self)).get('report_desc', default)
+        return get_presentation(unicode(self)).get('report_desc', default)
 
     @property
     def placeholder(self):
-        return get_presentation(str(self)).get('placeholder', self.unit)
+        return get_presentation(unicode(self)).get('placeholder', self.unit)
 
     @property
     def verbose_name(self):
-        return get_presentation(str(self)).get('verbose_name', self.name)
+        return get_presentation(unicode(self)).get('verbose_name', self.name)
 
     @property
     def display_name(self):
@@ -405,30 +398,34 @@ class AstakosUser(User):
     auth_token_expires = models.DateTimeField(
         _('Token expiration date'), null=True)
 
-    updated = models.DateTimeField(_('Update date'))
+    updated = models.DateTimeField(_('Last update date'))
 
     # Arbitrary text to identify the reason user got deactivated.
     # To be used as a reference from administrators.
     deactivated_reason = models.TextField(
-        _('Reason the user was disabled for'),
+        _('Reason for user deactivation'),
         default=None, null=True)
-    deactivated_at = models.DateTimeField(_('User deactivated at'), null=True,
+    deactivated_at = models.DateTimeField(_('User deactivation date'),
+                                          null=True,
                                           blank=True)
 
-    has_credits = models.BooleanField(_('Has credits?'), default=False)
+    has_credits = models.BooleanField(_('User has credits'), default=False)
 
     # this is set to True when user profile gets updated for the first time
-    is_verified = models.BooleanField(_('Is verified?'), default=False)
+    is_verified = models.BooleanField(_('User is verified'), default=False)
 
     # user email is verified
-    email_verified = models.BooleanField(_('Email verified?'), default=False)
+    email_verified = models.BooleanField(_('User email is verified'),
+                                         default=False)
 
     # unique string used in user email verification url
-    verification_code = models.CharField(max_length=255, null=True,
-                                         blank=False, unique=True)
+    verification_code = models.CharField(
+        _('String used for email verification'),
+        max_length=255, null=True,
+        blank=False, unique=True)
 
     # date user email verified
-    verified_at = models.DateTimeField(_('User verified email at'), null=True,
+    verified_at = models.DateTimeField(_('User verification date'), null=True,
                                        blank=True)
 
     # email verification notice was sent to the user at this time
@@ -436,13 +433,14 @@ class AstakosUser(User):
                                            null=True, blank=True)
 
     # user got rejected during moderation process
-    is_rejected = models.BooleanField(_('Account rejected'),
+    is_rejected = models.BooleanField(_('Account is rejected'),
                                       default=False)
     # reason user got rejected
-    rejected_reason = models.TextField(_('User rejected reason'), null=True,
+    rejected_reason = models.TextField(_('Reason for user rejection'),
+                                       null=True,
                                        blank=True)
     # moderation status
-    moderated = models.BooleanField(_('User moderated'), default=False)
+    moderated = models.BooleanField(_('Account is moderated'), default=False)
     # date user moderated (either accepted or rejected)
     moderated_at = models.DateTimeField(_('Date moderated'), default=None,
                                         blank=True, null=True)
@@ -454,12 +452,13 @@ class AstakosUser(User):
     # the email used to accept the user
     accepted_email = models.EmailField(null=True, default=None, blank=True)
 
-    has_signed_terms = models.BooleanField(_('I agree with the terms'),
+    has_signed_terms = models.BooleanField(_('False if needs to sign terms'),
                                            default=False)
-    date_signed_terms = models.DateTimeField(_('Signed terms date'),
+    date_signed_terms = models.DateTimeField(_('Date of terms signing'),
                                              null=True, blank=True)
     # permanent unique user identifier
-    uuid = models.CharField(max_length=255, null=False, blank=False,
+    uuid = models.CharField(_('Unique user identifier'),
+                            max_length=255, null=False, blank=False,
                             unique=True)
 
     policy = models.ManyToManyField(
@@ -468,11 +467,20 @@ class AstakosUser(User):
     disturbed_quota = models.BooleanField(_('Needs quotaholder syncing'),
                                           default=False, db_index=True)
 
+    # This could have been OneToOneField, but fails due to
+    # https://code.djangoproject.com/ticket/13781 (fixed in v1.6)
+    base_project = models.ForeignKey('Project', related_name="base_user",
+                                     null=True)
+
     objects = AstakosUserManager()
 
     @property
     def realname(self):
         return '%s %s' % (self.first_name, self.last_name)
+
+    @property
+    def realname_with_email(self):
+        return '%s (%s)' % (self.realname, self.email)
 
     @property
     def log_display(self):
@@ -487,6 +495,11 @@ class AstakosUser(User):
         first, last = split_realname(value)
         self.first_name = first
         self.last_name = last
+
+    def get_base_project(self):
+        assert self.base_project is not None, \
+            "User %s has no system project" % self
+        return self.base_project
 
     def add_permission(self, pname):
         if self.has_perm(pname):
@@ -511,7 +524,7 @@ class AstakosUser(User):
     def is_accepted(self):
         return self.moderated and not self.is_rejected
 
-    def is_project_admin(self, application_id=None):
+    def is_project_admin(self):
         return self.uuid in astakos_settings.PROJECT_ADMINS
 
     @property
@@ -598,23 +611,22 @@ class AstakosUser(User):
 
     @property
     def status_display(self):
-        msg = ""
-        if self.is_active:
-            msg = "Accepted/Active"
-        if self.is_rejected:
+        if not self.email_verified:
+            msg = "Pending email verification"
+        elif not self.moderated:
+            msg = "Pending moderation"
+        elif self.is_rejected:
             msg = "Rejected"
             if self.rejected_reason:
                 msg += " (%s)" % self.rejected_reason
-        if not self.email_verified:
-            msg = "Pending email verification"
-        if not self.moderated:
-            msg = "Pending moderation"
-        if not self.is_active and self.email_verified:
-            msg = "Accepted/Inactive"
-            if self.deactivated_reason:
-                msg += " (%s)" % (self.deactivated_reason)
-
-        if self.moderated and not self.is_rejected:
+        # accepted
+        else:
+            if self.is_active:
+                msg = "Accepted/Active"
+            else:
+                msg = "Accepted/Inactive"
+                if self.deactivated_reason:
+                    msg += " (%s)" % (self.deactivated_reason)
             if self.accepted_policy == 'manual':
                 msg += " (manually accepted)"
             else:
@@ -720,7 +732,7 @@ class AstakosUser(User):
     # URL methods
     @property
     def auth_providers_display(self):
-        return ",".join(["%s:%s" % (p.module, p.identifier) for p in
+        return ",".join(["%s:%s" % (p.module, p.identifier or '') for p in
                          self.get_enabled_auth_providers()])
 
     def add_auth_provider(self, module='local', identifier=None, **params):
@@ -728,17 +740,20 @@ class AstakosUser(User):
         provider.add_to_user()
 
     def get_resend_activation_url(self):
-        return reverse('send_activation', kwargs={'user_id': self.pk})
+        return reverse('send_activation', urlconf="synnefo.webproject.urls",
+                       kwargs={'user_id': self.pk})
 
     def get_activation_url(self, nxt=False):
-        url = "%s?auth=%s" % (reverse('astakos.im.views.activate'),
-                              quote(self.verification_code))
+        activate_url = reverse('astakos.im.views.activate',
+                               urlconf="synnefo.webproject.urls")
+        url = "%s?auth=%s" % (activate_url, quote(self.verification_code))
         if nxt:
             url += "&next=%s" % quote(nxt)
         return url
 
     def get_password_reset_url(self, token_generator=default_token_generator):
         return reverse('astakos.im.views.target.local.password_reset_confirm',
+                       urlconf="synnefo.webproject.urls",
                        kwargs={'uidb36': int_to_base36(self.id),
                                'token': token_generator.make_token(self)})
 
@@ -780,7 +795,7 @@ class AstakosUser(User):
         return application.owner == self
 
     def owns_project(self, project):
-        return project.application.owner == self
+        return project.owner == self
 
     def is_associated(self, project):
         try:
@@ -821,6 +836,29 @@ class AstakosUser(User):
         logger.info('The following access tokens will be deleted: %s',
                     offline_tokens)
         offline_tokens.delete()
+
+    def get_last_logins(self):
+        providers = self.auth_providers.filter().order_by('-last_login_at')
+        providers = providers.filter(last_login_at__isnull=False)
+        logins = []
+        for provider in providers:
+            logins.append((provider.module, provider.last_login_at))
+
+        return logins
+
+    @property
+    def last_login_info_display(self):
+        logins = self.get_last_logins()
+        display = []
+
+        if len(logins) == 0:
+            return "No login info available"
+
+        for module, date in logins:
+            display.append("[%s] %s" % (module, date))
+
+        return ", ".join(display)
+
 
 
 class AstakosUserAuthProviderManager(models.Manager):
@@ -956,6 +994,8 @@ class AstakosUserAuthProvider(models.Model):
                                     default='astakos')
     info_data = models.TextField(default="", null=True, blank=True)
     created = models.DateTimeField('Creation date', auto_now_add=True)
+    last_login_at = models.DateTimeField('Last login date', null=True,
+                                         default=None)
 
     objects = AstakosUserAuthProviderManager()
 
@@ -1120,6 +1160,7 @@ class EmailChange(models.Model):
 
     def get_url(self):
         return reverse('email_change_confirm',
+                       urlconf="synnefo.webproject.urls",
                        kwargs={'activation_key': self.activation_key})
 
     def activation_key_expired(self):
@@ -1258,7 +1299,7 @@ class UserSetting(models.Model):
 class Chain(models.Model):
     chain = models.AutoField(primary_key=True)
 
-    def __str__(self):
+    def __unicode__(self):
         return "%s" % (self.chain,)
 
 
@@ -1295,24 +1336,28 @@ class ProjectApplication(models.Model):
     DISMISSED = 4
     CANCELLED = 5
 
+    MAX_HOMEPAGE_LENGTH = 255
+    MAX_NAME_LENGTH = 80
+
     state = models.IntegerField(default=PENDING,
                                 db_index=True)
     owner = models.ForeignKey(
         AstakosUser,
         related_name='projects_owned',
+        null=True,
         db_index=True)
     chain = models.ForeignKey('Project',
                               related_name='chained_apps',
                               db_column='chain')
-    name = models.CharField(max_length=80)
-    homepage = models.URLField(max_length=255, null=True,
+    name = models.CharField(max_length=MAX_NAME_LENGTH, null=True)
+    homepage = models.URLField(max_length=MAX_HOMEPAGE_LENGTH, null=True,
                                verify_exists=False)
     description = models.TextField(null=True, blank=True)
     start_date = models.DateTimeField(null=True, blank=True)
-    end_date = models.DateTimeField()
-    member_join_policy = models.IntegerField()
-    member_leave_policy = models.IntegerField()
-    limit_on_members_number = models.PositiveIntegerField(null=True)
+    end_date = models.DateTimeField(null=True)
+    member_join_policy = models.IntegerField(null=True)
+    member_leave_policy = models.IntegerField(null=True)
+    limit_on_members_number = models.BigIntegerField(null=True)
     resource_grants = models.ManyToManyField(
         Resource,
         null=True,
@@ -1328,6 +1373,7 @@ class ProjectApplication(models.Model):
     waive_reason = models.TextField(null=True, blank=True)
     waive_actor = models.ForeignKey(AstakosUser, null=True,
                                     related_name='waived_apps')
+    private = models.NullBooleanField(default=False)
 
     objects = ProjectApplicationManager()
 
@@ -1361,20 +1407,15 @@ class ProjectApplication(models.Model):
         return self.APPLICATION_STATE_DISPLAY.get(self.state, _('Unknown'))
 
     @property
-    def grants(self):
-        return self.projectresourcegrant_set.values('member_capacity',
-                                                    'resource__name')
+    def resource_set(self):
+        return self.projectresourcegrant_set.order_by('resource__name')
 
     @property
     def resource_policies(self):
-        return [str(rp) for rp in self.projectresourcegrant_set.all()]
+        return [unicode(rp) for rp in self.projectresourcegrant_set.all()]
 
     def is_modification(self):
-        # if self.state != self.PENDING:
-        #     return False
-        parents = self.chained_applications().filter(id__lt=self.id)
-        parents = parents.filter(state__in=[self.APPROVED])
-        return parents.count() > 0
+        return self.chain.is_initialized()
 
     def chained_applications(self):
         return ProjectApplication.objects.filter(chain=self.chain)
@@ -1477,10 +1518,9 @@ class ProjectResourceGrantManager(models.Manager):
 class ProjectResourceGrant(models.Model):
 
     resource = models.ForeignKey(Resource)
-    project_application = models.ForeignKey(ProjectApplication,
-                                            null=True)
-    project_capacity = models.BigIntegerField(null=True)
-    member_capacity = models.BigIntegerField(default=0)
+    project_application = models.ForeignKey(ProjectApplication)
+    project_capacity = models.BigIntegerField()
+    member_capacity = models.BigIntegerField()
 
     objects = ProjectResourceGrantManager()
 
@@ -1488,47 +1528,83 @@ class ProjectResourceGrant(models.Model):
         unique_together = ("resource", "project_application")
 
     def display_member_capacity(self):
-        return units.show(self.member_capacity, self.resource.unit)
+        return units.show(self.member_capacity, self.resource.unit,
+                          inf="Unlimited")
 
-    def __str__(self):
-        return 'Max %s per user: %s' % (self.resource.pluralized_display_name,
-                                        self.display_member_capacity())
+    def display_project_capacity(self):
+        return units.show(self.project_capacity, self.resource.unit,
+                          inf="Unlimited")
 
+    def project_diffs(self):
+        project = self.project_application.chain
+        try:
+            project_resource = project.resource_set.get(resource=self.resource)
+        except ProjectResourceQuota.DoesNotExist:
+            return [self.project_capacity, self.member_capacity]
 
-def _distinct(f, l):
-    d = {}
-    last = None
-    for x in l:
-        group = f(x)
-        if group == last:
-            continue
-        last = group
-        d[group] = x
-    return d
+        project_diff = \
+            self.project_capacity - project_resource.project_capacity
+        if self.project_capacity == units.PRACTICALLY_INFINITE:
+            project_diff = units.PRACTICALLY_INFINITE
+        if project_resource.project_capacity == units.PRACTICALLY_INFINITE:
+            project_diff = -units.PRACTICALLY_INFINITE
 
+        member_diff = self.member_capacity - project_resource.member_capacity
+        if self.member_capacity == units.PRACTICALLY_INFINITE:
+            member_diff = units.PRACTICALLY_INFINITE
+        if project_resource.member_capacity == units.PRACTICALLY_INFINITE:
+            member_diff = -units.PRACTICALLY_INFINITE
 
-def invert_dict(d):
-    return dict((v, k) for k, v in d.iteritems())
+        return [project_diff, member_diff]
+
+    def display_project_diff(self):
+        proj, member = self.project_diffs()
+        proj_abs, member_abs = proj, member
+        unit = self.resource.unit
+
+        def disp(v, disp_func=None):
+            if not disp_func:
+                disp_func = lambda : ''
+
+            if v == 0:
+                return ''
+            sign = u'+' if v >= 0 else u'-'
+            ext = units.show(abs(v), unit, inf="Unlimited")
+            if ext == "Unlimited" and sign == u'+':
+                disp = disp_func()
+                if disp:
+                    ext = "from %s" % disp
+            else:
+                disp = disp_func()
+                ext = sign + "" + ext
+            return unicode(ext)
+
+        project_resource = None
+        try:
+            project = self.project_application.chain
+            project_resource = project.resource_set.get(resource=self.resource)
+        except:
+            pass
+
+        memb_disp = project_resource.display_member_capacity if \
+            project_resource else None
+        proj_disp = project_resource.display_project_capacity if \
+            project_resource else None
+        return [disp(proj_abs, proj_disp),
+                disp(member_abs, memb_disp)]
+
+    def __unicode__(self):
+        return 'Max %s per member: %s; project total: %s' % (
+            self.resource.pluralized_display_name,
+            self.display_member_capacity(),
+            self.display_project_capacity())
 
 
 class ProjectManager(models.Manager):
-
-    def all_with_pending(self, flt=None):
-        flt = Q() if flt is None else flt
-        projects = list(self.select_related(
-            'application', 'application__owner').filter(flt))
-
-        objs = ProjectApplication.objects.select_related('owner')
-        apps = objs.filter(state=ProjectApplication.PENDING,
-                           chain__in=projects).order_by('chain', '-id')
-        app_d = _distinct(lambda app: app.chain_id, apps)
-        return [(project, app_d.get(project.pk)) for project in projects]
-
     def expired_projects(self):
         model = self.model
-        q = ((model.o_state_q(model.O_ACTIVE) |
-              model.o_state_q(model.O_SUSPENDED)) &
-             Q(application__end_date__lt=datetime.now()))
+        q = (Q(state__in=[model.NORMAL, model.SUSPENDED]) &
+             Q(end_date__lt=datetime.now()))
         return self.filter(q)
 
     def user_accessible_projects(self, user):
@@ -1541,14 +1617,13 @@ class ProjectManager(models.Manager):
         else:
             membs = user.projectmembership_set.associated()
             memb_projects = membs.values_list("project", flat=True)
-            flt = (Q(application__owner=user) |
-                   Q(application__applicant=user) |
+            flt = (Q(owner=user) |
+                   Q(last_application__applicant=user) |
                    Q(id__in=memb_projects))
 
-        relevant = model.o_states_q(model.RELEVANT_STATES)
+        relevant = ~Q(state=model.DELETED)
         return self.filter(flt, relevant).order_by(
-            'application__issue_date').select_related(
-            'application', 'application__owner', 'application__applicant')
+            'creation_date').select_related('last_application', 'owner')
 
     def search_by_name(self, *search_strings):
         q = Q()
@@ -1556,14 +1631,24 @@ class ProjectManager(models.Manager):
             q = q | Q(name__icontains=s)
         return self.filter(q)
 
+    def initialized(self, flt=None):
+        q = Q(state__in=self.model.INITIALIZED_STATES)
+        if flt is not None:
+            q &= flt
+        return self.filter(q)
+
+    @property
+    def has_infinite_members_limit(self):
+        return self.limit_on_members_number == units.PRACTICALLY_INFINITE
+
+
 
 class Project(models.Model):
 
     id = models.BigIntegerField(db_column='id', primary_key=True)
 
-    application = models.OneToOneField(
-        ProjectApplication,
-        related_name='project')
+    last_application = models.ForeignKey(ProjectApplication, null=True,
+                                         related_name='last_of_project')
 
     members = models.ManyToManyField(
         AstakosUser,
@@ -1571,40 +1656,76 @@ class Project(models.Model):
 
     creation_date = models.DateTimeField(auto_now_add=True)
     name = models.CharField(
-        max_length=80,
+        max_length=ProjectApplication.MAX_NAME_LENGTH,
         null=True,
         db_index=True,
         unique=True)
 
+    UNINITIALIZED = 0
     NORMAL = 1
     SUSPENDED = 10
     TERMINATED = 100
+    DELETED = 1000
+
+    INITIALIZED_STATES = [NORMAL,
+                          SUSPENDED,
+                          TERMINATED,
+                          ]
+
+    ALIVE_STATES = [NORMAL,
+                    SUSPENDED,
+                    ]
+
+    SKIP_STATES = [DELETED,
+                   TERMINATED,
+                   ]
 
     DEACTIVATED_STATES = [SUSPENDED, TERMINATED]
 
-    state = models.IntegerField(default=NORMAL,
+    state = models.IntegerField(default=UNINITIALIZED,
                                 db_index=True)
+    uuid = models.CharField(max_length=255, unique=True)
+
+    owner = models.ForeignKey(
+        AstakosUser,
+        related_name='projs_owned',
+        null=True,
+        db_index=True)
+    realname = models.CharField(max_length=ProjectApplication.MAX_NAME_LENGTH)
+    homepage = models.URLField(
+        max_length=ProjectApplication.MAX_HOMEPAGE_LENGTH,
+        verify_exists=False)
+    description = models.TextField(blank=True)
+    end_date = models.DateTimeField()
+    member_join_policy = models.IntegerField()
+    member_leave_policy = models.IntegerField()
+    limit_on_members_number = models.BigIntegerField()
+    resource_grants = models.ManyToManyField(
+        Resource,
+        null=True,
+        blank=True,
+        through='ProjectResourceQuota')
+    private = models.BooleanField(default=False)
+    is_base = models.BooleanField(default=False)
 
     objects = ProjectManager()
 
-    def __str__(self):
-        return uenc(_("<project %s '%s'>") %
-                    (self.id, udec(self.application.name)))
-
-    __repr__ = __str__
-
     def __unicode__(self):
-        return _("<project %s '%s'>") % (self.id, self.application.name)
+        return _("<project %s '%s'>") % (self.id, self.realname)
 
+    O_UNINITIALIZED = -1
     O_PENDING = 0
     O_ACTIVE = 1
+    O_ACTIVE_PENDING = 2
     O_DENIED = 3
     O_DISMISSED = 4
     O_CANCELLED = 5
     O_SUSPENDED = 10
     O_TERMINATED = 100
+    O_DELETED = 1000
 
     O_STATE_DISPLAY = {
+        O_UNINITIALIZED: _("Uninitialized"),
         O_PENDING:    _("Pending"),
         O_ACTIVE:     _("Active"),
         O_DENIED:     _("Denied"),
@@ -1612,72 +1733,87 @@ class Project(models.Model):
         O_CANCELLED:  _("Cancelled"),
         O_SUSPENDED:  _("Suspended"),
         O_TERMINATED: _("Terminated"),
+        O_DELETED:    _("Deleted"),
     }
+
+    O_STATE_UNINITIALIZED = {
+        None: O_UNINITIALIZED,
+        ProjectApplication.PENDING: O_PENDING,
+        ProjectApplication.DENIED:  O_DENIED,
+        }
+    O_STATE_DELETED = {
+        None: O_DELETED,
+        ProjectApplication.DISMISSED: O_DISMISSED,
+        ProjectApplication.CANCELLED: O_CANCELLED,
+        }
 
     OVERALL_STATE = {
-        (NORMAL, ProjectApplication.PENDING):      O_PENDING,
-        (NORMAL, ProjectApplication.APPROVED):     O_ACTIVE,
-        (NORMAL, ProjectApplication.DENIED):       O_DENIED,
-        (NORMAL, ProjectApplication.DISMISSED):    O_DISMISSED,
-        (NORMAL, ProjectApplication.CANCELLED):    O_CANCELLED,
-        (SUSPENDED, ProjectApplication.APPROVED):  O_SUSPENDED,
-        (TERMINATED, ProjectApplication.APPROVED): O_TERMINATED,
-    }
+        NORMAL: lambda app_state: Project.O_ACTIVE,
+        UNINITIALIZED: lambda app_state: Project.O_STATE_UNINITIALIZED.get(
+            app_state, None),
+        DELETED: lambda app_state: Project.O_STATE_DELETED.get(
+            app_state, None),
+        SUSPENDED: lambda app_state: Project.O_SUSPENDED,
+        TERMINATED: lambda app_state: Project.O_TERMINATED,
+        }
 
-    OVERALL_STATE_INV = invert_dict(OVERALL_STATE)
+    def display_name_for_user(self, user):
+        if not self.is_base:
+            return self.realname
 
-    @classmethod
-    def o_state_q(cls, o_state):
-        p_state, a_state = cls.OVERALL_STATE_INV[o_state]
-        return Q(state=p_state, application__state=a_state)
+        if user.uuid == self.realname.replace("system:", ""):
+            return "System project"
 
-    @classmethod
-    def o_states_q(cls, o_states):
-        return reduce(lambda x, y: x | y, map(cls.o_state_q, o_states), Q())
+        if user.is_project_admin():
+            return "[system] %s" % (self.display_name(email=True), )
 
-    INITIALIZED_STATES = [O_ACTIVE,
-                          O_SUSPENDED,
-                          O_TERMINATED,
-                          ]
+        return self.display_name
 
-    RELEVANT_STATES = [O_PENDING,
-                       O_DENIED,
-                       O_ACTIVE,
-                       O_SUSPENDED,
-                       O_TERMINATED,
-                       ]
+    def display_name(self, email=False):
+        if self.is_base:
+            uuid = self.realname.replace("system:", "")
+            try:
+                user = AstakosUser.objects.get(uuid=uuid)
+                if email:
+                    username = "%s %s" % (user.email, user.realname)
+                else:
+                    username = user.realname
+            except AstakosUser.DoesNotExist:
+                username = uuid
 
-    SKIP_STATES = [O_DISMISSED,
-                   O_CANCELLED,
-                   O_TERMINATED,
-                   ]
+            return username
+        return self.realname
 
     @classmethod
     def _overall_state(cls, project_state, app_state):
-        return cls.OVERALL_STATE.get((project_state, app_state), None)
+        os = cls.OVERALL_STATE.get(project_state, None)
+        if os is None:
+            return None
+        return os(app_state)
 
     def overall_state(self):
-        return self._overall_state(self.state, self.application.state)
+        app_state = (self.last_application.state
+                     if self.last_application else None)
+        return self._overall_state(self.state, app_state)
 
     def last_pending_application(self):
-        apps = self.chained_apps.filter(
-            state=ProjectApplication.PENDING).order_by('-id')
-        if apps:
-            return apps[0]
+        app = self.last_application
+        if app and app.state == ProjectApplication.PENDING:
+            return app
         return None
 
     def last_pending_modification(self):
         last_pending = self.last_pending_application()
-        if last_pending == self.application:
-            return None
-        return last_pending
+        if self.state != Project.UNINITIALIZED:
+            return last_pending
+        return None
 
     def state_display(self):
         return self.O_STATE_DISPLAY.get(self.overall_state(), _('Unknown'))
 
     def expiration_info(self):
-        return (str(self.id), self.name, self.state_display(),
-                str(self.application.end_date))
+        return (unicode(self.id), self.name, self.state_display(),
+                unicode(self.end_date))
 
     def last_deactivation(self):
         objs = self.log.filter(to_state__in=self.DEACTIVATED_STATES)
@@ -1693,10 +1829,10 @@ class Project(models.Model):
         return self.state != self.NORMAL
 
     def is_active(self):
-        return self.overall_state() == self.O_ACTIVE
+        return self.state == self.NORMAL
 
     def is_initialized(self):
-        return self.overall_state() in self.INITIALIZED_STATES
+        return self.state in self.INITIALIZED_STATES
 
     ### Deactivation calls
 
@@ -1723,14 +1859,28 @@ class Project(models.Model):
     def resume(self, actor=None, reason=None):
         self.set_state(self.NORMAL, actor=actor, reason=reason)
         if self.name is None:
-            self.name = self.application.name
+            self.name = self.realname
             self.save()
 
-    ### Logical checks
+    def activate(self, actor=None, reason=None):
+        assert self.state != self.DELETED, \
+            "cannot activate: %s is deleted" % self
+        if self.state != self.NORMAL:
+            self.set_state(self.NORMAL, actor=actor, reason=reason)
+        if self.name != self.realname:
+            self.name = self.realname
+            self.save()
 
+    def set_deleted(self, actor=None, reason=None):
+        self.set_state(self.DELETED, actor=actor, reason=reason)
+
+    def can_modify(self):
+        return self.state not in [self.UNINITIALIZED, self.DELETED]
+
+    ### Logical checks
     @property
     def is_alive(self):
-        return self.overall_state() in [self.O_ACTIVE, self.O_SUSPENDED]
+        return self.state in [self.NORMAL, self.SUSPENDED]
 
     @property
     def is_terminated(self):
@@ -1741,10 +1891,7 @@ class Project(models.Model):
         return self.is_deactivated(self.SUSPENDED)
 
     def violates_members_limit(self, adding=0):
-        application = self.application
-        limit = application.limit_on_members_number
-        if limit is None:
-            return False
+        limit = self.limit_on_members_number
         return (len(self.approved_members) + adding > limit)
 
     ### Other
@@ -1763,6 +1910,59 @@ class Project(models.Model):
     @property
     def approved_members(self):
         return [m.person for m in self.approved_memberships]
+
+    @property
+    def member_join_policy_display(self):
+        policy = self.member_join_policy
+        return presentation.PROJECT_MEMBER_JOIN_POLICIES.get(policy)
+
+    @property
+    def member_leave_policy_display(self):
+        policy = self.member_leave_policy
+        return presentation.PROJECT_MEMBER_LEAVE_POLICIES.get(policy)
+
+    @property
+    def has_infinite_members_limit(self):
+        return self.limit_on_members_number == units.PRACTICALLY_INFINITE
+
+    @property
+    def resource_set(self):
+        return self.projectresourcequota_set.order_by('resource__name')
+
+
+def create_project(**kwargs):
+    if "uuid" not in kwargs:
+        kwargs["uuid"] = str(uuid.uuid4())
+    return Project.objects.create(**kwargs)
+
+
+class ProjectResourceQuotaManager(models.Manager):
+    def quotas_per_project(self, projects):
+        proj_ids = [proj.id for proj in projects]
+        quotas = self.filter(
+            project__in=proj_ids).select_related("resource")
+        return _partition_by(lambda g: g.project_id, quotas)
+
+
+class ProjectResourceQuota(models.Model):
+
+    resource = models.ForeignKey(Resource)
+    project = models.ForeignKey(Project)
+    project_capacity = models.BigIntegerField(default=0)
+    member_capacity = models.BigIntegerField(default=0)
+
+    objects = ProjectResourceQuotaManager()
+
+    class Meta:
+        unique_together = ("resource", "project")
+
+    def display_member_capacity(self):
+        return units.show(self.member_capacity, self.resource.unit,
+                          inf="Unlimited")
+
+    def display_project_capacity(self):
+        return units.show(self.project_capacity, self.resource.unit,
+                          inf="Unlimited")
 
 
 class ProjectLogManager(models.Manager):
@@ -1795,8 +1995,21 @@ class ProjectMembershipManager(models.Manager):
         q = self.model.Q_ACCEPTED_STATES
         return self.filter(q)
 
-    def actually_accepted(self):
+    def actually_accepted(self, projects=None):
         q = self.model.Q_ACTUALLY_ACCEPTED
+        if projects is not None:
+            q &= Q(project__in=projects)
+        return self.filter(q)
+
+    def actually_accepted_and_active(self):
+        q = self.model.Q_ACTUALLY_ACCEPTED
+        q &= Q(project__state=Project.NORMAL)
+        return self.filter(q)
+
+    def initialized(self, projects=None):
+        q = Q(initialized=True)
+        if projects is not None:
+            q &= Q(project__in=projects)
         return self.filter(q)
 
     def requested(self):
@@ -1857,6 +2070,7 @@ class ProjectMembership(models.Model):
     state = models.IntegerField(default=REQUESTED,
                                 db_index=True)
 
+    initialized = models.BooleanField(default=False)
     objects = ProjectMembershipManager()
 
     # Compiled queries
@@ -1878,8 +2092,8 @@ class ProjectMembership(models.Model):
         ACCEPTED:        _('Accepted member'),
         LEAVE_REQUESTED: _('Requested to leave'),
         USER_SUSPENDED:  _('Suspended member'),
-        REJECTED:        _('Request rejected'),
-        CANCELLED:       _('Request cancelled'),
+        REJECTED:        _('Join request rejected'),
+        CANCELLED:       _('Join request cancelled'),
         REMOVED:         _('Removed member'),
     }
 
@@ -1893,11 +2107,9 @@ class ProjectMembership(models.Model):
         unique_together = ("person", "project")
         #index_together = [["project", "state"]]
 
-    def __str__(self):
-        return uenc(_("<'%s' membership in '%s'>") %
-                    (self.person.username, self.project))
-
-    __repr__ = __str__
+    def __unicode__(self):
+        return (_("<'%s' membership in '%s'>") %
+                (self.person.username, self.project))
 
     def latest_log(self):
         logs = self.log.all()
@@ -1917,6 +2129,10 @@ class ProjectMembership(models.Model):
                          comments=comments)
         self.state = to_state
         self.save()
+
+    def is_active(self):
+        return (self.project.state == Project.NORMAL and
+                self.state in self.ACTUALLY_ACCEPTED)
 
     ACTION_CHECKS = {
         "join": lambda m: m.state not in m.ASSOCIATED_STATES,
@@ -1959,6 +2175,8 @@ class ProjectMembership(models.Model):
             s = self.ACTION_STATES[action]
         except KeyError:
             raise ValueError("No such action '%s'" % action)
+        if action == "accept":
+            self.initialized = True
         return self.set_state(s, actor=actor, reason=reason)
 
 

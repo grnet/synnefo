@@ -1,40 +1,24 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.http import HttpResponse
+from django.utils.encoding import smart_str
 
 import gd
 import os
+import os.path
 
 from cStringIO import StringIO
 
@@ -46,7 +30,6 @@ from hashlib import sha256
 
 from synnefo_stats import settings
 
-from synnefo.util.text import uenc
 from snf_django.lib.api import faults, api_method
 
 from logging import getLogger
@@ -113,6 +96,8 @@ def draw_cpu_bar(fname, outfname=None):
 
 def draw_net_bar(fname, outfname=None):
     fname = os.path.join(fname, "interface", "if_octets-eth0.rrd")
+    if not os.path.isfile(fname):
+        raise faults.ItemNotFound("VM has no attached NICs")
 
     try:
         values = rrdtool.fetch(fname, "AVERAGE")[2][-20:]
@@ -169,9 +154,9 @@ def draw_cpu_ts(fname, outfname):
     outfname += "-cpu.png"
 
     rrdtool.graph(outfname, "-s", "-1d", "-e", "-20s",
-                  #"-t", "CPU usage",
+                  # "-t", "CPU usage",
                   "-v", "%",
-                  #"--lazy",
+                  # "--lazy",
                   "DEF:cpu=%s:value:AVERAGE" % fname,
                   "LINE1:cpu#00ff00:")
 
@@ -183,9 +168,9 @@ def draw_cpu_ts_w(fname, outfname):
     outfname += "-cpu-weekly.png"
 
     rrdtool.graph(outfname, "-s", "-1w", "-e", "-20s",
-                  #"-t", "CPU usage",
+                  # "-t", "CPU usage",
                   "-v", "%",
-                  #"--lazy",
+                  # "--lazy",
                   "DEF:cpu=%s:value:AVERAGE" % fname,
                   "LINE1:cpu#00ff00:")
 
@@ -195,6 +180,8 @@ def draw_cpu_ts_w(fname, outfname):
 def draw_net_ts(fname, outfname):
     fname = os.path.join(fname, "interface", "if_octets-eth0.rrd")
     outfname += "-net.png"
+    if not os.path.isfile(fname):
+        raise faults.ItemNotFound("VM has no attached NICs")
 
     rrdtool.graph(outfname, "-s", "-1d", "-e", "-20s",
                   "--units", "si",
@@ -215,6 +202,8 @@ def draw_net_ts(fname, outfname):
 def draw_net_ts_w(fname, outfname):
     fname = os.path.join(fname, "interface", "if_octets-eth0.rrd")
     outfname += "-net-weekly.png"
+    if not os.path.isfile(fname):
+        raise faults.ItemNotFound("VM has no attached NICs")
 
     rrdtool.graph(outfname, "-s", "-1w", "-e", "-20s",
                   "--units", "si",
@@ -253,14 +242,14 @@ available_graph_types = {'cpu-bar': draw_cpu_bar,
             format_allowed=False, logger=log)
 def grapher(request, graph_type, hostname):
     try:
-        hostname = decrypt(uenc(hostname))
+        hostname = decrypt(smart_str(hostname))
     except (ValueError, TypeError):
         raise faults.BadRequest("Invalid encrypted virtual server name")
-    fname = uenc(os.path.join(settings.RRD_PREFIX, hostname))
+    fname = smart_str(os.path.join(settings.RRD_PREFIX, hostname))
     if not os.path.isdir(fname):
         raise faults.ItemNotFound('No such instance')
 
-    outfname = uenc(os.path.join(settings.GRAPH_PREFIX, hostname))
+    outfname = smart_str(os.path.join(settings.GRAPH_PREFIX, hostname))
     draw_func = available_graph_types[graph_type]
 
     response = HttpResponse(draw_func(fname, outfname),

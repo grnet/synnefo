@@ -21,6 +21,62 @@ all the interactions between them.
    :target: _images/synnefo-arch2.png
 
 
+Required system users and groups (synnefo, archipelago)
+=======================================================
+
+Since v0.16, Synnefo requires an Archipelago installation for the Pithos
+backend. Archipelago on the other hand, supports both NFS and RADOS as
+storage backends. This leads us to various components that have specific
+access rights.
+
+Synnefo ships its own configuration files under ``/etc/synnefo``. In
+order those files not to be compromised, they are owned by
+``root:synnefo`` with group read access (mode 640). Since Gunicorn,
+which serves Synnefo by default, needs read access to the configuration
+files and we don't want it to run as root, it must run with group
+``synnefo``.
+
+Cyclades and Pithos talk to Archipelago over some named pipes under
+``/dev/shm/posixfd``. This directory is created by Archipelago, owned by
+the user/group that Archipelago runs as, and at the same time it must be
+accessible by Gunicorn. Therefore we let Gunicorn run as ``synnefo``
+user and Archipelago as ``archipelago:synnefo`` (by default it rus as
+``archipelago:archipelago``). Beware that the ``synnefo`` user and
+group is created by snf-common package.
+
+Archipelago must have a storage backend to physically store blocks, maps
+and locks. This can be either an NFS or a RADOS cluster.
+
+NFS backing store
+-----------------
+In case of NFS, Archipelago must have permissions to write on the
+exported dirs. We choose to have ``/srv/archip`` exported with
+``blocks``, ``maps``, and ``locks`` subdirectories. They are owned by
+``archipelago:synnefo`` and have ``g+ws`` access permissions. So
+Archipelago will be able to read/write in these directories. We could
+have the whole NFS isolated from Synnefo (owned by
+``archipelago:archipelago`` with ``640`` access permissions) but we
+choose not to (e.g. some future extension could require access to the
+backing store directly from Synnefo).
+
+Due to NFS restrictions, all Archipelago nodes must have common uid for
+the ``archipelago`` user and common gid for the ``synnefo`` group. So
+before any Synnefo installation, we create them here in advance. We
+assume that ids 200 and 300 are available across all nodes.
+
+.. code-block:: console
+
+  # addgroup --system --gid 200 synnefo
+  # adduser --system --uid 200 --gid 200 --no-create-home \
+      --gecos Synnefo synnefo
+
+  # addgroup --system --gid 300 archipelago
+  # adduser --system --uid 300 --gid 300 --no-create-home \
+      --gecos Archipelago archipelago
+
+Normally the ``snf-common`` and ``archipelago`` packages are responsible
+for creating the required system users and groups.
+
 Identity Service (Astakos)
 ==========================
 
@@ -218,8 +274,8 @@ user in the following cases:
       :ref:`authentication methods policies <auth_methods_policies>`).
 
 If all of the above fail to trigger automatic activation, an email is sent to
-the persons listed in ``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings,
-notifing that there is a new user pending for moderation and that it's up to
+the persons listed in ``ACCOUNT_NOTIFICATIONS_RECIPIENTS`` setting,
+notifying that there is a new user pending for moderation and that it's up to
 the administrator to decide if the user should be activated. The UI also shows
 a corresponding 'pending moderation' message to the user. The administrator can
 activate a user using the ``snf-manage user-modify`` command:
@@ -234,7 +290,7 @@ activate a user using the ``snf-manage user-modify`` command:
 
 Once the activation process finishes, a greeting message is sent to the user
 email address and a notification for the activation to the persons listed in
-``HELPDESK``, ``MANAGERS`` and ``ADMINS`` settings. Once activated the user is
+``ACCOUNT_NOTIFICATIONS_RECIPIENTS`` setting. Once activated the user is
 able to login and access the Synnefo services.
 
 Additional authentication methods
@@ -312,61 +368,60 @@ Upon success, the system renews the token (if it has expired), logins the user
 and sets the cookie, before redirecting the user to the ``next`` parameter
 value.
 
-Setting quota limits
-~~~~~~~~~~~~~~~~~~~~
+Projects and quota
+~~~~~~~~~~~~~~~~~~
 
-Set default quota
-`````````````````
-To inspect current default base quota limits, run::
+Synnefo supports granting resources and controling their quota through the
+mechanism of *projects*. A project is considered as a pool of finite
+resources. Every actual resources allocated by a user (e.g. a Cyclades VM or
+a Pithos container) is also assigned to a project where the user is a
+member to. For each resource a project specifies the maximum amount that can
+be assigned to it and the maximum amount that a single member can assign to it.
+
+Default quota
+`````````````
+
+Upon user creation, a special purpose user-specific project is automatically
+created in order to hold the quota provided by the system. These *system*
+projects are identified with the same UUID as the user.
+
+To inspect the quota that future users will receive by default through their
+base projects, check column ``system_default`` in::
 
    # snf-manage resource-list
 
-You can modify the default base quota limit for all future users with::
+You can modify the default system quota limit for all future users with::
 
-   # snf-manage resource-modify <resource_name> --default-quota <value>
+   # snf-manage resource-modify <resource_name> --system-default <value>
 
-Set base quota for individual users
-```````````````````````````````````
+You can also control the default quota a new project offers to its members
+if a limit is not specified in the project application (`project default`).
+In particular, if a resource is not meant to be visible to the end user,
+then it's best to set its project default to infinite.
 
-For individual users that need different quota than the default
-you can set it for each resource like this::
+.. code-block:: console
 
-    # use this to display quota / uuid
-    # snf-manage user-show 'uuid or email' --quota
-
-    # snf-manage user-modify <user-uuid> --base-quota 'cyclades.vm' 10
-
-You can set base quota for all existing users, with possible exceptions, using::
-
-    # snf-manage user-modify --all --base-quota cyclades.vm 10 --exclude uuid1,uuid2
-
-All quota for which values different from the default have been set,
-can be listed with::
-
-    # snf-manage quota-list --with-custom=True
+    # snf-manage resource-modify cyclades.total_ram --project-default inf
 
 
-Enable the Projects feature
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Grant extra quota through projects
+``````````````````````````````````
 
-If you want to enable the projects feature so that users may apply
-on their own for resources by creating and joining projects,
-in ``20-snf-astakos-app-settings.conf`` set::
+A user can apply for a new project through the web interface or the API.
+Once it is approved by the administrators, the applicant can join the
+project and let other users in too.
 
-    # this will make the 'projects' page visible in the dashboard
-    ASTAKOS_PROJECTS_VISIBLE = True
+A project member can make use of the quota granted by the project by
+specifying this particular project when creating a new quotable entity.
 
-You can change the maximum allowed number of pending project applications
-per user with::
+Note that quota are not accumulative: in order to allocate a 100GB disk,
+one must be in a project that grants at least 100GB; it is not possible to
+add up quota from different projects. Note also that if allocating an entity
+requires multiple resources (e.g. cpu and ram for a Cyclades VM) these must
+be all assigned to a single project.
 
-    # snf-manage resource-modify astakos.pending_app --default-quota <number>
-
-You can also set a user-specific limit with::
-
-    # snf-manage user-modify <user-uuid> --base-quota 'astakos.pending_app' 5
-
-When users apply for projects they are not automatically granted
-the resources. They must first be approved by the administrator.
+Control projects
+````````````````
 
 To list pending project applications in astakos::
 
@@ -381,13 +436,39 @@ To deny an application::
 
     # snf-manage project-control --deny <app id>
 
-Users designated as *project admins* can approve, deny, or modify
+Before taking an action, on can inspect project status, settings and quota
+limits with::
+
+   # snf-manage project-show <project-uuid>
+
+For an initialized project, option ``--quota`` also reports the resource
+usage.
+
+Users designated as *project admins* can approve or deny
 an application through the web interface. In
 ``20-snf-astakos-app-settings.conf`` set::
 
     # UUIDs of users that can approve or deny project applications from the web.
     ASTAKOS_PROJECT_ADMINS = [<uuid>, ...]
 
+Set quota limits
+````````````````
+
+One can change the quota limits of an initialized project with::
+
+   # snf-manage project-modify <project-uuid> --limit <resource_name> <member_limit> <project_limit>
+
+One can set system quota for all accepted users (that is, set limits for system
+projects), with possible exceptions, with::
+
+   # snf-manage project-modify --all-system-projects --exclude <uuid1>,<uuid2> --limit ...
+
+Quota for a given resource are reported for all projects that the user is
+member in with::
+
+   # snf-manage user-show <user-uuid> --quota
+
+With option ``--projects``, owned projects and memberships are also reported.
 
 Astakos advanced operations
 ---------------------------
@@ -635,27 +716,24 @@ Enabling this feature consists of the following steps:
 
 .. _select_pithos_storage:
 
-Select Pithos storage backend
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Pithos storage backend
+~~~~~~~~~~~~~~~~~~~~~~
 
-Starting from Synnefo 0.15.1 we introduce the ability to select or change the
-storage backend. If you have already enabled and configured RADOS as your
-secondary storage solution you can now explicitly select your storage
-backend being only RADOS.
+Starting from Synnefo version 0.16, we introduce Archipelago as the new storage
+backend. Archipelago will act as a storage abstraction layer between Pithos and
+NFS, RADOS or any other storage backend driver that Archipelago supports. For
+more information about backend drivers please check Archipelago documentation.
 
-A new variable has been introduced called PITHOS_BACKEND_STORAGE with
-possible values 'nfs' and 'rados', default value is 'nfs'.
-For those users that need to migrate from NFS to RADOS and have not enabled the
-dual mode of operation from the beginning of their installation, you can
-use a synchronization script that is provided in order to synchronize the data
-from NFS to Rados. The script can be found at
-`/usr/lib/pithos/tools/pithos-sync-rados.sh`.
+Since this version care must be taken when restarting Archipelago on a Pithos
+worker node. Pithos acts as an Archipelago peer and must be stopped first
+before trying to restart Archipelago for any reason.
 
-Since this version the dual mode of operation is not supported any more,
-meaning you will not be able to keep double Pithos objects anymore in NFS and
-RADOS.
-After installing v0.15.1 you will have to choose between the storage backend
-you want to use.
+If you need to restart Archipelago on a running Pithos worker follow the
+procedure below::
+
+    pithos-host$ /etc/init.d/gunicorn stop
+    pithos-host$ /etc/init.d/archipelago restart
+    pithos-host$ /etc/init.d/gunicorn start
 
 
 Compute/Network/Image Service (Cyclades)
@@ -688,8 +766,8 @@ to Cyclades.
 Working with Cyclades
 ---------------------
 
-Flavors
-~~~~~~~
+Flavors and Volume Types
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 When creating a VM, the user must specify the `flavor` of the virtual server.
 Flavors are the virtual hardware templates, and provide a description about
@@ -701,8 +779,9 @@ Flavors are created by the administrator and the user can select one of the
 available flavors. After VM creation, the user can resize his VM, by
 adding/removing CPU and RAM.
 
-Cyclades support different storage backends that are described by the disk
-template of the flavor, which is mapped to Ganeti's instance `disk template`.
+Cyclades support different storage backends that are described by the `volume
+type` of the flavor. Each volume type contains a `disk template` attribute
+which is mapped to Ganeti's instance `disk template`.
 Currently the available disk templates are the following:
 
 * `file`: regulars file
@@ -715,16 +794,24 @@ Currently the available disk templates are the following:
   - `ext_archipelago`: External shared storage provided by
     `Archipelago <http://www.synnefo.org/docs/archipelago/latest/index.html>`_.
 
+Volume types are created by the administrator using the `snf-manage
+volume-type-create` command and providing the `disk template` and a
+human-friendly name:
+
+.. code-block:: console
+
+ $ snf-manage volume-type-create --disk-template=drbd --name=DRBD
+
 Flavors are created by the administrator using `snf-manage flavor-create`
 command. The command takes as argument number of CPUs, amount of RAM, the size
-of the disks and the disk templates and create the flavors that belong to the
+of the disks and the volume type IDs and creates the flavors that belong to the
 cartesian product of the specified arguments. For example, the following
-command will create two flavors of `40G` disk size with `drbd` disk template,
+command will create two flavors of `40G` disk size of volume type with ID `1`,
 `4G` RAM and `2` or `4` CPUs.
 
 .. code-block:: console
 
-  $ snf-manage flavor-create 2,4 4096 40 drbd
+  $ snf-manage flavor-create 2,4 4096 40 1
 
 To see the available flavors, run `snf-manage flavor-list` command. The
 administrator can delete a flavor by using `flavor-modify` command:
@@ -804,7 +891,7 @@ delete the Cyclades Images but will leave the Pithos file as is (unregister).
 
 Apart from using `kamaki` to see and hangle the available images, the
 administrator can use `snf-manage image-list` and `snf-manage image-show`
-commands to list and inspect the available public images. Also, the `--user-id`
+commands to list and inspect the available public images. Also, the `--user`
 option can be used the see the images of a specific user.
 
 Virtual Servers
@@ -819,7 +906,7 @@ others, by a prefix in their names. This prefix is defined in
 
 Apart from handling Cyclades VM at the Ganeti level, the administrator can
 also use the `snf-manage server-*` commands. These command cover the most
-common tasks that are relative with VM handling. Below we describe come
+common tasks that are relative with VM handling. Below we describe some
 of them, but for more information you can use the `--help` option of all
 `snf-manage server-* commands`. These command cover the most
 
@@ -831,11 +918,11 @@ bypassing automatic VM allocation.
 
 .. code-block:: console
 
- $ snf-manage server-create --flavor-id=1 --image-id=fc0f6858-f962-42ce-bf9a-1345f89b3d5e \
-    --user-id=7cf4d078-67bf-424d-8ff2-8669eb4841ea --backend-id=2 \
+ $ snf-manage server-create --flavor=1 --image=fc0f6858-f962-42ce-bf9a-1345f89b3d5e \
+    --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea --backend-id=2 \
     --password='example_passw0rd' --name='test_vm'
 
-The above commnd will create a new VM for user
+The above command will create a new VM for user
 `7cf4d078-67bf-424d-8ff2-8669eb4841ea` in the Ganeti backend with ID 2. By
 default this command will issue a Ganeti job to create the VM
 (`OP_INSTANCE_CREATE`) and return. As in other commands, the `--wait=True`
@@ -1036,14 +1123,14 @@ better understanding of these commands, refer to their help messages.
 
 Create a virtual private network for user
 `7cf4d078-67bf-424d-8ff2-8669eb4841ea` using the `PHYSICAL_VLAN` flavor, which
-means that the network will be uniquely assigned a phsyical VLAN. The network
+means that the network will be uniquely assigned a physical VLAN. The network
 is assigned an IPv4 subnet, described by it's CIDR and gateway. Also,
 the `--dhcp=True` option is used, to make `nfdhcpd` response to DHCP queries
 from VMs.
 
 .. code-block:: console
 
- $ snf-manage network-create --owner=7cf4d078-67bf-424d-8ff2-8669eb4841ea --name=prv_net-1 \
+ $ snf-manage network-create --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea --name=prv_net-1 \
     --subnet=192.168.2.0/24 --gateway=192.168.2.1 --dhcp=True --flavor=PHYSICAL_VLAN
 
 Inspect the state of the network in Cyclades DB and in all the Ganeti backends:
@@ -1059,7 +1146,7 @@ subnet's IPv4 address allocation pool:
 
   $ snf-manage subnet-inspect <subnet_id>
 
-Connect a VM to the created private network. The port will be automatically
+Connect a VM to the created private network. The port will automatically
 be assigned an IPv4 address from one of the network's available IPs. This
 command will result in sending an `OP_INSTANCE_MODIFY` Ganeti command and
 attaching a NIC to the specified Ganeti instance.
@@ -1114,14 +1201,14 @@ from `snf-manage` would look like this:
  ---------------------------------------------------------------------------------------------
   1  Internet       None  ACTIVE    True  10.2.1.0/24      10.2.1.1    False              True
 
- $ snf-manage floating-ip-create --owner=7cf4d078-67bf-424d-8ff2-8669eb4841ea --network=1
+ $ snf-manage floating-ip-create --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea --network=1
 
  $ snf-manage floating-ip-list --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea
  id   address       network                             user.uuid  server
  ------------------------------------------------------------------------
  38  10.2.1.2             1  7cf4d078-67bf-424d-8ff2-8669eb4841ea      42
 
- $ snf-manage port-create --owner=7cf4d078-67bf-424d-8ff2-8669eb4841ea --network=1 \
+ $ snf-manage port-create --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea --network=1 \
                           --ipv4-address=10.2.1.2 --floating-ip=38
 
  $ snf-manage port-list --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea
@@ -1234,7 +1321,7 @@ As already mentioned Cyclades use a pool of Bridges that must correspond
 to Physical VLAN at the Ganeti level. A bridge from the pool is assigned to
 each network of flavor `PHYSICAL_VLAN`. Creation of this pool is done
 using `snf-manage pool-create` command. For example the following command
-will create a pool containing the brdiges from `prv1` to `prv21`.
+will create a pool containing the bridges from `prv1` to `prv21`.
 
 .. code-block:: console
 
@@ -1269,7 +1356,7 @@ externally reserved, to exclude from allocation.
 Quotas
 ~~~~~~
 
-The andling of quotas for Cyclades resources is powered by Astakos quota
+The handling of quotas for Cyclades resources is powered by Astakos quota
 mechanism. During registration of Cyclades service to Astakos, the Cyclades
 resources are also imported to Astakos for accounting and presentation.
 
@@ -1358,7 +1445,7 @@ Cyclades database may differ from the real state of VMs and networks in the
 Ganeti backends. The reconciliation process is designed to synchronize the
 state of the Cyclades DB with Ganeti. There are two management commands for
 reconciling VMs and Networks that will detect stale, orphans and out-of-sync
-VMs and networks. To fix detected inconsistencies, use the `--fix-all`.
+VMs and networks. To fix detected inconsistencies, use the `--fix-all` option.
 
 .. code-block:: console
 
@@ -1407,6 +1494,71 @@ To fix detected inconsistencies, use the `--fix` option.
 
   $ snf-manage reconcile-pools
   $ snf-manage reconcile-pools --fix
+
+
+.. _admin-guide-vnc:
+
+snf-vncauthproxy configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Since ``snf-vncauthproxy-1.6`` and ``snf-cyclades-app-0.16``, it is possible
+to run snf-vncauthproxy on a separate node and have multiple snf-vncauthproxy
+instances / nodes, to serve clients.
+
+The ``CYCLADES_VNCAUTHPROXY_OPTS`` setting has become a list of dictionaries,
+each of which defines one snf-vncauthproxy instance. Each vncauthproxy should
+be properly configured to accept control connections by the Cylades host (via
+the ``--listen-address`` CLI parameter of snf-vncauthproxy) and VNC connections
+from clients (via the ``--proxy-listen-address`` CLI parameter.
+
+For a two-node vncauthproxy setup, the ``CYCLADES_VNCAUTHPROXY_OPTS`` would
+look like:
+
+.. code-block:: console
+
+    CYCLADES_VNCAUTHPROXY_OPTS = [
+       {
+        'auth_user': 'synnefo',
+        'auth_password': 'secret_password',
+        'server_address': 'node1.synnefo.live',
+        'server_port': 24999,
+        'enable_ssl': True,
+        'ca_cert': '/path/to/cacert',
+        'strict': True,
+       },
+       {
+        'auth_user': 'synnefo',
+        'auth_password': 'secret_password',
+        'server_address': 'node2.synnefo.live',
+        'server_port': 24999,
+        'enable_ssl': False,
+        'ca_cert': '/path/to/cacert',
+        'strict': True,
+       },
+    ]
+
+The ``server_address`` is the host / IP which Cyclades will use for the control
+connection, in order to set up the forwarding.
+
+The vncauthproxy ``DAEMON_OPTS`` option in ``/etc/default/vncauthproxy`` would
+look like:
+
+.. code-block:: console
+
+    DAEMON_OPTS="--pid-file=$PIDFILE --listen-address=node1.synnefo.live --proxy-listen-address=node1.synnefo.live"
+
+The ``--proxy-listen-address`` is the host / IP which clients (Web browsers /
+VNC clients) will use to connect to snf-vncauthproxy.
+
+In case that snf-vncauthproxy doesn't run on the same node as the Cyclades
+node, it is highly recommended to enable SSL on the control socket, using
+strict verification of the server certificate. The only caveat, for the time
+being, is that the same certificate, provided to snf-vncauthproxy, is used for
+both the control and the client connections. If the control and client host
+(``--listen-address`` and ``--proxy-listen-address`` parameters, respectively)
+differ, you should make sure to generate a certificate covering both (using the
+one as common name / CN, and specifying the other as a subject alternative
+name).
 
 .. _admin-guide-stats:
 
@@ -1489,7 +1641,7 @@ host and export the RRD directory to the snf-stats-app node via e.g. NFS.
 ``GRAPH_PREFIX`` is the directory where collectd stores the resulting
 stats graphs. You should create it manually, in case it doesn't exist.
 
-.. code-block::
+.. code-block:: console
 
     # mkdir /var/cache/snf-stats-app/
     # chown www-data:wwwdata /var/cache/snf-stats-app/
@@ -1501,6 +1653,7 @@ directory.
 
 snf-stats-app, based on the ``STATS_BASE_URL`` setting will export the
 following URL 'endpoints`:
+
  * CPU stats bar: ``STATS_BASE_URL``/v1.0/cpu-bar/<encrypted VM hostname>
  * Network stats bar: ``STATS_BASE_URL``/v1.0/net-bar/<encrypted VM hostname>
  * CPU stats daily graph: ``STATS_BASE_URL``/v1.0/cpu-ts/<encrypted VM hostname>
@@ -1510,7 +1663,7 @@ following URL 'endpoints`:
 
 You can verify that these endpoints are exported by issuing:
 
-.. code-block::
+.. code-block:: console
 
     # snf-manage show_urls
 
@@ -1518,9 +1671,10 @@ snf-cyclades-gtools configuration
 `````````````````````````````````
 
 To enable VM stats collecting, you will need to:
- * Install collectd on the every Ganeti (VM-capable) node.
+
+ * Install collectd on every Ganeti (VM-capable) node.
  * Enable the Ganeti stats plugin in your collectd configuration. This can be
-   achived by either copying the example collectd conf file that comes with
+   achieved by either copying the example collectd conf file that comes with
    snf-cyclades-gtools
    (``/usr/share/doc/snf-cyclades-gtools/examples/ganeti-stats-collectd.conf``)
    or by adding the following line to your existing (or default) collectd
@@ -1568,14 +1722,14 @@ fetch them when needed.
 Helpdesk
 --------
 
-Helpdesk application provides the ability to view the virtual servers and
+The Helpdesk application provides the ability to view the virtual servers and
 networks of all users, along with the ability to perform some basic actions
 like administratively suspending a server. You can perform look-ups by
 user UUID or email, by server ID (vm-$id) or by an IPv4 address.
 
 If you want to activate the helpdesk application you can set to `True` the
 `HELPDESK_ENABLED` setting. Access to helpdesk views (under
-`$BASE_URL/helpdesk`) is only to allowed to users that belong to Astakos
+`$BASE_URL/helpdesk`) is only allowed to users that belong to Astakos
 groups defined in the `HELPDESK_PERMITTED_GROUPS` setting, which by default
 contains the `helpdesk` group. For example, to allow <user_id>
 to access helpdesk view, you should run the following command in the Astakos
@@ -1625,6 +1779,128 @@ these messages and properly updates the state of the Cyclades DB. Subsequent
 requests to the Cyclades API, will retrieve the updated state from the DB.
 
 
+Admin Dashboard (Admin)
+=======================
+
+Introduction
+------------
+
+Admin is the Synnefo component that provides to trusted users the ability to
+manage and view various different Synnefo entities such as users, VMs, projects
+etc. Additionally, it automatically generates charts and statistics using data
+from the Astakos/Cyclades stats.
+
+Access and permissions
+----------------------
+
+The Admin dashboard can be accessed by default from the ``ADMIN_BASE_URL`` URL.
+Since there is no login form, the user must login on Astakos first and then
+visit the above URL. Access will be granted only to users that belong to a
+predefined list of Astakos groups. By default, there are three group categories
+that are mapped 1-to-1 to Astakos groups:
+
+* ADMIN_READONLY_GROUP: 'admin-readonly'
+* ADMIN_HELPDESK_GROUP: 'helpdesk'
+* ADMIN_GROUP:          'admin'
+
+The group categories can be changed using the ``ADMIN_PERMITTED_GROUPS``
+setting.  In order to change the Astakos group that a category corresponds to,
+the administrator can specify the group that he/she wants in the
+``ADMIN_READONLY_GROUP``, ``ADMIN_HELPDESK_GROUP`` or ``ADMIN_GROUP`` settings.
+
+Note that while any user that belongs to the ``ADMIN_PERMITTED_GROUPS`` has the
+same access to the administrator dashboard, the actions that are allowed for a
+group may differ. That's because Admin implements a Role-Based Access Control
+(RBAC) policy, which can be changed from the ``ADMIN_RBAC`` setting. By
+default, users in the ``ADMIN_READONLY_GROUP`` cannot perform any actions. On
+the other hand, users in the ``ADMIN_GROUP`` can perform all actions.  In the
+middle of the spectrum is the ``ADMIN_HELPDESK_GROUP``, which by default
+performs a small subset of reversible actions.
+
+Seting up Admin
+---------------
+
+Admin is bundled by default with a list of sane settings. The most important
+one, ``ADMIN_ENABLED``, is set to ``True`` and defines whether Admin will be used
+or not.
+
+The administrator simply has to create the necessary Astakos groups and
+add trusted users in them. The following example will create an admin group and
+will add a user in it:
+
+.. code-block:: console
+
+ snf-manage group-add admin
+ snf-manage user-modify --add-group=admin <user_id>
+
+Finally, the administrator must edit the ``20-snf-admin-app-general.conf``
+settings file, uncomment the ``ADMIN_BASE_URL`` setting and assign the
+appropriate URL to it. In most cases, this URL will be the top-level URL of the
+Admin node, with the optional addition of an extra path (e.g. ``/admin``) in
+order to distinguish it from different components.
+
+That's all that is required for a single-node setup. For a multi-node setup,
+please consult the following section:
+
+Multi-node Setup
+~~~~~~~~~~~~~~~~
+
+Admin by design does not use the Astakos/Cyclades API for any action. Instead,
+it requires direct access to the Astakos/Cyclades database as well as the
+settings of their nodes. As a result, when installing Admin in a node, the
+Astakos and Cyclades packages will also be installed.
+
+In order to disable the Astakos/Cyclades API in the Admin node, the
+administrator can add the following line in ``99-locals.conf`` (you can create
+it if doesn't exist):
+
+.. code-block:: console
+
+    ROOT_URLCONF="synnefo_admin.urls"
+
+Note that the above change does not interfere with the ``ADMIN_BASE_URL``,
+which will be used normally.
+
+Furthermore, if Astakos and Cyclades have separate databases, then they must be
+defined in the ``DATABASES`` setting of ``10-snf-webproject-database.conf``. An
+example setup is the following:
+
+.. code-block:: console
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'snf_apps_cyclades',
+            'HOST': <Cyclades host>,
+            <...snip..>
+        }, 'cyclades': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'snf_apps_cyclades',
+            'HOST': <Cyclades host>,
+            <...snip..>
+        }, 'astakos': {
+            'ENGINE': 'django.db.backends.postgresql_psycopg2',
+            'NAME': 'snf_apps_astakos',
+            'HOST': <Astakos host>,
+            <...snip..>
+        }
+    }
+
+    DATABASE_ROUTERS = ['snf_django.utils.routers.SynnefoRouter']
+
+You may notice that there are three databases instead of two. That's because
+Django requires that every ``DATABASES`` setting has a *default* database. In
+our case, we suggest that you use as default the Cyclades database. Finally,
+you must not forget to add the ``DATABASE_ROUTERS`` setting in the above
+example that must always be used in multi-db setups.
+
+Disabling Admin
+---------------
+
+The easiest way to disable the Admin Dashboard is to set the ``ADMIN_ENABLED``
+setting to ``False``.
+
+
 List of all Synnefo components
 ==============================
 
@@ -1638,8 +1914,9 @@ They are also available from our apt repository: ``apt.dev.grnet.gr``
  * `snf-pithos-webclient <http://www.synnefo.org/docs/pithos-webclient/latest/index.html>`_
  * `snf-cyclades-app <http://www.synnefo.org/docs/snf-cyclades-app/latest/index.html>`_
  * `snf-cyclades-gtools <http://www.synnefo.org/docs/snf-cyclades-gtools/latest/index.html>`_
+ * `snf-admin-app <http://www.synnefo.org/docs/snf-admin-app/latest/index.html>`_
  * `astakosclient <http://www.synnefo.org/docs/astakosclient/latest/index.html>`_
- * `snf-vncauthproxy <https://code.grnet.gr/projects/vncauthproxy>`_
+ * `snf-vncauthproxy <https://github.com/grnet/snf-vncauthproxy>`_
  * `snf-image <http://www.synnefo.org/docs/snf-image/latest/index.html/>`_
  * `snf-image-creator <http://www.synnefo.org/docs/snf-image-creator/latest/index.html>`_
  * `snf-occi <http://www.synnefo.org/docs/snf-occi/latest/index.html>`_
@@ -1650,10 +1927,10 @@ They are also available from our apt repository: ``apt.dev.grnet.gr``
 Synnefo management commands ("snf-manage")
 ==========================================
 
-Each Synnefo service, Astakos, Pithos and Cyclades are controlled by the
+Each Synnefo service, Astakos, Pithos and Cyclades is controlled by the
 administrator using the "snf-manage" admin tool. This tool is an extension of
 the Django command-line management utility. It is run on the host that runs
-each service and provides different types of commands depending the services
+each service and provides different types of commands depending on the services
 running on the host. If you are running more than one service on the same host
 "snf-manage" adds all the corresponding commands for each service dynamically,
 providing a unified admin environment.
@@ -1773,6 +2050,10 @@ network-remove                 Delete a network
 flavor-create                  Create a new flavor
 flavor-list                    List flavors
 flavor-modify                  Modify a flavor
+volume-type-create             Create a new volume type
+volume-type-list               List volume types
+volume-type-show               Show volume type details
+volume-type-modify             Modify a volume type
 image-list                     List images
 image-show                     Show image details
 pool-create                    Create a bridge or mac-prefix pool
@@ -1814,8 +2095,8 @@ Running:
 
    snf-component-register [<component_name>]
 
-automates the registration of the standard Synnefo components (astakos,
-cyclades, and pithos) in astakos database. It internally uses the script:
+automates the registration of the standard Synnefo components (Astakos,
+Cyclades, and Pithos) in Astakos database. It internally uses the script:
 
 .. code-block:: console
 
@@ -1842,7 +2123,7 @@ Name                          Description
 ============================  ===========================
 delete                        Remove an account from the Pithos DB
 export-quota                  Export account quota in a file
-list                          List existing/dublicate accounts
+list                          List existing/duplicate accounts
 merge                         Move an account contents in another account
 set-container-quota           Set container quota for all or a specific account
 ============================  ===========================
@@ -1853,7 +2134,7 @@ The "kamaki" API client
 
 To upload, register or modify an image you will need the **kamaki** tool.
 Before proceeding make sure that it is configured properly. Verify that
-*image.url*, *file.url*, *user.url* and *token* are set as needed:
+*url* and *token* are set as needed:
 
 .. code-block:: console
 
@@ -2124,52 +2405,52 @@ description and a link to their content:
 
 * ``snf-astakos-app/astakos/im/templates/im/email.txt``
   Base email template. Contains a contact email and a “thank you” message.
-  (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/email.txt>`_)
+  (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/email.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/activation_email.txt`` Email sent to
   user that prompts  him/her to click on a link provided to activate the account.
-  Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/activation_email.txt>`_)
+  Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/activation_email.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/invitation.txt`` Email sent to an
   invited user. He/she has to click on a link provided to activate the account.
-  Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/invitation.txt>`_)
+  Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/invitation.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/switch_accounts_email.txt`` Email
   sent to user upon his/her request to associate this email address with a
   shibboleth account. He/she has to click on a link provided to activate the
-  association. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/switch_accounts_email.txt>`_)
+  association. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/switch_accounts_email.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/welcome_email.txt`` Email sent to
   inform the user that his/ her account has been activated. Extends “email.txt”
-  (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/welcome_email.txt>`_)
+  (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/welcome_email.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/registration/email_change_email.txt``
   Email sent to user when he/she has requested new email address assignment. The
   user has to click on a link provided to validate this action. Extends
-  “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/registration/email_change_email.txt>`_)
+  “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/registration/email_change_email.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/registration/password_email.txt`` Email
   sent for resetting password purpose. The user has to click on a link provided
-  to validate this action. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/registration/password_email.txt>`_)
+  to validate this action. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/registration/password_email.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt``
   Informs  the project owner that his/her project has been approved. Extends
-  “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt>`_)
+  “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_approval_notification.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_denial_notification.txt``
   Informs the project owner that his/her  project application has been denied
-  explaining the reasons. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_denial_notification.txt>`_)
+  explaining the reasons. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_denial_notification.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_change_notification.txt``
   An email is sent to a user containing information about his project membership
   (whether he has been accepted, rejected or removed). Extends “email.txt” (`Link
-  <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_change_notification.txt>`_)
+  <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_change_notification.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_enroll_notification.txt``
   Informs a user that he/she  has been enrolled to a project. Extends
-  “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_enroll_notification.txt>`_)
+  “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_enroll_notification.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_leave_request_notification.txt``
   An email is sent to the project owner to make him aware of a  user having
-  requested to leave his project. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_leave_request_notification.txt>`_)
+  requested to leave his project. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_leave_request_notification.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_membership_request_notification.txt``
   An email is sent to the project owner to make him/her aware of a user having
-  requested to join  his project. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_membership_request_notification.txt>`_)
+  requested to join  his project. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_membership_request_notification.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_suspension_notification.txt``
   An email is sent to the project owner to make him/her aware of his/her project
-  having been suspended. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_suspension_notification.txt>`_)
+  having been suspended. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_suspension_notification.txt>`_)
 * ``snf-astakos-app/astakos/im/templates/im/projects/project_termination_notification.txt``
   An email is sent to the project owner to make him/her aware of his/her project
-  having been terminated. Extends “email.txt” (`Link <https://code.grnet.gr/projects/synnefo/repository/revisions/master/changes/snf-astakos-app/astakos/im/templates/im/projects/project_termination_notification.txt>`_)
+  having been terminated. Extends “email.txt” (`Link <https://github.com/grnet/synnefo/blob/master/snf-astakos-app/astakos/im/templates/im/projects/project_termination_notification.txt>`_)
 
 .. warning:: Django templates language:
 
@@ -2260,7 +2541,7 @@ The RabbitMQ nodes that form the cluster, are declared to Synnefo through the
 `AMQP_HOSTS` setting. Each time a Synnefo component needs to connect to
 RabbitMQ, one of these nodes is chosen in a random way. The client that Synnefo
 uses to connect to RabbitMQ, handles connection failures transparently and
-tries to reconnect to a different node. As long as one of these nodes are up
+tries to reconnect to a different node. As long as one of these nodes is up
 and running, functionality of Synnefo should not be downgraded by the RabbitMQ
 node failures.
 
@@ -2340,6 +2621,12 @@ The logging configuration dictionary is defined in
 
 The administrator can have logging control by modifying the ``LOGGING_SETUP``
 dictionary, and defining subloggers with different handlers and log levels.
+
+By default snf-manage will log any command that is being executed along with
+its output under the directory ``LOG_DIR``/commands. The ``LOG_DIR`` directory
+can be changed from the ``00-snf-common-admins.conf`` configuration file and
+the whole snf-manage logging mechanism can be disabled by changing the
+``LOGGER_EXCLUDE_COMMANDS`` setting to ".\*".
 
 
 .. _scale-up:
@@ -2540,6 +2827,112 @@ Node10:
 All sections: :ref:`Scale out Guide <i-synnefo>`
 
 
+Regions, Zones and Clusters
+===========================
+
+Region
+------
+
+A Region is a single Synnefo installation, with
+Compute/Network/Image/Volume/Object Store services. A Region is associated with
+one set of Synnefo DBs (Astakos DB, Pithos DB and Cyclades DB). Every Region has a
+distinct set of API endpoints, e.g.,
+`https://cloud.example.com/cyclades/compute/v2.0`. Two Regions are most times
+located geographically far from each other, e.g. "Europe", "US-East". A Region
+comprises multiple Zones.
+
+Zone
+----
+
+A Zone is a set of Ganeti clusters, in a potentially geographically distinct
+location, e.g. "Athens", "Rome". All clusters have access to the same physical
+networks, and are considered a single failure domain, e.g., they access the
+network over the same router. A Zone comprises muliple Ganeti clusters.
+
+Ganeti cluster
+--------------
+
+A Ganeti cluster is a set of Ganeti nodes (physical machines). One of the nodes
+has the role of "Ganeti master". If this node goes down, another node may
+undertake the master role. Ganeti nodes run Virtual Machines (VMs). VMs can live
+migrate inside a Ganeti cluster. A Ganeti cluster comprises multiple physical
+hardware nodes, most times geographically close to each other.
+
+VM mobility
+-----------
+
+VMs may move across Regions, Zones, Ganeti clusters and physical nodes. Before we
+describe how that's possible, we will describe the different kinds of moving,
+providing the corresponding terminology:
+
+Live migration
+~~~~~~~~~~~~~~
+
+The act of moving a running VM from physical node to physical node without any
+impact on its operation. The VM continues to run on its new physical location,
+completely unaffected, and without any service downtime or dropped connections.
+Live migration typically requires shared storage and networking between the source
+and destination nodes.
+
+Live migration is issued by the administrator in the background and is transparent
+to the VM user.
+
+Failover
+~~~~~~~~
+
+The act of moving a VM from physical node to physical node by stopping it first on
+the source node, then re-starting it on the destination node. There is short
+service downtime, during the time the VM boots up, and client connections are
+dropped.
+
+Failover is issued by the administrator in the background and the VM user will
+experience a reboot.
+
+Snapshot Failover
+~~~~~~~~~~~~~~~~~
+
+The act of moving a VM from physical node to physical node via a point-in-time
+snapshot. That is, stopping a VM on the source node, taking a snapshot, then
+creating a new VM from that snapshot.
+
+Snapshot failover is issued by the VM user and not the administrator.
+
+Disaster Recovery
+-----------------
+
+In Synnefo terminology, Disaster Recovery is the process of sustaining a disaster
+in one datacenter, and ensuring business continuity by performing live migration
+or failover of running/existing VMs, or respawning VMs from previously made
+snapshots. Based on the method used, this can work inside a single Ganeti cluster,
+across Ganeti clusters in the same Zone, or across Zones.
+
+Specifically:
+
+Live migration is only supported inside a single Ganeti cluster. Ganeti supports
+live migration between nodes in the same cluster with or without shared storage.
+Live migration is done at the Ganeti level and is transparent to Synnefo.
+
+Failover is supported inside a Ganeti cluster, across Ganeti clusters and across
+Zones. Ganeti supports failover inside a Ganeti cluster with or without shared
+storage, which poses minimum downtime for the VM. Failover inside the same Ganeti
+cluster is done at the Ganeti level and is transparent to Synnefo.
+
+Ganeti also provides tools for failing over VMs across different Ganeti clusters,
+meaning that one can use them to failover VMs across Ganeti clusters of the same
+Zone or across Ganeti clusters of different Zones, thus moving across Zones.
+Failing over across different Ganeti clusters requires copying of data, resulting
+in longer downtimes, depending on the geographical distance and network between
+them. Failover across Ganeti clusters, either in the same or different Zones, is
+not transparent to Synnefo and requires manual import of intances at Synnefo level
+too, by the administrator.
+
+Snapshot failover supports moving VMs across all domains. It is issued by the VM
+user and is done at the Synnefo level without the need of running anything at the
+Ganeti level or by the administrator.
+
+In the future Synnefo will also support moving VMs across different Regions.
+
+
 Upgrade Notes
 =============
 
@@ -2554,12 +2947,14 @@ Upgrade Notes
    v0.14.9 -> v0.14.10 <upgrade/upgrade-0.14.10>
    v0.14 -> v0.15 <upgrade/upgrade-0.15>
    v0.15 -> v0.15.1 <upgrade/upgrade-0.15.1>
+   v0.15 -> v0.16 <upgrade/upgrade-0.16>
 
 
 Changelog, NEWS
 ===============
 
 
+* v0.16 :ref:`Changelog <Changelog-0.16>`, :ref:`NEWS <NEWS-0.16>`
 * v0.15.2 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.2>`
 * v0.15.1 :ref:`Changelog <Changelog-0.15.1>`, :ref:`NEWS <NEWS-0.15.1>`
 * v0.15 :ref:`Changelog <Changelog-0.15>`, :ref:`NEWS <NEWS-0.15>`

@@ -1,41 +1,22 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.conf import settings
 from synnefo_branding import settings as synnefo_settings
 from synnefo.lib import parse_base_url
 from astakos.api.services import astakos_services as vanilla_astakos_services
-from synnefo.util.keypath import get_path
 from synnefo.lib import join_urls
 from synnefo.lib.services import fill_endpoints
 
@@ -50,11 +31,11 @@ BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
 
 astakos_services = deepcopy(vanilla_astakos_services)
 fill_endpoints(astakos_services, BASE_URL)
-ACCOUNTS_PREFIX = get_path(astakos_services, 'astakos_account.prefix')
-VIEWS_PREFIX = get_path(astakos_services, 'astakos_ui.prefix')
-KEYSTONE_PREFIX = get_path(astakos_services, 'astakos_identity.prefix')
-WEBLOGIN_PREFIX = get_path(astakos_services, 'astakos_weblogin.prefix')
-ADMIN_PREFIX = get_path(astakos_services, 'astakos_admin.prefix')
+ACCOUNTS_PREFIX = astakos_services['astakos_account']['prefix']
+VIEWS_PREFIX = astakos_services['astakos_ui']['prefix']
+KEYSTONE_PREFIX = astakos_services['astakos_identity']['prefix']
+WEBLOGIN_PREFIX = astakos_services['astakos_weblogin']['prefix']
+ADMIN_PREFIX = astakos_services['astakos_admin']['prefix']
 
 # Set the expiration time of newly created auth tokens
 # to be this many hours after their creation time.
@@ -74,6 +55,39 @@ ADMINS = tuple(getattr(settings, 'ADMINS', ()))
 MANAGERS = tuple(getattr(settings, 'MANAGERS', ()))
 HELPDESK = tuple(getattr(settings, 'HELPDESK', ()))
 
+# For convenience, Astakos groups the notifications in three categories and
+# let the user define the recipients for these categories.
+# - ACCOUNT_NOTIFICATIONS_RECIPIENTS receive notifications for 'account pending
+#   moderation' and 'account activated' actions.
+# - FEEDBACK_NOTIFICATIONS_RECIPIENTS receive feedback notifications
+# - PROJECT_NOTIFICATIONS_RECIPIENTS receive notifications for 'project
+#   creation' and 'project modification' actions.
+ACCOUNT_NOTIFICATIONS_RECIPIENTS = tuple(set(tuple(
+    getattr(settings, 'ACCOUNT_NOTIFICATIONS_RECIPIENTS',
+            HELPDESK + MANAGERS + ADMINS))))
+FEEDBACK_NOTIFICATIONS_RECIPIENTS = tuple(set(tuple(
+    getattr(settings, 'FEEDBACK_NOTIFICATIONS_RECIPIENTS',
+            HELPDESK))))
+PROJECT_NOTIFICATIONS_RECIPIENTS = tuple(set(tuple(
+    getattr(settings, 'PROJECT_NOTIFICATIONS_RECIPIENTS',
+            HELPDESK + MANAGERS))))
+
+# Using the following settings, one can explicitly specify the recipients for a
+# specific notification. By default, these settings are not exposed to the
+# config file.
+ACCOUNT_PENDING_MODERATION_RECIPIENTS = tuple(set(tuple(
+    getattr(settings, 'ACCOUNT_PENDING_MODERATION_RECIPIENTS',
+            ACCOUNT_NOTIFICATIONS_RECIPIENTS))))
+ACCOUNT_ACTIVATED_RECIPIENTS = tuple(set(tuple(
+    getattr(settings, 'ACCOUNT_ACTIVATED_RECIPIENTS',
+            ACCOUNT_NOTIFICATIONS_RECIPIENTS))))
+PROJECT_CREATION_RECIPIENTS = tuple(set(tuple(
+    getattr(settings, 'PROJECT_CREATION_RECIPIENTS',
+            PROJECT_NOTIFICATIONS_RECIPIENTS))))
+PROJECT_MODIFICATION_RECIPIENTS = tuple(set(tuple(
+    getattr(settings, 'PROJECT_MODIFICATION_RECIPIENTS',
+            PROJECT_NOTIFICATIONS_RECIPIENTS))))
+
 CONTACT_EMAIL = settings.CONTACT_EMAIL
 SERVER_EMAIL = settings.SERVER_EMAIL
 SECRET_KEY = settings.SECRET_KEY
@@ -86,7 +100,7 @@ IM_MODULES = getattr(settings, 'ASTAKOS_IM_MODULES', ['local'])
 # Force user profile verification
 FORCE_PROFILE_UPDATE = getattr(settings, 'ASTAKOS_FORCE_PROFILE_UPDATE', False)
 
-#Enable invitations
+# Enable invitations
 INVITATIONS_ENABLED = getattr(settings, 'ASTAKOS_INVITATIONS_ENABLED', False)
 
 COOKIE_NAME = getattr(settings, 'ASTAKOS_COOKIE_NAME', '_pithos2_a')
@@ -221,9 +235,6 @@ default_success_url = join_urls('/', BASE_PATH, VIEWS_PREFIX, "landing")
 LOGIN_SUCCESS_URL = getattr(settings, 'ASTAKOS_LOGIN_SUCCESS_URL',
                             default_success_url)
 
-# Whether or not to display projects in astakos menu
-PROJECTS_VISIBLE = getattr(settings, 'ASTAKOS_PROJECTS_VISIBLE', False)
-
 # A way to extend the components presentation metadata
 COMPONENTS_META = getattr(settings, 'ASTAKOS_COMPONENTS_META', {})
 
@@ -257,3 +268,21 @@ ENDPOINT_CACHE_TIMEOUT = getattr(settings,
 RESOURCE_CACHE_TIMEOUT = getattr(settings,
                                  'ASTAKOS_RESOURCE_CACHE_TIMEOUT',
                                  60)
+
+ADMIN_API_ENABLED = getattr(settings, 'ASTAKOS_ADMIN_API_ENABLED', False)
+
+_default_project_members_limit_choices = (
+    ('Unlimited', 'Unlimited'),
+    ('5', '5'),
+    ('15', '15'),
+    ('50', '50'),
+    ('100', '100')
+)
+
+PROJECT_MEMBERS_LIMIT_CHOICES = getattr(
+    settings, 'ASTAKOS_PROJECT_MEMBERS_LIMIT_CHOICES',
+    _default_project_members_limit_choices)
+
+ADMIN_API_PERMITTED_GROUPS = getattr(settings,
+                                     'ASTAKOS_ADMIN_API_PERMITTED_GROUPS',
+                                     ['admin-api'])

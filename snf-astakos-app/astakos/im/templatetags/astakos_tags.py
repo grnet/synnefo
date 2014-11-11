@@ -1,35 +1,17 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import urllib
 
@@ -48,14 +30,14 @@ from django.utils.safestring import mark_safe
 register = template.Library()
 
 MESSAGES_VIEWS_MAP = getattr(settings, 'ASTAKOS_MESSAGES_VIEWS_MAP', {
-    'astakos.im.views.index': 'LOGIN_MESSAGES',
-    'astakos.im.views.logout': 'LOGIN_MESSAGES',
-    'astakos.im.views.login': 'LOGIN_MESSAGES',
-    'astakos.im.views.signup': 'SIGNUP_MESSAGES',
-    'astakos.im.views.edit_profile': 'PROFILE_MESSAGES',
-    'astakos.im.views.change_password': 'PROFILE_MESSAGES',
-    'astakos.im.views.invite': 'PROFILE_MESSAGES',
-    'astakos.im.views.feedback': 'PROFILE_MESSAGES',
+    'astakos.im.views.im.index': 'LOGIN_MESSAGES',
+    'astakos.im.views.im.logout': 'LOGIN_MESSAGES',
+    'astakos.im.views.im.login': 'LOGIN_MESSAGES',
+    'astakos.im.views.im.signup': 'SIGNUP_MESSAGES',
+    'astakos.im.views.im.edit_profile': 'PROFILE_MESSAGES',
+    'astakos.im.views.im.change_password': 'PROFILE_MESSAGES',
+    'astakos.im.views.im.invite': 'PROFILE_MESSAGES',
+    'astakos.im.views.im.feedback': 'PROFILE_MESSAGES',
 })
 
 
@@ -177,14 +159,15 @@ class MessagesNode(template.Node):
 
 
 @register.simple_tag
-def get_grant_value(rname, form):
-    grants = form.instance.grants
-    try:
-        r = form.instance.projectresourcegrant_set.get(
-            resource__name=rname).member_capacity
-    except Exception, e:
-        r = ''
-    return r
+def get_grant_value(rname, project_or_app, for_project=True):
+    if not project_or_app:
+        return None
+    resource_set = project_or_app.grants
+    r = resource_set.get(resource__name=rname)
+    if for_project:
+        return r.project_capacity
+    else:
+        return r.member_capacity
 
 
 @register.tag(name="provider_login_url")
@@ -233,6 +216,7 @@ CONFIRM_LINK_PROMPT_MAP = {
                              'project ?'),
     'project_join': _('Are you sure you want to join this project ?'),
     'project_leave': _('Are you sure you want to leave from the project ?'),
+    'project_cancel_member': _('Are you sure you want to cancel your join request ?'),
 }
 
 
@@ -250,8 +234,14 @@ def confirm_link(context, title, prompt='', url=None, urlarg=None,
         if isinstance(urlarg, basestring) and "," in urlarg:
             args = urlarg.split(",")
             for index, arg in enumerate(args):
+                property = None
+                if "." in arg:
+                    arg, property = arg.split(".")
                 if context.get(arg, None) is not None:
-                    args[index] = context.get(arg)
+                    val = context.get(arg)
+                    if property:
+                        val = getattr(val, property)
+                    args[index] = val
             urlargs = args
         else:
             urlargs = (urlarg,)

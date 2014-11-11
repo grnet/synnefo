@@ -1,42 +1,24 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import uuid
 
 from django.core.validators import validate_email
 from django.contrib.auth.models import Permission
 from django.contrib.contenttypes.models import ContentType
-from django.core.management import CommandError
+from snf_django.management.commands import CommandError
 
 from synnefo.util import units
 from astakos.im.models import AstakosUser
@@ -197,48 +179,34 @@ def show_resource_value(number, resource, style):
     return units.show(number, unit, style)
 
 
-def collect_holder_quotas(holder_quotas, h_initial, style=None):
+def collect_holder_quotas(holder_quotas, style=None):
     print_data = []
     for source, source_quotas in holder_quotas.iteritems():
-        try:
-            s_initial = h_initial[source]
-        except KeyError:
-            continue
         for resource, values in source_quotas.iteritems():
-            try:
-                initial = s_initial[resource]
-            except KeyError:
-                continue
-            initial = show_resource_value(initial, resource, style)
             limit = show_resource_value(values['limit'], resource, style)
             usage = show_resource_value(values['usage'], resource, style)
-            fields = (source, resource, initial, limit, usage)
+            fields = (source, resource, limit, usage)
             print_data.append(fields)
     return print_data
 
 
-def show_user_quotas(holder_quotas, h_initial, style=None):
-    labels = ('source', 'resource', 'base_quota', 'total_quota', 'usage')
-    print_data = collect_holder_quotas(holder_quotas, h_initial, style=style)
+def show_user_quotas(holder_quotas, style=None):
+    labels = ('source', 'resource', 'limit', 'usage')
+    print_data = collect_holder_quotas(holder_quotas, style=style)
     return print_data, labels
 
 
-def show_quotas(qh_quotas, astakos_initial, info=None, style=None):
-    labels = ('user', 'source', 'resource', 'base_quota', 'total_quota',
-              'usage')
+def show_quotas(qh_quotas, info=None, style=None):
+    labels = ('holder', 'source', 'resource', 'limit', 'usage')
     if info is not None:
         labels = ('displayname',) + labels
 
     print_data = []
     for holder, holder_quotas in qh_quotas.iteritems():
-        h_initial = astakos_initial.get(holder)
-        if h_initial is None:
-            continue
-
         if info is not None:
             email = info.get(holder, "")
 
-        h_data = collect_holder_quotas(holder_quotas, h_initial, style=style)
+        h_data = collect_holder_quotas(holder_quotas, style=style)
         if info is not None:
             h_data = [(email, holder) + fields for fields in h_data]
         else:

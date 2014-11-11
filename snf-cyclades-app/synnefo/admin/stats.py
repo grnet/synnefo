@@ -1,35 +1,17 @@
-# Copyright 2013-2014 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
 import datetime
@@ -37,12 +19,13 @@ import datetime
 from collections import defaultdict  # , OrderedDict
 from copy import copy
 from django.conf import settings
+from django.db import connection
 from django.db.models import Count, Sum
 
 from snf_django.lib.astakos import UserCache
-from synnefo.db.models import (VirtualMachine, Network, Backend,
+from synnefo.plankton.backend import PlanktonBackend
+from synnefo.db.models import (VirtualMachine, Network, Backend, VolumeType,
                                pooled_rapi_client, Flavor)
-from synnefo.plankton.utils import image_backend
 
 
 def get_cyclades_stats(backend=None, clusters=True, servers=True,
@@ -119,12 +102,12 @@ def _get_total_servers(backend=None):
 
 
 def get_server_stats(backend=None):
-    servers = VirtualMachine.objects.select_related("flavor")\
+    servers = VirtualMachine.objects.select_related("flavor__volume_type")\
                                     .filter(deleted=False)
     if backend is not None:
         servers = servers.filter(backend=backend)
-    disk_templates = Flavor.objects.values_list("disk_template", flat=True)\
-                                   .distinct()
+    disk_templates = \
+        VolumeType.objects.values_list("disk_template", flat=True).distinct()
 
     # Initialize stats
     server_stats = defaultdict(dict)
@@ -144,7 +127,7 @@ def get_server_stats(backend=None):
             state = "stopped"
 
         flavor = s.flavor
-        disk_template = flavor.disk_template
+        disk_template = flavor.volume_type.disk_template
         server_stats[state]["count"] += 1
         server_stats[state]["cpu"][flavor.cpu] += 1
         server_stats[state]["ram"][flavor.ram << 20] += 1
@@ -188,19 +171,25 @@ def get_ip_pool_stats():
     return ip_stats
 
 
+IMAGES_QUERY = """
+SELECT is_system, osfamily, os, count(vm.id)
+FROM db_virtualmachine as vm LEFT OUTER JOIN db_image as img
+ON img.uuid = vm.imageid AND img.version = vm.image_version
+WHERE vm.deleted=false
+GROUP BY is_system, osfamily, os
+"""
+
 def get_image_stats(backend=None):
-    total_servers = _get_total_servers(backend=backend)
-    active_servers = total_servers.filter(deleted=False)
-
-    active_servers_images = active_servers.values("imageid", "userid")\
-                                          .annotate(number=Count("imageid"))
-
-    image_cache = ImageCache()
-    image_stats = defaultdict(int)
-    for result in active_servers_images:
-        imageid = image_cache.get_image(result["imageid"], result["userid"])
-        image_stats[imageid] += result["number"]
-    return dict(image_stats)
+    cursor = connection.cursor()
+    cursor.execute(IMAGES_QUERY)
+    images = cursor.fetchall()
+    images_stats = {}
+    for image in images:
+        owner = "system" if image[0] else "user"
+        osfamily = image[1] or "unknown"
+        os = image[2] or "unknown"
+        images_stats["%s:%s:%s" % (owner, osfamily, os)] = image[3]
+    return images_stats
 
 
 class ImageCache(object):
@@ -214,7 +203,7 @@ class ImageCache(object):
     def get_image(self, imageid, userid):
         if imageid not in self.images:
             try:
-                with image_backend(userid) as ib:
+                with PlanktonBackend(userid) as ib:
                     image = ib.get_image(imageid)
                 properties = image.get("properties")
                 os = properties.get("os",

@@ -17,13 +17,14 @@ Most Synnefo services have a corresponding OpenStack API:
 | Cyclades/Compute Service -> OpenStack Compute API
 | Cyclades/Network Service -> OpenStack Networking ("Neutron") API
 | Cyclades/Image Service -> OpenStack Image ("Glance") API
+| Cyclades/Block Storage Service -> OpenStack Block Storage ("Cinder") API
 | Pithos/Storage Service -> OpenStack Object Storage API
 | Astakos/Identity Service -> OpenStack Identity ("Keystone") API
 | Astakos/Quota Service -> Proprietary API
 | Astakos/Resource Service -> Proprietary API
 | Astakos/Project Service -> Proprietary API
 
-Below, we will describe all Synnefo APIs with conjuction to the OpenStack APIs.
+Below, we will describe all Synnefo APIs with conjunction to the OpenStack APIs.
 
 
 Identity Service API (Astakos)
@@ -50,6 +51,18 @@ following Synnefo specific (proprietary) API:
     :maxdepth: 2
 
     Resource and Quota API <quota-api-guide.rst>
+
+Weblogin Service API (Astakos)
+==============================
+
+The Weblogin Service is implemented inside Astakos and have the
+following Synnefo API:
+
+.. toctree::
+    :maxdepth: 2
+
+    Weblogin API <weblogin-api-guide.rst>
+
 
 Project Service API
 ===================
@@ -103,6 +116,20 @@ This is the Cyclades/Image API:
    :maxdepth: 2
 
    Image API (Glance) <image-api-guide>
+
+
+Block Storage Service API (Cyclades)
+====================================
+
+The Block Storage Service is implemented inside Cyclades. It exposes the
+OpenStack Block Storage ("Cinder") API with minor changes wherever needed.
+
+This is the Cyclades/Block Storage API:
+
+.. toctree::
+   :maxdepth: 2
+
+   Block Storage API (Cinder) <blockstorage-api-guide>
 
 
 Storage Service API (Pithos)

@@ -1,38 +1,19 @@
 #!/usr/bin/env python
 #coding=utf8
-
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from urlparse import urlunsplit, urlsplit, urlparse
 from xml.dom import minidom
@@ -47,13 +28,13 @@ from pithos.backends.migrate import initialize_db
 
 from synnefo.lib.services import get_service_path
 from synnefo.lib import join_urls
-from synnefo.util import text
 
 from django.test import TestCase
 from django.test.client import Client, MULTIPART_CONTENT, FakePayload
 from django.test.simple import DjangoTestSuiteRunner
 from django.conf import settings
 from django.utils.http import urlencode
+from django.utils.encoding import smart_unicode
 from django.db.backends.creation import TEST_DATABASE_PREFIX
 
 import django.utils.simplejson as json
@@ -62,6 +43,7 @@ import django.utils.simplejson as json
 import sys
 import random
 import functools
+import time
 
 
 pithos_test_settings = functools.partial(with_settings, pithos_settings)
@@ -143,6 +125,11 @@ def filter_headers(headers, prefix):
 
 
 class PithosTestSuiteRunner(DjangoTestSuiteRunner):
+    def setup_test_environment(self, **kwargs):
+        pithos_settings.BACKEND_MAPFILE_PREFIX = \
+            'snf_test_pithos_app_%s_' % time.time()
+        super(PithosTestSuiteRunner, self).setup_test_environment(**kwargs)
+
     def setup_databases(self, **kwargs):
         old_names, mirrors = super(PithosTestSuiteRunner,
                                    self).setup_databases(**kwargs)
@@ -174,11 +161,11 @@ class PithosTestClient(Client):
         """
         parsed = urlparse(path)
         r = {
-            'CONTENT_TYPE':    'text/html; charset=utf-8',
-            'PATH_INFO':       self._get_path(parsed),
-            'QUERY_STRING':    urlencode(data, doseq=True) or parsed[4],
+            'CONTENT_TYPE': 'text/html; charset=utf-8',
+            'PATH_INFO': self._get_path(parsed),
+            'QUERY_STRING': urlencode(data, doseq=True) or parsed[4],
             'REQUEST_METHOD': 'COPY',
-            'wsgi.input':      FakePayload('')
+            'wsgi.input': FakePayload('')
         }
         r.update(extra)
 
@@ -194,11 +181,11 @@ class PithosTestClient(Client):
         """
         parsed = urlparse(path)
         r = {
-            'CONTENT_TYPE':    'text/html; charset=utf-8',
-            'PATH_INFO':       self._get_path(parsed),
-            'QUERY_STRING':    urlencode(data, doseq=True) or parsed[4],
+            'CONTENT_TYPE': 'text/html; charset=utf-8',
+            'PATH_INFO': self._get_path(parsed),
+            'QUERY_STRING': urlencode(data, doseq=True) or parsed[4],
             'REQUEST_METHOD': 'MOVE',
-            'wsgi.input':      FakePayload('')
+            'wsgi.input': FakePayload('')
         }
         r.update(extra)
 
@@ -230,7 +217,8 @@ class PithosAPITest(TestCase):
         mock_validate_token = self.create_patch(
             'astakosclient.AstakosClient.validate_token')
         mock_validate_token.return_value = {
-            'access': {'user': {'id': text.udec(self.user, 'utf8')}}}
+            'access': {
+                'user': {'id': smart_unicode(self.user, encoding='utf-8')}}}
 
         # patch astakosclient.AstakosClient.get_token
         mock_get_token = self.create_patch(
@@ -368,8 +356,9 @@ class PithosAPITest(TestCase):
 
     def delete_account_meta(self, meta, user=None, verify_status=True):
         user = user or self.user
-        transform = lambda k: 'HTTP_%s' % k.replace('-', '_').upper()
-        kwargs = dict((transform(k), '') for k, v in meta.items())
+        transform = lambda k: 'HTTP_X_ACCOUNT_META_%s' %\
+            k.replace('-', '_').upper()
+        kwargs = dict((transform(k), '') for k in meta)
         url = join_urls(self.pithos_path, user)
         r = self.post('%s?update=' % url, user=user, **kwargs)
         if verify_status:
@@ -382,7 +371,10 @@ class PithosAPITest(TestCase):
     def delete_account_groups(self, groups, user=None, verify_status=True):
         user = user or self.user
         url = join_urls(self.pithos_path, user)
-        r = self.post('%s?update=' % url, user=user, **groups)
+        transform = lambda k: 'HTTP_X_ACCOUNT_GROUP_%s' %\
+            k.replace('-', '_').upper()
+        kwargs = dict((transform(k), '') for k in groups)
+        r = self.post('%s?update=' % url, user=user, **kwargs)
         if verify_status:
             self.assertEqual(r.status_code, 202)
         account_groups = self.get_account_groups()
@@ -502,11 +494,15 @@ class PithosAPITest(TestCase):
             self.assertEqual(r.status_code, 204)
         return r
 
-    def create_container(self, cname=None, user=None, verify_status=True):
+    def create_container(self, cname=None, user=None, verify_status=True,
+                         meta=None):
+        meta = meta or {}
         cname = cname or get_random_name()
         user = user or self.user
         url = join_urls(self.pithos_path, user, cname)
-        r = self.put(url, user=user, data='')
+        kwargs = dict(
+            ('HTTP_X_CONTAINER_META_%s' % k, str(v)) for k, v in meta.items())
+        r = self.put(url, user=user, data='', **kwargs)
         if verify_status:
             self.assertTrue(r.status_code in (202, 201))
         return cname, r

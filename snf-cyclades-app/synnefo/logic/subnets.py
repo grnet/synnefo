@@ -1,42 +1,24 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import ipaddr
 from logging import getLogger
 from functools import wraps
 
 from django.conf import settings
-from django.db import transaction
+from synnefo.db import transaction
 from django.db.models import Q
 
 from snf_django.lib import api
@@ -85,7 +67,7 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
 
     try:
         network_id = int(network_id)
-        network = Network.objects.get(id=network_id)
+        network = Network.objects.select_for_update().get(id=network_id)
     except (ValueError, TypeError):
         raise api.faults.BadRequest("Malformed network ID")
     except Network.DoesNotExist:
@@ -95,7 +77,7 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
         raise api.faults.BadRequest("Network has been deleted")
 
     if user_id != network.userid:
-        raise api.faults.Unauthorized("Unauthorized operation")
+        raise api.faults.Forbidden("Forbidden operation")
 
     if ipversion not in [4, 6]:
         raise api.faults.BadRequest("Malformed IP version type")
@@ -124,6 +106,9 @@ def _create_subnet(network_id, user_id, cidr, name, ipversion=4, gateway=None,
                                 userid=network.userid, public=network.public,
                                 dhcp=dhcp, host_routes=host_routes,
                                 dns_nameservers=dns_nameservers)
+
+    network.subnet_ids.append(sub.id)
+    network.save()
 
     gateway_ip = ipaddr.IPAddress(gateway) if gateway else None
 
@@ -190,7 +175,7 @@ def update_subnet(sub_id, name, user_id):
         raise api.faults.ItemNotFound("Subnet not found")
 
     if user_id != subnet.network.userid:
-        raise api.faults.Unauthorized("Unauthorized operation")
+        raise api.faults.Forbidden("Forbidden operation")
 
     utils.check_name_length(name, Subnet.SUBNET_NAME_LENGTH, "Subnet name is "
                             " too long")
@@ -266,17 +251,17 @@ def validate_subnet_params(subnet=None, gateway=None, subnet6=None,
 
         # Check that network size is allowed!
         prefixlen = network.prefixlen
-        if prefixlen > 29 or prefixlen <= settings.MAX_CIDR_BLOCK:
+        if prefixlen > 29 or prefixlen < settings.MAX_CIDR_BLOCK:
             raise faults.OverLimit(
                 message="Unsupported network size",
-                details="Netmask must be in range: (%s, 29]" %
+                details="Netmask must be in range: [%s, 29]" %
                 settings.MAX_CIDR_BLOCK)
         if gateway:  # Check that gateway belongs to network
             try:
                 gateway = ipaddr.IPv4Address(gateway)
             except ValueError:
                 raise faults.BadRequest("Invalid network IPv4 gateway")
-            if not gateway in network:
+            if gateway not in network:
                 raise faults.BadRequest("Invalid network IPv4 gateway")
 
     if subnet6:

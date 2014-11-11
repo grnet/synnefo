@@ -1,35 +1,17 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 This is the burnin class that tests the Servers' functionality
@@ -44,12 +26,11 @@ import socket
 
 from vncauthproxy.d3des import generate_response as d3des_generate_response
 
-from synnefo_tools.burnin.common import BurninTests, Proper
+from synnefo_tools.burnin.common import Proper
 from synnefo_tools.burnin.cyclades_common import CycladesTests
 
 
-# Too many public methods. pylint: disable-msg=R0904
-# Too many instance attributes. pylint: disable-msg=R0902
+# pylint: disable=too-many-public-methods,too-many-instance-attributes
 # This class gets replicated into actual TestCases dynamically
 class GeneratedServerTestSuite(CycladesTests):
     """Test Spawning Serverfunctionality"""
@@ -182,8 +163,15 @@ class GeneratedServerTestSuite(CycladesTests):
         self._skip_if(not self.use_ipv6, "--no-ipv6 flag enabled")
         self._insist_on_ping(self.ipv6[0], version=6)
 
-    def test_011_attach_second_network(self):
-        """Attach a second public IP to our server"""
+    def test_011a_detach_from_network(self):
+        """Detach server from public network"""
+        self._disconnect_from_network(self.server)
+
+        # Test that server is unreachable
+        self._insist_on_ping(self.ipv4[0], should_fail=True)
+
+    def test_011b_attach_network(self):
+        """Re-Attach a public IP to our server"""
         floating_ip = self._create_floating_ip()
         self._create_port(floating_ip['floating_network_id'],
                           device_id=self.server['id'],
@@ -193,7 +181,7 @@ class GeneratedServerTestSuite(CycladesTests):
         server = self.clients.cyclades.get_server_details(self.server['id'])
         self.server = server
         self.ipv4 = self._get_ips(server, version=4)
-        self.assertEqual(len(self.ipv4), 2)
+        self.assertEqual(len(self.ipv4), 1)
 
         # Test new IPv4
         self.test_009_server_ping_ipv4()
@@ -222,13 +210,11 @@ class GeneratedServerTestSuite(CycladesTests):
         """Test SSH to server public IPv4 works, verify hostname"""
         self._skip_if(not self._image_is(self.use_image, "linux"),
                       "only valid for Linux servers")
-        hostname1 = self._insist_get_hostname_over_ssh(
+        hostname = self._insist_get_hostname_over_ssh(
             self.ipv4[0], self.username, self.password)
-        hostname2 = self._insist_get_hostname_over_ssh(
-            self.ipv4[1], self.username, self.password)
+
         # The hostname must be of the form 'prefix-id'
-        self.assertTrue(hostname1.endswith("-%d" % self.server['id']))
-        self.assertEqual(hostname1, hostname2)
+        self.assertTrue(hostname.endswith("-%d" % self.server['id']))
 
     def test_018_ssh_to_server_ipv6(self):
         """Test SSH to server public IPv6 works, verify hostname"""
@@ -248,7 +234,7 @@ class GeneratedServerTestSuite(CycladesTests):
             socket.AF_INET, self.ipv4[0], 3389)
         # No actual RDP processing done. We assume the RDP server is there
         # if the connection to the RDP port is successful.
-        # pylint: disable-msg=W0511
+        # pylint: disable=fixme
         # FIXME: Use rdesktop, analyze exit code? see manpage
         sock.close()
 
@@ -261,7 +247,7 @@ class GeneratedServerTestSuite(CycladesTests):
             socket.AF_INET, self.ipv6[0], 3389)
         # No actual RDP processing done. We assume the RDP server is there
         # if the connection to the RDP port is successful.
-        # pylint: disable-msg=W0511
+        # pylint: disable=fixme
         # FIXME: Use rdesktop, analyze exit code? see manpage
         sock.close()
 
@@ -291,7 +277,7 @@ class GeneratedServerTestSuite(CycladesTests):
 # will run the same tests using different images and or flavors.
 # The creation and running of our GeneratedServerTestSuite class will
 # happen as a testsuite itself (everything here is a test!).
-class ServerTestSuite(BurninTests):
+class ServerTestSuite(CycladesTests):
     """Generate and run the GeneratedServerTestSuite
 
     We will generate as many testsuites as the number of images given.
@@ -304,28 +290,11 @@ class ServerTestSuite(BurninTests):
 
     def test_001_images_to_use(self):
         """Find images to be used by GeneratedServerTestSuite"""
-        if self.images is None:
-            self.info("No --images given. Will use the default %s",
-                      "^Debian Base$")
-            filters = ["name:^Debian Base$"]
-        else:
-            filters = self.images
-
-        self.avail_images = self._find_images(filters)
-        self.info("Found %s images. Let's create an equal number of tests",
-                  len(self.avail_images))
+        self.avail_images = self._parse_images()
 
     def test_002_flavors_to_use(self):
         """Find flavors to be used by GeneratedServerTestSuite"""
-        flavors = self._get_list_of_flavors(detail=True)
-
-        if self.flavors is None:
-            self.info("No --flavors given. Will use all of them")
-            self.avail_flavors = flavors
-        else:
-            self.avail_flavors = self._find_flavors(
-                self.flavors, flavors=flavors)
-        self.info("Found %s flavors to choose from", len(self.avail_flavors))
+        self.avail_flavors = self._parse_flavors()
 
     def test_003_create_testsuites(self):
         """Generate the GeneratedServerTestSuite tests"""

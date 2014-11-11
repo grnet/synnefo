@@ -1,35 +1,17 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.test import TestCase
 
@@ -37,12 +19,11 @@ from snf_django.utils.testing import assertGreater, assertIn, assertRaises
 from astakos.quotaholder_app import models
 import astakos.quotaholder_app.callpoint as qh
 from astakos.quotaholder_app.exception import (
-    InvalidDataError,
     NoCommissionError,
     NoQuantityError,
     NoCapacityError,
     NoHoldingError,
-    DuplicateError)
+)
 
 
 class QuotaholderTest(TestCase):
@@ -102,6 +83,12 @@ class QuotaholderTest(TestCase):
         with assertRaises(NoCommissionError):
             qh.get_commission(self.client, s1+1)
 
+        r = qh.get_quota()
+        self.assertEqual(r,
+                         {(holder, source, resource1): (limit1, 0, limit1/2),
+                          (holder, source, resource2): (limit2, 0, limit2),
+                          })
+
         # commission exceptions
 
         with assertRaises(NoCapacityError) as cm:
@@ -140,21 +127,6 @@ class QuotaholderTest(TestCase):
         self.assertEqual(provision['resource'], resource1)
         self.assertEqual(provision['quantity'], 1)
 
-        with assertRaises(DuplicateError) as cm:
-            self.issue_commission([((holder, source, resource1), 1),
-                                   ((holder, source, resource1), 2)])
-
-        e = cm.exception
-        provision = e.data['provision']
-        self.assertEqual(provision['holder'], holder)
-        self.assertEqual(provision['source'], source)
-        self.assertEqual(provision['resource'], resource1)
-        self.assertEqual(provision['quantity'], 2)
-
-        with assertRaises(InvalidDataError):
-            self.issue_commission([((holder, source, resource1), 1),
-                                   ((holder, source, resource1), "nan")])
-
         r = qh.get_quota(holders=[holder])
         quotas = {(holder, source, resource1): (limit1, 0, limit1/2),
                   (holder, source, resource2): (limit2, 0, limit2),
@@ -166,6 +138,7 @@ class QuotaholderTest(TestCase):
         r = qh.get_pending_commissions(clientkey=self.client)
         self.assertEqual(len(r), 1)
         serial = r[0]
+        self.assertEqual(serial, s1)
         r = qh.resolve_pending_commission(self.client, serial)
         self.assertEqual(r, True)
         r = qh.get_pending_commissions(clientkey=self.client)
@@ -178,6 +151,13 @@ class QuotaholderTest(TestCase):
                   (holder, source, resource2): (limit2, limit2, limit2),
                   }
         self.assertEqual(r, quotas)
+
+        logs = models.ProvisionLog.objects.filter(serial=serial)
+        self.assertEqual(len(logs), 2)
+        log1 = filter(lambda p: p.resource == resource1
+                      and p.delta_quantity == limit1/2
+                      and p.usage_min == limit1/2, logs)
+        self.assertEqual(len(log1), 1)
 
         # resolve commissions
 

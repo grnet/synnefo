@@ -1,35 +1,17 @@
-// Copyright 2013 GRNET S.A. All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or
-// without modification, are permitted provided that the following
-// conditions are met:
-// 
-//   1. Redistributions of source code must retain the above
-//      copyright notice, this list of conditions and the following
-//      disclaimer.
-// 
-//   2. Redistributions in binary form must reproduce the above
-//      copyright notice, this list of conditions and the following
-//      disclaimer in the documentation and/or other materials
-//      provided with the distribution.
-// 
-// THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-// USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-// AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
-// 
-// The views and conclusions contained in the software and
-// documentation are those of the authors and should not be
-// interpreted as representing official policies, either expressed
-// or implied, of GRNET S.A.
+// Copyright (C) 2010-2014 GRNET S.A.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
 ;(function(root){
@@ -71,6 +53,7 @@
             this.quotas = options.quotas || synnefo.storage.quotas;
             this.selected_flavor = options.selected_flavor || undefined;
             this.extra_quotas = options.extra_quotas || undefined;
+            this.project = options.project;
             this.render();
             if (this.selected_flavor) { this.set_flavor(this.selected_flavor)}
         },
@@ -158,7 +141,7 @@
         
         set_unavailable: function() {
             this.$el.find("li.choice").removeClass("disabled");
-            var quotas = this.quotas.get_available_for_vm({'active': true});
+            var quotas = this.project.quotas.get_available_for_vm({'active': true});
             var extra_quotas = this.extra_quotas;
             var user_excluded = storage.flavors.unavailable_values_for_quotas(
               quotas, 
@@ -223,7 +206,7 @@
         
         view_id: "vm_resize_view",
         content_selector: "#vm-resize-overlay-content",
-        css_class: 'overlay-vm-resize overlay-info',
+        css_class: 'overlay-vm-resize overlay-info create-wizard-overlay',
         overlay_id: "vm-resize-overlay",
 
         subtitle: "",
@@ -278,10 +261,11 @@
         submit_resize: function(flv) {
             if (this.submit.hasClass("in-progress")) { return }
             this.submit.addClass("in-progress");
+            var vm = this.vm;
             var complete = _.bind(function() {
-              this.vm.set({'flavor': flv});
-              this.vm.set({'flavorRef': flv.id});
-              this.hide();
+              vm.set({'flavor': flv});
+              vm.set({'flavorRef': flv.id});
+              this.vm && this.hide();
             }, this);
             this.vm.call("resize", complete, complete, {flavor:flv.id});
         },
@@ -296,6 +280,7 @@
             this.start_warning.hide();
             this.submit.removeClass("in-progress");
             this.vm = vm;
+            this.project = vm.get('project');
             this.vm.bind("change", this.handle_vm_change);
             if (this.flavors_view) {
                 this.flavors_view.remove();
@@ -314,7 +299,8 @@
                 el: this.$(".flavor-options-inner-cont div"),
                 hidden_choices:['disk', 'disk_template'],
                 selected_flavor: this.vm.get_flavor(),
-                extra_quotas: extra_quota
+                extra_quotas: extra_quota,
+                project: this.project
             });
             this.selected_flavor = this.vm.get_flavor();
             this.handle_flavor_select(this.selected_flavor);
@@ -407,6 +393,7 @@
         },
 
         onClose: function() {
+            if (!this.visible()) { return }
             this.editing = false;
             this.vm.unbind("change", this.handle_vm_change);
             this.vm.unbind("change:status", this.handle_shutdown_complete);

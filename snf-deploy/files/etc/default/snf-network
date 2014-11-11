@@ -1,0 +1,32 @@
+STATE_DIR=/var/lib/snf-network
+LOGFILE=/var/log/ganeti/snf-network.log
+IFUP_EXTRA_SCRIPT=/etc/ganeti/ifup-extra
+
+MAC_MASK=ff:ff:f0:00:00:00
+
+TAP_CONSTANT_MAC=cc:47:52:4e:45:54 # GRNET in hex :-)
+MAC2EUI64=/usr/bin/mac2eui64
+NFDHCPD_STATE_DIR=/var/lib/nfdhcpd
+GANETI_NIC_DIR=/var/run/ganeti/xen-hypervisor/nic
+
+MAC_FILTERED_TAG=private-filtered
+NFDHCPD_TAG=nfdhcpd
+IP_LESS_ROUTED_TAG=ip-less-routed
+MASQ_TAG=masq
+PUBLIC_TAG=public
+DNS_TAG=public
+
+# Default options for runlocked helper script (uncomment to modify)
+#RUNLOCKED_OPTS="--id 10001 --retry-sec 0.5"
+
+# NS options needed by nsupdate
+# A proper bind configuration is a prerequisite
+# Please see: https://wiki.debian.org/DDNS
+# If one of the following vars are not set dnshook wont do a thing
+# Name server IP/FQDN
+SERVER=%SERVER%
+# zone for the vms
+FZONE=vm.%DOMAIN%
+# keyfile path to pass to nsupdate with -k option
+# see man page for more info
+KEYFILE=%KEYFILE%

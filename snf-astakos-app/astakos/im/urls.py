@@ -1,35 +1,17 @@
-# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.conf.urls import patterns, url
 from astakos.im.forms import (
@@ -66,50 +48,67 @@ urlpatterns = patterns(
     # url(r'^billing/?$', 'billing', {}, name='billing'),
     # url(r'^timeline/?$', 'timeline', {}, name='timeline'),
 
-    url(r'^projects/add/?$', 'project_add', {}, name='project_add'),
-    url(r'^projects/?$', 'project_list', {}, name='project_list'),
-    url(r'^projects/search/?$', 'project_search', {}, name='project_search'),
-    url(r'^projects/(?P<chain_id>\d+)/?$', 'project_detail', {},
-        name='project_detail'),
-    url(r'^projects/(?P<chain_id>\d+)/join/?$', 'project_join', {},
-        name='project_join'),
-    url(r'^projects/(?P<chain_id>\d+)/members/?$', 'project_members', {},
-        name='project_members'),
-    url(r'^projects/(?P<chain_id>\d+)/members/approved/?$', 'project_members',
-        {'members_status_filter': 1}, name='project_approved_members'),
-    url(r'^projects/(?P<chain_id>\d+)/members/accept/?$',
+    # projects urls
+    url(r'^projects/?$',
+        'project_list', {}, name='project_list'),
+    url(r'^projects/add/?$',
+        'project_add_or_modify', {}, name='project_add'),
+    url(r'^projects/search/?$',
+        'project_search', {}, name='project_search'),
+    url(r'^projects/(?P<project_uuid>[^/]+)/?$',
+        'project_or_app_detail', {}, name='project_detail'),
+
+    # user project actions
+    url(r'^projects/(?P<project_uuid>[^/]+)/join/?$',
+        'project_join', name='project_join'),
+    url(r'^projects/(?P<project_uuid>[^/]+)/leave/?$',
+        'project_leave', name='project_leave'),
+    url(r'^projects/(?P<project_uuid>[^/]+)/cancel-join-request/?$',
+        'project_cancel_join', name='project_cancel_join'),
+
+    # project members urls
+    url(r'^projects/(?P<project_uuid>[^/]+)/members/?$',
+        'project_members', {}, name='project_members'),
+    url(r'^projects/(?P<project_uuid>[^/]+)/members/approved/?$',
+        'project_members', {'members_status_filter': 1},
+        name='project_approved_members'),
+    url(r'^projects/(?P<project_uuid>[^/]+)/members/pending/?$',
+        'project_members', {'members_status_filter': 0},
+        name='project_pending_members'),
+
+    # project admin members actions (batch/single)
+    url(r'^projects/(?P<project_uuid>[^/]+)/members/accept/?$',
         'project_members_action', {'action': 'accept'},
         name='project_members_accept'),
-    url(r'^projects/(?P<chain_id>\d+)/members/remove/?$',
+    url(r'^projects/(?P<project_uuid>[^/]+)/members/remove/?$',
         'project_members_action', {'action': 'remove'},
         name='project_members_remove'),
-    url(r'^projects/(?P<chain_id>\d+)/members/reject/?$',
+    url(r'^projects/(?P<project_uuid>[^/]+)/members/reject/?$',
         'project_members_action', {'action': 'reject'},
         name='project_members_reject'),
-    url(r'^projects/(?P<chain_id>\d+)/members/pending/?$', 'project_members',
-        {'members_status_filter': 0}, name='project_pending_members'),
-    url(r'^projects/memberships/(?P<memb_id>\d+)/leave/?$',
-        'project_leave', {}, name='project_leave'),
-    url(r'^projects/memberships/(?P<memb_id>\d+)/cancel/?$',
-        'project_cancel_member', {}, name='project_cancel_member'),
-    url(r'^projects/memberships/(?P<memb_id>\d+)/accept/?$',
-        'project_accept_member', {}, name='project_accept_member'),
-    url(r'^projects/memberships/(?P<memb_id>\d+)/reject/?$',
-        'project_reject_member', {}, name='project_reject_member'),
-    url(r'^projects/memberships/(?P<memb_id>\d+)/remove/?$',
-        'project_remove_member', {}, name='project_remove_member'),
-    url(r'^projects/app/(?P<application_id>\d+)/?$', 'project_app', {},
-        name='project_app'),
-    url(r'^projects/app/(?P<application_id>\d+)/modify$', 'project_modify', {},
-        name='project_modify'),
-    url(r'^projects/app/(?P<application_id>\d+)/approve$',
+    url(r'^projects/(?P<project_uuid>[^/]+)/memberships/(?P<memb_id>\d+)/accept/?$',
+        'project_members_action', {'action': 'accept'},
+        name='project_accept_member'),
+    url(r'^projects/(?P<project_uuid>[^/]+)/memberships/(?P<memb_id>\d+)/reject/?$',
+        'project_members_action', {'action': 'reject'},
+        name='project_reject_member'),
+    url(r'^projects/(?P<project_uuid>[^/]+)/memberships/(?P<memb_id>\d+)/remove/?$',
+        'project_members_action', {'action': 'remove'},
+        name='project_remove_member'),
+
+    # project application urls
+    url(r'^projects/(?P<project_uuid>[^/]+)/app/(?P<app_id>\d+)/?$',
+        'project_or_app_detail', {}, name='project_app'),
+    url(r'^projects/(?P<project_uuid>[^/]+)/modify$', 'project_add_or_modify',
+        {}, name='project_modify'),
+    url(r'^projects/(?P<project_uuid>[^/]+)/app/(?P<application_id>\d+)/approve?$',
         'project_app_approve', {}, name='project_app_approve'),
-    url(r'^projects/app/(?P<application_id>\d+)/deny$', 'project_app_deny', {},
-        name='project_app_deny'),
-    url(r'^projects/app/(?P<application_id>\d+)/dismiss$',
+    url(r'^projects/(?P<project_uuid>[^/]+)/app/(?P<application_id>\d+)/deny?$',
+        'project_app_deny', {}, name='project_app_deny'),
+    url(r'^projects/(?P<project_uuid>[^/]+)/app/(?P<application_id>\d+)/dismiss?$',
         'project_app_dismiss', {}, name='project_app_dismiss'),
-    url(r'^projects/app/(?P<application_id>\d+)/cancel$', 'project_app_cancel',
-        {}, name='project_app_cancel'),
+    url(r'^projects/(?P<project_uuid>[^/]+)/app/(?P<application_id>\d+)/cancel?$',
+        'project_app_cancel', {}, name='project_app_cancel'),
 
     url(r'^projects/how_it_works/?$', 'how_it_works', {}, name='how_it_works'),
     url(r'^remove_auth_provider/(?P<pk>\d+)?$', 'remove_auth_provider', {},

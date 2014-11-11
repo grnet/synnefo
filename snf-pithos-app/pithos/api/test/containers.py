@@ -1,38 +1,20 @@
 #!/usr/bin/env python
 #coding=utf8
 
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from pithos.api.test import (PithosAPITest, DATE_FORMATS, o_names,
                              pithos_settings, pithos_test_settings)
@@ -139,7 +121,7 @@ class ContainerHead(PithosAPITest):
                          len(objects))
         self.assertTrue('X-Container-Bytes-Used' in container_info)
         self.assertEqual(int(container_info['X-Container-Bytes-Used']),
-                         sum([len(data) for data in objects.values()]))
+                         sum([len(dt) for dt in objects.values()]))
         self.assertTrue('X-Container-Object-Meta' in container_info)
         self.assertEqual(
             sorted(container_info['X-Container-Object-Meta'].split(',')),
@@ -175,6 +157,8 @@ class ContainerGet(PithosAPITest):
 
         cname = self.cnames[0]
         self.upload_object(cname)
+        oname = self.objects[cname].keys()[-1]
+        self.delete_object(cname, oname)
 
         url = join_urls(self.pithos_path, self.user, cname)
         r = self.get('%s?until=%s' % (url, until))
@@ -418,11 +402,25 @@ class ContainerGet(PithosAPITest):
         container_url = join_urls(self.pithos_path, self.user, cname)
         onames = self.objects[cname].keys()
 
+        r = self.get('%s?shared=&public=&format=json' % container_url)
+        self.assertEqual(r.status_code, 200)
+        objects = json.loads(r.content)
+        self.assertEqual(len(objects), 0)
+
         # publish an object
         public1 = onames.pop()
         url = join_urls(container_url, public1)
         r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='true')
         self.assertEqual(r.status_code, 202)
+
+        r = self.get('%s?shared=&public=&format=json' % container_url)
+        self.assertEqual(r.status_code, 200)
+        objects = json.loads(r.content)
+        self.assertEqual(len(objects), 1)
+        self.assertEqual(objects[0]['name'], public1)
+        self.assertEqual(objects[0]['bytes'],
+                         len(self.objects[cname][public1]))
+        self.assertTrue('x_object_public' in objects[0])
 
         # publish another
         public2 = onames.pop()
@@ -469,7 +467,7 @@ class ContainerGet(PithosAPITest):
         # create child object
         descendant = strnextling(public1)
         self.upload_object(cname, descendant)
-        # request public and assert child obejct is not listed
+        # request public and assert child object is not listed
         r = self.get('%s?shared=&public=' % container_url)
         objects = r.content.split('\n')
         if '' in objects:
@@ -490,6 +488,29 @@ class ContainerGet(PithosAPITest):
             objects.remove('')
         self.assertTrue(folder in objects)
         self.assertTrue(descendant not in objects)
+
+        # unpublish public1
+        url = join_urls(container_url, public1)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='false')
+        self.assertEqual(r.status_code, 202)
+
+        # unpublish public2
+        url = join_urls(container_url, public2)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='false')
+        self.assertEqual(r.status_code, 202)
+
+        # unpublish folder
+        url = join_urls(container_url, folder)
+        r = self.post(url, content_type='', HTTP_X_OBJECT_PUBLIC='false')
+        self.assertEqual(r.status_code, 202)
+
+        r = self.get('%s?shared=&public=' % container_url)
+        self.assertEqual(r.status_code, 200)
+        objects = r.content.split('\n')
+        if '' in objects:
+            objects.remove('')
+        l = sorted([shared1, shared2])
+        self.assertEqual(objects, l)
 
     def test_list_objects(self):
         cname = self.cnames[0]
@@ -687,6 +708,14 @@ class ContainerGet(PithosAPITest):
             objects.remove('')
         self.assertTrue(objects, sorted(onames[2:]))
 
+        # list objects that satisfy the in-existence criteria
+        r = self.get('%s?meta=!Stock' % container_url)
+        self.assertEqual(r.status_code, 200)
+        objects = r.content.split('\n')
+        if '' in objects:
+            objects.remove('')
+            self.assertTrue(objects, sorted(onames[:2]))
+
         # test case insensitive existence criteria matching
         r = self.get('%s?meta=quality' % container_url)
         self.assertEqual(r.status_code, 200)
@@ -862,6 +891,13 @@ class ContainerGet(PithosAPITest):
 
 class ContainerPut(PithosAPITest):
     def test_create(self):
+        # test metadata limit
+        limit = pithos_settings.RESOURCE_MAX_METADATA
+        too_many_meta = dict((i, i) for i in range(limit + 1))
+        _, r = self.create_container('c1', verify_status=False,
+                                     meta=too_many_meta)
+        self.assertEqual(r.status_code, 400)
+
         self.create_container('c1')
         self.list_containers()
         self.assertTrue('c1' in self.list_containers(format=None))
@@ -886,6 +922,13 @@ class ContainerPost(PithosAPITest):
             self.assertTrue(k in info)
             self.assertEqual(info[k], v)
 
+        # test metadata limit
+        limit = pithos_settings.RESOURCE_MAX_METADATA
+        too_many_meta = dict((i, i) for i in range(limit - len(meta) + 1))
+        r = self.update_container_meta(cname, too_many_meta,
+                                       verify_status=False)
+        self.assertEqual(r.status_code, 400)
+
     def test_quota(self):
         self.create_container('c1')
 
@@ -905,6 +948,35 @@ class ContainerPost(PithosAPITest):
         self.assertEqual(r.status_code, 202)
 
         r = self.upload_object('c1', length=1)
+
+    def test_upload_blocks(self):
+        cname = self.create_container()[0]
+
+        url = join_urls(self.pithos_path, self.user, cname)
+        r = self.post(url, data=get_random_data())
+        self.assertEqual(r.status_code, 202)
+
+        url = join_urls(self.pithos_path, 'chuck', cname)
+        r = self.post(url, data=get_random_data())
+        self.assertEqual(r.status_code, 403)
+
+        # share object for read only
+        oname = self.upload_object(cname)[0]
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
+                  HTTP_X_OBJECT_SHARING='read=*')
+        url = join_urls(self.pithos_path, 'chuck', cname)
+        r = self.post(url, data=get_random_data())
+        self.assertEqual(r.status_code, 403)
+
+        # share object for write only
+        oname = self.upload_object(cname)[0]
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
+                  HTTP_X_OBJECT_SHARING='write=*')
+        url = join_urls(self.pithos_path, 'chuck', cname)
+        r = self.post(url, data=get_random_data())
+        self.assertEqual(r.status_code, 403)
 
 
 class ContainerDelete(PithosAPITest):

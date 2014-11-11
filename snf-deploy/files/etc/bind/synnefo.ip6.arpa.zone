@@ -1,0 +1,10 @@
+$ORIGIN .
+$TTL 86400      ; 1 day
+ip6.arpa                IN SOA  ns.vm.qa.live. admin.vm.qa.live. (
+                                2012071070 ; serial
+                                172800     ; refresh (2 days)
+                                7200       ; retry (2 hours)
+                                604800     ; expire (1 week)
+                                3600       ; minimum (1 hour)
+                                )
+                        NS      ns.vm.qa.live.

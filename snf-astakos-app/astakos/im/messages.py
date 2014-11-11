@@ -1,35 +1,17 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.conf import settings
 import astakos.im.settings as astakos_settings
@@ -221,13 +203,16 @@ NOT_ALLOWED_NEXT_PARAM = 'Not allowed next parameter.'
 MISSING_KEY_PARAMETER = 'Missing key parameter.'
 INVALID_KEY_PARAMETER = 'Invalid key.'
 DOMAIN_VALUE_ERR = 'Enter a valid domain.'
+BASE_PROJECT_NAME_ERR = 'Enter a valid system project name.'
 QH_SYNC_ERROR = 'Failed to get synchronized with quotaholder.'
 UNIQUE_PROJECT_NAME_CONSTRAIN_ERR = (
     'The project name (as specified in its application\'s definition) must '
     'be unique among all active projects.')
 NOT_ALIVE_PROJECT = 'Project %s is not alive.'
+SUSPENDED_PROJECT = 'Project %s is suspended.'
 NOT_SUSPENDED_PROJECT = 'Project %s is not suspended.'
 NOT_TERMINATED_PROJECT = 'Project %s is not terminated.'
+BASE_NO_TERMINATE = "Cannot terminate: %s is a system project."
 NOT_ALLOWED = 'You do not have the permissions to perform this action.'
 MEMBER_NUMBER_LIMIT_REACHED = (
     'You have reached the maximum number of members for this Project.')
@@ -271,8 +256,13 @@ APPLICATION_CANNOT_DENY = "Cannot deny application %s in state '%s'"
 APPLICATION_CANNOT_DISMISS = "Cannot dismiss application %s in state '%s'"
 APPLICATION_CANNOT_CANCEL = "Cannot cancel application %s in state '%s'"
 APPLICATION_CANCELLED = "Your project application has been cancelled."
+APPLICATION_APPROVED = "Project application has been approved."
+APPLICATION_DENIED = "Project application has been denied."
+APPLICATION_DISMISSED = "Project application has been dismissed."
 REACHED_PENDING_APPLICATION_LIMIT = ("You have reached the maximum number "
                                      "of pending project applications: %s.")
+UNINITIALIZED_NO_MODIFY = "Cannot modify: project %s is not initialized."
+BASE_NO_MODIFY_FIELDS = "Cannot modify field(s) '%s' of system projects."
 
 PENDING_APPLICATION_LIMIT_ADD = \
     ("You are not allowed to create a new project "
@@ -342,6 +332,7 @@ AUTH_PROVIDER_ADD_TO_EXISTING_ACCOUNT = (
 
 # Email subjects
 _SITENAME = astakos_settings.SITENAME
+PLAIN_EMAIL_SUBJECT = 'New email from %s' % _SITENAME
 INVITATION_EMAIL_SUBJECT = 'Invitation to %s' % _SITENAME
 GREETING_EMAIL_SUBJECT = 'Welcome to %s' % _SITENAME
 FEEDBACK_EMAIL_SUBJECT = 'Feedback from %s' % _SITENAME
@@ -352,19 +343,21 @@ HELPDESK_NOTIFICATION_EMAIL_SUBJECT = \
 EMAIL_CHANGE_EMAIL_SUBJECT = 'Email change on %s ' % _SITENAME
 PASSWORD_RESET_EMAIL_SUBJECT = 'Password reset on %s ' % _SITENAME
 PROJECT_CREATION_SUBJECT = \
-    '%s project application created (%%(name)s)' % _SITENAME
+    '%s application for a new project created (%%s)' % _SITENAME
+PROJECT_MODIFICATION_SUBJECT = \
+    '%s application for a project modification created (%%s)' % _SITENAME
 PROJECT_APPROVED_SUBJECT = \
-    '%s project application approved (%%(name)s)' % _SITENAME
+    '%s project application approved (%%s)' % _SITENAME
 PROJECT_DENIED_SUBJECT = \
-    '%s project application denied (%%(name)s)' % _SITENAME
+    '%s project application denied (%%s)' % _SITENAME
 PROJECT_TERMINATION_SUBJECT = \
-    '%s project terminated (%%(name)s)' % _SITENAME
+    '%s project terminated (%%s)' % _SITENAME
 PROJECT_SUSPENSION_SUBJECT = \
-    '%s project suspended (%%(name)s)' % _SITENAME
+    '%s project suspended (%%s)' % _SITENAME
 PROJECT_UNSUSPENSION_SUBJECT = \
-    '%s project resumed (%%(name)s)' % _SITENAME
+    '%s project resumed (%%s)' % _SITENAME
 PROJECT_REINSTATEMENT_SUBJECT = \
-    '%s project reinstated (%%(name)s)' % _SITENAME
+    '%s project reinstated (%%s)' % _SITENAME
 PROJECT_MEMBERSHIP_CHANGE_SUBJECT = \
     '%s project membership changed (%%(name)s)' % _SITENAME
 PROJECT_MEMBERSHIP_ENROLL_SUBJECT = \

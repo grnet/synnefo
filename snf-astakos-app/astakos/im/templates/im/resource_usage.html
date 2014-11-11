@@ -10,29 +10,50 @@
 {% block page.title %}Usage{% endblock %}
 
 {% block page.body %}
+<script id="projectQuotaTpl" type="text/template">
+  {% verbatim %}
+  <div class="resource-bar project clearfix project-{{id}} {{ usage.cls }}
+      {{^system_project}}no-base-project{{/system_project}} 
+      {{#system_project}}base-project{{/system_project}}" 
+      data-project="{{ id }}">
+      <div class="info {{#not_a_member}}warn{{/not_a_member}}" data-currvalue="" data-maxvalue="">
+          <h3>
+            <a href="{{ details_url }}">{{{ display_name }}}</a>
+            {{#not_a_member}}<span class="warn-msg">[NOT A MEMBER]</span>{{/not_a_member}}
+          </h3>
+        <p>
+          <span class="currValue">{{ usage.curr }}</span> out of 
+          <span class="maxValue">{{ usage.max }}</span> {{ report_desc }}
+          (<span class="leftValue">{{ usage.left }}</span> left)
+        </p>
+      </div>
+      <div class="bar">
+        <i class="warn {{#usage.project_warn}}visible{{/usage.project_warn}}"></i>
+        <i class="warn-msg">
+          {{ usage.project_warn_msg }}
+        </i>
+        <div>
+          <span style="width:{{ usage.ratio }}%" class="member"></span>
+          <span style="width:{{ usage.project_warn_ratio}}%"
+            class="project"></span>
+            <em class="value" 
+                style="left: {{ usage.label_left }}; color: {{ usage.label_color }}">
+                {{ usage.ratio }}%
+            </em>
+        </div>
+      </div>
+  </div>
+  {% endverbatim %}
+</script>
 
 <script id="quotaTpl" type="text/template">
   {% verbatim %}
   {{#resources}}
   <li class="clearfix {{ resource_name }} {{ usage.cls }}" 
-      data-resource="{{ name }}">
+  data-resource="{{ name }}">
   <div class="img-wrap">&nbsp;</div>
-  <div class="info" data-currvalue="" data-maxvalue="">
-    <h3>{{ report_desc }}</h3>
-    <p>
-      <span class="currValue">{{ usage.curr }}</span> out of 
-      <span class="maxValue">{{ usage.max }}</span> {{ report_desc }}
-    </p>
-  </div>
-  <div class="bar">
-    <div>
-        <span style="width:{{ usage.perc }}%"></span>
-        <em 
-            class="value" 
-            style="left: {{ usage.label_left }}%; color: {{ usage.label_color }}">
-            {{ usage.perc }}%
-        </em>
-    </div>
+  <h2>{{ display_name }}</h2>
+  <div class="resource-projects clearfix">
   </div>
   </li>
   {{/resources}}
@@ -41,20 +62,23 @@
 
 <div class="maincol {% block innerpage.class %}{% endblock %}"> 
     <h2>RESOURCE USAGE</h2>
-    <div id="quota-container">
+    <div id="quota-container" class='filter-base'>
     </div>
 </div>
 <script>
 $(document).ready(function(){
   var usageView = new UsageView({
     'url': '{% url astakos-api-quotas %}',
+    'projects_url': '{% url astakos.api.projects.projects %}',
     'cookie_name': '{{ token_cookie_name|safe }}',
     'dataType': 'json',
     'container': '#quota-container',
-    'quotas': {{ current_usage|safe }},
+    'quotas': {{ user_quotas|safe }},
+    'project_url_tpl': '{% url project_detail project_uuid="UUID" %}',
     'meta': {
       'resources': {{ resource_catalog|safe }},
       'groups': {{ resource_groups|safe }},
+      'projects_details': {{ projects_details|safe }},
       'resources_order': {{ resources_order|safe }}
     }
   });

@@ -1,5 +1,5 @@
 ;(function(root){
-    
+    var set = true;   
     // root
     var root = root;
     
@@ -17,8 +17,13 @@
     models.GlanceImage = snf.models.Image.extend({
         api_type: 'glance',
 
-        get_size: function() {
-            return this.get('size') / 1024 / 1024;
+        get_size: function(metric) {
+            if (metric == undefined) { metric = 'mb' }
+            var map = {
+                'mb': Math.pow(1024, 2),
+                'gb': Math.pow(1024, 3)
+            }
+            return this.get('size') / map[metric];
         },
 
         get_readable_size: function() {
@@ -42,6 +47,15 @@
             return this.get('owner') || 'Unknown';
         },
 
+        is_snapshot: function() {
+          return this.get('is_snapshot');
+        },
+
+
+        is_available: function() {
+          if (!this.is_snapshot()) { return true }
+          return this.get("status") === "AVAILABLE";
+        },
 
         display_size: function() {
             return this.get_readable_size();
@@ -49,8 +63,12 @@
 
         display_users: function() {
             try {
-              return this.get_meta('users').split(' ').join(", ");
-            } catch(err) { console.log(err); return ''}
+              if (this.get_meta('users')) {
+                return this.get_meta('users').split(' ').join(", ");
+              } else {
+                return "";
+              }
+            } catch(err) { console.error(err); return ''}
         }
         
     })
@@ -58,7 +76,6 @@
     models.GlanceImages = snf.models.Images.extend({
         model: models.GlanceImage,
         api_type: 'glance',
-
         type_selections: {'personal':'My images', 
                           'shared': 'Shared with me', 
                           'public': 'Public'},
@@ -115,7 +132,28 @@
             }
 
             img = models.GlanceImages.__super__.parse_meta.call(this, img);
+            if (img.is_snapshot) {
+              if (!img.OS) {
+                img.OS = 'snapshot';
+              }
+              if (!img.metadata) { img.metadata = {}; }
+              if (!img.metadata || !img.metadata.OS) {
+                img.metadata.OS = 'snapshot';
+              }
+            }
             return img;
+        },
+
+        active: function() {
+            return this.filter(function(img) {
+              return img.get('status') != "DELETED" && !img.is_snapshot()
+            });
+        },
+
+        active_snapshots: function() {
+            return this.filter(function(img) {
+              return img.get('status') != "DELETED" && img.is_snapshot()
+            });
         },
 
         get_system_images: function() {
@@ -142,7 +180,33 @@
                                i.get_owner_uuid() != snf.user.get_username() &&
                                !i.is_public();
             });
-        }
+        },
+
+        get_snapshot_system_images: function() {
+            return _.filter(this.active_snapshots(), function(i) { 
+                return _.include(_.keys(snf.config.system_images_owners), 
+                                 i.get_owner());
+            })
+        },
+
+        get_snapshot_personal_images: function() {
+            return _.filter(this.active_snapshots(), function(i) { 
+                return i.get_owner_uuid() == snf.user.get_username();
+            });
+        },
+
+        get_snapshot_public_images: function() {
+            return _.filter(this.active_snapshots(), function(i){ return i.is_public() })
+        },
+
+        get_snapshot_shared_images: function() {
+            return _.filter(this.active_snapshots(), function(i){ 
+                return !_.include(_.keys(snf.config.system_images_owners), 
+                                  i.get_owner()) && 
+                               i.get_owner_uuid() != snf.user.get_username() &&
+                               !i.is_public();
+            });
+        },
 
     })
         

@@ -1,35 +1,17 @@
-# Copyright 2011-2014 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from functools import wraps
 from datetime import datetime
@@ -52,8 +34,7 @@ from snf_django.lib import api
 from snf_django.lib.api import faults, utils
 
 from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
-                                 BACKEND_BLOCK_MODULE, BACKEND_BLOCK_PATH,
-                                 BACKEND_BLOCK_UMASK,
+                                 BACKEND_BLOCK_MODULE,
                                  BACKEND_QUEUE_MODULE, BACKEND_QUEUE_HOSTS,
                                  BACKEND_QUEUE_EXCHANGE,
                                  ASTAKOSCLIENT_POOLSIZE,
@@ -64,17 +45,22 @@ from pithos.api.settings import (BACKEND_DB_MODULE, BACKEND_DB_CONNECTION,
                                  BACKEND_VERSIONING, BACKEND_FREE_VERSIONING,
                                  BACKEND_POOL_ENABLED, BACKEND_POOL_SIZE,
                                  BACKEND_BLOCK_SIZE, BACKEND_HASH_ALGORITHM,
-                                 RADOS_POOL_BLOCKS,
+                                 BACKEND_ARCHIPELAGO_CONF,
+                                 BACKEND_XSEG_POOL_SIZE,
+                                 BACKEND_MAP_CHECK_INTERVAL,
+                                 BACKEND_MAPFILE_PREFIX,
+                                 RADOS_STORAGE, RADOS_POOL_BLOCKS,
                                  RADOS_POOL_MAPS, TRANSLATE_UUIDS,
                                  PUBLIC_URL_SECURITY, PUBLIC_URL_ALPHABET,
                                  BASE_HOST, UPDATE_MD5, VIEW_PREFIX,
                                  OAUTH2_CLIENT_CREDENTIALS, UNSAFE_DOMAIN,
-                                 BACKEND_STORAGE, RADOS_CEPH_CONF)
+                                 RESOURCE_MAX_METADATA, ACC_MAX_GROUPS,
+                                 ACC_MAX_GROUP_MEMBERS)
 
-from pithos.api.resources import resources
 from pithos.backends import connect_backend
 from pithos.backends.base import (NotAllowedError, QuotaError, ItemNotExists,
-                                  VersionNotExists)
+                                  VersionNotExists, IllegalOperationError,
+                                  LimitExceeded, BrokenSnapshot)
 
 from synnefo.lib import join_urls
 
@@ -153,7 +139,7 @@ def get_account_headers(request):
         n = k[16:].lower()
         if '-' in n or '_' in n:
             raise faults.BadRequest('Bad characters in group name')
-        groups[n] = v.replace(' ', '').split(',')
+        groups[n] = list(set(v.replace(' ', '').split(',')))
         while '' in groups[n]:
             groups[n].remove('')
     return meta, groups
@@ -241,6 +227,7 @@ def put_object_headers(response, meta, restricted=False, token=None,
     response.override_serialization = True
     response['Content-Type'] = meta.get('type', 'application/octet-stream')
     response['Last-Modified'] = http_date(int(meta['modified']))
+    response['Available'] = meta['available']
     if not restricted:
         response['X-Object-Hash'] = meta['hash']
         response['X-Object-UUID'] = meta['uuid']
@@ -271,7 +258,7 @@ def put_object_headers(response, meta, restricted=False, token=None,
         if user_defined and not valid_disposition_type:
             return
         if not valid_disposition_type:
-            disposition_type = 'attachment'
+            disposition_type = 'inline'
         response['Content-Disposition'] = smart_str('%s; filename="%s"' % (
             disposition_type, meta['name']), strings_only=True)
 
@@ -341,7 +328,8 @@ def retrieve_displaynames(token, uuids, return_dict=False, fail_silently=True):
     catalog = astakos.get_usernames(uuids) or {}
     missing = list(set(uuids) - set(catalog))
     if missing and not fail_silently:
-        raise ItemNotExists('Unknown displaynames: %s' % ', '.join(missing))
+        raise ItemNotExists('Unknown displaynames: %s' %
+                            ', '.join(map(smart_str, missing)))
     return catalog if return_dict else [catalog.get(i) for i in uuids]
 
 
@@ -366,7 +354,8 @@ def retrieve_uuids(token, displaynames, return_dict=False, fail_silently=True):
     catalog = astakos.get_uuids(displaynames) or {}
     missing = list(set(displaynames) - set(catalog))
     if missing and not fail_silently:
-        raise ItemNotExists('Unknown uuids: %s' % ', '.join(missing))
+        raise ItemNotExists('Unknown uuids: %s' %
+                            ', '.join(map(smart_str, missing)))
     return catalog if return_dict else [catalog.get(i) for i in displaynames]
 
 
@@ -457,9 +446,7 @@ def validate_modification_preconditions(request, meta):
 def validate_matching_preconditions(request, meta):
     """Check that the ETag conforms with the preconditions set."""
 
-    etag = meta['hash'] if not UPDATE_MD5 else meta['checksum']
-    if not etag:
-        etag = None
+    etag = meta.get('hash') if not UPDATE_MD5 else meta.get('checksum')
 
     if_match = request.META.get('HTTP_IF_MATCH')
     if if_match is not None:
@@ -522,6 +509,7 @@ def copy_or_move_object(request, src_account, src_container, src_name,
         raise faults.BadRequest('Invalid sharing header')
     except QuotaError, e:
         raise faults.RequestEntityTooLarge('Quota error: %s' % e)
+
     if public is not None:
         try:
             request.backend.update_object_public(
@@ -765,8 +753,8 @@ def socket_read_iterator(request, length=0, blocksize=4096):
             try:
                 chunk_length = int(chunk_length, 16)
             except Exception:
+                # TODO: Change to something more appropriate.
                 raise faults.BadRequest('Bad chunk size')
-                                 # TODO: Change to something more appropriate.
             # Check if done.
             if chunk_length == 0:
                 if len(data) > 0:
@@ -840,13 +828,14 @@ class ObjectWrapper(object):
     in each entry of the range list.
     """
 
-    def __init__(self, backend, ranges, sizes, hashmaps, boundary):
+    def __init__(self, backend, ranges, sizes, hashmaps, boundary, meta):
         self.backend = backend
         self.ranges = ranges
         self.sizes = sizes
         self.hashmaps = hashmaps
         self.boundary = boundary
         self.size = sum(self.sizes)
+        self.meta = meta
 
         self.file_index = 0
         self.block_index = 0
@@ -961,7 +950,8 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
         boundary = uuid.uuid4().hex
     else:
         boundary = ''
-    wrapper = ObjectWrapper(request.backend, ranges, sizes, hashmaps, boundary)
+    wrapper = ObjectWrapper(request.backend, ranges, sizes, hashmaps,
+                            boundary, meta)
     response = HttpResponse(wrapper, status=ret)
     put_object_headers(
         response, meta, restricted=public,
@@ -982,14 +972,20 @@ def object_data_response(request, sizes, hashmaps, meta, public=False):
     return response
 
 
-def put_object_block(request, hashmap, data, offset):
+def put_object_block(request, hashmap, data, offset, is_snapshot):
     """Put one block of data at the given offset."""
 
     bi = int(offset / request.backend.block_size)
     bo = offset % request.backend.block_size
     bl = min(len(data), request.backend.block_size - bo)
     if bi < len(hashmap):
-        hashmap[bi] = request.backend.update_block(hashmap[bi], data[:bl], bo)
+        try:
+            hashmap[bi] = request.backend.update_block(hashmap[bi],
+                                                       data[:bl],
+                                                       offset=bo,
+                                                       is_snapshot=is_snapshot)
+        except IllegalOperationError, e:
+            raise faults.Forbidden(e[0])
     else:
         hashmap.append(request.backend.put_block(('\x00' * bo) + data[:bl]))
     return bl  # Return ammount of data written.
@@ -1021,7 +1017,7 @@ def simple_list_response(request, l):
 
 from pithos.backends.util import PithosBackendPool
 
-if BACKEND_STORAGE == 'rados':
+if RADOS_STORAGE:
     BLOCK_PARAMS = {'mappool': RADOS_POOL_MAPS,
                     'blockpool': RADOS_POOL_BLOCKS, }
 else:
@@ -1032,8 +1028,6 @@ BACKEND_KWARGS = dict(
     db_module=BACKEND_DB_MODULE,
     db_connection=BACKEND_DB_CONNECTION,
     block_module=BACKEND_BLOCK_MODULE,
-    block_path=BACKEND_BLOCK_PATH,
-    block_umask=BACKEND_BLOCK_UMASK,
     block_size=BACKEND_BLOCK_SIZE,
     hash_algorithm=BACKEND_HASH_ALGORITHM,
     queue_module=BACKEND_QUEUE_MODULE,
@@ -1049,8 +1043,13 @@ BACKEND_KWARGS = dict(
     account_quota_policy=BACKEND_ACCOUNT_QUOTA,
     container_quota_policy=BACKEND_CONTAINER_QUOTA,
     container_versioning_policy=BACKEND_VERSIONING,
-    backend_storage=BACKEND_STORAGE,
-    rados_ceph_conf=RADOS_CEPH_CONF)
+    archipelago_conf_file=BACKEND_ARCHIPELAGO_CONF,
+    xseg_pool_size=BACKEND_XSEG_POOL_SIZE,
+    map_check_interval=BACKEND_MAP_CHECK_INTERVAL,
+    mapfile_prefix=BACKEND_MAPFILE_PREFIX,
+    resource_max_metadata=RESOURCE_MAX_METADATA,
+    acc_max_groups=ACC_MAX_GROUPS,
+    acc_max_group_members=ACC_MAX_GROUP_MEMBERS)
 
 _pithos_backend_pool = PithosBackendPool(size=BACKEND_POOL_SIZE,
                                          **BACKEND_KWARGS)
@@ -1076,8 +1075,8 @@ def update_request_headers(request):
             v.decode('ascii')
             if '%' in k or '%' in v:
                 del(request.META[k])
-                request.META[unquote(k)] = smart_unicode(unquote(
-                    v), strings_only=True)
+                request.META[smart_unicode(unquote(k), strings_only=True)] = \
+                    smart_unicode(unquote(v), strings_only=True)
         except UnicodeDecodeError:
             raise faults.BadRequest('Bad character in headers.')
 
@@ -1126,6 +1125,10 @@ def api_method(http_method=None, token_required=True, user_required=True,
 
                 success_status = True
                 return response
+            except LimitExceeded, le:
+                raise faults.BadRequest(le.args[0])
+            except BrokenSnapshot, bs:
+                raise faults.BadRequest(bs.args[0])
             finally:
                 # Always close PithosBackend connection
                 if getattr(request, "backend", None) is not None:

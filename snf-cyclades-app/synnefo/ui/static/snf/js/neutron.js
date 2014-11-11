@@ -1,3 +1,19 @@
+// Copyright (C) 2010-2014 GRNET S.A.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+// 
+
 ;(function(root){
     // Neutron api models, collections, helpers
   
@@ -59,6 +75,14 @@
     // Network 
     models.Network = models.NetworkModel.extend({
       path: 'networks',
+      
+      url: function(options, method) {
+        var url = models.Network.__super__.url.call(this, method, options);
+        if (options.data && options.data.reassign) {
+          return url + '/action';
+        }
+        return url;
+      },
 
       parse: function(obj) {
         return obj.network;
@@ -83,6 +107,7 @@
         this.actions.reset_pending();
         this.destroy({
           success: _.bind(function() {
+            synnefo.api.trigger("quotas:call", 10);
             this.set({status: 'REMOVING'});
             this.set({ext_status: 'REMOVING'});
             // force status display update
@@ -140,11 +165,13 @@
         'subnets': ['subnets', 'subnet', function(model, attr) {
           var subnets = model.get(attr);
           if (subnets && subnets.length) { return subnets[0] }
-        }]
+        }],
+        'tenant_id': ['projects', 'project']
       },
 
       // call rename api
       rename: function(new_name, cb) {
+          var self = this;
           this.sync("update", this, {
               critical: true,
               data: {
@@ -156,6 +183,7 @@
               success: _.bind(function(){
                   //this.set({name: new_name});
                   snf.api.trigger("call");
+                  self.set({name: new_name});
               }, this),
               complete: cb || function() {}
           });
@@ -244,7 +272,25 @@
         this.pending_connections++;
         this.update_connecting_status();
         synnefo.storage.ports.create(data, {complete: cb});
-      }
+      },
+
+      reassign_to_project: function(project, success, cb) {
+        var project_id = project.id ? project.id : project;
+        var self = this;
+        var _success = function() {
+          success();
+          self.set({'tenant_id': project_id});
+        }
+        synnefo.api.sync('create', this, {
+          success: _success,
+          complete: cb,
+          data: { 
+            reassign: { 
+              project: project_id 
+            }
+          }
+        });
+      },
     });
     
     models.CombinedPublicNetwork = models.Network.extend({
@@ -304,7 +350,7 @@
       },
 
       get_floating_ips_network: function() {
-        return this.filter(function(n) { return n.get('is_public')})[1]
+        return this.filter(function(n) { return n.get('is_public') })[1]
       },
       
       create_subnet: function(subnet_params, complete, error) {
@@ -314,20 +360,26 @@
         });
       },
 
-      create: function (name, type, cidr, dhcp, gateway, callback) {
+      create: function (project, name, type, cidr, dhcp, gateway, callback) {
         var quota = synnefo.storage.quotas;
         var params = {network:{name:name}};
         var subnet_params = {subnet:{network_id:undefined}};
         if (!type) { throw "Network type cannot be empty"; }
 
         params.network.type = type;
+        params.network.project = project.id;
         if (cidr) { subnet_params.subnet.cidr = cidr; }
         if (dhcp) { subnet_params.subnet.dhcp_enabled = dhcp; }
         if (dhcp === false) { subnet_params.subnet.dhcp_enabled = false; }
-
-        subnet_params.subnet.gateway_ip = gateway || null;
+        
+        // api applies a gateway address automatically when gateway_ip 
+        // parameter is missing
+        if (gateway !== "auto") {
+            subnet_params.subnet.gateway_ip = gateway || null;
+        }
         
         var cb = function() {
+          synnefo.api.trigger("quotas:call");
           callback && callback();
         }
         
@@ -352,7 +404,7 @@
               created_network.destroy({no_skip: true});
             });
           }
-          quota.get('cyclades.network.private').increase();
+          project.quotas.get('cyclades.network.private').increase();
         }
         return this.api_call(this.path, "create", params, complete, error, success);
       }
@@ -504,12 +556,21 @@
 
     models.FloatingIP = models.NetworkModel.extend({
       path: 'floatingips',
+    
+      url: function(options, method) {
+        var url = models.FloatingIP.__super__.url.call(this, method, options);
+        if (options.data && options.data.reassign) {
+          return url + '/action';
+        }
+        return url;
+      },
 
       parse: function(obj) {
         return obj.floatingip;
       },
 
       storage_attrs: {
+        'tenant_id': ['projects', 'project'],
         'port_id': ['ports', 'port'],
         'floating_network_id': ['networks', 'network'],
       },
@@ -533,11 +594,30 @@
         }]
       },
       
+      reassign_to_project: function(project, success, cb) {
+        var project_id = project.id ? project.id : project;
+        var self = this;
+        var _success = function() {
+          success();
+          self.set({'tenant_id': project_id});
+        }
+        synnefo.api.sync('create', this, {
+          success: _success,
+          complete: cb,
+          data: { 
+            reassign: { 
+              project: project_id 
+            }
+          }
+        });
+      },
+
       do_remove: function(succ, err) { return this.do_destroy(succ, err) },
       do_destroy: function(succ, err) {
         this.actions.reset_pending();
         this.destroy({
           success: _.bind(function() {
+            synnefo.api.trigger("quotas:call", 10);
             this.set({status: 'REMOVING'});
             succ && succ();
           }, this),
@@ -552,6 +632,14 @@
       },
 
       proxy_attrs: {
+        '_status': [
+            ['status', 'port', 'port.vm'], function() {
+                var status = this.get("status");
+                var port = this.get("port");
+                var vm = port && port.get("vm");
+                return status + (vm ? vm.state() : "");
+            }
+        ],
         'ip': [
           ['floating_ip_adress'], function() {
             return this.get('floating_ip_address'); 
@@ -594,6 +682,9 @@
       path: 'floatingips',
       parse: function(resp) {
         return resp.floatingips;
+      },
+      comparator: function(m) {
+        return parseInt(m.id);
       }
     });
 

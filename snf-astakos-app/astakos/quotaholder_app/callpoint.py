@@ -1,44 +1,26 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from datetime import datetime
 from django.db.models import Q
 from astakos.quotaholder_app.exception import (
     QuotaholderError,
     NoCommissionError,
-    CorruptedError, InvalidDataError,
+    CorruptedError,
     NoHoldingError,
-    DuplicateError)
+)
 
 from astakos.quotaholder_app.commission import (
     Import, Release, Operations, finalize, undo)
@@ -73,6 +55,13 @@ def get_quota(holders=None, sources=None, resources=None, flt=None):
         quotas[key] = value
 
     return quotas
+
+
+def delete_quota(keys):
+    for holder, source, resource in keys:
+        Holding.objects.filter(holder=holder,
+                               source=source,
+                               resource=resource).delete()
 
 
 def _get_holdings_for_update(holding_keys, resource=None, delete=False):
@@ -132,30 +121,28 @@ def set_quota(quotas, resource=None):
     Holding.objects.bulk_create(new_holdings.values())
 
 
+def _merge_same_keys(provisions):
+    prov_dict = _partition_by(lambda t: t[0], provisions, lambda t: t[1])
+    tuples = []
+    for key, values in prov_dict.iteritems():
+        tuples.append((key, sum(values)))
+    return tuples
+
+
 def issue_commission(clientkey, provisions, name="", force=False):
     operations = Operations()
     provisions_to_create = []
 
+    provisions = _merge_same_keys(provisions)
     keys = [key for (key, value) in provisions]
     holdings = _get_holdings_for_update(keys)
     try:
-        checked = []
         for key, quantity in provisions:
-            if not isinstance(quantity, (int, long)):
-                raise InvalidDataError("Malformed provision")
-
-            if key in checked:
-                m = "Duplicate provision for %s" % str(key)
-                provision = _mkProvision(key, quantity)
-                raise DuplicateError(m,
-                                     provision=provision)
-            checked.append(key)
-
             # Target
             try:
                 th = holdings[key]
             except KeyError:
-                m = ("There is no such holding %s" % str(key))
+                m = ("There is no such holding %s" % unicode(key))
                 provision = _mkProvision(key, quantity)
                 raise NoHoldingError(m,
                                      provision=provision)
@@ -169,7 +156,6 @@ def issue_commission(clientkey, provisions, name="", force=False):
 
             holdings[key] = th
             provisions_to_create.append((key, quantity))
-
     except QuotaholderError:
         operations.revert()
         raise
@@ -177,12 +163,14 @@ def issue_commission(clientkey, provisions, name="", force=False):
     commission = Commission.objects.create(clientkey=clientkey,
                                            name=name,
                                            issue_datetime=datetime.now())
+    ps = []
     for (holder, source, resource), quantity in provisions_to_create:
-        Provision.objects.create(serial=commission,
-                                 holder=holder,
-                                 source=source,
-                                 resource=resource,
-                                 quantity=quantity)
+        ps.append(Provision(serial=commission,
+                            holder=holder,
+                            source=source,
+                            resource=resource,
+                            quantity=quantity))
+    Provision.objects.bulk_create(ps)
 
     return commission.serial
 
@@ -204,7 +192,7 @@ def _log_provision(commission, provision, holding, log_datetime, reason):
         'reason':              reason,
     }
 
-    ProvisionLog.objects.create(**kwargs)
+    return ProvisionLog(**kwargs)
 
 
 def _get_commissions_for_update(clientkey, serials):
@@ -217,12 +205,14 @@ def _get_commissions_for_update(clientkey, serials):
     return commissions
 
 
-def _partition_by(f, l):
+def _partition_by(f, l, convert=None):
+    if convert is None:
+        convert = lambda x: x
     d = {}
     for x in l:
         group = f(x)
         group_l = d.get(group, [])
-        group_l.append(x)
+        group_l.append(convert(x))
         d[group] = group_l
     return d
 
@@ -263,12 +253,15 @@ def resolve_pending_commissions(clientkey, accept_set=None, reject_set=None,
         accepted.append(serial) if accept else rejected.append(serial)
 
         ps = provisions.get(serial, [])
+        provision_ids = []
+        plog = []
         for pv in ps:
             key = pv.holding_key()
             h = holdings.get(key)
             if h is None:
-                raise CorruptedError("Corrupted provision")
+                raise CorruptedError("Corrupted provision '%s'" % key)
 
+            provision_ids.append(pv.id)
             quantity = pv.quantity
             action = finalize if accept else undo
             if quantity >= 0:
@@ -278,8 +271,10 @@ def resolve_pending_commissions(clientkey, accept_set=None, reject_set=None,
 
             prefix = 'ACCEPT:' if accept else 'REJECT:'
             comm_reason = prefix + reason[-121:]
-            _log_provision(commission, pv, h, log_datetime, comm_reason)
-            pv.delete()
+            plog.append(
+                _log_provision(commission, pv, h, log_datetime, comm_reason))
+        Provision.objects.filter(id__in=provision_ids).delete()
+        ProvisionLog.objects.bulk_create(plog)
         commission.delete()
     return accepted, rejected, notFound, conflicting
 

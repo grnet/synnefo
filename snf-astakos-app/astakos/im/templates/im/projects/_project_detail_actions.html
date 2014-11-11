@@ -2,49 +2,27 @@
 
 <!-- make room for buttons -->
 {% if owner_mode or admin_mode or can_join_request or can_leave_request %}
-  <br />
+<br />
 {% endif %}
 
 <div class="project-actions">
 {% if owner_mode or admin_mode %}
-<a class="owner-action" href="{% url astakos.im.views.project_modify object.pk %}">MODIFY</a>
-
-{% if owner_mode %}
-{% with project.last_pending_application as last_pending %}
-{% if last_pending != None %}
-{% if project.is_initialized %}
-- {% confirm_link "CANCEL PROJECT MODIFICATION" "project_modification_cancel" "project_app_cancel" last_pending.pk "" "OK" %}
-{% else %}
-- {% confirm_link "CANCEL PROJECT APPLICATION" "project_app_cancel" "project_app_cancel" last_pending.pk "" "OK" %}
-{% endif %}
-{% endif %}
-{% endwith %}
-{% endif %}
-
-{% if admin_mode %}
-{% if object.can_approve %}
-- {% confirm_link "APPROVE" "project_app_approve" "project_app_approve" object.pk "" "OK" %}
-- {% confirm_link "DENY" "project_app_deny" "project_app_deny" object.pk %}
-{% endif %}
-{% endif %}
-
-{% if owner_mode %}
-{% if object.can_dismiss %}
-- {% confirm_link "DISMISS" "project_app_dismiss" "project_app_dismiss" object.pk %}
-{% endif %}
-{% endif %}
-
-<!-- only one is possible, perhaps add cancel button too -->
-{% if can_join_request or can_leave_request %}
--
+{% if object.can_modify %}
+<div class="msg-wrap inline">
+  <a class="" href="{% url project_modify project_uuid=object.uuid %}">MODIFY</a> 
+</div>
 {% endif %}
 {% endif %}
 
 {% if can_join_request %}
-{% confirm_link "JOIN" "project_join" "project_join" project.pk %}
+{% confirm_link "JOIN" "project_join" "project_join" project.uuid %}
 {% endif %}
 
 {% if can_leave_request %}
-{% confirm_link "LEAVE" "project_leave" "project_leave" membership_id %}
+{% confirm_link "LEAVE" "project_leave" "project_leave" project.uuid %}
+{% endif %}
+
+{% if can_cancel_join_request %}
+{% confirm_link "CANCEL JOIN REQUEST" "project_cancel_member" "project_cancel_join" project.uuid "" "OK" %}
 {% endif %}
 </div>

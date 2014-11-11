@@ -27,7 +27,7 @@ GANETI_CREATEINSTANCE_KWARGS = {
     'hvparams': {"kvm": {'serial_console': False},
                  "xen-pvm": {},
                  "xen-hvm": {}},
-    'wait_for_sync': False}
+}
 
 # If True, qemu-kvm will hotplug a NIC when connecting a vm to
 # a network. This requires qemu-kvm=1.0.
@@ -37,6 +37,10 @@ GANETI_USE_HOTPLUG = True
 # not already locked. This might result in slightly unbalanced clusters.
 GANETI_USE_OPPORTUNISTIC_LOCKING = True
 
+# If False, Ganeti will not wait for the disk mirror to sync
+# (--no-wait-for-sync option in Ganeti). Useful only for DRBD template.
+GANETI_DISKS_WAIT_FOR_SYNC = False
+
 # This module implements the strategy for allocating a vm to a backend
 BACKEND_ALLOCATOR_MODULE = "synnefo.logic.allocators.default_allocator"
 # Refresh backend statistics timeout, in minutes, used in backend allocation
@@ -45,6 +49,10 @@ BACKEND_REFRESH_MIN = 15
 # Maximum number of NICs per Ganeti instance. This value must be less or equal
 # than 'max:nic-count' option of Ganeti's ipolicy.
 GANETI_MAX_NICS_PER_INSTANCE = 8
+
+# Maximum number of disks per Ganeti instance. This value must be less or equal
+# than 'max:disk-count' option of Ganeti's ipolicy.
+GANETI_MAX_DISKS_PER_INSTANCE = 8
 
 # The following setting defines a dictionary with key-value parameters to be
 # passed to each Ganeti ExtStorage provider. The setting defines a mapping from

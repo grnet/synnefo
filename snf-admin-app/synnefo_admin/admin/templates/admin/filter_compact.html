@@ -1,0 +1,14 @@
+{% load admin_tags %}
+<div class="filter compact-filter input-with-btn">
+    <div class="form-group">
+        <label title="Compact View">
+            <input type="search" data-filter="compact">
+        </label>
+    </div>
+    <a class="exec-search search-btn"><span>Search</span></a>
+    <div class="filter-error">
+	    <span class="error-sign snf-exclamation-sign"></span>
+	    <span class="error-description"></span>
+    </div>
+    {% include "admin/filter_compact_instructions.html" %}
+</div>

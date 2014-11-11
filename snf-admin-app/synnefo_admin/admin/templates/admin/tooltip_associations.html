@@ -1,0 +1,12 @@
+{% load admin_tags %}
+{% if association.excluded %}
+    Excluding <b>{{ association.excluded }} {{ association|present_excluded}}</b>
+    from the results.<br>
+{% endif %}
+
+{% if association.excluded|add:association.showing < association.total %}
+    Showing <b>{{ association.showing }} out of {{ association.total }}</b> total entries.<br>
+{% endif %}
+
+To view all entries, visit the {{ type|display_list_type }} tab in navigation.
+{{ association|show_more_exception_message }}

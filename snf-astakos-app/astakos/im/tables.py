@@ -1,35 +1,17 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.utils.translation import ugettext as _
 from django.utils.safestring import mark_safe
@@ -40,7 +22,7 @@ from django_tables2 import A
 import django_tables2 as tables
 
 from astakos.im.models import *
-from astakos.im.templatetags.filters import truncatename
+from astakos.im.util import truncatename
 from astakos.im.functions import can_join_request, membership_allowed_actions
 
 
@@ -54,7 +36,11 @@ class LinkColumn(tables.LinkColumn):
         self.append = kwargs.pop('append', None)
         super(LinkColumn, self).__init__(*args, **kwargs)
 
+    def get_value(self, value, record, bound_column):
+        return value
+
     def render(self, value, record, bound_column):
+        value = self.get_value(value, record, bound_column)
         link = super(LinkColumn, self).render(value, record, bound_column)
         extra = ''
         if self.append:
@@ -68,6 +54,21 @@ class LinkColumn(tables.LinkColumn):
         if self.coerce:
             text = self.coerce(text)
         return super(LinkColumn, self).render_link(uri, text, attrs)
+
+
+class ProjectNameColumn(LinkColumn):
+
+    def get_value(self, value, record, bound_column):
+        # inspect columnt context to resolve user, fallback to value
+        # if failed
+        try:
+            table = getattr(bound_column, 'table', None)
+            if table:
+                user = getattr(table, 'request').user
+                value = record.display_name_for_user(user)
+        except:
+            pass
+        return value
 
 
 # Helper columns
@@ -187,19 +188,19 @@ def action_extra_context(project, table, self):
         allowed = membership_allowed_actions(membership, user)
         if 'leave' in allowed:
             url = reverse('astakos.im.views.project_leave',
-                          args=(membership.id,))
+                          args=(membership.project.uuid,))
             action = _('Leave')
             confirm = True
             prompt = _('Are you sure you want to leave from the project?')
         elif 'cancel' in allowed:
-            url = reverse('astakos.im.views.project_cancel_member',
-                          args=(membership.id,))
+            url = reverse('project_cancel_join',
+                          args=(project.uuid,))
             action = _('Cancel')
             confirm = True
             prompt = _('Are you sure you want to cancel the join request?')
 
     if can_join_request(project, user, membership):
-        url = reverse('astakos.im.views.project_join', args=(project.id,))
+        url = reverse('project_join', args=(project.uuid,))
         action = _('Join')
         confirm = True
         prompt = _('Are you sure you want to join this project?')
@@ -225,9 +226,9 @@ class UserTable(tables.Table):
 
 
 def project_name_append(project, column):
-    pending_apps = column.table.pending_apps
-    app = pending_apps.get(project.id)
-    if app and app.id != project.application_id:
+    if project.state != project.UNINITIALIZED and \
+            project.last_application is not None and \
+            project.last_application.state == ProjectApplication.PENDING:
         return mark_safe("<br /><i class='tiny'>%s</i>" %
                          _('modifications pending'))
     return u''
@@ -236,38 +237,51 @@ def project_name_append(project, column):
 # Table classes
 class UserProjectsTable(UserTable):
 
+    _links = [
+        {'url': '?show_base=1', 'label': 'Show system projects'},
+        {'url': '?', 'label': 'Hide system projects'}
+    ]
+    links = []
+
     def __init__(self, *args, **kwargs):
+        self.request = kwargs.pop('request', None)
+        if self.request and self.request.user.is_project_admin():
+            self.links = [self._links[0]]
+            if self.request and self.request.GET.get('show_base', False):
+                self.links = [self._links[1]]
         self.pending_apps = kwargs.pop('pending_apps')
         self.memberships = kwargs.pop('memberships')
         self.accepted = kwargs.pop('accepted')
         self.requested = kwargs.pop('requested')
         super(UserProjectsTable, self).__init__(*args, **kwargs)
 
+        if self.request and self.request.user.is_project_admin():
+            self.caption = _("Projects")
+            owner_col = dict(self.columns.items())['owner']
+            setattr(owner_col.column, 'accessor', 'owner.realname_with_email')
+
     caption = _('My projects')
 
-    name = LinkColumn('astakos.im.views.project_detail',
+    name = ProjectNameColumn('project_detail',
                       coerce=lambda x: truncatename(x, 25),
                       append=project_name_append,
-                      args=(A('id'),),
+                      args=(A('uuid'),),
                       orderable=False,
-                      accessor='application.name')
+                      accessor='display_name')
 
-    issue_date = tables.DateColumn(verbose_name=_('Application'),
-                                   format=DEFAULT_DATE_FORMAT,
-                                   orderable=False,
-                                   accessor='application.issue_date')
-    start_date = tables.DateColumn(format=DEFAULT_DATE_FORMAT,
-                                   orderable=False,
-                                   accessor='application.start_date')
+    creation_date = tables.DateColumn(verbose_name=_('Application'),
+                                      format=DEFAULT_DATE_FORMAT,
+                                      orderable=False,
+                                      accessor='creation_date')
     end_date = tables.DateColumn(verbose_name=_('Expiration'),
                                  format=DEFAULT_DATE_FORMAT,
                                  orderable=False,
-                                 accessor='application.end_date')
+                                 accessor='end_date')
     members_count_f = tables.Column(verbose_name=_("Members"),
                                     empty_values=(),
                                     orderable=False)
     owner = tables.Column(verbose_name=_("Owner"),
-                          accessor='application.owner')
+                          accessor='owner.realname')
     membership_status = tables.Column(verbose_name=_("Status"),
                                       empty_values=(),
                                       orderable=False)
@@ -294,7 +308,7 @@ class UserProjectsTable(UserTable):
         if c > 0:
             pending_members_url = reverse(
                 'project_pending_members',
-                kwargs={'chain_id': record.id})
+                kwargs={'project_uuid': record.uuid})
 
             pending_members = "<i class='tiny'> - %d %s</i>" % (
                 c, _('pending'))
@@ -307,7 +321,7 @@ class UserProjectsTable(UserTable):
                                    (pending_members_url, c, _('pending')))
             append = mark_safe(pending_members)
         members_url = reverse('project_approved_members',
-                              kwargs={'chain_id': record.id})
+                              kwargs={'project_uuid': record.uuid})
         members_count = len(self.accepted.get(project.id, []))
         if self.user.owns_project(record) or self.user.is_project_admin():
             members_count = '<a href="%s">%d</a>' % (members_url,
@@ -315,12 +329,11 @@ class UserProjectsTable(UserTable):
         return mark_safe(str(members_count) + append)
 
     class Meta:
-        sequence = ('name', 'membership_status', 'owner', 'issue_date',
+        sequence = ('name', 'membership_status', 'owner', 'creation_date',
                     'end_date', 'members_count_f', 'project_action')
         attrs = {'id': 'projects-list', 'class': 'my-projects alt-style'}
         template = "im/table_render.html"
         empty_text = _('No projects')
-        exclude = ('start_date', )
 
 
 def member_action_extra_context(membership, table, col):
@@ -332,21 +345,22 @@ def member_action_extra_context(membership, table, col):
         return context
 
     if membership.state == ProjectMembership.REQUESTED:
-        urls = ['astakos.im.views.project_reject_member',
-                'astakos.im.views.project_accept_member']
+        urls = ['project_reject_member',
+                'project_accept_member']
         actions = [_('Reject'), _('Accept')]
         prompts = [_('Are you sure you want to reject this member?'),
                    _('Are you sure you want to accept this member?')]
         confirms = [True, True]
 
     if membership.state in ProjectMembership.ACCEPTED_STATES:
-        urls = ['astakos.im.views.project_remove_member']
+        urls = ['project_remove_member']
         actions = [_('Remove')]
         prompts = [_('Are you sure you want to remove this member?')]
         confirms = [True, True]
 
     for i, url in enumerate(urls):
-        context.append(dict(url=reverse(url, args=(membership.pk,)),
+        context.append(dict(url=reverse(url, args=(membership.project.uuid,
+                                                   membership.pk,)),
                             action=actions[i], prompt=prompts[i],
                             confirm=confirms[i]))
     return context

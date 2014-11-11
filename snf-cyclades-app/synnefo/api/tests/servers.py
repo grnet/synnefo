@@ -1,36 +1,18 @@
 # encoding: utf-8
-# Copyright 2012 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
 from copy import deepcopy
@@ -38,7 +20,7 @@ from copy import deepcopy
 from snf_django.utils.testing import (BaseAPITest, mocked_quotaholder,
                                       override_settings)
 from synnefo.db.models import (VirtualMachine, VirtualMachineMetadata,
-                               IPAddress, NetworkInterface)
+                               IPAddress, NetworkInterface, Volume)
 from synnefo.db import models_factory as mfactory
 from synnefo.logic.utils import get_rsapi_state
 from synnefo.cyclades_settings import cyclades_services
@@ -326,14 +308,20 @@ class ServerAPITest(ComputeAPITest):
 
 fixed_image = Mock()
 fixed_image.return_value = {'location': 'pithos://foo',
-                            'checksum': '1234',
+                            'mapfile': '1234',
                             "id": 1,
                             "name": "test_image",
-                            "size": "41242",
+                            "version": 42,
+                            "is_public": True,
+                            "owner": "user1",
+                            "size": 1024,
+                            "is_snapshot": False,
+                            "status": "AVAILABLE",
                             'disk_format': 'diskdump'}
 
 
 @patch('synnefo.api.util.get_image', fixed_image)
+@patch('synnefo.volume.util.get_snapshot', fixed_image)
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
 class ServerCreateAPITest(ComputeAPITest):
     def setUp(self):
@@ -594,6 +582,89 @@ class ServerCreateAPITest(ComputeAPITest):
                                        json.dumps(request), 'json')
         self.assertEqual(response.status_code, 404)
 
+    def test_create_server_with_volumes(self, mrapi):
+        user = "test_user"
+        mrapi().CreateInstance.return_value = 42
+        # Test creation without any volumes. Server will use flavor+image
+        request = deepcopy(self.request)
+        request["server"]["block_device_mapping_v2"] = []
+        with mocked_quotaholder():
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202, msg=response.content)
+        vm_id = json.loads(response.content)["server"]["id"]
+        volume = Volume.objects.get(machine_id=vm_id)
+        self.assertEqual(volume.volume_type, self.flavor.volume_type)
+        self.assertEqual(volume.size, self.flavor.disk)
+        self.assertEqual(volume.source, "image:%s" % fixed_image()["id"])
+        self.assertEqual(volume.delete_on_termination, True)
+        self.assertEqual(volume.userid, user)
+
+        # Test using an image
+        request["server"]["block_device_mapping_v2"] = [
+            {"source_type": "image",
+             "uuid": fixed_image()["id"],
+             "volume_size": 10,
+             "delete_on_termination": True}
+        ]
+        with mocked_quotaholder():
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202, msg=response.content)
+        vm_id = json.loads(response.content)["server"]["id"]
+        volume = Volume.objects.get(machine_id=vm_id)
+        self.assertEqual(volume.volume_type, self.flavor.volume_type)
+        self.assertEqual(volume.size, 10)
+        self.assertEqual(volume.source, "image:%s" % fixed_image()["id"])
+        self.assertEqual(volume.delete_on_termination, True)
+        self.assertEqual(volume.userid, user)
+        self.assertEqual(volume.origin, fixed_image()["mapfile"])
+
+        # Test using a snapshot
+        request["server"]["block_device_mapping_v2"] = [
+            {"source_type": "snapshot",
+             "uuid": fixed_image()["id"],
+             "volume_size": 10,
+             "delete_on_termination": True}
+        ]
+        with mocked_quotaholder():
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertEqual(response.status_code, 202, msg=response.content)
+        vm_id = json.loads(response.content)["server"]["id"]
+        volume = Volume.objects.get(machine_id=vm_id)
+        self.assertEqual(volume.volume_type, self.flavor.volume_type)
+        self.assertEqual(volume.size, 10)
+        self.assertEqual(volume.source, "snapshot:%s" % fixed_image()["id"])
+        self.assertEqual(volume.origin, fixed_image()["mapfile"])
+        self.assertEqual(volume.delete_on_termination, True)
+        self.assertEqual(volume.userid, user)
+
+        source_volume = volume
+        # Test using source volume
+        request["server"]["block_device_mapping_v2"] = [
+            {"source_type": "volume",
+             "uuid": source_volume.id,
+             "volume_size": source_volume.size,
+             "delete_on_termination": True}
+        ]
+        with mocked_quotaholder():
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        # This will fail because the volume is not AVAILABLE.
+        self.assertBadRequest(response)
+
+        # Test using a blank volume
+        request["server"]["block_device_mapping_v2"] = [
+            {"source_type": "blank",
+             "volume_size": 10,
+             "delete_on_termination": True}
+        ]
+        with mocked_quotaholder():
+            response = self.mypost("servers", user,
+                                   json.dumps(request), 'json')
+        self.assertBadRequest(response)
+
 
 @patch('synnefo.logic.rapi_pool.GanetiRapiClient')
 class ServerDestroyAPITest(ComputeAPITest):
@@ -787,8 +858,10 @@ class ServerActionAPITest(ComputeAPITest):
         response = self.mypost('servers/%d/action' % vm.id,
                                vm.userid, json.dumps(request), 'json')
         self.assertBadRequest(response)
-        flavor2 = mfactory.FlavorFactory(disk_template="foo")
-        flavor3 = mfactory.FlavorFactory(disk_template="baz")
+
+        # Check flavor with different volume type
+        flavor2 = mfactory.FlavorFactory(volume_type__disk_template="foo")
+        flavor3 = mfactory.FlavorFactory(volume_type__disk_template="baz")
         vm = self.get_vm(flavor=flavor2, operstate="STOPPED")
         request = {'resize': {'flavorRef': flavor3.id}}
         response = self.mypost('servers/%d/action' % vm.id,
@@ -796,7 +869,7 @@ class ServerActionAPITest(ComputeAPITest):
         self.assertBadRequest(response)
         # Check success
         vm = self.get_vm(flavor=flavor, operstate="STOPPED")
-        flavor4 = mfactory.FlavorFactory(disk_template=flavor.disk_template,
+        flavor4 = mfactory.FlavorFactory(volume_type=vm.flavor.volume_type,
                                          disk=flavor.disk,
                                          cpu=4, ram=2048)
         request = {'resize': {'flavorRef': flavor4.id}}
@@ -850,9 +923,19 @@ class ServerVNCConsole(ComputeAPITest):
         vm.save()
 
         data = json.dumps({'console': {'type': 'vnc'}})
-        with override_settings(settings, TEST=True):
-            response = self.mypost('servers/%d/action' % vm.id,
-                                   vm.userid, data, 'json')
+        with patch('synnefo.logic.rapi_pool.GanetiRapiClient') as rapi:
+            rapi().GetInstance.return_value = {"pnode": "node1",
+                                               "network_port": 5055,
+                                               "oper_state": True,
+                                               "hvparams": {
+                                                   "serial_console": False
+                                               }}
+            with patch("synnefo.logic.servers.request_vnc_forwarding") as vnc:
+                vnc.return_value = {"status": "OK",
+                                    "source_port": 42}
+                response = self.mypost('servers/%d/action' % vm.id,
+                                       vm.userid, data, 'json')
+
         self.assertEqual(response.status_code, 200)
         reply = json.loads(response.content)
         self.assertEqual(reply.keys(), ['console'])
@@ -871,3 +954,83 @@ class ServerVNCConsole(ComputeAPITest):
         response = self.mypost('servers/%d/action' % vm.id,
                                vm.userid, data, 'json')
         self.assertBadRequest(response)
+
+
+@patch('synnefo.logic.rapi_pool.GanetiRapiClient')
+class ServerAttachments(ComputeAPITest):
+    def test_list_attachments(self, mrapi):
+        # Test default volume
+        vol = mfactory.VolumeFactory()
+        vm = vol.machine
+
+        response = self.myget("servers/%d/os-volume_attachments" % vm.id,
+                              vm.userid)
+        self.assertSuccess(response)
+        attachments = json.loads(response.content)
+        self.assertEqual(len(attachments), 1)
+        self.assertEqual(attachments["volumeAttachments"][0],
+                         {"volumeId": vol.id,
+                          "serverId": vm.id,
+                          "id": vol.id,
+                          "device": ""})
+
+        # Test deleted Volume
+        dvol = mfactory.VolumeFactory(machine=vm, deleted=True)
+        response = self.myget("servers/%d/os-volume_attachments" % vm.id,
+                              vm.userid)
+        self.assertSuccess(response)
+        attachments = json.loads(response.content)["volumeAttachments"]
+        self.assertEqual(len([d for d in attachments if d["id"] == dvol.id]),
+                         0)
+
+    def test_attach_detach_volume(self, mrapi):
+        vol = mfactory.VolumeFactory(status="AVAILABLE")
+        vm = vol.machine
+        volume_type = vm.flavor.volume_type
+        # Test that we cannot detach the root volume
+        response = self.mydelete("servers/%d/os-volume_attachments/%d" %
+                                 (vm.id, vol.id), vm.userid)
+        self.assertBadRequest(response)
+
+        # Test that we cannot attach a used volume
+        vol1 = mfactory.VolumeFactory(status="IN_USE",
+                                      volume_type=volume_type,
+                                      userid=vm.userid)
+        request = json.dumps({"volumeAttachment": {"volumeId": vol1.id}})
+        response = self.mypost("servers/%d/os-volume_attachments" %
+                               vm.id, vm.userid,
+                               request, "json")
+        self.assertBadRequest(response)
+
+        vol1.status = "AVAILABLE"
+        # We cannot attach a volume of different disk template
+        volume_type_2 = mfactory.VolumeTypeFactory(disk_template="lalalal")
+        vol1.volume_type = volume_type_2
+        vol1.save()
+        response = self.mypost("servers/%d/os-volume_attachments/" %
+                               vm.id, vm.userid,
+                               request, "json")
+        self.assertBadRequest(response)
+
+        vol1.volume_type = volume_type
+        vol1.save()
+        mrapi().ModifyInstance.return_value = 43
+        response = self.mypost("servers/%d/os-volume_attachments" %
+                               vm.id, vm.userid,
+                               request, "json")
+        self.assertEqual(response.status_code, 202, response.content)
+        attachment = json.loads(response.content)["volumeAttachment"]
+        self.assertEqual(attachment, {"volumeId": vol1.id,
+                                      "serverId": vm.id,
+                                      "id": vol1.id,
+                                      "device": ""})
+        # And we delete it...will fail because of status
+        response = self.mydelete("servers/%d/os-volume_attachments/%d" %
+                                 (vm.id, vol1.id), vm.userid)
+        self.assertBadRequest(response)
+        vm.task = None
+        vm.save()
+        vm.volumes.all().update(status="IN_USE")
+        response = self.mydelete("servers/%d/os-volume_attachments/%d" %
+                                 (vm.id, vol1.id), vm.userid)
+        self.assertEqual(response.status_code, 202, response.content)

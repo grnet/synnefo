@@ -546,6 +546,29 @@ class GanetiRapiClient(object): # pylint: disable=R0904
                              ("/%s/instances/%s/deactivate-disks" %
                               (GANETI_RAPI_VERSION, instance)), None, None)
 
+  def SnapshotInstance(self, instance, disks, dry_run=False, reason=None):
+    """Takes snapshot of instance's disks.
+
+    More details for parameters can be found in the RAPI documentation.
+
+    @type instance: string
+    @param instance: Instance name
+    @type disks: list of tuples
+    @param disks: The disks to snapshot
+    @rtype: string
+    @return: job id
+
+    """
+    body = {"disks": disks}
+
+    query = []
+    _AppendIf(query, reason, ("reason", reason))
+    _AppendDryRunIf(query, dry_run)
+
+    return self._SendRequest(HTTP_PUT,
+                             ("/%s/instances/%s/snapshot" %
+                              (GANETI_RAPI_VERSION, instance)), query, body)
+
   def RecreateInstanceDisks(self, instance, disks=None, nodes=None):
     """Recreate an instance's disks.
 
@@ -1462,7 +1485,7 @@ class GanetiRapiClient(object): # pylint: disable=R0904
     return self._SendRequest(HTTP_POST, "/%s/networks" % GANETI_RAPI_VERSION,
                              query, body)
 
-  def ConnectNetwork(self, network_name, group_name, mode, link,
+  def ConnectNetwork(self, network_name, group_name, mode, link, vlan="",
                      conflicts_check=False, depends=None, dry_run=False):
     """Connects a Network to a NodeGroup with the given netparams
 
@@ -1471,6 +1494,10 @@ class GanetiRapiClient(object): # pylint: disable=R0904
       "group_name": group_name,
       "network_mode": mode,
       "network_link": link,
+      # This will be needed only if synnefo supports networks based on ovs.
+      # Note that adding this here will break
+      # compatibility with Ganeti versions older than 2.10
+      # "network_vlan": vlan,
       "conflicts_check": conflicts_check,
       }
 

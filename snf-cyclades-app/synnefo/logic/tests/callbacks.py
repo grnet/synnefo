@@ -1,32 +1,18 @@
 # vim: set fileencoding=utf-8 :
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above copyright
-#      notice, this list of conditions and the following disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#  2. Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in the
-#     documentation and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are
-# those of the authors and should not be interpreted as representing official
-# policies, either expressed or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 # Provides automated tests for logic module
 
@@ -51,7 +37,7 @@ from time import time
 import json
 
 
-## Test Callbacks
+# Test Callbacks
 @patch('synnefo.lib.amqp.AMQPClient')
 class UpdateDBTest(TestCase):
     def create_msg(self, **kwargs):
@@ -133,14 +119,16 @@ class UpdateDBTest(TestCase):
         self.assertEqual(db_vm.operstate, 'STARTED')
 
     def test_remove(self, client):
-        vm = mfactory.VirtualMachineFactory()
+        vm = mfactory.VirtualMachineFactory(flavor__cpu=1, flavor__ram=128)
+        mfactory.VolumeFactory(userid=vm.userid, machine=vm, size=1)
+        mfactory.VolumeFactory(userid=vm.userid, machine=vm, size=3)
         # Also create a NIC
         ip = mfactory.IPv4AddressFactory(nic__machine=vm)
         nic = ip.nic
         nic.network.get_ip_pools()[0].reserve(nic.ipv4_address)
         msg = self.create_msg(operation='OP_INSTANCE_REMOVE',
                               instance=vm.backend_vm_id)
-        with mocked_quotaholder():
+        with mocked_quotaholder() as m:
             update_db(client, msg)
         self.assertTrue(client.basic_ack.called)
         db_vm = VirtualMachine.objects.get(id=vm.id)
@@ -149,6 +137,17 @@ class UpdateDBTest(TestCase):
         # Check that nics are deleted
         self.assertFalse(db_vm.nics.all())
         self.assertTrue(nic.network.get_ip_pools()[0].is_available(ip.address))
+        # Check that volumes are deleted
+        self.assertFalse(db_vm.volumes.filter(deleted=False))
+        # Check quotas
+        name, args, kwargs = m.mock_calls[0]
+        for (userid, res), value in args[1].items():
+            if res == 'cyclades.disk':
+                self.assertEqual(value, -4 << 30)
+            elif res == 'cyclades.cpu':
+                self.assertEqual(value, -1)
+            elif res == 'cyclades.ram':
+                self.assertEqual(value, -128 << 20)
         vm2 = mfactory.VirtualMachineFactory()
         fp1 = mfactory.IPv4AddressFactory(nic__machine=vm2, floating_ip=True,
                                           network__floating_ip_pool=True)
@@ -285,11 +284,13 @@ class UpdateDBTest(TestCase):
         db_vm = VirtualMachine.objects.get(id=vm.id)
         self.assertEqual(db_vm.operstate, "STOPPED")
         # Test success
-        f1 = mfactory.FlavorFactory(cpu=4, ram=1024, disk_template="drbd",
+        f1 = mfactory.FlavorFactory(cpu=4, ram=1024,
+                                    volume_type__disk_template="drbd",
                                     disk=1024)
         vm.flavor = f1
         vm.save()
-        f2 = mfactory.FlavorFactory(cpu=8, ram=2048, disk_template="drbd",
+        f2 = mfactory.FlavorFactory(cpu=8, ram=2048,
+                                    volume_type__disk_template="drbd",
                                     disk=1024)
         beparams = {"vcpus": 8, "minmem": 2048, "maxmem": 2048}
         msg = self.create_msg(operation='OP_INSTANCE_SET_PARAMS',
@@ -312,6 +313,40 @@ class UpdateDBTest(TestCase):
         with mocked_quotaholder():
             update_db(client, msg)
         self.assertTrue(client.basic_reject.called)
+
+    @patch("synnefo.plankton.backend.get_pithos_backend")
+    def test_error_snapshot(self, pithos_backend, client):
+        vm = mfactory.VirtualMachineFactory()
+        disks = [
+            (0, {"snapshot_info": json.dumps({"snapshot_id":
+                                              "test_snapshot_id"})})
+        ]
+        msg = self.create_msg(operation='OP_INSTANCE_SNAPSHOT',
+                              instance=vm.backend_vm_id,
+                              job_fields={'disks': disks},
+                              status="running")
+        update_db(client, msg)
+        self.assertEqual(pithos_backend().update_object_status.mock_calls, [])
+
+        msg = self.create_msg(operation='OP_INSTANCE_SNAPSHOT',
+                              instance=vm.backend_vm_id,
+                              job_fields={'disks': disks},
+                              event_time=split_time(time()),
+                              status="error")
+        update_db(client, msg)
+
+        pithos_backend().update_object_status\
+                        .assert_called_once_with("test_snapshot_id", state=-1)
+
+        pithos_backend.reset_mock()
+        msg = self.create_msg(operation='OP_INSTANCE_SNAPSHOT',
+                              instance=vm.backend_vm_id,
+                              job_fields={'disks': disks},
+                              event_time=split_time(time()),
+                              status="success")
+        update_db(client, msg)
+        pithos_backend().update_object_status\
+                        .assert_called_once_with("test_snapshot_id", state=1)
 
 
 @patch('synnefo.lib.amqp.AMQPClient')
@@ -618,7 +653,6 @@ class UpdateNetworkTest(TestCase):
                                   "remove_reserved_ips": ["10.0.0.10",
                                                           "10.0.0.20"]})
         update_network(client, msg)
-        #self.assertTrue(client.basic_ack.called)
         pool = network.get_ip_pools()[0]
         self.assertTrue(pool.is_reserved('10.0.0.10'))
         self.assertTrue(pool.is_reserved('10.0.0.20'))

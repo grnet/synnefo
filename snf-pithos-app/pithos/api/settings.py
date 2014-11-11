@@ -1,35 +1,17 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #coding=utf8
 import logging
@@ -37,7 +19,6 @@ import logging
 from django.conf import settings
 from synnefo.lib import parse_base_url, join_urls
 from synnefo.lib.services import fill_endpoints
-from synnefo.util.keypath import get_path
 from pithos.api.services import pithos_services as vanilla_pithos_services
 from astakosclient import AstakosClient
 
@@ -55,16 +36,13 @@ BASE_URL = getattr(settings, 'PITHOS_BASE_URL',
 # Service Token acquired by identity provider.
 SERVICE_TOKEN = getattr(settings, 'PITHOS_SERVICE_TOKEN', '')
 
-# Select Pithos backend storage.
-BACKEND_STORAGE = getattr(settings, 'PITHOS_BACKEND_STORAGE', 'nfs')
-
 BASE_HOST, BASE_PATH = parse_base_url(BASE_URL)
 
 pithos_services = deepcopy(vanilla_pithos_services)
 fill_endpoints(pithos_services, BASE_URL)
-PITHOS_PREFIX = get_path(pithos_services, 'pithos_object-store.prefix')
-PUBLIC_PREFIX = get_path(pithos_services, 'pithos_public.prefix')
-UI_PREFIX = get_path(pithos_services, 'pithos_ui.prefix')
+PITHOS_PREFIX = pithos_services['pithos_object-store']['prefix']
+PUBLIC_PREFIX = pithos_services['pithos_public']['prefix']
+UI_PREFIX = pithos_services['pithos_ui']['prefix']
 VIEW_PREFIX = join_urls(UI_PREFIX, 'view')
 
 
@@ -169,8 +147,7 @@ BACKEND_POOL_SIZE = getattr(settings, 'PITHOS_BACKEND_POOL_SIZE', 5)
 # Update object checksums.
 UPDATE_MD5 = getattr(settings, 'PITHOS_UPDATE_MD5', False)
 
-RADOS_CEPH_CONF = getattr(settings, 'PITHOS_RADOS_CEPH_CONF', \
-                          '/etc/ceph/ceph.conf')
+RADOS_STORAGE = getattr(settings, 'PITHOS_RADOS_STORAGE', False)
 RADOS_POOL_BLOCKS = getattr(settings, 'PITHOS_RADOS_POOL_BLOCKS', 'blocks')
 RADOS_POOL_MAPS = getattr(settings, 'PITHOS_RADOS_POOL_MAPS', 'maps')
 
@@ -208,3 +185,28 @@ OAUTH2_CLIENT_CREDENTIALS = getattr(settings,
 # Set domain to restrict requests of pithos object contents serve endpoint or
 # None for no domain restriction
 UNSAFE_DOMAIN = getattr(settings, 'PITHOS_UNSAFE_DOMAIN', None)
+
+# Archipelago Configuration File
+BACKEND_ARCHIPELAGO_CONF = getattr(settings, 'PITHOS_BACKEND_ARCHIPELAGO_CONF',
+                                   '/etc/archipelago/archipelago.conf')
+
+# Archipelagp xseg pool size
+BACKEND_XSEG_POOL_SIZE = getattr(settings, 'PITHOS_BACKEND_XSEG_POOL_SIZE', 8)
+
+# The maximum interval (in seconds) for consequent backend object map checks
+BACKEND_MAP_CHECK_INTERVAL = getattr(settings,
+                                     'PITHOS_BACKEND_MAP_CHECK_INTERVAL', 5)
+
+# The archipelago mapfile prefix (it should not exceed 15 characters)
+# WARNING: Once set it should not be changed
+BACKEND_MAPFILE_PREFIX = getattr(settings,
+                                 'PITHOS_BACKEND_MAPFILE_PREFIX', 'snf_file_')
+
+# The maximum allowed metadata items per domain for a Pithos+ resource
+RESOURCE_MAX_METADATA = getattr(settings, 'PITHOS_RESOURCE_MAX_METADATA', 32)
+
+# The maximum allowed groups for a Pithos+ account.
+ACC_MAX_GROUPS = getattr(settings, 'PITHOS_ACC_MAX_GROUPS', 32)
+
+# The maximum allowed group members per group.
+ACC_MAX_GROUP_MEMBERS = getattr(settings, 'PITHOS_ACC_MAX_GROUP_MEMBERS', 32)

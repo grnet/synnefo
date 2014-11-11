@@ -1,35 +1,17 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from objpool import ObjectPool
 from new import instancemethod
@@ -41,70 +23,12 @@ USAGE_LIMIT = 500
 
 
 class PithosBackendPool(ObjectPool):
-    def __init__(self, size=None, db_module=None, db_connection=None,
-                 block_module=None, block_path=None, block_umask=None,
-                 block_size=None, hash_algorithm=None,
-                 queue_module=None, queue_hosts=None,
-                 queue_exchange=None, free_versioning=True,
-                 astakos_auth_url=None, service_token=None,
-                 astakosclient_poolsize=None,
-                 block_params=None,
-                 public_url_security=None,
-                 public_url_alphabet=None,
-                 account_quota_policy=None,
-                 container_quota_policy=None,
-                 container_versioning_policy=None,
-                 backend_storage=None,
-                 rados_ceph_conf=None):
+    def __init__(self, size=None, **kwargs):
         super(PithosBackendPool, self).__init__(size=size)
-        self.db_module = db_module
-        self.db_connection = db_connection
-        self.block_module = block_module
-        self.block_path = block_path
-        self.block_umask = block_umask
-        self.block_size = block_size
-        self.hash_algorithm = hash_algorithm
-        self.queue_module = queue_module
-        self.block_params = block_params
-        self.queue_hosts = queue_hosts
-        self.queue_exchange = queue_exchange
-        self.astakos_auth_url = astakos_auth_url
-        self.service_token = service_token
-        self.astakosclient_poolsize = astakosclient_poolsize
-        self.free_versioning = free_versioning
-        self.public_url_security = public_url_security
-        self.public_url_alphabet = public_url_alphabet
-        self.account_quota_policy = account_quota_policy
-        self.container_quota_policy = container_quota_policy
-        self.container_versioning_policy = container_versioning_policy
-        self.backend_storage = backend_storage
-        self.rados_ceph_conf = rados_ceph_conf
+        self.backend_kwargs = kwargs
 
     def _pool_create(self):
-        backend = connect_backend(
-            db_module=self.db_module,
-            db_connection=self.db_connection,
-            block_module=self.block_module,
-            block_path=self.block_path,
-            block_umask=self.block_umask,
-            block_size=self.block_size,
-            hash_algorithm=self.hash_algorithm,
-            queue_module=self.queue_module,
-            block_params=self.block_params,
-            queue_hosts=self.queue_hosts,
-            queue_exchange=self.queue_exchange,
-            astakos_auth_url=self.astakos_auth_url,
-            service_token=self.service_token,
-            astakosclient_poolsize=self.astakosclient_poolsize,
-            free_versioning=self.free_versioning,
-            public_url_security=self.public_url_security,
-            public_url_alphabet=self.public_url_alphabet,
-            account_quota_policy=self.account_quota_policy,
-            container_quota_policy=self.container_quota_policy,
-            container_versioning_policy=self.container_versioning_policy,
-            backend_storage=self.backend_storage,
-            rados_ceph_conf=self.rados_ceph_conf)
-
+        backend = connect_backend(**self.backend_kwargs)
         backend._real_close = backend.close
         backend.close = instancemethod(_pooled_backend_close, backend,
                                        type(backend))

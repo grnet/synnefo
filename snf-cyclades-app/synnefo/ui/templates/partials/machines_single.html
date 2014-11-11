@@ -15,6 +15,9 @@
                         <div class="indicator3"></div>
                         <div class="indicator4"></div>
                     </div>
+                    <div class="project-name-cont">
+                      <span class="project-name"></span>
+                    </div>
                     <div class="action-indicator" style="display:none">empty</div>
                     <img class="spinner" style="display:none" src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/medium/progress.gif" />
                     <img class="wave" style="display:none" src="{{ SYNNEFO_IMAGES_URL }}icons/indicators/medium/wave.gif" />
@@ -29,7 +32,7 @@
             <div class="title machine-detail name">My Desktop</div>
             <div class="suspended-notice">SUSPENDED</div>
             <div class="column2">
-                <div class="fqdn"></div>
+                <input class="fqdn reset" disabled />
                 <div class="machine-labels">
                     <div class="machine-label cpus">{% trans "CPUs" %}:</div>
                     <div class="machine-label ram">{% trans "RAM (MB)" %}:</div>
@@ -51,9 +54,14 @@
                             <span class="label">{% trans "tags" %}</span>
                         </span>
                     </div>
+                    <div class="cont-toggler-wrapper toggler-header volumes">
+                      <span class="info-header cont-toggler toggler">
+                        <span class="label">{% trans "disks" %}</span>
+                      </span>
+                    </div>
                     <div class="cont-toggler-wrapper toggler-header ips">
                       <span class="info-header cont-toggler toggler">
-                        <span class="label">{% trans "IP addresses" %}</span>
+                        <span class="label">{% trans "IPs" %}</span>
                       </span>
                     </div>
                   </div>
@@ -66,6 +74,8 @@
                       <a href="#" class="manage-metadata">{% trans "Manage Tags" %}</a>
                     </div>
                     <div class="ips-content toggler-content hidden info-content">
+                    </div>
+                    <div class="volumes-content toggler-content hidden info-content">
                     </div>
                   </div>
                 </div>
@@ -102,10 +112,6 @@
                     </div>
                     <div class="action-container resize">
                         <a class="single-action action-resize">{% trans "Resize" %}</a>
-                        <div class="confirm_single">
-                            <button class="yes">{% trans "Confirm" %}</button>
-                            <button class="no">X</button>
-                        </div>
                     </div>
                     <div class="action-container destroy">
                         <a class="single-action action-destroy">{% trans "Destroy" %}</a>

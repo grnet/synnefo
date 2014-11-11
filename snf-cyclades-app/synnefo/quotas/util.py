@@ -1,95 +1,111 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.db.models import Sum, Count, Q
 
-from synnefo.db.models import VirtualMachine, Network, IPAddress
+from synnefo.db.models import VirtualMachine, Network, IPAddress, Volume
 from synnefo.quotas import Quotaholder
+from collections import defaultdict
+
+QuotaDict = lambda: defaultdict(lambda: defaultdict(dict))
+
+MiB = 2 ** 20
+GiB = 2 ** 30
 
 
-def get_db_holdings(user=None):
-    """Get holdings from Cyclades DB."""
-    holdings = {}
+def get_db_holdings(user=None, project=None, for_users=True):
+    """Get per user or per project holdings from Cyclades DB."""
+
+    if for_users is False and user is not None:
+        raise ValueError(
+            "Computing per project holdings; setting a user is meaningless.")
+    holdings = QuotaDict()
 
     vms = VirtualMachine.objects.filter(deleted=False)
     networks = Network.objects.filter(deleted=False)
     floating_ips = IPAddress.objects.filter(deleted=False, floating_ip=True)
+    volumes = Volume.objects.filter(deleted=False)
 
-    if user is not None:
+    if for_users and user is not None:
         vms = vms.filter(userid=user)
         networks = networks.filter(userid=user)
         floating_ips = floating_ips.filter(userid=user)
+        volumes = volumes.filter(userid=user)
 
-    # Get resources related with VMs
-    vm_resources = vms.values("userid")\
-                      .annotate(num=Count("id"),
-                                total_ram=Sum("flavor__ram"),
-                                total_cpu=Sum("flavor__cpu"),
-                                disk=Sum("flavor__disk"))
-    vm_active_resources = \
-        vms.values("userid")\
-           .filter(Q(operstate="STARTED") | Q(operstate="BUILD") |
-                   Q(operstate="ERROR"))\
-           .annotate(ram=Sum("flavor__ram"),
-                     cpu=Sum("flavor__cpu"))
+    if project is not None:
+        vms = vms.filter(project=project)
+        networks = networks.filter(project=project)
+        floating_ips = floating_ips.filter(project=project)
+        volumes = volumes.filter(project=project)
 
+    values = ["project"]
+    if for_users:
+        values.append("userid")
+
+    vm_resources = vms.values(*values)\
+        .annotate(num=Count("id"),
+                  total_ram=Sum("flavor__ram"),
+                  total_cpu=Sum("flavor__cpu"))
     for vm_res in vm_resources.iterator():
-        user = vm_res['userid']
+        project = vm_res['project']
         res = {"cyclades.vm": vm_res["num"],
                "cyclades.total_cpu": vm_res["total_cpu"],
-               "cyclades.disk": 1073741824 * vm_res["disk"],
-               "cyclades.total_ram": 1048576 * vm_res["total_ram"]}
-        holdings[user] = res
+               "cyclades.total_ram": vm_res["total_ram"] * MiB}
+        pholdings = holdings[vm_res['userid']] if for_users else holdings
+        pholdings[project] = res
+
+    vm_active_resources = vms.values(*values)\
+        .filter(Q(operstate="STARTED") | Q(operstate="BUILD") |
+                Q(operstate="ERROR"))\
+        .annotate(ram=Sum("flavor__ram"),
+                  cpu=Sum("flavor__cpu"))
 
     for vm_res in vm_active_resources.iterator():
-        user = vm_res['userid']
-        holdings[user]["cyclades.cpu"] = vm_res["cpu"]
-        holdings[user]["cyclades.ram"] = 1048576 * vm_res["ram"]
+        project = vm_res['project']
+        pholdings = holdings[vm_res['userid']] if for_users else holdings
+        pholdings[project]["cyclades.cpu"] = vm_res["cpu"]
+        pholdings[project]["cyclades.ram"] = vm_res["ram"] * MiB
+
+    # Get disk resource
+    disk_resources = volumes.values(*values).annotate(Sum("size"))
+    for disk_res in disk_resources.iterator():
+        project = disk_res['project']
+        pholdings = (holdings[disk_res['userid']]
+                     if for_users else holdings)
+        pholdings[project]["cyclades.disk"] = disk_res["size__sum"] * GiB
 
     # Get resources related with networks
-    net_resources = networks.values("userid")\
+    net_resources = networks.values(*values)\
                             .annotate(num=Count("id"))
-    for net_res in net_resources.iterator():
-        user = net_res['userid']
-        holdings.setdefault(user, {})
-        holdings[user]["cyclades.network.private"] = net_res["num"]
 
-    floating_ips_resources = floating_ips.values("userid")\
+    for net_res in net_resources.iterator():
+        project = net_res['project']
+        if project is None:
+            continue
+        pholdings = holdings[net_res['userid']] if for_users else holdings
+        pholdings[project]["cyclades.network.private"] = net_res["num"]
+
+    floating_ips_resources = floating_ips.values(*values)\
                                          .annotate(num=Count("id"))
+
     for floating_ip_res in floating_ips_resources.iterator():
-        user = floating_ip_res["userid"]
-        holdings.setdefault(user, {})
-        holdings[user]["cyclades.floating_ip"] = floating_ip_res["num"]
+        project = floating_ip_res["project"]
+        pholdings = (holdings[floating_ip_res["userid"]]
+                     if for_users else holdings)
+        pholdings[project]["cyclades.floating_ip"] = \
+            floating_ip_res["num"]
 
     return holdings
 
@@ -103,24 +119,14 @@ def get_quotaholder_holdings(user=None):
     return qh.service_get_quotas(user)
 
 
-def get_qh_users_holdings(users=None):
+def get_qh_users_holdings(users=None, projects=None):
     qh = Quotaholder.get()
-    if users is None or len(users) != 1:
-        req = None
-    else:
-        req = users[0]
-    quotas = qh.service_get_quotas(req)
+    return qh.service_get_quotas(user=users, project_id=projects)
 
-    if users is None:
-        return quotas
 
-    qs = {}
-    for user in users:
-        try:
-            qs[user] = quotas[user]
-        except KeyError:
-            pass
-    return qs
+def get_qh_project_holdings(projects=None):
+    qh = Quotaholder.get()
+    return qh.service_get_project_quotas(project_id=projects)
 
 
 def transform_quotas(quotas):
@@ -129,5 +135,15 @@ def transform_quotas(quotas):
         used = counters['usage']
         limit = counters['limit']
         pending = counters['pending']
+        d[resource] = (used, limit, pending)
+    return d
+
+
+def transform_project_quotas(quotas):
+    d = {}
+    for resource, counters in quotas.iteritems():
+        used = counters['project_usage']
+        limit = counters['project_limit']
+        pending = counters['project_pending']
         d[resource] = (used, limit, pending)
     return d

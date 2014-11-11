@@ -27,7 +27,12 @@ COLLECTION_EVENTS = ['add', 'remove', 'update', 'reset']
 
 _.extend(rivets.formatters, {
 
-  prefix: function(value, prefix) {
+  in_brackets: function(value) {
+      return "[" + value + "]";
+  },
+
+  prefix: function(value) {
+    var prefix = _.rest(_.toArray(arguments), 1).join(" ");
     return prefix + value.toString();
   },
   
@@ -43,7 +48,7 @@ _.extend(rivets.formatters, {
   },
 
   list_truncate: function(value, size) {
-    size = size === undefined ? 38 : size;
+    size = size === undefined ? 34 : size;
     return synnefo.util.truncate(value, size);
   },
 
@@ -71,6 +76,22 @@ _.extend(rivets.formatters, {
   
   intEq: function(value, cmp) {
     return parseInt(value) == parseInt(cmp);
+  },
+
+  bytes_display: function(value) {
+    return synnefo.util.readablizeBytes(value);
+  },
+
+  disk_size_display: function(value) {
+      return '{0}GB'.format(value || 0);
+  },
+
+  msg_if_empty: function(value) {
+      var msg = [].slice.call(arguments, 1).join(" ");
+      if (!value) { 
+          value = msg;
+      }
+      return value;
   }
 
 });
@@ -97,7 +118,7 @@ _.extend(rivets.binders, {
             value = this.view.models.model;
           }
         } catch (err) {
-          console.log("value error");
+          console.error("value error", err);
         }
       }
 
@@ -115,11 +136,16 @@ _.extend(rivets.binders, {
         var specs = this.options.formatters[0].split(",");
         var cls_name = specs[0];
         var params = specs[1];
+        if (params && this.view.models && 
+                      this.view.models.view &&
+                      this.view.models.view[params]) { 
+          params = this.view.models.view[params](this, specs); 
+        } else {
+          if (params) { params = JSON.parse(params) }
+        }
         var view_cls = synnefo.views[cls_name];
         var view_params = {collection: value};
-        if (params) {
-          _.extend(view_params, JSON.parse(params));
-        }
+        if (params) { _.extend(view_params, params); }
         var view = this.view.models.view.create_view(view_cls, view_params);
         this.view.models.view.add_subview(view);
         view.show(true);
@@ -296,7 +322,7 @@ rivets.configure({
     },
     
     publish: function(obj, keypath, value) {
-      throw "Publish not available"
+        console.error("Publish not available");
     },
 
   }

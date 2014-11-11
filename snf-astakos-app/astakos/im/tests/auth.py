@@ -1,36 +1,18 @@
 # -*- coding: utf-8 -*-
-# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import urlparse
 import urllib
@@ -38,6 +20,10 @@ import urllib
 from astakos.im.tests.common import *
 
 ui_url = lambda url: '/' + astakos_settings.BASE_PATH + '/ui/%s' % url
+
+MANAGERS = (('Manager', 'manager@synnefo.org'),)
+HELPDESK = (('Helpdesk', 'helpdesk@synnefo.org'),)
+ADMINS = (('Admin', 'admin@synnefo.org'),)
 
 
 class ShibbolethTests(TestCase):
@@ -177,6 +163,8 @@ class ShibbolethTests(TestCase):
 
         user = AstakosUser.objects.get()
         provider = user.get_auth_provider("shibboleth")
+        first_login_date = provider._instance.last_login_at
+        self.assertFalse(provider._instance.last_login_at)
         headers = provider.provider_details['info']['headers']
         self.assertEqual(headers.get('SHIB_CUSTOM_IDP_KEY'), 'test')
 
@@ -230,8 +218,15 @@ class ShibbolethTests(TestCase):
         self.assertEqual(u.is_active, True)
 
 
-        # we see our profile
+        # we visit our profile view
         r = client.get(ui_url("login/shibboleth?"), follow=True)
+        user = r.context['request'].user
+        provider = user.get_auth_provider()._instance
+        # last login date updated
+        self.assertTrue(provider.last_login_at)
+        self.assertNotEqual(provider.last_login_at, first_login_date)
+        self.assertEqual(provider.last_login_at, user.last_login)
+
         self.assertRedirects(r, ui_url('landing'))
         self.assertEqual(r.status_code, 200)
 
@@ -444,7 +439,9 @@ class ShibbolethTests(TestCase):
 class TestLocal(TestCase):
 
     def setUp(self):
-        settings.ADMINS = (('admin', 'support@cloud.synnefo.org'),)
+        settings.ADMINS = ADMINS
+        settings.ACCOUNT_PENDING_MODERATION_RECIPIENTS = ADMINS
+        settings.ACCOUNT_ACTIVATED_RECIPIENTS = ADMINS
         settings.SERVER_EMAIL = 'no-reply@synnefo.org'
         self._orig_moderation = astakos_settings.MODERATION_ENABLED
         settings.ASTAKOS_MODERATION_ENABLED = True
@@ -491,7 +488,7 @@ class TestLocal(TestCase):
         self.assertFalse(user.is_active)
 
         # user (but not admin) gets notified
-        self.assertEqual(len(get_mailbox('support@cloud.synnefo.org')), 0)
+        self.assertEqual(len(get_mailbox('admin@synnefo.org')), 0)
         self.assertEqual(len(get_mailbox('kpap@synnefo.org')), 1)
         astakos_settings.MODERATION_ENABLED = True
 
@@ -529,7 +526,9 @@ class TestLocal(TestCase):
         form = forms.LocalUserCreationForm(data)
         self.assertFalse(form.is_valid())
 
-    @im_settings(HELPDESK=(('support', 'support@synnefo.org'),),
+    @im_settings(HELPDESK=HELPDESK,
+                 ACCOUNT_PENDING_MODERATION_RECIPIENTS=HELPDESK,
+                 ACCOUNT_ACTIVATED_RECIPIENTS=HELPDESK,
                  FORCE_PROFILE_UPDATE=False, MODERATION_ENABLED=True)
     def test_local_provider(self):
         self.helpdesk_email = astakos_settings.HELPDESK[0][1]
@@ -671,7 +670,7 @@ class TestLocal(TestCase):
         self.assertFalse(r.context['request'].user.is_authenticated())
         self.assertFalse(self.client.cookies.get('_pithos2_a').value)
 
-        #https://docs.djangoproject.com/en/dev/topics/testing/#persistent-state
+        # https://docs.djangoproject.com/en/dev/topics/testing/#persistent-state
         del self.client.cookies['_pithos2_a']
 
         # user can login
@@ -890,7 +889,9 @@ class TestAuthProviderViews(TestCase):
     @shibboleth_settings(CREATION_GROUPS_POLICY=['academic-login'],
                          AUTOMODERATE_POLICY=True)
     @im_settings(IM_MODULES=['shibboleth', 'local'], MODERATION_ENABLED=True,
-                 HELPDESK=(('support', 'support@synnefo.org'),),
+                 HELPDESK=HELPDESK,
+                 ACCOUNT_PENDING_MODERATION_RECIPIENTS=HELPDESK,
+                 ACCOUNT_ACTIVATED_RECIPIENTS=HELPDESK,
                  FORCE_PROFILE_UPDATE=False)
     def test_user(self):
         Profile = AuthProviderPolicyProfile
@@ -1296,6 +1297,12 @@ class TestAuthProvidersAPI(TestCase):
         self.assertEqual(provider.get_not_active_msg,
                          "'Academic login' is disabled.")
 
+        user = get_local_user(u'kpap@s\u1e6bbynnefo.org')
+        provider = auth_providers.get_provider('shibboleth', user, u'kpap@s\u1e6bynnefo.org')
+        self.assertEqual(provider.get_method_details_msg, u'Account: kpap@s\u1e6bynnefo.org')
+        self.assertEqual(provider.get_username_msg, u'kpap@s\u1e6bynnefo.org')
+
+
     @im_settings(IM_MODULES=['local', 'shibboleth'])
     @shibboleth_settings(LIMIT_POLICY=2)
     def test_templates(self):
@@ -1347,12 +1354,13 @@ class TestActivationBackend(TestCase):
         self.assertEqual(user3.moderated, True)
         self.assertEqual(user3.accepted_policy, 'auth_provider_shibboleth')
 
-    @im_settings(MODERATION_ENABLED=False,
-                 MANAGERS=(('Manager',
-                            'manager@synnefo.org'),),
-                 HELPDESK=(('Helpdesk',
-                            'helpdesk@synnefo.org'),),
-                 ADMINS=(('Admin', 'admin@synnefo.org'), ))
+    @im_settings(
+        MODERATION_ENABLED=False,
+        MANAGERS=MANAGERS,
+        HELPDESK=HELPDESK,
+        ADMINS=ADMINS,
+        ACCOUNT_PENDING_MODERATION_RECIPIENTS=MANAGERS+HELPDESK+ADMINS,
+        ACCOUNT_ACTIVATED_RECIPIENTS=MANAGERS+HELPDESK+ADMINS)
     def test_without_moderation(self):
         backend = activation_backends.get_backend()
         form = backend.get_signup_form('local')
@@ -1400,12 +1408,13 @@ class TestActivationBackend(TestCase):
         self.assertEqual(user.email_verified, True)
         self.assertTrue(user.activation_sent)
 
-    @im_settings(MODERATION_ENABLED=True,
-                 MANAGERS=(('Manager',
-                            'manager@synnefo.org'),),
-                 HELPDESK=(('Helpdesk',
-                            'helpdesk@synnefo.org'),),
-                 ADMINS=(('Admin', 'admin@synnefo.org'), ))
+    @im_settings(
+        MODERATION_ENABLED=True,
+        MANAGERS=MANAGERS,
+        HELPDESK=HELPDESK,
+        ADMINS=ADMINS,
+        ACCOUNT_PENDING_MODERATION_RECIPIENTS=HELPDESK+MANAGERS+ADMINS,
+        ACCOUNT_ACTIVATED_RECIPIENTS=HELPDESK+MANAGERS+ADMINS)
     def test_with_moderation(self):
 
         backend = activation_backends.get_backend()
@@ -1537,7 +1546,7 @@ class TestWebloginRedirect(TestCase):
                          AstakosUser.objects.get().auth_token)
         # does not contain uuid
         # reverted for 0.14.2 to support old pithos desktop clients
-        #self.assertFalse('uuid' in params)
+        # self.assertFalse('uuid' in params)
 
         # invalid cases
         r = self.client.get(invalid_scheme, follow=True)

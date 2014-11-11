@@ -1,41 +1,22 @@
-# Copyright 2011-2014 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils import simplejson as json
 from django.utils.http import parse_etags
-from django.utils.encoding import smart_str
 from django.views.decorators.csrf import csrf_exempt
 
 from astakosclient import AstakosClient
@@ -64,7 +45,8 @@ from pithos.api import settings
 
 from pithos.backends.base import (
     NotAllowedError, QuotaError, ContainerNotEmpty, ItemNotExists,
-    VersionNotExists, ContainerExists, InvalidHash)
+    VersionNotExists, ContainerExists, InvalidHash, IllegalOperationError,
+    InconsistentContentSize, InvalidPolicy)
 
 from pithos.backends.filter import parse_filters
 
@@ -104,7 +86,7 @@ def account_demux(request, v_account):
     if TRANSLATE_UUIDS:
         if not is_uuid(v_account):
             uuids = get_uuids([v_account])
-            if not uuids or not v_account in uuids:
+            if not uuids or v_account not in uuids:
                 return HttpResponse(status=404)
             v_account = uuids[v_account]
 
@@ -126,7 +108,7 @@ def container_demux(request, v_account, v_container):
     if TRANSLATE_UUIDS:
         if not is_uuid(v_account):
             uuids = get_uuids([v_account])
-            if not uuids or not v_account in uuids:
+            if not uuids or v_account not in uuids:
                 return HttpResponse(status=404)
             v_account = uuids[v_account]
 
@@ -156,7 +138,7 @@ def object_demux(request, v_account, v_container, v_object):
     if TRANSLATE_UUIDS:
         if not is_uuid(v_account):
             uuids = get_uuids([v_account])
-            if not uuids or not v_account in uuids:
+            if not uuids or v_account not in uuids:
                 return HttpResponse(status=404)
             v_account = uuids[v_account]
 
@@ -292,6 +274,7 @@ def account_meta(request, v_account):
                     getattr(request, 'token', None), groups[k])
         policy = request.backend.get_account_policy(
             request.user_uniq, v_account)
+        logger.debug(policy)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
 
@@ -485,8 +468,8 @@ def container_create(request, v_account, v_container):
         ret = 201
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
-    except ValueError:
-        raise faults.BadRequest('Invalid policy header')
+    except InvalidPolicy, e:
+        raise faults.BadRequest(e.args[0])
     except ContainerExists:
         ret = 202
 
@@ -499,8 +482,10 @@ def container_create(request, v_account, v_container):
             raise faults.Forbidden('Not allowed')
         except ItemNotExists:
             raise faults.ItemNotFound('Container does not exist')
-        except ValueError:
-            raise faults.BadRequest('Invalid policy header')
+        except InvalidPolicy, e:
+            raise faults.BadRequest(e.args[0])
+        except QuotaError, e:
+            raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     if meta:
         try:
             request.backend.update_container_meta(request.user_uniq, v_account,
@@ -536,8 +521,10 @@ def container_update(request, v_account, v_container):
             raise faults.Forbidden('Not allowed')
         except ItemNotExists:
             raise faults.ItemNotFound('Container does not exist')
-        except ValueError:
-            raise faults.BadRequest('Invalid policy header')
+        except InvalidPolicy, e:
+            raise faults.BadRequest(e.args[0])
+        except QuotaError, e:
+            raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     if meta or replace:
         try:
             request.backend.update_container_meta(request.user_uniq, v_account,
@@ -557,6 +544,13 @@ def container_update(request, v_account, v_container):
     if (content_type
             and content_type == 'application/octet-stream'
             and content_length != 0):
+
+        try:
+            request.backend.can_write_container(request.user_uniq, v_account,
+                                                v_container)
+        except NotAllowedError:
+            raise faults.Forbidden('Not allowed')
+
         for data in socket_read_iterator(request, content_length,
                                          request.backend.block_size):
             # TODO: Raise 408 (Request Timeout) if this takes too long.
@@ -655,8 +649,7 @@ def object_list(request, v_account, v_container):
 
     keys = request.GET.get('meta')
     if keys:
-        keys = [smart_str(x.strip()) for x in keys.split(',')
-                if x.strip() != '']
+        keys = [x.strip() for x in keys.split(',') if x.strip() != '']
         included, excluded, opers = parse_filters(keys)
         keys = []
         keys += [format_header_key('X-Object-Meta-' + x) for x in included]
@@ -931,7 +924,7 @@ def _object_read(request, v_account, v_container, v_object):
 
         try:
             for x in objects:
-                s, h = \
+                snap, s, h = \
                     request.backend.get_object_hashmap(
                         request.user_uniq, v_account, src_container, x[0],
                         x[1])
@@ -943,9 +936,11 @@ def _object_read(request, v_account, v_container, v_object):
             raise faults.ItemNotFound('Object does not exist')
         except VersionNotExists:
             raise faults.ItemNotFound('Version does not exist')
+        except IllegalOperationError, e:
+            raise faults.Forbidden(str(e))
     else:
         try:
-            s, h = request.backend.get_object_hashmap(
+            snap, s, h = request.backend.get_object_hashmap(
                 request.user_uniq, v_account,
                 v_container, v_object, version)
             sizes.append(s)
@@ -956,6 +951,8 @@ def _object_read(request, v_account, v_container, v_object):
             raise faults.ItemNotFound('Object does not exist')
         except VersionNotExists:
             raise faults.ItemNotFound('Version does not exist')
+        except IllegalOperationError, e:
+            raise faults.Forbidden(str(e))
 
     # Reply with the hashmap.
     if hashmap_reply:
@@ -1096,6 +1093,10 @@ def object_write(request, v_account, v_container, v_object):
             request.user_uniq, v_account, v_container, v_object, size,
             content_type, hashmap, checksum, 'pithos', meta, True, permissions
         )
+    except IllegalOperationError, e:
+        raise faults.Forbidden(e[0])
+    except InconsistentContentSize, e:
+        raise faults.BadRequest(e[0])
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except IndexError, e:
@@ -1111,6 +1112,7 @@ def object_write(request, v_account, v_container, v_object):
         raise faults.RequestEntityTooLarge('Quota error: %s' % e)
     except InvalidHash, e:
         raise faults.BadRequest('Invalid hash: %s' % e)
+
     if not checksum and UPDATE_MD5:
         # Update the MD5 after the hashmap, as there may be missing hashes.
         checksum = hashmap_md5(request.backend, hashmap, size)
@@ -1157,6 +1159,10 @@ def object_write_form(request, v_account, v_container, v_object):
             request.user_uniq, v_account, v_container, v_object, file.size,
             file.content_type, file.hashmap, checksum, 'pithos', {}, True
         )
+    except IllegalOperationError, e:
+        faults.Forbidden(e[0])
+    except InconsistentContentSize, e:
+        raise faults.BadRequest(e[0])
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:
@@ -1342,13 +1348,15 @@ def object_update(request, v_account, v_container, v_object):
         raise faults.RangeNotSatisfiable('Invalid Content-Range header')
 
     try:
-        size, hashmap = \
+        is_snapshot, size, hashmap = \
             request.backend.get_object_hashmap(
                 request.user_uniq, v_account, v_container, v_object)
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:
         raise faults.ItemNotFound('Object does not exist')
+    except IllegalOperationError, e:
+        raise faults.Forbidden(str(e))
 
     offset, length, total = ranges
     if offset is None:
@@ -1367,13 +1375,18 @@ def object_update(request, v_account, v_container, v_object):
 
         try:
             src_version = request.META.get('HTTP_X_SOURCE_VERSION')
-            src_size, src_hashmap = request.backend.get_object_hashmap(
-                request.user_uniq,
-                src_account, src_container, src_name, src_version)
+            src_is_snapshot, src_size, src_hashmap = \
+                request.backend.get_object_hashmap(request.user_uniq,
+                                                   src_account,
+                                                   src_container,
+                                                   src_name,
+                                                   src_version)
         except NotAllowedError:
             raise faults.Forbidden('Not allowed')
         except ItemNotExists:
             raise faults.ItemNotFound('Source object does not exist')
+        except IllegalOperationError, e:
+            raise faults.Forbidden(str(e))
 
         if length is None:
             length = src_size
@@ -1419,8 +1432,11 @@ def object_update(request, v_account, v_container, v_object):
                         hashmap[bi] = src_hashmap[sbi]
                     else:
                         data = request.backend.get_block(src_hashmap[sbi])
-                        hashmap[bi] = request.backend.update_block(
-                            hashmap[bi], data[:bl], 0)
+                        try:
+                            hashmap[bi] = request.backend.update_block(
+                                hashmap[bi], data[:bl], 0)
+                        except IllegalOperationError, e:
+                            raise faults.Forbidden(e[0])
                 else:
                     hashmap.append(src_hashmap[sbi])
                 offset += bl
@@ -1434,7 +1450,8 @@ def object_update(request, v_account, v_container, v_object):
                     data += request.backend.get_block(src_hashmap[sbi])
                 if length < request.backend.block_size:
                     data = data[:length]
-                bytes = put_object_block(request, hashmap, data, offset)
+                bytes = put_object_block(request, hashmap, data, offset,
+                                         is_snapshot=src_is_snapshot)
                 offset += bytes
                 data = data[bytes:]
                 length -= bytes
@@ -1447,11 +1464,13 @@ def object_update(request, v_account, v_container, v_object):
             # TODO: Raise 499 (Client Disconnect) if a length is defined
             #       and we stop before getting this much data.
             data += d
-            bytes = put_object_block(request, hashmap, data, offset)
+            bytes = put_object_block(request, hashmap, data, offset,
+                                     is_snapshot=is_snapshot)
             offset += bytes
             data = data[bytes:]
         if len(data) > 0:
-            bytes = put_object_block(request, hashmap, data, offset)
+            bytes = put_object_block(request, hashmap, data, offset,
+                                     is_snapshot=is_snapshot)
             offset += bytes
 
     if offset > size:
@@ -1467,6 +1486,10 @@ def object_update(request, v_account, v_container, v_object):
             prev_meta['type'], hashmap, checksum, 'pithos', meta, replace,
             permissions
         )
+    except IllegalOperationError, e:
+        raise faults.Forbidden(e[0])
+    except InconsistentContentSize, e:
+        raise faults.BadRequest(e[0])
     except NotAllowedError:
         raise faults.Forbidden('Not allowed')
     except ItemNotExists:
@@ -1475,6 +1498,7 @@ def object_update(request, v_account, v_container, v_object):
         raise faults.BadRequest('Invalid sharing header')
     except QuotaError, e:
         raise faults.RequestEntityTooLarge('Quota error: %s' % e)
+
     if public is not None:
         try:
             request.backend.update_object_public(request.user_uniq, v_account,

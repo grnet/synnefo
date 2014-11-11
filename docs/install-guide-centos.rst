@@ -3,6 +3,13 @@
 Administrator's Installation Guide (on CentOS 6.5)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. warning::
+
+    Currently, we don't provide packages for release candidate versions of
+    Synnefo for CentOS 6.5. Please consult the docs for `Synnefo 0.15.2
+    <https://www.synnefo.org/docs/synnefo/0.15.2/index.html>`_
+    instead.
+
 This is the Administrator's installation guide on CentOS 6.5.
 
 It describes how to install the whole Synnefo stack on two (2) physical nodes,
@@ -24,13 +31,6 @@ guide and just stop after the "Testing of Pithos" section.
 
 Installation of Synnefo / Introduction
 ======================================
-
-We will install the services with the above list's order. The last three
-services will be installed in a single step (at the end), because at the moment
-they are contained in the same software component (Cyclades). Furthermore, we
-will install all services in the first physical node, except Pithos which will
-be installed in the second, due to a conflict between the snf-pithos-app and
-snf-cyclades-app component (scheduled to be fixed in the next version).
 
 For the rest of the documentation we will refer to the first physical node as
 "node1" and the second as "node2". We will also assume that their domain names
@@ -79,9 +79,9 @@ You also need a shared directory visible by both nodes. Pithos will save all
 data inside this directory. By 'all data', we mean files, images, and Pithos
 specific mapping data. If you plan to upload more than one basic image, this
 directory should have at least 50GB of free space. During this guide, we will
-assume that node1 acts as an NFS server and serves the directory ``/srv/pithos``
+assume that node1 acts as an NFS server and serves the directory ``/srv/arhip``
 to node2 (be sure to set no_root_squash flag). Node2 has this directory
-mounted under ``/srv/pithos``, too.
+mounted under ``/srv/arhip``, too.
 
 Before starting the Synnefo installation, you will need basic third party
 software to be installed and configured on the physical nodes. We will describe
@@ -107,6 +107,7 @@ General Synnefo dependencies
 		* ntp (NTP daemon)
 		* gevent
 		* dnsmasq (DNS server)
+		* Archipelago
 
 You can install apache, ntp and rabbitmq by running:
 
@@ -300,33 +301,76 @@ exchanges:
 We do not need to initialize the exchanges. This will be done automatically,
 during the Cyclades setup.
 
-Pithos data directory setup
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-As mentioned in the General Prerequisites section, there should be a directory
-called ``/srv/pithos`` visible by both nodes. We create and setup the ``data``
-directory inside it:
+System user/group setup
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Before we continue with the installation we have to mention the user and
+group that our components will run as. In short Archipelago (and
+specifically the ``archipelago`` package) creates the ``archipelago``
+system user and group while synnefo (and specifically the ``snf-common``
+package) creates the ``synnefo`` system user and group.
+
+This guide uses NFS for Archipelago's physical storage backend.
+Archipelago must have permissions to write on the shared dir. As
+explained below the shared dir will be owned by ``archipelago:synnefo``.
+Due to NFS restrictions, all nodes nodes must have common uid for the
+``archipelago`` user and common gid for the ``synnefo`` group. So before
+any Synnefo installation, we create them here in advance. We assume that
+ids 200 and 300 are available across all nodes.
 
 .. code-block:: console
 
-   # mkdir /srv/pithos
-   # cd /srv/pithos
-   # mkdir data
-   # chown apache:apache data
-   # chmod g+ws data
+  # addgroup --system --gid 200 synnefo
+  # adduser --system --uid 200 --gid 200 --no-create-home \
+      --gecos Synnefo synnefo
 
-This directory must be shared via `NFS <https://en.wikipedia.org/wiki/Network_File_System>`_.
-In order to do this, run:
+  # addgroup --system --gid 300 archipelago
+  # adduser --system --uid 300 --gid 300 --no-create-home \
+      --gecos Archipelago archipelago
+
+
+
+NFS data directory setup
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Archipelago directory must be shared via
+`NFS <https://en.wikipedia.org/wiki/Network_File_System>`_.
+As mentioned in the General Prerequisites section, there should be a
+directory called ``/srv/archip/`` with ``blocks``, ``maps``, and
+``locks`` subdirectories visible by both nodes. To create it run:
 
 .. code-block:: console
 
-   # yum install rpcbind nfs-utils
+   # mkdir /srv/archip/
+   # cd /srv/archip/
+   # mkdir -p {maps,blocks,locks}
+
+Currently Archipelago is the only one that needs to have access to the
+backing store. We could have the whole NFS isolated from Synnefo (owned
+by ``archipelago:archipelago`` with ``640`` access permissions) but we
+choose not to (e.g. some future extension could require access to the
+backing store directly from Synnefo). Thus we set the ownership to
+``archipelago:synnefo`` and access permissions to ``g+ws``.
+
+.. code-block:: console
+
+   # cd /srv/archip
+   # chown archipelago:synnefo {maps,blocks,locks}
+   # chmod 770 {maps,blocks,locks}
+   # chmod g+s {maps,blocks,locks}
+
+In order to install the NFS server, run:
+
+.. code-block:: console
+
+   # yum install rpcbind nfs-kernel-server
 
 Now edit ``/etc/exports`` and add the following line:
 
 .. code-block:: console
 
-   /srv/pithos/ 203.0.113.2(rw,no_root_squash,sync,subtree_check)
+   /srv/archip/ 203.0.113.2(rw,no_root_squash,sync,subtree_check)
 
 Once done, run:
 
@@ -334,6 +378,45 @@ Once done, run:
 
    # service rpcbind restart
    # service nfs restart
+
+Archipelago setup
+~~~~~~~~~~~~~~~~~
+
+To install Archipelago, run:
+
+.. code-block:: console
+
+   # yum install archipelago
+
+Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
+
+* ``USER``: Let Archipelago run as ``archipelago`` user (default)
+
+* ``GROUP``: Let Archipelago run as ``synnefo`` group (archipelago by default)
+
+* ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
+  RAM. The default value is 2GB which in some situations might exceed your
+  machine's physical RAM. Consult also with `Archipelago administrator's guide
+  <https://www.synnefo.org/docs/archipelago/latest/admin-guide.html>`_ for an
+  appropriate value.
+
+Adjust the following settings of  ``blockerb`` and ``blockerm`` to point to
+their corresponding directories.
+
+In section ``blockerb`` set:
+
+* ``archip_dir``: ``/srv/archip/blocks``
+
+In section ``blockerm`` set:
+
+* ``archip_dir``: ``/srv/archip/maps``
+* ``lock_dir``: ``/srv/archip/locks``
+
+Finally, start Archipelago:
+
+.. code-block:: console
+
+   # archipelago restart
 
 
 DNS server setup
@@ -346,7 +429,7 @@ In order to set up a dns server using dnsmasq do the following:
 
    # yum install dnsmasq
 
-Then edit your ``/etc/hosts/`` file as follows:
+Then edit your ``/etc/hosts`` file as follows:
 
 .. code-block:: console
 
@@ -405,6 +488,7 @@ General Synnefo dependencies
     * gevent
     * certificates
     * dnsmasq (DNS server)
+    * Archipelago
 
 You can install the above by running:
 
@@ -553,10 +637,8 @@ Copy the file ``/etc/gunicorn.d/synnefo.example`` to
 
 
 .. warning:: Do NOT start the server yet, because it won't find the
-    ``synnefo.settings`` module. Also, in case you are using ``/etc/hosts``
-    instead of a DNS to get the hostnames, change ``--worker-class=gevent`` to
-    ``--worker-class=sync``. We will start the server after successful
-    installation of Astakos. If the server is running::
+    ``synnefo.settings`` module. Also set the Gunicorn config file to
+    ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py``.
 
        # service gunicorn stop
 
@@ -665,18 +747,19 @@ notify administrators with a notice that a new account has just been verified.
 More specifically Astakos sends emails in the following cases
 
 - An email containing a verification link after each signup process.
-- An email to the people listed in ``ADMINS`` setting after each email
-  verification if ``ASTAKOS_MODERATION`` setting is ``True``. The email
-  notifies administrators that an additional action is required in order to
-  activate the user.
-- A welcome email to the user email and an admin notification to ``ADMINS``
-  right after each account activation.
-- Feedback messages submited from Astakos contact view and Astakos feedback
-  API endpoint are sent to contacts listed in ``HELPDESK`` setting.
-- Project application request notifications to people included in ``HELPDESK``
-  and ``MANAGERS`` settings.
+- An email to the people listed in ``ACCOUNT_NOTIFICATIONS_RECIPIENTS``
+  setting after each email verification if ``ASTAKOS_MODERATION`` setting is
+  ``True``. The email notifies administrators that an additional action is
+  required in order to activate the user.
+- A welcome email to the user email and a notification to
+  ``ACCOUNT_NOTIFICATIONS_RECIPIENTS`` right after each account activation.
+- Feedback messages submitted from Astakos contact view and Astakos feedback
+  API endpoint are sent to contacts listed in
+  ``FEEDBACK_NOTIFICATIONS_RECIPIENTS`` setting.
+- Project application request notifications to people included in
+  ``PROJECT_NOTIFICATIONS_RECIPIENTS`` setting.
 - Notifications after each project members action (join request, membership
-  accepted/declinde etc.) to project members or project owners.
+  accepted/declined etc.) to project members or project owners.
 
 Astakos uses the Django internal email delivering mechanism to send email
 notifications. A simple configuration, using an external smtp server to
@@ -713,11 +796,13 @@ Refer to
 `Django documentation <https://docs.djangoproject.com/en/1.4/topics/email/>`_
 for additional information on available email settings.
 
-As refered in the previous section, based on the operation that triggers
-an email notification, the recipients list differs. Specifically, for
-emails whose recipients include contacts from your service team
-(administrators, managers, helpdesk etc) Synnefo provides the following
-settings located in ``00-snf-common-admins.conf``:
+As referred in the previous section, based on the operation that triggers an
+email notification, the recipients list differs. For convenience (and backward
+compatibility), Astakos defines three service teams (administrators, managers
+and helpdesk) and send the above notifications to these teams in a
+preconfigured way (ie. project notifications are sent to the members of
+managers and helpdesk teams). These settings are located in
+``00-snf-common-admins.conf``:
 
 .. code-block:: python
 
@@ -877,15 +962,17 @@ Notice that in this installation astakos and cyclades are in node1 and pithos is
 Setting Default Base Quota for Resources
 ----------------------------------------
 
-We now have to specify the limit on resources that each user can employ
-(exempting resources offered by projects). When specifying storage or
-memory size limits you can append a unit to the value, i.e. 10240 MB,
-10 GB etc. Use the special value ``inf``, if you don't want to restrict a
-resource.
+All resources are registered with unlimited quota. We now have to restrict
+the limit on the resources we wish to control. We can set the default quota
+a new user is offered by the system (`system default`) with
 
 .. code-block:: console
 
-    # snf-manage resource-modify --default-quota-interactive
+    # snf-manage resource-modify <resource-name> --system-default <value>
+
+When specifying storage or memory size limits you can append a unit to the
+value, i.e. 10240 MB, 10 GB etc. Use the special value ``inf``, if you don't
+want to restrict a resource.
 
 Setting Resource Visibility
 ---------------------------
@@ -1008,6 +1095,42 @@ This package provides the standalone Pithos web client. The web client is the
 web UI for Pithos and will be accessible by clicking "Pithos" on the Astakos
 interface's cloudbar, at the top of the Astakos homepage.
 
+Installation of Archipelago on node 2
+=====================================
+
+To install Archipelago, run:
+
+.. code-block:: console
+
+   # yum install archipelago
+
+
+Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
+
+* ``USER``: Let Archipelago run as ``archipelago`` user (default)
+
+* ``GROUP``: Let Archipelago run as ``synnefo`` group (defaults to archipelago)
+
+* ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
+  RAM. The default value is 2GB which in some situations might exceed your
+  machine's physical RAM. Consult also with `Archipelago administrator's guide
+  <https://www.synnefo.org/docs/archipelago/latest/admin-guide.html>`_ for an
+  appropriate value.
+
+In section ``blockerb`` set:
+
+* ``archip_dir``: ``/srv/arhip/blocks``
+
+In section ``blockerm`` set:
+
+* ``archip_dir``: ``/srv/arhip/maps``
+* ``lock_dir``: ``/srv/arhip/locks``
+
+Finally, restart Archipelago:
+
+.. code-block:: console
+
+   # service archipelago restart
 
 .. _conf-pithos:
 
@@ -1027,10 +1150,8 @@ Copy the file ``/etc/gunicorn.d/synnefo.example`` to
 
 
 .. warning:: Do NOT start the server yet, because it won't find the
-    ``synnefo.settings`` module. Also, in case you are using ``/etc/hosts``
-    instead of a DNS to get the hostnames, change ``--worker-class=gevent`` to
-    ``--worker-class=sync``. We will start the server after successful
-    installation of Astakos. If the server is running::
+    ``synnefo.settings`` module. Also set the Gunicorn config file to
+    ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py``.
 
        # service gunicorn stop
 
@@ -1052,7 +1173,6 @@ this options:
 
    PITHOS_BASE_URL = 'https://node2.example.com/pithos'
    PITHOS_BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
-   PITHOS_BACKEND_BLOCK_PATH = '/srv/pithos/data'
 
    PITHOS_SERVICE_TOKEN = 'pithos_service_token22w'
 
@@ -1062,11 +1182,6 @@ find the Pithos backend database. Above we tell Pithos that its database is
 ``snf_pithos`` at node1 and to connect as user ``synnefo`` with password
 ``example_passw0rd``.  All those settings where setup during node1's "Database
 setup" section.
-
-The ``PITHOS_BACKEND_BLOCK_PATH`` option tells to the Pithos app where to find
-the Pithos backend data. Above we tell Pithos to store its data under
-``/srv/pithos/data``, which is visible by both nodes. We have already setup this
-directory at node1's "Pithos data directory setup" section.
 
 The ``ASTAKOS_AUTH_URL`` option informs the Pithos app where Astakos is.
 The Astakos service is used for user management (authentication, quotas, etc.)
@@ -1152,12 +1267,12 @@ First install the package nfs-common by running:
 
    root@node2:~ # yum install nfs-utils
 
-now create the directory /srv/pithos/ and mount the remote directory to it:
+Now create the directory /srv/arhip/ and mount the remote directory to it:
 
 .. code-block:: console
 
-   root@node2:~ # mkdir /srv/pithos/
-   root@node2:~ # mount -t nfs 203.0.113.1:/srv/pithos/ /srv/pithos/
+   root@node2:~ # mkdir /srv/arhip/
+   root@node2:~ # mount -t nfs 203.0.113.1:/srv/arhip/ /srv/arhip/
 
 Servers Initialization
 ----------------------
@@ -1360,28 +1475,36 @@ Ganeti nodes:
 It's time to install Ganeti. To be able to use hotplug (which will be part of
 the official Ganeti 2.10), we recommend using our Ganeti package version:
 
-``2.8.4+snap1+b64v1+kvm2+ext1+lockfix1+ipfix1+ifdown1+backports5-1``
+``2.10.7+snap1+b64v1+ext1+lockfix1+ifdown1+qmp1+bpo1-1``
 
 Let's briefly explain each patch set:
 
-    * snap adds snapshot support for ext disk template
+    * snap extends snapshot support for the ext disk template (separate LU)
     * b64 saves networks' bitarrays in a more compact representation
-    * kvm adds migration_caps hypervisor param
     * ext
 
-      * exports logical id in hooks
       * allows arbitrary params to reach kvm command (i.e. cache overrides
         disk_cache hvparam, heads and secs define the disk's geometry)
 
     * lockfix is a workaround for Issue #621
-    * ipfix does not require IP if mode is routed (needed for IPv6 only NICs)
     * ifdown cleans up node's configuration upon instance migration/shutdown
-    * backports is a set of patches backported from stable-2.10
+    * qmp replace HMP with QMP commands during hotplug
+    * bpo is a set of patches backported from later branches
 
-      * Hotplug support
-      * Better networking support (NIC configuration scripts)
-      * Change IP pool to support NAT instances
-      * Change RAPI to accept depends body argument and shutdown_timeout
+      * Make name and uuid Disk attributes reach bdev (2.11)
+      * IDiskParams fixes (2.11)
+      * Proper support for the --cdrom option (2.12)
+      * Add migration capabilities as an hvparam (2.13)
+      * Convert hv_kvm to a package (2.12)
+      * Extend QMP support (2.12)
+      * Add access to IDiskParams (2.13)
+      * Support userspace access for ExtStorage (2.13)
+      * Allow NICs with routed mode and no IP (2.13)
+      * Add support for KVM multiqueue virtio-net (2.12)
+      * Support Snapshot() for the ExtStorage interface (2.13)
+      * Support disk hotplug even with chroot or SM (2.13)
+      * Some refactor wrt NICs at the HV level (2.12)
+
 
 .. note::
 
@@ -1398,7 +1521,7 @@ Ganeti will make use of drbd. To install drbd, you're gonna need to use packages
 from the `ELRepo <http://elrepo.org/tiki/tiki-index.php>`_. To install ELRepo,
 run:
 
-.. code-block:: consolse
+.. code-block:: console
 
    # rpm -Uvh http://www.elrepo.org/elrepo-release-6-6.el6.elrepo.noarch.rpm
 
@@ -1479,18 +1602,11 @@ Configuration
 ~~~~~~~~~~~~~
 snf-image supports native access to Images stored on Pithos. This means that
 it can talk directly to the Pithos backend, without the need of providing a
-public URL. More details, are described in the next section. For now, the only
-thing we need to do, is configure snf-image to access our Pithos backend.
-
-To do this, we need to set the corresponding variable in
-``/etc/default/snf-image``, to reflect our Pithos setup:
-
-.. code-block:: console
-
-    PITHOS_DATA="/srv/pithos/data"
+public URL. More details, are described in the next section.
 
 If you have installed your Ganeti cluster on different nodes than node1 and
-node2 make sure that ``/srv/pithos/data`` is visible by all of them.
+node2 make sure that ``/srv/arhip/`` is visible by all of them and
+Archipelago is installed and configured properly.
 
 If you would like to use Images that are also/only stored locally, you need to
 save them under ``IMAGE_DIR``, however this guide targets Images stored only on
@@ -2005,7 +2121,7 @@ Edit ``/etc/synnefo/20-snf-cyclades-app-plankton.conf``:
 .. code-block:: console
 
    BACKEND_DB_CONNECTION = 'postgresql://synnefo:example_passw0rd@node1.example.com:5432/snf_pithos'
-   BACKEND_BLOCK_PATH = '/srv/pithos/data/'
+   BACKEND_BLOCK_PATH = '/srv/arhip/'
 
 In this file we configure the Image Service. ``BACKEND_DB_CONNECTION``
 denotes the Pithos database (where the Image files are stored). So we set that
@@ -2040,7 +2156,7 @@ Configure the vncauthproxy settings in
 
 .. code-block:: console
 
-    CYCLADES_VNCAUTHPROXY_OPTS = {
+    CYCLADES_VNCAUTHPROXY_OPTS = [{
         'auth_user': 'synnefo',
         'auth_password': 'secret_password',
         'server_address': '127.0.0.1',
@@ -2048,12 +2164,31 @@ Configure the vncauthproxy settings in
         'enable_ssl': False,
         'ca_cert': None,
         'strict': False,
-    }
+    }]
 
 Depending on your snf-vncauthproxy setup, you might want to tweak the above
 settings. Check the `documentation
 <http://www.synnefo.org/docs/snf-vncauthproxy/latest/index.html>`_ of
 snf-vncauthproxy for more information.
+
+You should also provide snf-vncauthproxy with SSL certificates signed by a
+trusted CA. You can either copy them to `/var/lib/vncauthproxy/{cert,key}.pem`
+or inform vncauthproxy about the location of the certificates (via the
+`DAEMON_OPTS` setting in `/etc/default/vncauthproxy`).
+
+::
+
+    DAEMON_OPTS="--pid-file=$PIDFILE --cert-file=<path_to_cert> --key-file=<path_to_key>"
+
+Both files should be readable by the `vncauthproxy` user or group.
+
+.. note::
+
+    When installing snf-vncauthproxy on the same node as Cyclades and using the
+    default settings for snf-vncauthproxy, the certificates should be issued to
+    the FQDN of the Cyclades worker. Refer to the :ref:`admin guide
+    <admin-guide-vnc>`, for more information on how to setup vncauthproxy on a
+    different host / interface.
 
 We have now finished with the basic Cyclades configuration.
 
@@ -2095,7 +2230,7 @@ You can see everything has been setup correctly by running:
 
 Enable the new backend by running:
 
-.. code-block::
+.. code-block:: console
 
    $ snf-manage backend-modify --drained False 1
 
@@ -2454,6 +2589,52 @@ If everything was setup correctly, after a few minutes your new machine will go
 to state 'Running' and you will be able to use it. Click 'Console' to connect
 through VNC out of band, or click on the machine's icon to connect directly via
 SSH or RDP (for windows machines).
+
+
+Installation of Admin on node1
+==============================
+
+This section describes the installation of Admin. Admin is a Synnefo component
+that provides to trusted users the ability to manage and view various different
+Synnefo entities such as users, VMs, projects etc.
+
+We will install Admin on node1. To do so, we install the corresponding
+package by running on node1 the following command:
+
+.. code-block:: console
+
+   # yum install snf-admin-app
+
+Once the package is installed, we must configure the ``ADMIN_BASE_URL``
+setting. This setting is located in the ``20-snf-admin-app-general.conf``
+settings file. Uncomment it and assign the following URL to it:
+
+    ``https://node1.example.com/admin``
+
+Now, we can proceed with testing Admin.
+
+Testing of Admin
+================
+
+In order to test the Admin Dashboard, we need a user that belongs to the
+`admin` group. We will use the user that was created in `Testing of Astakos`_
+section:
+
+.. code-block:: console
+
+    root@node1:~ # snf-manage group-add admin
+    root@node1:~ # snf-manage user-modify 1 --add-group=admin
+
+Then, you need to login to the Astakos node by visiting the following URL:
+
+    ``https://node1.example.com/astakos``
+
+Once you login successfully, you can access the Admin Dashboard from this URL:
+
+    ``https://node1.example.com/admin``
+
+This should redirect you to the **Users** table, where there should be an entry
+with this user.
 
 Congratulations. You have successfully installed the whole Synnefo stack and
 connected all components.

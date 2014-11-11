@@ -1,16 +1,28 @@
-#!/usr/bin/python
+# Copyright (C) 2010-2014 GRNET S.A.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import time
-import ipaddr
 import os
 import signal
-import ConfigParser
 import sys
 import re
 import random
 import subprocess
 import imp
-
+import ast
+import string
 
 HEADER = '\033[95m'
 OKBLUE = '\033[94m'
@@ -40,166 +52,59 @@ if not sys.stdout.isatty():
     disable_color()
 
 
-class Host(object):
-    def __init__(self, hostname, ip, mac, domain, os):
-        self.hostname = hostname
-        self.ip = ip
-        self.mac = mac
-        self.domain = domain
-        self.os = os
+def evaluate(some_object, **kwargs):
+    for k, v in kwargs.items():
+        setattr(some_object, k, v)
+
+
+def getlist(value):
+    return list(filter(None, (x.strip() for x in value.splitlines())))
+
+
+def getbool(value):
+    return ast.literal_eval(value)
+
+
+class FQDN(object):
+    def __init__(self, alias=None, **kwargs):
+        self.alias = alias
+        evaluate(self, **kwargs)
+        self.hostname = self.name
 
     @property
     def fqdn(self):
-        return self.hostname + "." + self.domain
+        return self.name + "." + self.domain
 
     @property
     def arecord(self):
-        return self.hostname + " IN A " + self.ip + "\n"
+        return self.fqdn + " 300 A " + self.ip
 
     @property
     def ptrrecord(self):
-        return ".".join(raddr(self.ip)) + " IN PTR " + self.fqdn + ".\n"
-
-
-class Alias(Host):
-    def __init__(self, host, alias):
-        super(Alias, self).__init__(host.hostname, host.ip, host.mac,
-                                    host.domain, host.os)
-        self.alias = alias
+        return ".".join(raddr(self.ip)) + ".in-addr.arpa 300 PTR " + self.fqdn
 
     @property
     def cnamerecord(self):
-        return (self.alias + " IN CNAME " + self.hostname + "." +
-                self.domain + ".\n")
+        if self.cname:
+            return self.cname + " 300 CNAME " + self.fqdn
+        else:
+            return ""
 
     @property
-    def fqdn(self):
-        return self.alias + "." + self.domain
+    def cname(self):
+        if self.alias:
+            return self.alias + "." + self.domain
+        else:
+            return ""
 
 
-class Env(object):
+def debug(*args):
 
-    def update_packages(self, os):
-        for section in self.conf.files[os]:
-            self.evaluate(os, section)
-
-    def evaluate(self, filename, section):
-        for k, v in self.conf.get_section(filename, section):
-            setattr(self, k, v)
-
-    def __init__(self, conf):
-        self.conf = conf
-        for f, sections in conf.files.iteritems():
-            for s in sections:
-                self.evaluate(f, s)
-
-        self.node2hostname = dict(conf.get_section("nodes", "hostnames"))
-        self.node2ip = dict(conf.get_section("nodes", "ips"))
-        self.node2mac = dict(conf.get_section("nodes", "macs"))
-        self.node2os = dict(conf.get_section("nodes", "os"))
-        self.hostnames = [self.node2hostname[n]
-                          for n in self.nodes.split(",")]
-
-        self.ips = [self.node2ip[n]
-                    for n in self.nodes.split(",")]
-
-        self.cluster_hostnames = [self.node2hostname[n]
-                                  for n in self.cluster_nodes.split(",")]
-
-        self.cluster_ips = [self.node2ip[n]
-                            for n in self.cluster_nodes.split(",")]
-
-        self.net = ipaddr.IPNetwork(self.subnet)
-
-        self.nodes_info = {}
-        self.hosts_info = {}
-        self.ips_info = {}
-        for node in self.nodes.split(","):
-            host = Host(self.node2hostname[node],
-                        self.node2ip[node],
-                        self.node2mac[node], self.domain, self.node2os[node])
-
-            self.nodes_info[node] = host
-            self.hosts_info[host.hostname] = host
-            self.ips_info[host.ip] = host
-
-        self.cluster = Host(self.cluster_name, self.cluster_ip, None,
-                            self.domain, None)
-        self.master = self.nodes_info[self.master_node]
-
-        self.roles = {}
-        for role, node in conf.get_section("synnefo", "roles"):
-            self.roles[role] = Alias(self.nodes_info[node], role)
-            setattr(self, role, self.roles[role])
-
-
-class Conf(object):
-
-    files = {
-        "nodes": ["network", "info"],
-        "deploy": ["dirs", "packages", "keys", "options"],
-        "vcluster": ["cluster", "image", "network"],
-        "synnefo": ["cred", "synnefo", "roles"],
-        "squeeze": ["debian", "ganeti", "synnefo", "other"],
-        "wheezy": ["debian", "ganeti", "synnefo", "other"],
-    }
-    confdir = "/etc/snf-deploy"
-
-    def get_ganeti(self, cluster_name):
-        self.files["ganeti"] = [cluster_name]
-
-    def __init__(self, args):
-        self.confdir = args.confdir
-        self.get_ganeti(args.cluster_name)
-        for f in self.files.keys():
-            setattr(self, f, self.read_config(f))
-        for f, sections in self.files.iteritems():
-            for s in sections:
-                for k, v in self.get_section(f, s):
-                    if getattr(args, k, None):
-                        self.set(f, s, k, getattr(args, k))
-        if args.autoconf:
-            self.autoconf()
-
-    def autoconf(self):
-        #domain = get_domain()
-        #if domain:
-        #    self.nodes.set("network", "domain", get_domain())
-        # self.nodes.set("network", "subnet", "/".join(get_netinfo()))
-        # self.nodes.set("network", "gateway", get_default_route()[0])
-        self.nodes.set("hostnames", "node1", get_hostname())
-        self.nodes.set("ips", "node1", get_netinfo()[0])
-        self.nodes.set("info", "nodes", "node1")
-        self.nodes.set("info", "public_iface", get_default_route()[1])
-
-    def read_config(self, f):
-        config = ConfigParser.ConfigParser()
-        config.optionxform = str
-        filename = os.path.join(self.confdir, f) + ".conf"
-        config.read(filename)
-        return config
-
-    def set(self, conf, section, option, value):
-        c = getattr(self, conf)
-        c.set(section, option, value)
-
-    def get(self, conf, section, option):
-        c = getattr(self, conf)
-        return c.get(section, option, True)
-
-    def get_section(self, conf, section):
-        c = getattr(self, conf)
-        return c.items(section, True)
-
-    def print_config(self):
-        for f in self.files.keys():
-            getattr(self, f).write(sys.stdout)
-
-
-def debug(host, msg):
-
-    print HEADER + host + \
-        OKBLUE + ": " + msg + ENDC
+    print " ".join([
+        HEADER, args[0],
+        OKBLUE, args[1],
+        OKGREEN, args[2],
+        ENDC])
 
 
 def check_pidfile(pidfile):
@@ -275,3 +180,8 @@ def import_conf_file(filename, directory):
 
 def raddr(addr):
     return list(reversed(addr.replace("/", "-").split(".")))
+
+
+def create_passwd(length):
+    char_set = string.ascii_uppercase + string.digits + string.ascii_lowercase
+    return ''.join(random.sample(char_set, length))

@@ -1,50 +1,41 @@
-# Copyright 2011-2014 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above copyright
-#      notice, this list of conditions and the following disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#  2. Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in the
-#     documentation and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are
-# those of the authors and should not be interpreted as representing official
-# policies, either expressed or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
 
+from datetime import datetime
 from socket import getfqdn
-from functools import wraps
+from random import choice
 from django import dispatch
-from django.db import transaction
+from synnefo.db import transaction
 from django.utils import simplejson as json
 
 from snf_django.lib.api import faults
 from django.conf import settings
-from synnefo import quotas
 from synnefo.api import util
 from synnefo.logic import backend, ips, utils
 from synnefo.logic.backend_allocator import BackendAllocator
 from synnefo.db.models import (NetworkInterface, VirtualMachine,
-                               VirtualMachineMetadata, IPAddressLog, Network)
+                               VirtualMachineMetadata, IPAddressLog, Network,
+                               Image, pooled_rapi_client)
 from vncauthproxy.client import request_forwarding as request_vnc_forwarding
 from synnefo.logic import rapi
+from synnefo.volume.volumes import _create_volume
+from synnefo.volume.util import get_volume
+from synnefo.logic import commands
+from synnefo import quotas
 
 log = logging.getLogger(__name__)
 
@@ -52,148 +43,87 @@ log = logging.getLogger(__name__)
 server_created = dispatch.Signal(providing_args=["created_vm_params"])
 
 
-def validate_server_action(vm, action):
-    if vm.deleted:
-        raise faults.BadRequest("Server '%s' has been deleted." % vm.id)
-
-    # Destroyin a server should always be permitted
-    if action == "DESTROY":
-        return
-
-    # Check that there is no pending action
-    pending_action = vm.task
-    if pending_action:
-        if pending_action == "BUILD":
-            raise faults.BuildInProgress("Server '%s' is being build." % vm.id)
-        raise faults.BadRequest("Cannot perform '%s' action while there is a"
-                                " pending '%s'." % (action, pending_action))
-
-    # Check if action can be performed to VM's operstate
-    operstate = vm.operstate
-    if operstate == "ERROR":
-        raise faults.BadRequest("Cannot perform '%s' action while server is"
-                                " in 'ERROR' state." % action)
-    elif operstate == "BUILD" and action != "BUILD":
-        raise faults.BuildInProgress("Server '%s' is being build." % vm.id)
-    elif (action == "START" and operstate != "STOPPED") or\
-         (action == "STOP" and operstate != "STARTED") or\
-         (action == "RESIZE" and operstate != "STOPPED") or\
-         (action in ["CONNECT", "DISCONNECT"] and operstate != "STOPPED"
-          and not settings.GANETI_USE_HOTPLUG):
-        raise faults.BadRequest("Cannot perform '%s' action while server is"
-                                " in '%s' state." % (action, operstate))
-    return
-
-
-def server_command(action, action_fields=None):
-    """Handle execution of a server action.
-
-    Helper function to validate and execute a server action, handle quota
-    commission and update the 'task' of the VM in the DB.
-
-    1) Check if action can be performed. If it can, then there must be no
-       pending task (with the exception of DESTROY).
-    2) Handle previous commission if unresolved:
-       * If it is not pending and it to accept, then accept
-       * If it is not pending and to reject or is pending then reject it. Since
-       the action can be performed only if there is no pending task, then there
-       can be no pending commission. The exception is DESTROY, but in this case
-       the commission can safely be rejected, and the dispatcher will generate
-       the correct ones!
-    3) Issue new commission and associate it with the VM. Also clear the task.
-    4) Send job to ganeti
-    5) Update task and commit
-    """
-    def decorator(func):
-        @wraps(func)
-        @transaction.commit_on_success
-        def wrapper(vm, *args, **kwargs):
-            user_id = vm.userid
-            validate_server_action(vm, action)
-            vm.action = action
-
-            commission_name = "client: api, resource: %s" % vm
-            quotas.handle_resource_commission(vm, action=action,
-                                              action_fields=action_fields,
-                                              commission_name=commission_name)
-            vm.save()
-
-            # XXX: Special case for server creation!
-            if action == "BUILD":
-                # Perform a commit, because the VirtualMachine must be saved to
-                # DB before the OP_INSTANCE_CREATE job in enqueued in Ganeti.
-                # Otherwise, messages will arrive from snf-dispatcher about
-                # this instance, before the VM is stored in DB.
-                transaction.commit()
-                # After committing the locks are released. Refetch the instance
-                # to guarantee x-lock.
-                vm = VirtualMachine.objects.select_for_update().get(id=vm.id)
-
-            # Send the job to Ganeti and get the associated jobID
-            try:
-                job_id = func(vm, *args, **kwargs)
-            except Exception as e:
-                if vm.serial is not None:
-                    # Since the job never reached Ganeti, reject the commission
-                    log.debug("Rejecting commission: '%s', could not perform"
-                              " action '%s': %s" % (vm.serial,  action, e))
-                    transaction.rollback()
-                    quotas.reject_resource_serial(vm)
-                    transaction.commit()
-                raise
-
-            if action == "BUILD" and vm.serial is not None:
-                # XXX: Special case for server creation: we must accept the
-                # commission because the VM has been stored in DB. Also, if
-                # communication with Ganeti fails, the job will never reach
-                # Ganeti, and the commission will never be resolved.
-                quotas.accept_resource_serial(vm)
-
-            log.info("user: %s, vm: %s, action: %s, job_id: %s, serial: %s",
-                     user_id, vm.id, action, job_id, vm.serial)
-
-            # store the new task in the VM
-            if job_id is not None:
-                vm.task = action
-                vm.task_job_id = job_id
-            vm.save()
-
-            return vm
-        return wrapper
-    return decorator
-
-
 @transaction.commit_on_success
-def create(userid, name, password, flavor, image, metadata={},
-           personality=[], networks=None, use_backend=None):
-    if use_backend is None:
-        # Allocate server to a Ganeti backend
-        use_backend = allocate_new_server(userid, flavor)
+def create(userid, name, password, flavor, image_id, metadata={},
+           personality=[], networks=None, use_backend=None, project=None,
+           volumes=None):
 
     utils.check_name_length(name, VirtualMachine.VIRTUAL_MACHINE_NAME_LENGTH,
                             "Server name is too long")
 
+    # Get the image, if any, that is used for the first volume
+    vol_image_id = None
+    if volumes:
+        vol = volumes[0]
+        if vol["source_type"] in ["image", "snapshot"]:
+            vol_image_id = vol["source_uuid"]
+
+    # Check conflict between server's and volume's image
+    if image_id and vol_image_id and image_id != vol_image_id:
+        raise faults.BadRequest("The specified server's image is different"
+                                " from the the source of the first volume.")
+    elif vol_image_id and not image_id:
+        image_id = vol_image_id
+    elif not image_id:
+        raise faults.BadRequest("You need to specify either an image or a"
+                                " block device mapping.")
+
+    if len(metadata) > settings.CYCLADES_VM_MAX_METADATA:
+        raise faults.BadRequest("Virtual Machines cannot have more than %s "
+                                "metadata items" %
+                                settings.CYCLADES_VM_MAX_METADATA)
+    # Get image info
+    image = util.get_image_dict(image_id, userid)
+
+    if not volumes:
+        # If no volumes are specified, we automatically create a volume with
+        # the size of the flavor and filled with the specified image.
+        volumes = [{"source_type": "image",
+                    "source_uuid": image_id,
+                    "size": flavor.disk,
+                    "delete_on_termination": True}]
+    assert(len(volumes) > 0), "Cannot create server without volumes"
+
+    if volumes[0]["source_type"] == "blank":
+        raise faults.BadRequest("Root volume cannot be blank")
+
+    try:
+        is_system = (image["owner"] == settings.SYSTEM_IMAGES_OWNER)
+        img, created = Image.objects.get_or_create(uuid=image["id"],
+                                                   version=image["version"])
+        if created:
+            img.owner = image["owner"]
+            img.name = image["name"]
+            img.location = image["location"]
+            img.mapfile = image["mapfile"]
+            img.is_public = image["is_public"]
+            img.is_snapshot = image["is_snapshot"]
+            img.is_system = is_system
+            img.os = image["metadata"].get("OS", "unknown")
+            img.osfamily = image["metadata"].get("OSFAMILY", "unknown")
+            img.save()
+    except Exception as e:
+        # Image info is not critical. Continue if it fails for any reason
+        log.warning("Failed to store image info: %s", e)
+
+    if use_backend is None:
+        # Allocate server to a Ganeti backend
+        use_backend = allocate_new_server(userid, flavor)
+
     # Create the ports for the server
     ports = create_instance_ports(userid, networks)
 
-    # Fix flavor for archipelago
-    disk_template, provider = util.get_flavor_provider(flavor)
-    if provider:
-        flavor.disk_template = disk_template
-        flavor.disk_provider = provider
-        flavor.disk_origin = None
-        if provider in settings.GANETI_CLONE_PROVIDERS:
-            flavor.disk_origin = image['checksum']
-            image['backend_id'] = 'null'
-    else:
-        flavor.disk_provider = None
+    if project is None:
+        project = userid
 
     # We must save the VM instance now, so that it gets a valid
     # vm.backend_vm_id.
     vm = VirtualMachine.objects.create(name=name,
                                        backend=use_backend,
                                        userid=userid,
+                                       project=project,
                                        imageid=image["id"],
+                                       image_version=image["version"],
                                        flavor=flavor,
                                        operstate="BUILD")
     log.info("Created entry in DB for VM '%s'", vm)
@@ -204,6 +134,32 @@ def create(userid, name, password, flavor, image, metadata={},
         port.index = index
         port.save()
 
+    # Create instance volumes
+    server_vtype = flavor.volume_type
+    server_volumes = []
+    for index, vol_info in enumerate(volumes):
+        if vol_info["source_type"] == "volume":
+            uuid = vol_info["source_uuid"]
+            v = get_volume(userid, uuid, for_update=True, non_deleted=True,
+                           exception=faults.BadRequest)
+            if v.volume_type_id != server_vtype.id:
+                msg = ("Volume '%s' has type '%s' while flavor's volume type"
+                       " is '%s'" % (v.id, v.volume_type_id, server_vtype.id))
+                raise faults.BadRequest(msg)
+            if v.status != "AVAILABLE":
+                raise faults.BadRequest("Cannot use volume while it is in %s"
+                                        " status" % v.status)
+            v.delete_on_termination = vol_info["delete_on_termination"]
+            v.machine = vm
+            v.index = index
+            v.save()
+        else:
+            v = _create_volume(server=vm, user_id=userid,
+                               volume_type=server_vtype, project=project,
+                               index=index, **vol_info)
+        server_volumes.append(v)
+
+    # Create instance metadata
     for key, val in metadata.items():
         utils.check_name_length(key, VirtualMachineMetadata.KEY_LENGTH,
                                 "Metadata key is too long")
@@ -215,7 +171,8 @@ def create(userid, name, password, flavor, image, metadata={},
             vm=vm)
 
     # Create the server in Ganeti.
-    vm = create_server(vm, ports, flavor, image, personality, password)
+    vm = create_server(vm, ports, server_volumes, flavor, image, personality,
+                       password)
 
     return vm
 
@@ -240,21 +197,30 @@ def allocate_new_server(userid, flavor):
     return use_backend
 
 
-@server_command("BUILD")
-def create_server(vm, nics, flavor, image, personality, password):
+@commands.server_command("BUILD")
+def create_server(vm, nics, volumes, flavor, image, personality, password):
     # dispatch server created signal needed to trigger the 'vmapi', which
     # enriches the vm object with the 'config_url' attribute which must be
     # passed to the Ganeti job.
+
+    # If the root volume has a provider, then inform snf-image to not fill
+    # the volume with data
+    image_id = image["pithosmap"]
+    root_volume = volumes[0]
+    if root_volume.volume_type.provider in settings.GANETI_CLONE_PROVIDERS:
+        image_id = "null"
+
     server_created.send(sender=vm, created_vm_params={
-        'img_id': image['backend_id'],
+        'img_id': image_id,
         'img_passwd': password,
         'img_format': str(image['format']),
         'img_personality': json.dumps(personality),
         'img_properties': json.dumps(image['metadata']),
     })
+
     # send job to Ganeti
     try:
-        jobID = backend.create_instance(vm, nics, flavor, image)
+        jobID = backend.create_instance(vm, nics, volumes, flavor, image)
     except:
         log.exception("Failed create instance '%s'", vm)
         jobID = None
@@ -262,6 +228,7 @@ def create_server(vm, nics, flavor, image, personality, password):
         vm.backendlogmsg = "Failed to send job to Ganeti."
         vm.save()
         vm.nics.all().update(state="ERROR")
+        vm.volumes.all().update(status="ERROR")
 
     # At this point the job is enqueued in the Ganeti backend
     vm.backendopcode = "OP_INSTANCE_CREATE"
@@ -273,7 +240,7 @@ def create_server(vm, nics, flavor, image, personality, password):
     return jobID
 
 
-@server_command("DESTROY")
+@commands.server_command("DESTROY")
 def destroy(vm, shutdown_timeout=None):
     # XXX: Workaround for race where OP_INSTANCE_REMOVE starts executing on
     # Ganeti before OP_INSTANCE_CREATE. This will be fixed when
@@ -287,19 +254,19 @@ def destroy(vm, shutdown_timeout=None):
     return backend.delete_instance(vm, shutdown_timeout=shutdown_timeout)
 
 
-@server_command("START")
+@commands.server_command("START")
 def start(vm):
     log.info("Starting VM %s", vm)
     return backend.startup_instance(vm)
 
 
-@server_command("STOP")
+@commands.server_command("STOP")
 def stop(vm, shutdown_timeout=None):
     log.info("Stopping VM %s", vm)
     return backend.shutdown_instance(vm, shutdown_timeout=shutdown_timeout)
 
 
-@server_command("REBOOT")
+@commands.server_command("REBOOT")
 def reboot(vm, reboot_type, shutdown_timeout=None):
     if reboot_type not in ("SOFT", "HARD"):
         raise faults.BadRequest("Malformed request. Invalid reboot"
@@ -313,7 +280,7 @@ def reboot(vm, reboot_type, shutdown_timeout=None):
 def resize(vm, flavor):
     action_fields = {"beparams": {"vcpus": flavor.cpu,
                                   "maxmem": flavor.ram}}
-    comm = server_command("RESIZE", action_fields=action_fields)
+    comm = commands.server_command("RESIZE", action_fields=action_fields)
     return comm(_resize)(vm, flavor)
 
 
@@ -325,15 +292,28 @@ def _resize(vm, flavor):
                                 % (vm, flavor))
     # Check that resize can be performed
     if old_flavor.disk != flavor.disk:
-        raise faults.BadRequest("Cannot resize instance disk.")
-    if old_flavor.disk_template != flavor.disk_template:
-        raise faults.BadRequest("Cannot change instance disk template.")
+        raise faults.BadRequest("Cannot change instance's disk size.")
+    if old_flavor.volume_type_id != flavor.volume_type_id:
+        raise faults.BadRequest("Cannot change instance's volume type.")
 
     log.info("Resizing VM from flavor '%s' to '%s", old_flavor, flavor)
     return backend.resize_instance(vm, vcpus=flavor.cpu, memory=flavor.ram)
 
 
-@server_command("SET_FIREWALL_PROFILE")
+@transaction.commit_on_success
+def reassign(vm, project):
+    commands.validate_server_action(vm, "REASSIGN")
+    action_fields = {"to_project": project, "from_project": vm.project}
+    log.info("Reassigning VM %s from project %s to %s",
+             vm, vm.project, project)
+    vm.project = project
+    vm.save()
+    vm.volumes.filter(index=0, deleted=False).update(project=project)
+    quotas.issue_and_accept_commission(vm, action="REASSIGN",
+                                       action_fields=action_fields)
+
+
+@commands.server_command("SET_FIREWALL_PROFILE")
 def set_firewall_profile(vm, profile, nic):
     log.info("Setting VM %s, NIC %s, firewall %s", vm, nic, profile)
 
@@ -343,7 +323,7 @@ def set_firewall_profile(vm, profile, nic):
     return None
 
 
-@server_command("CONNECT")
+@commands.server_command("CONNECT")
 def connect(vm, network, port=None):
     if port is None:
         port = _create_port(vm.userid, network)
@@ -354,7 +334,7 @@ def connect(vm, network, port=None):
     return backend.connect_to_network(vm, port)
 
 
-@server_command("DISCONNECT")
+@commands.server_command("DISCONNECT")
 def disconnect(vm, nic):
     log.info("Removing NIC %s from VM %s", nic, vm)
     return backend.disconnect_from_network(vm, nic)
@@ -373,18 +353,41 @@ def console(vm, console_type):
     """
     log.info("Get console  VM %s, type %s", vm, console_type)
 
-    # Use RAPI to get VNC console information for this instance
     if vm.operstate != "STARTED":
         raise faults.BadRequest('Server not in ACTIVE state.')
 
-    if settings.TEST:
-        console_data = {'kind': 'vnc', 'host': 'ganeti_node', 'port': 1000}
-    else:
-        console_data = backend.get_instance_console(vm)
+    # Use RAPI to get VNC console information for this instance
+    # RAPI GetInstanceConsole() returns endpoints to the vnc_bind_address,
+    # which is a cluster-wide setting, either 0.0.0.0 or 127.0.0.1, and pretty
+    # useless (see #783).
+    #
+    # Until this is fixed on the Ganeti side, construct a console info reply
+    # directly.
+    #
+    # WARNING: This assumes that VNC runs on port network_port on
+    #          the instance's primary node, and is probably
+    #          hypervisor-specific.
+    def get_console_data(i):
+        return {"kind": "vnc",
+                "host": i["pnode"],
+                "port": i["network_port"]}
+    with pooled_rapi_client(vm) as c:
+        i = c.GetInstance(vm.backend_vm_id)
+    console_data = get_console_data(i)
 
-    if console_data['kind'] != 'vnc':
-        message = 'got console of kind %s, not "vnc"' % console_data['kind']
-        raise faults.ServiceUnavailable(message)
+    if vm.backend.hypervisor == "kvm" and i['hvparams']['serial_console']:
+        raise Exception("hv parameter serial_console cannot be true")
+
+    # Check that the instance is really running
+    if not i["oper_state"]:
+        log.warning("VM '%s' is marked as '%s' in DB while DOWN in Ganeti",
+                    vm.id, vm.operstate)
+        # Instance is not running. Mock a shutdown job to sync DB
+        backend.process_op_status(vm, etime=datetime.now(), jobid=0,
+                                  opcode="OP_INSTANCE_SHUTDOWN",
+                                  status="success",
+                                  logmsg="Reconciliation simulated event")
+        raise faults.BadRequest('Server not in ACTIVE state.')
 
     # Let vncauthproxy decide on the source port.
     # The alternative: static allocation, e.g.
@@ -394,24 +397,33 @@ def console(vm, console_type):
     dport = console_data['port']
     password = util.random_password()
 
-    if settings.TEST:
-        fwd = {'source_port': 1234, 'status': 'OK'}
-    else:
-        vnc_extra_opts = settings.CYCLADES_VNCAUTHPROXY_OPTS
-        fwd = request_vnc_forwarding(sport, daddr, dport, password,
-                                     **vnc_extra_opts)
+    vnc_extra_opts = settings.CYCLADES_VNCAUTHPROXY_OPTS
+
+    # Maintain backwards compatibility with the dict setting
+    if isinstance(vnc_extra_opts, list):
+        vnc_extra_opts = choice(vnc_extra_opts)
+
+    fwd = request_vnc_forwarding(sport, daddr, dport, password,
+                                 console_type=console_type, **vnc_extra_opts)
 
     if fwd['status'] != "OK":
+        log.error("vncauthproxy returned error status: '%s'" % fwd)
         raise faults.ServiceUnavailable('vncauthproxy returned error status')
 
     # Verify that the VNC server settings haven't changed
-    if not settings.TEST:
-        if console_data != backend.get_instance_console(vm):
-            raise faults.ServiceUnavailable('VNC Server settings changed.')
+    with pooled_rapi_client(vm) as c:
+        i = c.GetInstance(vm.backend_vm_id)
+    if get_console_data(i) != console_data:
+        raise faults.ServiceUnavailable('VNC Server settings changed.')
+
+    try:
+        host = fwd['proxy_address']
+    except KeyError:
+        host = getfqdn()
 
     console = {
-        'type': 'vnc',
-        'host': getfqdn(),
+        'type': console_type,
+        'host': host,
         'port': fwd['source_port'],
         'password': password}
 
@@ -493,6 +505,7 @@ def _create_port(userid, network, machine=None, use_ipaddress=None,
                                            state="DOWN",
                                            userid=userid,
                                            device_owner=None,
+                                           public=network.public,
                                            name=name)
 
     # add the security groups if any
@@ -724,7 +737,7 @@ def _port_for_request(user_id, network_dict):
         network = util.get_network(network_id, user_id, non_deleted=True)
         if network.public:
             if network.subnet4 is not None:
-                if not "fixed_ip" in network_dict:
+                if "fixed_ip" not in network_dict:
                     return create_public_ipv4_port(user_id, network)
                 elif address is None:
                     msg = "Cannot connect to public network"

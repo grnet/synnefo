@@ -1,50 +1,33 @@
-# Copyright 2012-2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from optparse import make_option
 
-from snf_django.management.commands import SynnefoCommand, CommandError
+from snf_django.management.commands import ListCommand
 
-from astakos.im.models import Project
-from django.db.models import Q
-from snf_django.management import utils
-from ._common import is_uuid, is_email
+from astakos.im.models import Project, ProjectApplication
+from ._common import is_uuid
 
 
-class Command(SynnefoCommand):
+class Command(ListCommand):
     help = """List projects and project status.
 
     Project status can be one of:
+      Uninitialized        an uninitialized project,
+                           with no pending application
+
       Pending              an uninitialized project, pending review
 
       Active               an active project
@@ -59,14 +42,14 @@ class Command(SynnefoCommand):
                            it can later be resumed
 
       Terminated           a terminated project; its name can be claimed
-                           by a new project"""
+                           by a new project
 
-    option_list = SynnefoCommand.option_list + (
-        make_option('--all',
-                    action='store_true',
-                    dest='all',
-                    default=False,
-                    help="List all projects (default)"),
+      Deleted              an uninitialized, deleted project"""
+
+    object_class = Project
+    select_related = ["last_application", "owner"]
+
+    option_list = ListCommand.option_list + (
         make_option('--new',
                     action='store_true',
                     dest='new',
@@ -83,89 +66,70 @@ class Command(SynnefoCommand):
                     default=False,
                     help=("Show only projects with a pending application "
                           "(equiv. --modified --new)")),
-        make_option('--skip',
+        make_option('--deleted',
                     action='store_true',
-                    dest='skip',
+                    dest='deleted',
                     default=False,
-                    help="Skip cancelled and terminated projects"),
-        make_option('--name',
-                    dest='name',
-                    help='Filter projects by name'),
-        make_option('--owner',
-                    dest='owner',
-                    help='Filter projects by owner\'s email or uuid'),
+                    help="Also show cancelled/terminated projects"),
+        make_option('--system-projects',
+                    action='store_true',
+                    default=False,
+                    help="Also show system projects"),
     )
 
-    def handle(self, *args, **options):
+    def get_owner(project):
+        return project.owner.email if project.owner else None
 
-        flt = Q()
-        owner = options['owner']
-        if owner:
-            flt &= filter_by_owner(owner)
+    def get_status(project):
+        return project.state_display()
 
-        name = options['name']
-        if name:
-            flt &= filter_by_name(name)
+    def get_pending_app(project):
+        app = project.last_application
+        return app.id if app and app.state == app.PENDING else ""
 
-        chains = Project.objects.all_with_pending(flt)
+    FIELDS = {
+        "id": ("uuid", "Project ID"),
+        "name": ("realname", "Project Name"),
+        "owner": (get_owner, "Project Owner"),
+        "status": (get_status, "Project Status"),
+        "pending_app": (get_pending_app,
+                        "An application pending for the project"),
+    }
 
-        if not options['all']:
-            if options['skip']:
-                pred = lambda c: (
-                    c[0].overall_state() not in Project.SKIP_STATES
-                    or c[1] is not None)
-                chains = filter_preds([pred], chains)
+    fields = ["id", "name", "owner", "status", "pending_app"]
 
-            preds = []
-            if options['new'] or options['pending']:
-                preds.append(
-                    lambda c: c[0].overall_state() == Project.O_PENDING)
-            if options['modified'] or options['pending']:
-                preds.append(
-                    lambda c: c[0].overall_state() != Project.O_PENDING
-                    and c[1] is not None)
+    def handle_args(self, *args, **options):
+        try:
+            name_filter = self.filters.pop("name")
+            self.filters["realname"] = name_filter
+        except KeyError:
+            pass
 
-            if preds:
-                chains = filter_preds(preds, chains)
+        try:
+            owner_filter = self.filters.pop("owner")
+            if owner_filter is not None:
+                if is_uuid(owner_filter):
+                    self.filters["owner__uuid"] = owner_filter
+                else:
+                    self.filters["owner__email"] = owner_filter
+        except KeyError:
+            pass
 
-        labels = ('ProjID', 'Name', 'Owner', 'Email', 'Status',
-                  'Pending AppID')
+        if not options['deleted']:
+            self.excludes["state__in"] = Project.SKIP_STATES
 
-        info = chain_info(chains)
-        utils.pprint_table(self.stdout, info, labels,
-                           options["output_format"])
+        if not options['system_projects']:
+            self.excludes["is_base"] = True
 
+        if options["pending"]:
+            self.filter_pending()
+        else:
+            if options['new']:
+                self.filter_pending()
+                self.filters["state"] = Project.UNINITIALIZED
+            if options['modified']:
+                self.filter_pending()
+                self.filters["state__in"] = Project.INITIALIZED_STATES
 
-def filter_preds(preds, chains):
-    return [c for c in chains
-            if any(map(lambda f: f(c), preds))]
-
-
-def filter_by_name(name):
-    return Q(application__name=name)
-
-
-def filter_by_owner(s):
-    if is_email(s):
-        return Q(application__owner__email=s)
-    if is_uuid(s):
-        return Q(application__owner__uuid=s)
-    raise CommandError("Expecting either email or uuid.")
-
-
-def chain_info(chains):
-    l = []
-    for project, pending_app in chains:
-        status = project.state_display()
-        pending_appid = pending_app.id if pending_app is not None else ""
-        application = project.application
-
-        t = (project.pk,
-             application.name,
-             application.owner.realname,
-             application.owner.email,
-             status,
-             pending_appid,
-             )
-        l.append(t)
-    return l
+    def filter_pending(self):
+        self.filters["last_application__state"] = ProjectApplication.PENDING

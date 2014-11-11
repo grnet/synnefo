@@ -1,0 +1,32 @@
+{% load admin_tags %}
+{% with source=item project=item.project %}
+<div class="object-anchor" id="quota-{{project|id}}"></div>
+<div class="object-details {{ rowcls }}">
+    <h4 class="clearfix">
+        <span class="lt">
+            <span class="title">{{ project|repr }}</span>
+            <span class="arrow  snf-angle-down"  role="button" tabindex="0"></span>
+        </span>
+        <span class="rt">
+            <span class="label">ID: {{ project.id }}</span>
+        </span>
+    </h4>
+    <div class="object-details-content">
+        <ul class="nav nav-tabs">
+            <li class="active"><a href="#quota-details{{ project.id }}" data-toggle="tab">Details</a></li>
+        </ul>
+        <div class="tab-content">
+            <div class="tab-pane active" id="quota-details{{ project.id }}">
+                <dl class="dl-horizontal well">
+                    {% for name, usage,limit in source.resources %}
+                        <dt>{{ name }}</dt><dd>{{ usage }} from {{ limit }}</dd>
+                    {% endfor %}
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="todo vm-actions clearfix">
+        {% include "admin/action_list_horizontal.html" %}
+    </div>
+</div>
+{% endwith %}

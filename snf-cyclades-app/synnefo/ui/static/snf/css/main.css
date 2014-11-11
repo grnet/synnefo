@@ -155,6 +155,8 @@ h5 {
 .tab-name, 
 .machine-container .name,
 h5.namecontainer span,
+.entry h3 span,
+.nested-model-list .model-item .inner.main-content .title,
 .single .machine-detail.title {
     font-family: 'Ubuntu', sans-serif;
 }
@@ -610,8 +612,10 @@ div#footer-text{
     width: 140px;
 }
 
-.overlay-networks-create .form-action {
-  float: left;
+.overlay-networks-create .clear {
+    float: none;
+    width: 100%;
+    margin-top: 5px !important;
 }
 
 .overlay-networks-create .fixpos {
@@ -636,6 +640,13 @@ form .fields-desc {
 
 .overlay-networks-create form select {
   padding: 1px;
+}
+
+.overlay-networks-create .col-fields .form-field.project-select {
+    float: none;
+    margin: 0;
+    border-bottom: none;
+    height: 34px;
 }
 
 .overlay-networks-create #network-create-subnet-custom {
@@ -733,31 +744,8 @@ div.image-container {
     padding-left: 50px;
 }
 
-/* slider root element */
-.slider {
-    border: 1px solid #666;
-    cursor: pointer;
-    display: inline !important;
-    float: left;
-    margin: 5px 0 20px 10px;
-    position: relative;
-    width: 250px;
-}
-
-.sliders {
-    float:left;
-    width: 40px;
-    margin-left: 10px;
-    margin-top: 3px;
-}
-
 .units {
     padding-left:10px;
-}
-
-.slider-container {
-    padding-bottom: 15px;
-    margin-left: 5px;
 }
 
 /* drag handle */
@@ -857,7 +845,7 @@ div.image-container {
 
 #machinesview .build-progress .btn {
     cursor: pointer;
-    background-color: #5e1616;
+    background-color: #666666;
     color: #FFF;
     padding: 3px;
 }
@@ -876,7 +864,7 @@ div.image-container {
 }
 
 .icon .machine-info {
-    padding: 20px 0;
+    padding: 28px 0;
 }
 
 .icon .machine-details .name {
@@ -913,7 +901,7 @@ div.image-container {
 
 .icon .vm-actions, .network .vm-actions {
     width: 180px;
-    height: 96px;
+    height: 111px;
     float: left;
 }
 
@@ -991,11 +979,14 @@ div.list div.actions a.enabled.destroy {
 .vm-actions .action-container.destroy a {
 }
 
-.icon .light-background .machine-data, div.network.light-background, div.network.expand {
+.icon .light-background .machine-data, 
+.icon .action-pending .machine-data, 
+div.network.light-background, div.network.expand {
     background-color:#aed2e3 !important;
 }
 
-.single .light-background {
+.single .light-background,
+.single .action-pending {
     background-color:#aed2e3;
 }
 
@@ -1061,8 +1052,8 @@ div.machine div.actions .disabled {
 }
 
 div.machine div.actions .disabled-visible a,
-div.machine div.vm-actions .disabled-visible a {
-  color: #aaa;
+div.vm-actions .disabled-visible a {
+  color: #aaa !important;
 }
 
 div.single-container div.vm-actions .disabled {
@@ -1085,7 +1076,7 @@ div.connect-arrow {
     display: none;
     left: -3px;
     position: absolute;
-    top: 22px;
+    top: 30px;
 }
 
 div.connect-arrow:hover, div.connect-arrow.border-hover, div.connect-arrow-ie, div.connect-arrow.border-ie {
@@ -1113,7 +1104,7 @@ div.connect-border:hover {
     display: none;
     left: -15px;
     position: absolute;
-    top: 22px;
+    top: 30px;
 }
 
 .standard .machine .logo {
@@ -1152,7 +1143,7 @@ div.connect-border:hover {
     margin: 0;
 }
 
-.icon div.cont-toggler-wrapper.ips {
+.icon div.cont-toggler-wrapper {
     margin-top: 2px;
     font-size: 75%;
 }
@@ -1186,6 +1177,14 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
     background: transparent;
 }
 
+.connecting-state .indicator1, .connecting-state .indicator2, .connecting-state .indicator3, .connecting-state .indicator4 {
+    background-color: #d4aa00;
+}
+
+.disconnecting-state .indicator1, .disconnecting-state .indicator2, .disconnecting-state .indicator3, .disconnecting-state .indicator4 {
+    background-color: #d4aa00;
+}
+
 .running-state .indicator1, .running-state .indicator2, .running-state .indicator3, .running-state .indicator4 {
     background-color: #63cf1c;
 }
@@ -1203,7 +1202,7 @@ div.indicator1, div.indicator2, div.indicator3, div.indicator4 {
 }
 
 .build-state .indicator1, .build-state .indicator2, .build-state .indicator3, .build-state .indicator4 {
-    background-color: #FF7F2A;
+    background-color: #4085a5 !important;
 }
 
 .destroying-state .indicator1, .destroying-state .indicator3, .destroying-state .indicator2, .destroying-state .indicator4 {
@@ -2536,8 +2535,12 @@ div.list table thead .vmname {
     margin: 10px 6px 0 15px;
 }
 
+.progress-indicator.spinner {
+    margin-top: 50px;
+}
+
 .icon .spinner {
-    margin: 20px 4px 0 15px !important;
+    margin: 33px 4px 0 15px !important;
 }
 
 .single .state .spinner {
@@ -3244,40 +3247,60 @@ div.reboot-dialog button.details:hover {
     display: none;
 }
 
-.machine .info-content.ips .collection {
+
+.machine .info-content.inner-collection .model-item .actions-content.inline {
+  right: -180px;
+  padding-top: 0px;
+}
+
+.machine .info-content.inner-collection .inner-item .nested .actions-content.inline {
+  padding-top: 6px !important;
+}
+
+.machine .info-content.inner-collection .collection {
   padding: 0;
 }
 
-.machine .info-content.ips .ips .model-item .subnet {
+.machine .info-content.inner-collection .nested .model-item .subnet {
   padding-top: 2px;
   width: 35%;
   float: left;
 }
 
-.machine .info-content.ips .ips .port-ip-item:last-child {
+.machine .info-content.inner-collection .nested-item:last-child {
   margin-bottom: 0;
 }
 
-.machine .info-content.ips.ips .port-item:hover {
+.machine .info-content.inner-collection .inner-item:hover {
   background-color: #75A7BF;
 }
 
-.machine .info-content.ips .ips .port-ip-item {
+.machine .info-content.volumes.inner-collection .nested-item {
+    margin-bottom:0px;
+}
+
+.machine .info-content.inner-collection .nested-item {
   padding: 6px;
   margin-bottom: 2px;
 }
 
-.machine .info-content.ips .ips .model-item .ip {
+.machine .info-content.inner-collection .model-item .title-display {
   padding-top: 4px;
   width: 55%;
   float: left;
 }
 
-.single .machine .info-content.ips .ips .model-item .ip {
+.single .machine .info-content.inner-collection .model-item .title-display {
   padding-top: 5px;
 }
 
-.machine .info-content.ips .ips .model-item .type {
+.machine .info-content.inner-collection .index-display {
+    float: left;
+    padding: 4px;
+    margin-right: 7px;
+}
+
+.machine .info-content.inner-collection .type-display {
   float: left;
   margin-right: 10px;
   margin-top: 1px;
@@ -3285,49 +3308,54 @@ div.reboot-dialog button.details:hover {
   color: #fff;
   background-color: #4085A5;
   padding: 3px;
+  min-width: 22px;
+  text-align: center;
 }
 
-.single .machine .info-content.ips .ips .model-item .ip {
+.machine .info-content.inner-collection .volume-item .type-display {
+    min-width: 26px;
+}
+
+.single .machine .info-content.inner-collection .model-item .title {
   width: 85%;
 }
 
-.single .machine .info-content.ips .ips .model-item .cidr {
+.single .machine .info-content.inner-collection .model-item .cidr {
   padding-left: 27px;
 }
 
-.single .machine .info-content.ips .ips .model-item .type {
+.single .machine .info-content.inner-collection .type-display {
   font-size: 0.9em;
   padding: 1px 4px;
   margin-top: 4px;
 }
 
-.machine .info-content.ips .port {
+.machine .info-content.inner-collection .port {
   width: 77%;
   float: left;
   margin-top: 9px;
 }
 
-.machine .info-content.ips .ips {
+.machine .info-content.inner-collection .nested {
   width: 50%;
   float: left;
 }
 
-.machine .info-content.ips .port-item:last-child {
+.machine .info-content.inner-collection .inner-item:last-child {
   border-bottom: none;
-  padding-bottom: 0;
   margin-bottom: 0;
 }
 
-.machine .info-content.ips .port-item {
+.machine .info-content.inner-collection .inner-item {
   border-bottom: 1px solid #75A9C1;
 }
 
-.machine .info-content.ips .port-item img.in-progress {
+.machine .info-content.inner-collection .inner-item img.in-progress {
   margin: 4px 2px;
   margin-right: 20px;
 }
 
-.machine .info-content.ips .port-item img {
+.machine .info-content.inner-collection .inner-item img {
   float: left;
   position: relative;
   left: 4px;
@@ -3335,44 +3363,44 @@ div.reboot-dialog button.details:hover {
   margin-right: 10px;
 }
 
-.single .machine .info-content.ips .port-item img {
+.single .machine .info-content.inner-collection .inner-item img {
   margin-top: 13px;
 }
 
-.machine .info-content.ips .port-item .network-header {
+.machine .info-content.inner-collection .inner-item .network-header {
   width: 50%;
   float: left;
 }
 
-.single .machine .info-content.ips .port-item .network-header {
+.single .machine .info-content.inner-collection .inner-item .network-header {
   width: 100%;
   float: none;
 }
 
-.single .machine .info-content.ips .ips {
+.single .machine .info-content.inner-collection .nested {
   width: 100%;
 }
 
-.single .machine .info-content.ips .ips,
-.single .machine .info-content.ips .port-item .network-header {
+.single .machine .info-content.inner-collection .nested,
+.single .machine .info-content.inner-collection .inner-item .network-header {
   float: none;
 }
 
-.single .machine .info-content.ips .port-item .network-header {
+.single .machine .info-content.inner-collection .inner-item .network-header {
   padding: 5px;
   margin-top: -10px;
 }
   
 
-.machine .info-content.ips .port-item .port {
+.machine .info-content.inner-collection .inner-item .port {
 }
 
-.single .machine .info-content.ips {
+.single .machine .info-content.inner-collection {
   font-size: 0.8em;
   color: #222;
 }
 
-.machine .info-content.ips {
+.machine .info-content.inner-collection {
     background-color: #84B7D0;
     padding: 0px 0px;
     font-size: 0.6em;
@@ -3568,6 +3596,11 @@ div.machine a.manage-metadata:hover {
     width: 140px;
 }
 
+.single .column1 .project-name-cont {
+    margin-top: 27px;
+    text-align: center;
+}
+
 .single .column1 .state {
     float: left;
     margin-left: 4px;
@@ -3597,7 +3630,7 @@ div.machine a.manage-metadata:hover {
 
 .single .single-actions {
     width: 150px;
-    height: 77px;
+    height: 80px;
     margin-bottom: 45px;
     margin-left: -10px;
 }
@@ -3672,6 +3705,7 @@ div.machine a.manage-metadata:hover {
     line-height: 17px;
     margin: 0 0 10px 5px;
     width: 358px;
+    margin-bottom: 80px;
 }
 
 .single .column2 .machine-labels {
@@ -3744,10 +3778,12 @@ div.machine a.manage-metadata:hover {
   font-size: 0.9em !important;
 }
 
+.single .volumes-content.toggler-content,
 .single .ips-content.toggler-content {
   padding: 0;
 }
 
+.single .volumes-content.toggler-content .action-container,
 .single .ips-content.toggler-content .action-container {
   display: none !important;
 }
@@ -3964,7 +4000,6 @@ div.single div.column3 div.server-name:hover {
     background: transparent;
     margin-bottom: 10px;
     overflow: visible;
-    overflow: hidden;
     width: 700px;
     background: #EFF7FA repeat scroll 0 0;
 }
@@ -4110,7 +4145,7 @@ div.console-footer {
 
 .icon .wave {
     margin-right: 4px !important;
-    margin-top: 15px !important;
+    margin-top: 33px !important;
 }
 
 .icon .status {
@@ -4127,7 +4162,7 @@ div.console-footer {
 }
 
 .icon div.action-indicator {
-    margin-top: 14px;
+    margin-top: 30px;
     margin-right: 4px;
 }
 
@@ -4268,13 +4303,14 @@ h3.overlay-inner-title {
 }
 
 #creation-password-overlay .password {
-    font-size: 1.5em;
+    font-size: 1.5em !important;
     font-weight: bold;
     letter-spacing: 2px;
-    font-family: Georgia, Times, serif;
-    margin-right: 5em;
+    font-family: Georgia, Times, serif !important;
+    margin-right: 2em;
     float: right;
     margin-top: -4px;
+    width: 200px;
 }
 
 .feedback-form .description {
@@ -4430,6 +4466,7 @@ h3.overlay-inner-title {
 }
 
 .fqdn {
+    width: 100%;
 }
 
 .column2 .fqdn {
@@ -4443,6 +4480,11 @@ h3.overlay-inner-title {
     padding: 0.2em 0.5em;
     border: 1px solid #888;
     z-index: 50000;
+}
+
+.tooltip.warning {
+    background-color: #940606;
+    color: #FFFFFF;
 }
 
 /*404 and 500 pages*/
@@ -4603,37 +4645,6 @@ tbody.machines .spinner {
     float: none !important;
 }
 
-.slider .slider-point {
-    width: 4px;
-    height: 3px;
-    margin-left: 1px;
-    background-color: transparent;
-    display: block;
-    position: absolute;
-    z-index: 10;
-    bottom: 0px;
-}
-
-.slider .slider-point-light {
-    background-color: transparent;
-}
-
-.slider-point-text {
-    font-size: 0.6em;
-    position: absolute;
-    top: 4px;
-    border-top: 5px solid #C5DEE9;
-    padding: 3px;
-    color: #4085A5;
-    display: block;
-    min-width: 6px;
-    text-align: middle;
-}
-
-.slider .handle {
-    z-index: 50;
-}
-
 .modal p.desc {
     margin: 5px 0;
     margin-left: 37px;
@@ -4744,10 +4755,6 @@ table.list-machines .wave {
     -webkit-box-shadow: 0 0 90px 5px #000;
     box-shadow: 0 0 90px 5px #000;
     width: 600px;
-}
-
-.overlay.overlay-createvm {
-    width: 640px;
 }
 
 .overlay a {
@@ -5233,7 +5240,7 @@ table.list-machines .wave {
 }
 
 #network-vms-select-content .empty-list {
-  font-size: 1.2em;
+  font-size: 1.2em !important;
 }
 
 #network-vms-select-content li.options-object .value {
@@ -5367,53 +5374,54 @@ table.list-machines .wave {
     color: #fff;
 }
 
-#createvm-overlay-content {
-    padding: 0;
-}
-
-.overlay-createvm .container {
+.overlay-wizard .container {
     width: 624px !important;
 }
 
-.create-vm .vm-network .list-cont.personalize-cont:last-child .confirm-params {
+.overlay.overlay-wizard {
+    width: 640px;
+}
+
+.create-wizard-overlay .vm-network .list-cont.personalize-cont:last-child .confirm-params {
   margin-right: 0!important;
 }
 
-.create-vm .vm-network .list-cont.personalize-cont:last-child {
+.create-wizard-overlay .list-cont.personalize-cont.noborder,
+.create-wizard-overlay .vm-network .list-cont.personalize-cont:last-child {
   border-right: none;
   margin-right: 0;
   width: 298px;
 }
 
-.create-vm .vm-network .list-cont.personalize-cont .confirm-params {
+.create-wizard-overlay .vm-network .list-cont.personalize-cont .confirm-params {
   max-height: 240px;
 }
 
-.create-vm .vm-network .list-cont.personalize-cont {
+.create-wizard-overlay .vm-network .list-cont.personalize-cont {
   height: 330px;
 }
 
-.create-vm .vm-network .list-cont.personalize-cont {
+.create-wizard-overlay .vm-network .list-cont.personalize-cont {
     width: 47%;
 }
 
-.create-vm .header-step.current {
+.create-wizard-overlay .header-step.current {
     font-weight: bold;
 }
 
-.create-vm .create-step-cont {
+.create-wizard-overlay .create-step-cont {
     min-height: 240px;
 }
-.create-vm .create-controls {
+.create-wizard-overlay .create-controls {
     padding: 10px;
 }
 
-.create-vm ul li {
+.create-wizard-overlay ul li {
     cursor: pointer;
     padding: 4px;
 }
 
-.create-vm ul li.selected {
+.create-wizard-overlay ul li.selected {
     background-color: #aaa;
 }
 
@@ -5474,6 +5482,12 @@ table.list-machines .wave {
     margin-right: 10px;
 }
 
+.form-field.error textarea,
+.form-field.error select,
+.form-field.error input {
+    border-color: #f00 !important;
+}
+
 .form-field.error label {
     color: #ff0000;
     text-decoration: underline;
@@ -5496,6 +5510,18 @@ table.list-machines .wave {
     margin-top: 0px;
     padding-top:0px;
     border-top: 0px;
+}
+
+.create-volume .no-project-notice {
+    padding: 4px;
+    margin-right: 6px;
+}
+
+.no-project-notice {
+  float: right;
+  font-size: 0.9em;
+  color: #800;
+  padding: 10px;
 }
 
 .form-action {
@@ -5527,6 +5553,11 @@ table.list-machines .wave {
     color: #fff;
 }
 
+.form-action.alt {
+    min-width: 100px;
+    margin-right: 5px;
+}
+
 .form-action.next,
 .form-action.ok {
     background-color: #080;
@@ -5556,38 +5587,34 @@ table.list-machines .wave {
     color: transparent;
 }
 
-#createvm-overlay-content {
-    padding: 0;
-}
-
-.create-vm .image-details.selected .size {
+.create-wizard-overlay .image-details.selected .size {
 
 }
 
-.create-vm .image-details .show-details:hover {
+.create-wizard-overlay .image-details .show-details:hover {
     color: #aaa !important; 
 }
-.create-vm .image-details.selected .show-details:hover {
+.create-wizard-overlay .image-details.selected .show-details:hover {
     color: #fff !important; 
 }
 
-.create-vm .image-details.selected .show-details,
-.create-vm .image-details.selected .size {
+.create-wizard-overlay .image-details.selected .show-details,
+.create-wizard-overlay .image-details.selected .size {
     color: #eee;
 }
 
-.create-vm .image-details.selected span.owner {
+.create-wizard-overlay .image-details.selected span.owner {
     color: #fff;
 }
 
 
-.create-vm .image-details p {
+.create-wizard-overlay .image-details p {
     font-size: 0.8em;
     padding-left: 27px;
     display:block;
 }
 
-.create-vm .image-details span.owner {
+.create-wizard-overlay .image-details span.owner {
     display: block;
     font-size: 0.9em;
     float: right;
@@ -5597,7 +5624,7 @@ table.list-machines .wave {
     right: 5px;
 }
 
-.create-vm .select-image .show-details {
+.create-wizard-overlay .select-image .show-details {
     display: none;
     font-size: 0.8em;
     text-decoration: underline;
@@ -5607,47 +5634,109 @@ table.list-machines .wave {
     right: 5px;
 }
 
-.create-vm .image-details .size {
+.create-wizard-overlay .image-details .size {
     margin-top: 2px;
     font-size: 0.8em;
     color: #aaa;
     margin-left: 10px;
 }
 
-.create-vm .step-cont {
+.create-wizard-overlay .step-cont {
     margin: 15px;
 }
 
-.create-vm .create-step-cont {
+.create-wizard-overlay.create-volume  .steps-history 
+.steps-history-cont span.description {
+    width: 280px;
+}
+
+.create-wizard-overlay.create-volume  .steps-history 
+.steps-history-cont .title {
+    width: 150px;
+    text-align: left;
+}
+
+.create-wizard-overlay.create-volume .vms-list {
+    max-height: 290px;
+    overflow: auto;
+}
+
+.create-wizard-overlay.create-volume .volume-description {
+    margin-top: 10px;
+}
+
+.create-wizard-overlay.create-volume h3.item-name {
+    background-image: url("../images/volume-icon-small.png");
+}
+
+.create-wizard-overlay.create-volume .rename input.volume-name {
+    background-image: url("../images/volume-icon-small.png");
+    padding-left: 30px !important; 
+    width: 93.5% !important;
+}
+
+.create-wizard-overlay.create-volume .volume-description textarea {
+    width: 98%;
+    height: 250px;
+    padding: 4px;
+    max-width: 582px;
+    max-height: 250px;
+}
+
+.create-wizard-overlay.create-volume .vms-list .model-item .indicators {
+    float: right;
+}
+
+.create-wizard-overlay.create-volume .vms-list .model-item .ico {
+    margin: 0 5px;
+}
+
+.create-wizard-overlay.create-volume .vms-list .model-item .name {
+    width: 82%;
+}
+
+.create-wizard-overlay.create-volume .vms-list .model-item .state span {
+    display: none;
+}
+
+.create-wizard-overlay.create-volume .step-cont .project-select {
+    margin-bottom: 10px;
+}
+
+.overlay-info.overlay-ip-create .project-select {
+    margin-bottom: 17px;
+}
+
+.create-wizard-overlay .create-step-cont {
     min-height: 250px;
     float: left;
     width: 624px;
 }
 
-.create-vm .create-controls {
+.create-wizard-overlay .create-controls {
     padding: 10px;
     border-top: 1px solid #ddd;
 }
 
-.create-vm .empty {
+.create-wizard-overlay .empty {
     font-size: 0.8em;
     color: #444;
 }
 
-.create-vm h4 {
+.create-wizard-overlay h4 {
     color: #5CA1C0;
     margin-bottom: 0.5em;
     font-family: arial;
 }
-.create-vm ul li {
+.create-wizard-overlay ul li {
     cursor: pointer;
     padding: 4px;
     font-size: 0.9em;
 }
 
-.create-vm .create-step-cont li.ssh-key-option.selected,
-.create-vm .create-step-cont li.list-item-option.selected,
-.create-vm ul li.selected {
+.create-wizard-overlay .create-step-cont li.ssh-key-option.selected,
+.create-wizard-overlay .create-step-cont li.list-item-option.selected,
+.create-wizard-overlay ul li.selected {
     background-color: #FF7F2A;
     background-image:linear-gradient(top, #FF9955, #E88B4D);
     background-image:-webkit-linear-gradient(top, #FF9955, #E88B4D);
@@ -5656,11 +5745,11 @@ table.list-machines .wave {
     color: #fff;
 }
 
-.create-vm .images-list-cont.loading .loading-indicator {
+.create-wizard-overlay .images-list-cont.loading .loading-indicator {
     display: block !important;
 }
 
-.create-vm .images-list-cont .loading-indicator {
+.create-wizard-overlay .images-list-cont .loading-indicator {
     display: none;
     position: absolute;
     right: -13px;
@@ -5671,44 +5760,51 @@ table.list-machines .wave {
     background-image: url("../images/icons/indicators/medium/progress.gif");
 }
 
-.create-vm .images-list-cont h4 {
+.create-wizard-overlay .images-list-cont h4 {
     position: relative;
 }
 
-.create-vm .images-list-cont {
+.create-wizard-overlay .images-list-cont {
     width: 40%;
     float: left;
     padding-left: 3%;
     padding-right: 3%;
 }
 
-.create-vm li p.desc {
+.create-wizard-overlay li p.desc {
     font-size: 0.9em;
 }
 
-.create-vm p.desc.warning {
+.create-wizard-overlay p.desc.warning {
     color: #880000;
 }
 
-.create-vm p.desc.empty {
+.create-wizard-overlay p.desc.empty {
     color: #000;
 }
 
-.create-vm p.desc {
+.create-wizard-overlay p.desc {
     font-size: 0.8em;
     color: #888;
     margin-bottom: 10px;
 }
 
-.create-vm li.role .values .val:hover {
+.create-wizard-overlay li.role .values .val:hover {
     background-color: #eee;
 }
-.create-vm li.role .values .val.selected,  .create-vm li.role .values .val.selected:hover {
+
+.create-wizard-overlay li.role .values .val.selected,  
+.create-vm li.role .values .val.selected:hover {
     color: #fff;
     background-color: #FF9955;
 }
 
-.create-vm .images-filter-cont, .create-vm .flavors-predefined-cont {
+.create-wizard-overlay .images-filters .cont {
+    margin-bottom: 15px;
+}
+
+.create-wizard-overlay .images-filter-cont, 
+.create-vm .flavors-predefined-cont {
     width: 18%;
     padding-right: 4%;
     float:left;
@@ -5716,13 +5812,45 @@ table.list-machines .wave {
     overflow: auto;
 }
 
-.create-vm .flavor-options-cont {
+.create-vm .project-select {
+    margin-top: 0 !important;
+    margin-bottom: 7px !important;
+}
+
+.create-vm .images-list-cont.content-cont,
+.create-vm .images-filter-cont.content-cont {
+    height: 370px;
+}
+
+.overlay-vm-resize .create-vm .flavor-options-cont {
+    height: auto !important;
+}
+
+.create-vm .flavor-options-cont,
+.create-vm .flavors-predefined-cont {
+    height: 327px !important;
+}
+
+.create-wizard-overlay .flavor-options-cont.volume.name h4 {
+    border: none;
+}
+
+.create-wizard-overlay .flavor-options-cont.volume {
+    height: auto;
+}
+
+.create-wizard-overlay .flavor-options-cont.wide {
+    width: 99%;
+    margin-left: 3px;
+}
+
+.create-wizard-overlay .flavor-options-cont {
     width: 74%;
     float: left;
     margin-left: 20px;
 }
 
-.create-vm .flavor-options-cont .flavor-options li:hover {
+.create-wizard-overlay .flavor-options-cont .flavor-options li:hover {
     background-image:-webkit-linear-gradient(top, #E8F4FA, #D1E7F0);
     background-image:-o-linear-gradient(top, #E8F4FA, #D1E7F0);
     background-image:-moz-linear-gradient(top, #E8F4FA, #D1E7F0);
@@ -5730,11 +5858,11 @@ table.list-machines .wave {
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#E8F4FA', endColorstr='#D1E7F0', GradientType=0);
 }
 
-.create-vm .flavor-options-cont .flavor-options li.disabled * {
+.create-wizard-overlay .flavor-options-cont .flavor-options li.disabled * {
     color: #eee !important;
 }
 
-.create-vm .flavor-options-cont .flavor-options li.disabled {
+.create-wizard-overlay .flavor-options-cont .flavor-options li.disabled {
     background-image:linear-gradient(top, #aaa, #ddd);
     background-image:-webkit-linear-gradient(top, #aaa, #ddd);
     background-image:-o-linear-gradient(top, #aaa, #ddd);
@@ -5742,7 +5870,7 @@ table.list-machines .wave {
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#aaaaaa', endColorstr='#dddddd', GradientType=0);
 }
 
-.create-vm .flavor-options-cont .flavor-options li.selected {
+.create-wizard-overlay .flavor-options-cont .flavor-options li.selected {
     background-color: #FF9955;
     background-image:linear-gradient(top, #FF9955, #E88B4D);
     background-image:-webkit-linear-gradient(top, #FF9955, #E88B4D);
@@ -5752,7 +5880,7 @@ table.list-machines .wave {
     border: 1px solid #C97943;
 }
 
-.create-vm .flavor-options-cont .flavor-options li.selected.disabled {
+.create-wizard-overlay .flavor-options-cont .flavor-options li.selected.disabled {
     background-color: #AAA;
     background-image:linear-gradient(top, #AAA, #E88B4D);
     background-image:-webkit-linear-gradient(top, #AAA, #E88B4D);
@@ -5762,11 +5890,11 @@ table.list-machines .wave {
     border: 1px solid #999;
 }
 
-.create-vm .predefined-list li.disabled {
+.create-wizard-overlay .predefined-list li.disabled {
     color: #ddd !important;
 }
 
-.create-vm .flavor-options-cont .flavor-options li {
+.create-wizard-overlay .flavor-options-cont .flavor-options li {
     display: block;
     float: left;
     margin-right: 10px;
@@ -5780,32 +5908,32 @@ table.list-machines .wave {
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#D1E7F0', endColorstr='#E8F4FA', GradientType=0);
 }
 
-.create-vm .flavor-opts-list.compact li {
+.create-wizard-overlay .flavor-opts-list.compact li {
     padding: 7px 9px;
     margin-right: 7px;
 }
 
-.create-vm .flavor-options-cont .flavor-options {
+.create-wizard-overlay .flavor-options-cont .flavor-options {
     margin-bottom: 2px;
 }
 
 
-.create-vm .flavor-options .metric {
+.create-wizard-overlay .flavor-options .metric {
     font-size: 0.8em;
     margin-left: 2px;
 }
 
-.create-vm .flavor-options span.available {
+.create-wizard-overlay .flavor-options span.available {
   font-size: 0.8em;
   font-weight: normal;
   margin-left: 5px;
 }
 
-.create-vm .flavor-options span.title {
+.create-wizard-overlay .flavor-options span.title {
     color: #444;
 }
 
-.create-vm .flavor-options span.desc {
+.create-wizard-overlay .flavor-options span.desc {
     display: block;
     color: #aaa;
     font-weight: normal;
@@ -5819,18 +5947,18 @@ table.list-machines .wave {
     top: 20px;
 }
 
-.create-vm .flavor-options .flavors-disk-template-list {
+.create-wizard-overlay .flavor-options .flavors-disk-template-list {
     position: relative;
 }
 
-.create-vm .flavor-options .disk_template.option {
+.create-wizard-overlay .flavor-options .disk_template.option {
     z-index: 10;
     min-width: 50px;
     text-align: center;
 }
 
 /*0 position is -470px*/
-.create-vm .flavor-options .disk-template-description {
+.create-wizard-overlay .flavor-options .disk-template-description {
     font-size: 0.8em;
     color: #444;
     background-image: url("../images/horizontal-pointer.png");
@@ -5846,7 +5974,7 @@ table.list-machines .wave {
     width: 100%;
 }
 
-.create-vm .flavor-options .disk_template.option .description {
+.create-wizard-overlay .flavor-options .disk_template.option .description {
     display: none;
     position: absolute;
     bottom: -20px;
@@ -5863,36 +5991,36 @@ table.list-machines .wave {
     display: none;
 }
 
-.create-vm .flavor-options .selected .value {
+.create-wizard-overlay .flavor-options .selected .value {
     color: #FFF;
 }
 
-.create-vm .flavor-options .value {
+.create-wizard-overlay .flavor-options .value {
     font-weight: bold;
     color: #5CA1C0;
 }
 
-.create-vm .flavor-options-cont h4 {
+.create-wizard-overlay .flavor-options-cont h4 {
     border-bottom: 1px solid #A1C8DB;
     padding-bottom: 5px;
 }
 
-.create-vm .images-info-cont {
+.create-wizard-overlay .images-info-cont {
     width: 28%;
     padding-left: 3%;
     float: left;
     border-left: 1px solid #A1C8DB;
 }
 
-.create-vm .select-image.wide .show-details {
+.create-wizard-overlay .select-image.wide .show-details {
     display: inline;
 }
 
-.create-vm .select-image .images-info-cont .hide {
+.create-wizard-overlay .select-image .images-info-cont .hide {
     display: none;
 }
 
-.create-vm .select-image.wide .images-info-cont .hide {
+.create-wizard-overlay .select-image.wide .images-info-cont .hide {
     display: block;
     float: right;
     position: absolute;
@@ -5904,34 +6032,41 @@ table.list-machines .wave {
     cursor: pointer;
 }
 
-.create-vm .select-image.wide .images-list-cont {
+.create-wizard-overlay .select-image.wide .images-list-cont {
     width: 74%;
     padding-right: 0;
 }
 
-.create-vm .select-image.wide .images-info-cont .description .title {
+.create-wizard-overlay .select-image.wide .images-info-cont .description .title {
     display: none;
     float: none;
 }
 
-.create-vm .select-image.wide .images-info-cont .description p {
+.create-wizard-overlay .select-image.wide .images-info-cont .description p {
     background-color: #fff;
     border: 1px solid #ddd;
     padding: 10px;
     float: none;
 }
 
-.create-vm .select-image.wide .selected .size {
+.create-wizard-overlay .select-image.wide .selected .size {
     color: #FFF !important;
 }
 
-.create-vm .select-image.wide .image-details .size {
+.create-wizard-overlay .select-image.wide .image-details .size {
     color: #5CA1C0;
-    position: absolute;
+    position: relative;
     top: 5px;
+    display: block;
+    left: 17px;
+    top: -3px;
 }
 
-.create-vm .select-image.wide .images-info-cont h3 {
+.create-wizard-overlay .select-image.wide .image-details.disabled {
+    background-color: #aaa;
+}
+
+.create-wizard-overlay .select-image.wide .images-info-cont h3 {
     color: #5CA1C0;
     margin: 10px 0;
     margin-top: 5px;
@@ -5939,32 +6074,32 @@ table.list-machines .wave {
     font-size: 0.9em;
 }
 
-.create-vm .select-image.wide .images-info-cont .description p {
+.create-wizard-overlay .select-image.wide .images-info-cont .description p {
     height: 50px;
 }
 
-.create-vm .select-image.wide .images-info-cont .description {
+.create-wizard-overlay .select-image.wide .images-info-cont .description {
     width: 100% !important;
     float: none !important;
     background-color: transparent !important;
     padding: 0 !important;
     font-size: 1.1em;
 }
-.create-vm .select-image.wide .images-info-cont .extra-details {
+.create-wizard-overlay .select-image.wide .images-info-cont .extra-details {
     height: 160px;
     overflow-y: scroll;
     padding-right: 15px;
 }
 
-.create-vm .select-image.wide .images-info-cont .extra-details .image-detail.extra-meta .title .custom {
+.create-wizard-overlay .select-image.wide .images-info-cont .extra-details .image-detail.extra-meta .title .custom {
     display: inline-block;
 }
 
-.create-vm .select-image.wide .images-info-cont .extra-details .image-detail.extra-meta .title {
+.create-wizard-overlay .select-image.wide .images-info-cont .extra-details .image-detail.extra-meta .title {
     background-color: #999 !important;
     border-color: #888 !important;
 }
-.create-vm .select-image.wide .images-info-cont .extra-details .image-detail .custom {
+.create-wizard-overlay .select-image.wide .images-info-cont .extra-details .image-detail .custom {
     float: right;
     display: none;
     font-size: 0.8em;
@@ -5973,13 +6108,13 @@ table.list-machines .wave {
     margin-top: 2px;
 }
 
-.create-vm .select-image.wide .images-info-cont .extra-details .image-detail {
+.create-wizard-overlay .select-image.wide .images-info-cont .extra-details .image-detail {
     padding: 0px;
     background-color: transparent;
     margin-bottom: 4px;
 }
 
-.create-vm .select-image.wide .images-info-cont .extra-details .title {
+.create-wizard-overlay .select-image.wide .images-info-cont .extra-details .title {
     float: left;
     display: block;
     width: 39%;
@@ -5990,7 +6125,7 @@ table.list-machines .wave {
     font-size: 0.8em;
 }
 
-.create-vm .select-image.wide .images-info-cont .extra-details .value {
+.create-wizard-overlay .select-image.wide .images-info-cont .extra-details .value {
     float: right;
     display: block;
     width: 55%;
@@ -6004,10 +6139,10 @@ table.list-machines .wave {
 }
 
 
-.create-vm .select-image.wide .images-info-cont .image-detail {
+.create-wizard-overlay .select-image.wide .images-info-cont .image-detail {
 }
 
-.create-vm .select-image.wide ul.images-list {
+.create-wizard-overlay .select-image.wide ul.images-list {
     height: 310px;
     overflow-y: scroll;
     padding-right: 3%;
@@ -6020,7 +6155,7 @@ table.list-machines .wave {
 .flavor-options-cont {
 }
 
-.create-vm .select-image.wide .images-info-cont {
+.create-wizard-overlay .select-image.wide .images-info-cont {
     position: absolute;
     width: 88%;
     background-color: #DAE9F0;
@@ -6034,7 +6169,7 @@ table.list-machines .wave {
 }
 
 
-.create-vm .images-info-cont h4, .create-vm .create-step-cont .param h4{
+.create-wizard-overlay .images-info-cont h4, .create-vm .create-step-cont .param h4, h4.project-name {
     color: #FF9955;
     margin-bottom: 1em;
     font-size: 1.2em;
@@ -6043,14 +6178,14 @@ table.list-machines .wave {
     margin-left: 20px;
 }
 
-.create-vm .images-info-cont span.title {
+.create-wizard-overlay .images-info-cont span.title {
     color: #4085A5;
     display: block;
     margin-bottom: 2px;
     font-size: 0.8em;
 }
 
-.create-vm .type-filter li {
+.create-wizard-overlay .type-filter li {
     font-size: 0.8em;
     /*font-weight: bold;*/
     padding: 4px;
@@ -6058,97 +6193,99 @@ table.list-machines .wave {
     color: #FF7F2A;
 }
 
-.create-vm .images-list li {
+.create-wizard-overlay .images-list #create-vm-image-empty-disk .owner,
+.create-wizard-overlay .images-list #create-vm-image-empty-disk .show-details,
+.create-wizard-overlay .images-list #create-vm-image-empty-disk .size {
+    display: none !important;
+}
+
+.create-wizard-overlay .images-list li {
     min-height: 30px;
 }
-.create-vm .images-list .image-details:hover {
+.create-wizard-overlay .images-list .image-details:hover {
     background-color: #eee;
 }
 
-.create-vm .images-list .image-details.selected:hover {
+.create-wizard-overlay .images-list .image-details.selected:hover {
     background-color: #FF7F2A;
 }
 
-.create-vm .images-list .image-details.selected {
+.create-wizard-overlay .images-list .image-details.selected {
     /*font-weight: bold;*/
 }
 
-.create-vm .images-list .image-details {
+.create-wizard-overlay .images-list .image-details {
     padding: 6px;
     margin-bottom:1px;
     position: relative;
+    word-wrap: break-word;
 }
 
-.create-vm .images-list .image-details img {
+.create-wizard-overlay .images-list .image-details img {
     vertical-align: middle;
     margin-right: 10px;
 }
 
-.create-vm .images-info-cont .image-detail:last-child p {
+.create-wizard-overlay .images-info-cont .image-detail:last-child p {
     border-bottom: none;
 }
 
-.create-vm .images-info-cont h4 img {
+.create-wizard-overlay .images-info-cont h4 img {
     vertical-align: middle;
     margin-right: 7px;
     margin-bottom: 5px;
 }
 
-.create-vm .images-info-cont .description p {
+.create-wizard-overlay .images-info-cont .description p {
     font-size: 0.8em;
 }
 
-.create-vm .images-info-cont p {
+.create-wizard-overlay .images-info-cont p {
     margin-bottom: 7px;
     font-size: 0.9em;
     border-bottom: 1px solid #A1C8DB;
     padding-bottom: 7px;
 }
 
-.create-vm .step-header {
+.create-wizard-overlay .step-header {
     padding-bottom:0;
     position: relative;
 }
 
-.create-vm .step-header .header-step .info span.subtitle {
+.create-wizard-overlay .step-header .header-step .info span.subtitle {
     font-size: 1.2em;
     color: #fff;
     font-weight: bold;
 }
 
-.create-vm .step-header .header-step .info span {
+.create-wizard-overlay .step-header .header-step .info span {
     float: none;
     text-align: right;
 }
 
-.create-vm .step-header .header-step .info {
+.create-wizard-overlay .step-header .header-step .info {
     position: absolute;
     right: 15px;
     top: 20px;
     font-size: 0.8em;
 }
 
-.create-vm .step-header .header-step span {
+.create-wizard-overlay .step-header .header-step span {
     float: left;
     display: block;
 }
 
-.create-vm .steps-container {
+.create-wizard-overlay .steps-container {
     width: 2000em;
 }
 
-.create-vm .step-header .header-step .title {
+.create-wizard-overlay .step-header .header-step .title {
     margin-top: 20px;
     font-size: 1em;
     margin-left: 10px;
 }
 
-#createvm-overlay-content {
-    width: 624px;
-    overflow: hidden;
-}
-
-.create-vm .steps-history .steps-history-cont.current .title {
+.create-wizard-overlay .steps-history .steps-history-cont.current .title {
     display: block;
     top: 23px;
     left: 43px;
@@ -6158,58 +6295,62 @@ table.list-machines .wave {
     font-family: 'Ubuntu', sans-serif !important;
 }
 
-.create-vm .steps-history .steps-history-cont.current .subnum {
+.create-wizard-overlay .steps-history .steps-history-cont.current .subnum {
     display: none;
     float: none;
     font-size: 0.9em;
     font-family: 'Ubuntu', sans-serif  !important;
 }
 
-.create-vm .steps-history .steps-history-cont.current .subtitle,
-.create-vm .steps-history .steps-history-cont.current .description {
+.create-wizard-overlay .steps-history .steps-history-cont.current .subtitle,
+.create-wizard-overlay .steps-history .steps-history-cont.current .description {
     font-family: 'Ubuntu', sans-serif  !important;
 }
 
-.create-vm .steps-history .steps-history-cont.current .info {
+.create-wizard-overlay .steps-history .steps-history-cont.current .info {
     display: block;
     font-family: 'Ubuntu', sans-serif !important;
 }
 
-.create-vm .steps-history .steps-history-cont.completed .title,
-.create-vm .steps-history .steps-history-cont.completed .num {
+.create-wizard-overlay .steps-history .steps-history-cont.completed .title,
+.create-wizard-overlay .steps-history .steps-history-cont.completed .num {
     color: #A1C8DB;
 }
 
-.create-vm .steps-history .steps-history-cont.completed {
+.create-wizard-overlay .steps-history .steps-history-cont.completed {
     background-color: #4085A5;
     color: #fff;
     cursor: pointer;
 }
 
-.create-vm .steps-history .steps-history-cont.completed .steps-history-step {
+.create-wizard-overlay .steps-history .steps-history-cont.completed .steps-history-step {
     background-image: url("../images/check.png");
 }
 
-.create-vm .steps-history .steps-history-cont.current .steps-history-step {
+.create-wizard-overlay .steps-history .steps-history-cont.current .steps-history-step {
     width: 320px;
 }
 
-.create-vm .steps-history .steps-history-cont.current .num {
+.create-wizard-overlay .steps-history .steps-history-cont.current .num {
     color: #fff;
 }
 
-.create-vm .steps-history .steps-history-cont.current .info {
+.create-wizard-overlay .steps-history .steps-history-cont.current .info {
     color: #4085A5;
     font-size: 0.8em;
 }
 
-.create-vm .steps-history .steps-history-cont.current {
+.create-wizard-overlay .steps-history .steps-history-cont.current {
     background-color: #A1C8DB;
     color: #fff;
     width: 416px;
 }
 
-.create-vm .steps-history-step {
+.create-wizard-overlay.create-volume .steps-history .steps-history-cont.current {
+    width: 416px;
+}
+
+.create-wizard-overlay .steps-history-step {
     padding: 4px;
     padding-left: 7px;
     font-size: 1em;
@@ -6221,21 +6362,21 @@ table.list-machines .wave {
     background-repeat: no-repeat;
 }
 
-.create-vm .steps-history {
+.create-wizard-overlay .steps-history {
     background-color: #4085A5;
 }
 
-.create-vm .steps-history .steps-history-cont.last {
+.create-wizard-overlay .steps-history .steps-history-cont.last {
     border-right: none;
 }
 
-.create-vm .steps-history .steps-history-cont .num {
+.create-wizard-overlay .steps-history .steps-history-cont .num {
     margin-left: 5px;
     margin-top: -10px;
     padding-bottom: 10px;
 }
 
-.create-vm .steps-history .steps-history-cont .title {
+.create-wizard-overlay .steps-history .steps-history-cont .title {
     display: none;
     position: absolute;
     bottom: 0px;
@@ -6248,12 +6389,12 @@ table.list-machines .wave {
     font-size: 0.8em;
 }
 
-.create-vm .steps-history .steps-history-cont .subnum,
-.create-vm .steps-history .steps-history-cont .info {
+.create-wizard-overlay .steps-history .steps-history-cont .subnum,
+.create-wizard-overlay .steps-history .steps-history-cont .info {
     display: none;
 }
 
-.create-vm .steps-history .steps-history-cont {
+.create-wizard-overlay .steps-history .steps-history-cont {
     height: 70px;
     width: 51px;
     float: left;
@@ -6273,7 +6414,7 @@ table.list-machines .wave {
     border-bottom: 1px solid #aaa;
 }
 
-.create-vm .step-header .header-step .num {
+.create-wizard-overlay .step-header .header-step .num {
     color: #225871;
     font-size: 4em;
     margin-bottom: -5px;
@@ -6281,7 +6422,7 @@ table.list-machines .wave {
     font-weight: normal !important;
 }
 
-.create-vm .step-header .header-step {
+.create-wizard-overlay .step-header .header-step {
     color: #;
     margin-bottom: -6px;
     width: 25%;
@@ -6290,23 +6431,23 @@ table.list-machines .wave {
     float: left;
 }
 
-.create-vm .step-header .header-step.current {
+.create-wizard-overlay .step-header .header-step.current {
     color: #387693;
 }
 
-.create-vm .image-filters-title {
+.create-wizard-overlay .image-filters-title {
     margin-top: 1em;
     margin-bottom: 0.5em;
 }
 
-.create-vm .create-step-cont span.clear {
+.create-wizard-overlay .create-step-cont span.clear {
     font-size: 0.8em;
     font-weight: bold;
     color: #A1C8DB;
     display: block;
 }
 
-.create-vm .category-filters li {
+.create-wizard-overlay .category-filters li {
     float:left;
     display: block;
     padding: 4px;
@@ -6316,26 +6457,35 @@ table.list-machines .wave {
     margin-bottom: 5px;
 }
 
-.create-vm .content-cont {
+.create-wizard-overlay .content-cont {
     height: 340px;
     overflow: auto;
 }
 
-.create-vm .vm-confirm .confirm-params span.cval {
+.create-wizard-overlay .vm-confirm .confirm-params .selected-ip-address .ip {
+}
+
+.create-wizard-overlay .vm-confirm .confirm-params .selected-ip-address .project {
+  display: block;
+  font-size: 0.8em;
+  color: #aaaaaa;
+}
+
+.create-wizard-overlay .vm-confirm .confirm-params span.cval {
     margin-left: 8px;
     color: #444;
 }
 
-.create-vm .vm-confirm .confirm-params span.ckey {
+.create-wizard-overlay .vm-confirm .confirm-params span.ckey {
     color: #4085A5;
     font-weight: bold;
 }
 
-.create-vm .vm-confirm .confirm-params {
+.create-wizard-overlay .vm-confirm .confirm-params {
     margin-bottom: 15px;
 }
 
-.create-vm .vm-confirm h3.vm-name {
+.create-wizard-overlay .vm-confirm h3.item-name {
     background-repeat: no-repeat;
     background-position: left center;
     font-size: 1.4em;
@@ -6343,12 +6493,12 @@ table.list-machines .wave {
     color: #4085A5;
 }
 
-.create-vm .images-list-cont h4 a {
+.create-wizard-overlay .images-list-cont h4 a {
     margin-top: 3px;
     margin-right: -2px !important;
 }
-.create-vm .images-list-cont h4 a,
-.create-vm .list-cont h4 a {
+.create-wizard-overlay .images-list-cont h4 a,
+.create-wizard-overlay .list-cont h4 a {
     font-size: 0.8em;
     font-weight: normal;
     margin-right: 5px;
@@ -6356,34 +6506,39 @@ table.list-machines .wave {
     color: #FF7F2A;
 }
 
-.create-vm .confirm-params {
+.create-wizard-overlay .confirm-params {
     overflow: auto;
 }
 
-.create-vm .vm-confirm .ssh.confirm-params {
+.create-wizard-overlay .vm-confirm .ssh.confirm-params {
     max-height: 150px;
 }
 
-.create-vm .personalize-cont .confirm-params {
+.create-wizard-overlay .personalize-cont .confirm-params {
     max-height: 160px;
     margin-right: 10px;
 }
 
-.create-vm .personalize-cont,
-.create-vm .confirm-cont {
-    height: 250px;
+.create-wizard-overlay .select-volume-details .personalize-cont {
+    height: 235px;
 }
 
-.create-vm .image-warning p {
+.create-wizard-overlay .personalize-cont,
+.create-wizard-overlay .confirm-cont {
+    height: 290px;
+}
+
+
+.create-wizard-overlay .image-warning p {
   width: 80%;
   float: left;
 }
 
-.create-vm .image-warning .untrusted-image-confirm:hover {
+.create-wizard-overlay .image-warning .untrusted-image-confirm:hover {
   background-color: #7D674E;
 }
 
-.create-vm .image-warning .untrusted-image-confirm {
+.create-wizard-overlay .image-warning .untrusted-image-confirm {
   display: inline-block;
   padding: 5px;
   background-color: #5C4D39;
@@ -6396,7 +6551,7 @@ table.list-machines .wave {
   text-align: center;
 }
 
-.create-vm .image-warning {
+.create-wizard-overlay .image-warning {
   display: none;
   background-color: #987249;
   color: #fff;
@@ -6405,38 +6560,67 @@ table.list-machines .wave {
   border-top: 1px solid #AAA;
 }
 
-.create-vm .create-step-cont .rename input.rename-field {
+.create-wizard-overlay .create-step-cont .rename input.rename-field {
     font-size: 1.4em;
     padding: 5px;
-    width: 93%;
-    padding-left: 30px;
+    width: 98%;
     background-position: 7px center;
     background-repeat: no-repeat;
 }
 
-.create-vm .create-step-cont .rename label {
+.create-wizard-overlay.create-volume textarea.volume-description {
+    width: 92%;
+    height: 70px;
+}
+
+.create-wizard-overlay.create-volume input.volume-name {
+    width: 89%;
+    padding: 4px;
+}
+
+.create-wizard-overlay.create-vm .create-step-cont .rename input.rename-field {
+    padding-left: 30px;
+    width: 93%;
+}
+
+.create-wizard-overlay .create-step-cont .rename label {
     display: block;
 }
 
-.create-vm .create-step-cont .personalize-conts,
-.create-vm .create-step-cont .confirm-conts {
+.create-wizard-overlay .create-step-cont .personalize-conts.top {
+    margin-top: 0;
+}
+
+.create-wizard-overlay .create-step-cont .personalize-conts,
+.create-wizard-overlay .create-step-cont .confirm-conts {
     margin-top: 20px;
 }
 
-.create-vm .create-step-cont .personalize-cont,
-.create-vm .create-step-cont .confirm-cont {
+.create-wizard-overlay .create-step-cont .personalize-cont,
+.create-wizard-overlay .create-step-cont .confirm-cont {
     width: 30%;
     margin-right: 2%;
     border-right: 1px solid #A1C8DB;
     float: left;
 }
 
-.create-vm .create-step-cont .confirm-cont ul li .title {
+.create-wizard-overlay .create-step-cont .confirm-cont.wide.last {
+    width: 46% !important;
+}
+.create-wizard-overlay .create-step-cont .confirm-cont.wide {
+    width: 50%;
+}
+
+.create-wizard-overlay .create-step-cont .confirm-cont ul li .title {
     width: 55px;
     float: left;
 }
 
-.create-vm .create-step-cont .list-cont ul li .value {
+.create-wizard-overlay .create-step-cont .list-cont ul li .project-name {
+  float: left !important;
+}
+
+.create-wizard-overlay .create-step-cont .list-cont ul li .value {
     float: right;
     padding-top: 2px;
     display: block;
@@ -6444,25 +6628,27 @@ table.list-machines .wave {
     text-align: right;
 }
 
-.create-vm .create-step-cont .list-cont ul li.flavor-disktype .value {
+.create-wizard-overlay .create-step-cont .list-cont ul li.flavor-disktype .value {
     width: 65px;
 }
 
-.create-vm .create-step-cont .list-cont ul li.image-description .value,
-.create-vm .create-step-cont .list-cont ul li.image-name .value {
+.create-wizard-overlay .create-step-cont .list-cont ul li.image-description .value,
+.create-wizard-overlay .create-step-cont .list-cont ul li.image-name .value {
     float: none;
     width: auto;
     text-align:left;
     width: auto;
 }
 
-.create-vm .create-step-cont .list-cont ul li.image-name .value {
+.create-wizard-overlay .create-step-cont .list-cont ul li.flavor-project .value,
+.create-wizard-overlay .create-step-cont .list-cont ul li.image-name .value {
   width: 120px;
   text-indent: 0;
   margin-left: 0;
+  text-align: left;
 }
 
-.create-vm .create-step-cont .list-cont ul li {
+.create-wizard-overlay .create-step-cont .list-cont ul li {
     padding:0;
     margin:0;
     margin-bottom: 5px;
@@ -6471,42 +6657,54 @@ table.list-machines .wave {
     margin-right: 10px;
 }
 
-.create-vm .create-step-cont li.ssh-key-option .check,
-.create-vm .create-step-cont li.list-item-option .check {
+.create-wizard-overlay .create-step-cont li.ssh-key-option .check,
+.create-wizard-overlay .create-step-cont li.list-item-option .check {
     float: right;
     margin-right: 5px;
     margin-top: 0px;
 }
 
-.create-vm .create-step-cont li.ssh-key-option.selected {
+.create-wizard-overlay .create-step-cont li.ssh-key-option.selected {
 }
-.create-vm .create-step-cont li.ssh-key-option.selected:hover,
-.create-vm .create-step-cont li.list-item-option.selected:hover {
+.create-wizard-overlay .create-step-cont li.ssh-key-option.selected:hover,
+.create-wizard-overlay .create-step-cont li.list-item-option.selected:hover {
     background-color: #F95;
 }
 
-.create-vm .create-step-cont li.ssh-key-option:hover,
-.create-vm .create-step-cont li.list-item-option:hover {
+.create-wizard-overlay .create-step-cont li.ssh-key-option:hover,
+.create-wizard-overlay .create-step-cont li.list-item-option:hover {
     background-color: #eee;
 }
 
-.create-vm .create-step-cont li.ssh-key-option.selected {
+.create-wizard-overlay .create-step-cont li.ssh-key-option.selected {
 }
 
-.create-vm .create-step-cont li.ssh-key-option,
-.create-vm .create-step-cont li.list-item-option {
+.create-wizard-overlay .create-step-cont li.ssh-key-option,
+.create-wizard-overlay .create-step-cont li.list-item-option {
     padding: 6px !important;
 }
 
-.create-vm .create-step-cont .list-cont.ssh {
-    width: 60%;
-}
-
-.create-vm .create-step-cont .list-cont.meta h4 {
+.create-wizard-overlay .create-step-cont .list-cont.vm h4 {
     margin-right: 0;
 }
 
-.create-vm .create-step-cont .list-cont.meta {
+.create-wizard-overlay .create-step-cont .list-cont.vm {
+    width: 379px;
+}
+
+.create-wizard-overlay .create-step-cont .list-cont.volume-size {
+    width: 34%
+}
+
+.create-wizard-overlay .create-step-cont .list-cont.ssh {
+    width: 60%;
+}
+
+.create-wizard-overlay .create-step-cont .list-cont.meta h4 {
+    margin-right: 0;
+}
+
+.create-wizard-overlay .create-step-cont .list-cont.last {
     margin-right:0;
     border-right: none;
     width: 195px;
@@ -6514,7 +6712,17 @@ table.list-machines .wave {
     overflow-y: auto;
 }
 
-.create-vm .list-cont > h4 {
+.create-wizard-overlay .list-cont .list-subcont {
+    margin-bottom: 10px;
+}
+
+.create-wizard-overlay .list-cont .list-subcont > h4.noborder {
+    border: none;
+    padding-bottom: 0;
+}
+
+.create-wizard-overlay .list-cont .list-subcont > h4,
+.create-wizard-overlay .list-cont > h4 {
     font-size: 1.2em;
     margin-right: 10px;
     border-bottom: 1px solid #A1C8DB;
@@ -6522,47 +6730,47 @@ table.list-machines .wave {
     color: #387693;
 }
 
-.create-vm .list-cont .param.image-name {
+.create-wizard-overlay .list-cont .param.image-name {
     margin-bottom: 0 !important;
     border-bottom: none !important;
 }
 
-.create-vm .list-cont .param h4 {
+.create-wizard-overlay .list-cont .param h4 {
     margin-bottom: 0px !important;
     font-size: 1.1em !important; 
 }
 
-.create-vm .list-cont .param {
+.create-wizard-overlay .list-cont .param {
     margin-bottom: 7px !important;
 }
 
-.create-vm .list-cont .value {
+.create-wizard-overlay .list-cont .value {
     font-weight: bold;
 }
 
-.create-vm .list-cont .param .value {
+.create-wizard-overlay .list-cont .param .value {
     font-size: 0.9em;
 }
 
-.create-vm .list-cont .param .title {
+.create-wizard-overlay .list-cont .param .title {
     color: #387693;
 }
 
-.create-vm .list-cont .image-description {
+.create-wizard-overlay .list-cont .image-description {
     margin-left:0;
 }
 
-.create-vm .list-cont .image-description .value {
+.create-wizard-overlay .list-cont .image-description .value {
     font-weight: normal;
     margin-left: 0 !important;
 }
 
-.create-vm .list-cont .image-description .title {
+.create-wizard-overlay .list-cont .image-description .title {
     display: none;
     font-size: 0.8em;
 }
 
-.create-vm .list-cont.meta .values span {
+.create-wizard-overlay .list-cont.meta .values span {
     display:block;
     float: left;
     margin-right: 4px;
@@ -6572,21 +6780,27 @@ table.list-machines .wave {
     font-size: 0.9em;
 }
 
-.create-vm .list-cont.meta .key {
+.create-wizard-overlay .list-cont.meta .key {
     font-weight: bold;
     font-size: 0.9em;
     display: block;
     margin-bottom: 5px;
 }
 
-.create-vm .meta input {
+.create-wizard-overlay .meta input {
     font-size: 0.8em;
 }
 
-.create-vm .network-select {
-  height: 278px;
+.create-wizard-overlay .network-select {
+  height: 310px;
   overflow-y: scroll;
   padding-right: 10px;
+}
+
+.wizard-overlay-content {
+    padding: 0 !important;
+    width: 624px !important;
+    overflow: hidden;
 }
 
 .vm-connect .connect-cont {
@@ -6654,7 +6868,8 @@ input.has-errors {
 
 .icon .suspended-notice {
   right: 192px;
-  top: 54px;
+  top: 60px;
+  z-index: 500;
 }
 
 .suspended-notice {
@@ -6793,7 +7008,7 @@ input.has-errors {
 .pane-view .collection-list-view .model-view .main-content .state-indicator {
   width: 50px;
   position: absolute;
-  top: 30px;
+  top: 46px;
   right: 5px;
 }
 
@@ -6817,8 +7032,9 @@ input.has-errors {
 }
 
 .pane-view .collection-list-view .model-view .main-content-inner {
-  padding: 10px 20px;
+  padding: 20px 20px;
   padding-right: 10px;
+  padding-top: 20px;
   /*overflow: hidden;*/
 }
 
@@ -6879,6 +7095,8 @@ input.has-errors {
 
 .collection .empty-list {
   padding: 10px;
+  padding-top:6px;
+  padding-left: 10px;
   font-size: 0.8em;
   color: #333;
 }
@@ -6897,13 +7115,18 @@ input.has-errors {
   margin-bottom: 0;
 }
 
+.model-item img.logo {
+    width: 60px;
+    height: 60px;
+}
+
 .model-item .status-title {
   text-align: right;
   margin-right: 4px;
   margin-top: 5px;
-  width: 150px;
+  width: 170px;
   position: absolute;
-  top:-4px;
+  top: -4px;
   right: 0;
 }
 
@@ -7022,11 +7245,11 @@ input.has-errors {
 }
 
 .model-item .status-inactive .status-indicator .indicator {
-  background-color: #940606;
+  background-color: #666666;
 }
 
 .model-item .status-terminated .status-indicator .indicator {
-  background-color: #5E1616;
+  background-color: #5e1616;
 }
 
 .model-item .status-error .status-indicator .indicator {
@@ -7034,14 +7257,13 @@ input.has-errors {
 }
 
 .model-item .status-progress .status-indicator .indicator {
-  background-color: #FF7F2A;
+  background-color: #4085a5 !important;
 }
 
 .model-item .status-indicator .indicator {
   width: 10px;
   height: 11px;
   float: right;
-  background-color: #EFF7FA;
   margin-right: 3px;
 }
 
@@ -7091,8 +7313,20 @@ input.has-errors {
 /* end vm sprites */
 
 /* ips */
+#ips-list-view .model-view .main-content-inner {
+    padding-bottom: 25px;
+}
+
+#ips-list-view .inline.ports.nested-model-list {
+  width: 360px;
+}
+
 .ip-port-view .title {
   width: 100%;
+}
+
+.model-item.light-background .main-content-inner {
+    background-color:#aed2e3 !important;
 }
 
 .model-item .vm-name {
@@ -7101,11 +7335,15 @@ input.has-errors {
 
 .nested-model-list {
   position: relative;
-  top: 43px;
+  top: 40px;
   overflow: visible;
   width: 531px;
   margin-left: -41px;
   margin-bottom: 39px;
+}
+
+.items-sublist.private .nested-model-list {
+  top: 26px;
 }
 
 .entry.inline .nested-model-list {
@@ -7113,12 +7351,20 @@ input.has-errors {
 }
 
 .entry.inline .nested-model-list .model-item .outer {
-  width: 220px;
+  width: 320px;
+}
+
+.volume-item .entry.inline .nested-model-list {
+    margin-left: -19px;
+}
+
+.entry.inline .ports.nested-model-list {
+    top: 34px;
 }
 
 .entry.inline .nested-model-list {
   position: absolute;
-  top: 17px;
+  top: 32px;
   margin-left: -9px;
   margin-bottom: 0;
   width: 420px;
@@ -7325,8 +7571,17 @@ input.has-errors {
 
 .network-ports-toggler {
   position: absolute;
-  top: 30px;
+  top: 40px;
   left: 0px;
+}
+
+.private .model-name {
+    height: 17px;
+    margin-top: -6px;
+}
+
+.private .network-ports-toggler {
+    top: 40px;
 }
 
 .model-form-actions .form-action {
@@ -7469,7 +7724,7 @@ input.has-errors {
   font-family: monospace;
   font-size: 1em;
   border: none;
-  overflow-y: hidden;
+  overflow-y: auto;
   overflow-x: hidden;
   height: 185px;
   margin: 10px 0;
@@ -7559,6 +7814,11 @@ input.has-errors {
   cursor: pointer;
 }
 
+.select-item.disabled {
+  background-color: #aaa !important;
+  color: #eeeeee;
+}
+
 .select-item.selected {
   background-color: #FF7F2A;
 }
@@ -7580,6 +7840,14 @@ input.has-errors {
 
 .items-list.floating-ips {
   margin-top: -5px;
+}
+
+.select-item.floating-ip .project-name {
+  color: #777 !important;
+  float: right;
+  margin-right: -18px;
+  font-size: 0.8em;
+  margin-top: 4px;
 }
 
 .select-item.floating-ip.not-available {
@@ -7644,6 +7912,11 @@ input.has-errors {
   margin-top: 3px;
 }
 
+#project-select-content .select-item .name {
+  width: 100% !important;
+  float: none;
+}
+
 .select-item .name {
   float: left;
   width: 90%;
@@ -7657,4 +7930,377 @@ input.has-errors {
 .select-item .checkbox {
   float: left;
   width: 5%;
+}
+
+
+#ips-create-content .form-actions {
+  margin-top: -23px;
+}
+
+.project-name-cont:hover {
+  color: #444;
+}
+
+.project-name-cont {
+  cursor: pointer;
+  font-weight: normal;
+  font-size: 11px;
+  color: #222;
+  margin-bottom: 2px;
+}
+
+.icon .project-name-cont {
+  margin-bottom: 7px;
+}
+
+.icon .machine-data {
+  position: relative;
+}
+
+.icon .machine-data .project-name-cont {
+    padding: 0;
+    margin-top: -3px;
+}
+
+#networks-list-view .project-name-cont {
+    margin-top: 2px;
+}
+
+#volumes-list-view .items-sublist.system .project-name-cont,
+#volumes-list-view .items-sublist.system .project-name-con:hover {
+    color: #999;
+    cursor: default;
+}
+
+
+.main-content-inner {
+  min-height: 70px;
+}
+
+.select2-drop .select-item {
+    text-align: left;
+}
+
+.select2-drop .select-item .quota .resource .value {
+    font-weight: bold;
+    margin-left: 1px;
+}
+
+.select2-drop .select-item .quota .resource {
+    margin-right: 8px;
+}
+
+.select2-drop .select-item .quota {
+    float: right;
+    margin:0 !important;
+    padding:0 !important;
+}
+
+.create-vm .step-cont .project-select {
+    margin-bottom: 5px;
+    margin-top: -7px;
+}
+
+.project-select .select2-chosen .quota {
+    display: none;
+}
+
+#project-select-content .model-usage {
+  margin-bottom: 10px;
+}
+
+#project-select-content .model-usage .key {
+  display: inline-block;
+  font-size: 0.9em;
+  margin-right: 5px;
+}
+
+#project-select-content .model-usage .value {
+  display: inline-block;
+  color: #444;
+  letter-spacing: -1px;
+  font-weight: bold;
+  margin-right: 15px;
+}
+
+.project.select-item .quota .resource-value {
+  width: 29%;
+  margin-right: 2%;
+  display: block;
+  float: left;
+  font-weight: bold;
+}
+
+.project.select-item .quota .resource-key {
+  width: 13%;
+  display: block;
+  float: left;
+  letter-spacing: -1px;
+}
+
+option.project.select-item.selected {
+  background-color: transparent;
+}
+
+.project.select-item.selected {
+  background-color: #6A96AB;
+}
+
+.project.select-item.selected .quota .resource-key {
+  color: #fff;
+}
+
+.project.select-item .quota .resource-key {
+  color: #444;
+  margin-right: 5px;
+}
+
+.project.select-item .quota .resource-value {
+  margin-right: 2px;
+  display: inline-block;
+}
+
+.project.select-item .quota .resource-value {
+}
+
+.project.select-item {
+  padding: 5px 0 0 0;
+  position: relative;
+}
+
+.project.select-item.selected .quota {
+}
+
+.project.select-item.disabled .quota {
+  background-color: #aaa;
+}
+
+.project.select-item .quota {
+  padding: 5px 5px 5px 0;
+}
+
+.project.select-item .quota {
+  margin-top: 5px;
+  font-size: 0.9em;
+  margin-left: 28px;
+}
+
+.project.select-item .current {
+  position: absolute;
+  right: 5px;
+  top: 2px;
+  font-size: 0.9em;
+  padding: 4px;
+  display: none;
+  color: #FFF;
+}
+
+.project.select-item.selected .current {
+  background-color: #6A96AB;
+}
+
+.model-item.current .project.select-item .current {
+  background-color: #6A96AB;
+  display: block;
+}
+
+
+.project.select-item.current {
+  background-color: #C7DEE9;
+}
+
+/* snapshots */
+.snapshot-create-form .form-field {
+  margin-bottom: 10px;
+}
+
+.snapshot-create-form .form-field input {
+  width: 100%;
+}
+
+.snapshot-create-desc {
+  width: 99.5%;
+  height: 90px;
+  border: 1px solid #aaa;
+  margin-top: 3px;
+}
+
+
+/* snapshots */
+.snapshot-create-form .form-field {
+  margin-bottom: 10px;
+}
+
+.snapshot-create-form .form-field input {
+  width: 100%;
+}
+
+.snapshot-create-desc {
+  width: 99.5%;
+  height: 90px;
+  border: 1px solid #aaa;
+  margin-top: 3px;
+}
+
+.slider-volume-size {
+  margin-top: 4px;
+  width: 85%;
+  float: left;
+}
+
+.slider-volume-size-cont {
+    margin-bottom: 15px;
+}
+
+.slider-volume-size-cont .metric {
+    float: left;
+    font-weight: bold;
+    display: block;
+    margin-top: 5px;
+    margin-left: 4px;
+    color: #4085A5;
+}
+
+.slider-volume-size-cont input {
+  display: block !important;
+  float: left;
+  width: 30px;
+  padding: 2px;
+  font-weight: bold;
+  margin-left: 4px;
+}
+
+.slider > .dragger {
+  border: 1px solid #444;
+  width: 12px;
+  height: 20px;
+  background-color: #4085A5;
+}
+
+.slider > .dragger:hover {
+  background-color: #70A9C9;
+}
+
+
+.slider > .track, .slider > .highlight-track {
+  background: #ccc;
+  border: 1px solid #aaa;
+  height: 7px;
+}
+
+.slider > .highlight-track {
+	background-color: #8DCA09;
+	background: -webkit-linear-gradient(top, #8DCA09, #72A307);
+	background: -moz-linear-gradient(top, #8DCA09, #72A307);
+	background: linear-gradient(top, #8DCA09, #72A307);
+	
+	border-color: #496805;
+}
+/* end slider */
+
+.volume-item .logo {
+    position: relative;
+    top: -5px;
+}
+
+.volume-item .disk-template {
+    font-weight: bold;
+    color: #3582Ac;
+}
+
+.volume-item .volume-size {
+    font-weight: bold;
+    font-size: 0.8em;
+    position: absolute;
+    width: 68px;
+    margin-left: -4px;
+    top: 67px;
+    text-align: center;
+}
+
+.volume-item .volume-size span {
+    padding: 1px 8px;
+    color: #222222;
+    position: relative;
+    left: -1px;
+    top: -25px;
+    font-size: 1.4em;
+    text-shadow: 
+        -1px -1px 0 rgba(239, 239, 239, 0.7),  
+        1px -1px 0 rgba(239, 239, 239, 0.7),
+        -1px 1px 0 rgba(239, 239, 239, 0.7),
+        1px 1px 0 rgba(239, 239, 239, 0.7);
+}
+
+.volume-item .vm-view-cont img {
+    vertical-align: middle;
+}
+
+.volume-item .vm-view-cont {
+    margin-left: 10px;
+    margin-top: 12px;
+}
+
+.volume-item .vms.nested-model-list .title {
+    font-weight: normal !important;
+}
+
+.volume-item .vms.nested-model-list {
+    width: 360px;
+    position: relative;
+    top: -12px;
+}
+
+.volume-item .toggler-wrap {
+    margin-top: -12px;
+    margin-left: 2px;
+}
+
+.volume-item .content-cont .model-rename-view {
+    width: 330px;
+}
+
+.volume-item .content-cont .edit-btn.hidden {
+    visibility: hidden;
+}
+
+.volume-item .content-cont .edit-btn {
+    position: absolute;
+    right:-29px;
+    top: 93px;
+    z-index: 10000;
+    height: 20px;
+    float: right;
+    margin-right: 5px;
+}
+
+.volume-item .content-cont .rename-actions {
+    position: absolute;
+    left: 286px;
+    top: 104px;
+}
+
+.volume-item .content-cont textarea.readonly {
+    cursor: pointer;
+    background-color: #F2EFEF;
+}
+
+.volume-item .content-cont textarea {
+    padding: 6px;
+    max-width: 270px;
+    width: 270px;
+    height: 100px;
+    margin-left: 2px;
+    margin-top: 5px;
+}
+
+input.reset {
+    padding: 0;
+    margin: 0;
+    border: 0;
+    border: none;
+    font-size: inherit !important;
+    font-family: inherit !important;
+    color: inherit !important;
+    background-color: transparent;
 }

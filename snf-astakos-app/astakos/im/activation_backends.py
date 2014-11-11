@@ -1,46 +1,29 @@
-# Copyright 2011 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.translation import ugettext as _
 
+from snf_django.lib.api import faults
+
 from astakos.im import models
 from astakos.im import functions
 from astakos.im import settings
 from astakos.im import forms
-
-from astakos.im.quotas import qh_sync_new_user
+from astakos.im import user_utils
 
 import astakos.im.messages as astakos_messages
 
@@ -85,20 +68,20 @@ class ActivationBackend(object):
     ActivationBackend handles user verification/activation.
 
     Example usage::
-    >>> # it is wise to not instantiate a backend class directly but use
-    >>> # get_backend method instead.
-    >>> backend = get_backend()
-    >>> formCls = backend.get_signup_form(request.POST)
-    >>> if form.is_valid():
-    >>>     user = form.create_user()
-    >>>     activation = backend.handle_registration(user)
-    >>>     # activation.status is one of backend.Result.{*} activation result
-    >>>     # types
-    >>>
-    >>>     # sending activation notifications is not done automatically
-    >>>     # we need to call send_result_notifications
-    >>>     backend.send_result_notifications(activation)
-    >>>     return HttpResponse(activation.message)
+    #>>> # it is wise to not instantiate a backend class directly but use
+    #>>> # get_backend method instead.
+    #>>> backend = get_backend()
+    #>>> formCls = backend.get_signup_form(request.POST)
+    #>>> if form.is_valid():
+    #>>>     user = form.create_user()
+    #>>>     activation = backend.handle_registration(user)
+    #>>>     # activation.status is one of backend.Result.{*} activation result
+    #>>>     # types
+    #>>>
+    #>>>     # sending activation notifications is not done automatically
+    #>>>     # we need to call send_result_notifications
+    #>>>     backend.send_result_notifications(activation)
+    #>>>     return HttpResponse(activation.message)
     """
 
     verification_template_name = 'im/activation_email.txt'
@@ -183,6 +166,96 @@ class ActivationBackend(object):
 
         return ActivationResult(self.Result.PENDING_VERIFICATION)
 
+    def validate_user_action(self, user, action, verification_code='',
+                             silent=True):
+        """Check if an action can apply on a user.
+
+        Arguments:
+            user: The target user.
+            action: The name of the action (in capital letters).
+            verification_code: Needed only in "VERIFY" action.
+            silent: If set to True, suppress exceptions.
+
+        Returns:
+            A `(success, message)` tuple. `success` is a boolean value that
+            shows if the action can apply on a user, and `message` explains
+            why the action cannot apply on a user.
+
+            If an action can apply on a user, this function will always return
+            `(True, None)`.
+
+        Exceptions:
+            faults.NotAllowed: When the action cannot apply on a user.
+            faults.BadRequest: When the action is unknown/malformed.
+        """
+        def fail(e=Exception, msg=""):
+            if silent:
+                return False, msg
+            else:
+                raise e(msg)
+
+        if action == "VERIFY":
+            if user.email_verified:
+                msg = _(astakos_messages.ACCOUNT_ALREADY_VERIFIED)
+                return fail(faults.NotAllowed, msg)
+            if not (user.verification_code and
+                    user.verification_code == verification_code):
+                msg = _(astakos_messages.VERIFICATION_FAILED)
+                return fail(faults.NotAllowed, msg)
+
+        elif action == "ACCEPT":
+            if user.moderated and not user.is_rejected:
+                msg = _(astakos_messages.ACCOUNT_ALREADY_MODERATED)
+                return fail(faults.NotAllowed, msg)
+            if not user.email_verified:
+                msg = _(astakos_messages.ACCOUNT_NOT_VERIFIED)
+                return fail(faults.NotAllowed, msg)
+
+        elif action == "ACTIVATE":
+            if not user.email_verified:
+                msg = _(astakos_messages.ACCOUNT_NOT_VERIFIED)
+                return fail(faults.NotAllowed, msg)
+            if not user.moderated:
+                msg = _(astakos_messages.ACCOUNT_NOT_MODERATED)
+                return fail(faults.NotAllowed, msg)
+            if user.is_rejected:
+                msg = _(astakos_messages.ACCOUNT_REJECTED)
+                return fail(faults.NotAllowed, msg)
+            if user.is_active:
+                msg = _(astakos_messages.ACCOUNT_ALREADY_ACTIVE)
+                return fail(faults.NotAllowed, msg)
+
+        elif action == "DEACTIVATE":
+            if not user.email_verified:
+                msg = _(astakos_messages.ACCOUNT_NOT_VERIFIED)
+                return fail(faults.NotAllowed, msg)
+            if not user.moderated:
+                msg = _(astakos_messages.ACCOUNT_NOT_MODERATED)
+                return fail(faults.NotAllowed, msg)
+            if user.is_rejected:
+                msg = _(astakos_messages.ACCOUNT_REJECTED)
+                return fail(faults.NotAllowed, msg)
+
+        elif action == "REJECT":
+            if user.moderated:
+                msg = _(astakos_messages.ACCOUNT_ALREADY_MODERATED)
+                return fail(faults.NotAllowed, msg)
+            if user.is_active:
+                msg = _(astakos_messages.ACCOUNT_ALREADY_ACTIVE)
+                return fail(faults.NotAllowed, msg)
+            if not user.email_verified:
+                msg = _(astakos_messages.ACCOUNT_NOT_VERIFIED)
+                return fail(faults.NotAllowed, msg)
+
+        elif action == "SEND_VERIFICATION_MAIL":
+            if user.email_verified:
+                return fail(faults.NotAllowed)
+
+        else:
+            return fail(faults.BadRequest, "Unknown action: {}.".format(action))
+
+        return True, None
+
     def verify_user(self, user, verification_code):
         """
         Process user verification using provided verification_code. This
@@ -191,25 +264,22 @@ class ActivationBackend(object):
         """
         logger.info("Verifying user: %s", user.log_display)
 
-        if user.email_verified:
-            logger.warning("User email already verified: %s",
-                           user.log_display)
-            msg = astakos_messages.ACCOUNT_ALREADY_VERIFIED
+        ok, msg = self.validate_user_action(user, "VERIFY", verification_code)
+        if not ok:
+            if msg == _(astakos_messages.ACCOUNT_ALREADY_VERIFIED):
+                logger.warning("User email already verified: %s",
+                               user.log_display)
+            elif msg == _(astakos_messages.VERIFICATION_FAILED):
+                logger.error("User email verification failed (invalid "
+                             "verification code): %s", user.log_display)
             return ActivationResult(self.Result.ERROR, msg)
 
-        if user.verification_code and \
-                user.verification_code == verification_code:
-            user.email_verified = True
-            user.verified_at = datetime.datetime.now()
-            # invalidate previous code
-            user.renew_verification_code()
-            user.save()
-            logger.info("User email verified: %s", user.log_display)
-        else:
-            logger.error("User email verification failed "
-                         "(invalid verification code): %s", user.log_display)
-            msg = astakos_messages.VERIFICATION_FAILED
-            return ActivationResult(self.Result.ERROR, msg)
+        user.email_verified = True
+        user.verified_at = datetime.datetime.now()
+        # invalidate previous code
+        user.renew_verification_code()
+        user.save()
+        logger.info("User email verified: %s", user.log_display)
 
         if not self.moderation_enabled:
             logger.warning("User preaccepted (%s): %s", 'auto_moderation',
@@ -232,20 +302,20 @@ class ActivationBackend(object):
 
     def accept_user(self, user, policy='manual'):
         logger.info("Moderating user: %s", user.log_display)
-        if user.moderated and user.is_active:
-            logger.warning("User already accepted, moderation"
-                           " skipped: %s", user.log_display)
-            msg = _(astakos_messages.ACCOUNT_ALREADY_MODERATED)
-            return ActivationResult(self.Result.ERROR, msg)
 
-        if not user.email_verified:
-            logger.warning("Cannot accept unverified user: %s",
-                           user.log_display)
-            msg = _(astakos_messages.ACCOUNT_NOT_VERIFIED)
+        ok, msg = self.validate_user_action(user, "ACCEPT")
+        if not ok:
+            if msg == _(astakos_messages.ACCOUNT_ALREADY_MODERATED):
+                logger.warning("User already accepted, moderation skipped: %s",
+                               user.log_display)
+            elif msg == _(astakos_messages.ACCOUNT_NOT_VERIFIED):
+                logger.warning("Cannot accept unverified user: %s",
+                               user.log_display)
             return ActivationResult(self.Result.ERROR, msg)
 
         # store a snapshot of user details by the time he
         # got accepted.
+
         if not user.accepted_email:
             user.accepted_email = user.email
         user.accepted_policy = policy
@@ -253,9 +323,9 @@ class ActivationBackend(object):
         user.moderated_at = datetime.datetime.now()
         user.moderated_data = json.dumps(user.__dict__,
                                          default=lambda obj:
-                                         str(obj))
+                                         unicode(obj))
         user.save()
-        qh_sync_new_user(user)
+        functions.enable_base_project(user)
 
         if user.is_rejected:
             logger.warning("User has previously been "
@@ -270,20 +340,8 @@ class ActivationBackend(object):
         return ActivationResult(self.Result.ACCEPTED)
 
     def activate_user(self, user):
-        if not user.email_verified:
-            msg = _(astakos_messages.ACCOUNT_NOT_VERIFIED)
-            return ActivationResult(self.Result.ERROR, msg)
-
-        if not user.moderated:
-            msg = _(astakos_messages.ACCOUNT_NOT_MODERATED)
-            return ActivationResult(self.Result.ERROR, msg)
-
-        if user.is_rejected:
-            msg = _(astakos_messages.ACCOUNT_REJECTED)
-            return ActivationResult(self.Result.ERROR, msg)
-
-        if user.is_active:
-            msg = _(astakos_messages.ACCOUNT_ALREADY_ACTIVE)
+        ok, msg = self.validate_user_action(user, "ACTIVATE")
+        if not ok:
             return ActivationResult(self.Result.ERROR, msg)
 
         user.is_active = True
@@ -294,38 +352,37 @@ class ActivationBackend(object):
         return ActivationResult(self.Result.ACTIVATED)
 
     def deactivate_user(self, user, reason=''):
-        user.is_active = False
-        user.deactivated_reason = reason
+        ok, msg = self.validate_user_action(user, "DEACTIVATE")
+        if not ok:
+            return ActivationResult(self.Result.ERROR, msg)
+
         if user.is_active:
             user.deactivated_at = datetime.datetime.now()
+        user.is_active = False
+        user.deactivated_reason = reason
         user.save()
         logger.info("User deactivated: %s", user.log_display)
         return ActivationResult(self.Result.DEACTIVATED)
 
     def reject_user(self, user, reason):
         logger.info("Rejecting user: %s", user.log_display)
-        if user.moderated:
-            logger.warning("User already moderated: %s", user.log_display)
-            msg = _(astakos_messages.ACCOUNT_ALREADY_MODERATED)
-            return ActivationResult(self.Result.ERROR, msg)
-
-        if user.is_active:
-            logger.warning("Cannot reject unverified user: %s",
-                           user.log_display)
-            msg = _(astakos_messages.ACCOUNT_NOT_VERIFIED)
-            return ActivationResult(self.Result.ERROR, msg)
-
-        if not user.email_verified:
-            logger.warning("Cannot reject unverified user: %s",
-                           user.log_display)
-            msg = _(astakos_messages.ACCOUNT_NOT_VERIFIED)
+        ok, msg = self.validate_user_action(user, "REJECT")
+        if not ok:
+            if msg == _(astakos_messages.ACCOUNT_ALREADY_MODERATED):
+                logger.warning("User already moderated: %s", user.log_display)
+            elif msg == _(astakos_messages.ACCOUNT_ALREADY_ACTIVE):
+                logger.warning("Cannot reject active user: %s",
+                               user.log_display)
+            elif msg == _(astakos_messages.ACCOUNT_NOT_VERIFIED):
+                logger.warning("Cannot reject unverified user: %s",
+                               user.log_display)
             return ActivationResult(self.Result.ERROR, msg)
 
         user.moderated = True
         user.moderated_at = datetime.datetime.now()
         user.moderated_data = json.dumps(user.__dict__,
                                          default=lambda obj:
-                                         str(obj))
+                                         unicode(obj))
         user.is_rejected = True
         user.rejected_reason = reason
         user.save()
@@ -337,7 +394,7 @@ class ActivationBackend(object):
         return self.prepare_user(user, email_verified=email_verified)
 
     def handle_verification(self, user, activation_code):
-        logger.info("Handling user email verirfication: %s", user.log_display)
+        logger.info("Handling user email verification: %s", user.log_display)
         return self.verify_user(user, activation_code)
 
     def handle_moderation(self, user, accept=True, reject_reason=None):
@@ -349,13 +406,14 @@ class ActivationBackend(object):
             return self.reject_user(user, reject_reason)
 
     def send_user_verification_email(self, user):
-        if user.is_active:
-            raise Exception("User already active")
+        ok, _ = self.validate_user_action(user, "SEND_VERIFICATION_MAIL")
+        if not ok:
+            raise Exception("User email already verified.")
 
         # invalidate previous code
         user.renew_verification_code()
         user.save()
-        functions.send_verification(user)
+        user_utils.send_verification(user)
         user.activation_sent = datetime.datetime.now()
         user.save()
 
@@ -364,7 +422,7 @@ class ActivationBackend(object):
         Send corresponding notifications based on the status of activation
         result.
 
-        Result.PENDING_VERIRFICATION
+        Result.PENDING_VERIFICATION
             * Send user the email verification url
 
         Result.PENDING_MODERATION
@@ -386,7 +444,7 @@ class ActivationBackend(object):
         if result.status == self.Result.PENDING_MODERATION:
             logger.info("Sending notifications for user"
                         " verification: %s", user.log_display)
-            functions.send_account_pending_moderation_notification(
+            user_utils.send_account_pending_moderation_notification(
                 user,
                 self.pending_moderation_template_name)
             # TODO: notify user
@@ -394,11 +452,11 @@ class ActivationBackend(object):
         if result.status == self.Result.ACCEPTED:
             logger.info("Sending notifications for user"
                         " moderation: %s", user.log_display)
-            functions.send_account_activated_notification(
+            user_utils.send_account_activated_notification(
                 user,
                 self.activated_email_template_name)
-            functions.send_greeting(user,
-                                    self.greeting_template_name)
+            user_utils.send_greeting(user,
+                                     self.greeting_template_name)
             # TODO: notify admins
 
         if result.status == self.Result.REJECTED:

@@ -2,38 +2,20 @@
 #
 # -*- coding: utf-8 -*-
 #
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
 from mock import patch
@@ -45,22 +27,24 @@ from synnefo.quotas import util
 
 
 class GetDBHoldingsTestCase(TestCase):
+    maxDiff = None
+
     def test_no_holdings(self):
         holdings = util.get_db_holdings(user=None)
         self.assertEqual(holdings, {})
 
     def test_vm_holdings(self):
-        flavor = mfactory.FlavorFactory(cpu=24, ram=8192, disk=20,
-                                        disk_template='drbd')
-        mfactory.VirtualMachineFactory()
+        flavor = mfactory.FlavorFactory(cpu=24, ram=8192, disk=20)
+        mfactory.VirtualMachineFactory(userid="user1", deleted=True)
         mfactory.VirtualMachineFactory(flavor=flavor, userid="user1",
                                        operstate="BUILD")
-        user_holdings = {"user1": {"cyclades.vm": 1,
-                                   "cyclades.total_cpu": 24,
-                                   "cyclades.cpu": 24,
-                                   "cyclades.disk": 21474836480,
-                                   "cyclades.total_ram": 8589934592,
-                                   "cyclades.ram": 8589934592}}
+        mfactory.VolumeFactory(userid="user1", size=20, machine=None)
+        user_holdings = {"user1": {"user1": {"cyclades.vm": 1,
+                                             "cyclades.total_cpu": 24,
+                                             "cyclades.cpu": 24,
+                                             "cyclades.disk": 20 << 30,
+                                             "cyclades.total_ram": 8192 << 20,
+                                             "cyclades.ram": 8192 << 20}}}
         holdings = util.get_db_holdings(user="user1")
         self.assertEqual(holdings, user_holdings)
         holdings = util.get_db_holdings()
@@ -69,27 +53,28 @@ class GetDBHoldingsTestCase(TestCase):
         ##
         mfactory.VirtualMachineFactory(flavor=flavor, userid="user2",
                                        operstate="STARTED")
-        user_holdings = {"user2": {"cyclades.vm": 1,
-                                   "cyclades.total_cpu": 24,
-                                   "cyclades.cpu": 24,
-                                   "cyclades.disk": 21474836480,
-                                   "cyclades.total_ram": 8589934592,
-                                   "cyclades.ram": 8589934592}}
+        mfactory.VolumeFactory(userid="user2", size=30, machine=None)
+        user_holdings = {"user2": {"user2": {"cyclades.vm": 1,
+                                             "cyclades.total_cpu": 24,
+                                             "cyclades.cpu": 24,
+                                             "cyclades.disk": 30 << 30,
+                                             "cyclades.total_ram": 8192 << 20,
+                                             "cyclades.ram": 8192 << 20}}}
         holdings = util.get_db_holdings(user="user2")
         self.assertEqual(holdings, user_holdings)
         mfactory.VirtualMachineFactory(flavor=flavor, userid="user3",
                                        operstate="STOPPED")
-        user_holdings = {"user3": {"cyclades.vm": 1,
-                                   "cyclades.total_cpu": 24,
-                                   "cyclades.disk": 21474836480,
-                                   "cyclades.total_ram": 8589934592}}
+        user_holdings = {"user3": {"user3": {"cyclades.vm": 1,
+                                             "cyclades.total_cpu": 24,
+                                             "cyclades.total_ram": 8589934592}}
+                         }
         holdings = util.get_db_holdings(user="user3")
         self.assertEqual(holdings, user_holdings)
 
     def test_network_holdings(self):
         mfactory.NetworkFactory(userid="user1")
         mfactory.NetworkFactory(userid="user2")
-        user_holdings = {"user2": {"cyclades.network.private": 1}}
+        user_holdings = {"user2": {"user2": {"cyclades.network.private": 1}}}
         holdings = util.get_db_holdings(user="user2")
         self.assertEqual(holdings, user_holdings)
         holdings = util.get_db_holdings()
@@ -101,9 +86,9 @@ class GetDBHoldingsTestCase(TestCase):
         mfactory.IPv4AddressFactory(userid="user2", floating_ip=True)
         mfactory.IPv4AddressFactory(userid="user3", floating_ip=True)
         holdings = util.get_db_holdings()
-        self.assertEqual(holdings["user1"]["cyclades.floating_ip"], 2)
-        self.assertEqual(holdings["user2"]["cyclades.floating_ip"], 1)
-        self.assertEqual(holdings["user3"]["cyclades.floating_ip"], 1)
+        self.assertEqual(holdings["user1"]["user1"]["cyclades.floating_ip"], 2)
+        self.assertEqual(holdings["user2"]["user2"]["cyclades.floating_ip"], 1)
+        self.assertEqual(holdings["user3"]["user3"]["cyclades.floating_ip"], 1)
 
 
 @patch("synnefo.quotas.get_quotaholder_pending")
@@ -132,9 +117,15 @@ class ResolvePendingTestCase(TestCase):
 
 
 class GetCommissionInfoTest(TestCase):
+    maxDiff = None
+
     def test_commissions(self):
         flavor = mfactory.FlavorFactory(cpu=2, ram=1024, disk=20)
         vm = mfactory.VirtualMachineFactory(flavor=flavor)
+        mfactory.VolumeFactory(size=20, machine=vm, deleted=False,
+                               status="IN_USE",
+                               delete_on_termination=True)
+        vm.volumes.update(project=vm.project)
         #commission = quotas.get_commission_info(vm, "BUILD")
         #self.assertEqual({"cyclades.vm": 1,
         #                  "cyclades.cpu": 2,
@@ -144,45 +135,46 @@ class GetCommissionInfoTest(TestCase):
         #                  "cyclades.disk": 1073741824 * 20}, commission)
         vm.operstate = "STARTED"
         vm.save()
+        project = vm.project
         commission = quotas.get_commission_info(vm, "STOP")
-        self.assertEqual({"cyclades.cpu": -2,
-                          "cyclades.ram": 1048576 * -1024}, commission)
+        self.assertEqual({(project, "cyclades.cpu"): -2,
+                          (project, "cyclades.ram"): 1048576 * -1024}, commission)
         # Check None quotas if vm is already stopped
         vm.operstate = "STOPPED"
         vm.save()
         commission = quotas.get_commission_info(vm, "STOP")
         self.assertEqual(None, commission)
         commission = quotas.get_commission_info(vm, "START")
-        self.assertEqual({"cyclades.cpu": 2,
-                          "cyclades.ram": 1048576 * 1024}, commission)
+        self.assertEqual({(project, "cyclades.cpu"): 2,
+                          (project, "cyclades.ram"): 1048576 * 1024}, commission)
         vm.operstate = "STARTED"
         vm.save()
         commission = quotas.get_commission_info(vm, "DESTROY")
-        self.assertEqual({"cyclades.vm": -1,
-                          "cyclades.total_cpu": -2,
-                          "cyclades.cpu": -2,
-                          "cyclades.total_ram": 1048576 * -1024,
-                          "cyclades.ram": 1048576 * -1024,
-                          "cyclades.disk": 1073741824 * -20}, commission)
+        self.assertEqual({(project, "cyclades.vm"): -1,
+                          (project, "cyclades.total_cpu"): -2,
+                          (project, "cyclades.cpu"): -2,
+                          (project, "cyclades.total_ram"): 1048576 * -1024,
+                          (project, "cyclades.ram"): 1048576 * -1024,
+                          (project, "cyclades.disk"): 1073741824 * -20}, commission)
         vm.operstate = "STOPPED"
         vm.save()
         commission = quotas.get_commission_info(vm, "DESTROY")
-        self.assertEqual({"cyclades.vm": -1,
-                          "cyclades.total_cpu": -2,
-                          "cyclades.total_ram": 1048576 * -1024,
-                          "cyclades.disk": 1073741824 * -20}, commission)
+        self.assertEqual({(project, "cyclades.vm"): -1,
+                          (project, "cyclades.total_cpu"): -2,
+                          (project, "cyclades.total_ram"): -1024 << 20,
+                          (project, "cyclades.disk"): -20 << 30}, commission)
         commission = quotas.get_commission_info(vm, "RESIZE")
         self.assertEqual(None, commission)
         commission = quotas.get_commission_info(vm, "RESIZE",
                                                 {"beparams": {"vcpus": 4,
                                                               "maxmem": 2048}})
-        self.assertEqual({"cyclades.total_cpu": 2,
-                          "cyclades.total_ram": 1048576 * 1024}, commission)
+        self.assertEqual({(project, "cyclades.total_cpu"): 2,
+                          (project, "cyclades.total_ram"): 1048576 * 1024}, commission)
         vm.operstate = "STOPPED"
         vm.save()
         commission = quotas.get_commission_info(vm, "REBOOT")
-        self.assertEqual({"cyclades.cpu": 2,
-                          "cyclades.ram": 1048576 * 1024}, commission)
+        self.assertEqual({(project, "cyclades.cpu"): 2,
+                          (project, "cyclades.ram"): 1048576 * 1024}, commission)
         vm.operstate = "STARTED"
         vm.save()
         commission = quotas.get_commission_info(vm, "REBOOT")

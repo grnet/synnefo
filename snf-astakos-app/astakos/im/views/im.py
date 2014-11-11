@@ -1,40 +1,19 @@
-# Copyright 2011, 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
-import inflect
-
-engine = inflect.engine()
 
 from urllib import quote
 
@@ -42,7 +21,8 @@ from django.shortcuts import get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.db import transaction
+from astakos.im import transaction
+from django.db.models import Q
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.shortcuts import redirect
 from django.utils.translation import ugettext as _
@@ -56,16 +36,16 @@ from synnefo_branding import settings as branding_settings
 
 import astakos.im.messages as astakos_messages
 
-from astakos.im import activation_backends
+from astakos.im import activation_backends, user_logic
 from astakos.im.models import AstakosUser, ApprovalTerms, EmailChange, \
-    AstakosUserAuthProvider, PendingThirdPartyUser, Component
+    AstakosUserAuthProvider, PendingThirdPartyUser, Component, Project
 from astakos.im.util import get_context, prepare_response, get_query, \
     restrict_next
 from astakos.im.forms import LoginForm, InvitationForm, FeedbackForm, \
     SignApprovalTermsForm, EmailChangeForm
 from astakos.im.forms import ExtendedProfileForm as ProfileForm
 from synnefo.lib.services import get_public_endpoint
-from astakos.im.functions import send_feedback, logout as auth_logout, \
+from astakos.im.user_utils import send_feedback, logout as auth_logout, \
     invite as invite_func
 from astakos.im import settings
 from astakos.im import presentation
@@ -74,6 +54,8 @@ from astakos.im import quotas
 from astakos.im.views.util import render_response, _resources_catalog
 from astakos.im.views.decorators import cookie_fix, signed_terms_required,\
     required_auth_methods_assigned, valid_astakos_user_required, login_required
+from astakos.api import projects as projects_api
+from astakos.api.util import _dthandler
 
 logger = logging.getLogger(__name__)
 
@@ -471,7 +453,6 @@ def signup(request, template_name='im/signup.html', on_success='index',
     form = activation_backend.get_signup_form(
         provider, None, **form_kwargs)
 
-
     if request.method == 'POST':
         form = activation_backend.get_signup_form(
             provider,
@@ -647,9 +628,7 @@ def activate(request, greeting_email_template_name='im/welcome_email.txt',
         messages.error(request, message)
         return HttpResponseRedirect(reverse('index'))
 
-    backend = activation_backends.get_backend()
-    result = backend.handle_verification(user, token)
-    backend.send_result_notifications(result, user)
+    result = user_logic.verify(user, token, notify_user=True)
     next = settings.ACTIVATION_REDIRECT_URL or next or reverse('index')
     if user.is_active:
         response = prepare_response(request, user, next, renew=True)
@@ -826,8 +805,7 @@ def send_activation(request, user_id, template_name='im/login.html',
             messages.error(request,
                            _(astakos_messages.ACCOUNT_ALREADY_VERIFIED))
         else:
-            activation_backend = activation_backends.get_backend()
-            activation_backend.send_user_verification_email(u)
+            user_logic.send_verification_mail(u)
             messages.success(request, astakos_messages.ACTIVATION_SENT)
 
     return HttpResponseRedirect(reverse('index'))
@@ -840,9 +818,25 @@ def resource_usage(request):
 
     resources_meta = presentation.RESOURCES
 
-    current_usage = quotas.get_user_quotas(request.user)
-    current_usage = json.dumps(current_usage['system'])
+    # resolve uuids of projects the user consumes quota from
+    user = request.user
+    quota_filters = Q(usage_min__gt=0, limit__gt=0)
+    quota_uuids = map(lambda k: k[1],
+                      quotas.get_users_quotas_counters([user],
+                                                       flt=quota_filters)[0].keys(),)
+    # resolve uuids of projects the user is member to
+    user_memberships = request.user.projectmembership_set.actually_accepted()
+    membership_uuids = [m.project.uuid for m in user_memberships]
+
+    # merge uuids
+    uuids = set(quota_uuids + membership_uuids)
+    uuid_refs = map(quotas.project_ref, uuids)
+
+    user_quotas = quotas.get_user_quotas(request.user, sources=uuid_refs)
+    projects = Project.objects.filter(uuid__in=uuids)
+    user_projects = projects_api.get_projects_details(projects)
     resource_catalog, resource_groups = _resources_catalog()
+
     if resource_catalog is False:
         # on fail resource_groups contains the result object
         result = resource_groups
@@ -852,16 +846,19 @@ def resource_usage(request):
     resource_catalog = json.dumps(resource_catalog)
     resource_groups = json.dumps(resource_groups)
     resources_order = json.dumps(resources_meta.get('resources_order'))
+    projects_details = json.dumps(user_projects, default=_dthandler)
+    user_quotas = json.dumps(user_quotas)
 
+    interval = settings.USAGE_UPDATE_INTERVAL
     return render_response('im/resource_usage.html',
                            context_instance=get_context(request),
                            resource_catalog=resource_catalog,
                            resource_groups=resource_groups,
                            resources_order=resources_order,
-                           current_usage=current_usage,
+                           projects_details=projects_details,
+                           user_quotas=user_quotas,
                            token_cookie_name=settings.COOKIE_NAME,
-                           usage_update_interval=
-                           settings.USAGE_UPDATE_INTERVAL)
+                           usage_update_interval=interval)
 
 
 # TODO: action only on POST and user should confirm the removal
@@ -931,12 +928,11 @@ def get_menu(request, with_extra_links=False, with_signout=True):
                     url=request.build_absolute_uri(reverse('resource_usage')),
                     name="Usage"))
 
-            if settings.PROJECTS_VISIBLE:
-                append(
-                    item(
-                        url=request.build_absolute_uri(
-                            reverse('project_list')),
-                        name="Projects"))
+            append(
+                item(
+                    url=request.build_absolute_uri(
+                        reverse('project_list')),
+                    name="Projects"))
 
             append(item(url=request.build_absolute_uri(reverse('feedback')),
                         name="Contact"))

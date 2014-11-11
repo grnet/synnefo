@@ -1,19 +1,37 @@
-import time
+#!/usr/bin/python
+
+# Copyright (C) 2010-2014 GRNET S.A.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import argparse
 import sys
-import re
-import random
-import ast
-from snfdeploy.lib import check_pidfile, create_dir, get_default_route, \
-    random_mac, Conf, Env
-from snfdeploy import fabfile
+import glob
 from fabric.api import hide, settings, execute, show
+from snfdeploy import config
+from snfdeploy import context
+from snfdeploy import status
+from snfdeploy import fabfile
+from snfdeploy import vcluster
+from snfdeploy import constants
+from snfdeploy.lib import create_dir
 
 
-def print_available_actions(command):
+def print_help_msg(cmds):
 
-    if command == "keygen":
+    if "keygen" in cmds:
         print """
 Usage: snf-deploy keygen [--force]
 
@@ -21,7 +39,7 @@ Usage: snf-deploy keygen [--force]
 
   """
 
-    if command == "vcluster":
+    elif "vcluster" in cmds:
         print """
 Usage: snf-deploy vcluster
 
@@ -35,211 +53,61 @@ Usage: snf-deploy vcluster
 
   """
 
-    if command == "prepare":
+    elif "setup" in cmds:
         print """
-Usage: snf-deploy prepare
+Usage: setup --node NODE [--role ROLE | --method METHOD --component COMPONENT]
 
-  Run the following actions concerning deployment preparation:
+    Setup a specific component on the requested context
 
-    - Setup an internal Domain Name Server
-    - Tweak hosts and add ssh keys
-    - Check network setup
-    - Setup apt repository and apt-get update
-    - Setup the nfs server and clients among all nodes
+      --node      NODE (overriden if --autoconf is passed)
+      --role      ROLE (one of the end roles)
+      --cluster   CLUSTER (one of the registered cluster)
+      --setup     SETUP (one of the registered setups)
+      --component COMPONENT (one of the subcomponents)
 
   """
 
-    if command == "backend":
+    elif "run" in cmds:
         print """
-Usage: snf-deploy backend [update]
+Usage: setup --setup SETUP | --target-nodes NODE1,NODE2... --cmd "some cmd"
 
-  Run the following actions concerning a ganeti backend:
+    Run a specific bash command on the requested nodes
 
-    - Create and add a backend to cyclades
-    - Does all the net-infra specific actions in backend nodes
-      (create/connect bridges, iptables..)
-    - Does all the storage-infra specific actions in backend nodes
-      depending on the --extra-disk option \
-(create VG, enable lvm/drbd storage..)
-
-    or
-
-    - Update packages in an already registered backend in cyclades.
-
+      --target-nodes NODES  Comma separated nodes definded in nodes.conf
+      --setup SETUP         Target all nodes in SETUP defined in setups.conf
+      --cmd CMD             The bash command to be executed
   """
 
-    if command == "run":
-        print """
-Usage: snf-deploy run <action> [<action>...]
-
-  Run any of the following fabric commands:
-
-
-    Setup commands:        Init commands:                Admin commands:
-      setup_apache           add_pools                     activate_user
-      setup_apt              add_rapi_user                 add_backend
-      setup_astakos          add_nodes                     add_image_locally
-      setup_cms              astakos_loaddata              add_network
-      setup_collectd
-      setup_common           astakos_register_components   add_ns
-      setup_cyclades         cms_loaddata                  add_user
-      setup_db               cyclades_loaddata             connect_bridges
-      setup_ganeti           enable_drbd                   create_bridges
-      setup_ganeti_collectd
-      setup_gtools           init_cluster                  create_vlans
-      setup_gunicorn         setup_nfs_clients             destroy_db
-      setup_hosts            setup_nfs_server              \
-get_auth_token_from_db
-      setup_image_helper     update_ns_for_ganeti          get_service_details
-      setup_image_host       astakos_register_pithos_view  gnt_instance_add
-      setup_iptables                                       gnt_network_add
-      setup_kamaki         Test commands:                  register_image
-      setup_lvm              test                          restart_services
-      setup_mq                                             setup_drbd_dparams
-      setup_net_infra
-      setup_network
-      setup_ns
-      setup_pithos
-      setup_pithos_dir
-      setup_router
-      setup_stats
-      setup_stats_collectd
-      setup_vncauthproxy
-      setup_webproject
-
-  """
-
-    sys.exit(1)
-
-
-def create_dnsmasq_files(args, env):
-
-    print("Customize dnsmasq..")
-    out = env.dns
-
-    hostsfile = open(out + "/dhcp-hostsfile", "w")
-    optsfile = open(out + "/dhcp-optsfile", "w")
-    conffile = open(out + "/conf-file", "w")
-
-    for node, info in env.nodes_info.iteritems():
-        # serve ip and hostname to nodes
-        hostsfile.write("%s,%s,%s,2m\n" % (info.mac, info.ip, info.hostname))
-
-    hostsfile.write("52:54:56:*:*:*,ignore\n")
-
-    # Netmask
-    optsfile.write("1,%s\n" % env.net.netmask)
-    # Gateway
-    optsfile.write("3,%s\n" % env.gateway)
-    # Namesevers
-    optsfile.write("6,%s\n" % "8.8.8.8")
-
-    dnsconf = """
-user=dnsmasq
-bogus-priv
-no-poll
-no-negcache
-leasefile-ro
-bind-interfaces
-except-interface=lo
-dhcp-fqdn
-no-resolv
-# disable DNS
-port=0
-""".format(env.ns.ip)
-
-    dnsconf += """
-# serve domain and search domain for resolv.conf
-domain={5}
-interface={0}
-dhcp-hostsfile={1}
-dhcp-optsfile={2}
-dhcp-range={0},{4},static,2m
-""".format(env.bridge, hostsfile.name, optsfile.name,
-           env.domain, env.net.network, env.domain)
-
-    conffile.write(dnsconf)
-
-    hostsfile.close()
-    optsfile.close()
-    conffile.close()
-
-
-def cleanup(args, env):
-    print("Cleaning up bridge, NAT, resolv.conf...")
-
-    for f in os.listdir(env.run):
-        if re.search(".pid$", f):
-            check_pidfile(os.path.join(env.run, f))
-
-    create_dir(env.run, True)
-    # create_dir(env.cmd, True)
-    cmd = """
-    iptables -t nat -D POSTROUTING -s {0} -o {1} -j MASQUERADE
-    echo 0 > /proc/sys/net/ipv4/ip_forward
-    iptables -D INPUT -i {2} -j ACCEPT
-    iptables -D FORWARD -i {2} -j ACCEPT
-    iptables -D OUTPUT -o {2} -j ACCEPT
-    """.format(env.subnet, get_default_route()[1], env.bridge)
-    os.system(cmd)
-
-    cmd = """
-    ip link show {0} && ip addr del {1}/{2} dev {0}
-    sleep 1
-    ip link set {0} down
-    sleep 1
-    brctl delbr {0}
-    """.format(env.bridge, env.gateway, env.net.prefixlen)
-    os.system(cmd)
-
-
-def network(args, env):
-    print("Create bridge..Add gateway IP..Activate NAT.."
-          "Append NS options to resolv.conf")
-
-    cmd = """
-    ! ip link show {0} && brctl addbr {0} && ip link set {0} up
-    sleep 1
-    ip link set promisc on dev {0}
-    ip addr add {1}/{2} dev {0}
-    """.format(env.bridge, env.gateway, env.net.prefixlen)
-    os.system(cmd)
-
-    cmd = """
-    iptables -t nat -A POSTROUTING -s {0} -o {1} -j MASQUERADE
-    echo 1 > /proc/sys/net/ipv4/ip_forward
-    iptables -I INPUT 1 -i {2} -j ACCEPT
-    iptables -I FORWARD 1 -i {2} -j ACCEPT
-    iptables -I OUTPUT 1 -o {2} -j ACCEPT
-    """.format(env.subnet, get_default_route()[1], env.bridge)
-    os.system(cmd)
-
-
-def image(args, env):
-    if env.os == "ubuntu":
-        url = env.ubuntu_image_url
     else:
-        url = env.squeeze_image_url
+        print """
+Usage: snf-deploy [-h] [-c CONFDIR] [-t TEMPLATE_DIR] [-s STATE_DIR]
+                  [--dry-run] [-v] [-d] [--autoconf] [--mem MEM] [--smp SMP]
+                  [--vnc] [--force] [-i SSH_KEY] [--no-key-inject]
+                  [--cluster CLUSTER] [--component COMPONENT]
+                  [--method METHOD] [--role ROLE] [--node NODE]
+                  [--setup SETUP] [--disable-colors]
+                  command [cmd]
 
-    disk0 = "{0}/{1}.disk0".format(env.images, env.os)
-    disk1 = "{0}/{1}.disk1".format(env.images, env.os)
+  The command can be either of:
 
-    if url and not os.path.exists(disk0):
-        cmd = "wget {0} -O {1}".format(url, disk0)
-        os.system(cmd)
+      packages    Download synnefo packages and stores them locally
+      image       Create a debian base image for vcluster
+      vcluster    Create a local virtual cluster with KVM, dnsmasq, and NAT
+      cleanup     Cleanup the local virtual cluster
+      test        Print the configuration
+      synnefo     Deploy synnefo on the requested setup
+      keygen      Create ssh and ddns keys
+      ganeti      Deploy a Ganeti cluster on the requested setup
+      ganeti-qa   Deploy a Ganeti QA cluster on the requested cluster
+      run         Run a specific bash command on the target nodes
+      help        Display a help message for the following command
 
-    if ast.literal_eval(env.create_extra_disk) and not os.path.exists(disk1):
-        if env.lvg:
-            cmd = "lvcreate -L30G -n{0}.disk1 {1}".format(env.os, env.lvg)
-            os.system(cmd)
-            cmd = "ln -s /dev/{0}/{1}.disk1 {2}".format(env.lvg, env.os, disk1)
-            os.system(cmd)
-        else:
-            cmd = "dd if=/dev/zero of={0} bs=10M count=3000".format(disk1)
-            os.system(cmd)
+  """
+
+    sys.exit(0)
 
 
-def fabcommand(args, env, actions, nodes=[]):
+def fabcommand(args, actions):
     levels = ["status", "aborts", "warnings", "running",
               "stdout", "stderr", "user", "debug"]
 
@@ -267,83 +135,17 @@ def fabcommand(args, env, actions, nodes=[]):
 # ".format(args.confdir, env.packages, env.templates, args.cluster_name,
 #          env.lib, args.autoconf, args.disable_colors, args.key_inject)
 
-    if nodes:
-        ips = [env.nodes_info[n].ip for n in nodes]
-
-    fabfile.setup_env(args)
     with settings(hide(*lhide), show(*lshow)):
-        print " ".join(actions)
         for a in actions:
             fn = getattr(fabfile, a)
-            if not args.dry_run:
-                if nodes:
-                    execute(fn, hosts=ips)
-                else:
-                    execute(fn)
+            execute(fn)
 
 
-def cluster(args, env):
-    for hostname, mac in env.node2mac.iteritems():
-        launch_vm(args, env, hostname, mac)
-
-    time.sleep(30)
-    os.system("reset")
-
-
-def launch_vm(args, env, hostname, mac):
-    check_pidfile("%s/%s.pid" % (env.run, hostname))
-
-    print("Launching cluster node {0}..".format(hostname))
-    os.environ["BRIDGE"] = env.bridge
-    if args.vnc:
-        graphics = "-vnc :{0}".format(random.randint(1, 1000))
-    else:
-        graphics = "-nographic"
-
-    disks = """ \
--drive file={0}/{1}.disk0,format=raw,if=none,id=drive0,snapshot=on \
--device virtio-blk-pci,drive=drive0,id=virtio-blk-pci.0 \
-""".format(env.images, env.os)
-
-    if ast.literal_eval(env.create_extra_disk):
-        disks += """ \
--drive file={0}/{1}.disk1,format=raw,if=none,id=drive1,snapshot=on \
--device virtio-blk-pci,drive=drive1,id=virtio-blk-pci.1 \
-""".format(env.images, env.os)
-
-    ifup = env.lib + "/ifup"
-    nics = """ \
--netdev tap,id=netdev0,script={0},downscript=no \
--device virtio-net-pci,mac={1},netdev=netdev0,id=virtio-net-pci.0 \
--netdev tap,id=netdev1,script={0},downscript=no \
--device virtio-net-pci,mac={2},netdev=netdev1,id=virtio-net-pci.1 \
--netdev tap,id=netdev2,script={0},downscript=no \
--device virtio-net-pci,mac={3},netdev=netdev2,id=virtio-net-pci.2 \
-""".format(ifup, mac, random_mac(), random_mac())
-
-    cmd = """
-/usr/bin/kvm -name {0} -pidfile {1}/{0}.pid -balloon virtio -daemonize \
--monitor unix:{1}/{0}.monitor,server,nowait -usbdevice tablet -boot c \
-{2} \
-{3} \
--m {4} -smp {5} {6} \
-""".format(hostname, env.run, disks, nics, args.mem, args.smp, graphics)
-    print cmd
-    os.system(cmd)
-
-
-def dnsmasq(args, env):
-    check_pidfile(env.run + "/dnsmasq.pid")
-    cmd = "dnsmasq --pid-file={0}/dnsmasq.pid --conf-file={1}/conf-file"\
-        .format(env.run, env.dns)
-    os.system(cmd)
-
-
-def get_packages(args, env):
-    if env.package_url:
-        os.system("rm {0}/*.deb".format(env.packages))
+def get_packages():
+    if config.package_url:
+        os.system("rm {0}/*.deb".format(config.package_dir))
         os.system("wget -r --level=1 -nH --no-parent --cut-dirs=4 {0} -P {1}"
-                  .format(env.package_url, env.packages))
+                  .format(config.package_url, config.package_dir))
 
 
 def parse_options():
@@ -353,6 +155,14 @@ def parse_options():
     parser.add_argument("-c", dest="confdir",
                         default="/etc/snf-deploy",
                         help="Directory to find default configuration")
+    parser.add_argument("-t", "--templates-dir", dest="template_dir",
+                        default=None,
+                        help="Directory to find templates. Overrides"
+                             " the one found in the deploy.conf file")
+    parser.add_argument("-s", "--state-dir", dest="state_dir",
+                        default=None,
+                        help="Directory to store current state. Overrides"
+                             " the one found in the deploy.conf")
     parser.add_argument("--dry-run", dest="dry_run",
                         default=False, action="store_true",
                         help="Do not execute or write anything.")
@@ -379,7 +189,8 @@ def parse_options():
                              "console or not")
     parser.add_argument("--force", dest="force",
                         default=False, action="store_true",
-                        help="Force the creation of new ssh key pairs")
+                        help="Force things (creation of key pairs"
+                             " do not abort execution if something fails")
 
     parser.add_argument("-i", "--ssh-key", dest="ssh_key",
                         default=None,
@@ -389,27 +200,54 @@ def parse_options():
                         default=True, action="store_false",
                         help="Whether to inject ssh key pairs to hosts")
 
-    # backend related options
-    parser.add_argument("--cluster-name", dest="cluster_name",
-                        default="ganeti1",
-                        help="The cluster name in ganeti.conf")
+    parser.add_argument("--pass-gen", dest="passgen",
+                        default=False, action="store_true",
+                        help="Whether to create random passwords")
 
     # backend related options
-    parser.add_argument("--cluster-node", dest="cluster_node",
+    parser.add_argument("--cluster", dest="cluster",
+                        default=constants.DEFAULT_CLUSTER,
+                        help="The cluster name in ganeti.conf")
+
+    # options related to custom setup
+    parser.add_argument("--component", dest="component",
                         default=None,
-                        help="The node to add to the existing cluster")
+                        help="The component class")
+
+    parser.add_argument("--method", dest="method",
+                        default=None,
+                        help="The component method")
+
+    parser.add_argument("--role", dest="role",
+                        default=None,
+                        help="The target node's role")
+
+    parser.add_argument("--node", dest="node",
+                        default=constants.DEFAULT_NODE,
+                        help="The target node")
+
+    parser.add_argument("--setup", dest="setup",
+                        default=constants.DEFAULT_SETUP,
+                        help="The target setup")
+
+    parser.add_argument("--cmd", dest="cmd",
+                        default="date",
+                        help="The command to run on target nodes")
+
+    parser.add_argument("--target-nodes", dest="target_nodes",
+                        default=None,
+                        help="The target nodes to run cmd")
 
     # available commands
     parser.add_argument("command", type=str,
-                        choices=["packages", "vcluster", "prepare",
-                                 "synnefo", "backend", "ganeti",
-                                 "run", "cleanup", "test",
-                                 "all", "add", "keygen"],
+                        choices=["packages", "vcluster", "cleanup", "image",
+                                 "setup", "test", "synnefo", "keygen",
+                                 "ganeti", "ganeti-qa", "help", "run"],
                         help="Run on of the supported deployment commands")
 
     # available actions for the run command
-    parser.add_argument("actions", type=str, nargs="*",
-                        help="Run one or more of the supported subcommands")
+    parser.add_argument("cmds", type=str, nargs="*",
+                        help="Specific commands to display help for")
 
     # disable colors in terminal
     parser.add_argument("--disable-colors", dest="disable_colors",
@@ -421,76 +259,22 @@ def parse_options():
 
 def get_actions(*args):
     actions = {
-        # prepare actions
-        "ns":  ["setup_ns", "setup_resolv_conf"],
-        "hosts": ["setup_hosts", "add_keys"],
-        "check": ["check_dhcp", "check_dns",
-                  "check_connectivity", "check_ssh"],
-        "apt": ["apt_get_update", "setup_apt"],
-        "nfs": ["setup_nfs_server", "setup_nfs_clients"],
-        "prepare":  [
-            "setup_hosts", "add_keys",
-            "setup_ns", "setup_resolv_conf",
-            "check_dhcp", "check_dns", "check_connectivity", "check_ssh",
-            "apt_get_update", "setup_apt",
-            "setup_nfs_server", "setup_nfs_clients"
-        ],
-        # synnefo actions
-        "synnefo": [
-            "setup_mq", "setup_db",
-            "setup_astakos",
-            #TODO: astakos-quota fails if no user is added.
-            #      add_user fails if no groups found
-            "astakos_loaddata", "add_user", "activate_user",
-            "astakos_register_components",
-            "astakos_register_pithos_view",
-            "setup_cms", "cms_loaddata",
-            "setup_pithos",
-            "setup_vncauthproxy",
-            "setup_cyclades", "cyclades_loaddata", "add_pools",
-            "export_services", "import_services", "set_user_quota",
-            "setup_kamaki", "upload_image", "register_image",
-            "setup_burnin",
-            "setup_stats"
-        ],
-        "supdate": [
-            "apt_get_update", "setup_astakos",
-            "setup_cms", "setup_pithos", "setup_cyclades"
-        ],
-        # backend actions
-        "backend": [
-            "setup_hosts",
-            "update_ns_for_ganeti",
-            "setup_ganeti", "init_cluster",
-            "add_rapi_user", "add_nodes",
-            "setup_image_host", "setup_image_helper",
-            "setup_network",
-            "setup_gtools", "add_backend", "add_network",
-            "setup_lvm", "enable_lvm",
-            "enable_drbd", "setup_drbd_dparams",
-            "setup_net_infra", "setup_iptables", "setup_router",
-            "setup_ganeti_collectd"
-        ],
-        "bstorage": [
-            "setup_lvm", "enable_lvm",
-            "enable_drbd", "setup_drbd_dparams"
-        ],
-        "bnetwork": ["setup_net_infra", "setup_iptables", "setup_router"],
-        "bupdate": [
-            "apt_get_update", "setup_ganeti", "setup_image_host",
-            "setup_image_helper", "setup_network", "setup_gtools"
-        ],
-        # ganeti actions
         "ganeti": [
-            "update_ns_for_ganeti",
-            "setup_ganeti", "init_cluster", "add_nodes",
-            "setup_image_host", "setup_image_helper", "add_image_locally",
-            "debootstrap", "setup_net_infra",
-            "setup_lvm", "enable_lvm", "enable_drbd", "setup_drbd_dparams",
-            "setup_ganeti_collectd"
+            "setup_ganeti"
         ],
-        "gupdate": ["setup_apt", "setup_ganeti"],
-        "gdestroy": ["destroy_cluster"],
+        "ganeti-qa": [
+            "setup_qa",
+        ],
+        "synnefo": [
+            "setup_synnefo",
+        ],
+        "setup": [
+            "setup",
+        ],
+        "run": [
+            "run",
+        ],
+
     }
 
     ret = []
@@ -500,16 +284,11 @@ def get_actions(*args):
     return ret
 
 
-def must_create_keys(force, env):
-    """Check if we need to create ssh keys
-
-    If force is true we are going to overide the old keys.
-    Else if there are already generated keys to use, don't create new ones.
+def must_create_keys():
+    """Check if the ssh keys already exist
 
     """
-    if force:
-        return True
-    d = os.path.join(env.templates, "root/.ssh")
+    d = os.path.join(config.template_dir, "root/.ssh")
     auth_keys_exists = os.path.exists(os.path.join(d, "authorized_keys"))
     dsa_exists = os.path.exists(os.path.join(d, "id_dsa"))
     dsa_pub_exists = os.path.exists(os.path.join(d, "id_dsa.pub"))
@@ -521,8 +300,11 @@ def must_create_keys(force, env):
                 and auth_keys_exists)
 
 
-def do_create_keys(args, env):
-    d = os.path.join(env.templates, "root/.ssh")
+def do_create_keys():
+    d = os.path.join(config.template_dir, "root/.ssh")
+    # Create dir if it does not exist
+    if not os.path.exists(d):
+        os.makedirs(d)
     a = os.path.join(d, "authorized_keys")
     # Delete old keys
     for filename in os.listdir(d):
@@ -536,116 +318,103 @@ def do_create_keys(args, env):
         os.system(cmd)
 
 
-def add_node(args, env):
-    actions = [
-        "update_ns_for_node:" + args.cluster_node,
-    ]
-    fabcommand(args, env, actions)
-    actions = [
-        "setup_resolv_conf",
-        "apt_get_update",
-        "setup_apt",
-        "setup_hosts",
-        "add_keys",
-    ]
-    fabcommand(args, env, actions, [args.cluster_node])
+def must_create_ddns_keys():
+    d = os.path.join(config.template_dir, "root/ddns")
+    # Create dir if it does not exist
+    if not os.path.exists(d):
+        os.makedirs(d)
+    key_exists = glob.glob(os.path.join(d, "Kddns*key"))
+    private_exists = glob.glob(os.path.join(d, "Kddns*private"))
+    bind_key_exists = os.path.exists(os.path.join(d, "ddns.key"))
+    return not (key_exists and private_exists and bind_key_exists)
 
-    actions = get_actions("check")
-    fabcommand(args, env, actions)
 
-    actions = [
-        "setup_nfs_clients",
-        "setup_ganeti",
-        "setup_image_host", "setup_image_helper",
-        "setup_network", "setup_gtools",
-    ]
-    fabcommand(args, env, actions, [args.cluster_node])
+def find_ddns_key_files():
+    d = os.path.join(config.template_dir, "root/ddns")
+    keys = glob.glob(os.path.join(d, "Kddns*"))
+    # Here we must have a key!
+    return map(os.path.basename, keys)
 
-    actions = [
-        "add_node:" + args.cluster_node,
-    ]
-    fabcommand(args, env, actions)
 
-    actions = [
-        "setup_lvm", "enable_drbd",
-        "setup_net_infra", "setup_iptables",
-    ]
-    fabcommand(args, env, actions, [args.cluster_node])
+def do_create_ddns_keys():
+    d = os.path.join(config.template_dir, "root/ddns")
+    if not os.path.exists(d):
+        os.mkdir(d)
+    for filename in os.listdir(d):
+        os.remove(os.path.join(d, filename))
+    cmd = """
+dnssec-keygen -a HMAC-MD5 -b 128 -K {0} -r /dev/urandom -n USER DDNS_UPDATE
+key=$(cat {0}/Kddns_update*.key | awk '{{ print $7 }}')
+cat > {0}/ddns.key <<EOF
+key DDNS_UPDATE {{
+        algorithm HMAC-MD5.SIG-ALG.REG.INT;
+        secret "$key";
+}};
+EOF
+""".format(d)
+    os.system(cmd)
 
 
 def main():
     args = parse_options()
 
-    conf = Conf(args)
-    env = Env(conf)
+    config.init(args)
+    status.init()
+    context.init(args)
 
-    create_dir(env.run, False)
-    create_dir(env.dns, False)
+    create_dir(config.run_dir, False)
+    create_dir(config.dns_dir, False)
 
     # Check if there are keys to use
     if args.command == "keygen":
-        if must_create_keys(args.force, env):
-            do_create_keys(args, env)
-            return 0
+        if must_create_keys() or args.force:
+            do_create_keys()
         else:
-            print "Keys already existed.. aborting"
-            return 1
+            print "ssh keys found. To re-create them use --force"
+        if must_create_ddns_keys() or args.force:
+            do_create_ddns_keys()
+        else:
+            print "ddns keys found. To re-create them use --force"
+        return 0
     else:
-        if (args.key_inject and (args.ssh_key is None)
-                and must_create_keys(False, env)):
-            print "No ssh keys to use. Run `snf-deploy keygen' first."
+        if ((args.key_inject and not args.ssh_key and
+             must_create_keys()) or must_create_ddns_keys()):
+            print "No ssh/ddns keys to use. Run `snf-deploy keygen' first."
             return 1
+        config.ddns_keys = find_ddns_key_files()
+        config.ddns_private_key = "/root/ddns/" + config.ddns_keys[0]
 
     if args.command == "test":
-        conf.print_config()
+        config.print_config()
+        return 0
+
+    if args.command == "image":
+        vcluster.image()
+        return 0
 
     if args.command == "cleanup":
-        cleanup(args, env)
+        vcluster.cleanup()
+        return 0
 
     if args.command == "packages":
-        create_dir(env.packages, True)
-        get_packages(args, env)
+        create_dir(config.package_dir, True)
+        get_packages()
+        return 0
 
     if args.command == "vcluster":
-        image(args, env)
-        network(args, env)
-        create_dnsmasq_files(args, env)
-        dnsmasq(args, env)
-        cluster(args, env)
+        status.reset()
+        vcluster.cleanup()
+        vcluster.launch()
+        return 0
 
-    if args.command == "prepare":
-        actions = get_actions("prepare")
-        fabcommand(args, env, actions)
+    if args.command == "help":
+        print_help_msg(args.cmds)
+        return 0
 
-    if args.command == "synnefo":
-        actions = get_actions("synnefo")
-        fabcommand(args, env, actions)
+    actions = get_actions(args.command)
+    fabcommand(args, actions)
 
-    if args.command == "backend":
-        actions = get_actions("backend")
-        fabcommand(args, env, actions)
-
-    if args.command == "ganeti":
-        actions = get_actions("ganeti")
-        fabcommand(args, env, actions)
-
-    if args.command == "all":
-        actions = get_actions("prepare", "synnefo", "backend")
-        fabcommand(args, env, actions)
-
-    if args.command == "add":
-        if args.cluster_node:
-            add_node(args, env)
-        else:
-            actions = get_actions("backend")
-            fabcommand(args, env, actions)
-
-    if args.command == "run":
-        if not args.actions:
-            print_available_actions(args.command)
-        else:
-            fabcommand(args, env, args.actions)
-
+    return 0
 
 if __name__ == "__main__":
     sys.exit(main())

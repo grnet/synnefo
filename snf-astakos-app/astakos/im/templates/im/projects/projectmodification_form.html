@@ -1,0 +1,10 @@
+{% extends "im/projects/projectapplication_form.html" %}
+{% load filters %}
+
+{% block page.heading %}
+{% if form.instance.is_base %}
+REQUEST <em>{{ form.instance|project_name_for_user:user }}</em> PROJECT MODIFICATION
+{% else %}
+REQUEST PROJECT MODIFICATION
+{% endif %}
+{% endblock %}

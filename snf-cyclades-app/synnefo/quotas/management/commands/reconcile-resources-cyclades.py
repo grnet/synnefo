@@ -1,58 +1,42 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from datetime import datetime
-from django.core.management.base import BaseCommand
 from optparse import make_option
 
-
 from synnefo import quotas
-from synnefo.quotas.util import (get_db_holdings, get_quotaholder_holdings,
-                                 transform_quotas)
+from synnefo.quotas import util
+from synnefo.quotas import errors
 from snf_django.management.utils import pprint_table
+from snf_django.management.commands import SynnefoCommand, CommandError
+from snf_django.utils import reconcile
 
 
-class Command(BaseCommand):
+class Command(SynnefoCommand):
     help = """Reconcile resource usage of Astakos with Cyclades DB.
 
     Detect unsynchronized usage between Astakos and Cyclades DB resources and
     synchronize them if specified so.
 
     """
-    option_list = BaseCommand.option_list + (
-        make_option("--userid", dest="userid",
+    option_list = SynnefoCommand.option_list + (
+        make_option("--user", dest="userid",
                     default=None,
                     help="Reconcile resources only for this user"),
+        make_option("--project",
+                    help="Reconcile resources only for this project"),
         make_option("--fix", dest="fix",
                     default=False,
                     action="store_true",
@@ -67,68 +51,52 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         write = self.stderr.write
         userid = options['userid']
+        project = options["project"]
 
         # Get holdings from Cyclades DB
-        db_holdings = get_db_holdings(userid)
+        db_holdings = util.get_db_holdings(user=userid, project=project)
+        db_project_holdings = util.get_db_holdings(project=project,
+                                                   for_users=False)
+
         # Get holdings from QuotaHolder
-        qh_holdings = get_quotaholder_holdings(userid)
+        try:
+            qh_holdings = util.get_qh_users_holdings(
+                [userid] if userid is not None else None,
+                [project] if project is not None else None)
+            qh_project_holdings = util.get_qh_project_holdings(
+                [project] if project is not None else None)
+        except errors.AstakosClientException as e:
+            raise CommandError(e)
 
-        users = set(db_holdings.keys())
-        users.update(qh_holdings.keys())
-        # Remove 'None' user
-        users.discard(None)
+        unsynced_users, users_pending, users_unknown =\
+            reconcile.check_users(self.stderr, quotas.RESOURCES,
+                                  db_holdings, qh_holdings)
 
-        if userid and userid not in users:
-            write("User '%s' does not exist in Quotaholder!", userid)
-            return
+        unsynced_projects, projects_pending, projects_unknown =\
+            reconcile.check_projects(self.stderr, quotas.RESOURCES,
+                                     db_project_holdings, qh_project_holdings)
+        pending_exists = users_pending or projects_pending
+        unknown_exists = users_unknown or projects_unknown
 
-        pending_exists = False
-        unknown_user_exists = False
-        unsynced = []
-        for user in users:
-            db = db_holdings.get(user, {})
-            try:
-                qh_all = qh_holdings[user]
-            except KeyError:
-                write("User '%s' does not exist in Quotaholder!\n" %
-                      user)
-                unknown_user_exists = True
-                continue
-
-            # Assuming only one source
-            qh = qh_all.get(quotas.DEFAULT_SOURCE, {})
-            qh = transform_quotas(qh)
-            for resource in quotas.RESOURCES:
-                db_value = db.pop(resource, 0)
-                try:
-                    qh_value, _, qh_pending = qh[resource]
-                except KeyError:
-                    write("Resource '%s' does not exist in Quotaholder"
-                          " for user '%s'!\n" % (resource, user))
-                    continue
-                if qh_pending:
-                    write("Pending commission. User '%s', resource '%s'.\n" %
-                          (user, resource))
-                    pending_exists = True
-                    continue
-                if db_value != qh_value:
-                    data = (user, resource, db_value, qh_value)
-                    unsynced.append(data)
-
-        headers = ("User", "Resource", "Database", "Quotaholder")
+        headers = ("Type", "Holder", "Source", "Resource",
+                   "Database", "Quotaholder")
+        unsynced = unsynced_users + unsynced_projects
         if unsynced:
             pprint_table(self.stdout, unsynced, headers)
             if options["fix"]:
                 qh = quotas.Quotaholder.get()
-                request = {}
-                request["force"] = options["force"]
-                request["auto_accept"] = True
-                request["name"] = \
-                    ("client: reconcile-resources-cyclades, time: %s"
-                     % datetime.now())
-                request["provisions"] = map(create_provision, unsynced)
+                force = options["force"]
+                name = ("client: reconcile-resources-cyclades, time: %s"
+                        % datetime.now())
+                user_provisions = reconcile.create_user_provisions(
+                    unsynced_users)
+                project_provisions = reconcile.create_project_provisions(
+                    unsynced_projects)
                 try:
-                    qh.issue_commission(request)
+                    qh.issue_commission_generic(
+                        user_provisions, project_provisions,
+                        name=name, force=force,
+                        auto_accept=True)
                 except quotas.errors.QuotaLimit:
                     write("Reconciling failed because a limit has been "
                           "reached. Use --force to ignore the check.\n")
@@ -138,13 +106,5 @@ class Command(BaseCommand):
         if pending_exists:
             write("Found pending commissions. Run 'snf-manage"
                   " reconcile-commissions-cyclades'\n")
-        elif not (unsynced or unknown_user_exists):
+        elif not (unsynced or unknown_exists):
             write("Everything in sync.\n")
-
-
-def create_provision(provision_info):
-    user, resource, db_value, qh_value = provision_info
-    return {"holder": user,
-            "source": quotas.DEFAULT_SOURCE,
-            "resource": resource,
-            "quantity": db_value - qh_value}

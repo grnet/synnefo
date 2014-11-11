@@ -1,36 +1,18 @@
 
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 This is the burnin class that tests the Flavors/Images functionality
@@ -42,10 +24,11 @@ import shutil
 
 from kamaki.clients import ClientError
 
-from synnefo_tools.burnin.common import BurninTests, Proper
+from synnefo_tools.burnin.common import BurninTests, Proper, \
+    QPITHOS, QADD, QREMOVE
 
 
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class FlavorsTestSuite(BurninTests):
     """Test flavor lists for consistency"""
     simple_flavors = Proper(value=None)
@@ -89,7 +72,7 @@ class FlavorsTestSuite(BurninTests):
 
 
 # --------------------------------------------------------------------
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class ImagesTestSuite(BurninTests):
     """Test image lists for consistency"""
     simple_images = Proper(value=None)
@@ -130,7 +113,8 @@ class ImagesTestSuite(BurninTests):
         """Test every system image has specific metadata defined"""
         keys = frozenset(["osfamily", "root_partition"])
         for i in self.system_images:
-            self.assertTrue(keys.issubset(i['properties'].keys()))
+            self.assertTrue(keys.issubset(i['properties'].keys()),
+                            "Failed in image with id '%s'" % i['id'])
 
     def test_007_download_image(self):
         """Download image from Pithos"""
@@ -166,12 +150,15 @@ class ImagesTestSuite(BurninTests):
         """Upload the image to Pithos"""
         self._set_pithos_account(self._get_uuid())
         self._create_pithos_container("burnin-images")
+        self._set_pithos_container("burnin-images")
         file_size = os.path.getsize(self.temp_image_file)
         with open(self.temp_image_file, "r+b") as fin:
             self.clients.pithos.upload_object(self.temp_image_name, fin)
 
         # Verify quotas
-        self._check_quotas(diskspace=file_size)
+        changes = \
+            {self._get_uuid(): [(QPITHOS, QADD, file_size, None)]}
+        self._check_quotas(changes)
 
     def test_009_register_image(self):
         """Register image to Plankton"""
@@ -191,14 +178,81 @@ class ImagesTestSuite(BurninTests):
         self.assertEqual(len(images), 1)
         self.info("Image registered with id %s", images[0]['id'])
 
+        self.info("Registering with unicode name")
+        uni_str = u'\u03b5\u03b9\u03ba\u03cc\u03bd\u03b1'
+        uni_name = u'%s, or %s in Greek' % (self.temp_image_name, uni_str)
+        img = self.clients.image.register(
+            uni_name, location, params, properties)
+
+        self.info('Checking if image with unicode name exists')
+        found_img = self.clients.image.get_meta(img['id'])
+        self.assertEqual(found_img['name'], uni_name)
+        self.info("Image registered with id %s", found_img['id'])
+
+        self.info("Checking if image is listed "
+                  "under the specific container in pithos")
+        self._set_pithos_account(self._get_uuid())
+        pithos = self.clients.pithos
+        pithos.container = 'burnin-images'
+        self.assertTrue(self.temp_image_name in (
+            o['name'] for o in pithos.list_objects()))
+
+        self.info("Checking copying image to "
+                  "another pithos container.")
+        pithos.container = other_container = 'burnin-images-backup'
+        pithos.create_container()
+        pithos.copy_object(
+            src_container='burnin-images',
+            src_object=self.temp_image_name,
+            dst_container=other_container,
+            dst_object='%s_copy' % self.temp_image_name)
+
+        # Verify quotas
+        file_size = os.path.getsize(self.temp_image_file)
+        changes = \
+            {self._get_uuid(): [(QPITHOS, QADD, file_size, None)]}
+        self._check_quotas(changes)
+
+        self.info("Checking copied image "
+                  "is listed among the images.")
+        images = self._get_list_of_images(detail=True)
+        locations = [i['location'] for i in images]
+        location2 = "pithos://" + self._get_uuid() + \
+            "/burnin-images-backup/" + '%s_copy' % self.temp_image_name
+        self.assertTrue(location2 in locations)
+
+        self.info("Set image metadata in the pithos domain")
+        pithos.set_object_meta('%s_copy' % self.temp_image_name,
+                {'foo': 'bar'})
+
+        self.info("Checking copied image "
+                  "is still listed among the images.")
+        images = self._get_list_of_images(detail=True)
+        locations = [i['location'] for i in images]
+        location2 = "pithos://" + self._get_uuid() + \
+            "/burnin-images-backup/" + '%s_copy' % self.temp_image_name
+        self.assertTrue(location2 in locations)
+
+        # delete copied object
+        self.clients.pithos.del_object('%s_copy' % self.temp_image_name)
+
+        # Verify quotas
+        file_size = os.path.getsize(self.temp_image_file)
+        changes = \
+            {self._get_uuid(): [(QPITHOS, QREMOVE, file_size, None)]}
+        self._check_quotas(changes)
+
     def test_010_cleanup_image(self):
         """Remove uploaded image from Pithos"""
         # Remove uploaded image
         self.info("Deleting uploaded image %s", self.temp_image_name)
+        self._set_pithos_container("burnin-images")
         self.clients.pithos.del_object(self.temp_image_name)
         # Verify quotas
         file_size = os.path.getsize(self.temp_image_file)
-        self._check_quotas(diskspace=-file_size)
+        changes = \
+            {self._get_uuid(): [(QPITHOS, QREMOVE, file_size, None)]}
+        self._check_quotas(changes)
         self.temp_image_name = None
         # Remove temp directory
         self.info("Deleting temp directory %s", self.temp_dir)
@@ -208,9 +262,11 @@ class ImagesTestSuite(BurninTests):
     @classmethod
     def tearDownClass(cls):  # noqa
         """Clean up"""
-        if cls.temp_image_name is not None:
+        for container in ["burnin-images", "burnin-images-backup"]:
+            cls.clients.pithos.container = container
             try:
-                cls.clients.pithos.del_object(cls.temp_image_name)
+                cls.clients.pithos.del_container(delimiter='/')
+                cls.clients.pithos.purge_container(container)
             except ClientError:
                 pass
 

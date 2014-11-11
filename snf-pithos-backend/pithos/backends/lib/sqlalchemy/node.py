@@ -1,56 +1,38 @@
-# Copyright 2011-2012 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from time import time
 from operator import itemgetter
 from itertools import groupby
+from collections import defaultdict
 
 from sqlalchemy import (Table, Integer, BigInteger, DECIMAL, Boolean,
                         Column, String, MetaData, ForeignKey)
-from sqlalchemy.schema import Index
-from sqlalchemy.sql import func, and_, or_, not_, select, bindparam, exists
-from sqlalchemy.sql.expression import true
-from sqlalchemy.exc import NoSuchTableError
+from sqlalchemy.schema import Index, Sequence
+from sqlalchemy.sql import (func, and_, or_, not_, select, bindparam, exists,
+                            functions)
+from sqlalchemy.sql.expression import true, literal, type_coerce
+from sqlalchemy.exc import NoSuchTableError, IntegrityError
 
 from dbworker import DBWorker, ESCAPE_CHAR
 
+from pithos.backends.base import MAP_AVAILABLE
 from pithos.backends.filter import parse_filters
 
-
+DEFAULT_DISKSPACE_RESOURCE = 'pithos.diskspace'
 ROOTNODE = 0
-
-(SERIAL, NODE, HASH, SIZE, TYPE, SOURCE, MTIME, MUSER, UUID, CHECKSUM,
- CLUSTER) = range(11)
 
 (MATCH_PREFIX, MATCH_EXACT) = range(2)
 
@@ -92,20 +74,6 @@ def strprevling(prefix):
         s += unichr(c - 1) + unichr(0xffff)
     return s
 
-_propnames = {
-    'serial': 0,
-    'node': 1,
-    'hash': 2,
-    'size': 3,
-    'type': 4,
-    'source': 5,
-    'mtime': 6,
-    'muser': 7,
-    'uuid': 8,
-    'checksum': 9,
-    'cluster': 10,
-}
-
 
 def create_tables(engine):
     metadata = MetaData()
@@ -124,6 +92,10 @@ def create_tables(engine):
     Index('idx_nodes_path', nodes.c.path, unique=True)
     Index('idx_nodes_parent', nodes.c.parent)
     Index('idx_latest_version', nodes.c.latest_version)
+    Index('idx_nodes_parent0', nodes.c.parent,
+          postgresql_where=nodes.c.parent == 0)
+    Index('idx_nodes_parent0_path', nodes.c.parent, nodes.c.path,
+          postgresql_where=nodes.c.parent == 0)
 
     #create policy table
     columns = []
@@ -166,9 +138,31 @@ def create_tables(engine):
     columns.append(Column('uuid', String(64), nullable=False, default=''))
     columns.append(Column('checksum', String(256), nullable=False, default=''))
     columns.append(Column('cluster', Integer, nullable=False, default=0))
+    columns.append(Column('available', Integer, nullable=False, default=1))
+    columns.append(Column('map_check_timestamp', DECIMAL(precision=16,
+                                                         scale=6)))
+    columns.append(Column('mapfile', String(256)))
+    columns.append(Column('is_snapshot', Boolean, nullable=False,
+                          default=False))
+
     versions = Table('versions', metadata, *columns, mysql_engine='InnoDB')
     Index('idx_versions_node_mtime', versions.c.node, versions.c.mtime)
+    Index('idx_versions_node', versions.c.node)
     Index('idx_versions_node_uuid', versions.c.uuid)
+    Index('idx_versions_serial_cluster_n2', versions.c.serial,
+          versions.c.cluster, postgresql_where=versions.c.cluster != 2)
+    Index('idx_versions_node_cluster0', versions.c.node,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 0)
+    Index('idx_versions_node_cluster1', versions.c.node,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 1)
+    Index('idx_versions_node_cluster2', versions.c.node,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 2)
+    Index('idx_versions_serial_cluster0', versions.c.serial,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 0)
+    Index('idx_versions_serial_cluster1', versions.c.serial,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 1)
+    Index('idx_versions_serial_cluster2', versions.c.serial,
+          versions.c.cluster, postgresql_where=versions.c.cluster == 2)
 
     #create attributes table
     columns = []
@@ -185,9 +179,29 @@ def create_tables(engine):
     attributes = Table('attributes', metadata, *columns, mysql_engine='InnoDB')
     Index('idx_attributes_domain', attributes.c.domain)
     Index('idx_attributes_serial_node', attributes.c.serial, attributes.c.node)
+    Index('idx_attributes_node', attributes.c.node)
+    Index('idx_attributes_islatest_domain_plankton', attributes.c.is_latest,
+          attributes.c.domain, postgresql_where=and_(
+              attributes.c.is_latest == True,
+              attributes.c.domain == "plankton"))
+    Index('idx_attributes_key_domain_plankton', attributes.c.key,
+          attributes.c.domain, postgresql_where=\
+          attributes.c.domain == "plankton")
+    Index('idx_attributes_key_domain_pithos', attributes.c.key,
+          attributes.c.domain, postgresql_where=\
+          attributes.c.domain == "pithos")
+    Index('idx_attributes_serial_domain_pithos', attributes.c.serial,
+          attributes.c.domain, postgresql_where=\
+          attributes.c.domain == "pithos")
+    Index('idx_attributes_serial_domain_plankton', attributes.c.serial,
+          attributes.c.domain, postgresql_where=\
+          attributes.c.domain == "plankton")
+
+    # TODO: handle backends not supporting sequences
+    mapfile_seq = Sequence('mapfile_seq', metadata=metadata)
 
     metadata.create_all(engine)
-    return metadata.sorted_tables
+    return metadata.sorted_tables + [mapfile_seq]
 
 
 class Node(DBWorker):
@@ -199,6 +213,8 @@ class Node(DBWorker):
     # TODO: Provide an interface for included and excluded clusters.
 
     def __init__(self, **params):
+        self._props = params.pop('props')
+        self.mapfile_prefix = params.pop('mapfile_prefix', 'snf_file_')
         DBWorker.__init__(self, **params)
         try:
             metadata = MetaData(self.engine)
@@ -207,6 +223,7 @@ class Node(DBWorker):
             self.statistics = Table('statistics', metadata, autoload=True)
             self.versions = Table('versions', metadata, autoload=True)
             self.attributes = Table('attributes', metadata, autoload=True)
+            self.mapfile_seq = Sequence('mapfile_seq', metadata)
         except NoSuchTableError:
             tables = create_tables(self.engine)
             map(lambda t: self.__setattr__(t.name, t), tables)
@@ -230,12 +247,18 @@ class Node(DBWorker):
         """Create a new node from the given properties.
            Return the node identifier of the new node.
         """
-        #TODO catch IntegrityError?
+        t = self.conn.begin_nested()  # create savepoint
         s = self.nodes.insert().values(parent=parent, path=path)
-        r = self.conn.execute(s)
-        inserted_primary_key = r.inserted_primary_key[0]
-        r.close()
-        return inserted_primary_key
+        try:
+            r = self.conn.execute(s)
+        except IntegrityError:
+            t.rollback()
+            raise ValueError('Attempt to create a node which already exists.')
+        else:
+            t.commit()
+            inserted_primary_key = r.inserted_primary_key[0]
+            r.close()
+            return inserted_primary_key
 
     def node_lookup(self, path, for_update=False):
         """Lookup the current node of the given path.
@@ -280,13 +303,30 @@ class Node(DBWorker):
         r.close()
         return l
 
-    def node_get_versions(self, node, keys=(), propnames=_propnames):
+    def node_get_parent_path(self, node):
+        """Return the node's parent path.
+           Return None if the node is not found.
+        """
+
+        n1 = self.nodes.alias('n1')
+        n2 = self.nodes.alias('n2')
+
+        s = select([n2.c.path])
+        s = s.where(n2.c.node == n1.c.parent)
+        s = s.where(n1.c.node == node)
+        r = self.conn.execute(s)
+        l = r.fetchone()
+        r.close()
+        return l[0] if l is not None else None
+
+    def node_get_versions(self, node, keys=(), props=None):
         """Return the properties of all versions at node.
            If keys is empty, return all properties in the order
            (serial, node, hash, size, type, source, mtime, muser, uuid,
-            checksum, cluster).
+            checksum, cluster, available, map_check_timestamp).
         """
 
+        props = props or self._props
         s = select([self.versions.c.serial,
                     self.versions.c.node,
                     self.versions.c.hash,
@@ -297,7 +337,12 @@ class Node(DBWorker):
                     self.versions.c.muser,
                     self.versions.c.uuid,
                     self.versions.c.checksum,
-                    self.versions.c.cluster], self.versions.c.node == node)
+                    self.versions.c.cluster,
+                    self.versions.c.available,
+                    self.versions.c.map_check_timestamp,
+                    self.versions.c.mapfile,
+                    self.versions.c.is_snapshot],
+                   self.versions.c.node == node)
         s = s.order_by(self.versions.c.serial)
         r = self.conn.execute(s)
         rows = r.fetchall()
@@ -308,7 +353,7 @@ class Node(DBWorker):
         if not keys:
             return rows
 
-        return [[p[propnames[k]] for k in keys if k in propnames] for
+        return [[p[props[k]] for k in keys if k in props] for
                 p in rows]
 
     def node_count_children(self, node):
@@ -485,11 +530,12 @@ class Node(DBWorker):
         r.close()
         return dict(rows)
 
-    def node_account_usage(self, account=None, cluster=0):
-        """Return usage for a specific account.
+    def node_account_usage(self, account=None, project=None, cluster=0):
+        """Return a dict of dicts with the project usage for a specific account
 
         Keyword arguments:
-        account -- (default None: list usage for all the accounts)
+        account -- (default None: list usage for all accounts)
+        project -- (default None: list usage for all projects)
         cluster -- list current, history or deleted usage (default 0: normal)
         """
 
@@ -497,20 +543,61 @@ class Node(DBWorker):
         n2 = self.nodes.alias('n2')
         n3 = self.nodes.alias('n3')
 
-        s = select([n3.c.path, func.sum(self.versions.c.size)])
+        s = select([n3.c.path, self.policy.c.value,
+                    func.sum(self.versions.c.size)])
+        s = s.where(self.policy.c.key == 'project')
+        s = s.where(self.policy.c.node == n2.c.node)
         s = s.where(n1.c.node == self.versions.c.node)
         s = s.where(self.versions.c.cluster == cluster)
         s = s.where(n1.c.parent == n2.c.node)
         s = s.where(n2.c.parent == n3.c.node)
         s = s.where(n3.c.parent == 0)
         s = s.where(n3.c.node != 0)
+        s = s.group_by(n3.c.path, self.policy.c.value)
         if account:
             s = s.where(n3.c.path == account)
-        s = s.group_by(n3.c.path)
+        if project:
+            s = s.where(self.policy.c.value == project)
         r = self.conn.execute(s)
-        usage = r.fetchall()
+        rows = r.fetchall()
         r.close()
-        return dict(usage)
+        d = defaultdict(lambda: defaultdict(dict))
+        for account, project, usage in rows:
+            d[account][project][DEFAULT_DISKSPACE_RESOURCE] = usage
+        return d
+
+    def node_project_usage(self, project=None, cluster=0):
+        """Return a dict of dicts with the project usage for a specific account
+
+        Keyword arguments:
+        project -- (default None: list usage for all projects)
+        cluster -- list current, history or deleted usage (default 0: normal)
+        """
+
+        n1 = self.nodes.alias('n1')
+        n2 = self.nodes.alias('n2')
+        n3 = self.nodes.alias('n3')
+
+        s = select([self.policy.c.value,
+                    func.sum(self.versions.c.size)])
+        s = s.where(self.policy.c.key == 'project')
+        s = s.where(self.policy.c.node == n2.c.node)
+        s = s.where(n1.c.node == self.versions.c.node)
+        s = s.where(self.versions.c.cluster == cluster)
+        s = s.where(n1.c.parent == n2.c.node)
+        s = s.where(n2.c.parent == n3.c.node)
+        # s = s.where(n3.c.parent == 0)
+        # s = s.where(n3.c.node != 0)
+        s = s.group_by(self.policy.c.value)
+        if project:
+            s = s.where(self.policy.c.value == project)
+        r = self.conn.execute(s)
+        rows = r.fetchall()
+        r.close()
+        d = defaultdict(dict)
+        for project, usage in rows:
+            d[project][DEFAULT_DISKSPACE_RESOURCE] = usage
+        return d
 
     def policy_get(self, node):
         s = select([self.policy.c.key, self.policy.c.value],
@@ -595,7 +682,7 @@ class Node(DBWorker):
         while True:
             if node == ROOTNODE:
                 break
-            if recursion_depth and recursion_depth <= i:
+            if recursion_depth is not None and recursion_depth <= i:
                 break
             props = self.node_get_properties(node)
             if props is None:
@@ -629,7 +716,11 @@ class Node(DBWorker):
                     self.versions.c.muser,
                     self.versions.c.uuid,
                     self.versions.c.checksum,
-                    self.versions.c.cluster])
+                    self.versions.c.cluster,
+                    self.versions.c.available,
+                    self.versions.c.map_check_timestamp,
+                    self.versions.c.mapfile,
+                    self.versions.c.is_snapshot])
         if before != inf:
             filtered = select([func.max(self.versions.c.serial)],
                               self.versions.c.node == node)
@@ -644,7 +735,7 @@ class Node(DBWorker):
         r.close()
         if not props:
             return None
-        mtime = props[MTIME]
+        mtime = props.mtime
 
         # First level, just under node (get population).
         v = self.versions.alias('v')
@@ -676,36 +767,40 @@ class Node(DBWorker):
         # This is why the full path is stored.
         if before != inf:
             s = select([func.count(v.c.serial),
-                        func.sum(v.c.size),
-                        func.max(v.c.mtime)])
+                       func.sum(v.c.size),
+                       func.max(v.c.mtime)])
             c1 = select([func.max(self.versions.c.serial)],
                         and_(self.versions.c.mtime < before,
                              self.versions.c.node == v.c.node))
         else:
-            inner_join = self.versions.join(
-                self.nodes,
-                onclause=self.versions.c.serial == self.nodes.c.latest_version)
+            d2 = select([self.nodes.c.node, self.nodes.c.latest_version],
+                        self.nodes.c.path.like(self.escape_like(path) + '%',
+                                               escape=ESCAPE_CHAR)).cte("d2")
+            inner_join = \
+                self.versions.join(d2,
+                                   onclause=(self.versions.c.serial ==
+                                             d2.c.latest_version))
             s = select([func.count(self.versions.c.serial),
                        func.sum(self.versions.c.size),
-                       func.max(self.versions.c.mtime)], from_obj=[inner_join])
+                       func.max(self.versions.c.mtime)],
+                       from_obj=[inner_join])
 
         c2 = select([self.nodes.c.node],
                     self.nodes.c.path.like(self.escape_like(path) + '%',
                                            escape=ESCAPE_CHAR))
         if before != inf:
             s = s.where(and_(v.c.serial == c1,
-                             v.c.cluster != except_cluster,
-                             v.c.node.in_(c2)))
+                        v.c.cluster != except_cluster,
+                        v.c.node.in_(c2)))
         else:
-            s = s.where(and_(self.versions.c.cluster != except_cluster,
-                        self.versions.c.node.in_(c2)))
+            s = s.where(and_(self.versions.c.cluster != except_cluster))
 
         rp = self.conn.execute(s)
         r = rp.fetchone()
         rp.close()
         if not r:
             return None
-        size = long(r[1] - props[SIZE])
+        size = long(r[1] - props.size)
         mtime = max(mtime, r[2])
         return (count, size, mtime)
 
@@ -716,40 +811,75 @@ class Node(DBWorker):
 
     def version_create(self, node, hash, size, type, source, muser, uuid,
                        checksum, cluster=0,
-                       update_statistics_ancestors_depth=None):
+                       update_statistics_ancestors_depth=None,
+                       available=MAP_AVAILABLE, map_check_timestamp=None,
+                       mapfile=None, is_snapshot=False):
         """Create a new version from the given properties.
-           Return the (serial, mtime) of the new version.
+           Return the (serial, mtime, mapfile) of the new version.
+
+           If mapfile is not None, set mapfile to this value.
+           Otherwise, assign to the mapfile a new unique identifier.
+
+           :raises DatabaseError
         """
 
         mtime = time()
-        s = self.versions.insert().values(
+        if size == 0:
+            mapfile = None
+        elif mapfile is None:
+            mapfile = literal(self.mapfile_prefix) + \
+                type_coerce(functions.next_value(self.mapfile_seq), String)
+        s = self.versions.insert().returning(self.versions.c.serial,
+                                             self.versions.c.mtime,
+                                             self.versions.c.mapfile)
+        s = s.values(
             node=node, hash=hash, size=size, type=type, source=source,
             mtime=mtime, muser=muser, uuid=uuid, checksum=checksum,
-            cluster=cluster)
-        serial = self.conn.execute(s).inserted_primary_key[0]
+            cluster=cluster, available=available,
+            map_check_timestamp=map_check_timestamp,
+            mapfile=mapfile,
+            is_snapshot=is_snapshot)
+        r = self.conn.execute(s)
+        serial, mtime, mapfile = r.fetchone()
+        r.close()
         self.statistics_update_ancestors(node, 1, size, mtime, cluster,
                                          update_statistics_ancestors_depth)
 
         self.nodes_set_latest_version(node, serial)
 
-        return serial, mtime
+        return serial, mtime, mapfile
 
-    def version_lookup(self, node, before=inf, cluster=0, all_props=True):
+    def version_lookup(self, node, before=inf, cluster=0, all_props=True,
+                       keys=()):
         """Lookup the current version of the given node.
-           Return a list with its properties:
-           (serial, node, hash, size, type, source, mtime,
-            muser, uuid, checksum, cluster)
-           or None if the current version is not found in the given cluster.
+           If the current version is not found in the given cluster,
+           return None.
+           If all_props is False, return the version's serial.
+           Otherwise:
+               If keys is not empty, return only the specific properties
+               (by filtering out the invalid ones).
+
+               If keys is empty, return all properties in the order
+               (serial, node, hash, size, type, source, mtime, muser, uuid,
+                checksum, cluster, available, map_check_timestamp)
+               This is bad tactic, since it may have considerable
+               impact on the performance.
         """
 
         v = self.versions.alias('v')
         if not all_props:
             s = select([v.c.serial])
         else:
-            s = select([v.c.serial, v.c.node, v.c.hash,
+            if keys:
+                cols = [getattr(v.c, col) for col in keys if hasattr(v.c, col)]
+            else:
+                cols = [v.c.serial, v.c.node, v.c.hash,
                         v.c.size, v.c.type, v.c.source,
                         v.c.mtime, v.c.muser, v.c.uuid,
-                        v.c.checksum, v.c.cluster])
+                        v.c.checksum, v.c.cluster,
+                        v.c.available, v.c.map_check_timestamp,
+                        v.c.mapfile, v.c.is_snapshot]
+            s = select(cols)
         if before != inf:
             c = select([func.max(self.versions.c.serial)],
                        self.versions.c.node == node)
@@ -767,11 +897,12 @@ class Node(DBWorker):
         return None
 
     def version_lookup_bulk(self, nodes, before=inf, cluster=0,
-                            all_props=True, order_by_path=False):
+                            all_props=True, order_by_path=False,
+                            keys=()):
         """Lookup the current versions of the given nodes.
            Return a list with their properties:
            (serial, node, hash, size, type, source, mtime, muser, uuid,
-            checksum, cluster).
+            checksum, cluster, available, map_check_timestamp).
         """
         if not nodes:
             return ()
@@ -780,10 +911,16 @@ class Node(DBWorker):
         if not all_props:
             s = select([v.c.serial])
         else:
-            s = select([v.c.serial, v.c.node, v.c.hash,
+            if keys:
+                cols = [getattr(v.c, col) for col in keys if hasattr(v.c, col)]
+            else:
+                cols = [v.c.serial, v.c.node, v.c.hash,
                         v.c.size, v.c.type, v.c.source,
                         v.c.mtime, v.c.muser, v.c.uuid,
-                        v.c.checksum, v.c.cluster])
+                        v.c.checksum, v.c.cluster,
+                        v.c.available, v.c.map_check_timestamp,
+                        v.c.mapfile, v.c.is_snapshot]
+            s = select(cols)
         if before != inf:
             c = select([func.max(self.versions.c.serial)],
                        self.versions.c.node.in_(nodes))
@@ -804,36 +941,32 @@ class Node(DBWorker):
         r.close()
         return (tuple(row.values()) for row in rproxy)
 
-    def version_get_properties(self, serial, keys=(), propnames=_propnames,
+    def version_get_properties(self, serial, keys=(), props=None,
                                node=None):
         """Return a sequence of values for the properties of
            the version specified by serial and the keys, in the order given.
            If keys is empty, return all properties in the order
            (serial, node, hash, size, type, source, mtime, muser, uuid,
-            checksum, cluster).
+            checksum, cluster, available, map_check_timestamp).
         """
 
+        props = props or self._props
+        keys = keys or props.keys()
         v = self.versions.alias()
-        s = select([v.c.serial, v.c.node, v.c.hash,
-                    v.c.size, v.c.type, v.c.source,
-                    v.c.mtime, v.c.muser, v.c.uuid,
-                    v.c.checksum, v.c.cluster], v.c.serial == serial)
+        cols = [getattr(v.c, p) for p in keys if hasattr(v.c, p)]
+        s = select(cols, v.c.serial == serial)
         if node is not None:
             s = s.where(v.c.node == node)
         rp = self.conn.execute(s)
         r = rp.fetchone()
         rp.close()
-        if r is None:
-            return r
+        return r
 
-        if not keys:
-            return r
-        return [r[propnames[k]] for k in keys if k in propnames]
-
-    def version_put_property(self, serial, key, value):
+    def version_put_property(self, serial, key, value, props=None):
         """Set value for the property of version specified by key."""
 
-        if key not in _propnames:
+        props = props or self._props
+        if key not in props:
             return
         s = self.versions.update()
         s = s.where(self.versions.c.serial == serial)
@@ -847,9 +980,9 @@ class Node(DBWorker):
         props = self.version_get_properties(serial)
         if not props:
             return
-        node = props[NODE]
-        size = props[SIZE]
-        oldcluster = props[CLUSTER]
+        node = props.node
+        size = props.size
+        oldcluster = props.cluster
         if cluster == oldcluster:
             return
 
@@ -870,10 +1003,10 @@ class Node(DBWorker):
         props = self.version_get_properties(serial)
         if not props:
             return
-        node = props[NODE]
-        hash = props[HASH]
-        size = props[SIZE]
-        cluster = props[CLUSTER]
+        node = props.node
+        hash = props.hash
+        size = props.size
+        cluster = props.cluster
 
         mtime = time()
         self.statistics_update_ancestors(node, -1, -size, mtime, cluster,
@@ -887,6 +1020,17 @@ class Node(DBWorker):
             self.nodes_set_latest_version(node, serial)
 
         return hash, size
+
+    def attribute_get_domains(self, serial, node=None):
+        node = node or select([self.versions.c.node],
+                              self.versions.c.serial == serial)
+        s = select([self.attributes.c.domain],
+                   and_(self.attributes.c.serial == serial,
+                        self.attributes.c.node == node)).distinct()
+        r = self.conn.execute(s)
+        l = r.fetchall()
+        r.close()
+        return [d[0] for d in l]
 
     def attribute_get(self, serial, domain, keys=()):
         """Return a list of (key, value) pairs of the specific version.
@@ -913,23 +1057,21 @@ class Node(DBWorker):
 
     def attribute_set(self, serial, domain, node, items, is_latest=True):
         """Set the attributes of the version specified by serial.
-           Receive attributes as an iterable of (key, value) pairs.
+           Receive attributes as a mapping object.
+
+           Raises: sqlalchemy.exc.IntegrityError
         """
-        #insert or replace
-        #TODO better upsert
-        for k, v in items:
-            s = self.attributes.update()
-            s = s.where(and_(self.attributes.c.serial == serial,
-                             self.attributes.c.domain == domain,
-                             self.attributes.c.key == k))
-            s = s.values(value=v)
-            rp = self.conn.execute(s)
-            rp.close()
-            if rp.rowcount == 0:
-                s = self.attributes.insert()
-                s = s.values(serial=serial, domain=domain, node=node,
-                             is_latest=is_latest, key=k, value=v)
-                self.conn.execute(s).close()
+
+        if not items:
+            return
+        s = self.attributes.insert()
+        values = [{'serial': serial,
+                   'domain': domain,
+                   'node': node,
+                   'is_latest': is_latest,
+                   'key': k,
+                   'value': v} for k, v in items.iteritems()]
+        self.conn.execute(s, values).close()
 
     def attribute_del(self, serial, domain, keys=()):
         """Delete attributes of the version specified by serial.
@@ -938,13 +1080,11 @@ class Node(DBWorker):
         """
 
         if keys:
-            #TODO more efficient way to do this?
-            for key in keys:
-                s = self.attributes.delete()
-                s = s.where(and_(self.attributes.c.serial == serial,
-                                 self.attributes.c.domain == domain,
-                                 self.attributes.c.key == key))
-                self.conn.execute(s).close()
+            s = self.attributes.delete()
+            s = s.where(and_(self.attributes.c.serial == serial,
+                             self.attributes.c.domain == domain,
+                             self.attributes.c.key.in_(keys)))
+            self.conn.execute(s).close()
         else:
             s = self.attributes.delete()
             s = s.where(and_(self.attributes.c.serial == serial,
@@ -1001,9 +1141,9 @@ class Node(DBWorker):
                                    v.c.node == self.versions.c.node))
         else:
             filtered = select([self.nodes.c.latest_version])
-            filtered = filtered.where(
-                self.nodes.c.node == self.versions.c.node).\
-                correlate(self.versions)
+            filtered = filtered.where(self.nodes.c.node ==
+                                      self.versions.c.node
+                                      ).correlate(self.versions)
         s = s.where(self.versions.c.serial == filtered)
         s = s.where(self.versions.c.cluster != except_cluster)
         s = s.where(self.versions.c.node.in_(select([self.nodes.c.node],
@@ -1016,8 +1156,8 @@ class Node(DBWorker):
         conjb = []
         for path, match in pathq:
             if match == MATCH_PREFIX:
-                conja.append(self.nodes.c.path.like(
-                    self.escape_like(path) + '%', escape=ESCAPE_CHAR))
+                conja.append(self.nodes.c.path.like(self.escape_like(path) +
+                                                    '%', escape=ESCAPE_CHAR))
             elif match == MATCH_EXACT:
                 conjb.append(path)
         if conja or conjb:
@@ -1088,53 +1228,65 @@ class Node(DBWorker):
 
         v = self.versions.alias('v')
         if before != inf:
-            filtered = select([func.max(v.c.serial)],
-                              and_(v.c.mtime < before,
-                                   v.c.node == self.versions.c.node))
-            inner_join = self.nodes.join(
-                self.versions,
-                onclause=self.versions.c.serial == filtered)
+            d4_insub = select([self.nodes.c.node],
+                              self.nodes.c.parent==parent)
+            d4_insub = d4_insub.where(and_(
+                self.nodes.c.path > bindparam('start'),
+                self.nodes.c.path < nextling))
+
+            d4 = select([func.max(v.c.serial).label("vmax"),
+                         v.c.node,
+                         self.nodes.c.path]).where(v.c.mtime < before)
+            d4 = d4.where(v.c.node.in_(d4_insub))
+            d4 = d4.where(v.c.node==self.nodes.c.node)
+            d4 = d4.group_by(v.c.node, self.nodes.c.path).cte("d4")
+            inner_join = \
+                d4.join(self.versions,
+                        onclause=self.versions.c.serial == d4.c.vmax)
         else:
-            filtered = select([self.nodes.c.latest_version])
-            filtered = filtered.where(
-                self.nodes.c.node == self.versions.c.node).\
-                correlate(self.versions)
-            inner_join = self.nodes.join(
-                self.versions,
-                onclause=self.versions.c.serial == filtered)
+            d4 = select([self.nodes.c.path,
+                         self.nodes.c.node,
+                         self.nodes.c.latest_version]).where(
+                         self.nodes.c.parent == parent)
+            d4 = d4.where(and_(self.nodes.c.path > bindparam('start'),
+                               self.nodes.c.path < nextling)).cte("d4")
+
+            inner_join = \
+                d4.join(self.versions,
+                        onclause=
+                        self.versions.c.serial == d4.c.latest_version)
         if not all_props:
-            s = select([self.nodes.c.path, self.versions.c.serial],
+            s = select([d4.c.path,
+                       self.versions.c.serial],
                        from_obj=[inner_join]).distinct()
         else:
-            s = select([self.nodes.c.path,
-                        self.versions.c.serial, self.versions.c.node,
-                        self.versions.c.hash,
-                        self.versions.c.size, self.versions.c.type,
-                        self.versions.c.source,
-                        self.versions.c.mtime, self.versions.c.muser,
-                        self.versions.c.uuid,
-                        self.versions.c.checksum,
-                        self.versions.c.cluster],
+            s = select([d4.c.path,
+                       self.versions.c.serial, self.versions.c.node,
+                       self.versions.c.hash,
+                       self.versions.c.size, self.versions.c.type,
+                       self.versions.c.source,
+                       self.versions.c.mtime, self.versions.c.muser,
+                       self.versions.c.uuid,
+                       self.versions.c.checksum,
+                       self.versions.c.cluster,
+                       self.versions.c.available,
+                       self.versions.c.map_check_timestamp,
+                       self.versions.c.mapfile,
+                       self.versions.c.is_snapshot],
                        from_obj=[inner_join]).distinct()
 
         s = s.where(self.versions.c.cluster != except_cluster)
-        s = s.where(self.versions.c.node.in_(select([self.nodes.c.node],
-                                             self.nodes.c.parent == parent)))
-
-        s = s.where(self.versions.c.node == self.nodes.c.node)
-        s = s.where(and_(self.nodes.c.path > bindparam('start'),
-                    self.nodes.c.path < nextling))
+        s = s.where(self.versions.c.node == d4.c.node)
         conja = []
         conjb = []
         for path, match in pathq:
             if match == MATCH_PREFIX:
-                conja.append(
-                    self.nodes.c.path.like(self.escape_like(path) + '%',
-                                           escape=ESCAPE_CHAR))
+                conja.append(d4.c.path.like(self.escape_like(path) +
+                             '%', escape=ESCAPE_CHAR))
             elif match == MATCH_EXACT:
                 conjb.append(path)
         if conja or conjb:
-            s = s.where(or_(self.nodes.c.path.in_(conjb), *conja))
+            s = s.where(or_(d4.c.path.in_(conjb), *conja))
 
         if sizeq and len(sizeq) == 2:
             if sizeq[0]:
@@ -1146,35 +1298,35 @@ class Node(DBWorker):
             included, excluded, opers = parse_filters(filterq)
             if included:
                 subs = select([1])
-                subs = subs.where(
-                    self.attributes.c.serial ==
-                    self.versions.c.serial).correlate(self.versions)
+                subs = subs.where(self.attributes.c.serial ==
+                                  self.versions.c.serial
+                                  ).correlate(self.versions)
                 subs = subs.where(self.attributes.c.domain == domain)
-                subs = subs.where(or_(*[self.attributes.c.key.op('=')(x) for
-                                  x in included]))
+                subs = subs.where(or_(*[self.attributes.c.key.op('=')(x)
+                                  for x in included]))
                 s = s.where(exists(subs))
             if excluded:
                 subs = select([1])
-                subs = subs.where(
-                    self.attributes.c.serial == self.versions.c.serial).\
-                    correlate(self.versions)
+                subs = subs.where(self.attributes.c.serial ==
+                                  self.versions.c.serial
+                                  ).correlate(self.versions)
                 subs = subs.where(self.attributes.c.domain == domain)
-                subs = subs.where(or_(*[self.attributes.c.key.op('=')(x) for
-                                  x in excluded]))
+                subs = subs.where(or_(*[self.attributes.c.key.op('=')(x)
+                                  for x in excluded]))
                 s = s.where(not_(exists(subs)))
             if opers:
                 for k, o, val in opers:
                     subs = select([1])
-                    subs = subs.where(
-                        self.attributes.c.serial == self.versions.c.serial).\
-                        correlate(self.versions)
+                    subs = subs.where(self.attributes.c.serial ==
+                                      self.versions.c.serial
+                                      ).correlate(self.versions)
                     subs = subs.where(self.attributes.c.domain == domain)
                     subs = subs.where(
                         and_(self.attributes.c.key.op('=')(k),
                              self.attributes.c.value.op(o)(val)))
                     s = s.where(exists(subs))
 
-        s = s.order_by(self.nodes.c.path)
+        s = s.order_by(d4.c.path)
 
         if not delimiter:
             s = s.limit(limit)
@@ -1252,9 +1404,13 @@ class Node(DBWorker):
         n = self.nodes.alias('n')
         a = self.attributes.alias('a')
 
-        s = select([n.c.path, v.c.serial, v.c.node, v.c.hash, v.c.size,
-                    v.c.type, v.c.source, v.c.mtime, v.c.muser, v.c.uuid,
-                    v.c.checksum, v.c.cluster, a.c.key, a.c.value])
+        props = [n.c.path, v.c.serial, v.c.node, v.c.hash, v.c.size, v.c.type,
+                 v.c.source, v.c.mtime, v.c.muser, v.c.uuid, v.c.checksum,
+                 v.c.cluster, v.c.available, v.c.map_check_timestamp,
+                 v.c.mapfile, v.c.is_snapshot]
+        cols = props + [a.c.key, a.c.value]
+
+        s = select(cols)
         if cluster:
             s = s.where(v.c.cluster == cluster)
         s = s.where(v.c.serial == a.c.serial)
@@ -1268,17 +1424,17 @@ class Node(DBWorker):
         rows = r.fetchall()
         r.close()
 
-        group_by = itemgetter(slice(12))
+        group_by = itemgetter(slice(len(props)))
         rows.sort(key=group_by)
         groups = groupby(rows, group_by)
-        return [(k[0], k[1:], dict([i[12:] for i in data])) for
+        return [(k[0], k[1:], dict([i[len(props):] for i in data])) for
                 (k, data) in groups]
 
     def get_props(self, paths):
         inner_join = \
-            self.nodes.join(
-                self.versions,
-                onclause=self.versions.c.serial == self.nodes.c.latest_version)
+            self.nodes.join(self.versions,
+                            onclause=self.versions.c.serial ==
+                            self.nodes.c.latest_version)
         cc = self.nodes.c.path.in_(paths)
         s = select([self.nodes.c.path, self.versions.c.type],
                    from_obj=[inner_join]).where(cc).distinct()

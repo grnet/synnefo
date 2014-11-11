@@ -1,44 +1,85 @@
-# Copyright 2013-2014 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+import functools
 
 from snf_django.lib.api import faults
-from django.db import transaction
+from synnefo.db import transaction
 from synnefo import quotas
 from synnefo.db import pools
 from synnefo.db.models import (IPPoolTable, IPAddress, Network)
 log = logging.getLogger(__name__)
+
+
+def validate_ip_action(ip, action, silent=True):
+    """Check if an action can apply on an IP address.
+
+    Arguments:
+        ip: The target IP address.
+        action: The name of the action (in capital letters).
+        silent: If set to True, suppress exceptions.
+
+    Returns:
+        A `(success, message)` tuple. `success` is a boolean value that
+        shows if the action can apply on an IP, and `message` explains
+        why the action cannot apply on an IP.
+
+        If an action can apply on an IP, this function will always return
+        `(True, None)`.
+
+    Exceptions:
+        faults.Conflict: When the action cannot apply on an ip due to a
+                         conflict.
+        faults.BadRequest: When the action is unknown/malformed.
+    """
+    def fail(e=Exception, msg=""):
+        if silent:
+            return False, msg
+        else:
+            raise e(msg)
+
+    if action == "DELETE":
+        if ip.nic:
+            # This is safe, you also need for_update to attach floating IP to
+            # instance.
+            server = ip.nic.machine
+            if server is None:
+                msg = ("IP '%s' is used by port '%s'" % (ip.id, ip.nic_id))
+            else:
+                msg = ("IP '%s' is used by server '%s'" %
+                       (ip.id, ip.nic.machine_id))
+            return fail(faults.Conflict, msg)
+    elif action == "REASSIGN":
+        pass
+    else:
+        return fail(faults.BadRequest, "Unknown action: {}.".format(action))
+
+    return True, None
+
+
+def ip_command(action):
+    """Common wrapper for IP commands."""
+    def decorator(func):
+        @functools.wraps(func)
+        @transaction.commit_on_success()
+        def wrapper(ip, *args, **kwargs):
+            validate_ip_action(ip, action, silent=False)
+            return func(ip, *args, **kwargs)
+        return wrapper
+    return decorator
 
 
 def allocate_ip_from_pools(pool_rows, userid, address=None, floating_ip=False):
@@ -109,7 +150,6 @@ def allocate_public_ip(userid, floating_ip=False, backend=None, networks=None):
     be used.
 
     """
-
     ip_pool_rows = IPPoolTable.objects.select_for_update()\
         .prefetch_related("subnet__network")\
         .filter(subnet__deleted=False)\
@@ -143,7 +183,7 @@ def allocate_public_ip(userid, floating_ip=False, backend=None, networks=None):
 
 
 @transaction.commit_on_success
-def create_floating_ip(userid, network=None, address=None):
+def create_floating_ip(userid, network=None, address=None, project=None):
     if network is None:
         floating_ip = allocate_public_ip(userid, floating_ip=True)
     else:
@@ -159,6 +199,10 @@ def create_floating_ip(userid, network=None, address=None):
         floating_ip = allocate_ip(network, userid, address=address,
                                   floating_ip=True)
 
+    if project is None:
+        project = userid
+    floating_ip.project = project
+    floating_ip.save()
     # Issue commission (quotas)
     quotas.issue_and_accept_commission(floating_ip)
     transaction.commit()
@@ -197,20 +241,8 @@ def get_free_floating_ip(userid, network=None):
     raise faults.Conflict(msg)
 
 
-@transaction.commit_on_success
+@ip_command("DELETE")
 def delete_floating_ip(floating_ip):
-    if floating_ip.nic:
-        # This is safe, you also need for_update to attach floating IP to
-        # instance.
-        server = floating_ip.nic.machine
-        if server is None:
-            msg = ("Floating IP '%s' is used by port '%s'" %
-                   (floating_ip.id, floating_ip.nic_id))
-        else:
-            msg = ("Floating IP '%s' is used by server '%s'" %
-                   (floating_ip.id, floating_ip.nic.machine_id))
-        raise faults.Conflict(msg)
-
     # Lock network to prevent deadlock
     Network.objects.select_for_update().get(id=floating_ip.network_id)
 
@@ -226,3 +258,15 @@ def delete_floating_ip(floating_ip):
     log.info("Deleted floating IP '%s' of user '%s", floating_ip,
              floating_ip.userid)
     floating_ip.delete()
+
+
+@ip_command("REASSIGN")
+def reassign_floating_ip(floating_ip, project):
+    action_fields = {"to_project": project,
+                     "from_project": floating_ip.project}
+    log.info("Reassigning floating IP %s from project %s to %s",
+             floating_ip, floating_ip.project, project)
+    floating_ip.project = project
+    floating_ip.save()
+    quotas.issue_and_accept_commission(floating_ip, action="REASSIGN",
+                                       action_fields=action_fields)

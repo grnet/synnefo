@@ -1,45 +1,24 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.core.management.base import CommandError
 from optparse import make_option
-
-from django.db.models import Q
 from astakos.im.models import AstakosUser, get_latest_terms, Project
-from astakos.im.quotas import list_user_quotas
+from astakos.im.quotas import get_user_quotas
 
 from synnefo.lib.ordereddict import OrderedDict
-from snf_django.management.commands import SynnefoCommand
+from snf_django.management.commands import SynnefoCommand, CommandError
 from snf_django.management import utils
 
 from ._common import show_user_quotas, style_options, check_style
@@ -96,7 +75,6 @@ class Command(SynnefoCommand):
                     ('email', user.email),
                     ('first name', user.first_name),
                     ('last name', user.last_name),
-                    ('active', user.is_active),
                     ('admin', user.is_superuser),
                     ('last login', user.last_login),
                     ('date joined', user.date_joined),
@@ -104,14 +82,17 @@ class Command(SynnefoCommand):
                     #('token', user.auth_token),
                     ('token expiration', user.auth_token_expires),
                     ('providers', user.auth_providers_display),
-                    ('verified', user.is_verified),
                     ('groups', [elem.name for elem in user.groups.all()]),
                     ('permissions', [elem.codename
                                      for elem in user.user_permissions.all()]),
                     ('group permissions', user.get_group_permissions()),
-                    ('email verified', user.email_verified),
+                    ('email_verified', user.email_verified),
+                    ('moderated', user.moderated),
+                    ('rejected', user.is_rejected),
+                    ('active', user.is_active),
                     ('username', user.username),
                     ('activation_sent_date', user.activation_sent),
+                    ('last_login_details', user.last_login_info_display),
                 ])
 
             if get_latest_terms():
@@ -127,12 +108,10 @@ class Command(SynnefoCommand):
                 unit_style = options["unit_style"]
                 check_style(unit_style)
 
-                quotas, initial = list_user_quotas([user])
-                h_quotas = quotas[user.uuid]
-                h_initial = initial[user.uuid]
+                quotas = get_user_quotas(user)
                 if quotas:
                     self.stdout.write("\n")
-                    print_data, labels = show_user_quotas(h_quotas, h_initial,
+                    print_data, labels = show_user_quotas(quotas,
                                                           style=unit_style)
                     utils.pprint_table(self.stdout, print_data, labels,
                                        options["output_format"],
@@ -161,28 +140,29 @@ def memberships(user):
 
     for m in ms:
         project = m.project
-        print_data.append((project.id,
-                           project.application.name,
+        print_data.append((project.uuid,
+                           project.realname,
                            m.state_display(),
                            ))
     return print_data, labels
 
 
 def ownerships(user):
-    chains = Project.objects.all_with_pending(Q(application__owner=user))
+    chains = Project.objects.select_related("last_application").\
+        filter(owner=user)
     return chain_info(chains)
 
 
 def chain_info(chains):
     labels = ('project id', 'project name', 'status', 'pending app id')
     l = []
-    for project, pending_app in chains:
+    for project in chains:
         status = project.state_display()
-        pending_appid = pending_app.id if pending_app is not None else ""
-        application = project.application
+        app = project.last_application
+        pending_appid = app.id if app and app.state == app.PENDING else ""
 
-        t = (project.pk,
-             application.name,
+        t = (project.uuid,
+             project.realname,
              status,
              pending_appid,
              )

@@ -1,0 +1,37 @@
+<div class="info-block well info">
+	<table class="table-selected-main" id="table-items-selected">
+		<thead>
+			<tr>
+			{% for column in columns %}
+				<th>{{ column }}</th>
+			{% endfor %}
+			</tr>
+		</thead>
+	</table>
+
+	<table class="table-items" id="table-items-total"
+		data-url="{% url admin-json item_type %}" data-server-side="true"
+		data-content="{{ item_type }}">
+		<thead>
+			<tr>
+			{% for column in columns %}
+				<th>{{ column }}</th>
+			{% endfor %}
+			</tr>
+		</thead>
+	</table>
+	{% block table-footer %}
+		{% include "admin/table_footer.html" %}
+	{% endblock %}
+</div>
+<div class="hidden massive-pull">
+	<table class="table total-list" id="total-list">
+		<thead>
+			<tr>
+			{% for column in columns %}
+				<th>{{ column }}</th>
+			{% endfor %}
+			</tr>
+		</thead>
+	</table>
+</div>

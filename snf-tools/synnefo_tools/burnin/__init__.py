@@ -1,35 +1,17 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 Burnin: functional tests for Synnefo
@@ -47,6 +29,8 @@ from synnefo_tools.burnin.images_tests import \
 from synnefo_tools.burnin.pithos_tests import PithosTestSuite
 from synnefo_tools.burnin.server_tests import ServerTestSuite
 from synnefo_tools.burnin.network_tests import NetworkTestSuite
+from synnefo_tools.burnin.projects_tests import QuotasTestSuite
+from synnefo_tools.burnin.snapshots import SnapshotsTestSuite
 from synnefo_tools.burnin.stale_tests import \
     StaleServersTestSuite, StaleFloatingIPsTestSuite, StaleNetworksTestSuite
 
@@ -60,6 +44,8 @@ TESTSUITES = [
     PithosTestSuite,
     ServerTestSuite,
     NetworkTestSuite,
+    QuotasTestSuite,
+    SnapshotsTestSuite
 ]
 TSUITES_NAMES = [tsuite.__name__ for tsuite in TESTSUITES]
 
@@ -92,8 +78,7 @@ def parse_arguments(args):
     kwargs["description"] = \
         "%prog runs a number of test scenarios on a Synnefo deployment."
 
-    # Used * or ** magic. pylint: disable-msg=W0142
-    parser = optparse.OptionParser(**kwargs)
+    parser = optparse.OptionParser(**kwargs)  # pylint: disable=star-args
     parser.disable_interspersed_args()
 
     parser.add_option(
@@ -104,6 +89,10 @@ def parse_arguments(args):
         "--token", action="store",
         type="string", default=None, dest="token",
         help="The token to use for authentication to the API")
+    parser.add_option(
+        "--ignore-ssl", "-k", action="store_true",
+        default=None, dest="ignore_ssl",
+        help="Don't verify SSL certificates")
     parser.add_option(
         "--failfast", action="store_true",
         default=False, dest="failfast",
@@ -144,7 +133,7 @@ def parse_arguments(args):
         "--system-user", action="store",
         type="string", default=None, dest="system_user",
         help="Owner of system images (typed option in the form of "
-             "\"name:user_name\" or \"id:uuuid\")")
+             "\"name:user_name\" or \"id:uuid\")")
     parser.add_option(
         "--show-stale", action="store_true",
         default=False, dest="show_stale",
@@ -194,6 +183,21 @@ def parse_arguments(args):
         "--temp-directory", action="store",
         default="/tmp/", dest="temp_directory",
         help="Directory to use for saving temporary files")
+    parser.add_option(
+        "--obj-upload-num", action="store",
+        type="int", default=2, dest="obj_upload_num",
+        help="Set the number of objects to massively be uploaded "
+             "(default: 2)")
+    parser.add_option(
+        "--obj-upload-min-size", action="store",
+        type="int", default=10 * common.MB, dest="obj_upload_min_size",
+        help="Set the min size of the object to massively be uploaded "
+             "(default: 10MB)")
+    parser.add_option(
+        "--obj-upload-max-size", action="store",
+        type="int", default=20 * common.MB, dest="obj_upload_max_size",
+        help="Set the max size of the objects to massively be uploaded "
+             "(default: 20MB)")
 
     (opts, args) = parser.parse_args(args)
 

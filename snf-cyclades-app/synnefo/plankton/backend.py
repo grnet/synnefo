@@ -1,36 +1,17 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
-
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 The Plankton attributes are the following:
@@ -46,25 +27,31 @@ The Plankton attributes are the following:
   - owner: the file's account
   - properties: stored as user meta prefixed with PROPERTY_PREFIX
   - size: the 'bytes' meta
-  - status: stored as a system meta
   - store: is always 'pithos'
   - updated_at: the 'modified' meta
 """
 
 import json
-import warnings
 import logging
 import os
 
 from time import time, gmtime, strftime
 from functools import wraps
 from operator import itemgetter
+from collections import namedtuple
+from copy import deepcopy
 
+from urllib import quote, unquote
 from django.conf import settings
 from django.utils import importlib
-from pithos.backends.base import NotAllowedError, VersionNotExists
-from synnefo.util.text import uenc
+from django.utils.encoding import smart_unicode, smart_str
+from pithos.backends.base import (NotAllowedError, VersionNotExists,
+                                  QuotaError, LimitExceeded,
+                                  MAP_AVAILABLE, MAP_UNAVAILABLE, MAP_ERROR)
+from pithos.backends.util import PithosBackendPool
+from snf_django.lib.api import faults
 
+Location = namedtuple("ObjectLocation", ["account", "container", "path"])
 
 logger = logging.getLogger(__name__)
 
@@ -74,360 +61,341 @@ PLANKTON_PREFIX = 'plankton:'
 PROPERTY_PREFIX = 'property:'
 
 PLANKTON_META = ('container_format', 'disk_format', 'name',
-                 'status', 'created_at')
+                 'status', 'created_at', 'volume_id', 'description')
+
+SNAPSHOTS_CONTAINER = "snapshots"
+SNAPSHOTS_TYPE = "application/octet-stream"
 
 MAX_META_KEY_LENGTH = 128 - len(PLANKTON_DOMAIN) - len(PROPERTY_PREFIX)
 MAX_META_VALUE_LENGTH = 256
 
-from pithos.backends.util import PithosBackendPool
-_pithos_backend_pool = \
-    PithosBackendPool(
-        settings.PITHOS_BACKEND_POOL_SIZE,
-        astakos_auth_url=settings.ASTAKOS_AUTH_URL,
-        service_token=settings.CYCLADES_SERVICE_TOKEN,
-        astakosclient_poolsize=settings.CYCLADES_ASTAKOSCLIENT_POOLSIZE,
-        db_connection=settings.BACKEND_DB_CONNECTION,
-        block_path=settings.BACKEND_BLOCK_PATH)
+_pithos_backend_pool = None
 
 
 def get_pithos_backend():
+    global _pithos_backend_pool
+    if _pithos_backend_pool is None:
+        _pithos_backend_pool = PithosBackendPool(
+            settings.PITHOS_BACKEND_POOL_SIZE,
+            astakos_auth_url=settings.ASTAKOS_AUTH_URL,
+            service_token=settings.CYCLADES_SERVICE_TOKEN,
+            astakosclient_poolsize=settings.CYCLADES_ASTAKOSCLIENT_POOLSIZE,
+            db_connection=settings.BACKEND_DB_CONNECTION,
+            archipelago_conf_file=settings.PITHOS_BACKEND_ARCHIPELAGO_CONF,
+            xseg_pool_size=settings.PITHOS_BACKEND_XSEG_POOL_SIZE,
+            map_check_interval=settings.PITHOS_BACKEND_MAP_CHECK_INTERVAL,
+            resource_max_metadata=settings.PITHOS_RESOURCE_MAX_METADATA)
     return _pithos_backend_pool.pool_get()
-
-
-def create_url(account, container, name):
-    assert "/" not in account, "Invalid account"
-    assert "/" not in container, "Invalid container"
-    return "pithos://%s/%s/%s" % (account, container, name)
-
-
-def split_url(url):
-    """Returns (accout, container, object) from a url string"""
-    try:
-        assert(isinstance(url, basestring))
-        t = url.split('/', 4)
-        assert t[0] == "pithos:", "Invalid url"
-        assert len(t) == 5, "Invalid url"
-        return t[2:5]
-    except AssertionError:
-        raise InvalidLocation("Invalid location '%s" % url)
 
 
 def format_timestamp(t):
     return strftime('%Y-%m-%d %H:%M:%S', gmtime(t))
 
 
-def handle_backend_exceptions(func):
+def handle_pithos_backend(func):
     @wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except NotAllowedError:
-            raise Forbidden
-        except NameError:
-            raise ImageNotFound
-        except VersionNotExists:
-            raise ImageNotFound
-    return wrapper
-
-
-def commit_on_success(func):
     def wrapper(self, *args, **kwargs):
         backend = self.backend
         backend.pre_exec()
+        commit = False
         try:
             ret = func(self, *args, **kwargs)
-        except:
-            backend.post_exec(False)
-            raise
+        except NotAllowedError:
+            raise faults.Forbidden
+        except (NameError, VersionNotExists):
+            raise faults.ItemNotFound
+        except (AssertionError, ValueError):
+            raise faults.BadRequest
+        except QuotaError:
+            raise faults.OverLimit
+        except LimitExceeded, e:
+            raise faults.BadRequest(e.args[0])
         else:
-            backend.post_exec(True)
+            commit = True
+        finally:
+            backend.post_exec(commit)
         return ret
     return wrapper
 
 
-class ImageBackend(object):
+OBJECT_AVAILABLE = "AVAILABLE"
+OBJECT_UNAVAILABLE = "UNAVAILABLE"
+OBJECT_ERROR = "ERROR"
+OBJECT_DELETED = "DELETED"
+
+MAP_TO_OBJ_STATES = {
+    MAP_AVAILABLE: OBJECT_AVAILABLE,
+    MAP_UNAVAILABLE: OBJECT_UNAVAILABLE,
+    MAP_ERROR: OBJECT_ERROR
+}
+
+OBJ_TO_MAP_STATES = dict([(v, k) for k, v in MAP_TO_OBJ_STATES.items()])
+
+
+class PlanktonBackend(object):
     """A wrapper arround the pithos backend to simplify image handling."""
 
     def __init__(self, user):
         self.user = user
-
-        original_filters = warnings.filters
-        warnings.simplefilter('ignore')         # Suppress SQLAlchemy warnings
         self.backend = get_pithos_backend()
-        warnings.filters = original_filters     # Restore warnings
 
     def close(self):
         """Close PithosBackend(return to pool)"""
         self.backend.close()
 
-    @handle_backend_exceptions
-    @commit_on_success
-    def get_image(self, image_uuid):
-        """Retrieve information about an image."""
-        image_url = self._get_image_url(image_uuid)
-        return self._get_image(image_url)
+    def __enter__(self):
+        return self
 
-    def _get_image_url(self, image_uuid):
-        """Get the Pithos url that corresponds to an image UUID."""
-        account, container, name = self.backend.get_uuid(self.user, image_uuid)
-        return create_url(account, container, name)
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        self.backend = None
+        return False
 
-    def _get_image(self, image_url):
-        """Get information about an Image.
+    @handle_pithos_backend
+    def get_image(self, uuid, check_permissions=True):
+        return self._get_image(uuid, check_permissions=check_permissions)
 
-        Get all available information about an Image.
-        """
-        account, container, name = split_url(image_url)
-        try:
-            meta = self._get_meta(image_url)
-            meta["deleted"] = ""
-        except NameError:
-            versions = self.backend.list_versions(self.user, account,
-                                                  container, name)
-            if not versions:
-                raise Exception("Image without versions %s" % image_url)
-            # Object was deleted, use the latest version
-            version, timestamp = versions[-1]
-            meta = self._get_meta(image_url, version)
-            meta["deleted"] = timestamp
+    def _get_image(self, uuid, check_permissions=True):
+        location, metadata, permissions = \
+            self.get_pithos_object(uuid, check_permissions=check_permissions)
+        return image_to_dict(location, metadata, permissions)
 
-        # XXX: Check that an object is a plankton image! PithosBackend will
-        # return common metadata for an object, even if it has no metadata in
-        # plankton domain. All images must have a name, so we check if a file
-        # is an image by checking if they are having an image name.
-        if PLANKTON_PREFIX + 'name' not in meta:
-            raise ImageNotFound
+    @handle_pithos_backend
+    def add_property(self, uuid, key, value):
+        location, _m, _p = self.get_pithos_object(uuid)
+        properties = self._prefix_properties({key: value})
+        self._update_metadata(uuid, location, properties, replace=False)
 
-        permissions = self._get_permissions(image_url)
-        return image_to_dict(image_url, meta, permissions)
+    @handle_pithos_backend
+    def remove_property(self, uuid, key):
+        location, _m, _p = self.get_pithos_object(uuid)
+        # Use empty string to delete a property
+        properties = self._prefix_properties({key: ""})
+        self._update_metadata(uuid, location, properties, replace=False)
 
-    def _get_meta(self, image_url, version=None):
-        """Get object's metadata."""
-        account, container, name = split_url(image_url)
-        return self.backend.get_object_meta(self.user, account, container,
-                                            name, PLANKTON_DOMAIN, version)
+    @handle_pithos_backend
+    def update_properties(self, uuid, properties, replace=False):
+        location, _, _p = self.get_pithos_object(uuid)
+        properties = self._prefix_properties(properties)
+        self._update_metadata(uuid, location, properties, replace=replace)
 
-    def _update_meta(self, image_url, meta, replace=False):
-        """Update object's metadata."""
-        account, container, name = split_url(image_url)
+    @staticmethod
+    def _prefix_properties(properties):
+        """Add property prefix to properties."""
+        return dict([(PROPERTY_PREFIX + k, v) for k, v in properties.items()])
 
-        prefixed = [(PLANKTON_PREFIX + uenc(k), uenc(v))
-                    for k, v in meta.items()
-                    if k in PLANKTON_META or k.startswith(PROPERTY_PREFIX)]
-        prefixed = dict(prefixed)
+    @staticmethod
+    def _unprefix_properties(properties):
+        """Remove property prefix from properties."""
+        return dict([(k.replace(PROPERTY_PREFIX, "", 1), v)
+                     for k, v in properties.items()])
 
-        for k, v in prefixed.items():
-            if len(k) > 128:
-                raise InvalidMetadata('Metadata keys should be less than %s '
-                                      'characters' % MAX_META_KEY_LENGTH)
-            if len(v) > 256:
-                raise InvalidMetadata('Metadata values should be less than %s '
-                                      'characters.' % MAX_META_VALUE_LENGTH)
+    @staticmethod
+    def _prefix_metadata(metadata):
+        """Add plankton prefix to metadata."""
+        return dict([(PLANKTON_PREFIX + k, v) for k, v in metadata.items()])
 
-        self.backend.update_object_meta(self.user, account, container, name,
-                                        PLANKTON_DOMAIN, prefixed, replace)
-        logger.debug("User '%s' updated image '%s', meta: '%s'", self.user,
-                     image_url, prefixed)
+    @staticmethod
+    def _unprefix_metadata(metadata):
+        """Remove plankton prefix from metadata."""
+        return dict([(k.replace(PLANKTON_PREFIX, "", 1), v)
+                     for k, v in metadata.items()])
 
-    def _get_permissions(self, image_url):
-        """Get object's permissions."""
-        account, container, name = split_url(image_url)
-        _a, path, permissions = \
-            self.backend.get_object_permissions(self.user, account, container,
-                                                name)
+    @handle_pithos_backend
+    def update_metadata(self, uuid, metadata):
+        location, _m, permissions = self.get_pithos_object(uuid)
 
-        if path is None and permissions != {}:
-            logger.warning("Image '%s' got permissions '%s' from 'None' path.",
-                           image_url, permissions)
-            raise Exception("Database Inconsistency Error:"
-                            " Image '%s' got permissions from 'None' path." %
-                            image_url)
-
-        return permissions
-
-    def _update_permissions(self, image_url, permissions):
-        """Update object's permissions."""
-        account, container, name = split_url(image_url)
-        self.backend.update_object_permissions(self.user, account, container,
-                                               name, permissions)
-        logger.debug("User '%s' updated image '%s', permissions: '%s'",
-                     self.user, image_url, permissions)
-
-    @handle_backend_exceptions
-    @commit_on_success
-    def unregister(self, image_uuid):
-        """Unregister an image.
-
-        Unregister an image, by removing all metadata from the Pithos
-        file that exist in the PLANKTON_DOMAIN.
-
-        """
-        image_url = self._get_image_url(image_uuid)
-        self._get_image(image_url)  # Assert that it is an image
-        # Unregister the image by removing all metadata from domain
-        # 'PLANKTON_DOMAIN'
-        meta = {}
-        self._update_meta(image_url, meta, True)
-        logger.debug("User '%s' deleted image '%s'", self.user, image_url)
-
-    @handle_backend_exceptions
-    @commit_on_success
-    def add_user(self, image_uuid, add_user):
-        """Add a user as an image member.
-
-        Update read permissions of Pithos file, to include the specified user.
-
-        """
-        image_url = self._get_image_url(image_uuid)
-        self._get_image(image_url)  # Assert that it is an image
-        permissions = self._get_permissions(image_url)
-        read = set(permissions.get("read", []))
-        assert(isinstance(add_user, (str, unicode)))
-        read.add(add_user)
-        permissions["read"] = list(read)
-        self._update_permissions(image_url, permissions)
-
-    @handle_backend_exceptions
-    @commit_on_success
-    def remove_user(self, image_uuid, remove_user):
-        """Remove the user from image members.
-
-        Remove the specified user from the read permissions of the Pithos file.
-
-        """
-        image_url = self._get_image_url(image_uuid)
-        self._get_image(image_url)  # Assert that it is an image
-        permissions = self._get_permissions(image_url)
-        read = set(permissions.get("read", []))
-        assert(isinstance(remove_user, (str, unicode)))
-        try:
-            read.remove(remove_user)
-        except ValueError:
-            return  # TODO: User did not have access
-        permissions["read"] = list(read)
-        self._update_permissions(image_url, permissions)
-
-    @handle_backend_exceptions
-    @commit_on_success
-    def replace_users(self, image_uuid, replace_users):
-        """Replace image members.
-
-        Replace the read permissions of the Pithos files with the specified
-        users. If image is specified as public, we must preserve * permission.
-
-        """
-        image_url = self._get_image_url(image_uuid)
-        image = self._get_image(image_url)
-        permissions = self._get_permissions(image_url)
-        assert(isinstance(replace_users, list))
-        permissions["read"] = replace_users
-        if image.get("is_public", False):
-            permissions["read"].append("*")
-        self._update_permissions(image_url, permissions)
-
-    @handle_backend_exceptions
-    @commit_on_success
-    def list_users(self, image_uuid):
-        """List the image members.
-
-        List the image members, by listing all users that have read permission
-        to the corresponding Pithos file.
-
-        """
-        image_url = self._get_image_url(image_uuid)
-        self._get_image(image_url)  # Assert that it is an image
-        permissions = self._get_permissions(image_url)
-        return [user for user in permissions.get('read', []) if user != '*']
-
-    @handle_backend_exceptions
-    @commit_on_success
-    def update_metadata(self, image_uuid, metadata):
-        """Update Image metadata."""
-        image_url = self._get_image_url(image_uuid)
-        self._get_image(image_url)  # Assert that it is an image
-
-        # 'is_public' metadata is translated in proper file permissions
         is_public = metadata.pop("is_public", None)
         if is_public is not None:
-            permissions = self._get_permissions(image_url)
+            assert(isinstance(is_public, bool))
             read = set(permissions.get("read", []))
-            if is_public:
+            if is_public and "*" not in read:
                 read.add("*")
-            else:
+            elif not is_public and "*" in read:
                 read.discard("*")
             permissions["read"] = list(read)
-            self._update_permissions(image_url, permissions)
+            self._update_permissions(uuid, location, permissions)
 
-        # Extract the properties dictionary from metadata, and store each
-        # property as a separeted, prefixed metadata
-        properties = metadata.pop("properties", {})
-        meta = dict([(PROPERTY_PREFIX + k, v) for k, v in properties.items()])
-        # Also add the following metadata
-        meta.update(**metadata)
+        # Each property is stored as a separate prefixed metadata
+        meta = deepcopy(metadata)
+        properties = meta.pop("properties", {})
+        meta.update(self._prefix_properties(properties))
 
-        self._update_meta(image_url, meta)
-        image_url = self._get_image_url(image_uuid)
-        return self._get_image(image_url)
+        self._update_metadata(uuid, location, metadata=meta, replace=False)
 
-    @handle_backend_exceptions
-    @commit_on_success
+        return self._get_image(uuid)
+
+    def _update_metadata(self, uuid, location, metadata, replace=False):
+        prefixed = self._prefix_and_validate_metadata(metadata)
+
+        account, container, path = location
+        self.backend.update_object_meta(self.user, account, container, path,
+                                        PLANKTON_DOMAIN, prefixed, replace)
+        logger.debug("User '%s' updated image '%s', metadata: '%s'", self.user,
+                     uuid, prefixed)
+
+    def _prefix_and_validate_metadata(self, metadata):
+        _prefixed_metadata = self._prefix_metadata(metadata)
+        prefixed = {}
+        for k, v in _prefixed_metadata.items():
+            # Encode to UTF-8
+            k, v = smart_unicode(k), smart_unicode(v)
+            # Check the length of key/value
+            if len(k) > MAX_META_KEY_LENGTH:
+                raise faults.BadRequest('Metadata keys should be less than %s'
+                                        ' characters' % MAX_META_KEY_LENGTH)
+            if len(v) > MAX_META_VALUE_LENGTH:
+                raise faults.BadRequest('Metadata values should be less than'
+                                        ' %s characters.'
+                                        % MAX_META_VALUE_LENGTH)
+            prefixed[k] = v
+        return prefixed
+
+    def get_pithos_object(self, uuid, version=None, check_permissions=True,
+                          check_image=True):
+        """Get a Pithos object based on its UUID.
+
+        If 'version' is not specified, the latest non-deleted version of this
+        object will be retrieved.
+        If 'check_permissions' is set to False, the Pithos backend will not
+        check if the user has permissions to access this object.
+        Finally, the 'check_image' option is used to check whether the Pithos
+        object is an image or not.
+
+        """
+        if check_permissions:
+            user = self.user
+        else:
+            user = None
+
+        meta, permissions, path = self.backend.get_object_by_uuid(
+            uuid=uuid, version=version, domain=PLANKTON_DOMAIN,
+            user=user, check_permissions=check_permissions)
+        account, container, path = path.split("/", 2)
+        location = Location(account, container, path)
+
+        if check_image and PLANKTON_PREFIX + "name" not in meta:
+            # Check that object is an image by checking if it has an Image name
+            # in Plankton metadata
+            raise faults.ItemNotFound("Object '%s' does not exist." % uuid)
+
+        return location, meta, permissions
+
+    # Users and Permissions
+    @handle_pithos_backend
+    def add_user(self, uuid, user):
+        assert(isinstance(user, basestring))
+        location, _, permissions = self.get_pithos_object(uuid)
+        read = set(permissions.get("read", []))
+        if user not in read:
+            read.add(user)
+            permissions["read"] = list(read)
+            self._update_permissions(uuid, location, permissions)
+
+    @handle_pithos_backend
+    def remove_user(self, uuid, user):
+        assert(isinstance(user, basestring))
+        location, _, permissions = self.get_pithos_object(uuid)
+        read = set(permissions.get("read", []))
+        if user in read:
+            read.remove(user)
+            permissions["read"] = list(read)
+            self._update_permissions(uuid, location, permissions)
+
+    @handle_pithos_backend
+    def replace_users(self, uuid, users):
+        assert(isinstance(users, list))
+        location, _, permissions = self.get_pithos_object(uuid)
+        read = set(permissions.get("read", []))
+        if "*" in read:  # Retain public permissions
+            users.append("*")
+        permissions["read"] = list(users)
+        self._update_permissions(uuid, location, permissions)
+
+    @handle_pithos_backend
+    def list_users(self, uuid):
+        location, _, permissions = self.get_pithos_object(uuid)
+        return [user for user in permissions.get('read', []) if user != '*']
+
+    def _update_permissions(self, uuid, location, permissions):
+        account, container, path = location
+        self.backend.update_object_permissions(self.user, account, container,
+                                               path, permissions)
+        logger.debug("User '%s' updated image '%s' permissions: '%s'",
+                     self.user, uuid, permissions)
+
+    @handle_pithos_backend
     def register(self, name, image_url, metadata):
         # Validate that metadata are allowed
         if "id" in metadata:
-            raise ValueError("Passing an ID is not supported")
+            raise faults.BadRequest("Passing an ID is not supported")
         store = metadata.pop("store", "pithos")
         if store != "pithos":
-            raise ValueError("Invalid store '%s'. Only 'pithos' store is"
-                             "supported" % store)
+            raise faults.BadRequest("Invalid store '%s'. Only 'pithos' store"
+                                    " is supported" % store)
         disk_format = metadata.setdefault("disk_format",
                                           settings.DEFAULT_DISK_FORMAT)
         if disk_format not in settings.ALLOWED_DISK_FORMATS:
-            raise ValueError("Invalid disk format '%s'" % disk_format)
+            raise faults.BadRequest("Invalid disk format '%s'" % disk_format)
         container_format =\
             metadata.setdefault("container_format",
                                 settings.DEFAULT_CONTAINER_FORMAT)
         if container_format not in settings.ALLOWED_CONTAINER_FORMATS:
-            raise ValueError("Invalid container format '%s'" %
-                             container_format)
+            raise faults.BadRequest("Invalid container format '%s'" %
+                                    container_format)
 
-        # Validate that 'size' and 'checksum' are valid
-        account, container, object = split_url(image_url)
+        account, container, path = split_url(image_url)
+        location = Location(account, container, path)
+        meta = self.backend.get_object_meta(self.user, account, container,
+                                            path, PLANKTON_DOMAIN, None)
+        uuid = meta["uuid"]
 
-        meta = self._get_meta(image_url)
-
-        size = int(metadata.pop('size', meta['bytes']))
-        if size != meta['bytes']:
-            raise ValueError("Invalid size")
+        # Validate that 'size' and 'checksum'
+        size = metadata.pop('size', int(meta['bytes']))
+        if not isinstance(size, int) or int(size) != int(meta["bytes"]):
+            raise faults.BadRequest("Invalid 'size' field")
 
         checksum = metadata.pop('checksum', meta['hash'])
-        if checksum != meta['hash']:
-            raise ValueError("Invalid checksum")
+        if not isinstance(checksum, basestring) or checksum != meta['hash']:
+            raise faults.BadRequest("Invalid checksum field")
 
-        # Fix permissions
-        is_public = metadata.pop('is_public', False)
-        if is_public:
-            permissions = {'read': ['*']}
-        else:
-            permissions = {'read': [self.user]}
+        users = [self.user]
+        public = metadata.pop("is_public", False)
+        if not isinstance(public, bool):
+            raise faults.BadRequest("Invalid value for 'is_public' metadata")
+        if public:
+            users.append("*")
+        permissions = {'read': users}
+        self._update_permissions(uuid, location, permissions)
 
-        # Extract the properties dictionary from metadata, and store each
-        # property as a separeted, prefixed metadata
-        properties = metadata.pop("properties", {})
-        meta = dict([(PROPERTY_PREFIX + k, v) for k, v in properties.items()])
-        # Add creation(register) timestamp as a metadata, to avoid extra
-        # queries when retrieving the list of images.
-        meta['created_at'] = time()
-        # Update rest metadata
-        meta.update(name=name, status='available', **metadata)
+        # Each property is stored as a separate prefixed metadata
+        meta = deepcopy(metadata)
+        properties = meta.pop("properties", {})
+        meta.update(self._prefix_properties(properties))
+        # Add extra metadata
+        meta["name"] = name
+        meta['created_at'] = str(time())
+        self._update_metadata(uuid, location, metadata=meta, replace=False)
 
-        # Do the actualy update in the Pithos backend
-        self._update_meta(image_url, meta)
-        self._update_permissions(image_url, permissions)
-        logger.debug("User '%s' created image '%s'('%s')", self.user,
-                     image_url, uenc(name))
-        return self._get_image(image_url)
+        logger.debug("User '%s' registered image '%s'('%s')", self.user,
+                     uuid, location)
+        return self._get_image(uuid)
 
-    def _list_images(self, user=None, filters=None, params=None):
+    @handle_pithos_backend
+    def unregister(self, uuid):
+        """Unregister an Image.
+
+        Unregister an Image by removing all the metadata in the Plankton
+        domain. The Pithos file is not deleted.
+
+        """
+        location, _m, _p = self.get_pithos_object(uuid)
+        self._update_metadata(uuid, location, metadata={}, replace=True)
+        logger.debug("User '%s' unregistered image '%s'", self.user, uuid)
+
+    # List functions
+    def _list_images(self, user=None, filters=None, params=None,
+                     check_permissions=True):
         filters = filters or {}
 
         # TODO: Use filters
@@ -441,92 +409,145 @@ class ImageBackend(object):
         #         size_range = (size_range[0], val)
         #     else:
         #         keys.append('%s = %s' % (PLANKTON_PREFIX + key, val))
-        _images = self.backend.get_domain_objects(domain=PLANKTON_DOMAIN,
-                                                  user=user)
+        _images = self.backend.get_domain_objects(
+            domain=PLANKTON_DOMAIN, user=user,
+            check_permissions=check_permissions)
 
         images = []
-        for (location, meta, permissions) in _images:
-            image_url = "pithos://" + location
-            meta["modified"] = meta["version_timestamp"]
-            images.append(image_to_dict(image_url, meta, permissions))
+        for (location, metadata, permissions) in _images:
+            location = Location(*location.split("/", 2))
+            images.append(image_to_dict(location, metadata, permissions))
 
         if params is None:
             params = {}
+
         key = itemgetter(params.get('sort_key', 'created_at'))
         reverse = params.get('sort_dir', 'desc') == 'desc'
         images.sort(key=key, reverse=reverse)
         return images
 
-    @commit_on_success
-    def list_images(self, filters=None, params=None):
+    @handle_pithos_backend
+    def list_images(self, filters=None, params=None, check_permissions=True):
         return self._list_images(user=self.user, filters=filters,
-                                 params=params)
+                                 params=params,
+                                 check_permissions=check_permissions)
 
-    @commit_on_success
+    @handle_pithos_backend
     def list_shared_images(self, member, filters=None, params=None):
         images = self._list_images(user=self.user, filters=filters,
                                    params=params)
         is_shared = lambda img: not img["is_public"] and img["owner"] == member
         return filter(is_shared, images)
 
-    @commit_on_success
+    @handle_pithos_backend
     def list_public_images(self, filters=None, params=None):
         images = self._list_images(user=None, filters=filters, params=params)
         return filter(lambda img: img["is_public"], images)
 
+    # Snapshots
+    @handle_pithos_backend
+    def register_snapshot(self, name, mapfile, size, metadata):
+        metadata = self._prefix_and_validate_metadata(metadata)
+        snapshot_id = self.backend.register_object_map(
+            user=self.user,
+            account=self.user,
+            container=SNAPSHOTS_CONTAINER,
+            name=name,
+            mapfile=mapfile,
+            size=size,
+            domain=PLANKTON_DOMAIN,
+            type=SNAPSHOTS_TYPE,
+            meta=metadata,
+            replace_meta=True,
+            permissions=None)
+        return snapshot_id
 
-class ImageBackendError(Exception):
-    pass
+    def list_snapshots(self, user=None, check_permissions=True):
+        _snapshots = self.list_images(check_permissions=check_permissions)
+        return [s for s in _snapshots if s["is_snapshot"]]
+
+    @handle_pithos_backend
+    def get_snapshot(self, snapshot_uuid, check_permissions=True):
+        snap = self._get_image(snapshot_uuid,
+                               check_permissions=check_permissions)
+        if snap.get("is_snapshot", False) is False:
+            raise faults.ItemNotFound("Snapshots '%s' does not exist" %
+                                      snapshot_uuid)
+        return snap
+
+    @handle_pithos_backend
+    def delete_snapshot(self, snapshot_uuid):
+        self.backend.delete_by_uuid(self.user, snapshot_uuid)
+
+    @handle_pithos_backend
+    def update_snapshot_state(self, snapshot_id, state):
+        state = OBJ_TO_MAP_STATES[state]
+        self.backend.update_object_status(snapshot_id, state=state)
 
 
-class ImageNotFound(ImageBackendError):
-    pass
+def create_url(account, container, name):
+    """Create a Pithos URL from the object info"""
+    assert "/" not in account, "Invalid account"
+    assert "/" not in container, "Invalid container"
+    account = quote(smart_str(account, encoding="utf-8"))
+    container = quote(smart_str(container, encoding="utf-8"))
+    name = quote(smart_str(name, encoding="utf-8"))
+    return "pithos://%s/%s/%s" % (account, container, name)
 
 
-class Forbidden(ImageBackendError):
-    pass
+def split_url(url):
+    """Get object info from the Pithos URL"""
+    assert(isinstance(url, basestring))
+    t = url.split('/', 4)
+    assert t[0] == "pithos:", "Invalid url"
+    assert len(t) == 5, "Invalid url"
+    account, container, name = t[2:5]
+    parse = lambda x: smart_unicode(unquote(x), encoding="utf-8")
+    return parse(account), parse(container), parse(name)
 
 
-class InvalidMetadata(ImageBackendError):
-    pass
-
-
-class InvalidLocation(ImageBackendError):
-    pass
-
-
-def image_to_dict(image_url, meta, permissions):
+def image_to_dict(location, metadata, permissions):
     """Render an image to a dictionary"""
-    account, container, name = split_url(image_url)
+    account, container, name = location
 
     image = {}
-    if PLANKTON_PREFIX + 'name' not in meta:
-        logger.warning("Image without Plankton name!! url %s meta %s",
-                       image_url, meta)
-        image[PLANKTON_PREFIX + "name"] = ""
-
-    image["id"] = meta["uuid"]
-    image["location"] = image_url
-    image["checksum"] = meta["hash"]
-    created = meta.get("created_at", meta["modified"])
-    image["created_at"] = format_timestamp(created)
-    deleted = meta.get("deleted", None)
-    image["deleted_at"] = format_timestamp(deleted) if deleted else ""
-    image["updated_at"] = format_timestamp(meta["modified"])
-    image["size"] = meta["bytes"]
-    image["store"] = "pithos"
+    image["id"] = metadata["uuid"]
+    image["mapfile"] = metadata["mapfile"]
+    image["checksum"] = metadata["hash"]
+    image["location"] = create_url(account, container, name)
+    image["size"] = metadata["bytes"]
     image['owner'] = account
+    image["store"] = u"pithos"
+    image["is_snapshot"] = metadata["is_snapshot"]
+    image["version"] = metadata["version"]
+
+    image["status"] = MAP_TO_OBJ_STATES.get(metadata.get("available"),
+                                            "UNKNOWN")
 
     # Permissions
-    image["is_public"] = "*" in permissions.get('read', [])
+    users = list(permissions.get("read", []))
+    image["is_public"] = "*" in users
+    image["users"] = [u for u in users if u != "*"]
+    # Timestamps
+    updated_at = metadata["version_timestamp"]
+    created_at = metadata.get("created_at", updated_at)
+    image["created_at"] = format_timestamp(created_at)
+    image["updated_at"] = format_timestamp(updated_at)
+    if metadata.get("deleted", False):
+        image["deleted_at"] = image["updated_at"]
+    else:
+        image["deleted_at"] = ""
+    # Ganeti ID and job ID to be used for snapshot reconciliation
+    image["backend_info"] = metadata.pop(PLANKTON_PREFIX + "backend_info",
+                                         None)
 
     properties = {}
-    for key, val in meta.items():
+    for key, val in metadata.items():
         # Get plankton properties
         if key.startswith(PLANKTON_PREFIX):
             # Remove plankton prefix
             key = key.replace(PLANKTON_PREFIX, "")
-            # Keep only those in plankton meta
+            # Keep only those in plankton metadata
             if key in PLANKTON_META:
                 if key != "created_at":
                     # created timestamp is return in 'created_at' field
@@ -534,6 +555,7 @@ def image_to_dict(image_url, meta, permissions):
             elif key.startswith(PROPERTY_PREFIX):
                 key = key.replace(PROPERTY_PREFIX, "")
                 properties[key] = val
+
     image["properties"] = properties
 
     return image
@@ -583,7 +605,7 @@ def get_backend():
     backend_module = getattr(settings, 'PLANKTON_BACKEND_MODULE', None)
     if not backend_module:
         # no setting set
-        return ImageBackend
+        return PlanktonBackend
 
     parts = backend_module.split(".")
     module = ".".join(parts[:-1])

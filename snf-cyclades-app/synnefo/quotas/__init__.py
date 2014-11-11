@@ -1,44 +1,30 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above copyright
-#      notice, this list of conditions and the following disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#  2. Redistributions in binary form must reproduce the above copyright
-#     notice, this list of conditions and the following disclaimer in the
-#     documentation and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and documentation are
-# those of the authors and should not be interpreted as representing official
-# policies, either expressed or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.utils import simplejson as json
-from django.db import transaction
+from synnefo.db import transaction
 
 from snf_django.lib.api import faults
 from synnefo.db.models import (QuotaHolderSerial, VirtualMachine, Network,
-                               IPAddress)
+                               IPAddress, Volume)
 
 from synnefo.settings import (CYCLADES_SERVICE_TOKEN as ASTAKOS_TOKEN,
                               ASTAKOS_AUTH_URL)
 from astakosclient import AstakosClient
 from astakosclient import errors
 
+from collections import defaultdict
 import logging
 log = logging.getLogger(__name__)
 
@@ -46,7 +32,6 @@ log = logging.getLogger(__name__)
 QUOTABLE_RESOURCES = [VirtualMachine, Network, IPAddress]
 
 
-DEFAULT_SOURCE = 'system'
 RESOURCES = [
     "cyclades.vm",
     "cyclades.total_cpu",
@@ -75,18 +60,38 @@ class Quotaholder(object):
 
 class AstakosClientExceptionHandler(object):
     def __init__(self, *args, **kwargs):
-        pass
+        self.user = kwargs.get("user")
+        self.projects = kwargs.get("projects")
 
     def __enter__(self):
         pass
+
+    def check_not_found(self):
+        if not self.user or not self.projects:
+            return
+        try:
+            qh = Quotaholder.get()
+            user_quota = qh.service_get_quotas(self.user)
+        except errors.AstakosClientException as e:
+            log.exception("Unexpected error %s" % e.message)
+            raise faults.InternalServerError("Unexpected error")
+
+        user_quota = user_quota[self.user]
+        for project in self.projects:
+            try:
+                user_quota[project]
+            except KeyError:
+                m = "User %s not in project %s" % (self.user, project)
+                raise faults.BadRequest(m)
 
     def __exit__(self, exc_type, value, traceback):
         if value is not None:  # exception
             if not isinstance(value, errors.AstakosClientException):
                 return False  # reraise
             if exc_type is errors.QuotaLimit:
-                msg, details = render_overlimit_exception(value)
-                raise faults.OverLimit(msg, details=details)
+                raise faults.OverLimit(value.message, details=value.details)
+            if exc_type is errors.NotFound:
+                self.check_not_found()
 
             log.exception("Unexpected error %s" % value.message)
             raise faults.InternalServerError("Unexpected error")
@@ -108,13 +113,27 @@ def issue_commission(resource, action, name="", force=False, auto_accept=False,
         return None
 
     user = resource.userid
-    source = DEFAULT_SOURCE
+    projects = set(p for (p, r) in provisions.keys())
 
     qh = Quotaholder.get()
-    if True:  # placeholder
-        with AstakosClientExceptionHandler():
-            serial = qh.issue_one_commission(user, source,
-                                             provisions, name=name,
+    if action == "REASSIGN":
+        try:
+            from_project = action_fields["from_project"]
+        except KeyError:
+            raise Exception("Missing project attribute.")
+
+        ext_provisions = {}
+        for (project, res), quantity in provisions.iteritems():
+            ext_provisions[(from_project, project, res)] = quantity
+        projects.add(from_project)
+        with AstakosClientExceptionHandler(user=user, projects=projects):
+            serial = qh.issue_resource_reassignment(user, ext_provisions,
+                                                    name=name,
+                                                    force=force,
+                                                    auto_accept=auto_accept)
+    else:
+        with AstakosClientExceptionHandler(user=user, projects=projects):
+            serial = qh.issue_one_commission(user, provisions, name=name,
                                              force=force,
                                              auto_accept=auto_accept)
 
@@ -128,34 +147,35 @@ def issue_commission(resource, action, name="", force=False, auto_accept=False,
         serial_info["resolved"] = True
 
     serial = QuotaHolderSerial.objects.create(**serial_info)
-
-    # Correlate the serial with the resource. Resolved serials are not
-    # attached to resources
-    if not auto_accept:
-        resource.serial = serial
-        resource.save()
-
     return serial
 
 
 def accept_resource_serial(resource, strict=True):
     serial = resource.serial
-    assert serial.pending or serial.accept, "%s can't be accepted" % serial
-    log.debug("Accepting serial %s of resource %s", serial, resource)
-    _resolve_commissions(accept=[serial.serial], strict=strict)
+    accept_serial(serial, strict=strict)
     resource.serial = None
     resource.save()
     return resource
+
+
+def accept_serial(serial, strict=True):
+    assert serial.pending or serial.accept, "%s can't be accepted" % serial
+    log.debug("Accepting serial %s", serial)
+    _resolve_commissions(accept=[serial.serial], strict=strict)
 
 
 def reject_resource_serial(resource, strict=True):
     serial = resource.serial
-    assert serial.pending or not serial.accept, "%s can't be rejected" % serial
-    log.debug("Rejecting serial %s of resource %s", serial, resource)
-    _resolve_commissions(reject=[serial.serial], strict=strict)
+    reject_serial(serial)
     resource.serial = None
     resource.save()
     return resource
+
+
+def reject_serial(serial, strict=True):
+    assert serial.pending or not serial.accept, "%s can't be rejected" % serial
+    log.debug("Rejecting serial %s", serial)
+    _resolve_commissions(reject=[serial.serial], strict=strict)
 
 
 def _resolve_commissions(accept=None, reject=None, strict=True):
@@ -229,33 +249,6 @@ def get_quotaholder_pending():
     return pending_serials
 
 
-def render_overlimit_exception(e):
-    resource_name = {"vm": "Virtual Machine",
-                     "cpu": "CPU",
-                     "ram": "RAM",
-                     "network.private": "Private Network",
-                     "floating_ip": "Floating IP address"}
-    details = json.loads(e.details)
-    data = details['overLimit']['data']
-    usage = data["usage"]
-    limit = data["limit"]
-    available = limit - usage
-    provision = data['provision']
-    requested = provision['quantity']
-    resource = provision['resource']
-    res = resource.replace("cyclades.", "", 1)
-    try:
-        resource = resource_name[res]
-    except KeyError:
-        resource = res
-
-    msg = "Resource Limit Exceeded for your account."
-    details = "Limit for resource '%s' exceeded for your account."\
-              " Available: %s, Requested: %s"\
-              % (resource, available, requested)
-    return msg, details
-
-
 @transaction.commit_on_success
 def issue_and_accept_commission(resource, action="BUILD", action_fields=None):
     """Issue and accept a commission to Quotaholder.
@@ -287,7 +280,7 @@ def issue_and_accept_commission(resource, action="BUILD", action_fields=None):
 
     try:
         # Accept the commission to quotaholder
-        accept_resource_serial(resource)
+        accept_serial(serial)
     except:
         # Do not crash if we can not accept commission to Quotaholder. Quotas
         # have already been reserved and the resource already exists in DB.
@@ -295,17 +288,30 @@ def issue_and_accept_commission(resource, action="BUILD", action_fields=None):
         log.exception("Failed to accept commission: %s", resource.serial)
 
 
+def get_volume_resources(volumes):
+    resources = defaultdict(lambda: 0)
+    for volume in volumes:
+        volproj = volume.project
+        resources[(volproj, "cyclades.disk")] += int(volume.size) << 30
+    return resources
+
+
 def get_commission_info(resource, action, action_fields=None):
+    project = resource.project
     if isinstance(resource, VirtualMachine):
+        resources = defaultdict(lambda: 0)
         flavor = resource.flavor
-        resources = {"cyclades.vm": 1,
-                     "cyclades.total_cpu": flavor.cpu,
-                     "cyclades.disk": 1073741824 * flavor.disk,
-                     "cyclades.total_ram": 1048576 * flavor.ram}
-        online_resources = {"cyclades.cpu": flavor.cpu,
-                            "cyclades.ram": 1048576 * flavor.ram}
+        offline_resources = {(project, "cyclades.vm"): 1,
+                             (project, "cyclades.total_cpu"): flavor.cpu,
+                             (project, "cyclades.total_ram"): flavor.ram << 20,
+                             }
+        online_resources = {(project, "cyclades.cpu"): flavor.cpu,
+                            (project, "cyclades.ram"): flavor.ram << 20}
         if action == "BUILD":
+            new_volumes = resource.volumes.filter(status="CREATING")
+            resources.update(offline_resources)
             resources.update(online_resources)
+            resources.update(get_volume_resources(new_volumes))
             return resources
         if action == "START":
             if resource.operstate == "STOPPED":
@@ -323,6 +329,15 @@ def get_commission_info(resource, action, action_fields=None):
             else:
                 return None
         elif action == "DESTROY":
+            volumes = resource.volumes.filter(deleted=False)
+            if resource.operstate not in ["BUILD", "ERROR"]:
+                # Count only the volumes that are in the 'IN_USE' status,
+                # because a pending commission exists for the other volumes.
+                # The pending commission will be rejected, but
+                # snf-dispatcher will finally fix the quotas.
+                volumes = volumes.filter(status="IN_USE")
+            resources.update(offline_resources)
+            resources.update(get_volume_resources(volumes))
             if resource.operstate in ["STARTED", "BUILD", "ERROR"]:
                 resources.update(online_resources)
             return reverse_quantities(resources)
@@ -330,26 +345,69 @@ def get_commission_info(resource, action, action_fields=None):
             beparams = action_fields.get("beparams")
             cpu = beparams.get("vcpus", flavor.cpu)
             ram = beparams.get("maxmem", flavor.ram)
-            return {"cyclades.total_cpu": cpu - flavor.cpu,
-                    "cyclades.total_ram": 1048576 * (ram - flavor.ram)}
+            return {(project, "cyclades.total_cpu"): cpu - flavor.cpu,
+                    (project, "cyclades.total_ram"): (ram - flavor.ram) << 20}
+        elif action == "REASSIGN":
+            resources.update(offline_resources)
+            system_volumes = resource.volumes.filter(index=0, deleted=False)
+            resources.update(get_volume_resources(system_volumes))
+            if resource.operstate in ["STARTED", "BUILD", "ERROR"]:
+                resources.update(online_resources)
+            return resources
+        elif action in ["ATTACH_VOLUME", "DETACH_VOLUME", "MODIFY_VOLUME"]:
+            if action_fields is not None:
+                volumes_changes = action_fields.get("disks")
+                if volumes_changes is not None:
+                    for action, db_volume, info in volumes_changes:
+                        project = db_volume.project
+                        resources[(project, "cyclades.disk")] += \
+                            get_volume_size_delta(action, db_volume, info)
+                return resources
         else:
-            #["CONNECT", "DISCONNECT", "SET_FIREWALL_PROFILE"]:
+            # ["CONNECT", "DISCONNECT", "SET_FIREWALL_PROFILE"]:
             return None
     elif isinstance(resource, Network):
-        resources = {"cyclades.network.private": 1}
+        resources = {(project, "cyclades.network.private"): 1}
         if action == "BUILD":
             return resources
         elif action == "DESTROY":
             return reverse_quantities(resources)
+        elif action == "REASSIGN":
+            return resources
     elif isinstance(resource, IPAddress):
         if resource.floating_ip:
-            resources = {"cyclades.floating_ip": 1}
+            resources = {(project, "cyclades.floating_ip"): 1}
             if action == "BUILD":
                 return resources
             elif action == "DESTROY":
                 return reverse_quantities(resources)
+            elif action == "REASSIGN":
+                return resources
         else:
             return None
+    elif isinstance(resource, Volume):
+        size = resource.size
+        resources = {(project, "cyclades.disk"): size << 30}
+        if resource.status == "CREATING" and action == "BUILD":
+            return resources
+        elif action == "DESTROY":
+            return reverse_quantities(resources)
+        elif action == "REASSIGN":
+            return resources
+        else:
+            return None
+
+
+def get_volume_size_delta(action, db_volume, info):
+    """Compute the change in the size of a volume"""
+    if action == "add":
+        return int(db_volume.size) << 30
+    elif action == "remove":
+        return -int(db_volume.size) << 30
+    elif action == "modify":
+        return info.get("size_delta", 0) << 30
+    else:
+        raise ValueError("Unknown volume action '%s'" % action)
 
 
 def reverse_quantities(resources):
@@ -377,6 +435,13 @@ def handle_resource_commission(resource, action, commission_name,
     serial = issue_commission(resource, action, name=commission_name,
                               force=force, auto_accept=auto_accept,
                               action_fields=action_fields)
+
+    # Correlate the serial with the resource. Resolved serials are not
+    # attached to resources
+    if not auto_accept:
+        resource.serial = serial
+        resource.save()
+
     return serial
 
 

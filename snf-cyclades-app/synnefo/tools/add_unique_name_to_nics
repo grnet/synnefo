@@ -29,7 +29,7 @@ setup_environ(settings)
 
 from django.db import close_connection
 from synnefo.db.models import Backend, pooled_rapi_client
-from synnefo.management.common import get_backend
+from synnefo.management.common import get_resource
 
 import logging
 logger = logging.getLogger("migrate_nics")
@@ -67,7 +67,7 @@ def main():
     options, args = parser.parse_args()
 
     if options.backend_id:
-        backends = [get_backend(options.backend_id)]
+        backends = [get_resource("backend", options.backend_id)]
     else:
         if Backend.objects.filter(offline=True).exists():
             msg = "Can not update intances. An 'offline' backend exists."

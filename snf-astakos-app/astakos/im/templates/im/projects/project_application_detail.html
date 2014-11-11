@@ -1,0 +1,90 @@
+{% extends "im/projects/project_detail.html" %}
+{% load filters %}
+
+{% block project.title %}
+{% if is_modification %}
+<a class="back-to-action" href="{% url project_detail project.uuid %}">&lt; back to project</a>
+{% endif %}
+{{ project|project_name_for_user:request.user }}
+{% if is_modification %}
+<span class="prefix"> MODIFICATION</span>
+{% endif %}
+{% endblock %}
+
+{% block object.actions %}
+{% include "im/projects/_project_application_detail_actions.html" %}
+{% endblock %}
+
+{% block object.status %}
+{% if project.is_initialized %}
+{{ object.state_display|upper}}
+{% else %}
+PROJECT APPLICATION {{ object.state_display|upper}}
+{% endif %}
+{% endblock %}
+
+
+{% block page.project_details %}
+{% if application.state == object.DENIED and application.response %}
+<dt>Reason denied</dt>
+<dd><em>{{ application.response }}</em></dd>
+{% endif %}
+<dt>Name</dt>
+<dd>
+{{ application|display_modification_param:"name" }}&nbsp;
+</dd>
+<dt>Homepage url</dt>
+<dd>
+{{ application|display_modification_param:"homepage" }}&nbsp;
+</dd>
+<dt>Description</dt>
+<dd>
+{{ application|display_modification_param:"description" }}&nbsp;
+</dd>
+
+{% if owner_mode or admin_mode and not is_modification %}
+<dt>Creation date</dt>
+<dd>{{project.creation_date|date:"d/m/Y"}}&nbsp;</dd>
+{% endif %}
+
+<dt>End Date</dt>
+<dd>{{ application|display_date_modification_param:"end_date,d/m/Y" }}&nbsp;</dd>
+<dt>Owner</dt>
+{% if admin_mode %}
+{% if owner_mode %}
+<dd>{{ application|display_modification_param:"owner,owner_owner" }}&nbsp;</dd>
+{% else %}
+<dd>{{ application|display_modification_param:"owner,owner_admin" }}&nbsp;</dd>
+{% endif %}
+{% else %}
+{% if owner_mode %}
+<dd>{{ application|display_modification_param:"owner,owner_owner" }}&nbsp;</dd>
+{% else %}
+<dd>{{ application|display_modification_param:"owner,owner" }}&nbsp;</dd>
+{% endif %}
+{% endif %}
+
+<dt>Applicant</dt>
+<dd>{{ application.applicant }}</dd>
+
+</dl>
+</div>
+<div class="full-dotted">
+<h3>MEMBERSHIP OPTIONS</h3>
+<dl class="alt-style">			    
+<dt>Member join policy</dt>
+<dd>{{ application|display_modification_param:"member_join_policy" }}&nbsp;</dd>
+<dt>Member leave policy</dt>
+<dd>{{ application|display_modification_param:"member_leave_policy" }}&nbsp;</dd>
+<dt>Total number of members</dt>
+<dd>{{ application|display_modification_param_diff:"limit_on_members_number" }}&nbsp;</dd>
+{% endblock %}
+
+{% block page.members %}{% endblock %}
+{% block page.resources_heading %}
+{% if is_modification %}
+MODIFIED RESOURCES
+{% else %}
+{{ block.super }}
+{% endif %}
+{% endblock %}

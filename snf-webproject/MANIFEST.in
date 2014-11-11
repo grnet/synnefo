@@ -1,7 +1,5 @@
 recursive-include synnefo *.json *.html *.json *.xml *.txt
-recursive-include synnefo/admin/static *
-recursive-include synnefo/ui/static *
-recursive-include docs/ *.rst
-recursive-include extras/ *
+recursive-include docs *.rst
+recursive-include extras *
 
-include distribute_setup.py
+include distribute_setup.py README.md

@@ -1,108 +1,119 @@
-# Copyright 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from optparse import make_option
-from django.db import transaction
+from astakos.im import transaction
 
-from astakos.im.models import AstakosUser
-from astakos.im.quotas import (
-    qh_sync_users_diffs,)
-from astakos.im.functions import get_user_by_uuid
+from astakos.im.models import Project
+from astakos.im import quotas
+from snf_django.management.utils import pprint_table
 from snf_django.management.commands import SynnefoCommand
-from astakos.im.management.commands import _common as common
 
 import logging
 logger = logging.getLogger(__name__)
 
 
+def differences(local_quotas, qh_quotas):
+    unsynced = []
+    unexpected = []
+    for holder, h_quotas in local_quotas.iteritems():
+        qh_h_quotas = qh_quotas.pop(holder, {})
+        for source, s_quotas in h_quotas.iteritems():
+            qh_s_quotas = qh_h_quotas.pop(source, {})
+            for resource, value in s_quotas.iteritems():
+                qh_value = qh_s_quotas.pop(resource, None)
+                if value != qh_value:
+                    data = (holder, source, resource, value, qh_value)
+                    unsynced.append(data)
+            unexpected += unexpected_resources(holder, source, qh_s_quotas)
+        unexpected += unexpected_sources(holder, qh_h_quotas)
+    unexpected += unexpected_holders(qh_quotas)
+    return unsynced, unexpected
+
+
+def unexpected_holders(qh_quotas):
+    unexpected = []
+    for holder, qh_h_quotas in qh_quotas.iteritems():
+        unexpected += unexpected_sources(holder, qh_h_quotas)
+    return unexpected
+
+
+def unexpected_sources(holder, qh_h_quotas):
+    unexpected = []
+    for source, qh_s_quotas in qh_h_quotas.iteritems():
+        unexpected += unexpected_resources(holder, source, qh_s_quotas)
+    return unexpected
+
+
+def unexpected_resources(holder, source, qh_s_quotas):
+    unexpected = []
+    for resource, qh_value in qh_s_quotas.iteritems():
+        data = (holder, source, resource, None, qh_value)
+        unexpected.append(data)
+    return unexpected
+
+
 class Command(SynnefoCommand):
-    help = "Check the integrity of user quota"
+    help = "Check the integrity of user and project quota"
 
     option_list = SynnefoCommand.option_list + (
-        make_option('--sync',
-                    action='store_true',
-                    dest='sync',
+        make_option("--include-unexpected-holdings",
                     default=False,
-                    help="Sync quotaholder"),
-        make_option('--user',
-                    metavar='<uuid or email>',
-                    dest='user',
-                    help="Check for a specified user"),
+                    action="store_true",
+                    help=("Also check for holdings that do not correspond "
+                          "to Astakos projects or user. Note that fixing such "
+                          "inconsistencies will permanently delete these "
+                          "holdings.")),
+        make_option("--fix", dest="fix",
+                    default=False,
+                    action="store_true",
+                    help="Synchronize Quotaholder with Astakos DB."),
     )
 
     @transaction.commit_on_success
     def handle(self, *args, **options):
-        sync = options['sync']
-        user_ident = options['user']
+        write = self.stderr.write
+        fix = options['fix']
+        check_unexpected = options["include_unexpected_holdings"]
 
-        if user_ident is not None:
-            users = [common.get_accepted_user(user_ident)]
-        else:
-            users = AstakosUser.objects.accepted()
+        projects = Project.objects.all()
+        local_proj_quotas, local_user_quotas = \
+            quotas.astakos_project_quotas(projects)
+        qh_proj_quotas, qh_user_quotas = \
+            quotas.get_projects_quota_limits()
+        unsynced, unexpected = differences(local_proj_quotas, qh_proj_quotas)
+        unsync_u, unexpect_u = differences(local_user_quotas, qh_user_quotas)
+        unsynced += unsync_u
+        unexpected += unexpect_u
 
-        qh_limits, diff_q = qh_sync_users_diffs(users, sync=sync)
-        if sync:
-            self.print_sync(diff_q)
-        else:
-            self.print_verify(qh_limits, diff_q)
+        headers = ("Holder", "Source", "Resource", "Astakos", "Quotaholder")
+        if not unsynced and (not check_unexpected or not unexpected):
+            write("Everything in sync.\n")
+            return
 
-    def print_sync(self, diff_quotas):
-        size = len(diff_quotas)
-        if size == 0:
-            self.stderr.write("No sync needed.\n")
-        else:
-            self.stderr.write("Synced %s users:\n" % size)
-            uuids = diff_quotas.keys()
-            users = AstakosUser.objects.filter(uuid__in=uuids)
-            for user in users:
-                self.stderr.write("%s (%s)\n" % (user.uuid, user.username))
+        printable = (unsynced if not check_unexpected
+                     else unsynced + unexpected)
+        pprint_table(self.stdout, printable, headers, title="Inconsistencies")
+        if fix:
+            to_sync = []
+            for holder, source, resource, value, qh_value in unsynced:
+                to_sync.append(((holder, source, resource), value))
+            quotas.qh.set_quota(to_sync)
 
-    def print_verify(self, qh_limits, diff_quotas):
-        for holder, local in diff_quotas.iteritems():
-            registered = qh_limits.pop(holder, None)
-            user = get_user_by_uuid(holder)
-            if registered is None:
-                self.stderr.write(
-                    "No quota for %s (%s) in quotaholder.\n" %
-                    (holder, user.username))
-            else:
-                self.stdout.write("Quota differ for %s (%s):\n" %
-                                  (holder, user.username))
-                self.stdout.write("Quota according to quotaholder:\n")
-                self.stdout.write("%s\n" % (registered))
-                self.stdout.write("Quota according to astakos:\n")
-                self.stdout.write("%s\n\n" % (local))
-
-        diffs = len(diff_quotas)
-        if diffs:
-            self.stderr.write("Quota differ for %d users.\n" % (diffs))
+            if check_unexpected:
+                to_del = []
+                for holder, source, resource, value, qh_value in unexpected:
+                    to_del.append((holder, source, resource))
+                quotas.qh.delete_quota(to_del)

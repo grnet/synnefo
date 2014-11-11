@@ -1,12 +1,21 @@
 [
     {
+        "model": "db.VolumeType",
+        "pk": 1,
+        "fields": {
+            "name": "drbd",
+            "disk_template": "drbd"
+        }
+    },
+
+    {
         "model": "db.Flavor",
         "pk": 1,
         "fields": {
             "cpu": 1,
             "ram": 1024,
             "disk": 20,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -17,7 +26,7 @@
             "cpu": 1,
             "ram": 1024,
             "disk": 30,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -28,7 +37,7 @@
             "cpu": 1,
             "ram": 1024,
             "disk": 40,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -39,7 +48,7 @@
             "cpu": 1,
             "ram": 2048,
             "disk": 20,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -50,7 +59,7 @@
             "cpu": 1,
             "ram": 2048,
             "disk": 30,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -61,7 +70,7 @@
             "cpu": 1,
             "ram": 2048,
             "disk": 40,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -72,7 +81,7 @@
             "cpu": 1,
             "ram": 4096,
             "disk": 20,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -83,7 +92,7 @@
             "cpu": 1,
             "ram": 4096,
             "disk": 30,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -94,7 +103,7 @@
             "cpu": 1,
             "ram": 4096,
             "disk": 40,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -105,7 +114,7 @@
             "cpu": 2,
             "ram": 1024,
             "disk": 20,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -116,7 +125,7 @@
             "cpu": 2,
             "ram": 1024,
             "disk": 30,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -127,7 +136,7 @@
             "cpu": 2,
             "ram": 1024,
             "disk": 40,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -138,7 +147,7 @@
             "cpu": 2,
             "ram": 2048,
             "disk": 20,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -149,7 +158,7 @@
             "cpu": 2,
             "ram": 2048,
             "disk": 30,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -160,7 +169,7 @@
             "cpu": 2,
             "ram": 2048,
             "disk": 40,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -171,7 +180,7 @@
             "cpu": 2,
             "ram": 4096,
             "disk": 20,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -182,7 +191,7 @@
             "cpu": 2,
             "ram": 4096,
             "disk": 30,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -193,7 +202,7 @@
             "cpu": 2,
             "ram": 4096,
             "disk": 40,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -204,7 +213,7 @@
             "cpu": 4,
             "ram": 1024,
             "disk": 20,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -215,7 +224,7 @@
             "cpu": 4,
             "ram": 1024,
             "disk": 30,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -226,7 +235,7 @@
             "cpu": 4,
             "ram": 1024,
             "disk": 40,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -237,7 +246,7 @@
             "cpu": 4,
             "ram": 2048,
             "disk": 20,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -248,7 +257,7 @@
             "cpu": 4,
             "ram": 2048,
             "disk": 30,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -259,7 +268,7 @@
             "cpu": 4,
             "ram": 2048,
             "disk": 40,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -270,7 +279,7 @@
             "cpu": 4,
             "ram": 4096,
             "disk": 20,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -281,7 +290,7 @@
             "cpu": 4,
             "ram": 4096,
             "disk": 30,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     },
 
@@ -292,7 +301,7 @@
             "cpu": 4,
             "ram": 4096,
             "disk": 40,
-            "disk_template": "drbd"
+            "volume_type": 1
         }
     }
 ]

@@ -6,10 +6,13 @@
   
   	<title>Error 403</title>
   	<meta name="viewport" content="width=device-width, initial-scale=1.0,minimum-scale=1.0, maximum-scale=1.0">
-    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,600,700&subset=latin,greek-ext,greek' rel='stylesheet' type='text/css'>
+    {% for url in BRANDING_FONTS_CSS_URLS %}
+    <link href="{{ url }}" rel="stylesheet" type="text/css" >
+    {% endfor %}
     <script src="{{ MEDIA_URL }}webproject/js/jquery-1.7.1.min.js"></script>
      
      {% if CLOUDBAR_ACTIVE %}
+        <script>window.CLOUDBAR_INCLUDE_FONTS = false;</script>
         {{ CLOUDBAR_CODE }}
     {% endif %}
     <style type="text/css">

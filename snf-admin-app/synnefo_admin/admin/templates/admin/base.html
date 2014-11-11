@@ -1,0 +1,125 @@
+{% load admin_tags %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <link rel="shortcut icon" href="{{ BRANDING_FAVICON_URL }}" />
+    <title>{{BRANDING_SERVICE_NAME}} admin</title>
+    <link href="{{ ADMIN_MEDIA_URL }}{% min_prefix %}css/icon-fonts.css" rel="stylesheet">
+    <!-- There is no minified version of jquery.dataTables.css in DataTables 1.10.0 -->
+    <link href="{{ ADMIN_MEDIA_URL }}css/jquery.dataTables.css" rel="stylesheet">
+
+    {% if request.COOKIES.theme == 'dark' %}
+    <link href="{{ ADMIN_MEDIA_URL }}{% min_prefix %}css/main.css" rel="stylesheet">
+    {% else  %}
+    <link href="{{ ADMIN_MEDIA_URL }}{% min_prefix %}css/main-light.css" rel="stylesheet">
+    {% endif %}
+    <!--
+    <link href="{{ ADMIN_MEDIA_URL }}css/ie7.css" rel="stylesheet"> -->
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,700italic,400,700,300,600' rel='stylesheet' type='text/css'>
+  </head>
+
+    {% block custom-css %}
+    {% endblock %}
+
+
+  <body>
+    <div class="wrapper">
+        {% block nav-bar %}
+        <div class="navbar navbar-default navbar-fixed-top">
+            <div class="container-fluid">
+                <!-- Brand and toggle get grouped for better mobile display -->
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse-1">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a href="{% url admin-home %}" title="Homepage" class="navbar-brand home-icon"><img src="{{ BRANDING_IMAGE_MEDIA_URL }}cloudbar_home.png" alt="S" /></a>
+                </div>
+
+                <div class="collapse navbar-collapse" id="navbar-collapse-1">
+                    <ul class="nav navbar-nav navbar-left">
+                        {% for view, view_dict in views.items %}
+                        <li
+                        {% if item_type == view or main_type == view %}class="active"{% endif %}
+                        ><a href="{% url admin-list view %}">{{ view_dict.label }}</a></li>
+                        {% endfor %}
+                        <li {% block nav-reports %}class="has-dropdown"{% endblock %}>
+                            <a href="#">Reports
+                            <span class="snf-angle-down arrow"></span></a>
+                            <ul class="dropdown-menu align-left">
+                                <li {% block nav-stats %}{%  endblock %}><a href="{% url admin-stats %}">Stats</a></li>
+                                <li {% block nav-charts %}{%  endblock %}><a href="{% url admin-charts %}">Charts</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="has-dropdown">
+                            <a href="" data-noclick="true">
+                                {{ user.access.user.name }}
+                                <span class="snf-angle-down arrow"></span>
+                            </a>
+                            <ul class="dropdown-menu align-right">
+                                <li>
+                                    <a href="{% url admin-logout %}" class="sign-out"><span class="snf-sign-out"></span>Sign Out</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+               </div> <!-- /collapse -->
+            </div> <!-- /container-fluid -->
+
+        </div> <!-- /nav-main -->
+        {% block subnav-bar %}
+        {% endblock subnav-bar %}
+
+
+        {% endblock nav-bar %}
+
+        {% if messages %}
+        <div class="messages">
+          {% for message in messages %}
+          <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+            <button class="close" data-dismiss="alert">×</button>
+            {{ message }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block main-area %}
+        <div class="container container-solid">
+          {% block content %}
+          {% endblock %}
+        </div>
+        {% endblock main-area %}
+
+        <div class="themes">
+          <a href="" id="toggle-theme" class="line-btn" title="Change theme. This will refresh the page."><span class="snf-moon-1"></span></a>
+        </div><!-- /themes -->
+
+ 
+        <div class="notify">
+          <a href="" class="close-notify close-notifications" title="Close notification area"><span class="snf-remove"></span></a>
+          <div class="container">
+              <p class="no-notifications">There are no notifications.</p>
+          </div>
+        </div><!-- /notify -->
+        
+   </div>
+        <script src="{{ MEDIA_URL }}admin/js/jquery.js"></script>
+        <script src="{{ MEDIA_URL }}admin/js/jquery.cookie.js"></script>
+        <script src="{{ MEDIA_URL }}admin/js/bootstrap.js"></script>
+        <script src="{{ MEDIA_URL }}admin/js/underscore.js"></script>
+
+        <script src="{{ MEDIA_URL }}admin/js/common.js"></script>
+
+        {% block custom-javascript %}
+        {% endblock %}
+
+
+  </body>
+</html>

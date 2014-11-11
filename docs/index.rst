@@ -3,26 +3,29 @@ Welcome to the Synnefo documentation
 
 .. image:: /images/synnefo-logo.png
 
-Synnefo is a complete open source cloud stack written in Python that provides
-Compute, Network, Image, Volume and Storage services, similar to the ones
-offered by AWS. Synnefo manages multiple `Ganeti
-<http://code.google.com/p/ganeti>`_ clusters at the backend for handling
+Synnefo is a complete open source IaaS cloud stack written in Python that
+provides Compute, Network, Image, Volume and Object Storage services, similar to
+the ones offered by AWS. Synnefo manages multiple `Ganeti
+<http://code.google.com/p/ganeti>`_ clusters at the backend for handling of
 low-level VM operations and uses `Archipelago
 <http://www.synnefo.org/docs/archipelago/latest/>`_ to unify cloud storage. To
 boost 3rd-party compatibility, Synnefo exposes the OpenStack APIs to users.
 
-Synnefo powers GRNET's `~okeanos public cloud service
+Synnefo came out of GRNET's `~okeanos public cloud service
 <http://okeanos.grnet.gr>`_ and you can try it out live at `demo.synnefo.org
 <http://demo.synnefo.org>`_.
 
-Synnefo has three main components providing the corresponding services:
+Synnefo has three main components which provide the corresponding services:
 
 .. toctree::
    :maxdepth: 1
 
-   Astakos: Identity/Account services <astakos>
-   Pithos: File/Object Storage service <pithos>
+   Astakos: Identity/Account/Quota services <astakos>
+   Pithos: Object Storage service <pithos>
    Cyclades: Compute/Network/Image/Volume services <cyclades>
+
+It :ref:`unifies storage resources <unify>` (Objects/Volumes/Images/Snapshots)
+using Archipelago as the common storage substrate for all services.
 
 This is an overview of the Synnefo services:
 
@@ -127,6 +130,17 @@ There are also the following tools:
 Design
 ======
 
+v0.16
+-----
+
+.. toctree::
+   :maxdepth: 1
+
+   Logging mechanism for Synnefo's management commands <design/logging-management-commands>
+   Resource-pool projects design <design/resource-pool-projects>
+   Volumes design <design/volumes>
+   Volume Snapshots design <design/volume-snapshots>
+
 v0.15
 -----
 
@@ -143,7 +157,7 @@ Drafts
 .. toctree::
    :maxdepth: 1
 
-   Resource-pool projects design <design/resource-pool-projects>
+   Multi-DB transactions in Django <design/multi-db-transactions>
 
 
 Contact

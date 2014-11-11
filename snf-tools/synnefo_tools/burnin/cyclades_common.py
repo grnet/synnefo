@@ -1,35 +1,17 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 Utility functions for Cyclades Tests
@@ -49,12 +31,38 @@ import subprocess
 
 from kamaki.clients import ClientError
 
-from synnefo_tools.burnin.common import BurninTests, MB, GB
+from synnefo_tools.burnin.common import BurninTests, MB, GB, QADD, QREMOVE, \
+    QDISK, QVM, QRAM, QIP, QCPU, QNET
 
 
-# Too many public methods. pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class CycladesTests(BurninTests):
     """Extends the BurninTests class for Cyclades"""
+    def _parse_images(self):
+        """Find images given to command line"""
+        if self.images is None:
+            self.info("No --images given. Will use the default %s",
+                      "^Debian Base$")
+            filters = ["name:^Debian Base$"]
+        else:
+            filters = self.images
+        avail_images = self._find_images(filters)
+        self.info("Found %s images to choose from", len(avail_images))
+        return avail_images
+
+    def _parse_flavors(self):
+        """Find flavors given to command line"""
+        flavors = self._get_list_of_flavors(detail=True)
+
+        if self.flavors is None:
+            self.info("No --flavors given. Will use all of them")
+            avail_flavors = flavors
+        else:
+            avail_flavors = self._find_flavors(self.flavors, flavors=flavors)
+
+        self.info("Found %s flavors to choose from", len(avail_flavors))
+        return avail_flavors
+
     def _try_until_timeout_expires(self, opmsg, check_fun):
         """Try to perform an action until timeout expires"""
         assert callable(check_fun), "Not a function"
@@ -90,6 +98,23 @@ class CycladesTests(BurninTests):
                    opmsg, int(time.time()) - start_time)
         self.fail("time out")
 
+    def _try_once(self, opmsg, check_fun, should_fail=False):
+        """Try to perform an action once"""
+        assert callable(check_fun), "Not a function"
+        ret_value = None
+        failed = False
+        try:
+            ret_value = check_fun()
+        except Retry:
+            failed = True
+
+        if failed and not should_fail:
+            self.error("Operation `%s' failed", opmsg)
+        elif not failed and should_fail:
+            self.error("Operation `%s' should have failed", opmsg)
+        else:
+            return ret_value
+
     def _get_list_of_servers(self, detail=False):
         """Get (detailed) list of servers"""
         if detail:
@@ -113,23 +138,27 @@ class CycladesTests(BurninTests):
                       server['name'], server['id'])
         return self.clients.cyclades.get_server_details(server['id'])
 
-    def _create_server(self, image, flavor, personality=None, network=False):
+    # pylint: disable=too-many-arguments
+    def _create_server(self, image, flavor, personality=None,
+                       network=False, project_id=None):
         """Create a new server"""
         if network:
-            fip = self._create_floating_ip()
+            fip = self._create_floating_ip(project_id=project_id)
             port = self._create_port(fip['floating_network_id'],
                                      floating_ip=fip)
             networks = [{'port': port['id']}]
         else:
             networks = None
 
-        servername = "%s for %s" % (self.run_id, image['name'])
+        name = image.get('name', image.get('display_name', ''))
+        servername = "%s for %s" % (self.run_id, name)
         self.info("Creating a server with name %s", servername)
-        self.info("Using image %s with id %s", image['name'], image['id'])
+        self.info("Using image %s with id %s", name, image['id'])
         self.info("Using flavor %s with id %s", flavor['name'], flavor['id'])
         server = self.clients.cyclades.create_server(
             servername, flavor['id'], image['id'],
-            personality=personality, networks=networks)
+            personality=personality, networks=networks,
+            project_id=project_id)
 
         self.info("Server id: %s", server['id'])
         self.info("Server password: %s", server['adminPass'])
@@ -138,12 +167,18 @@ class CycladesTests(BurninTests):
         self.assertEqual(server['flavor']['id'], flavor['id'])
         self.assertEqual(server['image']['id'], image['id'])
         self.assertEqual(server['status'], "BUILD")
+        if project_id is None:
+            project_id = self._get_uuid()
+        self.assertEqual(server['tenant_id'], project_id)
 
         # Verify quotas
-        self._check_quotas(disk=+int(flavor['disk'])*GB,
-                           vm=+1,
-                           ram=+int(flavor['ram'])*MB,
-                           cpu=+int(flavor['vcpus']))
+        changes = \
+            {project_id:
+                [(QDISK, QADD, flavor['disk'], GB),
+                 (QVM, QADD, 1, None),
+                 (QRAM, QADD, flavor['ram'], MB),
+                 (QCPU, QADD, flavor['vcpus'], None)]}
+        self._check_quotas(changes)
 
         return server
 
@@ -180,26 +215,25 @@ class CycladesTests(BurninTests):
             self.assertNotIn(srv['id'], new_servers)
 
         # Verify quotas
-        flavors = \
-            [self.clients.compute.get_flavor_details(srv['flavor']['id'])
-             for srv in servers]
-        self._verify_quotas_deleted(flavors)
+        self._verify_quotas_deleted(servers)
 
-    def _verify_quotas_deleted(self, flavors):
+    def _verify_quotas_deleted(self, servers):
         """Verify quotas for a number of deleted servers"""
-        used_disk = 0
-        used_vm = 0
-        used_ram = 0
-        used_cpu = 0
-        for flavor in flavors:
-            used_disk += int(flavor['disk']) * GB
-            used_vm += 1
-            used_ram += int(flavor['ram']) * MB
-            used_cpu += int(flavor['vcpus'])
-        self._check_quotas(disk=-used_disk,
-                           vm=-used_vm,
-                           ram=-used_ram,
-                           cpu=-used_cpu)
+        changes = dict()
+        for server in servers:
+            project = server['tenant_id']
+            if project not in changes:
+                changes[project] = []
+            flavor = \
+                self.clients.compute.get_flavor_details(server['flavor']['id'])
+            new_changes = [
+                (QDISK, QREMOVE, flavor['disk'], GB),
+                (QVM, QREMOVE, 1, None),
+                (QRAM, QREMOVE, flavor['ram'], MB),
+                (QCPU, QREMOVE, flavor['vcpus'], None)]
+            changes[project].extend(new_changes)
+
+        self._check_quotas(changes)
 
     def _get_connection_username(self, server):
         """Determine the username to use to connect to the server"""
@@ -242,6 +276,42 @@ class CycladesTests(BurninTests):
         opmsg = "Waiting for server \"%s\" with id %s to become %s"
         self.info(opmsg, server['name'], server['id'], new_status)
         opmsg = opmsg % (server['name'], server['id'], new_status)
+        self._try_until_timeout_expires(opmsg, check_fun)
+
+    def _insist_on_snapshot_transition(self, snapshot,
+                                       curr_statuses, new_status):
+        """Insist on snapshot transiting from curr_statuses to new_status"""
+        def check_fun():
+            """Check snapstho status"""
+            snap = \
+                self.clients.block_storage.get_snapshot_details(snapshot['id'])
+            if snap['status'] in curr_statuses:
+                raise Retry()
+            elif snap['status'] == new_status:
+                return
+            else:
+                msg = "Snapshot \"%s\" with id %s went to unexpected status %s"
+                self.error(msg, snapshot['display_name'],
+                           snapshot['id'], snap['status'])
+        opmsg = "Waiting for snapshot \"%s\" with id %s to become %s"
+        self.info(opmsg, snapshot['display_name'], snapshot['id'], new_status)
+        opmsg = opmsg % (snapshot['display_name'], snapshot['id'], new_status)
+        self._try_until_timeout_expires(opmsg, check_fun)
+
+    def _insist_on_snapshot_deletion(self, snapshot_id):
+        """Insist on snapshot deletion"""
+        def check_fun():
+            """Check snapshot details"""
+            try:
+                self.clients.block_storage.get_snapshot_details(snapshot_id)
+            except ClientError as err:
+                if err.status != 404:
+                    raise
+            else:
+                raise Retry()
+        opmsg = "Waiting for snapshot %s to be deleted"
+        self.info(opmsg, snapshot_id)
+        opmsg = opmsg % snapshot_id
         self._try_until_timeout_expires(opmsg, check_fun)
 
     def _insist_on_network_transition(self, network,
@@ -320,7 +390,7 @@ class CycladesTests(BurninTests):
                            "Can not get IPs from server attachments")
 
         for addr in addrs:
-            self.assertEquals(IPy.IP(addr).version(), version)
+            self.assertEqual(IPy.IP(addr).version(), version)
 
         if network is None:
             msg = "Server's public IPv%s is %s"
@@ -332,7 +402,7 @@ class CycladesTests(BurninTests):
                 self.info(msg, version, network['id'], addr)
         return addrs
 
-    def _insist_on_ping(self, ip_addr, version=4):
+    def _insist_on_ping(self, ip_addr, version=4, should_fail=False):
         """Test server responds to a single IPv4 of IPv6 ping"""
         def check_fun():
             """Ping to server"""
@@ -349,14 +419,17 @@ class CycladesTests(BurninTests):
         opmsg = "Sent IPv%s ping requests to %s"
         self.info(opmsg, version, ip_addr)
         opmsg = opmsg % (version, ip_addr)
-        self._try_until_timeout_expires(opmsg, check_fun)
+        if should_fail:
+            self._try_once(opmsg, check_fun, should_fail=True)
+        else:
+            self._try_until_timeout_expires(opmsg, check_fun)
 
     def _image_is(self, image, osfamily):
         """Return true if the image is of `osfamily'"""
         d_image = self.clients.cyclades.get_image_details(image['id'])
         return d_image['metadata']['osfamily'].lower().find(osfamily) >= 0
 
-    # Method could be a function. pylint: disable-msg=R0201
+    # pylint: disable=no-self-use
     def _ssh_execute(self, hostip, username, password, command):
         """Execute a command via ssh"""
         ssh = paramiko.SSHClient()
@@ -364,10 +437,8 @@ class CycladesTests(BurninTests):
         try:
             ssh.connect(hostip, username=username, password=password)
         except paramiko.SSHException as err:
-            if err.args[0] == "Error reading SSH protocol banner":
-                raise Retry()
-            else:
-                raise
+            self.warning("%s", err.message)
+            raise Retry()
         _, stdout, _ = ssh.exec_command(command)
         status = stdout.channel.recv_exit_status()
         output = stdout.readlines()
@@ -393,39 +464,54 @@ class CycladesTests(BurninTests):
         self.info("Server's hostname is %s", hostname)
         return hostname
 
-    # Too many arguments. pylint: disable-msg=R0913
+    # pylint: disable=too-many-arguments
     def _check_file_through_ssh(self, hostip, username, password,
                                 remotepath, content):
         """Fetch file from server and compare contents"""
-        self.info("Fetching file %s from remote server", remotepath)
-        transport = paramiko.Transport((hostip, 22))
-        transport.connect(username=username, password=password)
-        with tempfile.NamedTemporaryFile() as ftmp:
-            sftp = paramiko.SFTPClient.from_transport(transport)
-            sftp.get(remotepath, ftmp.name)
-            sftp.close()
-            transport.close()
-            self.info("Comparing file contents")
-            remote_content = base64.b64encode(ftmp.read())
-            self.assertEqual(content, remote_content)
+        def check_fun():
+            """Fetch file"""
+            try:
+                transport = paramiko.Transport((hostip, 22))
+                transport.connect(username=username, password=password)
+                with tempfile.NamedTemporaryFile() as ftmp:
+                    sftp = paramiko.SFTPClient.from_transport(transport)
+                    sftp.get(remotepath, ftmp.name)
+                    sftp.close()
+                    transport.close()
+                    self.info("Comparing file contents")
+                    remote_content = base64.b64encode(ftmp.read())
+                    self.assertEqual(content, remote_content)
+            except paramiko.SSHException as err:
+                self.warning("%s", err.message)
+                raise Retry()
+        opmsg = "Fetching file %s from remote server" % remotepath
+        self.info(opmsg)
+        self._try_until_timeout_expires(opmsg, check_fun)
 
     # ----------------------------------
     # Networks
-    def _create_network(self, cidr="10.0.1.0/28", dhcp=True):
+    def _create_network(self, cidr="10.0.1.0/28", dhcp=True,
+                        project_id=None):
         """Create a new private network"""
         name = self.run_id
         network = self.clients.network.create_network(
-            "MAC_FILTERED", name=name, shared=False)
+            "MAC_FILTERED", name=name, shared=False,
+            project_id=project_id)
         self.info("Network with id %s created", network['id'])
         subnet = self.clients.network.create_subnet(
             network['id'], cidr=cidr, enable_dhcp=dhcp)
         self.info("Subnet with id %s created", subnet['id'])
 
         # Verify quotas
-        self._check_quotas(network=+1)
+        if project_id is None:
+            project_id = self._get_uuid()
+        changes = \
+            {project_id: [(QNET, QADD, 1, None)]}
+        self._check_quotas(changes)
 
-        #Test if the right name is assigned
+        # Test if the right name is assigned
         self.assertEqual(network['name'], name)
+        self.assertEqual(network['tenant_id'], project_id)
 
         return network
 
@@ -450,7 +536,9 @@ class CycladesTests(BurninTests):
             self.assertNotIn(net['id'], new_networks)
 
         # Verify quotas
-        self._check_quotas(network=-len(networks))
+        changes = \
+            {self._get_uuid(): [(QNET, QREMOVE, len(networks), None)]}
+        self._check_quotas(changes)
 
     def _get_public_networks(self, networks=None):
         """Get the public networks"""
@@ -466,14 +554,15 @@ class CycladesTests(BurninTests):
                             "Could not find a public network to use")
         return public_networks
 
-    def _create_floating_ip(self):
+    def _create_floating_ip(self, project_id=None):
         """Create a new floating ip"""
         pub_nets = self._get_public_networks()
         for pub_net in pub_nets:
             self.info("Creating a new floating ip for network with id %s",
                       pub_net['id'])
             try:
-                fip = self.clients.network.create_floatingip(pub_net['id'])
+                fip = self.clients.network.create_floatingip(
+                    pub_net['id'], project_id=project_id)
             except ClientError as err:
                 self.warning("%s: %s", err.message, err.details)
                 continue
@@ -481,8 +570,13 @@ class CycladesTests(BurninTests):
             fips = self.clients.network.list_floatingips()
             fips = [f['id'] for f in fips]
             self.assertIn(fip['id'], fips)
+
             # Verify quotas
-            self._check_quotas(ip=+1)
+            if project_id is None:
+                project_id = self._get_uuid()
+            changes = \
+                {project_id: [(QIP, QADD, 1, None)]}
+            self._check_quotas(changes)
             # Check that IP is IPv4
             self.assertEquals(IPy.IP(fip['floating_ip_address']).version(), 4)
 
@@ -603,8 +697,51 @@ class CycladesTests(BurninTests):
         list_ips = [f['id'] for f in self.clients.network.list_floatingips()]
         for fip in fips:
             self.assertNotIn(fip['id'], list_ips)
+
         # Verify quotas
-        self._check_quotas(ip=-len(fips))
+        changes = dict()
+        for fip in fips:
+            project = fip['tenant_id']
+            if project not in changes:
+                changes[project] = []
+            changes[project].append((QIP, QREMOVE, 1, None))
+        self._check_quotas(changes)
+
+    def _find_project(self, flavors, projects=None):
+        """Return a pair of flavor, project that we can use"""
+        if projects is None:
+            projects = self.quotas.keys()
+
+        # XXX: Well there seems to be no easy way to find how many resources
+        # we have left in a project (we have to substract usage from limit,
+        # check both per_user and project quotas, blah, blah). For now
+        # just return the first flavor with the first project and lets hope
+        # that it fits.
+        return (flavors[0], projects[0])
+
+        # # Get only the quotas for the given 'projects'
+        # quotas = dict()
+        # for prj, qts in self.quotas.items():
+        #     if prj in projects:
+        #         quotas[prj] = qts
+        #
+        # results = []
+        # for flv in flavors:
+        #     for prj, qts in quotas.items():
+        #         self.debug("Testing flavor %s, project %s", flv['name'], prj)
+        #         condition = \
+        #             (flv['ram'] <= qts['cyclades.ram']['usage'] and
+        #              flv['vcpus'] <= qts['cyclades.cpu']['usage'] and
+        #              flv['disk'] <= qts['cyclades.disk']['usage'] and
+        #              qts['cyclades.vm']['usage'] >= 1)
+        #         if condition:
+        #             results.append((flv, prj))
+        #
+        # if not results:
+        #     msg = "Couldn't find a suitable flavor to use for current qutoas"
+        #     self.error(msg)
+        #
+        # return random.choice(results)
 
 
 class Retry(Exception):

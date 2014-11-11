@@ -49,7 +49,8 @@ Quotas
 
 The system specifies user quotas for each available resource. Resources
 can be allocated from various sources. By default, users get resources
-from a single source, called ``system``. For each combination of user,
+from their user-specific `system projects', which are identified by the same
+uuid as the users. For each combination of user,
 source, and resource, the quota system keeps track of the maximum allowed
 value (limit) and the current actual usage. The former is controlled by
 the policy defined in Astakos; the latter is updated by the services that
@@ -69,10 +70,16 @@ X-Auth-Token          User authentication token
 
 A user can query their resources with this call. It returns in a nested
 dictionary structure, for each source and resource, three indicators.
-``limit`` and ``usage`` are as explained above. ``pending`` is related to the
-commissioning system explained below. Roughly, if ``pending`` is non zero,
-this indicates that some resource allocation process has started but not
-finished properly.
+``limit`` and ``usage`` are as explained above. ``pending`` is related to
+the commissioning system explained below. Roughly, if ``pending`` is non
+zero, this indicates that some resource allocation process has started but
+not finished properly. The project-level indicators ``project_limit``,
+``project_usage`` and ``project_pending`` are included in the resource
+dictionaries, too. The project quota must be taken into account in order to
+compute the `effective` quota limit::
+
+  taken_by_others = project_usage - usage
+  effective_limit = min(limit, project_limit - taken_by_others)
 
 **Response Codes**:
 
@@ -89,29 +96,41 @@ Status  Description
 .. code-block:: javascript
 
   {
-      "system": {
+      "system_project_id": {
           "cyclades.ram": {
               "usage": 536870912,
               "limit": 1073741824,
-              "pending": 0
+              "pending": 0,
+              "project_usage": 536870912,
+              "project_limit": 1073741824,
+              "project_pending": 0
 
           },
           "cyclades.vm": {
               "usage": 2,
               "limit": 2,
-              "pending": 0
+              "pending": 0,
+              "project_usage": 2,
+              "project_limit: 2,
+              "project_pending": 0
           }
       },
       "project:1": {
           "cyclades.ram": {
               "usage": 2147483648,
               "limit": 2147483648,
-              "pending": 0
+              "pending": 0,
+              "project_usage": 4147483648,
+              "project_limit": 14147483648,
+              "project_pending": 0
           },
           "cyclades.vm": {
               "usage": 2,
               "limit": 5,
-              "pending": 1
+              "pending": 1,
+              "project_usage": 4,
+              "project_limit": 10,
+              "project_pending": 1
           }
       }
   }
@@ -127,9 +146,9 @@ Request Header Name   Value
 X-Auth-Token          Service authentication token
 ====================  ============================
 
-A service can query the quotas for all resources related to it. By default,
-it returns the quotas for all users, in the format explained above, indexed
-by the user identifier (UUID).
+A service can query the user quotas for all resources related to it. By
+default, it returns the quotas for all users, in the format explained above,
+indexed by the user identifier (UUID).
 
 Use the GET parameter ``?user=<uuid>`` to query for a single user.
 
@@ -150,29 +169,109 @@ Status  Description
 
   {
       "1a6165d0-5020-4b6d-a4ad-83476632a584": {
-          "system": {
+          "system_project_id": {
               "cyclades.ram": {
                   "usage": 536870912,
                   "limit": 1073741824,
-                  "pending": 0
+                  "pending": 0,
+                  "project_usage": 536870912,
+                  "project_limit": 1073741824,
+                  "project_pending": 0
               },
               "cyclades.vm": {
                   "usage": 2,
                   "limit": 2,
-                  "pending": 0
+                  "pending": 0,
+                  "project_usage": 2,
+                  "project_limit: 2,
+                  "project_pending": 0
               }
           },
           "project:1": {
               "cyclades.ram": {
                   "usage": 2147483648,
                   "limit": 2147483648,
-                  "pending": 0
+                  "pending": 0,
+                  "project_usage": 4147483648,
+                  "project_limit": 14147483648,
+                  "project_pending": 0
               },
               "cyclades.vm": {
                   "usage": 2,
                   "limit": 5,
-                  "pending": 1
+                  "pending": 1,
+                  "project_usage": 4,
+                  "project_limit": 10,
+                  "project_pending": 1
               }
+          }
+      }
+  }
+
+**GET** /account/v1.0/service_project_quotas
+
+====================  ============================
+Request Header Name   Value
+====================  ============================
+X-Auth-Token          Service authentication token
+====================  ============================
+
+A service can also query the project quotas for all resources related to it.
+By default, it returns the quotas for all projects, in the format explained
+above, indexed by the project identifier (UUID).
+
+Use the GET parameter ``?project=<uuid>`` to query for a single project.
+
+
+**Response Codes**:
+
+======  ============================
+Status  Description
+======  ============================
+200     Success
+401     Unauthorized (Missing token)
+500     Internal Server Error
+======  ============================
+
+**Example Successful Response**:
+
+.. code-block:: javascript
+
+  {
+      "system_project_id": {
+          "cyclades.ram": {
+              "project_usage": 536870912,
+              "project_limit": 1073741824,
+              "project_pending": 0
+          },
+          "cyclades.vm": {
+              "project_usage": 2,
+              "project_limit: 2,
+              "project_pending": 0
+          }
+      },
+      "system_project2_id": {
+          "cyclades.ram": {
+              "project_usage": 0,
+              "project_limit": 1073741824,
+              "project_pending": 0
+          },
+          "cyclades.vm": {
+              "project_usage": 0,
+              "project_limit: 2,
+              "project_pending": 0
+          }
+      },
+      "project:1": {
+          "cyclades.ram": {
+              "project_usage": 4147483648,
+              "project_limit": 14147483648,
+              "project_pending": 0
+          },
+          "cyclades.vm": {
+              "project_usage": 4,
+              "project_limit": 10,
+              "project_pending": 1
           }
       }
   }
@@ -203,9 +302,13 @@ Request Header Name   Value
 X-Auth-Token          Service authentication token
 ====================  ============================
 
-A service issues a commission by providing a list of *provisions*, i.e.
-the intended allocation for a particular user (in general, ``holder``),
-``source``, and ``resource`` combination.
+A service issues a commission by providing a list of *provisions*, i.e. the
+intended allocation for a particular user and project (in general,
+``holder``), ``source``, and ``resource`` combination. Users must be
+specified with ``user:<uuid>`` and projects with ``project:<uuid>``. When
+charging a user/project pair for a given resource, the intended use is to
+also charge the project separately (by including a provision with the
+project as holder and ``null`` as source), as in the example below.
 
 The request body consists of a JSON dict (as in the example below), which
 apart from the provisions list can also contain the following optional
@@ -225,14 +328,26 @@ fields:
       "name": "an optional description",
       "provisions": [
           {
-              "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",
-              "source": "system",
+              "holder": "user:c02f315b-7d84-45bc-a383-552a3f97d2ad",
+              "source": "project:c02f315b-7d84-45bc-a383-552a3f97d2ad",
               "resource": "cyclades.vm",
               "quantity": 1
           },
           {
-              "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",
-              "source": "system",
+              "holder": "project:c02f315b-7d84-45bc-a383-552a3f97d2ad",
+              "source": null,
+              "resource": "cyclades.vm",
+              "quantity": 1
+          },
+          {
+              "holder": "user:c02f315b-7d84-45bc-a383-552a3f97d2ad",
+              "source": "project:c02f315b-7d84-45bc-a383-552a3f97d2ad",
+              "resource": "cyclades.ram",
+              "quantity": 536870912
+          },
+          {
+              "holder": "project:c02f315b-7d84-45bc-a383-552a3f97d2ad",
+              "source": null,
               "resource": "cyclades.ram",
               "quantity": 536870912
           }
@@ -279,8 +394,8 @@ also included.
           "code": 413,
           "data": {
               "provision": {
-                  "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",
-                  "source": "system",
+                  "holder": "user:c02f315b-7d84-45bc-a383-552a3f97d2ad",
+                  "source": "project:c02f315b-7d84-45bc-a383-552a3f97d2ad",
                   "resource": "cyclades.vm",
                   "quantity": 1
               },
@@ -357,14 +472,26 @@ Status  Description
       "name": "an optional description",
       "provisions": [
           {
-              "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",
-              "source": "system",
+              "holder": "user:c02f315b-7d84-45bc-a383-552a3f97d2ad",
+              "source": "project:c02f315b-7d84-45bc-a383-552a3f97d2ad",
               "resource": "cyclades.vm",
               "quantity": 1
           },
           {
-              "holder": "c02f315b-7d84-45bc-a383-552a3f97d2ad",
-              "source": "system",
+              "holder": "project:c02f315b-7d84-45bc-a383-552a3f97d2ad",
+              "source": null,
+              "resource": "cyclades.vm",
+              "quantity": 1
+          },
+          {
+              "holder": "user:c02f315b-7d84-45bc-a383-552a3f97d2ad",
+              "source": "project:c02f315b-7d84-45bc-a383-552a3f97d2ad",
+              "resource": "cyclades.ram",
+              "quantity": 536870912
+          },
+          {
+              "holder": "project:c02f315b-7d84-45bc-a383-552a3f97d2ad",
+              "source": null,
               "resource": "cyclades.ram",
               "quantity": 536870912
           }

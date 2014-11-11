@@ -1,67 +1,69 @@
-# Copyright 2013-2014 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 Common utils for burnin tests
 
 """
 
+import hashlib
 import re
 import shutil
 import unittest
 import datetime
 import tempfile
 import traceback
+from tempfile import NamedTemporaryFile
+from os import urandom
+from string import ascii_letters
+from StringIO import StringIO
+from binascii import hexlify
 
+from kamaki.cli import config as kamaki_config
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
-from kamaki.clients.astakos import AstakosClient, parse_endpoints
+from kamaki.clients.astakos import AstakosClient
 from kamaki.clients.compute import ComputeClient
 from kamaki.clients.pithos import PithosClient
 from kamaki.clients.image import ImageClient
+from kamaki.clients.utils import https
+from kamaki.clients.blockstorage import BlockStorageClient
 
 from synnefo_tools.burnin.logger import Log
 
 
 # --------------------------------------------------------------------
 # Global variables
-logger = None   # Invalid constant name. pylint: disable-msg=C0103
-success = None  # Invalid constant name. pylint: disable-msg=C0103
+logger = None   # pylint: disable=invalid-name
+success = None  # pylint: disable=invalid-name
 SNF_TEST_PREFIX = "snf-test-"
 CONNECTION_RETRY_LIMIT = 2
 SYSTEM_USERS = ["images@okeanos.grnet.gr", "images@demo.synnefo.org"]
 KB = 2**10
 MB = 2**20
 GB = 2**30
+
+QADD = 1
+QREMOVE = -1
+
+QDISK = "cyclades.disk"
+QVM = "cyclades.vm"
+QPITHOS = "pithos.diskspace"
+QRAM = "cyclades.ram"
+QIP = "cyclades.floating_ip"
+QCPU = "cyclades.cpu"
+QNET = "cyclades.network.private"
 
 
 # --------------------------------------------------------------------
@@ -77,9 +79,11 @@ class BurninTestResult(unittest.TestResult):
     def startTest(self, test):  # noqa
         """Called when the test case test is about to be run"""
         super(BurninTestResult, self).startTest(test)
-        logger.log(test.__class__.__name__, test.shortDescription())
+        logger.log(
+            test.__class__.__name__,
+            test.shortDescription() or 'Test %s' % test.__class__.__name__)
 
-    # Method could be a function. pylint: disable-msg=R0201
+    # pylint: disable=no-self-use
     def _test_failed(self, test, err):
         """Test failed"""
         # Get class name
@@ -105,11 +109,25 @@ class BurninTestResult(unittest.TestResult):
         super(BurninTestResult, self).addFailure(test, err)
         self._test_failed(test, err)
 
+    # pylint: disable=fixme
+    def addSkip(self, test, reason):  # noqa
+        """Called when the test case test is skipped
+
+        If reason starts with "__SkipClass__: " then
+        we should stop the execution of all the TestSuite.
+
+        TODO: There should be a better way to do this
+
+        """
+        super(BurninTestResult, self).addSkip(test, reason)
+        if reason.startswith("__SkipClass__: "):
+            self.stop()
+
 
 # --------------------------------------------------------------------
 # Helper Classes
-# Too few public methods. pylint: disable-msg=R0903
-# Too many instance attributes. pylint: disable-msg=R0902
+# pylint: disable=too-few-public-methods
+# pylint: disable=too-many-instance-attributes
 class Clients(object):
     """Our kamaki clients"""
     auth_url = None
@@ -132,38 +150,65 @@ class Clients(object):
     image = None
     image_url = None
 
-    def initialize_clients(self):
+    def _kamaki_ssl(self, ignore_ssl=None):
+        """Patch kamaki to use the correct CA certificates
+
+        Read kamaki's config file and decide if we are going to use
+        CA certificates and patch kamaki clients accordingly.
+
+        """
+        config = kamaki_config.Config()
+        if ignore_ssl is None:
+            ignore_ssl = config.get("global", "ignore_ssl").lower() == "on"
+        ca_file = config.get("global", "ca_certs")
+
+        if ignore_ssl:
+            # Skip SSL verification
+            https.patch_ignore_ssl()
+        else:
+            # Use ca_certs path found in kamakirc
+            https.patch_with_certs(ca_file)
+
+    def initialize_clients(self, ignore_ssl=False):
         """Initialize all the Kamaki Clients"""
+
+        # Path kamaki for SSL verification
+        self._kamaki_ssl(ignore_ssl=ignore_ssl)
+
+        # Initialize kamaki Clients
         self.astakos = AstakosClient(self.auth_url, self.token)
         self.astakos.CONNECTION_RETRY_LIMIT = self.retry
 
-        endpoints = self.astakos.authenticate()
-
-        self.compute_url = _get_endpoint_url(endpoints, "compute")
+        self.compute_url = self.astakos.get_endpoint_url(
+            ComputeClient.service_type)
         self.compute = ComputeClient(self.compute_url, self.token)
         self.compute.CONNECTION_RETRY_LIMIT = self.retry
 
-        self.cyclades = CycladesClient(self.compute_url, self.token)
+        self.cyclades_url = self.astakos.get_endpoint_url(
+            CycladesClient.service_type)
+        self.cyclades = CycladesClient(self.cyclades_url, self.token)
         self.cyclades.CONNECTION_RETRY_LIMIT = self.retry
 
-        self.network_url = _get_endpoint_url(endpoints, "network")
+        self.block_storage_url = self.astakos.get_endpoint_url(
+            BlockStorageClient.service_type)
+        self.block_storage = BlockStorageClient(self.block_storage_url,
+                                                self.token)
+        self.block_storage.CONNECTION_RETRY_LIMIT = self.retry
+
+        self.network_url = self.astakos.get_endpoint_url(
+            CycladesNetworkClient.service_type)
         self.network = CycladesNetworkClient(self.network_url, self.token)
         self.network.CONNECTION_RETRY_LIMIT = self.retry
 
-        self.pithos_url = _get_endpoint_url(endpoints, "object-store")
+        self.pithos_url = self.astakos.get_endpoint_url(
+            PithosClient.service_type)
         self.pithos = PithosClient(self.pithos_url, self.token)
         self.pithos.CONNECTION_RETRY_LIMIT = self.retry
 
-        self.image_url = _get_endpoint_url(endpoints, "image")
+        self.image_url = self.astakos.get_endpoint_url(
+            ImageClient.service_type)
         self.image = ImageClient(self.image_url, self.token)
         self.image.CONNECTION_RETRY_LIMIT = self.retry
-
-
-def _get_endpoint_url(endpoints, endpoint_type):
-    """Get the publicURL for the specified endpoint"""
-
-    service_catalog = parse_endpoints(endpoints, ep_type=endpoint_type)
-    return service_catalog[0]['endpoints'][0]['publicURL']
 
 
 class Proper(object):
@@ -184,13 +229,66 @@ class Proper(object):
         self.val = value
 
 
+def file_read_iterator(fp, size=1024):
+    while True:
+        data = fp.read(size)
+        if not data:
+            break
+        yield data
+
+
+class HashMap(list):
+
+    def __init__(self, blocksize, blockhash):
+        super(HashMap, self).__init__()
+        self.blocksize = blocksize
+        self.blockhash = blockhash
+
+    def _hash_raw(self, v):
+        h = hashlib.new(self.blockhash)
+        h.update(v)
+        return h.digest()
+
+    def _hash_block(self, v):
+        return self._hash_raw(v.rstrip('\x00'))
+
+    def hash(self):
+        if len(self) == 0:
+            return self._hash_raw('')
+        if len(self) == 1:
+            return self.__getitem__(0)
+
+        h = list(self)
+        s = 2
+        while s < len(h):
+            s = s * 2
+        h += [('\x00' * len(h[0]))] * (s - len(h))
+        while len(h) > 1:
+            h = [self._hash_raw(h[x] + h[x + 1]) for x in range(0, len(h), 2)]
+        return h[0]
+
+    def load(self, data):
+        self.size = 0
+        fp = StringIO(data)
+        for block in file_read_iterator(fp, self.blocksize):
+            self.append(self._hash_block(block))
+            self.size += len(block)
+
+
+def merkle(data, blocksize, blockhash):
+    hashes = HashMap(blocksize, blockhash)
+    hashes.load(data)
+    return hexlify(hashes.hash())
+
+
 # --------------------------------------------------------------------
 # BurninTests class
-# Too many public methods (45/20). pylint: disable-msg=R0904
+# pylint: disable=too-many-public-methods
 class BurninTests(unittest.TestCase):
     """Common class that all burnin tests should implement"""
     clients = Clients()
     run_id = None
+    ignore_ssl = False
     use_ipv6 = None
     action_timeout = None
     action_warning = None
@@ -201,8 +299,10 @@ class BurninTests(unittest.TestCase):
     delete_stale = False
     temp_directory = None
     failfast = None
+    temp_containers = []
 
     quotas = Proper(value=None)
+    uuid = Proper(value=None)
 
     @classmethod
     def setUpClass(cls):  # noqa
@@ -216,7 +316,7 @@ class BurninTests(unittest.TestCase):
     def test_000_clients_setup(self):
         """Initializing astakos/cyclades/pithos clients"""
         # Update class attributes
-        self.clients.initialize_clients()
+        self.clients.initialize_clients(ignore_ssl=self.ignore_ssl)
         self.info("Astakos auth url is %s", self.clients.auth_url)
         self.info("Cyclades url is %s", self.clients.compute_url)
         self.info("Network url is %s", self.clients.network_url)
@@ -224,24 +324,27 @@ class BurninTests(unittest.TestCase):
         self.info("Image url is %s", self.clients.image_url)
 
         self.quotas = self._get_quotas()
-        self.info("  Disk usage is %s bytes",
-                  self.quotas['system']['cyclades.disk']['usage'])
-        self.info("  VM usage is %s",
-                  self.quotas['system']['cyclades.vm']['usage'])
-        self.info("  DiskSpace usage is %s bytes",
-                  self.quotas['system']['pithos.diskspace']['usage'])
-        self.info("  Ram usage is %s bytes",
-                  self.quotas['system']['cyclades.ram']['usage'])
-        self.info("  Floating IPs usage is %s",
-                  self.quotas['system']['cyclades.floating_ip']['usage'])
-        self.info("  CPU usage is %s",
-                  self.quotas['system']['cyclades.cpu']['usage'])
-        self.info("  Network usage is %s",
-                  self.quotas['system']['cyclades.network.private']['usage'])
+        for puuid, quotas in self.quotas.items():
+            project_name = self._get_project_name(puuid)
+            self.info("  Project %s:", project_name)
+            self.info("    Disk usage is         %s bytes",
+                      quotas['cyclades.disk']['usage'])
+            self.info("    VM usage is           %s",
+                      quotas['cyclades.vm']['usage'])
+            self.info("    DiskSpace usage is    %s bytes",
+                      quotas['pithos.diskspace']['usage'])
+            self.info("    Ram usage is          %s bytes",
+                      quotas['cyclades.ram']['usage'])
+            self.info("    Floating IPs usage is %s",
+                      quotas['cyclades.floating_ip']['usage'])
+            self.info("    CPU usage is          %s",
+                      quotas['cyclades.cpu']['usage'])
+            self.info("    Network usage is      %s",
+                      quotas['cyclades.network.private']['usage'])
 
     def _run_tests(self, tcases):
         """Run some generated testcases"""
-        global success  # Using global. pylint: disable-msg=C0103,W0603,W0602
+        global success  # pylint: disable=invalid-name, global-statement
 
         for tcase in tcases:
             self.info("Running testsuite %s", tcase.__name__)
@@ -270,15 +373,17 @@ class BurninTests(unittest.TestCase):
     def error(self, msg, *args):
         """Pass the section value to logger"""
         logger.error(self.suite_name, msg, *args)
+        self.fail(msg % args)
 
     # ----------------------------------
     # Helper functions that every testsuite may need
     def _get_uuid(self):
         """Get our uuid"""
-        authenticate = self.clients.astakos.authenticate()
-        uuid = authenticate['access']['user']['id']
-        self.info("User's uuid is %s", uuid)
-        return uuid
+        if self.uuid is None:
+            authenticate = self.clients.astakos.authenticate()
+            self.uuid = authenticate['access']['user']['id']
+            self.info("User's uuid is %s", self.uuid)
+        return self.uuid
 
     def _get_username(self):
         """Get our User Name"""
@@ -301,6 +406,69 @@ class BurninTests(unittest.TestCase):
         except OSError:
             pass
 
+    def _create_large_file(self, size):
+        """Create a large file at fs"""
+        named_file = NamedTemporaryFile()
+        seg = size / 8
+        self.debug('Create file %s  ', named_file.name)
+        for sbytes in [b * seg for b in range(size / seg)]:
+            named_file.seek(sbytes)
+            named_file.write(urandom(seg))
+            named_file.flush()
+        named_file.seek(0)
+        return named_file
+
+    def _create_file(self, size):
+        """Create a file and compute its merkle hash"""
+
+        tmp_file = NamedTemporaryFile()
+        self.debug('\tCreate file %s  ' % tmp_file.name)
+        meta = self.clients.pithos.get_container_info()
+        block_size = int(meta['x-container-block-size'])
+        block_hash_algorithm = meta['x-container-block-hash']
+        num_of_blocks = size / block_size
+        hashmap = HashMap(block_size, block_hash_algorithm)
+        s = 0
+        for i in range(num_of_blocks):
+            seg = urandom(block_size)
+            tmp_file.write(seg)
+            hashmap.load(seg)
+            s += len(seg)
+        else:
+            rest = size - s
+            if rest:
+                seg = urandom(rest)
+                tmp_file.write(seg)
+                hashmap.load(seg)
+                s += len(seg)
+        tmp_file.seek(0)
+        tmp_file.hash = hexlify(hashmap.hash())
+        return tmp_file
+
+    def _create_boring_file(self, num_of_blocks):
+        """Create a file with some blocks being the same"""
+
+        def chargen():
+            """10 + 2 * 26 + 26 = 88"""
+            while True:
+                for char in xrange(10):
+                    yield '%s' % char
+                for char in ascii_letters:
+                    yield char
+                for char in '~!@#$%^&*()_+`-=:";|<>?,./':
+                    yield char
+
+        tmp_file = NamedTemporaryFile()
+        self.debug('\tCreate file %s  ' % tmp_file.name)
+        block_size = 4 * 1024 * 1024
+        chars = chargen()
+        while num_of_blocks:
+            fslice = 3 if num_of_blocks > 3 else num_of_blocks
+            tmp_file.write(fslice * block_size * chars.next())
+            num_of_blocks -= fslice
+        tmp_file.seek(0)
+        return tmp_file
+
     def _get_uuid_of_system_user(self):
         """Get the uuid of the system user
 
@@ -319,7 +487,6 @@ class BurninTests(unittest.TestCase):
                     return su_value
                 else:
                     self.error("Unrecognized system-user type %s", su_type)
-                    self.fail("Unrecognized system-user type")
             except ValueError:
                 msg = "Invalid system-user format: %s. Must be [id|name]:.+"
                 self.warning(msg, self.system_user)
@@ -342,6 +509,12 @@ class BurninTests(unittest.TestCase):
         if condition:
             self.info("Test skipped: %s" % msg)
             self.skipTest(msg)
+
+    def _skip_suite_if(self, condition, msg):
+        """Skip the whole testsuite"""
+        if condition:
+            self.info("TestSuite skipped: %s" % msg)
+            self.skipTest("__SkipClass__: %s" % msg)
 
     # ----------------------------------
     # Flavors
@@ -398,7 +571,6 @@ class BurninTests(unittest.TestCase):
                     [f for f in flavors if str(f['id']) == flv_value]
             else:
                 self.error("Unrecognized flavor type %s", flv_type)
-                self.fail("Unrecognized flavor type")
 
             # Get only flavors that are allowed to create a machine
             filtered_flvs = [f for f in filtered_flvs
@@ -434,7 +606,8 @@ class BurninTests(unittest.TestCase):
         su_uuid = self._get_uuid_of_system_user()
         my_uuid = self._get_uuid()
         ret_images = [i for i in images
-                      if i['owner'] == su_uuid or i['owner'] == my_uuid]
+                      if (i['owner'] == su_uuid or i['owner'] == my_uuid)
+                      and not i['is_snapshot']]
 
         return ret_images
 
@@ -473,7 +646,6 @@ class BurninTests(unittest.TestCase):
                      i['id'].lower() == img_value.lower()]
             else:
                 self.error("Unrecognized image type %s", img_type)
-                self.fail("Unrecognized image type")
 
             # Append and continue
             ret_images.extend(filtered_imgs)
@@ -514,62 +686,79 @@ class BurninTests(unittest.TestCase):
         assert container, "No pithos container was given"
 
         self.info("Creating pithos container %s", container)
-        self.clients.pithos.container = container
-        self.clients.pithos.container_put()
+        self.clients.pithos.create_container(container)
+        self.temp_containers.append(container)
 
     # ----------------------------------
     # Quotas
     def _get_quotas(self):
         """Get quotas"""
         self.info("Getting quotas")
-        return self.clients.astakos.get_quotas()
+        return dict(self.clients.astakos.get_quotas())
 
-    # Invalid argument name. pylint: disable-msg=C0103
-    # Too many arguments. pylint: disable-msg=R0913
-    def _check_quotas(self, disk=None, vm=None, diskspace=None,
-                      ram=None, ip=None, cpu=None, network=None):
-        """Check that quotas' changes are consistent"""
-        assert any(v is None for v in
-                   [disk, vm, diskspace, ram, ip, cpu, network]), \
-            "_check_quotas require arguments"
+    # pylint: disable=invalid-name
+    # pylint: disable=too-many-arguments
+    def _check_quotas(self, changes):
+        """Check that quotas' changes are consistent
+
+        @param changes: A dict of the changes that have been made in quotas
+
+        """
+        def dicts_are_equal(d1, d2):
+            """Helper function to check dict equality"""
+            self.assertEqual(set(d1), set(d2))
+            for key, val in d1.items():
+                if isinstance(val, (list, tuple)):
+                    self.assertEqual(set(val), set(d2[key]))
+                elif isinstance(val, dict):
+                    dicts_are_equal(val, d2[key])
+                else:
+                    self.assertEqual(val, d2[key])
+
+        if not changes:
+            return
 
         self.info("Check that quotas' changes are consistent")
         old_quotas = self.quotas
         new_quotas = self._get_quotas()
         self.quotas = new_quotas
 
-        # Check Disk usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.disk', disk)
-        # Check VM usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.vm', vm)
-        # Check DiskSpace usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'pithos.diskspace', diskspace)
-        # Check Ram usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.ram', ram)
-        # Check Floating IPs usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.floating_ip', ip)
-        # Check CPU usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.cpu', cpu)
-        # Check Network usage
-        self._check_quotas_aux(
-            old_quotas, new_quotas, 'cyclades.network.private', network)
+        self.assertListEqual(sorted(old_quotas.keys()),
+                             sorted(new_quotas.keys()))
 
-    def _check_quotas_aux(self, old_quotas, new_quotas, resource, value):
-        """Auxiliary function for _check_quotas"""
-        old_value = old_quotas['system'][resource]['usage']
-        new_value = new_quotas['system'][resource]['usage']
-        if value is not None:
-            assert isinstance(value, int), \
-                "%s value has to be integer" % resource
-            old_value += value
-        self.assertEqual(old_value, new_value,
-                         "%s quotas don't match" % resource)
+        # Take old_quotas and apply changes
+        for prj, values in changes.items():
+            self.assertIn(prj, old_quotas.keys())
+            for q_name, q_mult, q_value, q_unit in values:
+                if q_unit is None:
+                    q_unit = 1
+                q_value = q_mult*int(q_value)*q_unit
+                assert isinstance(q_value, int), \
+                    "Project %s: %s value has to be integer" % (prj, q_name)
+                old_quotas[prj][q_name]['usage'] += q_value
+                old_quotas[prj][q_name]['project_usage'] += q_value
+
+        dicts_are_equal(old_quotas, new_quotas)
+
+    # ----------------------------------
+    # Projects
+    def _get_project_name(self, puuid):
+        """Get the name of a project"""
+        uuid = self._get_uuid()
+        if puuid == uuid:
+            return "base"
+        else:
+            project_info = self.clients.astakos.get_project(puuid)
+            return project_info['name']
+
+    def _get_merkle_hash(self, data):
+        self.clients.pithos._assert_account()
+        meta = self.clients.pithos.get_container_info()
+        block_size = int(meta['x-container-block-size'])
+        block_hash_algorithm = meta['x-container-block-hash']
+        hashes = HashMap(block_size, block_hash_algorithm)
+        hashes.load(data)
+        return hexlify(hashes.hash())
 
 
 # --------------------------------------------------------------------
@@ -581,7 +770,7 @@ def initialize(opts, testsuites, stale_testsuites):
 
     """
     # Initialize logger
-    global logger  # Using global statement. pylint: disable-msg=C0103,W0603
+    global logger  # pylint: disable=invalid-name, global-statement
     curr_time = datetime.datetime.now()
     logger = Log(opts.log_folder, verbose=opts.verbose,
                  use_colors=opts.use_colors, in_parallel=False,
@@ -592,6 +781,7 @@ def initialize(opts, testsuites, stale_testsuites):
     Clients.token = opts.token
 
     # Pass the rest options to BurninTests
+    BurninTests.ignore_ssl = opts.ignore_ssl
     BurninTests.use_ipv6 = opts.use_ipv6
     BurninTests.action_timeout = opts.action_timeout
     BurninTests.action_warning = opts.action_warning
@@ -604,6 +794,9 @@ def initialize(opts, testsuites, stale_testsuites):
     BurninTests.failfast = opts.failfast
     BurninTests.run_id = SNF_TEST_PREFIX + \
         datetime.datetime.strftime(curr_time, "%Y%m%d%H%M%S")
+    BurninTests.obj_upload_num = opts.obj_upload_num
+    BurninTests.obj_upload_min_size = opts.obj_upload_min_size
+    BurninTests.obj_upload_max_size = opts.obj_upload_max_size
 
     # Choose tests to run
     if opts.show_stale:
@@ -623,7 +816,8 @@ def initialize(opts, testsuites, stale_testsuites):
 # Run Burnin
 def run_burnin(testsuites, failfast=False):
     """Run burnin testsuites"""
-    # Using global. pylint: disable-msg=C0103,W0603,W0602
+    # pylint: disable=invalid-name,global-statement
+    # pylint: disable=global-variable-not-assigned
     global logger, success
 
     success = True
@@ -638,7 +832,9 @@ def run_burnin(testsuites, failfast=False):
 
 def run_tests(tcases, failfast=False):
     """Run some testcases"""
-    global success  # Using global. pylint: disable-msg=C0103,W0603,W0602
+    # pylint: disable=invalid-name,global-statement
+    # pylint: disable=global-variable-not-assigned
+    global success
 
     for tcase in tcases:
         was_success = run_test(tcase)

@@ -1,5 +1,10 @@
+import json
+
 from django.utils.safestring import mark_safe
 from django.conf import settings
+
+from synnefo.util import version
+from synnefo_branding import settings as branding_settings
 
 
 def cloudbar(request):
@@ -30,8 +35,12 @@ def cloudbar(request):
 
     """
 
+    BRANDING_CSS = getattr(branding_settings, 'FONTS_CSS_URLS', [])
+
     CB_ACTIVE = getattr(settings, 'CLOUDBAR_ACTIVE', True)
     CB_LOCATION = getattr(settings, 'CLOUDBAR_LOCATION')
+    CB_VERSION = version.get_component_version("webproject")
+
     CB_COOKIE_NAME = getattr(settings, 'CLOUDBAR_COOKIE_NAME',
             'okeanos_account')
     CB_SERVICES_URL = getattr(settings, 'CLOUDBAR_SERVICES_URL')
@@ -43,14 +52,17 @@ def cloudbar(request):
 
     CB_CODE = """
     <script type="text/javascript">
+        var CLOUDBAR_VERSION = '%(version)s';
         var CLOUDBAR_LOCATION = "%(location)s";
         var CLOUDBAR_COOKIE_NAME = "%(cookie_name)s";
         var GET_SERVICES_URL = "%(services_url)s";
         var GET_MENU_URL = "%(menu_url)s";
         var CLOUDBAR_HEIGHT = '%(height)s';
 
+        var CLOUDBAR_EXTRA_CSS = %(branding_css)s;
+
         $(document).ready(function(){
-            $.getScript(CLOUDBAR_LOCATION + 'cloudbar.js');
+            $.getScript(CLOUDBAR_LOCATION + 'cloudbar.js?' + CLOUDBAR_VERSION);
         });
 
     </script>
@@ -67,7 +79,9 @@ def cloudbar(request):
        'services_url': CB_SERVICES_URL,
        'menu_url': CB_MENU_URL,
        'height': str(CB_HEIGHT),
-       'bg_color': CB_BGCOLOR}
+       'bg_color': CB_BGCOLOR,
+       'version': CB_VERSION,
+       'branding_css': json.dumps(BRANDING_CSS)}
 
     CB_CODE = mark_safe(CB_CODE)
 

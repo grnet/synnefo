@@ -33,7 +33,7 @@ Authentication
 --------------
 
 All requests use the same authentication method: an ``X-Auth-Token`` header is
-passed to the servive, which is used to authenticate the user and retrieve user
+passed to the service, which is used to authenticate the user and retrieve user
 related information. No other user details are passed through HTTP.
 
 Efficient Polling with the Changes-Since Parameter
@@ -51,7 +51,7 @@ Efficient Polling with the Changes-Since Parameter
 Limitations
 -----------
 
-* Version MIME type and vesionless requests are not currently supported.
+* Version MIME type and versionless requests are not currently supported.
 
 * Cyclades only supports JSON Requests and JSON/XML Responses. XML Requests are
   currently not supported.
@@ -96,7 +96,7 @@ Description                                        URI                          
 `Get Meta Item <#get-server-metadata-item>`_       ``/servers/<server-id>/metadata/<key>``   GET    ✔        ✔
 `Update Meta Item <#update-server-metadata-item>`_ ``/servers/<server-id>/metadata/<key>``   PUT    ✔        ✔
 `Delete Meta Item <#delete-server-metadata>`_      ``/servers/<server-id>/metadata/<key>``   DELETE ✔        ✔
-`Actions <#server-actions>`_                       ``servers/<server id>/action``            POST   ✔        ✔
+`Actions <#server-actions>`_                       ``/servers/<server id>/action``           POST   ✔        ✔
 ================================================== ========================================= ====== ======== ==========
 
 .. rubric:: Flavors
@@ -507,26 +507,48 @@ Request body contents::
       ...
   }
 
-=========== ====================== ======== ==========
-Attributes  Description            Cyclades OS/Compute
-=========== ====================== ======== ==========
-name        The server name        ✔        ✔
-imageRef    Image id               ✔        ✔
-flavorRef   Resources flavor       ✔        ✔
-personality Personality contents   ✔        ✔
-metadata    Custom metadata        ✔        ✔
-networks    Connection information ✔        ✔
-.. project  .. Project UUID        .. ✔     .. **✘**
-=========== ====================== ======== ==========
+=========== ==================== ======== ==========
+Attributes  Description          Cyclades OS/Compute
+=========== ==================== ======== ==========
+name        The server name      ✔        ✔
+imageRef    Image id             ✔        ✔
+flavorRef   Resources flavor     ✔        ✔
+personality Personality contents ✔        ✔
+metadata    Custom metadata      ✔        ✔
+project     Project assignment   ✔        **✘**
+=========== ==================== ======== ==========
 
 * **name** can be any string
 
-* **imageRed** and **flavorRed** should refer to existing images and hardware
+* **imageRef** and **flavorRef** should refer to existing images and hardware
   flavors accessible by the user
 
 * **metadata** are ``key``:``value`` pairs of custom server-specific metadata.
   There are no semantic limitations, although the ``OS`` and ``USERS`` values
   should rather be defined
+
+* **project** (optional) is the project where the VM is to be assigned. If not
+  given, user's system project is assumed (identified with the same uuid as the
+  user).
+
+* **personality** (optional) is a list of personality injections. A personality
+  injection is a way to add a file into a virtual server while creating it.
+  Each change modifies/creates a file on the virtual server. The injected data
+  (``contents``) should not exceed 10240 *bytes* in size and must be base64
+  encoded. The file mode should be a number, not a string. A personality
+  injection contains the following attributes:
+
+====================== =================== ======== ==========
+Personality Attributes Description         Cyclades OS/Compute
+====================== =================== ======== ==========
+path                   File path on server ✔        ✔
+contents               Data to inject      ✔        ✔
+group                  User group          ✔        **✘**
+mode                   File access mode    ✔        **✘**
+owner                  File owner          ✔        **✘**
+====================== =================== ======== ==========
+
+*Example Create Server Request: JSON*
 
 * **personality** (optional) is a list of
   `personality injections <#personality-ref>`_
@@ -762,6 +784,7 @@ netTimeSeries Network load / time graph URL
 *Example Get Server Stats Response: JSON*
 
 .. code-block:: javascript
+
   GET https://example.org/compute/v2.0/servers/5678/stats
   {
     "stats": {
@@ -1584,6 +1607,7 @@ Operations                                      Cyclades OS/Compute
 `Reboot <#reboot-server>`_                      ✔        ✔
 `Get Console <#get-server-console>`_            ✔        **✘**
 `Set Firewall <#set-server-firewall-profile>`_  ✔        **✘**
+`Reassign <#reassign-server>`_                  ✔        **✘**
 `Change Admin Password <#os-compute-specific>`_ **✘**    ✔
 `Rebuild <#os-compute-specific>`_               **✘**    ✔
 `Resize <#resize-server>`_                      ✔        ✔
@@ -1767,23 +1791,27 @@ Request body contents::
 
 .. note:: Response body should be empty
 
-.. Server reassign
-.. .............
+Reassign Server
+...............
 
-.. Each resource is assigned to a project. A Synnefo project is a set of resource
-.. limits e.g., maximum number of CPU cores per user, maximum ammount of RAM, etc.
+This operation assigns the VM to a different project.
+Each resource is assigned to a project. A Synnefo project is a set of resource
+limits e.g., maximum number of CPU cores per user, maximum ammount of RAM, etc.
 
-.. Although its resource is assigned exactly one project, a user may be a member
-.. of more, so that different resources are registered to different projects.
+Although its resource is assigned exactly one project, a user may be a member
+of more, so that different resources are registered to different projects.
 
-.. Project reassignment is the process of assigning a project to a different
-.. project
+Request body contents::
 
-.. Request body contents::
-..   reassign: { project: <project ID>}
+  reassign: { project: <project-id>}
 
-.. .. code-block:: javascript
-..   "reassign": { "project": "s0m3-pr0j3ct-1d"}
+*Example Action reassign: JSON**
+
+.. code-block:: javascript
+
+  {"reassign": {"project": "9969f2fd-86d8-45d6-9106-5e251f7dd92f"}}
+
+.. note:: Response body should be empty
 
 OS/Compute Specific
 ...................
@@ -2563,6 +2591,8 @@ Return Code                 Description
 \                           internal error
 503 (Service Unavailable)   The server is not currently available
 =========================== =====================
+
+.. note:: In case of a 204 code, the response body should be empty.
 
 Index of Attributes
 -------------------

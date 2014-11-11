@@ -1,35 +1,17 @@
-// Copyright 2011 GRNET S.A. All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or
-// without modification, are permitted provided that the following
-// conditions are met:
-// 
-//   1. Redistributions of source code must retain the above
-//      copyright notice, this list of conditions and the following
-//      disclaimer.
-// 
-//   2. Redistributions in binary form must reproduce the above
-//      copyright notice, this list of conditions and the following
-//      disclaimer in the documentation and/or other materials
-//      provided with the distribution.
-// 
-// THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-// USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-// AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
-// 
-// The views and conclusions contained in the software and
-// documentation are those of the authors and should not be
-// interpreted as representing official policies, either expressed
-// or implied, of GRNET S.A.
+// Copyright (C) 2010-2014 GRNET S.A.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
 ;(function(root){
@@ -49,6 +31,119 @@
     // shortcuts
     var bb = root.Backbone;
 
+    var min_vm_quota = {
+      'cyclades.vm': 1, 
+      'cyclades.ram': 1, 
+      'cyclades.cpu': 1, 
+      'cyclades.disk': 1
+    };
+
+    views.CreateVMSelectProjectItemView = views.ext.SelectModelView.extend({
+      tpl: '#create-view-select-project-item-tpl',
+      can_deselect: false,
+      display_quota: min_vm_quota,
+      quotas_option_html: function() {
+        var data = "";
+        _.each(this.display_quota, function(val, key) {
+          var q = this.model.quotas.get(key);
+          if (!q) { return }
+          var content = '<span class="resource">' +
+                        '<span class="key">{0}:</span>' +
+                        '<span class="value">{1}</span>' +
+                        '</span>';
+          data += content.format(q.get('resource').get('display_name'), 
+                                 q.get_readable('available'));
+        }, this);
+        data = data.substring(0, data.length-3);
+        if (data) {
+            data += "";
+        }
+        return data;
+      }
+    });
+
+    views.CreateVMSelectProjectView = views.ext.CollectionSelectView.extend({
+      tpl: '#create-view-projects-select-tpl',
+      select2_params: {},
+      model_view_cls: views.CreateVMSelectProjectItemView,
+      required_quota: function() {
+          return min_vm_quota
+      },
+      
+      _select2_format_result: function(state) {
+          return $(state.element).html();
+      },
+
+      _select2_format_selection: function(state) {
+          return $(state.element).html();
+      },
+
+      post_init: function() {
+        this._select = $(this.el).find("select");
+        this._select.addClass("project-select")
+        this._select.select2(
+            _.extend({}, {
+                width: "100%",
+                formatResult: this._select2_format_result,
+                formatSelection: this._select2_format_selection
+        }, this.select2_params));
+        views.CreateVMSelectProjectView.__super__.post_init.apply(this, arguments);
+      },
+
+      set_current: function(model) {
+        if (!this._model_views[model.id]) { return }
+        var view = this._model_views[model.id];
+        view.select();
+        this._select.select2("val", view.el.attr("value"));
+      },
+        
+      hide: function() {
+          this._select.select2("close");
+          views.CreateVMSelectProjectView.__super__.hide.apply(this, arguments);
+      },
+
+      init: function() {
+        this.handle_quota_changed = _.bind(this.handle_quota_changed, this);
+        views.CreateVMSelectProjectView.__super__.init.apply(this, arguments);
+      },
+
+      handle_quota_changed: function() {
+        _.each(this._model_views, function(view) {
+          if (!view.model.quotas.can_fit(this.required_quota())) {
+            view.set_disabled();
+          } else {
+            view.set_enabled();
+          }
+          view.model.trigger("change:_quota");
+        }, this);
+        // force select2 to update data
+        this._select.data().select2.search.trigger("keyup-change");
+      },
+
+      set_handlers: function() {
+        var self = this;
+        synnefo.storage.quotas.bind("change", this.handle_quota_changed);
+        this.el.bind("change", function() {
+          var view = self._model_views[self.list_el.val()];
+          self.deselect_all();
+          view.delegate_checked = false;
+          view.select();
+          view.trigger('selected', view);
+        });
+        views.CreateVMSelectProjectView.__super__.set_handlers.apply(this, arguments);
+      },
+
+      remove_handlers: function() {
+        synnefo.storage.quotas.unbind("change", this.handle_quota_changed);
+        this.el.unbind("change");
+        views.CreateVMSelectProjectView.__super__.remove_handlers.apply(this, arguments);
+      },
+
+      post_show: function() {
+        views.CreateVMSelectProjectView.__super__.post_show.apply(this, arguments);
+        this.handle_quota_changed();
+      }
+    });
 
     views.VMCreationPasswordView = views.Overlay.extend({
         view_id: "creation_password_view",
@@ -72,10 +167,11 @@
                 }
                 this.hide();
             }, this));
-
+            
+            var self = this;
             _.bindAll(this, "handle_vm_added");
             storage.vms.bind("add", this.handle_vm_added);
-            this.password.text("");
+            this.password.val("");
         },
 
         handle_vm_added: function() {
@@ -84,16 +180,17 @@
         
         show_password: function() {
             this.$(".show-machine").addClass("in-progress");
-            this.password.text(this.pass);
+            this.password.val(this.pass);
             if (storage.vms.get(this.vm_id)) {
                 this.$(".show-machine").removeClass("in-progress");
             }
             
             this.clip = new snf.util.ClipHelper(this.copy, this.pass);
+
         },
 
         onClose: function() {
-            this.password.text("");
+            this.password.val("");
             this.vm_id = undefined;
             try { delete this.clip; } catch (err) {};
         },
@@ -109,14 +206,18 @@
         show: function(pass, vm_id) {
             this.pass = pass;
             this.vm_id = vm_id;
-            
+            var self = this;
+            this.password.unbind("click").click(function() {
+                self.password.selectRange(0);
+            });
+
             views.VMCreationPasswordView.__super__.show.apply(this, arguments);
         }
     })
 
 
     
-    views.CreateVMStepView = views.View.extend({
+    views.CreateWizardStepView = views.View.extend({
         step: "1",
         title: "Image",
         submit: false,
@@ -127,7 +228,11 @@
             this.header = this.$(".step-header .step-" + this.step);
             this.view_id = "create_step_" + this.step;
 
-            views.CreateVMStepView.__super__.initialize.apply(this);
+            views.CreateWizardStepView.__super__.initialize.apply(this);
+        },
+      
+        get_project: function() {
+          return this.parent.project;
         },
 
         show: function() {
@@ -140,9 +245,13 @@
 
         reset: function() {
         }
-    })
+    });
+
+    views.CreateVMStepView = views.CreateWizardStepView;
 
     views.CreateImageSelectView = views.CreateVMStepView.extend({
+        
+        default_type: 'system',
 
         initialize: function() {
             views.CreateImageSelectView.__super__.initialize.apply(this, arguments);
@@ -162,8 +271,8 @@
             this.categories_list = this.$(".category-filters");
             
             // params initialization
-            this.type_selections = {"system": "System"};
-            this.type_selections_order = ['system'];
+            this.type_selections = this.type_selections || {"system": "System"};
+            this.type_selections_order = this.type_selections_order || ['system'];
             
             this.images_storage = snf.storage.images;
 
@@ -172,7 +281,6 @@
                 this.type_selections = _.extend(
                     this.images_storage.type_selections,
                     this.type_selections)
-
                 this.type_selections_order = this.images_storage.type_selections_order;
             }
 
@@ -185,6 +293,11 @@
 
             // handlers initialization
             this.create_types_selection_options();
+            if (synnefo.config.snapshots_enabled) {
+                this.create_snapshot_types_selection_options();
+            } else {
+                this.$(".snapshot-types-cont").hide();
+            }
             this.init_handlers();
             this.init_position();
         },
@@ -213,21 +326,43 @@
             })
 
             $(".image-warning .confirm").bind('click', function(){
-                $(".image-warning").hide();
-                $(".create-controls").show();
-            })
+                self.parent.el.find(".image-warning").hide();
+                self.parent.el.find(".create-controls").show();
+                if (!self.parent.project) {
+                  self.parent.set_no_project();
+                }
+            });
         },
 
         update_images: function(images) {
             this.images = images;
-            this.images_ids = _.map(this.images, function(img){return img.id});
+            var filtered_images = _.filter(images, function(img) { 
+              return img.is_available()
+            });
+            this.images_ids = _.map(filtered_images, function(img) { 
+              return img.id
+            });
             return this.images;
         },
 
         create_types_selection_options: function() {
-            var list = this.$("ul.type-filter");
+            var list = this.$(".image-types-cont ul.type-filter");
+            list.empty();
             _.each(this.type_selections_order, _.bind(function(key) {
-                list.append('<li id="type-select-{0}">{1}</li>'.format(key, this.type_selections[key]));
+                list.append('<li id="type-select-{0}">{1}</li>'.format(
+                    key, this.type_selections[key]));
+            }, this));
+            this.types = this.$(".type-filter li");
+        },
+
+        create_snapshot_types_selection_options: function() {
+            var exclude = [];
+            var list = this.$(".snapshot-types-cont ul.type-filter");
+            list.empty();
+            _.each(this.type_selections_order, _.bind(function(key) {
+                if (_.includes(exclude, key)) { return }
+                var label = this.type_selections[key].replace("images", "snapshots");
+                list.append('<li id="type-select-snapshot-{0}">{1}</li>'.format(key, label));
             }, this));
             this.types = this.$(".type-filter li");
         },
@@ -254,12 +389,13 @@
                 this.categories_list.append(el);
             }, this));
 
+            var empty = this.categories_list.parent().find(".empty");
             if (!categories.length) { 
                 this.categories_list.parent().find(".clear").hide();
-                this.categories_list.parent().find(".empty").show();
+                empty.show();
             } else {
                 this.categories_list.parent().find(".clear").show();
-                this.categories_list.parent().find(".empty").hide();
+                empty.hide();
             }
         },
         
@@ -280,7 +416,11 @@
             this.reset_categories();
             this.update_images(images);
             this.reset_images();
-            this.select_image(this.selected_image);
+            var to_select = this.selected_image;
+            if (!_.contains(this.images_ids, this.selected_image && this.selected_image.get("id"))) {
+                to_select = this.images.length && this.images[0];
+            }
+            this.select_image(to_select);
             this.hide_list_loading();
             $(".custom-image-help").hide();
             if (this.selected_type == 'personal' && !images.length) {
@@ -292,14 +432,24 @@
         select_type: function(type) {
             this.selected_type = type;
             this.types.removeClass("selected");
+            var selection = "#type-select-" + this.selected_type;
             this.types.filter("#type-select-" + this.selected_type).addClass("selected");
+            if (!type) { return }
             this.images_storage.update_images_for_type(
                 this.selected_type, 
                 _.bind(this.show_loading_view, this), 
                 _.bind(this.hide_loading_view, this)
             );
-
             this.update_layout_for_type(type);
+            this.selected_type_el = this.types.filter(".selected").closest("ul").parent();
+            this.update_type_messages(this.selected_type_el);
+        },
+        
+        update_type_messages: function(el) {
+            var empty = this.images_list.parent().find(".empty");
+            empty.text(el.data("list-empty"));
+            var heading = this.images_list.parent().find("h4");
+            heading.text(el.data("list-title"));
         },
 
         update_layout_for_type: function(type) {
@@ -320,16 +470,20 @@
         },
         
         display_warning_for_image: function(image) {
-          if (image && !image.is_system_image() && !image.owned_by(synnefo.user)) {
-            $(".create-vm .image-warning").show();
-            $(".create-controls").hide();
+          if (image && !image.is_system_image() && 
+              !image.owned_by(synnefo.user)) {
+            this.parent.el.find(".image-warning").show();
+            this.parent.el.find(".create-controls").hide();
           } else {
-            $(".create-vm .image-warning").hide();
-            $(".create-controls").show();
+            this.parent.el.find(".image-warning").hide();
+            this.parent.el.find(".create-controls").show();
           }
         },
 
         select_image: function(image) {
+            if (image && !image.is_available()) {
+              image = undefined;
+            }
             if (image && image.get('id') && !_.include(this.images_ids, image.get('id'))) {
                 image = undefined;
             }
@@ -351,8 +505,11 @@
             this.selected_image = image;
                 
             if (image) {
-                this.images_list.find(".image-details").removeClass("selected");
-                this.images_list.find(".image-details#create-vm-image-" + this.selected_image.id).addClass("selected");
+                this.images_list.find(
+                    ".image-details").removeClass("selected");
+                this.images_list.find(
+                    ".image-details#create-vm-image-" + 
+                    this.selected_image.id).addClass("selected");
                 this.update_image_details(image);
 
             } else {
@@ -361,13 +518,17 @@
             this.image_details.hide();
             this.validate();
         },
+        
+        get_image_icon_tag: function(image) {
+            return snf.ui.helpers.os_icon_tag(image.escape("OS"));
+        },
 
         update_image_details: function(image) {
             this.image_details_desc.hide().parent().hide();
             if (image.get_description()) {
                 this.image_details_desc.html(image.get_description(false)).show().parent().show();
             }
-            var img = snf.ui.helpers.os_icon_tag(image.escape("OS"))
+            var img = this.get_image_icon_tag(image);
             if (image.get("name")) {
                 this.image_details_title.html(img + image.escape("name")).show().parent().show();
             }
@@ -435,11 +596,12 @@
                 this.add_image(img);
             }, this))
             
+            var empty = this.images_list.parent().find(".empty");
             if (this.images.length) {
-                this.images_list.parent().find(".empty").hide();
+                empty.hide();
                 this.images_list.show();
             } else {
-                this.images_list.parent().find(".empty").show();
+                empty.show();
                 this.images_list.hide();
             }
 
@@ -447,39 +609,51 @@
             this.images_list.find(".image-details").click(function(){
                 self.select_image($(this).data("image"));
             });
-            
         },
 
         show: function() {
             this.image_details.hide();
             this.parent.$(".create-controls").show();
-
             views.CreateImageSelectView.__super__.show.apply(this, arguments);
         },
 
         add_image: function(img) {
-            var image = $(('<li id="create-vm-image-{1}"' +
-                           'class="image-details clearfix">{2}{0}'+
-                           '<span class="show-details">details</span>'+
-                           '<span class="size"><span class="prepend">by </span>{5}</span>' + 
-                           '<span class="owner">' +
-                           '<span class="prepend"></span>' +
-                           '{3}</span>' + 
-                           '<p>{4}</p>' +
-                           '</li>').format(img.escape("name"), 
-                                                  img.id, 
-                                                  snf.ui.helpers.os_icon_tag(img.escape("OS")),
-                                                  _.escape(img.get_readable_size()),
-                                                  util.truncate(img.get_description(false), 35),
-                                                  _.escape(img.display_owner())));
+            var description = util.truncate(img.get_description(false), 35);
+            if (!img.is_available()) {
+              description = "Image not available."
+            }
+            var image_html = '<li id="create-vm-image-{1}"' +
+                             'class="image-details clearfix">{2}{0}'+
+                             '<span class="show-details">details</span>'+
+                             '<span class="size"><span class="prepend">by ' +
+                             '</span>{5}</span>' + 
+                             '<span class="owner">' +
+                             '<span class="prepend"></span>' +
+                             '{3}</span>' + 
+                             '<p>{4}</p>' +
+                             '</li>';
+            
+            var icon_tag = this.get_image_icon_tag(img);
+            var image = $(image_html.format(
+              _.escape(util.truncate(img.get("name"), 50)), 
+              img.id, 
+              icon_tag,
+              _.escape(img.get_readable_size()),
+              description,
+              _.escape(img.display_owner())
+            ));
+
             image.data("image", img);
             image.data("image_id", img.id);
+
+            if (!img.is_available()) { image.addClass("disabled"); }
+
             this.images_list.append(image);
             image.find(".show-details").click(_.bind(function(e){
                 e.preventDefault();
                 e.stopPropagation();
                 this.show_image_details(img);
-            }, this))
+            }, this));
         },
             
         hide_image_details: function() {
@@ -495,7 +669,7 @@
 
         reset: function() {
             this.selected_image = false;
-            this.select_type("system");
+            this.select_type(this.default_type);
         },
 
         get: function() {
@@ -510,12 +684,13 @@
             }
         }
     });
-
+    
     views.CreateFlavorSelectView = views.CreateVMStepView.extend({
         step: 2,
         initialize: function() {
             views.CreateFlavorSelectView.__super__.initialize.apply(this, arguments);
             this.parent.bind("image:change", _.bind(this.handle_image_change, this));
+            this.parent.bind("project:change", _.bind(this.handle_project_change, this));
 
             this.cpus = this.$(".flavors-cpu-list");
             this.disks = this.$(".flavors-disk-list");
@@ -530,9 +705,58 @@
             }, this));
 
             this.predefined = this.$(".predefined-list");
+            this.projects_list = this.$(".project-select");
+            this.project_select_view = undefined;
+        },
+          
+        init_subviews: function() {
+          if (!this.project_select_view) {
+            this.project_select_view = new views.CreateVMSelectProjectView({
+              container: this.projects_list,
+              collection: synnefo.storage.joined_projects,
+              parent_view: this
+            });
+            this.project_select_view.show(true);
+            this.project_select_view.bind("change", 
+                                          _.bind(this.handle_project_select, 
+                                                 this))
+          }
+          this.project_select_view.set_current(this.parent.project);
+          this.handle_project_select(this.parent.project);
+        },
+
+        hide: function() {
+            this.hide_step();
+        },
+
+        hide_step: function() {
+            this.project_select_view && this.project_select_view.hide(true);
+        },
+
+        handle_project_select: function(projects) {
+          if (!projects.length ) { return }
+          var project = projects[0];
+          this.parent.set_project(project);
+        },
+
+        handle_project_change: function() {
+            if (!this.parent.project) { return }
+            this.update_valid_predefined();
+            this.update_flavors_data();
+            this.update_predefined_flavors();
+            this.reset_flavors();
+            this.update_layout();
+        },
+
+        show: function() {
+          var args = _.toArray(arguments);
+          this.init_subviews();
+          this.project_select_view.show();
+          views.CreateFlavorSelectView.__super__.show.call(this, args);
         },
 
         handle_image_change: function(data) {
+            if (!this.parent.project) { return }
             this.current_image = data;
             this.update_valid_predefined();
             this.current_flavor = undefined;
@@ -628,7 +852,7 @@
                 }
                 
                 // quota check
-                var quotas = synnefo.storage.quotas.get_available_for_vm();
+                var quotas = this.get_project().quotas.get_available_for_vm();
                 var unavailable_check = 
                   synnefo.storage.flavors.unavailable_values_for_quotas;
                 var unavailable = unavailable_check(quotas, [existing]);
@@ -639,7 +863,7 @@
                 }
                 
                 return key;
-            }), function(ret) { return ret });
+            }, this), function(ret) { return ret });
             
             $("li.predefined-selection").addClass("disabled");
             _.each(this.valid_predefined, function(key) {
@@ -662,6 +886,7 @@
         },
         
         update_flavors_data: function() {
+            if (!this.parent.project) { return }
             this.flavors = this.get_active_flavors();
             this.flavors_data = storage.flavors.get_data(this.flavors);
             
@@ -692,8 +917,8 @@
             if (this.current_image) {
               image_excluded = storage.flavors.unavailable_values_for_image(this.current_image);
             }
-
-            var quotas = synnefo.storage.quotas.get_available_for_vm({active: true});
+            
+            var quotas = this.get_project().quotas.get_available_for_vm({active: true});
             var user_excluded = storage.flavors.unavailable_values_for_quotas(quotas);
 
             unavailable.disk = user_excluded.disk.concat(image_excluded.disk);
@@ -922,7 +1147,6 @@
                                                                 values.disk_template);
 
                 this.disk_templates.append(disk_template);
-                //disk_template.tooltip({position:'top center', offset:[-5,0], delay:100, tipClass:'tooltip disktip'});
                 this.__added_flavors.disk_template.push(values.disk_template)
             }
             
@@ -948,7 +1172,7 @@
         
         update_quota_display: function() {
 
-          var quotas = synnefo.storage.quotas;
+          var quotas = this.get_project().quotas;
           _.each(["disk", "ram", "cpu"], function(type) {
             var active = true;
             var key = 'available';
@@ -1205,7 +1429,8 @@
             var create_view = this.parent;
             if (!this.networks_view) {
               this.networks_view = new views.NetworkSelectView({
-                container: this.cont
+                container: this.cont,
+                project: this.get_project()
               });
               this.networks_view.hide(true);
             }
@@ -1451,6 +1676,7 @@
             this.name = this.$("h3.vm-name");
             this.keys = this.$(".confirm-params.ssh");
             this.meta = this.$(".confirm-params.meta");
+            this.project = this.$(".confirm-cont.image .project-name");
             this.ip_addresses = this.$(".confirm-params.ip-addresses");
             this.private_networks = this.$(".confirm-params.private-networks");
             this.init_handlers();
@@ -1472,11 +1698,19 @@
             this.ip_addresses.empty();
             if (!ips|| ips.length == 0) {
                 this.ip_addresses.append(this.make("li", {'class':'empty'}, 
-                                           'No ip addresses selected'))
+                                           'No IP addresses selected'))
             }
             _.each(ips, _.bind(function(ip) {
+                var ip_address = $('<span class="ip"></span>');
+                ip_address.text(ip.get('floating_ip_address'));
+
                 var el = this.make("li", {'class':'selected-ip-address'}, 
-                                  ip.get('floating_ip_address'));
+                                  ip_address);
+                var project_name = ip.get('project').get('name');
+                project_name = util.truncate(project_name, 30);
+                var name = $('<span class="project"></span>');
+                $(name).text(project_name);
+                $(el).append(name);
                 this.ip_addresses.append(el);
             }, this))
 
@@ -1572,6 +1806,10 @@
             this.update_image_details();
             this.update_flavor_details();
             this.update_network_details();
+            
+            var project_name = this.get_project().get('name');
+            project_name = util.truncate(project_name, 25);
+            this.project.text(project_name);
 
             if (!params.image.supports('ssh')) {
                 this.keys.hide();
@@ -1597,40 +1835,91 @@
         }
     });
 
-    views.CreateVMView = views.Overlay.extend({
+    views.VMCreateView = views.Overlay.extend({
         
         view_id: "create_vm_view",
         content_selector: "#createvm-overlay-content",
-        css_class: 'overlay-createvm overlay-info',
+        css_class: 'overlay-wizard overlay-info',
         overlay_id: "metadata-overlay",
 
         subtitle: false,
         title: "Create new machine",
+        min_quota: min_vm_quota,
 
         initialize: function(options) {
-            views.CreateVMView.__super__.initialize.apply(this);
+            views.VMCreateView.__super__.initialize.apply(this);
             this.current_step = 1;
-
-            this.password_view = new views.VMCreationPasswordView();
-
+            
             this.steps = [];
+
+            this.setup_step_views();
+            this.cancel_btn = this.$(".create-controls .cancel");
+            this.next_btn = this.$(".create-controls .next");
+            this.prev_btn = this.$(".create-controls .prev");
+            this.no_project_notice = this.$(".no-project-notice");
+            this.submit_btn = this.$(".create-controls .submit");
+
+            this.history = this.$(".steps-history");
+            this.history_steps = this.$(".steps-history .steps-history-step");
+
+            this.loading_view = $("<div>Loading images...</div>");
+            this.$(".container").after(this.loading_view);
+            this.loading_view.css({
+              backgroundColor: "#97C3D6", 
+              padding: '15px',
+              fontSize: '0.7em',
+              color: '#333'
+            });
+            
+            this.init_handlers();
+        },
+        
+        setup_step_views: function() {
+            this.password_view = new views.VMCreationPasswordView();
             this.steps[1] = new views.CreateImageSelectView(this);
-            this.steps[1].bind("change", _.bind(function(data) {this.trigger("image:change", data)}, this));
+            this.steps[1].bind("change", _.bind(function(data) {
+                this.trigger("image:change", data)
+            }, this));
 
             this.steps[2] = new views.CreateFlavorSelectView(this);
             this.steps[3] = new views.CreateNetworkingView(this);
             this.steps[4] = new views.CreatePersonalizeView(this);
             this.steps[5] = new views.CreateSubmitView(this);
 
-            this.cancel_btn = this.$(".create-controls .cancel");
-            this.next_btn = this.$(".create-controls .next");
-            this.prev_btn = this.$(".create-controls .prev");
-            this.submit_btn = this.$(".create-controls .submit");
+        },
 
-            this.history = this.$(".steps-history");
-            this.history_steps = this.$(".steps-history .steps-history-step");
-            
-            this.init_handlers();
+        get_available_project: function() {
+          var project = undefined;
+          var user_project = synnefo.storage.projects.get_user_project();
+          if (user_project && user_project.quotas.can_fit(this.min_quota)) {
+            project = user_project;
+          }
+          if (!project) {
+            synnefo.storage.projects.each(function(p) {
+              if (p.quotas.can_fit(this.min_quota)) {
+                project = p;
+              }
+            }, this);
+          }
+          return project;
+        },
+
+        set_project: function(project) {
+          var trigger = false;
+          if (project != this.project) {
+            trigger = true;
+          }
+          this.project = project;
+          if (trigger) { this.trigger("project:change", project)}
+          this.check_project_is_set();
+        },
+        
+        check_project_is_set: function() {
+          if (!this.project) { 
+            this.set_no_project();
+          } else {
+            this.unset_no_project();
+          }
         },
 
         init_handlers: function() {
@@ -1699,10 +1988,11 @@
                     'fixed_ip': ip.get('floating_ip_address')
                   });
                 });
-
+                
                 _.map(data.networks, function(n) { return n.get('id') });
                 storage.vms.create(data.name, data.image, data.flavor, 
-                                   meta, extra, _.bind(function(data){
+                                   meta, this.project, extra, 
+                                   _.bind(function(data) {
                     _.each(data.addresses, function(ip) {
                       ip.set({'status': 'connecting'});
                     });
@@ -1722,21 +2012,18 @@
         },
 
         onClose: function() {
-          this.steps[3].remove();
+          this.current_view && this.current_view.hide && this.current_view.hide(true);
+          if (this.steps && this.steps[3]) {
+            this.steps[3].remove();
+          }
         },
 
         reset: function() {
           this.current_step = 1;
-
-          this.steps[1].reset();
-          this.steps[2].reset();
-          this.steps[3].reset();
-          this.steps[4].reset();
-
-          //this.steps[1].show();
-          //this.steps[2].show();
-          //this.steps[3].show();
-          //this.steps[4].show();
+          
+          _.each(this.steps, function(s) {
+              s.reset();
+          });
 
           this.submit_btn.removeClass("in-progress");
         },
@@ -1745,11 +2032,24 @@
         },
 
         update_layout: function() {
+            this.check_project_is_set();
             this.show_step(this.current_step);
             this.current_view.update_layout();
         },
+        
+        set_no_project: function() {
+          this.next_btn.hide();
+          this.no_project_notice.show();
+        },
+
+        unset_no_project: function() {
+          this.next_btn.show();
+          this.no_project_notice.hide();
+        },
 
         beforeOpen: function() {
+            var project = this.get_available_project();
+            this.set_project(project);
             if (!this.skip_reset_on_next_open) {
                 this.submiting = false;
                 this.reset();
@@ -1757,9 +2057,18 @@
                 this.$(".steps-container").css({"margin-left":0 + "px"});
                 this.show_step(1);
             }
-            
+
+            this.loading_view.show();
+            this.$(".container").hide();
+            var complete = _.bind(function() {
+              this.loading_view.hide();
+              this.$(".container").slideDown();
+              this.update_layout();
+            }, this);
+
+            synnefo.storage.images.fetch({complete: complete});
+
             this.skip_reset_on_next_open = false;
-            this.update_layout();
         },
         
         set_step: function(step) {
@@ -1773,8 +2082,6 @@
         },
 
         show_step: function(step) {
-            // FIXME: this shouldn't be here
-            // but since we are not calling step.hide this should work
             this.steps[1].image_details.hide();
             
             this.current_view && this.current_view.hide_step && this.current_view.hide_step();
@@ -1822,13 +2129,17 @@
                 this.next_btn.hide();
                 this.submit_btn.show();
             } else {
-                this.next_btn.show();
+                this.check_project_is_set();
                 this.submit_btn.hide();
             }
         },
 
         get_params: function() {
-            return _.extend({}, this.steps[1].get(), this.steps[2].get(), this.steps[3].get(), this.steps[4].get());
+            var params = {};
+            _.each(this.steps, function(s) {
+                _.extend(params, s.get());
+            });
+            return params;
         }
     });
     

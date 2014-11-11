@@ -1,35 +1,17 @@
-// Copyright 2011 GRNET S.A. All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or
-// without modification, are permitted provided that the following
-// conditions are met:
-// 
-//   1. Redistributions of source code must retain the above
-//      copyright notice, this list of conditions and the following
-//      disclaimer.
-// 
-//   2. Redistributions in binary form must reproduce the above
-//      copyright notice, this list of conditions and the following
-//      disclaimer in the documentation and/or other materials
-//      provided with the distribution.
-// 
-// THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-// USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-// AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
-// 
-// The views and conclusions contained in the software and
-// documentation are those of the authors and should not be
-// interpreted as representing official policies, either expressed
-// or implied, of GRNET S.A.
+// Copyright (C) 2010-2014 GRNET S.A.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
 ;(function(root){
@@ -41,6 +23,22 @@
     var snf = root.synnefo = root.synnefo || {};
     var views = snf.views = snf.views || {}
     var storage = snf.storage = snf.storage || {};
+    var util = snf.util = snf.util || {};
+
+    var min_ip_quota = {
+      'cyclades.floating_ip': 1
+    };
+    
+    views.CreateIPSelectProjectView = 
+        views.CreateVMSelectProjectView.extend({
+            tpl: '#create-view-projects-select-tpl',
+            required_quota: function() {
+                return min_ip_quota
+            },
+            model_view_cls: views.CreateVMSelectProjectItemView.extend({
+                display_quota: min_ip_quota
+            })
+        });
 
     views.IpPortView = views.ext.ModelView.extend({
       tpl: '#ip-port-view-tpl',
@@ -119,14 +117,35 @@
       tpl: '#ip-view-tpl',
       auto_bind: ['connect_vm'],
         
+      show_reassign_view: function() {
+          synnefo.ui.main.ip_reassign_view.show(this.model);
+      },
+
       status_cls: function() {
-        return this.status_cls_map[this.model.get('status')];
+          var status = this.model.get('status');
+          var vm = this.model.get("port") && this.model.get("port").get("vm");
+          if (status == "CONNECTED" && vm) {
+            return snf.views.ext.VM_STATUS_CLS_MAP[vm.state()].join(" ");
+          } else {
+            return this.status_cls_map[this.model.get('status')];
+          }
       },
 
       status_display: function(v) {
-        return this.status_map[this.model.get('status')];
+        var vm_status = "";
+        var vm = this.model.get("port") && this.model.get("port").get("vm");
+        var ip_status = this.status_map[this.model.get('status')];
+        if (vm) {
+            vm_status = STATE_TEXTS[vm.state()] || "";
+        }
+        if (!vm_status) { return ip_status; }
+        return ip_status + " - " + vm_status;
       },
       
+      show_reassign_view: function() {
+          synnefo.ui.main.ip_reassign_view.show(this.model);
+      },
+
       model_icon: function() {
         var img = 'ip-icon-detached.png';
         var src = synnefo.config.images_url + '/{0}';
@@ -177,47 +196,118 @@
       }
     });
       
+    views.FloatingIPCreateView = views.Overlay.extend({
+        view_id: "ip_create_view",
+        content_selector: "#ips-create-content",
+        css_class: 'overlay-ip-create overlay-info',
+        overlay_id: "ip-create-overlay",
+
+        title: "Create new IP address",
+        subtitle: "IP addresses",
+
+        initialize: function(options) {
+            views.FloatingIPCreateView.__super__.initialize.apply(this);
+
+            this.create_button = this.$("form .form-action.create");
+            this.form = this.$("form");
+            this.projects_list = this.$(".projects-list");
+            this.project_select_view = undefined;
+            this.init_handlers();
+        },
+
+        init_handlers: function() {
+            this.create_button.click(_.bind(function(e){
+                this.submit();
+            }, this));
+
+            this.form.submit(_.bind(function(e){
+                e.preventDefault();
+                this.submit();
+                return false;
+            }, this))
+        },
+
+        submit: function() {
+            if (this.validate()) {
+                this.create();
+            };
+        },
+        
+        validate: function() {
+            var project = this.get_project();
+            if (!project || !project.quotas.can_fit({'cyclades.floating_ip': 1})) {
+                this.project_select.closest(".form-field").addClass("error");
+                this.project_select.focus();
+                return false;
+            }
+            return true;
+        },
+        
+        create: function() {
+            if (this.create_button.hasClass("in-progress")) { return }
+            this.create_button.addClass("in-progress");
+
+            var project_id = this.get_project().get("id");
+            var project = synnefo.storage.projects.get(project_id);
+
+
+            var cb = _.bind(function() { 
+              synnefo.api.trigger("quota:update");
+              this.hide(); 
+            }, this);
+
+            snf.storage.floating_ips.create({
+                floatingip: {
+                  project: project_id
+                }
+              }, 
+              { 
+                complete: cb 
+              });
+        },
+        
+        get_project: function() {
+          var project = this.project_select_view.get_selected()[0];
+          return project;
+        },
+        
+        init_subviews: function() {
+          if (!this.project_select_view) {
+            var view_cls = views.CreateIPSelectProjectView;
+            this.project_select_view = new view_cls({
+              container: this.projects_list,
+              collection: synnefo.storage.joined_projects,
+              parent_view: this
+            });
+          }
+          this.project_select_view.show(true);
+          var project = synnefo.storage.quotas.get_available_projects(min_ip_quota)[0];
+          if (project) {
+            this.project_select_view.set_current(project);
+          }
+        },
+        
+        hide: function() {
+          this.project_select_view && this.project_select_view.hide(true);
+          views.FloatingIPCreateView.__super__.hide.apply(this, arguments);
+        },
+
+        beforeOpen: function() {
+            this.init_subviews();
+            this.create_button.removeClass("in-progress")
+            this.$(".form-field").removeClass("error");
+        }
+    });
+
     views.IpCollectionView = views.ext.CollectionView.extend({
       collection: storage.floating_ips,
       collection_name: 'floating_ips',
       model_view_cls: views.IpView,
-      create_view: undefined, // no create overlay for IPs
-      quota_key: 'cyclades.floating_ip',
+      create_view_cls: views.FloatingIPCreateView,
+      quota_key: 'ip',
       initialize: function() {
         views.IpCollectionView.__super__.initialize.apply(this, arguments);
         this.connect_view = new views.IPConnectVmOverlay();
-        this.creating = false;
-      },
-      
-      set_creating: function() {
-        this.creating = true;
-        this.create_button.addClass("in-progress");
-      },
-      
-      reset_creating: function() {
-        this.creating = false;
-        this.create_button.removeClass("in-progress");
-      },
-
-      handle_create_click: function() {
-        if (this.creating) { 
-          return
-        }
-
-        this.set_creating();
-        network = synnefo.storage.networks.get_floating_ips_network();
-        this.collection.create({
-          floatingip: {}
-        }, 
-        {
-          success: _.bind(function() {
-            this.post_create();
-          }, this),
-          complete: _.bind(function() {
-            this.creating = false;
-            this.reset_creating();
-            this.collection.fetch();
-        }, this)});
       }
     });
 
@@ -230,6 +320,7 @@
         css_class: "overlay-info connect-ip",
         title: "Attach IP to machine",
         allow_multiple: false,
+        allow_empty: false,
 
         show_vms: function(ip, vms, selected, callback, subtitle) {
             views.IPConnectVmOverlay.__super__.show_vms.call(this, 
@@ -245,5 +336,6 @@
         }
 
     });
+
 
 })(this);

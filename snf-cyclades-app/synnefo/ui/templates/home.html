@@ -5,15 +5,13 @@
 <head>
     <title>{{ BRANDING_SERVICE_NAME }}</title>
     
-    <!--<meta http-equiv="X-UA-Compatible" content="IE=7">-->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     
-    {% if SYNNEFO_FONTS_BASE_URL %}
-    <link href="{{ SYNNEFO_FONTS_BASE_URL }}css?family=Ubuntu&subset=latin,greek" 
-          rel="stylesheet" type="text/css" >
-    <link href='{{ SYNNEFO_FONTS_BASE_URL }}css?family=Open+Sans&subset=latin,greek' 
-          rel='stylesheet' type='text/css'>
-    {% endif %}
+
+    {% for url in BRANDING_FONTS_CSS_URLS %}
+        <link href="{{ url }}" rel="stylesheet" type="text/css" >
+    {% endfor %}
 
     <link rel="shortcut icon" href="{{ BRANDING_FAVICON_URL }}" />
 
@@ -35,6 +33,7 @@
     <![endif]-->
 
     <script src="{{ SYNNEFO_JS_LIB_URL}}jquery-1.7.2.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}simple-slider.min.js"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.cookie.js"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.client.js"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}jquery.tools.min.js"></script>
@@ -46,10 +45,14 @@
     <script src="{{ SYNNEFO_JS_LIB_URL}}filereader.js"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}filesaver.js"></script>
 
+    <script src="{{ SYNNEFO_JS_LIB_URL}}select2.min.js"></script>
+    <link rel="stylesheet" type="text/css" 
+          href="{{ SYNNEFO_CSS_URL }}select2.css?v={{ SYNNEFO_JS_LIB_VERSION }}"/>
+
 
     <script src="{{ SYNNEFO_JS_LIB_URL}}underscore.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}underscore.string.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
-    <script src="{{ SYNNEFO_JS_LIB_URL}}rivets.conf.js"></script>
+    <script src="{{ SYNNEFO_JS_LIB_URL}}rivets.conf.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}backbone.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}json2.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_LIB_URL}}stacktrace.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
@@ -69,6 +72,7 @@
     <script src="{{ SYNNEFO_JS_URL }}sync.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_URL }}models.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_URL }}neutron.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_URL }}volumes.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_URL }}glance_models.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_URL }}views.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_URL }}views_ext.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
@@ -79,15 +83,16 @@
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_icon_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_single_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_list_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_networks_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_public_keys_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_disks_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
-    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_ips_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_metadata_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_feedback_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_create_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_networks_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_ips_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_volumes_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_connect_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_vm_resize_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
+    <script src="{{ SYNNEFO_JS_WEB_URL }}ui_reassign_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_public_keys_view.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
     <script src="{{ SYNNEFO_JS_WEB_URL }}ui_custom_images.js?v={{ SYNNEFO_JS_LIB_VERSION }}"></script>
 
@@ -103,8 +108,10 @@
         });
         if (!tmp_auth_client.get_token()) { tmp_auth_client.redirect_to_login(); }
     </script>
+
     {{ CLOUDBAR_CODE }}
-    
+    <script>window.CLOUDBAR_INCLUDE_FONTS = false;</script>
+
     <script>
         // empty object for console to avoid errors in browsers that don't support it
         if (!window.console) {window.console = {}; window.console.log = window.console.info = window.console.debug =
@@ -112,6 +119,7 @@
         
         //populate available image icons array
         var os_icons = {{image_icons|safe}};
+        os_icons.push('snapshot');
         
         // timeout value from settings.py
         var TIMEOUT = {{ timeout }};
@@ -136,10 +144,11 @@
             'START': '{% trans "Starting..." %}',
             'CONNECT': '{% trans "Connecting..." %}',
             'DISCONNECT': '{% trans "Disconnecting..." %}',
+            'ATTACH_VOLUME': '{% trans "Attaching disk..." %}',
+            'DETACH_VOLUME': '{% trans "Detaching disk..." %}',
+            'MODIFY_VOLUME': '{% trans "Modifying disk..." %}',
             'RESIZE': '{% trans "Resizing..." %}'
         }
-
-
 
         // building statuses
         var BUILDING_MESSAGES = {
@@ -237,6 +246,9 @@
                     <li><a href="#machines/icon/" title="{% trans "manage virtual machines" %}"
                         data-hover-title="machines" class="primary" id="machines_view_link">
                         <img src="{{ SYNNEFO_IMAGES_URL }}machines-icon.png" /></a></li>
+                    <li><a href="#disks/" title="{% trans "manage virtual disks" %}"
+                        data-hover-title="disks" class="primary" id="volumes_view_link">
+                        <img src="{{ SYNNEFO_IMAGES_URL }}disks-icon.png" /></a></li>
                     <li><a href="#networks/" title="{% trans "manage networks" %}"
                         data-hover-title="networks" class="primary" id="networks_view_link">
                         <img src="{{ SYNNEFO_IMAGES_URL }}networks-icon.png" /></a></li>
@@ -255,8 +267,8 @@
                     <div id="networks-pane" class="pane-view">
                         {% include "partials/networks.html" %}
                     </div>
-                    <div id="disks-pane" class="pane">
-                    	{% include "partials/disks.html" %}
+                    <div id="volumes-pane" class="pane-view">
+                    	{% include "partials/volumes.html" %}
                     </div>
                     <div id="ips-pane" class="pane-view">
                     	{% include "partials/ips.html" %}
@@ -400,7 +412,7 @@
     <div id="rename-view-tpl" class="hidden model-rename-view">
       <div class="model-name">
         <h3>
-          <span data-rv-text="model.name|list_truncate" class="value"></span>
+          <span data-rv-text="model._rename_view|display_name|list_truncate" class="value"></span>
           <span class="edit-btn" data-rv-on-click="view.set_edit"></span>
         </h3>
       </div>
@@ -576,14 +588,36 @@
         <div class="header clearfix images off">Loading images...<span></span></div>
         <div class="header clearfix flavors off">Loading flavors...<span></span></div>
         <div class="header clearfix resources off">Loading resources...<span></span></div>
+        <div class="header clearfix projects off">Loading projects...<span></span></div>
         <div class="header clearfix quotas off">Loading quotas...<span></span></div>
         <div class="header clearfix vms off">Loading machines...<span></span></div>
+        <div class="header clearfix volumes off">Loading disks...<span></span></div>
         <div class="header clearfix networks off">Loading networks...<span></span></div>
         <div class="header clearfix layout off">Rendering layout...<span></span></div>
     </div>
     <div id="user_custom_images" class="overlay-content overlay-content hidden">
         {% include "partials/custom_images.html" %}
     </div>
+
+    <div id="create-view-projects-select-tpl" class="hidden">
+    <div class="collection">
+        <select class="items-list">
+        </select>
+    </div>
+    </div>
+
+    <div id="create-view-select-project-item-tpl" class="hidden inner-tpl">
+        <option class="clearfix select-item project clearfix" 
+        data-rv-value="model.id">
+        <div class="project-select-item-content clearfix">
+                <span class-"project-name" 
+                    data-rv-text="model.name|truncate 25"></span>
+                <span class="quota" 
+                    data-rv-html="model._quota|quotas_option_html"></span>
+            </div>
+        </option>
+    </div>
+
     {% include "partials/vm_resize.html" %}
     {% include "footer.html" %}
 
@@ -591,7 +625,6 @@
         $(document).ready(function() {
             $(".css-panes").hide();
 
-            // TODO: match <= 1.9.1
             if ($.browser.mozilla && $.browser.version.substr(0,3) == "1.9") {
                 synnefo.config.overlay_speed = 0;
                 $.fx.off = true;
@@ -630,8 +663,9 @@
                 'userdata': '{% url ui_userdata %}', 
                 'compute':  {{ compute_api_url|safe }}, 
                 'network':  {{ network_api_url|safe }}, 
+                'volume':  {{ volume_api_url|safe }}, 
                 'glance': {{ glance_api_url|safe }},
-                'accounts': {{ accounts_api_url|safe }},
+                'accounts': {{ accounts_api_url|safe }}
             };
             
             // TODO: configurable userdata urls in models.js
@@ -672,6 +706,9 @@
             synnefo.config.automatic_network_range_format = {{ automatic_network_range_format|safe }};
             synnefo.config.custom_image_help_url = '{{ custom_image_help_url|safe }}';
             synnefo.config.forced_server_networks = {{ forced_server_networks|safe }};
+            synnefo.config.limit_reached_msg = 'Usage limit reached';
+            synnefo.config.volume_max_size = {{ volume_max_size|safe }};
+            synnefo.config.snapshots_enabled = {{ snapshots_enabled|safe }};
             
             synnefo.auth_client = new synnefo.auth.AstakosClient({
                 login_url: synnefo.config.login_redirect,
@@ -697,6 +734,7 @@
             synnefo.ui.init();
             synnefo.ui.main.bind("ready", function(){
             });
+
         });
     </script>
 </body>

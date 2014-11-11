@@ -1,35 +1,17 @@
-# Copyright (C) 2012, 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 Astakos Client utility module
@@ -38,9 +20,13 @@ Astakos Client utility module
 from httplib import HTTPConnection, HTTPSConnection
 from contextlib import closing
 
-import simplejson
 from objpool.http import PooledHTTPConnection
 from astakosclient.errors import AstakosClientException, BadValue
+
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 
 def retry_dec(func):
@@ -99,7 +85,7 @@ def scheme_to_class(scheme, use_pool, pool_size):
 def parse_request(request, logger):
     """Parse request with simplejson to convert it to string"""
     try:
-        return simplejson.dumps(request)
+        return json.dumps(request)
     except Exception as err:
         msg = "Cannot parse request \"%s\" with simplejson: %s" \
               % (request, str(err))
@@ -120,3 +106,35 @@ def check_input(function_name, logger, **kwargs):
 def join_urls(url_a, url_b):
     """Join_urls from synnefo.lib"""
     return url_a.rstrip("/") + "/" + url_b.lstrip("/")
+
+
+def render_overlimit_exception(response, logger):
+    """Render a human readable message for QuotaLimit Exception"""
+    resource_name = {
+        "cyclades.disk": "Disk",
+        "cyclades.vm": "Virtual Machine",
+        "cyclades.cpu": "CPU",
+        "cyclades.ram": "RAM",
+        "cyclades.floating_ip": "Floating IP address",
+        "cyclades.network.private": "Private Network",
+        "pithos.diskspace": "Storage space",
+        "astakos.pending_app": "Pending Applications"
+    }
+    response = json.loads(response)
+    data = response['overLimit']['data']
+    usage = data["usage"]
+    limit = data["limit"]
+    available = limit - usage
+    provision = data['provision']
+    requested = provision['quantity']
+    resource = provision['resource']
+    try:
+        resource = resource_name[resource]
+    except KeyError:
+        logger.error("Unknown resource name '%s'", resource)
+
+    msg = "Resource Limit Exceeded for your account."
+    details = "Limit for resource '%s' exceeded for your account."\
+              " Available: %s, Requested: %s"\
+              % (resource, available, requested)
+    return msg, details

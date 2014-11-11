@@ -1,37 +1,19 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """Business logic for reconciliation
 
@@ -61,9 +43,10 @@ from django.conf import settings
 import logging
 import itertools
 import bitarray
+import simplejson as json
 from datetime import datetime, timedelta
 
-from django.db import transaction
+from synnefo.db import transaction
 from synnefo.db.models import (Backend, VirtualMachine, Flavor,
                                pooled_rapi_client, Network,
                                BackendNetwork, BridgePoolTable,
@@ -71,6 +54,8 @@ from synnefo.db.models import (Backend, VirtualMachine, Flavor,
 from synnefo.db import pools
 from synnefo.logic import utils, rapi, backend as backend_mod
 from synnefo.lib.utils import merge_time
+from synnefo.plankton.backend import (PlanktonBackend, OBJECT_UNAVAILABLE,
+                                      OBJECT_ERROR)
 
 logger = logging.getLogger()
 logging.basicConfig()
@@ -113,6 +98,7 @@ class BackendReconciler(object):
         self.stale_servers = self.reconcile_stale_servers()
         self.orphan_servers = self.reconcile_orphan_servers()
         self.unsynced_servers = self.reconcile_unsynced_servers()
+        self.unsynced_snapshots = self.reconcile_unsynced_snapshots()
         self.close()
 
     def get_build_status(self, db_server):
@@ -193,7 +179,6 @@ class BackendReconciler(object):
             self.log.debug("Issued OP_INSTANCE_REMOVE for orphan servers.")
 
     def reconcile_unsynced_servers(self):
-        #log = self.log
         for server_id in self.db_servers_keys & self.gnt_servers_keys:
             db_server = self.db_servers[server_id]
             gnt_server = self.gnt_servers[server_id]
@@ -269,7 +254,7 @@ class BackendReconciler(object):
                     ram=gnt_flavor["ram"],
                     cpu=gnt_flavor["vcpus"],
                     disk=db_flavor.disk,
-                    disk_template=db_flavor.disk_template)
+                    volume_type_id=db_flavor.volume_type_id)
             except Flavor.DoesNotExist:
                 self.log.warning("Server '%s' has unknown flavor.", server_id)
                 return
@@ -302,7 +287,12 @@ class BackendReconciler(object):
                                          created__lte=building_time) \
                                 .order_by("id")
         gnt_nics = gnt_server["nics"]
-        gnt_nics_parsed = backend_mod.process_ganeti_nics(gnt_nics)
+        try:
+            gnt_nics_parsed = backend_mod.parse_instance_nics(gnt_nics)
+        except Network.InvalidBackendIdError as e:
+            self.log.warning("Server %s is connected to unknown network %s"
+                             " Cannot reconcile server." % (server_id, str(e)))
+            return
         nics_changed = len(db_nics) != len(gnt_nics)
         for db_nic, gnt_nic in zip(db_nics, sorted(gnt_nics_parsed.items())):
             gnt_nic_id, gnt_nic = gnt_nic
@@ -321,12 +311,44 @@ class BackendReconciler(object):
             self.log.info(msg, server_id, db_nics_str, gnt_nics_str)
             if self.options["fix_unsynced_nics"]:
                 vm = get_locked_server(server_id)
-                backend_mod.process_net_status(vm=vm,
-                                               etime=self.event_time,
-                                               nics=gnt_nics)
+                backend_mod.process_op_status(
+                    vm=vm, etime=self.event_time, jobid=-0,
+                    opcode="OP_INSTANCE_SET_PARAMS", status='success',
+                    logmsg="Reconciliation: simulated Ganeti event",
+                    nics=gnt_nics)
 
     def reconcile_unsynced_disks(self, server_id, db_server, gnt_server):
-        pass
+        building_time = self.event_time - BUILDING_NIC_TIMEOUT
+        db_disks = db_server.volumes.exclude(status="CREATING",
+                                             created__lte=building_time) \
+                                    .filter(deleted=False)\
+                                    .order_by("id")
+        gnt_disks = gnt_server["disks"]
+        gnt_disks_parsed = backend_mod.parse_instance_disks(gnt_disks)
+        disks_changed = len(db_disks) != len(gnt_disks)
+        for db_disk, gnt_disk in zip(db_disks,
+                                     sorted(gnt_disks_parsed.items())):
+            gnt_disk_id, gnt_disk = gnt_disk
+            if (db_disk.id == gnt_disk_id) and\
+               backend_mod.disks_are_equal(db_disk, gnt_disk):
+                continue
+            else:
+                disks_changed = True
+                break
+        if disks_changed:
+            msg = "Found unsynced disks for server '%s'.\n"\
+                  "\tDB:\n\t\t%s\n\tGaneti:\n\t\t%s"
+            db_disks_str = "\n\t\t".join(map(format_db_disk, db_disks))
+            gnt_disks_str = "\n\t\t".join(map(format_gnt_disk,
+                                          sorted(gnt_disks_parsed.items())))
+            self.log.info(msg, server_id, db_disks_str, gnt_disks_str)
+            if self.options["fix_unsynced_disks"]:
+                vm = get_locked_server(server_id)
+                backend_mod.process_op_status(
+                    vm=vm, etime=self.event_time, jobid=-0,
+                    opcode="OP_INSTANCE_SET_PARAMS", status='success',
+                    logmsg="Reconciliation: simulated Ganeti event",
+                    disks=gnt_disks)
 
     def reconcile_pending_task(self, server_id, db_server):
         job_id = db_server.task_job_id
@@ -351,6 +373,48 @@ class BackendReconciler(object):
                 db_server.save()
                 self.log.info("Cleared pending task for server '%s", server_id)
 
+    def reconcile_unsynced_snapshots(self):
+        # Find the biggest ID of the retrieved Ganeti jobs. Reconciliation
+        # will be performed for IDs that are smaller from this.
+        max_job_id = max(self.gnt_jobs.keys()) if self.gnt_jobs.keys() else 0
+
+        with PlanktonBackend(None) as b:
+            snapshots = b.list_snapshots(check_permissions=False)
+        unavail_snapshots = [s for s in snapshots
+                             if s["status"] == OBJECT_UNAVAILABLE]
+
+        for snapshot in unavail_snapshots:
+            uuid = snapshot["id"]
+            backend_info = snapshot["backend_info"]
+            if backend_info is None:
+                self.log.warning("Cannot perform reconciliation for"
+                                 " snapshot '%s'. Not enough information.",
+                                 uuid)
+                continue
+            job_info = json.loads(backend_info)
+            backend_id = job_info["ganeti_backend_id"]
+            job_id = job_info["ganeti_job_id"]
+
+            if backend_id == self.backend.id and job_id <= max_job_id:
+                if job_id in self.gnt_jobs:
+                    job_status = self.gnt_jobs[job_id]["status"]
+                    state = \
+                        backend_mod.snapshot_state_from_job_status(job_status)
+                    if state == OBJECT_UNAVAILABLE:
+                        continue
+                else:
+                    # Snapshot in unavailable but no job exists
+                    state = OBJECT_ERROR
+
+                self.log.info("Snapshot '%s' is '%s' in Pithos DB but should"
+                              " be '%s'", uuid, snapshot["status"], state)
+                if self.options["fix_unsynced_snapshots"]:
+                    backend_mod.update_snapshot(uuid, snapshot["owner"],
+                                                job_id=-1,
+                                                job_status=job_status,
+                                                etime=self.event_time)
+                    self.log.info("Fixed state of snapshot '%s'.", uuid)
+
 
 NIC_MSG = ": %s\t".join(["ID", "State", "IP", "Network", "MAC", "Index",
                          "Firewall"]) + ": %s"
@@ -366,6 +430,17 @@ def format_gnt_nic(nic):
     return NIC_MSG % (nic_name, nic["state"], nic["ipv4_address"],
                       nic["network"].id, nic["mac"], nic["index"],
                       nic["firewall_profile"])
+
+DISK_MSG = ": %s\t".join(["ID", "State", "Size", "Index"]) + ": %s"
+
+
+def format_db_disk(disk):
+    return DISK_MSG % (disk.id, disk.status, disk.size, disk.index)
+
+
+def format_gnt_disk(disk):
+    disk_name, disk = disk
+    return DISK_MSG % (disk_name, disk["status"], disk["size"], disk["index"])
 
 
 #
@@ -392,8 +467,10 @@ def hanging_networks(backend, GNets):
     """
     def get_network_groups(group_list):
         groups = set()
-        for (name, mode, link) in group_list:
-            groups.add(name)
+        # Since ganeti 2.10 networks are connected to nodegroups
+        # with mode and link AND vlan (ovs extra nicparam)
+        for group_info in group_list:
+            groups.add(group_info[0])
         return groups
 
     with pooled_rapi_client(backend) as c:
@@ -459,12 +536,12 @@ def nics_from_instance(i):
     names = zip(itertools.repeat('name'), i['nic.names'])
     macs = zip(itertools.repeat('mac'), i['nic.macs'])
     networks = zip(itertools.repeat('network'), i['nic.networks.names'])
+    indexes = zip(itertools.repeat('index'), range(0, len(ips)))
     # modes = zip(itertools.repeat('mode'), i['nic.modes'])
     # links = zip(itertools.repeat('link'), i['nic.links'])
     # nics = zip(ips,macs,modes,networks,links)
-    nics = zip(ips, names, macs, networks)
+    nics = zip(ips, names, macs, networks, indexes)
     nics = map(lambda x: dict(x), nics)
-    #nics = dict(enumerate(nics))
     tags = i["tags"]
     for tag in tags:
         t = tag.split(":")
@@ -479,14 +556,19 @@ def nics_from_instance(i):
     return nics
 
 
+def disks_from_instance(i):
+    sizes = zip(itertools.repeat('size'), i['disk.sizes'])
+    names = zip(itertools.repeat('name'), i['disk.names'])
+    uuids = zip(itertools.repeat('uuid'), i['disk.uuids'])
+    indexes = zip(itertools.repeat('index'), range(0, len(sizes)))
+    disks = zip(sizes, names, uuids, indexes)
+    disks = map(lambda x: dict(x), disks)
+    return disks
+
+
 def get_ganeti_jobs(backend):
     gnt_jobs = backend_mod.get_jobs(backend)
     return dict([(int(j["id"]), j) for j in gnt_jobs])
-
-
-def disks_from_instance(i):
-    return dict([(index, {"size": size})
-                 for index, size in enumerate(i["disk.sizes"])])
 
 
 class NetworkReconciler(object):

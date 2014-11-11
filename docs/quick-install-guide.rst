@@ -62,7 +62,7 @@ To install the whole Synnefo stack run:
 
 .. code-block:: console
 
-   # snf-deploy all --autoconf
+   # snf-deploy synnefo --autoconf
 
 This might take a while depending on the physical host you are running on, since
 it will download everything that is necessary, install and configure the whole
@@ -70,34 +70,107 @@ stack.
 
 If the following ends without errors, you have successfully installed Synnefo.
 
+NOTE: All the passwords and secrets used during installation are
+hardcoded in `/etc/snf-deploy/synnefo.conf`. You can change them before
+starting the installation process. If you want snf-deploy create random
+passwords use the ``--pass-gen`` option. The generated passwords will be
+kept in the `/var/lib/snf-deploy/snf_deploy_status` file.
+
+.. _access-synnefo:
+
 Accessing the Synnefo installation
 ==================================
 
 Remote access
 -------------
 
-If you want to access the Synnefo installation from a remote machine, please
-first set your nameservers accordingly by adding the following line as your
-first nameserver in ``/etc/resolv.conf``:
+If you want to access the Synnefo installation from a remote machine:
 
-.. code-block:: console
+Method 1: Modify DNS name resolution
+____________________________________
 
-   nameserver <IP>
+* Set your nameservers accordingly by adding the following line as your
+  first nameserver in ``/etc/resolv.conf``:
 
-The <IP> is the public IP of the machine that you deployed Synnefo on, and want
-to access.
+  .. code-block:: console
 
-Then open a browser and point to:
+     nameserver <IP>
 
-`https://synnefo.live/`
+  The **<IP>** is the public IP of the machine that you deployed Synnefo on,
+  and want to access. Note that ``/etc/resolv.conf`` can be overwritten by
+  other programs (``Network Manager``, ``dhclient``) and you may therefore lose
+  this line. Depending on your system, you may need to disable writes to
+  ``/etc/resolv.conf`` or prepend the nameservers in the
+  ``/etc/dhclient.conf``.
+
+Method 2: Modify /etc/hosts
+___________________________
+
+* Add the IP of your Synnefo installation in your ``/etc/hosts`` file:
+
+  .. code-block:: console
+
+      <IP> synnefo.live
+      <IP> accounts.synnefo.live
+      <IP> compute.synnefo.live
+      <IP> pithos.synnefo.live
+
+ If you're using Windows the same settings can be applied on
+ ``C:\WINDOWS\SYSTEM32\DRIVERS\ETC\HOSTS``.
+
+Method 3: Use a SOCKS proxy (easier)
+____________________________________
+
+* Alternatively, you can setup a SOCKS proxy using the ssh client and instruct
+  your browser to use it. To setup a SOCKS proxy run:
+
+ .. code-block:: console
+
+    $ ssh -D localhost:9009 user@host
+
+ Now, you can either instruct your browser to tunnel all the traffic through
+ the SOCKS proxy or even better install a plugin like `Foxy Proxy
+ <https://addons.mozilla.org/en-US/firefox/addon/foxyproxy-standard/>`_ to fine
+ tune when to use the proxy or not.
+
+ In order to use the proxy globally in Firefox, go to
+ ``Edit->Preferences->Advanced->Network->Settings`` and set ``SOCKS host`` to
+ ``localhost`` and ``Port`` to ``9009``. Firefox by default doesn't use the
+ SOCKS proxy for domain name resolving. To enable this, type ``about:config`` in
+ the URL bar and change ``network.proxy.socks_remote_dns`` to ``true``.
+
+ For better control on which sites you view over the proxy, download FoxyProxy
+ and set a ``URL_Pattern`` to whitelist the ``synnefo.live`` domain. To do this
+ use the URL_Pattern ``*synnefo.live*`` and set FoxyProxy to run in the
+ ``Use proxies based on their pre-defined patterns and priorities`` mode.
+
+ FoxyProxy is also available for Chrome through the `Chrome Web Store
+ <https://chrome.google.com/webstore/detail/foxyproxy-standard/gcknhkkoolaabfmlnjonogaaifnjlfnp?hl=en>`_,
+ so a similar approach will work in Chrome also.
+
+ .. note::
+
+    Internet Explorer doesn't support SOCKS5 proxies.
+
+Then open a browser and point it to:
+
+`https://astakos.synnefo.live/astakos/ui/login`
 
 Local access
 ------------
 
-If you want to access the installation from the same machine it runs on, just
-open a browser and point to:
+If you want to access the installation from the same machine it runs on, you
+must connect graphically to the machine first. A simple way is to use SSH with
+X-forwarding:
 
-`https://synnefo.live/`
+.. code-block:: console
+
+   $ ssh <user>@<hostname> -YC
+
+where **<user>** is your username and **<hostname>** is the IP/hostname of your
+machine. Then, run ``iceweasel`` or ``chromium`` and in the address bar write:
+
+`https://astakos.synnefo.live/astakos/ui/login`
 
 The default <domain> is set to ``synnefo.live``. A local BIND is already
 set up by `snf-deploy` to serve all FQDNs.

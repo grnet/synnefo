@@ -1,45 +1,28 @@
-# Copyright 2011-2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.conf import settings
 from django.conf.urls import patterns
 from django.http import HttpResponse
 from django.utils import simplejson as json
-from django.db import transaction
+from synnefo.db import transaction
 from django.db.models import Q
 from django.template.loader import render_to_string
 
 from snf_django.lib import api
+from snf_django.lib.api import utils
 
 from synnefo.api import util
 from synnefo.db.models import Network
@@ -53,7 +36,9 @@ urlpatterns = patterns(
     'synnefo.api.networks',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_networks', {'detail': True}),
-    (r'^/(\w+)(?:/|.json|.xml)?$', 'network_demux'))
+    (r'^/(\w+)(?:/|.json|.xml)?$', 'network_demux'),
+    (r'^/(\w+)/action(?:/|.json|.xml)?$', 'network_action_demux'),
+)
 
 
 def demux(request):
@@ -81,6 +66,23 @@ def network_demux(request, network_id):
                                                            'DELETE'])
 
 
+@api.api_method(http_method='POST', user_required=True, logger=log)
+def network_action_demux(request, network_id):
+    req = utils.get_json_body(request)
+    network = util.get_network(network_id, request.user_uniq, for_update=True,
+                               non_deleted=True)
+    action = req.keys()[0]
+    try:
+        f = NETWORK_ACTIONS[action]
+    except KeyError:
+        raise api.faults.BadRequest("Action %s not supported." % action)
+    action_args = req[action]
+    if not isinstance(action_args, dict):
+        raise api.faults.BadRequest("Invalid argument.")
+
+    return f(request, network, action_args)
+
+
 @api.api_method(http_method='GET', user_required=True, logger=log)
 def list_networks(request, detail=True):
     log.debug('list_networks detail=%s', detail)
@@ -88,8 +90,6 @@ def list_networks(request, detail=True):
     user_networks = Network.objects.filter(Q(userid=request.user_uniq) |
                                            Q(public=True))\
                                    .order_by('id')
-    if detail:
-        user_networks = user_networks.prefetch_related("subnets")
 
     user_networks = api.utils.filter_modified_since(request,
                                                     objects=user_networks)
@@ -109,7 +109,7 @@ def list_networks(request, detail=True):
 @api.api_method(http_method='POST', user_required=True, logger=log)
 def create_network(request):
     userid = request.user_uniq
-    req = api.utils.get_request_dict(request)
+    req = api.utils.get_json_body(request)
     log.info('create_network user: %s request: %s', userid, req)
 
     network_dict = api.utils.get_attribute(req, "network",
@@ -128,8 +128,9 @@ def create_network(request):
     if name is None:
         name = ""
 
+    project = network_dict.get('project', None)
     network = networks.create(userid=userid, name=name, flavor=flavor,
-                              public=False)
+                              public=False, project=project)
     networkdict = network_to_dict(network, detail=True)
     response = render_network(request, networkdict, status=201)
 
@@ -145,13 +146,14 @@ def get_network_details(request, network_id):
 
 @api.api_method(http_method='PUT', user_required=True, logger=log)
 def update_network(request, network_id):
-    info = api.utils.get_request_dict(request)
+    info = api.utils.get_json_body(request)
 
     network = api.utils.get_attribute(info, "network", attr_type=dict,
                                       required=True)
     new_name = api.utils.get_attribute(network, "name", attr_type=basestring)
 
-    network = util.get_network(network_id, request.user_uniq, for_update=True)
+    network = util.get_network(network_id, request.user_uniq, for_update=True,
+                               non_deleted=True)
     if network.public:
         raise api.faults.Forbidden("Cannot rename the public network.")
     network = networks.rename(network, new_name)
@@ -162,7 +164,8 @@ def update_network(request, network_id):
 @transaction.commit_on_success
 def delete_network(request, network_id):
     log.info('delete_network %s', network_id)
-    network = util.get_network(network_id, request.user_uniq, for_update=True)
+    network = util.get_network(network_id, request.user_uniq, for_update=True,
+                               non_deleted=True)
     if network.public:
         raise api.faults.Forbidden("Cannot delete the public network.")
     networks.delete(network)
@@ -173,15 +176,9 @@ def network_to_dict(network, detail=True):
     d = {'id': str(network.id), 'name': network.name}
     d['links'] = util.network_to_links(network.id)
     if detail:
-        # Loop over subnets. Do not perform any extra query because of prefetch
-        # related!
-        subnet_ids = []
-        for subnet in network.subnets.all():
-            subnet_ids.append(subnet.id)
-
         state = "SNF:DRAINED" if network.drained else network.state
         d['user_id'] = network.userid
-        d['tenant_id'] = network.userid
+        d['tenant_id'] = network.project
         d['type'] = network.flavor
         d['updated'] = api.utils.isoformat(network.updated)
         d['created'] = api.utils.isoformat(network.created)
@@ -190,10 +187,24 @@ def network_to_dict(network, detail=True):
         d['shared'] = network.public
         d['router:external'] = network.external_router
         d['admin_state_up'] = True
-        d['subnets'] = subnet_ids
+        d['subnets'] = network.subnet_ids
         d['SNF:floating_ip_pool'] = network.floating_ip_pool
         d['deleted'] = network.deleted
     return d
+
+
+@transaction.commit_on_success
+def reassign_network(request, network, args):
+    project = args.get("project")
+    if project is None:
+        raise api.faults.BadRequest("Missing 'project' attribute.")
+    networks.reassign(network, project)
+    return HttpResponse(status=200)
+
+
+NETWORK_ACTIONS = {
+    "reassign": reassign_network,
+}
 
 
 def render_network(request, networkdict, status=200):

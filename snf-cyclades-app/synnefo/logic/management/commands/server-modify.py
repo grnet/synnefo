@@ -1,42 +1,26 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from optparse import make_option
 
-from django.db import transaction
-from django.core.management.base import BaseCommand, CommandError
-from synnefo.management.common import (get_vm, get_flavor, convert_api_faults,
+from synnefo.db import transaction
+from django.core.management.base import CommandError
+
+from synnefo.management.common import (get_resource, convert_api_faults,
                                        wait_server_task)
+from snf_django.management.commands import SynnefoCommand
 from snf_django.management.utils import parse_bool
 from synnefo.logic import servers
 
@@ -44,19 +28,19 @@ from synnefo.logic import servers
 ACTIONS = ["start", "stop", "reboot_hard", "reboot_soft"]
 
 
-class Command(BaseCommand):
-    args = "<server ID>"
+class Command(SynnefoCommand):
+    args = "<server_id>"
     help = "Modify a server."
 
-    option_list = BaseCommand.option_list + (
+    option_list = SynnefoCommand.option_list + (
         make_option(
             '--name',
             dest='name',
             metavar='NAME',
             help="Rename server."),
         make_option(
-            '--owner',
-            dest='owner',
+            '--user',
+            dest='user',
             metavar='USER_UUID',
             help="Change ownership of server. Value must be a user UUID"),
         make_option(
@@ -84,7 +68,7 @@ class Command(BaseCommand):
             default="True",
             choices=["True", "False"],
             metavar="True|False",
-            help="Wait for Ganeti jobs to complete."),
+            help="Wait for Ganeti jobs to complete. [Default: True]"),
     )
 
     @transaction.commit_on_success
@@ -93,7 +77,7 @@ class Command(BaseCommand):
         if len(args) != 1:
             raise CommandError("Please provide a server ID")
 
-        server = get_vm(args[0], for_update=True)
+        server = get_resource("server", args[0], for_update=True)
 
         new_name = options.get("name", None)
         if new_name is not None:
@@ -110,10 +94,10 @@ class Command(BaseCommand):
             self.stdout.write("Set server '%s' as suspended=%s\n" %
                               (server, suspended))
 
-        new_owner = options.get('owner')
+        new_owner = options.get('user')
         if new_owner is not None:
             if "@" in new_owner:
-                raise CommandError("Invalid owner UUID.")
+                raise CommandError("Invalid user UUID.")
             old_owner = server.userid
             server.userid = new_owner
             server.save()
@@ -123,7 +107,7 @@ class Command(BaseCommand):
         wait = parse_bool(options["wait"])
         new_flavor_id = options.get("flavor")
         if new_flavor_id is not None:
-            new_flavor = get_flavor(new_flavor_id)
+            new_flavor = get_resource("flavor", new_flavor_id)
             old_flavor = server.flavor
             msg = "Resizing server '%s' from flavor '%s' to '%s'.\n"
             self.stdout.write(msg % (server, old_flavor, new_flavor))

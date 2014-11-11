@@ -1,4 +1,19 @@
 #!/usr/bin/env python
+#
+# Copyright (C) 2010-2014 GRNET S.A.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 Synnefo ci utils module
@@ -8,8 +23,10 @@ import os
 import re
 import sys
 import time
+import httplib
 import logging
 import fabric.api as fabric
+import simplejson as json
 import subprocess
 import tempfile
 from ConfigParser import ConfigParser, DuplicateSectionError
@@ -19,12 +36,15 @@ from kamaki.clients.astakos import AstakosClient, parse_endpoints
 from kamaki.clients.cyclades import CycladesClient, CycladesNetworkClient
 from kamaki.clients.image import ImageClient
 from kamaki.clients.compute import ComputeClient
+from kamaki.clients.utils import https
 from kamaki.clients import ClientError
 import filelocker
 
 DEFAULT_CONFIG_FILE = "ci_wheezy.conf"
 # Is our terminal a colorful one?
 USE_COLORS = True
+# Ignore SSL verification
+IGNORE_SSL = False
 # UUID of owner of system images
 DEFAULT_SYSTEM_IMAGES_UUID = [
     "25ecced9-bf53-4145-91ee-cf47377e9fb2",  # production (okeanos.grnet.gr)
@@ -75,6 +95,26 @@ def _check_fabric(fun):
             self.fabric_installed = True
         return fun(self, *args, **kwargs)
     return wrapper
+
+
+def _kamaki_ssl(ignore_ssl=None):
+    """Patch kamaki to use the correct CA certificates
+
+    Read kamaki's config file and decide if we are going to use
+    CA certificates and patch kamaki clients accordingly.
+
+    """
+    config = kamaki_config.Config()
+    if ignore_ssl is None:
+        ignore_ssl = config.get("global", "ignore_ssl").lower() == "on"
+    ca_file = config.get("global", "ca_certs")
+
+    if ignore_ssl:
+        # Skip SSL verification
+        https.patch_ignore_ssl()
+    else:
+        # Use ca_certs path found in kamakirc
+        https.patch_with_certs(ca_file)
 
 
 def _check_kamaki(fun):
@@ -185,6 +225,9 @@ class SynnefoCI(object):
         Setup cyclades_client, image_client and compute_client
         """
 
+        # Patch kamaki for SSL verification
+        _kamaki_ssl(ignore_ssl=IGNORE_SSL)
+
         config = kamaki_config.Config()
         if self.kamaki_cloud is None:
             try:
@@ -198,7 +241,7 @@ class SynnefoCI(object):
         auth_url = config.get_cloud(self.kamaki_cloud, "url")
         self.logger.debug("Authentication URL is %s" % _green(auth_url))
         token = config.get_cloud(self.kamaki_cloud, "token")
-        #self.logger.debug("Token is %s" % _green(token))
+        # self.logger.debug("Token is %s" % _green(token))
 
         self.astakos_client = AstakosClient(auth_url, token)
         endpoints = self.astakos_client.authenticate()
@@ -262,6 +305,12 @@ class SynnefoCI(object):
                              fip['floating_ip_address'])
             self.network_client.delete_floatingip(fip['id'])
 
+    # pylint: disable= no-self-use
+    @_check_fabric
+    def shell_connect(self):
+        """Open shell to remote server"""
+        fabric.open_shell("export TERM=xterm")
+
     def _create_floating_ip(self):
         """Create a new floating ip"""
         networks = self.network_client.list_networks(detail=True)
@@ -272,12 +321,12 @@ class SynnefoCI(object):
             try:
                 fip = self.network_client.create_floatingip(pub_net['id'])
             except ClientError as err:
-                self.logger.warning("%s: %s", err.message, err.details)
+                self.logger.warning("%s", str(err.message).strip())
                 continue
             self.logger.debug("Floating IP %s with id %s created",
                               fip['floating_ip_address'], fip['id'])
             return fip
-        self.logger.error("No mor IP addresses available")
+        self.logger.error("No more IP addresses available")
         sys.exit(1)
 
     def _create_port(self, floating_ip):
@@ -322,7 +371,10 @@ class SynnefoCI(object):
         server_id = server['id']
         self.write_temp_config('server_id', server_id)
         self.logger.debug("Server got id %s" % _green(server_id))
-        server_user = server['metadata']['users']
+
+        # An image may have more than one user. Choose the first one.
+        server_user = server['metadata']['users'].split(" ")[0]
+
         self.write_temp_config('server_user', server_user)
         self.logger.debug("Server's admin user is %s" % _green(server_user))
         server_passwd = server['adminPass']
@@ -349,16 +401,19 @@ class SynnefoCI(object):
             _run(cmd, False)
 
         # Setup apt, download packages
-        self.logger.debug("Setup apt. Install x2goserver and firefox")
+        self.logger.debug("Setup apt")
         cmd = """
         echo 'APT::Install-Suggests "false";' >> /etc/apt/apt.conf
         echo 'precedence ::ffff:0:0/96  100' >> /etc/gai.conf
         apt-get update
-        apt-get install curl --yes --force-yes
+        apt-get install -q=2 curl --yes --force-yes
         echo -e "\n\n{0}" >> /etc/apt/sources.list
         # Synnefo repo's key
         curl https://dev.grnet.gr/files/apt-grnetdev.pub | apt-key add -
+        """.format(self.config.get('Global', 'apt_repo'))
+        _run(cmd, False)
 
+        cmd = """
         # X2GO Key
         apt-key adv --recv-keys --keyserver keys.gnupg.net E1F958385BFE2B6E
         apt-get install x2go-keyring --yes --force-yes
@@ -377,9 +432,10 @@ class SynnefoCI(object):
         echo 'Encoding=UTF-8' >> /usr/share/applications/xterm.desktop
         echo 'Icon=xterm-color_48x48' >> /usr/share/applications/xterm.desktop
         echo 'Categories=System;TerminalEmulator;' >> \
-                /usr/share/applications/xterm.desktop
-        """.format(self.config.get('Global', 'apt_repo'))
-        _run(cmd, False)
+                /usr/share/applications/xterm.desktop"""
+        if self.config.get("Global", "setup_x2go") == "True":
+            self.logger.debug("Install x2goserver and firefox")
+            _run(cmd, False)
 
     def _find_flavor(self, flavor=None):
         """Find a suitable flavor to use
@@ -502,14 +558,16 @@ class SynnefoCI(object):
         # Use the first network as IPv4
         server_ip = networks[0]['ipv4']
 
-        if (".okeanos.io" in self.cyclades_client.base_url or
-           ".demo.synnefo.org" in self.cyclades_client.base_url):
-            tmp1 = int(server_ip.split(".")[2])
-            tmp2 = int(server_ip.split(".")[3])
-            server_ip = "gate.okeanos.io"
-            server_port = 10000 + tmp1 * 256 + tmp2
-        else:
-            server_port = 22
+        # Check if config has ssh_port option and if so, use that port.
+        server_port = self.config.get("Deployment", "ssh_port")
+        if not server_port:
+            # No ssh port given. Get it from API (SNF:port_forwarding)
+            if '22' in server['SNF:port_forwarding']:
+                server_ip = server['SNF:port_forwarding']['22']['host']
+                server_port = int(server['SNF:port_forwarding']['22']['port'])
+            else:
+                server_port = 22
+
         self.write_temp_config('server_ip', server_ip)
         self.logger.debug("Server's IPv4 is %s" % _green(server_ip))
         self.write_temp_config('server_port', server_port)
@@ -646,7 +704,8 @@ class SynnefoCI(object):
             sys.exit(1)
 
     @_check_fabric
-    def clone_repo(self, local_repo=False):
+    def clone_repo(self, synnefo_repo=None, synnefo_branch=None,
+                   local_repo=False, pull_request=None):
         """Clone Synnefo repo from slave server"""
         self.logger.info("Configure repositories on remote server..")
         self.logger.debug("Install/Setup git")
@@ -659,16 +718,65 @@ class SynnefoCI(object):
         _run(cmd, False)
 
         # Clone synnefo_repo
-        synnefo_branch = self.clone_synnefo_repo(local_repo=local_repo)
+        synnefo_branch = self.clone_synnefo_repo(
+            synnefo_repo=synnefo_repo, synnefo_branch=synnefo_branch,
+            local_repo=local_repo, pull_request=pull_request)
         # Clone pithos-web-client
-        self.clone_pithos_webclient_repo(synnefo_branch)
+        if self.config.get("Global", "build_pithos_webclient") == "True":
+            # Clone pithos-web-client
+            self.clone_pithos_webclient_repo(synnefo_branch)
 
     @_check_fabric
-    def clone_synnefo_repo(self, local_repo=False):
+    def clone_synnefo_repo(self, synnefo_repo=None, synnefo_branch=None,
+                           local_repo=False, pull_request=None):
         """Clone Synnefo repo to remote server"""
+
+        assert (pull_request is None or
+                (synnefo_branch is None and synnefo_repo is None))
+
+        pull_repo = None
+        if pull_request is not None:
+            # Get a Github pull request and run the testsuite in
+            # a sophisticated way.
+            # Sophisticated means that it will not just check the remote branch
+            # from which the pull request originated. Instead it will checkout
+            # the branch for which the pull request is indented (e.g.
+            # grnet:develop) and apply the pull request over it. This way it
+            # checks the pull request against the branch this pull request
+            # targets.
+            m = re.search("github.com/([^/]+)/([^/]+)/pull/(\d+)",
+                          pull_request)
+            if m is None:
+                self.logger.error("Couldn't find a valid GitHub pull request"
+                                  " URL")
+                sys.exit(1)
+
+            group = m.group(1)
+            repo = m.group(2)
+            pull_number = m.group(3)
+
+            # Construct api url
+            api_url = "/repos/%s/%s/pulls/%s" % \
+                (group, repo, pull_number)
+            headers = {'User-Agent': "snf-ci"}
+            # Get pull request info
+            try:
+                conn = httplib.HTTPSConnection("api.github.com")
+                conn.request("GET", api_url, headers=headers)
+                response = conn.getresponse()
+                payload = json.load(response)
+                synnefo_repo = payload['base']['repo']['html_url']
+                synnefo_branch = payload['base']['ref']
+                pull_repo = (payload['head']['repo']['html_url'],
+                             payload['head']['ref'])
+            finally:
+                conn.close()
+
         # Find synnefo_repo and synnefo_branch to use
-        synnefo_repo = self.config.get('Global', 'synnefo_repo')
-        synnefo_branch = self.config.get("Global", "synnefo_branch")
+        if synnefo_repo is None:
+            synnefo_repo = self.config.get('Global', 'synnefo_repo')
+        if synnefo_branch is None:
+            synnefo_branch = self.config.get("Global", "synnefo_branch")
         if synnefo_branch == "":
             synnefo_branch = \
                 subprocess.Popen(
@@ -709,7 +817,7 @@ class SynnefoCI(object):
         else:
             # Clone Synnefo from remote repo
             self.logger.debug("Clone synnefo from %s" % synnefo_repo)
-            self._git_clone(synnefo_repo)
+            self._git_clone(synnefo_repo, directory="synnefo")
 
         # Checkout the desired synnefo_branch
         self.logger.debug("Checkout \"%s\" branch/commit" % synnefo_branch)
@@ -721,6 +829,16 @@ class SynnefoCI(object):
         git checkout %s
         """ % (synnefo_branch)
         _run(cmd, False)
+
+        # Apply a Github pull request
+        if pull_repo is not None:
+            self.logger.debug("Apply patches from pull request %s",
+                              pull_number)
+            cmd = """
+            cd synnefo
+            git pull --no-edit --no-rebase {0} {1}
+            """.format(pull_repo[0], pull_repo[1])
+            _run(cmd, False)
 
         return synnefo_branch
 
@@ -736,7 +854,7 @@ class SynnefoCI(object):
         # Clone pithos-webclient from remote repo
         self.logger.debug("Clone pithos-webclient from %s" %
                           pithos_webclient_repo)
-        self._git_clone(pithos_webclient_repo)
+        self._git_clone(pithos_webclient_repo, directory="pithos-web-client")
 
         # Track all pithos-webclient branches
         cmd = """
@@ -781,7 +899,7 @@ class SynnefoCI(object):
         """.format(pithos_webclient_branch)
         _run(cmd, False)
 
-    def _git_clone(self, repo):
+    def _git_clone(self, repo, directory=""):
         """Clone repo to remote server
 
         Currently clonning from code.grnet.gr can fail unexpectedly.
@@ -791,7 +909,7 @@ class SynnefoCI(object):
         cloned = False
         for i in range(1, 11):
             try:
-                _run("git clone %s" % repo, False)
+                _run("git clone %s %s" % (repo, directory), False)
                 cloned = True
                 break
             except BaseException:
@@ -824,7 +942,8 @@ class SynnefoCI(object):
         # Build synnefo packages
         self.build_synnefo()
         # Build pithos-web-client packages
-        self.build_pithos_webclient()
+        if self.config.get("Global", "build_pithos_webclient") == "True":
+            self.build_pithos_webclient()
 
     @_check_fabric
     def build_synnefo(self):
@@ -842,6 +961,7 @@ class SynnefoCI(object):
         cmd = """
         dpkg -i snf-deploy*.deb
         apt-get -f install --yes --force-yes
+        snf-deploy keygen
         """
         with fabric.cd("synnefo_build-area"):
             with fabric.settings(warn_only=True):
@@ -901,12 +1021,17 @@ class SynnefoCI(object):
             schema = self.config.get('Global', 'schema')
         self.logger.debug("Will use \"%s\" schema" % _green(schema))
 
-        schema_dir = os.path.join(self.ci_dir, "schemas/%s" % schema)
-        if not (os.path.exists(schema_dir) and os.path.isdir(schema_dir)):
-            raise ValueError("Unknown schema: %s" % schema)
-
-        self.logger.debug("Upload schema files to server")
-        _put(os.path.join(schema_dir, "*"), "/etc/snf-deploy/")
+        self.logger.debug("Update schema files to server")
+        cmd = """
+        schema_dir="synnefo/ci/schemas/{0}"
+        if [ -d "$schema_dir" ]; then
+            cp "$schema_dir"/* /etc/snf-deploy/
+        else
+            echo "$schema_dir" does not exist
+            exit 1
+        fi
+        """.format(schema)
+        _run(cmd, False)
 
         self.logger.debug("Change password in nodes.conf file")
         cmd = """
@@ -916,8 +1041,7 @@ class SynnefoCI(object):
 
         self.logger.debug("Run snf-deploy")
         cmd = """
-        snf-deploy keygen --force
-        snf-deploy --disable-colors --autoconf all
+        snf-deploy --disable-colors --autoconf synnefo
         """
         _run(cmd, True)
 
@@ -929,9 +1053,7 @@ class SynnefoCI(object):
 
         self.logger.debug("Install needed packages")
         cmd = """
-        pip install -U mock
-        pip install -U factory_boy
-        pip install -U nose
+        pip install -U mock factory_boy nose coverage
         """
         _run(cmd, False)
 

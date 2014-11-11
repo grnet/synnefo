@@ -1,38 +1,20 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from django.conf.urls.defaults import patterns
-from django.db import transaction
+from synnefo.db import transaction
 from django.http import HttpResponse
 from django.utils import simplejson as json
 
@@ -62,7 +44,9 @@ ips_urlpatterns = patterns(
     'synnefo.api.floating_ips',
     (r'^(?:/|.json|.xml)?$', 'demux'),
     (r'^/detail(?:.json|.xml)?$', 'list_floating_ips', {'detail': True}),
-    (r'^/(\w+)(?:/|.json|.xml)?$', 'floating_ip_demux'))
+    (r'^/(\w+)(?:/|.json|.xml)?$', 'floating_ip_demux'),
+    (r'^/(\w+)/action(?:.json|.xml)?$', 'floating_ip_action_demux'),
+)
 
 
 def demux(request):
@@ -87,6 +71,29 @@ def floating_ip_demux(request, floating_ip_id):
                                           allowed_methods=['GET', 'DELETE'])
 
 
+@api.api_method(http_method='POST', user_required=True, logger=log,
+                serializations=["json"])
+def floating_ip_action_demux(request, floating_ip_id):
+    userid = request.user_uniq
+    req = utils.get_json_body(request)
+    log.debug('floating_ip_action %s %s', floating_ip_id, req)
+    if len(req) != 1:
+        raise faults.BadRequest('Malformed request.')
+    floating_ip = util.get_floating_ip_by_id(userid,
+                                             floating_ip_id,
+                                             for_update=True)
+    action = req.keys()[0]
+    try:
+        f = FLOATING_IP_ACTIONS[action]
+    except KeyError:
+        raise faults.BadRequest("Action %s not supported." % action)
+    action_args = req[action]
+    if not isinstance(action_args, dict):
+        raise faults.BadRequest("Invalid argument.")
+
+    return f(request, floating_ip, action_args)
+
+
 def ip_to_dict(floating_ip):
     machine_id = None
     port_id = None
@@ -99,9 +106,9 @@ def ip_to_dict(floating_ip):
             "floating_ip_address": floating_ip.address,
             "port_id": str(port_id) if port_id else None,
             "floating_network_id": str(floating_ip.network_id),
-            "deleted": floating_ip.deleted,
-            "tenant_id": floating_ip.userid,
-            "user_id": floating_ip.userid}
+            "user_id": floating_ip.userid,
+            "tenant_id": floating_ip.project,
+            "deleted": floating_ip.deleted}
 
 
 @api.api_method(http_method="GET", user_required=True, logger=log,
@@ -140,10 +147,11 @@ def get_floating_ip(request, floating_ip_id):
 @transaction.commit_on_success
 def allocate_floating_ip(request):
     """Allocate a floating IP."""
-    req = utils.get_request_dict(request)
+    req = utils.get_json_body(request)
     floating_ip_dict = api.utils.get_attribute(req, "floatingip",
                                                required=True, attr_type=dict)
     userid = request.user_uniq
+    project = floating_ip_dict.get("project", None)
     log.info('allocate_floating_ip user: %s request: %s', userid, req)
 
     # the network_pool is a mandatory field
@@ -152,7 +160,7 @@ def allocate_floating_ip(request):
                                          required=False,
                                          attr_type=(basestring, int))
     if network_id is None:
-        floating_ip = ips.create_floating_ip(userid)
+        floating_ip = ips.create_floating_ip(userid, project=project)
     else:
         try:
             network_id = int(network_id)
@@ -165,7 +173,8 @@ def allocate_floating_ip(request):
                                           "floating_ip_address",
                                           required=False,
                                           attr_type=basestring)
-        floating_ip = ips.create_floating_ip(userid, network, address)
+        floating_ip = ips.create_floating_ip(userid, network, address,
+                                             project=project)
 
     log.info("User '%s' allocated floating IP '%s'", userid, floating_ip)
     request.serialization = "json"
@@ -198,7 +207,7 @@ def update_floating_ip(request, floating_ip_id):
     #userid = request.user_uniq
     #log.info("update_floating_ip '%s'. User '%s'.", floating_ip_id, userid)
 
-    #req = utils.get_request_dict(request)
+    #req = utils.get_json_body(request)
     #info = api.utils.get_attribute(req, "floatingip", required=True)
 
     #device_id = api.utils.get_attribute(info, "device_id", required=False)
@@ -233,6 +242,20 @@ def list_floating_ip_pools(request):
     data = json.dumps({"floating_ip_pools": floating_ip_pools})
     request.serialization = "json"
     return HttpResponse(data, status=200)
+
+
+@transaction.commit_on_success
+def reassign(request, floating_ip, args):
+    project = args.get("project")
+    if project is None:
+        raise faults.BadRequest("Missing 'project' attribute.")
+    ips.reassign_floating_ip(floating_ip, project)
+    return HttpResponse(status=200)
+
+
+FLOATING_IP_ACTIONS = {
+    "reassign": reassign,
+}
 
 
 def network_to_floating_ip_pool(network):

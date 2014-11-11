@@ -1,35 +1,17 @@
-// Copyright 2011 GRNET S.A. All rights reserved.
-// 
-// Redistribution and use in source and binary forms, with or
-// without modification, are permitted provided that the following
-// conditions are met:
-// 
-//   1. Redistributions of source code must retain the above
-//      copyright notice, this list of conditions and the following
-//      disclaimer.
-// 
-//   2. Redistributions in binary form must reproduce the above
-//      copyright notice, this list of conditions and the following
-//      disclaimer in the documentation and/or other materials
-//      provided with the distribution.
-// 
-// THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-// OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-// USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-// AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-// LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-// ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-// POSSIBILITY OF SUCH DAMAGE.
-// 
-// The views and conclusions contained in the software and
-// documentation are those of the authors and should not be
-// interpreted as representing official policies, either expressed
-// or implied, of GRNET S.A.
+// Copyright (C) 2010-2014 GRNET S.A.
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // 
 
 ;(function(root){
@@ -247,6 +229,14 @@
             var self = this;
             var el = this.vm(vm);
 
+            var project = vm.get('project');
+            if (project) {
+              project.bind('change', function() {
+                el.find(".project-name").text(
+                  _.truncate(project.get('name'), 20));
+              }, this);
+            };
+
             // hidden feature, double click on indicators to display 
             // vm diagnostics.
             el.find(".indicators").bind("dblclick", function(){
@@ -298,24 +288,39 @@
             _.each(vms, _.bind(function(vm){
                 // vm will be removed
                 // no need to update
-                if (vm.get("status") == "DELETED") {
-                    return;
-                }
-
-                // this won't add it additional times
+                if (vm.get("status") == "DELETED") { return; }
                 this.add(vm);
                 this.update_vm(vm);
-            }, this))
+            }, this));
             
             // update view stuff
             this.__update_layout();
         },
         
+        disable_toggler: function(vm, t) {
+            this.vm(vm).find(".cont-toggler-wrapper."+t).addClass("disabled");
+            var info_view = this.info_views && this.info_views[vm.id];
+            var el = info_view && info_view[t+'_el'];
+            if (el) {
+              el.hide();
+            }
+        },
+
+        enable_toggler: function(vm, t) {
+            this.vm(vm).find(".cont-toggler-wrapper." + t).removeClass("disabled");
+        },
+
         update_toggles_visibility: function(vm) {
           if (vm.is_building() || vm.in_error_state() || vm.get("status") == "DESTROY") {
-            this.vm(vm).find(".cont-toggler-wrapper.ips").addClass("disabled");
+              this.disable_toggler(vm, 'ips');
+              this.disable_toggler(vm, 'volumes');
           } else {
-            this.vm(vm).find(".cont-toggler-wrapper.ips").removeClass("disabled");
+              this.enable_toggler(vm, 'ips');
+              if (vm.volumes.length) {
+                  this.enable_toggler(vm, 'volumes');
+              } else {
+                  this.disable_toggler(vm, 'volumes');
+              }
           }
         },
 
@@ -335,10 +340,10 @@
             }
             
             var el = this.vm(vm);
-            if (vm.can_resize()) {
-              el.addClass("can-resize");
+            if (!vm.in_error_state()) {
+                el.addClass("can-resize");
             } else {
-              el.removeClass("can-resize");
+                el.removeClass("can-resize");
             }
 
             if (vm.get('suspended')) {
@@ -397,6 +402,10 @@
             }
         },
         
+        show_reassign_view: function(vm) {
+          synnefo.ui.main.vm_reassign_view.show(vm);
+        },
+
         show_indicator: function(vm, action) {
             var action = action || vm.pending_action;
             this.sel('vm_wave', vm.id).hide();
@@ -507,6 +516,16 @@
           el.addClass("disabled-visible")
         },
 
+        set_can_resize: function() {
+          var el = $(this.el).find("a.action-resize").parent();
+          el.removeClass("disabled-visible");
+        },
+
+        set_cannot_resize: function() {
+          var el = $(this.el).find("a.action-resize").parent();
+          el.addClass("disabled-visible");
+        },
+
         // update the actions layout, depending on the selected actions
         update_layout: function() {
             
@@ -515,6 +534,12 @@
                 this.set_can_start();
               } else {
                 this.set_cannot_start();
+              }
+
+              if (this.vm.can_resize()) {
+                  this.set_can_resize();
+              } else {
+                  this.set_cannot_resize();
               }
             }
 
@@ -574,6 +599,8 @@
                 this.view.hide_indicator(this.vm);
             }
                 
+            var vm_view = this.view.vm(this.vm);
+            vm_view.removeClass("action-pending");
             // update action link styles and shit
             _.each(models.VM.ACTIONS, function(action, index) {
                 if (actions.indexOf(action) > -1) {
@@ -591,6 +618,7 @@
                         this.action_confirm(action).show();
                         this.action(action).removeClass("disabled");
                         this.action_link(action).addClass("selected");
+                        vm_view.addClass("action-pending");
                     } else {
                         this.action_confirm_cont(action).hide();
                         this.action_confirm(action).hide();
@@ -608,7 +636,7 @@
             try {
                 this.vm.unbind("action:fail", this.update_layout)
                 this.vm.unbind("action:fail:reset", this.update_layout)
-            } catch (err) { console.log("Error")};
+            } catch (err) { console.error(err)};
             
             this.vm.bind("action:fail", this.update_layout)
             this.vm.bind("action:fail:reset", this.update_layout)
@@ -636,6 +664,11 @@
             // initial hide
             if (this.hide) { $(this.el).hide() };
             
+            if (this.$('.snapshot').length) {
+              this.$('.snapshot').click(_.bind(function() {
+                synnefo.ui.main.create_snapshot_view.show(this.vm);
+              }, this));
+            }
             // action links events
             _.each(models.VM.ACTIONS, function(action) {
                 var action = action;
@@ -654,14 +687,22 @@
                 // action links click events
                 $(this.el).find(".action-container."+action+" a").click(function(ev) {
                     ev.preventDefault();
-                    if (action == "start" && !self.vm.can_start() && !vm.in_error_state()) {
+                    if (
+                      action == "start" && 
+                      !self.vm.can_start() && 
+                      !vm.in_error_state()) {
+                        if (!vm.can_resize()) { return }
                         ui.main.vm_resize_view.show_with_warning(self.vm);
                         return;
                     }
 
                     if (action == "resize") {
-                        ui.main.vm_resize_view.show(self.vm);
-                        return;
+                      //if (!vm.can_resize()) { return }
+                      ui.main.vm_resize_view.show(self.vm);
+                      return;
+                    } else if (action == "reassign") {
+                      ui.main.vm_reassign_view.show(self.vm);
+                      return;
                     } else {
                         self.set(action);
                     }
@@ -785,7 +826,7 @@
     
     views.VMPortView = views.ext.ModelView.extend({
       tpl: '#vm-port-view-tpl',
-      classes: 'port-item clearfix',
+      classes: 'inner-item port-item clearfix',
       
       update_in_progress: function() {
         if (this.model.get("in_progress_no_vm")) {
@@ -856,5 +897,20 @@
       tpl: '#vm-port-ips-tpl',
       model_view_cls: views.VMPortIpView
     });
+
+    views.VMVolumeView = views.ext.ModelView.extend({
+      tpl: '#vm-volume-view-tpl',
+      classes: 'volume-item clearfix inner-item',
+      show_snapshot_create_overlay: function() {
+        var vm = this.model.get('vm');
+        if (!vm) { return }
+        synnefo.ui.main.create_snapshot_view.show(vm, this.model);
+      }
+
+    });
+
+    views.VMVolumeListView = views.ext.CollectionView.extend({
+      tpl: '#vm-volume-list-view-tpl',
+      model_view_cls: views.VMVolumeView    });      
 
 })(this);

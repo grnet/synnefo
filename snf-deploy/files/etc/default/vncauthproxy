@@ -1,0 +1,6 @@
+# set uid/gid
+#CHUID="vncauthproxy:vncauthproxy"
+# Arguments passed to vncauthproxy
+#DAEMON_OPTS="--pid-file=$PIDFILE"
+
+DAEMON_OPTS="--pid-file=$PIDFILE --enable-ssl --listen-address=%VNC% --proxy-listen-address=%VNC%"

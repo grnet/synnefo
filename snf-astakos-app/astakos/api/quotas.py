@@ -1,53 +1,36 @@
-# Copyright 2013 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from django.utils import simplejson as json
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
-from django.db import transaction
+from astakos.im import transaction
 
 from snf_django.lib import api
 from snf_django.lib.api.faults import BadRequest, ItemNotFound
+from snf_django.lib.api import utils
 from django.core.cache import cache
 
 from astakos.im import settings
 from astakos.im import register
-from astakos.im.quotas import get_user_quotas, service_get_quotas
+from astakos.im.quotas import get_user_quotas, service_get_quotas, \
+    service_get_project_quotas, project_ref
 
 import astakos.quotaholder_app.exception as qh_exception
 import astakos.quotaholder_app.callpoint as qh
 
-from .util import (json_response, is_integer, are_integer,
+from .util import (json_response, is_integer, are_integer, check_is_dict,
                    user_from_token, component_from_token)
 
 
@@ -65,19 +48,39 @@ def get_visible_resources():
 def quotas(request):
     visible_resources = get_visible_resources()
     resource_names = [r.name for r in visible_resources]
-    result = get_user_quotas(request.user, resources=resource_names)
+    memberships = request.user.projectmembership_set.actually_accepted()
+    sources = [project_ref(m.project.uuid) for m in memberships]
+    result = get_user_quotas(request.user, resources=resource_names,
+                             sources=sources)
     return json_response(result)
 
 
 @api.api_method(http_method='GET', token_required=True, user_required=False)
 @component_from_token
 def service_quotas(request):
-    user = request.GET.get('user')
-    users = [user] if user is not None else None
-    result = service_get_quotas(request.component_instance, users=users)
+    userstr = request.GET.get('user')
+    users = userstr.split(",") if userstr is not None else None
+    projectstr = request.GET.get('project')
+    projects = projectstr.split(",") if projectstr is not None else None
+    result = service_get_quotas(request.component_instance, users=users,
+                                sources=projects)
 
-    if user is not None and result == {}:
-        raise ItemNotFound("No such user '%s'" % user)
+    if userstr is not None and result == {}:
+        raise ItemNotFound("No user with UUID '%s'" % userstr)
+
+    return json_response(result)
+
+
+@api.api_method(http_method='GET', token_required=True, user_required=False)
+@component_from_token
+def service_project_quotas(request):
+    projectstr = request.GET.get('project')
+    projects = projectstr.split(',') if projectstr is not None else None
+    result = service_get_project_quotas(request.component_instance,
+                                        projects=projects)
+
+    if projectstr is not None and result == {}:
+        raise ItemNotFound("No project with UUID '%s'" % projectstr)
 
     return json_response(result)
 
@@ -102,7 +105,7 @@ def commissions(request):
 @api.api_method(http_method='GET', token_required=True, user_required=False)
 @component_from_token
 def get_pending_commissions(request):
-    client_key = str(request.component_instance)
+    client_key = unicode(request.component_instance)
 
     result = qh.get_pending_commissions(clientkey=client_key)
     return json_response(result)
@@ -121,7 +124,7 @@ def _provisions_to_list(provisions):
             if not is_integer(quantity):
                 raise ValueError()
         except (TypeError, KeyError, ValueError):
-            raise BadRequest("Malformed provision %s" % str(provision))
+            raise BadRequest("Malformed provision %s" % unicode(provision))
     return lst
 
 
@@ -129,13 +132,10 @@ def _provisions_to_list(provisions):
 @api.api_method(http_method='POST', token_required=True, user_required=False)
 @component_from_token
 def issue_commission(request):
-    data = request.body
-    try:
-        input_data = json.loads(data)
-    except json.JSONDecodeError:
-        raise BadRequest("POST data should be in json format.")
+    input_data = utils.get_json_body(request)
+    check_is_dict(input_data)
 
-    client_key = str(request.component_instance)
+    client_key = unicode(request.component_instance)
     provisions = input_data.get('provisions')
     if provisions is None:
         raise BadRequest("Provisions are missing.")
@@ -219,13 +219,10 @@ def conflictingCF(serial):
 @component_from_token
 @transaction.commit_on_success
 def resolve_pending_commissions(request):
-    data = request.body
-    try:
-        input_data = json.loads(data)
-    except json.JSONDecodeError:
-        raise BadRequest("POST data should be in json format.")
+    input_data = utils.get_json_body(request)
+    check_is_dict(input_data)
 
-    client_key = str(request.component_instance)
+    client_key = unicode(request.component_instance)
     accept = input_data.get('accept', [])
     reject = input_data.get('reject', [])
 
@@ -255,7 +252,7 @@ def resolve_pending_commissions(request):
 @component_from_token
 def get_commission(request, serial):
     data = request.GET
-    client_key = str(request.component_instance)
+    client_key = unicode(request.component_instance)
     try:
         serial = int(serial)
     except ValueError:
@@ -275,18 +272,15 @@ def get_commission(request, serial):
 @component_from_token
 @transaction.commit_on_success
 def serial_action(request, serial):
-    data = request.body
-    try:
-        input_data = json.loads(data)
-    except json.JSONDecodeError:
-        raise BadRequest("POST data should be in json format.")
+    input_data = utils.get_json_body(request)
+    check_is_dict(input_data)
 
     try:
         serial = int(serial)
     except ValueError:
         raise BadRequest("Serial should be an integer.")
 
-    client_key = str(request.component_instance)
+    client_key = unicode(request.component_instance)
 
     accept = 'accept' in input_data
     reject = 'reject' in input_data

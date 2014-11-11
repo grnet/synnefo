@@ -1,43 +1,26 @@
 #!/usr/bin/env python
 #coding=utf8
 
-# Copyright 2011-2014 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from binascii import hexlify
 from collections import defaultdict
 from urllib import quote, unquote
 from functools import partial
+from unittest import skipIf
 
 from pithos.api.test import (PithosAPITest, pithos_settings,
                              AssertMappingInvariant, AssertUUidInvariant,
@@ -142,7 +125,7 @@ class ObjectGet(PithosAPITest):
         m = p.match(content_disposition)
         self.assertTrue(m is not None)
         disposition_type = m.group(1)
-        self.assertEqual(disposition_type, 'attachment')
+        self.assertEqual(disposition_type, 'inline')
         filename = m.group(2)
         self.assertEqual(o, filename)
 
@@ -174,7 +157,7 @@ class ObjectGet(PithosAPITest):
         m = p.match(content_disposition)
         self.assertTrue(m is not None)
         disposition_type = m.group(1)
-        self.assertEqual(disposition_type, 'attachment')
+        self.assertEqual(disposition_type, 'inline')
         filename = m.group(2)
 
         user_defined_disposition = content_disposition.replace(
@@ -370,10 +353,6 @@ class ObjectGet(PithosAPITest):
         cname = self.containers[0]
         oname, odata = self.upload_object(cname, length=512)[:-1]
         url = join_urls(self.pithos_path, self.user, cname, oname)
-
-        # TODO
-        #r = self.get(url, HTTP_RANGE='bytes=50-10')
-        #self.assertEqual(r.status_code, 416)
 
         offset = len(odata) + 1
         r = self.get(url, HTTP_RANGE='bytes=0-%s' % offset)
@@ -721,6 +700,16 @@ class ObjectPut(PithosAPITest):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.content, data)
 
+    def test_upload_limit_metadata(self):
+        cname = self.container
+        oname = get_random_name()
+        limit = pithos_settings.RESOURCE_MAX_METADATA
+        kwargs = dict(('HTTP_X_OBJECT_META_%s' % i, unicode(i)) for
+                      i in range(limit + 1))
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.put(url, content_type='application/octet-stream', **kwargs)
+        self.assertEqual(r.status_code, 400)
+
     def test_maximum_upload_size_exceeds(self):
         cname = self.container
         oname = get_random_name()
@@ -759,6 +748,24 @@ class ObjectPut(PithosAPITest):
         url = join_urls(self.pithos_path, self.user, cname, oname)
         r = self.put(url, data=data, HTTP_ETAG='123')
         self.assertEqual(r.status_code, 422)
+
+    def test_upload_if_none_match(self):
+        cname = self.container
+        oname = get_random_name()
+        data = get_random_data()
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.put(url, data=data, HTTP_IF_NONE_MATCH='*')
+        self.assertEqual(r.status_code, 201)
+
+        r = self.get(url)
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.content, data)
+        self.assertTrue('ETag' in r)
+        etag = r['ETag']
+
+        url = join_urls(self.pithos_path, self.user, cname, oname)
+        r = self.put(url, data=data, HTTP_IF_NONE_MATCH=etag)
+        self.assertEqual(r.status_code, 412)
 
 #    def test_chunked_transfer(self):
 #        cname = self.container
@@ -819,6 +826,7 @@ class ObjectPut(PithosAPITest):
     def test_create_object_by_hashmap(self):
         cname = self.container
         block_size = pithos_settings.BACKEND_BLOCK_SIZE
+        block_hash = pithos_settings.BACKEND_HASH_ALGORITHM
 
         # upload an object
         oname, data = self.upload_object(cname, length=block_size + 1)[:-1]
@@ -835,11 +843,35 @@ class ObjectPut(PithosAPITest):
         self.assertEqual(r.status_code, 200)
         self.assertEqual(r.content, data)
 
+        # inconsistent size; too small
+        d = json.loads(hashmap)
+        d['bytes'] = len(data) - 1
+        r = self.put('%s?hashmap=' % url, data=json.dumps(d))
+        self.assertEqual(r.status_code, 400)
+
+        # inconsistent size; too big
+        d = json.loads(hashmap)
+        d['bytes'] = 2 * d['block_size'] + 1
+        r = self.put('%s?hashmap=' % url, data=json.dumps(d))
+        self.assertEqual(r.status_code, 400)
+
+        # extremely big size
+        d = json.loads(hashmap)
+        d['bytes'] = 45390000000000000000000000000000000000
+        r = self.put('%s?hashmap=' % url, data=json.dumps(d))
+        self.assertEqual(r.status_code, 400)
+
+        # negative size
+        d = json.loads(hashmap)
+        d['bytes'] = -1
+        r = self.put('%s?hashmap=' % url, data=json.dumps(d))
+        self.assertEqual(r.status_code, 400)
+
         r = self.put('%s?hashmap=' % url, data='not json')
         self.assertEqual(r.status_code, 400)
 
-        d = {"block_hash": "sha1",
-             "block_size": TEST_BLOCK_SIZE}
+        d = {"block_hash": block_hash,
+             "block_size": block_size}
         hashmap = json.dumps(d)
         r = self.put('%s?hashmap=' % url, data=hashmap)
         self.assertEqual(r.status_code, 400)
@@ -852,12 +884,12 @@ class ObjectPut(PithosAPITest):
         r = self.put('%s?hashmap=' % url, data=hashmap)
         self.assertEqual(r.status_code, 400)
 
-        length = random.randint(TEST_BLOCK_SIZE, 2 * TEST_BLOCK_SIZE)
-        data = get_random_data(length=length)
-        hashes = HashMap(TEST_BLOCK_SIZE, TEST_HASH_ALGORITHM)
-        hashes.load(data)
+        length = (block_size - len(data) % block_size)
+        more_data = ''.join([data, get_random_data(length=length)])
+        hashes = HashMap(block_size, block_hash)
+        hashes.load(more_data)
         hexlified = [hexlify(h) for h in hashes]
-        d.update({"hashes": hexlified, "bytes": len(data)})
+        d.update({"hashes": hexlified, "bytes": len(more_data)})
         hashmap = json.dumps(d)
         r = self.put('%s?hashmap=' % url, data=hashmap)
         self.assertEqual(r.status_code, 409)
@@ -866,7 +898,7 @@ class ObjectPut(PithosAPITest):
         except:
             self.fail("shouldn't happen")
         else:
-            self.assertEqual(sorted(missing), sorted(hexlified))
+            self.assertEqual(missing, hexlified[-1:])
 
         r = self.get('%s?hashmap=&format=xml' % url)
         oname = get_random_name()
@@ -930,6 +962,19 @@ class ObjectPutCopy(PithosAPITest):
             # assert etag is the same
             self.assertTrue('X-Object-Hash' in r)
             self.assertEqual(r['X-Object-Hash'], self.etag)
+
+    def test_copy_limit_metadata(self):
+        with AssertMappingInvariant(self.get_object_info, self.container,
+                                    self.object):
+            # copy object
+            oname = get_random_name()
+            url = join_urls(self.pithos_path, self.user, self.container, oname)
+            limit = pithos_settings.RESOURCE_MAX_METADATA
+            kwargs = dict(('HTTP_X_OBJECT_META_%s' % i, unicode(i)) for
+                          i in range(limit + 1))
+            r = self.put(url, data='', HTTP_X_COPY_FROM='/%s/%s' % (
+                         self.container, self.object), **kwargs)
+            self.assertEqual(r.status_code, 400)
 
     def test_copy_from_different_container(self):
         cname = 'c2'
@@ -1145,6 +1190,19 @@ class ObjectPutMove(PithosAPITest):
                         self.object)
         r = self.head(url)
         self.assertEqual(r.status_code, 404)
+
+    def test_move_limit_metadata(self):
+        with AssertMappingInvariant(self.get_object_info, self.container,
+                                    self.object):
+            # copy object
+            oname = get_random_name()
+            url = join_urls(self.pithos_path, self.user, self.container, oname)
+            limit = pithos_settings.RESOURCE_MAX_METADATA
+            kwargs = dict(('HTTP_X_OBJECT_META_%s' % i, unicode(i))
+                          for i in range(limit + 1))
+            r = self.put(url, data='', HTTP_X_MOVE_FROM='/%s/%s' % (
+                         self.container, self.object), **kwargs)
+            self.assertEqual(r.status_code, 400)
 
     @pithos_test_settings(API_LIST_LIMIT=10)
     def test_move_dir(self):
@@ -1368,6 +1426,21 @@ class ObjectCopy(PithosAPITest):
             self.assertTrue('X-Object-Hash' in r)
             self.assertEqual(r['X-Object-Hash'], self.etag)
 
+    def test_copy_limit_metadata(self):
+        with AssertMappingInvariant(self.get_object_info, self.container,
+                                    self.object):
+            oname = get_random_name()
+            # copy object
+            url = join_urls(self.pithos_path, self.user, self.container,
+                            self.object)
+            limit = pithos_settings.RESOURCE_MAX_METADATA
+            kwargs = dict(('HTTP_X_OBJECT_META_%s' % i, unicode(i))
+                          for i in range(limit + 1))
+            r = self.copy(url, HTTP_DESTINATION='/%s/%s' % (self.container,
+                                                            oname),
+                          **kwargs)
+            self.assertEqual(r.status_code, 400)
+
     @pithos_test_settings(API_LIST_LIMIT=10)
     def test_copy_dir_contents(self):
         folder = self.create_folder(self.container)[0]
@@ -1439,7 +1512,7 @@ class ObjectCopy(PithosAPITest):
 
         # share object for write with user
         url = join_urls(self.pithos_path, 'alice', cname, folder)
-        r = self.post(url, user='alice',  content_type='',
+        r = self.post(url, user='alice', content_type='',
                       HTTP_CONTENT_RANGE='bytes */*',
                       HTTP_X_OBJECT_SHARING='write=%s' % self.user)
         self.assertEqual(r.status_code, 202)
@@ -1522,6 +1595,21 @@ class ObjectMove(PithosAPITest):
                         self.object)
         r = self.head(url)
         self.assertEqual(r.status_code, 404)
+
+    def test_move_limit_metadata(self):
+        with AssertMappingInvariant(self.get_object_info, self.container,
+                                    self.object):
+            oname = get_random_name()
+            # copy object
+            url = join_urls(self.pithos_path, self.user, self.container,
+                            self.object)
+            limit = pithos_settings.RESOURCE_MAX_METADATA
+            kwargs = dict(('HTTP_X_OBJECT_META_%s' % i, unicode(i))
+                          for i in range(limit + 1))
+            r = self.move(url, HTTP_DESTINATION='/%s/%s' % (self.container,
+                                                            oname),
+                          **kwargs)
+            self.assertEqual(r.status_code, 400)
 
     @pithos_test_settings(API_LIST_LIMIT=10)
     def test_move_dir_contents(self):
@@ -1636,7 +1724,7 @@ class ObjectMove(PithosAPITest):
 
         # share object for write with user
         url = join_urls(self.pithos_path, 'alice', cname, folder)
-        r = self.post(url, user='alice',  content_type='',
+        r = self.post(url, user='alice', content_type='',
                       HTTP_CONTENT_RANGE='bytes */*',
                       HTTP_X_OBJECT_SHARING='write=%s' % self.user)
         self.assertEqual(r.status_code, 202)
@@ -1697,6 +1785,13 @@ class ObjectPost(PithosAPITest):
             r = self.post(url, content_type='', **kwargs)
             self.assertEqual(r.status_code, 400)
 
+            # test metadata limit
+            limit = pithos_settings.RESOURCE_MAX_METADATA
+            kwargs = dict(('HTTP_X_OBJECT_META_%s' % i, unicode(i))
+                          for i in range(limit - len(meta) + 1))
+            r = self.post('%s?update=' % url, content_type='', **kwargs)
+            self.assertEqual(r.status_code, 400)
+
 #            # Check utf-8 meta
 #            d = {'α' * (114 / 2): 'β' * (256 / 2)}
 #            kwargs = dict(('HTTP_X_OBJECT_META_%s' % quote(k), quote(v)) for
@@ -1754,7 +1849,7 @@ class ObjectPost(PithosAPITest):
             etag = md5_hash(updated_data)
         else:
             etag = merkle(updated_data)
-        #self.assertEqual(r['ETag'], etag)
+        self.assertEqual(r['ETag'], etag)
 
         # check modified object
         r = self.get(url)
@@ -1788,7 +1883,7 @@ class ObjectPost(PithosAPITest):
             etag = md5_hash(updated_data)
         else:
             etag = merkle(updated_data)
-        #self.assertEqual(r['ETag'], etag)
+        self.assertEqual(r['ETag'], etag)
 
         # check modified object
         r = self.get(url)
@@ -1801,7 +1896,7 @@ class ObjectPost(PithosAPITest):
         block_size = pithos_settings.BACKEND_BLOCK_SIZE
         oname, odata = self.upload_object(
             self.container, length=random.randint(
-                block_size + 1, 2 * block_size))[:2]
+                block_size + 2, 2 * block_size))[:2]
 
         length = len(odata)
         first_byte_pos = random.randint(1, block_size)
@@ -1911,7 +2006,7 @@ class ObjectPost(PithosAPITest):
         dest_meta = self.get_object_info(self.container, dest)
 
         self.assertEqual(source_data, dest_data)
-        #self.assertEqual(source_meta['ETag'], dest_meta['ETag'])
+        self.assertEqual(source_meta['ETag'], dest_meta['ETag'])
         self.assertEqual(source_meta['X-Object-Hash'],
                          dest_meta['X-Object-Hash'])
         self.assertTrue(
@@ -1935,7 +2030,7 @@ class ObjectPost(PithosAPITest):
         r = self.put(url, data=initial_data)
         self.assertEqual(r.status_code, 201)
 
-        offset = random.randint(0, source_length - 1)
+        offset = random.randint(0, source_length - 2)
         upto = random.randint(offset, source_length - 1)
         r = self.post(url,
                       HTTP_CONTENT_RANGE='bytes %s-%s/*' % (offset, upto),
@@ -2094,19 +2189,22 @@ class ObjectPost(PithosAPITest):
         content = r.content
         self.assertEqual(content, d2 + d3[-1])
 
+    @skipIf(pithos_settings.BACKEND_DB_MODULE ==
+            'pithos.backends.lib.sqlite',
+            "This test is only meaningful for SQLAlchemy backend")
     def test_update_invalid_permissions(self):
         url = join_urls(self.pithos_path, self.user, self.container,
                         self.object)
         r = self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
-                      HTTP_X_OBJECT_SHARING='%s' % (257*'a'))
+                      HTTP_X_OBJECT_SHARING='%s' % (257 * 'a'))
         self.assertEqual(r.status_code, 400)
 
         r = self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
-                      HTTP_X_OBJECT_SHARING='read=%s' % (257*'a'))
+                      HTTP_X_OBJECT_SHARING='read=%s' % (257 * 'a'))
         self.assertEqual(r.status_code, 400)
 
         r = self.post(url, content_type='', HTTP_CONTENT_RANGE='bytes */*',
-                      HTTP_X_OBJECT_SHARING='write=%s' % (257*'a'))
+                      HTTP_X_OBJECT_SHARING='write=%s' % (257 * 'a'))
         self.assertEqual(r.status_code, 400)
 
 

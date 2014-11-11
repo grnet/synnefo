@@ -1,35 +1,17 @@
-# Copyright 2012, 2013, 2014 GRNET S.A. All rights reserved.
+# Copyright (C) 2010-2014 GRNET S.A.
 #
-# Redistribution and use in source and binary forms, with or
-# without modification, are permitted provided that the following
-# conditions are met:
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 #
-#   1. Redistributions of source code must retain the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer.
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-#   2. Redistributions in binary form must reproduce the above
-#      copyright notice, this list of conditions and the following
-#      disclaimer in the documentation and/or other materials
-#      provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY GRNET S.A. ``AS IS'' AND ANY EXPRESS
-# OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-# WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL GRNET S.A OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF
-# USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
-# AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-#
-# The views and conclusions contained in the software and
-# documentation are those of the authors and should not be
-# interpreted as representing official policies, either expressed
-# or implied, of GRNET S.A.
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import string
 from datetime import datetime
@@ -37,36 +19,22 @@ from datetime import datetime
 from optparse import make_option
 
 from django.core import management
-from django.db import transaction
-from django.core.management.base import BaseCommand, CommandError
+from astakos.im import transaction
+from snf_django.management.commands import SynnefoCommand, CommandError
 from django.contrib.auth.models import Group
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
-from synnefo.util import units
-from astakos.im.models import AstakosUser, Resource
-from astakos.im import quotas
-from astakos.im import activation_backends
-from ._common import (remove_user_permission, add_user_permission, is_uuid,
-                      show_resource_value)
-
-activation_backend = activation_backends.get_backend()
+from astakos.im.models import AstakosUser
+from ._common import (remove_user_permission, add_user_permission, is_uuid)
+from astakos.im import user_logic as user_action
 
 
-class Command(BaseCommand):
-    args = "<user ID> (or --all)"
+class Command(SynnefoCommand):
+    args = "<user ID>"
     help = "Modify a user's attributes"
 
-    option_list = BaseCommand.option_list + (
-        make_option('--all',
-                    action='store_true',
-                    default=False,
-                    help=("Operate on all users. Currently only setting "
-                          "base quota is supported in this mode. Can be "
-                          "combined with `--exclude'.")),
-        make_option('--exclude',
-                    help=("If `--all' is given, exclude users given as a "
-                          "list of uuids: uuid1,uuid2,uuid3")),
+    option_list = SynnefoCommand.option_list + (
         make_option('--invitations',
                     dest='invitations',
                     metavar='NUM',
@@ -143,14 +111,6 @@ class Command(BaseCommand):
                     default=False,
                     action='store_true',
                     help="Sign terms"),
-        make_option('--base-quota',
-                    dest='set_base_quota',
-                    metavar='<resource> <capacity>',
-                    nargs=2,
-                    help=("Set base quota for a specified resource. "
-                          "The special value 'default' sets the user base "
-                          "quota to the default value.")
-                    ),
         make_option('-f', '--no-confirm',
                     action='store_true',
                     default=False,
@@ -167,18 +127,8 @@ class Command(BaseCommand):
 
     @transaction.commit_on_success
     def handle(self, *args, **options):
-        if options['all']:
-            if not args:
-                return self.handle_all_users(*args, **options)
-            else:
-                raise CommandError("Please provide a user ID or --all")
-
         if len(args) != 1:
-            raise CommandError("Please provide a user ID or --all")
-
-        if options["exclude"] is not None:
-            m = "Option --exclude is meaningful only combined with --all."
-            raise CommandError(m)
+            raise CommandError("Please provide a user ID")
 
         if args[0].isdigit():
             try:
@@ -195,7 +145,12 @@ class Command(BaseCommand):
             raise CommandError(("Invalid user identification: "
                                 "you should provide a valid user ID "
                                 "or a valid user UUID"))
+        try:
+            self.apply_actions(user, options)
+        except BaseException as e:
+            raise CommandError(e)
 
+    def apply_actions(self, user, options):
         if options.get('admin'):
             user.is_superuser = True
         elif options.get('noadmin'):
@@ -203,49 +158,41 @@ class Command(BaseCommand):
 
         if options.get('reject'):
             reject_reason = options.get('reject_reason', None)
-            res = activation_backend.handle_moderation(
-                user,
-                accept=False,
-                reject_reason=reject_reason)
-            activation_backend.send_result_notifications(res, user)
+            res = user_action.reject(user, reject_reason)
             if res.is_error():
-                print "Failed to reject.", res.message
+                self.stderr.write("Failed to reject: %s\n" % res.message)
             else:
-                print "Account rejected"
+                self.stderr.write("Account rejected\n")
 
         if options.get('verify'):
-            res = activation_backend.handle_verification(
-                user,
-                user.verification_code)
-            #activation_backend.send_result_notifications(res, user)
+            res = user_action.verify(user, user.verification_code)
             if res.is_error():
-                print "Failed to verify.", res.message
+                self.stderr.write("Failed to verify: %s\n" % res.message)
             else:
-                print "Account verified (%s)" % res.status_display()
+                self.stderr.write("Account verified (%s)\n"
+                                  % res.status_display())
 
         if options.get('accept'):
-            res = activation_backend.handle_moderation(user, accept=True)
-            activation_backend.send_result_notifications(res, user)
+            res = user_action.accept(user)
             if res.is_error():
-                print "Failed to accept.", res.message
+                self.stderr.write("Failed to accept: %s\n" % res.message)
             else:
-                print "Account accepted and activated"
+                self.stderr.write("Account accepted and activated\n")
 
         if options.get('active'):
-            res = activation_backend.activate_user(user)
+            res = user_action.activate(user)
             if res.is_error():
-                print "Failed to activate.", res.message
+                self.stderr.write("Failed to activate: %s\n" % res.message)
             else:
-                print "Account %s activated" % user.username
+                self.stderr.write("Account %s activated\n" % user.username)
 
         elif options.get('inactive'):
-            res = activation_backend.deactivate_user(
-                user,
-                reason=options.get('inactive_reason', None))
+            inactive_reason = options.get('inactive_reason', None)
+            res = user_action.deactivate(user, inactive_reason)
             if res.is_error():
-                print "Failed to deactivate,", res.message
+                self.stderr.write("Failed to deactivate: %s\n" % res.message)
             else:
-                print "Account %s deactivated" % user.username
+                self.stderr.write("Account %s deactivated\n" % user.username)
 
         invitations = options.get('invitations')
         if invitations is not None:
@@ -329,15 +276,6 @@ class Command(BaseCommand):
             self.stdout.write('User\'s new password: %s\n' % password)
 
         force = options['force']
-
-        set_base_quota = options.get('set_base_quota')
-        if set_base_quota is not None:
-            if not user.is_accepted():
-                m = "%s is not an accepted user." % user
-                raise CommandError(m)
-            resource, capacity = set_base_quota
-            self.set_limits([user], resource, capacity, force)
-
         delete = options.get('delete')
         if delete:
             if user.is_accepted():
@@ -349,7 +287,9 @@ class Command(BaseCommand):
             if not force:
                 self.stdout.write("About to delete user %s. " % user.uuid)
                 self.confirm()
+
             user.delete()
+            user.base_project and user.base_project.delete()
 
         # Change users email address
         newemail = options.get('set-email', None)
@@ -377,67 +317,3 @@ class Command(BaseCommand):
         if string.lower(response) not in ['y', 'yes']:
             self.stderr.write("Aborted.\n")
             exit()
-
-    def handle_limits_user(self, user, res, capacity, style):
-        default_capacity = res.uplimit
-        resource = res.name
-        quota = user.get_resource_policy(resource)
-        s_default = show_resource_value(default_capacity, resource, style)
-        s_current = show_resource_value(quota.capacity, resource, style)
-        s_capacity = (show_resource_value(capacity, resource, style)
-                      if capacity != 'default' else capacity)
-        self.stdout.write("user: %s (%s)\n" % (user.uuid, user.username))
-        self.stdout.write("default capacity: %s\n" % s_default)
-        self.stdout.write("current capacity: %s\n" % s_current)
-        self.stdout.write("new capacity: %s\n" % s_capacity)
-        self.confirm()
-
-    def handle_limits_all(self, res, capacity, exclude, style):
-        m = "This will set base quota for all users"
-        app = (" except %s" % ", ".join(exclude)) if exclude else ""
-        self.stdout.write(m+app+".\n")
-        resource = res.name
-        self.stdout.write("resource: %s\n" % resource)
-        s_capacity = (show_resource_value(capacity, resource, style)
-                      if capacity != 'default' else capacity)
-        self.stdout.write("capacity: %s\n" % s_capacity)
-        self.confirm()
-
-    def set_limits(self, users, resource, capacity, force=False, exclude=None):
-        try:
-            r = Resource.objects.get(name=resource)
-        except Resource.DoesNotExist:
-            raise CommandError("No such resource '%s'." % resource)
-
-        style = None
-        if capacity != "default":
-            try:
-                capacity, style = units.parse_with_style(capacity)
-            except:
-                m = ("Please specify capacity as a decimal integer or "
-                     "'default'")
-                raise CommandError(m)
-
-        if not force:
-            if len(users) == 1:
-                self.handle_limits_user(users[0], r, capacity, style)
-            else:
-                self.handle_limits_all(r, capacity, exclude, style)
-
-        if capacity == "default":
-            capacity = r.uplimit
-        quotas.update_base_quota(users, resource, capacity)
-
-    def handle_all_users(self, *args, **options):
-        force = options["force"]
-        exclude = options["exclude"]
-        if exclude is not None:
-            exclude = exclude.split(',')
-
-        set_base_quota = options.get('set_base_quota')
-        if set_base_quota is not None:
-            users = AstakosUser.objects.accepted().select_for_update()
-            if exclude:
-                users = users.exclude(uuid__in=exclude)
-            resource, capacity = set_base_quota
-            self.set_limits(users, resource, capacity, force, exclude)

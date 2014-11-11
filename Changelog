@@ -8,75 +8,10 @@ repository and have aligned versions.
 
 .. _Changelog-0.16:
 
-v0.16rc3
-========
+v0.16
+=====
 
-Released: Wed Oct 15 14:14:33 EEST 2014
-
-Synnefo-wide
-------------
-
-* Update upgrade notes and installation guide to conform with
-  Archipelago 0.16rc2.
-* Add Synnefo wide accessible gunicorn hooks for Archipelago.
-
-Astakos
--------
-
-* Explicitly specify the lists in which every notification will be sent.
-
-Cyclades
---------
-
-* Remove stale '--public' and '--user' options from 'image-show' and
-  'snapshot-show' management commands.
-
-Pithos
-------
-
-* Remove custom Gunicorn worker.
-
-
-v0.16rc2
-========
-
-Released: Tue Sep 30 10:39:13 EEST 2014
-
-Admin
------
-
-* Define the Admin node URL and path with the ``ADMIN_BASE_URL`` setting
-
-  * The ``ADMIN_BASE_URL`` setting should be adjusted in every node that Admin
-    is installed.
-
-UI
---
-
-* Remove UI_SNAPSHOTS_ENABLED setting. UI now uses CYCLADES_SNAPSHOTS_ENABLED
-  setting to resolve whether or not snapshot functionality should be enabled.
-
-Cyclades
---------
-
-* Make snf-dispatcher update status of snapshots when Ganeti job fails.
-* Implement reconciliation for stale snapshots.
-
-Pithos
-------
-
-* Restore PostgreSQL 8.4 compatibility.
-
-Tools
------
-
-* Extend snf-burnin to include testing of snapshots.
-
-
-v0.16rc1
-========
-
-Released: Mon Sep  8 17:26:35 EEST 2014
+Released: Tue Nov 11 10:44:57 EET 2014
 
 Synnefo-wide
 ------------
@@ -175,6 +110,8 @@ Astakos
   * Display system projects in admin project list view.
   * Handle display of infinite resource quota values.
 
+* Explicitly specify the lists in which every notification will be sent.
+
 
 Cyclades
 --------
@@ -189,6 +126,7 @@ Cyclades
     commands for handling of snapshots.
   * Implement 'volume-type-{create, list, modify, show, remove}` management
     commands for handling of volume types.
+  * Implement reconciliation for stale snapshots.
   * Add new settings:
 
     * GANETI_MAX_DISKS_PER_INSTANCE: Maximum number of disks that each Ganeti
@@ -208,6 +146,9 @@ Cyclades
     attribute.
 
 * Add support for snf-vncauthproxy 1.6 (configurable VNC console types).
+* Change the ``CYCLADES_VNCAUTHPROXY_OPTS`` setting to a list of dictionaries
+  and support configurable vncauthproxy proxy addresses (added in
+  snf-vncauthproxy-1.6).
 * Add support for more types of VM console:
 
   * Modify the current 'console' action to support VNC WebSockets (requires
@@ -242,6 +183,8 @@ Cyclades
 * Fix mishandling of `MAX_CIDR_BLOCK` setting. Allowed CIDR sizes
   changed from (MAX_CIDR_BLOCK, 29) to [MAX_CIDR_BLOCK, 29].
 * Fix various minor bugs.
+* Remove stale '--public' and '--user' options from 'image-show' and
+  'snapshot-show' management commands.
 
 Cyclades UI
 -----------
@@ -302,6 +245,17 @@ Admin
   * Intuitive filtering.
   * Multiple actions and notifications.
   * Charts and statistics generation.
+
+* Define the Admin node URL and path with the ``ADMIN_BASE_URL`` setting
+
+  * The ``ADMIN_BASE_URL`` setting should be adjusted in every node that Admin
+    is installed.
+
+Tools
+-----
+
+* Extend snf-burnin to include testing of snapshots.
+
 
 .. _Changelog-0.15.2:
 

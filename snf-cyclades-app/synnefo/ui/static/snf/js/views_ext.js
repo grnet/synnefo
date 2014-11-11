@@ -406,6 +406,10 @@
 
       check_disabled: function(view) {
         var disabled = this.disabled_filter(view.model);
+        // forced models are always disabled
+        if (view.model.get('forced')){
+          disabled = true;
+        }
         if (disabled) { 
             view.disable && view.disable(disabled); 
             if (_.isString(disabled)) {
@@ -867,7 +871,9 @@
 
       set_disabled: function() {
         this.disabled = true;
-        this.deselect();
+        if (!this.model.get('forced')){
+          this.deselect();
+        }
         this.input.attr("disabled", true);
         this.item.addClass("disabled");
         this.item.attr("disabled", true);

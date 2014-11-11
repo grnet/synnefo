@@ -20,11 +20,13 @@ from snfdeploy import components
 _ROLE_MAP = {
     constants.NS: components.NS,
     constants.NFS: components.NFS,
+    constants.CA: components.CA,
     constants.DB: components.DB,
     constants.MQ: components.MQ,
     constants.ASTAKOS: components.Astakos,
     constants.CYCLADES: components.Cyclades,
     constants.ADMIN: components.Admin,
+    constants.VNC: components.VNC,
     constants.PITHOS: components.Pithos,
     constants.CMS: components.CMS,
     constants.STATS: components.Stats,

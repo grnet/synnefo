@@ -76,6 +76,7 @@ def update_admin(fn):
         ctx.admin_node = cl.node
         ctx.admin_fqdn = cl.fqdn
         cl.NS = NS(node=ctx.ns.node, ctx=ctx)
+        cl.CA = CA(node=ctx.ca.node, ctx=ctx)
         cl.NFS = NFS(node=ctx.nfs.node, ctx=ctx)
         cl.DB = DB(node=ctx.db.node, ctx=ctx)
         cl.ASTAKOS = Astakos(node=ctx.astakos.node, ctx=ctx)
@@ -119,26 +120,6 @@ def export_and_import_service(fn):
     return wrapper
 
 
-def cert_override(fn):
-    """ Create all needed entries for cert_override.txt file
-
-    Append them in a tmp file and upload them to client node
-
-    """
-    def wrapper(*args, **kwargs):
-        cl = args[0]
-        f = "/tmp/" + constants.CERT_OVERRIDE + "_" + cl.service
-        for domain in [cl.node.domain, cl.node.cname, cl.node.ip]:
-            cmd = """
-python /root/firefox_cert_override.py {0} {1}:443 >> {2}
-""".format(constants.CERT_PATH, domain, f)
-            cl.run(cmd)
-        cl.get(f, f + ".local")
-        cl.CLIENT.put(f + ".local", f)
-        return fn(*args, **kwargs)
-    return wrapper
-
-
 # ########################## Components ############################
 
 # A Component() gets initialized with an execution context that is a
@@ -169,6 +150,36 @@ python /root/firefox_cert_override.py {0} {1}:443 >> {2}
 # provides node, cluster, and setup related info.
 
 class HW(base.Component):
+
+    @base.run_cmds
+    def prepare(self):
+        return [
+            # NOTE: This is needed because the NFS dir is owned by
+            # archipelago:synnefo and IDs must be common across nodes
+            "addgroup --system --gid 200 synnefo",
+            "adduser --system --uid 200 --gid 200 --no-create-home \
+                --gecos Synnefo synnefo",
+            "addgroup --system --gid 300 archipelago",
+            "adduser --system --uid 300 --gid 300 --no-create-home \
+                --gecos Archipelago archipelago",
+            ]
+
+    @base.check_if_testing
+    def _configure(self):
+        r1 = {
+            "date": str(datetime.datetime.today()),
+            }
+        return [
+            ("/etc/sysctl.d/disable-ipv6.conf", r1, {})
+            ]
+
+    @base.run_cmds
+    @base.check_if_testing
+    def initialize(self):
+        return [
+            "sysctl -f /etc/sysctl.d/disable-ipv6.conf",
+            ]
+
     @base.run_cmds
     def test(self):
         return [
@@ -534,6 +545,46 @@ class DRBD(base.Component):
             ]
 
 
+class CA(base.Component):
+    REQUIRED_PACKAGES = [
+        "openssl"
+        ]
+
+    alias = constants.CA
+    service = constants.CA
+
+    def required_components(self):
+        return [
+            HW, SSH, DNS, APT,
+            ]
+
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+
+    @base.run_cmds
+    def prepare(self):
+        return [
+            "mkdir -p /root/ca"
+            ]
+
+    def _configure(self):
+        r1 = {
+            "domain": self.node.domain,
+            }
+        return [
+            ("/root/create_root_ca.sh", {}, {"mode": 0755}),
+            ("/root/ca/ca-x509-extensions.cnf", r1, {}),
+            ("/root/ca/x509-extensions.cnf", r1, {}),
+            ]
+
+    @base.run_cmds
+    def initialize(self):
+        return [
+            "/root/create_root_ca.sh"
+            ]
+
+
 class Ganeti(base.Component):
     REQUIRED_PACKAGES = [
         "qemu-kvm",
@@ -724,7 +775,9 @@ class Image(base.Component):
         d = config.images_dir
         image = "debian_base.diskdump"
         return [
-            "test -e %s/%s || wget %s -O %s/%s" % (d, image, url, d, image)
+            "test -e /tmp/%s || wget -4 %s -O /tmp/%s" % (image, url, image),
+            "cp /tmp/%s %s/%s" % (image, d, image),
+            "mv /etc/default/snf-image /etc/default/snf-image.orig",
             ]
 
     def _configure(self):
@@ -757,7 +810,6 @@ class GTools(base.Component):
     def prepare(self):
         return [
             "sed -i 's/false/true/' /etc/default/snf-ganeti-eventd",
-            "chown -R root:archipelago /etc/synnefo/",
             ]
 
     def _configure(self):
@@ -820,6 +872,15 @@ class Apache(base.Component):
         "python-openssl",
         ]
 
+    @update_admin
+    def admin_pre(self):
+        self.CA.get("/root/ca/cert.pem", "/tmp/cert.pem")
+        self.put("/tmp/cert.pem", "/etc/ssl/certs/synnefo.pem")
+        self.CA.get("/root/ca/key.pem", "/tmp/key.pem")
+        self.put("/tmp/key.pem", "/etc/ssl/private/synnefo.key")
+        self.CA.get("/root/ca/cacert.pem", "/tmp/cacert.pem")
+        self.put("/tmp/cacert.pem", "/etc/ssl/certs/synnefo_ca.pem")
+
     @base.run_cmds
     def prepare(self):
         return [
@@ -855,12 +916,6 @@ class Gunicorn(base.Component):
         "gunicorn",
         ]
 
-    @base.run_cmds
-    def prepare(self):
-        return [
-            "chown root:www-data /var/log/gunicorn",
-            ]
-
     def _configure(self):
         r1 = {"HOST": self.node.fqdn}
         return [
@@ -881,6 +936,13 @@ class Common(base.Component):
         "snf-branding",
         ]
 
+    @base.run_cmds
+    def prepare(self):
+        return [
+            "mkdir -p %s" % config.mail_dir,
+            "chmod 777 %s" % config.mail_dir,
+            ]
+
     def _configure(self):
         r1 = {
             "EMAIL_SUBJECT_PREFIX": self.node.hostname,
@@ -891,10 +953,6 @@ class Common(base.Component):
         return [
             ("/etc/synnefo/common.conf", r1, {}),
             ]
-
-    @base.run_cmds
-    def initialize(self):
-        return ["mkdir -p {0}; chmod 777 {0}".format(config.mail_dir)]
 
     @base.run_cmds
     def restart(self):
@@ -1102,7 +1160,6 @@ class Astakos(base.Component):
 
     @update_admin
     @export_and_import_service
-    @cert_override
     def admin_post(self):
         self.set_astakos_default_quota()
 
@@ -1156,15 +1213,10 @@ class CMS(base.Component):
     def restart(self):
         return ["/etc/init.d/gunicorn restart"]
 
-    @update_admin
-    @cert_override
-    def admin_post(self):
-        pass
-
 
 class Mount(base.Component):
     REQUIRED_PACKAGES = [
-        "nfs-common"
+        "nfs-common",
         ]
 
     @update_admin
@@ -1186,9 +1238,6 @@ EOF
 
         return [
             "mkdir -p %s" % config.shared_dir,
-            "addgroup --gid 200 archipelago",
-            "adduser --system --no-create-home \
-              --gecos 'Archipelago user' --gid 200 archipelago",
             fstab,
             ]
 
@@ -1202,7 +1251,7 @@ EOF
 class NFS(base.Component):
     REQUIRED_PACKAGES = [
         "rpcbind",
-        "nfs-kernel-server"
+        "nfs-kernel-server",
         ]
 
     alias = constants.NFS
@@ -1225,11 +1274,8 @@ class NFS(base.Component):
             "mkdir -p %s" % config.images_dir,
             "mkdir -p %s" % config.ganeti_dir,
             "mkdir -p %s" % config.archip_dir,
-            "addgroup --gid 200 archipelago",
-            "adduser --system --no-create-home \
-              --gecos 'Archipelago user' --gid 200 archipelago",
             "cd %s && mkdir {maps,blocks,locks}" % config.archip_dir,
-            "cd %s && chown archipelago:archipelago {maps,blocks,locks}" % \
+            "cd %s && chown archipelago:synnefo {maps,blocks,locks}" % \
               config.archip_dir,
             "cd %s && chmod 770 {maps,blocks,locks}" % config.archip_dir,
             "cd %s && chmod g+s {maps,blocks,locks}" % config.archip_dir,
@@ -1288,7 +1334,9 @@ class Pithos(base.Component):
     @base.run_cmds
     def prepare(self):
         return [
-            "chown -R root:archipelago /etc/synnefo/",
+            #FIXME: Workaround until snf-pithos-webclient creates conf
+            # files properly with root:synnefo
+            "chown root:synnefo /etc/synnefo/*snf-pithos-webclient*conf",
             ]
 
     def _configure(self):
@@ -1323,7 +1371,6 @@ class Pithos(base.Component):
 
     @update_admin
     @export_and_import_service
-    @cert_override
     def admin_post(self):
         self.ASTAKOS.set_pithos_default_quota()
 
@@ -1438,7 +1485,6 @@ snf-manage network-create --subnet6={0} \
     def prepare(self):
         return [
             "sed -i 's/false/true/' /etc/default/snf-dispatcher",
-            "chown -R root:archipelago /etc/synnefo/",
             ]
 
     def _configure(self):
@@ -1456,10 +1502,9 @@ snf-manage network-create --subnet6={0} \
             "STATS": self.ctx.stats.cname,
             "STATS_SECRET": config.stats_secret,
             "SYNNEFO_VNC_PASSWD": config.synnefo_vnc_passwd,
-            # TODO: fix java issue with no signed jar
-            "CYCLADES_NODE_IP": self.ctx.cyclades.ip,
             "CYCLADES_SECRET": config.cyclades_secret,
             "SHARED_GANETI_DIR": config.ganeti_dir,
+            "VNC": self.ctx.vnc.cname,
             }
         return [
             ("/etc/synnefo/cyclades.conf", r1, {}),
@@ -1515,7 +1560,6 @@ snf-manage volume-type-create --name {0} --disk-template {0}
 
     @update_admin
     @export_and_import_service
-    @cert_override
     def admin_post(self):
         self.create_flavors()
         self.ASTAKOS.set_cyclades_default_quota()
@@ -1526,6 +1570,23 @@ class VNC(base.Component):
         "snf-vncauthproxy"
         ]
 
+    alias = constants.VNC
+    service = constants.VNC
+
+    def required_components(self):
+        return [
+            HW, SSH, DNS, APT,
+            ]
+
+    @update_admin
+    def admin_pre(self):
+        self.NS.update_ns()
+        self.run("mkdir -p /var/lib/vncauthproxy")
+        self.CA.get("/root/ca/cert.pem", "/tmp/cert.pem")
+        self.put("/tmp/cert.pem", "/var/lib/vncauthproxy/cert.pem")
+        self.CA.get("/root/ca/key.pem", "/tmp/key.pem")
+        self.put("/tmp/key.pem", "/var/lib/vncauthproxy/key.pem")
+
     @base.run_cmds
     def prepare(self):
         user = config.synnefo_user
@@ -1534,10 +1595,16 @@ class VNC(base.Component):
         users_file = "%s/users" % outdir
         return [
             "mkdir -p %s" % outdir,
-            "cp /etc/ssl/certs/ssl-cert-snakeoil.pem %s/cert.pem" % outdir,
-            "cp /etc/ssl/private/ssl-cert-snakeoil.key %s/key.pem" % outdir,
             "chown vncauthproxy:vncauthproxy %s/*.pem" % outdir,
             "vncauthproxy-passwd -p %s %s %s" % (passwd, users_file, user)
+            ]
+
+    def _configure(self):
+        r1 = {
+            "vnc": self.ctx.vnc.cname,
+        }
+        return [
+            ("/etc/default/vncauthproxy", r1, {})
             ]
 
     @base.run_cmds
@@ -1567,19 +1634,12 @@ class Admin(base.Component):
         self.NS.update_ns()
         self.DB.allow_db_access()
         self.DB.restart()
-
-    @base.run_cmds
-    @update_admin
-    def prepare(self):
         f = "/etc/synnefo/astakos.conf"
         self.ASTAKOS.get(f, "/tmp/astakos.conf")
         self.put("/tmp/astakos.conf", f)
         f = "/etc/synnefo/cyclades.conf"
         self.CYCLADES.get(f, "/tmp/cyclades.conf")
         self.put("/tmp/cyclades.conf", f)
-        return [
-            "chown -R root:archipelago /etc/synnefo",
-            ]
 
     def _configure(self):
         r1 = {
@@ -1608,12 +1668,6 @@ class Admin(base.Component):
             "snf-manage user-modify %s --add-group=admin" % user_id
             ]
 
-    @update_admin
-    @cert_override
-    def admin_post(self):
-        pass
-
-
 class Kamaki(base.Component):
     REQUIRED_PACKAGES = [
         "python-progress",
@@ -1626,21 +1680,13 @@ class Kamaki(base.Component):
         self.ASTAKOS.activate_user()
         self.DB.get_user_info_from_db(config.user_email)
         self.ADMIN.make_user_admin_user()
+        self.CA.get("/root/ca/cacert.pem", "/tmp/cacert.pem")
+        self.put("/tmp/cacert.pem",
+          "/usr/local/share/ca-certificates/Synnefo_Root_CA.crt")
 
     @base.run_cmds
     def prepare(self):
-        cmd = """
-cat >> /etc/ca-certificates.conf <<EOF
-
-# Deploy local certificate
-local.org/snakeoil.crt
-EOF
-"""
         return [
-            "mkdir -p /usr/share/ca-certificates/local.org",
-            "cp /etc/ssl/certs/ssl-cert-snakeoil.pem \
-                /usr/share/ca-certificates/local.org/snakeoil.crt",
-            cmd,
             "update-ca-certificates",
             ]
 
@@ -1658,7 +1704,7 @@ EOF
         url = config.debian_base_url
         image = "debian_base.diskdump"
         return [
-            "test -e /tmp/%s || wget %s -O /tmp/%s" % (image, url, image)
+            "test -e /tmp/%s || wget -4 %s -O /tmp/%s" % (image, url, image)
             ]
 
     def _upload_image(self):
@@ -1733,8 +1779,9 @@ class Stats(base.Component):
     @base.run_cmds
     def prepare(self):
         return [
-            "mkdir -p /var/cache/snf-stats-app/",
-            "chown www-data:www-data /var/cache/snf-stats-app/",
+            "mkdir -p /var/cache/snf-stats-app",
+            "chmod g+ws /var/cache/snf-stats-app",
+            "chown synnefo:synnefo /var/cache/snf-stats-app",
             ]
 
     def _configure(self):
@@ -1801,7 +1848,10 @@ class Archip(base.Component):
     @base.run_cmds
     def restart(self):
         return [
-            "archipelago restart"
+            #FIXME: See https://github.com/grnet/archipelago/pull/44
+            "mkdir -p /dev/shm/posixfd",
+            "chown -R synnefo:synnefo /dev/shm/posixfd",
+            "archipelago restart",
             ]
 
 
@@ -1812,9 +1862,8 @@ class ArchipSynnefo(base.Component):
     def prepare(self):
         return [
             "mkdir -p /etc/synnefo/gunicorn-hooks",
-            "chown -R root:archipelago /etc/synnefo",
-            "chown -R root:archipelago /var/log/gunicorn",
-            "chmod g+s /etc/synnefo/",
+            "chmod 750 /etc/synnefo/gunicorn-hooks",
+            "chmod g+s /etc/synnefo/gunicorn-hooks",
             ]
 
     def _configure(self):
@@ -2023,11 +2072,19 @@ class Router(base.Component):
 class Firefox(base.Component):
     REQUIRED_PACKAGES = [
         "iceweasel",
+        "libnss3-tools",
         ]
+
+    @update_admin
+    def admin_pre(self):
+        self.CA.get("/root/ca/cacert.pem", "/tmp/cacert.pem")
+        self.put("/tmp/cacert.pem", "/tmp/Synnefo_Root_CA.crt")
 
     @base.run_cmds
     def initialize(self):
-        f = constants.CERT_OVERRIDE
         return [
-            "cat /tmp/%s_* >> /etc/iceweasel/profile/%s" % (f, f)
+            "echo 12345678 > /tmp/iceweasel_db_pass",
+            "certutil -N -d /etc/iceweasel/profile/ -f /tmp/iceweasel_db_pass",
+            "certutil -A -n synnefo -t TCu -d /etc/iceweasel/profile/ \
+              -i /tmp/Synnefo_Root_CA.crt",
             ]

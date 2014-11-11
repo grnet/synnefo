@@ -14,11 +14,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 NS = "ns"
+CA = "ca"
 DB = "db"
 MQ = "mq"
 ASTAKOS = "astakos"
 CYCLADES = "cyclades"
 ADMIN = "admin"
+VNC = "vnc"
 PITHOS = "pithos"
 CLIENT = "client"
 ROUTER = "router"
@@ -38,9 +40,6 @@ DEFAULT_NODE = None
 DEFAULT_CLUSTER = None
 DEFAULT_SETUP = "auto"
 DUMMY_NODE = "dummy"
-
-CERT_OVERRIDE = "cert_override.txt"
-CERT_PATH = "/etc/ssl/certs/ssl-cert-snakeoil.pem"
 
 DEFAULT_PASSWD_LENGTH = 10
 

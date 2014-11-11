@@ -308,6 +308,80 @@ We do not need to initialize the exchanges. This will be done automatically,
 during the Cyclades setup.
 
 
+System user/group setup
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Before we continue with the installation we have to mention the user and
+group that our components will run as. In short Archipelago (and
+specifically the ``archipelago`` package) creates the ``archipelago``
+system user and group while synnefo (and specifically the ``snf-common``
+package) creates the ``synnefo`` system user and group.
+
+This guide uses NFS for Archipelago's physical storage backend.
+Archipelago must have permissions to write on the shared dir. As
+explained below the shared dir will be owned by ``archipelago:synnefo``.
+Due to NFS restrictions, all nodes nodes must have common uid for the
+``archipelago`` user and common gid for the ``synnefo`` group. So before
+any Synnefo installation, we create them here in advance. We assume that
+ids 200 and 300 are available across all nodes.
+
+.. code-block:: console
+
+  # addgroup --system --gid 200 synnefo
+  # adduser --system --uid 200 --gid 200 --no-create-home \
+      --gecos Synnefo synnefo
+
+  # addgroup --system --gid 300 archipelago
+  # adduser --system --uid 300 --gid 300 --no-create-home \
+      --gecos Archipelago archipelago
+
+
+NFS data directory setup
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Archipelago directory must be shared via
+`NFS <https://en.wikipedia.org/wiki/Network_File_System>`_.
+As mentioned in the General Prerequisites section, there should be a
+directory called ``/srv/archip/`` with ``blocks``, ``maps``, and
+``locks`` subdirectories visible by both nodes. To create it run:
+
+.. code-block:: console
+
+   # mkdir /srv/archip/
+   # cd /srv/archip/
+   # mkdir -p {maps,blocks,locks}
+
+Currently Archipelago is the only one that needs to have access to the
+backing store. We could have the whole NFS isolated from Synnefo (owned
+by ``archipelago:archipelago`` with ``640`` access permissions) but we
+choose not to (e.g. some future extension could require access to the
+backing store directly from Synnefo). Thus we set the ownership to
+``archipelago:synnefo`` and access permissions to ``g+ws``.
+
+.. code-block:: console
+
+   # cd /srv/archip
+   # chown archipelago:synnefo {maps,blocks,locks}
+   # chmod 770 {maps,blocks,locks}
+   # chmod g+s {maps,blocks,locks}
+
+In order to install the NFS server, run:
+
+.. code-block:: console
+
+   # apt-get install rpcbind nfs-kernel-server
+
+Now edit ``/etc/exports`` and add the following line:
+
+.. code-block:: console
+
+   /srv/archip/ 203.0.113.2(rw,no_root_squash,sync,subtree_check)
+
+Once done, run:
+
+.. code-block:: console
+
+   # /etc/init.d/nfs-kernel-server restart
 
 Archipelago setup
 ~~~~~~~~~~~~~~~~~
@@ -319,20 +393,11 @@ To install Archipelago, run:
    root@node1:~ # apt-get install archipelago archipelago-ganeti
    root@node1:~ # apt-get install blktap-archipelago-utils blktap-dkms
 
-As mentioned in the General Prerequisites section, there should be a directory
-called ``/srv/archip/`` visible by both nodes. We create and setup the
-``blocks``, ``maps``, and ``locks`` directories inside it:
-
-.. code-block:: console
-
-   # mkdir /srv/archip/
-   # cd /srv/archip/
-   # mkdir -p {maps,blocks,locks}
-   # chown archipelago:archipelago {maps,blocks,locks}
-   # chmod 770 {maps,blocks,locks}
-   # chmod g+s {maps,blocks,locks}
-
 Now edit ``/etc/archipelago/archipelago.conf`` and tweak the following settings:
+
+* ``USER``: Let Archipelago run as ``archipelago`` user (default)
+
+* ``GROUP``: Let Archipelago run as ``synnefo`` group (archipelago by default)
 
 * ``SEGMENT_SIZE``: Adjust shared memory segment size according to your machine's
   RAM. The default value is 2GB which in some situations might exceed your
@@ -358,28 +423,6 @@ Finally, start Archipelago:
 
    root@node1:~ # /etc/init.d/archipelago start
 
-
-NFS data directory setup
-~~~~~~~~~~~~~~~~~~~~~~~~
-The Archipelago directory must be shared via
-`NFS <https://en.wikipedia.org/wiki/Network_File_System>`_.
-In order to do this, run:
-
-.. code-block:: console
-
-   # apt-get install rpcbind nfs-kernel-server
-
-Now edit ``/etc/exports`` and add the following line:
-
-.. code-block:: console
-
-   /srv/archip/ 203.0.113.2(rw,no_root_squash,sync,subtree_check)
-
-Once done, run:
-
-.. code-block:: console
-
-   # /etc/init.d/nfs-kernel-server restart
 
 DNS server setup
 ~~~~~~~~~~~~~~~~
@@ -1258,10 +1301,6 @@ various Archipelago components. For more information regarding the Archipelago
 internal architecture consult with the `Archipelago administrator's guide
 <https://www.synnefo.org/docs/archipelago/latest/admin-guide.html>`_
 
-In order to integrate with Archipelago, Pithos needs to be run as the group
-Archipelago runs as (defaults to ``archipelago``). So we should change the
-gunicorn's group to ``archipelago``.
-
 Furthermore, we have to set the ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py`` option.
 
 .. Furthermore, add the ``--worker-class=gevent`` (or ``--worker-class=sync`` as
@@ -1278,8 +1317,8 @@ The file should look something like this:
        'DJANGO_SETTINGS_MODULE': 'synnefo.settings',
      },
      'working_dir': '/etc/synnefo',
-     'user': 'www-data',
-     'group': 'archipelago',
+     'user': 'synnefo',
+     'group': 'synnefo',
      'args': (
        '--bind=127.0.0.1:8080',
        '--workers=4',
@@ -1290,12 +1329,6 @@ The file should look something like this:
      ),
     }
 
-
-Then, we must manually change group ownership of the following directories to
-the ``archipelago`` group:
-
-* ``/var/log/gunicorn/`` directory
-* ``/etc/synnefo/`` directory and all the files inside it.
 
 Stamp Database Revision
 -----------------------
@@ -1510,37 +1543,44 @@ Ganeti nodes:
 
    # apt-get install qemu-kvm
 
-It's time to install Ganeti. To be able to use hotplug (which will be part of
-the official Ganeti 2.10), we recommend using our Ganeti package version:
+It's time to install Ganeti. We recommend using our Ganeti package version:
 
-``2.8.4+snap1+b64v1+kvm2+ext1+lockfix1+ipfix1+ifdown1+backports5-1~wheezy``
+``2.10.7+snap1+b64v1+ext1+lockfix1+ifdown1+qmp1+bpo1-1~wheezy``
 
 Let's briefly explain each patch set:
 
-    * snap adds snapshot support for ext disk template
+    * snap extends snapshot support for the ext disk template (separate LU)
     * b64 saves networks' bitarrays in a more compact representation
-    * kvm adds migration_caps hypervisor param
     * ext
 
-      * exports logical id in hooks
       * allows arbitrary params to reach kvm command (i.e. cache overrides
         disk_cache hvparam, heads and secs define the disk's geometry)
 
     * lockfix is a workaround for Issue #621
-    * ipfix does not require IP if mode is routed (needed for IPv6 only NICs)
     * ifdown cleans up node's configuration upon instance migration/shutdown
-    * backports is a set of patches backported from stable-2.10
+    * qmp replace HMP with QMP commands during hotplug
+    * bpo is a set of patches backported from later branches
 
-      * Hotplug support
-      * Better networking support (NIC configuration scripts)
-      * Change IP pool to support NAT instances
-      * Change RAPI to accept depends body argument and shutdown_timeout
+      * Make name and uuid Disk attributes reach bdev (2.11)
+      * IDiskParams fixes (2.11)
+      * Proper support for the --cdrom option (2.12)
+      * Add migration capabilities as an hvparam (2.13)
+      * Convert hv_kvm to a package (2.12)
+      * Extend QMP support (2.12)
+      * Add access to IDiskParams (2.13)
+      * Support userspace access for ExtStorage (2.13)
+      * Allow NICs with routed mode and no IP (2.13)
+      * Add support for KVM multiqueue virtio-net (2.12)
+      * Support Snapshot() for the ExtStorage interface (2.13)
+      * Support disk hotplug even with chroot or SM (2.13)
+      * Some refactor wrt NICs at the HV level (2.12)
+
 
 To install Ganeti run:
 
 .. code-block:: console
 
-   # apt-get install snf-ganeti ganeti-htools ganeti-haskell ganeti2
+   # apt-get install snf-ganeti ganeti2
 
 Ganeti will make use of drbd. To enable this and make the configuration
 permanent you have to do the following :
@@ -2192,7 +2232,7 @@ Configure the vncauthproxy settings in
 
 .. code-block:: console
 
-    CYCLADES_VNCAUTHPROXY_OPTS = {
+    CYCLADES_VNCAUTHPROXY_OPTS = [{
         'auth_user': 'synnefo',
         'auth_password': 'secret_password',
         'server_address': '127.0.0.1',
@@ -2200,7 +2240,8 @@ Configure the vncauthproxy settings in
         'enable_ssl': False,
         'ca_cert': None,
         'strict': False,
-    }
+    }]
+
 
 Depending on your snf-vncauthproxy setup, you might want to tweak the above
 settings. Check the `documentation
@@ -2220,8 +2261,11 @@ Both files should be readable by the `vncauthproxy` user or group.
 
 .. note::
 
-    At the moment, the certificates should be issued to the FQDN of the
-    Cyclades worker.
+    When installing snf-vncauthproxy on the same node as Cyclades and using the
+    default settings for snf-vncauthproxy, the certificates should be issued to
+    the FQDN of the Cyclades worker. Refer to the :ref:`admin guide
+    <admin-guide-vnc>`, for more information on how to setup vncauthproxy on a
+    different host / interface.
 
 We have now finished with the basic Cyclades configuration.
 
@@ -2229,22 +2273,14 @@ Gunicorn configuration
 ----------------------
 
 Cyclades uses Pithos backend library to access and store system and
-user-provided images and snapshots. As stated on the
-:ref:`conf-pithos-gunicorn`, the gunicorn worker that integrates with Pithos
-needs to be run as the group Archipelago runs as (defaults to ``archipelago``).
-So we should change the gunicorn group for Cyclades gunicorn worker to
-``archipelago``. Then, we must manually change group ownership of the following
-directories to the ``archipelago`` group:
+user-provided images and snapshots.
 
-* ``/var/log/gunicorn/`` directory
-* ``/etc/synnefo/`` directory and all the files inside it.
-
-
-We also need to adjust Pithos gunicorn configuration in order to integrate with
-Archipelago. The file, as mentioned above, is located at
+We need to adjust gunicorn configuration in order to integrate with
+Archipelago. Set the
+``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py`` option
+in the gunicorn configuration file located at
 ``/etc/gunicorn.d/synnefo``.
 
-Furthermore, we have to set the ``--config=/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py`` option.
 
 
 Database Initialization

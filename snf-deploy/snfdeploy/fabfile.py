@@ -100,12 +100,14 @@ def setup_cluster(ctx=None):
 
 def setup_synnefo():
     setup_role(constants.NS)
+    setup_role(constants.CA)
     setup_role(constants.NFS)
     setup_role(constants.DB)
     setup_role(constants.MQ)
 
     setup_role(constants.ASTAKOS)
     setup_role(constants.PITHOS)
+    setup_role(constants.VNC)
     setup_role(constants.CYCLADES)
     setup_role(constants.ADMIN)
     setup_role(constants.CMS)

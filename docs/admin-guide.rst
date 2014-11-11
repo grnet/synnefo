@@ -21,6 +21,62 @@ all the interactions between them.
    :target: _images/synnefo-arch2.png
 
 
+Required system users and groups (synnefo, archipelago)
+=======================================================
+
+Since v0.16, Synnefo requires an Archipelago installation for the Pithos
+backend. Archipelago on the other hand, supports both NFS and RADOS as
+storage backends. This leads us to various components that have specific
+access rights.
+
+Synnefo ships its own configuration files under ``/etc/synnefo``. In
+order those files not to be compromised, they are owned by
+``root:synnefo`` with group read access (mode 640). Since Gunicorn,
+which serves Synnefo by default, needs read access to the configuration
+files and we don't want it to run as root, it must run with group
+``synnefo``.
+
+Cyclades and Pithos talk to Archipelago over some named pipes under
+``/dev/shm/posixfd``. This directory is created by Archipelago, owned by
+the user/group that Archipelago runs as, and at the same time it must be
+accessible by Gunicorn. Therefore we let Gunicorn run as ``synnefo``
+user and Archipelago as ``archipelago:synnefo`` (by default it rus as
+``archipelago:archipelago``). Beware that the ``synnefo`` user and
+group is created by snf-common package.
+
+Archipelago must have a storage backend to physically store blocks, maps
+and locks. This can be either an NFS or a RADOS cluster.
+
+NFS backing store
+-----------------
+In case of NFS, Archipelago must have permissions to write on the
+exported dirs. We choose to have ``/srv/archip`` exported with
+``blocks``, ``maps``, and ``locks`` subdirectories. They are owned by
+``archipelago:synnefo`` and have ``g+ws`` access permissions. So
+Archipelago will be able to read/write in these directories. We could
+have the whole NFS isolated from Synnefo (owned by
+``archipelago:archipelago`` with ``640`` access permissions) but we
+choose not to (e.g. some future extension could require access to the
+backing store directly from Synnefo).
+
+Due to NFS restrictions, all Archipelago nodes must have common uid for
+the ``archipelago`` user and common gid for the ``synnefo`` group. So
+before any Synnefo installation, we create them here in advance. We
+assume that ids 200 and 300 are available across all nodes.
+
+.. code-block:: console
+
+  # addgroup --system --gid 200 synnefo
+  # adduser --system --uid 200 --gid 200 --no-create-home \
+      --gecos Synnefo synnefo
+
+  # addgroup --system --gid 300 archipelago
+  # adduser --system --uid 300 --gid 300 --no-create-home \
+      --gecos Archipelago archipelago
+
+Normally the ``snf-common`` and ``archipelago`` packages are responsible
+for creating the required system users and groups.
+
 Identity Service (Astakos)
 ==========================
 
@@ -866,7 +922,7 @@ bypassing automatic VM allocation.
     --user=7cf4d078-67bf-424d-8ff2-8669eb4841ea --backend-id=2 \
     --password='example_passw0rd' --name='test_vm'
 
-The above commnd will create a new VM for user
+The above command will create a new VM for user
 `7cf4d078-67bf-424d-8ff2-8669eb4841ea` in the Ganeti backend with ID 2. By
 default this command will issue a Ganeti job to create the VM
 (`OP_INSTANCE_CREATE`) and return. As in other commands, the `--wait=True`
@@ -1090,7 +1146,7 @@ subnet's IPv4 address allocation pool:
 
   $ snf-manage subnet-inspect <subnet_id>
 
-Connect a VM to the created private network. The port will be automatically
+Connect a VM to the created private network. The port will automatically
 be assigned an IPv4 address from one of the network's available IPs. This
 command will result in sending an `OP_INSTANCE_MODIFY` Ganeti command and
 attaching a NIC to the specified Ganeti instance.
@@ -1265,7 +1321,7 @@ As already mentioned Cyclades use a pool of Bridges that must correspond
 to Physical VLAN at the Ganeti level. A bridge from the pool is assigned to
 each network of flavor `PHYSICAL_VLAN`. Creation of this pool is done
 using `snf-manage pool-create` command. For example the following command
-will create a pool containing the brdiges from `prv1` to `prv21`.
+will create a pool containing the bridges from `prv1` to `prv21`.
 
 .. code-block:: console
 
@@ -1389,7 +1445,7 @@ Cyclades database may differ from the real state of VMs and networks in the
 Ganeti backends. The reconciliation process is designed to synchronize the
 state of the Cyclades DB with Ganeti. There are two management commands for
 reconciling VMs and Networks that will detect stale, orphans and out-of-sync
-VMs and networks. To fix detected inconsistencies, use the `--fix-all`.
+VMs and networks. To fix detected inconsistencies, use the `--fix-all` option.
 
 .. code-block:: console
 
@@ -1438,6 +1494,71 @@ To fix detected inconsistencies, use the `--fix` option.
 
   $ snf-manage reconcile-pools
   $ snf-manage reconcile-pools --fix
+
+
+.. _admin-guide-vnc:
+
+snf-vncauthproxy configuration
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Since ``snf-vncauthproxy-1.6`` and ``snf-cyclades-app-0.16``, it is possible
+to run snf-vncauthproxy on a separate node and have multiple snf-vncauthproxy
+instances / nodes, to serve clients.
+
+The ``CYCLADES_VNCAUTHPROXY_OPTS`` setting has become a list of dictionaries,
+each of which defines one snf-vncauthproxy instance. Each vncauthproxy should
+be properly configured to accept control connections by the Cylades host (via
+the ``--listen-address`` CLI parameter of snf-vncauthproxy) and VNC connections
+from clients (via the ``--proxy-listen-address`` CLI parameter.
+
+For a two-node vncauthproxy setup, the ``CYCLADES_VNCAUTHPROXY_OPTS`` would
+look like:
+
+.. code-block:: console
+
+    CYCLADES_VNCAUTHPROXY_OPTS = [
+       {
+        'auth_user': 'synnefo',
+        'auth_password': 'secret_password',
+        'server_address': 'node1.synnefo.live',
+        'server_port': 24999,
+        'enable_ssl': True,
+        'ca_cert': '/path/to/cacert',
+        'strict': True,
+       },
+       {
+        'auth_user': 'synnefo',
+        'auth_password': 'secret_password',
+        'server_address': 'node2.synnefo.live',
+        'server_port': 24999,
+        'enable_ssl': False,
+        'ca_cert': '/path/to/cacert',
+        'strict': True,
+       },
+    ]
+
+The ``server_address`` is the host / IP which Cyclades will use for the control
+connection, in order to set up the forwarding.
+
+The vncauthproxy ``DAEMON_OPTS`` option in ``/etc/default/vncauthproxy`` would
+look like:
+
+.. code-block:: console
+
+    DAEMON_OPTS="--pid-file=$PIDFILE --listen-address=node1.synnefo.live --proxy-listen-address=node1.synnefo.live"
+
+The ``--proxy-listen-address`` is the host / IP which clients (Web browsers /
+VNC clients) will use to connect to snf-vncauthproxy.
+
+In case that snf-vncauthproxy doesn't run on the same node as the Cyclades
+node, it is highly recommended to enable SSL on the control socket, using
+strict verification of the server certificate. The only caveat, for the time
+being, is that the same certificate, provided to snf-vncauthproxy, is used for
+both the control and the client connections. If the control and client host
+(``--listen-address`` and ``--proxy-listen-address`` parameters, respectively)
+differ, you should make sure to generate a certificate covering both (using the
+one as common name / CN, and specifying the other as a subject alternative
+name).
 
 .. _admin-guide-stats:
 
@@ -1551,9 +1672,9 @@ snf-cyclades-gtools configuration
 
 To enable VM stats collecting, you will need to:
 
- * Install collectd on the every Ganeti (VM-capable) node.
+ * Install collectd on every Ganeti (VM-capable) node.
  * Enable the Ganeti stats plugin in your collectd configuration. This can be
-   achived by either copying the example collectd conf file that comes with
+   achieved by either copying the example collectd conf file that comes with
    snf-cyclades-gtools
    (``/usr/share/doc/snf-cyclades-gtools/examples/ganeti-stats-collectd.conf``)
    or by adding the following line to your existing (or default) collectd
@@ -1601,14 +1722,14 @@ fetch them when needed.
 Helpdesk
 --------
 
-Helpdesk application provides the ability to view the virtual servers and
+The Helpdesk application provides the ability to view the virtual servers and
 networks of all users, along with the ability to perform some basic actions
 like administratively suspending a server. You can perform look-ups by
 user UUID or email, by server ID (vm-$id) or by an IPv4 address.
 
 If you want to activate the helpdesk application you can set to `True` the
 `HELPDESK_ENABLED` setting. Access to helpdesk views (under
-`$BASE_URL/helpdesk`) is only to allowed to users that belong to Astakos
+`$BASE_URL/helpdesk`) is only allowed to users that belong to Astakos
 groups defined in the `HELPDESK_PERMITTED_GROUPS` setting, which by default
 contains the `helpdesk` group. For example, to allow <user_id>
 to access helpdesk view, you should run the following command in the Astakos
@@ -1737,7 +1858,7 @@ it if doesn't exist):
 
     ROOT_URLCONF="synnefo_admin.urls"
 
-Note that the above change does not interfere the with the ``ADMIN_BASE_URL``,
+Note that the above change does not interfere with the ``ADMIN_BASE_URL``,
 which will be used normally.
 
 Furthermore, if Astakos and Cyclades have separate databases, then they must be
@@ -1760,7 +1881,7 @@ example setup is the following:
         }, 'astakos': {
             'ENGINE': 'django.db.backends.postgresql_psycopg2',
             'NAME': 'snf_apps_astakos',
-            'HOST': <Cyclades host>,
+            'HOST': <Astakos host>,
             <...snip..>
         }
     }
@@ -1806,10 +1927,10 @@ They are also available from our apt repository: ``apt.dev.grnet.gr``
 Synnefo management commands ("snf-manage")
 ==========================================
 
-Each Synnefo service, Astakos, Pithos and Cyclades are controlled by the
+Each Synnefo service, Astakos, Pithos and Cyclades is controlled by the
 administrator using the "snf-manage" admin tool. This tool is an extension of
 the Django command-line management utility. It is run on the host that runs
-each service and provides different types of commands depending the services
+each service and provides different types of commands depending on the services
 running on the host. If you are running more than one service on the same host
 "snf-manage" adds all the corresponding commands for each service dynamically,
 providing a unified admin environment.
@@ -1974,8 +2095,8 @@ Running:
 
    snf-component-register [<component_name>]
 
-automates the registration of the standard Synnefo components (astakos,
-cyclades, and pithos) in astakos database. It internally uses the script:
+automates the registration of the standard Synnefo components (Astakos,
+Cyclades, and Pithos) in Astakos database. It internally uses the script:
 
 .. code-block:: console
 
@@ -2013,7 +2134,7 @@ The "kamaki" API client
 
 To upload, register or modify an image you will need the **kamaki** tool.
 Before proceeding make sure that it is configured properly. Verify that
-*image.url*, *file.url*, *user.url* and *token* are set as needed:
+*url* and *token* are set as needed:
 
 .. code-block:: console
 
@@ -2420,7 +2541,7 @@ The RabbitMQ nodes that form the cluster, are declared to Synnefo through the
 `AMQP_HOSTS` setting. Each time a Synnefo component needs to connect to
 RabbitMQ, one of these nodes is chosen in a random way. The client that Synnefo
 uses to connect to RabbitMQ, handles connection failures transparently and
-tries to reconnect to a different node. As long as one of these nodes are up
+tries to reconnect to a different node. As long as one of these nodes is up
 and running, functionality of Synnefo should not be downgraded by the RabbitMQ
 node failures.
 

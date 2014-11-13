@@ -1904,8 +1904,7 @@
           return project;
         },
 
-        set_project: function(project) {
-          var trigger = false;
+        set_project: function(project, trigger) {
           if (project != this.project) {
             trigger = true;
           }
@@ -2049,7 +2048,7 @@
 
         beforeOpen: function() {
             var project = this.get_available_project();
-            this.set_project(project);
+            this.set_project(project, true);
             if (!this.skip_reset_on_next_open) {
                 this.submiting = false;
                 this.reset();

@@ -1858,20 +1858,11 @@ class Archip(base.Component):
 class ArchipSynnefo(base.Component):
     REQUIRED_PACKAGES = []
 
-    @base.run_cmds
-    def prepare(self):
-        return [
-            "mkdir -p /etc/synnefo/gunicorn-hooks",
-            "chmod 750 /etc/synnefo/gunicorn-hooks",
-            "chmod g+s /etc/synnefo/gunicorn-hooks",
-            ]
-
     def _configure(self):
         r1 = {"HOST": self.node.fqdn}
         return [
             ("/etc/gunicorn.d/synnefo-archip", r1,
              {"remote": "/etc/gunicorn.d/synnefo"}),
-            ("/etc/synnefo/gunicorn-hooks/gunicorn-archipelago.py", {}, {}),
             ]
 
     @base.run_cmds

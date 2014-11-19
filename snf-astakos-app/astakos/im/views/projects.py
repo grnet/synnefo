@@ -481,6 +481,9 @@ def project_members(request, project_uuid, members_status_filter=None,
     if not user.owns_project(project) and not user.is_project_admin():
         return redirect(reverse('index'))
 
+    if not project.is_alive:
+        return redirect(reverse('project_list'))
+
     if request.method == 'POST':
         addmembers_form = AddProjectMembersForm(
             request.POST,

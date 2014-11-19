@@ -6,6 +6,30 @@ Unified Changelog file for Synnefo versions >= 0.13
 Since v0.13 most of the Synnefo components have been merged into a single
 repository and have aligned versions.
 
+.. _Changelog-0.16.1:
+
+v0.16.1
+=====
+
+Astakos
+-------
+
+* Include additional validation checks in project modification form to ensure
+  members limit is always set lower or equal than total limit.
+
+* Prevent members limit from automatically set to unlimited in project
+  modification form.
+
+* Exclude terminated projects from responses of project list and user quota
+  api calls.
+
+
+Cyclades UI
+-----------
+
+* Improve handling of terminated projects in reassign view.
+
+
 .. _Changelog-0.16:
 
 v0.16

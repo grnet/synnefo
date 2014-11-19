@@ -30,6 +30,12 @@ Cyclades UI
 * Improve handling of terminated projects in reassign view.
 
 
+Stats
+-----
+
+* Aggregate the traffic of every VM interface in the net stats graphs.
+
+
 .. _Changelog-0.16:
 
 v0.16

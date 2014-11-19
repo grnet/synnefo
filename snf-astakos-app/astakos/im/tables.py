@@ -324,8 +324,9 @@ class UserProjectsTable(UserTable):
                               kwargs={'project_uuid': record.uuid})
         members_count = len(self.accepted.get(project.id, []))
         if self.user.owns_project(record) or self.user.is_project_admin():
-            members_count = '<a href="%s">%d</a>' % (members_url,
-                                                     members_count)
+            if project.is_alive:
+                members_count = '<a href="%s">%d</a>' % (members_url,
+                                                         members_count)
         return mark_safe(str(members_count) + append)
 
     class Meta:

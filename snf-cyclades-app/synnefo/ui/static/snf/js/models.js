@@ -2868,6 +2868,10 @@
             if (project.id == synnefo.user.get_username()) {
               project.name = "System project"
             }
+            // missing means the project exists in a relation to a resource
+            // but does not appear in user projects list. Once the project
+            // appears in projects list set missing flag to false.
+            project.missing = false;
           }, this);
           return resp;
         },

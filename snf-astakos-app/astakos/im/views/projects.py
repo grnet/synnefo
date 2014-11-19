@@ -115,7 +115,7 @@ def project_list(request, template_name="im/projects/project_list.html"):
         query = query & ~Q(Q(is_base=True) & \
                           ~Q(realname="system:%s" % request.user.uuid))
 
-    query = query & ~Q(state=Project.DELETED)
+    query = query & ~Q(state__in=Project.SKIP_STATES)
     mode = "default"
     if not request.user.is_project_admin():
         mode = "related"

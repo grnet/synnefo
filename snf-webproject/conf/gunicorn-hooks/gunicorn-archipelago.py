@@ -20,7 +20,8 @@ import mmap
 import pickle
 import os
 
-SYNNEFO_UMASK=0o007
+SYNNEFO_UMASK = 0o007
+
 
 def find_hole(workers, fworkers):
     old_key = []
@@ -99,5 +100,9 @@ def worker_exit(server, worker):
 
 def on_exit(server):
     server.state_fd.close()
+
+
+def on_reload(server):
+    server.worker_age = 0
 
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4

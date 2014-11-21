@@ -1176,7 +1176,8 @@ class SynnefoCI(object):
         if not os.path.exists(dest):
             os.makedirs(dest)
         self.fetch_compressed("synnefo_build-area", dest)
-        self.fetch_compressed("webclient_build-area", dest)
+        if self.config.get("Global", "build_pithos_webclient") == "True":
+            self.fetch_compressed("webclient_build-area", dest)
         self.logger.info("Downloaded debian packages to %s" %
                          _green(dest))
 

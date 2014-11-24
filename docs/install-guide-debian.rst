@@ -1949,7 +1949,7 @@ Then, provide connectivity mode and link to the network:
 
 .. code-block:: console
 
-   # gnt-network connect test-net-public bridged br1
+   # gnt-network connect --nic-parameters mode=bridged,link=br1 test-net-public
 
 Now, it is time to test that the backend infrastracture is correctly setup for
 the Public Network. We will add a new VM, almost the same way we did it on the
@@ -2010,7 +2010,7 @@ means that the instances will have a second NIC connected to the ``br2``.
 .. code-block:: console
 
    # gnt-network add --network=192.168.1.0/24 --mac-prefix=aa:00:55 --tags=nfdhcpd,private-filtered test-net-prv-mac
-   # gnt-network connect test-net-prv-mac bridged br2
+   # gnt-network connect --nic-parameters mode=bridged,link=br2 test-net-prv-mac
 
    # gnt-instance add -o snf-image+default --os-parameters \
                       img_passwd=my_vm_example_passw0rd,img_format=diskdump,img_id=debian_base-6.0-x86_64,img_properties='{"OSFAMILY":"linux"\,"ROOT_PARTITION":"1"}' \

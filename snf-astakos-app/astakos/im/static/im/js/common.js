@@ -164,7 +164,7 @@ function tableSort(tableEl, iDisplayLength, bFilter) {
            '<option value="50">50</option>'+
            '<option value="-1">All</option>'+
            '</select>'
-    },
+    }
   });
 
   $('.dataTables_wrapper').addClass('clearfix');

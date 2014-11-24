@@ -496,7 +496,7 @@ $('#members-table tr .check input').click(function(e){
 
   tableSort($('.projects-intro').siblings('table#projects-list'), 10, true );
   tableSort($('.search-projects').siblings('table#projects-list'), 25, true);
-  tableSort($('#members-table'), 3, true);
+  tableSort($('#members-table'), 10, true);
 
 
 });

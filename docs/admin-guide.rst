@@ -1851,7 +1851,7 @@ settings of their nodes. As a result, when installing Admin in a node, the
 Astakos and Cyclades packages will also be installed.
 
 In order to disable the Astakos/Cyclades API in the Admin node, the
-administrator can add the following line in ``99-locals.conf`` (you can create
+administrator can add the following line in ``99-local.conf`` (you can create
 it if doesn't exist):
 
 .. code-block:: console
@@ -1890,9 +1890,16 @@ example setup is the following:
 
 You may notice that there are three databases instead of two. That's because
 Django requires that every ``DATABASES`` setting has a *default* database. In
-our case, we suggest that you use as default the Cyclades database. Finally,
-you must not forget to add the ``DATABASE_ROUTERS`` setting in the above
-example that must always be used in multi-db setups.
+our case, we suggest that you use as default the Cyclades database.
+
+You should also make sure not to enable database (psycopg) connection pooling
+(as described in the `installation guide <install-guide-debian.html#enable-pooling>`_)
+by omitting (deleting or commenting out) all the relevant pooling options from
+the DB configuration (i.e. the ``synnefo_poolsize`` option).
+
+Finally, you must not forget to add the ``DATABASE_ROUTERS`` setting in the
+above example that must always be used in multi-db setups.
+
 
 Disabling Admin
 ---------------

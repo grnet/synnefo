@@ -48,6 +48,7 @@ def follow_workers(pid, wid, server):
         k = {pid: int(hole[0])}
     else:
         k = {pid: wid}
+        hole.append(wid)
     f.update(k)
     fd.seek(0)
     pickle.dump(f, fd)
@@ -100,9 +101,4 @@ def worker_exit(server, worker):
 
 def on_exit(server):
     server.state_fd.close()
-
-
-def on_reload(server):
-    server.worker_age = 0
-
 # vim: tabstop=8 expandtab shiftwidth=4 softtabstop=4

@@ -212,7 +212,7 @@
         options['el'] = $(this.$(this.collection_view_selector).get(0));
         this.collection_view = this.create_view(this.collection_view_cls, options);
         this.add_subview(this.collection_view);
-      },
+      }
     });
 
     views.ext.CollectionView = views.ext.View.extend({

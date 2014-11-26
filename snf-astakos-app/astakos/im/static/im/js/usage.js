@@ -134,7 +134,7 @@ _.extend(UsageView.prototype, {
     this.container.append(this.el.main);
     var ul = this.container.find("ul");
     this.el.list = this.render('quotas', {
-      'resources': this.resources_ordered,
+      'resources': this.resources_ordered
     });
     ul.append(this.el.list).hide();
     _.each(this.resources_ordered, function(resource) {
@@ -476,7 +476,7 @@ _.extend(UsageView.prototype, {
       'url': url || this.url,
       'headers': {
         'X-Auth-Token': token
-      },
+      }
     }
   },
   

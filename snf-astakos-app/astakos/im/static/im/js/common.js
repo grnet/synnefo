@@ -155,7 +155,7 @@ function tableSort(tableEl, iDisplayLength, bFilter) {
     "bStateSave": true,
     "aoColumnDefs": [
          { "sType": "num-html", "aTargets": numHTMLArr },
-         { "sType": "date-uk", "aTargets": dateArr },
+         { "sType": "date-uk", "aTargets": dateArr }
     ],
     "oLanguage": {
       "sLengthMenu": 'Pagination <select>'+

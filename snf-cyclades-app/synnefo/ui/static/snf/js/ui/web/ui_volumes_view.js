@@ -544,7 +544,7 @@
                       }, 1000);
                     }, this));
             }
-        },
+        }
     });
 
     views.VolumeView = views.ext.ModelView.extend({

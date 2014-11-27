@@ -2310,6 +2310,7 @@ Image            Name/extension  convention    Usage
 ===============  ============================  =========
 Favicon          favicon.ico                   Favicon for all services
 Dashboard logo   dashboard_logo.png            Visible in all Astakos UI pages
+Cloudbar icon    cloudbar_home.png             Homepage icon for admin & cloudbar
 Compute logo     compute_logo.png              Visible in all Cyclades UI pages
 Console logo     console_logo.png              Visible in the Cyclades Console Window
 Storage logo     storage_logo.png              Visible in all Pithos UI pages

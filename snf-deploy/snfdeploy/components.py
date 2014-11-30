@@ -700,10 +700,10 @@ gnt-node modify --master-capable=yes {0}
             # This is needed because MIN_VG_SIZE is constant and set to 20G
             # and cluster modify --vg-name may result to:
             # volume group 'ganeti' too small
-            # But this check is made only ff a vm-capable node is found
+            # But this check is made only if a vm-capable node is found
             "gnt-cluster modify --enabled-disk-templates file,ext,plain \
+                                --ipolicy-disk-template file,ext,plain \
                                 --vg-name=%s" % vg,
-            "gnt-cluster modify --ipolicy-disk-template file,ext,plain",
             ]
 
     @base.run_cmds
@@ -711,8 +711,8 @@ gnt-node modify --master-capable=yes {0}
         vg = self.cluster.vg
         return [
             "gnt-cluster modify --enabled-disk-templates file,ext,plain,drbd \
+                                --ipolicy-disk-template file,ext,plain,drbd \
                                 --drbd-usermode-helper=/bin/true",
-            "gnt-cluster modify --ipolicy-disk-template file,ext,plain,drbd",
             "gnt-cluster modify --disk-parameters=drbd:metavg=%s" % vg,
             "gnt-group modify --disk-parameters=drbd:metavg=%s default" % vg,
             ]

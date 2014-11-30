@@ -1879,6 +1879,10 @@ class ArchipGaneti(base.Component):
 
 
 class ExtStorage(base.Component):
+    REQUIRED_PACKAGES = [
+        "git",
+        ]
+
     @base.run_cmds
     def prepare(self):
         return ["mkdir -p /usr/local/lib/ganeti/"]

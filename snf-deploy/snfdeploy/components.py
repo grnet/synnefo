@@ -494,6 +494,7 @@ class VMC(base.Component):
         self.MASTER.add_node(self.node)
         self.MASTER.enable_lvm()
         self.MASTER.enable_drbd()
+        self.MASTER.modify_os()
 
 
 class LVM(base.Component):
@@ -716,6 +717,16 @@ gnt-node modify --master-capable=yes {0}
             "gnt-cluster modify --disk-parameters=drbd:metavg=%s" % vg,
             "gnt-group modify --disk-parameters=drbd:metavg=%s default" % vg,
             ]
+
+    @base.run_cmds
+    def modify_os(self):
+        os = """
+gnt-os modify \
+  --os-parameters=img_passwd={0},img_format={1},img_id={2},img_properties={3} \
+  snf-image+default
+        """.format("12345678", "diskdump", "debian_base",
+                   "'{\"OSFAMILY\":\"linux\"\\,\"ROOT_PARTITION\":\"1\"}'")
+        return [os]
 
     @base.run_cmds
     def initialize(self):

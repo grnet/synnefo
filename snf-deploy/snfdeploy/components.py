@@ -1952,105 +1952,12 @@ class Client(base.Component):
 
 
 class GanetiDev(base.Component):
-    REQUIRED_PACKAGES = [
-        "automake",
-        "bridge-utils",
-        "cabal-install",
-        "fakeroot",
-        "fping",
-        "ghc",
-        "ghc-haddock",
-        "git",
-        "graphviz",
-        "hlint",
-        "hscolour",
-        "iproute",
-        "iputils-arping",
-        "libcurl4-openssl-dev",
-        "libghc-attoparsec-dev",
-        "libghc-crypto-dev",
-        "libghc-curl-dev",
-        "libghc-haddock-dev",
-        "libghc-hinotify-dev",
-        "libghc-hslogger-dev",
-        "libghc-hunit-dev",
-        "libghc-json-dev",
-        "libghc-network-dev",
-        "libghc-parallel-dev",
-        "libghc-quickcheck2-dev",
-        "libghc-regex-pcre-dev",
-        "libghc-snap-server-dev",
-        "libghc-temporary-dev",
-        "libghc-test-framework-dev",
-        "libghc-test-framework-hunit-dev",
-        "libghc-test-framework-quickcheck2-dev",
-        "libghc-base64-bytestring-dev",
-        "libghc-text-dev",
-        "libghc-utf8-string-dev",
-        "libghc-vector-dev",
-        "libghc-comonad-transformers-dev",
-        "libpcre3-dev",
-        "libghc6-zlib-dev",
-        "libghc-lifted-base-dev",
-        "libcurl4-openssl-dev",
-        "shelltestrunner",
-        "lvm2",
-        "make",
-        "ndisc6",
-        "openssl",
-        "pandoc",
-        "pep8",
-        "pylint",
-        "python",
-        "python-bitarray",
-        "python-coverage",
-        "python-epydoc",
-        "python-ipaddr",
-        "python-openssl",
-        "python-pip",
-        "python-pycurl",
-        "python-pyinotify",
-        "python-pyparsing",
-        "python-setuptools",
-        "python-simplejson",
-        "python-sphinx",
-        "python-yaml",
-        "qemu-kvm",
-        "socat",
-        "ssh",
-        "vim"
-        ]
-
-    CABAL = [
-        "json",
-        "network",
-        "parallel",
-        "utf8-string",
-        "curl",
-        "hslogger",
-        "Crypto",
-        "hinotify==0.3.2",
-        "regex-pcre",
-        "vector",
-        "lifted-base==0.2.0.3",
-        "lens==3.10",
-        "base64-bytestring==1.0.0.1",
-        ]
-
-    def _cabal(self):
-        ret = ["cabal update"]
-        for p in self.CABAL:
-            ret.append("cabal install %s" % p)
-        return ret
 
     @base.run_cmds
     def prepare(self):
-        src = config.src_dir
-        url1 = "git://git.ganeti.org/ganeti.git"
-        url2 = "https://code.grnet.gr/git/ganeti-local"
-        return self._cabal() + [
-            "git clone %s %s/ganeti" % (url1, src),
-            "git clone %s %s/snf-ganeti" % (url2, src)
+        return [
+            "mkdir -p %s" % config.src_dir,
+            "git clone %s %s/ganeti" % (config.ganeti_url, config.src_dir),
             ]
 
     def _configure(self):
@@ -2062,27 +1969,25 @@ class GanetiDev(base.Component):
                 "secondary": n.ip,
                 })
 
-        repl = {
+        r1 = {
             "CLUSTER_NAME": self.cluster.name,
             "VG": self.cluster.vg,
             "CLUSTER_NETDEV": self.cluster.netdev,
             "NODES": simplejson.dumps(sample_nodes),
             "DOMAIN": self.cluster.domain
             }
-        c8 = os.path.join(config.src_dir, "ganeti", "configure-2.8")
-        c10 = os.path.join(config.src_dir, "ganeti", "configure-2.10")
-        return [
-            ("/root/qa-sample.json", repl, {}),
-            ("/tmp/configure-2.8", {}, {"remote": c8, "mode": 0755}),
-            ("/tmp/configure-2.10", {}, {"remote": c10, "mode": 0755}),
-            ]
 
-    @base.run_cmds
-    def initialize(self):
-        d = os.path.join(config.src_dir, "ganeti")
+        r2 = {
+            "GANETI_SRC_DIR": "%s/ganeti" % config.src_dir,
+            }
+
+        remote1 = "%s/qa-init.sh" % config.src_dir
+        remote2 = "%s/configure-ganeti" % config.src_dir
+
         return [
-            "cd %s; ./autogen.sh" % d,
-            "cd %s; ./configure" % d,
+            ("/root/qa-sample.json", r1, {}),
+            ("/tmp/qa-init.sh", {}, {"remote": remote1, "mode": 0755}),
+            ("/tmp/configure-ganeti", r2, {"remote": remote2, "mode": 0755}),
             ]
 
     @base.run_cmds

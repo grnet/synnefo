@@ -1046,6 +1046,13 @@ class Astakos(base.Component):
         return [HW, SSH, DNS, APT, Apache, Gunicorn, Common, Webproject]
 
     @base.run_cmds
+    def make_user_admin_user(self):
+        user_id = context.user_id
+        return [
+            "snf-manage user-modify %s --add-group=admin" % user_id
+            ]
+
+    @base.run_cmds
     def setup_user(self):
         self._debug("Setting up user")
         return self._set_default_quota() + \
@@ -1684,6 +1691,7 @@ class Admin(base.Component):
         f = "/etc/synnefo/cyclades.conf"
         self.CYCLADES.get(f, "/tmp/cyclades.conf")
         self.put("/tmp/cyclades.conf", f)
+        self.ASTAKOS.run("snf-manage group-add admin")
 
     def _configure(self):
         r1 = {
@@ -1694,23 +1702,11 @@ class Admin(base.Component):
             ]
 
     @base.run_cmds
-    def initialize(self):
-        return [
-            "snf-manage group-add admin"
-            ]
-
-    @base.run_cmds
     def restart(self):
         return [
             "/etc/init.d/gunicorn restart"
             ]
 
-    @base.run_cmds
-    def make_user_admin_user(self):
-        user_id = context.user_id
-        return [
-            "snf-manage user-modify %s --add-group=admin" % user_id
-            ]
 
 class Kamaki(base.Component):
     REQUIRED_PACKAGES = [
@@ -1723,7 +1719,7 @@ class Kamaki(base.Component):
         self.ASTAKOS.add_user()
         self.ASTAKOS.activate_user()
         self.DB.get_user_info_from_db(config.user_email)
-        self.ADMIN.make_user_admin_user()
+        self.ASTAKOS.make_user_admin_user()
         self.CA.get("/root/ca/cacert.pem", "/tmp/cacert.pem")
         self.put("/tmp/cacert.pem",
           "/usr/local/share/ca-certificates/Synnefo_Root_CA.crt")

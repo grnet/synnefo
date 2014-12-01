@@ -828,42 +828,73 @@ class GTools(base.Component):
 
 class Network(base.Component):
     REQUIRED_PACKAGES = [
+        "ferm",
         "python-nfqueue",
         "snf-network",
         "nfdhcpd",
         ]
 
+    @base.run_cmds
+    def prepare(self):
+        # Needed to flush default configuration
+        return [
+              "/etc/init.d/ferm stop",
+              ]
+
     def _configure(self):
+        is_router = self.node.ip == self.ctx.router.ip
         r1 = {
             "ns_node_ip": self.ctx.ns.ip
             }
         r2 = {
-            "common_bridge": config.common_bridge,
-            "public_iface": self.node.public_iface,
-            "subnet": config.synnefo_public_network_subnet,
-            "gateway": config.synnefo_public_network_gateway,
-            "router_ip": self.ctx.router.ip,
-            "node_ip": self.node.ip,
+            "vm_public_bridge": config.vm_public_bridge,
+            "vm_private_bridge": config.vm_private_bridge,
             }
         r3 = {
             "domain": self.node.domain,
             "server": self.ctx.ns.ip,
             "keyfile": config.ddns_private_key,
             }
+        r4 = {
+            "public_iface": self.node.public_iface,
+            "subnet": config.synnefo_public_network_subnet,
+            "gateway": config.synnefo_public_network_gateway,
+            "router": 1 if is_router else 0,
+            "iface": self.node.vm_public_iface,
+            }
+        r5 = {
+            "vm_public_bridge": config.vm_public_bridge,
+            "vm_public_iface": self.node.vm_public_iface,
+            "address": config.synnefo_public_network_gateway \
+                if is_router else "0.0.0.0",
+            "netmask": config.synnefo_public_network_netmask \
+                if is_router else "255.255.255.255",
+            "vm_private_bridge": config.vm_private_bridge,
+            "vm_private_iface": self.node.vm_private_iface,
+            }
 
         return [
             ("/etc/nfdhcpd/nfdhcpd.conf", r1, {}),
             ("/etc/rc.local", r2, {"mode": 0755}),
             ("/etc/default/snf-network", r3, {}),
+            ("/etc/ferm/ferm.conf", {}, {}),
+            ("/etc/ferm/masq.ferm", r4, {}),
+            ("/etc/network/interfaces.synnefo", r5, {}),
             ]
 
     @base.run_cmds
     def initialize(self):
-        return ["/etc/init.d/rc.local start"]
+        return [
+            "/etc/init.d/rc.local start",
+            "/etc/init.d/ferm start",
+            ]
 
     @base.run_cmds
     def restart(self):
-        return ["/etc/init.d/nfdhcpd restart"]
+        return [
+            "/etc/init.d/nfdhcpd restart",
+            "/etc/init.d/ferm restart",
+            ]
 
 
 class Apache(base.Component):
@@ -1425,7 +1456,7 @@ class Cyclades(base.Component):
         subnet = config.synnefo_public_network_subnet
         gw = config.synnefo_public_network_gateway
         ntype = config.synnefo_public_network_type
-        link = config.common_bridge
+        link = config.vm_public_bridge
 
         cmd = """
 snf-manage network-create --subnet={0} --gateway={1} --public \
@@ -1440,7 +1471,7 @@ snf-manage network-create --subnet={0} --gateway={1} --public \
         subnet = "babe::/64"
         gw = "babe::1"
         ntype = config.synnefo_public_network_type
-        link = config.common_bridge
+        link = config.vm_public_bridge
 
         cmd = """
 snf-manage network-create --subnet6={0} \
@@ -1497,6 +1528,8 @@ snf-manage network-create --subnet6={0} \
             "synnefo_db_passwd": config.synnefo_db_passwd,
             "synnefo_rabbitmq_passwd": config.synnefo_rabbitmq_passwd,
             "common_bridge": config.common_bridge,
+            "vm_public_bridge": config.vm_public_bridge,
+            "vm_private_bridge": config.vm_private_bridge,
             "domain": self.node.domain,
             "CYCLADES_SERVICE_TOKEN": context.service_token,
             "STATS": self.ctx.stats.cname,

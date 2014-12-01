@@ -1668,6 +1668,9 @@ class VNC(base.Component):
 class Admin(base.Component):
     REQUIRED_PACKAGES = [
         "python-django-eztables",
+        "python-astakosclient",
+        "snf-astakos-app",
+        "snf-cyclades-app",
         "snf-admin-app"
         ]
 

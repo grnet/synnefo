@@ -120,8 +120,9 @@ EOF
       -o /var/lib/snf-image/debian_base.diskdump
 
   touch /etc/ganeti/vnc-cluster-password
-fi
 
-cat >> /var/lib/ganeti/rapi/users <<EOF
-ganeti-qa ganeti-qa write
+  cat >> /var/lib/ganeti/rapi/users <<EOF
+ganeti-qa qa_example_passwd write
 EOF
+
+fi

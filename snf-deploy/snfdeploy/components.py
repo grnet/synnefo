@@ -663,7 +663,10 @@ class Master(base.Component):
         cmd = """
 echo ganeti-qa qa_example_passwd write >> /var/lib/ganeti/rapi/users
 """
-        return [cmd]
+        return [
+            cmd,
+            "gnt-cluster redist-conf",
+            ]
 
     def _add_rapi_user(self):
         user = config.synnefo_user

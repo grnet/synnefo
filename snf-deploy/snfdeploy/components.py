@@ -1187,6 +1187,12 @@ class Astakos(base.Component):
         return [h, c, p, a]
 
     @base.run_cmds
+    def restart(self):
+        return [
+            "/etc/init.d/gunicorn restart",
+            ]
+
+    @base.run_cmds
     def add_user(self):
         info = (
             config.user_email,

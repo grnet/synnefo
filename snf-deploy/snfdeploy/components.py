@@ -1189,12 +1189,14 @@ class Astakos(base.Component):
     @base.run_cmds
     def add_user(self):
         info = (
+            config.user_email,
             config.user_passwd,
             config.user_email,
             config.user_name,
             config.user_lastname,
             )
-        cmd = "snf-manage user-add --password %s %s %s %s" % info
+        cmd = "snf-manage user-show %s || \
+            snf-manage user-add --password %s %s %s %s" % info
         return [cmd]
 
     @update_admin

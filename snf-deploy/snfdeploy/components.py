@@ -296,10 +296,12 @@ EOF
 
     def add_qa_instances(self):
         instances = [
-            ("xen-test-inst1", "1.2.3.4"),
-            ("xen-test-inst2", "1.2.3.5"),
-            ("xen-test-inst3", "1.2.3.6"),
-            ("xen-test-inst4", "1.2.3.7"),
+            ("test-inst1", "1.2.3.4"),
+            ("test-inst2", "1.2.3.5"),
+            ("test-inst3", "1.2.3.6"),
+            ("test-inst4", "1.2.3.7"),
+            ("test-inst-rename", "1.2.3.10"),
+            ("test-cluster-rename", "1.2.3.11"),
             ]
         for name, ip in instances:
             info = {

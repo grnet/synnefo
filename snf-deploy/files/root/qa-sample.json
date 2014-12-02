@@ -7,7 +7,7 @@
   "name": "%CLUSTER_NAME%",
 
   "# Name used for renaming cluster": null,
-  "rename": "ganeti1-rename",
+  "rename": "test-cluster-rename",
 
   "# Virtual cluster": null,
   "#vcluster-master": "xen-vcluster",
@@ -101,19 +101,19 @@
 
   "instances": [
     {
-      "name": "xen-test-inst1.%DOMAIN%",
+      "name": "test-inst1.%DOMAIN%",
 
       "# Static MAC address": null,
       "#nic.mac/0": "AA:00:00:11:11:11"
     },
     {
-      "name": "xen-test-inst2.%DOMAIN%",
+      "name": "test-inst2.%DOMAIN%",
 
       "# Static MAC address": null,
       "#nic.mac/0": "AA:00:00:22:22:22"
     },
     {
-      "name": "xen-test-inst3.%DOMAIN%",
+      "name": "test-inst3.%DOMAIN%",
 
       "# Static MAC address": null,
       "#nic.mac/0": "AA:00:00:22:22:22"
@@ -241,7 +241,7 @@
     "burnin-disk-template": "drbd",
     "burnin-in-parallel": false,
     "burnin-check-instances": false,
-    "burnin-rename": "ganeti1-rename",
+    "burnin-rename": "test-inst-rename",
     "burnin-reboot": true,
     "reboot-types": ["soft", "hard", "full"],
     "use-iallocators": false

@@ -1984,7 +1984,8 @@ class GanetiDev(base.Component):
             "VG": self.cluster.vg,
             "CLUSTER_NETDEV": self.cluster.netdev,
             "NODES": simplejson.dumps(sample_nodes),
-            "DOMAIN": self.cluster.domain
+            "DOMAIN": self.cluster.domain,
+            "COMMON_BRIDGE": config.common_bridge
             }
 
         r2 = {

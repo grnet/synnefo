@@ -876,17 +876,20 @@ class Network(base.Component):
             "subnet": config.synnefo_public_network_subnet,
             "gateway": config.synnefo_public_network_gateway,
             "router": 1 if is_router else 0,
-            "iface": self.node.vm_public_iface,
+            "vm_public_iface": self.node.vm_public_iface
+                if self.node.vm_public_iface else self.node.public_iface,
             }
         r5 = {
             "vm_public_bridge": config.vm_public_bridge,
-            "vm_public_iface": self.node.vm_public_iface,
+            "vm_public_iface": self.node.vm_public_iface
+                if self.node.vm_public_iface else "none",
             "address": config.synnefo_public_network_gateway \
                 if is_router else "0.0.0.0",
             "netmask": config.synnefo_public_network_netmask \
                 if is_router else "255.255.255.255",
             "vm_private_bridge": config.vm_private_bridge,
-            "vm_private_iface": self.node.vm_private_iface,
+            "vm_private_iface": self.node.vm_private_iface
+                if self.node.vm_private_iface else "none",
             }
 
         return [

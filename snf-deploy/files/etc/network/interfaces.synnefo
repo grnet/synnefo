@@ -1,7 +1,4 @@
-# interface and bridge used for VMs' public network
-auto %VM_PUBLIC_IFACE%
-iface %VM_PUBLIC_IFACE% inet manual
-
+# bridge used for VMs' public network
 auto %VM_PUBLIC_BRIDGE%
 iface %VM_PUBLIC_BRIDGE% inet static
     bridge_ports %VM_PUBLIC_IFACE%
@@ -11,10 +8,7 @@ iface %VM_PUBLIC_BRIDGE% inet static
     bridge_waitport 0
     bridge_fd 0
 
-# interface and bridge used for VMs' private networks (MAC_FILTERED)
-auto %VM_PRIVATE_IFACE%
-iface %VM_PRIVATE_IFACE% inet manual
-
+# bridge used for VMs' private networks (MAC_FILTERED)
 auto %VM_PRIVATE_BRIDGE%
 iface %VM_PRIVATE_BRIDGE% inet manual
     bridge_ports %VM_PRIVATE_IFACE%

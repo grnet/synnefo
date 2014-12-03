@@ -436,7 +436,7 @@ class CycladesTests(BurninTests):
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
             ssh.connect(hostip, username=username, password=password)
-        except paramiko.SSHException as err:
+        except (paramiko.SSHException, socket.error) as err:
             self.warning("%s", err.message)
             raise Retry()
         _, stdout, _ = ssh.exec_command(command)

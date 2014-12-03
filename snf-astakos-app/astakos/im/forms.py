@@ -436,7 +436,6 @@ class ExtendedPasswordResetForm(PasswordResetForm):
             c = {
                 'email': user.email,
                 'url': url,
-                'site_name': settings.SITENAME,
                 'user': user,
                 'baseurl': settings.BASE_URL,
                 'support': settings.CONTACT_EMAIL

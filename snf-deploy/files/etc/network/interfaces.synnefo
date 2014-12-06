@@ -1,0 +1,17 @@
+# bridge used for VMs' public network
+auto %VM_PUBLIC_BRIDGE%
+iface %VM_PUBLIC_BRIDGE% inet static
+    bridge_ports %VM_PUBLIC_IFACE%
+    address %ADDRESS%
+    netmask %NETMASK%
+    bridge_stp off
+    bridge_waitport 0
+    bridge_fd 0
+
+# bridge used for VMs' private networks (MAC_FILTERED)
+auto %VM_PRIVATE_BRIDGE%
+iface %VM_PRIVATE_BRIDGE% inet manual
+    bridge_ports %VM_PRIVATE_IFACE%
+    bridge_stp off
+    bridge_waitport 0
+    bridge_fd 0

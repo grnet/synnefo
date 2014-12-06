@@ -1,0 +1,28 @@
+@hook post  "echo 1 > /proc/sys/net/ipv4/ip_forward";
+@hook flush "echo 0 > /proc/sys/net/ipv4/ip_forward";
+
+@def $PUBLIC_IFACE = %PUBLIC_IFACE%;
+@def $VM_PUBLIC_IFACE = %VM_PUBLIC_IFACE%;
+@def $SUBNET = %SUBNET%;
+@def $MAC = `cat /sys/class/net/%VM_PUBLIC_IFACE%/address`;
+@def $ROUTER = %ROUTER%;
+
+
+domain ip {
+  table nat {
+    chain POSTROUTING {
+      @if $ROUTER outerface $PUBLIC_IFACE saddr $SUBNET MASQUERADE;
+    }
+  }
+}
+
+
+domain eb {
+  table nat {
+      chain POSTROUTING {
+         # MAC SNAT for networks
+          outerface $VM_PUBLIC_IFACE snat to-source $MAC;
+      }
+  }
+}
+

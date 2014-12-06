@@ -118,41 +118,22 @@ def setup_synnefo():
     setup_role(constants.CLIENT)
 
 
-def setup_ganeti():
-    setup_role(constants.NS)
-    setup_role(constants.NFS)
-    setup_cluster()
-
-
-@with_cluster
-def _setup_qa(ctx):
-    setup_role(constants.NS)
-    setup_role(constants.NFS)
-    setup_cluster()
-    setup_role(constants.DEV)
-
-
-@with_ctx
-def setup_qa(ctx=None):
-    execute(_setup_qa, ctx, hosts=ctx.clusters)
-
-
 @with_ctx
 def setup(ctx=None):
 
-    if context.node:
-        if context.component:
-            C = roles.get(context.component, ctx)
-        elif context.role:
-            C = roles.get(context.role, ctx)
-        if context.method:
-            fn = getattr(C, context.method)
-            fn()
-        else:
-            C.setup()
+    if not context.component:
+        print "Please pass --component option."
+        return
+    else:
+        print "Setting up component %s @ %s" % (context.component, ctx)
 
-    elif context.cluster:
-        _setup_cluster(ctx)
+    C = roles.get(context.component, ctx)
+
+    if context.method:
+        fn = getattr(C, context.method)
+        fn()
+    else:
+        C.setup()
 
 
 @with_ctx

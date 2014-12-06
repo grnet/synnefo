@@ -7,7 +7,7 @@
   "name": "%CLUSTER_NAME%",
 
   "# Name used for renaming cluster": null,
-  "rename": "ganeti1-rename",
+  "rename": "test-cluster-rename",
 
   "# Virtual cluster": null,
   "#vcluster-master": "xen-vcluster",
@@ -15,11 +15,15 @@
 
   "enabled-hypervisors": "kvm",
   "# Dict of hypervisor name and parameters (like on the cmd line)": null,
-  "hypervisor-parameters": {"kvm": "kernel_path=,vnc_bind_address=0.0.0.0", "xen-pvm": "kernel_path=/boot/vmlinuz-3.2.0-4-amd64", "xen-hvm": "kernel_path=/boot/vmlinuz-3.2.0-4-amd64"},
+  "hypervisor-parameters": {
+    "kvm": "kernel_path=,vnc_bind_address=0.0.0.0,migration_caps=xbzrle:auto-converge,vhost_net=True"
+  },
   "# Backend parameters (like on the cmd line)": null,
   "backend-parameters": "",
   "# Dict of OS name and parameters (like on the cmd line)": null,
-  "os-parameters": {},
+  "os-parameters": {
+    "snf-image+default": "img_passwd=12345678,img_format=diskdump,img_id=debian_base-7.0-x86_64,img_properties=\\{\"OSFAMILY\":\"linux\"\\,\"ROOT_PARTITION\":\"1\"\\}"
+  },
   "# Dict of OS name and value dict of hypervisor  parameters": null,
   "os-hvp": {},
   "primary_ip_version": 4,
@@ -32,11 +36,16 @@
   "enabled-disk-templates": [
     "plain",
     "drbd",
-    "diskless"
+    "diskless",
+    "ext"
   ],
 
   "# Additional arguments for initializing cluster": null,
-  "cluster-init-args": [],
+  "cluster-init-args": [
+    "--no-etc-hosts",
+    "--no-ssh-init",
+    "--enabled-hypervisors=kvm"
+    ],
 
   "# Network interface for master role": null,
   "master-netdev": "%CLUSTER_NETDEV%",
@@ -44,12 +53,12 @@
   "# Default network interface parameters": null,
   "default-nicparams": {
     "mode": "bridged",
-    "link": "br0"
+    "link": "%COMMON_BRIDGE%"
   },
 
-  "os": "debootstrap+default",
-  "maxmem": "1024M",
-  "minmem": "512M",
+  "os": "snf-image+default",
+  "maxmem": "512M",
+  "minmem": "128M",
 
   "# Instance policy specs": null,
   "#ispec_cpu_count_max": null,
@@ -92,19 +101,19 @@
 
   "instances": [
     {
-      "name": "xen-test-inst1.%DOMAIN%",
+      "name": "test-inst1.%DOMAIN%",
 
       "# Static MAC address": null,
       "#nic.mac/0": "AA:00:00:11:11:11"
     },
     {
-      "name": "xen-test-inst2.%DOMAIN%",
+      "name": "test-inst2.%DOMAIN%",
 
       "# Static MAC address": null,
       "#nic.mac/0": "AA:00:00:22:22:22"
     },
     {
-      "name": "xen-test-inst3.%DOMAIN%",
+      "name": "test-inst3.%DOMAIN%",
 
       "# Static MAC address": null,
       "#nic.mac/0": "AA:00:00:22:22:22"
@@ -232,7 +241,7 @@
     "burnin-disk-template": "drbd",
     "burnin-in-parallel": false,
     "burnin-check-instances": false,
-    "burnin-rename": "ganeti1-rename",
+    "burnin-rename": "test-inst-rename",
     "burnin-reboot": true,
     "reboot-types": ["soft", "hard", "full"],
     "use-iallocators": false

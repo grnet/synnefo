@@ -1,0 +1,12 @@
+cd %GANETI_SRC_DIR%
+./autogen.sh
+./configure \
+  --prefix=/usr \
+  --localstatedir=/var \
+  --sysconfdir=/etc \
+  --with-export-dir=/var/lib/ganeti/export \
+  --with-iallocator-search-path=/usr/local/lib/ganeti/iallocators,/usr/lib/ganeti/iallocators \
+  --with-os-search-path=/usr/local/lib/ganeti/os,/srv/ganeti/os,/usr/lib/ganeti/os,/usr/share/ganeti/os \
+  --with-extstorage-search-path=/srv/ganeti/extstorage,/usr/local/lib/ganeti/extstorage,/usr/lib/ganeti/extstorage,/usr/share/ganeti/extstorage \
+  --docdir=/usr/share/doc/ganeti \
+  --enable-symlinks

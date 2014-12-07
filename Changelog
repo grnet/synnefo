@@ -32,6 +32,8 @@ Cyclades UI
 * Improve handling of terminated projects in reassign view.
 * Remove the COPYRECT encoding from the preferred noVNC client encodings, and
   prefer TIGHT_PNG by default.
+* Fix handling of SSH keys and password customization steps to images that
+  do not support them, e.g. snapshots.
 
 
 Stats

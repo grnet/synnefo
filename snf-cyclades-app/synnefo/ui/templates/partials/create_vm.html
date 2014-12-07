@@ -331,9 +331,18 @@
         <input class="password reset" readonly id="new-machine-password"/>
         <div class="clipboard new-vm-password-copy"></div>
     </div>
+    <div class="password-cont disabled clearfix hidden">
+        <div class="password-label">Not setting a new password for this machine.</div>
+    </div>
     <div class="description subinfo">
         <p>{% blocktrans %}You will need this later to connect to your machine.{% endblocktrans %}</p>
         <p class="important">{% blocktrans %}After closing this window you will <em>NOT</em> be able to retrieve it again
+        {% endblocktrans %}</p>
+    </div>
+    <div class="description subinfo disabled hidden">
+        <p class="important">{% blocktrans %}This Image/Snapshot already contains valid login credentials,
+        {% endblocktrans %}</p>
+        <p class="important">{% blocktrans %}which have been left unchanged.
         {% endblocktrans %}</p>
     </div>
     <div class="form-action show-machine">{% trans "OK" %}</div>

@@ -4287,6 +4287,18 @@ h3.overlay-inner-title {
     position: relative;
 }
 
+#creation-password-overlay div.disabled.password-cont .password-label {
+    color: #fff !important;
+    float: none;
+}
+
+#creation-password-overlay div.disabled.password-cont {
+    border: 2px solid #888;
+    background-color: #aaa;
+    text-align: center;
+    padding: 10px;
+}
+
 #creation-password-overlay {
     position: relative;
 }

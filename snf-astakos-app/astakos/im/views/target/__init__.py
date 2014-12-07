@@ -14,7 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-import datetime
 
 from django.contrib import messages
 from django.http import HttpResponseRedirect
@@ -25,7 +24,7 @@ from astakos.im import transaction
 from astakos.im.models import PendingThirdPartyUser, AstakosUser
 from astakos.im.util import get_query, login_url
 from astakos.im import messages as astakos_messages
-from astakos.im import auth_providers as auth
+from astakos.im import auth_providers
 from astakos.im.util import prepare_response
 
 import logging
@@ -90,8 +89,8 @@ def handle_third_party_signup(request, userid, provider_module,
         'affiliation': pending_user_params.get('affiliation', provider_module),
         'info_data': provider_info
     }
-    provider = auth.get_provider(provider_module, request.user, userid,
-                                 **provider_data)
+    provider = auth_providers.get_provider(provider_module, request.user,
+                                           userid, **provider_data)
 
     # user wants to add another third party login method
     if third_party_key:
@@ -168,8 +167,8 @@ def handle_third_party_login(request, provider_module, identifier,
         'info': provider_info
     }
 
-    provider = auth.get_provider(provider_module, request.user, identifier,
-                                 **provider_data)
+    provider = auth_providers.get_provider(provider_module, request.user,
+                                           identifier, **provider_data)
 
     # an existing user accessed the view
     if request.user.is_authenticated():

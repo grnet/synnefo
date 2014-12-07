@@ -651,11 +651,20 @@ class AstakosUser(User):
                 self.has_usable_password())
 
     def can_change_email(self):
-        if not self.has_auth_provider('local'):
-            return True
+        return astakos_settings.EMAILCHANGE_ENABLED and \
+            self.can_change_profile_attr('email')
 
-        local = self.get_auth_provider('local')._instance
-        return local.auth_backend == 'astakos'
+    def can_change_first_name(self):
+        return self.can_change_profile_attr('first_name')
+
+    def can_change_last_name(self):
+        return self.can_change_profile_attr('last_name')
+
+    def can_change_profile_attr(self, attr):
+        for provider in self.auth_providers.active():
+            if attr in provider.settings.get_provider_forced_attributes():
+                return False
+        return True
 
     # Auth providers related methods
     def get_auth_provider(self, module=None, identifier=None, **filters):

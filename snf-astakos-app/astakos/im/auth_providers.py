@@ -131,6 +131,20 @@ class AuthProvider(object):
         'automoderate': not astakos_settings.MODERATION_ENABLED
     }
 
+    # Mapping of provider's attributes to attributes of AstakosUser.
+    # The second element of the tuple dictates whether the attribute can be
+    # changed by the user or is automatically set by the provider in every
+    # login.
+    # Identifier is used to get the unique user identifier of the third
+    # party provider!
+    user_attr_map = {
+        # 'user field': ('provider field', 'mutable by user')
+        'identifier': ('uuid', False),
+        'email': ('email', True),
+        'first_name': ('first_name', True),
+        'last_name': ('last_name', True),
+    }
+
     policies = {}
 
     def __init__(self, user=None, identifier=None, **provider_params):
@@ -314,7 +328,7 @@ class AuthProvider(object):
                     tpl = smart_unicode(msg)
                     self.message_tpls_compiled[key] = tpl.format(**params)
                     params.update(self.message_tpls_compiled)
-                except KeyError, e:
+                except KeyError:
                     continue
         else:
             params.update(self.message_tpls_compiled)
@@ -400,6 +414,21 @@ class AuthProvider(object):
         return AuthProviderPolicyProfile.objects.for_user(self.user,
                                                           self.module)
 
+    def get_user_attr_map(self):
+        """Get the mapping of provider to user attributes."""
+        attr_map = self.user_attr_map
+        settings_key = "USER_ATTR_MAP"
+        settings_default = self.get_setting(settings_key, attr_map)
+        attr_map.update(settings_default)
+        return attr_map
+
+    def get_provider_forced_attributes(self):
+        """List of attributes that are automatically set by the provider."""
+        attr_map = self.get_user_attr_map()
+        return [attr
+                for attr, (provider_attr, mutable) in attr_map.items()
+                if not mutable]
+
     def get_policy(self, policy):
         module_default = self.module_policies.get(policy)
         settings_key = '%s_POLICY' % policy.upper()
@@ -425,11 +454,11 @@ class AuthProvider(object):
             msg_key = 'AUTH_PROVIDER_%s' % msg.upper()
             try:
                 tpl = getattr(astakos_messages, msg_key)
-            except AttributeError, e:
+            except AttributeError:
                 try:
                     msg_key = msg.upper()
                     tpl = getattr(astakos_messages, msg_key)
-                except AttributeError, e:
+                except AttributeError:
                     tpl = ''
 
         in_settings = self.get_setting(msg)
@@ -665,7 +694,7 @@ def get_provider(module, user_obj=None, identifier=None, **params):
     """
     Return a provider instance from the auth providers registry.
     """
-    if not module in PROVIDERS:
+    if module not in PROVIDERS:
         raise InvalidProvider('Invalid auth provider "%s"' % module)
 
     return PROVIDERS.get(module)(user_obj, identifier, **params)

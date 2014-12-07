@@ -136,13 +136,14 @@ def authenticated(
         'lastName', '')
     provider_info = profile_data
     affiliation = 'LinkedIn.com'
+    user_info = {'affiliation': affiliation, 'realname': realname}
 
     try:
         return handle_third_party_login(request, 'linkedin', userid,
-                                        provider_info, affiliation)
+                                        provider_info, affiliation,
+                                        user_info=user_info)
     except AstakosUser.DoesNotExist, e:
         third_party_key = get_pending_key(request)
-        user_info = {'affiliation': affiliation, 'realname': realname}
         return handle_third_party_signup(request, userid, 'linkedin',
                                          third_party_key,
                                          provider_info,

@@ -21,11 +21,15 @@ from django.core.urlresolvers import reverse
 from django.core.validators import ValidationError
 from astakos.im import transaction
 
-from astakos.im.models import PendingThirdPartyUser, AstakosUser
+from astakos.im.models import (PendingThirdPartyUser, AstakosUser,
+                               get_latest_terms)
 from astakos.im.util import get_query, login_url
+from astakos.im import activation_backends
 from astakos.im import messages as astakos_messages
 from astakos.im import auth_providers
+from astakos.im import auth
 from astakos.im.util import prepare_response
+from django.utils.encoding import smart_unicode
 
 import logging
 
@@ -145,7 +149,7 @@ def handle_third_party_signup(request, userid, provider_module,
 @transaction.commit_on_success
 def handle_third_party_login(request, provider_module, identifier,
                              provider_info=None, affiliation=None,
-                             third_party_key=None):
+                             third_party_key=None, user_info=None):
 
     if not provider_info:
         provider_info = {}
@@ -160,7 +164,7 @@ def handle_third_party_login(request, provider_module, identifier,
         del request.session['next_url']
 
     third_party_request_params = get_third_party_session_params(request)
-    from_login = third_party_request_params.get('from_login', False)
+    # from_login = third_party_request_params.get('from_login', False)
     switch_from = third_party_request_params.get('switch_from', False)
     provider_data = {
         'affiliation': affiliation,
@@ -224,11 +228,19 @@ def handle_third_party_login(request, provider_module, identifier,
             user__email_verified=True,
         )
     except AstakosUser.DoesNotExist:
-        # TODO: add a message ? redirec to login ?
-        if astakos_messages.AUTH_PROVIDER_SIGNUP_FROM_LOGIN:
-            messages.warning(request,
-                             astakos_messages.AUTH_PROVIDER_SIGNUP_FROM_LOGIN)
-        raise
+        if signup_form_required(provider):
+            if astakos_messages.AUTH_PROVIDER_SIGNUP_FROM_LOGIN:
+                # TODO: add a message ? redirec to login ?
+                messages.warning(
+                    request,
+                    astakos_messages.AUTH_PROVIDER_SIGNUP_FROM_LOGIN)
+            raise
+
+        # If all attributes are set by the provider, the signup form is not
+        # required. Continue by creating the AstakosUser object.
+        user = handle_third_party_auto_signup(request, provider_module,
+                                              provider_info,
+                                              identifier, user_info)
 
     if not third_party_key:
         third_party_key = get_pending_key(request)
@@ -239,6 +251,16 @@ def handle_third_party_login(request, provider_module, identifier,
         if not provider.get_login_policy:
             messages.error(request, provider.get_login_disabled_msg)
             return HttpResponseRedirect(reverse('login'))
+
+        # Update attributes that are forced by the provider
+        for attr in provider.get_provider_forced_attributes():
+            if attr in user_info:
+                setattr(user, attr, user_info[attr])
+
+        # Update the groups that the user belongs to
+        user_groups = user_info.get('groups', None)
+        if isinstance(user_groups, list):
+            user.groups = user_groups
 
         # authenticate user
         response = prepare_response(request, user, next_redirect,
@@ -253,3 +275,85 @@ def handle_third_party_login(request, provider_module, identifier,
         message = user.get_inactive_message(provider_module, identifier)
         messages.error(request, message)
         return HttpResponseRedirect(login_url(request))
+
+
+def handle_third_party_auto_signup(request, provider, provider_info,
+                                   identifier, user_info):
+    """Create AstakosUser for third party user without requiring signup form.
+
+    Handle third party signup by automatically creating an AstakosUser. This
+    is performed when the user's profile is automatically set by the provider.
+
+    """
+    try:
+        email = user_info['email']
+        first_name = user_info['first_name']
+        last_name = user_info['last_name']
+    except KeyError as e:
+        raise Exception("Invalid user info. Missing '%s'", str(e))
+
+    has_signed_terms = not get_latest_terms()
+    user = auth.make_user(email=email,
+                          first_name=first_name, last_name=last_name,
+                          has_signed_terms=has_signed_terms)
+
+    provider_data = {
+        'affiliation': user_info.get('affiliation', provider),
+        'info': provider_info
+    }
+    provider = auth_providers.get_provider(module=provider, user_obj=user,
+                                           identifier=identifier,
+                                           **provider_data)
+    provider.add_to_user()
+
+    # Handle user activation
+    activation_backend = activation_backends.get_backend()
+    result = activation_backend.handle_registration(user)
+    activation_backend.send_result_notifications(result, user)
+
+    # Commit user entry
+    transaction.commit()
+    return user
+
+
+def signup_form_required(provider):
+    """Return whether the sign up form for setting profile is required.
+
+    The signup form is not required when all attributes of the user's profile
+    are set by the authentication provider.
+
+    """
+    form_attrs = set(('email', 'first_name', 'last_name'))
+    forced_attrs = set(provider.get_provider_forced_attributes())
+    return not form_attrs.issubset(forced_attrs)
+
+
+def populate_user_attributes(provider, provider_info):
+    """Populate user attributes based on the providers attribute mapping.
+
+    Map attributes returned by the provider to user attributes based on the
+    attribute mapping of the provider. If the value is missing and attribute
+    is not mutable (cannot by set by the user) it will fail.
+
+    """
+    user_attributes = {}
+    if isinstance(provider, basestring):
+        provider = auth_providers.get_provider(provider)
+    for attr, (provider_attr, mutable) in provider.get_user_attr_map().items():
+        try:
+            if callable(provider_attr):
+                value = provider_attr(provider_info)
+            else:
+                value = provider_info[provider_attr]
+                if isinstance(value, list):
+                    value = value[0]
+            user_attributes[attr] = smart_unicode(value)
+        except (KeyError, IndexError):
+            if mutable:
+                user_attributes[attr] = None
+            else:
+                msg = ("Provider '%s' response does not have a value for"
+                       " attribute '%s'. Provider returned those attributes:"
+                       " %s" % (provider, provider_attr, provider_info))
+                raise ValueError(msg)
+    return user_attributes

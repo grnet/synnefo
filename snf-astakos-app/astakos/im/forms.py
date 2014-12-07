@@ -63,6 +63,8 @@ DOMAIN_VALUE_REGEX = re.compile(
     r'^([a-zA-Z0-9]([a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,6}$',
     re.IGNORECASE)
 
+READ_ONLY_FIELD_MSG = ("This value is provided by your authentication provider"
+                       " and cannot be changed.")
 
 class LocalUserCreationForm(UserCreationForm):
     """
@@ -173,6 +175,8 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
         'provided to login previously. '
     )
 
+    ro_fields = []
+
     class Meta:
         model = AstakosUser
         fields = ['email', 'first_name', 'last_name', 'has_signed_terms']
@@ -207,6 +211,14 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
             self.fields['has_signed_terms'].label = \
                 mark_safe("I agree with %s" % terms_link_html)
 
+        auth_provider = auth_providers.get_provider(self.provider)
+        user_attr_map = auth_provider.get_user_attr_map()
+        for field in ['email', 'first_name', 'last_name']:
+            if not user_attr_map[field][1]:
+                self.ro_fields.append(field)
+                self.fields[field].widget.attrs['readonly'] = True
+                self.fields[field].help_text = _(READ_ONLY_FIELD_MSG)
+
     def clean_email(self):
         email = self.cleaned_data['email']
         if not email:
@@ -219,6 +231,16 @@ class ThirdPartyUserCreationForm(forms.ModelForm):
             raise forms.ValidationError(mark_safe(
                 _(astakos_messages.EMAIL_USED) + ' ' + extra_message))
         return email
+
+    def clean_first_name(self):
+        if 'first_name' in self.ro_fields:
+            return self.initial['first_name']
+        return self.cleaned_data['first_name']
+
+    def clean_last_name(self):
+        if 'last_name' in self.ro_fields:
+            return self.initial['last_name']
+        return self.cleaned_data['last_name']
 
     def clean_has_signed_terms(self):
         has_signed_terms = self.cleaned_data['has_signed_terms']
@@ -336,6 +358,7 @@ class ProfileForm(forms.ModelForm):
     email = EmailField(label='E-mail address',
                        help_text='E-mail address')
     renew = forms.BooleanField(label='Renew token', required=False)
+    ro_fields = ['email']
 
     class Meta:
         model = AstakosUser
@@ -345,13 +368,27 @@ class ProfileForm(forms.ModelForm):
         self.session_key = kwargs.pop('session_key', None)
         super(ProfileForm, self).__init__(*args, **kwargs)
         instance = getattr(self, 'instance', None)
-        ro_fields = ('email',)
         if instance and instance.id:
-            for field in ro_fields:
+            if not instance.can_change_first_name():
+                self.ro_fields.append('first_name')
+            if not instance.can_change_last_name():
+                self.ro_fields.append('last_name')
+            for field in self.ro_fields:
                 self.fields[field].widget.attrs['readonly'] = True
+                self.fields[field].help_text = _(READ_ONLY_FIELD_MSG)
 
     def clean_email(self):
         return self.instance.email
+
+    def clean_first_name(self):
+        if 'first_name' in self.ro_fields:
+            return self.initial['first_name']
+        return self.cleaned_data['first_name']
+
+    def clean_last_name(self):
+        if 'last_name' in self.ro_fields:
+            return self.initial['last_name']
+        return self.cleaned_data['last_name']
 
     def save(self, commit=True, **kwargs):
         user = super(ProfileForm, self).save(commit=False, **kwargs)

@@ -127,6 +127,7 @@ class AuthProvider(object):
         'add_groups': [],
         'creation_groups': [],
         'required': False,
+        'autoverify': False,
         'automoderate': not astakos_settings.MODERATION_ENABLED
     }
 

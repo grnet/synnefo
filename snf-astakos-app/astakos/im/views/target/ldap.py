@@ -17,7 +17,7 @@ from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponseRedirect
 
-from astakos.im.models import AstakosUser
+from astakos.im.models import AstakosUser, Group
 from astakos.im import settings
 from astakos.im.views.target import get_pending_key, \
     handle_third_party_signup, handle_third_party_login, \
@@ -109,9 +109,10 @@ def login(request, template_name="im/login.html", on_failure='im/login.html',
 
     user_info['affiliation'] = affiliation
 
-    if hasattr(user, 'groups'):
-        # User will have groups if AUTH_LDAP_MIRROR_GROUPS option is set.
-        user_info['groups'] = user.groups
+    if hasattr(user, 'group_names') and provider.get_policy('mirror_groups'):
+        groups = [Group.objects.get_or_create(name=group_name)[0]
+                  for group_name in user.group_names]
+        user_info['groups'] = groups
 
     try:
         return handle_third_party_login(request, provider_module="ldap",
@@ -173,9 +174,10 @@ def add(request, template_name='im/auth/ldap_add.html'):
                               for k, v in provider_info.items()
                               if k in provider.get_provider_info_attributes()])
 
-        if hasattr(user, 'groups'):
-            # User will have groups if AUTH_LDAP_MIRROR_GROUPS option is set.
-            user_info['groups'] = user.groups
+    if hasattr(user, 'group_names') and provider.get_policy('mirror_groups'):
+        groups = [Group.objects.get_or_create(name=group_name)[0]
+                  for group_name in user.group_names]
+        user_info['groups'] = groups
 
         return handle_third_party_login(request, provider_module="ldap",
                                         identifier=user_id,

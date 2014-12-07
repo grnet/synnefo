@@ -126,6 +126,7 @@ class AuthProvider(object):
         'switch': True,
         'add_groups': [],
         'creation_groups': [],
+        'mirror_groups': False,  # Currently used only by LDAP
         'required': False,
         'autoverify': False,
         'automoderate': not astakos_settings.MODERATION_ENABLED

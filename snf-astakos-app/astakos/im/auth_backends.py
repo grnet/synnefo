@@ -120,4 +120,5 @@ class LDAPBackend(LDAPAuthenticationBackend):
     def get_or_create_user(self, username, ldap_user):
         user = MockedAstakosUser()
         user.username = username
+        user.group_names = ldap_user._get_groups().get_group_names()
         return user, True

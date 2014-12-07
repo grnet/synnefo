@@ -28,14 +28,12 @@
       {% with auth_providers|length as l %}
       {% if l > 1 %}
       LOGIN using &nbsp;&nbsp;
-      {% endif %}
-      {% endwith %}
       <div class="extralogin">
       {% for provider in auth_providers %}
-        {% if not provider.module == primary_provider.module %}
-          {% include provider.get_login_prompt_template %}
-        {% endif %}
+        {% include provider.get_login_prompt_template %}
       {% endfor %}
-    </div>
+      </div>
+      {% endif %}
+      {% endwith %}
     </div>
 {% endblock body.right%}

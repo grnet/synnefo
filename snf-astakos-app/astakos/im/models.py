@@ -647,7 +647,8 @@ class AstakosUser(User):
         self.invitations = astakos_settings.INVITATIONS_PER_LEVEL.get(level, 0)
 
     def can_change_password(self):
-        return self.has_auth_provider('local', auth_backend='astakos')
+        return (self.has_auth_provider('local', auth_backend='astakos') and
+                self.has_usable_password())
 
     def can_change_email(self):
         if not self.has_auth_provider('local'):

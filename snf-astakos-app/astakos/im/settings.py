@@ -282,3 +282,5 @@ PROJECT_MEMBERS_LIMIT_CHOICES = getattr(
 ADMIN_API_PERMITTED_GROUPS = getattr(settings,
                                      'ASTAKOS_ADMIN_API_PERMITTED_GROUPS',
                                      ['admin-api'])
+
+SHOW_SIGNUP = getattr(settings, 'ASTAKOS_SHOW_SIGNUP', True)

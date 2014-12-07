@@ -14,9 +14,11 @@
 
       <h2 class="clearfix">
         <span class="title">LOGIN</span>
+        {% if show_signup %}
         <span class="header-actions">
             <a href="{% url signup %}">{% trans "Sign up" %}</a>
         </span>
+        {% endif %}
       </h2>
       <div class="main-login-method">
         {% with provider=primary_provider%}

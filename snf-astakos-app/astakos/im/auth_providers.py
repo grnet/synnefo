@@ -165,8 +165,6 @@ class AuthProvider(object):
 
         # initialize policies
         self.module_policies = copy.copy(self.default_policies)
-        self.module_policies['automoderate'] = not \
-            astakos_settings.MODERATION_ENABLED
         for policy, value in self.policies.iteritems():
             setting_key = "%s_POLICY" % policy.upper()
             if self.has_setting(setting_key):

@@ -578,9 +578,20 @@
             return true;
         },
 
+        _supports_password: function () {
+          if (!this.has_metadata() ||
+              this.get_meta('EXCLUDE_ALL_TASKS') != null ||
+              this.get_meta("EXCLUDE_TASK_CHANGEPASSWORD") != null) {
+              return false;
+          }
+          return true;
+        },
+
         supports: function(feature) {
             if (feature == "ssh") {
                 return this._supports_ssh()
+            } else if (feature == "password") {
+                return this._supports_password()
             }
             return false;
         },

@@ -1,4 +1,4 @@
-<form action="{% url astakos.im.views.target.local.login %}" method="post" 
+<form action="{% url astakos.im.views.target.local.login %}" method="post"
   class="login-form login innerlabels">{% csrf_token %}
   <p>
     {{ provider.get_login_prompt_msg }}
@@ -9,7 +9,7 @@
         {% include "im/form_render.html" %}
     {% endwith %}
     <input type="hidden" name="next" value="{{ next }}">
-    
+
     {% if key %}
         <input type="hidden" name="key" value="{{key}}">
     {% else %}
@@ -17,21 +17,10 @@
             <input type="hidden" name="key" value="{{request.GET.key}}">
         {% endif %}
     {% endif %}
-    
+
     <div class="form-row submit clearfix">
         <input type="submit" class="submit altcol" value="SUBMIT" />
         <a class="extra-link" href="{% url astakos.im.views.target.local.password_reset %}">Forgot your password?</a>
       </div>
     </div>
   </form>
-  <br> 
-  {% if not forloop.last and not is_master %}
-  LOGIN using &nbsp;&nbsp;
-  {% endif %}
-  {% if is_master %}
-  {% with auth_providers|length as l %}
-  {% if l > 1 %}
-  LOGIN using &nbsp;&nbsp;
-  {% endif %}
-  {% endwith %}
-  {% endif %}

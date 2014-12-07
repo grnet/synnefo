@@ -59,6 +59,8 @@ from astakos.api.util import _dthandler
 
 logger = logging.getLogger(__name__)
 
+PRIMARY_PROVIDER = auth.get_provider(settings.IM_MODULES[0])
+
 
 @require_http_methods(["GET", "POST"])
 @cookie_fix
@@ -85,6 +87,8 @@ def login(request, template_name='im/login.html', extra_context=None):
 
     if request.user.is_authenticated():
         return HttpResponseRedirect(reverse('landing'))
+
+    extra_context['primary_provider'] = PRIMARY_PROVIDER
 
     return render_response(
         template_name,

@@ -83,7 +83,7 @@ class AuthProvider(object):
         ('signup_title', '{title}'),
         ('profile_title', '{title}'),
         ('method_details', '{account_prompt}: {identifier}'),
-        ('primary_login_prompt', 'Login using '),
+        ('primary_login_prompt', 'Login using {account_prompt}'),
         ('required', '{title} is required. You can assign it '
                      'from your profile page'),
         ('login_prompt', ''),
@@ -558,7 +558,7 @@ class AuthProvider(object):
 class LocalAuthProvider(AuthProvider):
     module = 'local'
 
-    login_view = 'login'
+    login_view = 'astakos.im.views.target.local.login'
     remote_authenticate = False
     username_key = 'user_email'
 
@@ -614,6 +614,7 @@ class ShibbolethAuthProvider(AuthProvider):
 
     messages = {
         'title': _('Academic'),
+        'login_title': _('ACADEMIC LOGIN'),
         'method_details': '{account_prompt}: {provider_info_eppn}',
         'login_description': _('If you are a student, professor or researcher'
                                ' you can login using your academic account.'),

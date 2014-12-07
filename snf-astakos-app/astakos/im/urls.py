@@ -128,6 +128,7 @@ if 'local' in settings.IM_MODULES:
     urlpatterns += patterns(
         'astakos.im.views.target.local',
         url(r'^local/?$', 'login', name='local_login'),
+        url(r'^login/local/?$', 'login', name='local_login'),
         url(r'^password_change/?$', 'password_change', {
             'post_change_redirect': 'profile',
             'password_change_form': ExtendedPasswordChangeForm},

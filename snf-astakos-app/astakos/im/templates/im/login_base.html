@@ -12,21 +12,28 @@
 
     <div class="login-section">
 
-      <h2 class="clearfix"><span class="title">LOGIN</span> <span class="header-actions">
-        <a href="{% url signup %}">{% trans "Sign up" %}</a></span>
+      <h2 class="clearfix">
+        <span class="title">LOGIN</span>
+        <span class="header-actions">
+            <a href="{% url signup %}">{% trans "Sign up" %}</a>
+        </span>
       </h2>
       <div class="main-login-method">
-        {% with provider=master_auth_provider is_master=1 %}
-          {% include master_auth_provider.get_login_template %}
+        {% with provider=primary_provider%}
+          {% include provider.get_primary_login_template %}
         {% endwith %}
       </div>
+      {% with auth_providers|length as l %}
+      {% if l > 1 %}
+      LOGIN using &nbsp;&nbsp;
+      {% endif %}
+      {% endwith %}
       <div class="extralogin">
       {% for provider in auth_providers %}
-        {% if not provider == master_auth_provider %}
+        {% if not provider.module == primary_provider.module %}
           {% include provider.get_login_prompt_template %}
         {% endif %}
       {% endfor %}
     </div>
     </div>
-
 {% endblock body.right%}

@@ -7,16 +7,16 @@
 {% block body.left %}
 	<img class="pic" src="{{ IM_STATIC_URL }}images/porta.png" />
 {% endblock body.left %}
-    
-{% block body.right %} 
-    
+
+{% block body.right %}
+
     <div class="login-section">
 
       <h2 class="clearfix"><span class="title">LOGIN</span> <span class="header-actions">
         <a href="{% url signup %}">{% trans "Sign up" %}</a></span>
       </h2>
       <div class="main-login-method">
-        {% with 1 as is_master %}
+        {% with provider=master_auth_provider is_master=1 %}
           {% include master_auth_provider.get_login_template %}
         {% endwith %}
       </div>
@@ -28,5 +28,5 @@
       {% endfor %}
     </div>
     </div>
- 
+
 {% endblock body.right%}

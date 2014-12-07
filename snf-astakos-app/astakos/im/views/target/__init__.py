@@ -355,5 +355,6 @@ def populate_user_attributes(provider, provider_info):
                 msg = ("Provider '%s' response does not have a value for"
                        " attribute '%s'. Provider returned those attributes:"
                        " %s" % (provider, provider_attr, provider_info))
+                logger.error(msg)
                 raise ValueError(msg)
     return user_attributes

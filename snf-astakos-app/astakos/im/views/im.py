@@ -62,6 +62,34 @@ logger = logging.getLogger(__name__)
 PRIMARY_PROVIDER = auth.get_provider(settings.IM_MODULES[0])
 
 
+def handle_get_to_login_view(request, primary_provider, login_form,
+                             template_name="im/login.html",
+                             extra_context=None):
+    """Common handling of a GET request to a login view.
+
+    Handle a GET request to a login view either by redirecting the user
+    to landing page in case the user is authenticated, or by rendering
+    the login template with the 'primary_provider' correctly set.
+
+    """
+    extra_context = extra_context or {}
+
+    third_party_token = request.GET.get('key', False)
+    if third_party_token:
+        messages.info(request, astakos_messages.AUTH_PROVIDER_LOGIN_TO_ADD)
+
+    if request.user.is_authenticated():
+        return HttpResponseRedirect(reverse('landing'))
+
+    extra_context['primary_provider'] = primary_provider
+
+    return render_response(
+        template_name,
+        login_form=login_form,
+        context_instance=get_context(request, extra_context)
+    )
+
+
 @require_http_methods(["GET", "POST"])
 @cookie_fix
 @signed_terms_required
@@ -79,22 +107,10 @@ def login(request, template_name='im/login.html', extra_context=None):
         An dictionary of variables to add to the template context.
     """
 
-    extra_context = extra_context or {}
-
-    third_party_token = request.GET.get('key', False)
-    if third_party_token:
-        messages.info(request, astakos_messages.AUTH_PROVIDER_LOGIN_TO_ADD)
-
-    if request.user.is_authenticated():
-        return HttpResponseRedirect(reverse('landing'))
-
-    extra_context['primary_provider'] = PRIMARY_PROVIDER
-
-    return render_response(
-        template_name,
-        login_form=LoginForm(request=request),
-        context_instance=get_context(request, extra_context)
-    )
+    return handle_get_to_login_view(request, primary_provider=PRIMARY_PROVIDER,
+                                    login_form=LoginForm(request),
+                                    template_name=template_name,
+                                    extra_context=extra_context)
 
 
 @require_http_methods(["GET", "POST"])

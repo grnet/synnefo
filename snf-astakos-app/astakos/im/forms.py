@@ -46,6 +46,7 @@ from astakos.im.util import reserved_verified_email, model_to_dict
 from astakos.im import auth_providers
 from astakos.im import settings
 from astakos.im import auth
+from astakos.im.auth_backends import LDAPBackend
 
 import astakos.im.messages as astakos_messages
 
@@ -344,6 +345,55 @@ class LoginForm(AuthenticationForm):
                 if not self.request.session.test_cookie_worked():
                     raise
         return self.cleaned_data
+
+
+class LDAPLoginForm(LoginForm):
+    """Login form for LDAP Authentication Provider.
+
+    * Inherits from 'LoginForm' in order to inherit recaptcha handling.
+    * Overrides username to be an arbitraty string rather than an email.
+    * Overrides clean method
+
+    """
+    username = forms.CharField(label=_('Identifier'))
+
+    def clean(self):
+        username = self.cleaned_data.get('username')
+        password = self.cleaned_data.get('password')
+
+        if username:
+            try:
+                user = AstakosUser.objects.get_by_identifier(username)
+                if not user.has_auth_provider('ldap'):
+                    provider = auth_providers.get_provider('ldap', user)
+                    msg = provider.get_login_disabled_msg
+                    raise forms.ValidationError(mark_safe(msg))
+            except AstakosUser.DoesNotExist:
+                pass
+
+        # Set user cache to None, so that methods of 'AuthenticationForm'
+        # work
+        self.user_cache = None
+
+        if username and password:
+            self.ldap_user_cache = LDAPBackend().authenticate(username=username,
+                                                              password=password)
+            if self.ldap_user_cache is None:
+                if self.request:
+                    if not self.request.session.test_cookie_worked():
+                        raise
+                raise forms.ValidationError(
+                    self.error_messages['invalid_login'])
+        self.check_for_test_cookie()
+        return self.cleaned_data
+
+    def get_ldap_user_id(self):
+        if self.ldap_user_cache:
+            return self.ldap_user_cache.id
+        return None
+
+    def get_ldap_user(self):
+        return self.ldap_user_cache
 
 
 class ProfileForm(forms.ModelForm):

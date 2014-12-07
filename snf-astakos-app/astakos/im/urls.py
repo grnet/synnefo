@@ -180,6 +180,12 @@ if 'linkedin' in settings.IM_MODULES:
         url(r'^login/linkedin/authenticated/?$',
             'linkedin.authenticated'))
 
+if 'ldap' in settings.IM_MODULES:
+    urlpatterns += patterns(
+        'astakos.im.views.target',
+        url(r'^login/ldap/?$', 'ldap.login'),
+        url(r'^login/ldap/add/?$', 'ldap.add'))
+
 urlpatterns += patterns(
     'astakos.im.views',
     url(r'^get_menu/?$', 'get_menu'),

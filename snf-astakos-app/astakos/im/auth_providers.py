@@ -689,6 +689,41 @@ class LinkedInAuthProvider(AuthProvider):
     }
 
 
+class LDAPAuthProvider(AuthProvider):
+    module = 'ldap'
+    login_view = 'astakos.im.views.target.ldap.login'
+    # TODO: orise poio tha einai to username!
+    username_key = 'user_identifier'
+
+    policies = {
+        'switch': False
+    }
+
+    user_attr_map = {
+        'identifier': ('objectGUID', False),
+        'email': ('mail', True),
+        'first_name': ('givenName', True),
+        'last_name': ('sn', True),
+    }
+
+    @property
+    def urls(self):
+        urls = super(LDAPAuthProvider, self).urls
+        urls['add'] = reverse('astakos.im.views.target.ldap.add')
+        return urls
+
+    messages = {
+        'title': _('Enterprise'),
+        'login_description': _('Login using your enteprise username/password'),
+        'login_prompt': _('Enterprise login (username/password)'),
+        'add_prompt': _('Allows you to login using your Enterprise '
+                        'account'),
+        'login_success': _('Logged in successfully.'),
+        'method_details': 'Identifier: {username}',
+        'logout_success_extra': ' '
+    }
+
+
 # Utility method
 def get_provider(module, user_obj=None, identifier=None, **params):
     """

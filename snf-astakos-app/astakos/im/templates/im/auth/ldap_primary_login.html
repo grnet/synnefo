@@ -1,0 +1,25 @@
+<form action="{% url astakos.im.views.target.ldap.login %}" method="post"
+  class="login-form login innerlabels">{% csrf_token %}
+  <p>
+    {{ provider.get_login_prompt_msg }}
+  </p>
+  <Br />
+  <div class="login-form" style="display:block">
+    {% with login_form as form %}
+        {% include "im/form_render.html" %}
+    {% endwith %}
+    <input type="hidden" name="next" value="{{ next }}">
+
+    {% if key %}
+        <input type="hidden" name="key" value="{{key}}">
+    {% else %}
+        {% if request.GET.key %}
+            <input type="hidden" name="key" value="{{request.GET.key}}">
+        {% endif %}
+    {% endif %}
+
+    <div class="form-row submit clearfix">
+        <input type="submit" class="submit altcol" value="SUBMIT" />
+     </div>
+    </div>
+  </form>

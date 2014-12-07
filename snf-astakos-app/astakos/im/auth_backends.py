@@ -13,12 +13,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import logging
 from django.contrib.auth.backends import ModelBackend
 
 from astakos.im.models import AstakosUser
 from astakos.im import settings
+from astakos.im import auth_providers as auth
 
-import logging
+try:
+    from django_auth_ldap.backend import\
+        LDAPBackend as LDAPAuthenticationBackend
+except ImportError as e:
+    if 'ldap' in settings.IM_MODULES:
+        msg = ("%s. 'django_auth_ldap' package is required when LDAP"
+               " authentication provider is used." % str(e))
+        raise ImportError(msg)
+    else:
+        LDAPAuthenticationBackend = object
+
 
 logger = logging.getLogger(__name__)
 
@@ -70,3 +82,42 @@ class EmailBackend(ModelBackend):
             return AstakosUser.objects.get(pk=user_id)
         except AstakosUser.DoesNotExist:
             return None
+
+
+LDAP_PROVIDER = auth.get_provider('ldap')
+
+
+class MockedAstakosUser(object):
+    """Mock AstakosUser object to be used by LDAPBackend.
+
+    The 'LDAPAuthenticationBackend' requires the creation or existence of an
+    Django User object. However, the creation of the 'AstakosUser' by the
+    'LDAPAuthenticationBackend' does not match with how Astakos is handling
+    thirt party authentication providers. To overcome this issue we create
+    a mock object, whose attributes will be populated by the
+    'LDAPAuthenticationBackend'.
+
+    """
+    def set_unusable_password(self):
+        pass
+
+    def get_profile(self):
+        return None
+
+    def save(self, *args, **kwargs):
+        pass
+
+
+class LDAPBackend(LDAPAuthenticationBackend):
+    """Authentication Backend for LDAP provider.
+
+    Override 'get_or_create_user' method of 'django_auth_ldap.LDAPBackend' to
+    create a mocked User object instead of automatically creating the User in
+    DB. This is required in order to go with how Astakos is handling third
+    party providers.
+
+    """
+    def get_or_create_user(self, username, ldap_user):
+        user = MockedAstakosUser()
+        user.username = username
+        return user, True

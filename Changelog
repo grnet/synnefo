@@ -13,6 +13,20 @@ v0.16next
 
 Released: UNRELEASED
 
+Astakos
+-------
+
+* Support LDAP authentication by creating the 'LDAP' authentication
+  provider.
+* Add 'autoverify' provider policy to automatically verify the user's
+  email. Obsolete the 'SKIP_EMAIL_VERIFICATION' setting.
+* Extend authentication provider mechanism to support mapping arbitraty
+  provider's attributes to user attributes. Also, support making these
+  attributes to be 'forced' by the provider so that user cannot change
+  them (e.g. the user's email).
+* Minor changes so that 'local' authentication provider is treated
+  in the same way as all other providers.
+
 Pithos
 ------
 

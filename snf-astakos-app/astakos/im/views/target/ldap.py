@@ -33,6 +33,7 @@ from astakos.im.forms import LDAPLoginForm
 from astakos.im.util import get_query, get_context
 from astakos.im.views.im import handle_get_to_login_view
 from django.shortcuts import render_to_response
+from django.utils.encoding import smart_unicode
 from astakos.im.views.decorators import login_required
 
 import logging
@@ -102,6 +103,10 @@ def login(request, template_name="im/login.html", on_failure='im/login.html',
         messages.error(request, msg)
         return HttpResponseRedirect(reverse('login'))
 
+    provider_info = dict([(k, smart_unicode(v, errors="ignore"))
+                          for k, v in provider_info.items()
+                          if k in provider.get_provider_info_attributes()])
+
     user_info['affiliation'] = affiliation
 
     if hasattr(user, 'groups'):
@@ -164,6 +169,9 @@ def add(request, template_name='im/auth/ldap_add.html'):
             return HttpResponseRedirect(reverse('login'))
         affiliation = 'LDAP'  # TODO: Add LDAP server name?
         user_info['affiliation'] = affiliation
+        provider_info = dict([(k, smart_unicode(v, errors="ignore"))
+                              for k, v in provider_info.items()
+                              if k in provider.get_provider_info_attributes()])
 
         if hasattr(user, 'groups'):
             # User will have groups if AUTH_LDAP_MIRROR_GROUPS option is set.

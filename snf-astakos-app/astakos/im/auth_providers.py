@@ -429,6 +429,16 @@ class AuthProvider(object):
                 for attr, (provider_attr, mutable) in attr_map.items()
                 if not mutable]
 
+    def get_provider_info_attributes(self):
+        """List of providers attributes to be stored in Astakos DB.
+
+        Get list of provider's attributes that will be stored in Astakos DB
+        in the 'info_data' field.
+
+        """
+        return self.get_setting("PROVIDER_ATTRS", [])
+
+
     def get_policy(self, policy):
         module_default = self.module_policies.get(policy)
         settings_key = '%s_POLICY' % policy.upper()

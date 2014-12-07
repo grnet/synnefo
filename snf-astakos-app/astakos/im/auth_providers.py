@@ -603,7 +603,7 @@ class LocalAuthProvider(AuthProvider):
 
     messages = {
         'title': _('Classic'),
-        'login_prompt': _('Classic login (username/password)'),
+        'login_prompt': _('Classic login'),
         'login_success': _('Logged in successfully.'),
         'method_details': 'Username: {username}',
         'logout_success_extra': ' '
@@ -726,7 +726,7 @@ class LDAPAuthProvider(AuthProvider):
     messages = {
         'title': _('Enterprise'),
         'login_description': _('Login using your enteprise username/password'),
-        'login_prompt': _('Enterprise login (username/password)'),
+        'login_prompt': _('Enterprise login'),
         'add_prompt': _('Allows you to login using your Enterprise '
                         'account'),
         'login_success': _('Logged in successfully.'),

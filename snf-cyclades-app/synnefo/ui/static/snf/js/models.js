@@ -454,6 +454,13 @@
             return this.get('description') || "No description available."
         },
 
+        has_metadata: function() {
+            if (this.get('metadata')) {
+                return !_.isEmpty(this.get('metadata'));
+            }
+            return false;
+        },
+
         get_meta: function(key) {
             if (this.get('metadata') && this.get('metadata')) {
                 if (!this.get('metadata')[key]) { return null }
@@ -562,6 +569,10 @@
             var exclude_list = synnefo.config.ssh_support_osfamily_exclude_list || [];
             var os = this.get_os();
             if (exclude_list.indexOf(os) > -1) {
+                return false;
+            } else if (!this.has_metadata() ||
+                       this.get_meta("EXCLUDE_ALL_TASKS") != null ||
+                       this.get_meta("EXCLUDE_TASK_ENFORCEPERSONALITY") != null) {
                 return false;
             }
             return true;

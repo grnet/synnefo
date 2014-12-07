@@ -705,7 +705,9 @@ h2 span.subtitle { font-size: 0.9em; color: #55B577;}
 .landing-page .cms a							{ color:#3780b0; }
 .landing-page .rt 								{ text-align:center;vertical-align:middle; } 
 #signup-classic									{ clear:both; }
-#signup-classic + .form-stacked					{ display:none; }
+#signup-ldap									{ clear:both; }
+.form-stacked                                   { display:none; }
+.form-stacked.open                              { display:block; }
 .extralogin a.standalone						{ display:block; width:150px; margin-bottom:20px; white-space:nowrap;}
 .hidden-form-rows								{ display:none; }
 

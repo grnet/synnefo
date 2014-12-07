@@ -6,13 +6,13 @@
 
 {% block body.left %}
 <div class="centered">
- 
-{% if third_party_token %} 
+
+{% if third_party_token %}
 	<img class="pic" src="{{ IM_STATIC_URL }}images/mailbox.png" />
-{% else %} 
+{% else %}
 	<img class="pic" src="{{ IM_STATIC_URL }}images/ringer1.png" />
 {% endif %}
-</div> 
+</div>
 {% endblock body.left %}
 
 {% block body.right %}
@@ -22,17 +22,24 @@
 
 </h2>
 {% if not third_party_token and not signup_form.errors %}
- 
+
+{% if auth_providers|length > 1 %}
 <p>{% trans "Choose one of the following sign up methods." %}</p>
- 
+{% endif %}
+
 <div class="extralogin">
 {% for provider_obj in auth_providers %}
 	{% if provider_obj.get_create_policy %}
 		{% if provider_obj.module == 'local' %}
-        <a href="#" class="submit standalone {{ provider_obj.module }}-provider" id="signup-classic">CLASSIC</a>
-            {% if "local" in im_modules %}
-            {% include "im/auth/signup_form.html" %}
-		    {% endif %}
+          <a href="#" class="submit standalone with-form {{ provider_obj.module }}-provider" id="signup-classic">
+            {{ provider_obj.get_title_msg|upper }}
+          </a>
+          {% include "im/auth/local_signup_form.html" %}
+		{% elif provider_obj.module == 'ldap' %}
+          <a href="#" class="submit standalone with-form {{ provider_obj.module }}-provider" id="signup-ldap">
+            {{ provider_obj.get_title_msg|upper }}
+          </a>
+          {% include "im/auth/ldap_login_form.html" %}
 		{% else %}
 			{% if provider_obj.module == 'shibboleth' %}
 				<a href="{% provider_login_url provider_obj %}" class="submit standalone">ACADEMIC</a>
@@ -53,19 +60,31 @@ Please provide us with the following information to complete your
 registration process. <br><br></p>
 {% endif %}
 
-{% include "im/auth/signup_form.html" %}
+{% with 'yes' as is_open %}
+{% include "im/auth/local_signup_form.html" %}
+{% endwith %}
 {% endif %}
+
 <script>
 $(document).ready(function(){
-    $("#signup-classic").click(function(e){
-        e.preventDefault();
-        $(this).siblings('.form-stacked').slideToggle();
-    	pic = $(this).parents('.rt').siblings('.lt').find('img.pic');
-    	var src = (pic.attr('src') === '{{ IM_STATIC_URL }}images/ringer1.png')
-            ? '{{ IM_STATIC_URL }}images/ringer2.png'
-            : '{{ IM_STATIC_URL }}images/ringer1.png';
-        pic.attr('src', src);
-    })
-});    
-</script>    
+   $(".with-form").click(function(e){
+       e.preventDefault();
+       $(this).next('.form-stacked').first().slideToggle();
+       $(this).next('.form-stacked').toggleClass('open');
+       togglePic();
+  });
+
+   function togglePic(){
+      pic = $('img.pic');
+      var src = pic.attr('src');
+      if ($('.form-stacked.open').length>0) {
+        src = '/static/im/images/ringer2.png';
+      } else {
+        src = '/static/im/images/ringer1.png'
+      }
+      pic.attr('src', src);
+   }
+
+});
+</script>
 {% endblock %}

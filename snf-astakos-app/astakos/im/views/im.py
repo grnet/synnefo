@@ -42,7 +42,7 @@ from astakos.im.models import AstakosUser, ApprovalTerms, EmailChange, \
 from astakos.im.util import get_context, prepare_response, get_query, \
     restrict_next
 from astakos.im.forms import LoginForm, InvitationForm, FeedbackForm, \
-    SignApprovalTermsForm, EmailChangeForm
+    SignApprovalTermsForm, EmailChangeForm, LDAPLoginForm
 from astakos.im.forms import ExtendedProfileForm as ProfileForm
 from synnefo.lib.services import get_public_endpoint
 from astakos.im.user_utils import send_feedback, logout as auth_logout, \
@@ -504,8 +504,13 @@ def signup(request, template_name='im/signup.html', on_success='index',
             messages.add_message(request, status, message)
             return HttpResponseRedirect(reverse(on_success))
 
+    ldap_login_form = None
+    if 'ldap' in settings.IM_MODULES:
+        ldap_login_form = LDAPLoginForm(request)
+
     return render_response(
         template_name,
+        login_form=ldap_login_form,
         signup_form=form,
         third_party_token=third_party_token,
         provider=provider,

@@ -5417,6 +5417,10 @@ table.list-machines .wave {
     width: 47%;
 }
 
+.create-wizard-overlay .list-cont.personalize-cont.meta.last {
+    width: 220px !important;
+}
+
 .create-wizard-overlay .header-step.current {
     font-weight: bold;
 }

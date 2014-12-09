@@ -669,7 +669,7 @@
       check_can_reassign: function() {
           var action = this.$(".project-name");
           if (this.model.get("is_root")) {
-              snf.util.set_tooltip(action, "You cannot change the project of boot disks.", {tipClass:"tooltip warning"});
+              snf.util.set_tooltip(action, "You cannot change the project of boot disks.<br>Boot disks are assigned to the same project as the parent VM.", {tipClass:"tooltip warning"});
               return "project-name-cont disabled";
           } else {
               snf.util.unset_tooltip(action);

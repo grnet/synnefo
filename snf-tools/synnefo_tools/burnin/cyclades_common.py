@@ -642,6 +642,18 @@ class CycladesTests(BurninTests):
         opmsg = opmsg % portid
         self._try_until_timeout_expires(opmsg, check_fun)
 
+    def _delete_arp_entry(self, fip):
+        """Delete floating IP from ARP table"""
+        cmd = ("arp -d %s" % fip)
+        subp = subprocess.Popen(
+            cmd, shell=True, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE)
+        subp.communicate()
+        ret = subp.wait()
+        if ret != 0:
+            self.warning("Could not remove floating IP %s from arp cache"
+                         % fip)
+
     def _disconnect_from_network(self, server, network=None):
         """Disconnnect server from network"""
         if network is None:
@@ -668,6 +680,9 @@ class CycladesTests(BurninTests):
             self.info("Destroying port with id %s", port['id'])
             self.clients.network.delete_port(port['id'])
             self._insist_on_port_deletion(port['id'])
+
+        for fip in fips:
+            self._delete_arp_entry(fip['floating_ip_address'])
 
         # Then delete the floating IPs
         self._delete_floating_ips(fips)

@@ -2702,6 +2702,12 @@ settings file. Uncomment it and assign the following URL to it:
 
     ``https://node1.example.com/admin``
 
+Restart gunicorn on node1:
+
+.. code-block:: console
+
+   # /etc/init.d/gunicorn restart
+
 Now, we can proceed with testing Admin.
 
 Testing of Admin

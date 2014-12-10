@@ -644,9 +644,9 @@ class CycladesTests(BurninTests):
 
     def _delete_arp_entry(self, fip):
         """Delete floating IP from ARP table"""
-        cmd = ("arp -d %s" % fip)
+        cmd = (["/usr/sbin/arp", "-d",  fip])
         subp = subprocess.Popen(
-            cmd, shell=True, stdout=subprocess.PIPE,
+            cmd, shell=False, stdout=subprocess.PIPE,
             stderr=subprocess.PIPE)
         subp.communicate()
         ret = subp.wait()

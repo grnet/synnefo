@@ -843,6 +843,16 @@ def resource_usage(request):
         messages.error(request, 'Unable to retrieve system resources: %s' %
                        result.reason)
 
+    # Exclude projects that are terminated *and* the user has no active
+    # resources (usage>0)
+    non_terminated_projects = [p["id"] for p in user_projects
+                               if p["state"] != "terminated"]
+    user_quotas = dict([(p_id,  p_quotas)
+                        for (p_id, p_quotas) in user_quotas.items()
+                        if p_id in non_terminated_projects
+                        or
+                        filter(lambda x: x["usage"] > 0, p_quotas.values())])
+
     resource_catalog = json.dumps(resource_catalog)
     resource_groups = json.dumps(resource_groups)
     resources_order = json.dumps(resources_meta.get('resources_order'))

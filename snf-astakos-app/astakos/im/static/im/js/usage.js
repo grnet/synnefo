@@ -459,10 +459,21 @@ _.extend(UsageView.prototype, {
         
         // update indexes
         _.each(resource.projects_list, function(p, index) {
-            if (!_.contains(active_project_uuids, p.id)) {
+            if (p.state == "terminated") {
+                p.terminated = true;
+            } else if (p.state == "suspended") {
+                p.suspended = true;
+            } else if (!_.contains(active_project_uuids, p.id)) {
                 p.not_a_member = true;
-            } else {
-                p.not_a_member = false;
+            }
+
+            // Check if we need to warn the user
+            if (p.terminated || p.suspended || p.not_a_member) {
+                warn = true;
+            }
+            // Hide project if not active and no usage
+            if ((p.terminated || p.not_a_member ) && (p.usage.usage == 0)) {
+                p.hide_project_resource = true;
             }
             p.index = index;
         });

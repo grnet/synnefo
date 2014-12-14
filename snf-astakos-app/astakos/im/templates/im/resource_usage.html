@@ -16,9 +16,12 @@
       {{^system_project}}no-base-project{{/system_project}}
       {{#system_project}}base-project{{/system_project}}"
       data-project="{{ id }}">
-      <div class="info {{#not_a_member}}warn{{/not_a_member}}" data-currvalue="" data-maxvalue="">
+      {{^hide_project_resource}}
+      <div class="info {{#warn}}warn{{/warn}}" data-currvalue="" data-maxvalue="">
           <h3>
             <a href="{{ details_url }}">{{{ display_name }}}</a>
+            {{#terminated}}<span class="warn-msg">[TERMINATED]</span>{{/terminated}}
+            {{#suspended}}<span class="warn-msg">[SUSPENDED]</span>{{/suspended}}
             {{#not_a_member}}<span class="warn-msg">[NOT A MEMBER]</span>{{/not_a_member}}
           </h3>
         <p>
@@ -42,6 +45,7 @@
             </em>
         </div>
       </div>
+      {{/hide_project_resource}}
   </div>
   {% endverbatim %}
 </script>
